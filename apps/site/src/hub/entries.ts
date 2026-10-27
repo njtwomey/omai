@@ -1,7 +1,9 @@
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
+import { eigenPower, eigenQr } from 'mdml-engine/methods/linalg'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
+import { changeOfVariables } from 'mdml-engine/methods/probability'
 import { mcmc } from 'mdml-engine/methods/sampling'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
@@ -119,6 +121,47 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'series', path: 'chain/position', names: ['x₀', 'x₁'], title: 'trace plot' },
       { kind: 'curves', paths: ['chain/acceptance'], title: 'acceptance rate so far' },
       { kind: 'curves', paths: ['chain/logDensity'] },
+    ],
+  },
+  {
+    id: 'probability/change-of-variables',
+    title: 'Change of variables',
+    summary:
+      'Normal samples and a grid pushed through a bijection that deforms from the identity: the density follows the Jacobian.',
+    method: changeOfVariables,
+    steps: 60,
+    layout: [
+      { kind: 'probe', path: 'map/density', title: 'pushed density, with the pushed samples' },
+      { kind: 'probe', path: 'map/grid', title: 'the grid under the map' },
+      { kind: 'curves', paths: ['map/entropy', 'map/meanLogDet'], title: 'entropy and mean log |det J|' },
+    ],
+  },
+  {
+    id: 'linalg/power-iteration',
+    title: 'Power iteration',
+    summary:
+      'v ← A v / ‖A v‖ on a symmetric matrix: the vector turns to the leading eigenvector, the Rayleigh quotient to its eigenvalue.',
+    method: eigenPower,
+    steps: 60,
+    layout: [
+      { kind: 'probe', path: 'matrix/action', title: 'the leading eigenplane: the unit circle, its image, and v' },
+      { kind: 'series', path: 'iteration/vector', title: 'the components of v' },
+      { kind: 'curves', paths: ['iteration/rayleigh'], title: 'Rayleigh quotient' },
+      { kind: 'curves', paths: ['iteration/error'], title: 'error of the eigenvalue estimate' },
+    ],
+  },
+  {
+    id: 'linalg/qr-iteration',
+    title: 'QR iteration',
+    summary:
+      'A_{k+1} = R_k Q_k: the matrix converges to a diagonal of its eigenvalues as the off-diagonal mass drains away.',
+    method: eigenQr,
+    steps: 60,
+    layout: [
+      { kind: 'tensor', path: 'iteration/matrix', title: 'A_k' },
+      { kind: 'series', path: 'iteration/vector', title: 'the diagonal: eigenvalue estimates' },
+      { kind: 'curves', paths: ['iteration/offDiagonal'], title: 'off-diagonal norm' },
+      { kind: 'curves', paths: ['iteration/error'], title: 'largest eigenvalue error' },
     ],
   },
 ]
