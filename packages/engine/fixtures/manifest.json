@@ -4719,6 +4719,15 @@
       "cases": 24
     },
     {
+      "fixture": "vision/boxes.json",
+      "source": "oracle/cases/vision/boxes.py",
+      "reference": {
+        "torchvision": "0.29.1",
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 25
+    },
+    {
       "fixture": "vision/colour.json",
       "source": "oracle/cases/vision/colour.py",
       "reference": {
