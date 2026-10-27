@@ -1,5 +1,6 @@
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
+import { kalmanTracking } from 'mdml-engine/methods/dynamics'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
 import type { Method, Subscription } from 'mdml-engine/trace'
@@ -98,6 +99,25 @@ export const ENTRIES: readonly HubEntry[] = [
     layout: [
       { kind: 'projection', name: 'regularisationPath' },
       { kind: 'curves', paths: ['solver/gap', 'solver/alpha'], title: 'duality gap and penalty' },
+    ],
+  },
+  {
+    id: 'dynamics/kalman-tracking',
+    title: 'Kalman filter tracking',
+    summary:
+      'A constant-velocity Kalman filter following a point it only sees through noisy readings: its estimate and 1σ uncertainty against the truth, and how trusting the model too much or too little changes it.',
+    method: kalmanTracking,
+    steps: 300,
+    layout: [
+      {
+        kind: 'trajectory',
+        paths: ['estimate', 'truth'],
+        ellipse: 'covariance',
+        title: 'filtered position (1σ) against the truth',
+      },
+      { kind: 'trajectory', paths: ['observation'], points: true, trail: 60, title: 'observations' },
+      { kind: 'curves', paths: ['positionError'] },
+      { kind: 'curves', paths: ['nis'] },
     ],
   },
 ]

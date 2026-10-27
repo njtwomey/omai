@@ -64,6 +64,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/logic/ilp': () => import('mdml-engine/logic/ilp'),
   'mdml-engine/losses': () => import('mdml-engine/losses'),
   'mdml-engine/methods/cluster': () => import('mdml-engine/methods/cluster'),
+  'mdml-engine/methods/dynamics': () => import('mdml-engine/methods/dynamics'),
   'mdml-engine/methods/linear': () => import('mdml-engine/methods/linear'),
   'mdml-engine/methods/mixture': () => import('mdml-engine/methods/mixture'),
   'mdml-engine/metrics': () => import('mdml-engine/metrics'),
