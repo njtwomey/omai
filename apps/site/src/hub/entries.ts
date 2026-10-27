@@ -1,7 +1,8 @@
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
+import { odeSystems } from 'mdml-engine/methods/dynamics'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
-import { gmm } from 'mdml-engine/methods/mixture'
+import { gmm, moe } from 'mdml-engine/methods/mixture'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -70,6 +71,19 @@ export const ENTRIES: readonly HubEntry[] = [
     ],
   },
   {
+    id: 'mixture/moe',
+    title: 'Mixture of experts',
+    summary:
+      'Linear experts and a gate that shares the rows among them: the E-step says which expert owns each row, the M-step refits each expert by weighted least squares and moves the gate.',
+    estimator: moe,
+    datasets: ['regression1d'],
+    layout: [
+      { kind: 'rows', overlay: 'experts' },
+      { kind: 'probe', path: 'model/gating', title: 'gate probabilities' },
+      { kind: 'curves', paths: ['solver/logLikelihood'] },
+    ],
+  },
+  {
     id: 'linear/logistic-regression',
     title: 'Logistic regression',
     summary:
@@ -98,6 +112,19 @@ export const ENTRIES: readonly HubEntry[] = [
     layout: [
       { kind: 'projection', name: 'regularisationPath' },
       { kind: 'curves', paths: ['solver/gap', 'solver/alpha'], title: 'duality gap and penalty' },
+    ],
+  },
+  {
+    id: 'dynamics/ode-systems',
+    title: 'ODE systems',
+    summary:
+      'Predator and prey, Lorenz, Van der Pol, a pendulum or an epidemic, integrated by an adaptive Runge-Kutta method one accepted step at a time: the state against time, the phase portrait, and the step size the controller chose. The panels name the state as y[i].',
+    method: odeSystems,
+    steps: 1000,
+    layout: [
+      { kind: 'series', path: 'y', x: 't', title: 'the state against time' },
+      { kind: 'trajectory', paths: ['y'], dims: [0, 1], title: 'phase portrait' },
+      { kind: 'curves', paths: ['h'], title: 'step size' },
     ],
   },
 ]

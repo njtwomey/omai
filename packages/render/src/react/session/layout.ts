@@ -17,9 +17,11 @@ export type Panel =
        * `assignments` and centres (`model/assignments`, `model/centres`); `components` those with each component's 1σ
        * and 2σ ellipses (`model/params` with covariances); `fit` the 1-D fit (`model/predictions`); `band` the 1-D fit
        * with its predictive band (`model/predictive`: mean, lower, upper per row); `surface` the decision surface
-       * (`model/decision-surface`).
+       * (`model/decision-surface`); `experts` a 1-D mixture of experts: rows coloured by their most responsible expert
+       * (`model/assignments`), one thin line per expert in its colour (`model/experts`: `{ lines }`, expert by row) and
+       * the mixture's own line, bolder (`model/predictions`).
        */
-      readonly overlay?: 'assignments' | 'components' | 'fit' | 'band' | 'surface'
+      readonly overlay?: 'assignments' | 'components' | 'fit' | 'band' | 'surface' | 'experts'
       readonly title?: string
     }
   /** A derived path at the viewed step: an exposition record is drawn by its view, anything else as JSON. */

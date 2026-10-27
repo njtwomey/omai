@@ -46,6 +46,7 @@ const ROWS_TITLES = {
   fit: 'the fit',
   band: 'the fit and its band',
   surface: 'decision surface',
+  experts: 'experts and the mixture',
 } as const
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')

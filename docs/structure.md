@@ -1987,6 +1987,10 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `pde/fokker-planck.ts`: density evolution for SDEs (Scharfetter-Gummel), stationary densities.
 - `fields.ts`: Jacobians, divergence, curl, fixed points (seeded Newton), classification (node, spiral, saddle,
   centre), nullclines, streamlines, flow maps, invariant manifolds.
+- `named-systems.ts`: named systems as vector fields in tensor operations (so they integrate and differentiate):
+  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, and `namedSystems`, each
+  with a start, a time span that shows its behaviour and its component names (what `methods/dynamics/odeSystems.ts`
+  runs).
 - `maps.ts`: iterated maps, orbits, cobwebs, bifurcation diagrams, Lyapunov exponents.
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
@@ -3717,6 +3721,10 @@ built from: `signal`, `optim/sparse.ts`, `stochastic`, `metrics`
 `dynamics/` (named systems and studies)
 oracle: scipy.integrate
 built from: `dynamics`, `stochastic`, `systems`
+- `odeSystems.ts` (built, on the log contract): a dataset-free `Method` that integrates a named system of
+  `lib/dynamics/named-systems.ts` (Lotka-Volterra, Lorenz, Van der Pol, damped pendulum, SIR) with `RK45`, `RK23` or
+  `DOP853` at a chosen `rtol`, one accepted step per step; plain `{ t, y, h, evaluations }` state, rebuilding the
+  library's stepper each step with the proposed step as its first. Logs `t`, `y` (full), `h` and `evaluations`.
 - `systems.ts`: Lorenz, Rossler, Van der Pol, Duffing, simple, damped and double pendulums, Lotka-Volterra, SIR and
   SEIR, Kuramoto oscillators, the Hopf normal form, Brusselator.
 - `maps.ts`: logistic, tent, sine, Henon and standard maps with bifurcation and Lyapunov studies.
