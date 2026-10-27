@@ -1,6 +1,6 @@
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
-import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
+import { bayesianRegression, lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
@@ -88,6 +88,19 @@ export const ENTRIES: readonly HubEntry[] = [
     estimator: ridge,
     datasets: ['regression1d'],
     layout: [{ kind: 'rows', overlay: 'fit' }],
+  },
+  {
+    id: 'linear/bayesian-regression',
+    title: 'Bayesian linear regression',
+    summary:
+      'A polynomial with a Gaussian prior on its coefficients, one training row per step: the predictive band tightens and the evidence settles.',
+    estimator: bayesianRegression,
+    datasets: ['regression1d'],
+    layout: [
+      { kind: 'rows', overlay: 'band' },
+      { kind: 'curves', paths: ['solver/logEvidence'] },
+      { kind: 'curves', paths: ['solver/meanPredictiveStd'] },
+    ],
   },
   {
     id: 'linear/lasso-path',

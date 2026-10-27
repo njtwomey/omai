@@ -3005,9 +3005,18 @@ The algorithms behind linear models, moved from the parked methods layer. `desig
 matrix from `LearnData` (intercept, centring, weights); `solvers.ts` holds least squares, ridge by SVD, IRLS for GLMs
 and coordinate descent for the lasso and elastic net; `paths.ts` the alpha grid and the regularisation path over it
 (with cross-validation); `model.ts` the linear model's parameters and prediction (`linearModel`); `inference.ts`
-covariances, Wald tables, standard errors and intervals. The estimator factories (lasso, ridge, logistic, GLM, robust,
-Bayesian, online, LARS, isotonic) stay parked until the new methods base. Goldens keep their fixtures under
-`methods/linear/`.
+covariances, Wald tables, standard errors and intervals. `bayesian.ts` is conjugate Bayesian linear regression (zero-mean
+Gaussian prior of precision `alpha`, known noise precision `beta`): the batch posterior `bayesianLinearFit`, the same
+posterior one observation per step as `bayesianLinearAlgorithm(design, prior, order)` (a rank-one update of precision and
+information; `observe` exposes the metrics `logEvidence` and `meanPredictiveStd` and the `param` tensors `mean` and
+`covariance`), `posteriorPredictive` (mean and variance per row), `maximiseEvidence` (MacKay's fixed point for `alpha`
+and `beta`) and `polynomialBasis` (features scaled to `[-1, 1]`, then the library's `polynomialFeatures`). The estimator
+factories (lasso, ridge, logistic, GLM, robust, online, LARS, isotonic) stay parked until the new methods base; the
+sequential Bayesian regression is the method `methods/linear/bayesianRegression`. Goldens of the parked factories keep
+their fixtures under `methods/linear/`.
+
+oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
+and a fixed number of evidence-maximisation updates
 
 ### 4.42 `mixture/`: mixture models (scikit-learn mixture)
 

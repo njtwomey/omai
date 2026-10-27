@@ -1220,6 +1220,14 @@
       "cases": 17
     },
     {
+      "fixture": "linear/bayesian.json",
+      "source": "oracle/cases/linear/bayesian.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "logic/answer-sets.json",
       "source": "oracle/cases/logic/answer-sets.py",
       "reference": {
