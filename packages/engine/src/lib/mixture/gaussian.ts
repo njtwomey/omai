@@ -291,6 +291,40 @@ export interface MixtureInitOptions {
 }
 
 /**
+ * Initial responsibilities for a mixture: one-hot labels of a converged k-means (k-means++ start, scikit-learn's
+ * default), or uniform random weights normalised over the components.
+ *
+ * @param x - Points `[n, d]`.
+ * @param k - The number of components (at most the number of points).
+ * @param init - `kmeans` or `random`.
+ * @param key - Randomness.
+ * @returns Responsibilities `[n][k]`, each row summing to one.
+ * @throws MdmlError with code `value` unless `k` is an integer in `1..n`.
+ * @example
+ * ```ts
+ * import { initialResponsibilities } from 'mdml-engine/mixture'
+ * import { key } from 'mdml-engine/random'
+ * initialResponsibilities([[0], [0.1], [9], [9.1]], 2, 'kmeans', key(0)).map((r) => r[0] + r[1]) // => [1, 1, 1, 1]
+ * ```
+ */
+export function initialResponsibilities(x: TensorLike, k: number, init: 'kmeans' | 'random', key: Key): number[][] {
+  const m = matrixView(x, 'gaussianMixture')
+  if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
+    throw new MdmlError('value', `gaussianMixture: nComponents must be in 1..${m.n}`)
+  if (init === 'kmeans') {
+    const lloyd = lloydAlgorithm(x, initialCentres(x, k, 'k-means++', key))
+    const labels = runAlgorithm(lloyd, { maxSteps: 300 }).state.labels
+    return labels.map((l) => Array.from({ length: k }, (_, j) => (j === l ? 1 : 0)))
+  }
+  const r = toFlat(uniform(key, [m.n, k]))
+  return Array.from({ length: m.n }, (_, i) => {
+    const row = r.slice(i * k, (i + 1) * k)
+    const s = row.reduce((a, v) => a + v, 0)
+    return row.map((v) => v / s)
+  })
+}
+
+/**
  * Initial parameters: the M-step on one-hot k-means labels (sklearn's default) or on random responsibilities, or the
  * given parameters.
  *
@@ -317,19 +351,7 @@ export function initialMixture(x: TensorLike, options: MixtureInitOptions, key: 
       means: init.means.map((r) => [...r]),
       covariances: init.covariances.map((c) => c.map((r) => [...r])),
     }
-  let resp: number[][]
-  if (init === 'kmeans') {
-    const lloyd = lloydAlgorithm(x, initialCentres(x, k, 'k-means++', key))
-    const labels = runAlgorithm(lloyd, { maxSteps: 300 }).state.labels
-    resp = labels.map((l) => Array.from({ length: k }, (_, j) => (j === l ? 1 : 0)))
-  } else {
-    const r = toFlat(uniform(key, [m.n, k]))
-    resp = Array.from({ length: m.n }, (_, i) => {
-      const row = r.slice(i * k, (i + 1) * k)
-      const s = row.reduce((a, v) => a + v, 0)
-      return row.map((v) => v / s)
-    })
-  }
+  const resp = initialResponsibilities(x, k, init, key)
   return gaussianMStep(m, resp, options.covarianceType ?? 'full', options.regCovar ?? 1e-6)
 }
 

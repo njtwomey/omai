@@ -1220,6 +1220,14 @@
       "cases": 17
     },
     {
+      "fixture": "linear/bayesian.json",
+      "source": "oracle/cases/linear/bayesian.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "logic/answer-sets.json",
       "source": "oracle/cases/logic/answer-sets.py",
       "reference": {
@@ -2081,6 +2089,14 @@
         "torchmetrics": "1.9.0"
       },
       "cases": 84
+    },
+    {
+      "fixture": "mixture/variational.json",
+      "source": "oracle/cases/mixture/variational.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
     },
     {
       "fixture": "nn/functional/activations.json",

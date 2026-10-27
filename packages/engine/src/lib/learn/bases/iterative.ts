@@ -52,8 +52,8 @@ export interface IterativeParticular<H extends object, S, P extends Json, V exte
   verbs(params: P, hyper: H): V
   /** What the state can tell beyond the solver's channels: aliases, derived paths, events. */
   contract?(data: LearnData, hyper: H): Contract<S>
-  /** The step budget of a fit (default 10,000; the algorithm's `done` usually ends it sooner). */
-  readonly maxSteps?: (hyper: H) => number
+  /** The step budget of a fit, which may depend on the data (default 10,000; the algorithm's `done` usually ends it sooner). */
+  readonly maxSteps?: (hyper: H, data: LearnData) => number
   /** Restarts: how many, and which final state wins. */
   readonly restarts?: { readonly count: (hyper: H) => number; readonly better: (a: S, b: S) => boolean }
   /** Structural records from the final state (a tree, a coefficient table). */
@@ -206,18 +206,18 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
             ),
           }),
     })
-  const steps = p.maxSteps?.(hyper) ?? 10_000
-  const checkpointEvery = Math.max(1, Math.floor(steps / 100))
-  const sessionOf = (data: LearnData, options: IterativeSessionOptions, key: Key): Session<S, Config> =>
-    session(method(data), {
+  const sessionOf = (data: LearnData, options: IterativeSessionOptions, key: Key): Session<S, Config> => {
+    const steps = p.maxSteps?.(hyper, data) ?? 10_000
+    return session(method(data), {
       key,
       config: configOf(hyper),
       logs: options.logs ?? (options.explain === false ? 'off' : 'defaults'),
       mode: options.mode ?? 'live',
       steps: options.steps ?? steps,
       ...(options.past === undefined ? {} : { past: options.past }),
-      checkpointEvery,
+      checkpointEvery: Math.max(1, Math.floor(steps / 100)),
     })
+  }
   const fit = (data: LearnData, options: FitOptions = {}): IterativeFitted<P, V> => {
     const key = resolveKey(options, p.name)
     const n = Math.max(1, p.restarts?.count(hyper) ?? 1)

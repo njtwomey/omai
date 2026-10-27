@@ -2,11 +2,10 @@ import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { kalmanTracking } from 'mdml-engine/methods/dynamics'
 import { eigenPower, eigenQr } from 'mdml-engine/methods/linalg'
-import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
-import { gmm } from 'mdml-engine/methods/mixture'
+import { bayesianRegression, lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
+import { bgmm, gmm } from 'mdml-engine/methods/mixture'
 import { transformSampling } from 'mdml-engine/methods/probability'
 import { mcmc } from 'mdml-engine/methods/sampling'
-
 import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
@@ -78,6 +77,21 @@ export const ENTRIES: readonly HubEntry[] = [
     ],
   },
   {
+    id: 'mixture/bayesian-gmm',
+    title: 'Bayesian Gaussian mixture',
+    summary:
+      'Variational inference with a sparse prior on the weights: eight components start, and the ones the data does not need die off.',
+    // From a k-means start: eight pieces of three blobs, merged and switched off by the prior. A random start leaves
+    // the components alike, and variational inference then merges two of three separated blobs in nine seeds of ten.
+    estimator: bgmm,
+    datasets: ['clustering2d'],
+    layout: [
+      { kind: 'rows', overlay: 'components' },
+      { kind: 'series', path: 'solver/weights', title: 'component weights (the unneeded die off)' },
+      { kind: 'curves', paths: ['solver/lowerBound'] },
+    ],
+  },
+  {
     id: 'linear/logistic-regression',
     title: 'Logistic regression',
     summary:
@@ -96,6 +110,19 @@ export const ENTRIES: readonly HubEntry[] = [
     estimator: ridge,
     datasets: ['regression1d'],
     layout: [{ kind: 'rows', overlay: 'fit' }],
+  },
+  {
+    id: 'linear/bayesian-regression',
+    title: 'Bayesian linear regression',
+    summary:
+      'A polynomial with a Gaussian prior on its coefficients, one training row per step: the predictive band tightens and the evidence settles.',
+    estimator: bayesianRegression,
+    datasets: ['regression1d'],
+    layout: [
+      { kind: 'rows', overlay: 'band' },
+      { kind: 'curves', paths: ['solver/logEvidence'] },
+      { kind: 'curves', paths: ['solver/meanPredictiveStd'] },
+    ],
   },
   {
     id: 'linear/lasso-path',
