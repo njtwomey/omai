@@ -1987,6 +1987,10 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `pde/fokker-planck.ts`: density evolution for SDEs (Scharfetter-Gummel), stationary densities.
 - `fields.ts`: Jacobians, divergence, curl, fixed points (seeded Newton), classification (node, spiral, saddle,
   centre), nullclines, streamlines, flow maps, invariant manifolds.
+- `named-systems.ts`: named systems as vector fields in tensor operations (so they integrate and differentiate):
+  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, and `namedSystems`, each
+  with a start, a time span that shows its behaviour and its component names (what `methods/dynamics/odeSystems.ts`
+  runs).
 - `maps.ts`: iterated maps, orbits, cobwebs, bifurcation diagrams, Lyapunov exponents.
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
@@ -3041,6 +3045,16 @@ density helpers stay parked; the method is `methods/mixture/bgmm`. The EM golden
 oracle: `variational` starts scikit-learn's `BayesianGaussianMixture` from given responsibilities (its private
 `_initialize`) and compares a fixed number of iterations, for both weight priors and all four covariance types
 (`mixture/variational` fixture)
+(params), declared in the schema. The estimator factories, the Bayesian mixture, component selection and the density
+helpers stay parked. The golden keeps its fixture under `methods/mixture/gaussian`.
+- `experts.ts`: the mixture of linear experts (Jacobs and Jordan) by EM: `mixtureOfExpertsAlgorithm(x, y, { nExperts,
+  ... }, key)` has a softmax gate of linear functions with a bias (the last expert's row held at zero) over
+  linear-Gaussian experts, each with its own noise variance. The E-step is the posterior responsibility of each expert
+  for each row; the M-step is weighted least squares per expert (`linear`'s `leastSquaresSolve`) and a few damped,
+  line-searched Newton steps on the ridge-penalised weighted multinomial logistic objective for the gate. The start is
+  one random chord (an exact fit through `d + 1` random rows) per expert. The metrics are `logLikelihood` and `change`;
+  the tensors `responsibilities` `[n, k]`, `gate` and `experts` `[k, d + 1]` and `variances` `[k]`. `moeGate`,
+  `moeExpertMeans`, `moePredict` (the mixture mean), `moePosterior` and `moeAssignments` read parameters.
 
 ## 5. Methods, exposition records, views and the hub
 
@@ -3737,6 +3751,10 @@ built from: `signal`, `optim/sparse.ts`, `stochastic`, `metrics`
 `dynamics/` (named systems and studies)
 oracle: scipy.integrate
 built from: `dynamics`, `stochastic`, `systems`
+- `odeSystems.ts` (built, on the log contract): a dataset-free `Method` that integrates a named system of
+  `lib/dynamics/named-systems.ts` (Lotka-Volterra, Lorenz, Van der Pol, damped pendulum, SIR) with `RK45`, `RK23` or
+  `DOP853` at a chosen `rtol`, one accepted step per step; plain `{ t, y, h, evaluations }` state, rebuilding the
+  library's stepper each step with the proposed step as its first. Logs `t`, `y` (full), `h` and `evaluations`.
 - `systems.ts`: Lorenz, Rossler, Van der Pol, Duffing, simple, damped and double pendulums, Lotka-Volterra, SIR and
   SEIR, Kuramoto oscillators, the Hopf normal form, Brusselator.
 - `maps.ts`: logistic, tent, sine, Henon and standard maps with bifurcation and Lyapunov studies.

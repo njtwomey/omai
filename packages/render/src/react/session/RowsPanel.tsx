@@ -1,7 +1,8 @@
 /**
  * The rows panel of a session on a dataset: the training rows (by assignment, class or target) with an overlay probed
  * at the viewed step (assignments and centres, mixture components with their ellipses, a 1-D fit with or without its
- * predictive band, a decision surface), plus the probe hook and the figure size every session panel shares.
+ * predictive band, a 1-D mixture of experts, a decision surface), plus the probe hook and the figure size every
+ * session panel shares.
  */
 
 import type { Json } from 'mdml-engine/base'
@@ -63,8 +64,8 @@ export const Note = (props: { readonly children: ReactNode }): ReactNode => (
 /**
  * The training rows (by assignment, class or target) with the probe overlay at the scrubbed step: `assignments` the
  * assignments and centres, `components` those with each component's 1σ and 2σ ellipses, `fit` the 1-D fit, `band`
- * the 1-D fit with its predictive band, `surface` the decision surface. Each probe is independent and the chart stays
- * mounted across frames.
+ * the 1-D fit with its predictive band, `surface` the decision surface, `experts` the rows by expert with each expert's
+ * line and the mixture's. Each probe is independent and the chart stays mounted across frames.
  */
 export function RowsPanel(props: {
   readonly overlay: NonNullable<Extract<Panel, { kind: 'rows' }>['overlay']> | undefined
@@ -79,11 +80,14 @@ export function RowsPanel(props: {
   const { overlay, live, t, x, y } = props
   const mode = useColourMode()
   const withCentres = overlay === 'assignments' || overlay === 'components'
-  const assignments = useProbe(live, t, withCentres ? 'model/assignments' : undefined)
+  const byExpert = overlay === 'experts'
+  const assignments = useProbe(live, t, withCentres || byExpert ? 'model/assignments' : undefined)
   const centres = useProbe(live, t, withCentres ? 'model/centres' : undefined)
   // A mixture's parameters carry covariances: drawn as each component's 1 and 2 sigma ellipses.
   const params = useProbe(live, t, overlay === 'components' ? 'model/params' : undefined)
-  const fit = useProbe(live, t, overlay === 'fit' ? 'model/predictions' : undefined)
+  const fit = useProbe(live, t, overlay === 'fit' || byExpert ? 'model/predictions' : undefined)
+  // A mixture of experts: each expert's own line over the training rows.
+  const expertLines = useProbe(live, t, byExpert ? 'model/experts' : undefined)
   // A predictive band: the mean and the band's edges per training row (a Bayesian model's posterior predictive).
   const predictive = useProbe(live, t, overlay === 'band' ? 'model/predictive' : undefined)
   const surface = useProbe(live, t, overlay === 'surface' ? 'model/decision-surface' : undefined)
@@ -105,11 +109,36 @@ export function RowsPanel(props: {
     | { readonly mean: number[]; readonly lower: number[]; readonly upper: number[] }
     | undefined
   const fitted = (fit.value as number[] | undefined) ?? interval?.mean
-  const error = [assignments, centres, params, fit, predictive, surface].find((p) => p.error !== undefined)?.error
+  const expertRows = (expertLines.value as { readonly lines?: number[][] } | undefined)?.lines
+  const error = [assignments, centres, params, fit, expertLines, predictive, surface].find(
+    (p) => p.error !== undefined,
+  )?.error
   const option = useMemo(() => {
-    const layers: Layer[] = [
-      points([{ x: rowX, y: rowY, ...(groups === undefined ? {} : { groups }), opacity: 0.7 }], { mode }),
-    ]
+    const layers: Layer[] =
+      byExpert && labels !== undefined
+        ? // One set per expert so that an expert keeps its colour whichever experts own rows.
+          Array.from({ length: Math.max(expertRows?.length ?? 0, Math.max(-1, ...labels) + 1) }, (_, k) => k).flatMap(
+            (k) => {
+              const own = labels.flatMap((l, i) => (l === k ? [i] : []))
+              return own.length === 0
+                ? []
+                : [
+                    points(
+                      [
+                        {
+                          x: own.map((i) => rowX[i] ?? 0),
+                          y: own.map((i) => rowY[i] ?? 0),
+                          name: `expert ${k}`,
+                          colour: categoricalColour(k),
+                          opacity: 0.7,
+                        },
+                      ],
+                      { mode },
+                    ),
+                  ]
+            },
+          )
+        : [points([{ x: rowX, y: rowY, ...(groups === undefined ? {} : { groups }), opacity: 0.7 }], { mode })]
     if (centreRows !== undefined)
       layers.push(
         points(
@@ -155,9 +184,25 @@ export function RowsPanel(props: {
         }
       })
     }
-    if (fitted !== undefined && d === 1) {
+    if (d === 1) {
       const order = rowX.map((_, i) => i).sort((a, b) => (rowX[a] ?? 0) - (rowX[b] ?? 0))
       const xs = order.map((i) => rowX[i] ?? 0)
+      expertRows?.forEach((line, k) => {
+        layers.push(
+          lines(
+            [
+              {
+                x: xs,
+                y: order.map((i) => line[i] ?? 0),
+                name: `__expert${k}`,
+                colour: categoricalColour(k),
+                width: 1.5,
+              },
+            ],
+            { mode },
+          ),
+        )
+      })
       if (interval !== undefined)
         layers.push(
           band(
@@ -172,10 +217,23 @@ export function RowsPanel(props: {
             { mode, colourOffset: 1 },
           ),
         )
-      layers.push(lines([{ x: xs, y: order.map((i) => fitted[i] ?? 0), name: 'fit' }], { mode, colourOffset: 1 }))
+      if (fitted !== undefined)
+        layers.push(
+          lines(
+            [
+              {
+                x: xs,
+                y: order.map((i) => fitted[i] ?? 0),
+                name: byExpert ? 'mixture' : 'fit',
+                ...(byExpert ? { colour: 'fg', width: 3.5 } : {}),
+              },
+            ],
+            { mode, colourOffset: 1 },
+          ),
+        )
     }
     return { ...cartesian(layers, { mode, figure: FIG }), animation: false }
-  }, [rowX, rowY, groups, centreRows, covs, fitted, interval, d, mode])
+  }, [rowX, rowY, groups, labels, byExpert, expertRows, centreRows, covs, fitted, interval, d, mode])
   // The decision surface is an exposition view (its own frame); the rest is one chart in this panel's frame.
   if (surface.value !== undefined)
     return (
