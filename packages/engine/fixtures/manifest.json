@@ -4728,6 +4728,30 @@
       "cases": 14
     },
     {
+      "fixture": "vision/components.json",
+      "source": "oracle/cases/vision/components.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "vision/contours.json",
+      "source": "oracle/cases/vision/contours.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 65
+    },
+    {
+      "fixture": "vision/fitting.json",
+      "source": "oracle/cases/vision/fitting.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 25
+    },
+    {
       "fixture": "vision/histograms.json",
       "source": "oracle/cases/vision/histograms.py",
       "reference": {
@@ -4735,6 +4759,22 @@
         "scikit-image": "0.26.0"
       },
       "cases": 24
+    },
+    {
+      "fixture": "vision/hull.json",
+      "source": "oracle/cases/vision/hull.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "vision/moments.json",
+      "source": "oracle/cases/vision/moments.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 23
     },
     {
       "fixture": "vision/thresholds.json",
