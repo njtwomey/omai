@@ -1,7 +1,7 @@
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { bayesianRegression, lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
-import { gmm } from 'mdml-engine/methods/mixture'
+import { bgmm, gmm } from 'mdml-engine/methods/mixture'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -67,6 +67,20 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'rows', overlay: 'components' },
       { kind: 'probe', path: 'model/density', args: { resolution: 40 }, title: 'log density' },
       { kind: 'curves', paths: ['solver/logLikelihood'] },
+    ],
+  },
+  {
+    id: 'mixture/bayesian-gmm',
+    title: 'Bayesian Gaussian mixture',
+    summary:
+      'Variational inference with a sparse prior on the weights: eight components start, and the ones the data does not need die off.',
+    // Random responsibilities to start, so the components begin alike and the work is visible.
+    estimator: bgmm.with({ init: 'random' }),
+    datasets: ['clustering2d'],
+    layout: [
+      { kind: 'rows', overlay: 'components' },
+      { kind: 'series', path: 'solver/weights', title: 'component weights (the unneeded die off)' },
+      { kind: 'curves', paths: ['solver/lowerBound'] },
     ],
   },
   {

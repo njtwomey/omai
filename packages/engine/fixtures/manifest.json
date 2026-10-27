@@ -2091,6 +2091,14 @@
       "cases": 84
     },
     {
+      "fixture": "mixture/variational.json",
+      "source": "oracle/cases/mixture/variational.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
+    },
+    {
       "fixture": "nn/functional/activations.json",
       "source": "oracle/cases/nn/functional/activations.py",
       "reference": {

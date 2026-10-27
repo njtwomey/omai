@@ -3024,8 +3024,18 @@ Expectation-maximisation for a Gaussian mixture, moved from the parked methods l
 `gaussianEmAlgorithm` (full, tied, diagonal or spherical covariances), the k-means or random initialisation, the M-step,
 and the responsibilities and per-row log density under a mixture. A state keeps no past: `observe` exposes the metrics
 `logLikelihood` and `change` and the tensors `responsibilities` `[n, k]` (state), `means` `[k, d]` and `weights` `[k]`
-(params), declared in the schema. The estimator factories, the Bayesian mixture, component selection and the density
-helpers stay parked. The golden keeps its fixture under `methods/mixture/gaussian`.
+(params), declared in the schema. `variational.ts` is the Bayesian Gaussian mixture by variational inference
+(scikit-learn's `BayesianGaussianMixture`, every covariance type, Dirichlet or Dirichlet-process weight prior):
+`variationalMixtureAlgorithm(x, start, priors, options)` with `variationalPriors` for the data-dependent priors,
+`expectedWeights` and `variationalResponsibilities`; `observe` exposes the metrics `lowerBound` and `change` and the
+tensors `responsibilities`, `means`, `weights` (expected) and `covariances`, declared in the schema; the start is
+`initialResponsibilities` of `gaussian.ts` (k-means or random). The estimator factories, component selection and the
+density helpers stay parked; the method is `methods/mixture/bgmm`. The EM golden keeps its fixture under
+`methods/mixture/gaussian`.
+
+oracle: `variational` starts scikit-learn's `BayesianGaussianMixture` from given responsibilities (its private
+`_initialize`) and compares a fixed number of iterations, for both weight priors and all four covariance types
+(`mixture/variational` fixture)
 
 ## 5. Methods, exposition records, views and the hub
 
