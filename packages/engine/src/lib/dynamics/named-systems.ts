@@ -195,7 +195,7 @@ export const namedSystems: Readonly<Record<NamedSystemName, NamedSystem>> = {
     description: 'Predators and prey: each boom feeds the other and the populations circle for ever.',
     field: lotkaVolterraField(),
     y0: [10, 5],
-    span: [0, 600],
+    span: [0, 300],
     names: ['prey', 'predators'],
   },
   lorenz: {
@@ -211,7 +211,7 @@ export const namedSystems: Readonly<Record<NamedSystemName, NamedSystem>> = {
     description: 'A self-sustaining oscillator: every start is drawn to the same limit cycle.',
     field: vanDerPolField(),
     y0: [0.5, 0],
-    span: [0, 300],
+    span: [0, 150],
     names: ['position', 'velocity'],
   },
   'damped-pendulum': {

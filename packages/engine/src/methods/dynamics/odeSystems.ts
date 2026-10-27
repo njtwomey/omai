@@ -59,7 +59,7 @@ export const odeSystems: Method<OdeSystemsState, Config> = defineMethod<OdeSyste
   config: dict({
     system: choice(SYSTEMS, { default: 'lotka-volterra', label: 'system' }),
     method: choice(['RK45', 'RK23', 'DOP853'] as const, { default: 'RK45', label: 'method' }),
-    rtol: real(1e-10, 1e-2, { log: true, default: 1e-3, label: 'relative tolerance' }),
+    rtol: real(1e-10, 1e-2, { log: true, default: 1e-5, label: 'relative tolerance' }),
   }),
   make: (c) => {
     const name = c['system'] as NamedSystemName
