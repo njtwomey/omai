@@ -22,16 +22,19 @@ The methods port (`docs/methods_port/`), phase by phase. Maintained by hand at e
 
 Piece by piece, not deep: each entry is a thin particular or a plain method over the library, a few panels, one smoke test.
 
-| piece                                                             | who          | status      | notes                                                                                     |
-| ----------------------------------------------------------------- | ------------ | ----------- | ----------------------------------------------------------------------------------------- |
-| `lib/vision`: classical computer vision, OpenCV-shaped            | agent (Opus) | in progress | worktree `agent-afa77cd434e278c8a`; built on `signal/image`; oracle group `oracle-vision` |
-| Bayesian: sequential linear regression, variational mixture       | agent        | started     |                                                                                           |
-| sequential: Kalman filter tracking, HMM by Baum-Welch             | agent        | started     |                                                                                           |
-| search and tuning: A\* on grids, annealing, Bayesian optimisation | agent        | started     |                                                                                           |
-| mixture of experts, ODE systems                                   | agent        | started     | `lib/mixture/experts.ts` new                                                              |
-| probability: MCMC on a target, change of variables                | me           | started     |                                                                                           |
-| linear algebra: power and QR iteration                            | me           | started     |                                                                                           |
-| stochastic processes: diffusion paths                             | me           | started     |                                                                                           |
-| CV entries in the hub (after the library merges)                  | later        |             |                                                                                           |
+| piece                                                             | who          | status      | notes                                                                                                                    |
+| ----------------------------------------------------------------- | ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `lib/vision`: classical computer vision, OpenCV-shaped            | agent (Opus) | in progress | worktree `agent-afa77cd434e278c8a`; built on `signal/image`; oracle group `oracle-vision`                                |
+| Bayesian: sequential linear regression, variational mixture       | agent        | merged      | 13b65264; `lib/linear/bayesian`, `lib/mixture/variational`; entries `linear/bayesian-regression`, `mixture/bayesian-gmm` |
+| sequential: Kalman filter tracking, HMM by Baum-Welch             | agent        | merged      | e91eafe6; `lib/pgm/learning/baum-welch`, `sequences` datasets; entries `dynamics/kalman-tracking`, `sequence/hmm`        |
+| search and tuning: A\* on grids, annealing, Bayesian optimisation | agent        | merged      | c5d76f62; entries `search/grid-search` (board view since 68b2c792), `search/annealing`, `tune/bayesian-optimisation`     |
+| mixture of experts, ODE systems                                   | agent        | merged      | 589181b5; `lib/mixture/experts`, `lib/dynamics/named-systems`; entries `mixture/moe`, `dynamics/ode-systems`             |
+| probability: MCMC on a target, sampling by transformation         | me           | done        | 129ca63d, 0334051e; entries `sampling/mcmc`, `probability/transform-sampling` (the 2-D change of variables was replaced) |
+| linear algebra: power and QR iteration                            | me           | done        | 1651b6ba; entries `linalg/power-iteration`, `linalg/qr-iteration`                                                        |
+| stochastic processes: diffusion paths                             | me           | done        | entry `stochastic/diffusion-paths`                                                                                       |
+| hub index by area, previous and next links                        | me           | done        | 68b2c792                                                                                                                 |
+| CV entries in the hub (after the library merges)                  | later        |             |                                                                                                                          |
 
-Last updated: 2026-10-27 23:05
+Lesson of the day (2026-10-27): the entries were meant to be written in main one by one, visible on :5300 as they landed; farming them out to worktree agents was not what was asked, and four agents verifying at once stalled the machine (CLAUDE.md now says agents throttle).
+
+Last updated: 2026-10-28 00:40

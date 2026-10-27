@@ -8,6 +8,7 @@ import { transformSampling } from 'mdml-engine/methods/probability'
 import { mcmc } from 'mdml-engine/methods/sampling'
 import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
+import { diffusionPaths } from 'mdml-engine/methods/stochastic'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
@@ -71,6 +72,7 @@ export const AREAS: readonly HubArea[] = [
   },
   { id: 'sequence', title: 'Sequences', blurb: 'Hidden-state models of a sequence.' },
   { id: 'dynamics', title: 'Dynamics', blurb: 'Equations, processes and filters in time.' },
+  { id: 'stochastic', title: 'Stochastic processes', blurb: 'Bundles of paths of a diffusion, and their laws.' },
   { id: 'sampling', title: 'Sampling', blurb: 'Markov chains walking a target.' },
   { id: 'probability', title: 'Probability', blurb: 'The ideas of probability watched.' },
   { id: 'linalg', title: 'Linear algebra', blurb: 'The iterations of numerical linear algebra.' },
@@ -326,6 +328,24 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'series', path: 'y', x: 't', title: 'the state against time' },
       { kind: 'trajectory', paths: ['y'], dims: [0, 1], title: 'phase portrait' },
       { kind: 'curves', paths: ['h'], title: 'step size' },
+    ],
+  },
+  {
+    id: 'stochastic/diffusion-paths',
+    title: 'Diffusion paths',
+    summary:
+      'A bundle of Ornstein-Uhlenbeck, geometric Brownian, Brownian or square-root paths, one Euler-Maruyama step at a time, against the exact moments and law.',
+    method: diffusionPaths,
+    steps: 500,
+    layout: [
+      { kind: 'series', path: 'paths/x', x: 'paths/t', max: 64, title: 'the paths' },
+      { kind: 'probe', path: 'paths/distribution', title: 'the bundle against the exact law' },
+      { kind: 'curves', paths: ['paths/mean', 'paths/exactMean'], title: 'mean, against the exact mean' },
+      {
+        kind: 'curves',
+        paths: ['paths/variance', 'paths/exactVariance'],
+        title: 'variance, against the exact variance',
+      },
     ],
   },
 ]
