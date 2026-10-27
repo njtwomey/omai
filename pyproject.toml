@@ -108,6 +108,9 @@ oracle-rl = [
     "nashpy>=0.0.43",
     "open-spiel>=2.0.2",
 ]
+oracle-vision = [
+    "opencv-python-headless>=4.10",
+]
 
 [build-system]
 requires = ["hatchling"]

@@ -32,6 +32,8 @@ const ORACLE_GROUPS = [
   'oracle-prob',
   '--group',
   'oracle-rl',
+  '--group',
+  'oracle-vision',
 ]
 
 // Files whose change can affect every test or fixture.
