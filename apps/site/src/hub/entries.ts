@@ -1,7 +1,29 @@
+import type { Json } from 'mdml-engine/base'
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
+import type { Subscription } from 'mdml-engine/trace'
+
+/**
+ * One panel of an entry's page. What the tape logs and what the page shows are separate: the session may record much
+ * more than the layout draws, and only the layout decides what appears.
+ */
+export type Panel =
+  /** The training rows with the probe overlay at the scrubbed step. */
+  | {
+      readonly kind: 'rows'
+      readonly overlay?: 'assignments' | 'components' | 'fit' | 'surface'
+      readonly title?: string
+    }
+  /** A derived path at the scrubbed step: an exposition record is drawn by its view, JSON as text. */
+  | { readonly kind: 'probe'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /** Scalar paths of the tape as curves on one chart, against the step. */
+  | { readonly kind: 'curves'; readonly paths: readonly string[]; readonly title?: string }
+  /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
+  | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
+  /** The generic view of everything the tape holds, for debugging. */
+  | { readonly kind: 'tape' }
 
 /** A hub entry is data: an id, words, an estimator on the contract, and the dataset collections it runs on. */
 export interface HubEntry {
@@ -13,6 +35,12 @@ export interface HubEntry {
   readonly estimator: IterativeEstimator<any, any, any, any>
   /** Ids in `datasetCollections` the entry can be run on. */
   readonly datasets: readonly string[]
+  /** The panels the page draws, in order. */
+  readonly layout: readonly Panel[]
+  /** The working mode the page starts in (default live). */
+  readonly mode?: 'live' | 'eager'
+  /** What the session logs (default the method's defaults). */
+  readonly logs?: Subscription
 }
 
 /** The entries of the hub. */
@@ -23,6 +51,10 @@ export const ENTRIES: readonly HubEntry[] = [
     summary: 'Lloyd’s algorithm: assign rows to the nearest centre, move centres to the means, repeat.',
     estimator: kmeans,
     datasets: ['clustering2d'],
+    layout: [
+      { kind: 'rows', overlay: 'assignments' },
+      { kind: 'curves', paths: ['solver/inertia'] },
+    ],
   },
   {
     id: 'mixture/gmm',
@@ -32,6 +64,11 @@ export const ENTRIES: readonly HubEntry[] = [
     // Random responsibilities to start, so EM is seen doing the work (k-means would hand it the answer).
     estimator: gmm.with({ init: 'random' }),
     datasets: ['clustering2d'],
+    layout: [
+      { kind: 'rows', overlay: 'components' },
+      { kind: 'probe', path: 'model/density', args: { resolution: 40 }, title: 'log density' },
+      { kind: 'curves', paths: ['solver/logLikelihood'] },
+    ],
   },
   {
     id: 'linear/logistic-regression',
@@ -40,6 +77,10 @@ export const ENTRIES: readonly HubEntry[] = [
       'A linear classifier fitted by iteratively reweighted least squares; the decision surface follows the fit.',
     estimator: logisticRegression,
     datasets: ['classification2d'],
+    layout: [
+      { kind: 'rows', overlay: 'surface' },
+      { kind: 'curves', paths: ['solver/objective'] },
+    ],
   },
   {
     id: 'linear/ridge',
@@ -47,6 +88,7 @@ export const ENTRIES: readonly HubEntry[] = [
     summary: 'Least squares with an L2 penalty, solved in closed form.',
     estimator: ridge,
     datasets: ['regression1d'],
+    layout: [{ kind: 'rows', overlay: 'fit' }],
   },
   {
     id: 'linear/lasso-path',
@@ -54,5 +96,9 @@ export const ENTRIES: readonly HubEntry[] = [
     summary: 'The lasso along a decreasing penalty grid, each penalty warm-started from the last: play the path.',
     estimator: lassoPath,
     datasets: ['regression1d'],
+    layout: [
+      { kind: 'projection', name: 'regularisationPath' },
+      { kind: 'curves', paths: ['solver/gap', 'solver/alpha'], title: 'duality gap and penalty' },
+    ],
   },
 ]

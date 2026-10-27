@@ -11,6 +11,16 @@ export interface SessionSettings {
   readonly preset: 'off' | 'defaults' | 'all' | 'custom'
   readonly chosen: readonly string[]
   readonly every: number
+  /** Append the generic view of the whole tape to the page (for debugging). */
+  readonly tape: boolean
+}
+
+/** Settings that start from a mode and a subscription: a preset name, or chosen paths logged at every step. */
+export function initialSettings(mode: 'eager' | 'live', logs: Subscription): SessionSettings {
+  const base = { mode, seed: 0, steps: 300, every: 1, tape: false }
+  return typeof logs === 'string'
+    ? { ...base, preset: logs, chosen: [] }
+    : { ...base, preset: 'custom', chosen: Object.keys(logs) }
 }
 
 export function logsOf(s: SessionSettings): Subscription {
@@ -52,6 +62,10 @@ export function SessionControls(props: {
           onChange={(preset) => onChange({ ...s, preset })}
         />
       </ControlPanel>
+      <label className="flex items-center gap-1 text-sm">
+        <input type="checkbox" checked={s.tape} onChange={(e) => onChange({ ...s, tape: e.target.checked })} />
+        show the whole tape
+      </label>
       {s.preset === 'custom' ? (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {paths.map((p) => (
