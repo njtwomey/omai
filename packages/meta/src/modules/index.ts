@@ -127,6 +127,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/text/subword': () => import('mdml-engine/text/subword'),
   'mdml-engine/trace': () => import('mdml-engine/trace'),
   'mdml-engine/tune': () => import('mdml-engine/tune'),
+  'mdml-engine/vision': () => import('mdml-engine/vision'),
   'mdml-engine/worlds': () => import('mdml-engine/worlds'),
   'mdml-render': () => import('mdml-render'),
   'mdml-render/animation': () => import('mdml-render/animation'),

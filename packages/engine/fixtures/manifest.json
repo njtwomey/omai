@@ -4711,6 +4711,32 @@
       "cases": 2
     },
     {
+      "fixture": "vision/blur.json",
+      "source": "oracle/cases/vision/blur.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "vision/colour.json",
+      "source": "oracle/cases/vision/colour.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "vision/histograms.json",
+      "source": "oracle/cases/vision/histograms.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 24
+    },
+    {
       "fixture": "worlds/analysis.json",
       "source": "oracle/cases/worlds/analysis.py",
       "reference": {
