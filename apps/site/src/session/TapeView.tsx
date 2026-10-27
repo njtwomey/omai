@@ -3,13 +3,14 @@
 // the scrubbed step, messages a list, and derived records their exposition view. Plus play, step and scrub controls.
 import { isExposition } from 'mdml-engine/exposition'
 import type { Scene } from 'mdml-engine/scene'
-import { type Config, episodes, frames, messages, type TensorEvent } from 'mdml-engine/trace'
+import { type Config, episodes, frames, messages, type Run, type TensorEvent } from 'mdml-engine/trace'
 import { cartesian, heatmapChart, lines } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import { Chart, ExpositionView, FigureFrame, SceneView, useColourMode } from 'mdml-render/react'
 import { episodeCurves, metricCurves, metricNames } from 'mdml-render/trace'
 import { type ReactElement, type ReactNode, useMemo } from 'react'
 import { SessionPlayer } from './SessionPlayer.tsx'
+import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import type { LiveSession } from './useSession.ts'
 
 function rowsOf<T>(flat: readonly T[], width: number): T[][] {
@@ -53,7 +54,9 @@ export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): React
 }
 
 /** Every channel of the tape drawn by its kind (curves, tensors, frames, messages, projections), without a player. */
-export function TapeChannels<S, C extends Config>(props: Omit<TapeViewProps<S, C>, 'onScrub'>): ReactElement {
+export function TapeChannels<S, C extends Config>(
+  props: Omit<TapeViewProps<S, C>, 'onScrub'> & { readonly onScrub?: (t: number | null) => void },
+): ReactElement {
   const { live, at, onEpisodeClick } = props
   const mode = useColourMode()
   const s = live.session
@@ -74,18 +77,16 @@ export function TapeChannels<S, C extends Config>(props: Omit<TapeViewProps<S, C
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-4">
         {[...groups].map(([prefix, names]) => (
-          <FigureFrame key={prefix} figure={FIG} filename={prefix || 'metrics'}>
-            <Chart
-              figure={FIG}
-              option={cartesian([metricCurves(run, names, { mode })], {
-                mode,
-                figure: FIG,
-                title: prefix || 'metrics',
-                x: { label: 'step' },
-                legend: true,
-              })}
-            />
-          </FigureFrame>
+          <MetricGroup
+            key={prefix}
+            prefix={prefix}
+            names={names}
+            run={run}
+            viewed={viewed}
+            head={head}
+            mode={mode}
+            onScrub={props.onScrub}
+          />
         ))}
         {eps.length > 0 ? (
           <Chart
@@ -165,6 +166,36 @@ export function TapeChannels<S, C extends Config>(props: Omit<TapeViewProps<S, C
         {props.children}
       </div>
     </div>
+  )
+}
+
+// One group of metric curves with the viewed step marked; a click on the plot scrubs to the nearest recorded step.
+function MetricGroup(props: {
+  readonly prefix: string
+  readonly names: readonly string[]
+  readonly run: Run
+  readonly viewed: number
+  readonly head: number
+  readonly mode: 'light' | 'dark'
+  readonly onScrub: ((t: number | null) => void) | undefined
+}): ReactElement {
+  const { prefix, names, run, viewed, head, mode } = props
+  const option = useMemo(() => {
+    const curves = metricCurves(run, names, { mode })
+    return cartesian([curves, ...stepMarker(curves, viewed, mode)], {
+      mode,
+      figure: FIG,
+      title: prefix || 'metrics',
+      x: { label: 'step' },
+      legend: true,
+    })
+  }, [run, names, viewed, mode, prefix])
+  const steps = useMemo(() => recordedSteps(run, names), [run, names])
+  const onInit = useScrubClick(steps, head, props.onScrub)
+  return (
+    <FigureFrame figure={FIG} filename={prefix || 'metrics'}>
+      <Chart figure={FIG} option={option} onInit={onInit} />
+    </FigureFrame>
   )
 }
 

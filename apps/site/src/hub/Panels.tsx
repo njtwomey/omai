@@ -4,6 +4,7 @@ import { cartesian } from 'mdml-render/charts'
 import { Chart, ExpositionView, FigureFrame, useColourMode } from 'mdml-render/react'
 import { metricCurves } from 'mdml-render/trace'
 import { type ReactNode, useMemo } from 'react'
+import { recordedSteps, stepMarker, useScrubClick } from '../session/scrub.ts'
 import { TapeChannels } from '../session/TapeView.tsx'
 import type { LiveSession } from '../session/useSession.ts'
 import type { HubEntry, Panel } from './entries.ts'
@@ -15,6 +16,8 @@ export interface PanelContext {
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   readonly live: LiveSession<any, any>
   readonly at: number | null
+  /** Sets the scrubbed step (`null` follows the head). */
+  readonly onScrub?: (t: number | null) => void
   readonly x: Tensor
   readonly y?: Tensor
 }
@@ -43,7 +46,7 @@ export function Panels(props: PanelContext & { readonly layout: readonly Panel[]
 }
 
 function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
-  const { panel, entry, live, at } = props
+  const { panel, entry, live, at, onScrub } = props
   const t = at === null ? live.session.t : Math.min(at, live.session.t)
   const file = (title: string): string => `${entry.id.replace('/', '-')}-${slug(title)}`
   switch (panel.kind) {
@@ -65,12 +68,21 @@ function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
       return <ProbeView {...props} panel={panel} t={t} file={file} />
     case 'curves': {
       const title = panel.title ?? panel.paths.join(', ')
-      return <CurvesView live={live} paths={panel.paths} title={title} filename={file(title)} />
+      return (
+        <CurvesView
+          live={live}
+          paths={panel.paths}
+          title={title}
+          filename={file(title)}
+          t={t}
+          {...(onScrub === undefined ? {} : { onScrub })}
+        />
+      )
     }
     case 'projection':
-      return <ProjectionView live={live} name={panel.name} />
+      return <ProjectionView live={live} name={panel.name} t={at === null ? undefined : t} />
     case 'tape':
-      return <TapeChannels live={live} at={at} />
+      return <TapeChannels live={live} at={at} {...(onScrub === undefined ? {} : { onScrub })} />
   }
 }
 
@@ -80,18 +92,28 @@ function CurvesView(props: {
   readonly paths: readonly string[]
   readonly title: string
   readonly filename: string
+  /** The viewed step, marked on the chart. */
+  readonly t: number
+  readonly onScrub?: (t: number | null) => void
 }): ReactNode {
-  const { live, paths } = props
+  const { live, paths, t } = props
   const mode = useColourMode()
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
   const run = useMemo(() => live.session.run(), [live.session, live.version])
-  const option = useMemo(
-    () => cartesian([metricCurves(run, paths, { mode })], { mode, figure: FIG, x: { label: 'step' }, legend: true }),
-    [run, paths, mode],
-  )
+  const option = useMemo(() => {
+    const curves = metricCurves(run, paths, { mode })
+    return cartesian([curves, ...stepMarker(curves, t, mode)], {
+      mode,
+      figure: FIG,
+      x: { label: 'step' },
+      legend: true,
+    })
+  }, [run, paths, mode, t])
+  const steps = useMemo(() => recordedSteps(run, paths), [run, paths])
+  const onInit = useScrubClick(steps, live.session.t, props.onScrub)
   return (
     <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
-      <Chart figure={FIG} option={option} />
+      <Chart figure={FIG} option={option} onInit={onInit} />
     </FigureFrame>
   )
 }
@@ -134,15 +156,21 @@ function ProjectionView(props: {
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   readonly live: LiveSession<any, any>
   readonly name: string
+  /** The scrubbed step: project the tape up to it (`undefined` follows the head). */
+  readonly t: number | undefined
 }): ReactNode {
-  const { live, name } = props
+  const { live, name, t } = props
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
   const record = useMemo((): unknown => {
     try {
-      return live.session.project(name)
+      const s = live.session
+      const p = s.method.projections?.[name]
+      if (t === undefined || p === undefined) return s.project(name)
+      const run = s.run()
+      return p({ ...run, events: run.events.filter((e) => !('step' in e) || e.step <= t) })
     } catch {
       return undefined
     }
-  }, [live.session, live.version, name])
+  }, [live.session, live.version, name, t])
   return record !== undefined && isExposition(record) ? <ExpositionView record={record} figure={FIG} /> : null
 }

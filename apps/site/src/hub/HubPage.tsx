@@ -69,6 +69,7 @@ export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
         entry={entry}
         live={live}
         at={at}
+        onScrub={setAt}
         x={data.x}
         {...(data.y === undefined ? {} : { y: data.y })}
         layout={layout}
