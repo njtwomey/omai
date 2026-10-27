@@ -1,5 +1,6 @@
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
+import { kalmanTracking } from 'mdml-engine/methods/dynamics'
 import { eigenPower, eigenQr } from 'mdml-engine/methods/linalg'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
@@ -7,6 +8,7 @@ import { transformSampling } from 'mdml-engine/methods/probability'
 import { mcmc } from 'mdml-engine/methods/sampling'
 
 import { annealing, gridSearch } from 'mdml-engine/methods/search'
+import { hmm } from 'mdml-engine/methods/sequence'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
@@ -210,6 +212,38 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'probe', path: 'tune/posterior', title: 'surrogate and acquisition' },
       { kind: 'curves', paths: ['best'] },
       { kind: 'curves', paths: ['x'] },
+    ],
+  },
+  {
+    id: 'dynamics/kalman-tracking',
+    title: 'Kalman filter tracking',
+    summary:
+      'A constant-velocity Kalman filter following a point it only sees through noisy readings: its estimate and 1σ uncertainty against the truth, and how trusting the model too much or too little changes it.',
+    method: kalmanTracking,
+    steps: 300,
+    layout: [
+      {
+        kind: 'trajectory',
+        paths: ['estimate', 'truth'],
+        ellipse: 'covariance',
+        title: 'filtered position (1σ) against the truth',
+      },
+      { kind: 'trajectory', paths: ['observation'], points: true, trail: 60, title: 'observations' },
+      { kind: 'curves', paths: ['positionError'] },
+      { kind: 'curves', paths: ['nis'] },
+    ],
+  },
+  {
+    id: 'sequence/hmm',
+    title: 'Hidden Markov model',
+    summary:
+      'Baum-Welch on a sequence with hidden states: forward-backward gives the state posteriors, then the transitions and emissions are re-estimated from the expected counts. The dishonest casino hides which die was rolled; the decoded path is drawn against the truth.',
+    estimator: hmm,
+    datasets: ['sequences'],
+    layout: [
+      { kind: 'probe', path: 'model/posterior', title: 'state posteriors and the decoded path' },
+      { kind: 'tensor', path: 'solver/transition', title: 'transition matrix' },
+      { kind: 'curves', paths: ['solver/logLikelihood'] },
     ],
   },
 ]
