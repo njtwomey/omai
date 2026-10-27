@@ -2,41 +2,102 @@ import { datasetCollections } from 'mdml-engine/datasets'
 import { key } from 'mdml-engine/random'
 import { type DictSpace, defaults } from 'mdml-engine/space'
 import type { Tensor } from 'mdml-engine/tensor'
-import { contractOf } from 'mdml-engine/trace'
-import { ControlPanel, DatasetPicker, loadSelection, SpaceControls, selectEntry } from 'mdml-render/react'
-import { type ReactNode, useMemo, useState } from 'react'
-import { initialSettings, logsOf, SessionControls, type SessionSettings } from '../session/SessionControls.tsx'
-import { SessionPlayer } from '../session/SessionPlayer.tsx'
-import { useSession } from '../session/useSession.ts'
+import { type Config, contractOf, type Method } from 'mdml-engine/trace'
+import {
+  ControlPanel,
+  DatasetPicker,
+  initialSettings,
+  loadSelection,
+  logsOf,
+  type Panel,
+  SessionControls,
+  SessionPanels,
+  SessionPlayer,
+  type SessionSettings,
+  SpaceControls,
+  selectEntry,
+  useSession,
+} from 'mdml-render/react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '../shell/layout.tsx'
-import type { HubEntry, Panel } from './entries.ts'
-import { Panels } from './Panels.tsx'
+import type { HubEntry } from './entries.ts'
 
 type Params = Record<string, never>
 
 const TAPE: readonly Panel[] = [{ kind: 'tape' }]
 
 /**
- * The hub's host: any entry's estimator on a chosen dataset, run as a session. Dataset, hyperparameters and session
- * settings are controls, the player scrubs the tape, and the entry's layout alone decides which panels are drawn.
+ * The hub's host: an entry run as a session. An estimator runs on a chosen dataset with its hyperparameters as
+ * controls; a method of nothing but its configuration runs on that. Session settings are controls, the player scrubs
+ * the tape, and the entry's layout alone decides which panels are drawn.
  */
 export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
+  const { entry } = props
+  return 'estimator' in entry ? <EstimatorPage entry={entry} /> : <MethodPage entry={entry} />
+}
+
+type EstimatorEntry = Extract<HubEntry, { readonly estimator: unknown }>
+type MethodEntry = Extract<HubEntry, { readonly method: unknown }>
+
+function MethodPage(props: { readonly entry: MethodEntry }): ReactNode {
+  const { entry } = props
+  const space = Object.keys(entry.method.config.spaces).length === 0 ? undefined : entry.method.config
+  const [params, setParams] = useState<Params>(() => defaults(entry.method.config) as Params)
+  return <SessionPage entry={entry} method={entry.method} space={space} params={params} onParams={setParams} />
+}
+
+function EstimatorPage(props: { readonly entry: EstimatorEntry }): ReactNode {
   const { entry } = props
   const estimator = entry.estimator
   const space = estimator.hyperSpace as DictSpace | undefined
   const collectionId = entry.datasets[0] ?? ''
   const [selection, setSelection] = useState(() => selectEntry(collectionId))
   const [params, setParams] = useState<Params>(() => (space === undefined ? {} : (defaults(space) as Params)))
-  const [settings, setSettings] = useState<SessionSettings>(() =>
-    initialSettings(entry.mode ?? 'live', entry.logs ?? 'defaults'),
-  )
-  const [at, setAt] = useState<number | null>(null)
   const loaded = useMemo(() => loadSelection(collectionId, selection), [collectionId, selection])
   const data = useMemo(() => {
     const d = loaded.data as unknown as { readonly x: Tensor; readonly y?: Tensor }
     return d.y === undefined ? { x: d.x } : { x: d.x, y: d.y }
   }, [loaded])
   const method = useMemo(() => estimator.with(params).method(data), [estimator, params, data])
+  return (
+    <SessionPage
+      entry={entry}
+      method={method}
+      space={space}
+      params={params}
+      onParams={setParams}
+      data={data}
+      controls={
+        <DatasetPicker
+          collection={datasetCollections[collectionId] ?? collectionId}
+          value={selection}
+          onChange={setSelection}
+        />
+      }
+    />
+  )
+}
+
+// The page itself, given what runs: header, the entry's own controls, its knobs, the session settings, the player and
+// the layout's panels.
+function SessionPage(props: {
+  readonly entry: HubEntry
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly method: Method<any, Config>
+  readonly space: DictSpace | undefined
+  readonly params: Params
+  readonly onParams: (p: Params) => void
+  readonly data?: { readonly x: Tensor; readonly y?: Tensor }
+  readonly controls?: ReactNode
+}): ReactNode {
+  const { entry, method, space, params, data } = props
+  const [settings, setSettings] = useState<SessionSettings>(() =>
+    initialSettings(entry.mode ?? 'live', entry.logs ?? 'defaults', entry.steps),
+  )
+  const [at, setAt] = useState<number | null>(null)
+  // A remade method (another dataset, other knobs) is a new run: follow its head.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset exactly when the method is remade
+  useEffect(() => setAt(null), [method])
   const paths = useMemo(() => Object.keys(contractOf(method, params, key(0))), [method, params])
   const logs = logsOf(settings)
   const live = useSession(
@@ -48,30 +109,21 @@ export function HubPage(props: { readonly entry: HubEntry }): ReactNode {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={entry.title} lede={entry.summary} eyebrow={{ label: 'Hub', path: '/hub' }} />
-      <ControlPanel columns={4}>
-        <DatasetPicker
-          collection={datasetCollections[collectionId] ?? collectionId}
-          value={selection}
-          onChange={(s) => {
-            setSelection(s)
-            setAt(null)
-          }}
-        />
-      </ControlPanel>
+      {props.controls === undefined ? null : <ControlPanel columns={4}>{props.controls}</ControlPanel>}
       {space === undefined ? null : (
         <ControlPanel columns={4}>
-          <SpaceControls space={space} value={params} onChange={(p) => setParams(p as Params)} />
+          <SpaceControls space={space} value={params} onChange={(p) => props.onParams(p as Params)} />
         </ControlPanel>
       )}
       <SessionControls paths={paths} settings={settings} onChange={setSettings} />
       <SessionPlayer live={live} at={at} onScrub={setAt} />
-      <Panels
-        entry={entry}
+      <SessionPanels
+        id={entry.id}
         live={live}
         at={at}
         onScrub={setAt}
-        x={data.x}
-        {...(data.y === undefined ? {} : { y: data.y })}
+        {...(data === undefined ? {} : { x: data.x })}
+        {...(data?.y === undefined ? {} : { y: data.y })}
         layout={layout}
       />
     </div>

@@ -4,49 +4,95 @@
  */
 
 import { MdmlError } from 'mdml-engine/base'
-import { type Run, tensorSeries } from 'mdml-engine/trace'
+import { metricSeries, type Run, tensorSeries } from 'mdml-engine/trace'
 import { lines } from '../charts/lines.ts'
 import { heatmap, type RampSpec } from '../charts/matrices.ts'
 import type { Layer } from '../charts/plot.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 
 /**
- * Parameter trajectories: chosen elements of a recorded tensor channel against steps (from full values, or from the
- * recorded subsample's positions).
+ * The recorded steps of a tensor channel and each step's position along x: the step itself, or with `x` a metric
+ * channel's value at that step (the last one recorded at or before it), such as the time an equation has reached.
  *
  * @param run - The trace.
  * @param name - The tensor channel.
- * @param options - Flat element indices to follow (default the first eight), colour mode.
- * @returns The layer, one curve per element.
+ * @param x - A metric channel giving the position of each step (default the step).
+ * @returns The steps and their positions, in order.
+ * @example
+ * ```ts
+ * import { stepPositions } from 'mdml-render/trace'
+ * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'y', role: 'state' as const, shape: [1], values })
+ * const time = (step: number, value: number) => ({ type: 'metric' as const, runId: 'r', step, name: 't', value })
+ * const run = { schema: 'mdml.run/1' as const, events: [time(0, 0), ev(0, [1]), time(1, 0.5), ev(1, [2])] }
+ * stepPositions(run, 'y', 't') // => { steps: [0, 1], xs: [0, 0.5] }
+ * ```
+ */
+export function stepPositions(run: Run, name: string, x?: string): { readonly steps: number[]; readonly xs: number[] } {
+  const steps = tensorSeries(run, name)
+    .filter((e) => e.values !== undefined)
+    .map((e) => e.step)
+  if (x === undefined) return { steps, xs: steps }
+  const m = metricSeries(run, x)
+  let i = 0
+  const xs = steps.map((s) => {
+    while (i + 1 < m.steps.length && (m.steps[i + 1] ?? Number.POSITIVE_INFINITY) <= s) i++
+    return (m.steps[i] ?? Number.POSITIVE_INFINITY) <= s ? (m.values[i] ?? Number.NaN) : Number.NaN
+  })
+  return { steps, xs }
+}
+
+/**
+ * Parameter trajectories: chosen elements of a recorded tensor channel against steps (from full values, or from the
+ * recorded subsample's positions), or against a metric channel's value at each step (`x`).
+ *
+ * @param run - The trace.
+ * @param name - The tensor channel.
+ * @param options - Flat element indices to follow (default the first `max`, itself default eight), their names
+ *   (default `name[index]`), a metric channel for the x axis, colour mode.
+ * @returns The layer, one curve per element; many curves are drawn thin.
  * @example
  * ```ts
  * import { parameterTrajectories } from 'mdml-render/trace'
  * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'w', role: 'param' as const, shape: [2], values })
  * const run = { schema: 'mdml.run/1' as const, events: [ev(0, [0, 1]), ev(1, [1, 2])] }
  * parameterTrajectories(run, 'w').series.map((s) => s.name) // => ['w[0]', 'w[1]']
+ * parameterTrajectories(run, 'w', { names: ['a', 'b'] }).series.map((s) => s.name) // => ['a', 'b']
  * ```
  */
 export function parameterTrajectories(
   run: Run,
   name: string,
-  options: { readonly indices?: readonly number[]; readonly mode?: ColourMode } = {},
+  options: {
+    readonly indices?: readonly number[]
+    readonly max?: number
+    readonly names?: readonly string[]
+    readonly x?: string
+    readonly mode?: ColourMode
+  } = {},
 ): Layer {
   const events = tensorSeries(run, name).filter((e) => e.values !== undefined)
   const first = events[0]
   const available = first?.indices ?? first?.values?.map((_, i) => i) ?? []
-  const wanted = options.indices ?? available.slice(0, 8)
-  const curves = wanted.map((flat) => {
+  const wanted = options.indices ?? available.slice(0, options.max ?? 8)
+  const positions = options.x === undefined ? undefined : stepPositions(run, name, options.x).xs
+  const many = wanted.length > 8
+  const curves = wanted.map((flat, k) => {
     const steps: number[] = []
     const values: number[] = []
-    for (const e of events) {
+    events.forEach((e, i) => {
       const pos = e.indices === undefined ? flat : e.indices.indexOf(flat)
       const v = pos >= 0 ? e.values?.[pos] : undefined
       if (v !== undefined) {
-        steps.push(e.step)
+        steps.push(positions === undefined ? e.step : (positions[i] ?? Number.NaN))
         values.push(v)
       }
+    })
+    return {
+      x: steps,
+      y: values,
+      name: options.names?.[k] ?? `${name}[${flat}]`,
+      ...(many ? { width: 1, opacity: 0.8 } : {}),
     }
-    return { x: steps, y: values, name: `${name}[${flat}]` }
   })
   return lines(curves, { mode: options.mode ?? 'light' })
 }

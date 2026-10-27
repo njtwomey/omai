@@ -1,6 +1,9 @@
-// A React hook over an engine session: makes it when the method, configuration, seed, subscription or mode changes,
-// plays it live at a target number of steps per second (bounded by a time budget per animation frame), and bumps a
-// version so views re-read the tape.
+/**
+ * A React hook over an engine session: makes it when the method, configuration, seed, subscription or mode changes,
+ * plays it live at a target number of steps per second (bounded by a time budget per animation frame), and bumps a
+ * version so views re-read the tape.
+ */
+
 import {
   type Config,
   type Method,
@@ -11,6 +14,7 @@ import {
 } from 'mdml-engine/trace'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+/** A session in a React page: the session, a version that changes as its tape grows, and playback. */
 export interface LiveSession<S, C extends Config> {
   readonly session: Session<S, C>
   /** Changes whenever the tape grows, so memoised views recompute. */
@@ -31,6 +35,14 @@ export interface LiveSession<S, C extends Config> {
 /** Milliseconds of computation allowed per animation frame while playing. */
 const FRAME_MS = 14
 
+/**
+ * A live session of a method.
+ *
+ * @param method - The method.
+ * @param options - The session's options.
+ * @param deps - What remaking the session depends on (the caller names them, as for `useMemo`).
+ * @returns The live session.
+ */
 export function useSession<S, C extends Config>(
   method: Method<S, C>,
   options: SessionOptions<S, C>,
@@ -51,9 +63,9 @@ export function useSession<S, C extends Config>(
   }, [s])
   const advance = useCallback(
     (budget: SliceBudget) => {
-      const t0 = performance.now()
+      const t0 = performance.now() // allow: the cost of a frame's work, shown in the status line; not on the tape
       s.advance(budget)
-      setLastMs(performance.now() - t0)
+      setLastMs(performance.now() - t0) // allow: as above
       bump()
     },
     [s, bump],
@@ -72,7 +84,7 @@ export function useSession<S, C extends Config>(
         const due = carry + ((now - last) * fps) / 1000
         const steps = Math.floor(due)
         carry = due - steps
-        if (steps > 0) advance({ steps, ms: FRAME_MS, clock: () => performance.now() })
+        if (steps > 0) advance({ steps, ms: FRAME_MS, clock: () => performance.now() }) // allow: the frame budget
       }
       last = now
       handle = requestAnimationFrame(tick)

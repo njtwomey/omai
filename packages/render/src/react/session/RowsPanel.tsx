@@ -1,20 +1,41 @@
+/**
+ * The rows panel of a session on a dataset: the training rows (by assignment, class or target) with an overlay probed
+ * at the viewed step (assignments and centres, mixture components with their ellipses, a 1-D fit with or without its
+ * predictive band, a decision surface), plus the probe hook and the figure size every session panel shares.
+ */
+
 import type { Json } from 'mdml-engine/base'
 import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
 import { type Tensor, toFlat } from 'mdml-engine/tensor'
-import { cartesian, type Layer, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ExpositionView, FigureFrame, useColourMode } from 'mdml-render/react'
-import { categoricalColour } from 'mdml-render/theme'
 import { type ReactNode, useMemo } from 'react'
-import type { LiveSession } from '../session/useSession.ts'
-import type { Panel } from './entries.ts'
+import { band, lines } from '../../charts/lines.ts'
+import { cartesian, type Layer } from '../../charts/plot.ts'
+import { points } from '../../charts/points.ts'
+import { type Figure, figure } from '../../figure/index.ts'
+import { categoricalColour } from '../../theme/index.ts'
+import { Chart } from '../Chart.tsx'
+import { FigureFrame } from '../FigureFrame.tsx'
+import { useColourMode } from '../theme.tsx'
+import { ExpositionView } from '../views/ExpositionView.tsx'
+import type { Panel } from './layout.ts'
+import type { LiveSession } from './useSession.ts'
 
-export const FIG = figure({ width: 440, height: 320 })
+/** The figure every session panel is drawn at. */
+export const FIG: Figure = figure({ width: 440, height: 320 })
 
+/** The outcome of a probe: its value, or the message of the error it threw. */
 export type Probed = { readonly value?: unknown; readonly error?: string }
 
-// One probe of the session at a step, computed once per (session, step) and never throwing: a failure is returned as
-// its message so a panel can say why and still draw its rows.
+/**
+ * One probe of the session at a step, computed once per (session, step) and never throwing: a failure is returned as
+ * its message so a panel can say why and still draw its rows.
+ *
+ * @param live - The session.
+ * @param t - The step.
+ * @param path - The derived path (`undefined` probes nothing).
+ * @param args - The probe's arguments.
+ * @returns The value or the error.
+ */
 export function useProbe(
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   live: LiveSession<any, any>,
@@ -41,8 +62,9 @@ export const Note = (props: { readonly children: ReactNode }): ReactNode => (
 
 /**
  * The training rows (by assignment, class or target) with the probe overlay at the scrubbed step: `assignments` the
- * assignments and centres, `components` those with each component's 1σ and 2σ ellipses, `fit` the 1-D fit, `surface`
- * the decision surface. Each probe is independent and the chart stays mounted across frames.
+ * assignments and centres, `components` those with each component's 1σ and 2σ ellipses, `fit` the 1-D fit, `band`
+ * the 1-D fit with its predictive band, `surface` the decision surface. Each probe is independent and the chart stays
+ * mounted across frames.
  */
 export function RowsPanel(props: {
   readonly overlay: NonNullable<Extract<Panel, { kind: 'rows' }>['overlay']> | undefined
@@ -62,6 +84,8 @@ export function RowsPanel(props: {
   // A mixture's parameters carry covariances: drawn as each component's 1 and 2 sigma ellipses.
   const params = useProbe(live, t, overlay === 'components' ? 'model/params' : undefined)
   const fit = useProbe(live, t, overlay === 'fit' ? 'model/predictions' : undefined)
+  // A predictive band: the mean and the band's edges per training row (a Bayesian model's posterior predictive).
+  const predictive = useProbe(live, t, overlay === 'band' ? 'model/predictive' : undefined)
   const surface = useProbe(live, t, overlay === 'surface' ? 'model/decision-surface' : undefined)
   const xs = useMemo(() => toFlat(x), [x])
   const ys = useMemo(() => (y === undefined ? undefined : toFlat(y)), [y])
@@ -77,8 +101,11 @@ export function RowsPanel(props: {
   const groups = labels ?? classes
   const centreRows = centres.value as number[][] | undefined
   const covs = (params.value as { readonly covariances?: number[][][] } | undefined)?.covariances
-  const fitted = fit.value as number[] | undefined
-  const error = [assignments, centres, params, fit, surface].find((p) => p.error !== undefined)?.error
+  const interval = predictive.value as
+    | { readonly mean: number[]; readonly lower: number[]; readonly upper: number[] }
+    | undefined
+  const fitted = (fit.value as number[] | undefined) ?? interval?.mean
+  const error = [assignments, centres, params, fit, predictive, surface].find((p) => p.error !== undefined)?.error
   const option = useMemo(() => {
     const layers: Layer[] = [
       points([{ x: rowX, y: rowY, ...(groups === undefined ? {} : { groups }), opacity: 0.7 }], { mode }),
@@ -130,15 +157,25 @@ export function RowsPanel(props: {
     }
     if (fitted !== undefined && d === 1) {
       const order = rowX.map((_, i) => i).sort((a, b) => (rowX[a] ?? 0) - (rowX[b] ?? 0))
-      layers.push(
-        lines([{ x: order.map((i) => rowX[i] ?? 0), y: order.map((i) => fitted[i] ?? 0), name: 'fit' }], {
-          mode,
-          colourOffset: 1,
-        }),
-      )
+      const xs = order.map((i) => rowX[i] ?? 0)
+      if (interval !== undefined)
+        layers.push(
+          band(
+            [
+              {
+                x: xs,
+                lower: order.map((i) => interval.lower[i] ?? 0),
+                upper: order.map((i) => interval.upper[i] ?? 0),
+                name: 'band',
+              },
+            ],
+            { mode, colourOffset: 1 },
+          ),
+        )
+      layers.push(lines([{ x: xs, y: order.map((i) => fitted[i] ?? 0), name: 'fit' }], { mode, colourOffset: 1 }))
     }
     return { ...cartesian(layers, { mode, figure: FIG }), animation: false }
-  }, [rowX, rowY, groups, centreRows, covs, fitted, d, mode])
+  }, [rowX, rowY, groups, centreRows, covs, fitted, interval, d, mode])
   // The decision surface is an exposition view (its own frame); the rest is one chart in this panel's frame.
   if (surface.value !== undefined)
     return (

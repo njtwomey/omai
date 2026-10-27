@@ -1,9 +1,15 @@
-// The controls every proof-of-concept page shares: eager against live, the seed and step budget, and the subscription
-// (off, the method's defaults, everything, or chosen paths with one schedule).
-import { Log, type Subscription } from 'mdml-engine/trace'
-import { Choice, ControlPanel, NumberField } from 'mdml-render/react'
-import type { ReactElement } from 'react'
+/**
+ * The controls of a session: eager against live, the seed and step budget, and the subscription (off, the method's
+ * defaults, everything, or chosen paths with one schedule), plus the toggle of the whole-tape view.
+ */
 
+import { Log, type Subscription } from 'mdml-engine/trace'
+import type { ReactElement } from 'react'
+import { Choice } from '../controls/Choice.tsx'
+import { ControlPanel } from '../controls/ControlPanel.tsx'
+import { NumberField } from '../controls/NumberField.tsx'
+
+/** What the session controls set. */
 export interface SessionSettings {
   readonly mode: 'eager' | 'live'
   readonly seed: number
@@ -15,19 +21,26 @@ export interface SessionSettings {
   readonly tape: boolean
 }
 
-/** Settings that start from a mode and a subscription: a preset name, or chosen paths logged at every step. */
-export function initialSettings(mode: 'eager' | 'live', logs: Subscription): SessionSettings {
-  const base = { mode, seed: 0, steps: 300, every: 1, tape: false }
+/** Settings that start from a mode, a subscription (a preset name, or chosen paths logged at every step) and a budget. */
+export function initialSettings(mode: 'eager' | 'live', logs: Subscription, steps = 300): SessionSettings {
+  const base = { mode, seed: 0, steps, every: 1, tape: false }
   return typeof logs === 'string'
     ? { ...base, preset: logs, chosen: [] }
     : { ...base, preset: 'custom', chosen: Object.keys(logs) }
 }
 
+/** The subscription the settings describe. */
 export function logsOf(s: SessionSettings): Subscription {
   if (s.preset !== 'custom') return s.preset
   return Object.fromEntries(s.chosen.map((p) => [p, Log({ every: s.every })]))
 }
 
+/**
+ * The session controls.
+ *
+ * @param props - The paths of the contract (for the custom subscription), the settings and their setter.
+ * @returns The controls.
+ */
 export function SessionControls(props: {
   readonly paths: readonly string[]
   readonly settings: SessionSettings

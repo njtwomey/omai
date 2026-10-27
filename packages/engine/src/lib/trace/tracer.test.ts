@@ -65,6 +65,21 @@ describe('run handles apply the policy', () => {
     expect(rec.events.filter((e) => e.type === 'tensor')).toHaveLength(2)
   })
 
+  it('stores a nested array as row-major values with its shape', () => {
+    const rec = recorder()
+    const run = startRun(rec, { ...info, policy: tracePolicy({ tensors: true, roles: ['state'], detail: 'full' }) })
+    run.tensor(0, 'm', 'state', [
+      [1, 2],
+      [3, 4],
+    ] as unknown as number[])
+    run.tensor(1, 'v', 'state', [5, 6])
+    const [m, v] = rec.events.filter((e): e is TensorEvent => e.type === 'tensor')
+    expect(m?.values).toEqual([1, 2, 3, 4])
+    expect(m?.shape).toEqual([2, 2])
+    expect(v?.values).toEqual([5, 6])
+    expect(v?.shape).toEqual([2])
+  })
+
   it('gives child runs the inner policy, or none', () => {
     const inner: Algorithm<number> = {
       name: 'inner',

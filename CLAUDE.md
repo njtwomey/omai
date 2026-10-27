@@ -9,6 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `docs/structure.md` is the plan: the table of contents of the whole library (every package, folder and file, with
   what it contains), the shared contracts (section 3), the conventions (section 2) and the order of construction
   (section 12). Put new code where it says; if something has no home, update the document in the same change.
+- Agents that need isolation work in a git worktree under `.claude/worktrees/` named `agent-<id>-<word>`: the agent's
+  short id and one word for what it is doing (`agent-afa77c-vision`). One worktree per agent, removed once its branch
+  is merged; never an unlabelled `worktree-agent-<hash>`.
 
 ## Commands
 

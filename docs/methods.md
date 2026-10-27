@@ -333,6 +333,21 @@ same session (a Bayesian mixture trained once; its components dying off in one p
 training in another). Live is the default mode. Layouts are data, like entries, so the same panel can be placed on
 any page that holds a session.
 
+The panel vocabulary and everything that runs a session in a page live in `mdml-render` (`react/session/`): the hook
+that runs a method live, the player, the settings, the layout type and the panels. A page anywhere (the hub, a notebook,
+someone else's app) composes them; the hub's own code is the list of entries and the routing. The panels share one
+**step cursor**: the viewed step is a single value, panels of a step (rows, a probe, a tensor, a trajectory) read it,
+panels of the tape (curves, per-element series) move it when clicked, and a custom panel reads it through a context
+with no wiring. Scrubbing is opt-in: only a chart whose x axis is the step (or a per-step position such as time)
+asks to move the cursor.
+
+A method need not run on data. A process, an equation, a sampler or a search is a `Method` of nothing but its
+configuration, and a hub entry can hold one directly (`method`) in place of an estimator with its datasets; the host
+then shows its knobs and the session controls and nothing about data. Two things such a method must do for the
+panels to work: declare `serialise` and `deserialise` on its algorithm (probes at a step seek from checkpoints, and
+only serialisable states are checkpointed), and keep in full the tensor paths it wants drawn element by element
+(`Log({ detail: 'full' })` in its `defaults`; `all` keeps summaries).
+
 ## 6. The standard
 
 1. **A method is a declaration**: `config` space, `make`, `contract`, `defaults`, `projections`. No loop, hook or

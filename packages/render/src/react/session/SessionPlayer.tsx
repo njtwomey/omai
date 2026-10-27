@@ -1,14 +1,23 @@
-// The player over a live session, shared by every page that runs one: play always moves the cursor forward through the
-// tape and then into live computation, with step, scrub, rate and reset, and a status line under it.
+/**
+ * The player over a live session: play always moves the cursor forward through the tape and then into live
+ * computation, with step, scrub, rate and reset, and a status line under it.
+ */
+
 import type { Config } from 'mdml-engine/trace'
-import { type PlaybackController, Player } from 'mdml-render/react'
 import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import { Player } from '../Player.tsx'
+import type { PlaybackController } from '../usePlayback.ts'
 import type { LiveSession } from './useSession.ts'
 
 /** Steps per second the player's menu offers. */
 const RATES = [1, 2, 5, 10, 30, 60, 120, 300, 1000]
 
-/** The player and status line of a session; `at` is the scrubbed step (`null` follows the head). */
+/**
+ * The player and status line of a session.
+ *
+ * @param props - The session, the scrubbed step (`null` follows the head) and its setter.
+ * @returns The player.
+ */
 export function SessionPlayer<S, C extends Config>(props: {
   readonly live: LiveSession<S, C>
   readonly at: number | null

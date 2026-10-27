@@ -1,47 +1,46 @@
-import type { Json } from 'mdml-engine/base'
 import type { IterativeEstimator } from 'mdml-engine/learn'
 import { kmeans } from 'mdml-engine/methods/cluster'
 import { lassoPath, logisticRegression, ridge } from 'mdml-engine/methods/linear'
 import { gmm } from 'mdml-engine/methods/mixture'
-import type { Subscription } from 'mdml-engine/trace'
+import type { Method, Subscription } from 'mdml-engine/trace'
+import type { Panel } from 'mdml-render/react'
 
 /**
- * One panel of an entry's page. What the tape logs and what the page shows are separate: the session may record much
- * more than the layout draws, and only the layout decides what appears.
+ * The hub's entries are data. What the tape logs and what the page shows are separate: the session may record much
+ * more than the layout draws, and only the layout (a list of `mdml-render`'s session panels) decides what appears.
  */
-export type Panel =
-  /** The training rows with the probe overlay at the scrubbed step. */
-  | {
-      readonly kind: 'rows'
-      readonly overlay?: 'assignments' | 'components' | 'fit' | 'surface'
-      readonly title?: string
-    }
-  /** A derived path at the scrubbed step: an exposition record is drawn by its view, JSON as text. */
-  | { readonly kind: 'probe'; readonly path: string; readonly args?: Json; readonly title?: string }
-  /** Scalar paths of the tape as curves on one chart, against the step. */
-  | { readonly kind: 'curves'; readonly paths: readonly string[]; readonly title?: string }
-  /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
-  | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
-  /** The generic view of everything the tape holds, for debugging. */
-  | { readonly kind: 'tape' }
-
-/** A hub entry is data: an id, words, an estimator on the contract, and the dataset collections it runs on. */
-export interface HubEntry {
+interface EntryBase {
   /** `area/name`, also the page path under /hub. */
   readonly id: string
   readonly title: string
   readonly summary: string
-  // biome-ignore lint/suspicious/noExplicitAny: entries of every particular share one list
-  readonly estimator: IterativeEstimator<any, any, any, any>
-  /** Ids in `datasetCollections` the entry can be run on. */
-  readonly datasets: readonly string[]
   /** The panels the page draws, in order. */
   readonly layout: readonly Panel[]
   /** The working mode the page starts in (default live). */
   readonly mode?: 'live' | 'eager'
   /** What the session logs (default the method's defaults). */
   readonly logs?: Subscription
+  /** The step budget the page starts with (default 300). */
+  readonly steps?: number
 }
+
+/**
+ * A hub entry is data: an id, words, a layout, and what runs. Either an estimator on the contract with the dataset
+ * collections it runs on, or a method of nothing but its configuration (a process, an equation, a sampler, a search).
+ */
+export type HubEntry = EntryBase &
+  (
+    | {
+        // biome-ignore lint/suspicious/noExplicitAny: entries of every particular share one list
+        readonly estimator: IterativeEstimator<any, any, any, any>
+        /** Ids in `datasetCollections` the entry can be run on. */
+        readonly datasets: readonly string[]
+      }
+    | {
+        // biome-ignore lint/suspicious/noExplicitAny: entries of every method share one list
+        readonly method: Method<any, any>
+      }
+  )
 
 /** The entries of the hub. */
 export const ENTRIES: readonly HubEntry[] = [

@@ -1,14 +1,24 @@
-// The generic tape viewer: whatever a session recorded, drawn by path kind with no bespoke code. Scalars become curves
-// grouped by prefix, episodes a return curve you can click, 2-D tensors a grid at the scrubbed step, frames a scene at
-// the scrubbed step, messages a list, and derived records their exposition view. Plus play, step and scrub controls.
+/**
+ * The generic tape viewer: whatever a session recorded, drawn by path kind with no bespoke code. Scalars become curves
+ * grouped by prefix, episodes a return curve you can click, 2-D tensors a grid at the scrubbed step, frames a scene at
+ * the scrubbed step, messages a list, and derived records their exposition view. Plus play, step and scrub controls.
+ */
+
 import { isExposition } from 'mdml-engine/exposition'
 import type { Scene } from 'mdml-engine/scene'
 import { type Config, episodes, frames, messages, type Run, type TensorEvent } from 'mdml-engine/trace'
-import { cartesian, heatmapChart, lines } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ExpositionView, FigureFrame, SceneView, useColourMode } from 'mdml-render/react'
-import { episodeCurves, metricCurves, metricNames } from 'mdml-render/trace'
 import { type ReactElement, type ReactNode, useMemo } from 'react'
+import { lines } from '../../charts/lines.ts'
+import { heatmapChart } from '../../charts/matrices.ts'
+import { cartesian } from '../../charts/plot.ts'
+import { figure } from '../../figure/index.ts'
+import { episodeCurves } from '../../trace/episodes.ts'
+import { metricCurves, metricNames } from '../../trace/metrics.ts'
+import { Chart } from '../Chart.tsx'
+import { FigureFrame } from '../FigureFrame.tsx'
+import { SceneView } from '../SceneView.tsx'
+import { useColourMode } from '../theme.tsx'
+import { ExpositionView } from '../views/ExpositionView.tsx'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import type { LiveSession } from './useSession.ts'
@@ -22,6 +32,7 @@ function rowsOf<T>(flat: readonly T[], width: number): T[][] {
 const FIG = figure({ width: 520, height: 240 })
 const SMALL = figure({ width: 320, height: 240 })
 
+/** What the tape views take. */
 export interface TapeViewProps<S, C extends Config> {
   readonly live: LiveSession<S, C>
   /** The step shown by the scrubber, or `null` to follow the head. */

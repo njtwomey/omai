@@ -120,7 +120,7 @@ function emitValue(run: RunHandle, t: number, path: Path, kind: Kind, role: Tens
         ? 'scalar'
         : isTensor(value) ||
             ArrayBuffer.isView(value) ||
-            (Array.isArray(value) && value.every((v) => typeof v === 'number'))
+            (Array.isArray(value) && value.every((v) => typeof v === 'number' || Array.isArray(v)))
           ? 'tensor'
           : typeof value === 'object' && value !== null && (value as { readonly kind?: unknown }).kind === 'scene'
             ? 'frame'

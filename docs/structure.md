@@ -3094,6 +3094,13 @@ exposition contract of 5.0. Every estimator comes as a factory (`pca({ nComponen
 `react/views/` (`PathView`, `TreeView`, `PipelineView`, `EmbeddingPlayer`, `DecisionSurfaceView`, ... one per record
 kind, each usable on its own in any page).
 
+**Sessions.** `render/react/session/` runs a method of the log contract (`lib/trace`'s `Method` and `Session`) in a
+page: `useSession` (make, play live at a rate within a frame budget, version the tape), `SessionPlayer`,
+`SessionControls` (mode, seed, steps, subscription), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a
+probe, curves, per-element series, a trajectory, a tensor, a projection, the whole tape), `SessionPanels` that draws a
+layout under one `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic
+`TapeView`. The hub (`apps/site/src/hub/`) is entries as data plus routing over these.
+
 **The hub.** `packages/hub/src/`:
 - `entry/entry.ts`: `HubEntry` (id, title, one-line summary, collection, tags, the method it runs, its `hyperSpace` with
   demo defaults, the dataset collections it suits, and a layout: which record kinds to show, with which views, in which

@@ -5,7 +5,7 @@
  */
 
 import { type Json, VERSION } from '../base/index.ts'
-import { isTensor, type Value } from '../tensor/index.ts'
+import { isTensor, type NestedArray, tensor, type Value } from '../tensor/index.ts'
 import type { Run, RunStatus, TensorRole, TraceEvent } from './events.ts'
 import { changed, channelSelected, childPolicy, onSchedule, policies, type TracePolicy } from './policy.ts'
 import { schemaToJson, type TraceSchema } from './schema.ts'
@@ -233,6 +233,11 @@ export function startRun(tracer: Tracer, info: RunInfo): RunHandle {
         if (!isTensor(value)) return
         data = value.data
         dims = value.shape
+      } else if (Array.isArray(value) && value.some((v) => Array.isArray(v) || ArrayBuffer.isView(v))) {
+        // A nested array (a matrix logged as rows): its row-major values and its own shape.
+        const t = tensor(value as NestedArray)
+        data = t.data
+        dims = shape ?? t.shape
       } else {
         data = value as ArrayLike<number>
         dims = shape ?? [data.length]
