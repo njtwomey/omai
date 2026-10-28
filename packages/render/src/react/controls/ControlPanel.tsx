@@ -57,8 +57,14 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
             gridAutoColumns: 'minmax(0, 1fr)',
           }
         : { gridTemplateColumns: `repeat(${columns ?? 1}, minmax(0, 1fr))` }
+  // A fieldset, not a <section>: inside a reveal.js slide a nested <section> is read as a vertical sub-slide, which
+  // turns the slide into a stack whose pointer events are off, so every control stops working after a slide change.
+  // `min-w-0` undoes the fieldset's default minimum width, so it shrinks with its column like any other box.
   return (
-    <section className={cx('rounded-lg border border-(--wb-grid) bg-(--wb-surface) text-(--wb-fg)', className)}>
+    <fieldset
+      {...(typeof title === 'string' ? { 'aria-label': title } : {})}
+      className={cx('min-w-0 rounded-lg border border-(--wb-grid) bg-(--wb-surface) text-(--wb-fg)', className)}
+    >
       {title === undefined ? null : collapsible ? (
         <button
           type="button"
@@ -82,7 +88,7 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
           <AreasContext.Provider value={areas !== undefined}>{children}</AreasContext.Provider>
         </div>
       ) : null}
-    </section>
+    </fieldset>
   )
 }
 
