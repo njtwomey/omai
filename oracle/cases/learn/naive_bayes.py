@@ -50,7 +50,7 @@ def tan_edges(x: FloatArray, y: FloatArray, root: int) -> tuple[FloatArray, Floa
     edges: list[tuple[float, float]] = []
     weights: list[float] = []
     while len(inside) < d:
-        best = max(((w[u, v], -u, -v) for u in inside for v in range(d) if v not in inside))
+        best = max((w[u, v], -u, -v) for u in inside for v in range(d) if v not in inside)
         edges.append((float(-best[1]), float(-best[2])))
         weights.append(float(best[0]))
         inside.append(int(-best[2]))

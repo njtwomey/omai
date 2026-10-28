@@ -24,7 +24,9 @@ def cases() -> list[Case]:
     y = np.column_stack([t0, t1, t2])
     q = g.normal(size=(9, 3))
     mor = MultiOutputRegressor(LinearRegression()).fit(x, y)
-    out.append(case("regressor/independent", "regressor", [x, y, q], {"predict": mor.predict(q)}, rtol=1e-9, atol=1e-10))
+    out.append(
+        case("regressor/independent", "regressor", [x, y, q], {"predict": mor.predict(q)}, rtol=1e-9, atol=1e-10)
+    )
     for order in ([2, 0, 1], [0, 1, 2], [1, 2, 0]):
         chain = RegressorChain(LinearRegression(), order=order).fit(x, y)
         out.append(
@@ -39,9 +41,9 @@ def cases() -> list[Case]:
             )
         )
     counts = np.abs(g.normal(size=(n, 3)) * 2)
-    labels = np.column_stack([(counts[:, 0] > 1.5), np.digitize(counts[:, 1], [1.0, 2.5]), (counts[:, 2] > 2.0)]).astype(
-        np.float64
-    )
+    labels = np.column_stack(
+        [(counts[:, 0] > 1.5), np.digitize(counts[:, 1], [1.0, 2.5]), (counts[:, 2] > 2.0)]
+    ).astype(np.float64)
     qc = np.abs(g.normal(size=(9, 3)) * 2)
     moc = MultiOutputClassifier(GaussianNB()).fit(counts, labels)
     proba = moc.predict_proba(qc)

@@ -30,9 +30,17 @@ def cases() -> list[Case]:
     xt = np.concatenate([g.normal(size=(12, 3)) + 1.5, x[:3] + 0.01])
     t = np.sin(x[:, 0]) + 0.5 * x[:, 1] + 0.1 * g.normal(size=60)
     out: list[Case] = []
-    for metric, params in [("euclidean", {}), ("manhattan", {}), ("chebyshev", {}), ("cosine", {}), ("minkowski", {"p": 3})]:
+    for metric, params in [
+        ("euclidean", {}),
+        ("manhattan", {}),
+        ("chebyshev", {}),
+        ("cosine", {}),
+        ("minkowski", {"p": 3}),
+    ]:
         for weights in ["uniform", "distance"]:
-            clf = KNeighborsClassifier(n_neighbors=5, weights=weights, metric=metric, algorithm="brute", **params).fit(x, y)
+            clf = KNeighborsClassifier(n_neighbors=5, weights=weights, metric=metric, algorithm="brute", **params).fit(
+                x, y
+            )
             out.append(
                 case(
                     f"classifier/{metric}/{weights}",
@@ -47,7 +55,9 @@ def cases() -> list[Case]:
                     **params,
                 )
             )
-            reg = KNeighborsRegressor(n_neighbors=4, weights=weights, metric=metric, algorithm="brute", **params).fit(x, t)
+            reg = KNeighborsRegressor(n_neighbors=4, weights=weights, metric=metric, algorithm="brute", **params).fit(
+                x, t
+            )
             out.append(
                 case(
                     f"regressor/{metric}/{weights}",
@@ -134,12 +144,20 @@ def cases() -> list[Case]:
         yi = np.where(np.arange(61) < 12, 2.0, yi)  # unbalanced classes
         nc = NearestCentroid(metric=metric, shrink_threshold=shrink, priors=priors).fit(xi, yi)
         q = np.concatenate([g.normal(size=(8, 4)) + 1.5, xi[:4]])
-        output: dict[str, FloatArray] = {"centroids": nc.centroids_, "predict": nc.predict(q), "withinStd": nc.within_class_std_dev_}
+        output: dict[str, FloatArray] = {
+            "centroids": nc.centroids_,
+            "predict": nc.predict(q),
+            "withinStd": nc.within_class_std_dev_,
+        }
         if metric == "euclidean":
             output["decision"] = nc.decision_function(q)
             output["proba"] = nc.predict_proba(q)
         params: dict[str, object] = {"metric": metric, "priors": priors}
         if shrink is not None:
             params["shrink"] = shrink
-        out.append(case(f"centroid/{metric}/{shrink}/{priors}", "centroid", [xi, yi, q], output, rtol=1e-9, atol=1e-10, **params))
+        out.append(
+            case(
+                f"centroid/{metric}/{shrink}/{priors}", "centroid", [xi, yi, q], output, rtol=1e-9, atol=1e-10, **params
+            )
+        )
     return out

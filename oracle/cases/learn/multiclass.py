@@ -82,13 +82,13 @@ def cases() -> list[Case]:
         classes = list(range(k))
         nodes: list[tuple[list[int], list[int]]] = []
 
-        def grow(s: list[int]) -> None:
+        def grow(s: list[int], nodes: list[tuple[list[int], list[int]]] = nodes) -> None:
             if len(s) < 2:
                 return
             cut = max(1, len(s) // 2)
             nodes.append((s[:cut], s[cut:]))
-            grow(s[:cut])
-            grow(s[cut:])
+            grow(s[:cut], nodes)
+            grow(s[cut:], nodes)
 
         grow(classes)
         proba = np.ones((len(q), k))

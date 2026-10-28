@@ -54,7 +54,13 @@ def cases() -> list[Case]:
             )
         )
     for init in ["identity", "pca", "lda"]:
-        nca = NeighborhoodComponentsAnalysis(n_components=2, init=init, max_iter=500, tol=1e-10, random_state=0).fit(x, y)  # pyright: ignore[reportArgumentType]
+        nca = NeighborhoodComponentsAnalysis(n_components=2, init=init, max_iter=500, tol=1e-10, random_state=0).fit(
+            x, y
+        )  # pyright: ignore[reportArgumentType]
         value, _, _ = objective(nca.components_, x, y)
-        out.append(case(f"fit/{init}", "fit", [x, y], {"value": np.array(value)}, rtol=1e-4, atol=1e-6, init=init, components=2))
+        out.append(
+            case(
+                f"fit/{init}", "fit", [x, y], {"value": np.array(value)}, rtol=1e-4, atol=1e-6, init=init, components=2
+            )
+        )
     return out

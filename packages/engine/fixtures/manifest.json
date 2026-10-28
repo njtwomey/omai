@@ -1294,6 +1294,14 @@
       "cases": 6
     },
     {
+      "fixture": "linear/lars.json",
+      "source": "oracle/cases/linear/lars.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "linear/online.json",
       "source": "oracle/cases/linear/online.py",
       "reference": {

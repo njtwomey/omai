@@ -57,7 +57,11 @@ def voted(x: FloatArray, y: FloatArray, epochs: int) -> tuple[FloatArray, FloatA
             else:
                 counts[-1] += 1
     keep = [k for k, c in enumerate(counts) if c > 0]
-    return np.array([vecs[k] for k in keep]), np.array([bias[k] for k in keep]), np.array([counts[k] for k in keep], dtype=np.float64)
+    return (
+        np.array([vecs[k] for k in keep]),
+        np.array([bias[k] for k in keep]),
+        np.array([counts[k] for k in keep], dtype=np.float64),
+    )
 
 
 def pocket(x: FloatArray, y: FloatArray, epochs: int) -> tuple[FloatArray, float]:
@@ -132,14 +136,26 @@ def cases() -> list[Case]:
             )
         )
         a = SGDClassifier(
-            loss="perceptron", learning_rate="constant", eta0=1.0, penalty=None, average=True, shuffle=False, max_iter=epochs, tol=None
+            loss="perceptron",
+            learning_rate="constant",
+            eta0=1.0,
+            penalty=None,
+            average=True,
+            shuffle=False,
+            max_iter=epochs,
+            tol=None,
         ).fit(x, y)
         out.append(
             case(
                 f"perceptron/averaged/{epochs}",
                 "perceptron",
                 [x, y, q],
-                {"coef": a.coef_[0], "intercept": a.intercept_[0], "decision": a.decision_function(q), "predict": a.predict(q)},
+                {
+                    "coef": a.coef_[0],
+                    "intercept": a.intercept_[0],
+                    "decision": a.decision_function(q),
+                    "predict": a.predict(q),
+                },
                 rtol=1e-11,
                 atol=1e-11,
                 variant="averaged",
@@ -197,13 +213,20 @@ def cases() -> list[Case]:
         )
     )
     for variant, rate, c in [("pa1", "pa1", 0.5), ("pa2", "pa2", 0.5), ("pa1", "pa1", 100.0)]:
-        m = SGDClassifier(loss="hinge", penalty=None, learning_rate=rate, eta0=c, shuffle=False, max_iter=3, tol=None).fit(x, y)
+        m = SGDClassifier(
+            loss="hinge", penalty=None, learning_rate=rate, eta0=c, shuffle=False, max_iter=3, tol=None
+        ).fit(x, y)
         out.append(
             case(
                 f"pa/classifier/{variant}/{c}",
                 "pa",
                 [x, y, q],
-                {"coef": m.coef_[0], "intercept": m.intercept_[0], "decision": m.decision_function(q), "predict": m.predict(q)},
+                {
+                    "coef": m.coef_[0],
+                    "intercept": m.intercept_[0],
+                    "decision": m.decision_function(q),
+                    "predict": m.predict(q),
+                },
                 rtol=1e-11,
                 atol=1e-11,
                 variant=variant,
@@ -214,7 +237,14 @@ def cases() -> list[Case]:
     t = x @ np.array([2.0, -1.0, 0.5]) + 1.0 + 0.1 * g.normal(size=len(x))
     for variant, rate, c, eps in [("pa1", "pa1", 0.5, 0.1), ("pa2", "pa2", 1.0, 0.3)]:
         r = SGDRegressor(
-            loss="epsilon_insensitive", epsilon=eps, penalty=None, learning_rate=rate, eta0=c, shuffle=False, max_iter=3, tol=None
+            loss="epsilon_insensitive",
+            epsilon=eps,
+            penalty=None,
+            learning_rate=rate,
+            eta0=c,
+            shuffle=False,
+            max_iter=3,
+            tol=None,
         ).fit(x, t)
         out.append(
             case(

@@ -3083,6 +3083,12 @@ binary; `learn`'s `oneVsRest` makes them multiclass. oracle: `linear/online` aga
 perceptron loss (plain and averaged) and the passive-aggressive learning rates, and numpy loops for the voted, pocket
 and kernel variants.
 
+`lars.ts` is least angle regression: `larsAlgorithm` (one knot per step, plain LAR or the lasso modification where a
+variable leaves when its coefficient crosses zero; logs `alpha`, `active`, the `coefficients` tensor and the message
+`event`), `larsPath` (the whole path: penalties, coefficients, entry order), `coefficientsAt` (interpolation at a
+penalty) and the `lars` estimator (the model at a penalty or active count, the path in `params.path`; `fittedAt(t)` is
+knot `t`). oracle: `linear/lars` against `sklearn.linear_model.lars_path` and `LassoLars`.
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 
