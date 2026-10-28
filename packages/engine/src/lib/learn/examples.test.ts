@@ -2,11 +2,15 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import * as agents from '../agents/index.ts'
 import * as autodiff from '../autodiff/index.ts'
 import * as base from '../base/index.ts'
 import * as data from '../data/index.ts'
 import * as exposition from '../exposition/index.ts'
+import * as losses from '../losses/index.ts'
 import * as metrics from '../metrics/index.ts'
+import * as nn from '../nn/index.ts'
+import * as optim from '../optim/index.ts'
 import * as random from '../random/index.ts'
 import * as space from '../space/index.ts'
 import * as stats from '../stats/index.ts'
@@ -15,11 +19,15 @@ import * as trace from '../trace/index.ts'
 import * as learn from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  'mdml-engine/agents': agents,
   'mdml-engine/autodiff': autodiff,
   'mdml-engine/base': base,
   'mdml-engine/data': data,
   'mdml-engine/exposition': exposition,
+  'mdml-engine/losses': losses,
   'mdml-engine/metrics': metrics,
+  'mdml-engine/nn': nn,
+  'mdml-engine/optim': optim,
   'mdml-engine/random': random,
   'mdml-engine/space': space,
   'mdml-engine/stats': stats,

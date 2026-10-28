@@ -2480,7 +2480,27 @@ oracle once the oracle environment has it.
   fitted value, with the kind's verbs, at any reached step through the checkpoints, and `fit`'s value at the head);
   `kinds.ts`: the estimator kinds as add-ons
   (`kindProbes`: the standard derived paths of classifiers and regressors, clusterers, transformers and outlier
-  detectors). The one-shot, trainer, agent, sweep and procedure bases follow.
+  detectors); `trainer.ts`: the trainer base (`defineTrainer(particular)`: minibatch training of one `nn` module as an
+  `Algorithm` over `fitAlgorithm`, a session step being an optimiser step or, with `unit: 'epoch'`, an epoch; the
+  particular declares `model`, `objective`, `optimiser(learningRate)`, `settings` (learning rate, a `schedules`
+  configuration, epochs or steps, batch size, clipping, accumulation, callbacks, a validation fraction), an optional
+  `source` (rows, or a `LearnStream` drawn into the rows the budget needs), `validation` and `metrics`; the base logs
+  `train/loss`, `train/gradNorm`, `train/lr`, `eval/loss` and `eval/<metric>` (on validation rows, at the schedule the
+  subscription gives, by default at each `train/epoch/end`), `layer/<i>/weights`, `layer/<i>/params` and
+  `layer/<i>/activations` (layers are the children of a `Sequential`, activations are computed on probe rows only when
+  due), the events `train/step/end` and `train/epoch/end`, `model/params` and the kind's probes; the state serialises
+  with the optimiser's moments, so `session.fittedAt(t)`, `probe` and `fork` work at any reached step, and `fit`
+  returns the verbs of the kind over the trained network, the training `curves` record and the tape); `agent.ts`: the
+  agent base (`defineAgentMethod(particular)`: an environment from the registry or a definition, an `Agent` from
+  `agents`, an `AgentSchedule` of episodes or steps, steps per episode and evaluation, run by `trainingAlgorithm`, a
+  session step being an environment step or an episode; it logs `episode/return`, `episode/length`, `eval/return`,
+  `train/loss` where the agent reports one, `agent/<statistic>`, `env/frame` and the event `rl/episode/end`, and probes
+  `eval/episode` (a greedy episode as an `episodes` record, with the tables of a tabular agent as snapshots) and, for
+  tabular agents, `agent/value-map` and `agent/action-map` as `valueGrids`; `session(...)` adds `agentAt(t)` and
+  `policyAt(t)`, `train()` runs it to completion). Private: `_session.ts` (`extendSession`, a session with extra verbs
+  that its forks keep, behind `fittedSession` and the agent session), `_trainer.ts` (plan arithmetic, layer records,
+  evaluation, curves and the verbs of a network) and `_agent.ts` (the value and action maps on a grid, an episode as a
+  record). The one-shot, sweep and procedure bases follow.
 
 oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
 modAL for active learning, diffprivlib and opacus for privacy
