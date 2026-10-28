@@ -180,6 +180,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/stats/smoothing': () => import('mdml-engine/stats/smoothing'),
   'mdml-engine/stats/tests': () => import('mdml-engine/stats/tests'),
   'mdml-engine/stochastic': () => import('mdml-engine/stochastic'),
+  'mdml-engine/svm': () => import('mdml-engine/svm'),
   'mdml-engine/symbolic': () => import('mdml-engine/symbolic'),
   'mdml-engine/systems': () => import('mdml-engine/systems'),
   'mdml-engine/tensor': () => import('mdml-engine/tensor'),

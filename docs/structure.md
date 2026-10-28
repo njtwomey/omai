@@ -410,6 +410,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
 | `vision`      | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                           |
+| `svm`         | support vector classification and regression (C and nu forms, one-versus-one, Platt probabilities) and novelty detection (one-class, SVDD) as stepped estimators over the SMO duals                  |
 
 ### 4.1 `base/`
 
@@ -1513,7 +1514,9 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `smo.ts`: sequential minimal optimisation (`smo`, `smoAlgorithm`) for quadratic programs with box constraints and
   one linear equality (the SVM dual family, libsvm's solver): working-set selection (maximal violating pair, second
   order WSS3), shrinking with gradient reconstruction, libsvm's rho, traced working pairs and active sets; `svcDual`
-  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables).
+  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables), `oneClassDual` and `svddDual`; `smoRho`.
+- `smo-nu.ts`: libsvm's Solver_NU (`nuSmoAlgorithm`: two equalities, pairs within a class), the feasible starts
+  (`nuSvcStart`, `nuSvrStart`), `nuRho`, and the `nuSvcDual` and `nuSvrDual` duals.
 - `sparse.ts`: sparse approximation, each a traced algorithm: `matchingPursuit`, `orthogonalMatchingPursuit`
   (sklearn's Cholesky OMP, atoms or squared-residual tolerance), `cosamp`, `iterativeHardThresholding` (normalised
   IHT or a fixed step), `basisPursuit` (ADMM with a cached projection), `basisPursuitDenoising` and
@@ -1590,6 +1593,9 @@ import with the installed jax)
   rational quadratic, scaled kernels, or given draws), `orthogonalRandomFeatures`, `nystroem`, `additiveChi2Sampler`,
   `skewedChi2Sampler`, `polynomialCountSketch`, `tensorSketch`, approximation error helpers (`approximateGram`,
   `approximationError`).
+- `named.ts`: kernels chosen by scikit-learn's names (`KernelChoice`: a metric name or a `Kernel`, `gamma` of `'scale'`
+  or `'auto'` or a number, `degree`, `coef0`), `resolveKernel` against the training rows into plain JSON,
+  `kernelMatrix`, and `kernelSpace` (the choice as knobs).
 - `matrices.ts`: `centerKernel`, `kernelAlignment`, `targetAlignment`, `hsic` (biased, unbiased, normalised),
   `mmdSquared` (biased, unbiased, linear-time), `effectiveDimension`, `kernelPca` projections, `pairwiseKernels`
   (scikit-learn's metric names and parameters).
@@ -3177,6 +3183,40 @@ diagonal of pairwise, derivative conformance of every continuous distance.
 built from: `numerics/geometry`, `numerics/linalg`, `space`, `tensor`. Sequence and string distances (DTW in
 `signal/similarity.ts`, Levenshtein and set Jaccard in `text/similarity.ts`, chi-square in `kernels/structured.ts`)
 keep their homes, as do the `Kernel` objects of `kernels/` (`pairwiseKernels` by scikit-learn's names).
+
+### 4.45 `svm/`: support vector machines (sklearn.svm, libsvm)
+
+oracle: scikit-learn (`SVC`, `NuSVC`, `SVR`, `NuSVR`, `OneClassSVM`); `optim/smo_nu` for the nu and one-class duals
+Every estimator is built on the iterative base (`learn/bases/iterative.ts`), so `.fit`, `.method(data)` and
+`.session(data)` all exist. The fit is the dual solve stepped: one SMO working-pair update per step, without shrinking so
+the gradient (and with it the objective and the gap) is exact at every step. Every machine logs `solver/dual` (the dual
+objective, to be maximised), `solver/gap` (the primal-dual gap, at least zero and closing to zero), `solver/violation`,
+`solver/support`, `solver/alphas`, `solver/pair`, `smo/alphaChanged` (|da_i| + |da_j| of the step) and the derived
+`model/support-vectors` (a `marginRecord` of the model at that step); the base adds `model/params`, `model/predictions`
+and the decision surface. Parameters are plain JSON (the support vectors, their coefficients, the intercepts and the
+resolved kernel), so `revive` rebuilds the verbs and `fittedAt(t)` gives the model at any step.
+- `_dual.ts` (private): the six duals behind one interface (`Dual`: the algorithm, the kernel expansion of a state, the
+  dual, the gap, the margins, the tube): `cSvcDual`, `nuSvcDual`, `svrDual`, `nuSvrDual`, `oneClassDual`, `svddDual`. The
+  gap of each is its primal at the best slack threshold (`hingeMinimum`) minus the dual.
+- `classifier.ts`: `svc` (C-SVC; `form: 'nu'` is NuSVC, also `nuSvc`): any `kernels` kernel (`rbf`, `linear`, `poly`,
+  `sigmoid`, `laplacian` by scikit-learn's names with `gamma` of `'scale'`, `'auto'` or a number, or a `Kernel` object),
+  one-versus-one for more than two classes (the pairs solved in turn, libsvm's class order and scikit-learn's
+  `decisionShape` `ovr` or `ovo`), class weights (`balanced` or by label) and sample weights, and Platt probabilities
+  (`probability: true`: a last step fits each pair's sigmoid on internal cross-validated decision values, coupled for more
+  than two classes). The parameters hold `supportIndex` and `nSupport` (scikit-learn's `support_`, `n_support_`) and
+  per pair the coefficients and intercept.
+- `regressor.ts`: `svr` (epsilon-SVR; `form: 'nu'` is NuSVR, also `nuSvr`), the tube width given or found
+  (`params.tube`), the probe's margins being the residuals.
+- `one-class.ts`: `oneClassSvm` (nu) and `svdd` (C, at least 1/n), the signed score positive inside the learnt region;
+  with a kernel of constant diagonal they are one machine (C = 1 / (nu n)).
+- `probability.ts`: `pairwiseCoupling` (libsvm's second method of Wu, Lin and Weng).
+The duals themselves are in `optim/smo.ts` (`oneClassDual`, `svddDual`, `smoRho`) and `optim/smo-nu.ts` (`nuSmoAlgorithm`,
+libsvm's Solver_NU: both equalities kept by moving pairs within a class; `nuSvcDual`, `nuSvrDual`, `nuRho`). Kernel
+choice by scikit-learn's names is `kernels/named.ts` (`resolveKernel`, `kernelMatrix`, `kernelSpace`).
+tests: goldens against scikit-learn on small data (support vectors, dual coefficients, intercepts, ovo and ovr decision
+values, predictions; libsvm keeps its kernel cache in single precision, so agreement is to 1e-4, and the nu forms divide
+by the margin, so 1e-3); probabilities (scikit-learn's cross-validation is random) are checked by properties.
+built from: `optim` (SMO), `kernels`, `learn` (the iterative base, Platt scaling), `exposition`, `trace`.
 
 ## 5. Methods, exposition records and views
 

@@ -2869,6 +2869,14 @@
       "cases": 4
     },
     {
+      "fixture": "optim/smo_nu.json",
+      "source": "oracle/cases/optim/smo_nu.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "optim/sparse.json",
       "source": "oracle/cases/optim/sparse.py",
       "reference": {
@@ -4182,6 +4190,30 @@
         "numpy": "2.5.4"
       },
       "cases": 5
+    },
+    {
+      "fixture": "svm/classifier.json",
+      "source": "oracle/cases/svm/classifier.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "svm/one_class.json",
+      "source": "oracle/cases/svm/one_class.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "svm/regressor.json",
+      "source": "oracle/cases/svm/regressor.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
     },
     {
       "fixture": "symbolic/compile.json",
