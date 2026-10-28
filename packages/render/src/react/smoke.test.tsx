@@ -157,6 +157,10 @@ describe('React bindings render on the server', () => {
     const eager = renderToString(<Player controller={{ ...controller, eager: true, setEager: noop }} />)
     expect(eager).toContain('aria-label="Eager"')
     expect(eager).toContain('aria-pressed="true"')
+    expect(plain).not.toContain('aria-label="Reset to defaults"')
+    expect(renderToString(<Player controller={{ ...controller, resetForm: noop }} />)).toContain(
+      'aria-label="Reset to defaults"',
+    )
     const projection = linearProjection({ x: [0, 1], y: [0, 1], width: 100, height: 100 })
     const svg = renderToString(
       <InteractionOverlay projection={projection} width={100} height={100}>

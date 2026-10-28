@@ -27,7 +27,7 @@ export const recipe: Recipe = {
   question:
     'How do I run a method as a session: computed in the background, played at its own rate, probed at any step?',
   explain:
-    '`useSession(method, options, deps)` is the producer: once play is pressed it computes the run ahead in the spare time of each frame, so the tape may stand at step 200 while the page shows step 20. `SessionPlayer` is the consumer: its cursor pops through the recorded steps at the rate in the menu, waits at the head when the computation is slower, and stops at the end. The bolt is eager (the whole run at once, its end shown); it and holding (a knob change waits for play while live) are remembered from page to page. `SessionPanels` draws a layout over the tape under one step cursor: click a curve to scrub. Here, a point walking a circle, with a probe of the plane around it.',
+    '`useSession(method, options, deps)` is the producer: once play is pressed it computes the run ahead in the spare time of each frame, so the tape may stand at step 200 while the page shows step 20. `SessionPlayer` is the consumer: its cursor pops through the recorded steps at the rate in the menu, waits at the head when the computation is slower, and stops at the end. The bolt is eager (the whole run at once, its end shown); it and holding (a knob change waits for play while live) are remembered from page to page; the rewind button resets the knobs to their defaults. `SessionPanels` draws a layout over the tape under one step cursor: click a curve to scrub. Here, a point walking a circle, with a probe of the plane around it.',
 }
 
 interface State {
@@ -107,7 +107,7 @@ export default function SessionRecipe(): ReactNode {
       <ControlPanel columns={2}>
         <SpaceControls space={walk.config as DictSpace} value={params} onChange={(p) => setParams(p as Config)} />
       </ControlPanel>
-      <SessionPlayer live={live} at={at} onScrub={setAt} />
+      <SessionPlayer live={live} at={at} onScrub={setAt} onReset={() => setParams(defaults(walk.config) as Config)} />
       <SessionPanels id="gallery/session" live={live} at={at} onScrub={setAt} layout={LAYOUT} />
     </div>
   )

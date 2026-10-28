@@ -1,7 +1,7 @@
 /**
- * Playback controls in one row for a precomputed timeline or a live algorithm: an eager toggle when the controller
- * offers one, seek to the start, step back, play or pause with a menu of target frame rates, step forward, seek to the
- * end, a draggable scrubber and an optional time stamp.
+ * Playback controls in one row for a precomputed timeline or a live algorithm: a reset of the page's controls and an
+ * eager toggle when the controller offers them, seek to the start, step back, play or pause with a menu of target
+ * frame rates, step forward, seek to the end, a draggable scrubber and an optional time stamp.
  */
 
 import { type PointerEvent, type ReactNode, useCallback, useRef, useState } from 'react'
@@ -10,6 +10,7 @@ import {
   ChevronDownIcon,
   PauseIcon,
   PlayIcon,
+  RewindIcon,
   SkipBackIcon,
   SkipForwardIcon,
   StepBackIcon,
@@ -36,8 +37,9 @@ export interface PlayerProps {
 }
 
 /**
- * Playback controls for a precomputed timeline or a live algorithm, one row: an eager toggle (when the controller
- * offers one: the whole run computed at once, its end shown), seek to the start, step back, play or pause with a
+ * Playback controls for a precomputed timeline or a live algorithm, one row: a reset of the page's controls to their
+ * defaults (when the controller offers one), an eager toggle (when the controller offers one: the whole run computed
+ * at once, its end shown), seek to the start, step back, play or pause with a
  * caret menu for the target frames per second, step forward, seek to the end, a scrubber to drag, and an optional
  * stamp. Space toggles play, the arrow keys step and Home and End seek while the player has focus.
  *
@@ -55,6 +57,8 @@ export function Player(props: PlayerProps): ReactNode {
   }
   const toEnd = (): void => c.seek(c.count - 1)
   const eager = c.eager === true
+  const hasReset = c.resetForm !== undefined
+  const hasEager = c.setEager !== undefined
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: keyboard shortcuts for the whole player, which holds the buttons
     <div
@@ -71,10 +75,25 @@ export function Player(props: PlayerProps): ReactNode {
       }}
     >
       <div className="flex shrink-0">
+        {c.resetForm === undefined ? null : (
+          <button
+            type="button"
+            className={cx(iconButtonClass, 'rounded-l-md')}
+            aria-label="Reset to defaults"
+            title="Reset the controls to their defaults"
+            onClick={c.resetForm}
+          >
+            <RewindIcon size={14} />
+          </button>
+        )}
         {c.setEager === undefined ? null : (
           <button
             type="button"
-            className={cx(iconButtonClass, 'rounded-l-md', eager && 'bg-(--wb-surface) text-(--wb-accent)')}
+            className={cx(
+              iconButtonClass,
+              hasReset ? '-ml-px' : 'rounded-l-md',
+              eager && 'bg-(--wb-surface) text-(--wb-accent)',
+            )}
             aria-label="Eager"
             aria-pressed={eager}
             title={
@@ -89,7 +108,7 @@ export function Player(props: PlayerProps): ReactNode {
         )}
         <button
           type="button"
-          className={cx(iconButtonClass, c.setEager === undefined ? 'rounded-l-md' : '-ml-px')}
+          className={cx(iconButtonClass, hasReset || hasEager ? '-ml-px' : 'rounded-l-md')}
           aria-label="Go to the start"
           disabled={c.frame <= 0}
           onClick={toStart}
