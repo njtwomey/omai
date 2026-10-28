@@ -1,6 +1,6 @@
 /**
- * A recipe-format page's live example and code, loaded when the page is opened: the registries (the gallery's recipes,
- * the hub's standalone pages) list every file from its `recipe` metadata alone (`?recipe`, plugins/recipe-meta.ts)
+ * A recipe-format page's live example and code, loaded when the page is opened: the registry (the gallery's recipes)
+ * lists every file from its `recipe` metadata alone (`?recipe`, plugins/recipe-meta.ts)
  * and keep a loader for the file's module and source, so an index page imports none of their code.
  */
 

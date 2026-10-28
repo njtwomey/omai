@@ -6,7 +6,6 @@ import { Link } from './Link.tsx'
 /** The site's sections, in navigation order. */
 export const SECTIONS = [
   { path: '/gallery', title: 'Gallery', summary: 'What mdml-render can draw, lay out, control and animate.' },
-  { path: '/hub', title: 'Hub', summary: 'Methods on a contract, run as sessions.' },
   { path: '/docs', title: 'Docs', summary: 'The mdml-engine reference, generated from the source.' },
 ] as const
 
@@ -14,7 +13,7 @@ export const SECTIONS = [
 const THEME_CSS = `${cssText('light', ':root')}\n${cssText('dark', '.dark')}`
 
 /**
- * The shared page chrome: the top bar with the three sections (the current one highlighted) and the colour toggle;
+ * The shared page chrome: the top bar with the sections (the current one highlighted) and the colour toggle;
  * then the page, beside an optional `sidebar` (a section's {@link TocSidebar}) that stays in view and scrolls on its
  * own, the content on the right.
  */

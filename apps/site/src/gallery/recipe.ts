@@ -2,7 +2,7 @@
  * A recipe: one file `recipes/<section>/<NN-slug>.tsx` answering one question about mdml-render ("How do I take a
  * number on a log scale?"). It exports `recipe` (this metadata) and, as its default export, the live example; the
  * gallery's pages, its contents and the code shown beside the example (the file's own source) are generated from the
- * files. Toy data only: model demos belong to the hub.
+ * files. Toy data only: model demonstrations are the encyclopedia's.
  */
 export interface Recipe {
   /** The card's and the contents' name, e.g. 'Number field'. */

@@ -3,6 +3,9 @@
 Written at the end of part 0 (2026-10-26). Everything under `_parked/` keeps its original path below that folder, so
 restoring a file is `git mv` back. Nothing in `_parked/` is built, linted, typed or tested.
 
+**Update, 2026-10-28.** `_parked/` was deleted from the tree, with the hub. Every path below is in git history at
+933f0dd8: `git show 933f0dd8:_parked/<path>` reads a file, `git checkout 933f0dd8 -- _parked/<path>` brings it back.
+
 ## 1. Parked
 
 | what                                                                           | where it is now                                                                                      | lines        |

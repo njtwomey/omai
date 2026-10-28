@@ -87,7 +87,7 @@ docs-catalogue: ## Precompile the docs catalogue into apps/site/.generated/docs 
 	$(NODE) apps/site/plugins/build-docs.ts --if-stale
 
 .PHONY: dev
-dev: docs-catalogue ## Serve the site (gallery, hub and docs) at http://localhost:5300 with hot reload
+dev: docs-catalogue ## Serve the site (gallery and docs) at http://localhost:5300 with hot reload
 	$(PNPM) --dir apps/site exec vite
 
 .PHONY: site

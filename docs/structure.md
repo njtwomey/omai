@@ -126,9 +126,9 @@ mdml-js/
   CLAUDE.md, INIT.md, AUDIT.md, PORT.md
 ```
 
-`apps/site` is the one site: the gallery shows off `render`, the hub shows off `mdml-hub` (its pages generated
-from the hub catalogue), and the docs document `engine`. Outside projects (the encyclopedia,
-the slide and blog tool) consume the three published packages as release tarballs.
+`apps/site` is the one site: the gallery shows off `render` and the docs document `engine`. Outside projects (the
+encyclopedia, the slide and blog tool) consume the three published packages as release tarballs; pages that explain
+a method are the encyclopedia's, composed from the packages, and the site has no hub (removed 2026-10-28).
 
 ## 2. Conventions every file follows
 
@@ -152,7 +152,7 @@ of section 1 hold too.
   `@inline` tag in its summary.
 - A file opens with its own paragraph: what the file is and what to expect in it (for `shapley.ts`, what Shapley
   values are and which explainers it provides), as a doc comment followed by a blank line or the imports. No to-do
-  lists and no lists of every export; hub entries under `collections/` can be one line.
+  lists and no lists of every export.
 - `make barrels` fails on a folder or a module file without one; mdml-meta reads both into the catalogue, and the
   docs show them on folder and file pages. A private file (`_tree.ts`) that defines a public symbol is shown too, so it
   opens with its paragraph as well (`make examples ARGS=--coverage` lists any that do not).
@@ -2998,7 +2998,6 @@ Left in 4.39 after round two (one line each):
 - TODO: path-specific effects along arbitrary chosen paths (`pathSpecificEffects` gives total, direct, indirect).
 - TODO: dedicated records and views for exposure in rankings, causal decompositions and repeated decisions.
 - TODO: thin methods for causal, regression and ranking fairness (the core is built).
-- TODO: hub entries for the round-two mitigations, and the parked gallery-to-hub move (5.20).
 
 ### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster)
 
@@ -3126,30 +3125,31 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   non-local means, stereoRectify's alpha-dependent camera matrices, StereoBM's pre-filter and SGBM's Birchfield-Tomasi
   cost, LSD's sub-sampling and refinement, OpenCV's cascade XML and HOGDescriptor layouts.
 
-## 5. Methods, exposition records, views and the hub
+## 5. Methods, exposition records and views
 
-> **Status, 2026-10-26.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
-> `docs/methods_port/`): one base per way of running, particulars of a few lines each, and a minimal hub that is the
-> pattern rather than a catalogue. The methods described below, the `mdml-hub` package and the site's hub section are
-> parked, untouched, under `_parked/` (same paths), and come back piece by piece: their algorithms move home to `lib/`
+> **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
+> `docs/methods_port/`): one base per way of running, particulars of a few lines each. The methods described below
+> were parked under `_parked/` on 2026-10-26 and removed from the tree on 2026-10-28 (they stay in git history at
+> 933f0dd8, same paths below `_parked/`); their algorithms move home to `lib/` as they are needed
 > (`docs/methods_port/inventory.md`), and the constructables already have (`lib/environments`, `lib/agents`,
-> `lib/problems`, `lib/graphics/rendering.ts`). Sections 5.x below describe what is parked; the exposition records of
-> `lib/exposition` and the views of render are unchanged.
+> `lib/problems`, `lib/graphics/rendering.ts`). Every area keeps a folder under `methods/` whose `index.ts` summary
+> says what it is for, a placeholder until its methods are written, so the index of methods stays in the code and in
+> the docs. The hub (the `mdml-hub` package and the site's hub section) went with the parked code: pages that explain
+> a method are the encyclopedia's, composed from the render session layer. Sections 5.x below describe what was
+> parked; the exposition records of `lib/exposition` and the views of render are unchanged.
 
-Four layers, each usable without the ones after it:
+Three layers, each usable without the ones after it:
 
-| layer   | where                          | what it holds                                                                                                                                                  | draws?        |
-| ------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| core    | `packages/engine/src/lib/`     | the primitives of section 4 (a library, as PyTorch or Pyro are)                                                                                                | no            |
-| methods | `packages/engine/src/methods/` | named algorithms and estimators (lasso, trees, k-means, UMAP, agents), headless, built from the core; each returns typed exposition records beside its results | no            |
-| views   | `packages/render/`             | reusable components, including one view per kind of exposition record                                                                                          | yes           |
-| hub     | `packages/hub/` (`mdml-hub`)   | declarative entries (a method, the dataset collections it suits, its controls, which views to show) and the generated catalogue the hub app is built from      | composes only |
+| layer   | where                          | what it holds                                                                                                                                                  | draws? |
+| ------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| core    | `packages/engine/src/lib/`     | the primitives of section 4 (a library, as PyTorch or Pyro are)                                                                                                | no     |
+| methods | `packages/engine/src/methods/` | named algorithms and estimators (lasso, trees, k-means, UMAP, agents), headless, built from the core; each returns typed exposition records beside its results | no     |
+| views   | `packages/render/`             | reusable components, including one view per kind of exposition record                                                                                          | yes    |
 
-**Why four.** The core does not decide how it is used; the encyclopedia, a blog or a slide deck define their own uses.
+**Why three.** The core does not decide how it is used; the encyclopedia, a blog or a slide deck define their own uses.
 Methods are worked algorithms anyone can call. Views make the exposition reusable: a lasso, an elastic net and a GAM's
-smoothness sweep all return a `RegularisationPath`, which `render` draws one way everywhere. The hub never grows
-bespoke capabilities: an entry only declares which views to arrange; a figure that does not exist yet becomes a new
-render view, available to every consumer.
+smoothness sweep all return a `RegularisationPath`, which `render` draws one way everywhere. A page anywhere only
+arranges views; a figure that does not exist yet becomes a new render view, available to every consumer.
 
 **Exposition records.** `lib/exposition/` (a core domain low in the import graph, types and small constructors only) defines the
 record kinds methods return, each a plain, serialisable value with a `kind` tag:
@@ -3212,40 +3212,12 @@ toggle computes the whole run at once and shows its end; seek to either end and 
 steps, subscription, and the same preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe,
 curves, per-element series, a trajectory, a tensor, a projection, the whole tape), `SessionPanels` that draws a layout
 under one `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic
-`TapeView`. The hub (`apps/site/src/hub/`) is entries as data plus routing over these.
+`TapeView`. A page anywhere (the encyclopedia, the gallery's `animation/` recipe) composes these.
 
-**The hub.** `packages/hub/src/`:
-- `entry/entry.ts`: `HubEntry` (id, title, one-line summary, collection, tags, the method it runs, its `hyperSpace` with
-  demo defaults, the dataset collections it suits, and a layout: which record kinds to show, with which views, in which
-  slots, and optionally the dataset and knobs to start from) and `defineEntry`; `entry/run.ts`: `fitEstimator` and
-  `fitEither` (an entry's controls and run from an estimator, or from a classifier and regressor pair chosen by the
-  dataset's kind), the demo state and `runDemo`; `entry/slots.ts`: helpers for slot props made on the page (`rowColours`:
-  an embedding's rows coloured by class or by banded regression target); `entry/url.ts`: a state in the URL;
-  `entry/descriptions.ts`: a line per collection and folder of collections for their index pages.
-- `collections/<collection>/<entry>.ts`: semi-organised folders, for example `sklearn/` (mirroring scikit-learn's modules,
-  kebab-cased: `linear-model`, `isotonic`, `tree`, `ensemble`, `svm`, `neighbors`, `naive-bayes`,
-  `discriminant-analysis`, `gaussian-process`, `cluster`, `mixture`, `decomposition`, `random-projection`, `manifold`,
-  `covariance`, `semi-supervised`, `pipeline`, `model-selection`), `pyod/` (anomaly detectors outside scikit-learn,
-  after PyOD), `neural/` (by `methods/neural` group: `foundations/` perceptrons, MLPs and backpropagation, `training/` optimiser,
-  initialisation and regularisation studies, `vision/` convolutions, `sequence/` recurrence; later attention and
-  autoencoders), `probabilistic/`
-  (`density/` and the probabilistic models: `hmm/`, `topic/`, `conjugate/`, `rating/`, `latent-gaussian/`),
-  `online/` (SGD, passive-aggressive and perceptron learners with their learning curves), `active-learning/` (query
-  strategies by label budget), `rl/` (the playground), `timeseries/`, `tuning/`.
-- `catalogue.ts`: generated by `make barrels` from every `defineEntry`, so the hub app imports new entries
-  automatically.
-- `lazy/index.ts` (`mdml-hub/lazy`): generated beside the catalogue, `entryModules`: each entry module as a lazy
-  `import()` by its path under `collections/` (`sklearn/cluster/kmeans`), so a page or the worker loads the one entry
-  it shows without the whole catalogue.
-- `react/HubEntryView.tsx`: lays out an entry from its declaration (dataset picker, method controls, the declared
-  views, the trace player) and re-runs it on every change, debounced, in a Web Worker (`react/_worker.ts`, by catalogue
-  id, loading only the entry's module when the view is given it (`module`), else the catalogue when a run starts) or on
-  the main thread for entries outside the catalogue, with a size limit (`maxRows`) for slow methods. A slot
-  names a record kind and optionally a `mdml-render/react` component with props made on the page (an
-  `EpisodePlayer`'s environment and policy); a run may report progress with the records so far, which the widget
-  draws live. The only React in the package, and composition only.
-  Entries are data: `make layers` lets the hub import the engine and render's public views, but no chart library, and
-  no drawing of its own.
+**No hub.** The hub package and the site's hub section were removed on 2026-10-28: pages that explain a method are
+the encyclopedia's purview. What such a page needs is in the engine (a `Method` run as a `Session`) and in render
+(`react/session/`: the hook, the player, the settings and the panels); the gallery's `animation/` section shows the
+player on a toy method.
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as
@@ -3254,13 +3226,12 @@ modifiers.
 
 **Testing, by layer.** The core keeps the full standard (oracle goldens, property tests, `checkPrimitive`). Methods are
 tested lightly: a smoke test per method that runs it on a small dataset and checks its exposition records' shapes,
-and a golden against the familiar library only where it is cheap and matters (a lasso path, a tree's splits). The hub
-is tested lightly: the catalogue builds and every entry's demo runs within its budget.
+and a golden against the familiar library only where it is cheap and matters (a lasso path, a tree's splits).
 
 **Layering.** Methods import the core and other method areas, without cycles between areas; the core never imports methods; render
-imports engine contracts (including `lib/exposition`), never algorithms; the hub imports engine and render.
+imports engine contracts (including `lib/exposition`), never algorithms.
 
-### 5.0 First pass: scope, phases and the exposition contract (methods, with their views and hub entries)
+### 5.0 First pass: scope, phases and the exposition contract (methods, with their views)
 
 The methods are a classical-AI toolkit in the spirit of scikit-learn, with a little more on the probabilistic side, and a
 reinforcement-learning playground. They exist to drive small live demos and gallery entries, not as an encyclopedia: a
@@ -3805,7 +3776,7 @@ the share of pixels leaking across true edges, the scene in its superpixels' mea
 contour from the frame onto a shape, its overlap with the mask), `kltTracking.ts` (corners of a drifting scene through
 pyramidal Lucas-Kanade, their error against the true motion), `grabCutSegmentation.ts` (the mask as a board, its
 overlap with the polygon) and `haarBoosting.ts` (AdaBoost over Haar stumps on windows of shapes, the stump and the
-accumulated template as pictures). The hub's `vision/` area lists them.
+accumulated template as pictures).
 The classical parts of this plan now live in the core `lib/vision` (4.43, with Hough transforms in `signal/image`):
 boxes, non-maximum suppression, anchors, box coding and anchor matching; contours, keypoints, descriptors and matching,
 line segments, Haar cascades and HOG detection; two-view geometry, calibration and stereo; segmentation, tracking and
@@ -4025,7 +3996,7 @@ Every trainer records how training went, so a page can play it: the parameters a
 misclassified rows highlighted; the loss and score per epoch on training and held-out rows; and where useful a hidden
 layer's representation of the rows, feature maps, filters or hidden states at the same snapshots (maps are recorded as
 playable value surfaces, their channels tiled in a mosaic). Trainers take an `onProgress` callback that reports the
-records so far, which hub pages draw live. Private plumbing: `_train.ts` (lib/nn's `fitAlgorithm` run with per-epoch
+records so far, which a page draws live. Private plumbing: `_train.ts` (lib/nn's `fitAlgorithm` run with per-epoch
 curves, snapshots and scikit-learn's stopping rules), `_nets.ts` (the task of a dataset, losses and scores, MLP builders
 with initialisation schemes, normalisation and dropout, snapshot predictors and surfaces, optimisers by name) and
 `_records.ts` (curves, representation steps, mosaics, progress).
@@ -4344,7 +4315,7 @@ DeepLIFT, Wachter, DiCE and FACE counterfactuals, linear recourse; `lib/explain/
 partial dependence and ICE, ALE, the H-statistic, functional ANOVA; `lib/learn/valuation.ts`: influence functions,
 TracIn, data Shapley, k-NN Shapley; `lib/fairness/group-metrics.ts`: group rates, demographic parity, equal opportunity,
 equalised odds, predictive parity, disparate impact, calibration by group). These areas turn them into methods over
-any fitted estimator, each returning exposition records that views draw and the hub and gallery show; process shown
+any fitted estimator, each returning exposition records that views draw and pages show; process shown
 over time where there is one (sampling SHAP converging, mitigation trading accuracy for parity, conformal coverage
 as data arrive).
 
@@ -4452,10 +4423,10 @@ each with the same records and views.
 Datasets: `lib/datasets` gains tabular datasets with protected attributes (a credit or income-like generator with a
 controllable dependence on the attribute, and vendored public ones where licences allow) for audits and mitigation.
 
-Where they are shown: these are model demonstrations, so they live in the hub (collections `explainability/`,
-`fairness/`, `trust/`: SHAP on fitted models, counterfactuals for a credit model, audits with per-group thresholds,
-mitigation trading accuracy for parity, conformal coverage). The gallery's exposition section keeps one small recipe
-per new view kind on simple data, showing what the view can draw.
+Where they are shown: these are model demonstrations, so their pages are the encyclopedia's (SHAP on fitted models,
+counterfactuals for a credit model, audits with per-group thresholds, mitigation trading accuracy for parity, conformal
+coverage). The gallery's exposition section keeps one small recipe per new view kind on simple data, showing what the
+view can draw.
 
 Round two adds the records and views the completed domains need: perturbation and occlusion maps over images and text
 (value grids and token strips), layer and neuron attributions, concept (TCAV) scores with significance, rule and
@@ -4470,16 +4441,11 @@ Built in round one. Records built: `groupReport` (`lib/exposition/fairness.ts`, 
 `GroupReportView` (with per-group `ContingencyTable`s and the disparities), `GroupSweepView`, `CalibrationView`,
 `ConformalView`.
 
-Hub: collections `explainability/`, `trust/` (calibration, conformal intervals, sets and streams, uncertainty, shift,
-robustness, model card), `fairness/` (audit, threshold optimiser, exponentiated gradient, reweighing,
-disparate-impact remover, frontier, impossibility; round two: intersectional audit, bias in data).
-
 Round two built so far: the shared threshold layer (`thresholdSweep` record, `ThresholdExplorer`, section 6), group
 report intervals and warnings, `subgroupReport` and `dataBias` records with their views, gallery recipes
 `exposition/43-subgroup-report` and `44-data-bias`, and the `paretoFront` record (view `paretoFrontView`, React
-`ParetoFrontView`). Round two's new methods have smoke tests but no hub entries (the hub and gallery are paused).
-TODO (parked by the user): move the gallery's model-heavy `fairness/` and `trust/` recipes to hub entries, keeping as
-small exposition recipes only the views not otherwise shown (conformal sets and the online stream). Gallery: the exposition section gains a recipe per new
+`ParetoFrontView`). Round two's new methods have smoke tests; their pages are the encyclopedia's. Gallery: the
+exposition section gains a recipe per new
 view, driven by real methods on small data, with live controls (`exposition/40-group-report`: per-group thresholds
 dragged on each group's scores); the `fairness/` section holds the mitigation recipes (threshold optimiser, exponentiated
 gradient, reweighing and repair, the frontier, the impossibility); `exposition/41-reliability-diagram` and
@@ -4787,13 +4753,12 @@ Turns the source into documentation data, runs examples and links functions to c
 
 ## 8. The site, `apps/site/`
 
-One private Vite and React 19 app, served by `make dev` (http://localhost:5300) and built by `make site`, with three
-sections on one shell, in priority order: the gallery shows off mdml-render, the hub shows off mdml-hub, and
-the docs document the engine. It consumes the packages exactly as an outside project does. aifn-engine's
+One private Vite and React 19 app, served by `make dev` (http://localhost:5300) and built by `make site`, with two
+sections on one shell: the gallery shows off mdml-render and the docs document the engine. It consumes the packages exactly as an outside project does. aifn-engine's
 `examples/` app is the template: its shell, recipe registry, live-example pages, Markdown and docstring-driven docs
 pages are recycled rather than reinvented.
 
-`src/shell/`: the top bar with the three sections, a dark and light toggle at the top right (dark by default,
+`src/shell/`: the top bar with the two sections, a dark and light toggle at the top right (dark by default,
 remembered, set before first paint; no system-preference detection),
 theme tokens from `mdml-render/theme`, Tailwind CSS, a dependency-free path router (`usePath`, `navigate`,
 `Link`), the contents sidebar (`TocSidebar`: any tree of `TocNode`s, a filter, folders closed but for the way to
@@ -4814,28 +4779,11 @@ failing example to itself).
   (maps, mazes, the ray-cast view), three-d, evaluation (contingency tables, ROC, precision-recall and PR-gain,
   reliability, confusion matrices), hierarchies and flows (treemaps, sunbursts, Sankey), time (calendars, candles),
   parts of a whole (pies, funnels, gauges). Every figure has one frame (expand, export) and a live control. Toy data
-  only, no model training: model demos belong to the hub.
+  only, no model training: model demonstrations are the encyclopedia's.
 
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,
-  `fairness/` and `trust/` sections and the RL episodes) moved to the hub as standalone pages, and `moved.ts` sends
-  their old paths to the new ones.
-
-`src/hub/` (generated from `mdml-hub`'s catalogue, plus standalone pages)
-- Pages: collections and tags, a collection, an entry through `HubEntryView` (dataset picker, method controls, its
-  views, its trace, its source). Adding a `defineEntry` adds its page.
-- `pages/<collection>/NN-name.tsx` (`standalone.ts`): one-off live demos in the recipe format, listed in their
-  collections beside the catalogue's entries; code of their own, not necessarily a method. Loaded as the gallery's
-  recipes are: metadata with the hub, code with the page.
-- The index pages and contents come from the hub index, `virtual:mdml-hub/index` (`plugins/hub-index.ts`, read in a
-  child Node process by `plugins/hub-index-data.ts` and read again after an edit to the hub's source): each entry's
-  card and header (title, summary, collection, tags, method links) with its module, and the collection descriptions.
-  An entry's page shows its header at once and loads its widget lazily (`live.tsx`: the entry's module through
-  `mdml-hub/lazy`, `HubEntryView`, the state in the URL), so no page imports the whole catalogue.
-- TODO (consolidate when the hub is rethought around small, particular tasks): pages that duplicate catalogue entries,
-  suffixed `-demo` (explainability counterfactuals, prototypes, rules, TCAV, explanation quality; fairness exponentiated
-  gradient, frontier, impossibility, data bias; trust conformal sets, online conformal, uncertainty, shift, robustness,
-  model card), and the other moved pages that overlap entries (feature importances, tree SHAP views, threshold
-  optimiser, reweighing and repair).
+  `fairness/` and `trust/` sections and the RL episodes) moved to the hub, which was removed on 2026-10-28. The
+  `animation/` section shows the session player on a toy method.
 
 `src/docs/` (generated from `mdml-meta`'s catalogue of the engine's TSDoc)
 - Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
@@ -4862,7 +4810,7 @@ failing example to itself).
   background process (debounced, low priority) while still serving the previous version, then sends
   `mdml-docs:update` and open pages fetch the new index. In a build it copies the files into `dist/docs-data/`.
 - Each section's code loads when the section is first visited (`React.lazy` in `main.tsx`), so the docs load none
-  of the gallery's recipes or the hub's collections; the first page's section loads before the first render, so it
+  of the gallery's recipes; the first page's section loads before the first render, so it
   appears without a Suspense fallback (which React shows for at least 300 ms).
 
 ## 9. Python oracle, `oracle/`

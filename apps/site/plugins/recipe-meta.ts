@@ -1,5 +1,5 @@
 /**
- * Recipe metadata without the recipe: a module id ending in `?recipe` (a gallery recipe or a hub standalone page)
+ * Recipe metadata without the recipe: a module id ending in `?recipe` (a gallery recipe)
  * loads as only its `export const recipe = { ... }` literal, so the index pages and the contents can list every recipe
  * without importing any recipe's code. The registries glob the files with this query eagerly and import the code itself
  * lazily, when a page is opened.

@@ -1,7 +1,7 @@
 # Methods: what they are for, the log contract, and eager against live
 
-A design for the methods layer on its own terms. Nothing depends on methods except the hub, and the hub is secondary,
-so methods are designed as the complete, self-sufficient unit: what a person reaches for to _do_ something with the
+A design for the methods layer on its own terms. Nothing depends on methods except the pages that show them (the
+encyclopedia's, since the hub was removed on 2026-10-28), so methods are designed as the complete, self-sufficient unit: what a person reaches for to _do_ something with the
 engine and to _see_ how it was done. The current state of the code is in `strategy.md` section 1; this document does
 not start from it.
 
@@ -58,7 +58,7 @@ Elucidation is paid for only by whoever subscribes to it.
   session(method, { config, seed, mode, budget, logs }): Session<S>
   ```
 
-  A session is the thing the hub was trying to be, and belongs in the engine so a test, a notebook or any page can
+  A session is the thing the old hub was trying to be, and belongs in the engine so a test, a notebook or any page can
   hold one.
 
 ## 2. The elucidation contract
@@ -334,16 +334,16 @@ training in another). Live is the default mode. Layouts are data, like entries, 
 any page that holds a session.
 
 The panel vocabulary and everything that runs a session in a page live in `mdml-render` (`react/session/`): the hook
-that runs a method live, the player, the settings, the layout type and the panels. A page anywhere (the hub, a notebook,
-someone else's app) composes them; the hub's own code is the list of entries and the routing. The panels share one
+that runs a method live, the player, the settings, the layout type and the panels. A page anywhere (the encyclopedia, a notebook,
+someone else's app) composes them. The panels share one
 **step cursor**: the viewed step is a single value, panels of a step (rows, a probe, a tensor, a trajectory) read it,
 panels of the tape (curves, per-element series) move it when clicked, and a custom panel reads it through a context
 with no wiring. Scrubbing is opt-in: only a chart whose x axis is the step (or a per-step position such as time)
 asks to move the cursor.
 
 A method need not run on data. A process, an equation, a sampler or a search is a `Method` of nothing but its
-configuration, and a hub entry can hold one directly (`method`) in place of an estimator with its datasets; the host
-then shows its knobs and the session controls and nothing about data. Two things such a method must do for the
+configuration, and a page can hold one directly in place of an estimator with its datasets, showing its knobs and
+the session controls and nothing about data. Two things such a method must do for the
 panels to work: declare `serialise` and `deserialise` on its algorithm (probes at a step seek from checkpoints, and
 only serialisable states are checkpointed), and keep in full the tensor paths it wants drawn element by element
 (`Log({ detail: 'full' })` in its `defaults`; `all` keeps summaries).
@@ -375,7 +375,7 @@ only serialisable states are checkpointed), and keep in full the tensor paths it
 5. One trainer for the torch-like family with `trainerContract`, manual optimisation and named hooks; neural and
    generative methods become specs.
 6. Projections for the step-like records that the generic views cannot cover, replacing side histories.
-7. The hub reads sessions instead of records. Last, because it is secondary.
+7. Pages read sessions instead of records (the hub did, until it was removed on 2026-10-28).
 
 Not needed: more entries or pages, a new record system, render changes beyond the clickable curve and the
 path-to-view defaults, filling the empty method areas before the standard exists.
