@@ -14,6 +14,7 @@ import { choleskyJitter, pinv, solve } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, permutation, randint } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toArray, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import type { TreeModel } from '../trees/tree.ts'
 
 /** A cooperative game: the value of each coalition (a membership mask over the players). */
 export type CoalitionValue = (coalition: readonly boolean[]) => number
@@ -352,54 +353,7 @@ export function samplingShapley(
   return { values, standardErrors }
 }
 
-/**
- * A binary decision tree as arrays (sklearn's `tree_`): node i splits on `feature[i]` at `threshold[i]` (going left
- * when x <= threshold), leaves have `childrenLeft[i] = -1`; `value[i]` is the node's prediction and `cover[i]` its
- * (weighted) number of training samples.
- */
-export interface TreeModel {
-  readonly childrenLeft: readonly number[]
-  readonly childrenRight: readonly number[]
-  readonly feature: readonly number[]
-  readonly threshold: readonly number[]
-  readonly value: readonly number[]
-  readonly cover: readonly number[]
-}
-
-/**
- * The prediction of a tree for each row.
- *
- * @param tree - The tree.
- * @param x - Rows `[n, d]`.
- * @returns Predictions `[n]`.
- * @example
- * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { toFlat } from 'mdml-engine/tensor'
- * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
- * toFlat(explain.treePredict(stump, [[0], [1]])) // => [0, 1]
- * ```
- */
-export function treePredict(tree: TreeModel, x: TensorLike): Tensor {
-  const m = matrixView(x, 'treePredict')
-  return fromStorage(
-    Float64Array.from({ length: m.n }, (_, i) => tree.value[leafOf(tree, m, i)] ?? 0),
-    [m.n],
-    'float64',
-  )
-}
-
-function leafOf(tree: TreeModel, m: MatrixView, i: number): number {
-  let node = 0
-  for (let guard = 0; (tree.childrenLeft[node] ?? -1) >= 0 && guard < tree.value.length; guard++) {
-    const f = tree.feature[node] ?? 0
-    node =
-      (m.data[i * m.d + f] ?? 0) <= (tree.threshold[node] ?? 0)
-        ? (tree.childrenLeft[node] ?? 0)
-        : (tree.childrenRight[node] ?? 0)
-  }
-  return node
-}
+export { type TreeModel, treePredict } from '../trees/tree.ts'
 
 interface PathElement {
   d: number

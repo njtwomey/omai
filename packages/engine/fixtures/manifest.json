@@ -4669,6 +4669,14 @@
       "cases": 20
     },
     {
+      "fixture": "trees/grow.json",
+      "source": "oracle/cases/trees/grow.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "tune/bayesian.json",
       "source": "oracle/cases/tune/bayesian.py",
       "reference": {
