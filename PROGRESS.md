@@ -16,25 +16,25 @@ The methods port (`docs/methods_port/`), phase by phase. Maintained by hand at e
 | 3f: session UI into mdml-render, dataset-free entries, new panels (asked 2026-10-27) | done          | 2026-10-27 22:20 | 2026-10-27 23:05 | `react/session/` in render (one step cursor, `series`/`trajectory`/`tensor` panels, `band` overlay); entries may hold a plain `Method`; tracer stores nested arrays row-major |
 | 4: trainer, agent and sweep bases                                                    | not requested |                  |                  |                                                                                                                                                                               |
 | 5: procedure base and the viewer                                                     | not requested |                  |                  |                                                                                                                                                                               |
-| 6: breadth (asked 2026-10-27)                                                        | in progress   | 2026-10-27 22:05 |                  | see the table below                                                                                                                                                           |
+| 6: breadth (asked 2026-10-27)                                                        | done          | 2026-10-27 22:05 | 2026-10-28 01:35 | see the table below; 25 hub entries in 12 areas                                                                                                                               |
 
 ## 6. Breadth
 
 Piece by piece, not deep: each entry is a thin particular or a plain method over the library, a few panels, one smoke test.
 
-| piece                                                             | who          | status      | notes                                                                                                                    |
-| ----------------------------------------------------------------- | ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `lib/vision`: classical computer vision, OpenCV-shaped            | agent (Opus) | in progress | worktree `agent-afa77cd434e278c8a`; built on `signal/image`; oracle group `oracle-vision`                                |
-| Bayesian: sequential linear regression, variational mixture       | agent        | merged      | 13b65264; `lib/linear/bayesian`, `lib/mixture/variational`; entries `linear/bayesian-regression`, `mixture/bayesian-gmm` |
-| sequential: Kalman filter tracking, HMM by Baum-Welch             | agent        | merged      | e91eafe6; `lib/pgm/learning/baum-welch`, `sequences` datasets; entries `dynamics/kalman-tracking`, `sequence/hmm`        |
-| search and tuning: A\* on grids, annealing, Bayesian optimisation | agent        | merged      | c5d76f62; entries `search/grid-search` (board view since 68b2c792), `search/annealing`, `tune/bayesian-optimisation`     |
-| mixture of experts, ODE systems                                   | agent        | merged      | 589181b5; `lib/mixture/experts`, `lib/dynamics/named-systems`; entries `mixture/moe`, `dynamics/ode-systems`             |
-| probability: MCMC on a target, sampling by transformation         | me           | done        | 129ca63d, 0334051e; entries `sampling/mcmc`, `probability/transform-sampling` (the 2-D change of variables was replaced) |
-| linear algebra: power and QR iteration                            | me           | done        | 1651b6ba; entries `linalg/power-iteration`, `linalg/qr-iteration`                                                        |
-| stochastic processes: diffusion paths                             | me           | done        | entry `stochastic/diffusion-paths`                                                                                       |
-| hub index by area, previous and next links                        | me           | done        | 68b2c792                                                                                                                 |
-| CV entries in the hub (after the library merges)                  | later        |             |                                                                                                                          |
+| piece                                                             | who          | status | notes                                                                                                                     |
+| ----------------------------------------------------------------- | ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `lib/vision`: classical computer vision, OpenCV-shaped            | agent (Opus) | merged | 44510a00 (12 commits, 35 modules, 24 fixture modules, oracle group `oracle-vision`); full gate green                      |
+| Bayesian: sequential linear regression, variational mixture       | agent        | merged | 13b65264; `lib/linear/bayesian`, `lib/mixture/variational`; entries `linear/bayesian-regression`, `mixture/bayesian-gmm`  |
+| sequential: Kalman filter tracking, HMM by Baum-Welch             | agent        | merged | e91eafe6; `lib/pgm/learning/baum-welch`, `sequences` datasets; entries `dynamics/kalman-tracking`, `sequence/hmm`         |
+| search and tuning: A\* on grids, annealing, Bayesian optimisation | agent        | merged | c5d76f62; entries `search/grid-search` (board view since 68b2c792), `search/annealing`, `tune/bayesian-optimisation`      |
+| mixture of experts, ODE systems                                   | agent        | merged | 589181b5; `lib/mixture/experts`, `lib/dynamics/named-systems`; entries `mixture/moe`, `dynamics/ode-systems`              |
+| probability: MCMC on a target, sampling by transformation         | me           | done   | 129ca63d, 0334051e; entries `sampling/mcmc`, `probability/transform-sampling` (the 2-D change of variables was replaced)  |
+| linear algebra: power and QR iteration                            | me           | done   | 1651b6ba; entries `linalg/power-iteration`, `linalg/qr-iteration`                                                         |
+| stochastic processes: diffusion paths                             | me           | done   | entry `stochastic/diffusion-paths`                                                                                        |
+| hub index by area, previous and next links                        | me           | done   | 68b2c792                                                                                                                  |
+| CV entries in the hub (after the library merges)                  | me           | done   | a3c45375 diffusion, a9e75fc2 superpixels, 00e1ffc5 active contour, 9d43307b tracking, 7408ca00 GrabCut, d3ac5d84 boosting |
 
 Lesson of the day (2026-10-27): the entries were meant to be written in main one by one, visible on :5300 as they landed; farming them out to worktree agents was not what was asked, and four agents verifying at once stalled the machine (CLAUDE.md now says agents throttle).
 
-Last updated: 2026-10-28 00:40
+Last updated: 2026-10-28 01:40

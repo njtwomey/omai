@@ -3789,9 +3789,18 @@ built from: `nn/language-model.ts`, `nn/decoding.ts`, `text`, `retrieval`, `mode
   stylometry (function-word profiles, Burrows' Delta), authorship attribution.
 - `agents.ts`: a tool-use loop contract whose steps are trace events.
 
-`vision/` (neural detection heads; parked)
+`vision/` (the classical algorithms watched; neural detection heads parked)
 oracle: torchvision.ops, torchvision.models.detection
 built from: `vision` (core, 4.43), `nn`, `losses`, `metrics`
+What exists: dataset-free methods of the session layer, each the library's traced algorithm on a synthetic scene from
+`lib/datasets` (`_scene.ts`: a geometric scene with its clean pixels, regions and corners, or one shape with its mask)
+with the picture at any step as a probe (`_picture.ts`: an image as a `decisionSurface` field with points over it):
+`peronaMalik.ts` (anisotropic diffusion, PSNR to the clean scene, the conduction map), `slicSuperpixels.ts` (labels,
+the share of pixels leaking across true edges, the scene in its superpixels' mean grey), `snakes.ts` (an active
+contour from the frame onto a shape, its overlap with the mask), `kltTracking.ts` (corners of a drifting scene through
+pyramidal Lucas-Kanade, their error against the true motion), `grabCutSegmentation.ts` (the mask as a board, its
+overlap with the polygon) and `haarBoosting.ts` (AdaBoost over Haar stumps on windows of shapes, the stump and the
+accumulated template as pictures). The hub's `vision/` area lists them.
 The classical parts of this plan now live in the core `lib/vision` (4.43, with Hough transforms in `signal/image`):
 boxes, non-maximum suppression, anchors, box coding and anchor matching; contours, keypoints, descriptors and matching,
 line segments, Haar cascades and HOG detection; two-view geometry, calibration and stereo; segmentation, tracking and
