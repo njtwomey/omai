@@ -2584,6 +2584,39 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
   cross-fitted calibrated classifiers.
+- `neighbours.ts`: `neighbourIndex` (exact k-nearest and radius search under any metric of `distances`, brute force or a KD
+  or ball tree), the k-nearest classifier and regressor and their radius twins (uniform or distance weights, an outlier
+  label), and the nearest centroid with Tibshirani's shrinkage and `shrunkenCentroidPath`; estimators on the iterative
+  base that absorb the training rows one per step (`solver/rows`), so `fittedAt(t)` is the model on the first `t` rows.
+  oracle: `learn/neighbours` against `sklearn.neighbors`.
+- `discriminant.ts`: `discriminantAnalysis` (pooled or per-class Gaussian covariances, shrinkage by a fixed intensity or
+  Ledoit-Wolf, Friedman's mix of the two, eigenvalue regularisation, priors, singular covariances by pseudo-inverse;
+  Fisher's axes as `transform` with `explainedVarianceRatio`), its presets `linearDiscriminant` and
+  `quadraticDiscriminant`, and `kernelFisherDiscriminant` (the axes in a kernel's span with a ridge on the within-class
+  scatter). Iterative base, one row per step. oracle: `learn/discriminant` against `sklearn.discriminant_analysis`.
+- `naive-bayes.ts`: `naiveBayes` (Gaussian, multinomial, Bernoulli, categorical and complement as one family whose fitted
+  parameters are sufficient statistics; `naiveBayesPartialFit` adds one weighted row, and the fit is the algorithm that
+  absorbs rows one per step logging `rows`, the prequential `accuracy` and `logLoss`), and on integer-coded features
+  `treeAugmentedNaiveBayes` (`tanAlgorithm`: Prim over the conditional mutual information, one edge per step, logging
+  `edges`, `weight` and the message `edge`) and `aode` (averaged one-dependence estimators, counted a row at a time).
+  oracle: `learn/naive_bayes` against `sklearn.naive_bayes` and, for the last two, numpy forms of their definitions.
+- `multiclass.ts`: `oneVsRest`, `oneVsOne`, `outputCode` (error-correcting output codes, random or given code book) and
+  `nestedDichotomies` (random hierarchies or one given, averaged) over any base `Estimator`; iterative base, one binary
+  problem per step (`solver/problems`), so `fittedAt(t)` is the classifier of the problems solved so far.
+  oracle: `learn/multiclass` against `sklearn.multiclass` (the codes and hierarchies from its fitted binary models).
+- `multilabel.ts`: `binaryRelevance`, `classifierChain` (order and chain method as knobs) and `labelPowerset` over a base
+  classifier, on a 0/1 label matrix. `multioutput.ts`: `multiOutputRegressor`, `multiOutputClassifier`,
+  `regressorChain` and the engines (`outputsEstimator`, `independentOutputs`, `outputChain`) the multilabel wrappers
+  share. oracle: `learn/multilabel` and `learn/multioutput` against `sklearn.multioutput` and `sklearn.multiclass`.
+- `_staged.ts` (private): the algorithm that fits one base-estimator problem per step, and readers of a fitted base.
+- `metric-learning.ts`: neighbourhood components analysis (`ncaValueAndGradient`, the objective and exact gradient;
+  `ncaAlgorithm`, L-BFGS on it logging `objective`, `gradNorm` and the map as `transform`;
+  `neighbourhoodComponentsAnalysis` with the LDA, PCA, identity, random or given start) and large margin nearest
+  neighbour (`lmnnAlgorithm`, gradient descent with the adaptive step logging `objective`, `impostors`, `step` and
+  `transform`; `largeMarginNearestNeighbour`). Transformers on the iterative base. oracle: `learn/metric_learning`
+  against `sklearn.neighbors.NeighborhoodComponentsAnalysis` (objective, gradient and fits scored by its own loss).
+- `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
+  the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
   RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
 - Explanation, inspection and data valuation are their own domain, `lib/explain/` (4.38).
@@ -3190,6 +3223,20 @@ and `beta`) and `polynomialBasis` (features scaled to `[-1, 1]`, then the librar
 factories (lasso, ridge, logistic, GLM, robust, online, LARS, isotonic) stay parked until the new methods base; the
 sequential Bayesian regression is the method `methods/linear/bayesianRegression`. Goldens of the parked factories keep
 their fixtures under `methods/linear/`.
+
+`online.ts` holds the online learners that take one example per step (iterative base, logging `solver/mistakes`):
+`perceptronAlgorithm` and `perceptron` (plain, averaged, voted and pocket-with-ratchet variants, passes in the data's
+order or a fresh random order each), `kernelPerceptronAlgorithm` and `kernelPerceptron` (the dual), and
+`passiveAggressiveAlgorithm`, `passiveAggressive` and `passiveAggressiveRegressor` (PA, PA-I, PA-II). Classifiers are
+binary; `learn`'s `oneVsRest` makes them multiclass. oracle: `linear/online` against scikit-learn's SGD with the
+perceptron loss (plain and averaged) and the passive-aggressive learning rates, and numpy loops for the voted, pocket
+and kernel variants.
+
+`lars.ts` is least angle regression: `larsAlgorithm` (one knot per step, plain LAR or the lasso modification where a
+variable leaves when its coefficient crosses zero; logs `alpha`, `active`, the `coefficients` tensor and the message
+`event`), `larsPath` (the whole path: penalties, coefficients, entry order), `coefficientsAt` (interpolation at a
+penalty) and the `lars` estimator (the model at a penalty or active count, the path in `params.path`; `fittedAt(t)` is
+knot `t`). oracle: `linear/lars` against `sklearn.linear_model.lars_path` and `LassoLars`.
 
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates

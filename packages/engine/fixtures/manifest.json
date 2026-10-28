@@ -1208,12 +1208,28 @@
       "cases": 11
     },
     {
+      "fixture": "learn/discriminant.json",
+      "source": "oracle/cases/learn/discriminant.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 23
+    },
+    {
+      "fixture": "learn/metric_learning.json",
+      "source": "oracle/cases/learn/metric_learning.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
     },
     {
       "fixture": "learn/model_selection/criteria.json",
@@ -1247,6 +1263,46 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 28
+    },
+    {
+      "fixture": "learn/multiclass.json",
+      "source": "oracle/cases/learn/multiclass.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "learn/multilabel.json",
+      "source": "oracle/cases/learn/multilabel.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "learn/multioutput.json",
+      "source": "oracle/cases/learn/multioutput.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "learn/naive_bayes.json",
+      "source": "oracle/cases/learn/naive_bayes.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "learn/neighbours.json",
+      "source": "oracle/cases/learn/neighbours.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 33
     },
     {
       "fixture": "learn/preprocessing/encoders.json",
@@ -1304,6 +1360,22 @@
         "numpy": "2.5.4"
       },
       "cases": 6
+    },
+    {
+      "fixture": "linear/lars.json",
+      "source": "oracle/cases/linear/lars.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "linear/online.json",
+      "source": "oracle/cases/linear/online.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 14
     },
     {
       "fixture": "logic/answer-sets.json",
