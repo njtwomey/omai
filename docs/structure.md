@@ -3255,7 +3255,11 @@ configuration to the mode it names (`make` for the library algorithm, `params` f
 `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible` for the
 modes the other slots' values allow); `options/solvers.ts`: `smoothSolvers`, the solvers of a smooth objective as
 one slot (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent: the
-minimisers of `optim`, each with its own knobs, all yielding the vector reached).
+minimisers of `optim`, each with its own knobs, all yielding the vector reached); `options/table.ts`: `optionTable`,
+the same shape for options that are values (knobs, properties, `make`); `options/objectives.ts`: `regressionLosses`,
+`classificationLosses` (the `losses` functions with their knobs bound and their properties: task, convex, smooth,
+likelihood) and `penalties` (none, ridge, lasso, elastic net: strength, value, proximal operator, and smooth, has a
+prox, sparse).
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as
