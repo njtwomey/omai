@@ -7,6 +7,7 @@
  * space.
  */
 
+import type { Json } from '../../../lib/base/index.ts'
 import {
   bfgsAlgorithm,
   type ConjugateGradientBeta,
@@ -19,7 +20,18 @@ import {
   type Objective,
   type Parameters,
 } from '../../../lib/optim/index.ts'
-import { bool, choice, dict, int, real } from '../../../lib/space/index.ts'
+import type { Key } from '../../../lib/random/index.ts'
+import { bool, choice, dict, int, real, type SpaceValue } from '../../../lib/space/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  Log,
+  type LogSpec,
+  type StepContext,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../../../lib/trace/index.ts'
 import { type Mode, type ModeTable, modes } from '../modes.ts'
 
 /** A smooth problem: a differentiable objective of a parameter vector (or tree) and where to start. */
@@ -144,3 +156,62 @@ export const smoothSolvers: ModeTable<SmoothProblem, VectorParams> = modes(
   { gradientDescent, conjugateGradient, newton, bfgs, lbfgs, coordinateDescent },
   { label: 'solver', description: 'how the objective is minimised' },
 )
+
+/** The channels every smooth solver's state yields, whichever solver it is. */
+interface Reached {
+  readonly x: Float64Array
+  readonly value: number
+  readonly grad: Float64Array
+  readonly step: number
+}
+
+/**
+ * A smooth solver as a logged algorithm: the library's minimiser for the configured solver, wrapped so each step
+ * logs the objective, the gradient's norm and the step length (`solver/objective`, `solver/gradNorm`, `solver/step`),
+ * lets the method log what is its own from the iterate (`extra`), and serialises its state for seeking.
+ *
+ * @param problem - The objective and the start.
+ * @param config - A value of `smoothSolvers.space` (the tag and the chosen solver's knobs).
+ * @param key - The run's key.
+ * @param extra - Called each step with the iterate, to log what the method adds.
+ * @returns The algorithm.
+ */
+export function loggedSolver(
+  problem: SmoothProblem,
+  config: SpaceValue,
+  key: Key,
+  extra?: (x: Float64Array, ctx: StepContext) => void,
+): Algorithm<unknown> {
+  const inner = smoothSolvers.make(problem, config, key)
+  return {
+    name: inner.name,
+    config: config as Json,
+    init: (k) => inner.init(k),
+    step: (state, ctx) => {
+      const next = inner.step(state, ctx)
+      const r = next as Reached
+      ctx.log('solver/objective', r.value)
+      ctx.log('solver/gradNorm', Math.hypot(...r.grad))
+      ctx.log('solver/step', r.step)
+      extra?.(r.x, ctx)
+      return next
+    },
+    ...(inner.done === undefined ? {} : { done: inner.done }),
+    serialise: (s) => stateToJson(s) as Json,
+    deserialise: (j) => stateFromJson(j),
+  }
+}
+
+/** The paths `loggedSolver` logs, for a method's contract. */
+export const solverContract: Contract<unknown> = {
+  'solver/objective': scalar({ description: 'the objective at the iterate' }),
+  'solver/gradNorm': scalar({ description: 'the norm of the gradient at the iterate' }),
+  'solver/step': scalar({ description: 'the length of the last step (or trust radius, as the solver calls it)' }),
+}
+
+/** What `loggedSolver`'s paths keep by default. */
+export const solverDefaults: Readonly<Record<string, LogSpec>> = {
+  'solver/objective': Log(),
+  'solver/gradNorm': Log(),
+  'solver/step': Log(),
+}
