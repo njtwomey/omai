@@ -44,6 +44,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/dynamics/filtering': () => import('mdml-engine/dynamics/filtering'),
   'mdml-engine/dynamics/ode': () => import('mdml-engine/dynamics/ode'),
   'mdml-engine/dynamics/pde': () => import('mdml-engine/dynamics/pde'),
+  'mdml-engine/ensembles': () => import('mdml-engine/ensembles'),
   'mdml-engine/environments': () => import('mdml-engine/environments'),
   'mdml-engine/explain': () => import('mdml-engine/explain'),
   'mdml-engine/exposition': () => import('mdml-engine/exposition'),

@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 44 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 46 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -410,6 +410,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
 | `vision`      | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                           |
+| `trees`       | decision trees: the tree structure, split criteria, the stepped grower, pruning, ID3, C4.5 and CHAID, the Hoeffding tree, CART estimators                                                          |
+| `ensembles`   | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking                                              |
 
 ### 4.1 `base/`
 
@@ -2875,7 +2877,7 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Surrogates and rules (`surrogates.ts`, `rules.ts`): global surrogate trees and fidelity, anchors (precision and
   coverage), RuleFit-style rule ensembles, rule lists and Boolean rules (BRCG-style), linearity measure.
   Built: `treeRules`, `ruleMask`, `ruleFit` and `ruleFitPredict` (lasso from `optim`), `linearityMeasure` in
-  `rules.ts`; `anchors`, `surrogateTree`, `fidelity`, `globalSurrogate`, `lime`, `limeMasked` in `surrogates.ts`.
+  `rules.ts`; `anchors`, `surrogateTree` (the grower of `trees`), `fidelity`, `globalSurrogate`, `lime`, `limeMasked` in `surrogates.ts`.
   TODO: rule lists and Boolean rules (BRCG).
 - Example-based (`examples.ts`): prototypes and criticisms (MMD-critic, ProtoSelect), k-nearest explanations, gradient
   similarity explanations, trust scores.
@@ -3177,6 +3179,66 @@ diagonal of pairwise, derivative conformance of every continuous distance.
 built from: `numerics/geometry`, `numerics/linalg`, `space`, `tensor`. Sequence and string distances (DTW in
 `signal/similarity.ts`, Levenshtein and set Jaccard in `text/similarity.ts`, chi-square in `kernels/structured.ts`)
 keep their homes, as do the `Kernel` objects of `kernels/` (`pairwiseKernels` by scikit-learn's names).
+
+### 4.45 `trees/`: decision trees (scikit-learn tree, river)
+
+A fitted tree is plain arrays in the layout of scikit-learn's `tree_` (`Tree`), with categorical subset splits and a
+missing-value direction per split; `tree.ts` holds prediction, `applyTree`, `decisionPath`, `nodeRegions`, impurity
+importances, `treeToStructure`, `exportText`, and `TreeModel` and `treePredict` (the scalar-valued view tree SHAP and rule
+extraction read; moved from `explain/shapley.ts`, which re-exports them). `criteria.ts` holds Gini, entropy (bits; the same
+as log loss), squared error, Friedman's improvement, absolute error, Poisson deviance and C4.5's gain ratio, and
+`searchSplits`: every threshold between consecutive values (or one random threshold, for extra trees), the best subset of
+the codes of a categorical feature, missing values sent to the better side, sample weights and leaf-size limits, with
+every candidate evaluated and recorded. `grow.ts` is the grower as an `Algorithm`, one node decided per step, depth-first
+(ids in preorder, as scikit-learn), breadth-first or best-first under a leaf limit, with depth, samples, minimum impurity
+decrease and a per-split feature subset (`maxFeatures`, for forests); a state, even a partial one, gives a `Tree`
+(`treeOfState`) and a `TreeRecord` with every node's candidates (`treeRecordOf`); `growTree` runs it. `prune.ts` has
+minimal cost-complexity pruning as an algorithm (the weakest link per step; `costComplexityPath` is the `PruningPath`
+record, `pruneTree` stops at an alpha) and reduced-error pruning on held-out rows (also an algorithm).
+`classic.ts` is ID3, C4.5 (gain ratio, continuous thresholds, pessimistic error pruning) and CHAID (chi-square merging of
+categories), growing multiway `ClassicTree`s one node per step; their records list each node's `branches`.
+`hoeffding.ts` is the Hoeffding tree (`hoeffdingTreeAlgorithm`, one stream example per step, Gaussian and categorical leaf
+statistics, the Hoeffding bound, prequential accuracy). `decision-tree.ts` holds the estimators on the iterative base,
+`decisionTreeClassifier`, `decisionTreeRegressor`, `extraTreeClassifier` and `extraTreeRegressor`: `.method(data)` and
+`.session(data)` beside `.fit`, `fittedAt(t)` the tree after t nodes, logging `tree/split`, `tree/candidates`,
+`tree/leaves`, `tree/depth`, `tree/impurity` and `eval/accuracy` (or `eval/r2`), probes `model/structure` and
+`model/importances`. `surrogateTree` in `explain` is the depth-first grower on a model's predictions.
+
+oracle: scikit-learn trees (`trees/grow` fixture): the arrays of the grown tree (features, thresholds, children,
+impurities, counts, values, missing-value directions), the pruning path and the pruned tree, importances, for Gini and
+entropy, squared, absolute and Poisson error, best-first growth with a minimum decrease, sample weights, and missing
+values. TODO: the Hoeffding tree has no reference (river is not an oracle group); its tests are behavioural.
+built from: `learn`, `metrics`, `stats/tests` (CHAID), `exposition`, `scene`
+
+### 4.46 `ensembles/`: ensembles of learners (scikit-learn ensemble, LightGBM)
+
+Every ensemble is a stepped algorithm on the iterative base, one member or stage per step. `averaging.ts` is the core of
+bagging and forests: members on bootstrap samples (or samples without replacement), the running sum of outputs, the
+out-of-bag sum and the training and out-of-bag scores after each member; logs `ensemble/member`, `ensemble/oobError`,
+`ensemble/memberError`, `ensemble/bootstrap`, `ensemble/trainScore`, `ensemble/oobScore`. `bagging.ts` takes any
+estimator of the library as the member (random subspaces and pasting as modes). `forest.ts` has random forests and extra
+trees (`ensemble/importances`, probes `model/proximity` and `model/importances`) and the random trees embedding.
+`adaboost.ts` is AdaBoost over any base estimator (SAMME, SAMME.R, and R2 for regression) with the weighted stump search
+`bestStump` that `vision/haar.ts` shares; logs `boost/error`, `boost/alpha`, `boost/trainingError`, `boost/stumps`, probes
+`boost/weights`, `boost/stump`, `model/margins`. `gradient-boosting.ts` (machinery in `_boosting.ts`) has the squared,
+absolute, Huber, quantile and Poisson losses, the logistic and exponential losses, Friedman's leaf line search or Newton
+leaves with an L2 penalty, subsampling and early stopping on a held-out loss (event `boost/stopped`); logs `boost/round`,
+`boost/trainLoss`, `boost/residuals`, `boost/leafValues`, `eval/loss`, probe `model/stagedPrediction`.
+`histogram-boosting.ts` plugs a histogram grower into the same loop: features binned as scikit-learn (`binFeatures`),
+leaf-wise growth, the subtraction trick, missing values to the better side (`boost/bins`). `cyclic.ts` is the cyclic
+booster of explainable boosting machines (moved from `explain/glassbox.ts`, which re-exports it): `cyclicBoosting` is an
+algorithm with one cycle over the features per step, `explainableBoosting` runs it, and the estimators
+`explainableBoostingRegressor` and `explainableBoostingClassifier` have the probe `model/shapeFunctions`.
+`stacking.ts` has voting (hard, soft, weighted) and stacking (the final estimator on out-of-fold predictions), one base
+estimator per step, logging `ensemble/baseScores`, `ensemble/weights`, `ensemble/diversity`. The fit of each records the
+stages (`ensemble/stages`, an `EnsembleStages` projection of the tape).
+
+oracle: scikit-learn `ensemble`: AdaBoost SAMME (weights, errors, decision function, stage by stage), gradient boosting
+(squared, Huber and quantile losses; binary and multinomial log loss; exponential loss; every stage) and histogram
+gradient boosting (squared error, L2, missing values, Poisson, coarse bins, binary and multinomial). TODO: the absolute
+error loss (tied splits), SAMME.R and R2 (scikit-learn dropped the first and resamples the second), categorical features
+in histogram boosting, LambdaMART.
+built from: `trees`, `learn`, `metrics`, `exposition`
 
 ## 5. Methods, exposition records and views
 
@@ -5005,8 +5067,8 @@ library for the same computation. They do not set a higher bar than that library
 | `base`, estimator API                                       | `lib/learn/estimator.ts`                              |
 | `linear_model`                                              | `methods/linear/`                                     |
 | `svm`                                                       | `methods/svm/`, `lib/optim/smo.ts`                    |
-| `tree`                                                      | `methods/trees/`                                      |
-| `ensemble`                                                  | `methods/ensemble/`                                   |
+| `tree`                                                      | `lib/trees/`                                          |
+| `ensemble`                                                  | `lib/ensembles/`                                      |
 | `neighbors`                                                 | `methods/neighbours/`, `lib/numerics/spatial/`        |
 | `naive_bayes`, `discriminant_analysis`                      | `methods/naive-bayes/`, `methods/discriminant/`       |
 | `gaussian_process`                                          | `methods/gp/`, `lib/kernels/`                         |

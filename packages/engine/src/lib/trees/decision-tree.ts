@@ -200,6 +200,7 @@ function treeEstimator(name: string, classifier: boolean, defaults: DecisionTree
       }
     },
     records: (state, learn, h): readonly Exposition[] => {
+      if (h.record === 0) return []
       const { info } = prepare(learn)
       const names = featureNamesOf(learn, info.nFeatures)
       const classNames = info.task === 'classification' ? classNamesOf(learn, info.classes) : undefined
