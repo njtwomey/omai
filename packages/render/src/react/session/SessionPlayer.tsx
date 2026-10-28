@@ -1,8 +1,10 @@
 /**
- * The player over a live session: the consumer of the tape. Play moves the cursor through the recorded steps at the
- * chosen rate while the producer computes ahead in the background, and waits at the head when the computation is
- * slower than the rate; the eager toggle computes the whole run at once and shows its end. Seek to either end, step
- * one, a rate menu and a status line; a change held while live is applied when play is pressed.
+ * The player over a live session, or over a comparison of several: the consumer of the tape. Play moves the cursor
+ * through the recorded steps at the chosen rate while the producer computes ahead in the background, and waits at the
+ * head when the computation is slower than the rate; the eager toggle computes the whole run at once and shows its
+ * end. Seek to either end, step one, a rate menu and a status line; a change held while live is applied when play is
+ * pressed; a reset of the page's controls when the page offers one. Over a comparison every verb acts on all the
+ * variants, the cursor is shared and the stamp shows the head of the slowest.
  */
 
 import type { Config } from 'mdml-engine/trace'
@@ -10,42 +12,50 @@ import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { Player } from '../Player.tsx'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
 import { setSessionPreferences, useSessionPreferences } from './preferences.ts'
-import type { LiveSession } from './useSession.ts'
+import { type LiveSession, type LiveSessions, variantsOf } from './useSession.ts'
 
 /** Steps per second the player's menu offers. */
 const RATES = [1, 2, 5, 10, 30, 60, 120, 300, 1000]
 
 /**
- * The player and status line of a session.
+ * The player and status line of a session, or of a comparison of several.
  *
- * @param props - The session, the scrubbed step (`null` follows the head) and its setter.
+ * @param props - The session or comparison, the scrubbed step (`null` follows the head) and its setter, and the reset
+ *   of the page's controls when it has any.
  * @returns The player.
  */
 export function SessionPlayer<S, C extends Config>(props: {
-  readonly live: LiveSession<S, C>
+  readonly live: LiveSession<S, C> | LiveSessions<S, C>
   readonly at: number | null
   readonly onScrub: (t: number | null) => void
+  /**
+   * Reset the page's controls (the method's knobs, the session settings) to their defaults: a button first in the
+   * group when given; pressing it also pauses and scrubs to the start.
+   */
+  readonly onReset?: () => void
 }): ReactElement {
   const { live, at, onScrub } = props
-  const s = live.session
+  const variants = variantsOf(live)
+  // Every variant is remade at once, so the first one's session stands for the remake.
+  const first = variants[0]?.live.session
   const eager = useSessionPreferences().mode === 'eager'
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
-  const run = useMemo(() => s.run(), [s, live.version])
   const head = live.head
   const viewed = at === null ? head : Math.min(at, head)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
   const counts = useMemo(() => {
     const c = new Map<string, number>()
-    for (const e of run.events) c.set(e.type, (c.get(e.type) ?? 0) + 1)
-    return [...c].map(([k, v]) => `${v} ${k}`).join(', ')
-  }, [run])
+    for (const e of first?.run().events ?? []) c.set(e.type, (c.get(e.type) ?? 0) + 1)
+    const text = [...c].map(([k, v]) => `${v} ${k}`).join(', ')
+    return variants.length > 1 && text !== '' ? `${text} × ${variants.length} variants` : text
+  }, [first, live.version, variants.length])
   const [fps, setFps] = useState(60)
   // The cursor ticks through the tape at `fps` steps per second: it waits at the head of an unfinished run for the
   // producer, and stops at the end of a finished one.
   const [ticking, setTicking] = useState(false)
   const cursor = useRef({ viewed, head, done: live.done })
   cursor.current = { viewed, head, done: live.done }
-  const handlers = useRef({ onScrub })
-  handlers.current = { onScrub }
+  const handlers = useRef({ onScrub, onReset: props.onReset })
+  handlers.current = { onScrub, onReset: props.onReset }
   useTicker(
     ticking,
     fps,
@@ -63,7 +73,7 @@ export function SessionPlayer<S, C extends Config>(props: {
   // A remade session plays from its first step when play asked for it, and otherwise stands at its end (eager) or at
   // its start (live, nothing computed yet).
   const playOnRemake = useRef(false)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: once per session
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per remake
   useEffect(() => {
     if (playOnRemake.current) {
       playOnRemake.current = false
@@ -73,7 +83,7 @@ export function SessionPlayer<S, C extends Config>(props: {
       setTicking(false)
       handlers.current.onScrub(null)
     }
-  }, [s])
+  }, [first])
   const following = at === null && live.computing && !live.done
   const playing = ticking || following
   const play = (): void => {
@@ -131,11 +141,26 @@ export function SessionPlayer<S, C extends Config>(props: {
       setTicking(false)
       onScrub(0)
     },
+    ...(props.onReset === undefined
+      ? {}
+      : {
+          resetForm: () => {
+            setTicking(false)
+            onScrub(0)
+            handlers.current.onReset?.()
+          },
+        }),
+  }
+  // The status once every variant has ended: the one status they share, or each variant's by its label.
+  const ended = (): string => {
+    const statuses = variants.map((v) => v.live.session.status)
+    const distinct = [...new Set(statuses)]
+    return distinct.length === 1 ? `${distinct[0]}` : variants.map((v, i) => `${v.label} ${statuses[i]}`).join(', ')
   }
   const status = live.held
     ? ' · changes held: press play'
-    : s.status !== undefined
-      ? ` · ${s.status}`
+    : live.done
+      ? ` · ${ended()}`
       : live.computing
         ? viewed < head
           ? ` · computed to ${head}`

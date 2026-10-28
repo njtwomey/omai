@@ -34,6 +34,8 @@ export interface PlaybackController {
   readonly eager?: boolean
   /** Switch eager on or off; absent when there is nothing to compute (precomputed frames), and so no button. */
   readonly setEager?: (on: boolean) => void
+  /** Reset the page's controls to their defaults; absent when the page has none, and so no button. */
+  readonly resetForm?: () => void
 }
 
 /**

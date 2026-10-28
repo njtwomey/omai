@@ -1,7 +1,9 @@
 /**
  * The panels of a session layout: curves and per-element series of the tape (which scrub the shared step cursor on
- * click), the rows, a probed derived path, a tensor as a heatmap and trajectories in the plane at the viewed step, a
- * projection of the tape so far, and the whole tape; laid out in a grid under one step cursor.
+ * click), the trials of a sweep, the rows, a probed derived path, a tensor as a heatmap and trajectories in the plane
+ * at the viewed step, a projection of the tape so far, and the whole tape; laid out in a grid under one step cursor.
+ * Over a comparison, curves and sweeps overlay the variants (one colour each, the step marker shared) and every other
+ * panel is drawn once per variant, side by side, titled with the variant's label.
  */
 
 import { isExposition } from 'mdml-engine/exposition'
@@ -13,31 +15,45 @@ import { contours } from '../../charts/fields.ts'
 import { lines } from '../../charts/lines.ts'
 import { heatmapChart } from '../../charts/matrices.ts'
 import { cartesian, type Layer } from '../../charts/plot.ts'
-import { points } from '../../charts/points.ts'
-import { metricCurves } from '../../trace/metrics.ts'
+import { type PointSet, points } from '../../charts/points.ts'
+import { categoricalColour } from '../../theme/palettes.ts'
 import { parameterTrajectories, stepPositions } from '../../trace/tensors.ts'
 import { Chart } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
+import { leaf, overlayCurves, sweepTrials } from './compare.ts'
 import { StepCursorProvider } from './cursor.tsx'
 import type { Panel } from './layout.ts'
 import { FIG, Note, RowsPanel, useProbe } from './RowsPanel.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import { TapeChannels } from './TapeView.tsx'
-import type { LiveSession } from './useSession.ts'
+import { type LiveSession, type LiveSessions, type LiveVariant, variantsOf } from './useSession.ts'
 
-/** What a panel needs of the page: a name for its files, the session, the scrubbed step and the training data (if any). */
+/**
+ * What a panel needs of the page: a name for its files, the session (or a comparison of several), the scrubbed step
+ * and the training data (if any).
+ */
 export interface PanelContext {
   /** The name exported files start with (an entry's id, say). */
   readonly id: string
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
-  readonly live: LiveSession<any, any>
+  readonly live: LiveSession<any, any> | LiveSessions<any, any>
   readonly at: number | null
   /** Sets the scrubbed step (`null` follows the head). */
   readonly onScrub?: (t: number | null) => void
   readonly x?: Tensor
   readonly y?: Tensor
+}
+
+// What a panel of one variant gets: the page's context with that variant's session and label.
+type VariantContext = Omit<PanelContext, 'live'> & {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  /** The variant's label in a comparison; absent for a session on its own. */
+  readonly label?: string
+  /** The comparison's shared head (the step every variant has reached); the variant's own without one. */
+  readonly head?: number
 }
 
 const ROWS_TITLES = {
@@ -50,38 +66,108 @@ const ROWS_TITLES = {
 } as const
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-const leaf = (path: string): string => path.split('/').at(-1) ?? path
 
 /**
- * The panels of a layout over a session, in a responsive two-column grid; nothing else is drawn. The viewed step is one
- * cursor: panels of the tape scrub it on click, panels of a step follow it, and a custom panel inside reads it with
- * `useStepCursor`.
+ * The panels of a layout over a session or a comparison, in a responsive two-column grid; nothing else is drawn. The
+ * viewed step is one cursor: panels of the tape scrub it on click, panels of a step follow it, and a custom panel
+ * inside reads it with `useStepCursor`. Over a comparison, curves and sweeps overlay the variants and every other
+ * panel takes a full row with one figure per variant.
  *
- * @param props - The session, the scrubbed step and its setter, the training data if any, and the layout.
+ * @param props - The session or comparison, the scrubbed step and its setter, the training data if any, and the
+ *   layout.
  * @returns The grid of panels.
  */
 export function SessionPanels(props: PanelContext & { readonly layout: readonly Panel[] }): ReactNode {
-  const { layout, ...ctx } = props
-  const head = ctx.live.head
+  const { layout, live, ...ctx } = props
+  const variants = variantsOf(live)
+  const single = variants.length === 1 ? variants[0] : undefined
+  const head = live.head
   const viewed = ctx.at === null ? head : Math.min(ctx.at, head)
   const cursor = useMemo(() => ({ viewed, head, scrub: ctx.onScrub ?? (() => undefined) }), [viewed, head, ctx.onScrub])
   return (
     <StepCursorProvider value={cursor}>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" data-testid="panels">
-        {layout.map((panel) => (
-          <div key={JSON.stringify(panel)} className="min-w-0">
-            <PanelView panel={panel} {...ctx} />
-          </div>
-        ))}
+        {layout.map((panel) => {
+          const key = JSON.stringify(panel)
+          if (panel.kind === 'curves' || panel.kind === 'sweep')
+            return (
+              <div key={key} className="min-w-0">
+                <TapePanel panel={panel} variants={variants} head={head} {...ctx} />
+              </div>
+            )
+          if (single !== undefined)
+            return (
+              <div key={key} className="min-w-0">
+                <PanelView panel={panel} live={single.live} {...ctx} />
+              </div>
+            )
+          return (
+            <div key={key} className="col-span-full min-w-0" data-testid="compared">
+              <div className={panel.kind === 'tape' ? 'flex flex-col gap-4' : 'flex flex-wrap gap-4'}>
+                {variants.map((v) => (
+                  <div key={v.label} className="min-w-0">
+                    <PanelView panel={panel} live={v.live} label={v.label} head={head} {...ctx} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </StepCursorProvider>
   )
 }
 
-function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
-  const { panel, id, live, at, onScrub } = props
-  const t = at === null ? live.head : Math.min(at, live.head)
+// A panel of the tape over every variant at once: curves or a sweep, overlaid.
+function TapePanel(
+  props: Omit<PanelContext, 'live'> & {
+    readonly panel: Extract<Panel, { kind: 'curves' | 'sweep' }>
+    // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+    readonly variants: readonly LiveVariant<any, any>[]
+    readonly head: number
+  },
+): ReactNode {
+  const { panel, variants, head, id, at, onScrub } = props
+  const t = at === null ? head : Math.min(at, head)
   const file = (title: string): string => `${slug(id)}-${slug(title)}`
+  if (panel.kind === 'curves') {
+    const title = panel.title ?? panel.paths.join(', ')
+    return (
+      <CurvesView
+        variants={variants}
+        head={head}
+        paths={panel.paths}
+        title={title}
+        filename={file(title)}
+        t={t}
+        {...(onScrub === undefined ? {} : { onScrub })}
+      />
+    )
+  }
+  const title =
+    panel.title ?? `${leaf(panel.path)} against ${panel.over === undefined ? 'the trial' : leaf(panel.over)}`
+  return (
+    <SweepView
+      variants={variants}
+      head={head}
+      panel={panel}
+      title={title}
+      filename={file(title)}
+      t={t}
+      {...(onScrub === undefined ? {} : { onScrub })}
+    />
+  )
+}
+
+function PanelView(
+  props: VariantContext & { readonly panel: Exclude<Panel, { kind: 'curves' | 'sweep' }> },
+): ReactNode {
+  const { panel, id, live, at, onScrub, label } = props
+  // The viewed step, never past this variant's head nor the shared one (a variant may run a few steps ahead).
+  const limit = Math.min(props.head ?? live.head, live.head)
+  const t = at === null ? limit : Math.min(at, limit)
+  const titled = (title: string): string => (label === undefined ? title : `${label} · ${title}`)
+  const file = (title: string): string => `${slug(id)}-${label === undefined ? '' : `${slug(label)}-`}${slug(title)}`
   switch (panel.kind) {
     case 'rows': {
       if (props.x === undefined) return null
@@ -89,7 +175,7 @@ function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
       return (
         <RowsPanel
           overlay={panel.overlay}
-          title={`${title} at step ${t}`}
+          title={titled(`${title} at step ${t}`)}
           filename={file(title)}
           live={live}
           t={t}
@@ -99,27 +185,14 @@ function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
       )
     }
     case 'probe':
-      return <ProbeView {...props} panel={panel} t={t} file={file} />
-    case 'curves': {
-      const title = panel.title ?? panel.paths.join(', ')
-      return (
-        <CurvesView
-          live={live}
-          paths={panel.paths}
-          title={title}
-          filename={file(title)}
-          t={t}
-          {...(onScrub === undefined ? {} : { onScrub })}
-        />
-      )
-    }
+      return <ProbeView {...props} panel={panel} t={t} file={file} titled={titled} />
     case 'series': {
       const title = panel.title ?? leaf(panel.path)
       return (
         <SeriesView
           live={live}
           panel={panel}
-          title={title}
+          title={titled(title)}
           filename={file(title)}
           t={t}
           {...(onScrub === undefined ? {} : { onScrub })}
@@ -128,11 +201,19 @@ function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
     }
     case 'trajectory': {
       const title = panel.title ?? panel.paths.map(leaf).join(', ')
-      return <TrajectoryView live={live} panel={panel} title={`${title} to step ${t}`} filename={file(title)} t={t} />
+      return (
+        <TrajectoryView
+          live={live}
+          panel={panel}
+          title={titled(`${title} to step ${t}`)}
+          filename={file(title)}
+          t={t}
+        />
+      )
     }
     case 'tensor': {
       const title = panel.title ?? leaf(panel.path)
-      return <TensorView live={live} path={panel.path} title={title} filename={file(title)} t={t} />
+      return <TensorView live={live} path={panel.path} title={titled(title)} filename={file(title)} t={t} />
     }
     case 'projection': {
       const title = panel.title ?? panel.name
@@ -141,13 +222,20 @@ function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
           live={live}
           name={panel.name}
           t={at === null ? undefined : t}
-          title={`${title} at step ${t}`}
+          title={titled(`${title} at step ${t}`)}
           filename={file(title)}
         />
       )
     }
     case 'tape':
-      return <TapeChannels live={live} at={at} {...(onScrub === undefined ? {} : { onScrub })} />
+      return label === undefined ? (
+        <TapeChannels live={live} at={at} {...(onScrub === undefined ? {} : { onScrub })} />
+      ) : (
+        <div className="flex flex-col gap-1">
+          <div className="text-sm text-muted">{label}</div>
+          <TapeChannels live={live} at={at} {...(onScrub === undefined ? {} : { onScrub })} />
+        </div>
+      )
   }
 }
 
@@ -158,9 +246,19 @@ function useRun(live: LiveSession<any, any>): Run {
   return useMemo(() => live.session.run(), [live.session, live.version])
 }
 
+// The tapes of every variant, re-read whenever they grow (they share one version and are remade together).
+// biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+function useRuns(variants: readonly LiveVariant<any, any>[]): readonly Run[] {
+  const first = variants[0]?.live.session
+  const version = variants.reduce((v, x) => Math.max(v, x.live.version), 0)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the tapes change with the version
+  return useMemo(() => variants.map((v) => v.live.session.run()), [first, version, variants.length])
+}
+
 function CurvesView(props: {
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
-  readonly live: LiveSession<any, any>
+  readonly variants: readonly LiveVariant<any, any>[]
+  readonly head: number
   readonly paths: readonly string[]
   readonly title: string
   readonly filename: string
@@ -168,20 +266,98 @@ function CurvesView(props: {
   readonly t: number
   readonly onScrub?: (t: number | null) => void
 }): ReactNode {
-  const { live, paths, t } = props
+  const { variants, paths, t } = props
   const mode = useColourMode()
-  const run = useRun(live)
+  const runs = useRuns(variants)
   const option = useMemo(() => {
-    const curves = metricCurves(run, paths, { mode })
+    const curves = overlayCurves(
+      runs.map((run, i) => ({ label: variants[i]?.label ?? '', run })),
+      paths,
+      { mode },
+    )
     return cartesian([curves, ...stepMarker(curves, t, mode)], {
       mode,
       figure: FIG,
       x: { label: 'step' },
       legend: true,
     })
-  }, [run, paths, mode, t])
-  const steps = useMemo(() => recordedSteps(run, paths), [run, paths])
-  const onInit = useScrubClick(steps, live.head, props.onScrub)
+  }, [runs, variants, paths, mode, t])
+  const steps = useMemo(
+    () => [...new Set(runs.flatMap((run) => recordedSteps(run, paths)))].sort((a, b) => a - b),
+    [runs, paths],
+  )
+  const onInit = useScrubClick(steps, props.head, props.onScrub)
+  return (
+    <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
+      <Chart figure={FIG} option={option} onInit={onInit} />
+    </FigureFrame>
+  )
+}
+
+// The trials of a sweep: the metric against the knob (or the step), one point set per variant, those after the
+// viewed step faint and the viewed one ringed; a click scrubs to the nearest trial.
+function SweepView(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly variants: readonly LiveVariant<any, any>[]
+  readonly head: number
+  readonly panel: Extract<Panel, { kind: 'sweep' }>
+  readonly title: string
+  readonly filename: string
+  readonly t: number
+  readonly onScrub?: (t: number | null) => void
+}): ReactNode {
+  const { variants, panel, t } = props
+  const mode = useColourMode()
+  const runs = useRuns(variants)
+  const trials = useMemo(() => runs.map((run) => sweepTrials(run, panel.path, panel.over)), [runs, panel])
+  const option = useMemo(() => {
+    const compared = trials.length > 1
+    const sets: PointSet[] = []
+    trials.forEach((trial, i) => {
+      const name = compared ? (variants[i]?.label ?? `${i}`) : leaf(panel.path)
+      const colour = categoricalColour(i)
+      const past = trial.steps.flatMap((s, k) => (s <= t ? [k] : []))
+      const future = trial.steps.flatMap((s, k) => (s > t ? [k] : []))
+      if (past.length > 0)
+        sets.push({ x: past.map((k) => trial.x[k] ?? 0), y: past.map((k) => trial.y[k] ?? 0), name, colour, size: 7 })
+      if (future.length > 0)
+        sets.push({
+          x: future.map((k) => trial.x[k] ?? 0),
+          y: future.map((k) => trial.y[k] ?? 0),
+          name: `__ahead${i}`,
+          colour,
+          size: 6,
+          opacity: 0.2,
+        })
+      const k = past.at(-1)
+      if (k !== undefined)
+        sets.push({
+          x: [trial.x[k] ?? 0],
+          y: [trial.y[k] ?? 0],
+          name: `__at${i}`,
+          colour,
+          size: 16,
+          symbol: 'emptyCircle',
+          outline: false,
+        })
+    })
+    const layer = sets.length === 0 ? lines([], { mode }) : points(sets, { mode })
+    return {
+      ...cartesian([layer], {
+        mode,
+        figure: FIG,
+        x: { label: panel.over === undefined ? 'trial (step)' : leaf(panel.over) },
+        y: { label: leaf(panel.path) },
+        legend: compared,
+      }),
+      animation: false,
+    }
+  }, [trials, variants, panel, t, mode])
+  const { steps, xs } = useMemo(
+    () => ({ steps: trials.flatMap((trial) => trial.steps), xs: trials.flatMap((trial) => trial.x) }),
+    [trials],
+  )
+  const onInit = useScrubClick(steps, props.head, props.onScrub, xs)
   return (
     <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
       <Chart figure={FIG} option={option} onInit={onInit} />
@@ -366,15 +542,16 @@ function TensorView(props: {
 }
 
 function ProbeView(
-  props: PanelContext & {
+  props: VariantContext & {
     readonly panel: Extract<Panel, { kind: 'probe' }>
     readonly t: number
     readonly file: (title: string) => string
+    readonly titled: (title: string) => string
   },
 ): ReactNode {
   const { panel, live, t } = props
   const probed = useProbe(live, t, panel.path, panel.args)
-  const title = `${panel.title ?? panel.path} at step ${t}`
+  const title = props.titled(`${panel.title ?? panel.path} at step ${t}`)
   const filename = props.file(panel.title ?? panel.path)
   // A record at a step is a still: views that would play it along x are told not to.
   if (probed.value !== undefined && isExposition(probed.value))

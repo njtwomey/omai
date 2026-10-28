@@ -3213,11 +3213,30 @@ the spare time of each animation frame, so the tape may stand at step 1000 while
 tape as it grows; holds a change of method or options until play in live mode, or applies it after a short pause),
 `preferences.ts` (eager against live, and holding, remembered in the browser from page to page), `SessionPlayer` (the
 consumer: the cursor through the tape at a chosen rate, waiting at the head when the computation is slower; the eager
-toggle computes the whole run at once and shows its end; seek to either end and step one), `SessionControls` (seed,
-steps, subscription, and the same preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe,
-curves, per-element series, a trajectory, a tensor, a projection, the whole tape), `SessionPanels` that draws a layout
-under one `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic
-`TapeView`. A page anywhere (the encyclopedia, the gallery's `animation/` recipe) composes these.
+toggle computes the whole run at once and shows its end; seek to either end and step one; a reset of the page's
+controls to their defaults when the page offers one), `SessionControls` (seed, steps, subscription, and the same
+preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe, curves, per-element series, a
+trajectory, a tensor, a sweep, a projection, the whole tape), `SessionPanels` that draws a layout under one
+`StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic `TapeView`. A page
+anywhere (the encyclopedia, the gallery's `animation/` recipes) composes these.
+
+**Comparisons.** The same layer compares several runs of one method: `useSessions(method, options, variants, deps)`
+runs one variant per `{ label, config }` with the same seed, data, budget and subscription (the shared options), so
+the knobs are the only difference, under one producer that keeps the variants in step (each frame the variant furthest
+behind takes the next slice, `compare.ts`'s `advanceInStep`; a step budget brings every variant up to the slowest head
+plus the steps). It returns one `LiveSession` per variant and a combined handle: the head is the step every variant has
+reached (`sharedHead`: the slowest unfinished variant's, or the furthest once all have ended), done when all are, and
+every verb acts on all. `SessionPlayer` takes a session or a comparison (play starts every producer; pause, eager,
+seeks, steps and held changes act on all; the cursor is shared; the stamp shows the slowest head) and `SessionPanels`
+draws the same layout over either: curves and sweeps overlay the variants (one colour per variant, the label in the
+legend, the step marker shared; `overlayCurves`), and every other panel (rows, probe, tensor, trajectory, projection,
+the whole tape) is drawn once per variant, side by side on a full row, titled with its label. A single session is a
+comparison of one, and the single-session API is unchanged. The **sweep panel** (`{ kind: 'sweep', path, over? }`)
+draws a metric logged once per trial of a study against the knob logged at the same step (`over`; the step itself
+without one), each point a trial (`sweepTrials`), those after the viewed step faint and the viewed one ringed; a click
+scrubs to the nearest trial. Bayesian optimisation (`methods/tune`) logs `x`, `value` and `best` per trial, so
+`{ kind: 'sweep', path: 'value', over: 'x' }` is its sweep. The gallery's `animation/05-compare` recipe runs the toy
+walk as three variants under one player.
 
 **No hub.** The hub package and the site's hub section were removed on 2026-10-28: pages that explain a method are
 the encyclopedia's purview. What such a page needs is in the engine (a `Method` run as a `Session`) and in render
@@ -4640,8 +4659,9 @@ Design rules:
   sizes nodes once for a whole animation).
 - `TraceView.tsx`: the standard figures of a run; `useRunStream` for live runs.
 - `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
-  an eager toggle when the controller offers one, seek to the start, step back, play and pause with a caret menu for
-  the target frames per second, step forward, seek to the end, a draggable scrubber, and an optional time stamp.
+  a reset of the page's controls to their defaults and an eager toggle when the controller offers them, seek to the
+  start, step back, play and pause with a caret menu for the target frames per second, step forward, seek to the end,
+  a draggable scrubber, and an optional time stamp.
   `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over precomputed frames and
   live algorithm steps, and `useTicker`, the animation-frame ticker every player shares) and `playhead.ts` (frame
   timing, the pure part).
@@ -4695,6 +4715,11 @@ Design rules:
   `StateSequenceView`; `cells.tsx`: `ValueGridView`, `ConfusionMatrixView`; `diagrams.tsx`: `DiagramPlayer`, a
   `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
+- `session/`: sessions in React (the Sessions and Comparisons paragraphs of section 5): `useSession.ts` (`useSession`,
+  `useSessions`: one producer over one or several sessions, `LiveSession`, `LiveSessions`, `variantsOf`), `compare.ts`
+  (the pure part of a comparison: `sharedHead`, `advanceInStep`, `overlayCurves`, `sweepTrials`), `SessionPlayer.tsx`,
+  `SessionControls.tsx`, `preferences.ts`, `layout.ts` (the `Panel` vocabulary), `SessionPanels.tsx`, `RowsPanel.tsx`,
+  `cursor.tsx`, `scrub.ts` and `TapeView.tsx`.
 - `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
   or a prop), dark by default; no system-preference detection.

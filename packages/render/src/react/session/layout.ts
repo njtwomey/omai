@@ -1,13 +1,15 @@
 /**
  * The vocabulary of session layouts: the kinds of panel a page declares over a session's tape. What the tape logs and
  * what a page shows are separate; the layout alone decides what is drawn, and every panel reads one shared step cursor.
+ * Over a comparison of several variants the same layout serves: panels of the tape (`curves`, `sweep`) overlay the
+ * variants, one colour each, and the rest are drawn once per variant, side by side.
  */
 
 import type { Json } from 'mdml-engine/base'
 
 /**
- * One panel of a layout. Panels of the tape (`curves`, `series`) scrub the cursor on click; panels of a step (`rows`,
- * `probe`, `tensor`, `trajectory`) follow it.
+ * One panel of a layout. Panels of the tape (`curves`, `series`, `sweep`) scrub the cursor on click; panels of a step
+ * (`rows`, `probe`, `tensor`, `trajectory`) follow it.
  */
 export type Panel =
   /** The training rows with the probe overlay at the viewed step (sessions on a dataset only). */
@@ -58,6 +60,12 @@ export type Panel =
       readonly points?: boolean
       readonly title?: string
     }
+  /**
+   * A sweep: a metric logged once per trial of a study (`path`) against the knob each trial set (`over`, a scalar path
+   * logged at the same step; default the step itself), each point a trial, those after the viewed step faint and the
+   * viewed one ringed; a click scrubs to the nearest trial's step.
+   */
+  | { readonly kind: 'sweep'; readonly path: string; readonly over?: string; readonly title?: string }
   /** A tensor path at the viewed step as a heatmap (a matrix being factorised, a transition matrix, an image). */
   | { readonly kind: 'tensor'; readonly path: string; readonly title?: string }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
