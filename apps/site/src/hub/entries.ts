@@ -10,6 +10,7 @@ import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
 import { diffusionPaths } from 'mdml-engine/methods/stochastic'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
+import { peronaMalik } from 'mdml-engine/methods/vision'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -78,6 +79,7 @@ export const AREAS: readonly HubArea[] = [
   { id: 'linalg', title: 'Linear algebra', blurb: 'The iterations of numerical linear algebra.' },
   { id: 'search', title: 'Search', blurb: 'Path and local search, expansion by expansion.' },
   { id: 'tune', title: 'Tuning', blurb: 'Choosing parameters trial by trial.' },
+  { id: 'vision', title: 'Computer vision', blurb: 'Classical vision algorithms on synthetic scenes, pixel by pixel.' },
 ]
 
 /** The entries of the hub. */
@@ -346,6 +348,20 @@ export const ENTRIES: readonly HubEntry[] = [
         paths: ['paths/variance', 'paths/exactVariance'],
         title: 'variance, against the exact variance',
       },
+    ],
+  },
+  {
+    id: 'vision/anisotropic-diffusion',
+    title: 'Anisotropic diffusion',
+    summary:
+      'Perona-Malik: a noisy scene smoothed by a heat flow that an edge switches off, so regions flatten while the edges stay put.',
+    method: peronaMalik,
+    steps: 120,
+    layout: [
+      { kind: 'tensor', path: 'image/pixels', title: 'the image' },
+      { kind: 'probe', path: 'image/conduction', title: 'conduction: where the flow gets through' },
+      { kind: 'curves', paths: ['quality/psnr', 'quality/psnrStart'], title: 'PSNR to the clean scene' },
+      { kind: 'curves', paths: ['image/change'] },
     ],
   },
 ]

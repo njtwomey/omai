@@ -74,6 +74,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/methods/sequence': () => import('mdml-engine/methods/sequence'),
   'mdml-engine/methods/stochastic': () => import('mdml-engine/methods/stochastic'),
   'mdml-engine/methods/tune': () => import('mdml-engine/methods/tune'),
+  'mdml-engine/methods/vision': () => import('mdml-engine/methods/vision'),
   'mdml-engine/metrics': () => import('mdml-engine/metrics'),
   'mdml-engine/mixture': () => import('mdml-engine/mixture'),
   'mdml-engine/nn': () => import('mdml-engine/nn'),
