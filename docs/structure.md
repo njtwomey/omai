@@ -2496,7 +2496,18 @@ oracle once the oracle environment has it.
   fitted value, with the kind's verbs, at any reached step through the checkpoints, and `fit`'s value at the head);
   `kinds.ts`: the estimator kinds as add-ons
   (`kindProbes`: the standard derived paths of classifiers and regressors, clusterers, transformers and outlier
-  detectors). The one-shot, trainer, agent, sweep and procedure bases follow.
+  detectors); `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
+  (a configuration at a repeat) that runs an inner `Method` as an eager `session` over a `grid` or `sample` of some of
+  its knobs (`knobsOf` picks them), or over explicit configurations, under paired keys (repeat `r` is the same key in
+  every configuration) or fresh ones; it logs `trial/<knob>`, `trial/<metric>` (the final value of each metric path
+  and of each derived `final` path), `trial/config`, `trial/repeat`, `trial/best`, and the running mean and spread of
+  the configuration's repeats (`config/<metric>/mean`, `config/<metric>/std`), keeps the inner tapes by `keep`
+  (`'none'` summarises each in its `TrialRecord`, `'last'`, `'all'`), serialises its `SweepState`, and has the readers
+  `sweepConfigurations` and `sweepBest`; `sweepTrials` counts the steps. `sweepMethod(spec)` is the study as a
+  `Method` (repeats, steps, keep, design, points and trials as knobs; derived `sweep/configurations` and
+  `sweep/best`). `race(method, variants)` is the sweep over a slot in one run: a method whose state holds every
+  variant's, stepped in lockstep from the same key, logging each under `race/<variant>/`, with the inner contract's
+  paths prefixed. The one-shot, trainer, agent and procedure bases follow.
 
 oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
 modAL for active learning, diffprivlib and opacus for privacy
