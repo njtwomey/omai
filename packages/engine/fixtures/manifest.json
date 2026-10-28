@@ -4715,6 +4715,15 @@
       "cases": 20
     },
     {
+      "fixture": "timeseries/var.json",
+      "source": "oracle/cases/timeseries/var.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 34
+    },
+    {
       "fixture": "trace/summaries.json",
       "source": "oracle/cases/trace/summaries.py",
       "reference": {

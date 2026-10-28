@@ -3229,6 +3229,23 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   (`stimpAlgorithm`/`stimp`, breadth-first over window lengths; `panImage`) and `multidimensional-profile.ts`
   (`mstumpAlgorithm`/`mstump`, `multiDistanceProfile`, `subspace`, `mdl`). Each algorithm's step is a batch of
   diagonals or rows (or one value, or one window length) and its state serialises.
+- `online-detection.ts`: `cusumAlgorithm`/`cusum` (two-sided tabular CUSUM in standard deviations, with a known or
+  warm-up-estimated target) and `pageHinkleyAlgorithm`/`pageHinkley` (cumulative deviation from the running mean above its
+  minimum, with forgetting and direction), one observation per step, recording their statistics and alarms. Bayesian
+  online changepoint detection stays in `dynamics/filtering/changepoint.ts` and is not repeated.
+- `volatility.ts`: GARCH(p, o, q) in the `arch` convention (`GarchSpec`; ARCH, GJR through `o`; constant or zero
+  mean; Gaussian or standardised Student-t): `garchVariance` (the recursion with the `arch` backcast),
+  `garchLogLikelihood`, `garchFilterAlgorithm` (the recursion one observation per step with the running likelihood),
+  `garchFitAlgorithm`/`garchFit` (BFGS on parameters mapped into the stationary region, on the series scaled to unit
+  spread; standard errors from the numerical Hessian), `garchForecast` (variance forecasts relaxing to the unconditional
+  variance) and `garchSimulate`.
+- `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
+  standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
+  cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
+  (F or Wald). Matrices are arrays of rows, via the private `_matrix.ts`.
+- `hierarchy.ts`: `treeSummingMatrix`, `groupedSummingMatrix`, `reconcile` (bottom-up, OLS, structural and variance WLS,
+  MinT with the sample or shrunk covariance of the base errors: y~ = S G y^), `shrinkCovariance`, `topDownProportions`
+  and `isCoherent`.
 - private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
   (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
   Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
@@ -3237,8 +3254,10 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 
 oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
 `innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,
-`innovations`, `AutoReg`; `ETSModel` smoothing, likelihood and prediction intervals; `seasonal_decompose`, `STL`, `MSTL`)
-in `fixtures/timeseries/`; properties: the likelihood by the fast filter equals the library's
+`innovations`, `AutoReg`; `ETSModel` smoothing, likelihood and prediction intervals; `seasonal_decompose`, `STL`, `MSTL`;
+`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests) in
+`fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
+recursion identities, recovery of simulated parameters and the algebra of the solutions; properties: the likelihood by the fast filter equals the library's
 Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
 built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
 
