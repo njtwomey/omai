@@ -1,33 +1,114 @@
 # Evaluation metrics (part 4, principles of learning)
 
-Metrics understood by moving them: classification metrics and their curves (ROC, precision-recall), probabilistic metrics, regression, correlation and agreement, distances, forecasting, ranking, clustering, detection and segmentation, image quality, generative and text metrics, as sessions over `metrics` with a score or prediction slot.
+Metrics understood by moving them: classification metrics and their curves (ROC, precision-recall, DET, the operating points), probabilistic metrics and proper scoring rules, regression, correlation and agreement, distances, forecasting, ranking and retrieval, clustering, detection and segmentation, image quality, generative, text and audio metrics, and the uncertainty of a metric (intervals, paired comparisons, streaming estimates), as sessions over `metrics` with a score or prediction slot. The session is mostly one step and the knobs do the work: a threshold descending, prevalence shifting, a ranking shuffled, noise growing.
 
-## Capabilities
+## Structure
 
-- Threshold metrics: every classification metric as a threshold sweeps over scores (`thresholdSweep` exists), with class imbalance as the knob.
-- Curves: ROC and precision-recall traced point by point, AUC accumulating, the effect of prevalence.
-- Probabilistic metrics: log loss, Brier and their decompositions; proper scoring rules shown by the forecaster's incentive.
-- Regression and agreement: residual-based metrics, correlation measures on a scatter being perturbed.
-- Ranking and retrieval: precision at k, NDCG, MAP computed as a ranking is shuffled.
-- Clustering: internal and external indices as a clustering is perturbed.
-- Detection and segmentation: IoU, mAP as boxes move; image quality (PSNR, SSIM) as noise grows.
+Everything here is done to predictions, so it lives under `analyse/evaluate/` (section 3 of `methods/README.md`), one folder per family of metric. Calibration is measured here only as a probabilistic metric; the calibrators and the decision theory are `decision-theory-and-calibration`'s (`analyse/calibrate/`), and the held-out score slot (`shared/scores.ts`) is shared between the two. The comparison of two learning algorithms over folds is `model-selection`'s (`study/cross-validate/compare/`); here the paired tests are applied to two score vectors on one test set.
+
+```
+analyse/evaluate/
+  classification/     the threshold sweep, ROC and precision-recall and DET traced, operating points, the confusion matrix and its summaries, multiclass and multilabel averaging
+  probabilistic/      log loss and Brier with their decompositions, proper scoring rules and the forecaster's incentive, CRPS and the energy score
+  regression/         residual metrics on a scatter being perturbed, correlation and agreement, deviances, forecasting errors
+  ranking/            precision at k, MAP, MRR, NDCG, ERR and RBP as a ranking is shuffled; diversity, novelty and exposure
+  clustering/         external indices against a planted partition, internal indices under perturbation
+  perception/         IoU and mAP as boxes move, segmentation overlaps, image quality as noise grows, generative, text and audio metrics
+  uncertainty/        confidence intervals on a metric, paired comparisons of two score vectors, streaming metrics as rows arrive
+  shared/             the score slot, the perturbation knobs, the metric registry with directions and needs (below)
+```
+
+Nothing of this chapter is built; the threshold sweep record (`exposition/thresholds.ts`: `thresholdSweep`) and its explorer exist in `render`, so the first method is the one that fills it.
+
+## Methods
+
+Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, `t!` a tensor kept in full, `p` a probe computed from the state at any step, `proj` a projection over the tape, `e` an event, `m` a message with a payload. The step is one position of the moving knob (one threshold, one prevalence, one swap in the ranking, one noise level); where rows arrive one at a time the step is one row. Every row shares `metric/value` s (the metric at the viewed step, one path per metric asked for) and `data/picture` p (the predictions with the truth at the viewed step), named as `shared/metrics.ts` names them.
+
+### classification/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `threshold-sweep` | Scores from the slot (a model's, or two overlapping score densities with separation and prevalence as knobs), the threshold descending one step at a time: the confusion matrix updating, every rate (TPR, FPR, precision, recall, F1, MCC, kappa, balanced accuracy) as a curve against the threshold, the operating points (Youden, equal error, the F1 maximum, recall at a fixed precision) marked; class imbalance as the knob. | `threshold/value` s, `threshold/confusion` t!, `threshold/rates` t, `threshold/operatingPoints` p, `study/sweep` proj (`thresholdSweep`), `data/picture` p (the score densities with the threshold) | `metrics/contingency.ts`: `analyseThresholds`, `thresholdConfusion`, `confusionMargins`; `metrics/curves.ts`: `confusionMatrixAtThresholds`; `metrics/operating-points.ts`: `youdenIndex`, `equalErrorRate`, `recallAtFixedPrecision`, `sensitivityAtSpecificity`, `fprAtTpr`; `metrics/classification.ts`: `confusionMatrix`, `precisionScore`, `recallScore`, `f1Score`, `balancedAccuracyScore`; `metrics/classification-summary.ts`: `matthewsCorrcoef`, `cohenKappaScore`; `exposition/thresholds.ts`: `thresholdSweep` | |
+| `roc-and-pr-curves` | ROC traced point by point as the threshold descends (each point a step, the AUC accumulating as the area so far), the precision-recall curve beside it, the DET curve on its normal-deviate axes; prevalence as the knob: PR shifts while ROC stays (the lesson), the PR-gain curve as the cure; average precision against the interpolated area; ties in the scores as the pathology. | `curve/point` t, `curve/auc` s, `curve/averagePrecision` s, `curve/prevalence` s, `curve/roc` p, `curve/pr` p, `curve/det` p | `metrics/curves.ts`: `rocCurve`, `auc`, `rocAucScore`, `detCurve`; `metrics/precision-recall.ts`: `precisionRecallCurve`, `averagePrecisionScore`, `prGainCurve`, `prGainAuc` | |
+| `confusion-and-summaries` | A multiclass confusion matrix with the per-class errors as knobs (one class's recall dragged down): the summaries moving (accuracy, balanced accuracy, kappa and its quadratic weighting, the likelihood ratios, the diagnostic odds ratio, Hamming and zero-one loss), the classification report; which summaries see the minority class and which do not. | `confusion/matrix` t!, `confusion/summaries` t, `confusion/report` p | `metrics/classification.ts`: `confusionMatrix`, `multilabelConfusionMatrix`, `precisionRecallFscoreSupport`, `accuracyScore`, `balancedAccuracyScore`; `metrics/classification-summary.ts`: `cohenKappaScore`, `quadraticWeightedKappa`, `positiveLikelihoodRatio`, `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `classificationReport`; `exposition/evaluation.ts`: `confusionMatrix` | |
+| `averaging` | The same multiclass or multilabel predictions with the average as the mode (micro, macro, weighted, samples): the class sizes as knobs, micro following the big class and macro the small ones, the gap between them as the imbalance measure; top-k accuracy with k as the step; the label-ranking metrics for multilabel (coverage, ranking loss, LRAP). | `average/kind` m, `average/values` t, `average/classSizes` t, `topk/k` s, `topk/accuracy` s | `metrics/classification.ts`: `fbetaScore`, `jaccardScore`, `subsetAccuracy` (each with `average`); `metrics/classification-summary.ts`: `topKAccuracyScore`, `labelRankingAveragePrecisionScore`, `coverageError`, `labelRankingLoss` | |
+
+### probabilistic/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `log-loss-and-brier` | A forecaster sharpened or flattened by a temperature (the step): log loss and the Brier score against it, the Brier decomposition (reliability, resolution, uncertainty) moving in opposite directions, the reliability diagram at the viewed step, log loss's unbounded punishment of a confident miss against Brier's bounded one; ECE and MCE beside them (their bins as a knob; the calibrators are `decision-theory-and-calibration`'s). | `temperature/value` s, `metric/logLoss` s, `metric/brier` s, `brier/reliability` s, `brier/resolution` s, `brier/uncertainty` s, `metric/ece` s, `calibration/reliability` p | `metrics/probabilistic.ts`: `logLoss`, `brierScoreLoss`, `brierDecomposition`, `calibrationCurve`, `expectedCalibrationError`, `maximumCalibrationError`, `classwiseCalibrationError`, `d2LogLossScore`; `datasets/predictions.ts`: `miscalibratedPredictions`; `exposition/trust.ts`: `calibrationRecord` | |
+| `proper-scoring-rules` | The forecaster's incentive: a forecaster who believes p reports q (the step moves q), the expected score under p against q for the log, Brier and spherical scores (minimised at q = p: proper) and for a non-proper rule (absolute error, minimised elsewhere); the scores' different penalties for the same miss drawn as curves. | `report/q` s, `score/expected` t (one per rule), `score/optimum` t, `score/curves` p | `metrics/scoring-rules.ts`: `logScore`, `crps`, `sphericalScore`, `energyScore`; `metrics/probabilistic.ts`: `brierScoreLoss` | |
+| `distributional-scores` | A forecast distribution (a Gaussian whose spread is the step, or an ensemble) scored against outcomes: CRPS as the integrated squared difference of CDFs (drawn), the interval score's width and coverage trade-off at α, the quantile loss across quantiles, the PIT histogram (flat when calibrated, U-shaped when too narrow); the multivariate energy score. | `forecast/spread` s, `metric/crps` s, `metric/intervalScore` s, `metric/coverage` s, `forecast/pit` t!, `forecast/picture` p (the CDFs with the shaded CRPS) | `metrics/forecasting.ts`: `crpsNormal`, `crpsEnsemble`, `intervalScore`, `meanScaledIntervalScore`, `intervalCoverage`, `quantileLoss`; `metrics/scoring-rules.ts`: `crps`, `energyScore` | |
+
+### regression/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `residual-metrics` | A scatter of predictions against targets with the perturbation as the knob (one outlier dragged, noise scaled, a bias added, the step moving it): MSE, RMSE, MAE, median AE, max error, R², adjusted R², explained variance, MSLE, MAPE and sMAPE moving, which ones the outlier dominates and which ignore it; the residual histogram at the viewed step. | `perturbation/value` s, `metric/values` t, `data/residuals` t!, `data/picture` p (the scatter with the residuals) | `metrics/regression.ts`: `meanSquaredError`, `rootMeanSquaredError`, `meanAbsoluteError`, `medianAbsoluteError`, `maxError`, `r2Score`, `adjustedR2Score`, `explainedVarianceScore`, `meanSquaredLogError`, `meanAbsolutePercentageError`, `meanHuberLoss`, `meanLogCoshError` | |
+| `correlation-and-agreement` | Two measurements of the same quantity with the disagreement as the knob (a scale, a shift, a nonlinearity, an outlier): Pearson, Spearman and Kendall against the concordance correlation (which sees the shift) and the Bland-Altman plot (the bias and the limits of agreement), intraclass correlation; the raters' agreement (Cohen's and Fleiss' kappa, Krippendorff's alpha) on categorical labels with the raters' noise as the knob. | `disagreement/value` s, `metric/correlations` t, `metric/agreement` t, `data/blandAltman` p, `data/picture` p | `metrics/correlation-agreement.ts`: `pearsonCorrelation`, `spearmanCorrelation`, `kendallTau`, `concordanceCorrelation`, `blandAltman`, `intraclassCorrelation`, `cramersV`, `theilsU`, `weightedCohenKappa`, `fleissKappa`, `krippendorffAlpha`; `datasets/regression-real.ts`: `anscombe` | |
+| `deviances` | Counts and positive targets with the predicted mean as the knob: the Poisson, gamma and Tweedie deviances against squared error, the D² scores, the pinball deviance for quantiles; why the deviance is the right residual for a GLM (the model family as the mode). | `prediction/value` s, `metric/deviances` t, `metric/d2` t, `data/picture` p | `metrics/deviance.ts`: `meanPoissonDeviance`, `meanGammaDeviance`, `meanTweedieDeviance`, `tweedieUnitDeviance`, `d2TweedieScore`, `d2PinballScore`, `meanPinballLoss` | |
+| `forecasting-errors` | A forecast against a series with the horizon as the step: MASE scaled by the naive forecast (below one means better than naive), sMAPE and WMAPE, Theil's U₂, RMSSE; the baselines are `time-series`' (`fit/forecast/practice/`). | `horizon/h` s, `metric/values` t, `forecast/picture` p | `metrics/forecasting.ts`: `meanAbsoluteScaledError`, `rootMeanSquaredScaledError`, `symmetricMeanAbsolutePercentageError`, `weightedMeanAbsolutePercentageError`, `mape`, `theilsU2` | |
+| `distances` | Two point sets or two shapes with the transformation as the knob (a shift, a rotation, a stray point): Hausdorff against Chamfer (the stray point's effect), Procrustes disparity after alignment, Mahalanobis against Euclidean under a covariance, cosine similarity against the dot product; the matched pairs drawn. Named distances and similarities are `distances`' (its entry point); here as metrics on predictions. | `transformation/value` s, `metric/distances` t, `data/picture` p (the two sets with their matches) | `metrics/distances.ts`: `hausdorffDistance`, `chamferDistance`, `procrustesDisparity`, `mahalanobisDistance`, `minkowskiDistance`, `cosineSimilarity` | |
+
+### ranking/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `ranking-metrics` | A ranked list with graded relevance, one swap per step (an item dragged up or down): precision and recall at k, R-precision, hit rate, MAP, MRR, DCG and NDCG with its log discount, ERR and rank-biased precision with their persistence; which metric moves when a relevant item crosses position k, which only care about the first hit; k and the gain as knobs. | `ranking/order` t!, `ranking/swap` m, `metric/values` t, `ranking/strip` p (the list with relevance and the metric's per-position contribution) | `metrics/ranking.ts`: `precisionAtK`, `recallAtK`, `rPrecision`, `hitRate`, `meanAveragePrecision`, `meanReciprocalRank`, `dcgScore`, `ndcgScore`, `expectedReciprocalRank`, `rankBiasedPrecision` | |
+| `beyond-accuracy` | A recommender's lists for many users with the catalogue's popularity as the knob: catalogue coverage, intra-list diversity, novelty, serendipity, the exposure Gini (the long tail starved); the trade-off against NDCG as the lists are re-ranked towards diversity (the step). The recommenders are `recommendation-and-retrieval`'s. | `rerank/weight` s, `metric/values` t, `metric/ndcg` s, `catalogue/exposure` p | `metrics/ranking.ts`: `catalogCoverage`, `intraListDiversity`, `novelty`, `serendipity`, `exposureGini`; `datasets/ranking.ts`: `zipfianCatalogue`, `lowRankRatings` | |
+
+### clustering/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `external-indices` | A planted partition with the clustering perturbed one step at a time (points reassigned, clusters merged or split): the Rand index and its adjusted form (the raw one flattering any clustering), Fowlkes-Mallows, mutual information and its normalised and adjusted forms, homogeneity, completeness, V-measure, purity, B-cubed; the contingency matrix at the viewed step; the number of clusters as the knob (the unadjusted indices rewarding many). | `perturbation/step` s, `metric/values` t, `clustering/contingency` t!, `data/picture` p | `metrics/clustering.ts`: `randScore`, `adjustedRandScore`, `fowlkesMallowsScore`, `mutualInfoScore`, `normalizedMutualInfoScore`, `adjustedMutualInfoScore`, `homogeneityCompletenessVMeasure`, `purityScore`, `bCubedF1`, `contingencyMatrix`, `pairConfusionMatrix`; `datasets/classification.ts`: `blobs` | |
+| `internal-indices` | A clustering with no truth, the number of clusters as the step: silhouette (per point, as a bar chart sorted within clusters), Calinski-Harabasz, Davies-Bouldin and Dunn against k, the elbow and the silhouette maximum marked; the indices' bias towards convex, equal-size clusters shown on rings and moons. The clusterers are `unsupervised-learning`'s. | `k/value` s, `metric/values` t, `silhouette/samples` t!, `silhouette/picture` p | `metrics/cluster-validity.ts`: `silhouetteSamples`, `silhouetteScore`, `calinskiHarabaszScore`, `daviesBouldinScore`, `dunnIndex`; `datasets/clustering.ts`: `rings`, `anisotropicBlobs`, `unequalVarianceBlobs` | |
+
+### perception/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `detection` | A predicted box dragged over a true one (the step moves it): IoU, generalised, distance and complete IoU (the generalised one still falling when the boxes no longer overlap), the match at the IoU threshold; many boxes with scores: the precision-recall curve per class at the threshold, mAP across thresholds (0.5 against 0.5:0.95), the threshold as the knob. The detectors are `computer-vision`'s. | `box/offset` t, `metric/ious` t, `metric/map` s, `detection/pr` p, `box/picture` p | `metrics/detection.ts`: `boxIou`, `generalizedBoxIou`, `distanceBoxIou`, `completeBoxIou`, `detectionMeanAveragePrecision` | |
+| `segmentation` | A predicted mask eroded, dilated or shifted (the step): Dice and IoU (Dice larger, the same ordering), mean IoU over classes, the boundary F1 at its tolerance, the mask Hausdorff distance (one stray pixel's effect), panoptic quality's segmentation and recognition factors; the masks overlaid. | `mask/perturbation` s, `metric/values` t, `mask/picture` p | `metrics/segmentation.ts`: `diceCoefficient`, `maskIou`, `meanIou`, `boundaryF1`, `maskHausdorffDistance`, `panopticQuality`; `datasets/images.ts`: `shapes` | |
+| `image-quality` | An image under a degradation as the mode (Gaussian noise, blur, JPEG-like quantisation, a shift) with its strength as the step: MSE and PSNR (blind to structure: a one-pixel shift scores badly), SSIM and its multi-scale form (the structure seen), VIF, UQI, the spectral measures for multispectral images, LPIPS and DISTS from features; the degraded image beside the clean one at the viewed step. | `degradation/strength` s, `metric/values` t, `image/degraded` t!, `image/picture` p | `metrics/image-quality.ts`: `imageMeanSquaredError`, `peakSignalNoiseRatio`, `structuralSimilarity`, `multiScaleSsim`, `visualInformationFidelity`, `universalImageQualityIndex`, `spectralAngleMapper`, `lpipsFromFeatures`, `distsFromFeatures`; `datasets/images.ts`: `digitGlyphs`, `fashionMnistTest` | |
+| `generative-metrics` | Two sample sets (real, and generated with a mode-dropping or blurring knob): the Fréchet distance between feature Gaussians, the kernel inception distance, the inception score, precision and recall of the manifolds with density and coverage (the dropped mode seen by recall, the blur by precision), the Vendi score for diversity; the features from a small fixed network. The generators are `generative-models`'. | `generation/knob` s, `metric/values` t, `metric/precisionRecall` p, `data/picture` p (both sets in feature space) | `metrics/generative.ts`: `frechetDistance`, `kernelInceptionDistance`, `inceptionScore`, `precisionRecallDensityCoverage`, `vendiScore`, `clipScore` | |
+| `text-metrics` | A reference sentence and a candidate edited one word per step (substituted, deleted, reordered): WER and CER with their edit paths, BLEU with its n-gram precisions and brevity penalty (a single reordering's cost), chrF, TER, ROUGE-N and ROUGE-L, exact match and token F1, BERTScore from embeddings, perplexity of a language model on the text, distinct-n; which metric forgives a paraphrase. The models are `natural-language-processing`'s. | `edit/step` m, `metric/values` t, `metric/ngramPrecisions` t, `text/alignment` p | `metrics/text.ts`: `wordErrorRate`, `characterErrorRate`, `bleuScore`, `sentenceBleu`, `chrfScore`, `translationEditRate`, `rougeN`, `rougeL`, `exactMatch`, `tokenF1`, `bertScore`, `perplexity`, `distinctN` | |
+| `audio-metrics` | A clean signal with noise or distortion added (the step raises it): SNR and segmental SNR, SDR and its scale-invariant forms (a gain change's effect), the permutation-invariant form for two sources, STOI for intelligibility, the log-spectral distance; the waveforms and spectrograms beside the numbers. | `distortion/strength` s, `metric/values` t, `audio/picture` p | `metrics/audio.ts`: `signalNoiseRatio`, `segmentalSnr`, `signalDistortionRatio`, `scaleInvariantSdr`, `permutationInvariant`, `shortTimeObjectiveIntelligibility`, `logSpectralDistance` | |
+
+### uncertainty/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `metric-intervals` | A metric with its confidence interval as the test set grows (one batch of rows per step): the bootstrap interval, the binomial interval for accuracy, DeLong's for the AUC; the interval wide on a small test set (how many rows a decision needs), the interval's coverage by repeated test sets as a projection. | `rows/n` s, `metric/value` s, `metric/interval` t, `metric/band` s, `study/coverage` proj | `metrics/foundations.ts`: `withInterval`, `delongVariance`, `pairedBootstrap`; `stats/tests/proportions.ts`: `proportionConfint`; `metrics/metric.ts`: `defineMetric`, `metricResult` | |
+| `paired-comparison` | Two score vectors on one test set (the second a perturbation of the first, the perturbation as the knob): DeLong's test on the AUCs, McNemar on the disagreements, the paired bootstrap of the difference in any metric; the p-value against the size of the difference and the test set; the per-row disagreements drawn. The comparison over folds is `model-selection`'s. | `difference/value` s, `test/delong` p, `test/mcnemar` p, `test/bootstrap` p, `data/disagreements` t! | `metrics/foundations.ts`: `delongTest`, `mcnemarTest`, `pairedBootstrap` | |
+| `streaming-metrics` | Rows arriving one per step with the metric accumulated (its state updated, never recomputed): the running value with its interval converging, the order of arrival as the knob (a block of one class first), drift planted in the stream (the streaming estimate lagging the windowed one). Shared with `online-learning` and `shift-and-drift`. | `rows/n` s, `metric/running` s, `metric/windowed` s, `metric/band` s, `stream/drift` e | `metrics/metric.ts`: `streaming`; `stats/running.ts`: `push`, `ewmPush`; the stream base of `time-series` (`shared/stream.ts`) | |
+
+## shared/
+
+| helper | what it does | used by |
+| --- | --- | --- |
+| `scores.ts` | The score slot: a fitted model's held-out scores or probabilities (through `learn`'s verbs), or synthetic scores from two overlapping densities with separation, spread and prevalence as knobs (so every classification metric has a planted truth); multiclass and multilabel variants; shared with `decision-theory-and-calibration` | `classification/`, `probabilistic/`, `uncertainty/` |
+| `perturbations.ts` | The perturbation knobs as one table: a dragged point or box or item, scaled noise, a temperature on probabilities, an edit on a sentence, a reassignment in a clustering, each with its step schedule | every group |
+| `metrics.ts` | The metric registry: every `metrics` function with its direction, what it needs (labels, scores, probabilities, boxes, masks, text), its averaging options and its interval method, so a page asks for metrics by name and the tape names them `metric/<name>`; the per-step record of many metrics at once | every group |
+| `pictures.ts` | The data pictures the generic views lack: score densities with a threshold, a ranking strip with per-position contributions, two boxes with their overlap, two masks overlaid, a sentence alignment | `classification/`, `ranking/`, `perception/`, `regression/` |
 
 ## Examples to make
 
-- ROC drawn point by point as the threshold descends, with the confusion matrix updating (`ContingencyTable` exists).
-- Prevalence as the knob: precision-recall shifts while ROC stays.
+- ROC drawn point by point as the threshold descends, with the confusion matrix updating (the `ContingencyTable` and `ThresholdExplorer` exist).
+- Prevalence as the knob: precision-recall shifts while ROC stays; the PR-gain curve beside them.
 - Brier decomposition: calibration against resolution on a forecaster that is sharpened or flattened.
-- NDCG as one relevant item is dragged up the ranking.
+- NDCG as one relevant item is dragged up the ranking, the per-position contributions as bars.
+- IoU and its generalised forms as a box is dragged past the truth.
+- A metric's interval shrinking as the test set grows, the coverage checked by repeated test sets.
 
 ## Rendering
 
-- Threshold explorer (exists), curves, confusion tables, scatter plots with draggable points (`interaction`).
-- Missing: a draggable ranking strip; a box-overlap picture for IoU.
-
-## Shared
-
-- `shared/`: the score slot (a model's scores, or synthetic scores from two overlapping distributions with separation and prevalence as knobs).
+- The threshold explorer and the contingency table (exist), curves (`curves`), confusion tables, scatter plots with draggable points (`interaction`), calibration views (`trust`), images.
+- Missing: a draggable ranking strip; a box-overlap picture for IoU; a mask-overlay panel; a sentence-alignment panel for the edit-distance metrics; a many-metrics panel (one value per metric at the viewed step, with direction arrows).
 
 ## Problems
 
-- New chapter; `trust/` calibration pieces split between here and `decision-theory-and-calibration`. Most pages are interactive rather than iterative: the session is one step and the knobs do the work.
+- New chapter; the `trust/` calibration pieces split between here (the measures) and `decision-theory-and-calibration` (the calibrators and the decisions), with one score slot shared.
+- Most pages are interactive rather than iterative: the session is one step and the knobs do the work, which the player handles as a held change (section 5 of `methods/README.md`) but the controls must make cheap: a dragged point is a configuration change per frame.
+- The perception and text rows need small fixed feature networks (for FID, LPIPS, BERTScore) at toy scale; each page must say it is a mechanism shown, not a benchmark (problem 16 of `methods/README.md`).
