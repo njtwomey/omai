@@ -925,6 +925,15 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
 - `generator.ts`: `DatasetGenerator` (name, kind, knobs as a `Space`, `generate(key, knobs) -> { data, truth }`),
   `Generated`, `generate` (resolves keys from the context, validates knobs, stamps the recipe and key),
   `describeGenerator`, `asGenerated` (a real dataset as `{ data, truth }` for modifiers).
+- `streams.ts`: the stream base: data arriving one batch per step with planted drift. `stream(key, options)` is a
+  `DataStream` (a classification or a regression generator; the concept, covariate or label `shift`; `drift` abrupt,
+  gradual, incremental or recurring, with `points` or an even `count`, a `width`, a `period`, `concepts` and a
+  `severity`) whose `next(t)` is a pure function of the key and the step (random access), and whose `StreamTruth`
+  carries the drift points (`changepoints`, as `Truth` names them), the `PlantedDrift`s, the active concept per step
+  (`conceptAt`, `transitionAt`), each concept's `parameters` and the rule it gives a point (`predict`). `streamKnobs`
+  is the stream's knobs as a `Space` (for a later registry entry); `streamAlgorithm(options)` runs the same stream as
+  a serialisable `Algorithm` (`StreamState`: key, step, last batch) that logs `stream/concept`, `stream/mix`,
+  `stream/drift`, `stream/x` and `stream/y` (`streamContract`).
 - `truth.ts`: the `Truth` interface: `program` (the generating probabilistic program), `logProb`, `posterior`,
   `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
   (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
@@ -1409,6 +1418,22 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   inverse-time, cosine (`cosineDecay`, `cosineWarmRestarts`, `sgdr`), warmup (`warmupCosineDecay`,
   `warmupExponentialDecay`, `warmupConstant`, `linearSchedule`), one-cycle, piecewise (`piecewiseConstant`,
   `piecewiseInterpolate`, `joinSchedules`), polynomial, cyclical, `reduceOnPlateau`; torch.optim.lr_scheduler and optax.
+- `schedule-table.ts`: `schedules`, the schedules as an option table (constant, step, exponential, inverse-time,
+  cosine, restarts, linear, polynomial, warm-ups), each taking the optimiser's learning rate as its peak, with
+  properties (warm-up, decays, restarts) for validity rules.
+- `optimiser-table.ts`: `optimisers`, the optimisers as an option table (SGD with momentum and Nesterov, RMSprop,
+  Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam, Lion), each a shape that takes a learning rate or a
+  schedule, with its own knobs and properties (adaptive, momentum, decoupled decay).
+- `stochastic.ts`: `gradientAlgorithm`, a transformation-driven descent over an objective that may be summed over a
+  batch (`BatchObjective`, `Batches`): the optimiser at a scheduled rate, a batch of `batch` examples drawn without
+  replacement from each step's key (null: the whole set), a serialisable `GradientState` (iterate, value, gradient,
+  optimiser state, step count, last rate); the engine of the `gradient` mode.
+- `solvers.ts`: `smoothSolvers`, the smooth solvers as one slot of modes (gradient descent with its step rules,
+  conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent and `gradient`, whose knobs are `optimiser`
+  (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
+  `SmoothProblem` (an objective that may take a batch index set, `batches`, a start); `loggedSolver` (logs
+  `solver/objective`, `solver/gradNorm`, `solver/step` and, for `gradient`, `solver/lr`; serialises the state),
+  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`.
 - `line-search.ts`: the line-search contract (`LineFunction`, `LineStart`, `LineSearchResult` with every trial point
   recorded, `LineSearch`), `backtracking` (Armijo, scipy's quadratic-cubic interpolation, optionally safeguarded, or
   halving; value-only evaluations), `strongWolfe` (Nocedal-Wright bracketing and zoom by cubic interpolation, scipy's
@@ -2500,7 +2525,18 @@ oracle once the oracle environment has it.
   `policyAt(t)`, `train()` runs it to completion). Private: `_session.ts` (`extendSession`, a session with extra verbs
   that its forks keep, behind `fittedSession` and the agent session), `_trainer.ts` (plan arithmetic, layer records,
   evaluation, curves and the verbs of a network) and `_agent.ts` (the value and action maps on a grid, an episode as a
-  record). The one-shot, sweep and procedure bases follow.
+  record).; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
+  (a configuration at a repeat) that runs an inner `Method` as an eager `session` over a `grid` or `sample` of some of
+  its knobs (`knobsOf` picks them), or over explicit configurations, under paired keys (repeat `r` is the same key in
+  every configuration) or fresh ones; it logs `trial/<knob>`, `trial/<metric>` (the final value of each metric path
+  and of each derived `final` path), `trial/config`, `trial/repeat`, `trial/best`, and the running mean and spread of
+  the configuration's repeats (`config/<metric>/mean`, `config/<metric>/std`), keeps the inner tapes by `keep`
+  (`'none'` summarises each in its `TrialRecord`, `'last'`, `'all'`), serialises its `SweepState`, and has the readers
+  `sweepConfigurations` and `sweepBest`; `sweepTrials` counts the steps. `sweepMethod(spec)` is the study as a
+  `Method` (repeats, steps, keep, design, points and trials as knobs; derived `sweep/configurations` and
+  `sweep/best`). `race(method, variants)` is the sweep over a slot in one run: a method whose state holds every
+  variant's, stepped in lockstep from the same key, logging each under `race/<variant>/`, with the inner contract's
+  paths prefixed. The one-shot and procedure bases follow.
 
 oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
 modAL for active learning, diffprivlib and opacus for privacy

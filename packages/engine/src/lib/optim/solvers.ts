@@ -4,12 +4,23 @@
  * coordinate descent, each the library's minimiser from `optim` with its own knobs, each yielding the same fitted
  * parameters (the vector). A method whose objective is smooth takes `smoothSolvers` as its solver slot and builds the
  * objective; the modes do the rest, and the controls, grids and tuners see every solver's knobs through the table's
- * space.
+ * space. The `gradient` mode is the stochastic one: an optimiser (SGD with momentum, RMSprop, Adam and the rest), a
+ * learning-rate schedule and an optional batch of examples drawn afresh at every step, all of them knobs of the mode.
  */
 
 import type { Json } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
-import { bool, choice, dict, int, real, type SpaceValue } from '../space/index.ts'
+import {
+  bool,
+  choice,
+  type DictSpace,
+  defaults,
+  dict,
+  int,
+  type OptionTable,
+  real,
+  type SpaceValue,
+} from '../space/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -31,13 +42,23 @@ import {
   gradientDescentAlgorithm,
 } from './minimize/gradient.ts'
 import { newtonAlgorithm } from './minimize/newton.ts'
-import type { Objective, Parameters } from './minimize/objective.ts'
+import type { Parameters } from './minimize/objective.ts'
 import { bfgsAlgorithm, lbfgsAlgorithm } from './minimize/quasi-newton.ts'
+import { optimisers } from './optimiser-table.ts'
+import { schedules } from './schedule-table.ts'
+import { type Batches, type BatchObjective, type GradientState, gradientAlgorithm } from './stochastic.ts'
 
-/** A smooth problem: a differentiable objective of a parameter vector (or tree) and where to start. */
+/**
+ * A smooth problem: a differentiable objective of a parameter vector (or tree) and where to start. An objective that
+ * is a mean over examples may take the indices of a batch as its second argument and say how many examples there are
+ * in `batches`; the `gradient` mode then draws batches. Every other solver, and a problem without `batches`, uses the
+ * whole set.
+ */
 export interface SmoothProblem {
-  readonly objective: Objective
+  readonly objective: BatchObjective
   readonly x0: Parameters
+  /** The examples the objective sums over, when it can be summed over a part of them. */
+  readonly batches?: Batches
 }
 
 /** The fitted parameters every smooth solver yields: the vector reached. */
@@ -148,12 +169,43 @@ const coordinateDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   params: vector,
 }
 
+/** A table option's configuration with the defaults of its option filled in where it names only some knobs. */
+function filled<T, P>(table: OptionTable<T, P>, config: SpaceValue | undefined): SpaceValue {
+  const name = table.optionOf(config).name
+  const given = typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}
+  return { ...(defaults(table.space.options[name] as DictSpace) as object), ...given, [table.tag]: name }
+}
+
+const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
+  description:
+    'stochastic gradient: an optimiser (SGD with momentum, RMSprop, Adam and others) at a scheduled learning rate, over the whole set or a batch drawn at every step',
+  space: dict({
+    optimiser: optimisers.space,
+    learningRate: real(1e-5, 10, { log: true, default: 1e-2, label: 'learning rate' }),
+    schedule: schedules.space,
+    batch: int(0, 1_000_000, { default: 0, label: 'batch size (0: the whole set)' }),
+    gradTol,
+  }),
+  make: (p, k) => {
+    const batch = (k['batch'] as number | undefined) ?? 0
+    return gradientAlgorithm(p.objective, p.x0, {
+      optimiser: optimisers.make(filled(optimisers, k['optimiser'])),
+      learningRate: (k['learningRate'] as number | undefined) ?? 1e-2,
+      schedule: schedules.make(filled(schedules, k['schedule'])),
+      batch: batch > 0 ? batch : null,
+      ...(p.batches === undefined ? {} : { batches: p.batches }),
+      gradTol: (k['gradTol'] as number | undefined) ?? 1e-5,
+    })
+  },
+  params: vector,
+}
+
 /**
- * The solvers of a smooth objective as one slot: gradient descent (default), conjugate gradient, Newton, BFGS, L-BFGS
- * and coordinate descent, each with its own knobs, all yielding the vector reached.
+ * The solvers of a smooth objective as one slot: gradient descent (default), conjugate gradient, Newton, BFGS, L-BFGS,
+ * coordinate descent and the stochastic `gradient` mode, each with its own knobs, all yielding the vector reached.
  */
 export const smoothSolvers: ModeTable<SmoothProblem, VectorParams> = modes(
-  { gradientDescent, conjugateGradient, newton, bfgs, lbfgs, coordinateDescent },
+  { gradientDescent, conjugateGradient, newton, bfgs, lbfgs, coordinateDescent, gradient },
   { label: 'solver', description: 'how the objective is minimised' },
 )
 
@@ -163,12 +215,14 @@ interface Reached {
   readonly value: number
   readonly grad: Float64Array
   readonly step: number
+  /** The learning rate of the last step (the `gradient` mode only). */
+  readonly lr?: number
 }
 
 /**
  * A smooth solver as a logged algorithm: the library's minimiser for the configured solver, wrapped so each step
  * logs the objective, the gradient's norm and the step length (`solver/objective`, `solver/gradNorm`, `solver/step`),
- * lets the method log what is its own from the iterate (`extra`), and serialises its state for seeking.
+ * and the learning rate where the solver has one (`solver/lr`, the `gradient` mode), lets the method log what is its own from the iterate (`extra`), and serialises its state for seeking.
  *
  * @param problem - The objective and the start.
  * @param config - A value of `smoothSolvers.space` (the tag and the chosen solver's knobs).
@@ -193,6 +247,7 @@ export function loggedSolver(
       ctx.log('solver/objective', r.value)
       ctx.log('solver/gradNorm', Math.hypot(...r.grad))
       ctx.log('solver/step', r.step)
+      if (r.lr !== undefined) ctx.log('solver/lr', r.lr)
       extra?.(r.x, ctx)
       return next
     },
@@ -209,9 +264,19 @@ export const solverContract: Contract<unknown> = {
   'solver/step': scalar({ description: 'the length of the last step (or trust radius, as the solver calls it)' }),
 }
 
+/** The path only the `gradient` mode logs, for the contract of a method that can take it. */
+export const gradientContract: Contract<unknown> = {
+  'solver/lr': scalar({ description: 'the learning rate of the last step, from the optimiser and its schedule' }),
+}
+
 /** What `loggedSolver`'s paths keep by default. */
 export const solverDefaults: Readonly<Record<string, LogSpec>> = {
   'solver/objective': Log(),
   'solver/gradNorm': Log(),
   'solver/step': Log(),
+}
+
+/** What the `gradient` mode's learning-rate path keeps by default. */
+export const gradientDefaults: Readonly<Record<string, LogSpec>> = {
+  'solver/lr': Log(),
 }

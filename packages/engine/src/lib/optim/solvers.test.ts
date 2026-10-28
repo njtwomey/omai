@@ -12,7 +12,7 @@ const bowl: SmoothProblem = {
 }
 
 describe('smoothSolvers', () => {
-  it('is one slot over six solvers with the knobs of the chosen one', () => {
+  it('is one slot over seven solvers with the knobs of the chosen one', () => {
     expect(smoothSolvers.names).toEqual([
       'gradientDescent',
       'conjugateGradient',
@@ -20,6 +20,7 @@ describe('smoothSolvers', () => {
       'bfgs',
       'lbfgs',
       'coordinateDescent',
+      'gradient',
     ])
     // The learning rate is a knob of the fixed and Barzilai-Borwein steps only.
     expect(defaults(smoothSolvers.space)).toEqual({ kind: 'gradientDescent', step: 'line-search', gradTol: 1e-5 })

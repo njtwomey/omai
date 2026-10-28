@@ -3,8 +3,9 @@
  * standard events, serialisation, the record plumbing and the kind's standard probes, so that a particular method is a
  * few declarations. Here the iterative base (a library algorithm run as a session behind scikit-learn's `fit`), the
  * trainer base (minibatch training of a network over `fitAlgorithm`, with parameter checkpoints for probes at any
- * step), the agent base (an agent learning in an environment over `trainingAlgorithm`) and the estimator kinds as
- * add-ons; the sweep and procedure bases follow.
+ * step), the agent base (an agent learning in an environment over `trainingAlgorithm`), the sweep and repeated-fit base
+ * (a study that runs an inner method over a grid or sample of its knobs, with repeats, and the race of variants in
+ * lockstep) and the estimator kinds as add-ons; the procedure base follows.
  *
  * @inline
  */
@@ -12,4 +13,5 @@
 export * from './agent.ts'
 export * from './iterative.ts'
 export * from './kinds.ts'
+export * from './sweep.ts'
 export * from './trainer.ts'
