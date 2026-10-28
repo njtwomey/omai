@@ -7,7 +7,7 @@ Distribution shift planted and met: covariate, label and concept shift, subpopul
 - Planting: a shift of each kind between a source and a target, with its size as the knob.
 - Detection: two-sample tests (KS, MMD, classifier two-sample), drift detectors on a stream (ADWIN, DDM, Page-Hinkley) stepped as data arrive.
 - Effect: a model's score under each shift; importance weighting by density ratio (`unsupervised-learning/density-ratio`).
-- Adaptation: reweighting, domain adaptation (`transfer-and-meta-learning`), retraining windows.
+- Adaptation: reweighting, domain adaptation (`transfer-learning`), retraining windows.
 
 ## Examples to make
 

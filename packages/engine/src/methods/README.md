@@ -85,10 +85,27 @@ Three kinds of file in a folder:
 
 Nothing under `methods/` draws. Rendering lives in `mdml-render`; a folder's README says what it needs drawn.
 
-**The tree today.** The fifty folders named after the encyclopedia's chapters, each with a page, were written before
-this layout was decided and mirror the encyclopedia too literally. They stay for now as the catalogue of
+**The tree today.** The fifty-odd folders named after the encyclopedia's chapters, each with a page, were written
+before this layout was decided and mirror the encyclopedia too literally. They stay for now as the catalogue of
 capabilities (what to build, with examples, rendering needs and problems); when building starts each capability
-moves to its folder above and the chapter folders go. The twelve built areas move the same way: `cluster` and
+moves to its folder above and the chapter folders go. One chapter was re-cut on 2026-10-28: `transfer-and-meta-learning`
+conflated three things and is now `transfer-learning` (fine-tuning, domain adaptation, domain generalisation,
+continual, federated), `meta-learning` (MAML and its kin, metric and model-based learners, hypernetworks, learned
+optimisers, hypergradients) and `multi-task-learning` (parameter sharing, task weighting, gradient surgery, auxiliary
+tasks, task affinity), which the old chapter did not mention at all.
+
+**The README format.** Each chapter's README is the to-do list for its area, in the form prototyped on `mathematics`
+(linear algebra in full), `time-series`, `probabilistic-inference` (the sequence models laid out) and the three
+chapters above: the opening paragraph; a **Structure** block giving the folder tree the chapter's methods will form
+under the layout above, with the full proposed path of every group and the chapter's `shared/` helpers named, so the
+move is a lookup; one **Methods** table per group with the columns `method` | `why it is interesting` (what to look
+into, which outputs matter, the knob worth turning, the comparison worth making) | `tracks` (the paths on the tape,
+each tagged scalar, tensor, tensor kept in full, probe, projection or event) | `needs from lib` (the module and the
+function that exists, or what is missing marked TODO) | `status` (`built <path>`, `lib ready`, `lib partly`, `lib
+missing`); a **shared/** table (`helper` | `what it does` | `used by`); then the Examples, Rendering and Problems
+sections as before. A family of modes is one row that names the slot carrying the modes (`arima` with the fit as a
+mode), not a row per mode. The tracks column is the contract a method will declare and the paths a page can ask for,
+named as the built methods name theirs (`solver/objective`, `model/params`, `image/pixels`, `chain/position`). The twelve built areas move the same way: `cluster` and
 `mixture` to `fit/cluster` (the mixture of experts to `fit/regress`), `linear` to `fit/classify` and `fit/regress`,
 `tune` to `study/`, `sampling` and `sequence` (the hidden Markov model) to `infer/`, `dynamics` to
 `simulate/dynamics` (ODE systems) and `infer/filters` (Kalman tracking), `linalg` to `simulate/numerics`,
