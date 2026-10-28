@@ -1,31 +1,93 @@
 # Convolutional networks (part 6, neural architectures)
 
-Convolution and the networks built on it: the building blocks (convolution, padding, stride, pooling, normalisation) watched on an image, the classic architectures at small scale, dense prediction (segmentation, detection heads), convolution beyond images (1-D on sequences, graphs), and interpreting convolutional networks (filters, feature maps, saliency, class activation maps), as sessions over `nn`, `vision` and the trainer base.
+Convolution and the networks built on it: the building blocks (convolution, padding, stride, dilation, transposed convolution, pooling, normalisation) watched on an image, the receptive field, the classic architectures at small scale (LeNet, VGG-like, ResNet, ConvNeXt, MobileNet) with skip connections and group equivariance, dense prediction (segmentation, a detection head, image-to-image), and interpreting convolutional networks (filters, feature maps, saliency and its family, Grad-CAM, occlusion, feature visualisation), as sessions over `nn`, `vision`, `explain`, `signal/image` and the trainer base, on the rendered images of `datasets`.
 
-## Capabilities
+## Structure
 
-- A convolution stepped: the kernel sliding over the image, the output pixel computed; options: the kernel (named or learned), padding, stride, dilation.
-- Training a small network on `datasets` shapes or digits: the filters and feature maps as probes at the viewed step, the accuracy on the tape.
-- Dense prediction: a small U-Net on the geometric scenes, the predicted mask against the truth each epoch.
-- Interpretation: saliency and Grad-CAM for a chosen image at the viewed step (with `trustworthy-machine-learning/interpretability`).
-- Receptive fields grown layer by layer.
+Problem methods of the torch world (section 7.2 of `methods/README.md`), so they live under `train/networks/convolutional/`, a sibling of the feedforward chapter's folders and on the same trainer base (`methods/shared/bases/trainer.ts`, planned); the stepped operations are probe-only methods of the same folder rather than `process/images/`, so a chapter is one tree. Convolution on sequences and on graphs are `see` rows (`sequence-models`, `graph-neural-networks`); the vision transformer is `transformers`'; classical vision (filters, features, segmentation without learning) is `computer-vision`'s and `process/images/`.
+
+```
+train/networks/convolutional/
+  operations/       convolution stepped, padding and stride, dilation, transposed convolution, pooling and unpooling, the receptive field, cost
+  architectures/    LeNet on digits, the classic families as modes, skip connections at depth, group-equivariant convolution, spatial transformers
+  dense-prediction/ U-Net segmentation, an anchor-based detection head, image-to-image (denoising, super-resolution, inpainting)
+  interpretation/   filters and feature maps, the saliency family, Grad-CAM and layer attribution, occlusion, feature visualisation, concepts
+  shared/           the image slot with truth, the feature-map and filter probes, the mask and box overlays (below)
+```
+
+## Methods
+
+Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, `t!` a tensor kept in full, `p` a probe computed from the state at any step, `proj` a projection over the tape, `e` an event, `m` a message with a payload. Trained rows step one minibatch at a time on the trainer base (`train/loss`, `train/gradNorm`, `train/lr`, `eval/<metric>`, `model/params` as checkpoints; `TODO: methods/shared/bases/trainer.ts` over `nn/training/fit.ts`: `fitAlgorithm`); the operations step one output position or one layer. Feature maps are `layer/<i>/activations` t! and filters `layer/<i>/weights` t, as images. Nothing in this chapter is built.
+
+### operations/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `convolution` | The kernel sliding over the image one output pixel per step, the patch and the kernel multiplied and summed (the im2col view as the other picture: `unfold` turns the image into patches and the convolution into one matrix product); the kernel as the mode (named: identity, box blur, Gaussian, Sobel, Laplacian; or random; or a trained first-layer filter), padding and stride as knobs with the output size they give; cross-correlation against true convolution (the flipped kernel). | `conv/position` s, `conv/patch` t, `conv/output` t! (filling in), `conv/picture` p (image, kernel, output side by side), `conv/im2col` p | `nn/functional/conv.ts`: `conv2d`, `unfold`, `fold`; `signal/image/filters.ts`: `sobel`, `prewitt`, `laplace`, `gaussianFilter`; `vision/blur.ts`: `getGaussianKernel`; `datasets/images.ts`: `shapes`, `geometricScenes` | |
+| `stride-dilation-transpose` | Stride as subsampling and dilation as a spread kernel (modes), the receptive field each gives; the transposed convolution as the adjoint (the kernel stamped onto the output, checkerboard artefacts at stride 2) and as upsampling then convolution; depthwise and separable convolution with their parameter counts against the full one. | `conv/output` t!, `conv/receptiveField` s, `conv/params` s, `conv/flops` s, `conv/picture` p | `nn/functional/conv.ts`: `conv2d` (stride, dilation), `convTransposed`, `convTranspose2d`, `depthwiseConv`, `separableConv`, `convTransposeOutputSize`; `nn/describe.ts`: `functionFlops` | |
+| `pooling` | Max against average pooling (modes) on a feature map, the indices max pooling keeps and unpooling restores, adaptive pooling to a fixed size, global pooling as the bridge to a classifier; translation invariance measured: the output's change as the input shifts by one pixel (the knob). | `pool/output` t!, `pool/indices` t, `pool/shiftError` s, `pool/picture` p | `nn/functional/pooling.ts`: `maxPool`, `maxPoolWithIndices`, `maxUnpool`, `avgPool`, `adaptiveAvgPool`, `globalAvgPool`, `lpPool` | |
+| `receptive-field` | The receptive field grown layer by layer through a stack (one layer per step): its size and stride from the kernels, strides and dilations, drawn on the input as the region one output pixel sees; the effective receptive field (the gradient of one output pixel with respect to the input, Gaussian-shaped and smaller than the theoretical) at the viewed training step. | `layer/<i>/receptiveField` s, `layer/<i>/stride` s, `field/theoretical` p, `field/effective` p (the input gradient) | TODO `nn/describe.ts`: `receptiveField` (the arithmetic over a module's conv and pool layers, as `blocks/sequence.ts` has for a `TCN`); `autodiff/transforms.ts`: `grad` (the effective field) | |
+
+### architectures/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `lenet` | A LeNet on the rendered digits (trains in seconds): the accuracy on the tape, the first filters becoming edge and stroke detectors over training, the feature maps of one digit at every layer at the viewed step (channels tiled), the confusion matrix, the misclassified digits as a grid; the architecture's knobs (channels, kernel size, pooling, activation) as the space. The page that proves the trainer base on images. | `train/loss` s, `eval/accuracy` s, `layer/<i>/weights` t (filters), `layer/<i>/activations` t! (feature maps), `model/filters` p, `model/featureMaps` p, `model/confusion` p, `model/mistakes` p, `model/params` p | `nn/module/conv.ts`: `Conv2d`; `nn/module/pooling.ts`: `MaxPool2d`, `AvgPool2d`; `nn/module/layers.ts`: `Linear`, `Flatten`; `nn/module/module.ts`: `tap`; `nn/training/callbacks.ts`: `activationLogger`; `datasets/images.ts`: `digitGlyphs`, `fashionMnistTest`; `metrics/classification.ts`: `confusionMatrix` | |
+| `classic-families` | The family as the mode at reduced width: VGG-like plain stacks, ResNet (basic and bottleneck blocks), ConvNeXt, MobileNet (inverted residuals with squeeze-and-excitation), each with its parameter and FLOP count from the describer; accuracy against cost on one small image set is the comparison; the architecture drawn as a structure with live shapes. | `train/loss` s, `eval/accuracy` s, `model/params` p, `model/structure` p, `model/cost` s (params, FLOPs), `study/accuracyCost` proj | `nn/blocks/vision.ts`: `BasicBlock`, `Bottleneck`, `ConvNeXtBlock`, `MBConv`, `SqueezeExcitation`; `nn/module/conv.ts`: `Conv2d`; `nn/module/normalisation.ts`: `BatchNorm2d`, `GroupNorm`; `nn/describe.ts`: `describe`, `layerTable`, `flops`, `summary`; `datasets/images.ts`: `shapes`, `digitGlyphs`, `fashionMnistTest` | |
+| `skip-connections` | A plain stack against a residual one as the depth grows (the knob): the gradient norm per layer at initialisation and during training (the plain stack's vanishing), the training loss of the deep plain network worse than the shallow one (the degradation ResNet fixed), the residual branches' contribution per block; batch norm's part in it. | `layer/<i>/gradNorm` s, `train/loss` s, `eval/accuracy` s, `block/<i>/residualNorm` s, `study/depthCurve` proj | `nn/blocks/vision.ts`: `BasicBlock`; `nn/module/containers.ts`: `Residual`, `Sequential`; `nn/training/callbacks.ts`: `gradNormLogger` | |
+| `group-equivariant` | p4 group convolution: the input rotated by a quarter turn, the feature maps rotating with it (the lifting layer's four orientations as a probe), the equivariance error at zero for the group layer and large for a plain one; orientation pooling for invariance; accuracy on rotated test images against augmentation as the other route. The geometric view of symmetries is `graph-neural-networks`' (geometric deep learning); this is its image instance. | `train/loss` s, `eval/accuracy` s, `eval/rotatedAccuracy` s, `equivariance/error` s, `layer/<i>/orientations` p (the four maps), `model/params` p | `nn/equivariant.ts`: `P4LiftingConv`, `P4GroupConv`, `OrientationPool`, `rotate90`, `equivarianceError`, `invarianceError`; `datasets/images.ts`: `shapes` | |
+| `spatial-transformer` | A localisation network predicting an affine transform, the sampling grid and bilinear sampling differentiable: on digits with random scale, shift and slant the predicted transform undoing the nuisance (the grid drawn on the input, the canonical output beside it) as training proceeds; the classifier after it against one without. | `train/loss` s, `eval/accuracy` s, `stn/theta` t, `stn/grid` p (over the input), `stn/output` p (the canonical image) | `nn/module/vision.ts`: `SpatialTransformer`; `nn/functional/sampling.ts`: `affineGrid`, `gridSample`, `identityTheta`; `datasets/images.ts`: `digitGlyphs` (scale, shift, slant) | |
+| `vision-transformer` | see transformers | | | |
+| `temporal-convolution` | see sequence-models | | | |
+| `graph-convolution` | see graph-neural-networks | | | |
+| `convolutional-autoencoder` | see generative-models | | | |
+
+### dense-prediction/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `unet-segmentation` | A small U-Net on the geometric scenes: the predicted mask against the truth each epoch (the boundary sharpening), the loss as the mode (cross-entropy, Dice, Tversky, Lovász), the IoU on the tape, the skip connections' feature maps at the viewed step, the depth and width as knobs; class imbalance (small objects) as what Dice fixes. | `train/loss` s, `eval/iou` s, `eval/dice` s, `model/mask` p (over the image), `layer/<i>/activations` t!, `model/params` p | `nn/blocks/vision.ts`: `DoubleConv`, `UNetDown`, `UNetUp`; `losses/segmentation.ts`: `dice`, `tversky`, `lovaszSoftmax`; `losses/classification.ts`: `crossEntropy`; `metrics/segmentation.ts`: `meanIou`, `diceCoefficient`, `boundaryF1`; `datasets/images.ts`: `shapes` (masks), `geometricScenes` | |
+| `detection-head` | A single-stage detector on the shapes: anchors over the feature map (the grid drawn), matching by IoU (the positives per step as an event), box regression and focal classification losses, decoding and non-maximum suppression at the viewed step (the boxes before and after), mean average precision on the tape; a feature pyramid for several scales as the mode. | `train/loss` s, `train/boxLoss` s, `train/classLoss` s, `eval/map` s, `detect/anchors` p, `detect/matched` m, `model/boxes` p (before and after NMS), `model/params` p | `vision/boxes.ts`: `generateAnchors`, `gridAnchors`, `matchAnchors`, `encodeBoxes`, `decodeBoxes`, `nms`; `losses/classification.ts`: `focal`; `losses/regression.ts`: `smoothL1`; `metrics/detection.ts`: `boxIou`, `detectionMeanAveragePrecision`; `nn/blocks/vision.ts`: `FeaturePyramid`; `datasets/images.ts`: `shapes` (boxes) | |
+| `image-to-image` | Denoising, super-resolution and inpainting as modes of one encoder-decoder (or U-Net): the corrupted input, the output and the truth side by side at the viewed step, PSNR and SSIM on the tape, the upsampling as the knob (transposed convolution, nearest or bilinear then convolution, pixel shuffle) with its artefacts; a perceptual loss on a hidden layer against the pixel loss. | `train/loss` s, `eval/psnr` s, `eval/ssim` s, `model/output` p (triptych), `model/params` p | `nn/functional/vision.ts`: `interpolate`, `pixelShuffle`; `nn/module/vision.ts`: `Upsample`, `PixelShuffle`; `nn/module/conv.ts`: `ConvTranspose2d`; `metrics/image-quality.ts`: `peakSignalNoiseRatio`, `structuralSimilarity`; `signal/image/filters.ts`: `gaussianFilter` (the degradation); `nn/functional/regularisation.ts`: `cutout` (the holes); `datasets/images.ts`: `geometricScenes`, `fashionMnistTest` | |
+
+### interpretation/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `filters-and-feature-maps` | The first-layer filters as images at every step (random, then oriented edges and colour blobs), each channel's feature map for one image tiled as a mosaic per layer, the channel that fires most for each class; the filters' spectra (what frequencies they pass). A probe-only page over any trained session's checkpoints. | `layer/<i>/weights` t, `layer/<i>/activations` t!, `model/filters` p, `model/featureMaps` p, `model/topChannels` p | `nn/module/module.ts`: `tap`; `nn/training/callbacks.ts`: `activationLogger`; `exposition/images.ts`: `imageSteps`; `numerics/fourier/fft.ts`: `fft2` | |
+| `saliency-family` | The attribution as the mode on one image at the viewed training step: the input gradient, input × gradient, integrated gradients (the path as a knob), SmoothGrad, guided backprop, deconvolution, LRP: the maps side by side over the image, where the network looks changing as it learns; the deletion curve as the faithfulness check (pixels removed in order of attribution, the score falling). | `explain/map` t! (per method), `explain/picture` p, `explain/deletionCurve` p, `eval/faithfulness` s | `explain/gradients.ts`: `saliency`, `inputXGradient`, `integratedGradients`, `smoothGrad`, `guidedBackprop`, `deconvolution`, `lrp`; `explain/evaluation.ts`: `deletionCurve`, `faithfulnessCorrelation` | |
+| `grad-cam` | The last convolutional layer's maps weighted by the gradient of the class score: the coarse heat map over the image at the viewed step, the layer as the knob (earlier layers finer, less semantic), layer and neuron conductance as the finer attributions; the class as the other knob (the map moves to the other object). Interpretability in general is `trustworthy-machine-learning`'s; these are the convolutional instances. | `explain/cam` t!, `explain/picture` p, `explain/layer` s, `explain/conductance` t | `explain/gradients.ts`: `gradCam`, `interpolateMap`; `explain/internal.ts`: `layerConductance`, `neuronConductance`, `layerGradientXActivation` | |
+| `occlusion` | A patch slid over the image (one position per step), the class score falling where the evidence is; the patch size and stride as knobs; RISE (random masks) as the mode with the saliency estimate converging as masks accumulate. | `occlude/position` s, `occlude/score` s, `occlude/map` t!, `occlude/picture` p | `explain/perturbation.ts`: `occlusion`, `rise`, `featureAblation` | |
+| `feature-visualisation` | Gradient ascent on the input to maximise a channel or a class score, one ascent step per step (the image emerging from noise, with jitter and blur as the regularisers that keep it natural), the channel as the knob; the dataset examples that most activate the channel beside it. | `ascent/image` t!, `ascent/activation` s, `ascent/picture` p, `channel/topExamples` p | `autodiff/transforms.ts`: `grad` (over the input); `signal/image/filters.ts`: `gaussianFilter` (the blur); TODO `explain/gradients.ts`: `featureVisualisation` (the regularised ascent as an `Algorithm`) | |
+| `concept-activation` | A concept (stripes, a colour) as a direction in a layer's activation space from labelled examples, the class's sensitivity to it (TCAV) at the viewed training step; a linear probe on each layer for the concept, its accuracy by depth. | `concept/sensitivity` s, `concept/direction` t, `probe/<i>/accuracy` s, `concept/examples` p | `explain/concepts.ts`: `conceptActivationVector`, `tcav`, `directionalDerivatives`, `linearProbe` | |
+| `adversarial-examples` | see trustworthy-machine-learning | | | |
+| `fine-tuning-and-transfer` | see transfer-learning | | | |
+
+## shared/
+
+| helper | what it does | used by |
+| --- | --- | --- |
+| `images.ts` | The image slot with its truth: `shapes` (labels, boxes, masks), `digitGlyphs` (labels and clean images), `geometricScenes` (edges and corners), `barsAndStripes`, `fashionMnistTest` (remote, pinned); the noise, blur and holes modifiers for image-to-image; a rotated test split for equivariance | every group |
+| `probes.ts` | The filter and feature-map probes (`layer/<i>/weights` and `layer/<i>/activations` as image mosaics through `tap` and `activationLogger`), the top channels per class, the effective receptive field; shared with `feedforward-networks`' per-layer probes | `architectures/`, `interpretation/` |
+| `overlays.ts` | Masks, boxes, attribution maps and sampling grids drawn over an image at the viewed step, as the `picture` of `methods/vision/` does for classical vision | `dense-prediction/`, `interpretation/`, `architectures/spatial-transformer` |
+| `kernels.ts` | The named kernels of `convolution` (identity, blurs, Sobel, Laplacian) with their expected outputs | `operations/` |
 
 ## Examples to make
 
-- The sliding kernel with the output filling in, kernel as a knob (edge, blur, learned).
-- First-layer filters becoming edge detectors over training, the feature maps of one image beside them.
-- A U-Net's mask sharpening epoch by epoch on a scene (the vision methods' scenes).
-- Grad-CAM over training: where the network looks as it learns.
+- The sliding kernel with the output filling in, the kernel as a knob (edge, blur, learned), the im2col matrix beside it.
+- LeNet on the digits: the first-layer filters becoming edge detectors over training, the feature maps of one digit beside them, the accuracy on the tape.
+- A plain twenty-layer stack against its residual twin: the gradient norm per layer at step 0 and the loss curves.
+- A U-Net's mask sharpening epoch by epoch on a scene, Dice against cross-entropy.
+- Grad-CAM over training: where the network looks as it learns, the class as a knob.
+- p4 equivariance: the input rotated, the four orientation maps rotating with it, the error at zero.
 
 ## Rendering
 
-- Images and image steps (`image`, `imageSteps`), grids of filters and feature maps, masks over images (the vision `picture` helper), curves.
-- Missing: an image-grid panel kind (many small images at the viewed step with labels).
-
-## Shared
-
-- `shared/`: the image data slot with truth (from `datasets` and `vision`), the feature-map probes; the trainer base from `feedforward-networks`.
+- Images and image steps (`image`, `imageSteps`), grids of filters and feature maps, masks, boxes and heat maps over images, curves, structures for architectures.
+- Missing: an image-grid panel (many small images at the viewed step with labels); the architecture diagram with live shapes; a triptych panel (input, output, truth) that follows the cursor; the per-layer small multiples of `feedforward-networks`.
 
 ## Problems
 
-- Shares the scene data of `computer-vision`; convolution on the main thread is slow: tiny images, and the worker.
+- Convolution on the main thread is slow: 16 to 32 pixel images, few channels, and the worker producer for anything more; the describer's FLOP counts say what a page can afford.
+- The interpretation group overlaps `trustworthy-machine-learning/interpretability`, which owns attribution in general; the rows here are the ones whose picture is an image over a convolutional network, and the two chapters must agree on which chapter a Grad-CAM page belongs to (here, by the rule that it lives where its comparison lives: the map over training).
+- The library gaps are two helpers: `receptiveField` in `nn/describe.ts` and `featureVisualisation` in `explain/gradients.ts`.
