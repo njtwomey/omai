@@ -10,7 +10,14 @@ import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
 import { diffusionPaths } from 'mdml-engine/methods/stochastic'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
-import { grabCutSegmentation, kltTracking, peronaMalik, slicSuperpixels, snakes } from 'mdml-engine/methods/vision'
+import {
+  grabCutSegmentation,
+  haarBoosting,
+  kltTracking,
+  peronaMalik,
+  slicSuperpixels,
+  snakes,
+} from 'mdml-engine/methods/vision'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -417,6 +424,20 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'projection', name: 'board', title: 'the mask' },
       { kind: 'curves', paths: ['cut/overlap'], title: 'overlap with the object' },
       { kind: 'curves', paths: ['cut/energy'] },
+    ],
+  },
+  {
+    id: 'vision/haar-boosting',
+    title: 'Haar features and boosting',
+    summary:
+      'Viola-Jones: one decision stump over a Haar-like feature per round, the windows it gets wrong weighing more in the next.',
+    method: haarBoosting,
+    steps: 40,
+    layout: [
+      { kind: 'probe', path: 'boost/stump', title: 'the feature just chosen' },
+      { kind: 'probe', path: 'boost/template', title: 'what the classifier looks for so far' },
+      { kind: 'curves', paths: ['boost/trainingError', 'boost/error'], title: 'errors' },
+      { kind: 'probe', path: 'boost/weights', title: 'the windows’ weights' },
     ],
   },
 ]
