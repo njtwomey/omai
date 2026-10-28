@@ -1,3 +1,5 @@
+import { datasetRegistry } from 'mdml-engine/datasets'
+import { environmentRegistry } from 'mdml-engine/environments'
 import { thresholdConfusion } from 'mdml-engine/metrics'
 import { structure } from 'mdml-engine/scene'
 import { bool, choice, dict, int, real } from 'mdml-engine/space'
@@ -8,7 +10,11 @@ import { Choice } from './controls/Choice.tsx'
 import { ColumnOrder, moveItem } from './controls/ColumnOrder.tsx'
 import { ControlLayout, ControlPanel, PanelArea } from './controls/ControlPanel.tsx'
 import { DatasetPicker } from './controls/DatasetPicker.tsx'
+import { DatasetSelector } from './controls/DatasetSelector.tsx'
 import { selectEntry } from './controls/datasets.ts'
+import { EntryList } from './controls/EntryList.tsx'
+import { EnvironmentSelector } from './controls/EnvironmentSelector.tsx'
+import { selectEnvironment } from './controls/environments.ts'
 import { MethodControls } from './controls/MethodControls.tsx'
 import { NumberField } from './controls/NumberField.tsx'
 import { SeedInput } from './controls/SeedInput.tsx'
@@ -219,5 +225,79 @@ describe('React bindings render on the server', () => {
     const plain = renderToString(<ThresholdExplorer yTrue={y} scores={scores} threshold={0.5} controls={false} />)
     expect(plain).not.toContain('follow the cheapest')
     expect(plain).toContain('TP')
+  })
+})
+
+describe('registry selectors render on the server', () => {
+  it('draws an entry list with a search box, titles and tag chips, the chosen row selected', () => {
+    const html = renderToString(
+      <EntryList
+        label="things"
+        rows={[
+          { name: 'a', title: 'Thing A', tags: ['real', '10 rows'] },
+          { name: 'b', title: 'Thing B', tags: ['synthetic'] },
+        ]}
+        value="b"
+        onChange={noop}
+      />,
+    )
+    expect(html).toContain('role="listbox"')
+    expect(html).toContain('type="search"')
+    expect(html).toContain('aria-selected="true"')
+    expect(html).toContain('Thing A')
+    expect(html).toContain('10 rows')
+    expect(html.match(/role="option"/g)?.length).toBe(2)
+    expect(renderToString(<EntryList label="t" rows={[]} value="" onChange={noop} search={false} />)).not.toContain(
+      'type="search"',
+    )
+  })
+
+  it('draws the dataset selector filtered by its props, with the chosen entry’s tags, provenance and knobs', () => {
+    const real = renderToString(
+      <DatasetSelector kind="classification" real value={selectEntry(datasetRegistry, 'iris')} onChange={noop} />,
+    )
+    expect(real).toContain('Iris')
+    expect(real).toContain('Wine')
+    expect(real).not.toContain('Two moons')
+    expect(real).toContain('scikit-learn load_iris')
+    expect(real).not.toContain('aria-label="New seed"')
+    const synthetic = renderToString(
+      <DatasetSelector
+        modality={['tabular']}
+        real={false}
+        value={selectEntry(datasetRegistry, 'moons')}
+        onChange={noop}
+      />,
+    )
+    expect(synthetic).toContain('Two moons')
+    expect(synthetic).not.toContain('Iris')
+    expect(synthetic).toContain('aria-label="New seed"')
+    expect(synthetic).toContain('noise')
+    expect(
+      renderToString(<DatasetSelector form="remote" value={{ name: 'x', seed: 0, knobs: {} }} onChange={noop} />),
+    ).toContain('remote')
+  })
+
+  it('draws the environment selector with the chosen entry’s spaces and options', () => {
+    const html = renderToString(
+      <EnvironmentSelector
+        family={['classicControl', 'gridWorld']}
+        actions="discrete"
+        value={selectEnvironment(environmentRegistry, 'frozenLake')}
+        onChange={noop}
+      />,
+    )
+    expect(html).toContain('Frozen lake (4 by 4)')
+    expect(html).toContain('Cart-pole')
+    expect(html).not.toContain('Pendulum')
+    expect(html).toContain('FrozenLake-v1')
+    expect(html).toContain('Discrete(16)')
+    expect(html).toContain('Discrete(4)')
+    expect(html).toContain('isSlippery')
+    const game = renderToString(
+      <EnvironmentSelector multiAgent value={selectEnvironment(environmentRegistry, 'ticTacToe')} onChange={noop} />,
+    )
+    expect(game).toContain('2 agents')
+    expect(game).toContain('observations (player_0)')
   })
 })

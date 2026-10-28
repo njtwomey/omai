@@ -1,16 +1,64 @@
 /**
  * A dataset picker: a select over a dataset collection's entries with arrows to step through them, and for generated
- * entries a seed and the generator's knobs as controls; `useDataset` generates or loads the chosen dataset once per
- * change.
+ * entries a seed and the generator's knobs as controls (`DatasetKnobs`, which the dataset selector shares);
+ * `useDataset` generates or loads the chosen dataset once per change, from a collection or a registry.
  */
 
 import type { Dataset, Generated } from 'mdml-engine/data'
 import type { DatasetCollection } from 'mdml-engine/datasets'
 import { type ReactNode, useMemo } from 'react'
-import { collectionOf, type DatasetSelection, entryKnobSpace, loadSelection, selectEntry } from './datasets.ts'
+import {
+  collectionOf,
+  type DatasetSelection,
+  type DatasetSource,
+  entryKnobSpace,
+  loadSelection,
+  type PickableEntry,
+  selectEntry,
+} from './datasets.ts'
 import { SeedInput } from './SeedInput.tsx'
 import { Select } from './Select.tsx'
 import { SpaceControls } from './SpaceControls.tsx'
+
+/** Props of {@link DatasetKnobs}. */
+export interface DatasetKnobsProps {
+  /** The chosen entry (nothing is drawn for a vendored or remote one, or none). */
+  readonly entry: PickableEntry | undefined
+  readonly value: DatasetSelection
+  readonly onChange: (selection: DatasetSelection) => void
+  /** Show the generator's knobs as controls (default true). */
+  readonly knobs?: boolean
+  /** Knobs to leave out (say `n`, when the page fixes the sample size). */
+  readonly exclude?: readonly string[]
+  readonly disabled?: boolean
+}
+
+/**
+ * The seed and the generator's knobs of a selection, as controls: what the picker and the selector draw under the
+ * chosen entry when it is generated.
+ *
+ * @param props - The entry, the selection and what to call with a new one.
+ * @returns The controls, or nothing for an entry without a generator.
+ */
+export function DatasetKnobs(props: DatasetKnobsProps): ReactNode {
+  const { entry, value, onChange, knobs = true, exclude = [], disabled = false } = props
+  const space = entry === undefined ? undefined : entryKnobSpace(entry)
+  if (space === undefined) return null
+  return (
+    <>
+      <SeedInput value={value.seed} onChange={(seed) => onChange({ ...value, seed })} disabled={disabled} />
+      {knobs ? (
+        <SpaceControls
+          space={space}
+          value={value.knobs}
+          onChange={(k) => onChange({ ...value, knobs: k })}
+          exclude={exclude}
+          disabled={disabled}
+        />
+      ) : null}
+    </>
+  )
+}
 
 /** Props of {@link DatasetPicker}. */
 export interface DatasetPickerProps {
@@ -38,7 +86,6 @@ export function DatasetPicker(props: DatasetPickerProps): ReactNode {
   const { value, onChange, knobs = true, exclude = [], label = 'dataset', disabled = false } = props
   const collection = collectionOf(props.collection)
   const entry = collection.entries.find((e) => e.name === value.name)
-  const space = entry === undefined ? undefined : entryKnobSpace(entry)
   return (
     <>
       <Select
@@ -48,20 +95,14 @@ export function DatasetPicker(props: DatasetPickerProps): ReactNode {
         onChange={(name) => onChange(selectEntry(collection, name, value.seed))}
         disabled={disabled}
       />
-      {space === undefined ? null : (
-        <>
-          <SeedInput value={value.seed} onChange={(seed) => onChange({ ...value, seed })} disabled={disabled} />
-          {knobs ? (
-            <SpaceControls
-              space={space}
-              value={value.knobs}
-              onChange={(k) => onChange({ ...value, knobs: k })}
-              exclude={exclude}
-              disabled={disabled}
-            />
-          ) : null}
-        </>
-      )}
+      <DatasetKnobs
+        entry={entry}
+        value={value}
+        onChange={onChange}
+        knobs={knobs}
+        exclude={exclude}
+        disabled={disabled}
+      />
     </>
   )
 }
@@ -69,16 +110,15 @@ export function DatasetPicker(props: DatasetPickerProps): ReactNode {
 /**
  * The dataset a selection names, generated (or loaded) once per change of selection.
  *
- * @param collection - The collection.
+ * @param source - A collection id, a collection or a registry.
  * @param selection - The selection.
  * @returns The data, with its truth for generated entries.
  */
 export function useDataset(
-  collection: string | DatasetCollection,
+  source: DatasetSource,
   selection: DatasetSelection,
 ): { readonly data: Dataset } & Partial<Generated> {
-  const id = typeof collection === 'string' ? collection : collection.id
   const knobs = JSON.stringify(selection.knobs)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the selection is compared by content, not identity
-  return useMemo(() => loadSelection(collection, selection), [id, selection.name, selection.seed, knobs])
+  return useMemo(() => loadSelection(source, selection), [source, selection.name, selection.seed, knobs])
 }
