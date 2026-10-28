@@ -3052,6 +3052,37 @@ oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans`
 checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
 (`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
 leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`)
+### 4.40a `decomposition/`: linear and factor decompositions (scikit-learn decomposition, cross_decomposition, random_projection)
+
+Decompositions as transformers: each iterative routine is a traced `Algorithm` with a serialising state, each model an
+estimator on the iterative base (`kind: 'transformer'`, so the standard `model/embedding` probe exists at every step and
+`fittedAt(t)` is the model so far). `_linear.ts` (private) holds the matrix helpers they share: column means, centring, a
+thin SVD with scikit-learn's sign convention, projection and reconstruction.
+- `pca.ts`: `pcaSvdAlgorithm` (one step finds every component; exact or the randomised SVD of `numerics/linalg`),
+  `powerPcaAlgorithm` (power iteration, one component per step, kept orthogonal to those found), `incrementalPcaAlgorithm`
+  (one batch folded into the running mean, variance and SVD per step), `sparsePcaAlgorithm` (a penalised rank-one
+  decomposition, one soft-thresholded component per step), `pcaLogLikelihood`, `pcaVerbs` (transform with whitening,
+  inverse transform, the probabilistic score) and the estimators `pca` (solver `full`, `randomized` or `power`),
+  `incrementalPca`, `sparsePca`.
+- `ica.ts`: FastICA on whitened data: `fastIcaAlgorithm` (parallel: symmetric decorrelation, one iteration per step),
+  `fastIcaDeflationAlgorithm` (one component per step), the contrasts `logcosh`, `exp` and `cube`, the estimator `fastIca`.
+- `nmf.ts`: `nmfAlgorithm` (multiplicative updates for the Frobenius or Kullback-Leibler loss, HALS sweeps for Frobenius;
+  the stopping rule lives in the state, so a replay stops where the run did), `nndsvda`, `nmfDivergence`, the estimator
+  `nmf` (transform solves W for new rows with H fixed).
+- `cross-decomposition.ts`: `plsAlgorithm` (NIPALS for PLS regression, PLS canonical and CCA, one component per step, the
+  score correlation on the tape), estimators `plsRegression`, `plsCanonical`, `cca`, and `plsSvd` (closed form).
+- `probabilistic.ts`: `probabilisticPca` (closed form from the SVD), `factorAnalysisAlgorithm` (scikit-learn's SVD-based
+  maximum-likelihood iteration, one per step), `factorAnalysis` with varimax and quartimax (`rotateLoadings`),
+  `latentVerbs` and `latentCovariance`. `random-projection.ts`: `randomProjection` (Gaussian and sparse, the
+  Johnson-Lindenstrauss dimension, a distortion report).
+- TODO: Infomax ICA, online and coordinate-descent NMF with penalties, truncated SVD and dictionary learning as
+  estimators (`text/representations.ts` and `optim/dictionary.ts` have the routines), kernel PCA pre-images.
+
+oracle: scikit-learn PCA, IncrementalPCA, FastICA (parallel, with fixed initial unmixing), NMF (`mu` from fixed factors),
+PLSRegression, PLSCanonical, CCA, PLSSVD and FactorAnalysis (`methods/decomposition/*` fixtures, kept at their old
+paths; PCA is also checked through power iteration), plus deflationary FastICA (`decomposition/ica_deflation`) and NMF
+by coordinate descent against HALS (`decomposition/nmf_hals`)
+
 ### 4.41 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
 
 The algorithms behind linear models, moved from the parked methods layer. `design.ts` (private) builds the design

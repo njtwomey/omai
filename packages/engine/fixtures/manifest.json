@@ -115,6 +115,24 @@
       "cases": 4
     },
     {
+      "fixture": "decomposition/ica_deflation.json",
+      "source": "oracle/cases/decomposition/ica_deflation.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "decomposition/nmf_hals.json",
+      "source": "oracle/cases/decomposition/nmf_hals.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "distances/evaluate.json",
       "source": "oracle/cases/distances/evaluate.py",
       "reference": {
