@@ -10,7 +10,7 @@ import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
 import { diffusionPaths } from 'mdml-engine/methods/stochastic'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
-import { peronaMalik, slicSuperpixels, snakes } from 'mdml-engine/methods/vision'
+import { kltTracking, peronaMalik, slicSuperpixels, snakes } from 'mdml-engine/methods/vision'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -390,6 +390,19 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'curves', paths: ['contour/overlap'], title: 'overlap with the shape' },
       { kind: 'curves', paths: ['contour/area'] },
       { kind: 'curves', paths: ['contour/moved'] },
+    ],
+  },
+  {
+    id: 'vision/klt-tracking',
+    title: 'Point tracking',
+    summary:
+      'Kanade-Lucas-Tomasi: the corners of a drifting scene followed frame to frame by pyramidal Lucas-Kanade, until they leave the frame.',
+    method: kltTracking,
+    steps: 47,
+    layout: [
+      { kind: 'probe', path: 'track/picture', title: 'the frame and its points' },
+      { kind: 'curves', paths: ['track/error'], title: 'mean distance from the true corners (px)' },
+      { kind: 'curves', paths: ['track/alive'] },
     ],
   },
 ]
