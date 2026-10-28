@@ -14,6 +14,12 @@ export interface SplitCandidate {
   readonly impurityLeft: number
   readonly impurityRight: number
   readonly decrease: number
+  /** For a categorical split, the category codes sent left (the threshold is then meaningless). */
+  readonly categories?: readonly number[]
+  /** Where rows with a missing value go, when some did (or a rule for future ones). */
+  readonly missingLeft?: boolean
+  /** The score the split was ranked by, when it is not `decrease` (Friedman's improvement, C4.5's gain ratio). */
+  readonly score?: number
 }
 
 /** One node of a grown tree, with everything needed to explain how it was grown. */
@@ -34,6 +40,12 @@ export interface TreeNode {
     readonly threshold: number
     readonly left: number
     readonly right: number
+    /** For a categorical split, the category codes sent left. */
+    readonly categories?: readonly number[]
+    /** Whether rows with a missing value go left. */
+    readonly missingLeft?: boolean
+    /** For a multiway split (ID3, C4.5, CHAID): every branch, with the category codes it takes. */
+    readonly branches?: readonly { readonly child: number; readonly categories: readonly number[] }[]
   }
   /** When the node was grown (0 for the root). */
   readonly order: number

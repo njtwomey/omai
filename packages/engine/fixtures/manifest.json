@@ -479,6 +479,30 @@
       "cases": 9
     },
     {
+      "fixture": "ensembles/adaboost.json",
+      "source": "oracle/cases/ensembles/adaboost.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "ensembles/gradient_boosting.json",
+      "source": "oracle/cases/ensembles/gradient_boosting.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "ensembles/histogram_boosting.json",
+      "source": "oracle/cases/ensembles/histogram_boosting.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "explain/gradients.json",
       "source": "oracle/cases/explain/gradients.py",
       "reference": {
@@ -4920,6 +4944,14 @@
         "numpy": "2.5.4"
       },
       "cases": 20
+    },
+    {
+      "fixture": "trees/grow.json",
+      "source": "oracle/cases/trees/grow.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
     },
     {
       "fixture": "tune/bayesian.json",
