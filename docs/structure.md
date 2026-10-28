@@ -3081,15 +3081,100 @@ Left in 4.39 after round two (one line each):
 - TODO: dedicated records and views for exposure in rankings, causal decompositions and repeated decisions.
 - TODO: thin methods for causal, regression and ranking fairness (the core is built).
 
-### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster)
+### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster, scipy hierarchy)
 
-Clustering as traced `Algorithm`s, moved out of the parked methods layer. `kmeans.ts` holds Lloyd's algorithm and
-mini-batch k-means, the initial centres (k-means++, random rows or given) and the nearest-centre assignment. A state
-keeps no past: `observe` exposes the metrics `inertia` and `moved` and the `state` tensors `centres` `[k, d]` and
-`labels` `[n]`, declared in the schema, and the tape records the history. The other clusterers (bisecting, kernel,
-density, hierarchical, spectral, ...) are still parked and arrive here as they are needed.
+Clustering as traced `Algorithm`s with estimators on the iterative base. A state keeps no past: `observe` exposes the
+metrics and the `state` tensors (`labels` `[n]`, `centres` `[k, d]`, ...) declared in the schema, and the tape records
+the history; every state serialises (`stateToJson`). Estimators are `iterative(...)` values (`kind: 'clusterer'`), so
+`.method(data)`, `.session(data)` and `fittedAt(t)` exist and the standard `model/assignments` probe works at any step;
+the distance-based ones take a `metric` from `distances` (or `'precomputed'`, through `distanceMatrix`).
+- `kmeans.ts`: Lloyd's algorithm and mini-batch k-means, the initial centres (k-means++, random rows or given) and the
+  nearest-centre assignment. `kmeans-variants.ts`: Elkan's bounds (`elkanAlgorithm`, counting the distances computed and
+  skipped), bisecting k-means (one split per step) and kernel k-means (`kernelKMeansAlgorithm` over a Gram matrix, with
+  the spectral relaxation as an initial labelling), each with an estimator (`elkanKMeans`, `bisectingKMeans`,
+  `kernelKMeans`).
+- `density.ts`: `dbscanAlgorithm` (one cluster grown per step), `opticsAlgorithm` (one point of the reachability
+  ordering per step) with `opticsOrdering` and `opticsClustersAt`, `hdbscan` (core distances, the single-linkage tree of
+  the mutual reachability distance, `condenseTree`, `selectClusters` by excess of mass: labels, probabilities, the
+  condensed tree and the stabilities), `meanShiftAlgorithm` (every seed moves each step) with `estimateBandwidth` and
+  `meanShiftCentres`; estimators `dbscan`, `optics`, `hdbscanClustering`, `meanShift`.
+- `hierarchical.ts`: `agglomerativeAlgorithm` (one merge per step, every linkage by Lance-Williams, the partition and the
+  linkage matrix on the tape), `linkageMatrix`, `singleLinkageTree`, `cutTree`, `copheneticDistances`,
+  `copheneticCorrelation`, `dendrogram`; BIRCH as a CF-tree in an arena (`birchAlgorithm` inserts one row per step,
+  node splits and the chain of leaves as scikit-learn's); estimators `agglomerativeClustering` and `birch`.
+- `medoids.ts`: PAM (`pamAlgorithm`: the BUILD steps, then the best swap per step), CLARA (`claraAlgorithm`: PAM on a
+  random sample per step), `kMedoids`. `fuzzy.ts`: `fuzzyCMeansAlgorithm`, `fuzzyMemberships`, `fuzzyCMeans`.
+- `spectral.ts`: the assembly over `graph/spectral.ts` (`affinityMatrix`, `spectralClusteringEmbedding`,
+  `spectralClusteringAlgorithm`: the embedding, then Lloyd's steps on it) and `spectralClustering`. `exemplar.ts`:
+  `affinityPropagationAlgorithm` (one damped round of messages per step, scikit-learn's tie-breaking noise from a key),
+  `affinityPropagationFit`, `affinityPropagation`. `constrained.ts`: `copKMeansAlgorithm`, `constrainedAssignment`,
+  `brokenConstraints`, `copKMeans`.
+- `validity.ts`: the choice of k: `kmeansElbow`, `gapStatistic` (Tibshirani's rule over uniform references) and
+  `stabilityIndex` (adjusted Rand agreement of clusterings of subsamples). `_support.ts` is private to the folder.
 
-oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path)
+oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path, also
+checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
+(`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
+leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`)
+### 4.40a `decomposition/`: linear and factor decompositions (scikit-learn decomposition, cross_decomposition, random_projection)
+
+Decompositions as transformers: each iterative routine is a traced `Algorithm` with a serialising state, each model an
+estimator on the iterative base (`kind: 'transformer'`, so the standard `model/embedding` probe exists at every step and
+`fittedAt(t)` is the model so far). `_linear.ts` (private) holds the matrix helpers they share: column means, centring, a
+thin SVD with scikit-learn's sign convention, projection and reconstruction.
+- `pca.ts`: `pcaSvdAlgorithm` (one step finds every component; exact or the randomised SVD of `numerics/linalg`),
+  `powerPcaAlgorithm` (power iteration, one component per step, kept orthogonal to those found), `incrementalPcaAlgorithm`
+  (one batch folded into the running mean, variance and SVD per step), `sparsePcaAlgorithm` (a penalised rank-one
+  decomposition, one soft-thresholded component per step), `pcaLogLikelihood`, `pcaVerbs` (transform with whitening,
+  inverse transform, the probabilistic score) and the estimators `pca` (solver `full`, `randomized` or `power`),
+  `incrementalPca`, `sparsePca`.
+- `ica.ts`: FastICA on whitened data: `fastIcaAlgorithm` (parallel: symmetric decorrelation, one iteration per step),
+  `fastIcaDeflationAlgorithm` (one component per step), the contrasts `logcosh`, `exp` and `cube`, the estimator `fastIca`.
+- `nmf.ts`: `nmfAlgorithm` (multiplicative updates for the Frobenius or Kullback-Leibler loss, HALS sweeps for Frobenius;
+  the stopping rule lives in the state, so a replay stops where the run did), `nndsvda`, `nmfDivergence`, the estimator
+  `nmf` (transform solves W for new rows with H fixed).
+- `cross-decomposition.ts`: `plsAlgorithm` (NIPALS for PLS regression, PLS canonical and CCA, one component per step, the
+  score correlation on the tape), estimators `plsRegression`, `plsCanonical`, `cca`, and `plsSvd` (closed form).
+- `probabilistic.ts`: `probabilisticPca` (closed form from the SVD), `factorAnalysisAlgorithm` (scikit-learn's SVD-based
+  maximum-likelihood iteration, one per step), `factorAnalysis` with varimax and quartimax (`rotateLoadings`),
+  `latentVerbs` and `latentCovariance`. `random-projection.ts`: `randomProjection` (Gaussian and sparse, the
+  Johnson-Lindenstrauss dimension, a distortion report).
+- TODO: Infomax ICA, online and coordinate-descent NMF with penalties, truncated SVD and dictionary learning as
+  estimators (`text/representations.ts` and `optim/dictionary.ts` have the routines), kernel PCA pre-images.
+
+oracle: scikit-learn PCA, IncrementalPCA, FastICA (parallel, with fixed initial unmixing), NMF (`mu` from fixed factors),
+PLSRegression, PLSCanonical, CCA, PLSSVD and FactorAnalysis (`methods/decomposition/*` fixtures, kept at their old
+paths; PCA is also checked through power iteration), plus deflationary FastICA (`decomposition/ica_deflation`) and NMF
+by coordinate descent against HALS (`decomposition/nmf_hals`)
+
+### 4.40b `manifold/`: embeddings and manifold learning (scikit-learn manifold, umap-learn)
+
+Embeddings as traced `Algorithm`s with estimators (`kind: 'transformer'`). The algorithms that iterate observe the
+configuration at every step as the `embedding` tensor `[n, k]` (and their objective as a metric), which is what an
+`embeddingSteps` record is built from. A fitted embedding has `transform`: the training rows give their fitted
+embedding, other rows the inverse-distance-weighted mean of their nearest training rows' (none of these methods has a
+closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_support.ts` is private.
+- `mds.ts`: `classicalMds`, `classicalMdsAlgorithm`, `smacofAlgorithm` (a Guttman transform per step; metric, or
+  non-metric with disparities by isotonic regression through `learn`'s `poolAdjacentViolators`), estimator `mds`.
+- `isomap.ts`: `neighbourEdges`, `geodesicDistances` (Floyd-Warshall over the neighbour graph), `isomap`. `lle.ts`:
+  `barycentreWeights`, `locallyLinearEmbedding` (standard; modified, Hessian and LTSA are TODO). `spectral.ts`:
+  `spectralEmbedding` (Laplacian eigenmaps over `cluster`'s affinities and `graph/spectral.ts`) and `diffusionMap`.
+- `tsne.ts`: `conditionalProbabilities` (the perplexity search), `jointProbabilities`, `sparseJointProbabilities`,
+  `tsneGradient`, `barnesHutKl` (a quadtree or octree of the embedding), `tsneAlgorithm` (early exaggeration, momentum,
+  gains, the two stages as scikit-learn runs them; exact for dense P, Barnes-Hut for sparse), `tsneSetup`, `tsne`.
+- `umap.ts`: `findAbParams` (the curve fit by `optim`), `fuzzySimplicialSet`, `umapAlgorithm` (one epoch of edge and
+  negative sampling per step), `umapSetup`, `umap`. `som.ts`: `somAlgorithm` (one epoch per step; observes the
+  weights and the rows' grid positions), `uMatrix`, `selfOrganisingMap`.
+- `quality.ts`: `trustworthiness`, `continuity`, `neighbourhoodPreservation`, `coRankingMatrix`, `rnxCurve`,
+  `embeddingStress`, `neighbourRanks`.
+- TODO: PaCMAP and TriMap, Barnes-Hut error control by a tree built once per step in typed arrays, UMAP with a sparse
+  graph (the memberships are dense `[n, n]`), the supervised and parametric variants.
+
+oracle: scikit-learn trustworthiness, Isomap, LocallyLinearEmbedding, SpectralEmbedding and metric SMACOF
+(`methods/manifold/*`, kept at their old paths), non-metric SMACOF (`manifold/mds_nonmetric`), and t-SNE through
+scikit-learn's own `_joint_probabilities`, `_joint_probabilities_nn`, `_kl_divergence`, `_kl_divergence_bh` (angle 0) and
+`_gradient_descent` (`manifold/tsne`; umap-learn is not in the oracle group, so UMAP is checked by properties)
+
 ### 4.41 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
 
 The algorithms behind linear models, moved from the parked methods layer. `design.ts` (private) builds the design
@@ -3231,8 +3316,9 @@ index picks a metric by name and a control can draw its knobs. Every computation
 - `evaluate.ts`: `distance(a, b, name, options)` and `similarity(a, b, name, options)` between corresponding rows, two
   points, or a point and rows; `pairwiseDistances(a, b?, name, options)` and `pairwiseSimilarities(a, b?, name,
   options)` for the `[m, n]` matrix (`b` omitted: among the rows of `a`); shapes checked once, scipy's defaults for
-  seuclidean and mahalanobis filled from the points. An unknown name is a `value` error, mismatched points a `shape`
-  error.
+  seuclidean and mahalanobis filled from the points. `distanceMatrix(x, metric, options)` is the flat `n x n` form
+  for algorithms that work on distances (clusterers, embeddings, outlier factors), with `'precomputed'` as a metric
+  (the input is the matrix). An unknown name is a `value` error, mismatched points a `shape` error.
 
 oracle: scipy.spatial.distance (cdist and the scalar functions row by row), scikit-learn's cosine_similarity,
 linear_kernel, rbf_kernel, laplacian_kernel and haversine_distances, numpy.corrcoef (`fixtures/distances/evaluate.json`);

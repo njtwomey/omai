@@ -2,6 +2,24 @@
   "schema": "mdml.fixtures/1",
   "fixtures": [
     {
+      "fixture": "cluster/birch.json",
+      "source": "oracle/cases/cluster/birch.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "cluster/mean_shift.json",
+      "source": "oracle/cases/cluster/mean_shift.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "data/batching.json",
       "source": "oracle/cases/data/batching.py",
       "reference": {
@@ -95,6 +113,24 @@
         "statsmodels": "0.15.0"
       },
       "cases": 4
+    },
+    {
+      "fixture": "decomposition/ica_deflation.json",
+      "source": "oracle/cases/decomposition/ica_deflation.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "decomposition/nmf_hals.json",
+      "source": "oracle/cases/decomposition/nmf_hals.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 9
     },
     {
       "fixture": "distances/evaluate.json",
@@ -1458,6 +1494,24 @@
         "torch": "2.14.1"
       },
       "cases": 18
+    },
+    {
+      "fixture": "manifold/mds_nonmetric.json",
+      "source": "oracle/cases/manifold/mds_nonmetric.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "manifold/tsne.json",
+      "source": "oracle/cases/manifold/tsne.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
     },
     {
       "fixture": "methods/anomaly/neighbours.json",
