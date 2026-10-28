@@ -10,7 +10,7 @@ import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
 import { diffusionPaths } from 'mdml-engine/methods/stochastic'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
-import { peronaMalik, slicSuperpixels } from 'mdml-engine/methods/vision'
+import { peronaMalik, slicSuperpixels, snakes } from 'mdml-engine/methods/vision'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -376,6 +376,20 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'tensor', path: 'segments/labels', title: 'the superpixel of each pixel' },
       { kind: 'curves', paths: ['segments/leak'], title: 'pixels leaking across a true edge' },
       { kind: 'curves', paths: ['segments/moved'] },
+    ],
+  },
+  {
+    id: 'vision/active-contour',
+    title: 'Active contour',
+    summary:
+      'A snake starts as a rectangle at the frame and shrinks, its elasticity pulling it in until the shape’s edges hold it.',
+    method: snakes,
+    steps: 300,
+    layout: [
+      { kind: 'probe', path: 'contour/picture', title: 'the snake on the shape' },
+      { kind: 'curves', paths: ['contour/overlap'], title: 'overlap with the shape' },
+      { kind: 'curves', paths: ['contour/area'] },
+      { kind: 'curves', paths: ['contour/moved'] },
     ],
   },
 ]
