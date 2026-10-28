@@ -85,7 +85,7 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 | A fastText variant                                       | `methods/embedding/fasttext.ts` (subword vectors and the supervised classifier); it shares `lib/text/shingles.ts` with shingle matching, and powers the dense mode of `methods/retrieval/approximate-matching.ts`.                                                                                                                    |
 | Active learning                                          | New `methods/active-learning/`.                                                                                                                                                                                                                                                                                                       |
 | Elo and rating models                                    | `methods/models/rating.ts`.                                                                                                                                                                                                                                                                                                           |
-| Classical vision (Hough)                                 | `lib/signal/image/features.ts` and `methods/vision/classical.ts`.                                                                                                                                                                                                                                                                     |
+| Classical vision (Hough)                                 | `lib/signal/image/features.ts` (Hough) and `lib/vision/` (4.43).                                                                                                                                                                                                                                                                      |
 | Rendering every environment                              | `render(state)` is part of the environment contract; episodes re-render from traces by deterministic replay.                                                                                                                                                                                                                          |
 | RL beyond the primitive                                  | `methods/rl/agents/` covers the main families; new environment suites.                                                                                                                                                                                                                                                                |
 | NMF                                                      | `methods/decomposition/nmf.ts`.                                                                                                                                                                                                                                                                                                       |
@@ -408,6 +408,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `datasets`    | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                         |
 | `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
+| `vision`      | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                           |
 
 ### 4.1 `base/`
 
@@ -3056,6 +3057,75 @@ helpers stay parked. The golden keeps its fixture under `methods/mixture/gaussia
   the tensors `responsibilities` `[n, k]`, `gate` and `experts` `[k, d + 1]` and `variances` `[k]`. `moeGate`,
   `moeExpertMeans`, `moePredict` (the mixture mean), `moePosterior` and `moeAssignments` read parameters.
 
+### 4.43 `vision/`: classical computer vision (OpenCV)
+
+Classical computer vision, shaped as OpenCV's imgproc, calib, features, video and photo modules, on images as tensors
+`[H, W]` or `[H, W, C]` with values in [0, 1]. It builds on `signal/image` (the scikit-image and scipy.ndimage layer:
+filters, morphology, Canny, Harris, HOG, Hough, watershed) and never repeats it; where OpenCV's 8-bit semantics matter
+(thresholds, FAST, LSD, CLAHE, adaptive thresholds) the functions see the image at 256 levels and emulate OpenCV's
+float32 arithmetic, so they match it exactly. Point sets are `[n, 2]` as (x, y); boxes `[n, 4]` as (x1, y1, x2, y2).
+Iterative pieces are traced `Algorithm`s (SORT, KLT, background models, anisotropic diffusion, inpainting, SLIC, active
+contours, GrabCut, AdaBoost), each with a function that runs it. Exact outputs of SLIC, GrabCut, snakes, mean-shift
+segmentation and seam carving are implementation-defined, so those are property-tested.
+
+oracle: OpenCV 5 (opencv-python-headless, group `oracle-vision`), scikit-image, torchvision.ops, scipy (least squares
+references); goldens per module under `fixtures/vision/`
+built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/geometry`, `optim`
+(Levenberg-Marquardt, linear sum assignment), `stats` (RANSAC, quantiles), `dynamics/filtering`, `mixture`, `cluster`,
+`graph` (min cut), `metrics` (box IoU), `random`, `trace`
+- `_image.ts` (private): rasters, 256-level views, float32 and fused multiply-add emulation, OpenCV's fastAtan2.
+- `colour.ts`: `cvtColor` and its conversions between RGB, grey (BT.601 and BT.709), HSV, XYZ, Lab (D65 or another
+  white) and YCrCb, golden against OpenCV. `colour-balance.ts`: sRGB linearisation, gamma, grey-world and white-patch
+  balance, channel split and merge.
+- `histograms.ts`: `calcHist`, `calcBackProject`, `equalizeHist`, `clahe` (bit-exact on arm64), `matchHistograms`,
+  `rescaleIntensity`, `contrastStretch`, `normalize`, `compareHist` (correlation, chi-square, intersection,
+  Bhattacharyya, KL).
+- `blur.ts`: OpenCV's border modes, `getGaussianKernel` (its bit-exact tables), `gaussianBlur`, `blur`, `medianBlur`,
+  `filter2D`.
+- `thresholds.ts`: `threshold` (binary, inverse, truncate, to zero, with Otsu, Li or triangle), `adaptiveThreshold`
+  (mean and Gaussian, 8-bit semantics), multi-level Otsu, Niblack and Sauvola.
+- `contours.ts`: `findContours` (Suzuki and Abe, OpenCV's hierarchy and order, every retrieval mode, chain or simple
+  approximation), `approxPolyDP`, `arcLength`, `contourArea`, `boundingRect`, `isContourConvex`, `pointPolygonTest`.
+  `moments.ts`: spatial, central and normalised moments, Hu moments, `matchShapes`. `hull.ts`: `convexHull`
+  (Sklansky), `convexityDefects`. `fitting.ts`: `minAreaRect`, `boxPoints`, `minEnclosingCircle`, `fitEllipse`,
+  `fitLine` (least squares and robust M-estimators). `components.ts`: `connectedComponentsWithStats`, `floodFill`.
+- `draw.ts`: functional drawing returning new images: OpenCV's line iterator, Wu's anti-aliased lines, rectangles,
+  circles, ellipses, polylines, filled polygons, and contour, keypoint and match views.
+- `boxes.ts`: box formats, area, clipping, scaling, `nms`, `batchedNms`, `softNms` (as cv2.dnn), anchors, box
+  encoding and decoding, anchor matching (torchvision's Matcher), golden against torchvision.ops.
+- `fast.ts`: FAST-9 corners with OpenCV's score and suppression. `scale-space.ts`: Gaussian and difference-of-Gaussian
+  scale spaces and SIFT-style keypoints (sub-pixel refinement, edge rejection, orientations). `descriptors.ts`:
+  SIFT-like descriptors, BRIEF and ORB (keyed binary patterns). `matching.ts`: brute-force matching (L1, L2, Hamming,
+  cross-check, k nearest) as BFMatcher, and the ratio test.
+- `geometry.ts`: `getPerspectiveTransform`, `getAffineTransform`, `perspectiveTransform`, `findHomography`,
+  `estimateAffine2D` and `findFundamentalMat` (direct, RANSAC through `stats`, with local re-scoring and
+  Levenberg-Marquardt refinement), epipolar lines, Sampson distance. `epipolar.ts`: essential matrices (five-point
+  free: normalised eight-point with the rank constraint), their decomposition, `triangulatePoints`, `recoverPose`.
+- `camera.ts`: Rodrigues vectors, `projectPoints` (OpenCV's radial and tangential distortion, differentiable
+  `projectValue`), `undistortPoints`, `initUndistortRectifyMap`, `remap`, `undistortImage`, reprojection error,
+  `solvePnP` and `solvePnPRansac`. `calibration.ts`: `calibrateCamera` (Zhang's method with zero skew, then
+  Levenberg-Marquardt over intrinsics, distortion and poses) and `stereoRectify` (Bouguet).
+- `stereo.ts`: block matching (SAD, SSD or NCC, sub-pixel, left-right check), semi-global matching (4 or 8 paths),
+  `disparityToDepth`, `reprojectImageTo3D`.
+- `tracking.ts`: SORT (a Kalman filter per track from `dynamics/filtering`, Hungarian assignment on IoU from `optim`),
+  `meanShift` and `camShift` as OpenCV, pyramidal Lucas-Kanade (`calcOpticalFlowPyrLK`, `kltAlgorithm`).
+  `background.ts`: `accumulateWeighted`, a running-average model and Stauffer-Grimson per-pixel mixtures.
+- `denoise.ts`: non-local means, `denoiseTvChambolle` (golden against scikit-image), Perona-Malik diffusion, the guided
+  filter, harmonic inpainting (the adaptive Wiener filter stays `signal`'s `wiener`).
+- `segmentation.ts`: SLIC superpixels, seeded region growing, mean-shift segmentation, k-means colour quantisation
+  (over `cluster`). `snakes.ts`: active contours. `grabcut.ts`: GrabCut with mixture colour models and min cuts.
+  `seams.ts`: seam energy, minimum seams, removal, content-aware resizing.
+- `pyramids.ts`: `pyrDown`, `pyrUp` (OpenCV's kernels, borders and odd sizes), `buildPyramid`, Laplacian pyramids and
+  multiresolution blending.
+- `haar.ts`: Haar-like features (scikit-image's types and order), discrete AdaBoost on stumps, attentional cascades,
+  `detectMultiScale`. `hog-detector.ts`: HOG features of windows and sliding-window detection with a linear classifier
+  over a pyramid. `lines.ts`: line segment detection as OpenCV's LSD (exact at LSD_REFINE_NONE, scale 1), validated by
+  density and the number of false alarms.
+- Image quality (PSNR, SSIM and the rest) is `metrics/image-quality.ts`; neural detection heads stay in `methods/vision` (5.x).
+- TODO: TC89 chain approximations and RETR_FLOODFILL, `fitEllipseDirect` and AMS, Telea inpainting, the fast mode of
+  non-local means, stereoRectify's alpha-dependent camera matrices, StereoBM's pre-filter and SGBM's Birchfield-Tomasi
+  cost, LSD's sub-sampling and refinement, OpenCV's cascade XML and HOGDescriptor layouts.
+
 ## 5. Methods, exposition records, views and the hub
 
 > **Status, 2026-10-26.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
@@ -3719,17 +3789,18 @@ built from: `nn/language-model.ts`, `nn/decoding.ts`, `text`, `retrieval`, `mode
   stylometry (function-word profiles, Burrows' Delta), authorship attribution.
 - `agents.ts`: a tool-use loop contract whose steps are trace events.
 
-`vision/` (OpenCV, torchvision.ops)
-oracle: torchvision.ops, OpenCV
-built from: `signal/image`, `numerics/geometry`, `optim`, `stats/robust.ts`, `dynamics/filtering`, `metrics`
-- `boxes.ts`: box formats and conversions, non-maximum suppression (hard, soft, batched).
-- `detection.ts`: anchors, box encoding and decoding, anchor matching, FCOS targets, feature-pyramid level assignment.
-- `classical.ts`: classical pipelines: Hough line and circle detection, lane finding, RANSAC line and circle fitting,
-  Harris corners with descriptor matching, homography panoramas, template matching.
-- `geometry.ts`: two-view geometry (homographies, fundamental matrices, triangulation), camera calibration, stereo
-  disparity by block matching.
-- `segmentation.ts`: region growing, superpixels and graph-cut segmentation studies.
-- `tracking.ts`: Kalman and SORT-style tracking, mean-shift tracking, optical-flow tracking.
+`vision/` (neural detection heads; parked)
+oracle: torchvision.ops, torchvision.models.detection
+built from: `vision` (core, 4.43), `nn`, `losses`, `metrics`
+The classical parts of this plan now live in the core `lib/vision` (4.43, with Hough transforms in `signal/image`):
+boxes, non-maximum suppression, anchors, box coding and anchor matching; contours, keypoints, descriptors and matching,
+line segments, Haar cascades and HOG detection; two-view geometry, calibration and stereo; segmentation, tracking and
+background subtraction. Only what needs a trained network remains for methods:
+- `detection.ts`: detection heads and their targets (FCOS centre-ness and regression targets, feature-pyramid level
+  assignment, focal-loss classification), decoded through the core's `boxes.ts`.
+- When the methods layer restarts, thin wrappers (a summary and a smoke test each) turning the core's classical
+  pipelines into exposition records: panoramas from features and homographies, calibration from a chessboard, lane
+  finding, tracking by detection.
 
 `audio/`
 oracle: librosa
@@ -3964,7 +4035,8 @@ with initialisation schemes, normalisation and dropout, snapshot predictors and 
   (reduced): classification networks with feature-map taps.
 - `unet.ts`: U-Net segmentation.
 - `vit.ts`: vision transformers (patch embeddings, class tokens), attention rollout.
-- `detection.ts`: a small single-stage detector (anchor-free), built on `vision/detection.ts`.
+- `detection.ts`: a small single-stage detector (anchor-free), built on `vision/detection.ts` and the core's
+  `lib/vision/boxes.ts`.
 - `autoencoders.ts`: convolutional autoencoders for images.
 
 `neural/sequence/`
@@ -4783,7 +4855,8 @@ A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and de
 fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy, python-sat, clingo,
 networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
-rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel with ecos for its LPs, nashpy),
+rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel with ecos for its LPs, nashpy), `oracle-vision`
+(opencv-python-headless),
 `oracle-misc` (lifelines, mlxtend, pysubgroup, umap-learn, hdbscan, dowhy, econml, causal-learn, pysindy, faiss-cpu,
 implicit, optuna).
 - `oracle/mdml_oracle/settings.py`: `OracleSettings` (reads the root `.env`; output paths; selection by path prefix
@@ -4897,7 +4970,8 @@ library for the same computation. They do not set a higher bar than that library
 | `torch.optim`, `lr_scheduler`         | `lib/optim/`                                                                |
 | `torch.utils.data`                    | `lib/data/batching.ts`                                                      |
 | `torch.distributions`                 | `lib/dists/`                                                                |
-| `torchvision.ops`                     | `methods/vision/boxes.ts`, `lib/metrics/detection-segmentation.ts`          |
+| `torchvision.ops`                     | `lib/vision/boxes.ts`, `lib/metrics/detection-segmentation.ts`              |
+| OpenCV                                | `lib/vision/`                                                               |
 | `torchmetrics`                        | `lib/metrics/`                                                              |
 | `torchdiffeq`, `torchsde`, diffrax    | `lib/dynamics/ode/`, `lib/stochastic/sde.ts`, `lib/nn/blocks/continuous.ts` |
 | DeepXDE                               | `methods/scientific/pinns/`                                                 |

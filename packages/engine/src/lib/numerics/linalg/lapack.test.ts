@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dasum, ddot, dgemv, idamax } from './blas.ts'
+import { dasum, ddot, dgemm, dgemv, idamax } from './blas.ts'
 import { dgeqrf, dgesv, dgesvd, dpotrf, dpotrs, dsyev, dtrsv } from './lapack.ts'
 
 const A = [4, 1, 0.5, 1, 3, -0.5, 0.5, -0.5, 2]
@@ -53,5 +53,14 @@ describe('number-array LAPACK routines', () => {
     expect(idamax([1, -5, 5])).toBe(1)
     expect(dasum([1, -2, 3])).toBe(6)
     expect(ddot([1, 2], [3, 4])).toBe(11)
+  })
+  it('dgemm multiplies with either factor transposed', () => {
+    const a = [1, 2, 3, 4, 5, 6] // 2 x 3
+    const b = [1, 0, 2, 1, 0, 3] // 3 x 2
+    expect(Array.from(dgemm(a, b, 2, 3, 2))).toEqual([5, 11, 14, 23])
+    // A^T A (3 x 3) and A A^T (2 x 2).
+    expect(Array.from(dgemm(a, a, 3, 2, 3, { transposeA: true }))).toEqual([17, 22, 27, 22, 29, 36, 27, 36, 45])
+    expect(Array.from(dgemm(a, a, 2, 3, 2, { transposeB: true }))).toEqual([14, 32, 32, 77])
+    for (let i = 0; i < 2; i++) expect(dgemm(a, b, 2, 3, 2)[i * 2]).toBe(dgemv(a, 2, 3, [1, 2, 0])[i])
   })
 })

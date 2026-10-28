@@ -4727,6 +4727,202 @@
       "cases": 2
     },
     {
+      "fixture": "vision/background.json",
+      "source": "oracle/cases/vision/background.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "vision/blur.json",
+      "source": "oracle/cases/vision/blur.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "vision/boxes.json",
+      "source": "oracle/cases/vision/boxes.py",
+      "reference": {
+        "torchvision": "0.29.1",
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "vision/calibration.json",
+      "source": "oracle/cases/vision/calibration.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "vision/camera.json",
+      "source": "oracle/cases/vision/camera.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "vision/colour.json",
+      "source": "oracle/cases/vision/colour.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "vision/components.json",
+      "source": "oracle/cases/vision/components.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "vision/contours.json",
+      "source": "oracle/cases/vision/contours.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 65
+    },
+    {
+      "fixture": "vision/denoise.json",
+      "source": "oracle/cases/vision/denoise.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "vision/draw.json",
+      "source": "oracle/cases/vision/draw.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "vision/epipolar.json",
+      "source": "oracle/cases/vision/epipolar.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "vision/fast.json",
+      "source": "oracle/cases/vision/fast.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "vision/fitting.json",
+      "source": "oracle/cases/vision/fitting.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 25
+    },
+    {
+      "fixture": "vision/geometry.json",
+      "source": "oracle/cases/vision/geometry.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "vision/haar.json",
+      "source": "oracle/cases/vision/haar.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 18
+    },
+    {
+      "fixture": "vision/histograms.json",
+      "source": "oracle/cases/vision/histograms.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 24
+    },
+    {
+      "fixture": "vision/hull.json",
+      "source": "oracle/cases/vision/hull.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "vision/lines.json",
+      "source": "oracle/cases/vision/lines.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "vision/matching.json",
+      "source": "oracle/cases/vision/matching.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "vision/moments.json",
+      "source": "oracle/cases/vision/moments.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "vision/pyramids.json",
+      "source": "oracle/cases/vision/pyramids.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "vision/stereo.json",
+      "source": "oracle/cases/vision/stereo.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 1
+    },
+    {
+      "fixture": "vision/thresholds.json",
+      "source": "oracle/cases/vision/thresholds.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93",
+        "scikit-image": "0.26.0"
+      },
+      "cases": 27
+    },
+    {
+      "fixture": "vision/tracking.json",
+      "source": "oracle/cases/vision/tracking.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "worlds/analysis.json",
       "source": "oracle/cases/worlds/analysis.py",
       "reference": {
