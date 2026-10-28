@@ -5,6 +5,8 @@
  * robust distances.
  */
 
+// TODO: fitEllipseDirect and fitEllipseAMS.
+
 import { MdmlError } from '../base/index.ts'
 import { dgesvd } from '../numerics/linalg/index.ts'
 import { f32, type PointsLike, pointsOf } from './_image.ts'

@@ -5,6 +5,8 @@
  * the convexity test and the signed distance of a point to a contour (`pointPolygonTest`). Points are (x, y) pairs.
  */
 
+// TODO: the Teh-Chin chain approximations (CHAIN_APPROX_TC89_L1 and KCOS) and RETR_FLOODFILL.
+
 import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { f32, greyOf, type PointsLike, pointsOf } from './_image.ts'
