@@ -4777,6 +4777,14 @@
       "cases": 65
     },
     {
+      "fixture": "vision/denoise.json",
+      "source": "oracle/cases/vision/denoise.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "vision/draw.json",
       "source": "oracle/cases/vision/draw.py",
       "reference": {
@@ -4848,6 +4856,22 @@
         "opencv-python-headless": "5.0.0.93"
       },
       "cases": 23
+    },
+    {
+      "fixture": "vision/pyramids.json",
+      "source": "oracle/cases/vision/pyramids.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "vision/stereo.json",
+      "source": "oracle/cases/vision/stereo.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 1
     },
     {
       "fixture": "vision/thresholds.json",
