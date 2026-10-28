@@ -166,3 +166,42 @@ export function dgemv(
   }
   return out
 }
+
+/**
+ * The matrix product A B of row-major matrices, A m x k and B k x n, either optionally transposed (BLAS dgemm with
+ * alpha 1, beta 0): the small dense products of geometry and calibration code.
+ *
+ * @param a - A, row-major (k x m when transposed).
+ * @param b - B, row-major (n x k when transposed).
+ * @param m - Rows of the product.
+ * @param k - The inner dimension.
+ * @param n - Columns of the product.
+ * @param options - transposeA and transposeB (default false).
+ * @returns The product, m x n row-major.
+ * @example
+ * ```ts
+ * import { dgemm } from 'mdml-engine/numerics/linalg'
+ * Array.from(dgemm([1, 2, 3, 4], [5, 6, 7, 8], 2, 2, 2)) // => [19, 22, 43, 50]
+ * Array.from(dgemm([1, 2, 3, 4], [1, 0, 0, 1], 2, 2, 2, { transposeA: true })) // => [1, 3, 2, 4]
+ * ```
+ */
+export function dgemm(
+  a: ArrayLike<number>,
+  b: ArrayLike<number>,
+  m: number,
+  k: number,
+  n: number,
+  options: { readonly transposeA?: boolean; readonly transposeB?: boolean } = {},
+): Float64Array {
+  const ta = options.transposeA === true
+  const tb = options.transposeB === true
+  const out = new Float64Array(m * n)
+  for (let i = 0; i < m; i++)
+    for (let p = 0; p < k; p++) {
+      const aip = (ta ? a[p * m + i] : a[i * k + p]) ?? 0
+      if (aip === 0) continue
+      for (let j = 0; j < n; j++)
+        out[i * n + j] = (out[i * n + j] ?? 0) + aip * ((tb ? b[j * k + p] : b[p * n + j]) ?? 0)
+    }
+  return out
+}

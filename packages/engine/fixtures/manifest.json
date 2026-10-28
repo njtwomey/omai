@@ -4728,6 +4728,22 @@
       "cases": 25
     },
     {
+      "fixture": "vision/calibration.json",
+      "source": "oracle/cases/vision/calibration.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "vision/camera.json",
+      "source": "oracle/cases/vision/camera.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "vision/colour.json",
       "source": "oracle/cases/vision/colour.py",
       "reference": {
@@ -4753,12 +4769,28 @@
       "cases": 65
     },
     {
+      "fixture": "vision/epipolar.json",
+      "source": "oracle/cases/vision/epipolar.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "vision/fitting.json",
       "source": "oracle/cases/vision/fitting.py",
       "reference": {
         "opencv-python-headless": "5.0.0.93"
       },
       "cases": 25
+    },
+    {
+      "fixture": "vision/geometry.json",
+      "source": "oracle/cases/vision/geometry.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 12
     },
     {
       "fixture": "vision/histograms.json",
