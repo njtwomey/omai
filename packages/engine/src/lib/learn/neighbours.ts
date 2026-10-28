@@ -20,6 +20,7 @@ import { ballTree, kdTree, type SpatialTree } from '../numerics/spatial/index.ts
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
 import { median } from '../stats/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { Log } from '../trace/index.ts'
 import { accuracyOf, classifierFromScores, prefixOf, type RowsState, r2Of, rowsAlgorithm } from './_classify.ts'
 import { type IterativeEstimator, iterative } from './bases/index.ts'
 import type { LearnData } from './estimator.ts'
@@ -458,6 +459,7 @@ export function kNeighboursClassifier(
       hyperSpace: kSpace,
       algorithm: (data, h) => rowsAlgorithm('k-neighbours', rowsOf(data.x), { k: h.nNeighbors }),
       maxSteps: (_h, data) => rowsOf(data.x),
+      logs: { 'solver/rows': Log() },
       params: (s, data) => classifierParams(data, s.n, 'kNeighboursClassifier'),
       verbs: (p, h) => classifierVerbs(p, h, 'kNeighboursClassifier'),
     },
@@ -490,6 +492,7 @@ export function kNeighboursRegressor(
       hyperSpace: kSpace,
       algorithm: (data, h) => rowsAlgorithm('k-neighbours', rowsOf(data.x), { k: h.nNeighbors }),
       maxSteps: (_h, data) => rowsOf(data.x),
+      logs: { 'solver/rows': Log() },
       params: (s, data) => regressorParams(data, s.n, 'kNeighboursRegressor'),
       verbs: (p, h) => regressorVerbs(p, h, 'kNeighboursRegressor'),
     },
@@ -523,6 +526,7 @@ export function radiusNeighboursClassifier(
       hyperSpace: radiusSpace,
       algorithm: (data, h) => rowsAlgorithm('radius-neighbours', rowsOf(data.x), { radius: h.radius }),
       maxSteps: (_h, data) => rowsOf(data.x),
+      logs: { 'solver/rows': Log() },
       params: (s, data) => classifierParams(data, s.n, 'radiusNeighboursClassifier'),
       verbs: (p, h) => classifierVerbs(p, h, 'radiusNeighboursClassifier'),
     },
@@ -555,6 +559,7 @@ export function radiusNeighboursRegressor(
       hyperSpace: radiusSpace,
       algorithm: (data, h) => rowsAlgorithm('radius-neighbours', rowsOf(data.x), { radius: h.radius }),
       maxSteps: (_h, data) => rowsOf(data.x),
+      logs: { 'solver/rows': Log() },
       params: (s, data) => regressorParams(data, s.n, 'radiusNeighboursRegressor'),
       verbs: (p, h) => regressorVerbs(p, h, 'radiusNeighboursRegressor'),
     },
@@ -734,6 +739,7 @@ export function nearestCentroid(
         }),
       algorithm: (data) => rowsAlgorithm('nearest-centroid', rowsOf(data.x)),
       maxSteps: (_h, data) => rowsOf(data.x),
+      logs: { 'solver/rows': Log() },
       params: (s, data, h) => {
         const { classes } = encodeLabels(data.y ?? [], 'nearestCentroid', rowsOf(data.x))
         const { m, head } = memoryOf(data, s.n, 'nearestCentroid')

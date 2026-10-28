@@ -2530,6 +2530,12 @@ modAL for active learning, diffprivlib and opacus for privacy
   Fisher's axes as `transform` with `explainedVarianceRatio`), its presets `linearDiscriminant` and
   `quadraticDiscriminant`, and `kernelFisherDiscriminant` (the axes in a kernel's span with a ridge on the within-class
   scatter). Iterative base, one row per step. oracle: `learn/discriminant` against `sklearn.discriminant_analysis`.
+- `naive-bayes.ts`: `naiveBayes` (Gaussian, multinomial, Bernoulli, categorical and complement as one family whose fitted
+  parameters are sufficient statistics; `naiveBayesPartialFit` adds one weighted row, and the fit is the algorithm that
+  absorbs rows one per step logging `rows`, the prequential `accuracy` and `logLoss`), and on integer-coded features
+  `treeAugmentedNaiveBayes` (`tanAlgorithm`: Prim over the conditional mutual information, one edge per step, logging
+  `edges`, `weight` and the message `edge`) and `aode` (averaged one-dependence estimators, counted a row at a time).
+  oracle: `learn/naive_bayes` against `sklearn.naive_bayes` and, for the last two, numpy forms of their definitions.
 - `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
   the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,

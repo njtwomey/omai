@@ -1189,6 +1189,14 @@
       "cases": 28
     },
     {
+      "fixture": "learn/naive_bayes.json",
+      "source": "oracle/cases/learn/naive_bayes.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "learn/neighbours.json",
       "source": "oracle/cases/learn/neighbours.py",
       "reference": {

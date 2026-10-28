@@ -18,6 +18,7 @@ import { dgemm, dgemv, eigh } from '../numerics/linalg/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { ledoitWolf } from '../stats/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { Log } from '../trace/index.ts'
 import {
   classifierFromScores,
   prefixOf,
@@ -387,6 +388,7 @@ export function discriminantAnalysis(
         }),
       algorithm: (data) => rowsAlgorithm('discriminant-analysis', rowsOf(data.x)),
       maxSteps: (_h, data) => rowsOf(data.x),
+      logs: { 'solver/rows': Log() },
       params: (s, data, h) => {
         const t = training(data, s.n, 'discriminantAnalysis')
         return fitDiscriminant(t.m, t.codes, t.classes, h)
@@ -635,6 +637,7 @@ export function kernelFisherDiscriminant(
         }),
       algorithm: (data) => rowsAlgorithm('kernel-fisher-discriminant', rowsOf(data.x)),
       maxSteps: (_h, data) => rowsOf(data.x),
+      logs: { 'solver/rows': Log() },
       params: (s, data, h) => {
         const t = training(data, s.n, 'kernelFisherDiscriminant')
         return kernelFisherFit(t.m, t.codes, t.classes, h)
