@@ -2525,6 +2525,11 @@ modAL for active learning, diffprivlib and opacus for privacy
   label), and the nearest centroid with Tibshirani's shrinkage and `shrunkenCentroidPath`; estimators on the iterative
   base that absorb the training rows one per step (`solver/rows`), so `fittedAt(t)` is the model on the first `t` rows.
   oracle: `learn/neighbours` against `sklearn.neighbors`.
+- `discriminant.ts`: `discriminantAnalysis` (pooled or per-class Gaussian covariances, shrinkage by a fixed intensity or
+  Ledoit-Wolf, Friedman's mix of the two, eigenvalue regularisation, priors, singular covariances by pseudo-inverse;
+  Fisher's axes as `transform` with `explainedVarianceRatio`), its presets `linearDiscriminant` and
+  `quadraticDiscriminant`, and `kernelFisherDiscriminant` (the axes in a kernel's span with a ridge on the within-class
+  scatter). Iterative base, one row per step. oracle: `learn/discriminant` against `sklearn.discriminant_analysis`.
 - `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
   the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,

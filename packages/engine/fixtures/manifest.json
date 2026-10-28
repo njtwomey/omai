@@ -1140,6 +1140,14 @@
       "cases": 11
     },
     {
+      "fixture": "learn/discriminant.json",
+      "source": "oracle/cases/learn/discriminant.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
