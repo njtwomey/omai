@@ -51,8 +51,9 @@ export function tagLabel(tag: string): string {
 export function Tags(props: { readonly items: readonly string[]; readonly className?: string }): ReactNode {
   return (
     <span className={cx('flex flex-wrap gap-1', props.className)}>
-      {props.items.map((t) => (
+      {[...new Set(props.items)].map((t) => (
         <span
+          // Once each: a kind and a modality may share a name ('sequence', 'graph'), and one chip says it.
           key={t}
           className="rounded border border-(--wb-grid) px-1 text-[10px] leading-4 text-(--wb-muted) select-none"
         >

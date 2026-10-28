@@ -6,7 +6,6 @@ import {
   type ObservationKind,
 } from 'mdml-engine/environments'
 import {
-  Choice,
   ControlPanel,
   EnvironmentSelector,
   firstFrame,
@@ -49,12 +48,13 @@ export default function EnvironmentSelectorRecipe(): ReactNode {
           onChange={setFamily}
           cycle={false}
         />
-        <Choice label="actions" value={actions} options={['any', ...ACTIONS]} onChange={setActions} />
-        <Choice
+        <Select label="actions" value={actions} options={['any', ...ACTIONS]} onChange={setActions} cycle={false} />
+        <Select
           label="observations"
           value={observations}
           options={['any', ...OBSERVATIONS]}
           onChange={setObservations}
+          cycle={false}
         />
         <SeedInput value={seed} onChange={setSeed} label="reset seed" />
       </ControlPanel>
