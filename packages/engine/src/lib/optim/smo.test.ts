@@ -79,3 +79,33 @@ describe('SMO', () => {
     expect(() => O.smo({ Q: [[1]], p: [0], y: [2], C: 1 })).toThrow()
   })
 })
+
+describe('the one-class and SVDD duals', () => {
+  const K = [
+    [1, 0.8, 0.1],
+    [0.8, 1, 0.2],
+    [0.1, 0.2, 1],
+  ]
+
+  it('keeps the sum of the one-class alphas at nu n and the box', () => {
+    const r = O.oneClassDual(K, 2 / 3, { tol: 1e-12 })
+    const a = toFlat(r.alpha)
+    expect(a.reduce((s, v) => s + v, 0)).toBeCloseTo(2, 10)
+    expect(a.every((v) => v >= -1e-12 && v <= 1 + 1e-12)).toBe(true)
+    expect(() => O.oneClassDual(K, 0)).toThrow(/nu/)
+  })
+
+  it('puts the SVDD centre between the points: unit alpha sum, a positive radius, inside scores positive', () => {
+    const r = O.svddDual(K, 1, { tol: 1e-12 })
+    const a = toFlat(r.alpha)
+    expect(a.reduce((s, v) => s + v, 0)).toBeCloseTo(1, 10)
+    expect(r.radiusSquared).toBeGreaterThan(0)
+    // The score 2 sum a_i K(x_i, x_j) - K(x_j, x_j) - rho is >= 0 for every point of a hard ball (C = 1).
+    for (let j = 0; j < 3; j++) {
+      const row = K[j] ?? []
+      const score = 2 * row.reduce((s, k, i) => s + k * (a[i] ?? 0), 0) - (row[j] ?? 0) - r.rho
+      expect(score).toBeGreaterThan(-1e-8)
+    }
+    expect(() => O.svddDual(K, 0.1)).toThrow(/at least/)
+  })
+})

@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 45 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 47 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -411,6 +411,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
 | `vision`      | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                           |
 | `timeseries`  | ARMA and ARIMA theory, estimators and forecasts, exponential smoothing, decomposition, the matrix profile, online detectors, vector autoregression, volatility and reconciliation                |
+| `svm`         | support vector classification and regression (C and nu forms, one-versus-one, Platt probabilities) and novelty detection (one-class, SVDD) as stepped estimators over the SMO duals              |
+| `gp`          | Gaussian-process regression and classification (Laplace, EP), sparse approximations, the relevance vector machine, as stepped estimators                                                         |
 
 ### 4.1 `base/`
 
@@ -1539,7 +1541,9 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `smo.ts`: sequential minimal optimisation (`smo`, `smoAlgorithm`) for quadratic programs with box constraints and
   one linear equality (the SVM dual family, libsvm's solver): working-set selection (maximal violating pair, second
   order WSS3), shrinking with gradient reconstruction, libsvm's rho, traced working pairs and active sets; `svcDual`
-  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables).
+  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables), `oneClassDual` and `svddDual`; `smoRho`.
+- `smo-nu.ts`: libsvm's Solver_NU (`nuSmoAlgorithm`: two equalities, pairs within a class), the feasible starts
+  (`nuSvcStart`, `nuSvrStart`), `nuRho`, and the `nuSvcDual` and `nuSvrDual` duals.
 - `sparse.ts`: sparse approximation, each a traced algorithm: `matchingPursuit`, `orthogonalMatchingPursuit`
   (sklearn's Cholesky OMP, atoms or squared-residual tolerance), `cosamp`, `iterativeHardThresholding` (normalised
   IHT or a fixed step), `basisPursuit` (ADMM with a cached projection), `basisPursuitDenoising` and
@@ -1616,6 +1620,9 @@ import with the installed jax)
   rational quadratic, scaled kernels, or given draws), `orthogonalRandomFeatures`, `nystroem`, `additiveChi2Sampler`,
   `skewedChi2Sampler`, `polynomialCountSketch`, `tensorSketch`, approximation error helpers (`approximateGram`,
   `approximationError`).
+- `named.ts`: kernels chosen by scikit-learn's names (`KernelChoice`: a metric name or a `Kernel`, `gamma` of `'scale'`
+  or `'auto'` or a number, `degree`, `coef0`), `resolveKernel` against the training rows into plain JSON,
+  `kernelMatrix`, and `kernelSpace` (the choice as knobs).
 - `matrices.ts`: `centerKernel`, `kernelAlignment`, `targetAlignment`, `hsic` (biased, unbiased, normalised),
   `mmdSquared` (biased, unbiased, linear-time), `effectiveDimension`, `kernelPca` projections, `pairwiseKernels`
   (scikit-learn's metric names and parameters).
@@ -3316,6 +3323,69 @@ oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `a
 recursion identities, recovery of simulated parameters and the algebra of the solutions; properties: the likelihood by the fast filter equals the library's
 Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
 built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
+
+### 4.46 `svm/`: support vector machines (sklearn.svm, libsvm)
+
+oracle: scikit-learn (`SVC`, `NuSVC`, `SVR`, `NuSVR`, `OneClassSVM`); `optim/smo_nu` for the nu and one-class duals
+Every estimator is built on the iterative base (`learn/bases/iterative.ts`), so `.fit`, `.method(data)` and
+`.session(data)` all exist. The fit is the dual solve stepped: one SMO working-pair update per step, without shrinking so
+the gradient (and with it the objective and the gap) is exact at every step. Every machine logs `solver/dual` (the dual
+objective, to be maximised), `solver/gap` (the primal-dual gap, at least zero and closing to zero), `solver/violation`,
+`solver/support`, `solver/alphas`, `solver/pair`, `smo/alphaChanged` (|da_i| + |da_j| of the step) and the derived
+`model/support-vectors` (a `marginRecord` of the model at that step); the base adds `model/params`, `model/predictions`
+and the decision surface. Parameters are plain JSON (the support vectors, their coefficients, the intercepts and the
+resolved kernel), so `revive` rebuilds the verbs and `fittedAt(t)` gives the model at any step.
+- `_dual.ts` (private): the six duals behind one interface (`Dual`: the algorithm, the kernel expansion of a state, the
+  dual, the gap, the margins, the tube): `cSvcDual`, `nuSvcDual`, `svrDual`, `nuSvrDual`, `oneClassDual`, `svddDual`. The
+  gap of each is its primal at the best slack threshold (`hingeMinimum`) minus the dual.
+- `classifier.ts`: `svc` (C-SVC; `form: 'nu'` is NuSVC, also `nuSvc`): any `kernels` kernel (`rbf`, `linear`, `poly`,
+  `sigmoid`, `laplacian` by scikit-learn's names with `gamma` of `'scale'`, `'auto'` or a number, or a `Kernel` object),
+  one-versus-one for more than two classes (the pairs solved in turn, libsvm's class order and scikit-learn's
+  `decisionShape` `ovr` or `ovo`), class weights (`balanced` or by label) and sample weights, and Platt probabilities
+  (`probability: true`: a last step fits each pair's sigmoid on internal cross-validated decision values, coupled for more
+  than two classes). The parameters hold `supportIndex` and `nSupport` (scikit-learn's `support_`, `n_support_`) and
+  per pair the coefficients and intercept.
+- `regressor.ts`: `svr` (epsilon-SVR; `form: 'nu'` is NuSVR, also `nuSvr`), the tube width given or found
+  (`params.tube`), the probe's margins being the residuals.
+- `one-class.ts`: `oneClassSvm` (nu) and `svdd` (C, at least 1/n), the signed score positive inside the learnt region;
+  with a kernel of constant diagonal they are one machine (C = 1 / (nu n)).
+- `probability.ts`: `pairwiseCoupling` (libsvm's second method of Wu, Lin and Weng).
+  The duals themselves are in `optim/smo.ts` (`oneClassDual`, `svddDual`, `smoRho`) and `optim/smo-nu.ts` (`nuSmoAlgorithm`,
+  libsvm's Solver_NU: both equalities kept by moving pairs within a class; `nuSvcDual`, `nuSvrDual`, `nuRho`). Kernel
+  choice by scikit-learn's names is `kernels/named.ts` (`resolveKernel`, `kernelMatrix`, `kernelSpace`).
+  tests: goldens against scikit-learn on small data (support vectors, dual coefficients, intercepts, ovo and ovr decision
+  values, predictions; libsvm keeps its kernel cache in single precision, so agreement is to 1e-4, and the nu forms divide
+  by the margin, so 1e-3); probabilities (scikit-learn's cross-validation is random) are checked by properties.
+  built from: `optim` (SMO), `kernels`, `learn` (the iterative base, Platt scaling), `exposition`, `trace`.
+
+### 4.47 `gp/`: Gaussian processes (sklearn.gaussian_process, GPML)
+
+oracle: scikit-learn (`GaussianProcessRegressor`, `GaussianProcessClassifier`, `ARDRegression`); numpy forms for EP (GPML Algorithm 3.5 with loops) and the dense sparse-GP likelihoods
+Estimators on the iterative base. The hyperparameter fits are one stepped L-BFGS-B search (`_search.ts`: one iteration per
+step, restarts in turn, the best run kept; the objective is a `customVjp` function whose derivative is the analytic
+gradient, so any `optim` minimiser could use it).
+- `likelihood.ts`: `logMarginalLikelihood` (value and gradient in theta through `gramGradient`, scikit-learn's
+  `log_marginal_likelihood(theta, eval_gradient=True)`), `negativeLogMarginalLikelihood`, `hyperparameterCount`.
+- `regression.ts`: `gpRegression` over any `Kernel` (alpha noise, `normalizeY`, `restarts`, bounds as scikit-learn's): logs
+  `gp/logMarginalLikelihood` and `gp/hyper` per step; verbs `predict`, `predictWithStd`, `predictCovariance`,
+  `predictDistribution`, `sample` (posterior functions); probes `model/posterior`, `model/samples`, `solver/surface` (the
+  likelihood over two hyperparameters, a `hyperparameterSurface`).
+- `approximations.ts`: `laplaceAlgorithm` (one Newton iteration per step), `epAlgorithm` (one site update per step, probit),
+  `laplaceMarginal` and `epMarginal` (approximate log marginal likelihood with gradient, Algorithm 5.1 and its EP form),
+  `latentTerms`.
+- `classification.ts`: `gpClassifier` (two classes; `method` laplace or ep, `likelihood` logit or probit): phase one the
+  hyperparameter search, phase two the approximation itself stepped (`gp/latent`); `predictive` scikit-learn's five-erf
+  approximation or quadrature.
+- `sparse.ts`: `sparseGp` (`sor`, `dtc`, `fitc`, `vfe`; the kernel, the noise and the inducing inputs optimised together by
+  autodiff of the Woodbury form; logs `gp/bound`, `gp/hyper`, `gp/inducing`), `sparseBound`.
+- `relevance-vector.ts`: `relevanceVectorMachine`, the evidence updates of `ARDRegression` on the kernel columns, pruning
+  at a precision threshold; logs `solver/precisions`, `solver/relevant`, `solver/logEvidence`.
+  tests: goldens against scikit-learn (fixed kernels to 1e-8 for the likelihood, gradient, mean, std and covariance; the
+  optimised fit and the Laplace classifier, including gradients and latent moments), a numpy GPML reference for EP, dense
+  numpy forms for the sparse approximations, ARDRegression for the RVM; properties by finite differences and exact limits (one
+  observation for EP, two by quadrature, m = n for the sparse bounds). Not built: multi-class and multi-output GPs, the
+  stochastic variational GP, RVM classification.
+  built from: `kernels`, `optim` (L-BFGS-B), `learn`, `stochastic` (posterior sampling), `numerics`, `exposition`, `trace`.
 
 ## 5. Methods, exposition records and views
 

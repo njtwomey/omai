@@ -794,6 +794,38 @@
       "cases": 13
     },
     {
+      "fixture": "gp/classification.json",
+      "source": "oracle/cases/gp/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "gp/regression.json",
+      "source": "oracle/cases/gp/regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "gp/relevance_vector.json",
+      "source": "oracle/cases/gp/relevance_vector.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "gp/sparse.json",
+      "source": "oracle/cases/gp/sparse.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "graph/centrality.json",
       "source": "oracle/cases/graph/centrality.py",
       "reference": {
@@ -2869,6 +2901,14 @@
       "cases": 4
     },
     {
+      "fixture": "optim/smo_nu.json",
+      "source": "oracle/cases/optim/smo_nu.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "optim/sparse.json",
       "source": "oracle/cases/optim/sparse.py",
       "reference": {
@@ -4182,6 +4222,30 @@
         "numpy": "2.5.4"
       },
       "cases": 5
+    },
+    {
+      "fixture": "svm/classifier.json",
+      "source": "oracle/cases/svm/classifier.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "svm/one_class.json",
+      "source": "oracle/cases/svm/one_class.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "svm/regressor.json",
+      "source": "oracle/cases/svm/regressor.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
     },
     {
       "fixture": "symbolic/compile.json",

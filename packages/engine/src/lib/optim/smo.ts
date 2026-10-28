@@ -1,13 +1,15 @@
 /**
  * Sequential minimal optimisation (SMO, Platt; libsvm's solver): the dual quadratic program of a support vector machine
  * solved by repeatedly optimising a pair of variables that violate the optimality conditions, as a traced algorithm.
- * Includes the C-SVC and epsilon-SVR duals, which return the solution as a kernel expansion.
+ * Includes the C-SVC and epsilon-SVR duals, the one-class and support vector data description duals, which return the
+ * solution as a kernel expansion.
  */
 
 import { MdmlError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
+import { updatePair } from './_smo-update.ts'
 
 /**
  * The quadratic program SMO solves (libsvm's general form): minimise 1/2 alpha^T Q alpha + p^T alpha subject to
@@ -56,6 +58,17 @@ export interface SmoState {
 }
 
 const TAU = 1e-12
+
+function squareFrom(x: TensorLike, name: string): { readonly data: Float64Array; readonly n: number } {
+  const t = vectorFrom(x)
+  const n = Math.round(Math.sqrt(t.length))
+  if (n * n !== t.length) throw new MdmlError('shape', `${name} must be square`)
+  return { data: t, n }
+}
+
+function toRows(m: { readonly data: Float64Array; readonly n: number }): number[][] {
+  return Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.n, (i + 1) * m.n)))
+}
 
 /** Result of {@link smo}. */
 export interface SmoResult {
@@ -234,64 +247,17 @@ export function smoAlgorithm(problem: SmoProblem, options: SmoOptions = {}): Alg
       }
       const { i, j } = pick
       const a = Float64Array.from(s.alpha)
-      const ci = C[i] ?? 0
-      const cj = C[j] ?? 0
-      const gi = s.grad[i] ?? 0
-      const gj = s.grad[j] ?? 0
-      const qij = Q[i * n + j] ?? 0
       const oldI = a[i] ?? 0
       const oldJ = a[j] ?? 0
-      if ((y[i] ?? 1) !== (y[j] ?? 1)) {
-        let quad = (QD[i] ?? 0) + (QD[j] ?? 0) + 2 * qij
-        if (quad <= 0) quad = TAU
-        const delta = (-gi - gj) / quad
-        const diff = oldI - oldJ
-        a[i] = oldI + delta
-        a[j] = oldJ + delta
-        if (diff > 0) {
-          if ((a[j] ?? 0) < 0) {
-            a[j] = 0
-            a[i] = diff
-          }
-        } else if ((a[i] ?? 0) < 0) {
-          a[i] = 0
-          a[j] = -diff
-        }
-        if (diff > ci - cj) {
-          if ((a[i] ?? 0) > ci) {
-            a[i] = ci
-            a[j] = ci - diff
-          }
-        } else if ((a[j] ?? 0) > cj) {
-          a[j] = cj
-          a[i] = cj + diff
-        }
-      } else {
-        let quad = (QD[i] ?? 0) + (QD[j] ?? 0) - 2 * qij
-        if (quad <= 0) quad = TAU
-        const delta = (gi - gj) / quad
-        const sum = oldI + oldJ
-        a[i] = oldI - delta
-        a[j] = oldJ + delta
-        if (sum > ci) {
-          if ((a[i] ?? 0) > ci) {
-            a[i] = ci
-            a[j] = sum - ci
-          }
-        } else if ((a[j] ?? 0) < 0) {
-          a[j] = 0
-          a[i] = sum
-        }
-        if (sum > cj) {
-          if ((a[j] ?? 0) > cj) {
-            a[j] = cj
-            a[i] = sum - cj
-          }
-        } else if ((a[i] ?? 0) < 0) {
-          a[i] = 0
-          a[j] = sum
-        }
-      }
+      updatePair(
+        a,
+        i,
+        j,
+        { yi: y[i] ?? 1, yj: y[j] ?? 1 },
+        { gi: s.grad[i] ?? 0, gj: s.grad[j] ?? 0 },
+        { qij: Q[i * n + j] ?? 0, qdi: QD[i] ?? 0, qdj: QD[j] ?? 0 },
+        { ci: C[i] ?? 0, cj: C[j] ?? 0 },
+      )
       const di = (a[i] ?? 0) - oldI
       const dj = (a[j] ?? 0) - oldJ
       const grad = Float64Array.from(s.grad)
@@ -318,8 +284,23 @@ export function smoAlgorithm(problem: SmoProblem, options: SmoOptions = {}): Alg
   }
 }
 
-/** libsvm's rho from a solution: the mean of y_i G_i over free variables, else the middle of the feasible interval. */
-function rhoOf(alpha: Float64Array, grad: Float64Array, y: Float64Array, C: Float64Array): number {
+/**
+ * libsvm's rho of a state of the dual: the mean of y_i G_i over the free variables, else the middle of the feasible
+ * interval. The decision function of a support vector machine is the kernel expansion minus rho.
+ *
+ * @param alpha - The dual variables.
+ * @param grad - The gradient Q alpha + p (complete, as in a finished state).
+ * @param y - Labels, +1 or -1.
+ * @param C - Upper bounds, one per variable.
+ * @returns rho.
+ * @concept support-vector-machines
+ * @example
+ * ```ts
+ * import { smoRho } from 'mdml-engine/optim'
+ * smoRho(Float64Array.of(0.5, 0.5), Float64Array.of(-0.5, 0.5), Float64Array.of(1, -1), Float64Array.of(1, 1)) // => -0.5
+ * ```
+ */
+export function smoRho(alpha: Float64Array, grad: Float64Array, y: Float64Array, C: Float64Array): number {
   let ub = Infinity
   let lb = -Infinity
   let free = 0
@@ -373,7 +354,7 @@ export function smo(problem: SmoProblem, options: SmoOptions = {}): SmoResult {
     for (let j = 0; j < n; j++) grad[i] = (grad[i] ?? 0) + (Q[i * n + j] ?? 0) * (s.alpha[j] ?? 0)
   let objective = 0
   for (let i = 0; i < n; i++) objective += 0.5 * (s.alpha[i] ?? 0) * ((grad[i] ?? 0) + (p[i] ?? 0))
-  const rho = rhoOf(s.alpha, grad, y, C)
+  const rho = smoRho(s.alpha, grad, y, C)
   return {
     alpha: vectorTensor(s.alpha),
     rho,
@@ -385,7 +366,7 @@ export function smo(problem: SmoProblem, options: SmoOptions = {}): SmoResult {
   }
 }
 
-/** Result of {@link svcDual} and {@link svrDual}: the dual solution as a kernel expansion. */
+/** Result of the duals of this file: the dual solution as a kernel expansion. */
 export interface SvmDualResult extends SmoResult {
   /** The expansion coefficients (y_i alpha_i for classification, alpha_i - alpha*_i for regression), one per sample. */
   readonly coef: Tensor
@@ -463,4 +444,86 @@ export function svrDual(
   const r = smo({ Q, p, y, C }, options)
   const a = r.alpha.data
   return { ...r, coef: vectorTensor(Float64Array.from({ length: n }, (_, i) => (a[i] ?? 0) - (a[i + n] ?? 0))) }
+}
+
+/**
+ * The one-class support vector machine dual (Schoelkopf et al., libsvm's ONE_CLASS): minimise 1/2 a^T K a subject to
+ * sum a = nu n and 0 <= a_i <= 1, by {@link smo}. The score of a point is sum_i a_i K(x_i, x) - rho, positive for
+ * points the learnt region contains; at most a fraction nu of the training points lie outside it and at least nu are
+ * support vectors.
+ *
+ * @param kernel - The n x n kernel matrix.
+ * @param nu - In (0, 1].
+ * @param options - SMO options.
+ * @returns alpha, coef = alpha, rho, bias and the support.
+ * @throws MdmlError `domain` for nu outside (0, 1].
+ * @concept support-vector-machines
+ * @reference B. Schoelkopf, J. Platt, J. Shawe-Taylor, A. Smola and R. Williamson, Estimating the support of a
+ * high-dimensional distribution (2001).
+ * @example
+ * ```ts
+ * import { oneClassDual } from 'mdml-engine/optim'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const r = oneClassDual([[1, 0, 0], [0, 1, 0], [0, 0, 1]], 0.5, { tol: 1e-12 })
+ * toArray(r.coef).map((v) => Math.round(v * 1e6) / 1e6) // => [0.5, 0.5, 0.5]
+ * ```
+ */
+export function oneClassDual(kernel: TensorLike, nu: number, options: SmoOptions = {}): SvmDualResult {
+  const K = squareFrom(kernel, 'kernel')
+  const n = K.n
+  if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `oneClassDual: nu must be in (0, 1], got ${nu}`)
+  const alpha0 = new Float64Array(n)
+  let remaining = nu * n
+  for (let i = 0; i < n && remaining > 0; i++) {
+    alpha0[i] = Math.min(1, remaining)
+    remaining -= alpha0[i] ?? 0
+  }
+  const ones = new Float64Array(n).fill(1)
+  const r = smo({ Q: toRows(K), p: new Float64Array(n), y: ones, C: 1, alpha0 }, options)
+  return { ...r, coef: r.alpha }
+}
+
+/** Result of {@link svddDual}. */
+export interface SvddResult extends SvmDualResult {
+  /** The squared radius R^2 of the enclosing ball in feature space. */
+  readonly radiusSquared: number
+}
+
+/**
+ * The support vector data description dual (Tax and Duin): the smallest ball in feature space enclosing the data up
+ * to slack, max sum a_i K_ii - a^T K a subject to sum a = 1 and 0 <= a_i <= C, by {@link smo} on Q = 2K,
+ * p = -diag(K). The centre is sum a_i phi(x_i); the score of a point is R^2 - |phi(x) - centre|^2 =
+ * 2 sum a_i K(x_i, x) - K(x, x) - rho, positive inside the ball.
+ *
+ * @param kernel - The n x n kernel matrix.
+ * @param C - The penalty on points outside the ball, at least 1/n (1 is the hard ball).
+ * @param options - SMO options.
+ * @returns alpha, coef = alpha, rho, the squared radius and the support.
+ * @throws MdmlError `domain` for C < 1/n.
+ * @concept support-vector-machines
+ * @reference D. Tax and R. Duin, Support vector data description (2004).
+ * @example
+ * ```ts
+ * import { svddDual } from 'mdml-engine/optim'
+ * const r = svddDual([[1, 0], [0, 1]], 1, { tol: 1e-12 })
+ * [r.alpha.data[0], r.alpha.data[1], r.radiusSquared] // => [0.5, 0.5, 0.5]
+ * ```
+ */
+export function svddDual(kernel: TensorLike, C: number, options: SmoOptions = {}): SvddResult {
+  const K = squareFrom(kernel, 'kernel')
+  const n = K.n
+  if (!(C * n >= 1 - 1e-12)) throw new MdmlError('domain', `svddDual: C must be at least 1/n = ${1 / n}, got ${C}`)
+  const alpha0 = new Float64Array(n)
+  let remaining = 1
+  for (let i = 0; i < n && remaining > 0; i++) {
+    alpha0[i] = Math.min(C, remaining)
+    remaining -= alpha0[i] ?? 0
+  }
+  const Q = Float64Array.from(K.data, (v) => 2 * v)
+  const p = Float64Array.from({ length: n }, (_, i) => -(K.data[i * n + i] ?? 0))
+  const r = smo({ Q: toRows({ data: Q, n }), p, y: new Float64Array(n).fill(1), C, alpha0 }, options)
+  let quad = 0
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) quad += (r.alpha.data[i] ?? 0) * (K.data[i * n + j] ?? 0) * (r.alpha.data[j] ?? 0)
+  return { ...r, coef: r.alpha, radiusSquared: quad - r.rho }
 }
