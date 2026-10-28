@@ -6,6 +6,7 @@
  * optimiser; the step budget of the page is the schedule's horizon where one is needed.
  */
 
+import { bool, dict, int, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import {
   constantSchedule,
   cosineDecay,
@@ -18,9 +19,7 @@ import {
   stepDecay,
   warmupCosineDecay,
   warmupExponentialDecay,
-} from '../../../lib/optim/index.ts'
-import { bool, dict, int, real } from '../../../lib/space/index.ts'
-import { type Option, type OptionTable, optionTable } from './table.ts'
+} from './schedules.ts'
 
 /** A schedule shape: given the peak (the optimiser's learning rate), the schedule over steps. */
 export type ScheduleShape = (peak: number) => Schedule

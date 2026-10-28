@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { defaults, grid } from '../../../lib/space/index.ts'
-import { schedules } from './schedules.ts'
+import { defaults, grid } from '../space/index.ts'
+import { schedules } from './schedule-table.ts'
 
 describe('schedules', () => {
   it('every shape starts at the peak (or warms up to it) and a decaying one never rises again', () => {

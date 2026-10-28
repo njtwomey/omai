@@ -7,29 +7,12 @@
  * IRLS a likelihood).
  */
 
-import {
-  elasticNet as elasticNetPenalty,
-  expectile,
-  exponential,
-  hinge,
-  huber,
-  l1Penalty,
-  l2Penalty,
-  logCosh,
-  logistic,
-  mae,
-  modifiedHuber,
-  mse,
-  type Penalised,
-  perceptron,
-  pinball,
-  smoothL1,
-  squaredHinge,
-} from '../../../lib/losses/index.ts'
-import { proxElasticNet, proxL1, proxSquaredL2 } from '../../../lib/optim/index.ts'
-import { dict, real } from '../../../lib/space/index.ts'
-import { asTensor, type TensorLike, type Value } from '../../../lib/tensor/index.ts'
-import { type Option, type OptionTable, optionTable } from './table.ts'
+import { proxElasticNet, proxL1, proxSquaredL2 } from '../optim/proximal.ts'
+import { dict, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
+import { asTensor, type TensorLike, type Value } from '../tensor/index.ts'
+import { exponential, hinge, logistic, modifiedHuber, perceptron, squaredHinge } from './margin.ts'
+import { expectile, huber, logCosh, mae, mse, pinball, smoothL1 } from './regression.ts'
+import { elasticNet as elasticNetPenalty, l1Penalty, l2Penalty, type Penalised } from './regularisers.ts'
 
 /** A loss with its knobs bound: the prediction (or score), the target (or label), the reduction and weights, as `mse`. */
 export type Loss = typeof mse

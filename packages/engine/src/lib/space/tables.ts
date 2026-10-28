@@ -2,12 +2,25 @@
  * An option table: the shape every option set shares when its options are values rather than algorithms (a loss, a
  * penalty, a schedule, a kernel). Each option has its own knobs (a dict space), properties the validity rules and the
  * selectors read, and a `make` that binds the knobs into the value; the table is one `union` space over the knobs
- * and the dispatch from a configuration to its option. The modes of `modes.ts` are the same idea for algorithms.
+ * and the dispatch from a configuration to its option. The modes of `trace/modes.ts` are the same idea for algorithms.
  */
 
-import { MdmlError } from '../../../lib/base/index.ts'
-import { type DictSpace, type SpaceValue, type UnionSpace, union } from '../../../lib/space/index.ts'
-import type { ModeConfig, ModeTableOptions } from '../modes.ts'
+import { MdmlError } from '../base/index.ts'
+import type { DictSpace, SpaceValue, UnionSpace } from './types.ts'
+import { union } from './types.ts'
+
+/** A mode's or option's knobs as a value: the tag that names it, beside its own knobs. */
+export type ModeConfig = Readonly<Record<string, SpaceValue>>
+
+/** The options of a table of modes or options. */
+export interface ModeTableOptions {
+  /** The key of the configuration that names the option (default `kind`). */
+  readonly tag?: string
+  /** The option chosen by default (default the first). */
+  readonly default?: string
+  readonly label?: string
+  readonly description?: string
+}
 
 /** One option of a table: its knobs, its properties, and the value its knobs make. */
 export interface Option<T, Props> {

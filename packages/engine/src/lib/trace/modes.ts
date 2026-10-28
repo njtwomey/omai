@@ -7,13 +7,18 @@
  * logs: the method's contract reads its state through `params`, and the mode's `extras` are derived from the state too.
  */
 
-import { type Json, MdmlError } from '../../lib/base/index.ts'
-import type { Key } from '../../lib/random/index.ts'
-import { type DictSpace, type SpaceValue, type UnionSpace, union } from '../../lib/space/index.ts'
-import type { Algorithm, Contract } from '../../lib/trace/index.ts'
-
-/** A mode's knobs as a value: the tag that names the mode, beside the mode's own knobs. */
-export type ModeConfig = Readonly<Record<string, SpaceValue>>
+import { type Json, MdmlError } from '../base/index.ts'
+import type { Key } from '../random/index.ts'
+import {
+  type DictSpace,
+  type ModeConfig,
+  type ModeTableOptions,
+  type SpaceValue,
+  type UnionSpace,
+  union,
+} from '../space/index.ts'
+import type { Algorithm } from './algorithm.ts'
+import type { Contract } from './contract.ts'
 
 /** The other slots' current values, for the validity check: a primitive, or a union value read by its `kind`. */
 export type SlotValues = Readonly<Record<string, SpaceValue>>
@@ -25,7 +30,7 @@ export type SlotValues = Readonly<Record<string, SpaceValue>>
  * @typeParam S - The algorithm's state, this mode's own.
  * @typeParam P - The fitted parameters every mode of the slot yields.
  */
-export interface Mode<Problem, S, P extends Json> {
+export interface ModeSpec<Problem, S, P extends Json> {
   readonly description?: string
   /** The mode's own knobs (empty when it has none). */
   readonly space: DictSpace
@@ -40,17 +45,7 @@ export interface Mode<Problem, S, P extends Json> {
 }
 
 /** A mode with its name, as the table hands it back. */
-export type NamedMode<Problem, P extends Json> = Mode<Problem, unknown, P> & { readonly name: string }
-
-/** The options of {@link modes}. */
-export interface ModeTableOptions {
-  /** The key of the configuration that names the mode (default `kind`). */
-  readonly tag?: string
-  /** The mode chosen by default (default the first). */
-  readonly default?: string
-  readonly label?: string
-  readonly description?: string
-}
+export type NamedMode<Problem, P extends Json> = ModeSpec<Problem, unknown, P> & { readonly name: string }
 
 /**
  * A table of modes: one union space over their knobs, and the dispatch from a configuration to the mode it names.
@@ -93,7 +88,7 @@ function optionOf(value: SpaceValue | undefined): string | number | boolean | un
 }
 
 /** Whether a mode admits the other slots' values. */
-function admits(mode: Mode<unknown, unknown, Json>, others: SlotValues): boolean {
+function admits(mode: ModeSpec<unknown, unknown, Json>, others: SlotValues): boolean {
   if (mode.needs === undefined) return true
   return Object.entries(mode.needs).every(([slot, allowed]) => {
     const option = optionOf(others[slot])
@@ -113,7 +108,7 @@ function admits(mode: Mode<unknown, unknown, Json>, others: SlotValues): boolean
  */
 export function modes<Problem, P extends Json>(
   // biome-ignore lint/suspicious/noExplicitAny: each mode has a state type of its own; the table erases them
-  table: Readonly<Record<string, Mode<Problem, any, P>>>,
+  table: Readonly<Record<string, ModeSpec<Problem, any, P>>>,
   options: ModeTableOptions = {},
 ): ModeTable<Problem, P> {
   const tag = options.tag ?? 'kind'
@@ -132,7 +127,7 @@ export function modes<Problem, P extends Json>(
   }
   const modeOf = (config: SpaceValue | undefined): NamedMode<Problem, P> => {
     const name = nameOf(config)
-    return { ...(table[name] as Mode<Problem, unknown, P>), name }
+    return { ...(table[name] as ModeSpec<Problem, unknown, P>), name }
   }
   const knobsOf = (config: SpaceValue | undefined): ModeConfig =>
     typeof config === 'object' && config !== null && !Array.isArray(config)
@@ -143,10 +138,10 @@ export function modes<Problem, P extends Json>(
     names,
     space,
     modeOf,
-    admissible: (others) => names.filter((n) => admits(table[n] as Mode<unknown, unknown, Json>, others)),
+    admissible: (others) => names.filter((n) => admits(table[n] as ModeSpec<unknown, unknown, Json>, others)),
     make: (problem, config, key, others) => {
       const mode = modeOf(config)
-      if (others !== undefined && !admits(mode as Mode<unknown, unknown, Json>, others))
+      if (others !== undefined && !admits(mode as ModeSpec<unknown, unknown, Json>, others))
         throw new MdmlError(
           'value',
           `modes: '${mode.name}' does not admit ${JSON.stringify(others)} (needs ${JSON.stringify(mode.needs)})`,

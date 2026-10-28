@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { key } from '../../../lib/random/index.ts'
-import { type DictSpace, defaults, grid } from '../../../lib/space/index.ts'
-import { mul, square, sub, sum, type Value } from '../../../lib/tensor/index.ts'
-import { runAlgorithm } from '../../../lib/trace/index.ts'
+import { key } from '../random/index.ts'
+import { type DictSpace, defaults, grid } from '../space/index.ts'
+import { mul, square, sub, sum, type Value } from '../tensor/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
 import { type SmoothProblem, smoothSolvers } from './solvers.ts'
 
 // An ill-conditioned bowl centred at (1, -2): f(x) = (x0 - 1)^2 + 10 (x1 + 2)^2.

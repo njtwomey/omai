@@ -1,8 +1,8 @@
 import type { DecisionSurface } from 'mdml-engine/exposition'
 import { describe, expect, it } from 'vitest'
+import { smoothSolvers } from '../../lib/optim/index.ts'
 import { defaults } from '../../lib/space/index.ts'
 import { type Config, metricSeries, session } from '../../lib/trace/index.ts'
-import { smoothSolvers } from '../shared/options/index.ts'
 import { linearClassifier } from './linearClassifier.ts'
 
 // Two separable-ish clouds on the plane.

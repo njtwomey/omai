@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { defaults, grid } from '../../../lib/space/index.ts'
-import { item, toArray } from '../../../lib/tensor/index.ts'
-import { classificationLosses, type Penalty, penalties, regressionLosses } from './objectives.ts'
+import { defaults, grid } from '../space/index.ts'
+import { item, toArray } from '../tensor/index.ts'
+import { classificationLosses, type Penalty, penalties, regressionLosses } from './tables.ts'
 
 describe('objectives', () => {
   it('every regression loss is zero at a perfect prediction and positive away from it', () => {

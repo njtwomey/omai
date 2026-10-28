@@ -8,6 +8,8 @@
  */
 
 import { type DecisionSurface, decisionSurface } from '../../lib/exposition/index.ts'
+import { classificationLosses, penalties } from '../../lib/losses/index.ts'
+import { loggedSolver, smoothSolvers, solverContract, solverDefaults } from '../../lib/optim/index.ts'
 import { type DictSpace, dict, union } from '../../lib/space/index.ts'
 import { add, asTensor, matmul, type TensorLike, tensor, toFlat, type Value } from '../../lib/tensor/index.ts'
 import {
@@ -19,14 +21,6 @@ import {
   scalar,
   tensor as tensorSource,
 } from '../../lib/trace/index.ts'
-import {
-  classificationLosses,
-  loggedSolver,
-  penalties,
-  smoothSolvers,
-  solverContract,
-  solverDefaults,
-} from '../shared/options/index.ts'
 
 /** The data: two features per row and a class (0 or 1) each. */
 export interface TwoClassData {

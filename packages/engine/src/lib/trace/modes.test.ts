@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { gradientDescentAlgorithm, newtonAlgorithm } from '../../lib/optim/index.ts'
-import { key } from '../../lib/random/index.ts'
-import { defaults, dict, real } from '../../lib/space/index.ts'
-import { square, sub, sum, type Value } from '../../lib/tensor/index.ts'
-import { runAlgorithm, scalar } from '../../lib/trace/index.ts'
-import { type Mode, modes } from './modes.ts'
+import { gradientDescentAlgorithm, newtonAlgorithm } from '../optim/index.ts'
+import { key } from '../random/index.ts'
+import { defaults, dict, real } from '../space/index.ts'
+import { square, sub, sum, type Value } from '../tensor/index.ts'
+import { runAlgorithm, scalar } from './index.ts'
+import { type ModeSpec, modes } from './modes.ts'
 
 // A problem: the minimiser of a bowl centred at `centre`; two modes reach it their own way.
 interface Bowl {
@@ -23,7 +23,7 @@ const objective =
   (x: Value): Value =>
     sum(square(sub(x, b.centre)))
 
-const gradient: Mode<Bowl, WithX, Params> = {
+const gradient: ModeSpec<Bowl, WithX, Params> = {
   description: 'gradient descent with a fixed step',
   space: dict({ learningRate: real(0.01, 0.5, { default: 0.2 }) }),
   make: (b, knobs) =>
@@ -40,7 +40,7 @@ const gradient: Mode<Bowl, WithX, Params> = {
   needs: { landscape: ['smooth'] },
 }
 
-const newton: Mode<Bowl, WithX, Params> = {
+const newton: ModeSpec<Bowl, WithX, Params> = {
   description: "Newton's method",
   space: dict({}),
   make: (b) =>

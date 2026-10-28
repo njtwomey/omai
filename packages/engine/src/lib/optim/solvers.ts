@@ -7,32 +7,32 @@
  * space.
  */
 
-import type { Json } from '../../../lib/base/index.ts'
-import {
-  bfgsAlgorithm,
-  type ConjugateGradientBeta,
-  conjugateGradientAlgorithm,
-  coordinateDescentAlgorithm,
-  type GradientDescentOptions,
-  gradientDescentAlgorithm,
-  lbfgsAlgorithm,
-  newtonAlgorithm,
-  type Objective,
-  type Parameters,
-} from '../../../lib/optim/index.ts'
-import type { Key } from '../../../lib/random/index.ts'
-import { bool, choice, dict, int, real, type SpaceValue } from '../../../lib/space/index.ts'
+import type { Json } from '../base/index.ts'
+import type { Key } from '../random/index.ts'
+import { bool, choice, dict, int, real, type SpaceValue } from '../space/index.ts'
 import {
   type Algorithm,
   type Contract,
   Log,
   type LogSpec,
+  type ModeSpec,
+  type ModeTable,
+  modes,
   type StepContext,
   scalar,
   stateFromJson,
   stateToJson,
-} from '../../../lib/trace/index.ts'
-import { type Mode, type ModeTable, modes } from '../modes.ts'
+} from '../trace/index.ts'
+import {
+  type ConjugateGradientBeta,
+  conjugateGradientAlgorithm,
+  coordinateDescentAlgorithm,
+  type GradientDescentOptions,
+  gradientDescentAlgorithm,
+} from './minimize/gradient.ts'
+import { newtonAlgorithm } from './minimize/newton.ts'
+import type { Objective, Parameters } from './minimize/objective.ts'
+import { bfgsAlgorithm, lbfgsAlgorithm } from './minimize/quasi-newton.ts'
 
 /** A smooth problem: a differentiable objective of a parameter vector (or tree) and where to start. */
 export interface SmoothProblem {
@@ -55,7 +55,7 @@ const vector = (s: WithVector): VectorParams => ({ x: Array.from(s.x) })
 /** The gradient tolerance every gradient-based solver stops at (scipy's gtol). */
 const gradTol = real(1e-12, 1e-2, { log: true, default: 1e-5, label: 'gradient tolerance' })
 
-const gradientDescent: Mode<SmoothProblem, WithVector, VectorParams> = {
+const gradientDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'gradient descent: a line search along the negative gradient, a fixed step, or Barzilai-Borwein steps',
   space: dict({
     step: choice(['line-search', 'fixed', 'bb1', 'bb2'], { default: 'line-search', label: 'step rule' }),
@@ -76,7 +76,7 @@ const gradientDescent: Mode<SmoothProblem, WithVector, VectorParams> = {
   params: vector,
 }
 
-const conjugateGradient: Mode<SmoothProblem, WithVector, VectorParams> = {
+const conjugateGradient: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'nonlinear conjugate gradient with a strong Wolfe line search',
   space: dict({
     beta: choice(['polak-ribiere', 'fletcher-reeves', 'hestenes-stiefel', 'dai-yuan', 'hager-zhang'], {
@@ -95,7 +95,7 @@ const conjugateGradient: Mode<SmoothProblem, WithVector, VectorParams> = {
   params: vector,
 }
 
-const newton: Mode<SmoothProblem, WithVector, VectorParams> = {
+const newton: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: "Newton's method with a modified Hessian and an Armijo line search",
   space: dict({
     modification: choice(['cholesky', 'eigenvalue'], { default: 'cholesky', label: 'Hessian modification' }),
@@ -111,21 +111,21 @@ const newton: Mode<SmoothProblem, WithVector, VectorParams> = {
   params: vector,
 }
 
-const bfgs: Mode<SmoothProblem, WithVector, VectorParams> = {
+const bfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'BFGS with a More-Thuente line search',
   space: dict({ damped: bool({ default: false, label: "Powell's damping" }), gradTol }),
   make: (p, k) => bfgsAlgorithm(p.objective, p.x0, { damped: k['damped'] as boolean, gradTol: k['gradTol'] as number }),
   params: vector,
 }
 
-const lbfgs: Mode<SmoothProblem, WithVector, VectorParams> = {
+const lbfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'limited-memory BFGS',
   space: dict({ memory: int(1, 50, { default: 10, label: 'curvature pairs kept' }), gradTol }),
   make: (p, k) => lbfgsAlgorithm(p.objective, p.x0, { memory: k['memory'] as number, gradTol: k['gradTol'] as number }),
   params: vector,
 }
 
-const coordinateDescent: Mode<SmoothProblem, WithVector, VectorParams> = {
+const coordinateDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'coordinate descent: one coordinate at a time, exactly, by a Newton step or by a gradient step',
   space: dict({
     order: choice(['cyclic', 'random', 'greedy'], { default: 'cyclic', label: 'sweep order' }),
