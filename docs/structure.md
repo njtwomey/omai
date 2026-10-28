@@ -1409,6 +1409,22 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   inverse-time, cosine (`cosineDecay`, `cosineWarmRestarts`, `sgdr`), warmup (`warmupCosineDecay`,
   `warmupExponentialDecay`, `warmupConstant`, `linearSchedule`), one-cycle, piecewise (`piecewiseConstant`,
   `piecewiseInterpolate`, `joinSchedules`), polynomial, cyclical, `reduceOnPlateau`; torch.optim.lr_scheduler and optax.
+- `schedule-table.ts`: `schedules`, the schedules as an option table (constant, step, exponential, inverse-time,
+  cosine, restarts, linear, polynomial, warm-ups), each taking the optimiser's learning rate as its peak, with
+  properties (warm-up, decays, restarts) for validity rules.
+- `optimiser-table.ts`: `optimisers`, the optimisers as an option table (SGD with momentum and Nesterov, RMSprop,
+  Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam, Lion), each a shape that takes a learning rate or a
+  schedule, with its own knobs and properties (adaptive, momentum, decoupled decay).
+- `stochastic.ts`: `gradientAlgorithm`, a transformation-driven descent over an objective that may be summed over a
+  batch (`BatchObjective`, `Batches`): the optimiser at a scheduled rate, a batch of `batch` examples drawn without
+  replacement from each step's key (null: the whole set), a serialisable `GradientState` (iterate, value, gradient,
+  optimiser state, step count, last rate); the engine of the `gradient` mode.
+- `solvers.ts`: `smoothSolvers`, the smooth solvers as one slot of modes (gradient descent with its step rules,
+  conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent and `gradient`, whose knobs are `optimiser`
+  (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
+  `SmoothProblem` (an objective that may take a batch index set, `batches`, a start); `loggedSolver` (logs
+  `solver/objective`, `solver/gradNorm`, `solver/step` and, for `gradient`, `solver/lr`; serialises the state),
+  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`.
 - `line-search.ts`: the line-search contract (`LineFunction`, `LineStart`, `LineSearchResult` with every trial point
   recorded, `LineSearch`), `backtracking` (Armijo, scipy's quadratic-cubic interpolation, optionally safeguarded, or
   halving; value-only evaluations), `strongWolfe` (Nocedal-Wright bracketing and zoom by cubic interpolation, scipy's
