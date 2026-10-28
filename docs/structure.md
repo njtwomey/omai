@@ -2536,6 +2536,15 @@ modAL for active learning, diffprivlib and opacus for privacy
   `treeAugmentedNaiveBayes` (`tanAlgorithm`: Prim over the conditional mutual information, one edge per step, logging
   `edges`, `weight` and the message `edge`) and `aode` (averaged one-dependence estimators, counted a row at a time).
   oracle: `learn/naive_bayes` against `sklearn.naive_bayes` and, for the last two, numpy forms of their definitions.
+- `multiclass.ts`: `oneVsRest`, `oneVsOne`, `outputCode` (error-correcting output codes, random or given code book) and
+  `nestedDichotomies` (random hierarchies or one given, averaged) over any base `Estimator`; iterative base, one binary
+  problem per step (`solver/problems`), so `fittedAt(t)` is the classifier of the problems solved so far.
+  oracle: `learn/multiclass` against `sklearn.multiclass` (the codes and hierarchies from its fitted binary models).
+- `multilabel.ts`: `binaryRelevance`, `classifierChain` (order and chain method as knobs) and `labelPowerset` over a base
+  classifier, on a 0/1 label matrix. `multioutput.ts`: `multiOutputRegressor`, `multiOutputClassifier`,
+  `regressorChain` and the engines (`outputsEstimator`, `independentOutputs`, `outputChain`) the multilabel wrappers
+  share. oracle: `learn/multilabel` and `learn/multioutput` against `sklearn.multioutput` and `sklearn.multiclass`.
+- `_staged.ts` (private): the algorithm that fits one base-estimator problem per step, and readers of a fitted base.
 - `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
   the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,

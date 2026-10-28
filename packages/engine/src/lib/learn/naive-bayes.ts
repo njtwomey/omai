@@ -443,23 +443,83 @@ export function naiveBayes(
   )
 }
 
-/** The Gaussian family, `sklearn.naive_bayes.GaussianNB`. */
+/**
+ * The Gaussian family, `sklearn.naive_bayes.GaussianNB`.
+ *
+ * @param hyper - The other settings of {@link naiveBayes}.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { gaussianNaiveBayes } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const x = [[0], [0.2], [5], [5.2]]
+ * toFlat(gaussianNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
+ * ```
+ */
 export const gaussianNaiveBayes = (
   hyper: Partial<Omit<NaiveBayesHyper, 'family'>> = {},
 ): ReturnType<typeof naiveBayes> => naiveBayes({ ...hyper, family: 'gaussian' })
-/** The multinomial family, `sklearn.naive_bayes.MultinomialNB`. */
+/**
+ * The multinomial family, `sklearn.naive_bayes.MultinomialNB`.
+ *
+ * @param hyper - The other settings of {@link naiveBayes}.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { multinomialNaiveBayes } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const x = [[3, 0], [2, 1], [0, 3], [1, 2]]
+ * toFlat(multinomialNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
+ * ```
+ */
 export const multinomialNaiveBayes = (
   hyper: Partial<Omit<NaiveBayesHyper, 'family'>> = {},
 ): ReturnType<typeof naiveBayes> => naiveBayes({ ...hyper, family: 'multinomial' })
-/** The Bernoulli family, `sklearn.naive_bayes.BernoulliNB`. */
+/**
+ * The Bernoulli family, `sklearn.naive_bayes.BernoulliNB`.
+ *
+ * @param hyper - The other settings of {@link naiveBayes}.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { bernoulliNaiveBayes } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const x = [[1, 0], [1, 0], [0, 1], [0, 1]]
+ * toFlat(bernoulliNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
+ * ```
+ */
 export const bernoulliNaiveBayes = (
   hyper: Partial<Omit<NaiveBayesHyper, 'family'>> = {},
 ): ReturnType<typeof naiveBayes> => naiveBayes({ ...hyper, family: 'bernoulli' })
-/** The categorical family, `sklearn.naive_bayes.CategoricalNB`. */
+/**
+ * The categorical family, `sklearn.naive_bayes.CategoricalNB`.
+ *
+ * @param hyper - The other settings of {@link naiveBayes}.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { categoricalNaiveBayes } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const x = [[0, 1], [0, 1], [1, 0], [1, 0]]
+ * toFlat(categoricalNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
+ * ```
+ */
 export const categoricalNaiveBayes = (
   hyper: Partial<Omit<NaiveBayesHyper, 'family'>> = {},
 ): ReturnType<typeof naiveBayes> => naiveBayes({ ...hyper, family: 'categorical' })
-/** The complement family, `sklearn.naive_bayes.ComplementNB`. */
+/**
+ * The complement family, `sklearn.naive_bayes.ComplementNB`.
+ *
+ * @param hyper - The other settings of {@link naiveBayes}.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { complementNaiveBayes } from 'mdml-engine/learn'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const x = [[3, 0], [2, 1], [0, 3], [1, 2]]
+ * toFlat(complementNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
+ * ```
+ */
 export const complementNaiveBayes = (
   hyper: Partial<Omit<NaiveBayesHyper, 'family'>> = {},
 ): ReturnType<typeof naiveBayes> => naiveBayes({ ...hyper, family: 'complement' })

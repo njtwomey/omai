@@ -1189,6 +1189,30 @@
       "cases": 28
     },
     {
+      "fixture": "learn/multiclass.json",
+      "source": "oracle/cases/learn/multiclass.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "learn/multilabel.json",
+      "source": "oracle/cases/learn/multilabel.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "learn/multioutput.json",
+      "source": "oracle/cases/learn/multioutput.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "learn/naive_bayes.json",
       "source": "oracle/cases/learn/naive_bayes.py",
       "reference": {

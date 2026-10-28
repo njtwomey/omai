@@ -159,7 +159,23 @@ const regularise = (c: Float64Array, d: number, r: number): Float64Array => {
   return out
 }
 
-/** Fit a discriminant analysis to rows and their class codes (the function the estimators run). */
+/**
+ * Fit a discriminant analysis to rows and their class codes: the function the estimators run on the first `t` rows at
+ * step `t`.
+ *
+ * @param m - The rows.
+ * @param codes - The class index of each row.
+ * @param classes - The class labels, ascending.
+ * @param h - The hyperparameters.
+ * @returns The fitted parameters (means, priors, covariances, scores' weights and the discriminant axes).
+ * @example
+ * ```ts
+ * import { fitDiscriminant, matrixView } from 'mdml-engine/learn'
+ * const m = matrixView([[0], [2], [10], [12]], 'demo')
+ * const hyper = { covariance: 'pooled', shrinkage: 0, regParam: 0, mix: 1, unbiased: false, rankTolerance: 1e-10 } as const
+ * fitDiscriminant(m, [0, 0, 1, 1], [0, 1], hyper).means // => [[1], [11]]
+ * ```
+ */
 export function fitDiscriminant(
   m: MatrixView,
   codes: ArrayLike<number>,
