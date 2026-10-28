@@ -14,7 +14,8 @@
       "!**/fixtures",
       "!docs/port-map.json",
       "!pnpm-lock.yaml",
-      "!packages/*/src/**/index.ts"
+      "!packages/*/src/**/index.ts",
+      "!packages/engine/src/methods/**/README.md"
     ]
   },
   "formatter": {

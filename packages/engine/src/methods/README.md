@@ -59,7 +59,7 @@ methods/
   shared/     what every folder uses (section 4)
   data/       registries and selectors (datasets, environments, problems); preparation, shift and selection studies
   fit/        task methods, the scikit-learn world: classify/ regress/ cluster/ reduce/ density/ detect/ rank/ forecast/ survive/
-  train/      problem methods, the torch world: networks/ generative/ representation/ sequence/ graphs/
+  train/      problem methods, the torch world: networks/ generative/ representation/ sequence/ graphs/ transfer/ meta/ multitask/
   infer/      problem methods, the Bayesian world: programs/ samplers/ variational/ graphical/ filters/
   act/        agents in environments: tabular/ deep/ bandits/ control/ planning/
   search/     procedures over problems: state-space/ local/ population/ constraint/ adversarial/
@@ -96,16 +96,30 @@ tasks, task affinity), which the old chapter did not mention at all.
 
 **The README format.** Each chapter's README is the to-do list for its area, in the form prototyped on `mathematics`
 (linear algebra in full), `time-series`, `probabilistic-inference` (the sequence models laid out) and the three
-chapters above: the opening paragraph; a **Structure** block giving the folder tree the chapter's methods will form
-under the layout above, with the full proposed path of every group and the chapter's `shared/` helpers named, so the
-move is a lookup; one **Methods** table per group with the columns `method` | `why it is interesting` (what to look
-into, which outputs matter, the knob worth turning, the comparison worth making) | `tracks` (the paths on the tape,
-each tagged scalar, tensor, tensor kept in full, probe, projection or event) | `needs from lib` (the module and the
-function that exists, or what is missing marked TODO) | `status` (`built <path>`, `lib ready`, `lib partly`, `lib
-missing`); a **shared/** table (`helper` | `what it does` | `used by`); then the Examples, Rendering and Problems
-sections as before. A family of modes is one row that names the slot carrying the modes (`arima` with the fit as a
-mode), not a row per mode. The tracks column is the contract a method will declare and the paths a page can ask for,
-named as the built methods name theirs (`solver/objective`, `model/params`, `image/pixels`, `chain/position`). The twelve built areas move the same way: `cluster` and
+chapters above, and then rolled out to every chapter: the opening paragraph; a **Structure** block giving the folder
+tree the chapter's methods will form under the layout above, with the full proposed path of every group and the
+chapter's `shared/` helpers named, so the move is a lookup; one **Methods** table per group; a **shared/** table
+(`helper` | `what it does` | `used by`); then the Examples, Rendering and Problems sections as before. The rules of
+the tables, settled after the prototype:
+
+- Columns: `method` | `why it is interesting` (what to look into, which outputs matter, the knob worth turning, the
+  comparison worth making) | `tracks` | `needs from lib` | `status`.
+- A track is written `path` tag, with a note in parentheses only when the path's name does not say it; the tags are
+  `s` scalar, `t` tensor (summary), `t!` tensor kept in full, `p` probe, `proj` projection, `e` event, `m` message.
+  Tracks are named as the built methods name theirs (`solver/objective`, `model/params`, `image/pixels`,
+  `chain/position`); the two or three paths that carry the method's story come first.
+- `needs from lib` names the module file and the function that exists, or `TODO:` what is missing and its proposed
+  home; a family of modes lists the modes with their readiness (`irls ready, sgd ready, lars TODO`).
+- `status` is about the method itself: `built <path>` (with `(modes: ...)` when only some modes are built),
+  `partly` or empty; library readiness lives in the needs column, so the two never share a cell.
+- A family of modes is one row that names the slot carrying the modes (`arima` with the fit as a mode), not a row
+  per mode.
+- A method claimed by several chapters lives where its comparison with the truth lives, and the other chapters carry
+  a one-line `see <chapter>` row in the group it belongs to rather than a copy.
+- The tables are not reformatted by biome (`methods/**/README.md` is excluded, since padded prose cells ran to
+  850 characters a line): one row per line, cells separated by ` | `, no padding.
+
+The twelve built areas move the same way: `cluster` and
 `mixture` to `fit/cluster` (the mixture of experts to `fit/regress`), `linear` to `fit/classify` and `fit/regress`,
 `tune` to `study/`, `sampling` and `sequence` (the hidden Markov model) to `infer/`, `dynamics` to
 `simulate/dynamics` (ODE systems) and `infer/filters` (Kalman tracking), `linalg` to `simulate/numerics`,
