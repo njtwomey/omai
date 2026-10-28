@@ -33,6 +33,8 @@ Create a task list. Split the exploration across parallel read-only agents, one 
 
 **Tests.** Test layout, coverage (measure it), tests that assert nothing meaningful, tests that depend on `Math.random` or timing, missing property tests for differentiable code, distributions and decompositions, missing golden comparisons, missing type tests, missing browser tests for rendering code.
 
+**Methods and sessions.** For each method (`packages/engine/src/methods/`): that it is a composition of library pieces and implements no algorithm of its own; that its contract names every path it logs, with defaults that keep only what tells its story; that its state serialises (probes and seeking need checkpoints); that every slot is filled from a table rather than a branch; that it has a smoke test; that its chapter README's table row is current (status, tracks). For the render session layer: that every panel kind is a view of a record or a path plus the cursor, and that producer and player stay decoupled.
+
 **Visualization.** Whether layout is separated from drawing, whether chart options are built as data, whether theming works in light and dark, whether graph and architecture rendering derives from one model description.
 
 **Performance traps.** Not the main concern, since the target is clarity, but report accidental quadratic copying, allocation inside inner loops, and repeated recomputation, with evidence.

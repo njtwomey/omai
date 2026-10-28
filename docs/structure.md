@@ -3291,19 +3291,7 @@ the encyclopedia's purview. What such a page needs is in the engine (a `Method` 
 (`react/session/`: the hook, the player, the settings and the panels); the gallery's `animation/` section shows the
 player on a toy method.
 
-**`methods/shared/`.** What every methods folder uses (`methods/README.md`, section 4), built piece by piece:
-`modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a
-configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters,
-`extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible` for the
-modes the other slots' values allow); `options/solvers.ts`: `smoothSolvers`, the solvers of a smooth objective as
-one slot (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent: the
-minimisers of `optim`, each with its own knobs, all yielding the vector reached); `options/table.ts`: `optionTable`,
-the same shape for options that are values (knobs, properties, `make`); `options/objectives.ts`: `regressionLosses`,
-`classificationLosses` (the `losses` functions with their knobs bound and their properties: task, convex, smooth,
-likelihood) and `penalties` (none, ridge, lasso, elastic net: strength, value, proximal operator, and smooth, has a
-prox, sparse); `options/schedules.ts`: `schedules`, the learning-rate schedules of `optim` as shapes over
-steps taking the optimiser's rate as their peak (constant, step, exponential, inverse time, cosine, cosine with
-restarts, linear, polynomial, warm-ups), with their knobs and properties (warm-up, decays, restarts).
+**Where the shared pieces live.** There is no `methods/shared/`: what methods share is library code (`methods/README.md`, `LIB.md`). `lib/trace/modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters, `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible`). `lib/space/tables.ts`: `optionTable`, the same shape for options that are values (knobs, properties, `make`). `lib/optim/solvers.ts`: `smoothSolvers` (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent as one slot) and `loggedSolver`; `lib/optim/schedule-table.ts`: `schedules`; `lib/losses/tables.ts`: `regressionLosses`, `classificationLosses` and `penalties` with their properties.
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as
