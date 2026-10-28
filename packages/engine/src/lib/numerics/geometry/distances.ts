@@ -1,6 +1,7 @@
 /**
- * Distances between points, scipy.spatial.distance style: `cdist`, `pdist` and `squareform` for all of scipy's metrics
- * plus haversine, and scalar metric functions on flat number arrays for the trees and indexes of `numerics/spatial`,
+ * Distances between points, scipy.spatial.distance style: `distanceBetween` evaluates any of scipy's metrics (plus
+ * haversine) over the coordinate axis of broadcast operands, `cdist`, `pdist` and `squareform` are the pairwise forms
+ * built on it, and scalar metric functions on flat number arrays serve the trees and indexes of `numerics/spatial`,
  * with the list of true metrics they may use.
  */
 
@@ -9,14 +10,18 @@ import {
   abs,
   add,
   arcsin,
+  cast,
   concat,
   cos,
   div,
   fromStorage,
-  matmul,
+  logicalOr,
+  logicalXor,
   max,
   mean,
+  minimum,
   mul,
+  notEqual,
   pow,
   primalOf,
   promoteFloat,
@@ -27,10 +32,10 @@ import {
   square,
   sub,
   sum,
-  swapaxes,
   type Tensor,
   type TensorLike,
   take,
+  tensordot,
   toFlat,
   type Value,
   where,
@@ -66,28 +71,22 @@ export interface MetricOptions {
   readonly vi?: TensorLike
 }
 
-/** Pairwise differences `[m, n, d]` of rows. */
-function differences(a: Value, b: Value): Value {
-  const d = a.shape[1] ?? 0
-  return sub(reshape(a, [-1, 1, d]), reshape(b, [1, -1, d]))
+function zeroMask(x: Value, isZero: (v: number) => boolean): Tensor {
+  return fromStorage(
+    Uint8Array.from(toFlat(primalOf(x)), (v) => (isZero(v) ? 1 : 0)),
+    x.shape,
+    'bool',
+  )
 }
 
 function safeSqrt(x: Value): Value {
   // sqrt with a zero gradient at zero distance (where the true derivative does not exist).
-  const zero = fromStorage(
-    Uint8Array.from(toFlat(primalOf(x)), (v) => (v <= 0 ? 1 : 0)),
-    x.shape,
-    'bool',
-  )
+  const zero = zeroMask(x, (v) => v <= 0)
   return where(zero, 0, sqrt(where(zero, 1, x)))
 }
 
 function safeDivide(n: Value, d: Value): Value {
-  const zero = fromStorage(
-    Uint8Array.from(toFlat(primalOf(d)), (v) => (v === 0 ? 1 : 0)),
-    d.shape,
-    'bool',
-  )
+  const zero = zeroMask(d, (v) => v === 0)
   return where(zero, 0, div(n, where(zero, 1, d)))
 }
 
@@ -114,10 +113,150 @@ function inverseCovariance(x: Value): Tensor {
   return inv(fromStorage(cov, [d, d], 'float64')) as Tensor
 }
 
+/** Coordinate k of every point: the last axis sliced and dropped. */
+function coordinate(x: Value, k: number): Value {
+  return reshape(sliceAxis(x, x.shape.length - 1, k, k + 1), x.shape.slice(0, -1))
+}
+
+/** Whether a metric still needs scipy's data-dependent defaults. */
+function needsStatistics(metric: Metric, options: MetricOptions): boolean {
+  return (metric === 'seuclidean' && options.v === undefined) || (metric === 'mahalanobis' && options.vi === undefined)
+}
+
+/**
+ * scipy's data-dependent defaults, filled from the points when not given: seuclidean's `v` is their sample variance
+ * per coordinate (ddof 1) and mahalanobis's `vi` the inverse of their sample covariance (`cdist` stacks both inputs,
+ * `pdist` uses its one input). Other metrics, and given values, pass through unchanged.
+ *
+ * @param metric - The metric.
+ * @param points - Points `[n, d]` the statistics are taken over.
+ * @param options - The options as given.
+ * @returns The options with `v` or `vi` filled in where the metric needs them.
+ * @example
+ * ```ts
+ * import { resolveMetricOptions } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(resolveMetricOptions('seuclidean', [[0, 0], [2, 4]]).v) // => [2, 8]
+ * resolveMetricOptions('euclidean', [[0, 0], [2, 4]], { p: 2 }) // => { p: 2 }
+ * ```
+ */
+export function resolveMetricOptions(metric: Metric, points: TensorLike, options: MetricOptions = {}): MetricOptions {
+  if (!needsStatistics(metric, options)) return options
+  const [x] = promoteFloat(points) as [Value]
+  if (x.shape.length !== 2) throw new MdmlError('shape', 'resolveMetricOptions: points must be [n, d]')
+  return metric === 'seuclidean' ? { ...options, v: sampleVariance(x) } : { ...options, vi: inverseCovariance(x) }
+}
+
+/**
+ * A metric between corresponding points of `a` and `b`, which are `[..., d]` broadcast together with the last axis as
+ * the coordinates: rows of equal shape give one distance per row `[n]`, two points `[d]` give a scalar, and `[m, 1, d]`
+ * against `[1, n, d]` gives the matrix of {@link cdist}. Continuous metrics are built from operations, so they are
+ * differentiable in the points (with zero gradient where a distance is exactly zero); hamming and jaccard compare
+ * values and have no derivative. Haversine takes `[latitude, longitude]` in radians on the unit sphere. seuclidean
+ * and mahalanobis need `v` and `vi` here ({@link resolveMetricOptions} fills scipy's defaults from the points).
+ *
+ * @param a - Points `[..., d]`.
+ * @param b - Points `[..., d]`, broadcastable against `a`.
+ * @param metric - The metric (default euclidean).
+ * @param options - Minkowski order, weights, variances or inverse covariance.
+ * @returns The distances, the broadcast shape without the last axis.
+ * @throws MdmlError `shape` when the coordinate axes differ, `value` when seuclidean or mahalanobis lack their
+ *   statistics.
+ * @concept distances
+ * @example
+ * ```ts
+ * import { distanceBetween } from 'mdml-engine/numerics/geometry'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(distanceBetween([[0, 0], [1, 1]], [[3, 4], [1, 1]])) // => [5, 0]
+ * toArray(distanceBetween([0, 0], [3, 4], 'cityblock')) // => 7
+ * ```
+ */
+export function distanceBetween(
+  a: TensorLike,
+  b: TensorLike,
+  metric: Metric = 'euclidean',
+  options: MetricOptions = {},
+): Value {
+  const [x, y] = promoteFloat(a, b) as [Value, Value]
+  const d = x.shape[x.shape.length - 1]
+  if (x.shape.length === 0 || y.shape.length === 0 || d !== y.shape[y.shape.length - 1])
+    throw new MdmlError(
+      'shape',
+      `distanceBetween: the coordinate axes differ, [${x.shape.join(', ')}] against [${y.shape.join(', ')}]`,
+    )
+  const weights = options.w === undefined ? undefined : (promoteFloat(options.w)[0] as Value)
+  const weigh = (v: Value): Value => (weights === undefined ? v : mul(v, weights))
+  switch (metric) {
+    case 'euclidean':
+      return safeSqrt(sum(weigh(square(sub(x, y))), -1))
+    case 'sqeuclidean':
+      return sum(weigh(square(sub(x, y))), -1)
+    case 'cityblock':
+      return sum(weigh(abs(sub(x, y))), -1)
+    case 'chebyshev':
+      return max(weigh(abs(sub(x, y))), -1)
+    case 'minkowski': {
+      const p = options.p ?? 2
+      const s = sum(weigh(pow(abs(sub(x, y)), p)), -1)
+      const zero = zeroMask(s, (v) => v === 0)
+      return where(zero, 0, pow(where(zero, 1, s), 1 / p))
+    }
+    case 'seuclidean': {
+      if (options.v === undefined)
+        throw new MdmlError('value', 'distanceBetween: seuclidean needs the variances v (resolveMetricOptions)')
+      const v = promoteFloat(options.v)[0] as Value
+      return safeSqrt(sum(div(square(sub(x, y)), v), -1))
+    }
+    case 'cosine': {
+      const dotXy = sum(mul(x, y), -1)
+      const nx = safeSqrt(sum(square(x), -1))
+      const ny = safeSqrt(sum(square(y), -1))
+      return sub(1, safeDivide(dotXy, mul(nx, ny)))
+    }
+    case 'correlation':
+      return distanceBetween(sub(x, mean(x, -1, true)), sub(y, mean(y, -1, true)), 'cosine')
+    case 'hamming':
+      // Fraction of differing coordinates (on the values, not differentiable).
+      return mean(cast(notEqual(x, y), 'float64'), -1)
+    case 'jaccard': {
+      // Among coordinates where either is non-zero, the fraction that differ (scipy's boolean Jaccard).
+      const nx = notEqual(x, 0)
+      const ny = notEqual(y, 0)
+      const union = cast(sum(logicalOr(nx, ny), -1), 'float64')
+      const differ = cast(sum(logicalXor(nx, ny), -1), 'float64')
+      return safeDivide(differ, union)
+    }
+    case 'mahalanobis': {
+      if (options.vi === undefined)
+        throw new MdmlError(
+          'value',
+          'distanceBetween: mahalanobis needs the inverse covariance vi (resolveMetricOptions)',
+        )
+      const vi = promoteFloat(options.vi)[0] as Value
+      const diff = sub(x, y)
+      return safeSqrt(sum(mul(tensordot(diff, vi, [[-1], [0]]), diff), -1))
+    }
+    case 'canberra':
+      return sum(safeDivide(abs(sub(x, y)), add(abs(x), abs(y))), -1)
+    case 'braycurtis':
+      return safeDivide(sum(abs(sub(x, y)), -1), sum(abs(add(x, y)), -1))
+    case 'haversine': {
+      if (d !== 2) throw new MdmlError('shape', 'distanceBetween: haversine needs [latitude, longitude] coordinates')
+      const lat1 = coordinate(x, 0)
+      const lat2 = coordinate(y, 0)
+      const dlat = sub(lat2, lat1)
+      const dlon = sub(coordinate(y, 1), coordinate(x, 1))
+      const h = add(square(sin(mul(dlat, 0.5))), mul(mul(cos(lat1), cos(lat2)), square(sin(mul(dlon, 0.5)))))
+      return mul(arcsin(safeSqrt(minimum(h, 1))), 2)
+    }
+  }
+}
+
 /**
  * Distances between each row of XA and each row of XB (scipy.spatial.distance.cdist), for the metrics of scipy plus
- * haversine (rows of [latitude, longitude] in radians, unit sphere). Continuous metrics are built from operations, so
- * differentiable in the points (with zero gradient where a distance is exactly zero).
+ * haversine (rows of [latitude, longitude] in radians, unit sphere): {@link distanceBetween} on `[m, 1, d]` against
+ * `[1, n, d]`, with seuclidean's variances and mahalanobis's inverse covariance defaulting to the statistics of both
+ * inputs stacked, as scipy. Continuous metrics are differentiable in the points.
  *
  * @param xa - Points `[m, d]`.
  * @param xb - Points `[n, d]`.
@@ -142,93 +281,8 @@ export function cdist(
   if (a.shape.length !== 2 || b.shape.length !== 2 || a.shape[1] !== b.shape[1])
     throw new MdmlError('shape', 'cdist: inputs must be [m, d] and [n, d]')
   const d = a.shape[1] ?? 0
-  const weights = options.w === undefined ? undefined : reshape(promoteFloat(options.w)[0] as Value, [1, 1, d])
-  const weigh = (x: Value): Value => (weights === undefined ? x : mul(x, weights))
-  switch (metric) {
-    case 'euclidean':
-      return safeSqrt(sum(weigh(square(differences(a, b))), 2))
-    case 'sqeuclidean':
-      return sum(weigh(square(differences(a, b))), 2)
-    case 'cityblock':
-      return sum(weigh(abs(differences(a, b))), 2)
-    case 'chebyshev':
-      return max(weigh(abs(differences(a, b))), 2)
-    case 'minkowski': {
-      const p = options.p ?? 2
-      const s = sum(weigh(pow(abs(differences(a, b)), p)), 2)
-      const zero = fromStorage(
-        Uint8Array.from(toFlat(primalOf(s)), (v) => (v === 0 ? 1 : 0)),
-        s.shape,
-        'bool',
-      )
-      return where(zero, 0, pow(where(zero, 1, s), 1 / p))
-    }
-    case 'seuclidean': {
-      const v = options.v === undefined ? sampleVariance(concat([a, b], 0)) : (promoteFloat(options.v)[0] as Value)
-      return safeSqrt(sum(div(square(differences(a, b)), reshape(v, [1, 1, d])), 2))
-    }
-    case 'cosine': {
-      const dotAb = matmul(a, swapaxes(b, 0, 1))
-      const na = reshape(safeSqrt(sum(square(a), 1)), [-1, 1])
-      const nb = reshape(safeSqrt(sum(square(b), 1)), [1, -1])
-      return sub(1, safeDivide(dotAb, mul(na, nb)))
-    }
-    case 'correlation':
-      return cdist(sub(a, mean(a, 1, true)), sub(b, mean(b, 1, true)), 'cosine')
-    case 'hamming': {
-      // Fraction of differing coordinates (on the numbers, not differentiable).
-      const diff = toFlat(primalOf(differences(a, b))).map((v) => (v !== 0 ? 1 : 0))
-      return mean(fromStorage(Float64Array.from(diff), [a.shape[0] ?? 0, b.shape[0] ?? 0, d], 'float64'), 2)
-    }
-    case 'jaccard': {
-      // Among coordinates where either is non-zero, the fraction that differ (scipy's boolean Jaccard).
-      const av = toFlat(primalOf(a))
-      const bv = toFlat(primalOf(b))
-      const m = a.shape[0] ?? 0
-      const n = b.shape[0] ?? 0
-      const out = new Float64Array(m * n)
-      for (let i = 0; i < m; i++) {
-        for (let j = 0; j < n; j++) {
-          let union = 0
-          let differ = 0
-          for (let k = 0; k < d; k++) {
-            const x = (av[i * d + k] ?? 0) !== 0
-            const y = (bv[j * d + k] ?? 0) !== 0
-            if (x || y) union++
-            if (x !== y) differ++
-          }
-          out[i * n + j] = union === 0 ? 0 : differ / union
-        }
-      }
-      return fromStorage(out, [m, n], 'float64')
-    }
-    case 'mahalanobis': {
-      const vi =
-        options.vi === undefined ? inverseCovariance(concat([a, b], 0)) : (promoteFloat(options.vi)[0] as Value)
-      const diff = differences(a, b)
-      const projected = matmul(reshape(diff, [-1, d]), vi)
-      return safeSqrt(reshape(sum(mul(projected, reshape(diff, [-1, d])), 1), [a.shape[0] ?? 0, b.shape[0] ?? 0]))
-    }
-    case 'canberra': {
-      const diff = abs(differences(a, b))
-      const denom = add(abs(reshape(a, [-1, 1, d])), abs(reshape(b, [1, -1, d])))
-      return sum(safeDivide(diff, denom), 2)
-    }
-    case 'braycurtis': {
-      const num = sum(abs(differences(a, b)), 2)
-      const den = sum(abs(add(reshape(a, [-1, 1, d]), reshape(b, [1, -1, d]))), 2)
-      return safeDivide(num, den)
-    }
-    case 'haversine': {
-      if (d !== 2) throw new MdmlError('shape', 'cdist: haversine needs [latitude, longitude] rows')
-      const lat1 = reshape(sliceAxis(a, 1, 0, 1), [-1, 1])
-      const lat2 = reshape(sliceAxis(b, 1, 0, 1), [1, -1])
-      const dlat = sub(lat2, lat1)
-      const dlon = sub(reshape(sliceAxis(b, 1, 1, 2), [1, -1]), reshape(sliceAxis(a, 1, 1, 2), [-1, 1]))
-      const h = add(square(sin(mul(dlat, 0.5))), mul(mul(cos(lat1), cos(lat2)), square(sin(mul(dlon, 0.5)))))
-      return mul(arcsin(safeSqrt(h)), 2)
-    }
-  }
+  const resolved = needsStatistics(metric, options) ? resolveMetricOptions(metric, concat([a, b], 0), options) : options
+  return distanceBetween(reshape(a, [-1, 1, d]), reshape(b, [1, -1, d]), metric, resolved)
 }
 
 /**
@@ -249,13 +303,7 @@ export function cdist(
 export function pdist(x: TensorLike, metric: Metric = 'euclidean', options: MetricOptions = {}): Value {
   const [v] = promoteFloat(x) as [Value]
   const n = v.shape[0] ?? 0
-  const opts =
-    metric === 'seuclidean' && options.v === undefined
-      ? { ...options, v: sampleVariance(v) }
-      : metric === 'mahalanobis' && options.vi === undefined
-        ? { ...options, vi: inverseCovariance(v) }
-        : options
-  const full = reshape(cdist(v, v, metric, opts), [-1])
+  const full = reshape(cdist(v, v, metric, resolveMetricOptions(metric, v, options)), [-1])
   const idx: number[] = []
   for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) idx.push(i * n + j)
   return take(full, fromStorage(Int32Array.from(idx), [idx.length], 'int32'), 0)
