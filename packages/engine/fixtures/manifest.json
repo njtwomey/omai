@@ -1156,6 +1156,14 @@
       "cases": 23
     },
     {
+      "fixture": "learn/metric_learning.json",
+      "source": "oracle/cases/learn/metric_learning.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "learn/model_selection/criteria.json",
       "source": "oracle/cases/learn/model_selection/criteria.py",
       "reference": {

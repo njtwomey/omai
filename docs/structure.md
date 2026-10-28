@@ -2545,6 +2545,12 @@ modAL for active learning, diffprivlib and opacus for privacy
   `regressorChain` and the engines (`outputsEstimator`, `independentOutputs`, `outputChain`) the multilabel wrappers
   share. oracle: `learn/multilabel` and `learn/multioutput` against `sklearn.multioutput` and `sklearn.multiclass`.
 - `_staged.ts` (private): the algorithm that fits one base-estimator problem per step, and readers of a fitted base.
+- `metric-learning.ts`: neighbourhood components analysis (`ncaValueAndGradient`, the objective and exact gradient;
+  `ncaAlgorithm`, L-BFGS on it logging `objective`, `gradNorm` and the map as `transform`;
+  `neighbourhoodComponentsAnalysis` with the LDA, PCA, identity, random or given start) and large margin nearest
+  neighbour (`lmnnAlgorithm`, gradient descent with the adaptive step logging `objective`, `impostors`, `step` and
+  `transform`; `largeMarginNearestNeighbour`). Transformers on the iterative base. oracle: `learn/metric_learning`
+  against `sklearn.neighbors.NeighborhoodComponentsAnalysis` (objective, gradient and fits scored by its own loss).
 - `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
   the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
