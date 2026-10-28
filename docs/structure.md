@@ -3207,6 +3207,16 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   standard errors from the numerical Hessian.
 - `arma-fit.ts`: `fitAr` (Yule-Walker adjusted or biased, Burg, least squares), `selectArOrder` (AIC, BIC, HQIC),
   `fitMa` (innovations), `hannanRissanen` (with the bias-correction step), `fitArma` and `armaFitAlgorithm`.
+- `smoothing.ts`: ETS models (`EtsSpec`: error, trend, damped, seasonal, period; the presets `smoothingModels`
+  (`simple`, `holt`, `damped`), `holtWintersAdditive`, `holtWintersMultiplicative`): `etsFilter` (fitted values,
+  residuals, states and the concentrated log-likelihood at given parameters and initial states), `etsAlgorithm` (one
+  observation per step: forecast, residual, states and the running likelihood as metrics; serialisable), `etsFitAlgorithm`
+  and `etsFit` (BFGS on logistic-bounded smoothing parameters and the initial states), `etsForecast` (point forecasts,
+  analytic standard errors and intervals for additive models). Recursions and likelihood follow statsmodels' `ETSModel`.
+- `decomposition.ts`: `seasonalDecompose` (classical, moving averages, additive or multiplicative, one- or two-sided,
+  trend extrapolation) and the shared `DecompositionResult`.
+- `stl.ts`: `stlAlgorithm(y, options)` (STL by loess, a port of the netlib routine as statsmodels has it; one inner
+  loop per step, robustness weights after each pass), `stl`, `mstlAlgorithm` (one STL fit per step) and `mstl`.
 - private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
   (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
   Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
@@ -3214,7 +3224,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 
 oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
 `innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,
-`innovations`, `AutoReg`) in `fixtures/timeseries/`; properties: the likelihood by the fast filter equals the library's
+`innovations`, `AutoReg`; `ETSModel` smoothing, likelihood and prediction intervals; `seasonal_decompose`, `STL`, `MSTL`)
+in `fixtures/timeseries/`; properties: the likelihood by the fast filter equals the library's
 Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
 built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
 

@@ -4697,6 +4697,24 @@
       "cases": 17
     },
     {
+      "fixture": "timeseries/decomposition.json",
+      "source": "oracle/cases/timeseries/decomposition.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "timeseries/smoothing.json",
+      "source": "oracle/cases/timeseries/smoothing.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "trace/summaries.json",
       "source": "oracle/cases/trace/summaries.py",
       "reference": {
