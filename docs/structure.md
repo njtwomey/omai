@@ -925,6 +925,15 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
 - `generator.ts`: `DatasetGenerator` (name, kind, knobs as a `Space`, `generate(key, knobs) -> { data, truth }`),
   `Generated`, `generate` (resolves keys from the context, validates knobs, stamps the recipe and key),
   `describeGenerator`, `asGenerated` (a real dataset as `{ data, truth }` for modifiers).
+- `streams.ts`: the stream base: data arriving one batch per step with planted drift. `stream(key, options)` is a
+  `DataStream` (a classification or a regression generator; the concept, covariate or label `shift`; `drift` abrupt,
+  gradual, incremental or recurring, with `points` or an even `count`, a `width`, a `period`, `concepts` and a
+  `severity`) whose `next(t)` is a pure function of the key and the step (random access), and whose `StreamTruth`
+  carries the drift points (`changepoints`, as `Truth` names them), the `PlantedDrift`s, the active concept per step
+  (`conceptAt`, `transitionAt`), each concept's `parameters` and the rule it gives a point (`predict`). `streamKnobs`
+  is the stream's knobs as a `Space` (for a later registry entry); `streamAlgorithm(options)` runs the same stream as
+  a serialisable `Algorithm` (`StreamState`: key, step, last batch) that logs `stream/concept`, `stream/mix`,
+  `stream/drift`, `stream/x` and `stream/y` (`streamContract`).
 - `truth.ts`: the `Truth` interface: `program` (the generating probabilistic program), `logProb`, `posterior`,
   `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
   (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
