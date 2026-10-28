@@ -56,18 +56,30 @@ optimisation, calibration and fairness). This tree is for building and using.
 ```
 methods/
   README.md   this document
-  shared/     what every folder uses (section 4)
-  data/       registries and selectors (datasets, environments, problems); preparation, shift and selection studies
-  fit/        task methods, the scikit-learn world: classify/ regress/ cluster/ reduce/ density/ detect/ rank/ forecast/ survive/
-  train/      problem methods, the torch world: networks/ generative/ representation/ sequence/ graphs/ transfer/ meta/ multitask/
-  infer/      problem methods, the Bayesian world: programs/ samplers/ variational/ graphical/ filters/
+  shared/     what every folder uses (section 4): modes, the option sets, bases, sweeps, streams, evaluation, pictures
+  data/       the registries and selectors (catalogue/), and the data studies: preparation/ features/ exploration/ shift/
+              labels/ (semi-supervised, weak and active labelling share one data slot) selection/ (active learning,
+              valuation, coresets) labelling/ augmentation/ label-noise/
+  fit/        task methods, the scikit-learn world: classify/ regress/ cluster/ reduce/ density/ detect/ rank/ forecast/
+              survive/ online/ (online convex optimisation, experts, incremental learners) relational/ (ILP, statistical
+              relational, neuro-symbolic)
+  train/      problem methods, the torch world: networks/ (foundations, training, convolutional/) sequence/ (recurrent,
+              state-space, transformers/, language/) graphs/ generative/ representation/ scientific/ multimodal/
+              transfer/ meta/ multitask/
+  infer/      problem methods, the Bayesian world: graphical/ (bayesian-networks, markov-random-fields, chains/,
+              message-passing) samplers/ variational/ programs/ models/ filters/ (the Kalman filter lives here, once)
   act/        agents in environments: tabular/ deep/ bandits/ control/ planning/
-  search/     procedures over problems: state-space/ local/ population/ constraint/ adversarial/
-  process/    operations on signals, images, text and graphs, watched: signals/ images/ text/ graphs/
-  simulate/   processes, systems and numerical procedures: stochastic/ dynamics/ numerics/ automata/ networks/ sketches/ curiosities/
-  analyse/    done to data or to fitted models: statistics/ explain/ fairness/ calibrate/ evaluate/
-  study/      methods over methods: sweep/ race/ learning-curve/ cross-validate/ cost/ theory/
+  search/     procedures over problems: state-space/ local/ population/ constraint/ adversarial/ planning/ logic/ games/
+  process/    operations on signals, images, text and graphs, watched: signals/ (with series/) images/ text/ graphs/
+  simulate/   processes, systems and numerical procedures: stochastic/ dynamics/ (linear-systems, nonlinear, fractals/)
+              numerics/ (linear-algebra, optimisation, losses) automata/ networks/ information/ sketches/ curiosities/
+  analyse/    done to data or to fitted models: statistics/ (with survival/, covariance/) evaluate/ calibrate/ explain/
+              fairness/ robustness/ privacy/ causal/
+  study/      methods over methods: sweep/ race/ learning-curve/ cross-validate/ cost/ theory/ experiments/ engineering/
 ```
+
+The next level down is each chapter README's **Structure** block, which is authoritative for its area; the lines
+above list every section those blocks chose, so a path in a README resolves against this tree.
 
 Inside any folder, section or not: a `README.md` (what it should do, in the form of the pages written today), an
 `index.ts` (its summary, which is its entry in the docs tree, and its exports), a `shared/` for its own slot tables,
@@ -118,6 +130,16 @@ the tables, settled after the prototype:
   a one-line `see <chapter>` row in the group it belongs to rather than a copy.
 - The tables are not reformatted by biome (`methods/**/README.md` is excluded, since padded prose cells ran to
   850 characters a line): one row per line, cells separated by ` | `, no padding.
+- The first words of a why cell say what kind of row it is when it is not a plain method: `study`, `probe-only`
+  (a computation with no training, the knobs do the work) or `simulated` (a mechanism at toy scale standing in for
+  what cannot run here); a row that trains says nothing.
+- `see` rows may be gathered under a `### cross-chapter` heading when they belong to no group; their status is empty.
+- A knob or a field of the truth named in a needs cell is plain text (the `confounding` knob), never backticked like
+  an export, so a checker can read the column.
+- A helper wanted by several chapters (the stream base, the repeated-fit and sweep base, the planted-problem
+  catalogue) is cited at its one home under `methods/shared/`, never as a chapter-local stopgap.
+- The three prototypes were written before these rules settled and have been brought in line (unpadded, status about
+  the method alone).
 
 The twelve built areas move the same way: `cluster` and
 `mixture` to `fit/cluster` (the mixture of experts to `fit/regress`), `linear` to `fit/classify` and `fit/regress`,
@@ -227,6 +249,25 @@ knobs and compare two solvers.
     values, narratives, the same session on several pages) shapes render's next layer; they read the methods, they do not shape them.
 16. **The simulated and the real.** Several pages (language models, engineering, multimodal learning)
     show mechanisms at toy scale or simulate what cannot run here; each page must say which it is.
+17. **What the inventory asks of the library first.** Across the 52 chapter pages (about 1,280 method rows in 405
+    groups, 457 library pieces marked TODO) the pieces most rows wait on, in order: the trainer base
+    (`methods/shared/bases/trainer.ts` over `nn/training/fit.ts`), the `gradient` mode of `smoothSolvers` (an
+    `optim` transform chain with batches and a schedule), one sweep and repeated-fit base (`methods/shared/sweeps.ts`,
+    which four chapters wrote as local stopgaps), one stream base (`methods/shared/streams.ts`), and the missing
+    domains `lib/trees`, `lib/ensembles`, `lib/svm`, `lib/gp`, `lib/survival`, `lib/anomaly`, `lib/rules`,
+    `lib/patterns`, `lib/causal`, `lib/sketches`, `lib/embedding`, with `lib/cluster`, `lib/decomposition` and
+    `lib/manifold` to grow. A whole-tree CART already sits in `explain/surrogates.ts` and a cyclic booster in
+    `explain/glassbox.ts`; both move under their own domains.
+18. **Chapters the inventory found missing or oversized.** No dynamics chapter (nonlinear dynamics and chaos are under
+    complex systems for now), no graphics chapter (rendering is under curiosities), no uncertainty-quantification
+    chapter (the largest group of decision theory and calibration), survival analysis as a group of statistics though
+    `fit/survive/` exists in the layout; data-centric learning spans five folders and splits when built; community
+    detection is claimed by no chapter.
+19. **Homes for methods claimed twice.** The Kalman filter (control, time series, probabilistic inference) lives at
+    `infer/filters/`; concentration bounds in probability; the online optimisers in online learning; game contracts
+    (three in the library: `search/adversarial.ts`, `games/extensive-form`, `environments/games.ts`) need one adapter
+    before any game page; `bayesianOptimisation` should take a method's space as its objective when it moves to
+    `study/sweep/bayesian/`.
 
 ## 7. The reflections of 2026-10-28, worked through
 
