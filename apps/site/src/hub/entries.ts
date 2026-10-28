@@ -10,7 +10,7 @@ import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
 import { diffusionPaths } from 'mdml-engine/methods/stochastic'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
-import { kltTracking, peronaMalik, slicSuperpixels, snakes } from 'mdml-engine/methods/vision'
+import { grabCutSegmentation, kltTracking, peronaMalik, slicSuperpixels, snakes } from 'mdml-engine/methods/vision'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -403,6 +403,20 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'probe', path: 'track/picture', title: 'the frame and its points' },
       { kind: 'curves', paths: ['track/error'], title: 'mean distance from the true corners (px)' },
       { kind: 'curves', paths: ['track/alive'] },
+    ],
+  },
+  {
+    id: 'vision/grabcut',
+    title: 'GrabCut',
+    summary:
+      'A rectangle round an object, then mixture models of each side and a minimum cut, over and over, until the mask settles.',
+    method: grabCutSegmentation,
+    steps: 12,
+    layout: [
+      { kind: 'probe', path: 'cut/picture', title: 'the scene inside the mask' },
+      { kind: 'projection', name: 'board', title: 'the mask' },
+      { kind: 'curves', paths: ['cut/overlap'], title: 'overlap with the object' },
+      { kind: 'curves', paths: ['cut/energy'] },
     ],
   },
 ]
