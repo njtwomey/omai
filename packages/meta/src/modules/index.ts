@@ -65,6 +65,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/logic': () => import('mdml-engine/logic'),
   'mdml-engine/logic/ilp': () => import('mdml-engine/logic/ilp'),
   'mdml-engine/losses': () => import('mdml-engine/losses'),
+  'mdml-engine/manifold': () => import('mdml-engine/manifold'),
   'mdml-engine/methods/active-learning': () => import('mdml-engine/methods/active-learning'),
   'mdml-engine/methods/anomaly-detection': () => import('mdml-engine/methods/anomaly-detection'),
   'mdml-engine/methods/causal-inference': () => import('mdml-engine/methods/causal-inference'),

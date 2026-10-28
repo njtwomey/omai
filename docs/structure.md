@@ -3083,6 +3083,34 @@ PLSRegression, PLSCanonical, CCA, PLSSVD and FactorAnalysis (`methods/decomposit
 paths; PCA is also checked through power iteration), plus deflationary FastICA (`decomposition/ica_deflation`) and NMF
 by coordinate descent against HALS (`decomposition/nmf_hals`)
 
+### 4.40b `manifold/`: embeddings and manifold learning (scikit-learn manifold, umap-learn)
+
+Embeddings as traced `Algorithm`s with estimators (`kind: 'transformer'`). The algorithms that iterate observe the
+configuration at every step as the `embedding` tensor `[n, k]` (and their objective as a metric), which is what an
+`embeddingSteps` record is built from. A fitted embedding has `transform`: the training rows give their fitted
+embedding, other rows the inverse-distance-weighted mean of their nearest training rows' (none of these methods has a
+closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_support.ts` is private.
+- `mds.ts`: `classicalMds`, `classicalMdsAlgorithm`, `smacofAlgorithm` (a Guttman transform per step; metric, or
+  non-metric with disparities by isotonic regression through `learn`'s `poolAdjacentViolators`), estimator `mds`.
+- `isomap.ts`: `neighbourEdges`, `geodesicDistances` (Floyd-Warshall over the neighbour graph), `isomap`. `lle.ts`:
+  `barycentreWeights`, `locallyLinearEmbedding` (standard; modified, Hessian and LTSA are TODO). `spectral.ts`:
+  `spectralEmbedding` (Laplacian eigenmaps over `cluster`'s affinities and `graph/spectral.ts`) and `diffusionMap`.
+- `tsne.ts`: `conditionalProbabilities` (the perplexity search), `jointProbabilities`, `sparseJointProbabilities`,
+  `tsneGradient`, `barnesHutKl` (a quadtree or octree of the embedding), `tsneAlgorithm` (early exaggeration, momentum,
+  gains, the two stages as scikit-learn runs them; exact for dense P, Barnes-Hut for sparse), `tsneSetup`, `tsne`.
+- `umap.ts`: `findAbParams` (the curve fit by `optim`), `fuzzySimplicialSet`, `umapAlgorithm` (one epoch of edge and
+  negative sampling per step), `umapSetup`, `umap`. `som.ts`: `somAlgorithm` (one epoch per step; observes the
+  weights and the rows' grid positions), `uMatrix`, `selfOrganisingMap`.
+- `quality.ts`: `trustworthiness`, `continuity`, `neighbourhoodPreservation`, `coRankingMatrix`, `rnxCurve`,
+  `embeddingStress`, `neighbourRanks`.
+- TODO: PaCMAP and TriMap, Barnes-Hut error control by a tree built once per step in typed arrays, UMAP with a sparse
+  graph (the memberships are dense `[n, n]`), the supervised and parametric variants.
+
+oracle: scikit-learn trustworthiness, Isomap, LocallyLinearEmbedding, SpectralEmbedding and metric SMACOF
+(`methods/manifold/*`, kept at their old paths), non-metric SMACOF (`manifold/mds_nonmetric`), and t-SNE through
+scikit-learn's own `_joint_probabilities`, `_joint_probabilities_nn`, `_kl_divergence`, `_kl_divergence_bh` (angle 0) and
+`_gradient_descent` (`manifold/tsne`; umap-learn is not in the oracle group, so UMAP is checked by properties)
+
 ### 4.41 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
 
 The algorithms behind linear models, moved from the parked methods layer. `design.ts` (private) builds the design

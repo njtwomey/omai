@@ -1464,6 +1464,24 @@
       "cases": 18
     },
     {
+      "fixture": "manifold/mds_nonmetric.json",
+      "source": "oracle/cases/manifold/mds_nonmetric.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "manifold/tsne.json",
+      "source": "oracle/cases/manifold/tsne.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "methods/anomaly/neighbours.json",
       "source": "oracle/cases/methods/anomaly/neighbours.py",
       "reference": {
