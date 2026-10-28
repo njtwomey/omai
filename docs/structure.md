@@ -424,6 +424,9 @@ the import graph between them has no cycles (section 2). Each domain's own summa
   bitmasks).
 - `heap.ts`: `heap`, a binary heap with a comparator (the priority queue of neighbour searches, shortest paths and
   best-first search).
+- `registry.ts`: the shape the dataset and environment registries share: `Registry<E>` (named entries in order, a
+  plain value), `registry`, `register` (a new registry with more entries, replacing by name; nothing registers itself
+  on import), `lookup`, `find`, `matchesText` (the search-box test of the registries' queries).
 - `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
   (`defaultTolerance`, `resolveTolerance`, `defaultReduction`, `defaultAlternative`, `defaultConfidenceLevel`,
   `resolveConfidenceLevel`).
@@ -3315,6 +3318,15 @@ environments by family), each entry with its name, its generator, the `Space` of
 the methods it suits. mdml-render turns a collection
 and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
 
+**Dataset registry.** Beside the hand-picked collections, `lib/datasets/catalogue.ts` builds `datasetRegistry`, every
+generator, vendored real dataset and remote asset as one tagged entry (kind, modality, real or synthetic, size,
+licence, source, with a title and description), from the machinery of `lib/datasets/registry.ts`: `whereDatasets`
+(a query by kinds, modalities, real, form and search text), `loadDataset` and `fetchDataset`, and `registerDatasets`,
+which returns a new registry with an app's own entries. `lib/environments/registry.ts` does the same for
+environments (`environmentRegistry`, `whereEnvironments`, `registerEnvironments`), with the action and observation
+kinds derived from each definition's spaces; mdml-render's `DatasetSelector` and `EnvironmentSelector` are the
+controls over them.
+
 **Phases** (first pass; later phases follow the same contract):
 1. Supervised: `linear/` (model, solvers, regression with paths and CV, classification, the GLM families, robust
    regression, Bayesian ridge and ARD), `trees/` (tree, criteria, growth, pruning), `ensemble/` (bagging, forests,
@@ -3941,6 +3953,12 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 - `games.ts`: tic-tac-toe, connect four, nim, Kuhn and Leduc poker, as turn-based environments with legal actions
   (the poker rules are `games`' `kuhnPoker` and `leducPoker`, with the cards dealt at reset).
 - `go.ts`: Go on small boards (5, 7, 9; captures, simple ko or positional superko, area scoring with komi).
+- `registry.ts`: the tagged environment registry: `environmentRegistry` (every definition of the folder and the
+  control models as environments, one entry each with its title, family, `episodic`, and `actions` and
+  `observations` derived from its spaces by `actionKindOf` and `observationKindOf`, plus its spec, spaces, options
+  and `make`), `environmentEntry` (an entry from any definition, single- or multi-agent), `whereEnvironments`
+  (by family, kinds, episodic, multi-agent, search text), `registerEnvironments` (a new registry with an app's
+  definitions), `findEnvironment`.
 - `multi-agent.ts`: matrix games (prisoner's dilemma, matching pennies, rock-paper-scissors, stag hunt, with `games`'
   payoffs), pursuit-evasion,
   cooperative navigation (MPE simple_spread).
@@ -4320,7 +4338,14 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   (`labelProportionBags`), each with the exact posterior or mechanism.
 - `operators.ts`: operator-learning pairs (`heatOperator`, `burgersOperator` solved exactly by Cole-Hopf,
   `antiderivativeOperator` with Gaussian-process inputs).
-- `catalogue.ts`: `datasetGenerators` (every generator by name, for recipes and controls), `remoteDatasets`.
+- `catalogue.ts`: `datasetGenerators` (every generator by name, for recipes and controls), `remoteDatasets`, and
+  `datasetRegistry`, the tagged registry built from them and the vendored real datasets (every entry with its kind,
+  modality, real flag, size, licence and source beside its title and description).
+- `registry.ts`: the registry's machinery: `DatasetEntry` (a generator with starting knobs, a vendored loader or a
+  remote reference, with `DatasetTags`), `DatasetModality`, `generatorEntry`, `vendoredEntry`, `remoteEntry`,
+  `whereDatasets` and `matchesDatasetQuery` (by kinds, modalities, real, form and search text), `registerDatasets`
+  (a new registry with an app's entries, kinds checked), `findDataset`, `loadDataset` (synchronous: generate or
+  load) and `fetchDataset` (remote assets too).
 - `predictions.ts`: model outputs with known miscalibration (`miscalibratedPredictions`, with the population ECE),
   survival data with known hazards (`survivalData`: Weibull and exponential proportional hazards, log-normal AFT,
   censoring).
@@ -4715,11 +4740,19 @@ Design rules:
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
   `Toggle`, `SeedInput`; `DatasetPicker` (a dataset collection from `lib/datasets/collections.ts`, with the
-  chosen generator's knobs as controls) and `MethodControls` (controls from a method's `hyperSpace`, demo defaults
+  chosen generator's knobs as controls, `DatasetKnobs`, and `useDataset` over a collection or a registry);
+  `DatasetSelector` (the tagged `datasetRegistry` filtered by its props, kinds, modalities, real, form, with a search
+  box, each entry's title and tags, and the chosen entry's description, provenance and knobs) and
+  `EnvironmentSelector` (the same over `environmentRegistry`: families, kinds of action and observation, episodic,
+  multi-agent; the chosen entry's spaces, formatted, and its options as controls; `useEnvironment` makes it), both
+  drawn by `EntryList` (`EntryList.tsx`: the search box and the list of titles with `Tags` chips, `tagLabel`); and
+  `MethodControls` (controls from a method's `hyperSpace`, demo defaults
   first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas (`ControlLayout` places it).
   Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
-  `space-controls.ts`, `datasets.ts`) and menus open in a `Popover` portal so no container clips them.
+  `space-controls.ts`, `datasets.ts` (sources: a collection id, a collection or a registry), `environments.ts`
+  (selections, `makeSelection`, `firstFrame` of any environment form, `formatSpace` gymnasium-style)) and menus open
+  in a `Popover` portal so no container clips them.
 - `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,

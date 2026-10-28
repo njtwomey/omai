@@ -1,5 +1,6 @@
+import { datasetRegistry, generatorEntry, moons, registerDatasets } from 'mdml-engine/datasets'
 import { describe, expect, it } from 'vitest'
-import { collectionOf, entryKnobSpace, loadSelection, selectEntry } from './datasets.ts'
+import { collectionOf, entriesOf, entryKnobSpace, loadSelection, selectEntry } from './datasets.ts'
 
 describe('dataset selections', () => {
   it('starts an entry from its demo knobs and the generator defaults', () => {
@@ -27,5 +28,24 @@ describe('dataset selections', () => {
   it('refuses unknown collections and entries', () => {
     expect(() => collectionOf('nope')).toThrow()
     expect(() => selectEntry('classification2d', 'nope')).toThrow()
+    expect(() => selectEntry(datasetRegistry, 'nope')).toThrow(/the registry has no entry/)
+  })
+
+  it('offers a registry the same way: generator defaults, starting knobs, vendored loads, remote refused', () => {
+    expect(entriesOf(datasetRegistry)).toBe(datasetRegistry.entries)
+    expect(entriesOf('regression1d')).toBe(collectionOf('regression1d').entries)
+    const s = selectEntry(datasetRegistry, 'moons', 2)
+    expect(s).toEqual({ name: 'moons', seed: 2, knobs: { n: 100, noise: 0.1, shuffle: true } })
+    expect(loadSelection(datasetRegistry, { ...s, knobs: { ...s.knobs, n: 8 } }).data.kind).toBe('classification')
+    expect(selectEntry(datasetRegistry).name).toBe(datasetRegistry.entries[0]?.name)
+    expect(selectEntry(datasetRegistry, 'iris').knobs).toEqual({})
+    expect(loadSelection(datasetRegistry, selectEntry(datasetRegistry, 'iris')).data.kind).toBe('classification')
+    expect(() => loadSelection(datasetRegistry, selectEntry(datasetRegistry, 'californiaHousing'))).toThrow(/remote/)
+    const mine = registerDatasets(datasetRegistry, [
+      generatorEntry(moons, { name: 'noisyMoons', title: 'Noisy moons', modality: 'tabular', knobs: { noise: 0.4 } }),
+    ])
+    expect(selectEntry(mine, 'noisyMoons').knobs).toEqual({ n: 100, noise: 0.4, shuffle: true })
+    const found = mine.entries.find((e) => e.name === 'noisyMoons')
+    expect(found === undefined ? undefined : entryKnobSpace(found)).toBe(moons.knobs)
   })
 })
