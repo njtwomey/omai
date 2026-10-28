@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 41 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 44 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -388,6 +388,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `stats`       | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                   |
 | `optim`       | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                 |
 | `kernels`     | kernel functions, compositions and explicit feature maps                                                                                                                                         |
+| `distances`   | named distances and similarities between points, each with its parameters as a space, evaluated by name between rows or all pairs                                                                |
 | `signal`      | signal and image processing, spectral and time-frequency analysis, audio features                                                                                                                |
 | `text`        | normalisation, tokenisation, subwords, shingles, vectorisers, similarity, parsing, fingerprinting                                                                                                |
 | `search`      | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                      |
@@ -856,9 +857,12 @@ primitives; "custom" means a dedicated rule.
   parameter and facing normal), `sweptCircleHit` (first contact of a moving circle with a segment's side or ends),
   `segmentsTouch` (robust closed-segment test with relative collinearity tolerance), `SegmentContact`. worlds'
   continuous motion, ray casts and line of sight are built on them.
-- `distances.ts`: `cdist`, `pdist`, `squareform` with the metrics euclidean, sqeuclidean, cityblock, chebyshev, minkowski
-  (with weights), seuclidean, cosine, correlation, hamming, jaccard, mahalanobis, canberra, braycurtis and haversine
-  (continuous ones differentiable).
+- `distances.ts`: `distanceBetween` (any of the metrics over the coordinate axis of broadcast operands: rows against
+  rows, two points, or `[m, 1, d]` against `[1, n, d]`), `cdist`, `pdist`, `squareform` built on it, and
+  `resolveMetricOptions` (scipy's data-dependent defaults for seuclidean and mahalanobis), with the metrics euclidean,
+  sqeuclidean, cityblock, chebyshev, minkowski (with weights), seuclidean, cosine, correlation, hamming, jaccard,
+  mahalanobis, canberra, braycurtis and haversine (continuous ones differentiable); `metricFunction` is the scalar form
+  on number arrays. `lib/distances/` names these under one vocabulary with their parameters as spaces.
 - `triangulation.ts`: `delaunay` (neighbours, hull, point location), `voronoi`, `barycentricCoordinates`, `alphaShape`,
   predicates (`orient`, `inCircle`, `circumcentre`).
 - `transforms.ts`: `Rotation` (`rotationFromQuat`, `rotationFromMatrix`, `rotationFromRotvec`, `rotationFromEuler`
@@ -3136,6 +3140,41 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   non-local means, stereoRectify's alpha-dependent camera matrices, StereoBM's pre-filter and SGBM's Birchfield-Tomasi
   cost, LSD's sub-sampling and refinement, OpenCV's cascade XML and HOGDescriptor layouts.
 
+### 4.44 `distances/`: named distances and similarities (scipy.spatial.distance, sklearn.metrics.pairwise)
+
+One entry point for distances and similarities between points, so that a page, a clusterer or a nearest-neighbour
+index picks a metric by name and a control can draw its knobs. Every computation is `numerics/geometry`'s
+`distanceBetween` (section 4.10); this domain names them under one vocabulary and arranges them as registries.
+- `distances.ts`: `DistanceEntry` (`{ name, description, metric, parameters, compute, scalar }`: whether the triangle
+  inequality holds, the knobs as a `DictSpace`, the differentiable `compute` over the coordinate axis of broadcast
+  operands, and the plain-number `scalar` form from `metricFunction`), the entries `euclideanDistance`,
+  `squaredEuclideanDistance`, `manhattanDistance`, `chebyshevDistance`, `minkowskiDistance` (`p`),
+  `seuclideanDistance` (`variance`), `cosineDistance`, `correlationDistance`, `mahalanobisDistance` (`covariance` or
+  `inverseCovariance`), `hammingDistance`, `jaccardDistance`, `canberraDistance`, `braycurtisDistance`,
+  `haversineDistance` (`degrees`, `radius`), the table `distances`, `distanceNames`, `distanceSpace` (a union over the
+  names, a value being `{ name, ...knobs }`), `distanceEntry` (names and the aliases `l1`, `l2`, `cityblock`,
+  `sqeuclidean`, `linf`) and `DistanceOptions` (`weights` too; tensor parameters are options, not knobs).
+- `similarities.ts`: `SimilarityEntry` (`{ name, description, range, parameters, compute }`), the entries
+  `cosineSimilarity`, `dotSimilarity`, `pearsonSimilarity`, `gaussianSimilarity` and `laplacianSimilarity` (`gamma`
+  or a `bandwidth`), `inverseDistanceSimilarity` (1 / (1 + d / scale) over any registered `distance`, whose knobs join
+  the space as conditional dimensions), the table `similarities`, `similarityNames`, `similaritySpace`,
+  `similarityEntry` (aliases `rbf`, `linear`, `correlation`), and the conversions `distanceToSimilarity` (inverse,
+  exponential, Gaussian, linear) and `similarityToDistance` (linear, inverse, chord: the kernel-induced distance of a
+  normalised kernel).
+- `evaluate.ts`: `distance(a, b, name, options)` and `similarity(a, b, name, options)` between corresponding rows, two
+  points, or a point and rows; `pairwiseDistances(a, b?, name, options)` and `pairwiseSimilarities(a, b?, name,
+  options)` for the `[m, n]` matrix (`b` omitted: among the rows of `a`); shapes checked once, scipy's defaults for
+  seuclidean and mahalanobis filled from the points. An unknown name is a `value` error, mismatched points a `shape`
+  error.
+
+oracle: scipy.spatial.distance (cdist and the scalar functions row by row), scikit-learn's cosine_similarity,
+linear_kernel, rbf_kernel, laplacian_kernel and haversine_distances, numpy.corrcoef (`fixtures/distances/evaluate.json`);
+properties: symmetry, zero diagonal, the triangle inequality of the metric entries, ranges, elementwise equals the
+diagonal of pairwise, derivative conformance of every continuous distance.
+built from: `numerics/geometry`, `numerics/linalg`, `space`, `tensor`. Sequence and string distances (DTW in
+`signal/similarity.ts`, Levenshtein and set Jaccard in `text/similarity.ts`, chi-square in `kernels/structured.ts`)
+keep their homes, as do the `Kernel` objects of `kernels/` (`pairwiseKernels` by scikit-learn's names).
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
@@ -4961,6 +5000,7 @@ library for the same computation. They do not set a higher bar than that library
 | `model_selection` (splitters, CV)                           | `lib/learn/model-selection/`                          |
 | `model_selection` (searches)                                | `lib/learn/model-selection/search.ts`, `lib/tune/`    |
 | `metrics`                                                   | `lib/metrics/`                                        |
+| `metrics.pairwise`                                          | `lib/distances/`, `lib/kernels/matrices.ts`           |
 | `calibration`                                               | `lib/learn/calibration.ts`                            |
 | `inspection`                                                | `lib/explain/inspection.ts`                           |
 | `datasets`                                                  | `lib/datasets/`, `lib/data/`                          |
@@ -5005,6 +5045,7 @@ library for the same computation. They do not set a higher bar than that library
 | `scipy.signal`                        | `lib/signal/`, `lib/systems/`                     |
 | `scipy.ndimage`                       | `lib/signal/image/`, `lib/numerics/convolution/`  |
 | `scipy.spatial`                       | `lib/numerics/geometry/`, `lib/numerics/spatial/` |
+| `scipy.spatial.distance`              | `lib/distances/`, `lib/numerics/geometry/`        |
 | `scipy.stats`                         | `lib/dists/`, `lib/stats/`                        |
 | `scipy.cluster.hierarchy`             | `methods/cluster/hierarchical.ts`                 |
 | SymPy                                 | `lib/symbolic/`                                   |

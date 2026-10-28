@@ -97,6 +97,16 @@
       "cases": 4
     },
     {
+      "fixture": "distances/evaluate.json",
+      "source": "oracle/cases/distances/evaluate.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 49
+    },
+    {
       "fixture": "dists/bijectors/elementwise.json",
       "source": "oracle/cases/dists/bijectors/elementwise.py",
       "reference": {
