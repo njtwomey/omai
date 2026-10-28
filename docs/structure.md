@@ -671,7 +671,8 @@ oracle: jax and torch for derivative values; finite differences in property test
   `onSchedule`, `selected` and `changed`), `childPolicy` (propagation to inner algorithms).
 - `summaries.ts`: tensor summaries (norm, mean, standard deviation, extremes, histogram, sparsity) used at summary
   detail (`summarise`), and `subsample`.
-- `tracer.ts`: `Tracer`, `nullTracer`, `recorder`, `tee`, `filtered`, `startRun`, `RunHandle` (applies the policy).
+- `tracer.ts`: `Tracer`, `nullTracer`, `recorder` (with `forget`, so a kept window can let its oldest event go),
+  `tee`, `filtered`, `startRun`, `RunHandle` (applies the policy).
 - `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext`,
   `runAlgorithm`, `iterate` (a generator for live views), `runFor` (budgeted slices that continue exactly; the budget
   is a step count or milliseconds of an injected clock, since published code reads no clocks).
@@ -684,11 +685,14 @@ oracle: jax and torch for derivative values; finite differences in property test
   for direct methods).
 - `checkpoint.ts`: `checkpointEvery` (a policy storing checkpoints every n steps), `resume`, `seek`.
 - `contract.ts`: the log contract (`docs/methods.md`): sources by path (`scalar`, `tensor`, `message`, `frame`,
-  `derived`, `event`), subscriptions (`Log`, `On`, `off`/`defaults`/`all`), path patterns, `resolve` (contract and
-  subscription to a policy, per-path schedules and hooks), `contractSchema`.
+  `derived`, `event`), subscriptions (`Log` with `every`, `detail`, `args`, `budget` and `keep`: `all`, `last` or the
+  most recent n events of the path, checkpoints never among them; `On`; `off`/`defaults`/`all`), path patterns,
+  `resolve` (contract and subscription to a policy, per-path schedules and hooks; it rejects a bad `keep`),
+  `contractSchema`.
 - `logging.ts`: the scheduler (every n steps, log-spaced, or on the nth firing of an event), the log context
   algorithms write to (`log`, `wants`, `emit`, `taps`), `defaultLogContext` for runs outside a session, and `gated`
-  (the tracer that renames native channels to paths and passes only what is subscribed and due).
+  (the tracer that renames native channels to paths, passes only what is subscribed and due, and holds a path's
+  `keep` window by having the recorder forget its oldest events as new ones arrive, the budget counting what is held).
 - `session.ts`: `Method` and `defineMethod` (config space, `make`, contract, defaults, named hooks, projections),
   `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`, `stepsOf`) and `session` with its modes (eager,
   live, eager to a point).
@@ -2465,7 +2469,9 @@ oracle once the oracle environment has it.
 - `bases/` (inlined; `docs/methods_port/bases.md`): the bases methods are built on. `iterative.ts`: the iterative base
   (`iterative(particular)`: a library `Algorithm` over the data run as a session behind scikit-learn's `fit`, with the
   solver's channels as `solver/...` paths, `fit/iteration/end`, `model/params`, restarts, the records' rows, and
-  `method(data)` and `session(data)` to drive the same fit live); `kinds.ts`: the estimator kinds as add-ons
+  `method(data)` and `session(data)` to drive the same fit live: an `IterativeSession`, whose `fittedAt(t)` is the
+  fitted value, with the kind's verbs, at any reached step through the checkpoints, and `fit`'s value at the head);
+  `kinds.ts`: the estimator kinds as add-ons
   (`kindProbes`: the standard derived paths of classifiers and regressors, clusterers, transformers and outlier
   detectors). The one-shot, trainer, agent, sweep and procedure bases follow.
 

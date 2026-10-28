@@ -111,6 +111,23 @@ describe('sessions', () => {
     expect(slower.stateAt(5)).toBe(10)
   })
 
+  it('keeps a window of a path: the latest events stay, checkpoints and seeking are untouched, defaults may keep', () => {
+    const logs = { count: Log({ keep: 3 }), doubled: Log({ keep: 'last' }), square: Log() }
+    const eager = session(counter, { mode: 'eager', steps: 10, checkpointEvery: 3, logs })
+    expect(metricSeries(eager.run(), 'count').steps).toEqual([7, 8, 9])
+    expect(metricSeries(eager.run(), 'doubled')).toEqual({ steps: [10], values: [20] })
+    expect(metricSeries(eager.run(), 'square').steps.length).toBe(11)
+    expect(eager.run().events.flatMap((e) => (e.type === 'checkpoint' ? [e.step] : []))).toEqual([0, 3, 6, 9])
+    expect(eager.stateAt(5)).toBe(5)
+    const live = session(counter, { mode: 'live', steps: 10, checkpointEvery: 3, logs })
+    live.advance({ steps: 4 })
+    expect(metricSeries(live.run(), 'count').steps).toEqual([1, 2, 3])
+    live.advance()
+    expect(live.run()).toEqual(eager.run())
+    const last = defineMethod({ ...counter, defaults: { count: Log({ keep: 'last' }) } })
+    expect(metricSeries(session(last, { mode: 'eager', steps: 5 }).run(), 'count')).toEqual({ steps: [4], values: [4] })
+  })
+
   it('runs named hooks and stops the run when asked', () => {
     const s = session(counter, { mode: 'eager', steps: 50, logs: { 'tick/end': On('stopAt', { at: 9 }) } })
     expect(s.status).toBe('stopped')

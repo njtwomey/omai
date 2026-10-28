@@ -4,7 +4,7 @@
  * can tell beyond the solver's own channels; the base owns the loop, the `fit/iteration/end` event, restarts, the
  * solver's channels as `solver/...` paths, `model/params` and the kind's standard probes, serialisation, the
  * scikit-learn `fit` surface (a session run to completion with the method's defaults), the records' rows, and a
- * `session` to drive the same fit live.
+ * `session` to drive the same fit live, with `fittedAt(t)` for the fitted value at any reached step.
  */
 
 import type { Json } from '../../base/index.ts'
@@ -76,13 +76,27 @@ export interface IterativeSessionOptions extends FitOptions {
   readonly past?: boolean
 }
 
+/**
+ * A session of a fit on the iterative base: the session's verbs, plus the fitted value at any reached step. Its forks
+ * are iterative sessions too.
+ */
+export interface IterativeSession<S, P extends Json, V extends Verbs & FittedFacts> extends Session<S, Config> {
+  /**
+   * The fitted value at a step (the verbs of the kind, built from the parameters of `stateAt(t)`), so "the model at
+   * step 40 on new data" is `fittedAt(40).predict(x)`. Any reached step, through the checkpoints; at the head, the
+   * value `fit` would return.
+   */
+  fittedAt(t: number): Fitted<P> & V
+  fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<Config> }): IterativeSession<S, P, V>
+}
+
 /** An estimator on the iterative base: scikit-learn's surface, plus its method and a session of its fit. */
 export interface IterativeEstimator<H extends object, S, P extends Json, V extends Verbs & FittedFacts>
   extends Estimator<H, IterativeFitted<P, V>> {
   /** The method of this estimator on a dataset (to drive as a session, or to read its contract). */
   method(data: LearnData): Method<S, Config>
-  /** A session of the fit on a dataset: the tape to advance, seek, probe and fork. */
-  session(data: LearnData, options?: IterativeSessionOptions): Session<S, Config>
+  /** A session of the fit on a dataset: the tape to advance, seek, probe and fork, and the fitted value at any step. */
+  session(data: LearnData, options?: IterativeSessionOptions): IterativeSession<S, P, V>
   with(changes: Partial<H>): IterativeEstimator<H, S, P, V>
 }
 
@@ -124,7 +138,12 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
   const hyperOf = (c: Config): H => ({ ...hyper, ...c }) as H
   const configOf = (h: H): Config =>
     Object.fromEntries(knobs.map((k) => [k, (h as Record<string, unknown>)[k] as SpaceValue])) as Config
-  const build = (params: P): Fitted<P> & V => ({ ...p.verbs(params, hyper), estimator: p.name, kind: p.kind, params })
+  const build = (params: P, h: H = hyper): Fitted<P> & V => ({
+    ...p.verbs(params, h),
+    estimator: p.name,
+    kind: p.kind,
+    params,
+  })
   // The algorithm is built once per (data, hyper, key): `make` and the contract both need it.
   const cache = new WeakMap<LearnData, Map<string, Algorithm<S>>>()
   const algorithmOf = (data: LearnData, h: H, key: Key): Algorithm<S> => {
@@ -176,7 +195,7 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
       description: 'the fitted parameters at this step',
       compute: (s) => p.params(s, data, h) as Json,
     })
-    Object.assign(out, kindProbes<S>(p.kind, { data, fitted: (s) => build(p.params(s, data, h)) }))
+    Object.assign(out, kindProbes<S>(p.kind, { data, fitted: (s) => build(p.params(s, data, h), h) }))
     Object.assign(out, p.contract?.(data, h) ?? {})
     return out
   }
@@ -206,30 +225,62 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
             ),
           }),
     })
-  const sessionOf = (data: LearnData, options: IterativeSessionOptions, key: Key): Session<S, Config> => {
+  // The session's verbs are delegated one by one (`t`, `state` and `status` are getters, so no spread), and the
+  // fitted value at a step is the kind's verbs over the parameters there, under the session's own configuration.
+  const wrap = (s: Session<S, Config>, data: LearnData): IterativeSession<S, P, V> => ({
+    method: s.method,
+    config: s.config,
+    seed: s.seed,
+    algorithm: s.algorithm,
+    contract: s.contract,
+    get t() {
+      return s.t
+    },
+    get state() {
+      return s.state
+    },
+    get status() {
+      return s.status
+    },
+    advance: s.advance,
+    stateAt: s.stateAt,
+    fork: (t, forkOptions) => wrap(s.fork(t, forkOptions), data),
+    probe: s.probe,
+    project: s.project,
+    run: s.run,
+    stepsOf: s.stepsOf,
+    fittedAt: (t) => {
+      const h = hyperOf(s.config)
+      return build(p.params(s.stateAt(t), data, h), h)
+    },
+  })
+  const sessionOf = (data: LearnData, options: IterativeSessionOptions, key: Key): IterativeSession<S, P, V> => {
     const steps = p.maxSteps?.(hyper, data) ?? 10_000
-    return session(method(data), {
-      key,
-      config: configOf(hyper),
-      logs: options.logs ?? (options.explain === false ? 'off' : 'defaults'),
-      mode: options.mode ?? 'live',
-      steps: options.steps ?? steps,
-      ...(options.past === undefined ? {} : { past: options.past }),
-      checkpointEvery: Math.max(1, Math.floor(steps / 100)),
-    })
+    return wrap(
+      session(method(data), {
+        key,
+        config: configOf(hyper),
+        logs: options.logs ?? (options.explain === false ? 'off' : 'defaults'),
+        mode: options.mode ?? 'live',
+        steps: options.steps ?? steps,
+        ...(options.past === undefined ? {} : { past: options.past }),
+        checkpointEvery: Math.max(1, Math.floor(steps / 100)),
+      }),
+      data,
+    )
   }
   const fit = (data: LearnData, options: FitOptions = {}): IterativeFitted<P, V> => {
     const key = resolveKey(options, p.name)
     const n = Math.max(1, p.restarts?.count(hyper) ?? 1)
-    let best: Session<S, Config> | undefined
+    let best: IterativeSession<S, P, V> | undefined
     for (let r = 0; r < n; r++) {
       const s = sessionOf(data, { ...options, mode: 'eager', past: false }, n === 1 ? key : foldIn(key, r))
       if (best === undefined || p.restarts?.better(s.state, best.state) === true) best = s
     }
-    const chosen = best as Session<S, Config>
+    const chosen = best as IterativeSession<S, P, V>
     const state = chosen.state
     const run = chosen.run()
-    const fitted = build(p.params(state, data, hyper))
+    const fitted = chosen.fittedAt(chosen.t)
     const records: Exposition[] = [
       ...(p.records?.(state, data, hyper) ?? []),
       ...Object.values(p.projections ?? {}).flatMap((f) => f(run, data, hyper) ?? []),

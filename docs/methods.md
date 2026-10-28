@@ -125,7 +125,8 @@ Log(options?: {
   every?: number | EventPath | [EventPath, number]   // steps; whenever an event fires; every nth firing
   detail?: 'summary' | 'full'                        // tensors: norms and histograms, or the values
   args?: Json                                        // for derived paths (a grid, a sample count)
-  budget?: number                                    // bytes, after which this path stops
+  budget?: number                                    // bytes held, after which this path stops
+  keep?: 'all' | 'last' | number                     // how much of the path the tape holds: everything, the last, the last n
 }): LogSpec
 On(hook: (ctx: HookContext) => void): HookSpec     // on an event path; HookContext has log, stop, run, the event's context
 On(name: string, options?: Json): HookSpec         // a hook the method exports by name, so it can cross to a worker
@@ -135,7 +136,10 @@ On(name: string, options?: Json): HookSpec         // a hook the method exports 
 the raw algorithm, with only checkpoints kept so `stateAt`, `fork` and `probe` still work (`past: false` drops them too
 and uses `nullTracer`). `'defaults'` is the method's own small choice (usually a loss). `'all'` is everything at summary detail,
 for debugging. Scheduling by event is what makes `every: 'training/epoch/end'` and `every: ['rl/episode/end', 10]`
-one mechanism rather than an epoch concept and an episode concept.
+one mechanism rather than an epoch concept and an episode concept. `keep` bounds what the tape holds of a path rather
+than when it is logged: `Log({ keep: 'last' })` on the parameters logs them every step and keeps the newest alone, so a
+page that shows the current model pays for one; older events are forgotten as new ones arrive, checkpoints are never
+among them (seeking is unaffected), and the byte budget counts what is held.
 
 **Reconciliation**, once, when the session is made: `resolve(contract, subscription)` matches patterns to paths
 (an exact path that does not exist is an error; a pattern matching nothing is a warning), compiles the matched inline

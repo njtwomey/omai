@@ -58,6 +58,13 @@ describe('resolve', () => {
     expect(resolve(contract, { 'nothing/**': Log() }).logs).toEqual([])
   })
 
+  it('keeps all, the last or the last n of a path, and rejects anything else', () => {
+    expect(resolve(contract, { 'training/loss': Log({ keep: 'last' }) }).logs[0]?.spec.keep).toBe('last')
+    expect(resolve(contract, { 'training/**': Log({ keep: 4 }) }).logs.map((l) => l.spec.keep)).toEqual([4, 4, 4])
+    expect(() => resolve(contract, { 'training/loss': Log({ keep: 0 }) })).toThrow(/keep/)
+    expect(() => resolve(contract, { 'training/**': Log({ keep: 1.5 }) })).toThrow(/keep/)
+  })
+
   it('binds hooks by function and by name', () => {
     let n = 0
     const r = resolve(

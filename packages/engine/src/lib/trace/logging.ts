@@ -2,7 +2,7 @@
  * Logging against a contract: the scheduler that says whether a path is due at a step (every n steps, at log-spaced
  * steps, or on the nth firing of an event), the log context algorithms write to (`log`, `wants`, `emit`, `taps`), the
  * default context runners give algorithms outside a session, and the gating tracer that renames native channels to
- * contract paths and lets through only what is subscribed and due.
+ * contract paths, lets through only what is subscribed and due, and holds no more of a path than its `keep` allows.
  */
 
 import type { Json } from '../base/index.ts'
@@ -19,7 +19,7 @@ import {
 import type { TensorRole, TraceEvent } from './events.ts'
 import { summarise } from './summaries.ts'
 import { type TapContext, tapContext } from './taps.ts'
-import type { RunHandle, Tracer } from './tracer.ts'
+import type { Recorder, RunHandle, Tracer } from './tracer.ts'
 
 /** Whether a path is due at a step, by its subscription's schedule; counts events and the paths that wait on them. */
 export interface Scheduler<S = unknown> {
@@ -242,14 +242,25 @@ export function defaultLogContext(run: RunHandle, t: number): LogContext {
 /**
  * A tracer that lets through only the events of subscribed paths when they are due, renaming native channels
  * (`objective`) to their contract paths (`smo/dual-objective`) on the way. Run, end, checkpoint, episode and log
- * events always pass.
+ * events always pass. A path that keeps a window (`Log({ keep })`) has its oldest events forgotten by the destination
+ * as new ones arrive, when the destination is a recorder; a destination that cannot forget holds all it is sent.
  *
  * @param tracer - The destination.
  * @param resolved - The resolved subscription.
  * @param sched - Its scheduler (shared with the log context, so a path is consumed once).
  * @returns The gating tracer.
+ * @example
+ * ```ts
+ * import { gated, Log, recorder, resolve, scalar, scheduler, startRun } from 'mdml-engine/trace'
+ * const r = resolve({ 'a/x': scalar() }, { 'a/x': Log({ keep: 2 }) })
+ * const rec = recorder()
+ * const run = startRun(gated(rec, r, scheduler(r)), { name: 'x', seed: 0, config: {}, policy: r.policy })
+ * for (let t = 0; t < 5; t++) run.metric(t, 'a/x', t)
+ * rec.events.flatMap((e) => (e.type === 'metric' ? [e.step] : [])) // => [3, 4]
+ * ```
  */
 export function gated<S>(tracer: Tracer, resolved: Resolved<S>, sched: Scheduler<S>): Tracer {
+  const forget: ((event: TraceEvent) => void) | undefined = 'forget' in tracer ? (tracer as Recorder).forget : undefined
   const native = { metric: new Map<string, Path>(), tensor: new Map<string, Path>(), message: new Map<string, Path>() }
   let framePath: Path | undefined
   for (const l of resolved.logs) {
@@ -271,16 +282,32 @@ export function gated<S>(tracer: Tracer, resolved: Resolved<S>, sched: Scheduler
     sched.consume(path)
     return true
   }
-  // A path's byte budget: its events stop once their JSON passes it.
+  // A path's byte budget: its events stop once the JSON of those held passes it.
   const spent = new Map<Path, number>()
+  // A path's window: the events held under `keep`, oldest first, so the oldest can be forgotten as a new one arrives.
+  const windows = new Map<Path, { readonly event: TraceEvent; readonly size: number }[]>()
   const emitPath = (path: Path, event: TraceEvent): void => {
-    const budget = sched.entry(path)?.spec.budget
+    const spec = sched.entry(path)?.spec
+    const budget = spec?.budget
+    const size = budget === undefined ? 0 : JSON.stringify(event).length
     if (budget !== undefined) {
-      const size = (spent.get(path) ?? 0) + JSON.stringify(event).length
-      if (size > budget) return
-      spent.set(path, size)
+      const held = (spent.get(path) ?? 0) + size
+      if (held > budget) return
+      spent.set(path, held)
     }
     tracer.emit(event)
+    const keep = spec?.keep
+    if (forget === undefined || keep === undefined || keep === 'all') return
+    const n = keep === 'last' ? 1 : keep
+    const window = windows.get(path) ?? []
+    windows.set(path, window)
+    window.push({ event, size })
+    while (window.length > n) {
+      const oldest = window.shift()
+      if (oldest === undefined) break
+      forget(oldest.event)
+      if (budget !== undefined) spent.set(path, (spent.get(path) ?? 0) - oldest.size)
+    }
   }
   return {
     enabled: tracer.enabled,

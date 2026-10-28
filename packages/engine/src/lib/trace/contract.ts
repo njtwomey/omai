@@ -180,6 +180,9 @@ export type EventSchedule = Path | readonly [Path, number]
 /** How often a path is logged: every n steps, at log-spaced steps, or by an event. */
 export type LogEvery = number | 'logSpaced' | EventSchedule
 
+/** How much of a path the tape holds: every event, the last one, or the most recent n. */
+export type LogKeep = 'all' | 'last' | number
+
 /** What a subscription asks for one path. */
 export interface LogSpec {
   readonly kind: 'log'
@@ -189,8 +192,14 @@ export interface LogSpec {
   readonly detail?: 'summary' | 'full'
   /** Arguments of a derived path (a grid, a sample count). */
   readonly args?: Json
-  /** Stop recording this path once its events pass this many bytes of JSON. */
+  /** Stop recording this path once the events it holds pass this many bytes of JSON. */
   readonly budget?: number
+  /**
+   * How much of this path the tape holds (default `all`): with `last` only its most recent event, with a number its
+   * most recent n; older ones are forgotten as new ones arrive. Checkpoints are never subject to it, so seeking is
+   * unaffected, and the budget counts only what is held.
+   */
+  readonly keep?: LogKeep
 }
 
 /** What a value logged against a contract can be: a number, a tensor or array, JSON, or an exposition record. */
@@ -227,14 +236,15 @@ export interface HookSpec {
 export type Subscription = 'off' | 'defaults' | 'all' | Readonly<Record<string, LogSpec | HookSpec>>
 
 /**
- * Ask for a path: how often, at what detail, with what arguments.
+ * Ask for a path: how often, at what detail, with what arguments, and how much of it the tape holds.
  *
- * @param options - Schedule, detail and arguments.
+ * @param options - Schedule, detail, arguments, budget and window.
  * @returns The spec.
  * @example
  * ```ts
  * import { Log } from 'mdml-engine/trace'
  * Log({ every: ['rl/episode/end', 10] }).every // => ['rl/episode/end', 10]
+ * Log({ keep: 'last' }).keep // => 'last'
  * ```
  */
 export function Log(options: Omit<LogSpec, 'kind'> = {}): LogSpec {
@@ -345,8 +355,8 @@ function everything<S>(contract: Contract<S>): Readonly<Record<string, LogSpec>>
  * @param subscription - What the caller asks for.
  * @param options - The method's defaults and named hooks, and the checkpoint interval.
  * @returns The resolved subscription.
- * @throws MdmlError with code `value` for an exact path the contract lacks, a hook on a path that is not an event, or a
- *   named hook the method does not export.
+ * @throws MdmlError with code `value` for an exact path the contract lacks, a hook on a path that is not an event, a
+ *   named hook the method does not export, or a `keep` that is not `all`, `last` or a positive integer.
  * @concept log-contract
  * @example
  * ```ts
@@ -382,6 +392,12 @@ export function resolve<S>(
       hooks.set(key, [...(hooks.get(key) ?? []), hook])
       continue
     }
+    const keep = spec.keep
+    if (keep !== undefined && keep !== 'all' && keep !== 'last' && !(Number.isInteger(keep) && keep > 0))
+      throw new MdmlError(
+        'value',
+        `resolve: '${key}' keeps ${String(keep)}; keep is 'all', 'last' or a positive integer`,
+      )
     if (exact !== undefined) {
       logs.set(key, { path: key, source: exact, spec })
       continue

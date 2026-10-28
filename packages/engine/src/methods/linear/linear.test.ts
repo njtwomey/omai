@@ -22,6 +22,18 @@ describe('logisticRegression', () => {
     s.advance({ steps: 3 })
     expect(s.probe(s.t, 'model/params')).toHaveProperty('coef')
   })
+
+  it('predicts with the model at any step of its session, and at the head as fit would', () => {
+    const s = logisticRegression.session(classes, { key: key(1) })
+    s.advance({ steps: 2 })
+    const first = s.fittedAt(1)
+    const second = s.fittedAt(2)
+    expect(first.classes).toEqual([0, 1])
+    expect(toFlat(first.predictProba(classes.x)).length).toBe(160)
+    expect(toFlat(first.decisionFunction(classes.x))).not.toEqual(toFlat(second.decisionFunction(classes.x)))
+    s.advance()
+    expect(s.fittedAt(s.t).params).toEqual(logisticRegression.fit(classes, { key: key(1) }).params)
+  })
 })
 
 describe('ridge', () => {
