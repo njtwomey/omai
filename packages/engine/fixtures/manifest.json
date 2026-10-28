@@ -2,6 +2,24 @@
   "schema": "mdml.fixtures/1",
   "fixtures": [
     {
+      "fixture": "cluster/birch.json",
+      "source": "oracle/cases/cluster/birch.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "cluster/mean_shift.json",
+      "source": "oracle/cases/cluster/mean_shift.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "data/batching.json",
       "source": "oracle/cases/data/batching.py",
       "reference": {

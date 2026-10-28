@@ -3017,15 +3017,41 @@ Left in 4.39 after round two (one line each):
 - TODO: dedicated records and views for exposure in rankings, causal decompositions and repeated decisions.
 - TODO: thin methods for causal, regression and ranking fairness (the core is built).
 
-### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster)
+### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster, scipy hierarchy)
 
-Clustering as traced `Algorithm`s, moved out of the parked methods layer. `kmeans.ts` holds Lloyd's algorithm and
-mini-batch k-means, the initial centres (k-means++, random rows or given) and the nearest-centre assignment. A state
-keeps no past: `observe` exposes the metrics `inertia` and `moved` and the `state` tensors `centres` `[k, d]` and
-`labels` `[n]`, declared in the schema, and the tape records the history. The other clusterers (bisecting, kernel,
-density, hierarchical, spectral, ...) are still parked and arrive here as they are needed.
+Clustering as traced `Algorithm`s with estimators on the iterative base. A state keeps no past: `observe` exposes the
+metrics and the `state` tensors (`labels` `[n]`, `centres` `[k, d]`, ...) declared in the schema, and the tape records
+the history; every state serialises (`stateToJson`). Estimators are `iterative(...)` values (`kind: 'clusterer'`), so
+`.method(data)`, `.session(data)` and `fittedAt(t)` exist and the standard `model/assignments` probe works at any step;
+the distance-based ones take a `metric` from `distances` (or `'precomputed'`, through `distanceMatrix`).
+- `kmeans.ts`: Lloyd's algorithm and mini-batch k-means, the initial centres (k-means++, random rows or given) and the
+  nearest-centre assignment. `kmeans-variants.ts`: Elkan's bounds (`elkanAlgorithm`, counting the distances computed and
+  skipped), bisecting k-means (one split per step) and kernel k-means (`kernelKMeansAlgorithm` over a Gram matrix, with
+  the spectral relaxation as an initial labelling), each with an estimator (`elkanKMeans`, `bisectingKMeans`,
+  `kernelKMeans`).
+- `density.ts`: `dbscanAlgorithm` (one cluster grown per step), `opticsAlgorithm` (one point of the reachability
+  ordering per step) with `opticsOrdering` and `opticsClustersAt`, `hdbscan` (core distances, the single-linkage tree of
+  the mutual reachability distance, `condenseTree`, `selectClusters` by excess of mass: labels, probabilities, the
+  condensed tree and the stabilities), `meanShiftAlgorithm` (every seed moves each step) with `estimateBandwidth` and
+  `meanShiftCentres`; estimators `dbscan`, `optics`, `hdbscanClustering`, `meanShift`.
+- `hierarchical.ts`: `agglomerativeAlgorithm` (one merge per step, every linkage by Lance-Williams, the partition and the
+  linkage matrix on the tape), `linkageMatrix`, `singleLinkageTree`, `cutTree`, `copheneticDistances`,
+  `copheneticCorrelation`, `dendrogram`; BIRCH as a CF-tree in an arena (`birchAlgorithm` inserts one row per step,
+  node splits and the chain of leaves as scikit-learn's); estimators `agglomerativeClustering` and `birch`.
+- `medoids.ts`: PAM (`pamAlgorithm`: the BUILD steps, then the best swap per step), CLARA (`claraAlgorithm`: PAM on a
+  random sample per step), `kMedoids`. `fuzzy.ts`: `fuzzyCMeansAlgorithm`, `fuzzyMemberships`, `fuzzyCMeans`.
+- `spectral.ts`: the assembly over `graph/spectral.ts` (`affinityMatrix`, `spectralClusteringEmbedding`,
+  `spectralClusteringAlgorithm`: the embedding, then Lloyd's steps on it) and `spectralClustering`. `exemplar.ts`:
+  `affinityPropagationAlgorithm` (one damped round of messages per step, scikit-learn's tie-breaking noise from a key),
+  `affinityPropagationFit`, `affinityPropagation`. `constrained.ts`: `copKMeansAlgorithm`, `constrainedAssignment`,
+  `brokenConstraints`, `copKMeans`.
+- `validity.ts`: the choice of k: `kmeansElbow`, `gapStatistic` (Tibshirani's rule over uniform references) and
+  `stabilityIndex` (adjusted Rand agreement of clusterings of subsamples). `_support.ts` is private to the folder.
 
-oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path)
+oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path, also
+checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
+(`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
+leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`)
 ### 4.41 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
 
 The algorithms behind linear models, moved from the parked methods layer. `design.ts` (private) builds the design
@@ -3167,8 +3193,9 @@ index picks a metric by name and a control can draw its knobs. Every computation
 - `evaluate.ts`: `distance(a, b, name, options)` and `similarity(a, b, name, options)` between corresponding rows, two
   points, or a point and rows; `pairwiseDistances(a, b?, name, options)` and `pairwiseSimilarities(a, b?, name,
   options)` for the `[m, n]` matrix (`b` omitted: among the rows of `a`); shapes checked once, scipy's defaults for
-  seuclidean and mahalanobis filled from the points. An unknown name is a `value` error, mismatched points a `shape`
-  error.
+  seuclidean and mahalanobis filled from the points. `distanceMatrix(x, metric, options)` is the flat `n x n` form
+  for algorithms that work on distances (clusterers, embeddings, outlier factors), with `'precomputed'` as a metric
+  (the input is the matrix). An unknown name is a `value` error, mismatched points a `shape` error.
 
 oracle: scipy.spatial.distance (cdist and the scalar functions row by row), scikit-learn's cosine_similarity,
 linear_kernel, rbf_kernel, laplacian_kernel and haversine_distances, numpy.corrcoef (`fixtures/distances/evaluate.json`);

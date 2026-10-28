@@ -7,7 +7,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { resolveMetricOptions } from '../numerics/geometry/index.ts'
-import { concat, promoteFloat, reshape, shapesEqual, type TensorLike, type Value } from '../tensor/index.ts'
+import { concat, promoteFloat, reshape, shapesEqual, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 import { type DistanceAlias, type DistanceName, type DistanceOptions, distanceEntry } from './distances.ts'
 import { type SimilarityAlias, type SimilarityName, type SimilarityOptions, similarityEntry } from './similarities.ts'
 
@@ -136,6 +136,39 @@ export function pairwiseDistances(
   const d = x.shape[1] ?? 0
   const points = (): Value => (b === undefined ? x : concat([x, y], 0))
   return entry.compute(reshape(x, [-1, 1, d]), reshape(y, [1, -1, d]), withStatistics(name, points, options))
+}
+
+/** The name of a metric slot: a registered distance or alias, or `'precomputed'` (the points are already distances). */
+export type MetricSlot = DistanceName | DistanceAlias | 'precomputed'
+
+/**
+ * The square matrix of distances among the rows of `x`, flat row-major, for the algorithms that work on distances
+ * rather than coordinates (density clustering, medoids, embeddings): the metric slot of a clusterer or a manifold
+ * method. With `'precomputed'` the input is taken to be the distance matrix itself and checked to be square.
+ *
+ * @param x - Rows `[n, d]`, or with `'precomputed'` the distances `[n, n]`.
+ * @param metric - A registered distance or alias (default `'euclidean'`), or `'precomputed'`.
+ * @param options - The distance's parameters.
+ * @returns The `n * n` distances, and `n`.
+ * @throws MdmlError `shape` for a precomputed input that is not square.
+ * @concept distances
+ * @example
+ * ```ts
+ * import { distanceMatrix } from 'mdml-engine/distances'
+ * distanceMatrix([[0, 0], [3, 4]]).data // => [0, 5, 5, 0]
+ * distanceMatrix([[0, 2], [2, 0]], 'precomputed').n // => 2
+ * ```
+ */
+export function distanceMatrix(
+  x: TensorLike,
+  metric: MetricSlot = 'euclidean',
+  options: DistanceOptions = {},
+): { readonly n: number; readonly data: Float64Array } {
+  const d = metric === 'precomputed' ? promoteFloat(x)[0] : pairwiseDistances(x, undefined, metric, options)
+  const shape = (d as Value).shape
+  if (shape.length !== 2 || shape[0] !== shape[1])
+    throw new MdmlError('shape', `distanceMatrix: expected a square matrix, got [${shape.join(', ')}]`)
+  return { n: shape[0] ?? 0, data: Float64Array.from(toFlat(d as Value)) }
 }
 
 /** The distance an entry is built on, whose data-dependent defaults the points must fill. */
