@@ -1,32 +1,89 @@
 # Online experimentation (part 7, application domains)
 
-Experiments run online: A/B test analysis (means, proportions, variance reduction by CUPED, stratification), validity threats and biased samples, the classic pitfalls simulated, sequential testing and safe peeking (always-valid p-values, mSPRT), multi-armed bandits (epsilon-greedy, UCB, Thompson sampling, best-arm identification) and contextual bandits with off-policy evaluation, as sessions over `stats`, `dists`, `agents` (bandits) and `rl`.
+Experiments run online: A/B tests as streams of arrivals (means, proportions, ratio metrics, variance reduction by CUPED, stratification and regression adjustment, Bayesian analysis, power and design), the validity threats simulated (peeking, sample-ratio mismatch, novelty and carryover, interference, many metrics), sequential testing and safe peeking (SPRT, alpha spending, always-valid p-values, confidence sequences), multi-armed bandits as the adaptive alternative (epsilon-greedy, UCB, Thompson sampling, best-arm identification), contextual bandits and off-policy evaluation, as sessions over `stats` (tests, sequential, power, resampling), `dists`, `agents` (bandits), `environments` (bandit arms), `rl` (regret, off-policy estimators) and the planted experiments of `datasets`.
 
-## Capabilities
+## Structure
 
-- An A/B test as a stream: users arriving, the estimate and its interval, the p-value over time with the peeking problem shown; options: the effect, the variance, the allocation.
-- Variance reduction: CUPED's covariate adjustment shrinking the interval.
-- Sequential tests: the always-valid interval against the fixed-horizon one.
-- Bandits: regret and the arm's posteriors over time, against A/B's fixed allocation; best-arm identification's stopping.
-- Contextual bandits: a linear bandit on synthetic contexts, off-policy estimates (inverse propensity, doubly robust) against the truth.
-- Pitfalls: novelty effects, sample-ratio mismatch, interference between units, each planted.
+Everything here is a study over a stream: an experiment is not a model fitted but a procedure watched as users arrive, so it lives under `study/experiments/` (section 3 of `methods/README.md`), one folder per question. The tests themselves are library functions and their behaviour in general (coverage, power, the bootstrap distribution forming) is the `statistics` chapter's; here they are applied to one stream with a planted truth. The bandits are agents of `agents/bandits.ts` run on bandit environments; the MDP exploration they inspire is `reinforcement-learning`'s.
+
+```
+study/experiments/
+  ab-tests/            the test on a stream of arrivals, Bayesian analysis, variance reduction, ratio metrics, power and design
+  validity/            the pitfalls planted and detected: peeking, sample-ratio mismatch, novelty and carryover, interference, many metrics
+  sequential/          tests that stay valid at every look: SPRT, group-sequential boundaries, mSPRT, confidence sequences
+  bandits/             adaptive allocation: multi-armed bandits against the fixed split, best-arm identification, contextual bandits, off-policy evaluation
+  shared/              the arrivals stream, the test slot, the planted faults, the bandit slot, the many-runs record (below)
+```
+
+Nothing of this chapter is built; `methods/shared/streams.ts` (section 4) is the base the arrivals stream will particularise.
+
+## Methods
+
+Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, `t!` a tensor kept in full, `p` a probe computed from the state at any step, `proj` a projection over the tape, `e` an event, `m` a message with a payload. The step of an experiment is one batch of arrivals (a day, or `n` users); the step of a bandit is one pull; the step of a design study is one sample size or one effect.
+
+### ab-tests/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `ab-test-stream` | Users arrive one batch per step and the estimate of the effect, its interval and the p-value move with them; the metric as a mode (conversion, continuous, zero-inflated revenue) and the test as a slot (z and t on means, the proportions z-test, Welch, Mann-Whitney, the bootstrap and the permutation test, each a few lines over the same arrivals); the effect, the variance and the allocation as knobs; the interval drawn against the generator's true effect, so a miss is visible. The comparison: two tests on one stream (a t-test against Mann-Whitney on heavy-tailed revenue). | `arrivals/n` s, `estimate/effect` s, `estimate/interval` t, `test/statistic` s, `test/pValue` s, `arm/mean` t!, `arm/n` t, `truth/effect` p, `test/decision` e | `datasets/experiments.ts`: `abTest` (arms, the metric, the lift, days, the novelty, the truth); `stats/tests/means.ts`: `ttestInd`, `ztest`; `stats/tests/proportions.ts`: `proportionsZtest`, `proportionsDifference`, `proportionConfint`; `stats/tests/nonparametric.ts`: `mannWhitneyU`; `stats/resampling.ts`: `bootstrapAlgorithm`, `permutationTestAlgorithm`; `stats/effect-size.ts`: `cohensD`, `cohensH`; the arrivals from `shared/arrivals.ts` | |
+| `bayesian-ab-test` | The posterior of each arm's rate (beta-binomial) or mean (normal) updating per batch, the probability that each arm is best, the expected loss of choosing it, the ROPE decision; against the frequentist test on the same stream: the Bayesian answer is a distribution at every look, the question of peeking does not arise in the same form (but the stopping rule still matters, which the `peeking` study shows). The prior's strength as the knob. | `posterior/params` t!, `posterior/probabilityBest` t, `posterior/expectedLoss` t, `posterior/hdi` t, `decision/rope` e, `posterior/density` p | `stats/tests/bayesian.ts`: `bayesianAbTest`, `rope`, `highestDensityInterval`; `dists/conjugacy.ts`: `conjugatePosterior`, `CONJUGATES` | |
+| `variance-reduction` | The adjustment as a mode: CUPED with the pre-period covariate (its correlation ρ as the knob; the variance falls by 1 − ρ²), post-stratification, regression adjustment on several covariates; the interval before and after on the same arrivals, the reduction achieved against the one the generator says is reachable; the trap of a post-treatment covariate as a planted fault. | `estimate/effect` s, `estimate/interval` t, `estimate/varianceReduction` s, `truth/varianceReduction` p, `covariate/theta` s, `covariate/correlation` s | `datasets/experiments.ts`: `abTest` (`rho`, the truth's reachable reduction); `linear/solvers.ts`: `leastSquaresSolve` (the adjustment regression); TODO `lib/stats/experiments.ts`: `cuped`, `postStratification`, `regressionAdjustment` (a few lines each, with their variance estimates) | |
+| `ratio-metrics` | A per-user ratio (revenue per session, clicks per view) whose unit of analysis is not the unit of randomisation: the naive interval against the delta method and against the bootstrap over users; the number of sessions per user as the knob (the naive interval shrinks as if sessions were independent). | `estimate/ratio` s, `estimate/naiveInterval` t, `estimate/deltaInterval` t, `estimate/bootstrapInterval` t, `truth/ratio` p | `stats/resampling.ts`: `bootstrapAlgorithm`; TODO `lib/stats/experiments.ts`: `deltaMethodRatio` (the variance of a ratio of means with the covariance term); the sessions-per-user structure in `shared/arrivals.ts` | |
+| `power-and-design` | A design study: power against sample size for the effect and baseline (knobs), the minimum detectable effect at a budget, the allocation ratio's cost, simulated power on the generator against the formula; several arms (A/B/n) with the correction as a mode (Bonferroni, Holm, Benjamini-Hochberg); a non-inferiority test (TOST) as the other question. | `design/n` s, `design/power` s, `design/mde` s, `design/simulatedPower` s, `design/arms` s, `design/correction` m, `study/powerCurve` proj | `stats/power.ts`: `powerProportions`, `sampleSizeProportions`, `powerTTest`, `sampleSizeTTest`, `simulatePower`; `stats/tests/multiple.ts`: `multipleTests`, `bonferroni`, `holm`, `benjaminiHochberg`; `stats/tests/equivalence.ts`: `tostProportions`, `tost` | |
+| `heterogeneous-effects` | see `causal-inference` (CATE and uplift estimators on experiment data; here the arrivals stream is the data slot it can take) | | | |
+
+### validity/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `peeking` | Many null experiments overlaid: the p-value of each run as arrivals come, the share of runs that has crossed 0.05 at least once climbing well past 5% as the horizon grows (the false-positive rate of looking); the same runs under an always-valid p-value staying below α; the number of looks and the horizon as knobs. The lesson of the chapter in one picture. | `run/pValue` t! (one per run), `study/crossedShare` s, `study/crossings` proj, `run/alwaysValidP` t!, `truth/effect` p (zero) | `stats/tests/proportions.ts`: `proportionsZtest`; `stats/tests/sequential.ts`: `alwaysValidPValues`; the repeated runs by `methods/shared/sweeps.ts` (section 4; the repeated-fit study) | |
+| `sample-ratio-mismatch` | The allocation counted per batch and the chi-squared statistic against the intended ratio over arrivals; a planted allocation bug (a redirect dropping treatment users from one day, an event) and the step at which the test catches it; the alert threshold as the knob and the false alarms it costs. | `allocation/counts` t, `test/chi2` s, `test/pValue` s, `fault/planted` e, `test/alarm` e | `stats/tests/distribution.ts`: `chisquare`; `stats/tests/contingency.ts`: `chi2Contingency`; the planted bug in `shared/pitfalls.ts` | |
+| `novelty-and-carryover` | The novelty effect decaying over days (the generator's knob): the estimate per day, the cumulative estimate converging to the long-run effect only after the novelty has worn off, the stopping day as the knob; carryover between two consecutive experiments on the same users (the second's estimate biased by the first's treatment) and re-randomisation as the fix. | `day/t` s, `day/effect` s, `estimate/cumulative` s, `truth/longRunEffect` p, `truth/noveltyEffect` p, `experiment/started` e | `datasets/experiments.ts`: `abTest` (the novelty knob and its truth); TODO carryover in `shared/pitfalls.ts` (two experiments chained on one user population with a planted persistence) | |
+| `interference` | Units on a network: a treated user's effect spilling to control neighbours (the spillover as the knob), so the difference in means is biased against the generator's direct effect; the exposure of each unit drawn on the graph; cluster randomisation and a switchback design (time as the cluster) as modes, their variance cost against their bias. | `estimate/effect` s, `estimate/bias` s, `truth/directEffect` p, `truth/totalEffect` p, `exposure/perUnit` t!, `design/clusters` t, `graph/board` p | `graph/generators.ts`: `stochasticBlockModel`, `wattsStrogatzGraph`, `barabasiAlbertGraph` (the interference graph); TODO `datasets/experiments.ts`: `networkExperiment` (a planted spillover with the direct and total effects as truth); TODO `lib/stats/experiments.ts`: `clusterRandomisation`, `switchbackDesign` | |
+| `many-metrics` | A primary metric and guardrails: one null experiment with twenty metrics, the smallest p-value crossing by chance, the correction as a mode (none, Bonferroni, Holm, Benjamini-Hochberg) and what each protects (family-wise against false discovery); correlated metrics as the knob. | `metric/pValues` t!, `metric/adjusted` t!, `metric/rejected` t, `study/falseDiscoveries` s | `stats/tests/multiple.ts`: `adjustPValues`, `multipleTests`, `combinePValues` | |
+
+### sequential/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `sequential-test` | The test as a mode on one stream: Wald's SPRT (the log-likelihood ratio walking between its two boundaries, one observation per step), group-sequential with alpha spending (O'Brien-Fleming against Pocock boundaries at the planned looks: the early boundary is strict for the first, flat for the second), the mixture SPRT's always-valid p-value, and the confidence sequence (an interval valid at every step, wider than the fixed one by the price of safety); the stopping time's distribution against the fixed-horizon sample size as a sweep; the mixture variance and the spending function as knobs. | `test/statistic` s, `test/boundary` t (upper and lower), `test/pValue` s, `test/interval` t, `test/decision` e, `test/look` e, `study/stoppingTime` proj, `truth/effect` p | `stats/tests/sequential.ts`: `sprtAlgorithm` (stepped), `sprtBernoulli`, `sprtNormal`, `alphaSpending`, `spendingFunction`, `msprt`, `alwaysValidPValues`, `confidenceSequence` (the last three are whole-stream functions over the running sums, which replay per step) | |
+
+### bandits/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `multi-armed-bandit` | The agent as a mode (epsilon-greedy with its epsilon, UCB1 and KL-UCB with their indices, Thompson sampling for Bernoulli and Gaussian arms with the posterior per arm, the gradient bandit's preferences, EXP3 on adversarial rewards) on an environment as a slot (Bernoulli, Gaussian, non-stationary, adversarial arms, each with its oracle): one pull per step, the arm chosen, each arm's estimate or posterior, the cumulative regret against the Lai-Robbins lower bound (the logarithmic shape); against the A/B split's fixed allocation on the same arms (its regret linear in the pulls, its answer a test); the gap between arms as the knob. Non-stationary arms show every stationary agent failing; the sliding-window and discounted indices are the cure. | `pull/arm` s, `pull/reward` s, `arm/estimate` t!, `arm/posterior` t! (Thompson), `arm/index` t (UCB), `arm/count` t, `regret/cumulative` s, `regret/bound` s, `regret/abSplit` s, `arm/truth` p | `agents/bandits.ts`: `epsilonGreedyBandit` ready, `ucb1` ready, `klUcb` ready, `thompsonBernoulli` ready, `thompsonGaussian` ready, `gradientBandit` ready, `exp3` ready, `runBandit` (the loop with regret); `environments/bandits.ts`: `bernoulliBandit`, `gaussianBandit`, `nonStationaryBandit`, `adversarialBandit`; `rl/bandits.ts`: `cumulativeRegret`, `laiRobbinsBound`, `ucb1Index`, `klUcbIndex`; sliding-window UCB and discounted UCB TODO (`agents/bandits.ts`) | |
+| `best-arm-identification` | The question changed from regret to a confident answer: fixed confidence (successive elimination dropping arms as events, LUCB pulling the two contenders) against fixed budget (sequential halving); the stopping time against the gap (the 1/Δ² shape); against the A/B test's planned sample size for the same confidence. The confidence δ as the knob. | `pull/arm` s, `arm/estimate` t!, `arm/interval` t!, `arm/eliminated` e, `study/stoppingTime` s, `study/correct` s, `arm/truth` p | `environments/bandits.ts`: `bernoulliBandit`; `stats/tests/proportions.ts`: `proportionConfint` (the per-arm interval); TODO `lib/agents/bandits.ts`: `successiveElimination`, `lucb`, `sequentialHalving` (as agents with a `done`) | |
+| `contextual-bandit` | LinUCB and linear Thompson sampling on synthetic contexts: each arm's ridge estimate and its confidence ellipse per step, the chosen arm's bonus, the regret against the oracle that knows the arms' vectors; the exploration width α as the knob; against an epsilon-greedy logistic policy (the comparison of principled against ad hoc exploration); the policy's decision regions over the context plane as a probe. | `pull/arm` s, `pull/context` t, `arm/theta` t!, `arm/covariance` t, `arm/bonus` t, `regret/cumulative` s, `policy/regions` p | `agents/bandits.ts`: `linUcb` ready, `linearThompson` ready, `epsilonGreedyBandit`; `environments/bandits.ts`: `contextualLinearBandit`; `rl/bandits.ts`: `cumulativeRegret` | |
+| `off-policy-evaluation` | Logged contexts, actions, propensities and rewards from one policy; a target policy evaluated without running it: the estimator as a mode (inverse propensity scoring, self-normalised, clipped with the threshold as the knob, the direct method's regression, doubly robust); the estimate and its variance as the log grows (one batch per step) against the truth the simulator can compute; the propensity overlap as the knob that breaks IPS (weights exploding, the effective sample size collapsing). | `log/n` s, `estimate/value` t (one per estimator), `estimate/variance` t, `estimate/error` t, `weights/max` s, `weights/ess` s, `truth/value` p | `rl/off-policy.ts`: `importanceWeights`, `ips`, `snips`, `clippedIps`, `directMethod`, `doublyRobust`; `datasets/ranking.ts`: `clickLogs` (logged propensities and the truth) and the contextual bandit's own logs; `sampling/importance.ts`: `importanceEss` | |
+| `exploration-in-mdps` | see `reinforcement-learning` (count bonuses, UCB over states, Thompson over models: the bandit strategies carried into MDPs) | | | |
+
+## shared/
+
+| helper | what it does | used by |
+| --- | --- | --- |
+| `arrivals.ts` | The arrivals stream over `datasets/experiments.ts`: users in batches (by day or by count) with arm, outcome, pre-period covariate and sessions, the truth beside them (every arm's mean, the effects, the reachable variance reduction, the novelty); a particular of `methods/shared/streams.ts`, shared with `online-learning` and `shift-and-drift` | every group |
+| `tests.ts` | The test slot table: z, t, Welch, proportions, Mann-Whitney, bootstrap, permutation and Bayesian, each with its assumptions, its interval and what it needs of the metric (binary, continuous, heavy-tailed), so a page swaps the test without changing the stream | `ab-tests/`, `validity/`, `sequential/` |
+| `pitfalls.ts` | Planted faults as stream modifiers with their truth: an allocation bug from a day, novelty, carryover between chained experiments, interference on a graph, a metric with outliers, a post-treatment covariate | `validity/`, `ab-tests/variance-reduction` |
+| `bandits.ts` | The bandit slot over `agents/bandits.ts` with each agent's knobs and needs (Bernoulli or Gaussian rewards, contexts), and the environment slot over `environments/bandits.ts` with the oracle each carries | `bandits/` |
+| `records.ts` | Records the generic ones do not cover: the many-runs overlay (one curve per run with the crossing share), the arms as bars with intervals or posteriors, the statistic between two boundaries with the looks marked, the exposure map on a graph | `validity/`, `sequential/`, `bandits/` |
 
 ## Examples to make
 
-- Peeking: the p-value crossing 0.05 by chance on a null experiment, many runs overlaid, against the sequential test.
-- CUPED: the interval before and after adjustment, the covariate's correlation as the knob.
-- Thompson sampling against A/B: cumulative regret and the posteriors over arms.
-- Sample-ratio mismatch detected by the chi-squared statistic over time.
+- Peeking: twenty null experiments, the p-values overlaid, the share that crosses 0.05 climbing; the same twenty under the always-valid p-value.
+- CUPED: the interval before and after adjustment shrinking as ρ moves, against the reachable reduction.
+- Thompson sampling against the A/B split: the arm posteriors as bars and the cumulative regret of both on one axis.
+- The SPRT's log-likelihood ratio walking between its boundaries, stopping early on a large effect.
+- Sample-ratio mismatch: the chi-squared statistic over arrivals catching a planted allocation bug.
+- Off-policy evaluation: IPS's variance exploding as the propensity overlap shrinks while doubly robust holds.
 
 ## Rendering
 
-- Curves over arrivals with crossing marks, posteriors over arms as bars with intervals, many-runs overlays, bandit episodes.
-- Missing: the many-runs overlay panel.
-
-## Shared
-
-- `shared/`: the arrivals stream (shared with `online-learning`), the bandit slot (from `agents`), the planted-effect slot.
+- Curves over arrivals with crossing marks and boundaries, posteriors over arms as bars with intervals, many-runs overlays, bandit pulls as a strip, the exposure graph as a board.
+- Missing: the many-runs overlay panel (one curve per run, a share curve beneath); a boundary panel (the statistic between two boundaries with the looks marked); the comparison of two sessions on one stream (section 5 of `methods/README.md`).
 
 ## Problems
 
-- `experimentation/` splits: the statistical half to `statistics`, the online half here.
+- The library gap is one file: `lib/stats/experiments.ts` (CUPED, post-stratification, regression adjustment, the delta method for ratios, cluster and switchback designs) and the best-arm agents in `agents/bandits.ts`; a network experiment generator beside `abTest`.
+- The repeated-run studies (`peeking`, `power-and-design`'s simulated power) are the hard case of section 6's problem 11: a study of many sessions, what of each tape to keep (the p-value curve alone).
+- The statistical half of the old `experimentation/` plan (the tests' behaviour in general) is `statistics`'s; the experiment on a stream is here. The boundary is the planted truth: a page with a generator and arrivals is this chapter's.
