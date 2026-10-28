@@ -227,3 +227,175 @@ knobs and compare two solvers.
     values, narratives, the same session on several pages) shapes render's next layer.
 16. **The simulated and the real.** Several chapters (`large-language-models`, `engineering`, `multimodal-learning`)
     show mechanisms at toy scale or simulate what cannot run here; each page must say which it is.
+
+## 7. The reflections of 2026-10-28, worked through
+
+### 7.1 Modes: how a slot branches without a solver tree
+
+A **mode** is one option of a slot with everything it needs in one module: its own knobs (a space), a factory that
+builds the algorithm, the extra paths it alone logs, and what it needs of the other slots. The Python instinct (a key
+to a function that solves and logs) is right, and the log contract makes the second half unnecessary: the model
+declares the paths every mode logs (the objective, the coefficients), the mode declares only its extras, and the
+method's contract is the union.
+
+```ts
+// fit/classify/logistic/modes/gradient.ts: one mode, one module, nothing outside it
+export const gradient = mode({
+  space: dict({ optimiser: optimiserSlot, schedule: scheduleSlot, batch: int(1, 4096, { nullable: true }) }),
+  make: (problem, hyper, key) => gradientAlgorithm(problem, hyper, key), // library pieces only
+  params: (state) => ({ coef: state.w, intercept: state.b }), // the common fitted parameters
+  logs: { 'batch/loss': scalar() }, // what only this mode can say
+  needs: { penalty: ['none', 'l2', 'l1', 'elasticNet'] }, // the validity table, locally
+})
+```
+
+- The state differs by mode (IRLS keeps weights and halvings, SGD keeps a batch position), so each mode gives
+  `params(state)`, the one fitted shape the probes and verbs read. Probes are mode-independent for free.
+- Full batch against stochastic is not a second switch beside the optimiser: it is a knob of the gradient modes
+  (`batch`, null for the whole set). Second-order modes have no batch knob. One interface, no `SGDClassifier`; a
+  cross-validation runs over the hyperparameters including the mode.
+- Branching nests: a mode's space can hold a slot (the optimiser), whose option can hold knobs (a momentum). Nesting
+  is the rule, not an exception, because a mode is a space and a space can contain spaces. The rule that keeps it
+  maintainable: a mode's definitions stay in its module; a mode reuses a shared slot by importing it, never by
+  redefining it.
+- Same model, different modes, different solutions: the lasso by coordinate descent, by LARS, by proximal gradient;
+  search by DFS, BFS and A* over the same problem. The page shows the solutions side by side; the comparison panel
+  is the rendering need.
+- `lib/space` already has what this needs: a dict key with `when: { key, in }` is active only when another key's
+  value is in a set, and `activeKeysOf` says which keys are live. `SpaceControls` does not read `when` yet: that is
+  the first render job (7.4).
+
+### 7.2 Two kinds of method: a task and a problem
+
+- A **task method** (the scikit-learn world, `fit/`): a generic approach to a kind of problem. The data is a slot
+  (any dataset of the task's kind), the model is an entry of a registry, the modes are as above, evaluation is
+  standard for the kind. Pages: "a classification problem, set up five ways".
+- A **problem method** (the torch and probabilistic-programming world, `train/`, `infer/`): a particular setup. The
+  network's layers, widths and loss, or the program's latents and observations, are the method; the data is fixed or
+  a narrow slot. What stays generic is the optimiser or sampler slot, the schedule and the logging. Pages: "this
+  model on this problem, watched".
+- Both run as sessions on the same contract and player; they differ in what the controls show (a registry and
+  modes, or the problem's own knobs) and in how they are tested.
+
+### 7.3 Registries and selectors: datasets, environments, models
+
+- **Datasets.** The catalogue has generators (`name`, `kind`, `description`, `knobs`), vendored real datasets and
+  remote assets pinned by hash with a licence, grouped by hand into collections (`classification2d`,
+  `regressionTabular`, `timeSeries`, ...). It lacks tags. Add a **registration phase**: every dataset registers with
+  `kind` (regression, classification, clustering, density, ranking, sequence, ...), `modality` (tabular, image, audio,
+  time series, text, graph), `real` or synthetic, size, licence and source; collections become saved queries. A query
+  API (`datasets.where({ kind: ['regression', 'classification'], real: true, modality: 'audio' })`) feeds a
+  `DatasetSelector` control with those filters and a search box. New real datasets register the same way.
+- **Environments.** Separate, as they should be: an `EnvSpec` carries observation and action spaces already; the
+  registry adds tags (discrete or continuous actions, vector, grid or image observations, episodic or continuing,
+  family) and an `EnvironmentSelector` filters on them, showing the spaces.
+- **Models.** The same pattern for task methods: a registry of models per task with a `ModelSelector`: a list of
+  names, each with a settings button that opens the model's space (its modes inside). A page then composes
+  `DatasetSelector`, `ModelSelector`, the session player and panels, and nothing bespoke.
+- The place for the registries is `data/` (datasets, environments, problems) and each task's `shared/` (models);
+  the controls are render's.
+
+### 7.4 Controls: hierarchical and compact
+
+- Flat key-value panels stay the simple form. The responsive form renders a dict space recursively: a `choice` key
+  that other keys depend on (`when`) shows its dependants only when they are active; a nested dict is a group; a
+  slot's option with its own space opens as a settings popover or an inline group.
+- The model list with a gear per entry is the compact form of the same thing: the list is a `choice`, the gear opens
+  that option's space.
+- A space is the single source: the same `hyperSpace` drives the controls, the cross-validation grid and the tuning
+  samplers, so a conditional knob is handled once (`lib/space` already encodes inactive keys for samplers).
+
+### 7.5 Pipelines and unions
+
+`pipeline`, `featureUnion` and `columnTransformer` exist in `lib/learn`, and a pipeline's `hyperSpace` is the dict of
+its steps' spaces by step name. A model's modes therefore travel with it into a pipeline unchanged: the pipeline's
+space has a `logistic` key whose value is the model's space, modes and all. Nothing is reinvented. Pipelines are
+particular compositions (a scaler, an encoder, a model), not arbitrary graphs, and each is written as such.
+
+### 7.6 Cost-sensitive learning
+
+Present in pieces: sample weights on `LearnData` and `fit`, `tableCost` and `thresholdCosts` in `metrics` (a cost
+matrix over a confusion table and over thresholds), the `ThresholdExplorer`, and the fairness reductions that solve
+cost-sensitive problems. Missing: a model-selection study that takes a grid, a cost matrix and a model and shows the
+chosen threshold and configuration under the costs (`study/`), and a `classWeight` option on the task methods'
+objective slot. Both small.
+
+### 7.7 Logging: selective by default, adjustable per use
+
+Already there: a subscription names paths with `Log({ every: n | 'logSpaced' | schedule, detail: 'summary' | 'full',
+budget })`, each method has `defaults`, and the host offers off, defaults, all and custom. `off` keeps checkpoints
+only, for a large job. Add `keep: 'all' | 'last' | n` so a path can keep only its last value or a window, and name
+the two or three paths that make a method's story (the loss and the path) as its defaults, everything else on
+request. A page passes its own subscription, so one method serves a chapter that wants every tensor and another that
+wants the loss alone.
+
+### 7.8 Predicting after training
+
+Yes. A task method's fitted value has the verbs of its kind (`predict`, `predictProba`, `decisionFunction`,
+`transform`, as the kind dictates), built from plain parameters; `revive(params)` rebuilds them anywhere. A session
+exposes the parameters at any step as a probe (`model/params` in the iterative base), so "the model at step 40 on
+new data" is `revive(session.probe(40, 'model/params')).predict(x)`. A `fittedAt(t)` convenience on the session
+makes that one call. Train, validate, predict is then: a session on the training split, held-out metrics on the tape
+(7.7), and the fitted value on anything after.
+
+### 7.9 Testing the methods
+
+Agreed: a method wraps library code that has the full standard (oracle goldens, properties, `checkPrimitive`), so a
+method gets a smoke test (it runs, its records have the right shape, its probes answer) and no fixtures; parity with
+another library's composition is not the point. Shared pieces (slot tables, bases, registries, sweeps) are library
+code in all but location and get the full standard.
+
+### 7.10 Probabilistic data structures
+
+Missing from the library and worth a domain, `lib/sketches`: Bloom, counting Bloom and cuckoo filters, count-min and
+count sketches, HyperLogLog, MinHash and locality-sensitive hashing, reservoir sampling, quantile sketches (t-digest,
+KLL), top-k (space-saving), skip lists. Each is a traced `Algorithm` where it grows. Methods (`simulate/` or `data/`):
+a Bloom filter filling with its false-positive rate against the formula, HyperLogLog's estimate converging on a
+stream, count-min's error against its width and depth. Tests against exact counts and the theoretical bounds rather
+than an oracle.
+
+### 7.11 Extending the datasets without hand work
+
+The mechanism exists: a remote asset pinned by SHA-256 with its licence, fetched and parsed on demand. What is missing
+is the ingestion: a Python script in the oracle that takes a manifest (source URL, licence, converter), downloads,
+converts to compact typed arrays, pins the hash and writes the registry entry with its tags (7.3). Candidates with
+permissive terms, by modality:
+- Images: MNIST (CC BY-SA 3.0), Fashion-MNIST (MIT; a test subset is vendored), KMNIST (CC BY-SA 4.0), the
+  scikit-image sample images (mostly public domain), Olivetti faces (research use), CIFAR-10 (no stated licence,
+  universally used).
+- Audio: Free Spoken Digit Dataset (CC BY-SA 4.0), Speech Commands (CC BY 4.0), NSynth (CC BY 4.0), LibriSpeech
+  subsets (CC BY 4.0); ESC-50 is non-commercial and would need a flag. Synthesised audio (tones, chirps, noise
+  mixtures) as generators from `signal`.
+- Time series: Mauna Loa CO2 (public domain), Jena climate, UCI HAR (CC BY 4.0), the M4 competition sets, PhysioNet
+  ECG (ODC-BY), the UCR archive (free for research, licence per set).
+- Tabular classics beyond the vendored ones: adult, bank marketing, bike sharing, heart disease (UCI, CC BY 4.0),
+  California and Ames housing.
+- Text: 20 newsgroups, SMS spam (UCI), AG News; graphs: Cora and Citeseer (research), Newman's small networks;
+  recommendation: MovieLens (research terms; a sample is vendored), Book-Crossing.
+
+### 7.12 The structure, re-evaluated: by what a page does, not by chapter
+
+The chapter mirror is literal and pedagogical, and a method is reused across chapters (logistic regression appears
+in supervised learning, loss functions, optimisation, calibration and fairness), so chapters are a poor home for code
+and a good index of it. The application-oriented alternative, folders by **what you do**, sections by task or
+application:
+
+```
+methods/
+  data/       registries and selectors (datasets, environments, problems); preparation, shift and selection studies
+  fit/        task methods, the scikit-learn world: classify/ regress/ cluster/ reduce/ density/ detect/ rank/ forecast/ survive/
+  train/      problem methods, the torch world: networks/ generative/ representation/ sequence/ graphs/
+  infer/      problem methods, the Bayesian world: programs/ samplers/ variational/ graphical/
+  act/        agents in environments: tabular/ deep/ bandits/ control/ planning/
+  search/     procedures over problems: state-space/ local/ population/ constraint/ adversarial/
+  simulate/   processes and systems: stochastic/ dynamics/ automata/ networks/ sketches/ curiosities/
+  analyse/    done to data or to fitted models: statistics/ explain/ fairness/ calibrate/ evaluate/
+  study/      methods over methods: sweep/ race/ learning-curve/ cross-validate/ cost/ theory/
+  shared/     slots, kinds, bases, sweeps, streams, evaluation, pictures, records
+```
+
+Each method carries its encyclopedia chapters as metadata (`chapters: ['supervised-learning/regression']`), so the
+chapter index is generated and both views exist: folders by use, index by chapter. The fifty chapter pages written
+today keep their value as the catalogue of what to build; they would move to `docs/methods/chapters/` and each
+capability would name its folder above. Recommended; the folders are placeholders, so the move is cheap, and it waits
+for the word.
