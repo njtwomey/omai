@@ -150,11 +150,10 @@ moves until the core pieces of section 8 are built and a first exemplar has prov
 
 ## 4. `methods/shared/`: the option sets and the bases
 
-> **Audited on 2026-10-28** (`LIB.md`, section 1): every piece listed here has a home in `lib/` and the folder is to
-> be dissolved into those homes (`modes.ts` to `lib/trace`, `optionTable` to `lib/space`, the solvers and schedules to
-> `lib/optim`, the objectives to `lib/losses`, the bases to `lib/learn/bases`, the stream to `lib/data`, the pictures
-> to `lib/exposition`). The layout below stands as the list of pieces; their location does not. `LIB.md` holds the
-> library work plan the inventory asks for, and `RENDER.md` the render one.
+> **Done 2026-10-28** (`LIB.md`, section 1): every piece listed here lives in `lib/` (`modes.ts` in `lib/trace`, `optionTable` in
+> `lib/space`, the solvers and schedules in `lib/optim`, the objectives in `lib/losses`); `methods/shared/` no longer exists.
+> The bases, the stream and the pictures are still to build in their library homes (`lib/learn/bases`, `lib/data`,
+> `lib/exposition`). `LIB.md` is the library work plan and `RENDER.md` the render one.
 
 
 What a page exposes is a small number of **externally facing option sets**: which dataset, which environment, which
