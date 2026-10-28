@@ -1,6 +1,6 @@
 /**
- * The small inline SVG icons the controls and player use: chevrons, play, pause, step and rewind, a die, light and dark
- * mode symbols, copy, check, menu, close and sliders, each sized by one prop.
+ * The small inline SVG icons the controls and player use: chevrons, play, pause, step, skip to either end and rewind,
+ * a bolt, a die, light and dark mode symbols, copy, check, menu, close and sliders, each sized by one prop.
  */
 
 import type { ReactNode, SVGProps } from 'react'
@@ -188,6 +188,37 @@ export function SlidersIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
       <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4" />
+    </Svg>
+  )
+}
+
+/** Skip to the start. */
+export function SkipBackIcon(props: IconProps): ReactNode {
+  return (
+    <Svg {...props}>
+      <path d="M21 5v14l-8-7z" fill="currentColor" />
+      <path d="M13 5v14l-8-7z" fill="currentColor" />
+      <path d="M3 5v14" />
+    </Svg>
+  )
+}
+
+/** Skip to the end. */
+export function SkipForwardIcon(props: IconProps): ReactNode {
+  return (
+    <Svg {...props}>
+      <path d="M3 5v14l8-7z" fill="currentColor" />
+      <path d="M11 5v14l8-7z" fill="currentColor" />
+      <path d="M21 5v14" />
+    </Svg>
+  )
+}
+
+/** A bolt (eager: all at once). */
+export function ZapIcon(props: IconProps): ReactNode {
+  return (
+    <Svg {...props}>
+      <path d="M13 2 3 14h9l-1 8 10-12h-9z" fill="currentColor" strokeWidth={1} />
     </Svg>
   )
 }

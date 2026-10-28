@@ -1,11 +1,21 @@
 /**
- * Playback controls in one row for a precomputed timeline or a live algorithm: step back, play or pause with a menu of
- * target frame rates, step forward, a draggable scrubber and an optional time stamp.
+ * Playback controls in one row for a precomputed timeline or a live algorithm: an eager toggle when the controller
+ * offers one, seek to the start, step back, play or pause with a menu of target frame rates, step forward, seek to the
+ * end, a draggable scrubber and an optional time stamp.
  */
 
 import { type PointerEvent, type ReactNode, useCallback, useRef, useState } from 'react'
 import { cx, iconButtonClass, menuItemClass } from './controls/classes.ts'
-import { ChevronDownIcon, PauseIcon, PlayIcon, StepBackIcon, StepForwardIcon } from './controls/icons.tsx'
+import {
+  ChevronDownIcon,
+  PauseIcon,
+  PlayIcon,
+  SkipBackIcon,
+  SkipForwardIcon,
+  StepBackIcon,
+  StepForwardIcon,
+  ZapIcon,
+} from './controls/icons.tsx'
 import { Popover } from './controls/Popover.tsx'
 import { FPS_CHOICES, timeStamp } from './playhead.ts'
 import type { PlaybackController } from './usePlayback.ts'
@@ -26,17 +36,25 @@ export interface PlayerProps {
 }
 
 /**
- * Playback controls for a precomputed timeline or a live algorithm, one row: step back, play or pause with a caret
- * menu for the target frames per second, step forward, a scrubber to drag, and an optional stamp. Space toggles play
- * and the arrow keys step while the player has focus.
+ * Playback controls for a precomputed timeline or a live algorithm, one row: an eager toggle (when the controller
+ * offers one: the whole run computed at once, its end shown), seek to the start, step back, play or pause with a
+ * caret menu for the target frames per second, step forward, seek to the end, a scrubber to drag, and an optional
+ * stamp. Space toggles play, the arrow keys step and Home and End seek while the player has focus.
  *
- * @param props - The controller (from `usePlayback`, `useTimelinePlayback` or `useLiveRun`) and the stamp.
+ * @param props - The controller (from `usePlayback`, `useTimelinePlayback`, `useLiveRun` or a session player) and the
+ *   stamp.
  * @returns The player.
  */
 export function Player(props: PlayerProps): ReactNode {
   const { controller: c, stamp, stampFps, fpsChoices = FPS_CHOICES, className } = props
   const label =
     stamp === true ? timeStamp(c.frame, stampFps ?? c.fps) : typeof stamp === 'function' ? stamp(c.frame) : null
+  const toStart = (): void => {
+    c.pause()
+    c.seek(0)
+  }
+  const toEnd = (): void => c.seek(c.count - 1)
+  const eager = c.eager === true
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: keyboard shortcuts for the whole player, which holds the buttons
     <div
@@ -46,14 +64,41 @@ export function Player(props: PlayerProps): ReactNode {
         if (e.key === ' ') c.toggle()
         else if (e.key === 'ArrowRight') c.step(1)
         else if (e.key === 'ArrowLeft') c.step(-1)
+        else if (e.key === 'Home') toStart()
+        else if (e.key === 'End') toEnd()
         else return
         e.preventDefault()
       }}
     >
       <div className="flex shrink-0">
+        {c.setEager === undefined ? null : (
+          <button
+            type="button"
+            className={cx(iconButtonClass, 'rounded-l-md', eager && 'bg-(--wb-surface) text-(--wb-accent)')}
+            aria-label="Eager"
+            aria-pressed={eager}
+            title={
+              eager
+                ? 'Eager: the whole run computed at once and its end shown (click for live)'
+                : 'Live: computed in the background as it plays (click for eager)'
+            }
+            onClick={() => c.setEager?.(!eager)}
+          >
+            <ZapIcon size={14} />
+          </button>
+        )}
         <button
           type="button"
-          className={cx(iconButtonClass, 'rounded-l-md')}
+          className={cx(iconButtonClass, c.setEager === undefined ? 'rounded-l-md' : '-ml-px')}
+          aria-label="Go to the start"
+          disabled={c.frame <= 0}
+          onClick={toStart}
+        >
+          <SkipBackIcon size={14} />
+        </button>
+        <button
+          type="button"
+          className={cx(iconButtonClass, '-ml-px')}
           aria-label="Step back"
           disabled={c.frame <= 0}
           onClick={() => c.step(-1)}
@@ -69,16 +114,25 @@ export function Player(props: PlayerProps): ReactNode {
         >
           {c.playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
         </button>
-        <FpsMenu fps={c.fps} choices={fpsChoices} onPick={c.setFps} />
         <button
           type="button"
-          className={cx(iconButtonClass, '-ml-px rounded-r-md')}
+          className={cx(iconButtonClass, '-ml-px')}
           aria-label="Step forward"
           disabled={c.frame >= c.count - 1 && !c.open}
           onClick={() => c.step(1)}
         >
           <StepForwardIcon size={14} />
         </button>
+        <button
+          type="button"
+          className={cx(iconButtonClass, '-ml-px')}
+          aria-label="Go to the end"
+          disabled={c.frame >= c.count - 1 && !c.open}
+          onClick={toEnd}
+        >
+          <SkipForwardIcon size={14} />
+        </button>
+        <FpsMenu fps={c.fps} choices={fpsChoices} onPick={c.setFps} />
       </div>
       <Scrubber frame={c.frame} count={c.count} onSeek={c.seek} onGrab={c.pause} />
       {label === null ? null : (
@@ -102,7 +156,7 @@ function FpsMenu(props: {
       <button
         ref={trigger}
         type="button"
-        className={cx(iconButtonClass, 'w-auto gap-0.5 px-1.5 font-mono text-[11px] tabular-nums')}
+        className={cx(iconButtonClass, 'w-auto gap-0.5 rounded-r-md px-1.5 font-mono text-[11px] tabular-nums')}
         aria-label={`Frames per second: ${fps}`}
         aria-haspopup="listbox"
         aria-expanded={open}

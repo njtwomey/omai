@@ -1,7 +1,7 @@
 /**
  * Playback controllers for the `Player`: one interface over precomputed frames (`usePlayback`, `useTimelinePlayback`)
  * and a live algorithm stepped as it plays (`useLiveRun`, through `iterate`, so its states match an uninterrupted run
- * with the same seed), with play, pause, step, seek and loop.
+ * with the same seed), with play, pause, step, seek and loop, and the animation-frame ticker they share (`useTicker`).
  */
 
 import type { Frame, Timeline } from 'mdml-engine/scene'
@@ -30,13 +30,22 @@ export interface PlaybackController {
   readonly seek: (frame: number) => void
   readonly setFps: (fps: number) => void
   readonly reset: () => void
+  /** Eager (the whole run computed at once and its end shown) against live, when the controller computes anything. */
+  readonly eager?: boolean
+  /** Switch eager on or off; absent when there is nothing to compute (precomputed frames), and so no button. */
+  readonly setEager?: (on: boolean) => void
 }
 
 /**
  * Call `onFrames(n)` with the frames due while `playing`, from the display's animation frames (their timestamps are
  * the clock, so nothing here reads one).
+ *
+ * @param playing - Whether to tick.
+ * @param fps - The target frames per second.
+ * @param onFrames - Called with the frames due (the latest callback is used, so it may close over fresh state).
+ * @param cap - The most frames due in one tick (default 4), so a tab back from the background does not race ahead.
  */
-function useTicker(playing: boolean, fps: number, onFrames: (n: number) => void): void {
+export function useTicker(playing: boolean, fps: number, onFrames: (n: number) => void, cap = 4): void {
   const callback = useRef(onFrames)
   callback.current = onFrames
   useEffect(() => {
@@ -45,7 +54,7 @@ function useTicker(playing: boolean, fps: number, onFrames: (n: number) => void)
     let carry = 0
     let handle = requestAnimationFrame(function tick(now: number) {
       if (last !== undefined) {
-        const due = framesDue(carry + (now - last), fps)
+        const due = framesDue(carry + (now - last), fps, cap)
         carry = due.carry
         if (due.frames > 0) callback.current(due.frames)
       }
@@ -53,7 +62,7 @@ function useTicker(playing: boolean, fps: number, onFrames: (n: number) => void)
       handle = requestAnimationFrame(tick)
     })
     return () => cancelAnimationFrame(handle)
-  }, [playing, fps])
+  }, [playing, fps, cap])
 }
 
 /** Options of {@link usePlayback}. */

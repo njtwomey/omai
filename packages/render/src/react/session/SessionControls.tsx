@@ -1,6 +1,7 @@
 /**
- * The controls of a session: eager against live, the seed and step budget, and the subscription (off, the method's
- * defaults, everything, or chosen paths with one schedule), plus the toggle of the whole-tape view.
+ * The controls of a session: eager against live and whether a change waits for play (the reader's remembered
+ * preferences, also on the player), the seed and step budget, and the subscription (off, the method's defaults,
+ * everything, or chosen paths with one schedule), plus the toggle of the whole-tape view.
  */
 
 import { Log, type Subscription } from 'mdml-engine/trace'
@@ -8,10 +9,10 @@ import type { ReactElement } from 'react'
 import { Choice } from '../controls/Choice.tsx'
 import { ControlPanel } from '../controls/ControlPanel.tsx'
 import { NumberField } from '../controls/NumberField.tsx'
+import { setSessionPreferences, useSessionPreferences } from './preferences.ts'
 
-/** What the session controls set. */
+/** What the session controls set (the mode and holding are preferences: `useSessionPreferences`). */
 export interface SessionSettings {
-  readonly mode: 'eager' | 'live'
   readonly seed: number
   readonly steps: number
   readonly preset: 'off' | 'defaults' | 'all' | 'custom'
@@ -21,9 +22,9 @@ export interface SessionSettings {
   readonly tape: boolean
 }
 
-/** Settings that start from a mode, a subscription (a preset name, or chosen paths logged at every step) and a budget. */
-export function initialSettings(mode: 'eager' | 'live', logs: Subscription, steps = 300): SessionSettings {
-  const base = { mode, seed: 0, steps, every: 1, tape: false }
+/** Settings that start from a subscription (a preset name, or chosen paths logged at every step) and a budget. */
+export function initialSettings(logs: Subscription, steps = 300): SessionSettings {
+  const base = { seed: 0, steps, every: 1, tape: false }
   return typeof logs === 'string'
     ? { ...base, preset: logs, chosen: [] }
     : { ...base, preset: 'custom', chosen: Object.keys(logs) }
@@ -47,10 +48,16 @@ export function SessionControls(props: {
   readonly onChange: (s: SessionSettings) => void
 }): ReactElement {
   const { paths, settings: s, onChange } = props
+  const prefs = useSessionPreferences()
   return (
     <div className="flex flex-col gap-2">
       <ControlPanel columns={4}>
-        <Choice label="mode" value={s.mode} options={['eager', 'live']} onChange={(mode) => onChange({ ...s, mode })} />
+        <Choice
+          label="mode"
+          value={prefs.mode}
+          options={['eager', 'live']}
+          onChange={(mode) => setSessionPreferences({ mode })}
+        />
         <NumberField
           label="seed"
           value={s.seed}
@@ -75,10 +82,20 @@ export function SessionControls(props: {
           onChange={(preset) => onChange({ ...s, preset })}
         />
       </ControlPanel>
-      <label className="flex items-center gap-1 text-sm">
-        <input type="checkbox" checked={s.tape} onChange={(e) => onChange({ ...s, tape: e.target.checked })} />
-        show the whole tape
-      </label>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <label className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={prefs.hold}
+            onChange={(e) => setSessionPreferences({ hold: e.target.checked })}
+          />
+          hold changes until play (live)
+        </label>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={s.tape} onChange={(e) => onChange({ ...s, tape: e.target.checked })} />
+          show the whole tape
+        </label>
+      </div>
       {s.preset === 'custom' ? (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {paths.map((p) => (

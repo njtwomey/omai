@@ -13,8 +13,10 @@ import {
 } from 'mdml-engine/trace'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { sessionPreferences, setSessionPreferences } from './preferences.ts'
 import { initialSettings, logsOf } from './SessionControls.tsx'
 import { SessionPanels } from './SessionPanels.tsx'
+import { SessionPlayer } from './SessionPlayer.tsx'
 import { nearestStep } from './scrub.ts'
 import type { LiveSession } from './useSession.ts'
 
@@ -90,15 +92,16 @@ function liveOf(steps: number): LiveSession<State, Config> {
   return {
     session: s,
     version: 0,
-    playing: false,
+    head: s.t,
     done: s.status !== undefined,
-    fps: 60,
-    lastMs: 0,
-    setFps: () => undefined,
-    play: () => undefined,
-    pause: () => undefined,
-    toggle: () => undefined,
+    computing: false,
+    compute: () => undefined,
+    halt: () => undefined,
     advance: () => undefined,
+    lastMs: 0,
+    stale: false,
+    held: false,
+    apply: () => s,
   }
 }
 
@@ -144,10 +147,27 @@ describe('session panels', () => {
   })
 
   it('turns settings into a subscription', () => {
-    expect(logsOf(initialSettings('live', 'defaults'))).toBe('defaults')
-    expect(initialSettings('eager', 'off', 50).steps).toBe(50)
-    const custom = initialSettings('live', { angle: { every: 1 } as never })
+    expect(logsOf(initialSettings('defaults'))).toBe('defaults')
+    expect(initialSettings('off', 50).steps).toBe(50)
+    const custom = initialSettings({ angle: { every: 1 } as never })
     expect(custom.preset).toBe('custom')
     expect(Object.keys(logsOf(custom))).toEqual(['angle'])
+  })
+
+  it('draws the player with the eager toggle, both seeks and the head in the stamp', () => {
+    const html = renderToString(<SessionPlayer live={liveOf(20)} at={5} onScrub={() => undefined} />)
+    expect(html).toContain('step 5 of 20')
+    expect(html).toContain('aria-label="Eager"')
+    expect(html).toContain('aria-label="Go to the start"')
+    expect(html).toContain('aria-label="Go to the end"')
+  })
+
+  it('keeps the reader’s preferences, with or without storage', () => {
+    expect(sessionPreferences()).toEqual({ mode: 'live', hold: true })
+    setSessionPreferences({ mode: 'eager' })
+    expect(sessionPreferences()).toEqual({ mode: 'eager', hold: true })
+    setSessionPreferences({ mode: 'live', hold: false })
+    expect(sessionPreferences().hold).toBe(false)
+    setSessionPreferences({ hold: true })
   })
 })

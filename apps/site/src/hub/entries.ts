@@ -32,8 +32,6 @@ interface EntryBase {
   readonly summary: string
   /** The panels the page draws, in order. */
   readonly layout: readonly Panel[]
-  /** The working mode the page starts in (default live). */
-  readonly mode?: 'live' | 'eager'
   /** What the session logs (default the method's defaults). */
   readonly logs?: Subscription
   /** The step budget the page starts with (default 300). */

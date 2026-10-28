@@ -3203,10 +3203,15 @@ exposition contract of 5.0. Every estimator comes as a factory (`pca({ nComponen
 kind, each usable on its own in any page).
 
 **Sessions.** `render/react/session/` runs a method of the log contract (`lib/trace`'s `Method` and `Session`) in a
-page: `useSession` (make, play live at a rate within a frame budget, version the tape), `SessionPlayer`,
-`SessionControls` (mode, seed, steps, subscription), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a
-probe, curves, per-element series, a trajectory, a tensor, a projection, the whole tape), `SessionPanels` that draws a
-layout under one `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic
+page, with the computation and the viewing at their own paces: `useSession` (the producer: computes the run ahead in
+the spare time of each animation frame, so the tape may stand at step 1000 while the page shows step 100; versions the
+tape as it grows; holds a change of method or options until play in live mode, or applies it after a short pause),
+`preferences.ts` (eager against live, and holding, remembered in the browser from page to page), `SessionPlayer` (the
+consumer: the cursor through the tape at a chosen rate, waiting at the head when the computation is slower; the eager
+toggle computes the whole run at once and shows its end; seek to either end and step one), `SessionControls` (seed,
+steps, subscription, and the same preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe,
+curves, per-element series, a trajectory, a tensor, a projection, the whole tape), `SessionPanels` that draws a layout
+under one `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic
 `TapeView`. The hub (`apps/site/src/hub/`) is entries as data plus routing over these.
 
 **The hub.** `packages/hub/src/`:
@@ -4658,9 +4663,11 @@ Design rules:
   sizes nodes once for a whole animation).
 - `TraceView.tsx`: the standard figures of a run; `useRunStream` for live runs.
 - `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
-  play and pause with a caret menu for the target frames per second, step back and forward, a draggable scrubber, and
-  an optional time stamp. `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over
-  precomputed frames and live algorithm steps) and `playhead.ts` (frame timing, the pure part).
+  an eager toggle when the controller offers one, seek to the start, step back, play and pause with a caret menu for
+  the target frames per second, step forward, seek to the end, a draggable scrubber, and an optional time stamp.
+  `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over precomputed frames and
+  live algorithm steps, and `useTicker`, the animation-frame ticker every player shares) and `playhead.ts` (frame
+  timing, the pure part).
 - `ContingencyTable.tsx`: a contingency table (confusion matrix) with full margins: named cells (TP, FN, FP, TN),
   row and column totals with their rates (TPR, FNR, TNR, FPR; PPV, FDR, NPV, FOR; recall and precision for more
   classes), prevalence and accuracy; hovering a rate outlines its numerator and denominator. Static from any table,

@@ -150,7 +150,13 @@ describe('React bindings render on the server', () => {
       setFps: noop,
       reset: noop,
     }
-    expect(renderToString(<Player controller={controller} stamp />)).toContain('0:00.30')
+    const plain = renderToString(<Player controller={controller} stamp />)
+    expect(plain).toContain('0:00.30')
+    expect(plain).toContain('aria-label="Go to the end"')
+    expect(plain).not.toContain('aria-label="Eager"')
+    const eager = renderToString(<Player controller={{ ...controller, eager: true, setEager: noop }} />)
+    expect(eager).toContain('aria-label="Eager"')
+    expect(eager).toContain('aria-pressed="true"')
     const projection = linearProjection({ x: [0, 1], y: [0, 1], width: 100, height: 100 })
     const svg = renderToString(
       <InteractionOverlay projection={projection} width={100} height={100}>

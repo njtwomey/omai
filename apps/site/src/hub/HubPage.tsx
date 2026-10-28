@@ -17,8 +17,9 @@ import {
   SpaceControls,
   selectEntry,
   useSession,
+  useSessionPreferences,
 } from 'mdml-render/react'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { PageHeader } from '../shell/layout.tsx'
 import type { HubEntry } from './entries.ts'
 
@@ -104,18 +105,19 @@ function SessionPage(props: {
 }): ReactNode {
   const { entry, method, space, params, data } = props
   const [settings, setSettings] = useState<SessionSettings>(() =>
-    initialSettings(entry.mode ?? 'live', entry.logs ?? 'defaults', entry.steps),
+    initialSettings(entry.logs ?? 'defaults', entry.steps),
   )
   const [at, setAt] = useState<number | null>(null)
-  // A remade method (another dataset, other knobs) is a new run: follow its head.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset exactly when the method is remade
-  useEffect(() => setAt(null), [method])
+  const prefs = useSessionPreferences()
   const paths = useMemo(() => Object.keys(contractOf(method, params, key(0))), [method, params])
   const logs = logsOf(settings)
+  // A remade method (another dataset, other knobs) or other settings remake the session: at once in eager mode, on
+  // play in live mode (the player moves the cursor).
   const live = useSession(
     method,
-    { config: params, seed: settings.seed, mode: settings.mode, steps: settings.steps, logs },
-    [method, JSON.stringify(params), settings.seed, settings.mode, settings.steps, JSON.stringify(logs)],
+    { config: params, seed: settings.seed, mode: prefs.mode, steps: settings.steps, logs },
+    [method, JSON.stringify(params), settings.seed, settings.steps, JSON.stringify(logs)],
+    { hold: prefs.hold },
   )
   const layout = useMemo(() => (settings.tape ? [...entry.layout, ...TAPE] : entry.layout), [entry, settings.tape])
   return (

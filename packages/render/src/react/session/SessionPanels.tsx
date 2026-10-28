@@ -62,7 +62,7 @@ const leaf = (path: string): string => path.split('/').at(-1) ?? path
  */
 export function SessionPanels(props: PanelContext & { readonly layout: readonly Panel[] }): ReactNode {
   const { layout, ...ctx } = props
-  const head = ctx.live.session.t
+  const head = ctx.live.head
   const viewed = ctx.at === null ? head : Math.min(ctx.at, head)
   const cursor = useMemo(() => ({ viewed, head, scrub: ctx.onScrub ?? (() => undefined) }), [viewed, head, ctx.onScrub])
   return (
@@ -80,7 +80,7 @@ export function SessionPanels(props: PanelContext & { readonly layout: readonly 
 
 function PanelView(props: PanelContext & { readonly panel: Panel }): ReactNode {
   const { panel, id, live, at, onScrub } = props
-  const t = at === null ? live.session.t : Math.min(at, live.session.t)
+  const t = at === null ? live.head : Math.min(at, live.head)
   const file = (title: string): string => `${slug(id)}-${slug(title)}`
   switch (panel.kind) {
     case 'rows': {
@@ -181,7 +181,7 @@ function CurvesView(props: {
     })
   }, [run, paths, mode, t])
   const steps = useMemo(() => recordedSteps(run, paths), [run, paths])
-  const onInit = useScrubClick(steps, live.session.t, props.onScrub)
+  const onInit = useScrubClick(steps, live.head, props.onScrub)
   return (
     <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
       <Chart figure={FIG} option={option} onInit={onInit} />
@@ -231,7 +231,7 @@ function SeriesView(props: {
       legend: layer.series.length <= 8,
     })
   }, [run, steps, xs, t, mode, panel])
-  const onInit = useScrubClick(steps, live.session.t, props.onScrub, panel.x === undefined ? undefined : xs)
+  const onInit = useScrubClick(steps, live.head, props.onScrub, panel.x === undefined ? undefined : xs)
   return (
     <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
       <Chart figure={FIG} option={option} onInit={onInit} />
