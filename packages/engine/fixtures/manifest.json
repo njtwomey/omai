@@ -4769,12 +4769,28 @@
       "cases": 65
     },
     {
+      "fixture": "vision/draw.json",
+      "source": "oracle/cases/vision/draw.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "vision/epipolar.json",
       "source": "oracle/cases/vision/epipolar.py",
       "reference": {
         "opencv-python-headless": "5.0.0.93"
       },
       "cases": 6
+    },
+    {
+      "fixture": "vision/fast.json",
+      "source": "oracle/cases/vision/fast.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 8
     },
     {
       "fixture": "vision/fitting.json",
@@ -4808,6 +4824,14 @@
         "opencv-python-headless": "5.0.0.93"
       },
       "cases": 12
+    },
+    {
+      "fixture": "vision/matching.json",
+      "source": "oracle/cases/vision/matching.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 9
     },
     {
       "fixture": "vision/moments.json",
