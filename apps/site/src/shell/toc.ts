@@ -3,10 +3,14 @@
  * close; leaves link pages. The gallery gives section folders and recipe files, the docs the engine's directories,
  * modules and symbols; {@link TocSidebar} draws any of them.
  */
+/** What a node is, when the tree says: a folder, a file, or one kind of export. Drawn as a glyph before the name. */
+export type TocKind = 'folder' | 'file' | 'function' | 'class' | 'interface' | 'type' | 'const' | 'enum'
+
 export interface TocNode {
   /** Unique within the tree. */
   readonly id: string
   readonly title: string
+  readonly kind?: TocKind
   /** The page the node links, if any (usually the leaves). */
   readonly path?: string
   readonly children?: readonly TocNode[]

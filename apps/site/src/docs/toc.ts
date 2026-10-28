@@ -1,7 +1,8 @@
 /**
  * The docs table of contents: the engine's source tree as it is on disk. `lib` and `methods`, then each folder's
- * subfolders and files (alphabetical), then each file's exports in source order. Names are the folder and file names;
- * the package's front page (`mdml-engine`) sits above the tree.
+ * subfolders and files (alphabetical), then each file's exports in source order. Names are the folder and file names,
+ * each node marked with what it is (a folder, a file, or the kind of the export); the package's front page
+ * (`mdml-engine`) sits above the tree.
  */
 import type { TocNode } from '../shell/toc.ts'
 import { type Docs, docsPath, symbolPath } from './data.ts'
@@ -16,6 +17,7 @@ function folderNode(docs: Docs, path: string): TocNode {
     ...(folder?.files ?? []).map((f) => ({
       id: f.path,
       title: f.path.slice(f.path.lastIndexOf('/') + 1),
+      kind: 'file' as const,
       path: docsPath(f.path),
       ...(f.symbols.length === 0
         ? {}
@@ -23,12 +25,19 @@ function folderNode(docs: Docs, path: string): TocNode {
             children: f.symbols.map((s) => ({
               id: `${f.path}#${s.name}`,
               title: s.name,
+              kind: s.kind,
               path: symbolPath(f.path, s.name),
             })),
           }),
     })),
   ]
-  return { id: path, title: folder?.name ?? path, path: docsPath(path), ...(children.length > 0 ? { children } : {}) }
+  return {
+    id: path,
+    title: folder?.name ?? path,
+    kind: 'folder',
+    path: docsPath(path),
+    ...(children.length > 0 ? { children } : {}),
+  }
 }
 
 /**
