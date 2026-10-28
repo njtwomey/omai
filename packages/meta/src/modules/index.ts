@@ -31,6 +31,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/data/schema': () => import('mdml-engine/data/schema'),
   'mdml-engine/datasets': () => import('mdml-engine/datasets'),
   'mdml-engine/datasets/outlines': () => import('mdml-engine/datasets/outlines'),
+  'mdml-engine/distances': () => import('mdml-engine/distances'),
   'mdml-engine/dists': () => import('mdml-engine/dists'),
   'mdml-engine/dists/bijectors': () => import('mdml-engine/dists/bijectors'),
   'mdml-engine/dists/compose': () => import('mdml-engine/dists/compose'),
