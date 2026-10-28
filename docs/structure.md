@@ -3259,7 +3259,9 @@ minimisers of `optim`, each with its own knobs, all yielding the vector reached)
 the same shape for options that are values (knobs, properties, `make`); `options/objectives.ts`: `regressionLosses`,
 `classificationLosses` (the `losses` functions with their knobs bound and their properties: task, convex, smooth,
 likelihood) and `penalties` (none, ridge, lasso, elastic net: strength, value, proximal operator, and smooth, has a
-prox, sparse).
+prox, sparse); `options/schedules.ts`: `schedules`, the learning-rate schedules of `optim` as shapes over
+steps taking the optimiser's rate as their peak (constant, step, exponential, inverse time, cosine, cosine with
+restarts, linear, polynomial, warm-ups), with their knobs and properties (warm-up, decays, restarts).
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as
