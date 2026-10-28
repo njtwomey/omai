@@ -52,6 +52,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/games': () => import('mdml-engine/games'),
   'mdml-engine/games/extensive-form': () => import('mdml-engine/games/extensive-form'),
   'mdml-engine/games/normal-form': () => import('mdml-engine/games/normal-form'),
+  'mdml-engine/gp': () => import('mdml-engine/gp'),
   'mdml-engine/graph': () => import('mdml-engine/graph'),
   'mdml-engine/graphics': () => import('mdml-engine/graphics'),
   'mdml-engine/information': () => import('mdml-engine/information'),
