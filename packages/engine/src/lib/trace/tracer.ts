@@ -33,14 +33,17 @@ export interface Tracer {
  */
 export const nullTracer: Tracer = { enabled: false, emit: () => {} }
 
-/** A tracer that keeps every event in memory. */
+/** A tracer that keeps every event in memory, and can be asked to let one go. */
 export interface Recorder extends Tracer {
   readonly events: readonly TraceEvent[]
   run(): Run
+  /** Drop one recorded event (the oldest of a path whose subscription keeps a window); an unknown one is ignored. */
+  forget(event: TraceEvent): void
 }
 
 /**
- * A tracer that records events in memory, to export, replay or plot afterwards.
+ * A tracer that records events in memory, to export, replay or plot afterwards. `forget` drops an event it holds, by
+ * identity, so the order of the rest is untouched.
  *
  * @returns The recorder.
  * @concept tracing
@@ -52,6 +55,9 @@ export interface Recorder extends Tracer {
  * run.metric(0, 'loss', 1.5)
  * run.end('completed', 1)
  * rec.events.length // => 3
+ * const metric = rec.events.find((e) => e.type === 'metric')
+ * if (metric !== undefined) rec.forget(metric)
+ * rec.events.map((e) => e.type) // => ['run', 'end']
  * ```
  */
 export function recorder(): Recorder {
@@ -61,6 +67,11 @@ export function recorder(): Recorder {
     events,
     emit: (event) => {
       events.push(event)
+    },
+    forget: (event) => {
+      // The forgotten event is usually near the end (a path's window of the last few), so search from there.
+      const i = events.lastIndexOf(event)
+      if (i >= 0) events.splice(i, 1)
     },
     run: () => ({ schema: 'mdml.run/1', events: [...events] }),
   }

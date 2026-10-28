@@ -100,6 +100,21 @@ describe('the iterative base', () => {
     expect(Object.keys(s.contract)).toContain('extra/gap')
   })
 
+  it('gives the fitted value at any reached step through the checkpoints, agreeing with fit at the head', () => {
+    const s = mean.session(data, { key: key(1) })
+    s.advance({ steps: 3 })
+    // Only step 0 is checkpointed on a four-step run, so an earlier step is re-run from there.
+    const early = s.fittedAt(2)
+    expect(early.params).toEqual({ mean: 1.5 })
+    expect(early.kind).toBe('regressor')
+    expect(toFlat(early.predict([[9, 9]]))).toEqual([1.5])
+    expect(s.fittedAt(3).params).toEqual({ mean: 3 })
+    expect(() => s.fittedAt(4)).toThrow(/not been reached/)
+    s.advance()
+    expect(s.fittedAt(s.t).params).toEqual(mean.fit(data, { key: key(1) }).params)
+    expect(s.fork(1).fittedAt(1).params).toEqual({ mean: 1 })
+  })
+
   it('takes hyperparameter changes through with() and runs restarts', () => {
     const shrunk = mean.with({ shrink: 0.5 })
     expect(shrunk.fit(data).params.mean).toBeLessThan(3)
