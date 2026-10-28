@@ -3075,6 +3075,14 @@ factories (lasso, ridge, logistic, GLM, robust, online, LARS, isotonic) stay par
 sequential Bayesian regression is the method `methods/linear/bayesianRegression`. Goldens of the parked factories keep
 their fixtures under `methods/linear/`.
 
+`online.ts` holds the online learners that take one example per step (iterative base, logging `solver/mistakes`):
+`perceptronAlgorithm` and `perceptron` (plain, averaged, voted and pocket-with-ratchet variants, passes in the data's
+order or a fresh random order each), `kernelPerceptronAlgorithm` and `kernelPerceptron` (the dual), and
+`passiveAggressiveAlgorithm`, `passiveAggressive` and `passiveAggressiveRegressor` (PA, PA-I, PA-II). Classifiers are
+binary; `learn`'s `oneVsRest` makes them multiclass. oracle: `linear/online` against scikit-learn's SGD with the
+perceptron loss (plain and averaged) and the passive-aggressive learning rates, and numpy loops for the voted, pocket
+and kernel variants.
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 

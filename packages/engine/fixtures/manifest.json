@@ -1294,6 +1294,14 @@
       "cases": 6
     },
     {
+      "fixture": "linear/online.json",
+      "source": "oracle/cases/linear/online.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "logic/answer-sets.json",
       "source": "oracle/cases/logic/answer-sets.py",
       "reference": {
