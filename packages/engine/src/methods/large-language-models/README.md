@@ -1,32 +1,127 @@
 # Large language models (part 6, neural architectures)
 
-Language models at toy scale and as black boxes: n-gram and small neural language models with decoding (greedy, beam, sampling, temperature, nucleus), pretraining and scaling curves at tiny sizes, working with a model (prompting, in-context learning on synthetic tasks, retrieval augmentation), adaptation (fine-tuning, LoRA, preference optimisation on a toy reward), reasoning and test-time compute (sampling many, verifying), agents (a loop of calls and tools, simulated), and decision models, as sessions over `nn`, `text`, `transformers`' pieces and simulated models where a real one is out of reach.
+Language models at toy scale and as black boxes: n-gram models with smoothing, the pretraining pipeline (corpus, tokeniser, a tiny transformer, perplexity, samples) and scaling curves at tiny sizes, decoding as a slot (greedy, beam, sampling with temperature, top-k, nucleus, min-p, penalties, constraints, speculative decoding, the KV cache), adaptation (fine-tuning, LoRA, adapters, distillation), alignment (a reward model, DPO and its kin, RLHF with PPO on a toy reward, best-of-n), inference-time methods (prompting and in-context learning on synthetic tasks, retrieval augmentation, sampling many and verifying), agents (a loop of calls and tools, simulated) and efficiency (mixtures of experts, post-training quantisation), as sessions over `nn`, `text`, `losses`, `agents` and the trainer base. Every model here is a mechanism at toy scale, and every row says whether it trains a real tiny model or simulates one that cannot run here.
 
-## Capabilities
+## Structure
 
-- n-gram models: counts, smoothing and perplexity on a small corpus, generation token by token.
-- A tiny transformer language model trained (with `transformers`): perplexity on the tape, samples at the viewed step.
-- Decoding as a slot: every strategy with its knobs on the same model, the chosen token's probability drawn.
-- Scaling: loss against parameters and data at toy sizes on a log-log axis.
-- Adaptation: LoRA's low-rank update, a preference-based objective (DPO) on a planted preference.
-- Agents: a simulated model calling tools, the loop's state as a sequence of steps.
+Problem methods of the torch world (section 7.2 of `methods/README.md`) under `train/sequence/language/`, a folder of the sequence tree beside `transformers/`, which owns the architecture; the rows here are what one does with a language model once it exists, the n-gram and pretraining rows being the two ways to make one. Decoding, prompting and agents are not training but belong with the model they run on, so the chapter is one tree; the alternative, a `train/language/` of its own beside `train/sequence/`, is a one-line move recorded under Problems.
+
+```
+train/sequence/language/
+  n-gram/           counts, smoothing and perplexity on a tiny corpus, generation token by token, Zipf
+  pretraining/      the pipeline, a tiny transformer language model, the objective, scaling at toy size; the tokeniser as a see row
+  decoding/         decoding as a slot, constrained decoding, the KV cache, speculative decoding
+  adaptation/       fine-tuning, LoRA and adapters, distillation as a see row
+  alignment/        a reward model, direct preference optimisation and its kin, RLHF with PPO on a toy reward, best-of-n
+  inference-time/   in-context learning on synthetic tasks, prompting, retrieval augmentation, sampling many and verifying, calibration
+  agents/           a simulated tool loop, its evaluation
+  efficiency/       mixtures of experts, post-training quantisation, serving estimates; pruning as a see row
+  shared/           the corpus slot, the decoding table, the simulated model, the preference generator, token records (below)
+```
+
+## Methods
+
+Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, `t!` a tensor kept in full, `p` a probe computed from the state at any step, `proj` a projection over the tape, `e` an event, `m` a message with a payload. Trained rows step one optimiser update on the trainer base (`train/loss`, `train/gradNorm`, `train/lr`, `eval/<metric>`, `model/params` as checkpoints; `TODO: methods/shared/bases/trainer.ts` over `nn/training/fit.ts`: `fitAlgorithm`); decoding rows step one token (`token/id` s, `token/distribution` t!, `token/logProb` s); agent rows step one call. Each row's first words say which it is: trained (a real tiny model), probe-only, or simulated (a scripted stand-in for a model that cannot run here). Nothing in this chapter is built.
+
+### n-gram/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `n-gram-model` | Trained by counting. The order n as the knob and the smoothing as the mode (none, add-k, interpolated, Kneser-Ney, stupid backoff): the counts table as a probe (sparse past n = 2 on a tiny corpus), held-out perplexity against n (the sweet spot, then the data running out), generation token by token with the chosen token's probability drawn; the bigram as the smallest language model, the one every later row is measured against. | `train/n` s, `eval/perplexity` s, `model/counts` p (the table), `token/distribution` t!, `token/id` s, `model/sample` p, `study/orderCurve` proj | `text/features.ts`: `ngrams`, `everygrams`, `ngramCounts`; `nn/language-model.ts`: `bigramLanguageModel`, `perplexity`, `characterTokenizer`; `text/vocabulary.ts`: `buildVocabulary`; `datasets/corpus.ts`: `nurseryRhymes`, `tinyShakespeare`; TODO `text/ngram.ts`: `ngramModel` with the smoothing modes as a `LanguageModel` (add-k, interpolated, Kneser-Ney) | |
+| `zipf-and-heaps` | Probe-only. The corpus's rank-frequency curve against Zipf's fit and its vocabulary growth against Heaps' as the corpus grows (one slice per step), the tokeniser's statistics (fertility, the share of unknown tokens); what a model's vocabulary size buys. | `corpus/size` s, `corpus/vocabulary` s, `corpus/zipf` p (rank against frequency with the fit), `corpus/heaps` p | `text/statistics.ts`: `zipfFit`, `heapsFit`, `lexicalDiversity`, `tokenizerStatistics`; `datasets/corpus.ts`: `tinyShakespeare` | |
+
+### pretraining/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `tokeniser` | see natural-language-processing | | | |
+| `tiny-language-model` | Trained. A GPT-shaped decoder on a tiny corpus (characters or a trained subword vocabulary as the mode): the loss and held-out perplexity on the tape, samples at the viewed step (gibberish, then words, then phrases: the samples as a probe over training is the page), the next-token distribution for a prompt, the attention per head (`transformers`'), the embedding of the vocabulary as a projection; the model size and the context length as knobs. | `train/loss` s, `eval/perplexity` s, `model/sample` p, `model/nextToken` p, `embedding` t!, `attention/<layer>/<head>` t!, `model/params` p | `nn/blocks/transformer.ts`: `TransformerLM`; `nn/language-model.ts`: `languageModelFromModule`, `characterTokenizer`, `perplexity`, `sequenceLogProb`; `text/subword/bpe.ts`: `bpeModel`, `bpeTokenize`; `nn/decoding/generate.ts`: `generate`; `datasets/corpus.ts`: `nurseryRhymes`, `tinyShakespeare`; `metrics/text.ts`: `perplexity` | |
+| `pipeline` | Trained. Corpus to tokeniser to model to generation as one tape: the tokeniser's merges as events (its training is `natural-language-processing`'s, replayed here), the vocabulary growing, then the model's training, then samples; the vocabulary size as the knob that trades sequence length against the embedding table. | `tokeniser/merge` e, `tokeniser/vocabulary` s, `train/loss` s, `eval/perplexity` s, `model/sample` p, `pipeline/stage` e | `text/subword/bpe.ts`: `bpeTrainingAlgorithm`, `trainBpe`; `text/subword/unigram.ts`: `unigramTrainingAlgorithm`; the `tiny-language-model` row; nested sessions (`methods/README.md` problem 11) | |
+| `scaling-at-toy-size` | Trained, as a study. Three model sizes by three data sizes (a grid of sessions): the final loss against parameters and against tokens on log-log axes with a power law fitted, the compute-optimal line at toy scale, the loss curves overlaid; the FLOP count of each model from the describer. The curves are real; the sizes are three orders of magnitude short of the real ones, which the page says. | `study/loss` t (per cell), `study/params` t, `study/tokens` t, `study/fit` p (the power law), `study/curves` proj, `model/cost` s | `nn/describe.ts`: `flops`, `layerTable`, `memoryEstimate`; `optim/minimize/least-squares.ts`: `curveFit` (the power law); the `tiny-language-model` row as the inner session; `methods/shared/sweeps.ts` (planned) | |
+| `objectives` | see transformers (masked against causal, `families/masked-encoder` and `families/small-decoder`) | | | |
+
+### decoding/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `decoding-slot` | Probe-only over a trained model (the tiny one or the n-gram). The strategy as the mode (greedy, beam with its width, sampling) and the processors as knobs (temperature, top-k, top-p, min-p, repetition and frequency penalties): the next-token distribution at every step with the cut drawn (what nucleus sampling removes, what temperature flattens), the chosen token's probability, the entropy per step, the sequence's log probability; the same prompt decoded several ways side by side. The decoding table is the slot every row after this uses. | `token/id` s, `token/distribution` t!, `token/logProb` s, `token/entropy` s, `token/cut` p (the distribution with the kept set), `decode/beam` t! (beam mode), `decode/output` p | `nn/decoding/generate.ts`: `decodingAlgorithm`, `generate`; `nn/decoding/processors.ts`: `temperatureProcessor`, `topKProcessor`, `topPProcessor`, `minPProcessor`, `repetitionPenaltyProcessor`, `frequencyPresenceProcessor`, `composeProcessors`, `entropyOfLogits`, `logProbs`; `nn/decoding/beam.ts`: `beamSearchAlgorithm` | |
+| `constrained-decoding` | Probe-only. A grammar (an automaton over tokens), a trie of allowed strings, or a mask as the constraint (modes): the allowed set at each step drawn over the distribution, the renormalised choice, structured output (a JSON-like shape) from a model that would not produce it unconstrained. | `token/allowed` t!, `token/distribution` t!, `constraint/state` m (the automaton's state), `decode/output` p | `nn/decoding/constraints.ts`: `maskProcessor`, `automatonConstraint`, `trieConstraint`; `nn/decoding/generate.ts`: `decodingAlgorithm` | |
+| `kv-cache` | Probe-only. Decoding with and without the cache: the keys and values appended per step (the cache as a growing tensor drawn), the cost per token constant against growing, the memory against context length (the knob), grouped-query attention shrinking it (the heads shared as the mode); the same output either way as the check. | `cache/length` s, `cache/memory` s, `decode/costPerToken` s, `check/difference` s, `cache/picture` p | `nn/module/attention.ts`: `GroupedQueryAttention`, `emptyKVCache`; `nn/blocks/transformer.ts`: `TransformerBlock`, `TransformerLM`; `nn/describe.ts`: `memoryEstimate` | |
+| `speculative-decoding` | Probe-only over two trained models. A small draft model proposes k tokens, the target scores them in one pass, a prefix is kept by the rejection rule: the proposed tokens with accepted and rejected marked per step, the acceptance rate on the tape, the speed-up against k (the knob), the output distribution matching the target's (the check over many samples). | `draft/proposed` t!, `draft/accepted` s, `draft/acceptanceRate` s, `decode/speedup` s, `decode/output` p, `check/distributionDistance` s | `nn/decoding/speculative.ts`: `speculativeAlgorithm`, `speculativeDecode`; two sizes of the `tiny-language-model` row | |
+
+### adaptation/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `fine-tuning` | Trained, from a pretrained tiny model's checkpoint. Full fine-tuning against freezing all but the last layers (the share frozen as the knob) on a second corpus or a classification head: the target loss falling, the source perplexity rising (forgetting, on the tape), the parameter distance from the start; the learning rate's part. Domain adaptation and continual learning in general are `transfer-learning`'s. | `train/loss` s, `eval/targetPerplexity` s, `eval/sourcePerplexity` s, `train/paramDistance` s, `model/sample` p, `model/params` p | `nn/training/state.ts`: `hasFrozen`; `optim/transform.ts`: `masked`; `nn/training/serialise.ts`: `loadState`; the `tiny-language-model` row's checkpoint | |
+| `lora` | Trained. A low-rank update A B on the attention and feed-forward weights with the rank as the knob (and rsLoRA's scaling, PiSSA's SVD start as modes): the number of trained parameters against full fine-tuning, the same target loss at a fraction, the update's singular values at the viewed step (how much rank it uses), the merged weight afterwards; adapters and prefix tuning as the other parameter-efficient modes. | `train/loss` s, `eval/targetPerplexity` s, `lora/rank` s, `lora/trainable` s, `lora/singularValues` t!, `model/params` p | TODO `nn/module/parametrisation.ts`: `LoRA` (a parametrisation beside `WeightNorm` and `SpectralNorm`, with the scaling and the SVD start), `Adapter`, `PrefixTuning`; `numerics/linalg/svd.ts`: `svd` (the update's spectrum); `optim/transform.ts`: `masked` | |
+| `distillation` | see feedforward-networks (the student on a teacher's logits; here the teacher is the larger tiny model) | | | |
+
+### alignment/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `reward-model` | Trained. Pairs of completions with a planted preference (a hidden scoring rule: length, a keyword, a style), a Bradley-Terry reward head on the frozen model trained on the pairwise logistic loss: the pair accuracy on the tape, the learned reward against the planted score as a scatter, the reward's calibration; the preference generator is the truth. | `train/loss` s, `eval/pairAccuracy` s, `reward/scores` t!, `reward/scatter` p (learned against planted), `model/params` p | `losses/ranking.ts`: `rankNet` (the Bradley-Terry pairwise logistic loss); the preference generator in `shared/preferences.ts`; `datasets/comparisons.ts`: `eloGames` (the same model on games) | |
+| `direct-preference-optimisation` | Trained. DPO on the planted preferences with the reference model fixed (β as the knob) and IPO, KTO as modes: the policy's log-probability of the preferred against the rejected completions moving apart on the tape, the implicit reward, the KL to the reference growing, samples at the viewed step drifting towards the preferred style; against the reward model plus PPO on the same preferences. | `train/loss` s, `train/chosenLogProb` s, `train/rejectedLogProb` s, `train/implicitReward` s, `train/klToReference` s, `model/sample` p, `model/params` p | `nn/language-model.ts`: `sequenceLogProb`; `losses/divergence.ts`: `klDiv`; TODO `losses/preference.ts`: `dpo`, `ipo`, `kto` (pairwise objectives over policy and reference log-probabilities) | |
+| `rlhf-ppo` | Trained, on a toy reward. The policy sampling completions, the reward model (or the planted rule) scoring them, PPO's clipped objective with a KL penalty to the reference (β as the knob): the reward rising, the KL growing, reward hacking when β is small (the completions degenerate while the reward climbs: the event); GRPO and RLOO advantages (group-relative, leave-one-out) as the modes without a value head. | `train/reward` s, `train/kl` s, `train/policyLoss` s, `train/entropy` s, `train/hacked` e, `model/sample` p, `model/params` p | `agents/policy-gradient.ts`: `ppoClipObjective`, `ppoKlObjective`, `adaptKlCoefficient`; `losses/divergence.ts`: `klDiv`; `nn/decoding/generate.ts`: `generate`; TODO the group-relative and leave-one-out advantages (a few lines in `shared/advantages.ts`) | |
+| `best-of-n` | Probe-only. n samples from the model, the reward model picks one: the chosen reward against n (the knob) on a log axis, the KL to the model implied by selection (log n − (n−1)/n), the samples with their rewards as a list at the viewed step; the cheapest alignment, and what it cannot change. | `select/n` s, `select/bestReward` s, `select/meanReward` s, `select/kl` s, `select/samples` p | `nn/decoding/generate.ts`: `generate`; the `reward-model` row; the KL bound is a formula | |
+
+### inference-time/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `in-context-learning` | Trained. A small transformer trained on sequences of (x, y) pairs from a task distribution (linear regression with a random weight per sequence, or a lookup from associative recall): at evaluation a new task's examples in the prompt and the model's prediction for a query improving as more examples are given (the knob), against least squares on the same examples (what it has learned to do in its forward pass); the attention from the query to the examples. | `train/loss` s, `eval/errorByShots` t!, `eval/leastSquaresError` t, `attention/<layer>/<head>` t!, `model/predictions` p, `study/shotCurve` proj | `nn/blocks/transformer.ts`: `TransformerLM`; `datasets/sequence-tasks.ts`: `associativeRecall`; TODO `datasets/sequence-tasks.ts`: `inContextRegression` (random linear tasks as token sequences with the least-squares truth) | |
+| `prompting` | Simulated. Prompt formats (zero-shot, few-shot, chain-of-thought) on a scripted model whose answers follow a known rule, so the page shows the mechanics of a prompt, not a capability: the prompt as tokens, the response, the scored answer, the accuracy against the number of examples; on the tiny trained model for the few-shot format only. | `prompt/tokens` p, `prompt/response` p, `eval/accuracy` s, `prompt/shots` s | the simulated model in `shared/simulated.ts`; `nn/decoding/generate.ts`: `generate` (the trained mode) | |
+| `retrieval-augmentation` | Simulated generator, real retrieval. A query against a small corpus: BM25 and a dense index (LSA vectors with nearest neighbours) as the retriever modes, the top-k passages with their scores at the viewed step, the prompt assembled from them, the generator a scripted stand-in that answers from the passages; retrieval quality (recall of the passage that holds the answer) against k is the real curve. | `retrieve/scores` t!, `retrieve/topK` p, `eval/recallAtK` s, `prompt/tokens` p, `generate/answer` p | `text/features.ts`: `bm25`, `bm25Scores`, `tfidfVectorize`; `text/representations.ts`: `lsa`; `numerics/spatial`: `kNearest`; `metrics/ranking.ts`: `recallAtK`; `datasets/corpus.ts`: `topicCorpus`, `workedExampleCorpus`; the simulated generator in `shared/simulated.ts` | |
+| `sampling-and-verifying` | Trained, on a verifiable task. Many samples from the tiny model on multi-digit addition (the answer checkable), majority vote (self-consistency) and best-of-n with the checker as the verifier (modes): accuracy against the number of samples on a log axis (the test-time compute curve), the agreement among samples as a confidence; the temperature's part. | `samples/n` s, `eval/accuracy` s, `eval/voteAccuracy` s, `samples/agreement` s, `samples/list` p, `study/computeCurve` proj | `datasets/sequence-tasks.ts`: `additionTask`; `nn/decoding/generate.ts`: `generate`; `nn/decoding/processors.ts`: `temperatureProcessor` | |
+| `calibration` | Probe-only. The model's confidence in its chosen token against its accuracy on the task slot: the reliability diagram and the expected calibration error at the viewed training step, temperature scaling on held-out data as the fix (the temperature as the step over a grid), entropy as the abstention signal. | `eval/ece` s, `eval/reliability` p, `calibrate/temperature` s, `calibrate/nll` s | `metrics/probabilistic.ts`: `expectedCalibrationError`, `calibrationCurve`, `logLoss`; `nn/decoding/processors.ts`: `entropyOfLogits`, `temperatureProcessor` | |
+
+### agents/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `tool-loop` | Simulated. A scripted policy standing in for a model, a set of tools (a calculator, a lookup over a small table, a search over the corpus) and a task with a known answer: one call per step (the chosen tool and its arguments as a message, the observation returned, the scratchpad growing), the loop ending on an answer or a budget; the policy's error modes as knobs (a wrong tool, a loop, a hallucinated observation) and what each does to the transcript. The page shows the loop's structure and its failure modes; it does not run a model. | `call/tool` m (name, arguments), `call/observation` m, `call/step` s, `loop/transcript` p, `loop/finished` e, `eval/success` s | `exposition/agents.ts`: `agentSteps` (the transcript record); the simulated policy and the tools in `shared/simulated.ts`; `text/features.ts`: `bm25Scores` (the search tool) | |
+| `agent-evaluation` | Simulated, as a study. The tool loop over a suite of tasks with the policy's error rates as knobs: success rate, calls per task and cost against the budget, the failure taxonomy (wrong tool, loop, gave up) as shares; what a benchmark of agents measures and what it cannot. | `study/successRate` s, `study/callsPerTask` s, `study/failures` t (by kind), `study/budgetCurve` proj | the `tool-loop` row as the inner session; `methods/shared/sweeps.ts` (planned) | |
+
+### efficiency/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `mixture-of-experts` | Trained. The feed-forward replaced by a router over experts (the routing as the mode: dense softmax, top-k, noisy top-k, Switch's top-1, expert choice) with the load-balancing, router z- and importance losses as knobs: the expert load per step (collapse onto one expert without balancing: the event), which tokens go where at the viewed step, the router's entropy, the loss against a dense model of the same active parameters. The mixture of linear experts by EM is `mixture`'s. | `train/loss` s, `train/balanceLoss` s, `router/load` t! (per expert), `router/entropy` s, `router/collapsed` e, `router/assignments` p (tokens to experts), `model/params` p | `nn/blocks/experts.ts`: `MixtureOfExperts`, `softmaxRouting`, `topKRouting`, `noisyTopKRouting`, `switchRouting`, `expertChoiceRouting`, `loadBalancingLoss`, `routerZLoss`, `importanceLoss`; `nn/blocks/transformer.ts`: `TransformerBlock` | |
+| `post-training-quantisation` | Probe-only over a trained tiny model. Round-to-nearest against GPTQ against AWQ (modes) at b bits (the knob), per tensor or per channel: the perplexity against bits, the quantisation error per layer, the weight histograms against the grid, the serving-memory estimate; the activation-aware scaling of AWQ drawn as the channels it protects. Quantisation-aware training on a small network is `feedforward-networks`'. | `quant/bits` s, `eval/perplexity` s, `quant/error` t (per layer), `quant/memory` s, `quant/histogram` p, `study/bitsCurve` proj | `nn/quantise.ts`: `quantiseModule`, `gptq`, `awq`, `quantParams`, `quantisationError`, `outputError`; `nn/describe.ts`: `memoryEstimate` | |
+| `serving-estimates` | Probe-only. Parameters, FLOPs per token, KV-cache memory per token and the memory a context of length L needs, from the architecture's knobs (layers, width, heads, key-value heads, vocabulary): a calculator page with the describer's numbers, extrapolated to real sizes as arithmetic (and said to be). | `estimate/params` s, `estimate/flopsPerToken` s, `estimate/cachePerToken` s, `estimate/table` p | `nn/describe.ts`: `layerTable`, `flops`, `memoryEstimate`, `summary` | |
+| `pruning` | see feedforward-networks | | | |
+| `decision-models` | see transformers (the decision transformer) | | | |
+
+## shared/
+
+| helper | what it does | used by |
+| --- | --- | --- |
+| `corpora.ts` | The corpus slot: the tiny corpora of `datasets/corpus.ts` (`nurseryRhymes`, `tinyShakespeare` pinned remote, `topicCorpus` and `workedExampleCorpus` for retrieval) with a character or trained subword tokeniser, held-out splits; shared with `natural-language-processing` | every group |
+| `decoding.ts` | The decoding slot table over `nn/decoding/`: the strategies and processors with their knobs as one union, so any row with a model decodes the same way | `decoding/`, `alignment/`, `inference-time/` |
+| `simulated.ts` | The simulated model: a scripted policy with named error modes, the tools, the generator that answers from passages; every page that uses it says so in its first line | `inference-time/prompting`, `inference-time/retrieval-augmentation`, `agents/` |
+| `preferences.ts` | The planted-preference generator: pairs of completions scored by a hidden rule (length, keyword, style), with the rule as the truth the reward model is compared with | `alignment/` |
+| `records.ts` | The token-probability strip (tokens with the chosen token's probability and the kept set), the next-token distribution, the transcript of a loop (`exposition/agents.ts`: `agentSteps`), the sample list with scores | every group |
+| `advantages.ts` | Group-relative and leave-one-out advantages for the PPO modes | `alignment/rlhf-ppo` |
 
 ## Examples to make
 
-- Nucleus sampling's cut on the next-token distribution, p and temperature as knobs.
-- A bigram model generating, with the counts table as a probe.
-- A toy scaling law: three model sizes, three data sizes, the loss surface.
-- DPO on a toy preference: the policy's probabilities moving towards the preferred completions.
+- Nucleus sampling's cut on the next-token distribution, p and temperature as knobs, the same prompt decoded three ways.
+- A bigram model generating with the counts table as a probe; then Kneser-Ney against add-k on held-out perplexity.
+- A tiny transformer on nursery rhymes: samples at log-spaced steps going from noise to rhyme.
+- A toy scaling law: three model sizes, three data sizes, the power law fitted on log-log axes.
+- DPO on a planted preference: the chosen and rejected log-probabilities parting, samples drifting towards the preferred style.
+- Speculative decoding: proposed tokens accepted and rejected per step, the acceptance rate against the draft length.
+- A simulated tool loop with a loop error mode, the transcript and the budget.
 
 ## Rendering
 
-- Token strips with probabilities, bars over a vocabulary, log-log curves, step lists for agents.
-- Missing: a chat-like transcript panel for agent loops; the token-probability strip.
-
-## Shared
-
-- `shared/`: the corpus slot (tiny corpora in `datasets`), the decoding slot table, the simulated-model stub for pages that cannot run a real model.
+- Token strips with probabilities, bars over a vocabulary, log-log curves with fits, step lists and transcripts for agents, scatter of learned against planted reward.
+- Missing: a chat-like transcript panel for agent loops; the token-probability strip; a samples-over-training panel (text at log-spaced steps).
 
 ## Problems
 
-- `llm/` moves here. Real models are out of scope for the engine; the pages are about mechanisms at toy scale, and the encyclopedia says so.
+- Real models are out of scope for the engine: the pages are about mechanisms at toy scale, and each row's first word says whether it is trained, probe-only or simulated; the simulated rows (prompting, retrieval's generator, the tool loop) must never be read as running a model, and the encyclopedia says so.
+- The chapter sits under `train/sequence/language/` though half its rows do not train; a `train/language/` beside `train/sequence/` (one line in section 3 of `methods/README.md`) would be the alternative if the sequence tree grows too deep.
+- The library gaps are named and small: `ngramModel` with smoothing, `LoRA` and adapters as parametrisations, the preference losses, an in-context regression dataset, the advantages; everything else (decoding, speculative, constraints, the cache, experts, quantisation) exists.
+- The tokeniser's training is `natural-language-processing`'s and the pipeline row replays it; nested sessions (problem 11) decide how.
