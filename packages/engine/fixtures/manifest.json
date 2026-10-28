@@ -4661,6 +4661,42 @@
       "cases": 70
     },
     {
+      "fixture": "timeseries/acf.json",
+      "source": "oracle/cases/timeseries/acf.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "timeseries/arima.json",
+      "source": "oracle/cases/timeseries/arima.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "timeseries/arma.json",
+      "source": "oracle/cases/timeseries/arma.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "timeseries/arma_fit.json",
+      "source": "oracle/cases/timeseries/arma_fit.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "trace/summaries.json",
       "source": "oracle/cases/trace/summaries.py",
       "reference": {

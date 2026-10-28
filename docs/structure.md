@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 44 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 45 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -410,6 +410,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
 | `vision`      | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                           |
+| `timeseries`  | ARMA and ARIMA theory, estimators and forecasts, exponential smoothing, decomposition, the matrix profile, online detectors, vector autoregression, volatility and reconciliation                |
 
 ### 4.1 `base/`
 
@@ -3177,6 +3178,45 @@ diagonal of pairwise, derivative conformance of every continuous distance.
 built from: `numerics/geometry`, `numerics/linalg`, `space`, `tensor`. Sequence and string distances (DTW in
 `signal/similarity.ts`, Levenshtein and set Jaccard in `text/similarity.ts`, chi-square in `kernels/structured.ts`)
 keep their homes, as do the `Kernel` objects of `kernels/` (`pairwiseKernels` by scikit-learn's names).
+
+### 4.45 `timeseries/`: time-series models and mining (statsmodels, stumpy, sktime)
+
+Series modelled and mined, moved out of the parked methods layer and extended to what `methods/time-series` asks of
+the library. A domain over `signal` (sliding dot products, MASS, Yule-Walker and Burg), `dynamics/filtering` (the
+Kalman filter, BOCPD), `optim` (BFGS), `stats` and `numerics`. Every iterative routine is an `Algorithm` whose state
+serialises (`stateToJson`), and every fitted model is plain JSON data with pure functions over it, so it serialises.
+Series are `TensorLike` or number arrays; AR coefficients follow `x_t = sum phi_j x_(t-j) + e_t + sum theta_j e_(t-j)`
+throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
+- `differencing.ts`: `difference(y, order, lag)`, `differencePolynomial(d, D, s)` (the coefficients of
+  `(1 - B)^d (1 - B^s)^D`), `integrate(z, initial, order, lag)`, the inverse.
+- `acf.ts`: `autocovariance` (biased or adjusted), `acf` (with Bartlett bands), `pacf` (Yule-Walker adjusted or biased,
+  or by regressions on lags) and `ccf`, as statsmodels.
+- `arma.ts`: the theory of ARMA processes: `armaPsiWeights`, `armaPiWeights`, `armaAutocovariance`, `armaAcf`,
+  `armaPacf`, `isStationary`, `isInvertible`, and the innovations algorithm `innovationsAlgorithm(gamma)` (one row, one
+  lag, per step; state `InnovationsState`) with its runner `innovations`.
+- `state-space.ts`: `armaForm` (the Harvey state-space form with the stationary initial covariance by doubling),
+  `armaStateSpace` (as a `LinearGaussianModel`, so `kalmanLogLikelihood` applies), the O(r^2)-per-step scalar filter
+  `armaFilter` and `armaLogLikelihood` (exact Gaussian likelihood, variance concentrated out, missing values skipped),
+  and `forecastStateSpace` (h-step means and variances of any single-noise linear Gaussian form).
+- `arima.ts`: `arimaFit(y, spec, options)` for ARIMA(p, d, q)(P, D, Q)_s with trend (`n`, `c`, `t`, `ct`) and exogenous
+  regressors (regression with ARIMA errors, as statsmodels' `ARIMA`), by `mle`, `css` or `css-mle`; the fit is
+  `arimaFitAlgorithm` (BFGS on the unconstrained partial autocorrelations, so the polynomials stay stationary and
+  invertible; `logLikelihood` per iteration; the likelihood is that of the differenced series, the diffuse limit),
+  `arimaResiduals`, `arimaForecast` (exact means and variances on the original scale by augmenting the state with the
+  last observations that the differencing operator integrates; intervals by level). `ArimaFit` is plain data with
+  standard errors from the numerical Hessian.
+- `arma-fit.ts`: `fitAr` (Yule-Walker adjusted or biased, Burg, least squares), `selectArOrder` (AIC, BIC, HQIC),
+  `fitMa` (innovations), `hannanRissanen` (with the bias-correction step), `fitArma` and `armaFitAlgorithm`.
+- private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
+  (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
+  Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
+  objectives), `_series.ts`.
+
+oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
+`innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,
+`innovations`, `AutoReg`) in `fixtures/timeseries/`; properties: the likelihood by the fast filter equals the library's
+Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
+built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
 
 ## 5. Methods, exposition records and views
 
