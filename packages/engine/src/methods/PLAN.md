@@ -19,7 +19,7 @@ chapter's `README.md` (its inventory table).
 | Methods | 34 rows built across 12 early areas under the old chapter folders; one slot-built method (`linear/linearClassifier`) with a test and no page; none moved to the new layout |
 
 Everything on main since the registries merge has been checked only by each agent's own tests, tsc, layering and the
-examples runner. The first act of any next stage is the gate (section 6, step 1).
+examples runner. The full-gate hold remains on through waves L1–L3 and lifts in wave L4.
 
 ## 2. Standing rules for every wave
 
@@ -68,20 +68,20 @@ Exit check: merged, `make layers` clean, and (after the hold) one gate on main.
 | graph-spreading | `lib/graph`: spreading (Gillespie epidemics, cascades, influence), percolation, stepped growth, effective resistance, neighbour sampling; `lib/information` (bottleneck, MDL, stepped coders) |
 | causal | `lib/causal` (estimation, quasi-experimental designs, heterogeneous effects, sensitivity), `metrics/uplift.ts`, the causal generators in `datasets` |
 | rules-patterns-logic | `lib/rules` (CN2, PRISM, RIPPER, rule lists, rule sets), `lib/patterns` (Apriori, FP-growth, Eclat, association rules, PrefixSpan, GSP, subgroup discovery), `lib/logic` extras (production systems, uncertain reasoning, argumentation, description logic, Markov logic, ProbLog, differentiable logic) |
-| text-embedding | `lib/embedding` (word2vec, GloVe, knowledge-graph scorers), `lib/text` (n-gram models with smoothers, RAKE and TextRank, inverted index and probabilistic retrieval, record linkage, spelling channel), `lib/metrics` sequence-labelling and ranking additions |
-| numerics-planted | `lib/numerics` (matrix completion, stationary iterations, two-grid, subspace iteration, Jacobi SVD steps, Lanczos stepped, float16 and bfloat16); `lib/datasets` and `data/modifiers`: the roughly thirty planted problems and generators with truth listed in `LIB.md` section 1 (leaks, duplicates, shifts, panels, discontinuity designs, transactions, tagged corpora, captioned scenes, in-context tasks, coupled series, spoken digits), registered with tags |
+| text-embedding | `lib/embedding` (word2vec, GloVe, knowledge-graph scorers), `lib/text` (n-gram models with smoothers, RAKE and TextRank, inverted index and probabilistic retrieval, record linkage, spelling channel), `lib/learn` click models, `lib/metrics` sequence-labelling and ranking additions |
+| numerics-planted | `lib/numerics` (matrix completion, stationary iterations, two-grid, subspace iteration, Jacobi SVD steps, Lanczos stepped, float16 and bfloat16); `lib/datasets` and `data/modifiers`: image modifiers (crops, flips, mixup, cutmix) and the roughly thirty planted problems and generators with truth listed in `LIB.md` section 1 (leaks, duplicates, shifts, panels, discontinuity designs, transactions, tagged corpora, captioned scenes, in-context tasks, coupled series, spoken digits), registered with tags |
 
 ### Wave L3: neural, reinforcement, search, the long tail
 
 | agent | scope |
 | --- | --- |
 | nn-blocks | `lib/nn`: energy blocks (Hopfield, RBM), continuous blocks (CNF, Hamiltonian), operators (DeepONet, FNO), forecasting (N-BEATS), recommender blocks, graph layers (relational, equivariant, graph transformer), masked convolutions, receptive fields, SWAG |
-| nn-training | `lib/nn` parametrisations (LoRA, adapters, prefix tuning), adversarial attacks and certification, `lib/learn` privacy (per-example clipping) and privacy attacks, a multi-module trainer for GANs |
+| nn-training | `lib/nn` parametrisations (LoRA, adapters, prefix tuning), adversarial attacks and certification, `lib/learn` privacy (per-example clipping) and privacy attacks, a multi-module trainer for GANs, `lib/optim/landscape.ts` (landscape slices with filter normalisation) |
 | losses-generative | `lib/losses` (CTC, preference objectives, invariance penalties, robust classification losses, focal and smoothing as table entries, VQ, noise-contrastive, sliced score matching, Barlow and VICReg, evidential); `stochastic/diffusion-models.ts` (schedules, VP and VE SDEs, DDPM and DDIM samplers as algorithms, guidance); `dists/bijectors` additions |
 | explain-vision | `lib/explain` internals (logit and tuned lens, activation patching, feature visualisation), `lib/vision` stepped forms (Canny stages, Hough peaks, watershed, mean shift, structure from motion, calibration iterations) |
 | rl-search | `lib/agents` and `lib/environments` additions (tile coding and semi-gradient learners, goal-conditioned and HER, best-arm bandits, sliding-window UCB, off-policy MC, random walk and Baird, changing mazes), `lib/search` and `lib/problems` (particle swarm, NEAT, puzzles, tours, SAT instances) |
 | timeseries-rest | the rest of `lib/timeseries` (cointegration with the Johansen and MacKinnon tables, shapelets, the feature set, EGARCH, Box-Cox MSTL, multiplicative ETS intervals), `lib/pgm` additions (rating systems, IRT, HMM variants, online CRF trainers, Swendsen-Wang), `lib/manifold` PaCMAP and TriMap |
-| core-gaps | the TODOs the waves above surface (each agent reports what it left out): a catch-all agent works the list `LIB.md` section 2.4 and the reports |
+| core-gaps | `lib/learn` additions not in L1 (`theory.ts`: PAC, VC, Rademacher, margin, stability, PAC-Bayes, regret bounds, bias-variance, degrees of freedom; `feature-selection.ts` knockoffs, selective inference, feature synthesis, mRMR, Relief; `model-selection/` thresholdout, the ladder, corrected resampled t-test, 5×2 CV), `lib/optim` additions (`online.ts` expert learners: weighted majority, FTL, FTPL, fixed share; dual coordinate descent for linear SVM), `lib/decomposition` and `lib/manifold` tail items, plus the TODOs the waves above surface and `LIB.md` section 2.4 |
 
 ### Wave L4: the gate, the fixes, the move
 
