@@ -1,6 +1,8 @@
-// Parameter transforms of the time-series fits: partial autocorrelations to and from autoregressive coefficients (the
-// Durbin-Levinson recursion), and the map from unconstrained reals to a stationary polynomial that statsmodels uses
-// to keep the optimiser inside the stationary (or invertible) region.
+/**
+ * Parameter transforms of the time-series fits: partial autocorrelations to and from autoregressive coefficients (the
+ * Durbin-Levinson recursion), and the map from unconstrained reals to a stationary polynomial that statsmodels uses
+ * to keep the optimiser inside the stationary (or invertible) region.
+ */
 
 /** The AR coefficients (x_t = sum phi_j x_(t-j) + e_t) of a stationary process with the given partial autocorrelations. */
 export function pacfToAr(pacf: ArrayLike<number>): Float64Array {

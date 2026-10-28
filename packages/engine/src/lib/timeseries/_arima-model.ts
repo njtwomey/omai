@@ -1,6 +1,8 @@
-// The internals of the ARIMA family: the model specification, the regression columns (trend and exogenous), the layout
-// of the parameter vector, the expansion of seasonal polynomials, and the two objectives (conditional sum of squares
-// and the exact concentrated likelihood) on the differenced series.
+/**
+ * The internals of the ARIMA family: the model specification, the regression columns (trend and exogenous), the layout
+ * of the parameter vector, the expansion of seasonal polynomials, and the two objectives (conditional sum of squares
+ * and the exact concentrated likelihood) on the differenced series.
+ */
 import { MdmlError } from '../base/index.ts'
 import { polymul } from '../numerics/polynomial/index.ts'
 import { constrainStationary } from './_params.ts'

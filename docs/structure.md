@@ -3217,10 +3217,23 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   trend extrapolation) and the shared `DecompositionResult`.
 - `stl.ts`: `stlAlgorithm(y, options)` (STL by loess, a port of the netlib routine as statsmodels has it; one inner
   loop per step, robustness weights after each pass), `stl`, `mstlAlgorithm` (one STL fit per step) and `mstl`.
+- the matrix profile family, ported from the parked methods layer with its STUMPY goldens (fixtures kept at their old
+  path `fixtures/methods/timeseries/matrix_profile/`), over the kernels of `signal/sliding.ts` and `signal/mass.ts`:
+  `matrix-profile.ts` (`stumpAlgorithm`/`stump` by diagonals with the O(1) covariance update, z-normalised or raw
+  p-norm distances (AAMP), AB-joins and top-k neighbours with left and right neighbours; `stompAlgorithm`/`stomp` by rows;
+  `stampAlgorithm`/`stamp` by random rows through MASS), `scrimp.ts` (`prescrump`, `scrumpAlgorithm`/`scrump`: the
+  anytime SCRIMP++), `stumpi.ts` (`stumpiInit`, `stumpiUpdate`, `stumpiAlgorithm`: the streaming profile, with or
+  without egress), `motifs.ts` (`match`, `motifs`, `discords`, `atsc`, `allc`: anchored and all time-series chains),
+  `segmentation.ts` (`arcCounts`, `idealArcCurve`, `correctedArcCurve`, `regimeLocations`, `fluss`, and the streaming
+  `flossInit`, `flossUpdate`, `flossAlgorithm`), `snippets.ts` (`mpdist`, `snippets`, `ostinato`), `pan-profile.ts`
+  (`stimpAlgorithm`/`stimp`, breadth-first over window lengths; `panImage`) and `multidimensional-profile.ts`
+  (`mstumpAlgorithm`/`mstump`, `multiDistanceProfile`, `subspace`, `mdl`). Each algorithm's step is a batch of
+  diagonals or rows (or one value, or one window length) and its state serialises.
 - private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
   (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
   Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
-  objectives), `_series.ts`.
+  objectives), `_series.ts`, `_profile.ts` (STUMPY's diagonal kernels and the `MatrixProfile` container) and
+  `_matrix-profile.ts` (the setup, merge and batch helpers of the profile algorithms).
 
 oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
 `innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,

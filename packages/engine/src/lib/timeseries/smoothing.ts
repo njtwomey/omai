@@ -42,7 +42,15 @@ export interface EtsParameters {
   readonly seasonal0?: readonly number[]
 }
 
-/** The presets of the classical smoothing methods as ETS specifications. */
+/**
+ * The presets of the classical smoothing methods as ETS specifications.
+ *
+ * @example
+ * ```ts
+ * import { smoothingModels } from 'mdml-engine/timeseries'
+ * Object.keys(smoothingModels) // => ['simple', 'holt', 'damped']
+ * ```
+ */
 export const smoothingModels: Readonly<Record<string, EtsSpec>> = {
   /** Simple exponential smoothing: ETS(A, N, N). */
   simple: { error: 'add', trend: 'none', seasonal: 'none' },
@@ -52,12 +60,32 @@ export const smoothingModels: Readonly<Record<string, EtsSpec>> = {
   damped: { error: 'add', trend: 'add', damped: true, seasonal: 'none' },
 }
 
-/** Holt-Winters with additive seasonality of the given period: ETS(A, A, A). */
+/**
+ * Holt-Winters with additive seasonality of the given period: ETS(A, A, A).
+ *
+ * @param period - The seasonal period.
+ * @returns The specification.
+ * @example
+ * ```ts
+ * import { holtWintersAdditive } from 'mdml-engine/timeseries'
+ * holtWintersAdditive(12).seasonal // => 'add'
+ * ```
+ */
 export function holtWintersAdditive(period: number): EtsSpec {
   return { error: 'add', trend: 'add', seasonal: 'add', period }
 }
 
-/** Holt-Winters with multiplicative seasonality of the given period: ETS(M, A, M). */
+/**
+ * Holt-Winters with multiplicative seasonality of the given period: ETS(M, A, M).
+ *
+ * @param period - The seasonal period.
+ * @returns The specification.
+ * @example
+ * ```ts
+ * import { holtWintersMultiplicative } from 'mdml-engine/timeseries'
+ * holtWintersMultiplicative(4).error // => 'mul'
+ * ```
+ */
 export function holtWintersMultiplicative(period: number): EtsSpec {
   return { error: 'mul', trend: 'add', seasonal: 'mul', period }
 }

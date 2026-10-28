@@ -1,6 +1,8 @@
-// Maximum-likelihood fitting shared by the time-series models: a number-level log-likelihood becomes an `Objective`
-// whose derivative is the central difference (a custom vjp), so the library's traced BFGS minimises it, and the BFGS
-// algorithm gains the likelihood as a metric and a serialisable state.
+/**
+ * Maximum-likelihood fitting shared by the time-series models: a number-level log-likelihood becomes an `Objective`
+ * whose derivative is the central difference (a custom vjp), so the library's traced BFGS minimises it, and the BFGS
+ * algorithm gains the likelihood as a metric and a serialisable state.
+ */
 import { customVjp } from '../autodiff/index.ts'
 import { inv, lstsq } from '../numerics/linalg/index.ts'
 import { type BfgsState, bfgsAlgorithm, type Objective } from '../optim/index.ts'

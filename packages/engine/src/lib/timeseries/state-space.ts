@@ -177,7 +177,18 @@ export function armaFilter(y: ArrayLike<number>, ar: ArrayLike<number>, ma: Arra
   return filterForm(y, form)
 }
 
-/** {@link armaFilter} for a prepared form. */
+/**
+ * {@link armaFilter} for a prepared form (so a fit builds the form once per parameter vector).
+ *
+ * @param y - The series.
+ * @param form - The form from {@link armaForm}.
+ * @returns The filter output.
+ * @example
+ * ```ts
+ * import { armaForm, filterForm } from 'mdml-engine/timeseries'
+ * filterForm([1, -2, 3], armaForm([], [])).sumSquares // => 14
+ * ```
+ */
 export function filterForm(y: ArrayLike<number>, form: ArmaForm): ArmaFilterResult {
   const { r, phi, loading } = form
   const n = y.length

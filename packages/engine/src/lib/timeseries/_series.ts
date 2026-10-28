@@ -1,4 +1,6 @@
-// Shared by the time-series files: a series argument as a plain Float64Array of primal values.
+/**
+ * Shared by the time-series files: a series argument as a plain Float64Array of primal values.
+ */
 import { MdmlError } from '../base/index.ts'
 import { asTensor, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 
