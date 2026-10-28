@@ -186,6 +186,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/tensor/ops': () => import('mdml-engine/tensor/ops'),
   'mdml-engine/text': () => import('mdml-engine/text'),
   'mdml-engine/text/subword': () => import('mdml-engine/text/subword'),
+  'mdml-engine/timeseries': () => import('mdml-engine/timeseries'),
   'mdml-engine/trace': () => import('mdml-engine/trace'),
   'mdml-engine/tune': () => import('mdml-engine/tune'),
   'mdml-engine/vision': () => import('mdml-engine/vision'),
