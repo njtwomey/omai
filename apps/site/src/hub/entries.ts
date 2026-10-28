@@ -10,7 +10,7 @@ import { annealing, gridSearch } from 'mdml-engine/methods/search'
 import { hmm } from 'mdml-engine/methods/sequence'
 import { diffusionPaths } from 'mdml-engine/methods/stochastic'
 import { bayesianOptimisation } from 'mdml-engine/methods/tune'
-import { peronaMalik } from 'mdml-engine/methods/vision'
+import { peronaMalik, slicSuperpixels } from 'mdml-engine/methods/vision'
 import type { Method, Subscription } from 'mdml-engine/trace'
 import type { Panel } from 'mdml-render/react'
 
@@ -362,6 +362,20 @@ export const ENTRIES: readonly HubEntry[] = [
       { kind: 'probe', path: 'image/conduction', title: 'conduction: where the flow gets through' },
       { kind: 'curves', paths: ['quality/psnr', 'quality/psnrStart'], title: 'PSNR to the clean scene' },
       { kind: 'curves', paths: ['image/change'] },
+    ],
+  },
+  {
+    id: 'vision/superpixels',
+    title: 'SLIC superpixels',
+    summary:
+      'k-means in grey and position: centres on a grid claim the pixels near them in value and in place, and move to their means.',
+    method: slicSuperpixels,
+    steps: 20,
+    layout: [
+      { kind: 'probe', path: 'segments/picture', title: 'the scene in its superpixels’ mean grey' },
+      { kind: 'tensor', path: 'segments/labels', title: 'the superpixel of each pixel' },
+      { kind: 'curves', paths: ['segments/leak'], title: 'pixels leaking across a true edge' },
+      { kind: 'curves', paths: ['segments/moved'] },
     ],
   },
 ]
