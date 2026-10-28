@@ -1,4 +1,4 @@
-import { bool, box, choice, dict, int, real, tuple } from 'mdml-engine/space'
+import { bool, box, choice, dict, int, real, tuple, union } from 'mdml-engine/space'
 import { describe, expect, it } from 'vitest'
 import { settleValue, spaceControls, valueAt, withValueAt } from './space-controls.ts'
 
@@ -8,6 +8,19 @@ const space = dict({
   depth: int(1, 8, { when: { key: 'model', in: ['tree'] } }),
   kernel: choice(['rbf', 'polynomial', 'linear', 'sigmoid', 'laplacian']),
   standardise: bool({ default: true }),
+})
+
+const withSolver = dict({
+  solver: union(
+    {
+      closedForm: dict({}),
+      sgd: dict({
+        batch: int(1, 256),
+        optimiser: union({ plain: dict({}), momentum: dict({ beta: real(0, 1) }) }, { tag: 'name' }),
+      }),
+    },
+    { label: 'solver' },
+  ),
 })
 
 describe('spaceControls', () => {
@@ -22,6 +35,22 @@ describe('spaceControls', () => {
     const alpha = controls[1]
     expect(alpha?.kind === 'number' ? alpha.spec : undefined).toEqual({ min: 1e-4, max: 10, log: true })
     expect(alpha?.label).toBe('penalty')
+  })
+
+  it('draws a union as its choice followed by the chosen option’s knobs at the same level', () => {
+    const flat = spaceControls(withSolver, { solver: { kind: 'closedForm' } })
+    expect(flat.map((c) => [c.id, c.kind])).toEqual([['solver', 'group']])
+    const [group] = flat
+    if (group?.kind !== 'group') return
+    expect(group.children.map((c) => [c.id, c.kind, c.path])).toEqual([['solver.kind', 'choice', ['solver', 'kind']]])
+    const deep = spaceControls(withSolver, {
+      solver: { kind: 'sgd', batch: 8, optimiser: { name: 'momentum', beta: 0.9 } },
+    })[0]
+    if (deep?.kind !== 'group') return
+    expect(deep.children.map((c) => c.id)).toEqual(['solver.kind', 'solver.batch', 'solver.optimiser'])
+    const optimiser = deep.children[2]
+    if (optimiser?.kind !== 'group') return
+    expect(optimiser.children.map((c) => c.id)).toEqual(['solver.optimiser.name', 'solver.optimiser.beta'])
   })
 
   it('turns boxes and tuples into groups with paths', () => {
@@ -48,6 +77,17 @@ describe('settling values', () => {
       alpha: expect.closeTo(0.0316, 3),
       kernel: 'rbf',
       standardise: false,
+    })
+  })
+
+  it('switching a union’s option swaps its knobs for the new option’s defaults', () => {
+    const v = { solver: { kind: 'sgd', batch: 8, optimiser: { name: 'momentum', beta: 0.9 } } }
+    expect(withValueAt(withSolver, v, ['solver', 'kind'], 'closedForm')).toEqual({ solver: { kind: 'closedForm' } })
+    expect(withValueAt(withSolver, v, ['solver', 'optimiser', 'name'], 'plain')).toEqual({
+      solver: { kind: 'sgd', batch: 8, optimiser: { name: 'plain' } },
+    })
+    expect(withValueAt(withSolver, { solver: { kind: 'closedForm' } }, ['solver', 'kind'], 'sgd')).toEqual({
+      solver: { kind: 'sgd', batch: 129, optimiser: { name: 'plain' } },
     })
   })
 

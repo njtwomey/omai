@@ -14,7 +14,8 @@ import { gibbs, gibbsAlgorithm } from './gibbs.ts'
 const logN = (x: number, m: number, s: number): number =>
   -0.5 * ((x - m) / s) ** 2 - Math.log(s) - 0.5 * Math.log(2 * Math.PI)
 
-describe('Gibbs sampling', () => {
+// The brute-force comparison runs a few seconds; on a loaded machine it has crossed the default five.
+describe('Gibbs sampling', { timeout: 20_000 }, () => {
   it('alternates semi-conjugate conditionals to the joint posterior (against a grid)', () => {
     const y = [1.2, 0.4, 2.3, 1.7, 0.9, 1.5]
     const model: Model = () => {

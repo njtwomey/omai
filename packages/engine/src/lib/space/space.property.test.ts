@@ -22,6 +22,7 @@ import {
   type Space,
   sample,
   tuple,
+  union,
 } from './index.ts'
 
 const spaces: readonly Space[] = [
@@ -47,6 +48,19 @@ const spaces: readonly Space[] = [
     net: dict(
       { width: int(4, 64, { log: true }), act: choice(['relu', 'tanh']) },
       { when: { key: 'model', in: ['net'] } },
+    ),
+  }),
+  dict({
+    solver: union(
+      {
+        closedForm: dict({}),
+        irls: dict({ tol: real(1e-10, 1e-2, { log: true }), maxIter: int(1, 200) }),
+        sgd: dict({
+          batch: int(1, 256, { log: true }),
+          optimiser: union({ plain: dict({}), momentum: dict({ beta: real(0, 0.99) }) }, { tag: 'name' }),
+        }),
+      },
+      { default: 'irls' },
     ),
   }),
 ]

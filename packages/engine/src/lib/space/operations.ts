@@ -8,7 +8,10 @@ import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 import { activeKeysOf, resolveDict } from './_active.ts'
-import type { Space, SpaceValue } from './types.ts'
+import { joinUnion, optionNames, splitUnion, tagOf } from './_union.ts'
+import type { DictSpace, Space, SpaceValue } from './types.ts'
+
+type Rec = Readonly<Record<string, SpaceValue>>
 
 function u01(k: Key, n: number): number[] {
   return Array.from(uniform(k, [n]).data)
@@ -55,6 +58,11 @@ export function activeDims(space: Space, value: SpaceValue): string[] {
     if (s.kind === 'tuple') {
       const items = (Array.isArray(v) ? v : []) as readonly SpaceValue[]
       return s.spaces.flatMap((c, i) => walk(c, items[i] as SpaceValue, at(String(i))))
+    }
+    if (s.kind === 'union') {
+      // The tag, then the chosen option's dimensions under the option's name (`solver.kind`, `solver.sgd.batch`).
+      const { name, option, rest } = splitUnion(s, v)
+      return [at(tagOf(s)), ...walk(option, rest, at(name))]
     }
     return [prefix]
   }
@@ -120,6 +128,14 @@ export function sample(space: Space, k: Key): SpaceValue {
     case 'dict':
       // Each key draws from its own key (by position), so adding a conditional key never changes the others.
       return resolveDict(space, (_, s, i) => sample(s, foldIn(k, i)))
+    case 'union': {
+      // The option from the key itself, its knobs from a key of its own (by position), as for dict keys.
+      const names = optionNames(space)
+      const [u] = u01(k, 1) as [number]
+      const i = Math.min(names.length - 1, Math.floor(u * names.length))
+      const name = names[i] as string
+      return joinUnion(space, name, sample(space.options[name] as DictSpace, foldIn(k, 1 + i)) as Rec)
+    }
   }
 }
 
@@ -177,6 +193,13 @@ export function contains(space: Space, value: SpaceValue): boolean {
         (k) => k in record && contains(space.spaces[k] as Space, record[k] as SpaceValue),
       )
     }
+    case 'union': {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+      const name = (value as Rec)[tagOf(space)]
+      if (typeof name !== 'string' || !(name in space.options)) return false
+      const { option, rest } = splitUnion(space, value)
+      return contains(option, rest)
+    }
   }
 }
 
@@ -225,6 +248,14 @@ export function clip(space: Space, value: SpaceValue): SpaceValue {
       return value
     case 'bool':
       return value
+    case 'union': {
+      const name =
+        typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Rec)[tagOf(space)] : undefined
+      if (typeof name !== 'string' || !(name in space.options))
+        throw new MdmlError('value', `clip: ${String(name)} is not an option`)
+      const { option, rest } = splitUnion(space, value)
+      return joinUnion(space, name, clip(option, rest) as Rec)
+    }
   }
 }
 
@@ -276,6 +307,10 @@ export function defaults(space: Space): SpaceValue {
       return space.spaces.map(defaults)
     case 'dict':
       return resolveDict(space, (_, s) => defaults(s))
+    case 'union': {
+      const name = space.default ?? (optionNames(space)[0] as string)
+      return joinUnion(space, name, defaults(space.options[name] as DictSpace) as Rec)
+    }
   }
 }
 
@@ -302,6 +337,9 @@ export function flatDim(space: Space): number {
       return space.spaces.reduce((n, s) => n + flatDim(s), 0)
     case 'dict':
       return Object.values(space.spaces).reduce((n, s) => n + flatDim(s), 0)
+    case 'union':
+      // The tag, then every option's dimensions in turn (the inactive ones NaN or 0.5, as inactive dict keys are).
+      return 1 + Object.values(space.options).reduce((n, s) => n + flatDim(s), 0)
     default:
       return 1
   }
@@ -340,6 +378,15 @@ export function flatten(space: Space, value: SpaceValue): number[] {
       return Object.entries(space.spaces).flatMap(([k, s]) =>
         k in record ? flatten(s, record[k] as SpaceValue) : new Array<number>(flatDim(s)).fill(Number.NaN),
       )
+    }
+    case 'union': {
+      const { name, rest } = splitUnion(space, value)
+      return [
+        optionNames(space).indexOf(name),
+        ...Object.entries(space.options).flatMap(([n, s]) =>
+          n === name ? flatten(s, rest) : new Array<number>(flatDim(s)).fill(Number.NaN),
+        ),
+      ]
     }
   }
 }
@@ -394,6 +441,20 @@ export function unflatten(space: Space, numbers: readonly number[]): SpaceValue 
           if (v !== undefined) out[k] = v
         }
         return out
+      }
+      case 'union': {
+        const [idx] = take(1)
+        const names = optionNames(s)
+        const name = Number.isNaN(idx)
+          ? undefined
+          : names[Math.min(names.length - 1, Math.max(0, Math.round(idx as number)))]
+        // Every option's numbers are consumed (so offsets line up); the named option's value is kept.
+        let kept: SpaceValue | undefined
+        for (const [n, c] of Object.entries(s.options)) {
+          const v = build(c)
+          if (n === name) kept = v
+        }
+        return name === undefined ? undefined : joinUnion(s, name, (kept ?? {}) as Rec)
       }
     }
   }

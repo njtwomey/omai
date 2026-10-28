@@ -162,10 +162,39 @@ export function spaceControls(space: Space, value: SpaceValue, options: SpaceCon
             .map(([k, c]) => walk(c, record[k], [...path, k], k)),
         }
       }
+      case 'union': {
+        // The option as a choice at the tag's path, then the chosen option's knobs at the same level (a union's value
+        // carries them beside the tag), so choosing another option swaps the knobs that follow.
+        const record = asRecord(v)
+        const tag = s.tag ?? 'kind'
+        const names = Object.keys(s.options)
+        const name = unionOption(s, record)
+        // The chooser carries the union's label; its group has none, so the label is not drawn twice.
+        const chooser: ControlSpec = {
+          ...plain([...path, tag], base.label),
+          kind: isShort(names, upTo) ? 'choice' : 'select',
+          options: names,
+        }
+        const inner = walk(s.options[name] as Space, record, path, name)
+        return {
+          ...base,
+          label: '',
+          kind: 'group',
+          children: [chooser, ...(inner.kind === 'group' ? inner.children : [inner])],
+        }
+      }
     }
   }
   const top = walk(space, value, [], space.label ?? '')
-  return top.kind === 'group' && space.kind === 'dict' ? [...top.children] : [top]
+  return top.kind === 'group' && (space.kind === 'dict' || space.kind === 'union') ? [...top.children] : [top]
+}
+
+/** The option a union value names, else the union's default (the first option). */
+function unionOption(space: Space & { readonly kind: 'union' }, value: Readonly<Record<string, SpaceValue>>): string {
+  const name = value[space.tag ?? 'kind']
+  return typeof name === 'string' && name in space.options
+    ? name
+    : (space.default ?? (Object.keys(space.options)[0] as string))
 }
 
 /**
@@ -177,6 +206,14 @@ export function spaceControls(space: Space, value: SpaceValue, options: SpaceCon
  * @returns The settled value.
  */
 export function settleValue(space: Space, value: SpaceValue): SpaceValue {
+  if (space.kind === 'union') {
+    // Keep the tag, settle the chosen option's knobs (the other options' knobs drop; missing ones get defaults).
+    const record = asRecord(value)
+    const tag = space.tag ?? 'kind'
+    const name = unionOption(space, record)
+    const { [tag]: _tag, ...rest } = record
+    return { [tag]: name, ...asRecord(settleValue(space.options[name] as Space, rest)) }
+  }
   if (space.kind !== 'dict') return value
   const out: Record<string, SpaceValue> = { ...asRecord(value) }
   const keys = Object.keys(space.spaces)

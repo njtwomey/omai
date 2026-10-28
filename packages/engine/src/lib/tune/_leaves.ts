@@ -89,6 +89,12 @@ export function leavesOf(space: Space): Leaf[] {
       case 'dict':
         for (const [k, c] of Object.entries(s.spaces)) walk(c, at(k))
         return
+      case 'union':
+        // The tag as a categorical leaf, then every option's leaves under the option's name, as `flatten` lays them
+        // out (the options not chosen are inactive, NaN, like conditional dict keys).
+        out.push(scalarLeaf(at(s.tag ?? 'kind'), choice(Object.keys(s.options))))
+        for (const [name, c] of Object.entries(s.options)) walk(c, at(name))
+        return
       case 'tuple':
         for (const [i, c] of s.spaces.entries()) walk(c, at(String(i)))
         return

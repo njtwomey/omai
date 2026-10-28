@@ -14,7 +14,13 @@ import {
   neighbours,
   real,
   tuple,
+  union,
 } from './index.ts'
+
+const solver = union(
+  { irls: dict({ tol: real(1e-10, 1e-2, { log: true }) }), sgd: dict({ batch: int(1, 256), nesterov: bool() }) },
+  { default: 'irls' },
+)
 
 const chained = dict({
   model: choice(['linear', 'tree']),
@@ -33,6 +39,34 @@ describe('encoding', () => {
     )
     expect(decode(tuple([multiBinary(2), multiDiscrete([4])]), [0.2, 0.9, 0.5])).toEqual([[0, 1], [2]])
     expect(decode(box(0, 4, [2]), [0.25, 2])).toEqual([1, 4])
+  })
+
+  it('encodes a union as the tag then every option, the unchosen ones at 0.5, and decodes it back', () => {
+    expect(encode(solver, { kind: 'irls', tol: 1e-6 })).toEqual([0, 0.5, 0.5, 0.5])
+    expect(encode(solver, { kind: 'sgd', batch: 256, nesterov: true })).toEqual([1, 0.5, 1, 1])
+    expect(decode(solver, [1, 0.5, 0, 1])).toEqual({ kind: 'sgd', batch: 1, nesterov: true })
+    expect(decode(solver, [0, 1, 0, 1])).toEqual({ kind: 'irls', tol: 1e-2 })
+    expect(decode(solver, encode(solver, { kind: 'sgd', batch: 17, nesterov: false }))).toEqual({
+      kind: 'sgd',
+      batch: 17,
+      nesterov: false,
+    })
+  })
+
+  it('grids a union option by option and moves between options by their defaults', () => {
+    expect(grid(solver, 2)).toEqual([
+      { kind: 'irls', tol: 1e-10 },
+      { kind: 'irls', tol: 1e-2 },
+      { kind: 'sgd', batch: 1, nesterov: false },
+      { kind: 'sgd', batch: 1, nesterov: true },
+      { kind: 'sgd', batch: 256, nesterov: false },
+      { kind: 'sgd', batch: 256, nesterov: true },
+    ])
+    expect(neighbours(solver, { kind: 'sgd', batch: 1, nesterov: false })).toEqual([
+      { kind: 'irls', tol: 1e-6 },
+      { kind: 'sgd', batch: 2, nesterov: false },
+      { kind: 'sgd', batch: 1, nesterov: true },
+    ])
   })
 
   it('decodes chained conditions', () => {

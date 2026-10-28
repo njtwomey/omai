@@ -2,9 +2,11 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { key } from '../random/index.ts'
 import {
+  activeDims,
   bool,
   box,
   choice,
+  clip,
   contains,
   decode,
   defaults,
@@ -21,6 +23,7 @@ import {
   sample,
   tuple,
   unflatten,
+  union,
 } from './index.ts'
 
 const spaces: readonly (readonly [string, Space])[] = [
@@ -44,7 +47,29 @@ const spaces: readonly (readonly [string, Space])[] = [
       lr: real(1e-4, 1, { log: true }),
     }),
   ],
+  [
+    'union of modes',
+    dict({
+      penalty: choice(['none', 'l2']),
+      solver: union(
+        {
+          closedForm: dict({}),
+          irls: dict({ tol: real(1e-10, 1e-2, { log: true }), maxIter: int(1, 200) }),
+          sgd: dict({
+            batch: int(1, 256, { log: true }),
+            optimiser: union({ plain: dict({}), momentum: dict({ beta: real(0, 0.99) }) }, { tag: 'name' }),
+          }),
+        },
+        { default: 'irls' },
+      ),
+    }),
+  ],
 ]
+
+const solver = union(
+  { irls: dict({ tol: real(1e-10, 1e-2, { log: true }) }), sgd: dict({ batch: int(1, 256) }) },
+  { default: 'irls' },
+)
 
 describe('spaces', () => {
   for (const [name, space] of spaces) {
@@ -87,5 +112,25 @@ describe('spaces', () => {
   it('rejects invalid intervals', () => {
     expect(() => real(1, 0)).toThrow(/high >= low/)
     expect(() => real(0, 1, { log: true })).toThrow(/log scale/)
+  })
+
+  it('a union names its option under the tag and carries that option’s knobs beside it', () => {
+    expect(defaults(solver)).toEqual({ kind: 'irls', tol: 1e-6 })
+    expect(contains(solver, { kind: 'sgd', batch: 32 })).toBe(true)
+    expect(contains(solver, { kind: 'sgd', tol: 1e-6 })).toBe(false)
+    expect(contains(solver, { kind: 'newton' })).toBe(false)
+    expect(contains(solver, 'irls')).toBe(false)
+    expect(() => clip(solver, { kind: 'newton' })).toThrow(/not an option/)
+    expect(clip(solver, { kind: 'sgd', batch: 1000 })).toEqual({ kind: 'sgd', batch: 256 })
+    expect(activeDims(dict({ solver }), { solver: { kind: 'sgd', batch: 8 } })).toEqual([
+      'solver.kind',
+      'solver.sgd.batch',
+    ])
+    // The flat layout: the tag, then every option's numbers (inactive ones NaN), so unions nest and tune leaf by leaf.
+    expect(flatten(solver, { kind: 'sgd', batch: 8 })).toEqual([1, Number.NaN, 8])
+    expect(unflatten(solver, [0, 1e-4, Number.NaN])).toEqual({ kind: 'irls', tol: 1e-4 })
+    expect(() => union({})).toThrow(/at least one/)
+    expect(() => union({ a: dict({}) }, { default: 'b' })).toThrow(/not an option/)
+    expect(() => union({ a: dict({ kind: bool() }) })).toThrow(/named like the tag/)
   })
 })

@@ -703,13 +703,18 @@ oracle: numpy for `summaries.ts` (moments, norms, `np.histogram`); the rest by u
 
 - `types.ts`: `Space` union (`real` with bounds, log scale and step; `int`; `choice`; `bool`; `box`; `discrete`;
   `multiDiscrete`; `multiBinary`; `tuple`; `dict`; conditional dimensions through `when` on a dict child, which may
-  chain), metadata (label, description, unit, and a `default` on every kind), with a builder per kind.
+  chain; `union`, a tagged union of named dict options, the value naming its option under `tag` (default `kind`) and
+  carrying that option's knobs beside it, so a mode and its settings are one space and unions nest into a tree of
+  modes), metadata (label, description, unit, and a `default` on every kind), with a builder per kind.
 - `operations.ts`: `sample(space, key)`, `contains`, `clip`, `defaults`, `flatDim`, `flatten`, `unflatten`,
   `activeDims` (dotted paths of the active dimensions of a value).
-- `encoding.ts`: `encode`/`decode` to the unit cube (every kind, inactive keys at 0.5), `encodedDim`, `grid`
-  enumeration (tuples, nested and conditional dicts), `neighbours` (one-move neighbourhoods for local search over
-  configurations, repairing conditional dimensions), `distance`.
-- `_active.ts` (internal): resolution of conditional dict keys shared by the operations.
+- `encoding.ts`: `encode`/`decode` to the unit cube (every kind, inactive keys at 0.5; a union is its tag then every
+  option's coordinates, the unchosen options at 0.5, the same layout as `flatten`), `encodedDim`, `grid` enumeration
+  (tuples, nested and conditional dicts, a union option by option), `neighbours` (one-move neighbourhoods for local
+  search over configurations, repairing conditional dimensions; a union's tag moves to each other option at its
+  defaults), `distance`.
+- `_active.ts` (internal): resolution of conditional dict keys shared by the operations; `_union.ts` (internal): the
+  tag, option and rest of a union value.
 
 oracle: none; checked by properties (samples, neighbours and decoded values stay in the space, encodings round-trip)
 

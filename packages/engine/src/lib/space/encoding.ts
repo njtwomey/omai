@@ -7,8 +7,11 @@
 import { clamp, MdmlError } from '../base/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 import { activeKeysOf, conditionHolds, resolveDict } from './_active.ts'
+import { joinUnion, optionNames, splitUnion } from './_union.ts'
 import { defaults, flatDim } from './operations.ts'
-import type { Space, SpaceValue } from './types.ts'
+import type { DictSpace, Space, SpaceValue } from './types.ts'
+
+type Rec = Readonly<Record<string, SpaceValue>>
 
 function elementBounds(bound: number | readonly number[], i: number): number {
   return typeof bound === 'number' ? bound : (bound[i] ?? 0)
@@ -76,6 +79,16 @@ export function encode(space: Space, value: SpaceValue): number[] {
         k in record ? encode(s, record[k] as SpaceValue) : new Array<number>(flatDim(s)).fill(0.5),
       )
     }
+    case 'union': {
+      const { name, rest } = splitUnion(space, value)
+      const names = optionNames(space)
+      return [
+        names.length === 1 ? 0.5 : names.indexOf(name) / (names.length - 1),
+        ...Object.entries(space.options).flatMap(([n, s]) =>
+          n === name ? encode(s, rest) : new Array<number>(flatDim(s)).fill(0.5),
+        ),
+      ]
+    }
   }
 }
 
@@ -122,6 +135,17 @@ export function decode(space: Space, u: readonly number[]): SpaceValue {
         const all: Record<string, SpaceValue> = {}
         for (const [k, c] of Object.entries(s.spaces)) all[k] = build(c)
         return resolveDict(s, (k) => all[k] as SpaceValue)
+      }
+      case 'union': {
+        const names = optionNames(s)
+        const name = names[Math.round(clamp(next(), 0, 1) * (names.length - 1))] as string
+        // Decode every option in order (so offsets line up), keep the named one.
+        let kept: SpaceValue = {}
+        for (const [n, c] of Object.entries(s.options)) {
+          const v = build(c)
+          if (n === name) kept = v
+        }
+        return joinUnion(s, name, kept as Rec)
       }
     }
   }
@@ -186,6 +210,11 @@ export function grid(space: Space, points = 5): SpaceValue[] {
       // Restore the space's key order.
       return configs.map((c) => resolveDict(space, (k) => c[k] as SpaceValue))
     }
+    case 'union':
+      // Option by option: each option's grid, tagged with its name.
+      return optionNames(space).flatMap((name) =>
+        grid(space.options[name] as DictSpace, points).map((v) => joinUnion(space, name, v as Rec)),
+      )
     default:
       throw new MdmlError('value', `grid: ${space.kind} spaces have no grid`)
   }
@@ -309,6 +338,15 @@ function neighboursOf(s: Space, v: SpaceValue, points: number): SpaceValue[] {
           out.push(resolveDict(s, (key, c) => (key in moved ? (moved[key] as SpaceValue) : defaults(c))))
         }
       }
+      return out
+    }
+    case 'union': {
+      // The tag moves to each other option, which starts from its defaults; then one move inside the chosen option.
+      const { name, option, rest } = splitUnion(s, v)
+      const out: SpaceValue[] = []
+      for (const other of optionNames(s))
+        if (other !== name) out.push(joinUnion(s, other, defaults(s.options[other] as DictSpace) as Rec))
+      for (const y of neighboursOf(option, rest, points)) out.push(joinUnion(s, name, y as Rec))
       return out
     }
   }

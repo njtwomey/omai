@@ -1,7 +1,8 @@
 /**
  * The space types and their constructors: real and integer intervals (optionally log-scaled or stepped), choices and
  * booleans for configuration spaces, gymnasium-style `box`, `discrete`, `multiDiscrete` and `multiBinary` spaces for
- * observations and actions, and tuples and dicts that compose them, with conditional dimensions declared by `when`.
+ * observations and actions, tuples and dicts that compose them, with conditional dimensions declared by `when`, and
+ * tagged unions (a mode with the knobs of its own that each option brings).
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -98,6 +99,20 @@ export interface DictSpace extends SpaceMeta {
 }
 
 /**
+ * A tagged union: named options, each a dict space of its own, so choosing an option (a mode: a solver, an optimiser,
+ * a kernel) brings its own knobs and no others. A value names the option under `tag` and carries that option's values
+ * beside it: `{ kind: 'gradient', lr: 0.1, batch: 32 }`. Options may nest unions, so a tree of modes is one space.
+ */
+export interface UnionSpace extends SpaceMeta {
+  readonly kind: 'union'
+  readonly options: Readonly<Record<string, DictSpace>>
+  /** The key of the value that names the option (default `'kind'`); no option may have a knob of that name. */
+  readonly tag?: string
+  /** The option chosen by default (default the first). */
+  readonly default?: string
+}
+
+/**
  * A typed set of values with metadata. One type describes hyperparameters, dataset knobs, observations and actions,
  * search spaces and figure controls, so any of these can be sampled, tuned, encoded or turned into controls.
  *
@@ -114,6 +129,7 @@ export type Space =
   | MultiBinarySpace
   | TupleSpace
   | DictSpace
+  | UnionSpace
 
 /** A value of a space. */
 export type SpaceValue =
@@ -306,4 +322,36 @@ export function tuple(spaces: readonly Space[], meta: SpaceMeta = {}): TupleSpac
  */
 export function dict(spaces: Readonly<Record<string, Space>>, meta: SpaceMeta = {}): DictSpace {
   return { kind: 'dict', spaces, ...meta }
+}
+
+/**
+ * A tagged union of named options, each a dict of the knobs that option brings (a mode and its settings). The value
+ * names the option under `tag` (default `'kind'`) and carries the option's values beside it.
+ *
+ * @param options - The options by name, each a dict space (empty for an option with no knobs).
+ * @param meta - The tag key, the default option and metadata.
+ * @returns The space.
+ * @throws MdmlError with code `value` for no options, a default that is not an option, or an option with a knob named
+ *   like the tag.
+ * @concept spaces
+ * @example
+ * ```ts
+ * import { defaults, dict, int, real, union } from 'mdml-engine/space'
+ * const solver = union({ irls: dict({ tol: real(1e-10, 1e-2, { log: true }) }), sgd: dict({ batch: int(1, 256) }) })
+ * defaults(solver) // => { kind: 'irls', tol: 1e-6 }
+ * ```
+ */
+export function union(
+  options: Readonly<Record<string, DictSpace>>,
+  meta: Omit<UnionSpace, 'kind' | 'options'> = {},
+): UnionSpace {
+  const names = Object.keys(options)
+  if (names.length === 0) throw new MdmlError('value', 'union: need at least one option')
+  const tag = meta.tag ?? 'kind'
+  if (meta.default !== undefined && !(meta.default in options))
+    throw new MdmlError('value', `union: default '${meta.default}' is not an option`)
+  for (const [name, option] of Object.entries(options))
+    if (tag in option.spaces)
+      throw new MdmlError('value', `union: option '${name}' has a knob named like the tag '${tag}'`)
+  return { kind: 'union', options, ...meta }
 }

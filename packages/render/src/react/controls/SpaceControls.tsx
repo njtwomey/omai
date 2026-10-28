@@ -84,7 +84,7 @@ function ControlFor(props: {
     case 'group':
       return (
         <fieldset className="flex min-w-0 flex-col gap-2 border-0 p-0">
-          <legend className={cx(labelClass, 'mb-1')}>{spec.label}</legend>
+          {spec.label === '' ? null : <legend className={cx(labelClass, 'mb-1')}>{spec.label}</legend>}
           <div className="flex flex-wrap gap-2">
             {spec.children.map((c) => (
               <ControlFor key={c.id} spec={c} value={value} set={set} disabled={disabled} />
