@@ -34,6 +34,7 @@ import {
 } from '../../trace/index.ts'
 import type { Estimator, EstimatorKind, FitOptions, Fitted, FittedFacts, LearnData, Verbs } from '../estimator.ts'
 import { withInputRows } from '../explained.ts'
+import { extendSession } from './_session.ts'
 import { kindProbes } from './kinds.ts'
 
 /** What a particular method declares over the iterative base. */
@@ -98,6 +99,37 @@ export interface IterativeEstimator<H extends object, S, P extends Json, V exten
   /** A session of the fit on a dataset: the tape to advance, seek, probe and fork, and the fitted value at any step. */
   session(data: LearnData, options?: IterativeSessionOptions): IterativeSession<S, P, V>
   with(changes: Partial<H>): IterativeEstimator<H, S, P, V>
+}
+
+/**
+ * A session with the fitted value at any reached step: the session's verbs delegated one by one (`t`, `state` and
+ * `status` are getters, so no spread), and `fittedAt(t)` the kind's verbs built from the state there. The bases that
+ * run a library algorithm as a fit (iterative, trainer) share it; forks are fitted sessions too.
+ *
+ * @param s - The session.
+ * @param fitted - The fitted value of a state under a configuration.
+ * @returns The session with `fittedAt`.
+ * @example
+ * ```ts
+ * import { fittedSession } from 'mdml-engine/learn'
+ * import { defineMethod, session } from 'mdml-engine/trace'
+ * import { dict } from 'mdml-engine/space'
+ * const m = defineMethod({
+ *   name: 'count', config: dict({}),
+ *   make: () => ({ name: 'count', config: {}, init: () => 0, step: (s) => s + 1, serialise: (s) => s, deserialise: (j) => j }),
+ *   contract: {},
+ * })
+ * const s = fittedSession(session(m, { steps: 5, mode: 'eager' }), (n) => ({ estimator: 'count', kind: 'other', params: { n } }))
+ * s.fittedAt(3).params // => { n: 3 }
+ * ```
+ */
+export function fittedSession<S, P extends Json, V extends Verbs & FittedFacts>(
+  s: Session<S, Config>,
+  fitted: (state: S, config: Config) => Fitted<P> & V,
+): IterativeSession<S, P, V> {
+  return extendSession(s, (inner) => ({
+    fittedAt: (t: number): Fitted<P> & V => fitted(inner.stateAt(t), inner.config),
+  })) as IterativeSession<S, P, V>
 }
 
 const EMPTY_RUN: Run = { schema: 'mdml.run/1', events: [] }
@@ -225,35 +257,12 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
             ),
           }),
     })
-  // The session's verbs are delegated one by one (`t`, `state` and `status` are getters, so no spread), and the
-  // fitted value at a step is the kind's verbs over the parameters there, under the session's own configuration.
-  const wrap = (s: Session<S, Config>, data: LearnData): IterativeSession<S, P, V> => ({
-    method: s.method,
-    config: s.config,
-    seed: s.seed,
-    algorithm: s.algorithm,
-    contract: s.contract,
-    get t() {
-      return s.t
-    },
-    get state() {
-      return s.state
-    },
-    get status() {
-      return s.status
-    },
-    advance: s.advance,
-    stateAt: s.stateAt,
-    fork: (t, forkOptions) => wrap(s.fork(t, forkOptions), data),
-    probe: s.probe,
-    project: s.project,
-    run: s.run,
-    stepsOf: s.stepsOf,
-    fittedAt: (t) => {
-      const h = hyperOf(s.config)
-      return build(p.params(s.stateAt(t), data, h), h)
-    },
-  })
+  // The fitted value at a step is the kind's verbs over the parameters there, under the session's own configuration.
+  const wrap = (s: Session<S, Config>, data: LearnData): IterativeSession<S, P, V> =>
+    fittedSession(s, (state, config) => {
+      const h = hyperOf(config)
+      return build(p.params(state, data, h), h)
+    })
   const sessionOf = (data: LearnData, options: IterativeSessionOptions, key: Key): IterativeSession<S, P, V> => {
     const steps = p.maxSteps?.(hyper, data) ?? 10_000
     return wrap(
