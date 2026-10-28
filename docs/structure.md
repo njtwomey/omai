@@ -3224,6 +3224,12 @@ the encyclopedia's purview. What such a page needs is in the engine (a `Method` 
 (`react/session/`: the hook, the player, the settings and the panels); the gallery's `animation/` section shows the
 player on a toy method.
 
+**`methods/shared/`.** What every methods folder uses (`methods/README.md`, section 4), built piece by piece:
+`modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a
+configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters,
+`extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible` for the
+modes the other slots' values allow).
+
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as
 `probprog` generating programs or `dynamics` changepoint posteriors); `lib/data` keeps the schemas, loaders, splits and

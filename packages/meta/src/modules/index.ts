@@ -111,6 +111,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/methods/semi-supervised-learning': () => import('mdml-engine/methods/semi-supervised-learning'),
   'mdml-engine/methods/sequence': () => import('mdml-engine/methods/sequence'),
   'mdml-engine/methods/sequence-models': () => import('mdml-engine/methods/sequence-models'),
+  'mdml-engine/methods/shared': () => import('mdml-engine/methods/shared'),
   'mdml-engine/methods/shift-and-drift': () => import('mdml-engine/methods/shift-and-drift'),
   'mdml-engine/methods/signal-processing': () => import('mdml-engine/methods/signal-processing'),
   'mdml-engine/methods/statistics': () => import('mdml-engine/methods/statistics'),
