@@ -1,32 +1,113 @@
 # Natural language processing (part 7, application domains)
 
-Text processed and modelled classically: text representation (tokenisation, stemming, vocabularies, bag of words, TF-IDF, hashing), language models (n-grams with smoothing, class-based), the NLP tasks (classification, named entities, parsing, similarity) and sequence labelling (hidden Markov models and conditional random fields for tagging), as sessions over `text`, `pgm`, `supervised-learning`'s models and `probabilistic-inference`'s HMM.
+Text processed and modelled classically: tokenisation (subword models trained merge by merge, word and sentence segmentation, normalisation, stemming and lemmatisation, hyphenation), representation (bag of words, TF-IDF, hashing, corpus statistics, collocations, distributional word vectors), n-gram language models with smoothing, the NLP tasks (text classification, keywords and extractive summarisation, named-entity recognition and tagging, constituency and dependency parsing, string similarity, spelling correction), as sessions over `text`, `pgm` (the HMM and the CRF), `nn/language-model.ts`, `metrics/text.ts`, the corpora of `datasets` and the models of `supervised-learning`. The neural language models, decoding and generation are `large-language-models`'; the CRF's training is `probabilistic-inference`'s; word embeddings trained by prediction are `representation-learning`'s; topic models are `probabilistic-inference`'s.
 
-## Capabilities
+## Structure
 
-- Tokenisation stepped: byte-pair encoding's merges one at a time on a corpus, the vocabulary growing; options: the corpus, the merge count.
-- Vectorisation: the term-document matrix built, TF-IDF weights as a probe, a classifier on top with its most-weighted terms.
-- n-gram language models: counts and smoothing, perplexity on held-out text, generation.
-- Sequence labelling: an HMM tagger by Viterbi with the trellis as a probe, a CRF trained by gradient with its features' weights.
-- Parsing: CKY's chart filling cell by cell on a small grammar.
-- Topic models and embeddings link to `unsupervised-learning` and `representation-learning`.
+Everything here is an operation on text watched (a tokeniser trained, a parser filling its chart, a tagger decoding) or a task method over a corpus slot, so it lives under `process/text/` (section 3 of `methods/README.md`), one folder per stage of the classical pipeline. The text-classification and tagging rows are task methods in the scikit-learn sense (they could be `fit/classify/text/`); they stay here because their interest is the text side (the vectoriser, the features, the tokens) and they share the corpus slot; the alternative is recorded under Problems.
+
+```
+process/text/
+  tokenisation/         subword tokenisers trained step by step, word and sentence segmentation, normalisation, stemming and lemmatisation, hyphenation and phonetic codes
+  representation/       vectorisers, corpus statistics and collocations, distributional word vectors
+  language-models/      n-gram models with the smoothing as a mode; the neural ones and translation by reference
+  classification/       text classification with any vectoriser and classifier, keywords and extractive summarisation
+  sequence-labelling/   the HMM tagger, named-entity recognition with the tagger as a slot; the CRF by reference
+  parsing/              CKY and Earley charts, PCFGs by inside-outside, dependency parsing by Eisner and transitions
+  similarity/           edit distances and alignments, spelling correction
+  shared/               the corpus slot, grammars, the tagger and vectoriser slots, token and chart records (below)
+```
+
+Nothing of this chapter is built.
+
+## Methods
+
+Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, `t!` a tensor kept in full, `p` a probe computed from the state at any step, `proj` a projection over the tape, `e` an event, `m` a message with a payload. The step of a tokeniser's training is one merge or one pruning round; the step of a vectoriser or a language model is one document added; the step of a chart parser is one cell; the step of a classifier is one batch of rows; the step of a tagger's training is one epoch.
+
+### tokenisation/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `subword-tokeniser` | The model as a mode: byte-pair encoding (one merge per step: the pair chosen, its count, the vocabulary growing, a sentence's tokenisation changing under the cursor), the unigram model (one pruning round per step: the tokens whose removal costs least in likelihood, the lattice of a word with its Viterbi path and n-best), WordPiece (the likelihood-gain criterion); the target vocabulary size and byte-level against character-level as knobs; the comparison statistics (tokens per word, the share of unknowns, compression) on one corpus for all three. | `train/merge` m (the pair and its count), `train/vocabulary` s, `train/likelihood` s (unigram), `train/pruned` e, `tokens/sentence` p (a `tokens` record of a held-out sentence), `tokens/lattice` p, `stats/tokensPerWord` s, `stats/unknownShare` s | `text/subword/bpe.ts`: `bpeTrainingAlgorithm` (stepped), `bpeTokenize`, `byteLevelAlphabet`; `text/subword/unigram.ts`: `unigramTrainingAlgorithm` (stepped), `unigramTokenize`, `unigramNbest`; `text/subword/wordpiece.ts`: `trainWordPiece` (whole; TODO per-merge steps), `wordPieceTokenize`; `text/tokenizer.ts`: `tokenizer`, `encode`, `decode`; `text/statistics.ts`: `tokenizerStatistics`; `datasets/corpus.ts`: `nurseryRhymes`, `tinyShakespeare` | |
+| `segmentation` | Word tokenisers compared on the same text (whitespace, regex and the scikit-learn pattern, word-punct, Treebank, the tweet tokeniser's handles and lengthening, BERT's pre-tokeniser): where they disagree, highlighted; sentence boundaries by Punkt trained unsupervised (the abbreviation and collocation statistics it learns, one corpus pass per step, the boundaries it then finds against a hand-marked truth). | `train/abbreviations` t!, `train/collocations` t, `train/pass` e, `tokens/sentence` p, `boundaries/found` t!, `eval/boundaryF1` s | `text/tokenise.ts`: `wordTokenize`, `wordPunctTokenize`, `regexTokenize`, `whitespaceTokenize`, `preTokenize`, `bertPreTokenize`; `text/treebank.ts`: `treebankTokenize`; `text/tweet.ts`: `tweetTokenize`; `text/sentences.ts`: `trainPunkt` (whole; its passes replay), `sentenceSpans`, `splitSentences` | |
+| `normalisation-and-stemming` | Porter's rules fired one at a time on a word (the trace: which rule, the measure m, the stem so far), Snowball beside it, lemmatisation by morphy's substitutions and the lexicon; Unicode normalisation, case folding and accent stripping with the alignment back to the original text kept (so a span found in the normalised text is marked in the original); the vocabulary's size before and after each stage on a corpus as the picture. | `stem/rule` m, `stem/word` s, `vocabulary/size` t (per stage), `tokens/aligned` p | `text/stem.ts`: `porterStemTrace`, `porterStem`, `snowballStem`; `text/lemmatise.ts`: `morphy`, `lemmatize`, `lexicon`; `text/normalise.ts`: `normaliseAligned`, `normaliseText`, `caseFold`, `stripAccents`, `alignedText`; `text/stopwords.ts`: `removeStopWords` | |
+| `hyphenation-and-phonetics` | Liang's patterns voting on a word: the matching patterns laid under it, the digits between letters, the odd maxima that become hyphens (the trace); patterns compiled from TeX or Hunspell sources; Soundex and Metaphone codes as the phonetic view, names that collide. | `hyphenate/patterns` t! (the matches), `hyphenate/votes` t!, `hyphenate/points` t, `phonetic/codes` p | `text/hyphenation.ts`: `hyphenate` (with its trace), `hyphenationPatterns`, `hyphenationDictionary`, `insertHyphens`; `text/phonetic.ts`: `soundex`, `metaphone` | |
+
+### representation/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `vectorisation` | The term-document matrix built one document per step with the vectoriser as a mode (counts, TF-IDF with its sublinear and smoothing knobs, hashing with the number of buckets as the knob and the collisions counted): the vocabulary growing, the IDF weights settling, the n-gram range; a document's vector as a probe with its heaviest terms; a classifier on top reading the same matrix (`classification/`). | `index/documents` s, `index/vocabulary` s, `index/idf` t!, `hashing/collisions` s, `document/vector` p, `matrix/sparsity` s | `text/features.ts`: `countVectorize`, `countTransform`, `tfidfVectorize`, `tfidfWeights`, `inverseDocumentFrequency`, `hashingVectorize`, `analyze`; `text/shingles.ts`: `ngrams`; `text/vocabulary.ts`: `buildVocabulary`, `encodeTokens`; `datasets/corpus.ts`: `naiveBayesCorpus`, `topicCorpus` | |
+| `corpus-statistics` | Zipf's law fitted as the corpus grows (the rank-frequency line and its exponent, one document per step), Heaps' law for the vocabulary (the exponent), lexical diversity; collocations ranked by the association measure as a mode (PMI, t, chi-squared, log-likelihood ratio) with the frequency cutoff as the knob (PMI's love of rare pairs is the lesson). | `corpus/tokens` s, `corpus/vocabulary` s, `zipf/exponent` s, `heaps/exponent` s, `zipf/curve` p, `collocations/top` p | `text/statistics.ts`: `zipfFit`, `heapsFit`, `lexicalDiversity`; `text/collocations.ts`: `collocationCounts`, `scoreCollocations`, `bigramAssociation`, `trigramAssociation`; `text/shingles.ts`: `ngramCounts` | |
+| `distributional-vectors` | Count-based word vectors: the co-occurrence matrix over a window (its size as the knob), PMI and positive PMI weighting, the SVD into word vectors (the dimension as the step), random indexing as the streaming alternative; nearest words and analogies at the viewed dimension; latent semantic analysis of documents on the Deerwester titles, the classic worked example. | `window/size` s, `svd/dimension` s, `svd/singularValues` t!, `model/vectors` t!, `model/embedding` p, `model/nearest` p (a `neighbours` record), `model/analogy` p | `text/representations.ts`: `cooccurrence`, `pmi`, `svdWordVectors`, `lsa`, `randomIndexing`, `nearestWords`, `analogy`; `datasets/corpus.ts`: `workedExampleCorpus` (`deerwester`), `nurseryRhymes` | |
+| `word-embeddings` | see `representation-learning` (word2vec, GloVe and fastText trained by prediction; the count-based vectors above are the baseline they are compared with) | | | |
+| `topic-models` | see `probabilistic-inference` (LDA by collapsed Gibbs and variational inference on the planted-topic corpora) | | | |
+
+### language-models/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `n-gram-language-model` | The order n and the smoothing as a mode (unsmoothed, add-k, Good-Turing, Witten-Bell, absolute discounting, Kneser-Ney, interpolated against backoff): the counts accumulating one document per step, held-out perplexity falling then rising with n for a small corpus (the sparsity), the probability mass given to unseen events by each smoother, a generated sentence at the viewed step and the next-word distribution after a prefix as a probe; the out-of-vocabulary rate as the knob through the vocabulary cutoff. | `corpus/documents` s, `model/ngrams` s, `eval/perplexity` s, `model/unseenMass` s, `model/nextWord` p, `model/sample` p, `model/counts` p | `text/shingles.ts`: `ngramCounts`, `ngrams`; `nn/language-model.ts`: `bigramLanguageModel` (the bigram table as a `LanguageModel`), `perplexity`, `sequenceLogProb`; `metrics/text.ts`: `perplexity`; `nn/decoding/generate.ts`: `decodingAlgorithm` (any `LanguageModel`); TODO `lib/text/language-models.ts`: `ngramModel` with the smoothers (`addK`, `goodTuring`, `wittenBell`, `kneserNey`, interpolated and backoff forms) as a `LanguageModel` | |
+| `neural-language-model` | see `large-language-models` (character and token models trained at toy scale, decoding, scaling curves; the n-gram model above is their baseline on the same corpus) | | | |
+| `machine-translation` | see `sequence-models` (sequence to sequence with attention on a synthetic parallel corpus; BLEU and chrF from `metrics/text.ts` and the `parallel` schema of `data/schema/corpus.ts` are the pieces shared) | | | |
+
+### classification/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `text-classification` | The pipeline with the vectoriser as a slot (`representation/vectorisation`) and the classifier as a slot (multinomial and Bernoulli naive Bayes, logistic regression, a linear SVM): rows arriving one batch per step, the most indicative terms per class moving (the spam filter's picture), the held-out accuracy and F1; token-level attributions of one document by ablation; against the planted class-word distributions of the generator; the n-gram range and the stop-word list as knobs. | `arrivals/rows` s, `solver/objective` s, `eval/accuracy` s, `eval/f1` s, `model/topTerms` p (per class), `model/params` p, `document/attributions` p (a `tokens` layout), `truth/classWords` p | `datasets/corpus.ts`: `naiveBayesCorpus` (the class-word truth); `text/features.ts`: `tfidfVectorize`, `countVectorize`; `methods/linear/logisticRegression.ts` (built, the logistic mode); `losses/margin.ts`: `hinge` (the SVM mode by any `optim` solver); `explain/perturbation.ts`: `featureAblation`; `explain/modalities.ts`: `tokenPredictor`, `tokenise`; naive Bayes TODO (`supervised-learning`'s generative classifiers: multinomial and Bernoulli models with their class-conditional counts as probes) | |
+| `keywords-and-summarisation` | Keywords by TF-IDF, by RAKE's degree-to-frequency scores over candidate phrases, and by TextRank (PageRank over the word co-occurrence graph, one power-iteration step per step, the scores converging); extractive summarisation as TextRank over sentences (the similarity graph, one sentence added to the summary per step), ROUGE against a reference as the summary grows; the window and the damping as knobs. | `iteration/scores` t!, `iteration/change` s, `summary/sentences` t, `eval/rougeN` s, `eval/rougeL` s, `graph/board` p, `keywords/top` p | `graph/centrality.ts`: `pagerankAlgorithm` (stepped); `text/similarity.ts`: `jaccard`; `text/features.ts`: `tfidfWeights`; `metrics/text.ts`: `rougeN`, `rougeL`; `text/stopwords.ts`: `stopWords` (RAKE's delimiters); TODO `lib/text/keywords.ts`: `rake`, `textRankGraph` (the co-occurrence and sentence graphs as `graph` inputs) | |
+
+### sequence-labelling/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `hmm-tagger` | Part-of-speech tagging by a hidden Markov model with the parameters counted from a tagged corpus (one sentence per step, the transition and emission tables filling, the smoothing of unseen words as the knob): Viterbi's trellis for a held-out sentence as the probe (the best path emerging column by column), the posterior decoding beside it (they differ), the tagging accuracy on known against unknown words. Baum-Welch on untagged text is `probabilistic-inference`'s `hmm`. | `corpus/sentences` s, `model/transitions` t!, `model/emissions` t, `eval/accuracy` s, `eval/unknownAccuracy` s, `model/trellis` p (a board with the path), `model/decoded` p (a `stateSequence` record) | `pgm/learning/baum-welch.ts`: `hmmFromParameters`, `hmmDecode`; `pgm/inference/chain.ts`: `viterbi`, `forwardBackward`, `posteriorDecode`; `data/schema/corpus.ts`: `sequenceLabelling`; TODO a tagged corpus in `datasets/corpus.ts` (`taggedCorpus`: sentences generated from a small tag HMM with its tables as truth) | |
+| `linear-chain-crf` | see `probabilistic-inference` (graphical/chains/conditional-random-fields/: the CRF trained by any first-order method of `optim`, `pgm/models/crf.ts`: `crfTrainingAlgorithm`, with CRF++ templates; here it is one option of the tagger slot) | | | |
+| `named-entity-recognition` | The task page over the tagger as a slot (the HMM above, the CRF with CRF++ or attribute templates, the averaged perceptron, a BiLSTM tagger at toy scale): the BIO scheme and its constraints (an I without a B as an event), entity-level precision, recall and F1 beside token accuracy (they disagree), the features that fire on a token as a probe (the template expansions), the learning curve as the tagged corpus grows; chunking is the same page with phrase tags. | `training/epoch` s, `solver/objective` s, `eval/tokenAccuracy` s, `eval/entityF1` s, `tokens/sentence` p (a `tokens` record with gold and predicted tags), `tokens/features` p (the features fired on a token), `scheme/violation` e | `pgm/models/crf.ts`: `crfppCrf`, `crfppObservation`, `crfTrainingAlgorithm`, `crfDecode`, `crfMarginals`; `text/templates.ts`: `crfppFeatures`, `fireFeatures`, `featureIndex`; `text/attribute-templates.ts`: `expandAttributeTemplates`; `nn/module/recurrent.ts`: `LSTM` (the neural mode); `data/schema/corpus.ts`: `sequenceLabelling`; TODO `lib/metrics/sequence-labelling.ts`: `entitySpans`, `entityPrecisionRecallF1` (seqeval's rules); the averaged perceptron TODO beside the CRF's online modes; the tagged corpus TODO as above | |
+
+### parsing/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `chart-parsing` | CKY on a grammar in Chomsky normal form (the conversion first, its new symbols as events): the chart filling one cell per step, bottom up, the back-pointers, the number of parses (ambiguity) and the trees at the end; Earley on the original grammar as the other mode (the states added by prediction, scanning and completion per step, which handles left recursion CKY cannot); a sentence as the knob from a small set. | `chart/cell` m (span, symbols), `chart/filled` s, `chart/board` p, `grammar/converted` e, `parse/count` s, `parse/tree` p (a `tree` record aligned to tokens), `earley/states` t! | `text/parsing.ts`: `grammar`, `toChomskyNormalForm`, `cyk` (whole: the sentence's membership, count and trees; TODO the cell-per-step chart), `earley` (whole; TODO per-state steps), `treeToString`; grammars in `shared/grammars.ts` | |
+| `pcfg` | Probabilities on the rules: the Viterbi parse with its inside probabilities, the sentence probability, the inside-outside EM one iteration per step on unlabelled sentences (the rule probabilities moving, the log likelihood rising, the recovered grammar against the planted one); the number of nonterminals as the knob. | `em/logLikelihood` s, `em/rules` t!, `em/change` s, `parse/tree` p, `parse/probability` s, `truth/rules` p | `text/pcfg.ts`: `pcfgEmAlgorithm` (stepped), `trainPcfg`, `viterbiParse`, `insideOutside`, `sentenceProbability`; planted PCFGs with sampled sentences in `shared/grammars.ts` | |
+| `dependency-parsing` | Eisner's algorithm filling its spans (projective trees only, the chart as a board) against the arc-standard transition parser (one shift or reduce per step with the oracle's choice, the stack and buffer drawn, a trained classifier replacing the oracle); projectivity as the property that decides which can parse a sentence; attachment accuracy against gold heads. | `chart/span` m, `transition/action` m, `transition/stack` t, `transition/buffer` t, `parse/heads` t!, `eval/attachment` s, `parse/tree` p | `text/dependency-parsing.ts`: `eisner` (whole; TODO per-span steps), `greedyArcStandard`, `arcStandardOracle`, `applyArcStandard`, `isProjective`; gold heads in `shared/grammars.ts` | |
+
+### similarity/
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `edit-distance` | The dynamic-programming table filling one cell per step for the distance as a mode (Levenshtein with its edit counts, Damerau's transpositions, the longest common subsequence, Needleman-Wunsch global and Smith-Waterman local alignments with their gap penalties as knobs): the traceback drawn, the alignment printed; Jaro-Winkler and the token ratios as the heuristics beside the exact table. Retrieval and near-duplicates over many strings are `recommendation-and-retrieval`'s. | `table/cell` m, `table/filled` s, `table/board` p, `alignment/path` p, `distance/value` s, `heuristics/scores` t | `text/similarity.ts`: `levenshtein`, `editCounts`, `damerauLevenshtein`, `lcsTable`, `longestCommonSubsequence`, `jaro`, `jaroWinkler`, `ratio`, `tokenSortRatio`; `text/alignment.ts`: `needlemanWunsch`, `smithWaterman`, `formatAlignment`, `alignmentScore` (whole tables; the cell-per-step fill is the method's loop over the same recurrence) | |
+| `spelling-correction` | The noisy channel: candidates within an edit distance (from a BK-tree or Sellers' search), the channel model (edit probabilities counted from a confusion set) times the language model (`language-models/`), the corrected sentence; the candidate set's size against the distance as the knob, the share corrected right on planted typos. | `query/candidates` t, `query/scores` t!, `query/corrected` s, `eval/accuracy` s | `text/approximate-search.ts`: `bkTree`, `bkSearch`, `sellers`; `text/similarity.ts`: `levenshtein`, `editCounts`; the language model from `language-models/n-gram-language-model`; TODO the channel model (a few lines in `shared/` or `lib/text/language-models.ts`) and a typo generator in `shared/corpora.ts` | |
+
+## shared/
+
+| helper | what it does | used by |
+| --- | --- | --- |
+| `corpora.ts` | The corpus slot: nursery rhymes, the Deerwester titles and Caesar passages, Tiny Shakespeare (remote), the planted LDA and naive-Bayes corpora, the near-duplicate corpus; to add: a tagged corpus from a small tag HMM, a parallel toy corpus, a typo generator; with held-out splits by document | every group |
+| `grammars.ts` | Toy context-free grammars and PCFGs with their sentences, parses and gold dependency heads, so the parsers compare with a truth | `parsing/` |
+| `taggers.ts` | The tagger slot over `sequenceLabelling` data: the HMM, the CRF (CRF++ and attribute templates), the averaged perceptron, a BiLSTM, each with its training algorithm and its decode | `sequence-labelling/` |
+| `vectorisers.ts` | The vectoriser slot (counts, TF-IDF, hashing, n-gram ranges, stop words) shared with the classifiers and the retrieval models of `recommendation-and-retrieval` | `representation/`, `classification/` |
+| `records.ts` | Records the generic ones do not cover: tokens with gold and predicted tags and the features fired, a trellis or chart as a board with the chosen path, a parse tree aligned to its tokens, an alignment with its traceback, the lattice of a word's segmentations | `tokenisation/`, `sequence-labelling/`, `parsing/`, `similarity/` |
 
 ## Examples to make
 
-- BPE merges on a small corpus: the merge just made and the tokenisation of a sentence changing.
-- The Viterbi trellis for a sentence, the best path emerging column by column.
-- CKY filling its chart for a short sentence.
-- A naive Bayes spam filter's most indicative words as training rows arrive.
+- BPE merges on a small corpus: the merge just made and the tokenisation of a sentence changing under the cursor.
+- The Viterbi trellis for a sentence, the best path emerging column by column, posterior decoding beside it.
+- CKY filling its chart for a short sentence, the number of parses at the end.
+- A naive Bayes spam filter's most indicative words moving as rows arrive.
+- Kneser-Ney against add-one: held-out perplexity against n on one corpus.
+- Edit distance's table filling cell by cell with the traceback.
 
 ## Rendering
 
-- Tokens with tags (`tokens`), trellises and charts as heatmaps or boards, bars of term weights, trees for parses.
-- Missing: a trellis panel with the chosen path; a parse-tree panel aligned with tokens.
-
-## Shared
-
-- `shared/`: the corpus slot (tiny corpora and grammars in `datasets`), the token probes.
+- Tokens with tags (`tokens`), trellises and charts as boards, bars of term weights, trees for parses, the lattice of segmentations, the Zipf line.
+- Missing: a trellis panel with the chosen path; a parse-tree panel aligned with tokens; a chart panel (cells filling, back-pointers on hover); an alignment panel with the traceback.
 
 ## Problems
 
-- `text/` moves here. CKY and CRF training are not in `lib` yet.
+- The library gap is small: the n-gram smoothers (`lib/text/language-models.ts`), keywords (`lib/text/keywords.ts`), entity-level metrics (`lib/metrics/sequence-labelling.ts`), the tagged corpus and the typo generator; CKY, Earley, the PCFG and the CRF are in `lib` (an earlier draft said CKY and CRF training were not: `text/parsing.ts`, `text/pcfg.ts` and `pgm/models/crf.ts`'s `crfTrainingAlgorithm` exist). The stepped forms (CKY's cells, Earley's states, Eisner's spans, WordPiece's merges) are the chapter's first library request.
+- Naive Bayes is `supervised-learning`'s generative classifier and is not in `lib` yet; the text-classification row waits on it for its first mode and runs on logistic regression meanwhile.
+- `text-classification` and `named-entity-recognition` are task methods; `fit/classify/text/` is the alternative home, decided when the first is built.
+- Three chapters claim sequence models: the probabilistic chains (`probabilistic-inference`), the neural ones (`sequence-models`) and the taggers here; the tagger slot of `named-entity-recognition` takes both kinds, which is the page that compares them.
