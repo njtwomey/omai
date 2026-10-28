@@ -1181,6 +1181,14 @@
       "cases": 28
     },
     {
+      "fixture": "learn/neighbours.json",
+      "source": "oracle/cases/learn/neighbours.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 33
+    },
+    {
       "fixture": "learn/preprocessing/encoders.json",
       "source": "oracle/cases/learn/preprocessing/encoders.py",
       "reference": {

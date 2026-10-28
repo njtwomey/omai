@@ -2520,6 +2520,13 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
   cross-fitted calibrated classifiers.
+- `neighbours.ts`: `neighbourIndex` (exact k-nearest and radius search under any metric of `distances`, brute force or a KD
+  or ball tree), the k-nearest classifier and regressor and their radius twins (uniform or distance weights, an outlier
+  label), and the nearest centroid with Tibshirani's shrinkage and `shrunkenCentroidPath`; estimators on the iterative
+  base that absorb the training rows one per step (`solver/rows`), so `fittedAt(t)` is the model on the first `t` rows.
+  oracle: `learn/neighbours` against `sklearn.neighbors`.
+- `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
+  the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
   RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
 - Explanation, inspection and data valuation are their own domain, `lib/explain/` (4.38).
