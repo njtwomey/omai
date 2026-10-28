@@ -4825,6 +4825,14 @@
       "cases": 12
     },
     {
+      "fixture": "vision/haar.json",
+      "source": "oracle/cases/vision/haar.py",
+      "reference": {
+        "scikit-image": "0.26.0"
+      },
+      "cases": 18
+    },
+    {
       "fixture": "vision/histograms.json",
       "source": "oracle/cases/vision/histograms.py",
       "reference": {
@@ -4840,6 +4848,14 @@
         "opencv-python-headless": "5.0.0.93"
       },
       "cases": 12
+    },
+    {
+      "fixture": "vision/lines.json",
+      "source": "oracle/cases/vision/lines.py",
+      "reference": {
+        "opencv-python-headless": "5.0.0.93"
+      },
+      "cases": 4
     },
     {
       "fixture": "vision/matching.json",

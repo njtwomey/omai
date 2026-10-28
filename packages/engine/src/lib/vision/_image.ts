@@ -84,6 +84,38 @@ export const clamp = (x: number, lo: number, hi: number): number => Math.min(hi,
 /** An image's pixel at 256 levels (OpenCV's 8-bit view of a [0, 1] image): round(255 v) clamped to 0 .. 255. */
 export const level = (v: number): number => clamp(roundHalfEven(255 * v), 0, 255)
 
+const ATAN_P1 = f32(f32(0.9997878412794807) * f32(180 / Math.PI))
+const ATAN_P3 = f32(f32(-0.3258083974640975) * f32(180 / Math.PI))
+const ATAN_P5 = f32(f32(0.1555786518463281) * f32(180 / Math.PI))
+const ATAN_P7 = f32(f32(-0.04432655554792128) * f32(180 / Math.PI))
+const F32_DBL_EPSILON = f32(2.220446049250313e-16)
+
+/**
+ * OpenCV's fastAtan2 in degrees [0, 360): its float32 polynomial, with the multiply-adds fused as arm64 builds compile
+ * them.
+ */
+export function fastAtan2(y: number, x: number): number {
+  const fy = f32(y)
+  const fx = f32(x)
+  const ax = Math.abs(fx)
+  const ay = Math.abs(fy)
+  const poly = (c: number): number => {
+    const c2 = f32(c * c)
+    return f32(f32(f32(ATAN_P7 * c2 + ATAN_P5) * c2 + ATAN_P3) * c2 + ATAN_P1)
+  }
+  let a: number
+  if (ax >= ay) {
+    const c = f32(ay / f32(ax + F32_DBL_EPSILON))
+    a = f32(poly(c) * c)
+  } else {
+    const c = f32(ax / f32(ay + F32_DBL_EPSILON))
+    a = f32(90 - poly(c) * c)
+  }
+  if (fx < 0) a = f32(180 - a)
+  if (fy < 0) a = f32(360 - a)
+  return a
+}
+
 /** The sRGB decoding curve (gamma expansion) of one value in [0, 1]. */
 export function srgbDecode(v: number): number {
   return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
