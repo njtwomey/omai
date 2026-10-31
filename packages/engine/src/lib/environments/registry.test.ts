@@ -79,7 +79,7 @@ describe('the environment registry', () => {
     expect(whereEnvironments(environmentRegistry, { observations: 'grid' }).map((e) => e.family)).toEqual([
       ...Array<string>(5).fill('minatar'),
     ])
-    expect(whereEnvironments(environmentRegistry, { family: ['toyText', 'bandit'], episodic: false }).length).toBe(7)
+    expect(whereEnvironments(environmentRegistry, { family: ['toyText', 'bandit'], episodic: false }).length).toBe(9)
     expect(whereEnvironments(environmentRegistry, { multiAgent: true }).length).toBe(9)
     expect(whereEnvironments(environmentRegistry, { multiAgent: false, family: 'game' })).toEqual([])
     expect(whereEnvironments(environmentRegistry, { text: 'frozen LAKE' }).map((e) => e.name)).toEqual([
