@@ -2596,6 +2596,10 @@ share a concept they share a definition but not a name.
   padded targets, input and target lengths, mean-by-length reduction, `zeroInfinity`), `ctcTrellis` (alpha, beta and the
   state and label alignment posteriors; the loss's gradient is minus the label posterior), `ctcForcedAlignment`
   (Viterbi), `ctcGreedyDecode`.
+- `preference.ts`: preference objectives on response log-probabilities: `bradleyTerry` (reward-model pairwise loss with a
+  margin), `dpo` (with conservative label smoothing and the reference-free form), `implicitRewards`, `ipo`, `kto`,
+  `orpo`, `simpo`, `sequenceLogProb`; `tables.ts` has them as `preferenceLosses` (needs a reference, length-normalised,
+  reward model, paired, bounded margin).
 - `ranking.ts`: `marginRanking`, `rankNet`, `pairwiseHinge`, `bpr`, `lambdaRank` (NDCG@k deltas), `listNet`,
   `softmaxRanking`, `listMle`, `approxNdcg`; padded lists through a mask.
 - `contrastive.ts`: `infoNce` (in-batch, shared or per-query negatives), `ntXent`, `tripletMargin`, `contrastive`,

@@ -1873,6 +1873,14 @@
       "cases": 18
     },
     {
+      "fixture": "losses/preference.json",
+      "source": "oracle/cases/losses/preference.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "losses/ranking.json",
       "source": "oracle/cases/losses/ranking.py",
       "reference": {
