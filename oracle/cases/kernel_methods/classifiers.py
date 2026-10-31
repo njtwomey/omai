@@ -83,7 +83,7 @@ def cases() -> list[Case]:
         )
     )
     alpha = 0.8
-    ridge = RidgeClassifier(alpha=alpha, fit_intercept=False)  # pyright: ignore[reportArgumentType].fit(x3, y3)
+    ridge = RidgeClassifier(alpha=alpha, fit_intercept=False).fit(x3, y3)
     out.append(
         case(
             "ridge-classifier/linear",
