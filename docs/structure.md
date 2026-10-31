@@ -1674,6 +1674,16 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   one linear equality (the SVM dual family, libsvm's solver): working-set selection (maximal violating pair, second
   order WSS3), shrinking with gradient reconstruction, libsvm's rho, traced working pairs and active sets; `svcDual`
   (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables), `oneClassDual` and `svddDual`; `smoRho`.
+- `dual-cd.ts`: dual coordinate descent for the linear SVM (`linearSvmDualCdAlgorithm`, `linearSvmDualCd`; Hsieh et al.,
+  liblinear's algorithm) for the hinge and squared-hinge losses, random sweeps with shrinking, the primal, dual and
+  duality gap on the tape. It sits here beside SMO because `svm` imports `learn`; an SVM estimator takes it as a mode of its
+  solver table. oracle: `optim/dual_cd` against `sklearn.svm.LinearSVC(dual=True)` (cases where liblinear hits its
+  iteration cap are refused); also cross-checked in a test against `svcDual` on a symmetrised dataset (primal objective).
+- `online-experts.ts`: prediction with expert advice as rules run by `expertsAlgorithm` with the regret on the tape (and
+  against the best k-switching sequence by `bestSwitchingLoss`): weighted majority (deterministic and randomised, with the
+  mistake bounds), follow the leader, follow the perturbed leader, Hedge, fixed share, variable share; `exp4Algorithm`
+  (bandit feedback, Exp3 as identity advice, `exp4RegretBound`); the p-norm mirror descent and AdaGrad (box constraints,
+  `adagradRegretBound`) as `OnlineLearner`s of `online.ts`; `hindsightComparator`.
 - `smo-nu.ts`: libsvm's Solver_NU (`nuSmoAlgorithm`: two equalities, pairs within a class), the feasible starts
   (`nuSvcStart`, `nuSvrStart`), `nuRho`, and the `nuSvcDual` and `nuSvrDual` duals.
 - `sparse.ts`: sparse approximation, each a traced algorithm: `matchingPursuit`, `orthogonalMatchingPursuit`
