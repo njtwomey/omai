@@ -1,18 +1,37 @@
 /**
  * Active learning, where the model chooses which unlabelled examples to have labelled next so it learns from fewer
  * labels, modAL style. Uncertainty measures and query strategies (least confidence, margin, entropy, query by
- * committee, expected error reduction, ranked batches), pool-based `activeLearning` as a traced loop of fit, query and
- * label, and stream-based selective sampling.
+ * committee, expected error reduction, expected model change, BALD and BatchBALD, density-weighted uncertainty, greedy
+ * k-center core-sets, BADGE, ranked batches), pool-based `activeLearningAlgorithm` and `activeLearning` as a traced
+ * loop of fit, query and label, and stream-based selective sampling.
  */
 
 import { MdmlError } from '../base/index.ts'
-import { bootstrapIndices, foldIn, type Key, permutation } from '../random/index.ts'
+import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
+import {
+  bootstrapIndices,
+  categorical,
+  foldIn,
+  type Key,
+  key as makeKey,
+  permutation,
+  uniform,
+} from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
-import { innerFitOptions, keyFor, runOptionsFor } from './_shared.ts'
+import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
+import { innerFitOptions, keyFor, rbfGram, runOptionsFor } from './_shared.ts'
+import { kCenterGreedy } from './coresets.ts'
 import { type Estimator, type FitOptions, type Fitted, type LearnData, requireVerb } from './estimator.ts'
 import { type Scorer, type Scoring, scorersOf } from './scoring.ts'
-import { encodeLabels, fromView, type MatrixView, matrixView, takeRows, targetVector } from './validation.ts'
+import {
+  encodeLabels,
+  fromView,
+  integerOption,
+  type MatrixView,
+  matrixView,
+  takeRows,
+  targetVector,
+} from './validation.ts'
 
 /** Class probabilities as rows. */
 function probaRows(
@@ -401,7 +420,495 @@ export function rankedBatchSampling(): QueryStrategy {
   }
 }
 
-/** Options of {@link activeLearning}. */
+/**
+ * Expected gradient length (EGL) scores for expected model change (Settles, Craven and Ray 2008): for each pool row i
+ * with predicted probabilities p_i and feature vector x_i (augmented with an intercept 1), the expected Euclidean norm
+ * sum_c p_{i,c} ||(p_i - e_c) (x) [x_i, 1]||_2 of the cross-entropy gradient induced by labelling x_i.
+ *
+ * @param proba - Class probabilities `[n, k]`.
+ * @param x - Feature matrix `[n, d]`.
+ * @returns One expected gradient norm per row.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { expectedModelChangeScores } from 'mdml-engine/learn'
+ * const s = expectedModelChangeScores([[0.9, 0.1], [0.5, 0.5]], [[1], [1]])
+ * s[1] > s[0] // => true
+ * ```
+ */
+export function expectedModelChangeScores(proba: TensorLike, x: TensorLike): number[] {
+  const p = matrixView(proba, 'expectedModelChangeScores')
+  const f = matrixView(x, 'expectedModelChangeScores')
+  if (p.n !== f.n) throw new MdmlError('shape', 'expectedModelChangeScores: proba and x must have the same rows')
+  return Array.from({ length: p.n }, (_, i) => {
+    const rowX = f.data.subarray(i * f.d, (i + 1) * f.d)
+    const xNorm = Math.hypot(dnrm2(rowX), 1)
+    let pNormSq = 0
+    for (let c = 0; c < p.d; c++) pNormSq += (p.data[i * p.d + c] ?? 0) ** 2
+    let egl = 0
+    for (let c = 0; c < p.d; c++) {
+      const pc = p.data[i * p.d + c] ?? 0
+      const diffNorm = Math.sqrt(Math.max(0, pNormSq - 2 * pc + 1))
+      egl += pc * diffNorm * xNorm
+    }
+    return egl
+  })
+}
+
+/** Options of {@link expectedModelChange}. */
+export interface ExpectedModelChangeOptions {
+  /** Custom per-candidate, per-class gradient norms `[n][k]` (defaults to cross-entropy gradient norms on `[x, 1]`). */
+  readonly gradNorms?: (ctx: QueryContext) => readonly (readonly number[])[]
+}
+
+/**
+ * Expected model change (Settles, Craven and Ray 2008): select the pool rows with the largest expected gradient norm
+ * sum_c p(y = c | x) ||grad_theta l(f_theta(x), c)||_2 under the current model's predictive distribution.
+ *
+ * @param options - Optional custom gradient-norm evaluator.
+ * @returns The query strategy.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { expectedModelChange } from 'mdml-engine/learn'
+ * expectedModelChange().name // => 'expected-model-change'
+ * ```
+ */
+export function expectedModelChange(options: ExpectedModelChangeOptions = {}): QueryStrategy {
+  return scoreStrategy('expected-model-change', (ctx) => {
+    const proba = requireVerb(ctx.fitted, 'predictProba', 'expectedModelChange')(fromView(ctx.pool))
+    if (options.gradNorms === undefined) return expectedModelChangeScores(proba, fromView(ctx.pool))
+    const p = matrixView(proba, 'expectedModelChange')
+    const norms = options.gradNorms(ctx)
+    return Array.from({ length: p.n }, (_, i) => {
+      let s = 0
+      for (let c = 0; c < p.d; c++) s += (p.data[i * p.d + c] ?? 0) * (norms[i]?.[c] ?? 0)
+      return s
+    })
+  })
+}
+
+/**
+ * Bayesian Active Learning by Disagreement (BALD; Houlsby et al. 2011): the mutual information
+ * I(y; theta | x) = H(mean_m p_m(y | x)) - mean_m H(p_m(y | x)) between predictions and posterior/committee members.
+ * High when members are individually confident and disagree with each other (epistemic uncertainty), near zero when
+ * every member is equally uncertain (aleatoric noise).
+ *
+ * @param memberProbas - Sequence of member probability matrices, each `[n, k]`.
+ * @returns One BALD mutual-information score (in nats) per row.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { baldAcquisition } from 'mdml-engine/learn'
+ * const s = baldAcquisition([[[0.99, 0.01], [0.5, 0.5]], [[0.01, 0.99], [0.5, 0.5]]])
+ * s[0] > 0.6 && s[1] === 0 // => true
+ * ```
+ */
+export function baldAcquisition(memberProbas: readonly TensorLike[]): number[] {
+  if (memberProbas.length === 0) throw new MdmlError('value', 'baldAcquisition: need at least one member')
+  const views = memberProbas.map((m) => matrixView(m, 'baldAcquisition'))
+  const n = views[0]?.n ?? 0
+  const k = views[0]?.d ?? 0
+  const M = views.length
+  for (const v of views) {
+    if (v.n !== n || v.d !== k) throw new MdmlError('shape', 'baldAcquisition: all member probas must be [n, k]')
+  }
+  const mean = new Float64Array(n * k)
+  const expectedEnt = new Float64Array(n)
+  for (const v of views) {
+    const ent = predictiveEntropy(fromView(v))
+    for (let i = 0; i < n; i++) {
+      expectedEnt[i] = (expectedEnt[i] ?? 0) + (ent[i] ?? 0) / M
+      for (let c = 0; c < k; c++) mean[i * k + c] = (mean[i * k + c] ?? 0) + (v.data[i * k + c] ?? 0) / M
+    }
+  }
+  const totalEnt = predictiveEntropy(fromStorage(mean, [n, k], 'float64'))
+  return Array.from({ length: n }, (_, i) => Math.max(0, (totalEnt[i] ?? 0) - (expectedEnt[i] ?? 0)))
+}
+
+/**
+ * BALD query strategy over the committee's member probability predictions (Houlsby et al. 2011).
+ *
+ * @returns The strategy (uses the committee).
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { baldSampling } from 'mdml-engine/learn'
+ * baldSampling().committee // => true
+ * ```
+ */
+export function baldSampling(): QueryStrategy {
+  return scoreStrategy(
+    'bald',
+    (ctx) => {
+      const { members, k } = committeeProba(ctx)
+      return baldAcquisition(members.map((m) => fromStorage(m, [ctx.pool.n, k], 'float64')))
+    },
+    true,
+  )
+}
+
+/** Options of {@link batchBald}. */
+export interface BatchBaldOptions {
+  /** Monte Carlo joint label configurations when k^b exceeds this cap (default 512). */
+  readonly numSamples?: number
+  readonly key?: Key
+}
+
+/**
+ * BatchBALD (Kirsch, van Amersfoort and Gal 2019): greedily build a batch of size `n` maximising the joint mutual
+ * information I(y_{1..b}; theta) = H(y_{1..b}) - E_theta[H(y_{1..b} | theta)] across committee/ensemble members,
+ * avoiding redundant near-duplicate queries that single-point BALD picks together.
+ *
+ * @param memberProbas - Member probability matrices, each `[poolSize, k]`.
+ * @param n - Batch size to select.
+ * @param options - Monte Carlo configuration cap and PRNG key.
+ * @returns Chosen pool `indices` and `scores`, the joint mutual information of the batch so far after each pick.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { batchBald } from 'mdml-engine/learn'
+ * const m1 = [[0.95, 0.05], [0.95, 0.05], [0.5, 0.5]]
+ * const m2 = [[0.05, 0.95], [0.05, 0.95], [0.5, 0.5]]
+ * batchBald([m1, m2], 1).indices // => [0]
+ * ```
+ */
+export function batchBald(
+  memberProbas: readonly TensorLike[],
+  n: number,
+  options: BatchBaldOptions = {},
+): { readonly indices: number[]; readonly scores: number[] } {
+  if (memberProbas.length === 0) throw new MdmlError('value', 'batchBald: need at least one member')
+  const views = memberProbas.map((m) => matrixView(m, 'batchBald'))
+  const poolSize = views[0]?.n ?? 0
+  const k = views[0]?.d ?? 0
+  const M = views.length
+  for (const v of views) {
+    if (v.n !== poolSize || v.d !== k) throw new MdmlError('shape', 'batchBald: all member probas must be [n, k]')
+  }
+  const batchSize = Math.min(integerOption(n, 'n', 'batchBald'), poolSize)
+  const individualEnt = new Float64Array(poolSize)
+  for (const v of views) {
+    const ent = predictiveEntropy(fromView(v))
+    for (let i = 0; i < poolSize; i++) individualEnt[i] = (individualEnt[i] ?? 0) + (ent[i] ?? 0) / M
+  }
+  const maxExact = options.numSamples ?? 512
+  const k0 = options.key ?? makeKey(0)
+  // Maintain joint probabilities P_m(y_{1..t}) for each member m across configurations.
+  let jointPerMember: Float64Array[] = Array.from({ length: M }, () => Float64Array.of(1))
+  let configWeights = Float64Array.of(1)
+  const chosen: number[] = []
+  const scores: number[] = []
+  const used = new Set<number>()
+  let condEntSum = 0
+
+  for (let step = 0; step < batchSize; step++) {
+    let bestIdx = -1
+    let bestScore = Number.NEGATIVE_INFINITY
+    const numConfigs = configWeights.length
+    for (let i = 0; i < poolSize; i++) {
+      if (used.has(i)) continue
+      let jointEnt = 0
+      for (let cfg = 0; cfg < numConfigs; cfg++) {
+        const w = configWeights[cfg] ?? 1
+        for (let c = 0; c < k; c++) {
+          let meanP = 0
+          for (let m = 0; m < M; m++) {
+            meanP += ((jointPerMember[m]?.[cfg] ?? 0) * (views[m]?.data[i * k + c] ?? 0)) / M
+          }
+          if (meanP > 0) jointEnt -= (meanP / w) * Math.log(meanP)
+        }
+      }
+      const mi = jointEnt - (condEntSum + (individualEnt[i] ?? 0))
+      if (mi > bestScore) {
+        bestScore = mi
+        bestIdx = i
+      }
+    }
+    if (bestIdx < 0) break
+    chosen.push(bestIdx)
+    scores.push(Math.max(0, bestScore))
+    used.add(bestIdx)
+    condEntSum += individualEnt[bestIdx] ?? 0
+
+    const nextConfigs = numConfigs * k
+    const expanded: Float64Array[] = Array.from({ length: M }, () => new Float64Array(nextConfigs))
+    const expandedW = new Float64Array(nextConfigs)
+    for (let cfg = 0; cfg < numConfigs; cfg++) {
+      for (let c = 0; c < k; c++) {
+        const idx = cfg * k + c
+        expandedW[idx] = configWeights[cfg] ?? 1
+        for (let m = 0; m < M; m++) {
+          const arr = expanded[m] as Float64Array
+          arr[idx] = (jointPerMember[m]?.[cfg] ?? 0) * (views[m]?.data[bestIdx * k + c] ?? 0)
+        }
+      }
+    }
+    if (nextConfigs <= maxExact) {
+      jointPerMember = expanded
+      configWeights = expandedW
+    } else {
+      // Too many label configurations to enumerate: draw `maxExact` of them from the joint predictive. A draw s stands for
+      // probability 1 / S, so the entropy sums weight it by 1 / (S P(s)), which is the divisor `w` below.
+      const joint = Float64Array.from({ length: nextConfigs }, (_, idx) => {
+        let sum = 0
+        for (let m = 0; m < M; m++) sum += expanded[m]?.[idx] ?? 0
+        return sum / M
+      })
+      const total = joint.reduce((a, b) => a + b, 0)
+      const draws = toFlat(
+        categorical(
+          foldIn(k0, step),
+          Array.from(joint, (p) => p / total),
+          [maxExact],
+        ),
+      )
+      jointPerMember = Array.from({ length: M }, (_, m) => Float64Array.from(draws, (d) => expanded[m]?.[d] ?? 0))
+      configWeights = Float64Array.from(draws, (d) => Math.max(maxExact * (joint[d] ?? 0), 1e-300))
+    }
+  }
+  return { indices: chosen, scores }
+}
+
+/** Options of {@link densityWeightedUncertainty} and {@link densityWeightedSampling}. */
+export interface DensityWeightedOptions {
+  /** Density exponent beta >= 0 (default 1; 0 recovers pure uncertainty). */
+  readonly beta?: number
+  /** RBF similarity bandwidth gamma > 0 (default 1 / d). */
+  readonly gamma?: number
+  /** Base uncertainty measure for {@link densityWeightedSampling} (default `'uncertainty'`). */
+  readonly base?: 'uncertainty' | 'margin' | 'entropy'
+}
+
+/**
+ * Information-density weighted uncertainty (Settles and Craven 2008): weight each candidate's uncertainty u(x_i) by its
+ * average RBF similarity s(x_i)^beta to the pool so isolated outliers are down-weighted in favour of dense regions.
+ *
+ * @param uncertainty - Base uncertainty scores `[n]`.
+ * @param x - Pool feature matrix `[n, d]`.
+ * @param options - Exponent `beta` (default 1) and RBF bandwidth `gamma` (default 1 / d).
+ * @returns Density-weighted scores `[n]`.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { densityWeightedUncertainty } from 'mdml-engine/learn'
+ * // Outlier at x = 100 has slightly higher raw uncertainty but much lower pool density than the cluster near 0.
+ * const scores = densityWeightedUncertainty([0.45, 0.45, 0.45, 0.5], [[0], [0.1], [-0.1], [100]], { beta: 1, gamma: 1 })
+ * scores[0] > scores[3] // => true
+ * ```
+ */
+export function densityWeightedUncertainty(
+  uncertainty: ArrayLike<number>,
+  x: TensorLike,
+  options: DensityWeightedOptions = {},
+): number[] {
+  const m = matrixView(x, 'densityWeightedUncertainty')
+  const u = targetVector(Array.from(uncertainty), 'densityWeightedUncertainty', m.n)
+  const beta = options.beta ?? 1
+  if (!(beta >= 0)) throw new MdmlError('value', 'densityWeightedUncertainty: beta must be >= 0')
+  const gamma = options.gamma ?? 1 / Math.max(1, m.d)
+  if (!(gamma > 0)) throw new MdmlError('value', 'densityWeightedUncertainty: gamma must be > 0')
+  const gram = rbfGram(m, m, gamma)
+  return Array.from({ length: m.n }, (_, i) => {
+    let sim = 0
+    for (let j = 0; j < m.n; j++) sim += gram[i * m.n + j] ?? 0
+    return (u[i] ?? 0) * (sim / m.n) ** beta
+  })
+}
+
+/**
+ * Density-weighted uncertainty sampling strategy (Settles and Craven 2008).
+ *
+ * @param options - `beta`, `gamma` and `base` uncertainty measure (`'uncertainty'`, `'margin'` or `'entropy'`).
+ * @returns The query strategy.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { densityWeightedSampling } from 'mdml-engine/learn'
+ * densityWeightedSampling({ beta: 1.5 }).name // => 'density-weighted'
+ * ```
+ */
+export function densityWeightedSampling(options: DensityWeightedOptions = {}): QueryStrategy {
+  return scoreStrategy('density-weighted', (ctx) => {
+    const proba = requireVerb(ctx.fitted, 'predictProba', 'densityWeightedSampling')(fromView(ctx.pool))
+    const base =
+      options.base === 'entropy'
+        ? predictiveEntropy(proba)
+        : options.base === 'margin'
+          ? classMargin(proba).map((v) => 1 - v)
+          : leastConfidence(proba)
+    return densityWeightedUncertainty(base, fromView(ctx.pool), options)
+  })
+}
+
+/** Options of {@link coreSetGreedy}. */
+export interface CoreSetOptions {
+  /** Already labelled feature rows `[m, d]` that act as initial centres. */
+  readonly labeled?: TensorLike
+  /** Initial pool index when `labeled` is omitted (default 0). */
+  readonly seedIndex?: number
+}
+
+/**
+ * Greedy k-center core-set selection (Sener and Savarese 2018; Gonzalez 1985): iteratively pick the pool point
+ * farthest from the set of already labelled and selected centres, minimising the covering radius of the pool.
+ *
+ * @param pool - Unlabelled pool features `[n, d]`.
+ * @param n - Number of points to select.
+ * @param options - Optional already labelled features `labeled` or initial `seedIndex`.
+ * @returns Selected pool `indices`, final minimum `distances` from each pool point, and the covering `radius`.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { coreSetGreedy } from 'mdml-engine/learn'
+ * coreSetGreedy([[0], [2], [10]], 2, { labeled: [[0]] }).indices // => [2, 1]
+ * ```
+ */
+export function coreSetGreedy(
+  pool: TensorLike,
+  n: number,
+  options: CoreSetOptions = {},
+): { readonly indices: number[]; readonly distances: number[]; readonly radius: number } {
+  const r = kCenterGreedy(pool, n, {
+    seedIndex: options.seedIndex ?? 0,
+    ...(options.labeled === undefined ? {} : { centres: options.labeled }),
+  })
+  return { indices: [...r.indices], distances: [...r.distances], radius: r.radius }
+}
+
+/**
+ * Greedy k-center core-set query strategy (Sener and Savarese 2018).
+ *
+ * @returns The query strategy.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { coreSetSampling } from 'mdml-engine/learn'
+ * coreSetSampling().name // => 'core-set'
+ * ```
+ */
+export function coreSetSampling(): QueryStrategy {
+  return {
+    name: 'core-set',
+    select: (ctx, n) => coreSetGreedy(fromView(ctx.pool), n, { labeled: ctx.labeled.x }).indices,
+  }
+}
+
+/** Options of {@link badgeSelection}. */
+export interface BadgeOptions {
+  /** The key of the k-means++ draws (default `key(0)`). */
+  readonly key?: Key
+}
+
+/**
+ * BADGE selection (Ash et al. 2020, Batch Active learning by Diverse Gradient Embeddings): form hallucinated
+ * last-layer loss gradient embeddings g_i = (p_i - e_{yhat_i}) (x) [x_i, 1] using each candidate's most likely predicted
+ * label yhat_i = argmax_c p_{i,c}, whose norm grows with the uncertainty of the prediction, then run k-means++ seeding on
+ * {g_i}: the first centre is the largest embedding, each next one is drawn with probability proportional to its squared
+ * distance to the nearest centre already chosen (a duplicate of a chosen row has distance zero and is never drawn).
+ *
+ * @param proba - Predicted class probabilities `[n, k]`.
+ * @param x - Feature or penultimate-layer representations `[n, d]`.
+ * @param n - Batch size to select.
+ * @param options - The PRNG `key`.
+ * @returns Chosen pool indices `[n]`.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { badgeSelection } from 'mdml-engine/learn'
+ * // Rows 0 and 1 are the same uncertain point: a batch of three never takes both before the other two rows.
+ * const p = [[0.6, 0.4], [0.6, 0.4], [0.4, 0.6], [0.55, 0.45]]
+ * badgeSelection(p, [[-4], [-4], [4], [0]], 3).includes(1) // => false
+ * ```
+ */
+export function badgeSelection(proba: TensorLike, x: TensorLike, n: number, options: BadgeOptions = {}): number[] {
+  const p = matrixView(proba, 'badgeSelection')
+  const f = matrixView(x, 'badgeSelection')
+  if (p.n !== f.n) throw new MdmlError('shape', 'badgeSelection: proba and x must have the same number of rows')
+  const count = Math.min(integerOption(n, 'n', 'badgeSelection'), p.n)
+  const dAug = f.d + 1
+  const dim = p.d * dAug
+  const grads = new Float64Array(p.n * dim)
+  const normsSq = new Float64Array(p.n)
+
+  for (let i = 0; i < p.n; i++) {
+    let yhat = 0
+    for (let c = 1; c < p.d; c++) {
+      if ((p.data[i * p.d + c] ?? 0) > (p.data[i * p.d + yhat] ?? 0)) yhat = c
+    }
+    for (let c = 0; c < p.d; c++) {
+      const delta = (p.data[i * p.d + c] ?? 0) - (c === yhat ? 1 : 0)
+      const base = i * dim + c * dAug
+      for (let j = 0; j < f.d; j++) grads[base + j] = delta * (f.data[i * f.d + j] ?? 0)
+      grads[base + f.d] = delta
+    }
+    const gi = grads.subarray(i * dim, (i + 1) * dim)
+    normsSq[i] = ddot(gi, gi)
+  }
+
+  const draws = toFlat(uniform(options.key ?? makeKey(0), [count]))
+  let first = 0
+  for (let i = 1; i < p.n; i++) if ((normsSq[i] ?? 0) > (normsSq[first] ?? 0)) first = i
+  const chosen = [first]
+  const used = new Set<number>([first])
+  const distSq = new Float64Array(p.n).fill(Number.POSITIVE_INFINITY)
+  const updateDistances = (centre: number): void => {
+    const gc = grads.subarray(centre * dim, (centre + 1) * dim)
+    for (let i = 0; i < p.n; i++) {
+      let sq = 0
+      const gi = grads.subarray(i * dim, (i + 1) * dim)
+      for (let j = 0; j < dim; j++) sq += ((gi[j] ?? 0) - (gc[j] ?? 0)) ** 2
+      if (sq < (distSq[i] ?? Number.POSITIVE_INFINITY)) distSq[i] = sq
+    }
+  }
+  updateDistances(first)
+  for (let t = 1; t < count; t++) {
+    let total = 0
+    for (let i = 0; i < p.n; i++) if (!used.has(i)) total += distSq[i] ?? 0
+    let pick = -1
+    if (total > 0) {
+      let target = (draws[t] ?? 0) * total
+      for (let i = 0; i < p.n; i++) {
+        if (used.has(i)) continue
+        target -= distSq[i] ?? 0
+        if (target <= 0) {
+          pick = i
+          break
+        }
+      }
+    }
+    // Every remaining embedding coincides with a centre: take the first row left.
+    if (pick < 0) pick = Array.from({ length: p.n }, (_, i) => i).filter((i) => !used.has(i))[0] ?? -1
+    if (pick < 0) break
+    chosen.push(pick)
+    used.add(pick)
+    updateDistances(pick)
+  }
+  return chosen
+}
+
+/**
+ * BADGE query strategy (Ash et al. 2020): diverse uncertain batches via k-means++ on hallucinated gradient embeddings.
+ *
+ * @returns The query strategy.
+ * @concept active-learning
+ * @example
+ * ```ts
+ * import { badgeSampling } from 'mdml-engine/learn'
+ * badgeSampling().name // => 'badge'
+ * ```
+ */
+export function badgeSampling(): QueryStrategy {
+  return {
+    name: 'badge',
+    select: (ctx, n) => {
+      const proba = requireVerb(ctx.fitted, 'predictProba', 'badgeSampling')(fromView(ctx.pool))
+      return badgeSelection(proba, fromView(ctx.pool), n, { key: ctx.key })
+    },
+  }
+}
+
+/** Options of {@link activeLearning} and {@link activeLearningAlgorithm}. */
 export interface ActiveLearningOptions extends FitOptions {
   /** The initial labelled data. */
   readonly labeled: LearnData
@@ -421,6 +928,15 @@ export interface ActiveLearningOptions extends FitOptions {
   readonly scoring?: Scoring
 }
 
+/** Serialisable state of {@link activeLearningAlgorithm}. */
+export interface ActiveLearningState {
+  readonly x: MatrixView
+  readonly y: readonly number[]
+  readonly remaining: readonly number[]
+  readonly queried: readonly number[]
+  readonly scores: readonly number[]
+}
+
 /** The result of {@link activeLearning}. */
 export interface ActiveLearningResult {
   /** The model fitted on all labelled data at the end. */
@@ -434,49 +950,39 @@ export interface ActiveLearningResult {
 }
 
 /**
- * Pool-based active learning as a traced algorithm (Settles 2009; modAL's ActiveLearner and Committee): each round
- * fits the model (and a bagged committee if the strategy needs one) on the labelled data, asks the strategy for a
- * batch from the pool, buys the labels from the oracle, and moves them to the labelled set; it stops when the budget
- * is spent or the pool is empty. Each fit nests as a child run.
+ * Stepped pool-based active learning {@link Algorithm}: each step fits the estimator (and a bootstrap committee when
+ * the strategy asks for one), selects a batch of unlabelled pool rows, queries the oracle, appends them to the
+ * labelled set, and optionally evaluates on held-out data.
  *
  * @param estimator - The classifier.
- * @param options - labeled, pool, oracle, strategy, batchSize, budget, committeeSize, evaluation, scoring, key and tracing.
- * @returns The final model, the queried indices, the labelled data and the per-round scores.
+ * @param options - labeled, pool, oracle, strategy, batchSize, budget, committeeSize, evaluation and scoring.
+ * @returns The stepped {@link Algorithm} over {@link ActiveLearningState}.
+ * @concept active-learning
  * @example
  * ```ts
- * import { activeLearning, uncertaintySampling } from 'mdml-engine/learn'
- * import { defineEstimator } from 'mdml-engine/learn'
+ * import { activeLearningAlgorithm, defineEstimator, uncertaintySampling } from 'mdml-engine/learn'
  * import { tensor } from 'mdml-engine/tensor'
- * const threshold = defineEstimator(
- *   { name: 't', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
- *   {},
- * )
- * const pool = [[-3], [0.1], [3], [-0.2]]
- * const r = activeLearning(threshold, { labeled: { x: [[-5], [5]], y: [0, 1] }, pool, oracle: (idx) => idx.map((i) => (pool[i][0] > 0 ? 1 : 0)), strategy: uncertaintySampling(), budget: 2 })
- * r.queried // => [1, 3]
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const est = defineEstimator({ name: 't', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, () => [0.5, 0.5])) }) }, {})
+ * const alg = activeLearningAlgorithm(est, { labeled: { x: [[0], [1]], y: [0, 1] }, pool: [[0.2], [0.8]], oracle: () => [0], strategy: uncertaintySampling(), budget: 1 })
+ * runAlgorithm(alg, { maxSteps: 2 }).state.queried.length // => 1
  * ```
  */
-export function activeLearning(estimator: Estimator, options: ActiveLearningOptions): ActiveLearningResult {
+export function activeLearningAlgorithm(
+  estimator: Estimator,
+  options: ActiveLearningOptions,
+): Algorithm<ActiveLearningState> {
   const pool = matrixView(options.pool, 'activeLearning')
   const labeled0 = matrixView(options.labeled.x, 'activeLearning', { nFeatures: pool.d })
   const y0 = targetVector(options.labeled.y ?? [], 'activeLearning', labeled0.n)
   const batch = options.batchSize ?? 1
   if (!(Number.isInteger(batch) && batch >= 1)) throw new MdmlError('value', 'activeLearning: batchSize must be >= 1')
   const budget = Math.min(options.budget ?? pool.n, pool.n)
-  const key = keyFor(options, 'activeLearning')
   const scorer: Scorer | undefined =
     options.evaluation === undefined ? undefined : Object.values(scorersOf(options.scoring))[0]
-  type State = {
-    readonly x: MatrixView
-    readonly y: readonly number[]
-    readonly remaining: readonly number[]
-    readonly queried: readonly number[]
-    readonly fitted?: Fitted
-    readonly scores: readonly number[]
-  }
-  const fitAll = (s: State, k: Key, parent: FitOptions['parent']): Fitted =>
+  const fitAll = (s: ActiveLearningState, k: Key, parent: FitOptions['parent']): Fitted =>
     estimator.fit({ x: fromView(s.x), y: [...s.y] }, innerFitOptions(options, k, parent))
-  const algorithm: Algorithm<State> = {
+  return {
     name: 'active-learning',
     config: { estimator: estimator.name, strategy: options.strategy.name, batchSize: batch, budget },
     schema: channels({
@@ -528,7 +1034,7 @@ export function activeLearning(estimator: Estimator, options: ActiveLearningOpti
         throw new MdmlError('shape', 'activeLearning: the oracle must label every queried row')
       const x = stackRows(s.x, takeRows(pool, indices))
       const chosen = new Set(indices)
-      const next: State = {
+      const next: ActiveLearningState = {
         x,
         y: [...s.y, ...labels],
         remaining: s.remaining.filter((i) => !chosen.has(i)),
@@ -548,7 +1054,40 @@ export function activeLearning(estimator: Estimator, options: ActiveLearningOpti
       metrics: { labeled: s.x.n, ...(s.scores.length === 0 ? {} : { score: s.scores[s.scores.length - 1] ?? 0 }) },
       messages: s.queried.length === 0 ? [] : [{ kind: 'query', payload: { indices: [...s.queried] } }],
     }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as ActiveLearningState,
   }
+}
+
+/**
+ * Pool-based active learning as a traced algorithm (Settles 2009; modAL's ActiveLearner and Committee): each round
+ * fits the model (and a bagged committee if the strategy needs one) on the labelled data, asks the strategy for a
+ * batch from the pool, buys the labels from the oracle, and moves them to the labelled set; it stops when the budget
+ * is spent or the pool is empty. Each fit nests as a child run.
+ *
+ * @param estimator - The classifier.
+ * @param options - labeled, pool, oracle, strategy, batchSize, budget, committeeSize, evaluation, scoring, key and tracing.
+ * @returns The final model, the queried indices, the labelled data and the per-round scores.
+ * @example
+ * ```ts
+ * import { activeLearning, uncertaintySampling } from 'mdml-engine/learn'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const threshold = defineEstimator(
+ *   { name: 't', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
+ *   {},
+ * )
+ * const pool = [[-3], [0.1], [3], [-0.2]]
+ * const r = activeLearning(threshold, { labeled: { x: [[-5], [5]], y: [0, 1] }, pool, oracle: (idx) => idx.map((i) => (pool[i][0] > 0 ? 1 : 0)), strategy: uncertaintySampling(), budget: 2 })
+ * r.queried // => [1, 3]
+ * ```
+ */
+export function activeLearning(estimator: Estimator, options: ActiveLearningOptions): ActiveLearningResult {
+  const algorithm = activeLearningAlgorithm(estimator, options)
+  const pool = matrixView(options.pool, 'activeLearning')
+  const batch = options.batchSize ?? 1
+  const budget = Math.min(options.budget ?? pool.n, pool.n)
+  const key = keyFor(options, 'activeLearning')
   const { state } = runAlgorithm(algorithm, {
     ...runOptionsFor(options, 'activeLearning'),
     maxSteps: Math.ceil(budget / batch) + 1,
