@@ -368,3 +368,57 @@ export const nonStationaryBandit: EnvDefinition<DriftingBanditState, number, num
     }
   },
 }
+
+/**
+ * ChangePointBandit-v0: a Bernoulli bandit whose arm probabilities are piecewise constant, `probs` until the pull
+ * `changeAt` (default 500) and `after` from then on (default the reverse of `probs`, so the best arm becomes the
+ * worst): the planted abrupt change that sliding-window and discounted UCB are built for. The oracle follows the
+ * change, so regret is measured against the best arm of the current piece.
+ *
+ * @concept bandits
+ * @example
+ * ```ts
+ * import { changePointBandit } from 'mdml-engine/environments'
+ * const env = changePointBandit.create({ probs: [0.2, 0.8], changeAt: 10 })
+ * [env.oracle?.optimalAction?.({ t: 0 }), env.oracle?.optimalAction?.({ t: 10 })] // => [1, 0]
+ * ```
+ */
+export const changePointBandit: EnvDefinition<BanditState, number, number> = {
+  id: 'ChangePointBandit-v0',
+  description: 'Pull arms that pay 1 with probabilities that change abruptly at a planted pull.',
+  options: dict({
+    changeAt: int(1, 1_000_000, { default: 500 }),
+    horizon: int(1, 1_000_000, { default: 1000 }),
+  }),
+  create: (options): BanditEnv<BanditState, number> => {
+    const before = list(options, 'probs', [0.2, 0.4, 0.6, 0.8])
+    const after = list(options, 'after', [...before].reverse())
+    const changeAt = typeof options?.['changeAt'] === 'number' ? options['changeAt'] : 500
+    const piece = (t: number): readonly number[] => (t >= changeAt ? after : before)
+    return {
+      spec: {
+        id: 'ChangePointBandit-v0',
+        description: 'Pull arms that pay 1 with probabilities that change abruptly at a planted pull.',
+        maxEpisodeSteps: horizonOf(options),
+      },
+      observationSpace: discrete(1, { label: 'no context' }),
+      actionSpace: discrete(before.length, { label: 'arm' }),
+      reset: () => ({ state: { t: 0 }, observation: 0, info: {} }),
+      step: (s, arm, k) => ({
+        state: { t: s.t + 1, last: arm },
+        observation: 0,
+        reward: u1(k) < (piece(s.t)[arm] ?? 0) ? 1 : 0,
+        terminated: false,
+        truncated: false,
+        info: { changed: s.t + 1 === changeAt ? 1 : 0 },
+      }),
+      render: (s) => renderArms(piece(s.t), s.last, 'ChangePointBandit'),
+      observe: () => 0,
+      oracle: {
+        expectedReward: (s, arm) => piece(s.t)[arm] ?? 0,
+        optimalExpectedReward: (s) => maxOf(piece(s.t)),
+        optimalAction: (s) => argmaxOf(piece(s.t)),
+      },
+    }
+  },
+}
