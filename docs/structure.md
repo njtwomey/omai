@@ -3374,6 +3374,20 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   Banzhaf, representer points; detecting mislabelled and harmful training rows.
   Built: `influenceFunctions`, `tracIn`, `dataShapley`, `knnShapley`, `subsetUtility`, `betaShapley`,
   `dataBanzhaf` (maximum sample reuse), `representerValues`; the mislabelled-row study is in `methods/explain`.
+- Mechanistic interpretability of transformers (`residual.ts`, `lens.ts`, `patching.ts`, `planted.ts`): the model opened
+  along its residual stream, with a hook at every site where a component writes (`embed`, each head, attention, feed-forward,
+  block output), so everything below is a function of one object.
+  Built: `residualModel` (pre-norm `TransformerLM`, forward pass rebuilt head by head, equals `lm.forward`, differentiable
+  through hooks), `headSite`, `logitLens` (the last depth is the model's logits exactly; ranks and probabilities of given
+  targets), `tunedLensAlgorithm` (affine translator per depth by KL to the final layer, one Adam step per step, paths
+  `lens/loss`, `lens/layerDivergence`, `lens/translators`), `lensDivergence`, `activationPatching` (denoise and noise,
+  every site and position, share of the gap recovered), `causalTrace` (ROME: noised subject embeddings, restore stream,
+  feed-forward or attention), `attributionPatching` (one gradient for every site), `pathPatching` (sender to chosen
+  receivers or the logits, everything else frozen clean), `directLogitAttribution` (exact split of a logit difference
+  including the final norm's frozen scale), the metrics `logitDifference`, `tokenLogProbability`, `tokenProbability`, and
+  `plantedCopyCircuit` (a hand-built one-layer model whose head 0 copies the name tokens, with its truth). Oracle: none
+  (no reference library); tested against the planted circuit and identities (lens at the last depth, self-patching,
+  patching every component equals replacing the run, contributions sum to the logit difference).
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
   Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
