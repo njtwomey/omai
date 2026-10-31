@@ -207,7 +207,7 @@ export function klmsAlgorithm(data: LearnData, hyper: KlmsHyper): Algorithm<Expa
 /** The default hyperparameters of {@link klms}. */
 export const klmsDefaults: KlmsHyper = KLMS_DEFAULTS
 
-function regressorVerbs(p: ExpansionParams, h: KernelOptions, who: string): OnlineRegressorVerbs {
+export function regressorVerbs(p: ExpansionParams, h: KernelOptions, who: string): OnlineRegressorVerbs {
   const predict = (x: TensorLike): Tensor => {
     const q = queryView(x, p.nFeaturesIn, who)
     const m = p.centres.length

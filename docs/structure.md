@@ -4091,6 +4091,12 @@ centred Gram matrices; variates of new rows by centring the cross-kernel on the 
 `kernelPlsRegression` (NIPALS on the deflated Gram matrix, one latent component per step of `kernelPlsAlgorithm`, so
 `fittedAt(t)` is the model with `t` components; the linear kernel is linear PLS regression, checked against
 `decomposition` and against scikit-learn `PLSRegression`).
+`kernel-quantile.ts` is asymmetric kernel regression: `kernelExpectileRegression` (the expectile in the RKHS; objective
+`kernelExpectileProblem` for the solver slot, default mode `'irls'` = iteratively reweighted kernel ridge, any of
+`smoothSolvers` otherwise; equal to `kernelRidge` at one half) and `kernelQuantileRegression` (sparse, an L1 penalty on the
+dual coefficients, an exact linear programme through `linear`'s `quantileRegression` on the Gram matrix; the RKHS-norm
+quadratic-programme form is not offered). Not done: a kernel density estimator with scikit-learn's other kernels
+(`stats/density.ts` has the Gaussian one).
 
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
 sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
