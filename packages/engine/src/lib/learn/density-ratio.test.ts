@@ -140,6 +140,16 @@ describe('KLIEP', () => {
     expect((revived as { iteration: number }).iteration).toBe(3)
     const lb = kliepAlgorithm(train, test, { sigma: 0.8, nCentres: 20, solver: { kind: 'lbfgs' } })
     expect(lb.name).toBeDefined()
+    // Run under a tracer: every path the generic solver logs is in its contract, or the run would throw.
+    expect(runAlgorithm(lb, { maxSteps: 2, tracer: recorder() }).steps).toBe(2)
+    const ul = ulsif(train, test, {
+      sigma: 0.8,
+      lambda: 0.1,
+      nCentres: 10,
+      solver: { kind: 'lbfgs' },
+      tracer: recorder(),
+    })
+    expect(ul.theta.length).toBe(10)
   })
 
   it('weights shift further from uniform as the shift grows (smaller effective sample size)', () => {
