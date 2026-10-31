@@ -32,6 +32,7 @@ import { CrossValidationView, LearningCurveView, PathView, PruningPathView } fro
 import { PointsStepsView } from './points-steps.tsx'
 import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
+import { SampleGridView } from './sample-grid.tsx'
 import { SceneStepsView } from './scene-steps.tsx'
 import { StateSequenceView } from './sequences.tsx'
 import { SimplexView } from './simplex.tsx'
@@ -199,6 +200,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <SceneStepsView record={record} {...common} />
     case 'landscapeSlice':
       return <LandscapeSliceView record={record} {...common} />
+    case 'sampleGrid':
+      return <SampleGridView record={record} {...common} />
     case 'transcript':
       return <TranscriptView record={record} {...common} />
     case 'audio':

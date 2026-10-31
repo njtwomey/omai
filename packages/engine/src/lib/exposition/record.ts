@@ -39,6 +39,7 @@ import type { PopulationSteps } from './populations.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { Reachability } from './reachability.ts'
 import type { RuleSet } from './rules.ts'
+import type { SampleGrid } from './sample-grid.ts'
 import type { SceneSteps } from './scene-steps.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
@@ -121,6 +122,7 @@ export type Exposition =
   | EquationFit
   | AudioClip
   | Transcript
+  | SampleGrid
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -225,4 +227,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'equationFit',
   'audio',
   'transcript',
+  'sampleGrid',
 ])

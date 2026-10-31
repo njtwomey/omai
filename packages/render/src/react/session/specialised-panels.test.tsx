@@ -2,6 +2,7 @@ import {
   audioClip,
   decisionSurface,
   equationFit,
+  sampleGrid,
   sampleLandscape,
   sampleStabilityRegion,
   transcript,
@@ -120,6 +121,14 @@ const toy: Method<State, Config> = defineMethod<State, Config>({
             { name: 'head 2', weights: [1, 0] },
           ],
           emitted: 1,
+        }),
+    }),
+    gallery: derived<State>({
+      description: 'samples over training',
+      compute: () =>
+        sampleGrid({
+          modality: 'text',
+          steps: [0, 2, 4].map((step) => ({ step, samples: [`sample at ${step}`] })),
         }),
     }),
     wrong: derived<State>({ description: 'not a surface', compute: () => ({ kind: 'nope' }) }),
@@ -244,5 +253,22 @@ describe('the transcript panel', () => {
     expect(html).toContain('data-emitted="true"')
     expect(html).toContain('Heaviest head 1: “there” 0.75, “Hello” 0.25.')
     expect(html).toContain('Tint the tokens by head 2')
+  })
+})
+
+describe('the samples panel', () => {
+  it('draws the samples of the viewed step with the filmstrip of earlier ones', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/samples"
+        live={live}
+        at={4}
+        layout={[{ kind: 'samples', path: 'gallery', filmstrip: 2, title: 'the samples' }]}
+      />,
+    )
+    expect(html).toContain('the samples at step 4')
+    expect(html).toContain('sample at 4')
+    expect(html).toContain('earlier steps')
+    expect(html).toContain('Show earlier steps beneath the grid')
   })
 })

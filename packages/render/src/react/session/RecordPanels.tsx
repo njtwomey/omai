@@ -16,6 +16,7 @@ import { ImageGridView } from '../views/images.tsx'
 import { LandscapeSliceView } from '../views/landscape-slice.tsx'
 import { MarkedTableView } from '../views/marked-tables.tsx'
 import { PointsStepsView } from '../views/points-steps.tsx'
+import { SampleGridView } from '../views/sample-grid.tsx'
 import { SceneStepsView } from '../views/scene-steps.tsx'
 import { StabilityRegionView } from '../views/stability-region.tsx'
 import { StripView } from '../views/strips.tsx'
@@ -329,4 +330,32 @@ export function TranscriptPanel(props: {
   const { record, problem } = useRecord(props.live, props.t, 'transcript', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return <TranscriptView record={record} figure={FIG} title={props.title} filename={props.filename} />
+}
+
+/**
+ * Samples over training probed at the viewed step: the grid of the viewed step with a filmstrip of earlier ones.
+ *
+ * @param props - The session, the viewed step, the panel and the frame's title and file name.
+ * @returns The figure.
+ */
+export function SamplesPanel(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  readonly panel: Extract<Panel, { kind: 'samples' }>
+  readonly t: number
+  readonly title: string
+  readonly filename: string
+}): ReactNode {
+  const { panel, t } = props
+  const { record, problem } = useRecord(props.live, t, 'sampleGrid', panel.path, panel.args)
+  if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
+  return (
+    <SampleGridView
+      record={record}
+      step={t}
+      title={props.title}
+      filename={props.filename}
+      {...(panel.filmstrip === undefined ? {} : { filmstrip: panel.filmstrip })}
+    />
+  )
 }

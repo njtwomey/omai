@@ -38,6 +38,7 @@ import { crossValidationView, learningCurveView, pruningPathView, regularisation
 import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
 import { reachabilityPlot } from './reachability.ts'
 import { conceptView, ruleListView } from './rules.ts'
+import { sampleGridScene } from './sample-grid.ts'
 import { sceneStepsScene } from './scene-steps.ts'
 import { stateSequenceView } from './sequences.ts'
 import { simplexView } from './simplex.ts'
@@ -513,6 +514,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r) => transcriptScene(r),
+  },
+  sampleGrid: {
+    kind: 'sampleGrid',
+    component: 'SampleGridView',
+    title: 'Samples over training',
+    plays: false,
+    accepts: [],
+    still: (r) => sampleGridScene(r, undefined, { filmstrip: 4 }),
   },
   dataBias: {
     kind: 'dataBias',

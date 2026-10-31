@@ -6,14 +6,21 @@
 
 import type { ReactNode } from 'react'
 import type { Panel } from './layout.ts'
-import { AudioPanel, EquationPanel, LandscapePanel, StabilityPanel, TranscriptPanel } from './RecordPanels.tsx'
+import {
+  AudioPanel,
+  EquationPanel,
+  LandscapePanel,
+  SamplesPanel,
+  StabilityPanel,
+  TranscriptPanel,
+} from './RecordPanels.tsx'
 import type { LiveSession } from './useSession.ts'
 import { ZoomPanel } from './ZoomPanel.tsx'
 
 /** The kinds of panel this module draws. */
 export type SpecialisedPanelSpec = Extract<
   Panel,
-  { kind: 'zoom' | 'landscape' | 'stability' | 'equation' | 'audio' | 'transcript' }
+  { kind: 'zoom' | 'landscape' | 'stability' | 'equation' | 'audio' | 'transcript' | 'samples' }
 >
 
 /**
@@ -44,5 +51,7 @@ export function SpecialisedPanel(props: {
       return <AudioPanel {...common} panel={panel} />
     case 'transcript':
       return <TranscriptPanel {...common} panel={panel} />
+    case 'samples':
+      return <SamplesPanel {...common} panel={panel} />
   }
 }

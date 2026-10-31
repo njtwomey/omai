@@ -312,6 +312,19 @@ export type Panel =
    * marked, and the heaviest tokens named beneath.
    */
   | { readonly kind: 'transcript'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * Samples of a generative model probed at the viewed step (a `sampleGrid` record: small images or text from fixed
+   * noise at recorded steps): the grid of the latest recorded step at or before it, with, when `filmstrip` is more than
+   * zero, a row per earlier step (log-spaced) beneath, so the samples are seen to sharpen.
+   */
+  | {
+      readonly kind: 'samples'
+      readonly path: string
+      readonly args?: Json
+      /** Rows of earlier steps in the filmstrip (default 4; zero for none). */
+      readonly filmstrip?: number
+      readonly title?: string
+    }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */
