@@ -302,3 +302,47 @@ describe('small multiples', () => {
     expect((html.match(/data-testid="multiples"/g) ?? []).length).toBe(2)
   })
 })
+
+describe('the inner session panel', () => {
+  const inner = { toy: { method: toy, options: ({ t }: { t: number }) => ({ steps: 2 + t }) } }
+  const layout = [{ kind: 'tensor', path: 'position', title: 'inside' }] as const
+
+  it('runs the registered session for the viewed outer step and draws its layout with its own cursor', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/inner"
+        live={live}
+        at={2}
+        inner={inner}
+        layout={[{ kind: 'inner', name: 'toy', layout, title: 'the inner loop' }]}
+      />,
+    )
+    expect(html).toContain('the inner loop at step 2')
+    // The inner run is two steps longer than the outer step viewed, and starts at its end.
+    expect(html).toContain('inner step 4 of 4')
+    expect(html).toContain('type="range"')
+    expect(html).toContain('inside at step 4')
+  })
+
+  it('follows the outer cursor when asked, from one inner run made at the head of the outer run', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/inner-outer"
+        live={live}
+        at={3}
+        inner={inner}
+        layout={[{ kind: 'inner', name: 'toy', layout, follow: 'outer' }]}
+      />,
+    )
+    // Made at the outer head (6): eight inner steps; the inner cursor is the outer step, 3.
+    expect(html).toContain('inner step 3 of 8, following the outer cursor')
+    expect(html).not.toContain('type="range"')
+  })
+
+  it('says when no session is registered under the name', () => {
+    const html = renderToString(
+      <SessionPanels id="test/inner-none" live={live} at={1} layout={[{ kind: 'inner', name: 'ghost', layout }]} />,
+    )
+    expect(html).toContain('no inner session named')
+  })
+})

@@ -353,6 +353,21 @@ export type Panel =
       readonly shared?: boolean
       readonly title?: string
     }
+  /**
+   * A session inside a step of the outer one (an optimiser inside a training step, the inner loop of a meta-learner):
+   * the page registers it by `name` (`SessionPanels`' `inner` prop: the inner method and how its options come from the
+   * outer run), the panel runs it for the viewed outer step and draws `layout` over it, with its own cursor and a
+   * slider (`own`, the default) or following the outer cursor (`outer`: one inner run, made at the end of the outer
+   * run so far, whose step is the outer step).
+   */
+  | {
+      readonly kind: 'inner'
+      readonly name: string
+      readonly args?: Json
+      readonly follow?: 'own' | 'outer'
+      readonly layout: readonly Panel[]
+      readonly title?: string
+    }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */
