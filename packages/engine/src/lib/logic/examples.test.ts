@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import * as random from '../random/index.ts'
 import * as trace from '../trace/index.ts'
 import * as ilp from './ilp/index.ts'
 import * as logic from './index.ts'
@@ -9,6 +10,7 @@ import * as logic from './index.ts'
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'mdml-engine/logic': logic,
   'mdml-engine/logic/ilp': ilp,
+  'mdml-engine/random': random,
   'mdml-engine/trace': trace,
 }
 

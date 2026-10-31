@@ -2221,8 +2221,40 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   the proofs and their probabilities exposed), `conditionalProbability` (evidence true or false) and `probLogEmAlgorithm`
   (EM for the facts' probabilities from observed interpretations, one iteration per step). Checked against enumeration of
   all possible worlds on random cyclic graphs.
-- TODO (not built): Markov logic networks (grounding, pseudo-likelihood weight learning, MC-SAT and Gibbs), differentiable
-  logic (t-norm formula semantics over tensors as in Logic Tensor Networks, a neural theorem prover, differentiable ILP).
+- `markov-logic.ts`: Markov logic networks: `groundMln` (weighted first-order formulas over a finite domain into ground
+  atoms and ground formulas; free variables universally quantified, quantifiers expanded, `=` decided; a hard formula has
+  infinite weight), `mlnExact` (the exact distribution by enumeration: log partition, marginals, query probabilities,
+  expected counts; the truth the samplers are tested against), `mlnSampleWorlds` (exact samples of complete worlds, the
+  generator with its planted weights as truth), `mlnGibbsAlgorithm` (one sweep per step), `mlnMcSatAlgorithm` (slice
+  sampling; the slice by `sampleSat`, Wei-Erenrich-Selman's near-uniform SampleSAT, or exactly by enumeration) with
+  marginals, query probabilities and energy on the tape (`MlnSamplerPath`, `mlnSamplerContract`), and `mlnMap` (MAP as
+  weighted partial MaxSAT through `maxsat.ts`).
+- `mln-learning.ts`: weight learning: `mlnPseudoLikelihoodProblem` (a convex logistic regression on the changes in each
+  formula's true-grounding count, as a `SmoothProblem` with value, gradient and Hessian), `mlnLikelihoodProblem` and
+  `mlnConditionalLikelihoodProblem` (exact, by enumeration), `learnMlnWeights` and `mlnPseudoLikelihoodAlgorithm` (the
+  solver is a slot of `smoothSolvers`, L-BFGS by default; recovers planted weights), and the discriminative voted
+  perceptron `mlnPerceptronAlgorithm` (MAP counts from `mlnMap`, or exact expected counts; the weights averaged over
+  the passes).
+- `fuzzy-logic.ts`: fuzzy logic over tensors in the manner of Logic Tensor Networks: t-norm families as differentiable
+  tensor ops (`normFamily`: product, Lukasiewicz, Goedel, Hamacher with their t-conorms, standard negation, residuated
+  and material implications, folds along an axis), aggregators for the quantifiers (`pMean`, `pMeanError`, the extremes,
+  a t-norm), `formulaSatisfaction` (propositional formulas over a network's outputs), learnable predicates
+  (`tablePredicate` over constants, `networkPredicate` on features), and `fuzzyTheory` (first-order axioms evaluated to
+  tensors with one axis per free variable, satisfaction as the objective, a `SmoothProblem` for the solver slot) with
+  `fuzzyTheoryAlgorithm` and `trainFuzzyTheory`.
+- `neural-theorem-prover.ts`: the neural theorem prover of Rocktaschel and Riedel: symbol embeddings, soft unification by
+  a Gaussian kernel, backward chaining to a depth over facts and rules (including `#template` predicates whose vectors
+  are learned), proof score the maximum over proofs of the minimum of the unification scores, all proofs batched as
+  tensors (`neuralTheoremProver`, `ntpTrainingSet` with leave-one-out positives and corrupted negatives, `trainNtp` with
+  restarts, `ntpAlgorithm` over the solver slot, `decode` of a template to the nearest predicate). With crisp embeddings
+  the network is classical backward chaining (tested to the proof depth). Goals with an unbound variable are proved
+  against facts only; a template's rule is not reliably induced from scratch at this scale (see the test notes).
+- `diff-ilp.ts`: differentiable ILP (Evans and Grefenstette): clause templates over a language, candidate clauses with
+  precomputed groundings, a softmax over each template's candidates, forward-chained valuation (product conjunction,
+  maximum over existential groundings, previous valuation amalgamated by maximum) as tensor ops, the example
+  cross-entropy as a `SmoothProblem` (`diffIlp`, `diffIlpAlgorithm`, `learnProgram` with restarts), `extract` of the
+  program by taking each template's most probable clause and a crisp forward chainer (`derive`, `accuracy`) to check it.
+  Learns the predecessor, graph reachability (recursive) and, with restarts, the even numbers with an invented auxiliary.
 - Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
   built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
