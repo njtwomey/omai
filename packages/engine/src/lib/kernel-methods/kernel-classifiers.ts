@@ -18,7 +18,7 @@ import { dgemm, solve } from '../numerics/linalg/index.ts'
 import { type SmoothProblem, smoothSolvers } from '../optim/index.ts'
 import { permutation } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
-import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
 import {
