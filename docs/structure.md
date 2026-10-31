@@ -1008,6 +1008,10 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
   (keeping the density truth consistent; `featureTransform`), `withCorrelatedFeatures` (Toeplitz and equicorrelated).
 - `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
   recurring), `shiftedSplit`, `semiSupervisedSplit`.
+- `modifiers/shift.ts` also has `withSubpopulationShift` (a group under-represented in the source, with the density ratio) and
+  `withShortcut` (a feature tracking the label at the source and independent of it at the target).
+- `modifiers/leaks.ts`: `withLeak` (a noisy copy of the target, or a target encoding fitted on all rows) and
+  `withDuplicates` (exact or jittered copies shuffled in, with the source row of each as truth).
 - `modifiers/images.ts`: image augmentations with their draws kept as truth: `withRandomCrop` (padding, offsets), `withRandomFlip`,
   `withCutout`, `withMixup` and `withCutmix` (weights, partners and soft labels), each also a recipe modifier.
 
