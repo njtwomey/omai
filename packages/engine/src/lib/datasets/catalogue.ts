@@ -7,6 +7,7 @@
 
 import { MdmlError, registry } from '../base/index.ts'
 import type { DatasetGenerator, DatasetRef } from '../data/index.ts'
+import { spokenDigits } from './audio.ts'
 import { captionedShapes } from './captions.ts'
 import { discontinuityDesign, instrumentalVariables, linearScm, panelEffects, treatmentEffects } from './causal.ts'
 import { changepointSeries } from './changepoints.ts'
@@ -93,7 +94,10 @@ import {
   arma,
   coalMiningCounts,
   coalMiningDisasters,
+  coupledSeries,
   electrocardiogram,
+  garchReturns,
+  plantedSeries,
   seasonalSeries,
   sinusoids,
   sunspots,
@@ -142,6 +146,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   clusterAssumption,
   contextualSbm,
   copyTask,
+  coupledSeries,
   crowdLabels,
   densitySamples,
   digitGlyphs,
@@ -154,6 +159,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   friedman1,
   friedman2,
   friedman3,
+  garchReturns,
   gaussianQuantiles,
   geometricScenes,
   glmCurve,
@@ -189,6 +195,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   panelEffects,
   parityTask,
   piecewiseLinear,
+  plantedSeries,
   plantedTransactions,
   poissonProcess,
   positiveUnlabelled,
@@ -208,6 +215,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   sparseUncorrelated,
   spatialPoisson,
   spirals,
+  spokenDigits,
   stepCurve,
   survivalData,
   swissRoll,
@@ -345,6 +353,9 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['regimeSwitching', 'Two Gaussian regimes'],
     ['seasonalSeries', 'Seasonal series'],
     ['sinusoids', 'Sinusoids'],
+    ['plantedSeries', 'Planted motif, discord and regime'],
+    ['garchReturns', 'GARCH returns'],
+    ['coupledSeries', 'Coupled series'],
   ]),
   ...g('text', [
     ['driftingTopics', 'Drifting topics'],
@@ -391,6 +402,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['loggedBandit', 'Logged bandit'],
     ['offlineMdp', 'Offline MDP episodes'],
   ]),
+  ...g('audio', [['spokenDigits', 'Spoken digits (synthetic)']]),
   // Vendored real datasets, with the provenance their metadata records.
   vendoredEntry('iris', iris, {
     title: 'Iris',

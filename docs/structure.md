@@ -5113,6 +5113,11 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `transactions.ts`: baskets with planted itemsets (`plantedTransactions`; the exact `expectedSupport` of any itemset).
 - `captions.ts`: scenes of coloured shapes with template captions and questions (`captionedShapes`; a paired
   image-text schema in `data/schema/` is still to do, the text sits in the truth).
+- `audio.ts`: `spokenDigits`, a stream of synthetic spoken digits (formant trajectories over a harmonic source, speakers
+  with pitch, speed and vocal-tract scale) with the digit of every sample and the utterance list as truth.
+- `timeseries.ts` also has `plantedSeries` (a motif planted repeatedly, a discord and a regime change with known
+  positions), `garchReturns` (the conditional variance as truth) and `coupledSeries` (VAR or coupled logistic maps
+  through a known directed graph).
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino
   (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
   and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`
