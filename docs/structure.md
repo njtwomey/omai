@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 49 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 50 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -415,6 +415,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `gp`          | Gaussian-process regression and classification (Laplace, EP), sparse approximations, the relevance vector machine, as stepped estimators                                                         |
 | `trees`       | decision trees: the tree structure, split criteria, the stepped grower, pruning, ID3, C4.5 and CHAID, the Hoeffding tree, CART estimators                                                        |
 | `ensembles`   | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking                                              |
+| `kernel-methods` | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                           |
 
 ### 4.1 `base/`
 
@@ -3581,6 +3582,27 @@ gradient boosting (squared error, L2, missing values, Poisson, coarse bins, bina
 error loss (tied splits), SAMME.R and R2 (scikit-learn dropped the first and resamples the second), categorical features
 in histogram boosting, LambdaMART.
 built from: `trees`, `learn`, `metrics`, `exposition`
+
+### 4.50 `kernel-methods/`: kernel regression, batch and online (scikit-learn kernel_ridge, KRLS, NORMA)
+
+`kernel-ridge.ts` is the closed-form dual solve `(K + alpha I)^(-1) y` over any kernel of `kernels` (a name with
+`gamma`, `degree`, `coef0` by `kernels/named.ts`, or a `Kernel` object), for one or several outputs. `solveKernelRidge`,
+`hatDiagonal`, `looPredictions` and `looPress` work on a Gram matrix: the leave-one-out residual is
+`c_i / [(K + alpha I)^(-1)]_ii`, exact, from one inverse. The estimator `kernelRidge` (kind regressor, one step) logs
+`solver/looMse` and `solver/effectiveDf`; its verbs add `hatDiagonal`, `looPredictions`, `looPress` and a normal
+`predictDistribution`. Sample weights are refused. `online-kernel.ts` has the learners that take one observation per step:
+`krls` (Engel, Mannor and Meir: the dictionary grows by a block inversion when the approximate-linear-dependence
+residual exceeds `aldThreshold`, otherwise a reduced-order recursive least squares step; `criterion: 'coherence'` for the
+coherence test; `criterion: 'sliding-window'` keeps the exact ridge solution on the last `budget` observations by a
+bordering update and a downdate of the inverse), `krlsStep` and `krlsPredict` on the plain-JSON `KrlsState`, and `norma`
+(stochastic gradient descent in the RKHS with weight decay `1 - eta_t lambda`, squared or epsilon-insensitive loss, an
+expansion truncated to `budget`). Logs `solver/dictionarySize`, `solver/novelty`, `solver/loss`, `solver/runningMse`,
+`solver/alpha` and the message `solver/dictionaryAdd`; probe `model/dictionary`.
+
+oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
+sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits. TODO: kernel ridge on the
+Nystroem and random Fourier maps of `kernels/expansion.ts` (the maps exist; the estimator over them does not).
+built from: `kernels`, `learn`, `numerics`, `metrics`, `dists`, `trace`
 
 ## 5. Methods, exposition records and views
 
