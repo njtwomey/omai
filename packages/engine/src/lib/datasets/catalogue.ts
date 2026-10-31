@@ -7,7 +7,9 @@
 
 import { MdmlError, registry } from '../base/index.ts'
 import type { DatasetGenerator, DatasetRef } from '../data/index.ts'
-import { instrumentalVariables, linearScm, treatmentEffects } from './causal.ts'
+import { spokenDigits } from './audio.ts'
+import { captionedShapes } from './captions.ts'
+import { discontinuityDesign, instrumentalVariables, linearScm, panelEffects, treatmentEffects } from './causal.ts'
 import { changepointSeries } from './changepoints.ts'
 import { blobs, checkerboard, circles, gaussianQuantiles, hastie10_2, moons, spirals, xor } from './classification.ts'
 import {
@@ -27,18 +29,21 @@ import {
   naiveBayesCorpus,
   nearDuplicateCorpus,
   nurseryRhymes,
+  taggedCorpus,
   tinyShakespeare,
   topicCorpus,
+  typoPairs,
   workedExampleCorpus,
 } from './corpus.ts'
 import { densitySamples } from './densities.ts'
 import { hawkesProcess, inhomogeneousPoisson, poissonProcess, spatialPoisson } from './events.ts'
-import { abTest } from './experiments.ts'
+import { abTest, carryoverExperiment, networkExperiment } from './experiments.ts'
 import { biasedCredit, germanCredit, titanicSurvival } from './fairness.ts'
 import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, karateClub, kinshipTriples, lesMiserables, smallMolecules } from './graphs.ts'
 import { dishonestCasino, regimeSwitching } from './hidden-markov.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
+import { mixedSources, toySuperposition, twoViews } from './latent.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
@@ -79,6 +84,7 @@ import {
   associativeRecall,
   copyTask,
   dyckTask,
+  inContextRegression,
   modularArithmetic,
   parityTask,
   reverseTask,
@@ -89,13 +95,24 @@ import {
   arma,
   coalMiningCounts,
   coalMiningDisasters,
+  coupledSeries,
   electrocardiogram,
+  garchReturns,
+  plantedSeries,
   seasonalSeries,
   sinusoids,
   sunspots,
 } from './timeseries.ts'
 import { loggedBandit, offlineMdp } from './trajectories.ts'
-import { crowdLabels, labellingFunctions, labelProportionBags, positiveUnlabelled } from './weak-labels.ts'
+import { plantedTransactions } from './transactions.ts'
+import {
+  clusterAssumption,
+  crowdLabels,
+  labellingFunctions,
+  labelProportionBags,
+  multipleInstanceBags,
+  positiveUnlabelled,
+} from './weak-labels.ts'
 
 /**
  * Every dataset generator of this area by name, the catalogue that `makeFromRecipe` looks generators up in and that
@@ -121,15 +138,20 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   blobs,
   blobsWithOutliers,
   burgersOperator,
+  captionedShapes,
+  carryoverExperiment,
   changepointSeries,
   checkerboard,
   circles,
   clickLogs,
+  clusterAssumption,
   contextualSbm,
   copyTask,
+  coupledSeries,
   crowdLabels,
   densitySamples,
   digitGlyphs,
+  discontinuityDesign,
   dishonestCasino,
   dopplerCurve,
   driftingTopics,
@@ -138,6 +160,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   friedman1,
   friedman2,
   friedman3,
+  garchReturns,
   gaussianQuantiles,
   geometricScenes,
   glmCurve,
@@ -148,6 +171,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   heatOperator,
   heteroscedastic,
   implicitFeedback,
+  inContextRegression,
   inhomogeneousPoisson,
   instrumentalVariables,
   kinshipTriples,
@@ -161,14 +185,20 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   makeMultilabelClassification,
   makeRegression,
   miscalibratedPredictions,
+  mixedSources,
   modularArithmetic,
   moons,
   moonsWithOutliers,
+  multipleInstanceBags,
   naiveBayesCorpus,
   nearDuplicateCorpus,
+  networkExperiment,
   offlineMdp,
+  panelEffects,
   parityTask,
   piecewiseLinear,
+  plantedSeries,
+  plantedTransactions,
   poissonProcess,
   positiveUnlabelled,
   quantileCurves,
@@ -187,12 +217,17 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   sparseUncorrelated,
   spatialPoisson,
   spirals,
+  spokenDigits,
   stepCurve,
   survivalData,
   swissRoll,
+  taggedCorpus,
   topicCorpus,
   torus,
+  toySuperposition,
   treatmentEffects,
+  twoViews,
+  typoPairs,
   unequalVarianceBlobs,
   xor,
   zipfianCatalogue,
@@ -247,7 +282,7 @@ const NETWORKX = 'Public domain data (NetworkX, BSD-3-Clause)'
  * ```ts
  * import { lookup } from 'mdml-engine/base'
  * import { datasetRegistry } from 'mdml-engine/datasets'
- * datasetRegistry.entries.length // => 121
+ * datasetRegistry.entries.length > 100 // => true
  * lookup(datasetRegistry, 'iris').size // => 150
  * ```
  */
@@ -263,6 +298,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['burgersOperator', 'Burgers operator'],
     ['checkerboard', 'Checkerboard'],
     ['circles', 'Concentric circles'],
+    ['clusterAssumption', 'Clusters and classes (semi-supervised)'],
     ['densitySamples', 'Samples from a known density'],
     ['dopplerCurve', 'Doppler curve'],
     ['friedman1', 'Friedman 1'],
@@ -285,6 +321,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['miscalibratedPredictions', 'Miscalibrated predictions'],
     ['moons', 'Two moons'],
     ['moonsWithOutliers', 'Two moons with outliers'],
+    ['multipleInstanceBags', 'Multiple-instance bags'],
     ['piecewiseLinear', 'Piecewise linear'],
     ['positiveUnlabelled', 'Positive-unlabelled'],
     ['quantileCurves', 'Curves with known quantiles'],
@@ -302,12 +339,20 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['treatmentEffects', 'Treatment effects'],
     ['unequalVarianceBlobs', 'Blobs of unequal variance'],
     ['xor', 'XOR'],
+    ['panelEffects', 'Panel with staggered adoption'],
+    ['discontinuityDesign', 'Regression discontinuity design'],
+    ['networkExperiment', 'Network experiment with spillover'],
+    ['carryoverExperiment', 'Chained experiments with carryover'],
+    ['mixedSources', 'Mixed independent sources'],
+    ['twoViews', 'Two views of shared factors'],
+    ['toySuperposition', 'Toy model of superposition'],
   ]),
   ...g('image', [
     ['barsAndStripes', 'Bars and stripes'],
     ['digitGlyphs', 'Digit glyphs'],
     ['geometricScenes', 'Geometric scenes'],
     ['shapes', 'Shapes'],
+    ['captionedShapes', 'Captioned shapes'],
   ]),
   ...g('timeSeries', [
     ['arma', 'ARMA process'],
@@ -315,12 +360,18 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['regimeSwitching', 'Two Gaussian regimes'],
     ['seasonalSeries', 'Seasonal series'],
     ['sinusoids', 'Sinusoids'],
+    ['plantedSeries', 'Planted motif, discord and regime'],
+    ['garchReturns', 'GARCH returns'],
+    ['coupledSeries', 'Coupled series'],
   ]),
   ...g('text', [
     ['driftingTopics', 'Drifting topics'],
     ['naiveBayesCorpus', 'Labelled corpus (naive Bayes)'],
     ['nearDuplicateCorpus', 'Near-duplicate documents'],
     ['topicCorpus', 'Topic corpus (LDA)'],
+    ['taggedCorpus', 'Tagged corpus (tag HMM)'],
+    ['typoPairs', 'Typos and intended words'],
+    ['plantedTransactions', 'Baskets with planted itemsets'],
   ]),
   ...g('sequence', [
     ['additionTask', 'Addition'],
@@ -332,6 +383,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['parityTask', 'Parity'],
     ['reverseTask', 'Reverse'],
     ['sortTask', 'Sort'],
+    ['inContextRegression', 'In-context linear regression'],
   ]),
   ...g('events', [
     ['hawkesProcess', 'Hawkes process'],
@@ -357,6 +409,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['loggedBandit', 'Logged bandit'],
     ['offlineMdp', 'Offline MDP episodes'],
   ]),
+  ...g('audio', [['spokenDigits', 'Spoken digits (synthetic)']]),
   // Vendored real datasets, with the provenance their metadata records.
   vendoredEntry('iris', iris, {
     title: 'Iris',

@@ -17,12 +17,25 @@ import {
   transformModifier,
 } from './modifiers/features.ts'
 import {
+  cutmixModifier,
+  cutoutModifier,
+  mixupModifier,
+  randomCropModifier,
+  randomFlipModifier,
+} from './modifiers/images.ts'
+import {
   classImbalanceModifier,
   labelNoiseModifier,
   labelShiftModifier,
   prevalenceModifier,
 } from './modifiers/labels.ts'
-import { conceptDriftModifier, covariateShiftModifier } from './modifiers/shift.ts'
+import { duplicatesModifier, leakModifier } from './modifiers/leaks.ts'
+import {
+  conceptDriftModifier,
+  covariateShiftModifier,
+  shortcutModifier,
+  subpopulationShiftModifier,
+} from './modifiers/shift.ts'
 
 /**
  * A named, keyed change to generated data with its knobs as a `Space` (label noise, missingness, shift), so recipes can
@@ -75,6 +88,15 @@ export const builtinModifiers: Readonly<Record<string, Modifier>> = Object.fromE
     correlatedFeaturesModifier,
     covariateShiftModifier,
     conceptDriftModifier,
+    randomCropModifier,
+    randomFlipModifier,
+    cutoutModifier,
+    mixupModifier,
+    cutmixModifier,
+    leakModifier,
+    duplicatesModifier,
+    subpopulationShiftModifier,
+    shortcutModifier,
   ].map((m) => [m.name, m]),
 )
 
