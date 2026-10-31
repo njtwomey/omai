@@ -4132,6 +4132,13 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `shapelets.ts`: `shapeletDistance` (early abandoning, optional z-normalisation), `shapeletSplit` (information gain with
   the gap tie-break), `shapeletDiscoveryAlgorithm`/`findShapelets` (one candidate per step, best non-overlapping kept,
   state serialisable) and `shapeletTransform`.
+- `learned-shapelets.ts`: learned shapelets (Grabocka et al.): `softMinDistance`, `initialShapelets` (k-means centres of
+  the windows), `learnedShapeletProblem` (the cross-entropy of a softmax classifier on soft-minimum distances, as a
+  `SmoothProblem` with batches of series and the analytic gradient through the soft minimum), `learnedShapeletsAlgorithm`
+  (a step of any solver of the slot; the stochastic `gradient` mode with Adam on mini-batches is the default
+  `learnedShapeletSolver`; the shapelets are a tensor per step), `fitLearnedShapelets`, `predictLearnedShapelets`.
+  Started from one k-means centre it can sit on the noise plateau where no window of the pattern has weight; a few
+  shapelets (k-means++ seeding finds the far windows) avoid it. Truth: `datasets/shapelet-series.ts`.
 - `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
   standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
   cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
@@ -6038,6 +6045,8 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `timeseries.ts` also has `plantedSeries` (a motif planted repeatedly, a discord and a regime change with known
   positions), `garchReturns` (the conditional variance as truth) and `coupledSeries` (VAR or coupled logistic maps
   through a known directed graph).
+- `shapelet-series.ts`: `shapeletSeries`, noise series in which each class but the first carries one planted pattern
+  (`shapeletPatterns`: a bump, a ramp, a pulse) at a random position; the patterns and positions are the truth.
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino
   (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
   and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`

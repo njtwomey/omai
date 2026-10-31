@@ -115,6 +115,7 @@ import {
   sunspots,
 } from './timeseries.ts'
 import { loggedBandit, offlineMdp } from './trajectories.ts'
+import { shapeletSeries } from './shapelet-series.ts'
 import { plantedTransactions } from './transactions.ts'
 import {
   clusterAssumption,
@@ -224,6 +225,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   roundRobin,
   sCurve,
   seasonalSeries,
+  shapeletSeries,
   severedSphere,
   shapes,
   sincCurve,
@@ -382,6 +384,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['changepointSeries', 'Changepoints'],
     ['regimeSwitching', 'Two Gaussian regimes'],
     ['seasonalSeries', 'Seasonal series'],
+    ['shapeletSeries', 'Series with a planted shapelet'],
     ['sinusoids', 'Sinusoids'],
     ['plantedSeries', 'Planted motif, discord and regime'],
     ['garchReturns', 'GARCH returns'],
