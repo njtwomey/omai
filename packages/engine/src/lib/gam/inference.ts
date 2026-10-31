@@ -493,7 +493,30 @@ export interface Band {
   readonly simultaneous: boolean
 }
 
-function bandOf(
+/**
+ * The credible band of a linear combination of the coefficients `X[:, columns] beta[columns]` over `m` rows of a
+ * design-like matrix `X` `[m, p]` (the rows may be derivatives of the basis or differences of two terms' bases), with
+ * the standard error from the posterior covariance of `columns`.
+ *
+ * @param ctx - The fitted pieces.
+ * @param X - The matrix `[m, p]`, row-major, over all the coefficients.
+ * @param m - Rows.
+ * @param columns - The coefficients that enter.
+ * @param options - The level, the scale and `simultaneous`.
+ * @returns The band.
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { GAM_DEFAULTS, bandFromDesign, fitContext, fitGam, gamProblem, linear } from 'mdml-engine/gam'
+ * const x = Array.from({ length: 20 }, (_, i) => [i / 19])
+ * const hyper = { ...GAM_DEFAULTS, terms: [linear(0)] }
+ * const problem = gamProblem(x, x.map((r) => 3 * (r[0] ?? 0)), hyper)
+ * const ctx = fitContext(problem, fitGam(problem, hyper).state)
+ * // The slope itself: one row that picks the second coefficient.
+ * Math.round(bandFromDesign(ctx, Float64Array.of(0, 1), 1, [1], {}).fit[0] ?? 0) // => 3
+ * ```
+ */
+export function bandFromDesign(
   ctx: GamFitContext,
   X: Float64Array,
   m: number,
@@ -581,7 +604,7 @@ export function termBand(ctx: GamFitContext, term: number, x: TensorLike, option
   if (t === undefined) throw new MdmlError('value', `termBand: no term ${term}`)
   const { X, n } = evaluateDesign(ctx.problem.design, x)
   const columns = Array.from({ length: t.width }, (_, j) => t.offset + j)
-  return bandOf(ctx, X, n, columns, { ...options, scale: 'link' })
+  return bandFromDesign(ctx, X, n, columns, { ...options, scale: 'link' })
 }
 
 /**
@@ -604,7 +627,7 @@ export function termBand(ctx: GamFitContext, term: number, x: TensorLike, option
  */
 export function predictionBand(ctx: GamFitContext, x: TensorLike, options: BandOptions = {}): Band {
   const { X, n } = evaluateDesign(ctx.problem.design, x)
-  return bandOf(
+  return bandFromDesign(
     ctx,
     X,
     n,

@@ -4134,6 +4134,13 @@ on the null space of the smoothness penalty so the criterion can shrink a term o
 `residualsVsFitted`, `kIndex` (the basis-dimension check on residuals ordered by the covariate, with a shuffle
 p-value), `concurvity` (worst, observed and estimate), `cooksDistance`.
 
+`derivatives.ts` is functionals of the smooths with bands from the same posterior covariance: `predictTermsSe` (every
+term's effect with its standard error, terms left out by `exclude` without being evaluated, the band of the total),
+`smoothDerivative` (first or second derivative of a one-covariate smooth, by central differences or their Richardson
+extrapolation, since a basis exposes values and not derivatives; stencils shifted inward at the range's ends) and
+`smoothDifference` (the difference of two smooths, the levels of a by-variable, with pointwise or simultaneous bands from the
+joint covariance). The estimators carry them as verbs.
+
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
 (a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,

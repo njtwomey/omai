@@ -19,6 +19,13 @@ import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, Log } from '../trace/index.ts'
 import {
+  type DerivativeOptions,
+  predictTermsSe,
+  smoothDerivative,
+  smoothDifference,
+  type TermPredictions,
+} from './derivatives.ts'
+import {
   type Band,
   type BandOptions,
   fitContext,
@@ -87,6 +94,15 @@ export interface GamVerbs {
   readonly summary: () => GamSummary
   /** The credible band of a term's partial effect at new rows (pointwise, or simultaneous by simulation). */
   readonly termBand: (term: number, x: TensorLike, options?: BandOptions) => Band
+  /** The partial effect of every term with standard errors, with terms left out (`exclude`). */
+  readonly predictTermsSe: (
+    x: TensorLike,
+    options?: BandOptions & { readonly exclude?: readonly number[]; readonly intercept?: boolean },
+  ) => TermPredictions
+  /** The derivative of a smooth of one covariate, with a credible band. */
+  readonly smoothDerivative: (term: number, at: ArrayLike<number>, options?: DerivativeOptions) => Band
+  /** The difference between two smooths of one covariate (levels of a by-variable), with a credible band. */
+  readonly smoothDifference: (a: number, b: number, at: ArrayLike<number>, options?: BandOptions) => Band
   /** The credible band of the linear predictor or (on the response scale) the mean at new rows. */
   readonly predictionBand: (x: TensorLike, options?: BandOptions) => Band
   /** Draws of the coefficients from their Gaussian posterior approximation `[count, p]`. */
@@ -179,6 +195,9 @@ function verbsOf(p: GamParams, h: GamHyper, kind: 'regressor' | 'classifier'): G
   }
   const base: GamVerbs = {
     summary: () => gamSummary(ctx()),
+    predictTermsSe: (x, options) => predictTermsSe(ctx(), x, options),
+    smoothDerivative: (term, at, options) => smoothDerivative(ctx(), term, at, options),
+    smoothDifference: (a, b, at, options) => smoothDifference(ctx(), a, b, at, options),
     termBand: (term, x, options) => termBand(ctx(), term, x, options),
     predictionBand: (x, options) => predictionBand(ctx(), x, options),
     sampleCoefficients: (count, key) => sampleCoefficients(ctx(), count, key),
