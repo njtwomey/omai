@@ -417,6 +417,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `ensembles`   | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking                                              |
 | `kernel-methods` | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                           |
 | `gam`         | generalised additive models: smooth, tensor-product and parametric terms on the penalised bases of `stats/smoothing`, penalised IRLS with REML, GCV and UBRE smoothing selection, backfitting, effective degrees of freedom |
+| `covariance`  | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators with Mahalanobis distances and likelihoods, FastMCD and the elliptic envelope, the graphical lasso                          |
+| `anomaly`     | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules              |
 
 ### 4.1 `base/`
 
@@ -3711,6 +3713,62 @@ families), shape-constrained smooths in terms (`stats/smoothing` has `shapeConst
 effects, p-values of terms.
 built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
 
+### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)
+
+`shrinkage.ts` wraps `stats/covariance.ts` (`empiricalCovariance`, `shrunkCovariance`, `ledoitWolf`, `oas`: not
+duplicated here) as `covarianceEstimator` on the iterative base, with the location, covariance, precision (by
+pseudo-inverse), shrinkage intensity, `mahalanobis` (squared distances) and `score` (the mean Gaussian log likelihood)
+verbs; `squaredMahalanobis`, `mahalanobisDistances` and `mahalanobisRecord` (an `anomalyScores` record against the 97.5%
+chi-squared quantile) are the helpers. `robust.ts` is FastMCD (Rousseeuw and Van Driessen): `cStepAlgorithm` (one
+concentration step per step, the determinant falling), `fastMcdAlgorithm` (random `h`-subsets screened by two C-steps in
+`init`, the best refined step by step, then scikit-learn's consistency correction of the distances and the reweighting at
+the 97.5% quantile with the Croux-Haesbroeck factor), `minCovDet` and `ellipticEnvelope` (the Mahalanobis detector over
+`'mcd'`, `'empirical'`, `'shrunk'`, `'ledoit-wolf'` or `'oas'`, thresholded at the contamination quantile; it uses the
+outlier verbs of `anomaly`, so `covariance` imports `anomaly` and `anomaly` never imports `covariance`).
+`graphical-lasso.ts` is the graphical lasso by block coordinate descent as scikit-learn does it (each column's lasso
+through `optim`'s `lassoCoordinateDescent` in the Gram form, factored by Cholesky; the duality gap as the stopping rule),
+`graphicalLassoAlgorithm`, `graphicalLasso` and `graphicalLassoEstimator`, whose exposition is a `regularisationPath`
+of the partial correlations over a penalty grid. The block coordinate descent is intrinsic to the problem (the L1 term is
+not smooth, so it is not a `smoothSolvers` slot); the inner lasso is the library's.
+
+oracle: scikit-learn `graphical_lasso` at two penalties (tolerances tightened), `MinCovDet` (default and 0.9 support
+fraction) and `EllipticEnvelope` on data with planted outliers, where the oracle picks a data seed for which
+scikit-learn's random starts all find the same minimum (the determinant has several nearby local minima on the clean
+rows, and a golden needs the global one). The shrinkage estimators are tested in `stats/covariance`. TODO: the nested
+subsets of FastMCD for more than 500 rows, `assume_centered` in the MCD, `GraphicalLassoCV`, the LARS-solved lasso mode.
+built from: `stats` (covariance), `anomaly` (outlier verbs), `learn`, `numerics` (linalg), `optim` (lasso), `dists`
+(chi-squared), `random`, `trace`
+
+### 4.53 `anomaly/`: anomaly and outlier detection (scikit-learn ensemble and neighbors, PyOD ideas)
+
+`isolation.ts` is the isolation forest (Liu, Ting and Zhou) and the extended variant (Hariri, Kind and Brunner):
+`isolationTree` (random split per node on a subsample, flat node list; or a random hyperplane through a uniform point of
+the bounding box), `pathLength`, `isolationPath` (the nodes a point visits, for the explanation), `averagePathLength`
+(`c(n)`), `isolationForestAlgorithm` (one tree per step, the running scores and their change), `isolationForest`,
+`extendedIsolationForest` and the classes. The trees have no criterion, so they do not use `trees`; the growing is
+intrinsic. `neighbours.ts` is the local outlier factor (`lofAlgorithm` in three stages: neighbourhoods and
+k-distances, reachability densities, factors; `localOutlierFactors`, `localOutlierFactor`), the connectivity-based
+outlier factor (`averageChainingDistance` of the set-based nearest path, `cofAlgorithm`, `connectivityOutlierFactor`)
+and the k-nearest-neighbour distance (`knnAlgorithm`, `knnDetector`, aggregation `largest`, `mean` or `median`), all over
+`neighbourIndex` of `learn` (any metric of `distances`, brute force or tree); a training row is left out of its own
+neighbourhood as `kneighbors()` does, the verbs score new rows (novelty mode). `combine.ts` is what every detector ends
+in: `outlierVerbs` (`scoreSamples` higher is more anomalous, `decisionFunction` as `threshold - score`, `predict` -1 or
+1), `outlierExposition`, the thresholds (`contaminationThreshold`, `quantileThreshold`, `potThreshold` peaks over
+threshold with a generalised Pareto tail, `iqrThreshold`, `madThreshold`), the normalisations (`zscoreNormalise`,
+`minmaxNormalise`, `rankNormalise`, `unifyScores`) and the combinations (`averageScores`, `maximizationScores`,
+`aomScores`, `moaScores`, `combineScores`). Scores here are the positive anomaly scores, so `scoreSamples` is the negative
+of scikit-learn's.
+
+oracle: scikit-learn `LocalOutlierFactor` (training factors and novelty scores at two `k` and two metrics, the decision
+function, labels and threshold at a contamination and at `'auto'`). The isolation forest is tested through statistical
+properties (the outlier's score, the spread of the score falling with the trees, the contamination fraction flagged,
+reproducibility under a key), as its random trees do not match scikit-learn's draw for draw; the connectivity-based
+factor and the neighbour-distance score have no scikit-learn reference and are tested on hand-computed values. TODO:
+the statistical detectors (z-scores, Mahalanobis, PCA reconstruction, HBOS) and the one-class methods, which the chapter
+README lists.
+built from: `learn` (neighbours, iterative base), `distances`, `stats` (quantiles, ranks, extreme values), `random`,
+`trace`, `exposition`
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
@@ -3965,6 +4023,19 @@ built from: `linear` (the GLM core), `stats/smoothing`, `optim`, `numerics/linal
 - `checks.ts`: basis-dimension checks (k-index), concurvity, residual diagnostics, posterior simulation of smooths.
 - `gamlss.ts`: distributional regression (location, scale and shape each with an additive predictor).
 - `bayesian.ts`: GAMs as probabilistic programs (smoothness priors from penalties), solved by NUTS or Laplace.
+
+`covariance/` (sklearn.covariance)
+built from: `stats/covariance.ts`, `anomaly` (outlier verbs), `learn`, `optim` (lasso), `numerics/linalg`
+- `shrinkage.ts`: the empirical, shrunk, Ledoit-Wolf and OAS estimators on the iterative base, Mahalanobis distances,
+  the Gaussian log likelihood.
+- `robust.ts`: the C-step, FastMCD, `minCovDet`, the elliptic envelope.
+- `graphical-lasso.ts`: the graphical lasso by block coordinate descent, its regularisation path.
+
+`anomaly/` (sklearn.ensemble.IsolationForest, sklearn.neighbors.LocalOutlierFactor, PyOD)
+built from: `learn` (neighbour index, iterative base), `distances`, `stats`, `random`
+- `isolation.ts`: isolation trees and forests, the extended variant, isolation paths.
+- `neighbours.ts`: the local and connectivity-based outlier factors, the k-nearest-neighbour distance.
+- `combine.ts`: outlier verbs and exposition, thresholds, score normalisation and combination.
 
 `svm/` (sklearn.svm, LIBSVM, LIBLINEAR)
 built from: `optim/smo.ts`, `optim/quadratic.ts`, `kernels`, `learn/calibration.ts`

@@ -22,10 +22,12 @@ export type ModuleLoader = () => Promise<Readonly<Record<string, unknown>>>
  */
 export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/agents': () => import('mdml-engine/agents'),
+  'mdml-engine/anomaly': () => import('mdml-engine/anomaly'),
   'mdml-engine/autodiff': () => import('mdml-engine/autodiff'),
   'mdml-engine/base': () => import('mdml-engine/base'),
   'mdml-engine/cluster': () => import('mdml-engine/cluster'),
   'mdml-engine/context': () => import('mdml-engine/context'),
+  'mdml-engine/covariance': () => import('mdml-engine/covariance'),
   'mdml-engine/data': () => import('mdml-engine/data'),
   'mdml-engine/data/modifiers': () => import('mdml-engine/data/modifiers'),
   'mdml-engine/data/schema': () => import('mdml-engine/data/schema'),
