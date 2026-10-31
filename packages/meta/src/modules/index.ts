@@ -189,7 +189,6 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/stats/tests': () => import('mdml-engine/stats/tests'),
   'mdml-engine/stochastic': () => import('mdml-engine/stochastic'),
   'mdml-engine/survival': () => import('mdml-engine/survival'),
-  'mdml-engine/survival': () => import('mdml-engine/survival'),
   'mdml-engine/svm': () => import('mdml-engine/svm'),
   'mdml-engine/symbolic': () => import('mdml-engine/symbolic'),
   'mdml-engine/systems': () => import('mdml-engine/systems'),

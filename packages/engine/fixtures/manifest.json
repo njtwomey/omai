@@ -4182,6 +4182,14 @@
       "cases": 34
     },
     {
+      "fixture": "stats/shrinkage.json",
+      "source": "oracle/cases/stats/shrinkage.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "stats/smoothing/bases.json",
       "source": "oracle/cases/stats/smoothing/bases.py",
       "reference": {
@@ -4495,7 +4503,7 @@
         "scipy": "1.18.1",
         "statsmodels": "0.15.0"
       },
-      "cases": 34
+      "cases": 36
     },
     {
       "fixture": "svm/classifier.json",

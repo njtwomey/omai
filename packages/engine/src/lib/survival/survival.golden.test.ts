@@ -1,5 +1,5 @@
 import { goldenSuite, type Params } from '../../testing/suite.ts'
-import { asTensor, type Tensor } from '../tensor/index.ts'
+import { asTensor, reshape, type Tensor, toFlat } from '../tensor/index.ts'
 import * as S from './index.ts'
 
 const ties = (p: Params): S.CoxTies => p['ties'] as S.CoxTies
@@ -33,6 +33,13 @@ goldenSuite('survival analysis against statsmodels and scipy', 'survival/estimat
     const b = fit.baseline[0]
     // The reference reports H just before each time; its later entries are H(t_k) at all but the last time.
     return vec((b?.time ?? []).slice(0, -1), (b?.cumulativeHazard ?? []).slice(0, -1))
+  },
+  schoenfeld: ([time, event, x]) => {
+    const data = S.coxData(time, event, x ?? time)
+    const fit = S.coxPh(data, { ties: 'breslow' })
+    const r = S.schoenfeldResiduals(data, fit.beta)
+    // The reference marks censored subjects with -999 in place of NaN.
+    return reshape(asTensor(toFlat(r).map((v) => (Number.isNaN(v) ? -999 : v))), r.shape)
   },
   coxStrata: ([time, event, x, strata]) => {
     const fit = S.coxPh(S.coxData(time, event, x ?? time, strata === undefined ? {} : { strata }))

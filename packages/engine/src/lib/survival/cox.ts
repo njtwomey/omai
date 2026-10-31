@@ -556,3 +556,77 @@ export function coxPredictSurvival(
   const risk = Math.exp(eta)
   return Array.from(times, (t) => Math.exp(-baselineHazardAt(fit, t, stratum) * risk))
 }
+
+/**
+ * Schoenfeld residuals of a fitted Cox model: at each event, the covariates of the subject who failed minus their
+ * average over the risk set weighted by `exp(x beta)` (Breslow's form, also what statsmodels' `PHReg` reports). They
+ * average to zero under proportional hazards, and a trend of a covariate's residuals against time is evidence that its
+ * effect changes with time.
+ *
+ * @param data - The data the model was fitted to.
+ * @param beta - The coefficients.
+ * @returns An `n x p` tensor in the order of the data, with `NaN` rows for censored subjects.
+ * @example
+ * ```ts
+ * import { coxData, coxPh, schoenfeldResiduals } from 'mdml-engine/survival'
+ * const data = coxData([1, 2, 3, 4], [1, 1, 1, 0], [0.2, 0.9, 0.4, 1.3])
+ * const r = schoenfeldResiduals(data, coxPh(data).beta)
+ * r.shape // => [4, 1]
+ * ```
+ */
+export function schoenfeldResiduals(data: CoxData, beta: readonly number[]): Tensor {
+  const plan = planOf(data, 'breslow')
+  const { n, p } = plan
+  const e = new Float64Array(n)
+  for (let k = 0; k < n; k++) {
+    let eta = 0
+    for (let j = 0; j < p; j++) eta += (plan.x[k * p + j] ?? 0) * (beta[j] ?? 0)
+    e[k] = Math.exp(eta)
+  }
+  const reverse = new Float64Array(n + 1)
+  const reverseX = new Float64Array((n + 1) * p)
+  for (let k = n - 1; k >= 0; k--) {
+    reverse[k] = (reverse[k + 1] ?? 0) + (e[k] ?? 0)
+    for (let j = 0; j < p; j++)
+      reverseX[k * p + j] = (reverseX[(k + 1) * p + j] ?? 0) + (e[k] ?? 0) * (plan.x[k * p + j] ?? 0)
+  }
+  const out = new Float64Array(n * p).fill(Number.NaN)
+  for (let g = 0; g < plan.groupStart.length; g++) {
+    const start = plan.groupStart[g] ?? 0
+    const stop = plan.stratumEnd[g] ?? n
+    const risk = (reverse[start] ?? 0) - (reverse[stop] ?? 0)
+    for (let k = start; k < (plan.groupEnd[g] ?? start); k++) {
+      if (plan.event[k] !== 1) continue
+      const i = plan.order[k] ?? 0
+      for (let j = 0; j < p; j++) {
+        const mean = ((reverseX[start * p + j] ?? 0) - (reverseX[stop * p + j] ?? 0)) / risk
+        out[i * p + j] = (plan.x[k * p + j] ?? 0) - mean
+      }
+    }
+  }
+  return fromStorage(out, [n, p], 'float64')
+}
+
+/**
+ * Martingale residuals of a fitted Cox model, `delta_i - H0(t_i) exp(x_i beta)`: the observed minus the expected number
+ * of events of each subject (they sum to zero and lie in `(-Infinity, 1]`), the residuals to plot against a covariate
+ * to see its functional form.
+ *
+ * @param data - The data the model was fitted to.
+ * @param fit - The fit.
+ * @returns One residual per subject, in the order of the data.
+ * @example
+ * ```ts
+ * import { coxData, coxPh, martingaleResiduals } from 'mdml-engine/survival'
+ * const data = coxData([1, 2, 3, 4], [1, 1, 1, 0], [0.2, 0.9, 0.4, 1.3])
+ * martingaleResiduals(data, coxPh(data, { ties: 'breslow' })).length // => 4
+ * ```
+ */
+export function martingaleResiduals(data: CoxData, fit: Pick<CoxFit, 'beta' | 'baseline'>): number[] {
+  const { sample, strata, p } = data
+  return Array.from({ length: sample.n }, (_, i) => {
+    let eta = 0
+    for (let j = 0; j < p; j++) eta += (data.x[i * p + j] ?? 0) * (fit.beta[j] ?? 0)
+    return (sample.event[i] ?? 0) - baselineHazardAt(fit, sample.time[i] ?? 0, strata[i] ?? 0) * Math.exp(eta)
+  })
+}

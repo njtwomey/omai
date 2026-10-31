@@ -362,6 +362,70 @@ describe('concordance index', () => {
   })
 })
 
+describe('residuals', () => {
+  const { time, event, x } = planted(60, 9)
+
+  it('has Schoenfeld residuals that are the failed subject minus the risk-set average, summing to the score', () => {
+    const data = S.coxData(time, event, x)
+    const fit = S.coxPh(data, { ties: 'breslow' })
+    const r = toFlat(S.schoenfeldResiduals(data, fit.beta))
+    // The residuals of the events add up to the score, which is zero at the fit.
+    for (let j = 0; j < 2; j++) {
+      let sum = 0
+      for (let i = 0; i < time.length; i++) if (event[i] === 1) sum += r[i * 2 + j] ?? 0
+      expect(Math.abs(sum)).toBeLessThan(1e-6)
+    }
+    for (let i = 0; i < time.length; i++) expect(Number.isNaN(r[i * 2] ?? 0)).toBe(event[i] === 0)
+  })
+
+  it('has martingale residuals that sum to zero for Breslow ties and never exceed one', () => {
+    const data = S.coxData(time, event, x)
+    const fit = S.coxPh(data, { ties: 'breslow' })
+    const m = S.martingaleResiduals(data, fit)
+    expect(Math.abs(m.reduce((a, b) => a + b, 0))).toBeLessThan(1e-6)
+    expect(Math.max(...m)).toBeLessThanOrEqual(1)
+  })
+})
+
+describe('scoring predictions under censoring', () => {
+  it('estimates the censoring distribution as the Kaplan-Meier curve of the censorings', () => {
+    const g = S.censoringSurvival(S.survivalSample([1, 2, 3, 4], [1, 0, 1, 0]))
+    expect(g(1)).toBe(1)
+    expect(g(2.5)).toBeCloseTo(2 / 3, 12)
+    expect(g(10)).toBe(0)
+  })
+
+  it('is the mean squared error of the predictions without censoring, and re-weights with it', () => {
+    expect(S.brierScore([1, 2, 3, 4], undefined, [0.1, 0.4, 0.6, 0.9], 2.5)).toBeCloseTo(0.085, 12)
+    expect(S.brierScore([1, 2, 3, 4], undefined, [0.5, 0.5, 0.5, 0.5], 2.5)).toBeCloseTo(0.25, 12)
+    // Censored at 2 (dropped), events at 1 and 3: weights 1 and 1 / G(2.5) = 3 / 2 for the subjects past the horizon.
+    expect(S.brierScore([1, 2, 3, 4], [1, 0, 1, 0], [0.2, 0.5, 0.7, 0.9], 2.5)).toBeCloseTo(
+      (0.04 + 0.09 * 1.5 + 0.01 * 1.5) / 4,
+      12,
+    )
+    const ibs = S.integratedBrierScore(
+      [1, 2, 3, 4],
+      undefined,
+      [
+        [0.9, 0.5],
+        [0.8, 0.4],
+        [0.9, 0.7],
+        [1, 0.9],
+      ],
+      [0.5, 2.5],
+    )
+    expect(ibs).toBeCloseTo((0.015 + 0.1275) / 2, 12)
+  })
+
+  it('has a cumulative/dynamic AUC that weights failures by the inverse censoring probability', () => {
+    expect(S.cumulativeDynamicAuc([1, 2, 3, 4], undefined, [4, 3, 2, 1], 2.5)).toBe(1)
+    expect(S.cumulativeDynamicAuc([1, 2, 3, 4], undefined, [1, 1, 1, 1], 2.5)).toBe(0.5)
+    // Failures at 1 (weight 1) and 3 (weight 1 / G(3-)^2 = 2.25) against the survivor at 4: only the first is ranked right.
+    expect(S.cumulativeDynamicAuc([1, 2, 3, 4], [1, 0, 1, 0], [5, 4, 1, 2], 3.5)).toBeCloseTo(1 / 3.25, 12)
+    expect(() => S.cumulativeDynamicAuc([1, 2], undefined, [1, 2], 5)).toThrow(/survivor/)
+  })
+})
+
 /** The first `n` rows of a covariate matrix. */
 function sliceRows(x: TensorLike, n: number): TensorLike {
   return sliceAxis(x, 0, 0, n)

@@ -1396,7 +1396,8 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
   `aliasStructure` (defining relation, resolution, alias chains), `latinSquareDesign`, `oneWayAnova` and `twoWayAnova`
   (Type I, II and III sums of squares; golden against statsmodels `anova_lm`).
 - `shrinkage.ts`: `jamesStein`, `positivePartJamesStein` (targets zero, a vector or the grand mean; SURE) and
-  `empiricalBayesNormalMeans` (homoscedastic Efron-Morris, heteroscedastic DerSimonian-Laird moments).
+  `empiricalBayesNormalMeans` (homoscedastic Efron-Morris, heteroscedastic DerSimonian-Laird moments; the
+  heteroscedastic fit is golden-tested against statsmodels `combine_effects`).
 - `missing.ts`: `missingnessProfile` (columns, rows, patterns) and `littleMcarTest` (Gaussian EM moments, chi-square
   over the pattern means; tested against the closed-form monotone-pattern maximum likelihood, no reference library
   implements it).
@@ -3803,18 +3804,21 @@ solver reaches the same optimum), and the fit carries the covariance from the ob
 likelihood-ratio and score tests, the concordance, Breslow's baseline cumulative hazard per stratum and
 `coxPredictSurvival`. `aft.ts` is the accelerated failure time family (`aftProblem`, `aftAlgorithm`, `aft`: Weibull,
 log-normal, log-logistic, exponential) on the same slot, with `aftPredictSurvival` and `aftPredictQuantile`.
-`concordance.ts` is Harrell's C (`concordanceIndex`, with pair counts). The planted generator is `survivalData` of
+`cox.ts` also has the Schoenfeld and martingale residuals. `concordance.ts` is Harrell's C (`concordanceIndex`, with pair
+counts). `prediction.ts` scores predictions under censoring with inverse-probability-of-censoring weights: the
+censoring distribution (`censoringSurvival`), the Brier score and its integral (`brierScore`, `integratedBrierScore`)
+and Uno's cumulative/dynamic AUC (`cumulativeDynamicAuc`). The planted generator is `survivalData` of
 `datasets` (Weibull or exponential proportional hazards and log-normal AFT with known coefficients), which the tests
 use.
 
 oracle: statsmodels `SurvfuncRight` (curve, Greenwood errors, risk sets), `survdiff` (log-rank, Gehan-Breslow,
 Tarone-Ware, Fleming-Harrington, two and three groups, with and without tied times), `PHReg` (coefficients, errors,
-partial log-likelihood and baseline hazard for both tie methods, and a stratified fit); the AFT fits are compared with
+partial log-likelihood, baseline hazard and Schoenfeld residuals for both tie methods, and a stratified fit); the AFT fits are compared with
 a maximum-likelihood fit written from `scipy.stats` log densities (Gumbel, normal, logistic) polished by Newton steps
 on numerical derivatives, and the concordance index with a direct count of the pairs (neither statsmodels nor
-scikit-learn has an equivalent installed). TODO: left truncation (entry times), case weights, time-varying
-covariates, interval and left censoring for the AFT family, Schoenfeld residuals and the proportional-hazards test,
-the time-dependent Brier score and AUC.
+scikit-learn has an equivalent installed); the Brier score and AUC are tested on hand-computed values. TODO: left
+truncation (entry times), case weights, time-varying covariates, interval and left censoring for the AFT family, the
+Grambsch-Therneau proportional-hazards test.
 built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
 `trace`, `space`, `random`
 

@@ -126,7 +126,7 @@ def cases() -> list[Case]:
         strata = (x[:, 0] > 0).astype(float)
         for tie in ["breslow", "efron"]:
             fit = PHReg(time, x, status=event, ties=tie).fit()
-            times, cumhaz, _ = fit.baseline_cumulative_hazard[0]
+            times, cumhaz, _ = fit.baseline_cumulative_hazard[0]  # pyright: ignore[reportIndexIssue]
             out.append(
                 case(
                     f"cox/{name}/{tie}",
@@ -143,13 +143,25 @@ def cases() -> list[Case]:
                     f"cox/{name}/{tie}/baseline",
                     "coxBaseline",
                     [time, event, x],
-                    # statsmodels reports the cumulative hazard just before each time, so its entries 1.. are H(t_k) for k < m - 1.
+                    # statsmodels reports H just before each time: its entries 1.. are H(t_k) for k < m - 1.
                     np.concatenate([times[:-1], cumhaz[1:]]),
                     rtol=1e-6,
                     atol=1e-8,
                     ties=tie,
                 )
             )
+        residual_fit = PHReg(time, x, status=event, ties="breslow").fit()
+        schoenfeld = np.asarray(residual_fit.schoenfeld_residuals)
+        out.append(
+            case(
+                f"cox/{name}/schoenfeld",
+                "schoenfeld",
+                [time, event, x],
+                np.nan_to_num(schoenfeld, nan=-999.0),
+                rtol=1e-6,
+                atol=1e-8,
+            )
+        )
         stratified = PHReg(time, x[:, [1]], status=event, strata=strata, ties="efron").fit()
         out.append(
             case(
