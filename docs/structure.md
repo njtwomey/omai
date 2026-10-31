@@ -809,6 +809,14 @@ primitives; "custom" means a dedicated rule.
   `kroneckerSolve`.
 - `randomized.ts`: `randomizedSvd`, `randomizedRangeFinder`, `randomProjectionMatrix`, `johnsonLindenstraussDim`,
   `hutchinsonTrace`, `stochasticLogdet`.
+- `subspace.ts`: `subspaceIterationAlgorithm` (a block power iteration, one block product and QR per step, with the
+  Rayleigh-Ritz values and residuals), `subspaceIteration`.
+- `svd-steps.ts`: `jacobiSvdAlgorithm` (one-sided Jacobi, a step is a rotation or a sweep; the off-diagonal measure is
+  the largest column cosine), `jacobiSvd`, `jacobiSingularValues`.
+- `completion.ts`: matrix completion from observed entries (`ObservedEntries`): `alsCompletionAlgorithm` (one
+  half-sweep of ridge solves per step), `sgdCompletionAlgorithm` (biased factorisation, one epoch per step),
+  `implicitAlsAlgorithm` (confidence-weighted implicit feedback), `softImputeAlgorithm` and `softImpute` (iterated
+  soft-thresholded SVD), `softImputeLambdaMax`, `predictEntry`, `factorsToMatrix`.
 
 `sparse/` (scipy.sparse)
 - `csr.ts`: `CsrMatrix`, `csr`, `fromCoo`, `toDense`, `spmv`, `spmm`, `transposeCsr`, `diagCsr`, `csrAdd`,
@@ -818,6 +826,13 @@ primitives; "custom" means a dedicated rule.
   adjoint solves).
 - `eigen.ts`: `lanczos` (full reorthogonalisation, deflation), `arnoldi`, `eigsh` (top k, with locking for repeated
   eigenvalues), `svds`.
+- `lanczos-steps.ts`: `lanczosAlgorithm` (one Krylov vector per step, with the Ritz values and residuals, and a switch
+  for reorthogonalisation to watch the basis lose orthogonality), `lanczosSteps`.
+- `stationary.ts`: `stationaryAlgorithm` (Jacobi with damping, Gauss-Seidel, SOR; one sweep per step), `stationarySolve`,
+  `jacobi`, `gaussSeidel`, `sor`, `iterationMatrix`, `stationarySpectralRadius`, `sorOptimalOmega`.
+- `multigrid.ts`: `poisson1d`, `poisson2d`, `prolongation` (linear and bilinear), `multigridAlgorithm` (two-grid, V and W
+  cycles with Galerkin coarse operators and a stationary smoother; the residual after each stage of a cycle),
+  `multigridCycle` (the iterate after each stage, for the error by frequency), `multigridSolve`.
 
 `polynomial/` (numpy.polynomial; composed)
 - `power.ts` (lowest degree first, as numpy.polynomial): `polyval`, `polyvander`, `polyfit`, `polyder`, `polyint`,
@@ -866,7 +881,8 @@ primitives; "custom" means a dedicated rule.
   equioscillation, `chebyshevSeries`.
 - `pade.ts`: `pade` (approximants from Taylor coefficients), `continuedFraction` (modified Lentz).
 - `acceleration.ts`: `richardson`, `aitken`, `shanks`, `wynnEpsilon`, `eulerTransform`.
-- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, `toFloat32`, `twoSum`, `twoProduct`, `compensatedSum`
+- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon` (for float64, float32, float16, bfloat16), `FLOAT_FORMATS`, `toFloat32`, `toFloat16`, `toBfloat16`,
+  `roundToFormat` (emulated rounding with subnormals and overflow), `twoSum`, `twoProduct`, `compensatedSum`
   (naive, Kahan, and base's Neumaier and pairwise sums), `propagateError`, `conditionNumber`, `significantDigits`.
 
 `fourier/` (numpy.fft, scipy.fft; linear, so differentiable; complex pairs come from `tensor/complex.ts`)
@@ -992,6 +1008,12 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
   (keeping the density truth consistent; `featureTransform`), `withCorrelatedFeatures` (Toeplitz and equicorrelated).
 - `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
   recurring), `shiftedSplit`, `semiSupervisedSplit`.
+- `modifiers/shift.ts` also has `withSubpopulationShift` (a group under-represented in the source, with the density ratio) and
+  `withShortcut` (a feature tracking the label at the source and independent of it at the target).
+- `modifiers/leaks.ts`: `withLeak` (a noisy copy of the target, or a target encoding fitted on all rows) and
+  `withDuplicates` (exact or jittered copies shuffled in, with the source row of each as truth).
+- `modifiers/images.ts`: image augmentations with their draws kept as truth: `withRandomCrop` (padding, offsets), `withRandomFlip`,
+  `withCutout`, `withMixup` and `withCutmix` (weights, partners and soft labels), each also a recipe modifier.
 
 ### 4.12 `foundations/`: mathematical foundations
 
@@ -2385,6 +2407,9 @@ none of those weights.
   or a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from embeddings (idf weights, baseline
   rescaling); perplexity; distinct-n. The edit alignment, LCS and n-gram counts come from `text/similarity.ts` and
   `text/shingles.ts`; private `_ter.ts`.
+- `latent.ts`: latent-factor data with the factors as truth: `mixedSources` (non-Gaussian sources and their mixing
+  matrix, for ICA), `twoViews` (shared latent signals in two views, with the population canonical correlations, for CCA
+  and PLS), `toySuperposition` (sparse features with importances).
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
@@ -5183,14 +5208,25 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `corpus.ts`: toy and topic corpora with true topics (`naiveBayesCorpus`, `topicCorpus` with Dirichlet or bars
   topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
   titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
-  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage).
+  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage), tagged sentences
+  from a tag HMM with its tables as truth (`taggedCorpus`), and typed words with the intended ones through an edit
+  channel (`typoPairs`, for noisy-channel spelling correction).
+- `transactions.ts`: baskets with planted itemsets (`plantedTransactions`; the exact `expectedSupport` of any itemset).
+- `captions.ts`: scenes of coloured shapes with template captions and questions (`captionedShapes`; a paired
+  image-text schema in `data/schema/` is still to do, the text sits in the truth).
+- `audio.ts`: `spokenDigits`, a stream of synthetic spoken digits (formant trajectories over a harmonic source, speakers
+  with pitch, speed and vocal-tract scale) with the digit of every sample and the utterance list as truth.
+- `timeseries.ts` also has `plantedSeries` (a motif planted repeatedly, a discord and a regime change with known
+  positions), `garchReturns` (the conditional variance as truth) and `coupledSeries` (VAR or coupled logistic maps
+  through a known directed graph).
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino
   (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
   and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`
   collection.
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
-  `modularArithmetic`), each with an exact solver in its truth.
+  `modularArithmetic`), each with an exact solver in its truth, and in-context linear regression written as quantised
+  tokens (`inContextRegression`, with the least-squares and Bayes predictions).
 - `graphs.ts`: karate club (`karateClub`), Les Miserables (`lesMiserables`), contextual stochastic block models
   (`contextualSbm`), graph families (`familyGraph`, `graphFamilies`: Erdos-Renyi, Barabasi-Albert, Watts-Strogatz,
   grids, cycles, paths, stars, complete graphs, trees, geometric graphs), small molecules (`smallMolecules`, read from
@@ -5200,14 +5236,20 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   corners (`geometricScenes`), a small Fashion-MNIST (`fashionMnistTest`, remote, parsed by `parseIdxImages`).
 - `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs: `linearScm` (random DAGs,
   Gaussian or non-Gaussian noise, total effects, interventional means), `treatmentEffects` (confounded treatment,
-  potential outcomes, CATE, propensities), `instrumentalVariables`.
+  potential outcomes, CATE, propensities), `instrumentalVariables`, `panelEffects` (a unit-by-period panel with
+  staggered or simultaneous adoption, a differential pre-trend and dynamic effects, for difference in differences and
+  event studies), `discontinuityDesign` (sharp or fuzzy, the jump and the first stage as truth).
 - `experiments.ts`: A/B test data with known effects (`abTest`: conversion, continuous or revenue metrics, several
-  arms, pre-period covariates for CUPED, arrival days and novelty effects).
+  arms, pre-period covariates for CUPED, arrival days and novelty effects), `networkExperiment` (a small-world network
+  with unit or cluster randomisation and spillover: direct, spillover and total effects), `carryoverExperiment` (two
+  chained experiments with a persistent first effect and the naive bias).
 - `trajectories.ts`: logged bandit data (`loggedBandit`, with exact policy values), offline RL datasets from known
   behaviour policies (`offlineMdp` on random tabular MDPs or Strens' chain, `policyEvaluation`, `TabularMdp`).
 - `weak-labels.ts`: labelling functions with known accuracies (`labellingFunctions`), crowd labels (`crowdLabels`,
   Dawid-Skene), positive-unlabelled data (`positiveUnlabelled`, SCAR and SAR), label-proportion bags
-  (`labelProportionBags`), each with the exact posterior or mechanism.
+  (`labelProportionBags`), multiple-instance bags with witnesses (`multipleInstanceBags`), clusters whose classes follow
+  or break the cluster assumption (`clusterAssumption`, the exact posterior); crowd workers can be spammers or
+  adversaries. Each carries the exact posterior or mechanism.
 - `operators.ts`: operator-learning pairs (`heatOperator`, `burgersOperator` solved exactly by Cole-Hopf,
   `antiderivativeOperator` with Gaussian-process inputs).
 - `catalogue.ts`: `datasetGenerators` (every generator by name, for recipes and controls), `remoteDatasets`, and

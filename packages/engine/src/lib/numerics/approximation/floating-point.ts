@@ -1,6 +1,6 @@
 /**
  * Floating-point arithmetic made visible: neighbours and gaps of doubles (`nextAfter`, `ulp`, machine epsilon),
- * rounding to float32, error-free transformations (TwoSum and TwoProduct), summation algorithms to compare their
+ * rounding to float32, float16 and bfloat16 (emulated in doubles, with their ranges and gaps), error-free transformations (TwoSum and TwoProduct), summation algorithms to compare their
  * rounding errors, condition numbers and first-order error propagation from autodiff, and counts of correct significant
  * digits.
  */
@@ -59,10 +59,39 @@ export function ulp(x: number): number {
   return nextAfter(a, Number.POSITIVE_INFINITY) - a
 }
 
+/** The binary formats the module can name: IEEE double and single, IEEE half (float16) and Google's bfloat16. */
+export type FloatFormatName = 'float64' | 'float32' | 'float16' | 'bfloat16'
+
+/** The shape of a binary floating-point format. */
+export interface FloatFormat {
+  /** Bits of the fraction (the stored mantissa): 52, 23, 10, 7. */
+  readonly fractionBits: number
+  /** The smallest normal exponent: 2^minExponent is the smallest normal number. */
+  readonly minExponent: number
+  /** The largest finite number. */
+  readonly max: number
+}
+
+/**
+ * The binary floating-point formats by name: fraction bits, smallest normal exponent and largest finite value.
+ *
+ * @example
+ * ```ts
+ * import { FLOAT_FORMATS } from 'mdml-engine/numerics/approximation'
+ * FLOAT_FORMATS.float16.max // => 65504
+ * ```
+ */
+export const FLOAT_FORMATS: Readonly<Record<FloatFormatName, FloatFormat>> = {
+  float64: { fractionBits: 52, minExponent: -1022, max: Number.MAX_VALUE },
+  float32: { fractionBits: 23, minExponent: -126, max: (2 - 2 ** -23) * 2 ** 127 },
+  float16: { fractionBits: 10, minExponent: -14, max: 65504 },
+  bfloat16: { fractionBits: 7, minExponent: -126, max: (2 - 2 ** -7) * 2 ** 127 },
+}
+
 /**
  * Machine epsilon of a floating-point format: the gap between 1 and the next number (numpy.finfo(...).eps).
  *
- * @param dtype - float64 (default) or float32.
+ * @param dtype - float64 (default), float32, float16 or bfloat16.
  * @returns Epsilon.
  * @example
  * ```ts
@@ -70,8 +99,8 @@ export function ulp(x: number): number {
  * machineEpsilon('float32') // => 1.1920928955078125e-7
  * ```
  */
-export function machineEpsilon(dtype: 'float64' | 'float32' = 'float64'): number {
-  return dtype === 'float64' ? 2 ** -52 : 2 ** -23
+export function machineEpsilon(dtype: FloatFormatName = 'float64'): number {
+  return 2 ** -FLOAT_FORMATS[dtype].fractionBits
 }
 
 /**
@@ -87,6 +116,74 @@ export function machineEpsilon(dtype: 'float64' | 'float32' = 'float64'): number
  */
 export function toFloat32(x: number): number {
   return Math.fround(x)
+}
+
+/** The binary exponent floor(log2 |x|) of a finite nonzero double, read from its bits (subnormals report -1023). */
+function exponentOf(x: number): number {
+  buffer.setFloat64(0, x)
+  return ((buffer.getUint32(0) >>> 20) & 0x7ff) - 1023
+}
+
+/** Round half to even at an integer. */
+function roundHalfEven(v: number): number {
+  const r = Math.round(v)
+  return Math.abs(v - Math.trunc(v)) === 0.5 && r % 2 !== 0 ? r - 1 : r
+}
+
+/**
+ * Round a double to the nearest value of a narrower binary format (round half to even; gradual underflow into
+ * subnormals; overflow to infinity), returned as a double. Infinities and NaN pass through.
+ *
+ * @param x - A double.
+ * @param format - The target format (default float16).
+ * @returns The value of `format` nearest to `x`.
+ * @example
+ * ```ts
+ * import { roundToFormat } from 'mdml-engine/numerics/approximation'
+ * roundToFormat(1 + 2 ** -11, 'float16') // => 1
+ * ```
+ */
+export function roundToFormat(x: number, format: FloatFormatName = 'float16'): number {
+  if (!Number.isFinite(x) || x === 0) return x
+  const f = FLOAT_FORMATS[format]
+  if (format === 'float64') return x
+  const e = Math.max(exponentOf(x), f.minExponent)
+  // The quantum is the spacing of the format at this magnitude (the subnormal spacing below the smallest normal).
+  const quantum = 2 ** (e - f.fractionBits)
+  const r = roundHalfEven(Math.abs(x) / quantum) * quantum
+  const out = r > f.max ? Number.POSITIVE_INFINITY : r
+  return x < 0 ? -out : out
+}
+
+/**
+ * Round to the nearest IEEE half-precision (float16) value: a 10-bit fraction, normals down to 2^-14, subnormals to
+ * 2^-24, largest finite value 65504, overflow to infinity. The way mixed-precision training loses small gradients.
+ *
+ * @param x - A double.
+ * @returns The float16 value, as a double.
+ * @example
+ * ```ts
+ * import { toFloat16 } from 'mdml-engine/numerics/approximation'
+ * toFloat16(0.1) // => 0.0999755859375
+ * ```
+ */
+export function toFloat16(x: number): number {
+  return roundToFormat(x, 'float16')
+}
+
+/**
+ * Round to the nearest bfloat16 value: float32's 8-bit exponent (so its range) with a 7-bit fraction.
+ *
+ * @param x - A double.
+ * @returns The bfloat16 value, as a double.
+ * @example
+ * ```ts
+ * import { toBfloat16 } from 'mdml-engine/numerics/approximation'
+ * toBfloat16(0.1) // => 0.10009765625
+ * ```
+ */
+export function toBfloat16(x: number): number {
+  return roundToFormat(x, 'bfloat16')
 }
 
 /**

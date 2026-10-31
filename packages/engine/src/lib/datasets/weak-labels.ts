@@ -1,7 +1,9 @@
 /**
  * Weak supervision with known clean labels: labelling functions that vote or abstain (data programming, as in Snorkel),
  * crowdsourced labels from workers with their own confusion matrices (the Dawid-Skene setting), positive-unlabelled
- * data under SCAR or biased labelling, and bags with only their label proportions observed.
+ * data under SCAR or biased labelling, bags with only their label proportions observed, bags with hidden witness
+ * instances for multiple-instance learning, and clusters whose classes follow the cluster assumption of
+ * semi-supervised learning, or break it.
  */
 
 import { softmaxOf } from '../base/index.ts'
@@ -14,6 +16,7 @@ import {
 } from '../data/index.ts'
 import { categorical, dirichlet, foldIn, type Key, normal, permutation, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
+import { toFlat, type Value } from '../tensor/index.ts'
 import { labels, matrix, stamp } from './_util.ts'
 
 /** Binary or multiclass features: class `c` centred at `separation × e_c` in `d` dimensions, unit noise. */
@@ -163,6 +166,16 @@ export const crowdLabels: DatasetGenerator<InteractionData> = {
       default: 4,
       label: 'diagonal concentration of confusion matrices',
     }),
+    spammers: real(0, 1, {
+      description: 'The share of workers who answer uniformly at random whatever the item.',
+      default: 0,
+      label: 'share of spammers',
+    }),
+    adversaries: real(0, 1, {
+      description: 'The share of workers who answer the class after the true one (cyclically) with their skill.',
+      default: 0,
+      label: 'share of adversaries',
+    }),
   }),
   generate: (k, knobs) => {
     const ni = knobs['items'] as number
@@ -170,16 +183,25 @@ export const crowdLabels: DatasetGenerator<InteractionData> = {
     const per = Math.min(knobs['perItem'] as number, nw)
     const kc = knobs['classes'] as number
     const skill = knobs['skill'] as number
+    // The first workers are spammers, then adversaries, the rest honest: the kind is part of the truth.
+    const nSpam = Math.round((knobs['spammers'] as number) * nw)
+    const nAdv = Math.min(nw - nSpam, Math.round((knobs['adversaries'] as number) * nw))
+    const workerKinds = Array.from({ length: nw }, (_, w) =>
+      w < nSpam ? 'spammer' : w < nSpam + nAdv ? 'adversary' : 'honest',
+    )
     const confusion = Array.from({ length: nw }, (_, w) =>
-      Array.from({ length: kc }, (_, c) =>
-        Array.from(
+      Array.from({ length: kc }, (_, c) => {
+        const kind = workerKinds[w]
+        if (kind === 'spammer') return new Array<number>(kc).fill(1 / kc)
+        const peak = kind === 'adversary' ? (c + 1) % kc : c
+        return Array.from(
           dirichlet(
             foldIn(foldIn(k, 0), w * kc + c),
-            Array.from({ length: kc }, (_, j) => (j === c ? 1 + skill : 1)),
+            Array.from({ length: kc }, (_, j) => (j === peak ? 1 + skill : 1)),
             1,
           ).data,
-        ),
-      ),
+        )
+      }),
     )
     const truthLabels = Array.from(categorical(foldIn(k, 1), new Array<number>(kc).fill(1), [ni]).data)
     const users: number[] = []
@@ -215,7 +237,11 @@ export const crowdLabels: DatasetGenerator<InteractionData> = {
         { users, items, values, nUsers: nw, nItems: ni },
         stamp('crowdLabels', crowdLabels.description, knobs),
       ),
-      truth: { clusters: labels(truthLabels), latents: { trueLabels: truthLabels }, extra: { confusion, posterior } },
+      truth: {
+        clusters: labels(truthLabels),
+        latents: { trueLabels: truthLabels },
+        extra: { confusion, posterior, workerKinds },
+      },
     }
   },
 }
@@ -349,6 +375,161 @@ export const labelProportionBags: DatasetGenerator<ClassificationData> = {
         classes: Array.from({ length: kc }, (_, c) => String(c)),
       }),
       truth: { latents: { trueLabels: labels(y) }, extra: { bags: bag, proportions, bagSizes: sizes } },
+    }
+  },
+}
+
+/**
+ * Multiple-instance bags: rows grouped into bags of instances, where a bag is positive when it holds at least one
+ * witness (a positive instance) and negative when it holds none. The dataset's target is the bag's label, repeated for
+ * each of its instances; the truth has every instance's own label, the bag of every row and the bag labels.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { multipleInstanceBags } from 'mdml-engine/datasets'
+ * generate(multipleInstanceBags, { knobs: { bags: 6, bagSize: 4 } }).data.x.shape // => [24, 2]
+ * ```
+ */
+export const multipleInstanceBags: DatasetGenerator<ClassificationData> = {
+  name: 'multipleInstanceBags',
+  kind: 'classification',
+  description: 'Bags of instances, positive when they hold a witness; only the bag label is observed.',
+  knobs: dict({
+    bags: int(2, 1_000_000, { label: 'bags', description: 'The number of bags.', default: 100 }),
+    bagSize: int(1, 1000, { label: 'bag size', description: 'Instances per bag.', default: 5 }),
+    features: int(1, 100, { label: 'features', description: 'The number of feature columns.', default: 2 }),
+    positiveShare: real(0, 1, {
+      label: 'positive bags',
+      description: 'The share of bags that are positive.',
+      default: 0.5,
+    }),
+    witnessRate: real(0, 1, {
+      label: 'witness rate',
+      description: 'In a positive bag, the chance that an instance is a witness (one is always forced).',
+      default: 0.3,
+    }),
+    separation: real(0, 10, {
+      label: 'separation',
+      description: 'The distance between witnesses and other instances, in standard deviations.',
+      default: 3,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const nb = knobs['bags'] as number
+    const size = knobs['bagSize'] as number
+    const d = knobs['features'] as number
+    const n = nb * size
+    const rate = knobs['witnessRate'] as number
+    const sep = knobs['separation'] as number
+    const ub = uniform(foldIn(k, 0), [nb]).data
+    const ui = uniform(foldIn(k, 1), [n]).data
+    const forced = uniform(foldIn(k, 2), [nb]).data
+    const bagLabel = Array.from({ length: nb }, (_, b) => ((ub[b] ?? 1) < (knobs['positiveShare'] as number) ? 1 : 0))
+    const instance = new Array<number>(n).fill(0)
+    for (let b = 0; b < nb; b++) {
+      if (bagLabel[b] !== 1) continue
+      const witness = Math.floor((forced[b] ?? 0) * size)
+      for (let i = 0; i < size; i++) instance[b * size + i] = i === witness || (ui[b * size + i] ?? 1) < rate ? 1 : 0
+    }
+    const z = normal(foldIn(k, 3), [n, d]).data
+    const x = Float64Array.from(z, (v, i) => v + ((instance[Math.floor(i / d)] ?? 0) === 1 ? sep / Math.sqrt(d) : 0))
+    const bag = Array.from({ length: n }, (_, i) => Math.floor(i / size))
+    return {
+      data: xyClasses(matrix(x, n, d), labels(bag.map((b) => bagLabel[b] ?? 0)), {
+        ...stamp('multipleInstanceBags', multipleInstanceBags.description, knobs),
+        classes: ['negative', 'positive'],
+      }),
+      truth: {
+        latents: { instanceLabels: labels(instance) },
+        extra: { bags: bag, bagLabels: bagLabel, bagSize: size },
+      },
+    }
+  },
+}
+
+/**
+ * Clusters and classes for semi-supervised learning: equal isotropic Gaussian clusters on a ring, each assigned a class,
+ * and each point's label follows its cluster's class with probability `purity` and is uniform over the classes
+ * otherwise. At purity 1 the cluster assumption holds exactly (a classifier can propagate labels along clusters); lower
+ * purity breaks it by a known amount. The truth has the clusters, the cluster-to-class map and the exact posterior.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { clusterAssumption } from 'mdml-engine/datasets'
+ * generate(clusterAssumption, { knobs: { n: 20 } }).data.x.shape // => [20, 2]
+ * ```
+ */
+export const clusterAssumption: DatasetGenerator<ClassificationData> = {
+  name: 'clusterAssumption',
+  kind: 'classification',
+  description: 'Gaussian clusters on a ring with classes that follow the clusters, up to a planted breakage.',
+  knobs: dict({
+    n: int(1, 10_000_000, { label: 'samples', description: 'The number of rows.', default: 600 }),
+    clusters: int(2, 50, { label: 'clusters', description: 'The number of clusters.', default: 6 }),
+    classes: int(2, 20, {
+      label: 'classes',
+      description: 'The number of classes; cluster j has class j mod classes.',
+      default: 2,
+    }),
+    spread: real(0.05, 5, {
+      label: 'cluster spread',
+      description: 'The standard deviation of each cluster, with the ring of radius 3.',
+      default: 0.5,
+    }),
+    purity: real(0, 1, {
+      label: 'purity',
+      description: 'The chance that a point carries its cluster’s class; otherwise its class is uniform.',
+      default: 1,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const nc = knobs['clusters'] as number
+    const kc = knobs['classes'] as number
+    const sd = knobs['spread'] as number
+    const purity = knobs['purity'] as number
+    const centres = Array.from({ length: nc }, (_, j) => [
+      3 * Math.cos((2 * Math.PI * j) / nc),
+      3 * Math.sin((2 * Math.PI * j) / nc),
+    ])
+    const cluster = Array.from(categorical(foldIn(k, 0), new Array<number>(nc).fill(1), [n]).data)
+    const z = normal(foldIn(k, 1), [n, 2]).data
+    const x = Float64Array.from(
+      { length: n * 2 },
+      (_, i) => (centres[cluster[Math.floor(i / 2)] ?? 0]?.[i % 2] ?? 0) + sd * (z[i] ?? 0),
+    )
+    const u = uniform(foldIn(k, 2), [n, 2]).data
+    const y = cluster.map((c, i) =>
+      (u[2 * i] ?? 1) < purity ? c % kc : Math.min(kc - 1, Math.floor((u[2 * i + 1] ?? 0) * kc)),
+    )
+    const posterior = (row: readonly number[]): number[] => {
+      const r = softmaxOf(
+        centres.map((c) => -(((row[0] ?? 0) - (c[0] ?? 0)) ** 2 + ((row[1] ?? 0) - (c[1] ?? 0)) ** 2) / (2 * sd * sd)),
+      )
+      const p = new Array<number>(kc).fill((1 - purity) / kc)
+      r.forEach((w, j) => {
+        p[j % kc] = (p[j % kc] ?? 0) + w * purity
+      })
+      return p
+    }
+    return {
+      data: xyClasses(matrix(x, n, 2), labels(y), {
+        ...stamp('clusterAssumption', clusterAssumption.description, knobs),
+        classes: Array.from({ length: kc }, (_, c) => String(c)),
+      }),
+      truth: {
+        clusters: labels(cluster),
+        posterior: (v: Value): Value => {
+          const flat = toFlat(v)
+          const rows = Math.floor(flat.length / 2)
+          const out = new Float64Array(rows * kc)
+          for (let i = 0; i < rows; i++) out.set(posterior([flat[2 * i] ?? 0, flat[2 * i + 1] ?? 0]), i * kc)
+          return matrix(out, rows, kc)
+        },
+        extra: { clusterClass: Array.from({ length: nc }, (_, j) => j % kc), centres, purity, posterior },
+      },
     }
   },
 }

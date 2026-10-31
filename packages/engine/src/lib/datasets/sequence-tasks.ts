@@ -5,8 +5,10 @@
  */
 
 import { type DatasetGenerator, type Generated, type Knobs, type SequenceData, sequences } from '../data/index.ts'
-import { foldIn, type Key, randint, uniform } from '../random/index.ts'
-import { bool, choice, dict, int } from '../space/index.ts'
+import { solve as solveLinear } from '../numerics/linalg/index.ts'
+import { foldIn, type Key, normal, randint, uniform } from '../random/index.ts'
+import { bool, choice, dict, int, real } from '../space/index.ts'
+import { tensor, toFlat } from '../tensor/index.ts'
 import { stamp } from './_util.ts'
 
 /** The special tokens shared by every task: padding, separator and answer markers. */
@@ -455,5 +457,130 @@ export const modularArithmetic: DatasetGenerator<SequenceData> = {
     const inputs = pairs.map(([a, b]) => [num(a), opToken, num(b), eq])
     const solve = (s: readonly number[]) => [num(apply((s[0] ?? 0) - SPECIAL.length, (s[2] ?? 0) - SPECIAL.length))]
     return task('modularArithmetic', modularArithmetic.description, knobs, inputs, inputs.map(solve), vocab, solve)
+  },
+}
+
+/**
+ * In-context linear regression as token sequences (the transformer-theory benchmark): each task draws a weight vector
+ * `w ~ N(0, I)`, then a context of `context` pairs `(x, y = w . x + noise)` and a query `x`; values are quantised to
+ * `levels` bins on `[-range, range]` and written as tokens, `x_1 y_1 x_2 y_2 ... x_q` with each `x` taking `features`
+ * tokens, and the target is the quantised noiseless `w . x_q`. The truth has every task's weights, the
+ * least-squares and the Bayes (ridge) prediction from the (unquantised) context, and `solve`, which decodes a token
+ * sequence and returns the least-squares prediction as a token.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { inContextRegression } from 'mdml-engine/datasets'
+ * generate(inContextRegression, { knobs: { n: 5, context: 4, features: 1 } }).data.inputs.shape // => [5, 9]
+ * ```
+ */
+export const inContextRegression: DatasetGenerator<SequenceData> = {
+  name: 'inContextRegression',
+  kind: 'sequence',
+  description: 'Random linear regression tasks written as token sequences, with least-squares and Bayes predictions.',
+  knobs: dict({
+    n: int(1, 1_000_000, { label: 'tasks', description: 'The number of regression tasks.', default: 1000 }),
+    context: int(1, 200, {
+      label: 'context pairs',
+      description: 'The number of (x, y) pairs shown before the query.',
+      default: 8,
+    }),
+    features: int(1, 8, { label: 'features', description: 'The dimension of x.', default: 1 }),
+    noise: real(0, 5, {
+      label: 'noise standard deviation',
+      description: 'The noise on the context outputs.',
+      default: 0.1,
+    }),
+    levels: int(8, 4096, { label: 'quantisation levels', description: 'The number of value tokens.', default: 128 }),
+    range: real(0.5, 100, {
+      label: 'value range',
+      description: 'Values are clipped to [-range, range] before quantising.',
+      default: 4,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const m = knobs['context'] as number
+    const d = knobs['features'] as number
+    const sd = knobs['noise'] as number
+    const levels = knobs['levels'] as number
+    const range = knobs['range'] as number
+    const vocab = [...SPECIAL, ...Array.from({ length: levels }, (_, b) => `v${b}`)]
+    const width = (2 * range) / levels
+    const toBin = (v: number): number => Math.min(levels - 1, Math.max(0, Math.floor((v + range) / width)))
+    const token = (v: number): number => SPECIAL.length + toBin(v)
+    const centre = (t: number): number => -range + (t - SPECIAL.length + 0.5) * width
+    // The least-squares prediction at x_q from a context of rows (xs, ys), with the ridge term `lambda`.
+    const ridge = (
+      xs: readonly (readonly number[])[],
+      ys: readonly number[],
+      xq: readonly number[],
+      lambda: number,
+    ): number => {
+      const a = Array.from({ length: d }, (_, i) =>
+        Array.from(
+          { length: d },
+          (_, j) => xs.reduce((s, x) => s + (x[i] ?? 0) * (x[j] ?? 0), 0) + (i === j ? lambda : 0),
+        ),
+      )
+      const b = Array.from({ length: d }, (_, i) => xs.reduce((s, x, r) => s + (x[i] ?? 0) * (ys[r] ?? 0), 0))
+      return toFlat(solveLinear(tensor(a), tensor(b))).reduce((s, w, i) => s + w * (xq[i] ?? 0), 0)
+    }
+    const inputs: number[][] = []
+    const targets: number[][] = []
+    const weights: number[][] = []
+    const lsPrediction: number[] = []
+    const bayesPrediction: number[] = []
+    const noiseless: number[] = []
+    for (let i = 0; i < n; i++) {
+      const ki = foldIn(k, i)
+      const z = normal(foldIn(ki, 0), [d + (m + 1) * d + m]).data
+      const w = Array.from(z.subarray(0, d))
+      const xs = Array.from({ length: m + 1 }, (_, r) => Array.from(z.subarray(d + r * d, d + (r + 1) * d)))
+      const eps = z.subarray(d + (m + 1) * d)
+      const ys = xs.slice(0, m).map((x, r) => x.reduce((s, v, j) => s + v * (w[j] ?? 0), 0) + sd * (eps[r] ?? 0))
+      const xq = xs[m] ?? []
+      const truthQ = xq.reduce((s, v, j) => s + v * (w[j] ?? 0), 0)
+      const seq: number[] = []
+      for (let r = 0; r < m; r++) {
+        for (const v of xs[r] ?? []) seq.push(token(v))
+        seq.push(token(ys[r] ?? 0))
+      }
+      for (const v of xq) seq.push(token(v))
+      inputs.push(seq)
+      targets.push([token(truthQ)])
+      weights.push(w)
+      noiseless.push(truthQ)
+      lsPrediction.push(ridge(xs.slice(0, m), ys, xq, 1e-9))
+      bayesPrediction.push(ridge(xs.slice(0, m), ys, xq, (sd * sd) / 1))
+    }
+    const solve = (input: readonly number[]): number[] => {
+      const stride = d + 1
+      const rows = Math.floor(input.length / stride)
+      const xsIn = Array.from({ length: rows }, (_, r) =>
+        Array.from({ length: d }, (_, j) => centre(input[r * stride + j] ?? SPECIAL.length)),
+      )
+      const ysIn = Array.from({ length: rows }, (_, r) => centre(input[r * stride + d] ?? SPECIAL.length))
+      const xq = Array.from({ length: d }, (_, j) => centre(input[rows * stride + j] ?? SPECIAL.length))
+      return [token(ridge(xsIn, ysIn, xq, 1e-9))]
+    }
+    const out = task('inContextRegression', inContextRegression.description, knobs, inputs, targets, vocab, solve)
+    return {
+      ...out,
+      truth: {
+        ...out.truth,
+        noiseScale: sd,
+        extra: {
+          ...(out.truth.extra ?? {}),
+          weights,
+          lsPrediction,
+          bayesPrediction,
+          noiselessTarget: noiseless,
+          binWidth: width,
+          decode: centre,
+        },
+      },
+    }
   },
 }

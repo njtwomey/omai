@@ -2556,7 +2556,7 @@
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 15
+      "cases": 16
     },
     {
       "fixture": "numerics/convolution/convolution.json",
@@ -2673,6 +2673,15 @@
       "cases": 4
     },
     {
+      "fixture": "numerics/linalg/completion.json",
+      "source": "oracle/cases/numerics/linalg/completion.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "numerics/linalg/decompositions.json",
       "source": "oracle/cases/numerics/linalg/decompositions.py",
       "reference": {
@@ -2697,6 +2706,15 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 20
+    },
+    {
+      "fixture": "numerics/linalg/iterations.json",
+      "source": "oracle/cases/numerics/linalg/iterations.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
     },
     {
       "fixture": "numerics/linalg/lu.json",
@@ -2766,12 +2784,30 @@
       "cases": 43
     },
     {
+      "fixture": "numerics/sparse/lanczos.json",
+      "source": "oracle/cases/numerics/sparse/lanczos.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "numerics/sparse/sparse.json",
       "source": "oracle/cases/numerics/sparse/sparse.py",
       "reference": {
         "scipy": "1.18.1"
       },
       "cases": 17
+    },
+    {
+      "fixture": "numerics/sparse/stationary.json",
+      "source": "oracle/cases/numerics/sparse/stationary.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 20
     },
     {
       "fixture": "numerics/spatial/spatial.json",

@@ -318,3 +318,223 @@ export const instrumentalVariables: DatasetGenerator<RegressionData> = {
     }
   },
 }
+
+/**
+ * Panel data for difference-in-differences and event studies, in long format (one row per unit and period): unit and
+ * period effects, a share of units that adopt a treatment either all at once or at staggered times, an optional
+ * differential pre-trend for the adopters (which breaks parallel trends by a known slope), selection of units with
+ * higher baselines into adoption, and an effect that is constant or grows with time since adoption. Features are
+ * `[unit, period, treated, adopter]`; the outcome is `y`. The truth has the unit and period effects, every unit's
+ * adoption period (-1 for never), each row's individual effect, both potential outcomes, the effect by event time and
+ * the average effect on the treated.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { panelEffects } from 'mdml-engine/datasets'
+ * generate(panelEffects, { knobs: { units: 10, periods: 6 } }).data.x.shape // => [60, 4]
+ * ```
+ */
+export const panelEffects: DatasetGenerator<RegressionData> = {
+  name: 'panelEffects',
+  kind: 'regression',
+  description: 'Unit-by-period panel with staggered or simultaneous adoption, a pre-trend and dynamic effects.',
+  knobs: dict({
+    units: int(2, 100_000, { label: 'units', description: 'The number of units.', default: 100 }),
+    periods: int(3, 1000, { label: 'periods', description: 'The number of time periods.', default: 10 }),
+    adopters: real(0, 1, { label: 'adopter share', description: 'The share of units that ever adopt.', default: 0.5 }),
+    timing: choice(['simultaneous', 'staggered'], {
+      label: 'timing',
+      description: 'All adopters adopt at the middle period, or at times spread over the middle half of the periods.',
+      default: 'simultaneous',
+    }),
+    effect: real(-100, 100, { label: 'effect', description: 'The effect in the period of adoption.', default: 2 }),
+    growth: real(-1, 5, {
+      label: 'effect growth',
+      description: 'The effect at event time e is `effect (1 + growth e)`; 0 is a constant effect.',
+      default: 0,
+    }),
+    trend: real(-5, 5, {
+      label: 'differential trend',
+      description:
+        'Adopters’ outcomes drift by this much more per period than the others’ even untreated (parallel trends fail).',
+      default: 0,
+    }),
+    selection: real(0, 5, {
+      label: 'selection',
+      description: 'Adopters’ unit effects are higher by this many standard deviations.',
+      default: 0.5,
+    }),
+    noise: real(0, 10, { label: 'noise standard deviation', description: 'The outcome noise.', default: 0.5 }),
+  }),
+  generate: (k, knobs) => {
+    const nu = knobs['units'] as number
+    const nt = knobs['periods'] as number
+    const effect = knobs['effect'] as number
+    const growth = knobs['growth'] as number
+    const trend = knobs['trend'] as number
+    const noiseSd = knobs['noise'] as number
+    const adopter = Array.from(uniform(foldIn(k, 0), [nu]).data, (u) => (u < (knobs['adopters'] as number) ? 1 : 0))
+    const mid = Math.floor(nt / 2)
+    const spread = uniform(foldIn(k, 1), [nu]).data
+    const adoption = adopter.map((a, i) =>
+      a === 0
+        ? -1
+        : knobs['timing'] === 'staggered'
+          ? Math.floor(nt / 4) + Math.floor((spread[i] ?? 0) * Math.max(1, nt - 2 * Math.floor(nt / 4) - 1)) + 1
+          : mid,
+    )
+    const unitEffect = Array.from(
+      normal(foldIn(k, 2), [nu]).data,
+      (z, i) => z + (adopter[i] === 1 ? (knobs['selection'] as number) : 0),
+    )
+    const periodEffect = Array.from(normal(foldIn(k, 3), [nt]).data, (z, t) => 0.5 * z + 0.1 * t)
+    const eps = normal(foldIn(k, 4), [nu * nt]).data
+    const n = nu * nt
+    const x = new Float64Array(n * 4)
+    const y = new Float64Array(n)
+    const y0 = new Float64Array(n)
+    const y1 = new Float64Array(n)
+    const ite = new Float64Array(n)
+    let treatedSum = 0
+    let treatedCount = 0
+    const byEvent = new Map<number, number>()
+    for (let i = 0; i < nu; i++)
+      for (let t = 0; t < nt; t++) {
+        const r = i * nt + t
+        const treated = adoption[i] !== -1 && t >= (adoption[i] ?? 0) ? 1 : 0
+        const event = t - (adoption[i] ?? 0)
+        const tau = adoption[i] === -1 ? 0 : effect * (1 + growth * Math.max(0, event))
+        const base =
+          (unitEffect[i] ?? 0) + (periodEffect[t] ?? 0) + (adopter[i] === 1 ? trend * t : 0) + noiseSd * (eps[r] ?? 0)
+        y0[r] = base
+        y1[r] = base + tau
+        ite[r] = tau
+        y[r] = treated === 1 ? base + tau : base
+        x.set([i, t, treated, adopter[i] ?? 0], r * 4)
+        if (treated === 1) {
+          treatedSum += tau
+          treatedCount++
+          byEvent.set(event, tau)
+        }
+      }
+    return {
+      data: xy(matrix(x, n, 4), vector(y), {
+        ...stamp('panelEffects', panelEffects.description, knobs),
+        featureNames: ['unit', 'period', 'treated', 'adopter'],
+        targetNames: ['outcome'],
+      }),
+      truth: {
+        noiseScale: noiseSd,
+        effects: {
+          ate: treatedCount === 0 ? 0 : treatedSum / treatedCount,
+          att: treatedCount === 0 ? 0 : treatedSum / treatedCount,
+          ite: vector(ite),
+          potentialOutcomes: { control: vector(y0), treated: vector(y1) },
+        },
+        latents: { unitEffects: vector(unitEffect), periodEffects: vector(periodEffect) },
+        extra: {
+          adoptionPeriod: adoption,
+          eventTimeEffects: Object.fromEntries([...byEvent.entries()].sort((a, b) => a[0] - b[0])),
+          differentialTrend: trend,
+          units: nu,
+          periods: nt,
+        },
+      },
+    }
+  },
+}
+
+/**
+ * Regression-discontinuity data: a running variable, a cutoff at which treatment switches on (sharply, or with a
+ * jump in the probability of treatment for a fuzzy design), and an outcome that is smooth in the running variable
+ * apart from the treatment effect. Features are `[running, treated]` (for the fuzzy design the instrument is whether
+ * the running variable is at or above the cutoff). The truth has the effect at the cutoff, the first-stage jump and
+ * the outcome's jump (the effect times the first stage), and the smooth outcome function without the effect.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { discontinuityDesign } from 'mdml-engine/datasets'
+ * generate(discontinuityDesign, { knobs: { n: 50, effect: 3 } }).truth.effects?.ate // => 3
+ * ```
+ */
+export const discontinuityDesign: DatasetGenerator<RegressionData> = {
+  name: 'discontinuityDesign',
+  kind: 'regression',
+  description: 'A running variable with treatment switching on at a cutoff, sharp or fuzzy, with the jump as truth.',
+  knobs: dict({
+    n: int(10, 10_000_000, { label: 'samples', description: 'The number of units.', default: 2000 }),
+    cutoff: real(-10, 10, {
+      label: 'cutoff',
+      description: 'The value of the running variable at which treatment switches.',
+      default: 0,
+    }),
+    effect: real(-100, 100, { label: 'effect', description: 'The treatment effect at the cutoff.', default: 2 }),
+    design: choice(['sharp', 'fuzzy'], {
+      label: 'design',
+      description: 'Everyone above the cutoff is treated, or the chance of treatment jumps there.',
+      default: 'sharp',
+    }),
+    compliance: real(0, 1, {
+      label: 'fuzzy first stage',
+      description: 'For a fuzzy design: the chance of treatment is 0.1 below the cutoff and 0.1 plus this above.',
+      default: 0.7,
+    }),
+    slope: real(-10, 10, {
+      label: 'slope',
+      description: 'The slope of the smooth outcome function below the cutoff.',
+      default: 1,
+    }),
+    slopeChange: real(-10, 10, {
+      label: 'slope change',
+      description: 'How much the slope changes at the cutoff (a kink that is not an effect).',
+      default: 0,
+    }),
+    curvature: real(-10, 10, {
+      label: 'curvature',
+      description: 'The coefficient of the squared running variable.',
+      default: 0.3,
+    }),
+    noise: real(0, 10, { label: 'noise standard deviation', description: 'The outcome noise.', default: 1 }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const c = knobs['cutoff'] as number
+    const effect = knobs['effect'] as number
+    const fuzzy = knobs['design'] === 'fuzzy'
+    const compliance = knobs['compliance'] as number
+    const slope = knobs['slope'] as number
+    const kink = knobs['slopeChange'] as number
+    const curve = knobs['curvature'] as number
+    const sd = knobs['noise'] as number
+    const r = Array.from(normal(foldIn(k, 0), [n]).data, (z) => c + 2 * z)
+    const u = uniform(foldIn(k, 1), [n]).data
+    const pAbove = fuzzy ? 0.1 + compliance : 1
+    const pBelow = fuzzy ? 0.1 : 0
+    const smooth = (v: number): number => 1 + slope * (v - c) + kink * Math.max(0, v - c) + curve * (v - c) ** 2
+    const treated = r.map((v, i) => ((u[i] ?? 1) < (v >= c ? pAbove : pBelow) ? 1 : 0))
+    const eps = normal(foldIn(k, 2), [n]).data
+    const y = r.map((v, i) => smooth(v) + effect * (treated[i] ?? 0) + sd * (eps[i] ?? 0))
+    const features = new Float64Array(n * 2)
+    for (let i = 0; i < n; i++) features.set([r[i] ?? 0, treated[i] ?? 0], i * 2)
+    return {
+      data: xy(matrix(features, n, 2), vector(y), {
+        ...stamp('discontinuityDesign', discontinuityDesign.description, knobs),
+        featureNames: ['running', 'treated'],
+        targetNames: ['outcome'],
+      }),
+      truth: {
+        noiseScale: sd,
+        effects: { ate: effect },
+        extra: {
+          cutoff: c,
+          design: fuzzy ? 'fuzzy' : 'sharp',
+          firstStageJump: pAbove - pBelow,
+          outcomeJump: effect * (pAbove - pBelow),
+          smoothFunction: (v: number): number => smooth(v),
+        },
+      },
+    }
+  },
+}
