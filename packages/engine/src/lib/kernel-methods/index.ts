@@ -7,7 +7,8 @@
  * classifiers (`kernelLogisticRegression`, `importVectorMachine`, `lssvm`, `kernelRidgeClassifier`); multiple kernel
  * learning (`alignmentWeights`, `easyMkl`, `mklAlgorithm`, `fitMultipleKernel`); kernel mean embeddings, the conditional
  * embedding, the kernel Bayes rule and the kernel Stein discrepancy with its test (`meanEmbedding`, `mmdWitness`,
- * `conditionalMeanEmbedding`, `kernelBayesRule`, `steinKernelGram`, `steinGoodnessOfFit`); and the
+ * `conditionalMeanEmbedding`, `kernelBayesRule`, `steinKernelGram`, `steinGoodnessOfFit`); more online learners
+ * (`klms`, `qklms`, `kernelPerceptron`, `kernelPassiveAggressive`, with budgets); and the
  * online learners that take one observation per step, kernel recursive least squares with approximate-linear-dependence,
  * coherence and sliding-window dictionaries (`krls`, `krlsAlgorithm`, `krlsStep`) and NORMA (`norma`).
  */
@@ -19,3 +20,4 @@ export * from './kernel-selection.ts'
 export * from './mean-embedding.ts'
 export * from './multiple-kernel.ts'
 export * from './online-kernel.ts'
+export * from './online-learners.ts'

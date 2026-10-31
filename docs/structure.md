@@ -4077,6 +4077,14 @@ function and the biased MMD; the two-sample tests are `kernels/matrices.ts` and 
 `kernelSteinDiscrepancy` its V- or U-statistic, `steinGoodnessOfFit` the test by the multinomial wild bootstrap (an
 `Algorithm`). Kernel herding is `learn/coresets.ts`. Checked by planted truth (a Gaussian posterior, a conditional
 expectation, the closed-form Stein kernel of a Gaussian kernel) and identities (CME is kernel ridge), not goldens.
+`online-learners.ts` has the online learners beside KRLS and NORMA, each an `Algorithm` with a plain-JSON state (the kernel
+expansion) and an estimator on the iterative base: `klms` (kernel LMS; the linear kernel is the LMS filter) and `qklms`
+(quantised: an input within the radius of a centre updates it, so centres stay a radius apart and the dictionary is
+bounded on bounded inputs), `kernelPerceptron` and `kernelPassiveAggressive` (PA, PA-I, PA-II), binary, with the budget
+rules `random-removal`, `oldest`, `forgetron` (a constant-factor shrink before dropping the oldest, a simplification of
+the paper's schedule) and `projectron` (projection onto the span when the residual is below `eta`). Tests check the
+perceptron's `(R / gamma)^2` mistake bound, the passive-aggressive `R^2 |u|^2` squared-loss bound on planted separable
+data, and the Projectron's dictionary never exceeding the dimension for a linear kernel.
 
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
 sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
