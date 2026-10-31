@@ -8,7 +8,7 @@ import { type DatasetGenerator, type RegressionData, xy } from '../data/index.ts
 import { inv, sqrtm, svdvals } from '../numerics/linalg/index.ts'
 import { foldIn, laplace, normal, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
-import { add, eye, matmul, mul, toFlat, transpose } from '../tensor/index.ts'
+import { add, eye, matmul, mul, toFlat, transpose, type Value } from '../tensor/index.ts'
 import { matrix, stamp } from './_util.ts'
 
 /** The source signals of {@link mixedSources}. */

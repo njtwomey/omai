@@ -175,7 +175,10 @@ export const plantedRelations: DatasetGenerator<TripleData> = {
       const base = g * P
       for (let i = 0; i < P; i++)
         for (let j = i + 1; j < P; j++)
-          if ((u[at++] ?? 1) < density) add(base + i, 0, base + j), add(base + j, 0, base + i)
+          if ((u[at++] ?? 1) < density) {
+            add(base + i, 0, base + j)
+            add(base + j, 0, base + i)
+          }
       for (let i = 0; i < P / 2; i++) {
         const children = new Set<number>([P / 2 + Math.floor((u[at++] ?? 0) * (P / 2)), P / 2 + ((i + 1) % (P / 2))])
         for (const c of children) {

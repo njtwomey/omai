@@ -4161,7 +4161,9 @@ built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `nu
 
 ### 4.56 `embedding/`: embeddings learned from data (word2vec, fastText, GloVe, knowledge-graph embeddings)
 
-oracle: numpy (the GloVe loss and gradient from the definition, `oracle/cases/embedding/glove.py`); the PPMI and SVD steps
+oracle: numpy (the GloVe loss and gradient from the definition, `oracle/cases/embedding/glove.py`; the four knowledge-graph
+scoring functions in numpy complex arithmetic and the filtered rank with scipy's `rankdata`,
+`oracle/cases/embedding/knowledge_graph.py`); the PPMI and SVD steps
 are `text`'s and are checked there against numpy and gensim's `KeyedVectors`. gensim and torch train stochastically and
 differently, so the trainers are checked on planted truth instead: a gradient check of each analytic update against
 autodiff, the loss decreasing under several solvers, and analogies and clusters recovered on `analogyCorpus`.

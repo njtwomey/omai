@@ -540,6 +540,15 @@
       "cases": 3
     },
     {
+      "fixture": "embedding/knowledge_graph.json",
+      "source": "oracle/cases/embedding/knowledge_graph.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "ensembles/adaboost.json",
       "source": "oracle/cases/ensembles/adaboost.py",
       "reference": {

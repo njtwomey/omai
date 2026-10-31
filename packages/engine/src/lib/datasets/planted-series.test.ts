@@ -24,8 +24,8 @@ describe('plantedSeries', () => {
   const m = 30
   const { data, truth } = generate(plantedSeries, { key: key(1), knobs: { n: 800, motifLength: m, occurrences: 2 } })
   const y = toFlat(data.values)
-  const starts = truth.extra?.['motifStarts'] as number[]
-  const discord = truth.extra?.['discordStart'] as number
+  const starts = (truth.extra ?? {})['motifStarts'] as number[]
+  const discord = (truth.extra ?? {})['discordStart'] as number
 
   it('puts the motif copies and the discord in disjoint places', () => {
     const spans = [...starts, discord].sort((a, b) => a - b)
@@ -80,7 +80,7 @@ describe('garchReturns', () => {
       knobs: { n: 6000, omega: 0.05, alpha: 0.15, beta: 0.8 },
     })
     const r = toFlat(data.values)
-    const v = toFlat(truth.latents?.['variance'] as Tensor)
+    const v = toFlat((truth.latents ?? {})['variance'] as Tensor)
     for (let t = 1; t < r.length; t++)
       expect(v[t]).toBeCloseTo(0.05 + 0.15 * (r[t - 1] ?? 0) ** 2 + 0.8 * (v[t - 1] ?? 0), 12)
     const kurt = mean(r.map((x) => x ** 4)) / mean(r.map((x) => x ** 2)) ** 2
@@ -90,7 +90,7 @@ describe('garchReturns', () => {
     const mu = mean(sq)
     const ac = mean(sq.slice(1).map((x, i) => (x - mu) * ((sq[i] ?? 0) - mu))) / mean(sq.map((x) => (x - mu) ** 2))
     expect(ac).toBeGreaterThan(0.1)
-    expect(Math.abs(mean(sq) - (truth.extra?.['unconditionalVariance'] as number)) / 1).toBeLessThan(0.15)
+    expect(Math.abs(mean(sq) - ((truth.extra ?? {})['unconditionalVariance'] as number)) / 1).toBeLessThan(0.15)
   })
 
   it('standardised returns are unit variance, heavier tailed with Student innovations, and a non-stationary pair is refused', () => {
@@ -111,7 +111,7 @@ describe('coupledSeries', () => {
       key: key(4),
       knobs: { n: 30000, series: 3, density: 0.5, coupling: 0.5, noise: 1 },
     })
-    const adjacency = truth.extra?.['adjacency'] as number[][]
+    const adjacency = (truth.extra ?? {})['adjacency'] as number[][]
     const d = 3
     const x = toFlat(data.values)
     const maxParents = Math.max(1, ...adjacency.map((row) => row.reduce((a, b) => a + b, 0)))
@@ -153,7 +153,7 @@ describe('coupledSeries', () => {
     })
     const x = toFlat(data.values)
     expect(x.every((v) => v > 0 && v < 1)).toBe(true)
-    expect((truth.extra?.['adjacency'] as number[][]).flat().reduce((a, b) => a + b, 0)).toBe(2)
+    expect(((truth.extra ?? {})['adjacency'] as number[][]).flat().reduce((a, b) => a + b, 0)).toBe(2)
     const a = x.filter((_, i) => i % 2 === 0)
     const b = x.filter((_, i) => i % 2 === 1)
     const ma = mean(a)
@@ -167,7 +167,7 @@ describe('coupledSeries', () => {
 
 describe('spokenDigits', () => {
   const { data, truth } = generate(spokenDigits, { key: key(6), knobs: { utterances: 24, speakers: 3, noise: 0.02 } })
-  const utterances = truth.extra?.['utterances'] as Utterance[]
+  const utterances = (truth.extra ?? {})['utterances'] as Utterance[]
   const y = toFlat(data.values)
   const segments = toFlat(data.segments as Tensor)
 

@@ -15,7 +15,7 @@ const column = (t: Tensor, j: number): number[] => {
 describe('mixedSources', () => {
   it('mixes the sources by the recorded matrix, and the inverse recovers them', () => {
     const { data, truth } = generate(mixedSources, { key: key(1), knobs: { n: 500, sources: 3 } })
-    const a = truth.extra?.['mixing'] as Tensor
+    const a = (truth.extra ?? {})['mixing'] as Tensor
     const recovered = matmul(data.x, transpose(inv(a)))
     toFlat(recovered).forEach((v, i) => {
       expect(v).toBeCloseTo(data.y.data[i] ?? 0, 9)
@@ -64,7 +64,7 @@ describe('twoViews', () => {
       key: key(3),
       knobs: { n: 40000, latent: 2, viewA: 4, viewB: 3, noise: 1 },
     })
-    const population = truth.extra?.['canonicalCorrelations'] as number[]
+    const population = (truth.extra ?? {})['canonicalCorrelations'] as number[]
     expect(population).toHaveLength(2)
     const sample = sampleCorrelations(data.x, data.y)
     population.forEach((rho, i) => {
@@ -81,7 +81,7 @@ describe('twoViews', () => {
       fc.property(fc.integer({ min: 0, max: 15 }), (seed) => {
         const rho = (noise: number): number => {
           const { truth } = generate(twoViews, { key: key(seed), knobs: { n: 20, noise } })
-          return (truth.extra?.['canonicalCorrelations'] as number[])[0] ?? 0
+          return ((truth.extra ?? {})['canonicalCorrelations'] as number[])[0] ?? 0
         }
         expect(rho(3)).toBeLessThan(rho(0.3))
       }),
@@ -98,12 +98,12 @@ describe('toySuperposition', () => {
     })
     const zeros = mean(Array.from(data.x.data, (v) => (v === 0 ? 1 : 0)))
     expect(Math.abs(zeros - 0.8)).toBeLessThan(0.02)
-    const importance = truth.extra?.['importance'] as number[]
+    const importance = (truth.extra ?? {})['importance'] as number[]
     expect(importance[3]).toBeCloseTo(0.7 ** 3, 12)
     expect(Array.from(data.y.data)).toEqual(Array.from(data.x.data))
-    const loss = truth.extra?.['weightedLoss'] as (r: ArrayLike<number>) => number
+    const loss = (truth.extra ?? {})['weightedLoss'] as (r: ArrayLike<number>) => number
     expect(loss(data.x.data)).toBe(0)
-    expect(loss(new Float64Array(5000 * 10))).toBeCloseTo(truth.extra?.['meanSquare'] as number, 12)
-    expect(truth.extra?.['meanSquare'] as number).toBeGreaterThan(0)
+    expect(loss(new Float64Array(5000 * 10))).toBeCloseTo((truth.extra ?? {})['meanSquare'] as number, 12)
+    expect((truth.extra ?? {})['meanSquare'] as number).toBeGreaterThan(0)
   })
 })

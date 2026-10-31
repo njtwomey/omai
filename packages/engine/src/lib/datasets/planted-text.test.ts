@@ -13,10 +13,10 @@ describe('taggedCorpus', () => {
     key: key(1),
     knobs: { sentences: 3000, tags: 4, vocabulary: 40, ambiguity: 0.25 },
   })
-  const initial = truth.extra?.['initial'] as number[]
-  const transition = truth.extra?.['transition'] as number[][]
-  const emission = truth.extra?.['emission'] as number[][]
-  const vocab = truth.extra?.['vocabulary'] as string[]
+  const initial = (truth.extra ?? {})['initial'] as number[]
+  const transition = (truth.extra ?? {})['transition'] as number[][]
+  const emission = (truth.extra ?? {})['emission'] as number[][]
+  const vocab = (truth.extra ?? {})['vocabulary'] as string[]
 
   it('has aligned tokens and tags, and counts that estimate the hidden tables', () => {
     expect(data.tokens.length).toBe(3000)
@@ -112,8 +112,8 @@ describe('typoPairs', () => {
 
   it('draws words with Zipfian frequency: the first word is the most common and the prior sums to one', () => {
     const { data, truth } = generate(typoPairs, { key: key(3), knobs: { n: 5000, errorRate: 0 } })
-    const vocab = truth.extra?.['vocabulary'] as string[]
-    const probs = truth.extra?.['wordProbabilities'] as number[]
+    const vocab = (truth.extra ?? {})['vocabulary'] as string[]
+    const probs = (truth.extra ?? {})['wordProbabilities'] as number[]
     expect(probs.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12)
     const count = (w: string): number => data.target.filter((t) => t === w).length
     expect(count(vocab[0] ?? '')).toBeGreaterThan(count(vocab[50] ?? ''))
@@ -127,9 +127,9 @@ describe('plantedTransactions', () => {
       key: key(4),
       knobs: { transactions: 20000, patterns: 5, items: 30 },
     })
-    const patterns = truth.extra?.['patterns'] as number[][]
-    const expected = truth.extra?.['expectedSupport'] as (s: readonly number[]) => number
-    const count = truth.extra?.['supportCount'] as (s: readonly number[]) => number
+    const patterns = (truth.extra ?? {})['patterns'] as number[][]
+    const expected = (truth.extra ?? {})['expectedSupport'] as (s: readonly number[]) => number
+    const count = (truth.extra ?? {})['supportCount'] as (s: readonly number[]) => number
     expect(expected([])).toBeCloseTo(1, 12)
     expect(data.tokens?.length).toBe(20000)
     for (const p of patterns) {
@@ -146,7 +146,7 @@ describe('plantedTransactions', () => {
       key: key(5),
       knobs: { transactions: 10, patterns: 6, items: 12 },
     })
-    const expected = truth.extra?.['expectedSupport'] as (s: readonly number[]) => number
+    const expected = (truth.extra ?? {})['expectedSupport'] as (s: readonly number[]) => number
     fc.assert(
       fc.property(
         fc.uniqueArray(fc.integer({ min: 0, max: 11 }), { maxLength: 6 }),
@@ -165,9 +165,9 @@ describe('captionedShapes', () => {
     key: key(6),
     knobs: { n: 60, size: 32, maxObjects: 3, noise: 0 },
   })
-  const scenes = truth.extra?.['scenes'] as SceneObject[][]
-  const captions = truth.extra?.['captions'] as string[]
-  const qa = truth.extra?.['questions'] as { question: string; answer: string }[][]
+  const scenes = (truth.extra ?? {})['scenes'] as SceneObject[][]
+  const captions = (truth.extra ?? {})['captions'] as string[]
+  const qa = (truth.extra ?? {})['questions'] as { question: string; answer: string }[][]
   const rgb = { red: [1, 0.1, 0.1], green: [0.1, 0.8, 0.2], blue: [0.15, 0.25, 1], yellow: [1, 0.9, 0.1] }
 
   it('draws each object in its colour at the centre of its cell', () => {
@@ -214,8 +214,8 @@ describe('inContextRegression', () => {
       knobs: { n: 50, context: 6, features: 2, noise: 0, levels: 512 },
     })
     expect(data.inputs.shape).toEqual([50, 6 * 3 + 2])
-    const decode = truth.extra?.['decode'] as (t: number) => number
-    const target = truth.extra?.['noiselessTarget'] as number[]
+    const decode = (truth.extra ?? {})['decode'] as (t: number) => number
+    const target = (truth.extra ?? {})['noiselessTarget'] as number[]
     const clipped = (v: number): number => Math.max(-4, Math.min(4, v))
     for (let i = 0; i < 50; i++)
       expect(Math.abs(decode(data.targets.data[i] ?? 0) - clipped(target[i] ?? 0))).toBeLessThan(0.02)
@@ -226,14 +226,14 @@ describe('inContextRegression', () => {
       key: key(8),
       knobs: { n: 40, context: 10, features: 1, noise: 0, levels: 2048, range: 6 },
     })
-    const ls = truth.extra?.['lsPrediction'] as number[]
-    const target = truth.extra?.['noiselessTarget'] as number[]
+    const ls = (truth.extra ?? {})['lsPrediction'] as number[]
+    const target = (truth.extra ?? {})['noiselessTarget'] as number[]
     ls.forEach((v, i) => {
       expect(v).toBeCloseTo(target[i] ?? 0, 6)
     })
-    const solve = truth.extra?.['solve'] as (s: readonly number[]) => number[]
-    const decode = truth.extra?.['decode'] as (t: number) => number
-    const width = truth.extra?.['binWidth'] as number
+    const solve = (truth.extra ?? {})['solve'] as (s: readonly number[]) => number[]
+    const decode = (truth.extra ?? {})['decode'] as (t: number) => number
+    const width = (truth.extra ?? {})['binWidth'] as number
     let close = 0
     for (let i = 0; i < 40; i++) {
       const row = Array.from(toFlat(data.inputs as Tensor).slice(i * 21, i * 21 + 21))
@@ -248,9 +248,9 @@ describe('inContextRegression', () => {
       key: key(9),
       knobs: { n: 3000, context: 2, features: 2, noise: 1 },
     })
-    const ls = truth.extra?.['lsPrediction'] as number[]
-    const bayes = truth.extra?.['bayesPrediction'] as number[]
-    const target = truth.extra?.['noiselessTarget'] as number[]
+    const ls = (truth.extra ?? {})['lsPrediction'] as number[]
+    const bayes = (truth.extra ?? {})['bayesPrediction'] as number[]
+    const target = (truth.extra ?? {})['noiselessTarget'] as number[]
     const mse = (p: number[]): number => mean(p.map((v, i) => (v - (target[i] ?? 0)) ** 2))
     expect(mse(bayes)).toBeLessThan(mse(ls))
   })

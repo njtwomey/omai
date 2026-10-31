@@ -12,7 +12,7 @@ describe('multipleInstanceBags', () => {
       knobs: { bags: 80, bagSize: 6, witnessRate: 0.2 },
     })
     const instance = toFlat(truth.latents?.['instanceLabels'] as Tensor)
-    const bagLabel = truth.extra?.['bagLabels'] as number[]
+    const bagLabel = (truth.extra ?? {})['bagLabels'] as number[]
     const y = toFlat(data.y)
     for (let b = 0; b < 80; b++) {
       const witnesses = instance.slice(b * 6, b * 6 + 6).reduce((a, v) => a + v, 0)
@@ -53,7 +53,7 @@ describe('clusterAssumption', () => {
   it('follows the cluster classes exactly at purity 1, and its posterior is then the Bayes rule', () => {
     const { data, truth } = generate(clusterAssumption, { key: key(3), knobs: { n: 600, purity: 1, spread: 0.4 } })
     const cluster = toFlat(truth.clusters as Tensor)
-    const map = truth.extra?.['clusterClass'] as number[]
+    const map = (truth.extra ?? {})['clusterClass'] as number[]
     const y = toFlat(data.y)
     for (let i = 0; i < 600; i++) expect(y[i]).toBe(map[cluster[i] ?? 0])
     const post = toFlat(truth.posterior?.(data.x) as Tensor)
@@ -65,7 +65,7 @@ describe('clusterAssumption', () => {
   it('lowers the accuracy of the cluster rule by the planted breakage, and the posterior rows sum to one', () => {
     const { data, truth } = generate(clusterAssumption, { key: key(4), knobs: { n: 4000, purity: 0.6, classes: 2 } })
     const cluster = toFlat(truth.clusters as Tensor)
-    const map = truth.extra?.['clusterClass'] as number[]
+    const map = (truth.extra ?? {})['clusterClass'] as number[]
     const y = toFlat(data.y)
     const follows = y.filter((v, i) => v === map[cluster[i] ?? 0]).length / 4000
     // With probability 0.6 the class is the cluster's, otherwise uniform over two classes: 0.6 + 0.4 / 2.
@@ -82,7 +82,7 @@ describe('crowdLabels worker kinds', () => {
       key: key(5),
       knobs: { items: 1500, workers: 6, perItem: 6, classes: 3, skill: 20, spammers: 0.34, adversaries: 0.17 },
     })
-    const kinds = truth.extra?.['workerKinds'] as string[]
+    const kinds = (truth.extra ?? {})['workerKinds'] as string[]
     expect(kinds.filter((k) => k === 'spammer')).toHaveLength(2)
     expect(kinds.filter((k) => k === 'adversary')).toHaveLength(1)
     const users = toFlat(data.users)
@@ -106,6 +106,6 @@ describe('crowdLabels worker kinds', () => {
 
   it('defaults reproduce honest workers only', () => {
     const { truth } = generate(crowdLabels, { key: key(6), knobs: { items: 20, workers: 5 } })
-    expect((truth.extra?.['workerKinds'] as string[]).every((k) => k === 'honest')).toBe(true)
+    expect(((truth.extra ?? {})['workerKinds'] as string[]).every((k) => k === 'honest')).toBe(true)
   })
 })
