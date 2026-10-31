@@ -7,7 +7,7 @@
 
 import { MdmlError, registry } from '../base/index.ts'
 import type { DatasetGenerator, DatasetRef } from '../data/index.ts'
-import { instrumentalVariables, linearScm, treatmentEffects } from './causal.ts'
+import { discontinuityDesign, instrumentalVariables, linearScm, panelEffects, treatmentEffects } from './causal.ts'
 import { changepointSeries } from './changepoints.ts'
 import { blobs, checkerboard, circles, gaussianQuantiles, hastie10_2, moons, spirals, xor } from './classification.ts'
 import {
@@ -33,7 +33,7 @@ import {
 } from './corpus.ts'
 import { densitySamples } from './densities.ts'
 import { hawkesProcess, inhomogeneousPoisson, poissonProcess, spatialPoisson } from './events.ts'
-import { abTest } from './experiments.ts'
+import { abTest, carryoverExperiment, networkExperiment } from './experiments.ts'
 import { biasedCredit, germanCredit, titanicSurvival } from './fairness.ts'
 import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, karateClub, kinshipTriples, lesMiserables, smallMolecules } from './graphs.ts'
@@ -128,6 +128,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   blobs,
   blobsWithOutliers,
   burgersOperator,
+  carryoverExperiment,
   changepointSeries,
   checkerboard,
   circles,
@@ -138,6 +139,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   crowdLabels,
   densitySamples,
   digitGlyphs,
+  discontinuityDesign,
   dishonestCasino,
   dopplerCurve,
   driftingTopics,
@@ -175,7 +177,9 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   multipleInstanceBags,
   naiveBayesCorpus,
   nearDuplicateCorpus,
+  networkExperiment,
   offlineMdp,
+  panelEffects,
   parityTask,
   piecewiseLinear,
   poissonProcess,
@@ -313,6 +317,10 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['treatmentEffects', 'Treatment effects'],
     ['unequalVarianceBlobs', 'Blobs of unequal variance'],
     ['xor', 'XOR'],
+    ['panelEffects', 'Panel with staggered adoption'],
+    ['discontinuityDesign', 'Regression discontinuity design'],
+    ['networkExperiment', 'Network experiment with spillover'],
+    ['carryoverExperiment', 'Chained experiments with carryover'],
   ]),
   ...g('image', [
     ['barsAndStripes', 'Bars and stripes'],

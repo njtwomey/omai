@@ -5124,9 +5124,13 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   corners (`geometricScenes`), a small Fashion-MNIST (`fashionMnistTest`, remote, parsed by `parseIdxImages`).
 - `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs: `linearScm` (random DAGs,
   Gaussian or non-Gaussian noise, total effects, interventional means), `treatmentEffects` (confounded treatment,
-  potential outcomes, CATE, propensities), `instrumentalVariables`.
+  potential outcomes, CATE, propensities), `instrumentalVariables`, `panelEffects` (a unit-by-period panel with
+  staggered or simultaneous adoption, a differential pre-trend and dynamic effects, for difference in differences and
+  event studies), `discontinuityDesign` (sharp or fuzzy, the jump and the first stage as truth).
 - `experiments.ts`: A/B test data with known effects (`abTest`: conversion, continuous or revenue metrics, several
-  arms, pre-period covariates for CUPED, arrival days and novelty effects).
+  arms, pre-period covariates for CUPED, arrival days and novelty effects), `networkExperiment` (a small-world network
+  with unit or cluster randomisation and spillover: direct, spillover and total effects), `carryoverExperiment` (two
+  chained experiments with a persistent first effect and the naive bias).
 - `trajectories.ts`: logged bandit data (`loggedBandit`, with exact policy values), offline RL datasets from known
   behaviour policies (`offlineMdp` on random tabular MDPs or Strens' chain, `policyEvaluation`, `TabularMdp`).
 - `weak-labels.ts`: labelling functions with known accuracies (`labellingFunctions`), crowd labels (`crowdLabels`,
