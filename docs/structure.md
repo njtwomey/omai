@@ -1339,7 +1339,7 @@ maximum likelihood, RANSAC, SPRT) are traced `Algorithm`s; randomness comes from
 linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisation); `tests/_shapiro.ts`,
 `tests/_kolmogorov.ts`, `tests/_cvm.ts` (null distributions).
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, weighted versions,
-  `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`.
+  `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`, `gini`.
 - `running.ts`: Welford moments (`momentState`, `push`, `pushAll`, `merge`, `momentsOf`), P-squared quantiles
   (`p2Quantile`, `p2Push`, `p2Estimate`), exponentially weighted moments (`ewmState`, `ewmPush`, `ewmMean`, `ewmVar`,
   `ewmStd`).
@@ -2142,6 +2142,12 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   - `sandpile.ts`: the Abelian sandpile (`stabilise`, `sandpileAdd`, `sandpileIdentity`, `sandpileAlgorithm` with the
     avalanche size, duration and sites).
   - `forest-fire.ts`: Drossel-Schwabl (`forestFire`, with `treeDensityWithoutFire` as its exact check).
+  - `schelling.ts`: Schelling segregation (`schelling`, `segregationIndex`, random or satisfying destinations).
+  - `traffic.ts`: Nagel-Schreckenberg (`nagelSchreckenberg`, `trafficStep`, `deterministicFlow` as the exact check for
+    no dawdling, `trafficDiagram` as the fundamental-diagram sweep).
+  - `wa-tor.ts`: Wa-Tor fish and sharks (`waTor`, with an extinction event).
+  - `sugarscape.ts`: Sugarscape (`sugarLandscape`, `sugarscape` with `stats.gini` of the wealth on the tape; trade and
+    reproduction are not built).
   - Private: `_core.ts` (state codec, torus index, board hash, checks).
 - Private helpers: `ode/_vec.ts` (typed-array fast path that falls back to tensor ops on traced values), `ode/_step.ts`
   (step bookkeeping shared by the steppers), `ode/_newton.ts` (simplified Newton, Jacobians, the implicit-function
