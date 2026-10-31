@@ -10,7 +10,8 @@
 import { MdmlError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import type { BfgsState } from '../optim/index.ts'
-import { item } from '../tensor/index.ts'
+import { type Key, normal } from '../random/index.ts'
+import { item, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { likelihoodAlgorithm } from './_ml.ts'
 import { asSeries } from './_series.ts'
@@ -605,4 +606,55 @@ export function etsForecast(fit: EtsFit, steps: number, levels: readonly number[
       }
     }),
   }
+}
+
+/**
+ * Sample paths of an ETS model from its final state (Hyndman et al.'s simulation of future values): each step draws
+ * the innovation e ~ N(0, sigma2), forms y = yhat + e for additive error or y = yhat (1 + e) for multiplicative error,
+ * and advances the states by the model's own recursion. It works for every combination of error, trend and seasonal
+ * type, so it gives prediction intervals where no closed form exists.
+ *
+ * @param fit - The fitted model (spec, parameters, sigma2 and final state).
+ * @param steps - The horizon.
+ * @param paths - The number of paths.
+ * @param key - The random key.
+ * @returns The paths, `[path][step]`.
+ * @example
+ * ```ts
+ * import { etsSimulate } from 'mdml-engine/timeseries'
+ * import { key } from 'mdml-engine/random'
+ * const fit = { spec: { error: 'mul', trend: 'none', seasonal: 'none' }, params: { alpha: 0.3, level0: 10 }, sigma2: 0.01,
+ *   final: { level: 10, trend: 0, seasonal: [] } } as never
+ * etsSimulate(fit, 3, 4, key(0)).length // => 4
+ * ```
+ */
+export function etsSimulate(
+  fit: Pick<EtsFit, 'spec' | 'params' | 'sigma2' | 'final'>,
+  steps: number,
+  paths: number,
+  key: Key,
+): number[][] {
+  const r = resolve(fit.spec)
+  const z = toFlat(normal(key, [paths * steps]))
+  const sd = Math.sqrt(fit.sigma2)
+  const out: number[][] = []
+  for (let p = 0; p < paths; p++) {
+    const run: Run = {
+      level: fit.final.level,
+      trend: fit.final.trend,
+      ring: Float64Array.from({ length: r.m }, (_, j) => fit.final.seasonal[j] ?? 0),
+      pos: 0,
+    }
+    const path: number[] = []
+    for (let h = 0; h < steps; h++) {
+      const probe: Run = { level: run.level, trend: run.trend, ring: Float64Array.from(run.ring), pos: run.pos }
+      const yhat = advance(r, fit.params, probe, 0)
+      const e = sd * (z[p * steps + h] ?? 0)
+      const y = fit.spec.error === 'mul' ? yhat * (1 + e) : yhat + e
+      advance(r, fit.params, run, y)
+      path.push(y)
+    }
+    out.push(path)
+  }
+  return out
 }

@@ -3966,6 +3966,14 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   back), `asymmetricSimulate`, `asymmetricForecast` (the one-step recursion, simulation beyond it) and
   `newsImpactCurve` (Engle-Ng, for GARCH, GJR, EGARCH and APARCH). `arch` is not an oracle dependency, so the models are
   tested by hand-computed recursions, the GARCH limit of APARCH, recovery of planted parameters and agreement of solvers.
+- `ets-intervals.ts`: prediction intervals of every ETS type after Hyndman et al.: `etsClass`, `etsPredictionVariance`
+  (closed form for class 1, additive error, and class 2, multiplicative error with additive or no trend and season:
+  (1 + sigma2) theta_h - mu_h^2) and `etsPredictionIntervals` (closed form where there is one, else the quantiles of
+  `etsSimulate` paths drawn from the final state through the model's own recursion, which also checks the closed forms).
+  Multiplicative season with multiplicative error (class 3) and multiplicative trends are simulated.
+- `box-cox.ts`: `guerreroLambda` (the exponent that makes the block spread independent of the level) and `boxCoxMstl`
+  (MSTL on the transformed series with lambda given, by Guerrero or by profile likelihood, the fit, trend and seasonal
+  factors carried back to the original scale).
 - `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
   standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
   cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
