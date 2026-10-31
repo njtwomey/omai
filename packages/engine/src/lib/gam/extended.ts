@@ -32,6 +32,7 @@ import {
   stateToJson,
   tensor as tensorSource,
 } from '../trace/index.ts'
+import { referenceTest } from './inference.ts'
 import { logDetDerivative } from './outer.ts'
 import {
   assemblePenalty,
@@ -1194,4 +1195,78 @@ function stripIntercept(X: Float64Array, n: number, p: number): Float64Array {
   const out = new Float64Array(n * (p - 1))
   for (let i = 0; i < n; i++) for (let j = 0; j < p - 1; j++) out[i * (p - 1) + j] = X[i * p + j + 1] ?? 0
   return out
+}
+
+/** The test of one term of an extended model. */
+export interface ExtendedTermTest {
+  readonly predictor: string
+  readonly label: string
+  /** The effective degrees of freedom of the term. */
+  readonly edf: number
+  /** The reference degrees of freedom, `edf1 = 2 tr(F) - tr(F F)` clamped to the term's width. */
+  readonly refDf: number
+  readonly statistic: number
+  /** The p-value under the null that the term's effect is zero (a chi-square reference: there is no scale to estimate). */
+  readonly pValue: number
+}
+
+/**
+ * Tests of the terms of a fitted extended model: Wood's (2013) reference test of each term's fitted effect against zero,
+ * from the Bayesian posterior covariance of its coefficients, on the term's `edf1` reference degrees of freedom (a Wald
+ * test for an unpenalised term).
+ *
+ * @param model - The model.
+ * @param fit - The fit.
+ * @returns One test per term.
+ * @concept generalized-additive-models
+ * @reference S. N. Wood, On p-values for smooth components of an extended empirical Bayesian GAM (Biometrika 100, 2013).
+ * @example
+ * ```ts
+ * import { extendedModel, extendedTermTests, fitExtended, s } from 'mdml-engine/gam'
+ * import { families } from 'mdml-engine/dists'
+ * const x = Array.from({ length: 80 }, (_, i) => [i / 79])
+ * const y = x.map((r, i) => Math.min(0.95, Math.max(0.05, 0.2 + 0.6 * (r[0] ?? 0) + 0.1 * Math.sin(i * 12.9898))))
+ * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 5 })]])
+ * (extendedTermTests(model, fitExtended(model))[0]?.pValue ?? 1) < 0.01 // => true
+ * ```
+ */
+export function extendedTermTests(model: ExtendedModel, fit: ExtendedFitResult): ExtendedTermTest[] {
+  const P = model.likelihood.p
+  const beta = Float64Array.from(fit.state.beta)
+  const S = assemblePenalty(model.structure, fit.state.logLambda)
+  const info = model.likelihood.evaluate(beta, fit.state.aux).information
+  const A = Float64Array.from(info, (v, i) => v + (S[i] ?? 0))
+  const { inverse } = invertSafely(A, P)
+  // F = H^-1 D and edf1_j = 2 F_jj - (F F)_jj
+  const F = new Float64Array(P * P)
+  for (let i = 0; i < P; i++)
+    for (let j = 0; j < P; j++) {
+      let a = 0
+      for (let k = 0; k < P; k++) a += (inverse[i * P + k] ?? 0) * (info[k * P + j] ?? 0)
+      F[i * P + j] = a
+    }
+  return model.terms.map((t) => {
+    const predictor = model.predictors.find((p) => p.name === t.predictor) as ExtendedPredictor
+    const columns = designColumns(predictor.design, predictor.dropIntercept)
+    const w = t.width
+    const local = t.offset - predictor.offset
+    const X = new Float64Array(model.n * w)
+    for (let i = 0; i < model.n; i++)
+      for (let j = 0; j < w; j++) X[i * w + j] = columns[i * predictor.width + local + j] ?? 0
+    let edf = 0
+    let edf1 = 0
+    for (let j = 0; j < w; j++) {
+      const at = t.offset + j
+      let ff = 0
+      for (let k = 0; k < P; k++) ff += (F[at * P + k] ?? 0) * (F[k * P + at] ?? 0)
+      edf += F[at * P + at] ?? 0
+      edf1 += 2 * (F[at * P + at] ?? 0) - ff
+    }
+    const V = new Float64Array(w * w)
+    for (let a = 0; a < w; a++)
+      for (let b = 0; b < w; b++) V[a * w + b] = fit.covariance[(t.offset + a) * P + t.offset + b] ?? 0
+    const refDf = Math.min(Math.max(edf1, 1e-3), w)
+    const test = referenceTest(X, model.n, w, beta.subarray(t.offset, t.offset + w), V, refDf, 0)
+    return { predictor: t.predictor, label: t.label, edf, refDf, statistic: test.statistic, pValue: test.pValue }
+  })
 }
