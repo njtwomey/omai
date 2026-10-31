@@ -4754,6 +4754,14 @@
       "cases": 77
     },
     {
+      "fixture": "systems/measures.json",
+      "source": "oracle/cases/systems/measures.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "systems/norms.json",
       "source": "oracle/cases/systems/norms.py",
       "reference": {

@@ -1297,7 +1297,8 @@ first, as scipy.signal. State-space and transfer-function values are differentia
 coefficients, and so are the conversions between them, the responses and the discretisations.
 - `representations.ts`: transfer functions, zero-pole-gain, state space and second-order sections (`tf`, `zpk`, `ss`,
   `sos`); continuous and discrete; conversions between them (`toTf`, `toZpk`, `toSs`, `toSos`), `dimensions`,
-  `isDiscrete`; minimal realisation (`minreal`: staircase reductions, pole-zero cancellation).
+  `isDiscrete`; minimal realisation (`minreal`: staircase reductions, pole-zero cancellation); `pade` (the rational
+  approximation of a delay, python-control's).
 - `conversions.ts`: scipy's pairwise conversions: `normalize`, `abcdNormalize`, `tf2ss` (controller canonical form),
   `ss2tf` (differentiable through `charpoly`), `tf2zpk`, `zpk2tf`, `zpk2ss`, `ss2zpk`.
 - `sections.ts`: second-order sections: `zpk2sos` (nearest, keep-odd and minimal pairing; analog), `sos2zpk`,
@@ -1305,7 +1306,9 @@ coefficients, and so are the conversions between them, the responses and the dis
 - `interconnect.ts`: `series`, `parallel`, `feedback`, `append`, `connect` (python-control semantics; static gains
   accepted; transfer functions combine as polynomials, multivariable systems in state space).
 - `responses.ts`: impulse, step, initial-condition and arbitrary-input responses (`lsim` and the traced
-  `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`.
+  `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`; `stepMeasures` (on
+  sampled data) and `stepInfo` (on a system): rise time, settling time, overshoot, undershoot and peak, as
+  python-control's `step_info`.
 - `frequency.ts`: frequency response (`freqresp`, `evalfr`, `dcgain`, `findfreqs`), Bode, Nyquist (with the
   encirclement count) and Nichols data.
 - `filters.ts`: frequency responses of filters given by coefficients (`freqs` analog, `freqz` digital, FFT for FIR).
@@ -2151,6 +2154,14 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
 - `control/optimal.ts`: LQR, discrete LQR, LQE, LQG, finite-horizon Riccati recursions.
 - `control/placement.ts`: pole placement (Kautsky-Nichols-Van Dooren, Ackermann).
+- `control/compensators.ts`: lead and lag compensators from their defining numbers (`leadCompensator`: phase and centre
+  to zero and pole; `lagCompensator`: zero and ratio), `leadLag`, and the textbook design rules from a plant's margins
+  (`leadDesign`: centre where the plant's gain is 1/sqrt(alpha); `lagDesign`: zero a decade below the crossover).
+- `control/indirect.ts`: Pontryagin's maximum principle: `ControlProblem`, the Hamiltonian and the state-costate system
+  (`hamiltonianSystem`), `bangBang`, and `pontryaginAlgorithm` (Newton shooting for the initial costate and, when free,
+  the horizon: one shot per step, the miss, the trajectory with its costate and control, and the switches as events);
+  `doubleIntegratorEnergy` and `minimumTimeDoubleIntegrator` with `minimumTimeShooting` (continuation in the smoothing
+  of the bang-bang rule) carry their closed-form truth.
 - `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints, receding horizon as a traced algorithm).
 - `control/pid.ts`: PID control with anti-windup and derivative filtering, Ziegler-Nichols and Cohen-Coon tuning,
   relay auto-tuning.
