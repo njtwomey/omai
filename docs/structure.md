@@ -4054,11 +4054,21 @@ choice of the kernel and the ridge from the data: `logEvidence` (kernel ridge as
 `gcvScore`, all differentiable in the Gram matrix; `kernelCriterionProblem` states the criterion over the log
 hyperparameters and log ridge as a `SmoothProblem` (the gradient is autodiff through the Gram matrix), `tuneKernelRidge`
 minimises it with any solver of the slot (L-BFGS by default), and `gridKernelRidge` scores a grid. `_slot.ts` (private) is
-the slot with the closed form as one more mode; `_testdata.ts` (private) the tests' planted data.
+the slot with the model's own mode (`'closed-form'`, `'irls'`) beside the solvers of `smoothSolvers`; `_classifier.ts`
+(private) the kernel options, training setup and classifier verbs; `_testdata.ts` (private) the tests' planted data.
+`kernel-classifiers.ts` is classification by regularised risk in the dual: `kernelLogisticRegression` (binary; objective
+`kernelLogisticProblem`; the default solver `'irls'` is Newton's method in the dual, any of `smoothSolvers` reaches the
+same optimum; with a linear kernel it is L2-penalised logistic regression with `C = 1 / lambda`), the import vector machine
+`importVectorMachine` (greedy sparse kernel logistic regression, one import vector per step), the least-squares SVM `lssvm`
+(closed form `[[0, 1'], [1, K + I/C]]` by default, a slot mode) and `kernelRidgeClassifier` (one-versus-rest ridge on plus
+and minus one). The kernel Fisher discriminant is `learn/discriminant.ts`, Gaussian-process classification `gp/`, the
+hinge-loss SVMs `svm/`; multi-class logistic problems go through `learn/multiclass.ts`.
 
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
 sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
 pipelines with `Ridge` (same landmarks and draws), and the leave-one-out errors of `RidgeCV`.
+Kernel classifiers: `LogisticRegression` (linear kernel; RBF through `Nystroem` with every row a landmark, where the
+penalties coincide), numpy's solve of the LS-SVM system, `RidgeClassifier` and `KernelRidge` on one-versus-rest targets.
 built from: `kernels`, `learn`, `numerics`, `metrics`, `dists`, `trace`
 
 ### 4.51 `gam/`: generalised additive models (mgcv, pyGAM, statsmodels GLMGam)

@@ -529,7 +529,7 @@ export function approximateKernelRidge(
           problem: problemOf(smooth, new Array<number>(p).fill(0)),
           smooth,
           solver: h.solver,
-          closed: () => {
+          direct: () => {
             const s = ridgeSolve(
               fromStorage(z, [m.n, d], 'float64'),
               fromStorage(t.rows, [m.n, t.k], 'float64'),

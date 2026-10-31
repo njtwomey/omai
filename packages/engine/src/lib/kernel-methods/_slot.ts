@@ -4,7 +4,7 @@
 // the normal equations directly. Either way the state holds the point reached in the solver's own shape, so the
 // estimator reads the parameters the same way and `solver/gradNorm` and `solver/step` are logged for both.
 import type { Json } from '../base/index.ts'
-import { slotAlgorithm } from '../linear/_slot.ts'
+import { infNorm, slotAlgorithm } from '../linear/_slot.ts'
 import { analyticObjective, type SmoothProblem, type SolverReached } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -12,8 +12,11 @@ import type { Algorithm, Observation, TraceSchema } from '../trace/index.ts'
 
 export { infNorm, newtonAt, type SlotState } from '../linear/_slot.ts'
 
-/** A solver of `smoothSolvers`, or the closed-form solution as one more mode of the slot. */
-export type SolverChoice = SpaceValue | 'closed-form'
+/**
+ * A solver of `smoothSolvers`, or a mode of the model's own: `'closed-form'` (one step to the solution of the normal
+ * equations) or `'irls'` (iteratively reweighted least squares, one direct step per iteration).
+ */
+export type SolverChoice = SpaceValue | 'closed-form' | 'irls'
 
 /** A smooth objective with its analytic derivatives. */
 export interface Smooth {
@@ -42,8 +45,8 @@ export interface SlottedSpec<S extends { readonly solver: unknown }> {
   readonly problem: SmoothProblem
   readonly smooth: Smooth
   readonly solver: SolverChoice
-  /** The closed-form point (used when the solver is `'closed-form'`). */
-  readonly closed?: () => ArrayLike<number>
+  /** The model's own step from a point: a closed form ignores the point; IRLS improves it. */
+  readonly direct?: (x: ArrayLike<number>) => ArrayLike<number>
   readonly key?: Key
   readonly tol: number
   view(r: SolverReached, evaluations: number, stalled: boolean): Omit<S, 'solver'>
@@ -67,11 +70,12 @@ export function slotted<S extends { readonly solver: unknown }>(spec: SlottedSpe
     view: spec.view,
     observe: spec.observe,
   }
-  if (spec.solver !== 'closed-form') {
+  if (spec.solver !== 'closed-form' && spec.solver !== 'irls') {
     return slotAlgorithm({ ...common, solver: spec.solver } as never) as unknown as Algorithm<S>
   }
-  if (spec.closed === undefined) throw new Error(`${spec.name}: no closed form for this configuration`)
-  const closed = spec.closed
+  const mode = spec.solver
+  if (spec.direct === undefined) throw new Error(`${spec.name}: no ${mode} mode for this configuration`)
+  const direct = spec.direct
   const base = slotAlgorithm({ ...common, solver: { kind: 'newton' } } as never) as unknown as Algorithm<S>
   const reachedAt = (x: ArrayLike<number>, step: number): SolverReached => ({
     x: Float64Array.from(x),
@@ -82,9 +86,18 @@ export function slotted<S extends { readonly solver: unknown }>(spec: SlottedSpe
   const wrap = (r: SolverReached): S => ({ ...spec.view(r, 1, false), solver: r }) as S
   return {
     ...base,
-    config: { ...(spec.config as object), solver: 'closed-form' } as Json,
+    config: { ...(spec.config as object), solver: mode } as Json,
     init: () => wrap(reachedAt(spec.problem.x0 as ArrayLike<number>, 0)),
-    step: () => wrap(reachedAt(closed(), 1)),
-    done: (_s, t) => (t >= 1 ? 'converged' : undefined),
+    step: (s) => {
+      const r = s.solver as SolverReached
+      const next = direct(r.x)
+      let moved = 0
+      for (let i = 0; i < next.length; i++) moved += ((next[i] ?? 0) - (r.x[i] ?? 0)) ** 2
+      return wrap(reachedAt(next, Math.sqrt(moved)))
+    },
+    done: (s, t) =>
+      (mode === 'closed-form' ? t >= 1 : infNorm((s.solver as SolverReached).grad) <= spec.tol)
+        ? 'converged'
+        : undefined,
   }
 }
