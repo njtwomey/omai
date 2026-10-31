@@ -117,3 +117,25 @@ export function scoredGroups(seed: number, n: number, gap: number): ScoredRows {
   const scores = groups.map((g, i) => sigmoid(1.6 * ((labels[i] ?? 0) - 0.5) * 2 + (z[i] ?? 0) - gap * g))
   return { scores, labels, groups }
 }
+
+/** A regression problem with sparse truth: `n` rows of `d` features, y = 3·x0 − 2·x1 + 1.5·x4 plus noise. */
+export function sparseRegression(seed: number, n: number, d: number, noise: number): { x: number[][]; y: number[] } {
+  const x = gaussianRows(seed, n, d)
+  const e = normals(seed + 50, n, noise)
+  const y = x.map((r, i) => 3 * (r[0] ?? 0) - 2 * (r[1] ?? 0) + 1.5 * (r[4] ?? 0) + (e[i] ?? 0))
+  return { x, y }
+}
+
+/** A two-class problem in the plane: two interleaved crescents, each label flipped with probability `flip`. */
+export function crescents(seed: number, n: number, flip: number): { x: number[][]; y: number[] } {
+  const u = uniforms(seed, 3 * n)
+  const e = normals(seed + 9, 2 * n, 0.18)
+  const y = Array.from({ length: n }, (_, i) => i % 2)
+  const x = y.map((c, i) => {
+    const t = Math.PI * (u[i] ?? 0)
+    return c === 0
+      ? [Math.cos(t) + (e[2 * i] ?? 0), Math.sin(t) + (e[2 * i + 1] ?? 0)]
+      : [1 - Math.cos(t) + (e[2 * i] ?? 0), 0.4 - Math.sin(t) + (e[2 * i + 1] ?? 0)]
+  })
+  return { x, y: y.map((c, i) => ((u[n + i] ?? 1) < flip ? 1 - c : c)) }
+}
