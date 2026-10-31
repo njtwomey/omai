@@ -1932,6 +1932,16 @@ jellyfish, Biopython, pyphen
   next-word distributions, perplexity and samples; `ngramTrainingAlgorithm` counts one sentence per step with the
   held-out perplexity so far. Oracle: Chen and Goodman's definitions written directly in Python (NLTK's `lm` models
   differ in convention, see `oracle/cases/text/language_models.py`).
+- `keywords.ts`: RAKE (reproduces the scores of the RAKE paper's worked abstract), the TextRank word graph and keywords
+  with phrase merging (PageRank from `graph`), the sentence graph with Mihalcea and Tarau's overlap similarity and
+  extractive summaries.
+- `linkage.ts`: record linkage: standard and sorted-neighbourhood blocking, field comparison into agreement levels,
+  the Fellegi-Sunter model fitted by EM on the comparison patterns (`fellegiSunterAlgorithm`, one iteration per step,
+  serialisable), match weights and posteriors, pairwise precision and recall, entity clusters from the matched pairs.
+  Tested on `linkageTables`, where the EM recovers the planted agreement rates.
+- `spelling.ts`: the noisy-channel spelling corrector: candidates from a BK-tree, a channel learned from (typed,
+  intended) pairs (weighted Damerau-Levenshtein alignment with counted operation probabilities) or uniform, the prior a
+  word-frequency table or an n-gram language model reading the corrected context, whole sentences left to right.
 - `retrieval.ts`: a positional inverted index (`invertedIndex` with `add` per document, `indexingAlgorithm` one
   document per step), the scoring models as a mode over its postings (TF-IDF cosine, BM25 with Robertson or Lucene idf,
   the binary independence model with optional relevance judgements, query likelihood under Dirichlet, Jelinek-Mercer or
