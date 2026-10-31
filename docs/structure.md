@@ -2998,6 +2998,45 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `generative.ts`: `timestepEmbedding`, `noiseLevelEmbedding` and `fourierFrequencies`, `TimeEmbedding`,
     `DiffusionResBlock`, `SpatialSelfAttention`, `DiffusionDownStage` and `DiffusionUpStage`, `AffineCoupling`
     (RealNVP) and `AdditiveCoupling` (NICE).
+  - `hopfield.ts`: associative memories: `hopfieldWeights` (Hebb or pseudo-inverse rule), `hopfieldEnergy`,
+    `classicalMemory` and `denseAssociativeMemory` (Krotov-Hopfield polynomial or exponential interaction) as one
+    `AssociativeMemory` contract, `hopfieldRecallAlgorithm` (asynchronous updates, sequential or random, the energy,
+    overlap and state on the tape; the energy never rises), and the modern continuous network:
+    `modernHopfieldUpdate` (attention over the patterns), `modernHopfieldEnergy`, `modernHopfieldAlgorithm`,
+    `ModernHopfield` (a layer with learnable patterns).
+  - `rbm.ts`: restricted Boltzmann machines: `RBM` (binary or Gaussian visible units), `rbmFreeEnergy`,
+    `rbmHiddenProbabilities`, `rbmVisibleMean`, `rbmGibbs` (block Gibbs), `rbmContrastiveLoss` (the surrogate whose
+    gradient is the CD update), the exact `rbmLogPartition`, `rbmLogLikelihood` and `rbmModelStatistics` for small
+    machines, and `contrastiveDivergenceAlgorithm` (CD-k or persistent CD with momentum and weight decay; the
+    reconstruction error, free energy, free-energy gap and exact log partition on the tape).
+  - `masked.ts`: `CausalConv1d` (left-padded, dilated, grouped), `pixelCnnMask` (masks A and B, optional colour-channel
+    ordering), `MaskedConv2d` (PixelCNN) and `GatedMaskedConv` (Gated PixelCNN vertical and horizontal stacks, no blind spot).
+  - `graph.ts`: `rgcnConv` and `RGCNConv` (relational GCN: one weight per edge type, basis decomposition, mean or sum per
+    relation), `EGNNLayer` and `EGNN` (E(n)-equivariant graph layers: features from distances, coordinates from relative
+    vectors), `GraphTransformerLayer` and `GraphTransformer` (edge-softmax attention, dense when no edges are given,
+    Laplacian or random-walk positional encodings from `graph` with random sign flips in training).
+  - `operators.ts`: operator learning: `DeepONet` (branch over sensors, trunk over the query point), `SpectralConv1d`
+    and `SpectralConv2d` (low Fourier modes times learned complex weights, through the differentiable FFT),
+    `FourierLayer` and `FNO` (lift, Fourier layers, projection, in one or two dimensions).
+  - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
+    `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
+  - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),
+    `FieldAwareFm`, `DeepFm`, `WideAndDeep` over `{ids, values}` feature rows; `NeuralCF` (NeuMF: GMF and MLP branches,
+    modes), `TwoTower` (with `embeddingTower`, in-batch logits, `logQCorrection`), `CrossNetwork` (DCN), `dotInteraction`
+    and `Dlrm`. The sequential recommenders are the existing `GRU` and `TransformerLM` (no separate block).
+  - `flow.ts`: `CNF` (FFJORD continuous normalising flow: the state and the accumulated Jacobian trace integrated
+    together; exact or Hutchinson trace, Rademacher or Gaussian noise; `logProb`, `sample` by backward integration) and
+    `standardNormalLogProb`.
+  - `mechanics.ts`: `HamiltonianNet` (a network for H(q, p), the field its symplectic gradient, energy conserved
+    along the flow) and `LagrangianNet` (a network for L(q, qdot), accelerations from the Euler-Lagrange equation).
+- `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
+  `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
+  containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
+- `swag.ts`: SWAG (stochastic weight averaging Gaussian): `swagState`, `swagCollect` (running mean, mean square and the
+  last deviations), `swagVariance`, `swagCovariance` (dense, small models), `swagSample` (diagonal plus low-rank, or
+  diagonal), `swagAlgorithm` (collection along any constant-step optimiser, as a stepped algorithm with the mean and
+  deviation matrix on the tape), `swagUnravel`, `swagPredictive`. Lives here, not in `training/callbacks.ts`, so it
+  works with any trajectory.
 - `describe.ts`: `describe` (a module to a `Structure`: blocks, tensor shapes, repeats, skip connections into `add`
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen
