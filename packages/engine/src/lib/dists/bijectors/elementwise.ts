@@ -1,25 +1,30 @@
 /**
  * Elementwise bijectors, applied to each coordinate independently: identity, exponential, softplus, sigmoid, tanh,
- * affine, power and the standard normal CDF, each with a numerically stable log-Jacobian. They map the real line onto
- * the positive reals, the unit interval and other simple supports.
+ * affine, power and the standard normal CDF, the Jones-Pewsey sinh-arcsinh map (skew and tail weight) and the Kumaraswamy
+ * CDF of the unit interval, each with a numerically stable log-Jacobian. They map the real line onto the positive reals,
+ * the unit interval and other simple supports.
  */
 
 import { logit, logSigmoid, ndtr, ndtri, normalLogPdf } from '../../numerics/special/index.ts'
 import {
   abs,
   add,
+  arcsinh,
   arctanh,
   div,
   expm1,
   exp as expOp,
   log,
+  log1p,
   mul,
   neg,
   pow,
   primalOf,
   promoteFloat,
   sigmoid as sigmoidOp,
+  sinh,
   softplus as softplusOp,
+  square,
   sub,
   type TensorLike,
   tanh as tanhOp,
@@ -225,5 +230,67 @@ export function normalCdf(): Bijector {
     forward: ndtr,
     inverse: ndtri,
     forwardLogDetJacobian: normalLogPdf,
+  })
+}
+
+/**
+ * The sinh-arcsinh bijector of Jones and Pewsey (2009): y = sinh(delta asinh(x) - epsilon), with skewness epsilon and
+ * tail weight delta > 0. Applied to a normal it gives the sinh-arcsinh distribution, whose tails are heavier than the
+ * normal's for delta < 1 and lighter for delta > 1; epsilon = 0 and delta = 1 is the identity.
+ *
+ * @param skewness - epsilon (default 0).
+ * @param tailweight - delta > 0 (default 1).
+ * @returns The bijector, with log |dy/dx| = log delta + log cosh(delta asinh(x) - epsilon) - log(1 + x^2) / 2.
+ * @concept normalizing-flows
+ * @example
+ * ```ts
+ * import { bijectors } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
+ * item(bijectors.sinhArcsinh(0, 1).forward(0.7)) // => 0.7
+ * ```
+ */
+export function sinhArcsinh(skewness: TensorLike = 0, tailweight: TensorLike = 1): Bijector {
+  const [eps, delta] = promoteFloat(skewness, tailweight) as [Value, Value]
+  return defineBijector({
+    name: 'sinhArcsinh',
+    sign: 1,
+    forward: (x) => sinh(sub(mul(delta, arcsinh(x)), eps)),
+    inverse: (y) => sinh(div(add(arcsinh(y), eps), delta)),
+    forwardLogDetJacobian: (x) => {
+      const z = sub(mul(delta, arcsinh(x)), eps)
+      // log cosh z = z + softplus(-2 z) - log 2, stable for large |z|.
+      const logCosh = sub(add(z, softplusOp(mul(z, -2))), Math.LN2)
+      return sub(add(log(delta), logCosh), mul(log1p(square(x)), 0.5))
+    },
+  })
+}
+
+/**
+ * The Kumaraswamy CDF as a bijector of the unit interval onto itself, y = 1 - (1 - x^a)^b (Kumaraswamy, 1980): the
+ * map that turns a uniform variable into a Kumaraswamy one (a Beta-like law with closed-form CDF and quantile),
+ * increasing for a, b > 0.
+ *
+ * @param a - First shape > 0.
+ * @param b - Second shape > 0.
+ * @returns The bijector, with log |dy/dx| = log a + log b + (a - 1) log x + (b - 1) log(1 - x^a).
+ * @example
+ * ```ts
+ * import { bijectors } from 'mdml-engine/dists'
+ * import { item } from 'mdml-engine/tensor'
+ * item(bijectors.kumaraswamyCdf(1, 1).forward(0.3)) // => 0.3
+ * ```
+ */
+export function kumaraswamyCdf(a: TensorLike, b: TensorLike): Bijector {
+  const [shapeA, shapeB] = promoteFloat(a, b) as [Value, Value]
+  const xPowA = (x: Value): Value => expOp(mul(shapeA, log(x)))
+  return defineBijector({
+    name: 'kumaraswamyCdf',
+    domain: { kind: 'unitInterval' },
+    codomain: { kind: 'unitInterval' },
+    sign: 1,
+    forward: (x) => neg(expm1(mul(shapeB, log1p(neg(xPowA(x)))))),
+    inverse: (y) => pow(neg(expm1(div(log1p(neg(y)), shapeB))), div(1, shapeA)),
+    forwardLogDetJacobian: (x) =>
+      add(add(log(shapeA), log(shapeB)), add(mul(sub(shapeA, 1), log(x)), mul(sub(shapeB, 1), log1p(neg(xPowA(x)))))),
   })
 }

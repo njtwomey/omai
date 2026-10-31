@@ -5,7 +5,17 @@
  */
 import { customVjp } from '../autodiff/index.ts'
 import { inv, lstsq } from '../numerics/linalg/index.ts'
-import { type BfgsState, bfgsAlgorithm, type Objective } from '../optim/index.ts'
+import {
+  analyticObjective,
+  type BfgsState,
+  bfgsAlgorithm,
+  type Objective,
+  type SlotState,
+  type SmoothProblem,
+  slotAlgorithm,
+} from '../optim/index.ts'
+import type { Key } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import { fromStorage, mul, primalOf, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 
@@ -124,4 +134,88 @@ export function numericalHessian(f: (x: Float64Array) => number, x: ArrayLike<nu
 export function inverseDiagonalRoots(h: Float64Array, n: number): number[] {
   const covariance = toFlat(inv(fromStorage(h, [n, n], 'float64')))
   return Array.from({ length: n }, (_, i) => Math.sqrt(covariance[i * n + i] ?? Number.NaN))
+}
+
+/** A scalar function of a flat parameter vector as a smooth problem, its gradient by central differences. */
+export function finiteDifferenceProblem(
+  f: (x: Float64Array) => number,
+  x0: ArrayLike<number>,
+  eps = 1e-6,
+): SmoothProblem {
+  return {
+    objective: analyticObjective({
+      value: f,
+      gradient: (x) => {
+        const grad = new Float64Array(x.length)
+        for (let i = 0; i < x.length; i++) {
+          const h = eps * Math.max(1, Math.abs(x[i] ?? 0))
+          const up = Float64Array.from(x)
+          const down = Float64Array.from(x)
+          up[i] = (x[i] ?? 0) + h
+          down[i] = (x[i] ?? 0) - h
+          grad[i] = (f(up) - f(down)) / (2 * h)
+        }
+        return grad
+      },
+    }),
+    x0: Array.from(x0),
+  }
+}
+
+/** The state of {@link likelihoodSlot}. */
+export type LikelihoodState = SlotState & {
+  /** The unconstrained parameter vector. */
+  readonly u: number[]
+  /** The negative log-likelihood per observation. */
+  readonly objective: number
+  readonly gradient: number
+}
+
+/**
+ * A negative log-likelihood per observation as a model of the solver slot: any solver of `smoothSolvers` minimises it,
+ * logged as `objective`, `gradient` (the largest entry), `logLikelihood`, `gradNorm`, `step` and the tensor `parameters`.
+ *
+ * @param name - The algorithm's name.
+ * @param config - Its JSON configuration.
+ * @param negLogLikPerObs - The objective at the unconstrained parameter vector.
+ * @param x0 - The start.
+ * @param nobs - The number of observations.
+ * @param options - The solver (default BFGS), the gradient tolerance and the key.
+ * @returns The algorithm.
+ */
+export function likelihoodSlot(
+  name: string,
+  config: object,
+  negLogLikPerObs: (x: Float64Array) => number,
+  x0: ArrayLike<number>,
+  nobs: number,
+  options: { readonly solver?: SpaceValue; readonly tol?: number; readonly key?: Key } = {},
+): Algorithm<LikelihoodState> {
+  const tol = options.tol ?? 1e-6
+  const solver = options.solver ?? { kind: 'bfgs', gradTol: tol }
+  return slotAlgorithm<LikelihoodState>({
+    name,
+    config: { ...config, nobs, solver } as never,
+    schema: {
+      metrics: {
+        objective: { description: 'the negative log-likelihood per observation', direction: 'lower' },
+        gradient: { description: 'the largest gradient entry', direction: 'lower' },
+        logLikelihood: { description: 'the log-likelihood at the iterate', direction: 'higher' },
+      },
+      tensors: { parameters: { role: 'param', description: 'the unconstrained parameters', shape: [x0.length] } },
+    },
+    problem: finiteDifferenceProblem(negLogLikPerObs, x0),
+    solver,
+    ...(options.key === undefined ? {} : { key: options.key }),
+    tol,
+    view: (r) => ({
+      u: Array.from(r.x),
+      objective: r.value,
+      gradient: r.grad.reduce((a, b) => Math.max(a, Math.abs(b)), 0),
+    }),
+    observe: (s) => ({
+      metrics: { objective: s.objective, gradient: s.gradient, logLikelihood: -s.objective * nobs },
+      tensors: { parameters: { role: 'param', value: s.u, shape: [s.u.length] } },
+    }),
+  })
 }

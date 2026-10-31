@@ -13,14 +13,17 @@ import type { DictSpace, Space } from '../space/index.ts'
 import {
   adversarialBandit,
   bernoulliBandit,
+  changePointBandit,
   contextualLinearBandit,
   gaussianBandit,
   nonStationaryBandit,
 } from './bandits.ts'
+import { blockingMaze, shortcutMaze } from './changing-maze.ts'
 import { acrobot, cartPole, mountainCar, mountainCarContinuous, pendulum } from './classic-control.ts'
 import { cartDoublePendulum, doubleIntegrator, planarQuadrotor, pointMass, reacher2d } from './continuous-control.ts'
 import { connectFour, type GameDefinition, kuhnPoker, leducPoker, nim, ticTacToe } from './games.ts'
 import { go } from './go.ts'
+import { reachGoal } from './goal-reaching.ts'
 import {
   cliffWalking,
   cliffWalkingSlippery,
@@ -46,6 +49,7 @@ import {
   reacher2dModel,
 } from './models.ts'
 import { cooperativeNavigation, matrixGame, type ParallelDefinition, pursuitEvasion } from './multi-agent.ts'
+import { bairdCounterexample, infiniteVariance, randomWalk } from './prediction.ts'
 import { keyDoor, proceduralMaze } from './procedural.ts'
 import { blackjack, nChain, riverSwim, taxi } from './toy-text.ts'
 
@@ -307,7 +311,7 @@ const model = (id: string, make: () => ControlModel): SingleAgentDefinition => (
  * ```ts
  * import { lookup } from 'mdml-engine/base'
  * import { environmentRegistry } from 'mdml-engine/environments'
- * environmentRegistry.entries.length // => 52
+ * environmentRegistry.entries.length // => 59
  * lookup(environmentRegistry, 'frozenLake').observations // => 'discrete'
  * ```
  */
@@ -324,6 +328,9 @@ export const environmentRegistry: EnvironmentRegistry = registry<EnvironmentEntr
     ['taxi', taxi, 'Taxi', true],
     ['nChain', nChain, 'NChain', false],
     ['riverSwim', riverSwim, 'RiverSwim', false],
+    ['randomWalk', randomWalk, 'Random walk', true],
+    ['bairdCounterexample', bairdCounterexample, "Baird's counterexample", false],
+    ['infiniteVariance', infiniteVariance, 'Infinite-variance process', true],
   ]),
   ...family('gridWorld', [
     ['frozenLake', frozenLake, 'Frozen lake (4 by 4)', true],
@@ -334,6 +341,8 @@ export const environmentRegistry: EnvironmentRegistry = registry<EnvironmentEntr
     ['windyGridWorld', windyGridWorld, 'Windy grid world', true],
     ['keyMaze', keyMaze, 'Key maze', true],
     ['fourRooms', fourRooms, 'Four rooms', true],
+    ['blockingMaze', blockingMaze, 'Blocking maze', true],
+    ['shortcutMaze', shortcutMaze, 'Shortcut maze', true],
   ]),
   ...family('bandit', [
     ['bernoulliBandit', bernoulliBandit, 'Bernoulli bandit', false],
@@ -341,6 +350,7 @@ export const environmentRegistry: EnvironmentRegistry = registry<EnvironmentEntr
     ['contextualLinearBandit', contextualLinearBandit, 'Contextual linear bandit', false],
     ['adversarialBandit', adversarialBandit, 'Adversarial bandit', false],
     ['nonStationaryBandit', nonStationaryBandit, 'Non-stationary bandit', false],
+    ['changePointBandit', changePointBandit, 'Change-point bandit', false],
   ]),
   ...family('continuousControl', [
     ['pointMass', pointMass, 'Point mass', false],
@@ -348,6 +358,7 @@ export const environmentRegistry: EnvironmentRegistry = registry<EnvironmentEntr
     ['doubleIntegrator', doubleIntegrator, 'Double integrator', false],
     ['planarQuadrotor', planarQuadrotor, 'Planar quadrotor', false],
     ['cartDoublePendulum', cartDoublePendulum, 'Cart double pendulum', true],
+    ['reachGoal', reachGoal, 'Goal reaching', true],
   ]),
   ...family('minatar', [
     ['breakoutMinAtar', breakoutMinAtar, 'Breakout (MinAtar)', true],

@@ -4,8 +4,9 @@
  * through the library's linear algebra.
  */
 
-import { cholesky, dgemm, eigvals, inv, slogdet } from '../numerics/linalg/index.ts'
+import { cholesky, dgemm, eigh, eigvals, inv, slogdet } from '../numerics/linalg/index.ts'
 import { fromStorage, toFlat, type Value } from '../tensor/index.ts'
+import { leastSquares } from './_ml.ts'
 
 /** A matrix as an array of rows. */
 export type Matrix = number[][]
@@ -69,4 +70,47 @@ export function eigenvalueModuli(a: readonly (readonly number[])[]): number[] {
   const r = toFlat(re)
   const i = toFlat(im)
   return r.map((v, k) => Math.hypot(v, i[k] ?? 0))
+}
+
+/** The eigenvalues (largest first) and orthonormal eigenvectors (as the columns of `vectors`) of a symmetric matrix. */
+export function symmetricEigen(a: readonly (readonly number[])[]): { values: number[]; vectors: Matrix } {
+  const n = a.length
+  const sym = a.map((r, i) => r.map((v, j) => 0.5 * (v + (a[j]?.[i] ?? 0))))
+  const { eigenvalues, eigenvectors } = eigh(tensorOf(sym))
+  const w = toFlat(eigenvalues)
+  const v = rowsOf(eigenvectors, n, n)
+  const order = Array.from({ length: n }, (_, i) => n - 1 - i)
+  return { values: order.map((i) => w[i] ?? 0), vectors: v.map((row) => order.map((i) => row[i] ?? 0)) }
+}
+
+/** The symmetric inverse square root of a symmetric positive definite matrix. */
+export function inverseSquareRoot(a: readonly (readonly number[])[]): Matrix {
+  const { values, vectors } = symmetricEigen(a)
+  const scaled = vectors.map((row) => row.map((v, j) => v / Math.sqrt(values[j] ?? 1)))
+  return multiply(scaled, transpose(vectors))
+}
+
+/** The columns of a matrix given as rows. */
+export function columnsOf(a: readonly (readonly number[])[]): Float64Array[] {
+  const n = a[0]?.length ?? 0
+  return Array.from({ length: n }, (_, j) => Float64Array.from(a, (r) => r[j] ?? 0))
+}
+
+/** A matrix of rows from its columns. */
+export function fromColumns(c: readonly ArrayLike<number>[]): Matrix {
+  const n = c[0]?.length ?? 0
+  return Array.from({ length: n }, (_, i) => c.map((col) => col[i] ?? 0))
+}
+
+/** The residuals of the columns of `y` after least squares on the columns of `x` (`y` itself when `x` is empty). */
+export function residualsOn(y: readonly ArrayLike<number>[], x: readonly ArrayLike<number>[]): Float64Array[] {
+  if (x.length === 0) return y.map((c) => Float64Array.from(c))
+  return y.map((c) => {
+    const beta = leastSquares(x, c)
+    return Float64Array.from({ length: c.length }, (_, i) => {
+      let fit = 0
+      for (let j = 0; j < x.length; j++) fit += (beta[j] ?? 0) * (x[j]?.[i] ?? 0)
+      return (c[i] ?? 0) - fit
+    })
+  })
 }

@@ -11,6 +11,13 @@ export interface Recipe {
   readonly question: string
   /** One to three sentences under the question; `code` in backticks is set as code. */
   readonly explain: string
+  /**
+   * What the page draws, for the coverage test (`coverage.test.ts`): the exposition record kinds it shows
+   * (`'groupReport'`, `'featureAttributions'`), and the views it uses beyond the kind's standard one by component name
+   * (`'WaterfallView'`, `'ForcePlotView'`). Every record kind the engine declares must be named by some recipe, so a new
+   * kind (and its view) cannot go undisplayed; list what the page really draws, not what it could.
+   */
+  readonly shows?: readonly string[]
 }
 
 /** A section of the gallery: a folder of recipes. */
@@ -66,10 +73,40 @@ export const SECTIONS: readonly Section[] = [
       'The session panels that draw a record probed at the viewed step: vector fields, strips of tokens, tables with marks, grids of images, graphs, matrices with marks, scenes, accumulating points, the complex plane, the simplex and reachability plots, each on a toy method.',
   },
   {
+    id: 'specialised',
+    title: 'Specialised panels',
+    blurb:
+      'Panels for one kind of method: a zoomable picture with a pixel inspector, loss landscapes with the optimiser on them, regions of stability, equations against their truth, audio in sync, transcripts, samples over training, small multiples and a session inside a session.',
+  },
+  {
     id: 'infrastructure',
     title: 'Infrastructure',
     blurb:
       'What a method page runs on: sessions computed in a Web Worker while the page stays alive, the whole page exported as an image, a recording or a tape file that reproduces it, and one run told in several pages.',
+  },
+  {
+    id: 'explanations',
+    title: 'Explanations',
+    blurb:
+      'Records that explain a prediction: attributions of one row, of many rows and of images, text and series, dependence curves, importances, concepts, rules, prototypes, counterfactuals and the quality of an explanation, each on a made-up model.',
+  },
+  {
+    id: 'trust',
+    title: 'Trust and fairness',
+    blurb:
+      'Records that ask whether a model can be relied on: calibration, conformal sets, threshold sweeps, group and subgroup reports, bias in data, Pareto fronts of accuracy against parity and anomaly scores, on made-up scores.',
+  },
+  {
+    id: 'selection',
+    title: 'Model selection',
+    blurb:
+      'Records that compare models and settings: coefficient and likelihood tables, regularisation and pruning paths, learning and cross-validation curves, hyperparameter surfaces and search trials, plus the standard views of margins, neighbours, components, trees and decision surfaces.',
+  },
+  {
+    id: 'steps',
+    title: 'Steps and stages',
+    blurb:
+      'Records of a run that plays: clustering, mixture and embedding steps, populations, boards, agents, ensemble and pipeline stages, epicycles, hidden states, value grids and posteriors, each with the same scrubber as every player.',
   },
   { id: 'three-d', title: 'Three dimensions', blurb: 'Surfaces, curves and points in 3-D, orbited by dragging.' },
 ]

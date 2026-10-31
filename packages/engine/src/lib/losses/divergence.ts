@@ -1,11 +1,13 @@
 /**
  * Losses that measure the distance between distributions: torch's `klDiv`, the KL and Jensen-Shannon divergences
  * between categorical distributions, knowledge distillation from a teacher's softened outputs, the maximum mean
- * discrepancy (a kernel two-sample distance) and the entropic optimal transport loss computed by Sinkhorn iterations.
+ * discrepancy (a kernel two-sample distance), the entropic optimal transport loss computed by Sinkhorn iterations and
+ * the sliced Wasserstein distance, which averages one-dimensional optimal transport over random projections.
  */
 
 import { MdmlError } from '../base/index.ts'
 import { xlogy } from '../numerics/special/index.ts'
+import { type Key, normal } from '../random/index.ts'
 import {
   abs,
   add,
@@ -17,11 +19,14 @@ import {
   log,
   logSoftmax,
   logsumexp,
+  matmul,
   mean,
   mul,
+  pow,
   promoteFloat,
   relu,
   softmax,
+  sort,
   sqrt,
   square,
   stopGradient,
@@ -30,6 +35,7 @@ import {
   type TensorLike,
   tensor,
   toFlat,
+  transpose,
   type Value,
   where,
 } from '../tensor/index.ts'
@@ -329,4 +335,41 @@ export function sinkhorn(x: TensorLike, y: TensorLike, options: SinkhornOptions 
   const xy = ot(p, q, logA, logB)
   if (options.debiased !== true) return xy
   return sub(xy, mul(add(ot(p, p, logA, logA), ot(q, q, logB, logB)), 0.5))
+}
+
+/**
+ * The sliced Wasserstein distance (Rabin et al., 2012; Bonneel et al., 2015): project both samples onto random
+ * directions on the sphere, solve the one-dimensional optimal transport in each by sorting, and average. Cheap
+ * (O(L N log N)) and differentiable, so it trains generators where full transport is too slow.
+ *
+ * @param x - Samples `[N, D]`.
+ * @param y - Samples `[N, D]` (the same count as x).
+ * @param key - Random key for the directions.
+ * @param options - projections (default 50), the order p (default 2) and `root` to return the p-th root SW_p rather
+ *   than SW_p^p (default false: the power is smooth where the root has an infinite slope at zero).
+ * @returns The scalar distance, differentiable in both samples.
+ * @example
+ * ```ts
+ * import { slicedWasserstein } from 'mdml-engine/losses'
+ * import { key } from 'mdml-engine/random'
+ * import { item } from 'mdml-engine/tensor'
+ * item(slicedWasserstein([[0, 0], [1, 1]], [[1, 1], [0, 0]], key(0))) // => 0
+ * ```
+ */
+export function slicedWasserstein(
+  x: TensorLike,
+  y: TensorLike,
+  key: Key,
+  options: { readonly projections?: number; readonly p?: number; readonly root?: boolean } = {},
+): Value {
+  const [a, b] = promoteFloat(x, y) as [Value, Value]
+  if (a.shape[0] !== b.shape[0] || a.shape[1] !== b.shape[1])
+    throw new MdmlError('shape', 'slicedWasserstein: the samples must have the same shape')
+  const p = options.p ?? 2
+  const directions = normal(key, [options.projections ?? 50, a.shape[1] ?? 1])
+  const unit = div(directions, sqrt(sum(square(directions), -1, true)))
+  const pa = sort(matmul(a, transpose(unit)), 0)
+  const pb = sort(matmul(b, transpose(unit)), 0)
+  const power = mean(pow(abs(sub(pa, pb)), p))
+  return options.root === true ? pow(power, 1 / p) : power
 }

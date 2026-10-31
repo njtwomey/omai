@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show a point set as it fills in over the run, in two or three dimensions?',
   explain:
     'A probe that returns a `pointsSteps` record (the points each step adds, optionally the extent of the whole run so the axes hold still) and the panel `{ kind: "points", path }`, which draws every point up to the viewed step, the latest step\'s in the accent colour. In three dimensions the same record is a cloud to orbit by dragging. The chaos game on a triangle fills in the Sierpinski gasket; switch to the Lorenz system and the same panel draws its attractor in three dimensions, one batch of points per step.',
+  shows: ['pointsSteps', 'PointsStepsView'],
 }
 
 const STEPS = 100

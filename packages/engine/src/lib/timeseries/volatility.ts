@@ -10,9 +10,16 @@ import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import type { BfgsState } from '../optim/index.ts'
 import { type Key, normal, studentT } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import { item, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
-import { inverseDiagonalRoots, likelihoodAlgorithm, numericalHessian } from './_ml.ts'
+import {
+  inverseDiagonalRoots,
+  type LikelihoodState,
+  likelihoodAlgorithm,
+  likelihoodSlot,
+  numericalHessian,
+} from './_ml.ts'
 import { asSeries } from './_series.ts'
 
 /** The structure of a GARCH model; the names are the `arch` package's. */
@@ -332,6 +339,10 @@ export interface GarchFit {
 
 /** Options of {@link garchFitAlgorithm}. */
 export interface GarchFitOptions {
+  /** The solver, a value of `smoothSolvers.space` (BFGS by default with the traced `garchFitAlgorithm`; see {@link garchFitSlot}). */
+  readonly solver?: SpaceValue
+  /** The run's key (for the stochastic solver's batches). */
+  readonly key?: Key
   /** The BFGS iteration cap (default 300). */
   readonly maxIterations?: number
   /** The gradient tolerance (default 1e-6). */
@@ -353,25 +364,8 @@ const flatten = (p: GarchParameters, r: Resolved): number[] => [
   ...(p.nu === undefined ? [] : [p.nu]),
 ]
 
-/**
- * The maximum-likelihood fit of a GARCH model as a traced algorithm: BFGS on the unconstrained parameters (the
- * constant term on a log scale, the coefficients as shares of a persistence budget below one, the degrees of freedom
- * above two), on the series scaled to unit spread for conditioning. One iteration per step, with the log-likelihood
- * of the original series recorded.
- *
- * @param y - The series (returns, typically).
- * @param spec - The structure.
- * @param options - The iteration cap and gradient tolerance.
- * @returns The algorithm and the map from its state to the fit.
- * @example
- * ```ts
- * import { garchFitAlgorithm, garchSimulate } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
- * const y = garchSimulate(key(2), 200, {}, { mu: 0, omega: 0.2, alpha: [0.1], gamma: [], beta: [0.8] })
- * garchFitAlgorithm(y, {}).algorithm.name // => 'garch-fit'
- * ```
- */
-export function garchFitAlgorithm(y: ArrayLike<number>, spec: GarchSpec, options: GarchFitOptions = {}): GarchProblem {
+/** The objective, start and map from the parameter vector to the fit, shared by every way of minimising it. */
+function prepareGarchFit(y: ArrayLike<number>, spec: GarchSpec) {
   const r = resolve(spec)
   const x = asSeries(Float64Array.from(y), 'garchFit')
   const n = x.length
@@ -386,11 +380,13 @@ export function garchFitAlgorithm(y: ArrayLike<number>, spec: GarchSpec, options
     return Number.isFinite(ll) ? -ll / n + Math.log(scale) : 1e10
   }
   const start = layout.start(varianceOf(z, 0), centre / scale)
-  const algorithm = likelihoodAlgorithm('garch-fit', { p: r.p, o: r.o, q: r.q, spec }, objective, start, n, options)
   return {
-    algorithm,
-    fit: (state, iterations = 0, converged = true) => {
-      const scaled = layout.toParams(state.x)
+    r,
+    n,
+    objective,
+    start,
+    fit: (u: ArrayLike<number>, iterations = 0, converged = true): GarchFit => {
+      const scaled = layout.toParams(u)
       const params: GarchParameters = {
         mu: scaled.mu * scale,
         omega: scaled.omega * scale * scale,
@@ -444,6 +440,75 @@ export function garchFitAlgorithm(y: ArrayLike<number>, spec: GarchSpec, options
 }
 
 /**
+ * The maximum-likelihood fit of a GARCH model as a traced algorithm: BFGS on the unconstrained parameters (the
+ * constant term on a log scale, the coefficients as shares of a persistence budget below one, the degrees of freedom
+ * above two), on the series scaled to unit spread for conditioning. One iteration per step, with the log-likelihood
+ * of the original series recorded.
+ *
+ * @param y - The series (returns, typically).
+ * @param spec - The structure.
+ * @param options - The iteration cap and gradient tolerance.
+ * @returns The algorithm and the map from its state to the fit.
+ * @example
+ * ```ts
+ * import { garchFitAlgorithm, garchSimulate } from 'mdml-engine/timeseries'
+ * import { key } from 'mdml-engine/random'
+ * const y = garchSimulate(key(2), 200, {}, { mu: 0, omega: 0.2, alpha: [0.1], gamma: [], beta: [0.8] })
+ * garchFitAlgorithm(y, {}).algorithm.name // => 'garch-fit'
+ * ```
+ */
+export function garchFitAlgorithm(y: ArrayLike<number>, spec: GarchSpec, options: GarchFitOptions = {}): GarchProblem {
+  const prepared = prepareGarchFit(y, spec)
+  const algorithm = likelihoodAlgorithm(
+    'garch-fit',
+    { p: prepared.r.p, o: prepared.r.o, q: prepared.r.q, spec },
+    prepared.objective,
+    prepared.start,
+    prepared.n,
+    options,
+  )
+  return { algorithm, fit: (state, iterations, converged) => prepared.fit(state.x, iterations, converged) }
+}
+
+/**
+ * The GARCH fit over the solver slot: the likelihood is a smooth objective of the unconstrained parameters and any
+ * solver of `smoothSolvers` minimises it (BFGS by default).
+ *
+ * @param y - The series.
+ * @param spec - The structure.
+ * @param options - The solver, gradient tolerance, iteration cap and key.
+ * @returns The algorithm and the fit run from it.
+ * @example
+ * ```ts
+ * import { garchFitSlot, garchSimulate } from 'mdml-engine/timeseries'
+ * import { key } from 'mdml-engine/random'
+ * const y = garchSimulate(key(2), 300, {}, { mu: 0, omega: 0.2, alpha: [0.1], gamma: [], beta: [0.8] })
+ * garchFitSlot(y, { mean: 'zero' }, { solver: { kind: 'lbfgs', gradTol: 1e-8 } }).fit.persistence < 1 // => true
+ * ```
+ */
+export function garchFitSlot(
+  y: ArrayLike<number>,
+  spec: GarchSpec = {},
+  options: GarchFitOptions = {},
+): { readonly algorithm: Algorithm<LikelihoodState>; readonly fit: GarchFit } {
+  const prepared = prepareGarchFit(y, spec)
+  const algorithm = likelihoodSlot(
+    'garch-fit',
+    { p: prepared.r.p, o: prepared.r.o, q: prepared.r.q, spec },
+    prepared.objective,
+    prepared.start,
+    prepared.n,
+    {
+      ...(options.solver === undefined ? {} : { solver: options.solver }),
+      ...(options.gradTol === undefined ? {} : { tol: options.gradTol }),
+      ...(options.key === undefined ? {} : { key: options.key }),
+    },
+  )
+  const run = runAlgorithm(algorithm, { maxSteps: options.maxIterations ?? 300 })
+  return { algorithm, fit: prepared.fit(run.state.u, run.steps, run.status === 'converged') }
+}
+
+/**
  * Fit a GARCH model by maximum likelihood.
  *
  * @param y - The series (returns, typically).
@@ -459,6 +524,7 @@ export function garchFitAlgorithm(y: ArrayLike<number>, spec: GarchSpec, options
  * ```
  */
 export function garchFit(y: ArrayLike<number>, spec: GarchSpec = {}, options: GarchFitOptions = {}): GarchFit {
+  if (options.solver !== undefined) return garchFitSlot(y, spec, options).fit
   const { algorithm, fit } = garchFitAlgorithm(y, spec, options)
   const run = runAlgorithm(algorithm, { maxSteps: options.maxIterations ?? 300 })
   return fit(run.state, run.steps, run.status === 'converged')

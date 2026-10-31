@@ -222,6 +222,15 @@
       "cases": 18
     },
     {
+      "fixture": "dists/bijectors/flows.json",
+      "source": "oracle/cases/dists/bijectors/flows.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "dists/bijectors/structured.json",
       "source": "oracle/cases/dists/bijectors/structured.py",
       "reference": {
@@ -1824,7 +1833,7 @@
         "torch": "2.14.1",
         "optax": "0.2.8"
       },
-      "cases": 19
+      "cases": 27
     },
     {
       "fixture": "losses/density.json",
@@ -1847,12 +1856,28 @@
       "cases": 19
     },
     {
+      "fixture": "losses/evidential.json",
+      "source": "oracle/cases/losses/evidential.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "losses/generative.json",
       "source": "oracle/cases/losses/generative.py",
       "reference": {
         "torch": "2.14.1"
       },
       "cases": 27
+    },
+    {
+      "fixture": "losses/invariance.json",
+      "source": "oracle/cases/losses/invariance.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "losses/margin.json",
@@ -1863,6 +1888,22 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 18
+    },
+    {
+      "fixture": "losses/preference.json",
+      "source": "oracle/cases/losses/preference.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "losses/quantisation.json",
+      "source": "oracle/cases/losses/quantisation.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 7
     },
     {
       "fixture": "losses/ranking.json",
@@ -1892,6 +1933,14 @@
       "cases": 10
     },
     {
+      "fixture": "losses/robust.json",
+      "source": "oracle/cases/losses/robust.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "losses/segmentation.json",
       "source": "oracle/cases/losses/segmentation.py",
       "reference": {
@@ -1899,6 +1948,14 @@
         "torch": "2.14.1"
       },
       "cases": 18
+    },
+    {
+      "fixture": "losses/sequence.json",
+      "source": "oracle/cases/losses/sequence.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 7
     },
     {
       "fixture": "manifold/mds_nonmetric.json",
@@ -4648,6 +4705,22 @@
       "cases": 12
     },
     {
+      "fixture": "stochastic/diffusion-models.json",
+      "source": "oracle/cases/stochastic/diffusion-models.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "stochastic/diffusion_models.json",
+      "source": "oracle/cases/stochastic/diffusion_models.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "stochastic/diffusions.json",
       "source": "oracle/cases/stochastic/diffusions.py",
       "reference": {
@@ -5318,6 +5391,15 @@
         "numpy": "2.5.4"
       },
       "cases": 17
+    },
+    {
+      "fixture": "timeseries/cointegration.json",
+      "source": "oracle/cases/timeseries/cointegration.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 148
     },
     {
       "fixture": "timeseries/decomposition.json",

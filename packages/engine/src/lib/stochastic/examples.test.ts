@@ -6,6 +6,7 @@ import * as autodiff from '../autodiff/index.ts'
 import * as base from '../base/index.ts'
 import * as dists from '../dists/index.ts'
 import * as graph from '../graph/index.ts'
+import * as optim from '../optim/index.ts'
 import * as random from '../random/index.ts'
 import * as tensor from '../tensor/index.ts'
 import * as trace from '../trace/index.ts'
@@ -16,6 +17,7 @@ const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'mdml-engine/base': base,
   'mdml-engine/dists': dists,
   'mdml-engine/graph': graph,
+  'mdml-engine/optim': optim,
   'mdml-engine/random': random,
   'mdml-engine/stochastic': stochastic,
   'mdml-engine/tensor': tensor,

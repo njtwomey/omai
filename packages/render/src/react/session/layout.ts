@@ -7,6 +7,7 @@
 
 import type { Json } from 'mdml-engine/base'
 import type { MatrixMark } from '../../views/matrix-marks.ts'
+import type { Viewport } from '../../views/zoom.ts'
 
 /**
  * Where a channel of the rows panel is read at the viewed step: a derived path (probed with `args`) or a tensor path of
@@ -44,6 +45,16 @@ export interface EventMarks {
   readonly path: string
   readonly label?: string
 }
+
+/**
+ * What a small-multiples panel repeats its panel over: the variants of a comparison (`variants`: one cell each, curves
+ * included), the paths of a curves panel (`paths`: one chart per path), or the values of one probe argument (`args`:
+ * the layers of a network, the classes of a problem; the panel's probe is asked with `{ ...args, [key]: value }`).
+ */
+export type Facet =
+  | { readonly by: 'variants' }
+  | { readonly by: 'paths' }
+  | { readonly by: 'args'; readonly key: string; readonly values: readonly Json[]; readonly labels?: readonly string[] }
 
 /**
  * One panel of a layout. Panels of the tape (`curves`, `series`, `sweep`) scrub the cursor on click; panels of a step
@@ -108,6 +119,8 @@ export type Panel =
       readonly slopes?: readonly ReferenceSlope[]
       /** Vertical marks where scalar paths fired: planted changes, alarms, restarts. */
       readonly events?: readonly EventMarks[]
+      /** Fix the vertical axis to `[low, high]` (small multiples share one across their cells). */
+      readonly yLimits?: readonly [number, number]
       readonly title?: string
     }
   /**
@@ -234,12 +247,127 @@ export type Panel =
    * A point set probed at the viewed step (a `pointsSteps` record): the points of every step up to it, or the set at it,
    * on axes that hold still over the whole run; in three dimensions a cloud to orbit.
    */
-  | { readonly kind: 'points'; readonly path: string; readonly args?: Json; readonly title?: string }
+  | {
+      readonly kind: 'points'
+      readonly path: string
+      readonly args?: Json
+      /**
+       * What colours the points: `groups` (a class each), `values` (the record's per-point `values` along a ramp, with
+       * a colour bar) or `none` (default: groups when the record has them, else values).
+       */
+      readonly colour?: 'groups' | 'values' | 'none'
+      /** Fade a trail: points this many recorded steps old (or older) are drawn at a tenth of the opacity. */
+      readonly fade?: number
+      /** The viewpoint a three-dimensional cloud starts from (buttons choose others): `iso` (default), `front`, `side`, `top`. */
+      readonly camera?: 'iso' | 'front' | 'side' | 'top'
+      readonly title?: string
+    }
   /**
    * A scene probed at the viewed step (a `sceneSteps` record): the latest recorded scene at or before it, with its
    * caption (agents on a plane, a plant and its horizon, a drawing being built).
    */
   | { readonly kind: 'scene'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A zoomable picture of a grid: the panel probes `path` with `args` extended by `view` (`{ x: [low, high], y: [low,
+   * high] }`, the viewport being drawn) and `size` (`[columns, rows]` of the raster wanted), and draws the
+   * `decisionSurface` with `values` it returns (a fractal's escape times, a field). The wheel, dragging and pinching
+   * pan and zoom; the picture is asked for again once the gesture has stopped. A minimap of the `domain` shows the
+   * viewport, and the value under the cursor is read out.
+   */
+  | {
+      readonly kind: 'zoom'
+      readonly path: string
+      readonly args?: Json
+      /** The viewport the panel starts on and returns to on reset. */
+      readonly view: Viewport
+      /** The whole picture, which the viewport never leaves (default `view`). */
+      readonly domain?: Viewport
+      /** The raster asked of the probe, as `[columns, rows]` (default 220 by 160). */
+      readonly resolution?: readonly [number, number]
+      /** The values mapped to the ends of the colour ramp (default the minimap's own range). */
+      readonly range?: readonly [number, number]
+      readonly title?: string
+    }
+  /**
+   * A slice through a loss landscape probed at the viewed step (a `landscapeSlice` record): the loss along one
+   * direction through the iterate as a curve with the optimiser's iterates and the Armijo and Wolfe lines on it, or
+   * over a plane as contours (or a surface to orbit) with the path of the iterates drawn over them.
+   */
+  | {
+      readonly kind: 'landscape'
+      readonly path: string
+      readonly args?: Json
+      readonly surface?: boolean
+      readonly title?: string
+    }
+  /**
+   * The region of absolute stability of an ODE method probed at the viewed step (a `stabilityRegion` record): the
+   * region of the complex plane where `|R(z)| <= 1` filled, with its boundary, and the eigenvalues times the step size
+   * marked inside or outside it.
+   */
+  | { readonly kind: 'stability'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A fitted equation probed at the viewed step (an `equationFit` record): the expression typeset beside the true one
+   * with each coefficient coloured by its error and listed with its status in words, the fit against the truth, and
+   * the residual in a strip beneath.
+   */
+  | { readonly kind: 'equation'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * An audio clip probed at the viewed step (an `audio` record): the waveform above its spectrogram, with a playhead
+   * at the time the step stands at (the record's `frames`). Clicking the picture moves the step cursor; the button
+   * plays the clip through WebAudio from the playhead and the cursor follows the sound.
+   */
+  | { readonly kind: 'audio'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A transcript probed at the viewed step (a `transcript` record): the tokens so far in turns by role, tinted by the
+   * weights of a track (an attention head; buttons choose among several), the token the step emitted outlined and
+   * marked, and the heaviest tokens named beneath.
+   */
+  | { readonly kind: 'transcript'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * Samples of a generative model probed at the viewed step (a `sampleGrid` record: small images or text from fixed
+   * noise at recorded steps): the grid of the latest recorded step at or before it, with, when `filmstrip` is more than
+   * zero, a row per earlier step (log-spaced) beneath, so the samples are seen to sharpen.
+   */
+  | {
+      readonly kind: 'samples'
+      readonly path: string
+      readonly args?: Json
+      /** Rows of earlier steps in the filmstrip (default 4; zero for none). */
+      readonly filmstrip?: number
+      readonly title?: string
+    }
+  /**
+   * Small multiples: one panel spec repeated over a facet (see {@link Facet}) in a grid of titled cells, all under the
+   * one step cursor, with the vertical axes of curves shared across the cells (`shared`, default true) so the cells
+   * can be compared by eye.
+   */
+  | {
+      readonly kind: 'multiples'
+      /** The panel in every cell (not itself small multiples or an inner session). */
+      readonly panel: Exclude<Panel, { readonly kind: 'multiples' | 'inner' }>
+      readonly over: Facet
+      /** Cells per row (default 3). */
+      readonly columns?: number
+      /** Share the vertical axis of curves across the cells (default true). */
+      readonly shared?: boolean
+      readonly title?: string
+    }
+  /**
+   * A session inside a step of the outer one (an optimiser inside a training step, the inner loop of a meta-learner):
+   * the page registers it by `name` (`SessionPanels`' `inner` prop: the inner method and how its options come from the
+   * outer run), the panel runs it for the viewed outer step and draws `layout` over it, with its own cursor and a
+   * slider (`own`, the default) or following the outer cursor (`outer`: one inner run, made at the end of the outer
+   * run so far, whose step is the outer step).
+   */
+  | {
+      readonly kind: 'inner'
+      readonly name: string
+      readonly args?: Json
+      readonly follow?: 'own' | 'outer'
+      readonly layout: readonly Panel[]
+      readonly title?: string
+    }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */

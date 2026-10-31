@@ -1277,9 +1277,16 @@ Reparameterisation comes in three forms:
   `gammaFromOutput`, `mixtureDensityFromOutput`, `multivariateNormalFromOutput`).
 - `bijectors/bijector.ts`: `Bijector`, `defineBijector`, `chain`, `invert` (ranks, supports, monotonicity and shape
   maps tracked through compositions).
-- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.
+- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`,
+  `sinhArcsinh` (Jones-Pewsey skew and tail weight), `kumaraswamyCdf`.
 - `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `lowerCholesky`,
   `choleskyOuterProduct`, `affineCoupling`, `permute`, `autoregressive` (MAF-style), `madeMasks`.
+- `bijectors/flows.ts`: the layers of normalising flows beyond coupling: `planar` and `radial` (inverted by bisection with a
+  Newton step for the gradients), `actNorm` and `actNormInitialise`, Glow's `invertibleLinear` and `luLinear` (with
+  `luParameters`: O(d) log-determinant), `inverseAutoregressive` (IAF), `madeParameters` and `madeConditioner` (the MADE
+  network for `autoregressive` and IAF), the rational-quadratic spline of neural spline flows (`rationalQuadraticSplineMap`,
+  `rationalQuadraticSpline`, `rationalQuadraticCoupling`, `splineParametersFromVector`), and `residualFlow` (fixed-point
+  inverse; log-determinant by the power series of traces, exact or Hutchinson) with `lipschitzNormalise`.
 - `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`, `unconstrained`.
 - `exponential-family.ts`: `exponentialFamily` (25 families): natural parameters, sufficient statistics, log
   partition, base measure, mean parameters and Fisher information (by differentiating the log partition), and
@@ -1451,8 +1458,9 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 - `tests/multivariate.ts`: `hotellingT2`, `manova`, `boxM`, `mardia`.
 - `tests/proportions.ts`: `binomTest`, `proportionsZtest`, `proportionConfint` (Wald, Wilson, Agresti-Coull,
   Clopper-Pearson, Jeffreys), `proportionsDifference`.
-- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`), `kpss`,
-  `runsTest`.
+- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`, which take the number
+  of integrated variables N for the Engle-Granger tables; the private `tests/_mackinnon.ts` holds the 1994 surfaces and
+  2010 critical values), `kpss`, `runsTest`.
 - `tests/equivalence.ts`: `tost`, `tostProportion`, `tostProportions`.
 - `tests/bayesian.ts`: `bayesFactorTTest` (JZS), `bayesFactorBinomial`, `bayesFactorPearson`, `bayesianAbTest`,
   `highestDensityInterval`, `rope`.
@@ -1548,6 +1556,10 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   batch (`BatchObjective`, `Batches`): the optimiser at a scheduled rate, a batch of `batch` examples drawn without
   replacement from each step's key (null: the whole set), a serialisable `GradientState` (iterate, value, gradient,
   optimiser state, step count, last rate); the engine of the `gradient` mode.
+- `slot.ts`: `familySolvers` (a model's own modes beside every generic solver, over the model's `SmoothProblem`),
+  `slotAlgorithm` (a mode of such a table as the model's `Algorithm`, state serialisable, `solver/gradNorm` and
+  `solver/step` beside the model's channels) and `newtonAt`; used by `timeseries` and `pgm` models (the `linear` and
+  `kernel-methods` folders keep private copies of the wrapper).
 - `solvers.ts`: `smoothSolvers`, the smooth solvers as one slot of modes (gradient descent with its step rules,
   conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent and `gradient`, whose knobs are `optimiser`
   (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
@@ -2050,6 +2062,21 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
 - `diffusions.ts`: named processes with exact transitions: Ornstein-Uhlenbeck, geometric Brownian motion, CIR, Vasicek
   (with Vasicek and CIR bond prices), Bessel, overdamped and underdamped Langevin dynamics, jump diffusions (generic, and
   Merton's with its exact simulation, log-return density and option price).
+- `diffusion-models.ts`: diffusion models as generative models (the SDE solvers are `sde.ts`): noise schedules with alpha,
+  sigma, log-SNR and the forward SDE's drift and squared diffusion (`linearSchedule`, `cosineSchedule`,
+  `sigmoidSchedule`, `discreteSchedule` with `linearBetas` and `cosineBetas`, `veSchedule`, `edmSchedule`,
+  `defineSchedule`), `vpSde` and `veSde` (closed-form marginals, as `Sde`s for `reverseSde` and `probabilityFlow`),
+  `samplerTimes` (uniform, quadratic, log-SNR, Karras spacing), `forwardSample` (q(x_t | x_0)), predictions and their
+  conversions (`toX0AndNoise`: epsilon, x0, v, score), training losses with weightings (`x0ErrorWeight`,
+  `weightedDiffusionLoss`: simple, SNR-plus-one, truncated and min-SNR, ELBO, EDM; `diffusionBatch`,
+  `edmPreconditioning`), guidance (`classifierFreeGuidance`, `guidedScore`, `guidedNoise`, `guidedModel`), and
+  `gaussianMixtureTruth`, the exact noised score of a Gaussian mixture, a planted truth for samplers and networks.
+- `diffusion-samplers.ts`: reverse samplers as stepped `Algorithm`s with typed paths (`sampler/xt`, `x0Hat`,
+  `noiseLevel`, `time`, `step`, `cloud`): `diffusionSampler` (DDPM ancestral, DDIM with eta, probability-flow Euler and
+  Heun, DPM-Solver-2), `ddpmSampler`, `ddimSampler`, `sampleDiffusion`, `samplerProperties`.
+- `diffusion-training.ts`: `scoreNetwork` (an MLP over x_t and Fourier time features, from `nn`), `networkModel`,
+  `diffusionTrainer` (the training loop as an `Algorithm` over `nn`'s `TrainState`), so a toy mixture is trained and
+  sampled end to end.
 - `markov-chains.ts`: discrete-time Markov chains: stationary distributions, classification, absorption, hitting
   times, mixing times, spectral gaps, reversibility, simulation.
 - `ctmc.ts`: continuous-time Markov chains (split from `markov-chains.ts` for size): transition matrices exp(tQ)
@@ -2441,6 +2468,11 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   probabilities. TODO: VMP on conjugate-exponential (Dirichlet, Gaussian) nodes.
 - `inference/ep.ts`: expectation propagation on factor graphs (discrete fully factorised sites; Gaussian sites of a
   latent-Gaussian model: probit, Gaussian and quadrature sites; damping, power EP).
+- `inference/cluster-updates.ts`: Swendsen-Wang and Wolff cluster updates and the Metropolis sweep for the q-state Potts model
+  (Ising at q = 2) on a periodic square lattice (`swendsenWangUpdate`, `wolffUpdate`, `metropolisSweep`,
+  `pottsSamplerAlgorithm` with energy and magnetisation per site on the tape), the exact truth (`pottsCriticalCoupling`,
+  `ISING_CRITICAL_ENERGY_PER_SITE`, `onsagerMagnetisation`) and `integratedAutocorrelationTime`. Tests check detailed balance
+  against exact enumeration of small lattices and the decorrelation advantage over Metropolis at the critical coupling.
 - `inference/map.ts`: MAP and MPE by max-product (elimination and junction trees elsewhere; loopy BP decoding here), by
   LP relaxation (MPLP on its dual, with the integrality gap), and by local search (ICM with restarts).
 - `learning/baum-welch.ts`: Baum-Welch for hidden Markov models (`baumWelchAlgorithm` as a traced algorithm with no past,
@@ -2448,6 +2480,22 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   (diagonal or full covariances with hmmlearn's prior) over `inference/chain.ts`; parameters are plain JSON
   (`HmmParameters`). The golden against hmmlearn keeps its fixture under `methods/models/hmm`. `methods/sequence/hmm.ts`
   is its particular on the iterative base.
+- `ratings.ts`: rating systems as filters over games: `eloExpected`/`eloUpdate`, `glickoUpdate`/`glickoInflate`,
+  `glicko2Update` (the Illinois iteration on the log volatility), `trueskillUpdate` (two players or two teams by Gaussian
+  moment matching, with draws and the dynamics term), and `ratingAlgorithm` (one game, or one period for the Glicko
+  systems, per step; the pre-game win probability's running log-loss on the tape). Goldens are the worked examples of
+  the Glicko and Glicko-2 papers and the reference TrueSkill update (no rating package is an oracle dependency).
+- `choice-models.ts`: Plackett-Luce and Bradley-Terry: `choiceSmoothProblem` (the log-likelihood in the free log strengths),
+  `choiceSolvers` (Hunter's minorise-maximise as the model's own mode beside every generic solver), `choiceAlgorithm`,
+  `fitPlackettLuce`, `fitBradleyTerry`, `pairedComparisons`, `winProbability`.
+- `irt.ts`: item response theory for scored responses: the 1PL, 2PL and 3PL models (`irtProbability`), Bock-Aitkin marginal
+  maximum likelihood on Gauss-Hermite nodes (`irtSmoothProblem` with the analytic gradient by Fisher's identity,
+  `irtSolvers` with `em` as the model's own mode beside every generic solver, `irtAlgorithm`, `fitIrt`), abilities by EAP,
+  MAP or MLE (`irtAbility`), the item and test information functions, and `irtSimulate` (abilities as the truth).
+- `learning/hmm-variants.ts`: the left-right (Bakis) topology (`leftRightParameters`, `isLeftRight`; Baum-Welch preserves
+  the structural zeros) and Viterbi training (`viterbiTrainingAlgorithm`, hard-assignment EM that never decreases the joint
+  score of data and best paths and stops when the paths settle). Hidden semi-Markov, input-output and factorial HMMs, and
+  Gaussian-mixture emissions, are not built yet.
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
@@ -2592,7 +2640,10 @@ share a concept they share a definition but not a name.
   `tweedieDeviance`.
 - `classification.ts`: binary and categorical cross-entropy (`binaryCrossEntropy`, `binaryCrossEntropyWithLogits`,
   `crossEntropy`: with logits, label smoothing, class weights and ignore index), `focal` (sigmoid) and
-  `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`.
+  `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`; the losses for noisy labels: `generalisedCrossEntropy`,
+  `truncatedCrossEntropy`, `symmetricCrossEntropy`, `probabilityMae`, `bootstrapped` (soft and hard), `forwardCorrected`
+  and `backwardCorrected` (given a transition matrix), `biTemperedLogistic` with `temperedSoftmax`, `logTemperature`
+  and `expTemperature`.
 - `large-output.ts`: losses for very many classes: hierarchical softmax (`huffmanCoding`, `hierarchicalSoftmax`,
   `hierarchicalSoftmaxLogProbs`), sampled softmax (`sampledSoftmax`, `sampleClasses` with uniform and log-uniform
   proposals). The Huffman tree comes from `information/source-coding.ts` (`huffmanTree`).
@@ -2600,22 +2651,41 @@ share a concept they share a definition but not a name.
   `westonWatkins`.
 - `density.ts`: negative log-likelihood of any `Distribution` (`negativeLogLikelihood`) or conditional distribution
   (`conditionalNll`), mixture-density NLL (`mixtureDensityNll`), heteroscedastic Gaussian NLL with beta-NLL weighting
-  (`heteroscedasticGaussianNll`), censored likelihoods (`censoredNll`: exact, left, right and interval).
+  (`heteroscedasticGaussianNll`), censored likelihoods (`censoredNll`: exact, left, right and interval); the evidential
+  losses: Dirichlet (`evidentialNll`: squared error, log and digamma forms with the KL regulariser; `dirichletUncertainty`:
+  vacuity, aleatoric and epistemic parts) and normal-inverse-gamma (`normalInverseGammaNll`,
+  `normalInverseGammaUncertainty`).
+- `sequence.ts`: CTC: `ctc` (log-semiring forward algorithm over the blank-extended target, torch's CTCLoss conventions:
+  padded targets, input and target lengths, mean-by-length reduction, `zeroInfinity`), `ctcTrellis` (alpha, beta and the
+  state and label alignment posteriors; the loss's gradient is minus the label posterior), `ctcForcedAlignment`
+  (Viterbi), `ctcGreedyDecode`.
+- `invariance.ts`: penalties for behaving the same across environments: the IRMv1 gradient penalty (`irmPenalty`, biased and
+  unbiased; `irmObjective`), V-REx (`vrexPenalty`, `vrexObjective`), `coral` (Deep CORAL, optional mean matching),
+  `mmdPenalty` (pairwise MMD between environments), and gradient criteria: `environmentGradient`, `gradientAlignment`
+  (cosine, and Fish's inner product), `perSampleGradients` and `fishrPenalty` (per-environment gradient variances).
+- `preference.ts`: preference objectives on response log-probabilities: `bradleyTerry` (reward-model pairwise loss with a
+  margin), `dpo` (with conservative label smoothing and the reference-free form), `implicitRewards`, `ipo`, `kto`,
+  `orpo`, `simpo`, `sequenceLogProb`; `tables.ts` has them as `preferenceLosses` (needs a reference, length-normalised,
+  reward model, paired, bounded margin).
 - `ranking.ts`: `marginRanking`, `rankNet`, `pairwiseHinge`, `bpr`, `lambdaRank` (NDCG@k deltas), `listNet`,
   `softmaxRanking`, `listMle`, `approxNdcg`; padded lists through a mask.
 - `contrastive.ts`: `infoNce` (in-batch, shared or per-query negatives), `ntXent`, `tripletMargin`, `contrastive`,
   `cosineEmbedding`, `hingeEmbedding`, `supervisedContrastive`, `clipLoss`, ArcFace and CosFace margins
-  (`arcFaceLogits`, `cosFaceLogits`, `arcFace`, `cosFace`).
+  (`arcFaceLogits`, `cosFaceLogits`, `arcFace`, `cosFace`); the self-supervised objectives `barlowTwins` and `vicreg`
+  and the `alignment` and `uniformity` terms.
 - `segmentation.ts`: `dice` (soft and squared), `tversky`, `focalTversky`, `lovaszHinge`, `lovaszSoftmax`; classes last,
   index or one-hot targets, activations, background, batch pooling, ignore index and class weights as MONAI.
 - `generative.ts`: GAN losses (`discriminatorLoss`, `generatorLoss`: minimax, non-saturating, Wasserstein, hinge, least
   squares; `gradientPenalty` (WGAN-GP) and `r1Penalty`), ELBO terms (`gaussianKl`, `sampledKl`, `negativeElbo`,
   `bernoulliLogLikelihood`, `gaussianLogLikelihood`, `importanceWeightedBound`), `denoisingScoreMatching`, diffusion
   objectives (`diffusionTarget`, `diffusionLoss`: epsilon, x0 and v), flow matching (`flowMatchingPath`,
-  `flowMatching`).
+  `flowMatching`); `noiseContrastive` (NCE with a learned log-normaliser), `scoreMatching` (exact trace) and
+  `slicedScoreMatching` (Gaussian or Rademacher directions, optional variance reduction, forward-mode derivatives),
+  vector quantisation (`vectorQuantise`: nearest code, codebook and commitment terms, straight-through output, usage and
+  perplexity; `vqEmaUpdate`: the EMA codebook).
 - `divergence.ts`: `klDiv` (torch, with 'batchmean'), `klDivergence`, `jensenShannon`, `distillation`, `mmd` (Gaussian,
   Laplacian and energy kernels, multi-scale, median heuristic, biased and unbiased) and `sinkhorn` (log domain, weighted,
-  debiased) losses.
+  debiased) losses, and `slicedWasserstein` (random projections, sorted).
 - `physics.ts`: `fieldDerivatives` (gradient, second derivatives and Laplacian by autodiff), `pdeResidualLoss`,
   `boundaryLoss` (Dirichlet and Neumann) and `initialConditionLoss`, adaptive loss balancing (`gradientNormWeights`,
   `ntkWeights`) for physics-informed training.
@@ -4062,7 +4132,31 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   `garchLogLikelihood`, `garchFilterAlgorithm` (the recursion one observation per step with the running likelihood),
   `garchFitAlgorithm`/`garchFit` (BFGS on parameters mapped into the stationary region, on the series scaled to unit
   spread; standard errors from the numerical Hessian), `garchForecast` (variance forecasts relaxing to the unconditional
-  variance) and `garchSimulate`.
+  variance) and `garchSimulate`. The fit also takes a `solver` from the slot (`garchFitSlot`, or `garchFit` with
+  `options.solver`): the likelihood is a smooth objective of the unconstrained parameters (`_ml.ts`: `likelihoodSlot`,
+  `finiteDifferenceProblem`), BFGS by default, and L-BFGS, conjugate gradient and the rest reach the same optimum.
+- `asymmetric-volatility.ts`: EGARCH(p, o, q) (the log variance with |z| - E|z| and signed z terms, Gaussian or
+  Student-t) and APARCH(p, q) (the power delta estimated): `asymmetricVariance`, `asymmetricLogLikelihood`,
+  `asymmetricFitAlgorithm`/`asymmetricFit` (over the solver slot, on the unit-spread scaling with the parameters mapped
+  back), `asymmetricSimulate`, `asymmetricForecast` (the one-step recursion, simulation beyond it) and
+  `newsImpactCurve` (Engle-Ng, for GARCH, GJR, EGARCH and APARCH). `arch` is not an oracle dependency, so the models are
+  tested by hand-computed recursions, the GARCH limit of APARCH, recovery of planted parameters and agreement of solvers.
+- `ets-intervals.ts`: prediction intervals of every ETS type after Hyndman et al.: `etsClass`, `etsPredictionVariance`
+  (closed form for class 1, additive error, and class 2, multiplicative error with additive or no trend and season:
+  (1 + sigma2) theta_h - mu_h^2) and `etsPredictionIntervals` (closed form where there is one, else the quantiles of
+  `etsSimulate` paths drawn from the final state through the model's own recursion, which also checks the closed forms).
+  Multiplicative season with multiplicative error (class 3) and multiplicative trends are simulated.
+- `box-cox.ts`: `guerreroLambda` (the exponent that makes the block spread independent of the level) and `boxCoxMstl`
+  (MSTL on the transformed series with lambda given, by Guerrero or by profile likelihood, the fit, trend and seasonal
+  factors carried back to the original scale).
+- `features.ts`: `timeSeriesFeatures` (a labelled vector of about 50 features: location and shape, autocorrelation, sample,
+  approximate, permutation and spectral entropy, spectral shape, trend and stability, crossings and strikes, tsfresh-style
+  closed forms, and with `set: 'all'` the Hurst and detrended-fluctuation exponents), `featureMatrix` and
+  `permutationEntropy`. In the spirit of catch22 and tsfresh with the definitions written out here; the values are not
+  the pycatch22 numbers.
+- `shapelets.ts`: `shapeletDistance` (early abandoning, optional z-normalisation), `shapeletSplit` (information gain with
+  the gap tie-break), `shapeletDiscoveryAlgorithm`/`findShapelets` (one candidate per step, best non-overlapping kept,
+  state serialisable) and `shapeletTransform`.
 - `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
   standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
   cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
@@ -4070,6 +4164,15 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `hierarchy.ts`: `treeSummingMatrix`, `groupedSummingMatrix`, `reconcile` (bottom-up, OLS, structural and variance WLS,
   MinT with the sample or shrunk covariance of the base errors: y~ = S G y^), `shrinkCovariance`, `topDownProportions`
   and `isCoherent`.
+- `cointegration.ts`: `engleGranger` (the two-step test: the cointegrating regression with `n`/`c`/`ct`/`ctt`, the
+  residual spread tested by ADF with MacKinnon's N-variable p-values and critical values), `johansen` (the trace and
+  maximum-eigenvalue statistics from the reduced-rank eigenproblem with the MacKinnon-Haug-Michelis tables of
+  `_johansen-tables.ts`) and `selectCointegrationRank`.
+- `vecm.ts`: the vector error-correction model. `vecmProblem` builds Johansen's matrices (deterministic terms `n`, `co`,
+  `ci`, `lo`, `li` and the combinations), `vecmSmoothProblem` is the likelihood concentrated on beta = [I; B] as a
+  smooth objective with its analytic gradient, `vecmSolvers` is the slot (`johansen` the closed-form eigen-solve as the
+  model's own mode, beside every generic solver), `vecmAlgorithm`/`vecmFit` fit through it, `vecmForecast` iterates the
+  VAR form (`vecmVarRepresentation`) with intervals from the moving-average representation.
 - private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
   (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
   Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
@@ -4079,8 +4182,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
 `innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,
 `innovations`, `AutoReg`; `ETSModel` smoothing, likelihood and prediction intervals; `seasonal_decompose`, `STL`, `MSTL`;
-`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests) in
-`fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
+`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests; `coint`,
+`coint_johansen` and `VECM` fits with forecasts) in `fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
 recursion identities, recovery of simulated parameters and the algebra of the solutions; properties: the likelihood by the fast filter equals the library's
 Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
 built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
@@ -4678,6 +4781,48 @@ Weka description-length constants, the CORELS cache and symmetry-aware bounds be
 built from: `learn` (iterative base), `patterns` (Eclat), `logic/ilp` (`foilGain`), `trees`, `exposition` (`ruleSet`),
 `numerics/special`, `trace`, `random`
 
+### 4.60 `agents/`, `environments/`, `problems/` and `search/evolutionary/`: function approximation, best-arm bandits, test beds with truth, puzzles and NEAT (Sutton and Barto, Garivier and Kaufmann, Stanley and Miikkulainen)
+
+New files in four existing domains; none changes what was there. In `environments/`, `prediction.ts` holds the test beds
+of prediction and off-policy learning, each carrying its truth: `randomWalk` (the 5-, 19- and 1000-state chains, with
+`randomWalkValues` in closed form or by the exact solve of its model), Baird's counterexample (`bairdCounterexample`,
+with `BAIRD_FEATURES`, the behaviour and target policies, the initial weights and `BAIRD_TRUTH`: every true value is
+zero and semi-gradient off-policy TD diverges) and `infiniteVariance` (Example 5.5: value 1, infinite variance of the
+ordinary importance-sampling estimate). `changing-maze.ts` is the blocking and shortcut mazes of Dyna-Q+ (`blockingMaze`,
+`shortcutMaze`): the clock counts steps across episodes through `resetFrom`, the change is flagged in `info`, and
+`changingMazeTruth` gives the shortest path before and after (10 then 16, and 16 then 10) and the optimal actions.
+`goal-reaching.ts` is `reachGoal`, the sparse-reward point-reaching task of hindsight replay (observation position then
+goal, `achievedGoal`, `desiredGoal`, `goalReward`, `reachGoalOptimalSteps`, a `minDistance` knob that makes the reward
+rare). `bandits.ts` gains `changePointBandit`, a Bernoulli bandit whose probabilities change at a planted pull. All are
+registered in `registry.ts` with tags (59 entries now).
+
+In `agents/`, `approximation.ts` is linear function approximation: sparse feature maps (`oneHotFeatures`,
+`matrixFeatures`, `tileFeatures`, `actionTileFeatures`), `tileCoder` (Sutton's tiles with asymmetric, symmetric or no
+offsets and optional hashing into a fixed memory) and the learners as agents with serialisable state:
+`semiGradientTd` (TD(lambda) with accumulating, replacing and dutch traces, `offline` updating whose summed update equals
+the forward view of the lambda returns, off-policy through importance ratios, and an `optimiser` slot taking any
+gradient transformation of `optim` as the update rule), `semiGradientSarsa`, `gradientTd` (GTD2 and TDC) and `emphaticTd`.
+`best-arm.ts` is fixed-confidence best-arm identification as algorithms with a stopping rule and typed paths
+(`BestArmPath`, `bestArmContract`): `successiveEliminationAlgorithm`, `medianEliminationAlgorithm`, `lucbAlgorithm` and
+`trackAndStopAlgorithm` (Gaussian arms), `runBestArm`, and the quantities the sample complexity is measured against
+(`characteristicTime`, the optimal allocation and `1 / T*` of the lower bound, and `hardness`).
+`non-stationary-bandits.ts` has `slidingWindowUcb` and `discountedUcb`. `off-policy-monte-carlo.ts` has
+`offPolicyMonteCarloPrediction` (ordinary and weighted importance sampling) and `offPolicyMonteCarloControl`.
+`goal-conditioned.ts` has `relabelEpisode` (hindsight strategies `final`, `future` and `episode`) and `goalConditionedQ`.
+
+In `problems/`, `classic-puzzles.ts` has the sliding-tile puzzles (`slidingPuzzle`, `isSolvable` by permutation parity,
+`scrambledBoard`, `optimalMoves`) and `towersOfHanoi`; `tours.ts` has travelling-salesman instances with known optimal
+tours (`circleTour`, `gridTour`, `randomTour` with the exact optimum from `heldKarp`) and Hamiltonian-cycle puzzles
+(`plantedHamiltonian`, `findHamiltonianCycle`); `sat-instances.ts` has `randomKSat`, `plantedKSat` (with the witness),
+`pigeonhole` and `SAT_THRESHOLDS`; `registry.ts` is `problemRegistry`, tagging every family (also queens and Sudoku) by
+kind and solvability, whose `make` builds an instance with its truth (`whereProblems`, `findProblem`). In
+`search/evolutionary/`, `neat.ts` is `neatAlgorithm`: innovation numbers, speciation by the compatibility distance,
+aligned crossover and structural mutation, with XOR (`xorFitness`, `solvesXor`) as its truth and `neatNetwork` to run a
+genome. Where this differs from `LIB.md`: the continuous particle swarm was already `optim/minimize/particle-swarm.ts`
+(inertia or constriction, global or ring topology) and was not duplicated; `randomWalk` and `bairdCounterexample` are in
+`environments/prediction.ts` rather than `toy-text.ts`, `changingMaze` in `changing-maze.ts` rather than `gridworlds.ts`,
+and the goal-reaching task is its own file instead of a variant of `pointMass`.
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
@@ -4746,8 +4891,20 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   `complex-plane.ts`: poles, zeros and locus branches in `s` or `z`, `isStablePole`), `Simplex` (`simplex`,
   `simplex.ts`: a triangle of three strategies or the square of two populations with paths, a field and classified
   fixed points; `simplexRecord`), `Reachability` (`reachability`, `reachability.ts`: OPTICS distances in visiting
-  order with a cut; `reachabilityRecord`) and `SceneSteps` (`sceneSteps`, `scene-steps.ts`: a `Scene` per recorded step;
-  `sceneStepAt`). `ImageSteps` steps may carry a caption under each image (`labels`);
+  order with a cut; `reachabilityRecord`), `SceneSteps` (`sceneSteps`, `scene-steps.ts`: a `Scene` per recorded step;
+  `sceneStepAt`) and the records of the specialised panels (wave R2): `LandscapeSlice` (`landscapeSlice`,
+  `landscape-slice.ts`: the loss along one direction through the iterate, or over a plane, with the optimiser's iterates
+  and the Armijo and Wolfe lines on it; `sampleLandscape`, `sliceCoordinates`, the projection of parameters onto the
+  directions), `StabilityRegion` (`stabilityRegion`, `stability-region.ts`: `|R(z)|` on a grid of the complex plane
+  with the eigenvalues times the step size marked; `explicitRungeKutta` from a Butcher tableau, `stabilityModulus`,
+  `sampleStabilityRegion`, `stableArea`, `realAxisLimit`, `markVerdict`), `EquationFit` (`equationFit`,
+  `equation-fit.ts`: terms with estimated and true coefficients or a whole expression as TeX, the fit and the truth on
+  a grid, the observations; `coefficientErrors`, `fitResidual`), `AudioClip` (`audio`, `audio.ts`: mono samples, an
+  optional spectrogram and the `frames` that map tape steps to times; `playheadAt`, `stepAt`, `audioDuration`),
+  `Transcript` (`transcript`, `transcript.ts`: tokens by role with a weight per named track and the emitted token;
+  `turnsOf`) and `SampleGrid` (`sampleGrid`, `sample-grid.ts`: images or text from fixed noise at recorded steps;
+  `sampleStepAt`, `filmstripSteps`). `PointsSteps` steps may carry a `values` channel (with `valueName`, `valueRange`),
+  and `pointsAt` returns each point's `born` step. `ImageSteps` steps may carry a caption under each image (`labels`);
 - `CurveSet` (`curves`: several series on shared axes, each with an optional band, a group sharing its colour and an
   optional right-hand axis; optimiser races and studies of schemes or strengths), `DiagramRecord` (`diagram`: a
   `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
@@ -4779,8 +4936,17 @@ controls to their defaults when the page offers one), `SessionControls` (seed, s
 preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe, curves, per-element series, a
 trajectory, a tensor with row and column labels and marks (`rowLabels`, `colLabels`, `marks`, `marksPath`), a sweep, a
 projection, the whole tape, and the panels of probed records: `field` (a `vectorField` with tape paths over it as a
-trajectory), `strip`, `table`, `images`, `graph` (a `structureSteps` record), `points` (`pointsSteps`) and `scene`
-(`sceneSteps`); `record-panels` in `RecordPanels.tsx`, `FieldPanel.tsx`, `trajectory.ts`), `SessionPanels` that draws a layout under one
+trajectory), `strip`, `table`, `images`, `graph` (a `structureSteps` record), `points` (`pointsSteps`, coloured by
+class or by a `values` channel, with a fading trail and camera presets) and `scene` (`sceneSteps`); the specialised
+panels (`SpecialisedPanels.tsx` dispatches them): `zoom` (a probe asked for a viewport and a raster size, panned and
+zoomed by wheel, drag and pinch, with a minimap, reset and a pixel inspector; `ZoomPanel.tsx`, the maths in
+`views/zoom.ts`), `landscape` (`landscapeSlice`), `stability` (`stabilityRegion`), `equation` (`equationFit`), `audio`
+(`audio`: a playhead locked to the step cursor, WebAudio playback), `transcript`, `samples` (`sampleGrid` with a
+filmstrip) and `inner` (a session registered by name on `SessionPanels` (`inner` prop, `InnerSessionSpec`), run for
+the viewed outer step and drawn with its own layout and cursor, or the outer one; `InnerPanel.tsx`); and the layout
+feature `multiples` (one panel spec repeated over a facet: the variants of a comparison, the paths of a curves panel or
+the values of a probe argument, with the vertical axis of curves shared; `Multiples.tsx`, `multiples.ts`);
+`record-panels` in `RecordPanels.tsx`, `FieldPanel.tsx`, `trajectory.ts`), `SessionPanels` that draws a layout under one
 `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic `TapeView`. A page
 anywhere (the encyclopedia, the gallery's `animation/` recipes) composes these.
 
@@ -4820,7 +4986,7 @@ the encyclopedia's purview. What such a page needs is in the engine (a `Method` 
 (`react/session/`: the hook, the player, the settings and the panels); the gallery's `animation/` section shows the
 player on a toy method.
 
-**Where the shared pieces live.** There is no `methods/shared/`: what methods share is library code (`methods/README.md`, `LIB.md`). `lib/trace/modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters, `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible`). `lib/space/tables.ts`: `optionTable`, the same shape for options that are values (knobs, properties, `make`). `lib/optim/solvers.ts`: `smoothSolvers` (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent as one slot) and `loggedSolver`; `lib/optim/schedule-table.ts`: `schedules`; `lib/losses/tables.ts`: `regressionLosses`, `classificationLosses` and `penalties` with their properties.
+**Where the shared pieces live.** There is no `methods/shared/`: what methods share is library code (`methods/README.md`, `LIB.md`). `lib/trace/modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters, `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible`). `lib/space/tables.ts`: `optionTable`, the same shape for options that are values (knobs, properties, `make`). `lib/optim/solvers.ts`: `smoothSolvers` (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent as one slot) and `loggedSolver`; `lib/optim/schedule-table.ts`: `schedules`; `lib/losses/tables.ts`: `regressionLosses`, `classificationLosses` (with focal and a label-smoothed logistic), `multiclassLosses` (cross-entropy, label smoothing, focal and the noisy-label losses, with `bounded`, `noiseRobust`, `proper` and `needsTransition` among their properties) and `penalties` with their properties.
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as
@@ -6275,8 +6441,11 @@ Design rules:
   (`Strip`), `marked-tables.ts` (`MarkedTable` as a scene), `structure-steps.ts` (`StructureSteps` as a scene at a step),
   `matrix-marks.ts` (a labelled matrix with outlined cells, rows, columns and dashed boundaries, and `cellShapes`, the
   pixel-exact outlines the strip uses too), `points-steps.ts` (`PointsSteps`: a scatter on fixed axes, a 3-D scene to
-  orbit, a projected still), `complex-plane.ts`, `simplex.ts`, `reachability.ts` (`Reachability` bars by cluster,
-  `reachabilityClusters`), `scene-steps.ts`, `images.ts` also giving `imageGridView`, `imageGridFigure` and
+  orbit, a projected still; colour by a value channel, a fading trail, camera presets), `complex-plane.ts`, `simplex.ts`,
+  `reachability.ts` (`Reachability` bars by cluster, `reachabilityClusters`), `scene-steps.ts`, `zoom.ts` (viewport
+  maths and the raster of a grid), `landscape-slice.ts` (curve, contours, surface), `stability-region.ts`, `equation-fit.ts`
+  (TeX of the fit and the truth, the fit against the truth, the residual strip), `audio.ts` (waveform and spectrogram
+  as a scene with a playhead; `spectrogramOf`), `transcript.ts`, `sample-grid.ts` (a scene: grid and filmstrip), `images.ts` also giving `imageGridView`, `imageGridFigure` and
   `imageStepIndex` (the images at a tape step as a grid with captions),
   `curves.ts` (`CurveSet`, revealed along x as a player), `cells.ts` (`ValueGrids` as blocky small multiples on one
   colour range, `ConfusionMatrix`, both played through training), `diagrams.ts` (`DiagramRecord` as a scene with a
@@ -6396,6 +6565,9 @@ Design rules:
   `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`; `fields.tsx`: `VectorFieldView`;
   `strips.tsx`: `StripView`; `marked-tables.tsx`: `MarkedTableView`; `structure-steps.tsx`: `StructureStepsView`;
   `points-steps.tsx`: `PointsStepsView`; `complex-plane.tsx`: `ComplexPlaneView`; `simplex.tsx`: `SimplexView`;
+  `landscape-slice.tsx`: `LandscapeSliceView`; `stability-region.tsx`: `StabilityRegionView`; `equation-fit.tsx`:
+  `EquationFitView`; `audio.tsx`: `AudioView`, `useClipPlayback`; `transcript.tsx`: `TranscriptView`; `sample-grid.tsx`:
+  `SampleGridView`;
   `reachability.tsx`: `ReachabilityPlotView`; `scene-steps.tsx`: `SceneStepsView`; `images.tsx` also `ImageGridView`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `session/`: sessions in React (the Sessions and Comparisons paragraphs of section 5): `useSession.ts` (`useSession`,
@@ -6513,8 +6685,27 @@ failing example to itself).
   reliability, confusion matrices), hierarchies and flows (treemaps, sunbursts, Sankey), time (calendars, candles),
   parts of a whole (pies, funnels, gauges), and panels (`panels/`: one recipe per record kind of the generic panels on
   a toy method of a few dozen lines, shown with the session panel that draws it: vector field, strip, table, images,
-  graph, matrix with marks, scene, accumulating points, complex plane, simplex, reachability). Every figure has one frame (expand, export) and a live control. Toy data
+  graph, matrix with marks, scene, accumulating points, complex plane, simplex, reachability) and `specialised/` (the
+  specialised panels, each on a toy method: zoomable picture, orbiting cloud, loss landscape, stability region, equation
+  against the truth, audio in sync, transcript, samples over training, small multiples, inner session). Every figure has one frame (expand, export) and a live control. Toy data
   only, no model training: model demonstrations are the encyclopedia's.
+
+  Coverage: every exposition record kind and every view component has a gallery page, and a test keeps it so. A recipe
+  lists what it really draws in an optional `shows` field of its `recipe` (`readonly string[]`: record kinds such as
+  `'groupReport'`, and view components beyond a kind's standard one such as `'WaterfallView'`); the registry passes it
+  through on each entry. `apps/site/src/gallery/coverage.test.ts` derives the kinds from the code (the exposition
+  interfaces' `readonly kind: '...'`, checked against `viewedKinds()` of the render registry, which the compiler keeps
+  exhaustive over the `Exposition` union), the views from the exported `*View` and `*Player` components of
+  `packages/render/src/react/views`, and fails for any not named by some recipe's `shows` (a view is also covered when it
+  is the standard component of a shown kind). Its two short exemption tables (kinds, views) start from one entry, each
+  with its reason. The record recipes build their records on made-up data with the engine's constructors and library
+  functions (`apps/site/src/gallery/toys/synthetic.ts` holds the shared generators) and live in four sections:
+  `explanations/` (attributions in every variant, dependence, importances, concepts, rules, prototypes,
+  counterfactuals, explanation quality), `trust/` (calibration, conformal, threshold sweep, group and subgroup reports,
+  bias in data, Pareto fronts, anomaly scores), `selection/` (paths, tables, curves, trees, searches, surfaces,
+  posteriors, margins, neighbours, components, likelihoods) and `steps/` (clustering, mixture, embedding, population,
+  board, agent, ensemble, pipeline, epicycle, state, value, curve, diagram and episode records); the older records
+  keep their recipes in `panels/`, `specialised/`, `evaluation/` and `animation/`.
 
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,
   `fairness/` and `trust/` sections and the RL episodes) moved to the hub, which was removed on 2026-10-28. The

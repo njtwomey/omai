@@ -9,6 +9,7 @@ import { MdmlError } from 'mdml-engine/base'
 import { type HistogramOptions, histogram as histogramOf } from 'mdml-engine/stats'
 import { type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { extentOf } from '../figure/limits.ts'
+import { formatNumber } from '../theme/format.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor, modeOf, numbers } from './_data.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
@@ -139,7 +140,18 @@ export function bars(
       },
       ...(options.stacked === true ? { stack: 'total' } : {}),
       ...(options.labels === true
-        ? { label: { show: true, position: horizontal ? 'right' : 'top', fontSize: 10 } }
+        ? {
+            label: {
+              show: true,
+              position: horizontal ? 'right' : 'top',
+              fontSize: 10,
+              // Short numbers, not the raw float (0.8068181818181818).
+              formatter: (p: { readonly value?: unknown }): string => {
+                const h = Array.isArray(p.value) ? p.value[p.value.length - 1] : p.value
+                return typeof h === 'number' ? formatNumber(h, { digits: 3 }) : String(h ?? '')
+              },
+            },
+          }
         : {}),
       barMaxWidth: BAR_MAX,
       barGap: `${BAR_GAP * 100}%`,

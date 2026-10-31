@@ -29,6 +29,7 @@ export const recipe: Recipe = {
     'How do I show poles and zeros moving in the complex plane as a parameter changes, and when they leave the stable region?',
   explain:
     'A probe that returns a `complexPlane` record (poles, zeros, the branches of a locus, the domain `s` or `z`) drawn on equal axes with the stability boundary, the imaginary axis here or the unit circle for a discrete-time system. A pole outside the stable region is a larger cross in its own colour and is listed apart in the legend, and the caption says in words whether the system is stable. Here the loop gain of K / (s (s + 1) (s + 2)) rises over the run: the closed-loop poles, the roots of s³ + 3s² + 2s + K, run along the locus and cross the imaginary axis at K = 6.',
+  shows: ['complexPlane', 'ComplexPlaneView'],
 }
 
 const STEPS = 100

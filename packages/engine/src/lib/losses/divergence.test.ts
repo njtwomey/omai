@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { expectConformant } from '../../testing/check.ts'
-import { item, tensor, type Value } from '../tensor/index.ts'
+import { key, normal } from '../random/index.ts'
+import { add, item, tensor, toArray, type Value } from '../tensor/index.ts'
 import * as L from './index.ts'
 
 const zp = tensor([
@@ -64,5 +65,40 @@ describe('divergence losses', () => {
 
   it('makes the debiased Sinkhorn divergence vanish between equal clouds', () => {
     expect(Math.abs(item(L.sinkhorn(x, x, { epsilon: 0.5, debiased: true })))).toBeLessThan(1e-9)
+  })
+})
+
+describe('sliced Wasserstein', () => {
+  const x = normal(key(1), [200, 2])
+
+  it('is exactly the squared shift in one dimension (the directions are plus or minus one)', () => {
+    const d = normal(key(2), [50, 1])
+    expect(item(L.slicedWasserstein(d, add(d, 0.7), key(3), { projections: 5 }))).toBeCloseTo(0.49, 13)
+    expect(item(L.slicedWasserstein(d, add(d, 0.7), key(3), { projections: 5, root: true }))).toBeCloseTo(0.7, 13)
+  })
+
+  it('averages the squared projected shift over directions in two dimensions (shift squared over the dimension)', () => {
+    const shifted = add(x, tensor([0.8, 0]))
+    expect(item(L.slicedWasserstein(x, shifted, key(4), { projections: 3000 }))).toBeCloseTo(0.64 / 2, 1)
+  })
+
+  it('is zero between a sample and a permutation of itself and passes the conformance check', () => {
+    const rows = toArray(x) as number[][]
+    expect(item(L.slicedWasserstein(x, [...rows].reverse(), key(5)))).toBe(0)
+    expectConformant(
+      (a, b) => L.slicedWasserstein(a, b, key(6), { projections: 4 }),
+      [
+        tensor([
+          [0.3, 1.1],
+          [-0.2, 0.5],
+          [1.4, -0.6],
+        ]),
+        tensor([
+          [0.9, 0.2],
+          [0.1, -0.3],
+          [-0.5, 0.8],
+        ]),
+      ],
+    )
   })
 })

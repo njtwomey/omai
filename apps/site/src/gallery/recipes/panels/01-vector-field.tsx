@@ -28,6 +28,7 @@ export const recipe: Recipe = {
   question: 'How do I show a flow whose field changes as the run goes on, with the path of the state over it?',
   explain:
     'A probe that returns a `vectorField` record (the grid, the components, optionally nullclines and fixed points with a stability class) and the panel `{ kind: "field", path, trajectory }`, which draws the probe at the viewed step as arrows (or streamlines) and the tape\'s position path over it, ending in its current point. Here predators and prey: the prey\'s growth rate drifts over the run, so the horizontal nullcline and the centre sit higher and higher while the state circles it; scrub the cursor and the field at that step comes back.',
+  shows: ['vectorField', 'VectorFieldView'],
 }
 
 interface State {

@@ -197,7 +197,7 @@ function streamPanel(r: ConformalRecord, mode: ColourMode, upTo: number): Panel 
       ),
     ],
     options: {
-      title: s.baseline === undefined ? 'running coverage' : 'running coverage (orange: fixed width)',
+      title: s.baseline === undefined ? 'running coverage' : 'running coverage (orange: fixed)',
       x: { label: r.xLabel ?? 'time', limits: [Math.min(...s.t), Math.max(...s.t)] },
       y: { label: 'coverage', limits: [Math.max(0, 1 - 4 * r.alpha - 0.05), 1] },
     },

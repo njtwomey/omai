@@ -9,6 +9,7 @@ import type { Figure } from '../../figure/figure.ts'
 import { AgentPlayer } from './agents.tsx'
 import { AnomalyView } from './anomaly.tsx'
 import { AttributionView, ImportanceView } from './attributions.tsx'
+import { AudioView } from './audio.tsx'
 import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ConfusionMatrixView, ValueGridView } from './cells.tsx'
 import { ComplexPlaneView } from './complex-plane.tsx'
@@ -18,20 +19,24 @@ import { DependenceView } from './dependence.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
 import { EpicyclePlayer } from './epicycles.tsx'
 import { EpisodeView } from './episodes.tsx'
+import { EquationFitView } from './equation-fit.tsx'
 import { CounterfactualView, PrototypeView } from './examples.tsx'
 import { ExplanationQualityView } from './explanation-quality.tsx'
 import { GroupReportView } from './fairness.tsx'
 import { VectorFieldView } from './fields.tsx'
 import { ImagePlayer } from './images.tsx'
+import { LandscapeSliceView } from './landscape-slice.tsx'
 import { MarginView } from './margins.tsx'
 import { MarkedTableView } from './marked-tables.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
 import { PointsStepsView } from './points-steps.tsx'
 import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
+import { SampleGridView } from './sample-grid.tsx'
 import { SceneStepsView } from './scene-steps.tsx'
 import { StateSequenceView } from './sequences.tsx'
 import { SimplexView } from './simplex.tsx'
+import { StabilityRegionView } from './stability-region.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
 import { StripView } from './strips.tsx'
@@ -40,6 +45,7 @@ import { DataBiasView, ParetoFrontView, SubgroupView } from './subgroups.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
 import { CoefficientTableView, LikelihoodView, NeighbourView, SearchTrialsView } from './tables.tsx'
 import { ThresholdSweepView } from './thresholds.tsx'
+import { TranscriptView } from './transcript.tsx'
 import { TreeView } from './trees.tsx'
 import { CalibrationView, ConformalView } from './trust.tsx'
 
@@ -192,5 +198,17 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <ReachabilityPlotView record={record} {...common} />
     case 'sceneSteps':
       return <SceneStepsView record={record} {...common} />
+    case 'landscapeSlice':
+      return <LandscapeSliceView record={record} {...common} />
+    case 'sampleGrid':
+      return <SampleGridView record={record} {...common} />
+    case 'transcript':
+      return <TranscriptView record={record} {...common} />
+    case 'audio':
+      return <AudioView record={record} {...common} />
+    case 'equationFit':
+      return <EquationFitView record={record} {...common} />
+    case 'stabilityRegion':
+      return <StabilityRegionView record={record} {...common} />
   }
 }

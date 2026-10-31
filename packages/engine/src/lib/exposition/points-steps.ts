@@ -14,6 +14,8 @@ export interface PointsStep {
   readonly points: readonly (readonly number[])[]
   /** A class per point (0, 1, ...), for colour. */
   readonly groups?: readonly number[]
+  /** A number per point, drawn as colour along a ramp (a speed, a time, a density, a loss): a continuous channel. */
+  readonly values?: readonly number[]
   readonly caption?: string
 }
 
@@ -25,6 +27,10 @@ export interface PointsSteps {
   readonly features?: readonly string[]
   /** The extent of each coordinate over the whole run, when the method knows it (default: the span of every step). */
   readonly range?: readonly (readonly [number, number])[]
+  /** What the per-point `values` are (`speed`), for the colour bar's label and the description. */
+  readonly valueName?: string
+  /** The extent of `values` over the whole run, when the method knows it (default: the span of every step). */
+  readonly valueRange?: readonly [number, number]
   readonly steps: readonly PointsStep[]
   /**
    * Whether each step adds its points to those of the steps before it (default `true`: an attractor filling in), or
@@ -37,6 +43,10 @@ export interface PointsSteps {
 export interface PointsAt {
   readonly points: readonly (readonly number[])[]
   readonly groups?: readonly number[]
+  /** The per-point values (when every step up to it has them). */
+  readonly values?: readonly number[]
+  /** The tape step each point arrived at, so a view can fade the old ones (a trail). */
+  readonly born: readonly number[]
   readonly caption?: string
   /** How many of the points the latest step added (the rest are older). */
   readonly fresh: number
@@ -47,7 +57,7 @@ export interface PointsAt {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a point does not have `dims` coordinates, groups do not match the points or `range`
+ * @throws MdmlError `shape` when a point does not have `dims` coordinates, groups or values do not match the points or `range`
  *   does not have one entry per coordinate; `value` when the steps are not in order.
  * @example
  * ```ts
@@ -69,6 +79,11 @@ export function pointsSteps(record: Omit<PointsSteps, 'kind'>): PointsSteps {
           'shape',
           `pointsSteps: steps[${t}].points[${i}] has ${p.length} entries, expected ${record.dims}`,
         )
+    if (s.values !== undefined && s.values.length !== s.points.length)
+      throw new MdmlError(
+        'shape',
+        `pointsSteps: steps[${t}].values has ${s.values.length} entries, expected ${s.points.length}`,
+      )
     if (s.groups !== undefined && s.groups.length !== s.points.length)
       throw new MdmlError(
         'shape',
@@ -91,6 +106,7 @@ export function pointsSteps(record: Omit<PointsSteps, 'kind'>): PointsSteps {
  * const r = pointsSteps({ dims: 2, steps: [{ step: 0, points: [[0, 0]] }, { step: 5, points: [[1, 1], [2, 0]] }] })
  * pointsAt(r, 3).points.length // => 1
  * pointsAt(r, 5).points.length // => 3
+ * pointsAt(r, 5).born // => [0, 5, 5]
  * ```
  */
 export function pointsAt(record: PointsSteps, step: number): PointsAt {
@@ -99,9 +115,12 @@ export function pointsAt(record: PointsSteps, step: number): PointsAt {
   const latest = used[used.length - 1]
   const from = record.accumulate === false ? used.slice(-1) : used
   const grouped = from.every((s) => s.groups !== undefined)
+  const valued = from.every((s) => s.values !== undefined)
   return {
     points: from.flatMap((s) => s.points),
     ...(grouped && from.length > 0 ? { groups: from.flatMap((s) => s.groups ?? []) } : {}),
+    ...(valued && from.length > 0 ? { values: from.flatMap((s) => s.values ?? []) } : {}),
+    born: from.flatMap((s) => s.points.map(() => s.step)),
     ...(latest?.caption === undefined ? {} : { caption: latest.caption }),
     fresh: latest?.points.length ?? 0,
   }

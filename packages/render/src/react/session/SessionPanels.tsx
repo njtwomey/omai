@@ -26,9 +26,12 @@ import { leaf, overlayCurves, sweepTrials } from './compare.ts'
 import { StepCursorProvider } from './cursor.tsx'
 import { FieldPanel } from './FieldPanel.tsx'
 import { type FamilyOptions, familyOption, hasFamily, intervalOption, logAxes, sweepFamily } from './families.ts'
+import { InnerPanel, type InnerSessionSpec } from './InnerPanel.tsx'
 import type { Panel } from './layout.ts'
+import { Multiples } from './Multiples.tsx'
 import { GraphPanel, ImagesPanel, PointsPanel, ScenePanel, StripPanel, TablePanel } from './RecordPanels.tsx'
 import { FIG, Note, RowsPanel, useProbe, useRun } from './RowsPanel.tsx'
+import { SpecialisedPanel } from './SpecialisedPanels.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import { TapeChannels } from './TapeView.tsx'
 import { tensorAt, trajectoryLayers } from './trajectory.ts'
@@ -48,6 +51,8 @@ export interface PanelContext {
   readonly onScrub?: (t: number | null) => void
   readonly x?: Tensor
   readonly y?: Tensor
+  /** The inner sessions the layout's `inner` panels draw, by name (see `InnerSessionSpec`). */
+  readonly inner?: Readonly<Record<string, InnerSessionSpec>>
 }
 
 // What a panel of one variant gets: the page's context with that variant's session and label.
@@ -93,6 +98,40 @@ export function SessionPanels(props: PanelContext & { readonly layout: readonly 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" data-testid="panels">
         {layout.map((panel) => {
           const key = JSON.stringify(panel)
+          if (panel.kind === 'multiples')
+            return (
+              <div key={key} className="col-span-full min-w-0">
+                <Multiples
+                  spec={panel}
+                  variants={variants}
+                  renderCell={(cell, limits) => {
+                    const cellVariants =
+                      cell.variant === undefined ? variants : variants.filter((_, i) => i === cell.variant)
+                    const inner = cell.panel
+                    if (inner.kind === 'curves' || inner.kind === 'sweep')
+                      return (
+                        <TapePanel
+                          panel={
+                            limits !== undefined && inner.kind === 'curves' ? { ...inner, yLimits: limits } : inner
+                          }
+                          variants={cellVariants}
+                          head={head}
+                          {...ctx}
+                        />
+                      )
+                    const v = cellVariants[0]
+                    return v === undefined ? null : (
+                      <PanelView
+                        panel={inner}
+                        live={v.live}
+                        {...(cell.variant === undefined ? {} : { head })}
+                        {...ctx}
+                      />
+                    )
+                  }}
+                />
+              </div>
+            )
           if (panel.kind === 'curves' || panel.kind === 'sweep')
             return (
               <div key={key} className="min-w-0">
@@ -101,7 +140,7 @@ export function SessionPanels(props: PanelContext & { readonly layout: readonly 
             )
           if (single !== undefined)
             return (
-              <div key={key} className="min-w-0">
+              <div key={key} className={panel.kind === 'inner' ? 'col-span-full min-w-0' : 'min-w-0'}>
                 <PanelView panel={panel} live={single.live} {...ctx} />
               </div>
             )
@@ -165,7 +204,7 @@ function TapePanel(
 }
 
 function PanelView(
-  props: VariantContext & { readonly panel: Exclude<Panel, { kind: 'curves' | 'sweep' }> },
+  props: VariantContext & { readonly panel: Exclude<Panel, { kind: 'curves' | 'sweep' | 'multiples' }> },
 ): ReactNode {
   const { panel, id, live, at, onScrub, label } = props
   // The viewed step, never past this variant's head nor the shared one (a variant may run a few steps ahead).
@@ -252,6 +291,50 @@ function PanelView(
       if (panel.kind === 'points') return <PointsPanel {...common} panel={panel} />
       if (panel.kind === 'scene') return <ScenePanel {...common} panel={panel} />
       return <GraphPanel {...common} panel={panel} />
+    }
+    case 'inner': {
+      const title = panel.title ?? panel.name
+      return (
+        <InnerPanel
+          spec={props.inner?.[panel.name]}
+          name={panel.name}
+          live={live}
+          t={t}
+          head={limit}
+          {...(panel.args === undefined ? {} : { args: panel.args })}
+          {...(panel.follow === undefined ? {} : { follow: panel.follow })}
+          title={titled(`${title} at step ${t}`)}
+          render={(innerLive, innerAt, scrub) => (
+            <SessionPanels
+              id={`${id}-${slug(panel.name)}`}
+              live={innerLive}
+              at={innerAt}
+              onScrub={panel.follow === 'outer' ? (onScrub ?? scrub) : scrub}
+              layout={panel.layout}
+              {...(props.x === undefined ? {} : { x: props.x })}
+              {...(props.y === undefined ? {} : { y: props.y })}
+            />
+          )}
+        />
+      )
+    }
+    case 'zoom':
+    case 'landscape':
+    case 'stability':
+    case 'equation':
+    case 'audio':
+    case 'transcript':
+    case 'samples': {
+      const title = panel.title ?? panel.path
+      return (
+        <SpecialisedPanel
+          live={live}
+          panel={panel}
+          t={t}
+          title={titled(`${title} at step ${t}`)}
+          filename={file(title)}
+        />
+      )
     }
     case 'projection': {
       const title = panel.title ?? panel.name

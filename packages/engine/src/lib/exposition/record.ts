@@ -7,6 +7,7 @@
 import type { AgentSteps } from './agents.ts'
 import type { AnomalyScores } from './anomaly.ts'
 import type { FeatureAttributions, Importances } from './attributions.ts'
+import type { AudioClip } from './audio.ts'
 import type { BoardSteps } from './boards.ts'
 import type { ValueGrids } from './cells.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
@@ -20,6 +21,7 @@ import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
 import type { Epicycles } from './epicycles.ts'
 import type { EpisodeRecord } from './episodes.ts'
+import type { EquationFit } from './equation-fit.ts'
 import type { ConfusionMatrix } from './evaluation.ts'
 import type { CounterfactualSet, PrototypeSet } from './examples.ts'
 import type { ExplanationQuality } from './explanation-quality.ts'
@@ -27,6 +29,7 @@ import type { GroupReport } from './fairness.ts'
 import type { VectorField } from './fields.ts'
 import type { ParetoFront } from './frontiers.ts'
 import type { ImageSteps } from './images.ts'
+import type { LandscapeSlice } from './landscape-slice.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
 import type { MarginRecord } from './margins.ts'
 import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
@@ -36,16 +39,19 @@ import type { PopulationSteps } from './populations.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { Reachability } from './reachability.ts'
 import type { RuleSet } from './rules.ts'
+import type { SampleGrid } from './sample-grid.ts'
 import type { SceneSteps } from './scene-steps.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
 import type { Simplex } from './simplex.ts'
+import type { StabilityRegion } from './stability-region.ts'
 import type { Strip } from './strips.ts'
 import type { StructureSteps } from './structure-steps.ts'
 import type { SubgroupReport } from './subgroups.ts'
 import type { DecisionSurface } from './surfaces.ts'
 import type { MarkedTable } from './tables.ts'
 import type { ThresholdSweep } from './thresholds.ts'
+import type { Transcript } from './transcript.ts'
 import type { PruningPath, TreeRecord } from './trees.ts'
 import type { CalibrationRecord, ConformalRecord } from './trust.ts'
 
@@ -111,6 +117,12 @@ export type Exposition =
   | Simplex
   | Reachability
   | SceneSteps
+  | LandscapeSlice
+  | StabilityRegion
+  | EquationFit
+  | AudioClip
+  | Transcript
+  | SampleGrid
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -210,4 +222,10 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'simplex',
   'reachability',
   'sceneSteps',
+  'landscapeSlice',
+  'stabilityRegion',
+  'equationFit',
+  'audio',
+  'transcript',
+  'sampleGrid',
 ])
