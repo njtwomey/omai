@@ -445,6 +445,24 @@ export function selectLogLambda(
 }
 
 /**
+ * Solve with the penalised Hessian of a solution, `(X'WX + S)^(-1) b`.
+ *
+ * @param sol - A solution.
+ * @param b - The right-hand side `[p]`.
+ * @returns The solution of the linear system.
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { gram, hessianSolve, solvePenalised } from 'mdml-engine/gam'
+ * const g = gram(Float64Array.of(1, 1, 1), 3, 1, Float64Array.of(1, 1, 1), Float64Array.of(1, 2, 3))
+ * Array.from(hessianSolve(solvePenalised(g, new Float64Array(1)), [3])) // => [1]
+ * ```
+ */
+export function hessianSolve(sol: PenalisedSolution, b: ArrayLike<number>): Float64Array {
+  return dpotrs(sol.factor, b, b.length)
+}
+
+/**
  * The Bayesian posterior covariance of the coefficients, `scale (X'WX + S)^(-1)`, as a `[p, p]` row-major array.
  *
  * @param sol - A solution.
@@ -465,7 +483,7 @@ export function posteriorCovariance(sol: PenalisedSolution, p: number, scale: nu
   for (let c = 0; c < p; c++) {
     e.fill(0)
     e[c] = 1
-    const col = dpotrs(sol.factor, e, p)
+    const col = hessianSolve(sol, e)
     for (let r = 0; r < p; r++) out[r * p + c] = scale * (col[r] ?? 0)
   }
   return out

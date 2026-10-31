@@ -18,6 +18,18 @@ import type { Key } from '../random/index.ts'
 import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { Log } from '../trace/index.ts'
+import {
+  type Band,
+  type BandOptions,
+  fitContext,
+  type GamFitContext,
+  type GamSummary,
+  gamSummary,
+  predictionBand,
+  sampleCoefficients,
+  simulateCurves,
+  termBand,
+} from './inference.ts'
 import { posteriorCovariance } from './penalised.ts'
 import {
   GAM_DEFAULTS,
@@ -70,6 +82,21 @@ export interface GamVerbs {
   readonly decisionFunction?: (x: TensorLike) => Tensor
   readonly classes?: readonly number[]
   readonly score: (data: LearnData) => number
+  /** The summary table: per-term tests (Wood's reference test for smooths), the scale and deviance explained. */
+  readonly summary: () => GamSummary
+  /** The credible band of a term's partial effect at new rows (pointwise, or simultaneous by simulation). */
+  readonly termBand: (term: number, x: TensorLike, options?: BandOptions) => Band
+  /** The credible band of the linear predictor or (on the response scale) the mean at new rows. */
+  readonly predictionBand: (x: TensorLike, options?: BandOptions) => Band
+  /** Draws of the coefficients from their Gaussian posterior approximation `[count, p]`. */
+  readonly sampleCoefficients: (count: number, key: Key) => Float64Array
+  /** Draws of a fitted curve (a term's effect, the predictor or the mean) at new rows `[count, m]`. */
+  readonly simulateCurves: (
+    x: TensorLike,
+    count: number,
+    key: Key,
+    options?: { readonly term?: number; readonly scale?: 'link' | 'response' },
+  ) => Float64Array
   readonly nFeaturesIn: number
   readonly coef: readonly number[]
   readonly edf: number
@@ -127,7 +154,34 @@ function verbsOf(p: GamParams, h: GamHyper, kind: 'regressor' | 'classifier'): G
     ),
   )
   const scaleEstimated = h.scale === undefined && !['binomial', 'poisson', 'negativeBinomial'].includes(h.family.name)
+  let context: GamFitContext | undefined
+  const ctx = (): GamFitContext => {
+    if (context === undefined) {
+      const problem = gamProblem(p.xFit, p.yFit, h, p.weights)
+      const eta = Array.from(toFlat(linearPredictor(p.xFit)))
+      const state: GamState = {
+        iteration: 0,
+        beta: p.coef,
+        eta,
+        logLambda: p.logLambda,
+        deviance: p.deviance,
+        penalisedDeviance: p.deviance,
+        edf: p.edf,
+        edfTerms: p.edfTerms,
+        criterion: Number.NaN,
+        scale: p.scale,
+        converged: true,
+      }
+      context = fitContext(problem, state)
+    }
+    return context
+  }
   const base: GamVerbs = {
+    summary: () => gamSummary(ctx()),
+    termBand: (term, x, options) => termBand(ctx(), term, x, options),
+    predictionBand: (x, options) => predictionBand(ctx(), x, options),
+    sampleCoefficients: (count, key) => sampleCoefficients(ctx(), count, key),
+    simulateCurves: (x, count, key, options) => simulateCurves(ctx(), x, count, key, options),
     predict,
     linearPredictor,
     predictTerms: (x) => {

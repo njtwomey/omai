@@ -4097,7 +4097,15 @@ penalty); logs
 `solver/logLambda`. `backfitting.ts` is Hastie and Tibshirani's backfitting (local scoring for an exponential family),
 one cycle per step, which converges to the same penalised solution at fixed smoothing parameters. `estimators.ts` has
 `gam` and `gamClassifier` on the iterative base: `predict`, `predictTerms`, `standardErrors` (Bayesian posterior
-covariance), `predictDistribution`, `edfTerms`, `smoothingParameters`, `aic`.
+covariance), `predictDistribution`, `edfTerms`, `smoothingParameters`, `aic`. `inference.ts` is inference on a fitted
+model from `fitContext(problem, state)` (the Bayesian and frequentist covariances, `edf` and `edf1` per coefficient):
+`gamSummary` (mgcv's `summary.gam`: Wald tests of the parametric terms, Wood's 2013 reference test `referenceTest` of
+each smooth with the fractional-rank pseudo-inverse and a `weightedChiSquareSf` null, an F reference when the scale is
+estimated, deviance explained), pointwise and simultaneous credible bands (`termBand` for one partial effect,
+`predictionBand` for the predictor or the mean; the simultaneous multiplier is the simulated quantile of the maximal
+standardised deviation), and posterior simulation (`sampleCoefficients`, `simulateCurves`). The estimators expose them
+as the verbs `summary`, `termBand`, `predictionBand`, `sampleCoefficients` and `simulateCurves`. Tested by simulation:
+coverage of the bands, uniformity of the null p-values, power under a real effect.
 
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
