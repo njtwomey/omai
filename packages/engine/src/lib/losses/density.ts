@@ -2,15 +2,19 @@
  * Likelihood losses for probabilistic models: the negative log-likelihood of observations under any distribution or of
  * targets under a conditional distribution (a likelihood head), the mixture density network loss, the heteroscedastic
  * Gaussian loss with a predicted log-variance, and the likelihood of censored observations known only to lie in an
- * interval.
+ * interval; and the evidential losses, where a network outputs the parameters of a distribution over distributions
+ * (a Dirichlet over class probabilities, a normal-inverse-gamma over a Gaussian) so that one forward pass gives a
+ * prediction with its aleatoric and epistemic uncertainty.
  */
 
 import { MdmlError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
-import { log1mexp } from '../numerics/special/index.ts'
+import { digamma, lgamma, log1mexp } from '../numerics/special/index.ts'
 import {
+  abs,
   add,
   asTensor,
+  cast,
   div,
   exp,
   expandDims,
@@ -20,9 +24,11 @@ import {
   logsumexp,
   mul,
   neg,
+  oneHot,
   promoteFloat,
   reshape,
   square,
+  squeeze,
   stopGradient,
   sub,
   sum,
@@ -32,7 +38,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, reduce } from './_reduce.ts'
+import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
 
 /**
  * Negative log-likelihood of observations under any distribution: -log p(x), reduced. Gradients flow to the
@@ -237,3 +243,183 @@ export function censoredNll(
 }
 
 type Kind = 'exact' | 'right' | 'left' | 'interval'
+
+/** The loss on the expected class probabilities of an evidential classifier. */
+export type EvidentialLoss = 'mse' | 'log' | 'digamma'
+
+/**
+ * Dirichlet evidential classification loss (Sensoy et al., 2018). The network outputs non-negative evidence e per
+ * class (pass logits through softplus, ReLU or exp), the Dirichlet parameters are alpha = e + 1 with strength
+ * S = sum alpha, and the expected probabilities alpha / S. The data term is the expected squared error under the
+ * Dirichlet (`mse`, the paper's choice), the expected log-likelihood (`log`) or its digamma form (`digamma`); an
+ * optional KL term pulls the evidence of the wrong classes to zero (the Dirichlet back to uniform), which the caller
+ * anneals from 0 to 1 over training.
+ *
+ * @param evidence - Non-negative evidence `[N, K]`.
+ * @param target - Class indices `[N]`.
+ * @param options - kind (default 'mse'), klWeight (default 0) and reduction.
+ * @returns The loss, differentiable in the evidence.
+ * @concept evidential-deep-learning
+ * @example
+ * ```ts
+ * import { evidentialNll } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * // No evidence: alpha = [1, 1], S = 2, p = [0.5, 0.5]: squared error 0.25 + 0.25 plus the variance 2 * (1 * 1) / (4 * 3).
+ * Math.abs(item(evidentialNll([[0, 0]], [0])) - (0.5 + 1 / 6)) < 1e-14 // => true
+ * ```
+ */
+export function evidentialNll(
+  evidence: TensorLike,
+  target: TensorLike,
+  options: { readonly kind?: EvidentialLoss; readonly klWeight?: number; readonly reduction?: Reduction } = {},
+): Value {
+  const [e] = promoteFloat(evidence) as [Value]
+  const k = e.shape[e.shape.length - 1] ?? 1
+  const y = oneHot(cast(promoteFloat(target)[0] as Value, 'int32'), k)
+  const alpha = add(e, 1)
+  const strength = sum(alpha, -1, true)
+  let terms: Value
+  switch (options.kind ?? 'mse') {
+    case 'mse': {
+      const p = div(alpha, strength)
+      const variance = div(mul(alpha, sub(strength, alpha)), mul(square(strength), add(strength, 1)))
+      terms = sum(add(square(sub(y, p)), variance), -1)
+      break
+    }
+    case 'log':
+      terms = sum(mul(y, sub(log(strength), log(alpha))), -1)
+      break
+    case 'digamma':
+      terms = sum(mul(y, sub(digamma(strength), digamma(alpha))), -1)
+      break
+    default:
+      throw new MdmlError('value', `unknown evidential loss ${String(options.kind)}`)
+  }
+  const klWeight = options.klWeight ?? 0
+  if (klWeight > 0) {
+    // Misleading evidence: the Dirichlet with the target class's evidence removed, against the uniform Dirichlet.
+    const tilde = add(y, mul(sub(1, y), alpha))
+    const s = sum(tilde, -1, true)
+    const kl = add(
+      sub(sub(squeeze(lgamma(s), -1), lgamma(k)), sum(lgamma(tilde), -1)),
+      sum(mul(sub(tilde, 1), sub(digamma(tilde), digamma(s))), -1),
+    )
+    terms = add(terms, mul(kl, klWeight))
+  }
+  return reduce(terms, { reduction: options.reduction ?? 'mean' })
+}
+
+/** The uncertainty decomposition of a Dirichlet evidential prediction. */
+export interface DirichletUncertainty {
+  /** The Dirichlet parameters alpha = evidence + 1 `[N, K]`. */
+  readonly alpha: Value
+  /** The expected class probabilities alpha / S `[N, K]`. */
+  readonly probabilities: Value
+  /** The Dirichlet strength S = sum alpha `[N]`. */
+  readonly strength: Value
+  /** Vacuity K / S in (0, 1]: one with no evidence at all (the model does not know), falling as evidence accrues `[N]`. */
+  readonly vacuity: Value
+  /** The expected entropy of the categorical under the Dirichlet: the data (aleatoric) uncertainty `[N]`. */
+  readonly aleatoric: Value
+  /** The mutual information between label and parameters: the model (epistemic) uncertainty `[N]`. */
+  readonly epistemic: Value
+}
+
+/**
+ * The uncertainty outputs of a Dirichlet evidential classifier: the expected probabilities, the vacuity K / S, and the
+ * entropy of the prediction split into its aleatoric part (the expected entropy under the Dirichlet) and its epistemic
+ * part (the mutual information, the entropy of the mean minus the mean entropy).
+ *
+ * @param evidence - Non-negative evidence `[N, K]`.
+ * @returns The Dirichlet parameters, probabilities, strength, vacuity, aleatoric and epistemic uncertainty.
+ * @example
+ * ```ts
+ * import { dirichletUncertainty } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(dirichletUncertainty([[0, 0, 0], [7, 0, 0]]).vacuity) // => [1, 0.3]
+ * ```
+ */
+export function dirichletUncertainty(evidence: TensorLike): DirichletUncertainty {
+  const [e] = promoteFloat(evidence) as [Value]
+  const k = e.shape[e.shape.length - 1] ?? 1
+  const alpha = add(e, 1)
+  const strength = sum(alpha, -1, true)
+  const probabilities = div(alpha, strength)
+  const total = neg(sum(mul(probabilities, log(probabilities)), -1))
+  const aleatoric = neg(sum(mul(probabilities, sub(digamma(add(alpha, 1)), digamma(add(strength, 1)))), -1))
+  return {
+    alpha,
+    probabilities,
+    strength: squeeze(strength, -1),
+    vacuity: div(k, squeeze(strength, -1)),
+    aleatoric,
+    epistemic: sub(total, aleatoric),
+  }
+}
+
+/**
+ * The deep evidential regression loss (Amini et al., 2020): the network outputs the parameters (gamma, nu, alpha,
+ * beta) of a normal-inverse-gamma over the mean and variance of the target, and the loss is the negative log
+ * likelihood of the target under the resulting Student-t, plus a regulariser |y - gamma| (2 nu + alpha) that penalises
+ * evidence on wrong predictions.
+ *
+ * @param gamma - Predicted mean.
+ * @param nu - Evidence on the mean (> 0).
+ * @param alpha - Shape (> 1).
+ * @param beta - Scale (> 0).
+ * @param target - Observed targets.
+ * @param options - regulariser weight lambda (default 0) and reduction.
+ * @returns The loss, differentiable in the four parameters.
+ * @example
+ * ```ts
+ * import { normalInverseGammaNll } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(normalInverseGammaNll([0], [1], [1], [0.5], [0])) - 1.5 * Math.LN2) < 1e-12 // => true
+ * ```
+ */
+export function normalInverseGammaNll(
+  gamma: TensorLike,
+  nu: TensorLike,
+  alpha: TensorLike,
+  beta: TensorLike,
+  target: TensorLike,
+  options: { readonly lambda?: number; readonly reduction?: Reduction } = {},
+): Value {
+  const [g, v, a, b, y] = promoteFloat(gamma, nu, alpha, beta, target) as [Value, Value, Value, Value, Value]
+  const error = sub(y, g)
+  const omega = mul(mul(b, 2), add(v, 1))
+  const nll = add(
+    sub(
+      add(mul(log(div(Math.PI, v)), 0.5), mul(neg(a), log(omega))),
+      neg(mul(add(a, 0.5), log(add(mul(square(error), v), omega)))),
+    ),
+    sub(lgamma(a), lgamma(add(a, 0.5))),
+  )
+  const regulariser = mul(abs(error), add(mul(v, 2), a))
+  return reduce(add(nll, mul(regulariser, options.lambda ?? 0)), { reduction: options.reduction ?? 'mean' })
+}
+
+/**
+ * The uncertainty of a normal-inverse-gamma prediction: aleatoric E[sigma^2] = beta / (alpha - 1) and epistemic
+ * Var[mu] = beta / (nu (alpha - 1)).
+ *
+ * @param nu - Evidence on the mean (> 0).
+ * @param alpha - Shape (> 1).
+ * @param beta - Scale (> 0).
+ * @returns The aleatoric and epistemic variances.
+ * @example
+ * ```ts
+ * import { normalInverseGammaUncertainty } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(normalInverseGammaUncertainty([2], [3], [1]).epistemic) // => [0.25]
+ * ```
+ */
+export function normalInverseGammaUncertainty(
+  nu: TensorLike,
+  alpha: TensorLike,
+  beta: TensorLike,
+): { readonly aleatoric: Value; readonly epistemic: Value } {
+  const [v, a, b] = promoteFloat(nu, alpha, beta) as [Value, Value, Value]
+  const aleatoric = div(b, sub(a, 1))
+  return { aleatoric, epistemic: div(aleatoric, v) }
+}

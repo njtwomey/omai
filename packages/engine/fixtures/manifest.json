@@ -1824,7 +1824,7 @@
         "torch": "2.14.1",
         "optax": "0.2.8"
       },
-      "cases": 19
+      "cases": 27
     },
     {
       "fixture": "losses/density.json",
@@ -1845,6 +1845,14 @@
         "pot": "0.9.7.post1"
       },
       "cases": 19
+    },
+    {
+      "fixture": "losses/evidential.json",
+      "source": "oracle/cases/losses/evidential.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 8
     },
     {
       "fixture": "losses/generative.json",
@@ -1890,6 +1898,14 @@
         "scipy": "1.18.1"
       },
       "cases": 10
+    },
+    {
+      "fixture": "losses/robust.json",
+      "source": "oracle/cases/losses/robust.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 13
     },
     {
       "fixture": "losses/segmentation.json",
