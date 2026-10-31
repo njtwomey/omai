@@ -2,6 +2,15 @@
   "schema": "mdml.fixtures/1",
   "fixtures": [
     {
+      "fixture": "anomaly/lof.json",
+      "source": "oracle/cases/anomaly/lof.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "cluster/birch.json",
       "source": "oracle/cases/cluster/birch.py",
       "reference": {
@@ -18,6 +27,24 @@
         "numpy": "2.5.4"
       },
       "cases": 7
+    },
+    {
+      "fixture": "covariance/graphical_lasso.json",
+      "source": "oracle/cases/covariance/graphical_lasso.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "covariance/robust.json",
+      "source": "oracle/cases/covariance/robust.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
     },
     {
       "fixture": "data/batching.json",
@@ -1707,15 +1734,6 @@
       "cases": 6
     },
     {
-      "fixture": "methods/anomaly/neighbours.json",
-      "source": "oracle/cases/methods/anomaly/neighbours.py",
-      "reference": {
-        "scikit-learn": "1.9.1",
-        "numpy": "2.5.4"
-      },
-      "cases": 4
-    },
-    {
       "fixture": "methods/cluster/density.json",
       "source": "oracle/cases/methods/cluster/density.py",
       "reference": {
@@ -1751,15 +1769,6 @@
         "numpy": "2.5.4"
       },
       "cases": 6
-    },
-    {
-      "fixture": "methods/covariance/graphical_lasso.json",
-      "source": "oracle/cases/methods/covariance/graphical_lasso.py",
-      "reference": {
-        "scikit-learn": "1.9.1",
-        "numpy": "2.5.4"
-      },
-      "cases": 4
     },
     {
       "fixture": "methods/decomposition/cross_decomposition.json",
