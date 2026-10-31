@@ -204,6 +204,14 @@
       "cases": 9
     },
     {
+      "fixture": "decomposition/rank_regression.json",
+      "source": "oracle/cases/decomposition/rank_regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
+    },
+    {
       "fixture": "distances/evaluate.json",
       "source": "oracle/cases/distances/evaluate.py",
       "reference": {
@@ -4716,14 +4724,6 @@
     {
       "fixture": "stochastic/diffusion-models.json",
       "source": "oracle/cases/stochastic/diffusion-models.py",
-      "reference": {
-        "numpy": "2.5.4"
-      },
-      "cases": 9
-    },
-    {
-      "fixture": "stochastic/diffusion_models.json",
-      "source": "oracle/cases/stochastic/diffusion_models.py",
       "reference": {
         "numpy": "2.5.4"
       },

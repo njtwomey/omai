@@ -60,7 +60,7 @@ def cases() -> list[Case]:
     index = np.array([int(np.where((combos == row).all(axis=1))[0][0]) for row in yp], dtype=np.float64)
     nb = GaussianNB().fit(xp, index)
     pc = np.zeros((len(qp), len(combos)))
-    pc[:, nb.classes_.astype(int)] = nb.predict_proba(qp)
+    pc[:, np.asarray(nb.classes_).astype(int)] = nb.predict_proba(qp)
     marginal = pc @ combos
     predicted: FloatArray = combos[nb.predict(qp).astype(int)]
     out.append(

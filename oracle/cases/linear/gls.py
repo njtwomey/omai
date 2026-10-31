@@ -3,6 +3,8 @@ scale, log-likelihood, standard errors), GLSAR.iterative_fit (the AR coefficient
 heteroscedastic regression: feasible GLS as the iterated log-residual regression written with statsmodels OLS and WLS,
 and the joint Gaussian likelihood of the mean and a log-linear variance by BFGS (statsmodels has no model for it)."""
 
+from typing import Any, cast
+
 import numpy as np
 import numpy.typing as npt
 import scipy
@@ -26,11 +28,11 @@ def fgls(x: Vec, y: Vec, z: Vec, rounds: int) -> tuple[Vec, Vec]:
     gamma = np.zeros(zc.shape[1])
     for _ in range(rounds):
         w = np.exp(-(zc @ gamma))
-        beta = np.asarray(sm.WLS(y, a, weights=w).fit().params, dtype=np.float64)
+        beta = np.asarray(sm.WLS(y, a, weights=cast(Any, w)).fit().params, dtype=np.float64)
         resid = y - a @ beta
         gamma = np.asarray(sm.OLS(np.log(np.maximum(resid**2, 1e-300)), zc).fit().params, dtype=np.float64)
     w = np.exp(-(zc @ gamma))
-    beta = np.asarray(sm.WLS(y, a, weights=w).fit().params, dtype=np.float64)
+    beta = np.asarray(sm.WLS(y, a, weights=cast(Any, w)).fit().params, dtype=np.float64)
     return beta, gamma
 
 

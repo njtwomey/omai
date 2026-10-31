@@ -2,6 +2,8 @@
 GenericLikelihoodModel (statsmodels has no Tobit model) and fitted by Newton from the least-squares start; compared on
 the coefficients, the noise scale, the log-likelihood and the Wald standard errors (numerical Hessian)."""
 
+from typing import Any, cast
+
 import numpy as np
 import numpy.typing as npt
 import statsmodels
@@ -61,7 +63,7 @@ def cases() -> list[Case]:
                     "coef": params[:d],
                     "intercept": np.array(float(params[d])),
                     "sigma": np.array(sigma),
-                    "logLikelihood": np.array(float(res.llf)),
+                    "logLikelihood": np.array(float(cast(Any, res).llf)),
                     "bse": np.append(bse[: d + 1], sigma * bse[-1]),
                 },
                 rtol=1e-4,

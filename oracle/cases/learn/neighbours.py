@@ -152,12 +152,18 @@ def cases() -> list[Case]:
         if metric == "euclidean":
             output["decision"] = nc.decision_function(q)
             output["proba"] = nc.predict_proba(q)
-        params: dict[str, object] = {"metric": metric, "priors": priors}
+        centroid_settings: dict[str, object] = {"metric": metric, "priors": priors}
         if shrink is not None:
-            params["shrink"] = shrink
+            centroid_settings["shrink"] = shrink
         out.append(
             case(
-                f"centroid/{metric}/{shrink}/{priors}", "centroid", [xi, yi, q], output, rtol=1e-9, atol=1e-10, **params
+                f"centroid/{metric}/{shrink}/{priors}",
+                "centroid",
+                [xi, yi, q],
+                output,
+                rtol=1e-9,
+                atol=1e-10,
+                **centroid_settings,
             )
         )
     return out

@@ -53,7 +53,7 @@ def cases() -> list[Case]:
                 std = np.ones(d)
             pca = PCA(n_components=k, svd_solver="full").fit(z)
             lr = LinearRegression().fit(pca.transform(z), y1)
-            coef = pca.components_.T @ lr.coef_ / std
+            coef = np.asarray(pca.components_).T @ np.asarray(lr.coef_) / std
             intercept = float(lr.intercept_) - float(np.mean(x, axis=0) @ coef)
             out.append(
                 case(

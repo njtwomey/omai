@@ -3,6 +3,8 @@ observation (the diagonal of the influence matrix), the effective degrees of fre
 the Gaussian, Poisson and binomial families on a B-spline smooth with its second-derivative penalty. statsmodels weighs
 the penalty as 2 alpha, so the engine's smoothing parameter is 2 alpha."""
 
+from typing import Any, cast
+
 import numpy as np
 import pandas as pd
 import statsmodels
@@ -19,15 +21,15 @@ def record(
 ) -> Case:
     frame = pd.DataFrame({"x": x})
     smoother = BSplines(frame, df=[df], degree=[3])
-    model = GLMGam(y, exog=np.ones((len(y), 1)), smoother=smoother, alpha=alpha, family=family)
+    model = GLMGam(y, exog=np.ones((len(y), 1)), smoother=smoother, alpha=cast(Any, alpha), family=family)
     fit = model.fit(maxiter=200, tol=1e-12)
     design = np.column_stack([np.ones(len(y)), np.asarray(smoother.basis, dtype=np.float64)])
     penalty = np.asarray(smoother.penalty_matrices[0], dtype=np.float64)
     output = {
         "coef": np.asarray(fit.params, dtype=np.float64),
-        "hat": np.asarray(fit.hat_matrix_diag, dtype=np.float64),
-        "edf": np.asarray([fit.hat_matrix_trace], dtype=np.float64),
-        "deviance": np.asarray([fit.deviance], dtype=np.float64),
+        "hat": np.asarray(cast(Any, fit).hat_matrix_diag, dtype=np.float64),
+        "edf": np.asarray([cast(Any, fit).hat_matrix_trace], dtype=np.float64),
+        "deviance": np.asarray([cast(Any, fit).deviance], dtype=np.float64),
     }
     if family_name == "gamma-log":
         # statsmodels' hat matrix of a family with an estimated scale is computed after the fit with the scale in

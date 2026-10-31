@@ -49,7 +49,7 @@ def cases() -> list[Case]:
         lda = LinearDiscriminantAnalysis(solver=solver, shrinkage=shrinkage).fit(x, y)  # pyright: ignore[reportArgumentType]
         dec = lda.decision_function(q)
         output: dict[str, FloatArray] = {
-            "predict": lda.predict(q),
+            "predict": np.asarray(lda.predict(q), dtype=np.float64),
             "proba": lda.predict_proba(q),
             "decisionDiff": dec[:, 1:] - dec[:, :1],
             "means": lda.means_,
@@ -69,7 +69,7 @@ def cases() -> list[Case]:
     for solver in ["svd", "lsqr"]:
         lda = LinearDiscriminantAnalysis(solver=solver).fit(xb, yb)  # pyright: ignore[reportArgumentType]
         binary: dict[str, FloatArray] = {
-            "predict": lda.predict(qb),
+            "predict": np.asarray(lda.predict(qb), dtype=np.float64),
             "proba": lda.predict_proba(qb),
             "decisionDiff": lda.decision_function(qb)[:, None],
         }
@@ -84,7 +84,11 @@ def cases() -> list[Case]:
             "lda/priors",
             "lda",
             [x, y, q],
-            {"predict": lda.predict(q), "proba": lda.predict_proba(q), "decisionDiff": dec[:, 1:] - dec[:, :1]},
+            {
+                "predict": np.asarray(lda.predict(q), dtype=np.float64),
+                "proba": lda.predict_proba(q),
+                "decisionDiff": dec[:, 1:] - dec[:, :1],
+            },
             rtol=1e-7,
             atol=1e-8,
             priors=priors,

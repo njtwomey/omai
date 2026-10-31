@@ -1,6 +1,8 @@
 """Kernel ridge regression against sklearn.kernel_ridge: dual coefficients and predictions for several kernels, one and
 several outputs; the exact leave-one-out predictions against refitting n times with the same estimator."""
 
+from typing import Any, cast
+
 import numpy as np
 import sklearn
 from mdml_oracle.fixture import Case, case
@@ -26,7 +28,7 @@ def loo(x: FloatArray, y: FloatArray, alpha: float, gamma: float) -> FloatArray:
     out = np.empty_like(y)
     for i in range(len(y)):
         keep = np.arange(len(y)) != i
-        model = KernelRidge(alpha=alpha, kernel="rbf", gamma=gamma).fit(x[keep], y[keep])
+        model = KernelRidge(alpha=cast(Any, alpha), kernel="rbf", gamma=gamma).fit(x[keep], y[keep])
         out[i] = model.predict(x[i : i + 1])[0]
     return out
 

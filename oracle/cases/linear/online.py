@@ -3,6 +3,8 @@ the data in order), passive-aggressive PA-I and PA-II classifiers and the epsilo
 passive-aggressive learning rates), and the voted, pocket and kernel perceptrons formed from their definitions with
 numpy loops."""
 
+from typing import Any
+
 import numpy as np
 import sklearn
 from mdml_oracle.fixture import Case, case
@@ -11,6 +13,10 @@ from sklearn.linear_model import Perceptron, SGDClassifier, SGDRegressor
 from sklearn.metrics.pairwise import rbf_kernel
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
+
+
+# scikit-learn accepts None for these (no tolerance, no penalty); its stubs type them as float and str.
+NONE: Any = None
 
 
 def data(g: np.random.Generator, n: int, noise: float) -> tuple[FloatArray, FloatArray]:
@@ -115,7 +121,7 @@ def cases() -> list[Case]:
     x, y = data(g, 40, 0.3)
     q = g.normal(size=(10, 3))
     for epochs in (1, 2, 4):
-        p = Perceptron(shuffle=False, max_iter=epochs, tol=None, eta0=1.0).fit(x, y)
+        p = Perceptron(shuffle=False, max_iter=epochs, tol=NONE, eta0=1.0).fit(x, y)
         mistakes = perceptron_path(x, y, epochs)[2]
         out.append(
             case(
@@ -123,8 +129,8 @@ def cases() -> list[Case]:
                 "perceptron",
                 [x, y, q],
                 {
-                    "coef": p.coef_[0],
-                    "intercept": p.intercept_[0],
+                    "coef": np.asarray(p.coef_)[0],
+                    "intercept": np.asarray(p.intercept_)[0],
                     "decision": p.decision_function(q),
                     "predict": p.predict(q),
                 },
@@ -139,11 +145,11 @@ def cases() -> list[Case]:
             loss="perceptron",
             learning_rate="constant",
             eta0=1.0,
-            penalty=None,
+            penalty=NONE,
             average=True,
             shuffle=False,
             max_iter=epochs,
-            tol=None,
+            tol=NONE,
         ).fit(x, y)
         out.append(
             case(
@@ -151,8 +157,8 @@ def cases() -> list[Case]:
                 "perceptron",
                 [x, y, q],
                 {
-                    "coef": a.coef_[0],
-                    "intercept": a.intercept_[0],
+                    "coef": np.asarray(a.coef_)[0],
+                    "intercept": np.asarray(a.intercept_)[0],
                     "decision": a.decision_function(q),
                     "predict": a.predict(q),
                 },
@@ -214,7 +220,7 @@ def cases() -> list[Case]:
     )
     for variant, rate, c in [("pa1", "pa1", 0.5), ("pa2", "pa2", 0.5), ("pa1", "pa1", 100.0)]:
         m = SGDClassifier(
-            loss="hinge", penalty=None, learning_rate=rate, eta0=c, shuffle=False, max_iter=3, tol=None
+            loss="hinge", penalty=NONE, learning_rate=rate, eta0=c, shuffle=False, max_iter=3, tol=NONE
         ).fit(x, y)
         out.append(
             case(
@@ -222,8 +228,8 @@ def cases() -> list[Case]:
                 "pa",
                 [x, y, q],
                 {
-                    "coef": m.coef_[0],
-                    "intercept": m.intercept_[0],
+                    "coef": np.asarray(m.coef_)[0],
+                    "intercept": np.asarray(m.intercept_)[0],
                     "decision": m.decision_function(q),
                     "predict": m.predict(q),
                 },
@@ -239,19 +245,19 @@ def cases() -> list[Case]:
         r = SGDRegressor(
             loss="epsilon_insensitive",
             epsilon=eps,
-            penalty=None,
+            penalty=NONE,
             learning_rate=rate,
             eta0=c,
             shuffle=False,
             max_iter=3,
-            tol=None,
+            tol=NONE,
         ).fit(x, t)
         out.append(
             case(
                 f"pa/regressor/{variant}",
                 "paRegressor",
                 [x, t, q],
-                {"coef": r.coef_, "intercept": r.intercept_[0], "predict": r.predict(q)},
+                {"coef": r.coef_, "intercept": np.asarray(r.intercept_)[0], "predict": r.predict(q)},
                 rtol=1e-11,
                 atol=1e-11,
                 variant=variant,
