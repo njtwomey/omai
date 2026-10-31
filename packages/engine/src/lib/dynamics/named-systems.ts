@@ -1,11 +1,11 @@
 /**
  * Named dynamical systems as vector fields for the ODE solvers and the phase-portrait tools: predator and prey
- * (Lotka-Volterra), the Lorenz attractor, the Van der Pol oscillator, a damped pendulum and the SIR epidemic. Each is
+ * (Lotka-Volterra), the Lorenz, Rossler and Thomas attractors, the Van der Pol oscillator, a damped pendulum and the SIR epidemic. Each is
  * written in tensor operations, so a field can be differentiated (Jacobians, fixed points) as well as integrated, and
  * comes with a start, a time span that shows its behaviour and the names of its components.
  */
 
-import { mul, neg, sin, sliceAxis, stack, sub, sum, type Value } from '../tensor/index.ts'
+import { add, mul, neg, sin, sliceAxis, stack, sub, sum, type Value } from '../tensor/index.ts'
 import type { VectorField } from './ode/problem.ts'
 
 /** Component `i` of a state vector, as a scalar. */
@@ -77,6 +77,63 @@ export function lorenzField(parameters: LorenzParameters = {}): VectorField {
     const y = at(s, 1)
     const z = at(s, 2)
     return stack([mul(sub(y, x), sigma), sub(mul(x, sub(rho, z)), y), sub(mul(x, y), mul(z, beta))])
+  }
+}
+
+/** The parameters of {@link rosslerField}. */
+export interface RosslerParameters {
+  /** Default 0.2. */
+  readonly a?: number
+  /** Default 0.2. */
+  readonly b?: number
+  /** Default 5.7, where the flow is chaotic. */
+  readonly c?: number
+}
+
+/**
+ * The Rossler equations on `(x, y, z)`: `x' = -y - z`, `y' = x + a y`, `z' = b + z (x - c)`. A single-scroll chaotic
+ * attractor at the classic parameters, with divergence `a + x - c`.
+ *
+ * @param parameters - a, b and c.
+ * @returns The vector field.
+ * @concept strange-attractors
+ * @example
+ * ```ts
+ * import { rosslerField } from 'mdml-engine/dynamics'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * toFlat(rosslerField()(0, tensor([1, 1, 1]))) // => [-2, 1.2, -4.5]
+ * ```
+ */
+export function rosslerField(parameters: RosslerParameters = {}): VectorField {
+  const { a = 0.2, b = 0.2, c = 5.7 } = parameters
+  return (_t, s) => {
+    const x = at(s, 0)
+    const y = at(s, 1)
+    const z = at(s, 2)
+    return stack([neg(add(y, z)), add(x, mul(y, a)), add(mul(z, sub(x, c)), b)])
+  }
+}
+
+/**
+ * Thomas' cyclically symmetric attractor on `(x, y, z)`: `x' = sin y - b x`, `y' = sin z - b y`, `z' = sin x - b z`.
+ * Its divergence is the constant `-3 b`; below `b` of about 0.208 the flow is chaotic, above it settles.
+ *
+ * @param b - The dissipation (default 0.208186).
+ * @returns The vector field.
+ * @concept strange-attractors
+ * @example
+ * ```ts
+ * import { thomasField } from 'mdml-engine/dynamics'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * toFlat(thomasField(0.5)(0, tensor([0, 0, 0]))) // => [0, 0, 0]
+ * ```
+ */
+export function thomasField(b = 0.208186): VectorField {
+  return (_t, s) => {
+    const x = at(s, 0)
+    const y = at(s, 1)
+    const z = at(s, 2)
+    return stack([sub(sin(y), mul(x, b)), sub(sin(z), mul(y, b)), sub(sin(x), mul(z, b))])
   }
 }
 

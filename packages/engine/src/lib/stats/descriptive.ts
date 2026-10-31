@@ -380,3 +380,32 @@ export function harmonicMean(x: TensorLike, options: { readonly weights?: Tensor
   const inv = Float64Array.from(a, (v, i) => (w === undefined ? 1 : (w[i] ?? 0)) / v)
   return (w === undefined ? a.length : pairwiseSum(w)) / pairwiseSum(inv)
 }
+
+/**
+ * The Gini coefficient of a sample of non-negative values: half the mean absolute difference between two draws,
+ * relative to the mean, `sum_i sum_j |x_i - x_j| / (2 n^2 mean)`. 0 is perfect equality; a single holder of everything
+ * gives `(n - 1) / n`.
+ *
+ * @param x - Non-negative values (wealth, say).
+ * @returns The coefficient, in [0, (n - 1) / n]; 0 when every value is 0.
+ * @throws MdmlError with code `domain` for negative values.
+ * @concept inequality
+ * @example
+ * ```ts
+ * import { gini } from 'mdml-engine/stats'
+ * gini([1, 1, 1, 1]) // => 0
+ * gini([0, 0, 0, 4]) // => 0.75
+ * ```
+ */
+export function gini(x: TensorLike): number {
+  const a = positiveSample('gini', x)
+  const n = a.length
+  a.sort()
+  let total = 0
+  let weighted = 0
+  for (let i = 0; i < n; i++) {
+    total += a[i] ?? 0
+    weighted += (i + 1) * (a[i] ?? 0)
+  }
+  return total === 0 ? 0 : (2 * weighted) / (n * total) - (n + 1) / n
+}
