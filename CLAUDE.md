@@ -68,6 +68,12 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
   generators with their truth): it goes in `lib/` with the full standard. Nothing is "shared among methods" as such;
   there is no `methods/shared/`. Every iterative routine ships as an `Algorithm`; every generator carries its truth
   and registers with tags in `lib/datasets`.
+- **A model is an objective; the solver is a slot.** An estimator fitted by minimising a smooth objective (logistic and
+  other GLMs, ordinal, count models, Cox, kernel and linear classifiers) exposes the objective as a `SmoothProblem`
+  and takes `solver` as a hyperparameter filled from `smoothSolvers` (`lib/optim/solvers.ts`: gradient descent,
+  conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent, and the stochastic `gradient` mode with its optimiser,
+  schedule and batch knobs). It is never fused to one solver ("logistic regression" is not "IRLS"); a solver specific to
+  one family (IRLS, SMO, EM) is an extra mode beside the generic ones.
 - Engine core is `packages/engine/src/lib/<domain>/`, applications are `packages/engine/src/methods/<area>/`. There are
   no tiers or metadata files: domains import one another, and areas one another, without cycles, and the core never
   imports methods (`make layers` reports any cycle as its path). Every folder is an import path
