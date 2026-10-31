@@ -7,9 +7,11 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
-import { nelderMead } from '../optim/index.ts'
+import { dgemm, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
+import { nelderMead, qpActiveSet, qpArrays, qpInteriorPoint } from '../optim/index.ts'
+import { constraintNullSpace } from '../stats/smoothing/index.ts'
 import { asTensor, toFlat, type Value } from '../tensor/index.ts'
+import type { ConstraintBlock } from './shape.ts'
 import type { GamDesign } from './terms.ts'
 
 /** How the smoothing parameters are chosen. */
@@ -112,6 +114,8 @@ export interface Gram {
   readonly z: Float64Array
   readonly xtwx: Float64Array
   readonly xtwz: Float64Array
+  /** Linear inequality constraints `rows beta >= rhs` the solution must satisfy (shape-constrained terms). */
+  readonly constraints?: ConstraintBlock
 }
 
 /**
@@ -122,6 +126,7 @@ export interface Gram {
  * @param p - Columns.
  * @param w - Working weights `[n]` (zero weights drop the row).
  * @param z - Working response `[n]`.
+ * @param constraints - Inequality constraints on the coefficients, if any.
  * @returns The gram.
  * @concept generalized-additive-models
  * @example
@@ -130,7 +135,14 @@ export interface Gram {
  * Array.from(gram(Float64Array.of(1, 1, 1, 2), 2, 2, Float64Array.of(1, 1), Float64Array.of(1, 3)).xtwz) // => [4, 7]
  * ```
  */
-export function gram(X: Float64Array, n: number, p: number, w: Float64Array, z: Float64Array): Gram {
+export function gram(
+  X: Float64Array,
+  n: number,
+  p: number,
+  w: Float64Array,
+  z: Float64Array,
+  constraints?: ConstraintBlock,
+): Gram {
   const xtwx = new Float64Array(p * p)
   const xtwz = new Float64Array(p)
   for (let i = 0; i < n; i++) {
@@ -144,7 +156,7 @@ export function gram(X: Float64Array, n: number, p: number, w: Float64Array, z: 
     }
   }
   for (let a = 0; a < p; a++) for (let b = 0; b < a; b++) xtwx[a * p + b] = xtwx[b * p + a] ?? 0
-  return { n, p, X, w, z, xtwx, xtwz }
+  return { n, p, X, w, z, xtwx, xtwz, ...(constraints === undefined ? {} : { constraints }) }
 }
 
 /** A penalised weighted least-squares solution. */
@@ -163,6 +175,11 @@ export interface PenalisedSolution {
   readonly logDetA: number
   /** The upper Cholesky factor of `X'WX + S`. */
   readonly factor: Float64Array
+  /**
+   * `(X'WX + S)^(-1)` restricted to the free directions, when inequality constraints are active at the solution (the
+   * Hessian is then inverted on the null space of the active constraints); undefined for an unconstrained solution.
+   */
+  readonly inverse?: Float64Array
 }
 
 /**
@@ -181,9 +198,18 @@ export interface PenalisedSolution {
  * ```
  */
 export function solvePenalised(g: Gram, S: Float64Array): PenalisedSolution {
-  const { n, p } = g
+  const { p } = g
   const A = Float64Array.from(g.xtwx)
   for (let i = 0; i < A.length; i++) A[i] = (A[i] ?? 0) + (S[i] ?? 0)
+  const { factor } = factorise(A, p)
+  const unconstrained = finish(g, S, dpotrs(factor, g.xtwz, p), factor, undefined)
+  const c = g.constraints
+  if (c === undefined || satisfied(c, unconstrained.beta)) return unconstrained
+  return solveConstrained(g, S, A, c)
+}
+
+/** The Cholesky factor of a symmetric matrix, with a small ridge added if it is not numerically positive definite. */
+function factorise(A: Float64Array, p: number): { factor: Float64Array } {
   let factor = dpotrf(A, p)
   let jitter = 0
   let scale = 0
@@ -198,12 +224,45 @@ export function solvePenalised(g: Gram, S: Float64Array): PenalisedSolution {
   if (factor.info !== 0) {
     throw new MdmlError('value', 'gam: the penalised normal equations are singular (the design is rank deficient)')
   }
-  const beta = dpotrs(factor.factor, g.xtwz, p)
+  return { factor: factor.factor }
+}
+
+function satisfied(c: ConstraintBlock, beta: ArrayLike<number>): boolean {
+  for (let r = 0; r < c.count; r++) {
+    let a = 0
+    let mag = 0
+    for (let j = 0; j < c.width; j++) {
+      a += (c.rows[r * c.width + j] ?? 0) * (beta[j] ?? 0)
+      mag += Math.abs((c.rows[r * c.width + j] ?? 0) * (beta[j] ?? 0))
+    }
+    if (a < (c.rhs[r] ?? 0) - 1e-10 * (1 + mag)) return false
+  }
+  return true
+}
+
+/** The quantities of a solution at coefficients `beta`: the fit, the influence-matrix diagonal and the criteria's terms. */
+function finish(
+  g: Gram,
+  S: Float64Array,
+  beta: Float64Array,
+  factor: Float64Array,
+  inverse: Float64Array | undefined,
+  logDet?: number,
+): PenalisedSolution {
+  const { n, p } = g
   const edf = new Float64Array(p)
-  const column = new Float64Array(p)
-  for (let c = 0; c < p; c++) {
-    for (let r = 0; r < p; r++) column[r] = g.xtwx[r * p + c] ?? 0
-    edf[c] = dpotrs(factor.factor, column, p)[c] ?? 0
+  if (inverse === undefined) {
+    const column = new Float64Array(p)
+    for (let c = 0; c < p; c++) {
+      for (let r = 0; r < p; r++) column[r] = g.xtwx[r * p + c] ?? 0
+      edf[c] = dpotrs(factor, column, p)[c] ?? 0
+    }
+  } else {
+    for (let i = 0; i < p; i++) {
+      let a = 0
+      for (let j = 0; j < p; j++) a += (inverse[i * p + j] ?? 0) * (g.xtwx[j * p + i] ?? 0)
+      edf[i] = a
+    }
   }
   const eta = dgemv(g.X, n, p, beta)
   let rss = 0
@@ -213,7 +272,7 @@ export function solvePenalised(g: Gram, S: Float64Array): PenalisedSolution {
   let logDetA = 0
   for (let i = 0; i < p; i++) {
     penalty += (beta[i] ?? 0) * (sb[i] ?? 0)
-    logDetA += 2 * Math.log(factor.factor[i * p + i] ?? 1)
+    logDetA += 2 * Math.log(factor[i * p + i] ?? 1)
   }
   return {
     beta,
@@ -222,9 +281,98 @@ export function solvePenalised(g: Gram, S: Float64Array): PenalisedSolution {
     edfTotal: edf.reduce((a, b) => a + b, 0),
     rss,
     penalty,
-    logDetA,
-    factor: factor.factor,
+    logDetA: logDet ?? logDetA,
+    factor,
+    ...(inverse === undefined ? {} : { inverse }),
   }
+}
+
+/** A linearly independent subset of constraint rows (modified Gram-Schmidt), in the order given. */
+function independentRows(c: ConstraintBlock, candidates: readonly number[], p: number): number[] {
+  const basis: Float64Array[] = []
+  const keep: number[] = []
+  for (const r of candidates) {
+    const v = Float64Array.from(c.rows.subarray(r * p, (r + 1) * p))
+    const norm0 = Math.hypot(...v)
+    if (norm0 === 0) continue
+    for (const b of basis) {
+      let d = 0
+      for (let j = 0; j < p; j++) d += (v[j] ?? 0) * (b[j] ?? 0)
+      for (let j = 0; j < p; j++) v[j] = (v[j] ?? 0) - d * (b[j] ?? 0)
+    }
+    const norm = Math.hypot(...v)
+    if (norm > 1e-8 * norm0) {
+      basis.push(v.map((e) => e / norm))
+      keep.push(r)
+    }
+  }
+  return keep
+}
+
+/**
+ * The penalised least-squares solution under linear inequality constraints `C beta >= d`: the quadratic program
+ * `min (z - X beta)' W (z - X beta) + beta' S beta` by the active-set method. At the solution the active constraints are
+ * equalities, so the Hessian is inverted on their null space `N`: `N (N'AN)^(-1) N'` is the posterior covariance (up
+ * to the scale), its trace against `X'WX` the effective degrees of freedom, and `log|N'AN|` the determinant the
+ * Laplace criterion uses.
+ */
+function solveConstrained(g: Gram, S: Float64Array, A: Float64Array, c: ConstraintBlock): PenalisedSolution {
+  const { p } = g
+  let scale = 0
+  for (let i = 0; i < p; i++) scale += A[i * p + i] ?? 0
+  scale = scale / p || 1
+  const qp = qpArrays({
+    P: Array.from({ length: p }, (_, i) => Array.from(A.subarray(i * p, (i + 1) * p), (v) => v / scale)),
+    q: Array.from(g.xtwz, (v) => -v / scale),
+    G: Array.from({ length: c.count }, (_, r) => Array.from(c.rows.subarray(r * p, (r + 1) * p), (v) => -v)),
+    h: Array.from(c.rhs, (v) => -v),
+  })
+  const homogeneous = c.rhs.every((v) => v <= 0)
+  // The active-set method is exact; many near-parallel grid rows can make it cycle, and then the interior-point method
+  // (which does not mind) finds the optimum and the binding rows are read off the slacks.
+  let result = qpActiveSet(qp, homogeneous ? { x0: new Float64Array(p) } : {})
+  let viaInterior = false
+  if (result.status !== 'optimal') {
+    result = qpInteriorPoint(qp, { tol: 1e-12 })
+    viaInterior = true
+  }
+  if (result.status !== 'optimal') {
+    throw new MdmlError('value', `gam: the shape-constrained fit is ${result.status} (are the constraints compatible?)`)
+  }
+  const beta = Float64Array.from(result.x)
+  // The binding constraints: the working set of the active-set method, or the rows with no slack and a positive
+  // multiplier; reduced to a linearly independent subset so that the null space has the right dimension.
+  let candidates: number[]
+  if (viaInterior) {
+    candidates = []
+    for (let r = 0; r < c.count; r++) {
+      let a = 0
+      for (let j = 0; j < p; j++) a += (c.rows[r * p + j] ?? 0) * (beta[j] ?? 0)
+      if (a - (c.rhs[r] ?? 0) < 1e-6 && (result.z[r] ?? 0) > 1e-9) candidates.push(r)
+    }
+  } else candidates = [...result.active]
+  const rows = independentRows(c, candidates, p)
+  const active = Float64Array.from(rows.flatMap((r) => Array.from(c.rows.subarray(r * p, (r + 1) * p))))
+  const N = Float64Array.from(toFlat(constraintNullSpace(active, p)))
+  const q = N.length / p
+  const AN = dgemm(A, N, p, p, q)
+  const H = dgemm(N, AN, q, p, q, { transposeA: true })
+  const { factor } = factorise(H, q)
+  const inverse = new Float64Array(p * p)
+  if (q > 0) {
+    const e = new Float64Array(q)
+    const cols = new Float64Array(q * q)
+    for (let col = 0; col < q; col++) {
+      e.fill(0)
+      e[col] = 1
+      const sol = dpotrs(factor, e, q)
+      for (let r = 0; r < q; r++) cols[r * q + col] = sol[r] ?? 0
+    }
+    inverse.set(dgemm(dgemm(N, cols, p, q, q), N, p, q, p, { transposeB: true }))
+  }
+  let logDet = 0
+  for (let i = 0; i < q; i++) logDet += 2 * Math.log(factor[i * q + i] ?? 1)
+  return finish(g, S, beta, factor, inverse, logDet)
 }
 
 /**
@@ -459,7 +607,8 @@ export function selectLogLambda(
  * ```
  */
 export function hessianSolve(sol: PenalisedSolution, b: ArrayLike<number>): Float64Array {
-  return dpotrs(sol.factor, b, b.length)
+  if (sol.inverse === undefined) return dpotrs(sol.factor, b, b.length)
+  return dgemv(sol.inverse, b.length, b.length, b)
 }
 
 /**

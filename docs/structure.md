@@ -4107,14 +4107,20 @@ standardised deviation), and posterior simulation (`sampleCoefficients`, `simula
 as the verbs `summary`, `termBand`, `predictionBand`, `sampleCoefficients` and `simulateCurves`. Tested by simulation:
 coverage of the bands, uniformity of the null p-values, power under a real effect.
 
+`shape.ts` makes the shape constraints of a smooth term (`s(0, { shape: 'increasing' | 'decreasing' | 'convex' |
+'concave' | [..], lower, upper })`) into linear inequalities on its coefficients (coefficient differences on a P-spline,
+the fitted effect on a grid on other bases and for bounds); `solvePenalised` then solves the penalised least-squares step
+as a quadratic program (the active-set method of `optim`, the interior-point method if a degenerate grid makes it
+cycle) and inverts the Hessian on the null space of the binding constraints, so `edf`, the posterior covariance and the
+REML determinant are those of the constrained model. The solver slot is `irls` only for such terms.
+
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
 (a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,
 variance and intercept). pyGAM and mgcv are not in the oracle environment. TODO: GAMLSS (the distributional families
 of `dists/families` have the links and the log-likelihood; the RS algorithm over per-parameter additive predictors is
 not written), the outer-iteration REML of mgcv (the performance iteration here differs from it for non-Gaussian
-families), shape-constrained smooths in terms (`stats/smoothing` has `shapeConstraint`), confidence bands for term
-effects, p-values of terms.
+families).
 built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
 
 ### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)
