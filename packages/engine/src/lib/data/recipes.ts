@@ -17,6 +17,13 @@ import {
   transformModifier,
 } from './modifiers/features.ts'
 import {
+  cutmixModifier,
+  cutoutModifier,
+  mixupModifier,
+  randomCropModifier,
+  randomFlipModifier,
+} from './modifiers/images.ts'
+import {
   classImbalanceModifier,
   labelNoiseModifier,
   labelShiftModifier,
@@ -75,6 +82,11 @@ export const builtinModifiers: Readonly<Record<string, Modifier>> = Object.fromE
     correlatedFeaturesModifier,
     covariateShiftModifier,
     conceptDriftModifier,
+    randomCropModifier,
+    randomFlipModifier,
+    cutoutModifier,
+    mixupModifier,
+    cutmixModifier,
   ].map((m) => [m.name, m]),
 )
 

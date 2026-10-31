@@ -1008,6 +1008,8 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
   (keeping the density truth consistent; `featureTransform`), `withCorrelatedFeatures` (Toeplitz and equicorrelated).
 - `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
   recurring), `shiftedSplit`, `semiSupervisedSplit`.
+- `modifiers/images.ts`: image augmentations with their draws kept as truth: `withRandomCrop` (padding, offsets), `withRandomFlip`,
+  `withCutout`, `withMixup` and `withCutmix` (weights, partners and soft labels), each also a recipe modifier.
 
 ### 4.12 `foundations/`: mathematical foundations
 
