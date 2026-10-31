@@ -80,7 +80,17 @@ def cases() -> list[Case]:
                 atol=1e-15,
             )
         )
-    for q, sigma, steps in [(0.01, 1.1, 1000), (0.05, 0.8, 200), (0.002, 2.0, 5000), (1.0, 1.5, 10)]:
+    for q, sigma, steps in [
+        (0.01, 1.1, 1000),
+        (0.05, 0.8, 200),
+        (0.002, 2.0, 5000),
+        (1.0, 1.5, 10),
+        # The standard settings: Abadi et al. 2016's MNIST (lot 600 of 60000, sigma 4, 10000 steps), the TensorFlow
+        # Privacy MNIST tutorial (batch 256, sigma 1.1, 60 epochs) and Opacus's MNIST example (rate 0.004, sigma 1).
+        (0.01, 4.0, 10000),
+        (256 / 60000, 1.1, 14062),
+        (0.004, 1.0, 2500),
+    ]:
         rdp = np.asarray(compute_rdp(q=q, noise_multiplier=sigma, steps=steps, orders=ORDERS))
         eps, order = get_privacy_spent(orders=ORDERS, rdp=rdp.tolist(), delta=1e-5)
         out.append(

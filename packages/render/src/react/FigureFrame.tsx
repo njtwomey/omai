@@ -1,7 +1,7 @@
 /**
  * The fixed-size figure area every figure sits in: content never resizes it, an expand button opens it full screen in a
  * modal, and its menu exports the whole figure (charts, scenes, typeset overlays) as SVG or PNG, or records a playback
- * as GIF or WebM. `useFrameSize` tells content the size it is drawn at.
+ * as GIF or WebM; a settings button (a modal applied only on confirm) can sit beside them. `useFrameSize` tells content the size it is drawn at.
  */
 
 import type { Pixels } from 'mdml-engine/scene'
@@ -74,6 +74,11 @@ export interface FigureFrameProps {
   readonly children: ReactNode | ((size: FrameSize) => ReactNode)
   /** Offer the expand-to-modal button (default true). */
   readonly expandable?: boolean
+  /**
+   * A settings control for the figure, drawn in the toolbar before the export and expand buttons: a `SettingsButton`
+   * or `SpaceSettings` with `appearance="toolbar"`, which opens a modal of settings applied only when it is confirmed.
+   */
+  readonly settings?: ReactNode
   /** Formats in the export menu (default png and svg; empty hides the menu). */
   readonly exportFormats?: readonly ExportFormat[]
   /**
@@ -255,7 +260,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       ...(playback === undefined ? [] : ['gif', ...(canEncodeVideo() ? ['webm'] : [])]),
     ] as ExportFormat[])
   const [busy, setBusy] = useState<string | null>(null)
-  const hasTools = formats.length > 0 || (props.expandable ?? true)
+  const hasTools = formats.length > 0 || (props.expandable ?? true) || props.settings !== undefined
 
   useEffect(() => {
     if (!expanded) return
@@ -351,6 +356,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const toolbar = (inModal: boolean): ReactElement => (
     <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', zIndex: 2, alignItems: 'center' }}>
       {busy !== null && <span style={{ font: `11px ${t.monoFont}`, color: t.muted, marginRight: 4 }}>{busy}</span>}
+      {props.settings}
       {formats.length > 0 && (
         <div style={{ position: 'relative' }}>
           <button

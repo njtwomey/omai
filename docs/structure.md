@@ -1726,6 +1726,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `chebyshev`, `augmentedChebyshev`, `epsilonConstraint`), `VectorObjective`.
 - `nsga2.ts`: `nsga2` (binary tournaments by rank and crowding, elitist survival, constrained domination, hypervolume
   traced against a reference point), the operators `sbxCrossover` and `polynomialMutation` (bounded, as Deb's code).
+- `landscape.ts`: loss landscapes after Li et al.: `filterNormalise` and `randomDirection` (per-filter, per-layer or no
+  normalisation; biases zeroed or normalised; any filter axis), `slice1d`, `slice2d` and `randomSlice` (losses along one
+  or two directions, with the directions returned), `interpolationSlice` and `bezierSlice` (the line and a quadratic
+  Bezier path between two minima) with `barrier`, and `sharpness` (the largest Hessian eigenvalue by Lanczos through
+  `eigsh` or by power iteration, on Hessian-vector products from `flatObjective`) with `stabilityThreshold` (2 / eta).
 - `implicit.ts`: differentiation through solutions by the implicit function theorem, with any solver: `implicitRoot`
   (F(x, ...thetas) = 0, reverse and forward rules, dense solves that differentiate again or matrix-free GMRES/CG),
   `implicitFixedPoint` (equilibrium layers, default fixed-point solver), `implicitArgmin` (optimisation layers through
@@ -2939,6 +2944,19 @@ modAL for active learning, diffprivlib and opacus for privacy
   score `ulsifLoo`.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
+- `dp-sgd.ts`: differentially private training: `perExampleGradients` (`vmap` of `valueAndGrad`), `clipPerExample`
+  (flat clipping to a norm bound, the clipped share), `privateGradient` and `dpGradientTransformation` (the Gaussian
+  noise stage, a `GradientTransformation` for the sum of clipped gradients), `dpSgdStep` (a step over `TrainState`),
+  `dpSgdAlgorithm` (Poisson batches, the Renyi account on the tape: `budget/epsilon`, `budget/rdp`, with
+  `training/clippedShare` and `training/noiseNorm`), `dpEpsilon` and `noiseMultiplierFor` (the accountant and its
+  inverse over `privacy.ts`). The accountant is checked against opacus on Abadi et al.'s, TensorFlow Privacy's and
+  Opacus's MNIST settings (`oracle/cases/learn/privacy.py`).
+- `privacy-attacks.ts`: attacks on a trained model, models as logits functions: membership inference by
+  `lossThresholdAttack`, `shadowModelAttack` (shadows calibrate the loss threshold) and `likelihoodRatioAttack` (LiRA,
+  online, per-record Gaussians of `confidenceLogit`), scored by `membershipReport` (AUC, best accuracy, advantage, TPR
+  at low FPR); `attributeInference` (Bayes over candidate values of a hidden feature); `modelInversionAlgorithm`
+  (gradient ascent on a class, stepped); gradient leakage by `analyticGradientLeak` (exact for a first linear layer) and
+  `gradientLeakageAlgorithm` (deep leakage from gradients, stepped); `extractionAttack`.
 - `semi-supervised.ts`: rows with target `-1` (NaN for regression) are unlabelled. `selfTraining`, `coTraining` (two
   feature views, shared labelled set, product of the views) and `triTraining` (Zhou and Li's error and size conditions)
   over any probabilistic base `Estimator`; `labelPropagation` and `labelSpreading` (`sklearn.semi_supervised`, rbf and
@@ -3103,6 +3121,13 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen
   counts and sizes), FLOP estimates (`flops`, `functionFlops`, counted from traced primitives) and `memoryEstimate`.
+- `module/adapters.ts`: parameter-efficient fine-tuning as module wrappers that freeze the base: `LoRA` (low-rank
+  `(alpha / r) B A` updates of chosen weights, by default a `Linear`'s weight or an attention layer's query and value
+  rows; `merged`, `unmerge`, `delta`, rank-stabilised scaling), `loraTargets`, `loraParameterCount` (`r (d_in + d_out)`),
+  `BottleneckAdapter` and `withAdapter` (near-identity residual adapters), `PromptTuning` (learnt input embeddings
+  prepended to a sequence), `PrefixAttention` (learnt key and value rows prepended in an attention layer's input space),
+  `trainOnly` and `bitFit` (train selected parameters only, through the module's `trainableMask`), and
+  `parameterCounts` (total, trainable and frozen).
 - `training/state.ts`: `TrainState` (params, optimiser state, buffers, step and update counts, key, update scale,
   accumulation window), `trainState`, `lossAndGrads`, `applyGradients` (masking frozen parameters), `trainStep` (the
   functional step), `accumulate`, `hasFrozen`.
@@ -3116,8 +3141,25 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `setLearningRateScale`; `onBatchEnd` gets the tapped activations. Built-ins: `gradNormLogger` (global and per
   parameter), `paramNormLogger`, `valueLogger` (gradient and parameter tensors), `learningRateMonitor`,
   `earlyStopping`, `bestCheckpoint`, `reduceLROnPlateau` (PyTorch's rule), `activationLogger` (activation taps).
+- `training/alternating.ts`: several modules trained against one another: `alternatingAlgorithm` (players of a module,
+  an optimiser and a loss that sees every player's parameters, stepped through a schedule with `times` per player; one
+  round per step; per-player loss and gradient norm on the tape; buffers carried; frozen players skipped),
+  `ganAlgorithm` (generator and discriminator or critic with `nCritic`, the objectives of `losses/generative`, the WGAN-GP
+  penalty, spectrally normalised layers through `SpectralNorm`, and the tracks `gan/discriminatorAccuracy`,
+  `gan/wasserstein`, `gan/penalty`, `gan/samples`) and `modeCoverage` (modes of a known mixture reached by samples).
 - `training/serialise.ts`: `saveState`/`loadState` and `stateToText`/`stateFromText` (parameters and buffers as JSON
   with dtype and shape), `loadTorchStateDict` (weights exported by the oracle, with renaming).
+- `adversarial.ts`: attacks and adversarial training on any logits function: `fgsm`, `pgd` (random start inside an
+  l-infinity or l2 ball, targeted or untargeted, cross-entropy, margin or TRADES-KL loss, data range), `pgdAlgorithm` (one
+  gradient step per step, `attack/*` paths, serialisable), `marginLoss`, `carliniWagnerL2` (Adam on the penalised margin,
+  closest adversarial point kept), `deepFool`, `transferAttack`, `squareAttack` (black box: logits only, query counts),
+  `accuracyOf`, `robustAccuracy` (the sweep over radii) and `adversarialTrainStep` (PGD inner maximisation, or TRADES, as a
+  step over `TrainState`).
+- `certify.ts`: certificates: randomised smoothing (`smoothedCounts`, `randomisedSmoothing` with the Clopper-Pearson
+  bound and the radius sigma Phi^-1(p), `certifiedRadius`, `certifiedAccuracy`, `smoothingAlgorithm` stepped with
+  `sample/*`, `vote/*`, `certify/*` paths, `linearSmoothedRadius` the closed form for a linear classifier), interval
+  bound propagation through a `Sequential` (`intervalBoundPropagation`, `ibpCertify` with the margin bounded exactly
+  through the last layer) and the Lipschitz bound from spectral norms (`lipschitzBound`, `lipschitzCertifiedRadius`).
 - `language-model.ts`: the `LanguageModel` contract (a structural `Tokenizer`, `logits(tokens)`, optional embeddings
   and a cached `step`), implemented by local models and by adapters in `methods/llm`; `languageModelFromModule`,
   `bigramLanguageModel` and `characterTokenizer` (reference models), `nextTokenLogits`, `sequenceLogProb`,
@@ -6224,7 +6266,11 @@ Design rules:
   multi-agent; the chosen entry's spaces, formatted, and its options as controls; `useEnvironment` makes it), both
   drawn by `EntryList` (`EntryList.tsx`: the search box and the list of titles with `Tags` chips, `tagLabel`); and
   `MethodControls` (controls from a method's `hyperSpace`, demo defaults
-  first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  first); `SettingsButton` (a gear that opens a modal of settings and changes nothing until it is confirmed: the dialog
+  edits a draft, Apply hands the whole draft to `onApply`, Cancel, Escape and the close button drop it, a press on the
+  backdrop closes it only while the draft is untouched, Reset returns the draft to given defaults, focus is kept inside and
+  restored; the logic is `settings.ts`: `settingsReducer`, `sameSettings`) and `SpaceSettings` (the same over a `Space`, drawn by
+  `SpaceControls`), which `FigureFrame` takes as `settings` and draws in its toolbar beside export and expand; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas (`ControlLayout` places it).
   Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
   `space-controls.ts`, `datasets.ts` (sources: a collection id, a collection or a registry), `environments.ts`

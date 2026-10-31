@@ -1,6 +1,6 @@
 /**
  * The small inline SVG icons the controls and player use: chevrons, play, pause, step, skip to either end and rewind,
- * a bolt, a die, light and dark mode symbols, copy, check, menu, close and sliders, each sized by one prop.
+ * a bolt, a die, light and dark mode symbols, copy, check, menu, close, sliders and a settings gear, each sized by one prop.
  */
 
 import type { ReactNode, SVGProps } from 'react'
@@ -188,6 +188,16 @@ export function SlidersIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
       <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4" />
+    </Svg>
+  )
+}
+
+/** A gear (settings). */
+export function SettingsIcon(props: IconProps): ReactNode {
+  return (
+    <Svg {...props}>
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
     </Svg>
   )
 }
