@@ -3293,8 +3293,9 @@ lasso, which a test checks against the GLM core. oracle: `linear/group_lasso` ag
 
 `ordinal.ts` is ordinal regression: `ordinalLogLikelihood` (the likelihood and its gradient for the cumulative-link
 model `P(Y <= k) = F(theta_k - x beta)` with the logit, probit, cloglog and loglog links, and for the sequential
-(continuation-ratio) model), `ordinalProbabilities`, `ordinalAlgorithm` (damped Newton steps, a Hessian from central
-differences of the analytic gradient, thresholds as a first cutpoint plus log increments) and the `ordinal` classifier
+(continuation-ratio) model), `ordinalProbabilities`, `ordinalSmoothProblem` (the objective with its analytic gradient, thresholds as a first cutpoint plus log
+increments) and `ordinalAlgorithm` (any solver of the slot, Newton by default with a Hessian from central differences
+of the gradient) and the `ordinal` classifier
 (`predictProba`, the latent `decisionFunction`, `predictDistribution`, a Wald table of slopes and thresholds). oracle:
 `linear/ordinal` against statsmodels' `OrderedModel` (slopes, thresholds, log-likelihood, slope standard errors and
 probabilities for the four links; the sequential mode has no reference and is checked by finite differences and its
@@ -3303,12 +3304,22 @@ equality with logistic regression for two categories).
 `mixed.ts` is the linear mixed model `y = X beta + Z b_g + e` for grouped data: `mixedProblemOf` summarises each group's
 rows into sufficient statistics (the group label is a column of `x`; random intercept and slopes, unstructured or
 diagonal covariance), `mixedProfile` is the profiled (restricted) deviance at a relative covariance factor (fixed effects
-and residual variance profiled out, the matrix determinant lemma per group), `mixedAlgorithm` maximises it by damped
-Newton steps (`_newton.ts`, shared with `ordinal.ts`: Levenberg-shifted direction and backtracking), and the `mixedModel`
+and residual variance profiled out, the matrix determinant lemma per group), `mixedSmoothProblem` is it as an objective
+of the solver slot and `mixedAlgorithm` maximises it with any solver of `smoothSolvers` (Newton by default), and the `mixedModel`
 estimator has the fixed-effects Wald table, `randomCovariance`, `sigma2`, the group effects (BLUPs), and `predict`
 (group effects for groups seen in fit) and `predictFixed`. Sample weights are refused. oracle: `linear/mixed` against
 statsmodels' `MixedLM` (REML and ML; random intercept, and correlated random intercept and slope); statsmodels stops
 slightly short of the optimum, so the golden tolerance is 1e-3 and a dense-matrix test checks the likelihood itself.
+
+The solver is a slot, not part of the model (docs/structure.md 4.18, `glm.ts`, `solvers.ts`, `analytic.ts`). The GLM core
+takes `solver` as a name or a configuration of `glmSolvers` (IRLS, Newton on the observed information, BFGS, L-BFGS,
+conjugate gradient, gradient descent, the stochastic mode with Adam and batches) when the penalty is smooth; `multinomial`,
+`ordinal`, `zeroInflated`/`hurdle` and `mixedModel` each build a `SmoothProblem` (`multinomialSmoothProblem`,
+`ordinalSmoothProblem`, `countModelSmoothProblem`, `mixedSmoothProblem`, from their analytic gradients through
+`analyticObjective`) and take `solver` as a configuration of `smoothSolvers`, default Newton, through `_slot.ts`
+(`slotAlgorithm`: the model's state fields read off the solver's state, which is kept inside so any solver serialises
+and resumes; `solver/gradNorm` and `solver/step` beside the model's channels). The lasso, elastic net, LARS, the paths and
+the group lasso are particular algorithms and stay outside the slot.
 
 `robust.ts` is regression that tolerates outliers: `theilSenAlgorithm` and the `theilSen` estimator (least squares on every
 row subset, or `maxSubpopulation` random ones drawn from a key, then Weiszfeld steps to the spatial median of the

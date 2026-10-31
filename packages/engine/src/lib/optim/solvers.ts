@@ -210,6 +210,39 @@ const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
 }
 
 /**
+ * A solver table's configuration with the defaults of the chosen solver filled in where the configuration names only
+ * some knobs (`{ kind: 'lbfgs', gradTol: 1e-9 }` becomes a complete value of the table's space, which a method's
+ * configuration check requires; the `gradient` mode's optimiser and schedule are filled the same way).
+ *
+ * @param table - A table of modes.
+ * @param config - A configuration naming a solver and some of its knobs.
+ * @returns The complete configuration.
+ * @example
+ * ```ts
+ * import { smoothSolvers, solverConfigOf } from 'mdml-engine/optim'
+ * solverConfigOf(smoothSolvers, { kind: 'lbfgs', gradTol: 1e-9 }) // => { memory: 10, ftol: 2.220446049250313e-9, gradTol: 1e-9, kind: 'lbfgs' }
+ * ```
+ */
+export function solverConfigOf<Problem>(table: ModeTable<Problem, VectorParams>, config: SpaceValue): SpaceValue {
+  const name = table.modeOf(config).name
+  const given = typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}
+  const nested: Record<string, SpaceValue> = {}
+  if (name === 'gradient') {
+    if ('optimiser' in given) nested['optimiser'] = filled(optimisers, given['optimiser'] as SpaceValue)
+    if ('schedule' in given) nested['schedule'] = filled(schedules, given['schedule'] as SpaceValue)
+  }
+  return {
+    ...(defaults(table.space.options[name] as DictSpace) as object),
+    ...given,
+    ...nested,
+    kind: name,
+  } as SpaceValue
+}
+
+/** {@link solverConfigOf} for `smoothSolvers`. */
+export const smoothSolverConfig = (config: SpaceValue): SpaceValue => solverConfigOf(smoothSolvers, config)
+
+/**
  * The solvers of a smooth objective as one slot: gradient descent (default), conjugate gradient, Newton, BFGS, L-BFGS,
  * coordinate descent and the stochastic `gradient` mode, each with its own knobs, all yielding the vector reached.
  */

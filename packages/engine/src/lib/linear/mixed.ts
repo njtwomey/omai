@@ -3,11 +3,11 @@
  * `e ~ N(0, sigma^2 I)` (statsmodels' `MixedLM`, R's `lme4::lmer`). The fixed effects and the residual variance are
  * profiled out of the (restricted) likelihood, which then depends only on the relative covariance factor `L` with
  * `Psi = sigma^2 L L'`; everything is computed from per-group sufficient statistics, so a likelihood evaluation costs
- * a few small Cholesky factorisations. `mixedAlgorithm` maximises it by damped Newton steps; `mixedModel` is the
+ * a few small Cholesky factorisations. `mixedAlgorithm` maximises it with any solver of the slot (Newton by default); `mixedModel` is the
  * estimator on the iterative base, with the fixed-effects table, the group effects (BLUPs) and group-aware prediction.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
   type IterativeEstimator,
@@ -19,10 +19,12 @@ import {
   withDefaultScore,
 } from '../learn/index.ts'
 import { dpotrf, dpotrs } from '../numerics/linalg/index.ts'
-import { bool, dict, real } from '../space/index.ts'
+import { analyticObjective, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
+import type { Key } from '../random/index.ts'
+import { bool, dict, real, type SpaceValue } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
-import { backtrack, newtonDirection } from './_newton.ts'
+import { type Algorithm, Log } from '../trace/index.ts'
+import { infNorm, newtonAt, type SlotState, slotAlgorithm } from './_slot.ts'
 import { waldTable } from './inference.ts'
 
 /** The structure of the random-effects covariance. */
@@ -272,10 +274,14 @@ export interface MixedOptions {
   readonly covariance?: MixedCovariance
   /** Stop when the largest gradient entry of the deviance per observation falls below this (default 1e-8). */
   readonly tol?: number
+  /** The solver, a value of `smoothSolvers.space` (default Newton at `tol`). */
+  readonly solver?: SpaceValue
+  /** The run's key (for the stochastic solver's batches). */
+  readonly key?: Key
 }
 
 /** The state of {@link mixedAlgorithm}. */
-export type MixedState = {
+export type MixedState = SlotState & {
   /** The covariance factor parameters (the lower triangle of `L` by rows, or its diagonal). */
   readonly theta: number[]
   /** The deviance (minus twice the log-likelihood). */
@@ -286,9 +292,99 @@ export type MixedState = {
 }
 
 /**
- * Maximum (restricted) likelihood for a mixed model as a traced algorithm: damped Newton steps on the profiled
- * deviance over the relative covariance factor, with the gradient and Hessian by central differences. It logs
- * `deviance`, `gradient`, `sigma2` and the tensor `theta`.
+ * The mixed-model objective as a smooth problem for the solver slot: the profiled (restricted) deviance per
+ * observation over the relative covariance factor, with its gradient by central differences and its Hessian by second
+ * differences (a non-positive-definite factor has an infinite deviance, which every solver's line search rejects).
+ *
+ * @param problem - The summarised data.
+ * @param options - REML or ML and the covariance structure.
+ * @returns The objective and the start (identity factor).
+ * @example
+ * ```ts
+ * import { mixedProblemOf, mixedSmoothProblem } from 'mdml-engine/linear'
+ * const layout = { groupColumn: 0, fitIntercept: true, randomIntercept: true, randomSlopes: [] }
+ * const x = [[1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2]]
+ * const p = mixedProblemOf({ x, y: [1, 2.1, 2.9, 3, 4.2, 4.8, 0.8, 2, 3.2] }, layout, 'demo')
+ * mixedSmoothProblem(p).x0 // => [1]
+ * ```
+ */
+export function mixedSmoothProblem(problem: MixedProblem, options: MixedOptions = {}): SmoothProblem {
+  const reml = options.reml ?? true
+  const structure = options.covariance ?? 'unstructured'
+  const { q, nObs } = problem
+  const m = thetaLength(q, structure)
+  const f = (theta: ArrayLike<number>): number => {
+    const prof = mixedProfile(problem, covarianceFactor(theta, q, structure), reml)
+    return prof === undefined ? Number.POSITIVE_INFINITY : prof.deviance / nObs
+  }
+  const gradientAt = (u: readonly number[]): Float64Array =>
+    Float64Array.from(u, (v, j) => {
+      const h = 1e-6 * Math.max(1, Math.abs(v))
+      const up = [...u]
+      const dn = [...u]
+      up[j] = v + h
+      dn[j] = v - h
+      return (f(up) - f(dn)) / (2 * h)
+    })
+  const start = (): number[] => {
+    const theta: number[] = []
+    for (let i = 0; i < q; i++)
+      if (structure === 'diagonal') theta.push(1)
+      else for (let j = 0; j <= i; j++) theta.push(i === j ? 1 : 0)
+    return theta
+  }
+  const hessianAt = (u: Float64Array): Float64Array => {
+    const H = new Float64Array(m * m)
+    const f0 = f(u)
+    const hs = u.map((v) => 1e-3 * Math.max(1, Math.abs(v)))
+    const shifted = (changes: readonly [number, number][]): number => {
+      const t = [...u]
+      for (const [j, delta] of changes) t[j] = (t[j] ?? 0) + delta
+      return f(t)
+    }
+    for (let i = 0; i < m; i++) {
+      const hi = hs[i] ?? 1e-3
+      H[i * m + i] = (shifted([[i, hi]]) - 2 * f0 + shifted([[i, -hi]])) / (hi * hi)
+      for (let j = 0; j < i; j++) {
+        const hj = hs[j] ?? 1e-3
+        const v =
+          (shifted([
+            [i, hi],
+            [j, hj],
+          ]) -
+            shifted([
+              [i, hi],
+              [j, -hj],
+            ]) -
+            shifted([
+              [i, -hi],
+              [j, hj],
+            ]) +
+            shifted([
+              [i, -hi],
+              [j, -hj],
+            ])) /
+          (4 * hi * hj)
+        H[i * m + j] = v
+        H[j * m + i] = v
+      }
+    }
+    return H
+  }
+  return {
+    objective: analyticObjective({
+      value: (t) => f(t),
+      gradient: (t) => gradientAt(Array.from(t)),
+      hessian: hessianAt,
+    }),
+    x0: start(),
+  }
+}
+
+/**
+ * Maximum (restricted) likelihood for a mixed model as a traced algorithm over the solver slot: any solver of
+ * `smoothSolvers` (Newton by default) minimises the profiled deviance of {@link mixedSmoothProblem} over the relative
+ * covariance factor. It logs `deviance`, `gradient`, `gradNorm`, `step`, `sigma2` and the tensor `theta`.
  *
  * @param problem - The summarised data.
  * @param options - REML or ML, the covariance structure and the tolerance.
@@ -309,103 +405,29 @@ export function mixedAlgorithm(problem: MixedProblem, options: MixedOptions = {}
   const tol = options.tol ?? 1e-8
   const { q, nObs } = problem
   const m = thetaLength(q, structure)
-  const f = (theta: ArrayLike<number>): number => {
-    const prof = mixedProfile(problem, covarianceFactor(theta, q, structure), reml)
-    return prof === undefined ? Number.POSITIVE_INFINITY : prof.deviance / nObs
-  }
-  const maxAbs = (v: ArrayLike<number>): number => {
-    let s = 0
-    for (let i = 0; i < v.length; i++) s = Math.max(s, Math.abs(v[i] ?? 0))
-    return s
-  }
-  const gradientAt = (u: readonly number[]): Float64Array =>
-    Float64Array.from(u, (v, j) => {
-      const h = 1e-6 * Math.max(1, Math.abs(v))
-      const up = [...u]
-      const dn = [...u]
-      up[j] = v + h
-      dn[j] = v - h
-      return (f(up) - f(dn)) / (2 * h)
-    })
-  const start = (): number[] => {
-    const theta: number[] = []
-    for (let i = 0; i < q; i++)
-      if (structure === 'diagonal') theta.push(1)
-      else for (let j = 0; j <= i; j++) theta.push(i === j ? 1 : 0)
-    return theta
-  }
-  return {
+  const solver = options.solver ?? newtonAt(tol)
+  return slotAlgorithm<MixedState>({
     name: `mixed-${reml ? 'reml' : 'ml'}`,
-    config: { reml, covariance: structure, tol },
-    schema: channels({
+    config: { reml, covariance: structure, tol, solver } as Json,
+    schema: {
       metrics: {
         deviance: { description: 'minus twice the (restricted) log-likelihood', direction: 'lower' },
         gradient: { description: 'the largest gradient entry of the deviance per observation', direction: 'lower' },
         sigma2: { description: 'the residual variance at the current covariance' },
       },
       tensors: { theta: { role: 'param', description: 'the relative covariance factor parameters', shape: [m] } },
+    },
+    problem: mixedSmoothProblem(problem, options),
+    solver,
+    ...(options.key === undefined ? {} : { key: options.key }),
+    tol,
+    view: (r, evaluations, stalled) => ({
+      theta: Array.from(r.x),
+      deviance: r.value * nObs,
+      gradient: infNorm(r.grad),
+      evaluations,
+      stalled,
     }),
-    init: () => {
-      const theta = start()
-      return {
-        theta,
-        deviance: f(theta) * nObs,
-        gradient: maxAbs(gradientAt(theta)),
-        evaluations: 1 + 2 * m,
-        stalled: false,
-      }
-    },
-    step: (s) => {
-      const u = s.theta
-      const g = gradientAt(u)
-      const H = new Float64Array(m * m)
-      const f0 = f(u)
-      const hs = u.map((v) => 1e-3 * Math.max(1, Math.abs(v)))
-      const shifted = (changes: readonly [number, number][]): number => {
-        const t = [...u]
-        for (const [j, delta] of changes) t[j] = (t[j] ?? 0) + delta
-        return f(t)
-      }
-      for (let i = 0; i < m; i++) {
-        const hi = hs[i] ?? 1e-3
-        H[i * m + i] = (shifted([[i, hi]]) - 2 * f0 + shifted([[i, -hi]])) / (hi * hi)
-        for (let j = 0; j < i; j++) {
-          const hj = hs[j] ?? 1e-3
-          const v =
-            (shifted([
-              [i, hi],
-              [j, hj],
-            ]) -
-              shifted([
-                [i, hi],
-                [j, -hj],
-              ]) -
-              shifted([
-                [i, -hi],
-                [j, hj],
-              ]) +
-              shifted([
-                [i, -hi],
-                [j, -hj],
-              ])) /
-            (4 * hi * hj)
-          H[i * m + j] = v
-          H[j * m + i] = v
-        }
-      }
-      const dir = newtonDirection(H, g, m)
-      const found = backtrack((t) => ({ objective: f(t) }), u, f0, g, dir)
-      const evaluations = s.evaluations + 2 * m + 1 + 2 * m * m + 3 * m + (found?.evaluations ?? 50)
-      if (found === undefined) return { ...s, evaluations, stalled: true }
-      return {
-        theta: found.u,
-        deviance: found.result.objective * nObs,
-        gradient: maxAbs(gradientAt(found.u)),
-        evaluations,
-        stalled: false,
-      }
-    },
-    done: (s) => (s.gradient <= tol ? 'converged' : s.stalled ? 'stopped' : undefined),
     observe: (s) => ({
       metrics: {
         deviance: s.deviance,
@@ -414,9 +436,7 @@ export function mixedAlgorithm(problem: MixedProblem, options: MixedOptions = {}
       },
       tensors: { theta: { role: 'param', value: s.theta, shape: [m] } },
     }),
-    serialise: (s) => stateToJson(s),
-    deserialise: (j) => stateFromJson(j) as MixedState,
-  }
+  })
 }
 
 /** The hyperparameters of {@link mixedModel}. */
@@ -432,6 +452,8 @@ export interface MixedHyper {
   readonly covariance: MixedCovariance
   readonly tol: number
   readonly maxIter: number
+  /** How the profiled deviance is minimised: a value of `smoothSolvers.space` (default Newton). */
+  readonly solver: SpaceValue
 }
 
 /** The fitted parameters of {@link mixedModel}. */
@@ -481,6 +503,7 @@ const MIXED_DEFAULTS: MixedHyper = {
   covariance: 'unstructured',
   tol: 1e-8,
   maxIter: 200,
+  solver: newtonAt(1e-8),
 }
 
 const layoutOf = (h: MixedHyper): MixedLayout => ({
@@ -613,12 +636,18 @@ export function mixedModel(
       kind: 'regressor',
       defaults: MIXED_DEFAULTS,
       hyperSpace: (h) =>
-        dict({ reml: bool({ default: h.reml }), tol: real(1e-12, 1e-3, { log: true, default: h.tol }) }),
-      algorithm: (data, h) =>
+        dict({
+          reml: bool({ default: h.reml }),
+          tol: real(1e-12, 1e-3, { log: true, default: h.tol }),
+          solver: smoothSolvers.space,
+        }),
+      algorithm: (data, h, key) =>
         mixedAlgorithm(mixedProblemOf(data, layoutOf(h), 'mixedModel'), {
           reml: h.reml,
           covariance: h.covariance,
           tol: h.tol,
+          solver: h.solver,
+          key,
         }),
       maxSteps: (h) => h.maxIter,
       params: (s, data, h) => paramsOf(mixedProblemOf(data, layoutOf(h), 'mixedModel'), h, s, namesOf(data, h)),
