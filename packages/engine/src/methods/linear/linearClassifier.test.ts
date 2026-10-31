@@ -48,7 +48,8 @@ describe('linearClassifier', () => {
 
   it('trains with every smooth loss it offers, each lowering its own objective', () => {
     const method = linearClassifier({ x, y })
-    const options = (method.config.spaces as Record<string, { options: Record<string, never> }>)['loss']?.options ?? {}
+    const options =
+      (method.config.spaces as unknown as Record<string, { options: Record<string, unknown> }>)['loss']?.options ?? {}
     for (const name of Object.keys(options)) {
       const loss = { ...(defaults(options[name] as never) as object), kind: name }
       const s = session(method, { mode: 'eager', steps: 80, config: { loss } as Partial<Config> })
