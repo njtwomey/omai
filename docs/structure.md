@@ -3396,6 +3396,12 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   `saeEncode`, `saeDecode`, `dictionaryRecovery` (best cosine per planted direction). The plant is the dataset
   `sparseDictionary`. Oracle: none; tested by recovery of the planted dictionary (mean cosine above 0.97) and by the
   dead-feature count with and without resampling.
+- Feature visualisation (`visualisation.ts`): activation maximisation over an image as an algorithm.
+  Built: `featureVisualisation` (a sigmoid of the pixels, or of the real inverse FFT of a spectrum scaled by 1/f^decay;
+  jitter by rolls, scale and rotation by a random affine grid sample, a total-variation penalty, optional blur of pixels;
+  Adam or plain ascent; state is the parameters, optimiser and image; paths `vis/activation`, `vis/loss`, `vis/image`),
+  the objectives `unitObjective` and `channelObjective`, `totalVariation`. Oracle: none; tested by monotone rise of the
+  target channel of a tiny CNN under plain ascent, the smoothness of the Fourier start, the penalty's effect.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
   Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
