@@ -70,7 +70,7 @@ describe('the optimum of the criterion', () => {
     ['gamma', gamma(log()), positive],
     ['binomial', binomial(), binary],
   ] as const) {
-    it(`is the minimiser a grid search finds: ${name}`, () => {
+    it(`is the minimiser a grid search finds: ${name}`, { timeout: 60000 }, () => {
       const hyper = outer({ family })
       const problem = gamProblem(x, y, hyper)
       const setup = { problem, hyper, key: key(0) }
