@@ -3277,6 +3277,14 @@ estimator has the fixed-effects Wald table, `randomCovariance`, `sigma2`, the gr
 statsmodels' `MixedLM` (REML and ML; random intercept, and correlated random intercept and slope); statsmodels stops
 slightly short of the optimum, so the golden tolerance is 1e-3 and a dense-matrix test checks the likelihood itself.
 
+`robust.ts` is regression that tolerates outliers: `theilSenAlgorithm` and the `theilSen` estimator (least squares on every
+row subset, or `maxSubpopulation` random ones drawn from a key, then Weiszfeld steps to the spatial median of the
+solutions, as scikit-learn), `huberAlgorithm`, `huberObjective` and the `huber` estimator (majorise-minimise steps with
+a jointly estimated scale, the objective of scikit-learn's `HuberRegressor`, `params.outliers` marking the linearly
+treated rows) and `quantileRegression` and the `quantileRegressor` estimator (the pinball loss with an optional L1
+penalty, solved exactly by `optim`'s `linprog`). RANSAC stays `stats/robust.ts`'s generic `ransac`. oracle:
+`linear/robust` against scikit-learn's `TheilSenRegressor` (all subsets), `HuberRegressor` and `QuantileRegressor`.
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 
