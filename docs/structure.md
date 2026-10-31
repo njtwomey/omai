@@ -1277,9 +1277,16 @@ Reparameterisation comes in three forms:
   `gammaFromOutput`, `mixtureDensityFromOutput`, `multivariateNormalFromOutput`).
 - `bijectors/bijector.ts`: `Bijector`, `defineBijector`, `chain`, `invert` (ranks, supports, monotonicity and shape
   maps tracked through compositions).
-- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.
+- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`,
+  `sinhArcsinh` (Jones-Pewsey skew and tail weight), `kumaraswamyCdf`.
 - `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `lowerCholesky`,
   `choleskyOuterProduct`, `affineCoupling`, `permute`, `autoregressive` (MAF-style), `madeMasks`.
+- `bijectors/flows.ts`: the layers of normalising flows beyond coupling: `planar` and `radial` (inverted by bisection with a
+  Newton step for the gradients), `actNorm` and `actNormInitialise`, Glow's `invertibleLinear` and `luLinear` (with
+  `luParameters`: O(d) log-determinant), `inverseAutoregressive` (IAF), `madeParameters` and `madeConditioner` (the MADE
+  network for `autoregressive` and IAF), the rational-quadratic spline of neural spline flows (`rationalQuadraticSplineMap`,
+  `rationalQuadraticSpline`, `rationalQuadraticCoupling`, `splineParametersFromVector`), and `residualFlow` (fixed-point
+  inverse; log-determinant by the power series of traces, exact or Hutchinson) with `lipschitzNormalise`.
 - `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`, `unconstrained`.
 - `exponential-family.ts`: `exponentialFamily` (25 families): natural parameters, sufficient statistics, log
   partition, base measure, mean parameters and Fisher information (by differentiating the log partition), and

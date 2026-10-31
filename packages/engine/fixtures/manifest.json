@@ -222,6 +222,15 @@
       "cases": 18
     },
     {
+      "fixture": "dists/bijectors/flows.json",
+      "source": "oracle/cases/dists/bijectors/flows.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "dists/bijectors/structured.json",
       "source": "oracle/cases/dists/bijectors/structured.py",
       "reference": {
