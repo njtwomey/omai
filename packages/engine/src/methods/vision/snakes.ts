@@ -10,6 +10,7 @@ import { dict, int, real } from '../../lib/space/index.ts'
 import {
   type Algorithm,
   type Config,
+  type Contract,
   defineMethod,
   derived,
   Log,
@@ -73,6 +74,18 @@ function overlap(sc: ShapeScene, points: readonly (readonly [number, number])[])
 }
 
 /**
+ * The paths of {@link snakes}: the contour’s points, the largest move, the area inside and the overlap with the shape, and the derived `contour/picture`.
+ *
+ * @example
+ * ```ts
+ * import type { SnakesPath } from 'mdml-engine/methods/vision'
+ * const path: SnakesPath = 'contour/area'
+ * path // => 'contour/area'
+ * ```
+ */
+export type SnakesPath = 'contour/points' | 'contour/moved' | 'contour/area' | 'contour/overlap' | 'contour/picture'
+
+/**
  * An active contour closing on a shape, one step per step.
  *
  * Configuration: `alpha` (elasticity: how hard the snake shrinks), `beta` (rigidity: how much it resists bending),
@@ -82,7 +95,11 @@ function overlap(sc: ShapeScene, points: readonly (readonly [number, number])[])
  * `contour/area`, `contour/overlap` (intersection over union with the shape's true mask) and the probe
  * `contour/picture` (the shape with the contour over it).
  */
-export const snakes: Method<ActiveContourState, Config> = defineMethod<ActiveContourState, Config>({
+export const snakes: Method<ActiveContourState, Config, SnakesPath> = defineMethod<
+  ActiveContourState,
+  Config,
+  SnakesPath
+>({
   name: 'vision/active-contour',
   config: dict({
     alpha: real(0.001, 0.5, { default: 0.05, log: true, label: 'elasticity α' }),
@@ -126,7 +143,7 @@ export const snakes: Method<ActiveContourState, Config> = defineMethod<ActiveCon
       deserialise: (j) => j as unknown as ActiveContourState,
     }
   },
-  contract: (c, key) => {
+  contract: (c, key): Contract<ActiveContourState, SnakesPath> => {
     const size = c['size'] as number
     const sc = shape(key, { size, noise: c['noise'] as number })
     return {

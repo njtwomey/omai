@@ -11,7 +11,16 @@ import { type CurveSet, curveSet, type DecisionSurface } from '../../lib/exposit
 import type { Key } from '../../lib/random/index.ts'
 import { dict, int, real } from '../../lib/space/index.ts'
 import { toFlat, type Value } from '../../lib/tensor/index.ts'
-import { type Algorithm, type Config, defineMethod, derived, Log, type Method, scalar } from '../../lib/trace/index.ts'
+import {
+  type Algorithm,
+  type Config,
+  type Contract,
+  defineMethod,
+  derived,
+  Log,
+  type Method,
+  scalar,
+} from '../../lib/trace/index.ts'
 import { type AdaBoostState, adaBoostAlgorithm, type HaarFeature, haarFeatures } from '../../lib/vision/index.ts'
 import { picture } from './_picture.ts'
 import { grid } from './_scene.ts'
@@ -79,6 +88,25 @@ function weightsRecord(w: Windows, s: AdaBoostState): CurveSet {
 }
 
 /**
+ * The paths of {@link haarBoosting}: the chosen stump’s error and vote, the strong classifier’s training error and size, and the derived row weights, stump and template.
+ *
+ * @example
+ * ```ts
+ * import type { HaarBoostingPath } from 'mdml-engine/methods/vision'
+ * const path: HaarBoostingPath = 'boost/alpha'
+ * path // => 'boost/alpha'
+ * ```
+ */
+export type HaarBoostingPath =
+  | 'boost/error'
+  | 'boost/trainingError'
+  | 'boost/alpha'
+  | 'boost/stumps'
+  | 'boost/weights'
+  | 'boost/stump'
+  | 'boost/template'
+
+/**
  * Discrete AdaBoost over Haar-feature stumps, one stump per step: circles against squares and triangles.
  *
  * Configuration: `windows` (how many 16-pixel windows, about a third of them circles), `stride` (the grid the
@@ -88,7 +116,11 @@ function weightsRecord(w: Windows, s: AdaBoostState): CurveSet {
  * the probe `boost/stump` (the feature just chosen: bright where it adds, dark where it subtracts) and the probe
  * `boost/template` (the stumps' patterns summed with their votes: what the classifier has come to look for).
  */
-export const haarBoosting: Method<AdaBoostState, Config> = defineMethod<AdaBoostState, Config>({
+export const haarBoosting: Method<AdaBoostState, Config, HaarBoostingPath> = defineMethod<
+  AdaBoostState,
+  Config,
+  HaarBoostingPath
+>({
   name: 'vision/haar-boosting',
   config: dict({
     windows: int(12, 240, { default: 60 }),
@@ -131,7 +163,7 @@ export const haarBoosting: Method<AdaBoostState, Config> = defineMethod<AdaBoost
       },
     }
   },
-  contract: (c, key) => {
+  contract: (c, key): Contract<AdaBoostState, HaarBoostingPath> => {
     const w = windowsOf(key, c)
     return {
       'boost/error': scalar({ description: 'the weighted error of the stump just chosen' }),

@@ -11,6 +11,7 @@ import { dict, int, real } from '../../lib/space/index.ts'
 import {
   type Algorithm,
   type Config,
+  type Contract,
   defineMethod,
   derived,
   Log,
@@ -81,6 +82,18 @@ function paintedRecord(sc: Scene, s: SlicState): DecisionSurface {
 }
 
 /**
+ * The paths of {@link slicSuperpixels}: the superpixel of every pixel, the largest centre move and the leak across the true boundaries, and the derived `segments/picture`.
+ *
+ * @example
+ * ```ts
+ * import type { SlicSuperpixelsPath } from 'mdml-engine/methods/vision'
+ * const path: SlicSuperpixelsPath = 'segments/moved'
+ * path // => 'segments/moved'
+ * ```
+ */
+export type SlicSuperpixelsPath = 'segments/labels' | 'segments/moved' | 'segments/leak' | 'segments/picture'
+
+/**
  * SLIC superpixels of a synthetic scene, one assignment and update per step.
  *
  * Configuration: `segments` (about how many superpixels), `compactness` (the weight of position against grey: high
@@ -90,7 +103,11 @@ function paintedRecord(sc: Scene, s: SlicState): DecisionSurface {
  * leaks across the true edges) and the probe `segments/picture` (the scene painted in its superpixels' mean grey, with the
  * centres).
  */
-export const slicSuperpixels: Method<SlicState, Config> = defineMethod<SlicState, Config>({
+export const slicSuperpixels: Method<SlicState, Config, SlicSuperpixelsPath> = defineMethod<
+  SlicState,
+  Config,
+  SlicSuperpixelsPath
+>({
   name: 'vision/slic',
   config: dict({
     segments: int(4, 144, { default: 36, label: 'superpixels' }),
@@ -124,7 +141,7 @@ export const slicSuperpixels: Method<SlicState, Config> = defineMethod<SlicState
       },
     }
   },
-  contract: (c, key) => {
+  contract: (c, key): Contract<SlicState, SlicSuperpixelsPath> => {
     const size = c['size'] as number
     const sc = scene(key, { size, noise: c['noise'] as number })
     return {

@@ -13,8 +13,9 @@ import { dict, int, real } from '../../lib/space/index.ts'
 import {
   type Algorithm,
   type Config,
-  type Derived,
+  type Contract,
   defineMethod,
+  type Derived,
   derived,
   Log,
   type Method,
@@ -86,6 +87,18 @@ function pictureOf(task: Task, s: GrabCutState): DecisionSurface {
 }
 
 /**
+ * The paths of {@link grabCutSegmentation}: the mask, the energy, the pixels relabelled and the overlap with the true outline of each step, and the derived `cut/picture`.
+ *
+ * @example
+ * ```ts
+ * import type { GrabCutPath } from 'mdml-engine/methods/vision'
+ * const path: GrabCutPath = 'cut/energy'
+ * path // => 'cut/energy'
+ * ```
+ */
+export type GrabCutPath = 'cut/mask' | 'cut/energy' | 'cut/changed' | 'cut/overlap' | 'cut/picture'
+
+/**
  * GrabCut of the largest polygon of a scene, one mixture fit and cut per step.
  *
  * Configuration: `components` (Gaussians per side's grey-level mixture), `gamma` (the weight of smoothness against
@@ -94,7 +107,11 @@ function pictureOf(task: Task, s: GrabCutState): DecisionSurface {
  * (intersection over union with the polygon), the projection `board` (the mask as a board of background and
  * foreground) and the probe `cut/picture` (the scene dimmed outside the mask, with the rectangle).
  */
-export const grabCutSegmentation: Method<GrabCutState, Config> = defineMethod<GrabCutState, Config>({
+export const grabCutSegmentation: Method<GrabCutState, Config, GrabCutPath> = defineMethod<
+  GrabCutState,
+  Config,
+  GrabCutPath
+>({
   name: 'vision/grabcut',
   config: dict({
     components: int(1, 5, { default: 3, label: 'mixture components' }),
@@ -150,7 +167,7 @@ export const grabCutSegmentation: Method<GrabCutState, Config> = defineMethod<Gr
       })
     },
   },
-  contract: (c, key) => {
+  contract: (c, key): Contract<GrabCutState, GrabCutPath> => {
     const task = taskOf(key, c)
     const { size } = task.scene
     return {

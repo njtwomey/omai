@@ -14,6 +14,7 @@ import { toFlat } from '../../lib/tensor/index.ts'
 import {
   type Algorithm,
   type Config,
+  type Contract,
   defineMethod,
   derived,
   Log,
@@ -75,6 +76,18 @@ function trackingError(seq: Sequence, s: KltState): number {
 }
 
 /**
+ * The paths of {@link kltTracking}: the tracked points, how many are alive and their error against the true corners, and the derived `track/picture`.
+ *
+ * @example
+ * ```ts
+ * import type { KltTrackingPath } from 'mdml-engine/methods/vision'
+ * const path: KltTrackingPath = 'track/points'
+ * path // => 'track/points'
+ * ```
+ */
+export type KltTrackingPath = 'track/points' | 'track/alive' | 'track/error' | 'track/picture'
+
+/**
  * Corners of a drifting scene tracked frame to frame by pyramidal Lucas-Kanade.
  *
  * Configuration: `frames` (the length of the sequence; the run ends with it), `amplitude` (how far the scene drifts,
@@ -83,7 +96,7 @@ function trackingError(seq: Sequence, s: KltState): number {
  * tracked), `track/error` (their mean distance from where the drift really put the corners, in pixels) and the probe
  * `track/picture` (the frame with the points over it, tracked or lost).
  */
-export const kltTracking: Method<KltState, Config> = defineMethod<KltState, Config>({
+export const kltTracking: Method<KltState, Config, KltTrackingPath> = defineMethod<KltState, Config, KltTrackingPath>({
   name: 'vision/klt-tracking',
   config: dict({
     frames: int(8, 120, { default: 48 }),
@@ -117,7 +130,7 @@ export const kltTracking: Method<KltState, Config> = defineMethod<KltState, Conf
       deserialise: (j) => j as unknown as KltState,
     }
   },
-  contract: (c, key) => {
+  contract: (c, key): Contract<KltState, KltTrackingPath> => {
     const seq = sequenceOf(key, c)
     return {
       'track/points': tensor({

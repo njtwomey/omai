@@ -12,6 +12,7 @@ import { choice, dict, int, real } from '../../lib/space/index.ts'
 import {
   type Algorithm,
   type Config,
+  type Contract,
   defineMethod,
   derived,
   Log,
@@ -39,6 +40,23 @@ function conductionOf(image: ArrayLike<number>, size: number, kappa: number, qua
 }
 
 /**
+ * The paths of {@link peronaMalik}: the image so far, its largest change, the PSNR against the clean scene and at the start, and the derived `image/conduction`.
+ *
+ * @example
+ * ```ts
+ * import type { PeronaMalikPath } from 'mdml-engine/methods/vision'
+ * const path: PeronaMalikPath = 'quality/psnr'
+ * path // => 'quality/psnr'
+ * ```
+ */
+export type PeronaMalikPath =
+  | 'image/pixels'
+  | 'image/change'
+  | 'quality/psnr'
+  | 'quality/psnrStart'
+  | 'image/conduction'
+
+/**
  * Perona-Malik anisotropic diffusion of a noisy scene, one diffusion step per step.
  *
  * Configuration: `kappa` (the edge threshold on the gradient: differences well below it diffuse, well above it are
@@ -48,7 +66,11 @@ function conductionOf(image: ArrayLike<number>, size: number, kappa: number, qua
  * start's, for comparison) and the probe `image/conduction` (the flow each pixel lets through: 1 free, 0 across an
  * edge).
  */
-export const peronaMalik: Method<DiffusionState, Config> = defineMethod<DiffusionState, Config>({
+export const peronaMalik: Method<DiffusionState, Config, PeronaMalikPath> = defineMethod<
+  DiffusionState,
+  Config,
+  PeronaMalikPath
+>({
   name: 'vision/perona-malik',
   config: dict({
     kappa: real(0.02, 0.5, { default: 0.1, log: true, label: 'edge threshold κ' }),
@@ -88,7 +110,7 @@ export const peronaMalik: Method<DiffusionState, Config> = defineMethod<Diffusio
       },
     }
   },
-  contract: (c) => {
+  contract: (c): Contract<DiffusionState, PeronaMalikPath> => {
     const size = c['size'] as number
     const kappa = c['kappa'] as number
     const quadratic = c['conduction'] === 'quadratic'
