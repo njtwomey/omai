@@ -1277,9 +1277,16 @@ Reparameterisation comes in three forms:
   `gammaFromOutput`, `mixtureDensityFromOutput`, `multivariateNormalFromOutput`).
 - `bijectors/bijector.ts`: `Bijector`, `defineBijector`, `chain`, `invert` (ranks, supports, monotonicity and shape
   maps tracked through compositions).
-- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`.
+- `bijectors/elementwise.ts`: `identity`, `exp`, `softplus`, `sigmoid`, `tanh`, `affine`, `power`, `normalCdf`,
+  `sinhArcsinh` (Jones-Pewsey skew and tail weight), `kumaraswamyCdf`.
 - `bijectors/structured.ts`: `ordered`, `stickBreaking`, `correlationCholesky`, `lowerCholesky`,
   `choleskyOuterProduct`, `affineCoupling`, `permute`, `autoregressive` (MAF-style), `madeMasks`.
+- `bijectors/flows.ts`: the layers of normalising flows beyond coupling: `planar` and `radial` (inverted by bisection with a
+  Newton step for the gradients), `actNorm` and `actNormInitialise`, Glow's `invertibleLinear` and `luLinear` (with
+  `luParameters`: O(d) log-determinant), `inverseAutoregressive` (IAF), `madeParameters` and `madeConditioner` (the MADE
+  network for `autoregressive` and IAF), the rational-quadratic spline of neural spline flows (`rationalQuadraticSplineMap`,
+  `rationalQuadraticSpline`, `rationalQuadraticCoupling`, `splineParametersFromVector`), and `residualFlow` (fixed-point
+  inverse; log-determinant by the power series of traces, exact or Hutchinson) with `lipschitzNormalise`.
 - `bijectors/unconstrain.ts`: `bijectorForSupport`, `transformLogDensity`, `unconstrained`.
 - `exponential-family.ts`: `exponentialFamily` (25 families): natural parameters, sufficient statistics, log
   partition, base measure, mean parameters and Fisher information (by differentiating the log partition), and
@@ -2040,6 +2047,21 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
 - `diffusions.ts`: named processes with exact transitions: Ornstein-Uhlenbeck, geometric Brownian motion, CIR, Vasicek
   (with Vasicek and CIR bond prices), Bessel, overdamped and underdamped Langevin dynamics, jump diffusions (generic, and
   Merton's with its exact simulation, log-return density and option price).
+- `diffusion-models.ts`: diffusion models as generative models (the SDE solvers are `sde.ts`): noise schedules with alpha,
+  sigma, log-SNR and the forward SDE's drift and squared diffusion (`linearSchedule`, `cosineSchedule`,
+  `sigmoidSchedule`, `discreteSchedule` with `linearBetas` and `cosineBetas`, `veSchedule`, `edmSchedule`,
+  `defineSchedule`), `vpSde` and `veSde` (closed-form marginals, as `Sde`s for `reverseSde` and `probabilityFlow`),
+  `samplerTimes` (uniform, quadratic, log-SNR, Karras spacing), `forwardSample` (q(x_t | x_0)), predictions and their
+  conversions (`toX0AndNoise`: epsilon, x0, v, score), training losses with weightings (`x0ErrorWeight`,
+  `weightedDiffusionLoss`: simple, SNR-plus-one, truncated and min-SNR, ELBO, EDM; `diffusionBatch`,
+  `edmPreconditioning`), guidance (`classifierFreeGuidance`, `guidedScore`, `guidedNoise`, `guidedModel`), and
+  `gaussianMixtureTruth`, the exact noised score of a Gaussian mixture, a planted truth for samplers and networks.
+- `diffusion-samplers.ts`: reverse samplers as stepped `Algorithm`s with typed paths (`sampler/xt`, `x0Hat`,
+  `noiseLevel`, `time`, `step`, `cloud`): `diffusionSampler` (DDPM ancestral, DDIM with eta, probability-flow Euler and
+  Heun, DPM-Solver-2), `ddpmSampler`, `ddimSampler`, `sampleDiffusion`, `samplerProperties`.
+- `diffusion-training.ts`: `scoreNetwork` (an MLP over x_t and Fourier time features, from `nn`), `networkModel`,
+  `diffusionTrainer` (the training loop as an `Algorithm` over `nn`'s `TrainState`), so a toy mixture is trained and
+  sampled end to end.
 - `markov-chains.ts`: discrete-time Markov chains: stationary distributions, classification, absorption, hitting
   times, mixing times, spectral gaps, reversibility, simulation.
 - `ctmc.ts`: continuous-time Markov chains (split from `markov-chains.ts` for size): transition matrices exp(tQ)
@@ -2582,7 +2604,10 @@ share a concept they share a definition but not a name.
   `tweedieDeviance`.
 - `classification.ts`: binary and categorical cross-entropy (`binaryCrossEntropy`, `binaryCrossEntropyWithLogits`,
   `crossEntropy`: with logits, label smoothing, class weights and ignore index), `focal` (sigmoid) and
-  `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`.
+  `categoricalFocal`, `nllLoss`, `multiLabelSoftMargin`; the losses for noisy labels: `generalisedCrossEntropy`,
+  `truncatedCrossEntropy`, `symmetricCrossEntropy`, `probabilityMae`, `bootstrapped` (soft and hard), `forwardCorrected`
+  and `backwardCorrected` (given a transition matrix), `biTemperedLogistic` with `temperedSoftmax`, `logTemperature`
+  and `expTemperature`.
 - `large-output.ts`: losses for very many classes: hierarchical softmax (`huffmanCoding`, `hierarchicalSoftmax`,
   `hierarchicalSoftmaxLogProbs`), sampled softmax (`sampledSoftmax`, `sampleClasses` with uniform and log-uniform
   proposals). The Huffman tree comes from `information/source-coding.ts` (`huffmanTree`).
@@ -2590,22 +2615,41 @@ share a concept they share a definition but not a name.
   `westonWatkins`.
 - `density.ts`: negative log-likelihood of any `Distribution` (`negativeLogLikelihood`) or conditional distribution
   (`conditionalNll`), mixture-density NLL (`mixtureDensityNll`), heteroscedastic Gaussian NLL with beta-NLL weighting
-  (`heteroscedasticGaussianNll`), censored likelihoods (`censoredNll`: exact, left, right and interval).
+  (`heteroscedasticGaussianNll`), censored likelihoods (`censoredNll`: exact, left, right and interval); the evidential
+  losses: Dirichlet (`evidentialNll`: squared error, log and digamma forms with the KL regulariser; `dirichletUncertainty`:
+  vacuity, aleatoric and epistemic parts) and normal-inverse-gamma (`normalInverseGammaNll`,
+  `normalInverseGammaUncertainty`).
+- `sequence.ts`: CTC: `ctc` (log-semiring forward algorithm over the blank-extended target, torch's CTCLoss conventions:
+  padded targets, input and target lengths, mean-by-length reduction, `zeroInfinity`), `ctcTrellis` (alpha, beta and the
+  state and label alignment posteriors; the loss's gradient is minus the label posterior), `ctcForcedAlignment`
+  (Viterbi), `ctcGreedyDecode`.
+- `invariance.ts`: penalties for behaving the same across environments: the IRMv1 gradient penalty (`irmPenalty`, biased and
+  unbiased; `irmObjective`), V-REx (`vrexPenalty`, `vrexObjective`), `coral` (Deep CORAL, optional mean matching),
+  `mmdPenalty` (pairwise MMD between environments), and gradient criteria: `environmentGradient`, `gradientAlignment`
+  (cosine, and Fish's inner product), `perSampleGradients` and `fishrPenalty` (per-environment gradient variances).
+- `preference.ts`: preference objectives on response log-probabilities: `bradleyTerry` (reward-model pairwise loss with a
+  margin), `dpo` (with conservative label smoothing and the reference-free form), `implicitRewards`, `ipo`, `kto`,
+  `orpo`, `simpo`, `sequenceLogProb`; `tables.ts` has them as `preferenceLosses` (needs a reference, length-normalised,
+  reward model, paired, bounded margin).
 - `ranking.ts`: `marginRanking`, `rankNet`, `pairwiseHinge`, `bpr`, `lambdaRank` (NDCG@k deltas), `listNet`,
   `softmaxRanking`, `listMle`, `approxNdcg`; padded lists through a mask.
 - `contrastive.ts`: `infoNce` (in-batch, shared or per-query negatives), `ntXent`, `tripletMargin`, `contrastive`,
   `cosineEmbedding`, `hingeEmbedding`, `supervisedContrastive`, `clipLoss`, ArcFace and CosFace margins
-  (`arcFaceLogits`, `cosFaceLogits`, `arcFace`, `cosFace`).
+  (`arcFaceLogits`, `cosFaceLogits`, `arcFace`, `cosFace`); the self-supervised objectives `barlowTwins` and `vicreg`
+  and the `alignment` and `uniformity` terms.
 - `segmentation.ts`: `dice` (soft and squared), `tversky`, `focalTversky`, `lovaszHinge`, `lovaszSoftmax`; classes last,
   index or one-hot targets, activations, background, batch pooling, ignore index and class weights as MONAI.
 - `generative.ts`: GAN losses (`discriminatorLoss`, `generatorLoss`: minimax, non-saturating, Wasserstein, hinge, least
   squares; `gradientPenalty` (WGAN-GP) and `r1Penalty`), ELBO terms (`gaussianKl`, `sampledKl`, `negativeElbo`,
   `bernoulliLogLikelihood`, `gaussianLogLikelihood`, `importanceWeightedBound`), `denoisingScoreMatching`, diffusion
   objectives (`diffusionTarget`, `diffusionLoss`: epsilon, x0 and v), flow matching (`flowMatchingPath`,
-  `flowMatching`).
+  `flowMatching`); `noiseContrastive` (NCE with a learned log-normaliser), `scoreMatching` (exact trace) and
+  `slicedScoreMatching` (Gaussian or Rademacher directions, optional variance reduction, forward-mode derivatives),
+  vector quantisation (`vectorQuantise`: nearest code, codebook and commitment terms, straight-through output, usage and
+  perplexity; `vqEmaUpdate`: the EMA codebook).
 - `divergence.ts`: `klDiv` (torch, with 'batchmean'), `klDivergence`, `jensenShannon`, `distillation`, `mmd` (Gaussian,
   Laplacian and energy kernels, multi-scale, median heuristic, biased and unbiased) and `sinkhorn` (log domain, weighted,
-  debiased) losses.
+  debiased) losses, and `slicedWasserstein` (random projections, sorted).
 - `physics.ts`: `fieldDerivatives` (gradient, second derivatives and Laplacian by autodiff), `pdeResidualLoss`,
   `boundaryLoss` (Dirichlet and Neumann) and `initialConditionLoss`, adaptive loss balancing (`gradientNormWeights`,
   `ntkWeights`) for physics-informed training.
@@ -4825,7 +4869,7 @@ the encyclopedia's purview. What such a page needs is in the engine (a `Method` 
 (`react/session/`: the hook, the player, the settings and the panels); the gallery's `animation/` section shows the
 player on a toy method.
 
-**Where the shared pieces live.** There is no `methods/shared/`: what methods share is library code (`methods/README.md`, `LIB.md`). `lib/trace/modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters, `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible`). `lib/space/tables.ts`: `optionTable`, the same shape for options that are values (knobs, properties, `make`). `lib/optim/solvers.ts`: `smoothSolvers` (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent as one slot) and `loggedSolver`; `lib/optim/schedule-table.ts`: `schedules`; `lib/losses/tables.ts`: `regressionLosses`, `classificationLosses` and `penalties` with their properties.
+**Where the shared pieces live.** There is no `methods/shared/`: what methods share is library code (`methods/README.md`, `LIB.md`). `lib/trace/modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters, `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible`). `lib/space/tables.ts`: `optionTable`, the same shape for options that are values (knobs, properties, `make`). `lib/optim/solvers.ts`: `smoothSolvers` (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent as one slot) and `loggedSolver`; `lib/optim/schedule-table.ts`: `schedules`; `lib/losses/tables.ts`: `regressionLosses`, `classificationLosses` (with focal and a label-smoothed logistic), `multiclassLosses` (cross-entropy, label smoothing, focal and the noisy-label losses, with `bounded`, `noiseRobust`, `proper` and `needsTransition` among their properties) and `penalties` with their properties.
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as

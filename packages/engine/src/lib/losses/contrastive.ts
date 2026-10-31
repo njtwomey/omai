@@ -2,7 +2,8 @@
  * Contrastive and metric-learning losses, which train embeddings so that similar pairs lie close and dissimilar ones
  * far apart: InfoNCE, SimCLR's NT-Xent, supervised contrastive and CLIP's symmetric image-text loss, the triplet,
  * contrastive, cosine and hinge embedding losses, and the additive-margin softmax heads of face recognition (ArcFace,
- * CosFace).
+ * CosFace); and the self-supervised objectives without negatives or with decorrelation, Barlow Twins and VICReg, with
+ * the alignment and uniformity terms of Wang and Isola that explain what a contrastive loss optimises.
  */
 
 import { logaddexp } from '../numerics/special/index.ts'
@@ -13,19 +14,24 @@ import {
   cast,
   clip,
   concat,
+  diagonal,
   div,
   equal,
+  exp,
   expandDims,
   eye,
   greater,
+  log,
   logSoftmax,
   logsumexp,
   matmul,
   maximum,
+  mean,
   minimum,
   mul,
   neg,
   oneHot,
+  pow,
   promoteFloat,
   relu,
   sqrt,
@@ -35,6 +41,7 @@ import {
   type TensorLike,
   transpose,
   type Value,
+  variance,
   where,
 } from '../tensor/index.ts'
 import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
@@ -446,4 +453,138 @@ export function cosFace(
   return crossEntropy(cosFaceLogits(embeddings, weights, labels, options), labels, {
     reduction: options.reduction ?? 'mean',
   })
+}
+
+/** The sum of the squared off-diagonal entries of a square matrix. */
+function offDiagonalSquares(m: Value): Value {
+  return sub(sum(square(m)), sum(square(diagonal(m))))
+}
+
+/**
+ * Barlow Twins (Zbontar et al., 2021): standardise each embedding dimension over the batch, form the
+ * cross-correlation matrix c between the two views' embeddings, and push it to the identity: the diagonal to one
+ * (invariance) and the off-diagonal to zero (redundancy reduction, weighted by lambda). The standardisation is the
+ * batch normalisation (no affine) of the reference code.
+ *
+ * @param z1 - Embeddings of the first view `[N, D]`.
+ * @param z2 - Embeddings of the second view `[N, D]`.
+ * @param options - lambda, the off-diagonal weight (default 0.0051), eps of the standardisation (default 1e-5).
+ * @returns The scalar loss, differentiable in both views.
+ * @concept self-supervised-learning
+ * @example
+ * ```ts
+ * import { barlowTwins } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * const z = [[1, -1], [-1, 1], [1, 1], [-1, -1]]
+ * item(barlowTwins(z, z, { eps: 0 })) // => 0
+ * ```
+ */
+export function barlowTwins(
+  z1: TensorLike,
+  z2: TensorLike,
+  options: { readonly lambda?: number; readonly eps?: number } = {},
+): Value {
+  const [a, b] = promoteFloat(z1, z2) as [Value, Value]
+  const n = a.shape[0] ?? 1
+  const eps = options.eps ?? 1e-5
+  const standardise = (z: Value): Value =>
+    div(sub(z, mean(z, 0, true)), sqrt(add(variance(z, 0, { keepDims: true }), eps)))
+  const c = div(matmul(transpose(standardise(a)), standardise(b)), n)
+  const onDiagonal = sum(square(sub(diagonal(c), 1)))
+  return add(onDiagonal, mul(offDiagonalSquares(c), options.lambda ?? 0.0051))
+}
+
+/** Options of {@link vicreg}. */
+export interface VicregOptions {
+  /** Weight of the invariance (mean squared error between views); default 25. */
+  readonly invariance?: number
+  /** Weight of the variance hinge; default 25. */
+  readonly variance?: number
+  /** Weight of the covariance penalty; default 1. */
+  readonly covariance?: number
+  /** Target standard deviation of every dimension (default 1). */
+  readonly gamma?: number
+  readonly eps?: number
+}
+
+/**
+ * VICReg (Bardes et al., 2022): variance-invariance-covariance regularisation. The invariance term is the mean
+ * squared error between the two views' embeddings; the variance term hinges each dimension's standard deviation (over
+ * the batch) at gamma, which prevents collapse; the covariance term penalises the off-diagonal entries of each view's
+ * covariance matrix, which decorrelates the dimensions.
+ *
+ * @param z1 - Embeddings of the first view `[N, D]`.
+ * @param z2 - Embeddings of the second view `[N, D]`.
+ * @param options - The three weights, gamma and eps.
+ * @returns The scalar loss, differentiable in both views.
+ * @example
+ * ```ts
+ * import { vicreg } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * item(vicreg([[1, 1], [-1, -1]], [[1, 1], [-1, -1]], { eps: 0, covariance: 0 })) // => 0
+ * ```
+ */
+export function vicreg(z1: TensorLike, z2: TensorLike, options: VicregOptions = {}): Value {
+  const [a, b] = promoteFloat(z1, z2) as [Value, Value]
+  const [n, d] = [a.shape[0] ?? 1, a.shape[1] ?? 1]
+  const eps = options.eps ?? 1e-4
+  const gamma = options.gamma ?? 1
+  const invarianceTerm = mean(square(sub(a, b)))
+  const centre = (z: Value): Value => sub(z, mean(z, 0, true))
+  const hinge = (z: Value): Value => mean(relu(sub(gamma, sqrt(add(variance(z, 0, { ddof: 1 }), eps)))))
+  const covariancePenalty = (z: Value): Value => {
+    const c = div(matmul(transpose(centre(z)), centre(z)), n - 1)
+    return div(offDiagonalSquares(c), d)
+  }
+  return add(
+    add(mul(invarianceTerm, options.invariance ?? 25), mul(add(hinge(a), hinge(b)), (options.variance ?? 25) / 2)),
+    mul(add(covariancePenalty(a), covariancePenalty(b)), options.covariance ?? 1),
+  )
+}
+
+/**
+ * Alignment of positive pairs (Wang and Isola, 2020): the mean over pairs of ||x - y||^alpha, small when positives map
+ * together. Pair it with {@link uniformity}: a contrastive loss asymptotically optimises the sum of the two.
+ *
+ * @param x - Normalised embeddings `[N, D]`.
+ * @param y - Their positives `[N, D]`.
+ * @param options - alpha (default 2).
+ * @returns The scalar alignment.
+ * @example
+ * ```ts
+ * import { alignment } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * item(alignment([[1, 0]], [[0, 1]])) // => 2
+ * ```
+ */
+export function alignment(x: TensorLike, y: TensorLike, options: { readonly alpha?: number } = {}): Value {
+  const [a, b] = promoteFloat(x, y) as [Value, Value]
+  const alpha = options.alpha ?? 2
+  const sq = sum(square(sub(a, b)), -1)
+  return mean(alpha === 2 ? sq : pow(sq, alpha / 2))
+}
+
+/**
+ * Uniformity on the sphere (Wang and Isola, 2020): log of the mean Gaussian potential exp(-t ||x_i - x_j||^2) over all
+ * pairs, low when the embeddings spread evenly over the hypersphere.
+ *
+ * @param x - Normalised embeddings `[N, D]`.
+ * @param options - t (default 2).
+ * @returns The scalar uniformity (more negative is more uniform).
+ * @example
+ * ```ts
+ * import { uniformity } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(uniformity([[1, 0], [-1, 0]], { t: 1 })) + 4) < 1e-12 // => true
+ * ```
+ */
+export function uniformity(x: TensorLike, options: { readonly t?: number } = {}): Value {
+  const [a] = promoteFloat(x) as [Value]
+  const n = a.shape[0] ?? 0
+  const gram = matmul(a, transpose(a))
+  const sq = sum(square(a), -1, true)
+  const dist2 = maximum(sub(add(sq, transpose(sq)), mul(gram, 2)), 0)
+  const upper = sub(1, eye(n))
+  const potentials = mul(exp(mul(dist2, -(options.t ?? 2))), upper)
+  return log(div(sum(potentials), sum(upper)))
 }

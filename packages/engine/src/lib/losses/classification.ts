@@ -2,33 +2,46 @@
  * Classification losses, torch.nn.functional style: binary cross-entropy on logits (computed stably) and on
  * probabilities, softmax cross-entropy with class-index or probability targets and label smoothing options, negative
  * log-likelihood of log-probabilities, the multi-label soft-margin loss, and sigmoid and softmax focal losses, which
- * down-weight easy examples.
+ * down-weight easy examples; and the losses made for noisy labels: generalised, truncated and symmetric cross-entropy,
+ * the bootstrapped losses, the probability MAE, the forward and backward corrected losses given a noise transition
+ * matrix, and the bi-tempered logistic loss.
  */
 
 import { MdmlError } from '../base/index.ts'
+import { inv } from '../numerics/linalg/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import {
+  abs,
   add,
+  argmax,
   cast,
   div,
   equal,
   exp,
   expandDims,
+  greater,
   log,
   logSoftmax,
+  matmul,
+  max,
   maximum,
   mul,
   neg,
   notEqual,
+  oneHot,
   pow,
   promoteFloat,
+  reciprocal,
+  relu,
   sigmoid,
   squeeze,
+  stopGradient,
   sub,
   sum,
   type TensorLike,
   take,
   takeAlongAxis,
+  transpose,
   type Value,
   where,
 } from '../tensor/index.ts'
@@ -283,4 +296,308 @@ export function nllLoss(
   }
   const terms = neg(squeeze(takeAlongAxis(lp, expandDims(index, -1), -1), -1))
   return reduce(terms, { reduction: options.reduction ?? 'mean', ...(w === undefined ? {} : { weight: w }) })
+}
+
+// --- Losses for noisy labels ---------------------------------------------------------------------------------------
+
+/** The class probabilities and the probability of each target class, for the noise-robust losses below. */
+function classProbabilities(
+  logits: TensorLike,
+  target: TensorLike,
+): { readonly logp: Value; readonly p: Value; readonly picked: Value; readonly pickedLog: Value; readonly c: number } {
+  const [z] = promoteFloat(logits) as [Value]
+  const c = z.shape[z.shape.length - 1] ?? 0
+  const t = promoteFloat(target)[0] as Value
+  if (t.shape.length !== z.shape.length - 1) throw new MdmlError('shape', 'targets must be class indices [...]')
+  const logp = logSoftmax(z, -1)
+  const index = expandDims(cast(t, 'int32'), -1)
+  const pickedLog = squeeze(takeAlongAxis(logp, index, -1), -1)
+  return { logp, p: exp(logp), picked: exp(pickedLog), pickedLog, c }
+}
+
+/**
+ * Generalised cross-entropy (Zhang and Sabuncu, 2018): the Box-Cox transform (1 - p_y^q) / q of the probability of the
+ * target class, which is the cross-entropy as q goes to 0 and half the probability MAE at q = 1. Large q bounds the
+ * loss (so a mislabelled example cannot dominate) at the price of slower fitting.
+ *
+ * @param logits - Logits `[..., C]`.
+ * @param target - Class indices `[...]`.
+ * @param options - q in (0, 1] (default 0.7) and reduction.
+ * @returns The loss, differentiable in the logits.
+ * @concept noise-robust-losses
+ * @example
+ * ```ts
+ * import { generalisedCrossEntropy } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(generalisedCrossEntropy([[0, 0]], [0], { q: 1 })) - 0.5) < 1e-15 // => true
+ * ```
+ */
+export function generalisedCrossEntropy(
+  logits: TensorLike,
+  target: TensorLike,
+  options: { readonly q?: number; readonly reduction?: Reduction } = {},
+): Value {
+  const q = options.q ?? 0.7
+  if (!(q > 0 && q <= 1)) throw new MdmlError('value', 'generalisedCrossEntropy: q must lie in (0, 1]')
+  const { pickedLog } = classProbabilities(logits, target)
+  return reduce(div(sub(1, exp(mul(pickedLog, q))), q), { reduction: options.reduction ?? 'mean' })
+}
+
+/**
+ * Truncated generalised cross-entropy (Zhang and Sabuncu, 2018): the generalised loss with the probability of the
+ * target class floored at k, so an example whose label the model gives probability below k contributes a constant and
+ * no gradient (it is treated as noise and ignored).
+ *
+ * @param logits - Logits `[..., C]`.
+ * @param target - Class indices `[...]`.
+ * @param options - q (default 0.7), the threshold k in (0, 1) (default 0.5) and reduction.
+ * @returns The loss, differentiable in the logits (zero gradient below the threshold).
+ * @example
+ * ```ts
+ * import { truncatedCrossEntropy } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(truncatedCrossEntropy([[0, 5]], [0], { q: 1, k: 0.5 })) - 0.5) < 1e-15 // => true
+ * ```
+ */
+export function truncatedCrossEntropy(
+  logits: TensorLike,
+  target: TensorLike,
+  options: { readonly q?: number; readonly k?: number; readonly reduction?: Reduction } = {},
+): Value {
+  const q = options.q ?? 0.7
+  const k = options.k ?? 0.5
+  if (!(q > 0 && q <= 1)) throw new MdmlError('value', 'truncatedCrossEntropy: q must lie in (0, 1]')
+  const { picked } = classProbabilities(logits, target)
+  const floor = (1 - k ** q) / q
+  const terms = where(greater(picked, k), div(sub(1, pow(picked, q)), q), floor)
+  return reduce(terms, { reduction: options.reduction ?? 'mean' })
+}
+
+/**
+ * Symmetric cross-entropy (Wang et al., 2019): alpha times the cross-entropy plus beta times the reverse
+ * cross-entropy, -sum_k p_k log q_k with q the one-hot label whose zero entries are clipped to exp(A) (so the reverse
+ * term is -A (1 - p_y), bounded and noise-tolerant).
+ *
+ * @param logits - Logits `[..., C]`.
+ * @param target - Class indices `[...]`.
+ * @param options - alpha (default 0.1), beta (default 1), the log of the clipped zero, A (default log 1e-4) and reduction.
+ * @returns The loss, differentiable in the logits.
+ * @example
+ * ```ts
+ * import { symmetricCrossEntropy } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(symmetricCrossEntropy([[0, 0]], [0], { alpha: 1, beta: 1, A: -2 })) - (Math.LN2 + 1)) < 1e-15 // => true
+ * ```
+ */
+export function symmetricCrossEntropy(
+  logits: TensorLike,
+  target: TensorLike,
+  options: {
+    readonly alpha?: number
+    readonly beta?: number
+    readonly A?: number
+    readonly reduction?: Reduction
+  } = {},
+): Value {
+  const { pickedLog, picked } = classProbabilities(logits, target)
+  const a = options.A ?? Math.log(1e-4)
+  const terms = add(mul(neg(pickedLog), options.alpha ?? 0.1), mul(sub(1, picked), -a * (options.beta ?? 1)))
+  return reduce(terms, { reduction: options.reduction ?? 'mean' })
+}
+
+/**
+ * The probability MAE (Ghosh et al., 2017), sum_k |1[k = y] - p_k| = 2 (1 - p_y): symmetric in the sense that its sum
+ * over all labels is constant, which makes it tolerant of symmetric label noise (and slow to train).
+ *
+ * @param logits - Logits `[..., C]`.
+ * @param target - Class indices `[...]`.
+ * @param options - reduction.
+ * @returns The loss, differentiable in the logits.
+ * @example
+ * ```ts
+ * import { probabilityMae } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * item(probabilityMae([[0, 0]], [1])) // => 1
+ * ```
+ */
+export function probabilityMae(
+  logits: TensorLike,
+  target: TensorLike,
+  options: { readonly reduction?: Reduction } = {},
+): Value {
+  const { p, c } = classProbabilities(logits, target)
+  const hot = oneHot(cast(promoteFloat(target)[0] as Value, 'int32'), c)
+  return reduce(sum(abs(sub(hot, p)), -1), { reduction: options.reduction ?? 'mean' })
+}
+
+/**
+ * Bootstrapped cross-entropy (Reed et al., 2015): the target is a convex combination beta y + (1 - beta) q of the
+ * given label y and the model's own belief q (soft: its probabilities; hard: its arg-max class, a constant), so the
+ * model partly trusts itself against labels it disagrees with.
+ *
+ * @param logits - Logits `[..., C]`.
+ * @param target - Class indices `[...]`.
+ * @param options - beta (default 0.8), mode ('soft' or 'hard', default 'soft') and reduction.
+ * @returns The loss, differentiable in the logits (the model's own belief is held constant).
+ * @example
+ * ```ts
+ * import { bootstrapped } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(bootstrapped([[0, 0]], [0], { beta: 1 })) - Math.LN2) < 1e-15 // => true
+ * ```
+ */
+export function bootstrapped(
+  logits: TensorLike,
+  target: TensorLike,
+  options: { readonly beta?: number; readonly mode?: 'soft' | 'hard'; readonly reduction?: Reduction } = {},
+): Value {
+  const beta = options.beta ?? 0.8
+  const { logp, p, c } = classProbabilities(logits, target)
+  const hot = oneHot(cast(promoteFloat(target)[0] as Value, 'int32'), c)
+  const belief =
+    (options.mode ?? 'soft') === 'soft' ? stopGradient(p) : oneHot(cast(stopGradient(argmax(p, -1)), 'int32'), c)
+  const mixed = add(mul(hot, beta), mul(belief, 1 - beta))
+  return reduce(neg(sum(mul(mixed, logp), -1)), { reduction: options.reduction ?? 'mean' })
+}
+
+/**
+ * Forward-corrected cross-entropy (Patrini et al., 2017): given the noise transition matrix T (T[i][j] = P(observed
+ * label j | true class i)) the model's clean probabilities p are pushed through it, and the loss is
+ * -log (T^T p)_y of the observed label; minimising it recovers the clean posterior.
+ *
+ * @param logits - Logits `[N, C]`.
+ * @param target - Observed (noisy) class indices `[N]`.
+ * @param transition - Row-stochastic transition matrix `[C, C]`.
+ * @param options - reduction.
+ * @returns The loss, differentiable in the logits.
+ * @example
+ * ```ts
+ * import { forwardCorrected } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(forwardCorrected([[0, 0]], [1], [[1, 0], [0.5, 0.5]])) - Math.log(4)) < 1e-15 // => true
+ * ```
+ */
+export function forwardCorrected(
+  logits: TensorLike,
+  target: TensorLike,
+  transition: TensorLike,
+  options: { readonly reduction?: Reduction } = {},
+): Value {
+  const { p } = classProbabilities(logits, target)
+  const t = promoteFloat(transition)[0] as Value
+  const noisy = matmul(p, t)
+  const index = expandDims(cast(promoteFloat(target)[0] as Value, 'int32'), -1)
+  const picked = squeeze(takeAlongAxis(noisy, index, -1), -1)
+  return reduce(neg(log(picked)), { reduction: options.reduction ?? 'mean' })
+}
+
+/**
+ * Backward-corrected cross-entropy (Patrini et al., 2017): the per-class loss vector l_j = -log p_j is mapped through
+ * the inverse transition matrix, and the entry of the observed label is the loss, (T^-1 l)_y, an unbiased estimate of
+ * the clean loss (and negative for some inputs, which is why the forward correction is the stabler of the two).
+ *
+ * @param logits - Logits `[N, C]`.
+ * @param target - Observed (noisy) class indices `[N]`.
+ * @param transition - Row-stochastic, invertible transition matrix `[C, C]`.
+ * @param options - reduction.
+ * @returns The loss, differentiable in the logits.
+ * @example
+ * ```ts
+ * import { backwardCorrected, crossEntropy } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * item(backwardCorrected([[1, 2]], [1], [[1, 0], [0, 1]])) === item(crossEntropy([[1, 2]], [1])) // => true
+ * ```
+ */
+export function backwardCorrected(
+  logits: TensorLike,
+  target: TensorLike,
+  transition: TensorLike,
+  options: { readonly reduction?: Reduction } = {},
+): Value {
+  const { logp } = classProbabilities(logits, target)
+  const tinv = inv(promoteFloat(transition)[0] as Value)
+  const corrected = matmul(neg(logp), transpose(tinv))
+  const index = expandDims(cast(promoteFloat(target)[0] as Value, 'int32'), -1)
+  return reduce(squeeze(takeAlongAxis(corrected, index, -1), -1), { reduction: options.reduction ?? 'mean' })
+}
+
+/** The tempered logarithm log_t(x) = (x^(1-t) - 1) / (1 - t), the logarithm at t = 1. */
+export function logTemperature(x: TensorLike, t: number): Value {
+  const [v] = promoteFloat(x) as [Value]
+  return t === 1 ? log(v) : div(sub(pow(v, 1 - t), 1), 1 - t)
+}
+
+/** The tempered exponential exp_t(x) = [1 + (1 - t) x]_+^(1 / (1 - t)), the exponential at t = 1. */
+export function expTemperature(x: TensorLike, t: number): Value {
+  const [v] = promoteFloat(x) as [Value]
+  return t === 1 ? exp(v) : pow(relu(add(mul(v, 1 - t), 1)), 1 / (1 - t))
+}
+
+/**
+ * The tempered softmax of Amid et al. (2019): exp_t(a - lambda(a)) with the normaliser lambda chosen so the
+ * probabilities sum to one, found by their fixed-point iteration (exact for t = 1, a close approximation after a few
+ * iterations otherwise, the same one the reference implementation takes).
+ *
+ * @param activations - Activations `[..., C]`.
+ * @param t - The temperature (t = 1 is the softmax; t > 1 gives heavier tails).
+ * @param iterations - Fixed-point iterations (default 5).
+ * @returns Probabilities `[..., C]`, differentiable.
+ * @example
+ * ```ts
+ * import { temperedSoftmax } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(temperedSoftmax([0, 0], 1)) // => [0.5, 0.5]
+ * ```
+ */
+export function temperedSoftmax(activations: TensorLike, t: number, iterations = 5): Value {
+  const [a] = promoteFloat(activations) as [Value]
+  if (t === 1) return exp(logSoftmax(a, -1))
+  const shifted = sub(a, max(a, -1, true))
+  let normalised = shifted
+  for (let i = 0; i < iterations; i++) {
+    const partition = sum(expTemperature(normalised, t), -1, true)
+    normalised = mul(shifted, pow(partition, 1 - t))
+  }
+  const partition = sum(expTemperature(normalised, t), -1, true)
+  const normaliser = add(neg(logTemperature(reciprocal(partition), t)), max(a, -1, true))
+  return expTemperature(sub(a, normaliser), t)
+}
+
+/**
+ * The bi-tempered logistic loss (Amid et al., 2019): the Bregman divergence between the one-hot label and the
+ * tempered softmax of the activations, with temperature t1 < 1 on the loss (bounded, so noisy labels stop mattering)
+ * and t2 > 1 on the softmax (heavy tails, so outliers stop mattering). t1 = t2 = 1 is the cross-entropy.
+ *
+ * @param activations - Activations `[N, C]`.
+ * @param target - Class indices `[N]`.
+ * @param options - t1 (default 0.8), t2 (default 1.2), fixed-point iterations (default 5) and reduction.
+ * @returns The loss, differentiable in the activations.
+ * @example
+ * ```ts
+ * import { biTemperedLogistic, crossEntropy } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * Math.abs(item(biTemperedLogistic([[1, 2, 0]], [1], { t1: 1, t2: 1 })) - item(crossEntropy([[1, 2, 0]], [1]))) < 1e-14 // => true
+ * ```
+ */
+export function biTemperedLogistic(
+  activations: TensorLike,
+  target: TensorLike,
+  options: {
+    readonly t1?: number
+    readonly t2?: number
+    readonly iterations?: number
+    readonly reduction?: Reduction
+  } = {},
+): Value {
+  const t1 = options.t1 ?? 0.8
+  const t2 = options.t2 ?? 1.2
+  const [a] = promoteFloat(activations) as [Value]
+  const c = a.shape[a.shape.length - 1] ?? 0
+  const hot = oneHot(cast(promoteFloat(target)[0] as Value, 'int32'), c)
+  const p = temperedSoftmax(a, t2, options.iterations ?? 5)
+  // For a one-hot label y the terms y (log_t1 y - log_t1 p) - (y^(2-t1) - p^(2-t1)) / (2-t1) reduce to the following.
+  const picked = sum(mul(hot, p), -1)
+  const terms =
+    t1 === 1 ? neg(log(picked)) : add(neg(logTemperature(picked, t1)), div(sub(sum(pow(p, 2 - t1), -1), 1), 2 - t1))
+  return reduce(terms, { reduction: options.reduction ?? 'mean' })
 }

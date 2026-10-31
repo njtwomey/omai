@@ -2,31 +2,45 @@
  * Training objectives of generative models: the GAN discriminator and generator losses (minimax, non-saturating,
  * Wasserstein, hinge and least squares) with the WGAN-GP and R1 gradient penalties, the VAE's KL terms, reconstruction
  * likelihoods, negative ELBO and IWAE bound, denoising score matching, the diffusion loss with noise, clean-sample or
- * velocity targets, and conditional flow matching.
+ * velocity targets, and conditional flow matching; noise-contrastive estimation of unnormalised densities, exact and
+ * sliced score matching, and vector quantisation (nearest code, codebook and commitment losses, the straight-through
+ * estimator and the exponential-moving-average codebook update of the VQ-VAE).
  */
 
-import { grad } from '../autodiff/index.ts'
+import { grad, jvp } from '../autodiff/index.ts'
 import { MdmlError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { softplus } from '../numerics/special/index.ts'
-import { type Key, uniform } from '../random/index.ts'
+import { type Key, normal, split, uniform } from '../random/index.ts'
 import {
   add,
+  argmin,
+  broadcastTo,
+  cast,
   div,
   exp,
+  eye,
+  greater,
+  log,
   logsumexp,
+  matmul,
   mean,
   mul,
   neg,
+  oneHot,
   promoteFloat,
   relu,
   reshape,
   sqrt,
   square,
+  stopGradient,
   sub,
   sum,
   type TensorLike,
+  take,
+  transpose,
   type Value,
+  where,
 } from '../tensor/index.ts'
 import { type Reduction, reduce } from './_reduce.ts'
 
@@ -461,4 +475,262 @@ export function flowMatching(
 ): Value {
   const [v, a, b] = promoteFloat(velocity, x0, x1) as [Value, Value, Value]
   return mean(square(sub(v, sub(b, mul(a, 1 - (options.sigmaMin ?? 0))))))
+}
+
+/** Options of {@link noiseContrastive}. */
+export interface NoiseContrastiveOptions {
+  /** A learned log-normaliser c subtracted from the model's log-density (so the model need not be normalised). */
+  readonly logNormaliser?: TensorLike
+  /** The number of noise samples per data sample, k; default the ratio of the two sample sizes. */
+  readonly k?: number
+}
+
+/**
+ * Noise-contrastive estimation (Gutmann and Hyvarinen, 2010, 2012): fit an unnormalised model by logistic regression
+ * of data against noise with a known density q. With k noise samples per data sample the classifier's logit is
+ * G(x) = s(x) - c - log k - log q(x), where s is the model's unnormalised log-density and c a learned log-normaliser,
+ * and the loss is -mean log sigma(G(data)) - (1/N) sum log sigma(-G(noise)). The minimiser has c = log of the
+ * partition function, so normalisation is learned along with the density. The same loss with a language model's score
+ * of the true word against k sampled words is NCE for large vocabularies.
+ *
+ * @param dataScores - The model's unnormalised log-density at the N data samples.
+ * @param dataLogNoise - The noise log-density at the data samples.
+ * @param noiseScores - The model's unnormalised log-density at the M noise samples.
+ * @param noiseLogNoise - The noise log-density at the noise samples.
+ * @param options - logNormaliser and k.
+ * @returns The scalar loss, differentiable in the scores and the normaliser.
+ * @concept noise-contrastive-estimation
+ * @example
+ * ```ts
+ * import { noiseContrastive } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * // The model equal to the noise (and k = 1) cannot tell them apart: 2 log 2.
+ * Math.abs(item(noiseContrastive([0], [0], [0], [0])) - 2 * Math.LN2) < 1e-15 // => true
+ * ```
+ */
+export function noiseContrastive(
+  dataScores: TensorLike,
+  dataLogNoise: TensorLike,
+  noiseScores: TensorLike,
+  noiseLogNoise: TensorLike,
+  options: NoiseContrastiveOptions = {},
+): Value {
+  const [sd, qd, sn, qn] = promoteFloat(dataScores, dataLogNoise, noiseScores, noiseLogNoise) as [
+    Value,
+    Value,
+    Value,
+    Value,
+  ]
+  const nData = sd.shape.reduce((a, b) => a * b, 1)
+  const nNoise = sn.shape.reduce((a, b) => a * b, 1)
+  const k = options.k ?? nNoise / nData
+  const c = options.logNormaliser === undefined ? 0 : (promoteFloat(options.logNormaliser)[0] as Value)
+  const shift = Math.log(k)
+  const logit = (s: Value, q: Value): Value => sub(sub(sub(s, c), shift), q)
+  const dataTerm = mean(softplus(neg(logit(sd, qd))))
+  const noiseTerm = div(sum(softplus(logit(sn, qn))), nData)
+  return add(dataTerm, noiseTerm)
+}
+
+/** The kind of random projection direction of {@link slicedScoreMatching}. */
+export type ProjectionKind = 'gaussian' | 'rademacher'
+
+/**
+ * Exact (Hyvarinen) score matching, E[tr(J_s(x)) + 0.5 ||s(x)||^2] with J_s the Jacobian of the score model, which
+ * equals the Fisher divergence to the data score up to a constant. The trace costs one forward-mode derivative per
+ * dimension, so it suits low dimensions; {@link slicedScoreMatching} estimates it with random projections.
+ *
+ * @param score - The score model s(x) mapping `[N, D]` to `[N, D]` (rows independent).
+ * @param x - Samples `[N, D]`.
+ * @returns The scalar loss, differentiable in whatever the score model closes over.
+ * @concept score-matching
+ * @example
+ * ```ts
+ * import { scoreMatching } from 'mdml-engine/losses'
+ * import { mul, item, type Value } from 'mdml-engine/tensor'
+ * // s(x) = -x is the score of a standard normal: tr(J) = -1 per sample, 0.5 |x|^2 averages to 0.5 on [[1], [-1]].
+ * item(scoreMatching((x: Value) => mul(x, -1), [[1], [-1]])) // => -0.5
+ * ```
+ */
+export function scoreMatching(score: (x: Value) => Value, x: TensorLike): Value {
+  const [data] = promoteFloat(x) as [Value]
+  const d = data.shape[1] ?? 1
+  const s = score(data)
+  const n = data.shape[0] ?? 1
+  const traces: Value[] = []
+  for (let i = 0; i < d; i++) {
+    const e = broadcastTo(reshape(take(eye(d), i), [1, d]), [n, d])
+    traces.push(sum(mul(jvp(score, data, e).tangent, e), -1))
+  }
+  return mean(
+    add(
+      traces.reduce((a, b) => add(a, b)),
+      mul(sum(square(s), -1), 0.5),
+    ),
+  )
+}
+
+/**
+ * Sliced score matching (Song et al., 2019): E_v[v^T J_s(x) v + 0.5 (v^T s(x))^2] over random directions v, which
+ * estimates the score-matching objective without the Jacobian's trace, each projection costing one forward-mode
+ * derivative. With the variance-reduced form (Gaussian v only) the second term is 0.5 ||s(x)||^2.
+ *
+ * @param score - The score model s(x) mapping `[N, D]` to `[N, D]` (rows independent).
+ * @param x - Samples `[N, D]`.
+ * @param k - Random key for the directions.
+ * @param options - projections per sample (default 1), kind ('gaussian' or 'rademacher') and varianceReduced.
+ * @returns The scalar loss, differentiable in whatever the score model closes over.
+ * @example
+ * ```ts
+ * import { slicedScoreMatching } from 'mdml-engine/losses'
+ * import { key } from 'mdml-engine/random'
+ * import { mul, item, type Value } from 'mdml-engine/tensor'
+ * // The score of a standard normal, -x, at the data [[1], [-1]]: v^T J v = -v^2 and (v s)^2 / 2 = (v x)^2 / 2 with v^2 = 1.
+ * item(slicedScoreMatching((x: Value) => mul(x, -1), [[1], [-1]], key(0), { kind: 'rademacher' })) // => -0.5
+ * ```
+ */
+export function slicedScoreMatching(
+  score: (x: Value) => Value,
+  x: TensorLike,
+  k: Key,
+  options: { readonly projections?: number; readonly kind?: ProjectionKind; readonly varianceReduced?: boolean } = {},
+): Value {
+  const [data] = promoteFloat(x) as [Value]
+  const [n, d] = [data.shape[0] ?? 1, data.shape[1] ?? 1]
+  const m = options.projections ?? 1
+  const kind = options.kind ?? 'gaussian'
+  const s = score(data)
+  const terms = split(k, m).map((projectionKey) => {
+    const raw = normal(projectionKey, [n, d])
+    const v = kind === 'gaussian' ? raw : where(greater(raw, 0), 1, -1)
+    const quadratic = sum(mul(v, jvp(score, data, v).tangent), -1)
+    const second =
+      options.varianceReduced === true && kind === 'gaussian' ? sum(square(s), -1) : square(sum(mul(v, s), -1))
+    return add(quadratic, mul(second, 0.5))
+  })
+  return mean(
+    div(
+      terms.reduce((a, b) => add(a, b)),
+      m,
+    ),
+  )
+}
+
+/** The result of {@link vectorQuantise}. */
+export interface VectorQuantisation {
+  /** The nearest code of every latent `[N, D]`, with the straight-through gradient to the latents. */
+  readonly quantised: Value
+  /** The index of the nearest code of every latent `[N]`. */
+  readonly indices: Value
+  /** mean ||sg(z) - e||^2: moves the codes to the latents (zero when the codebook is updated by EMA). */
+  readonly codebookLoss: Value
+  /** mean ||z - sg(e)||^2: keeps the encoder's outputs near their codes. */
+  readonly commitmentLoss: Value
+  /** codebookLoss + beta commitmentLoss, differentiable in the latents and the codebook. */
+  readonly loss: Value
+  /** The share of the batch assigned to each code `[K]`. */
+  readonly usage: Value
+  /** exp of the entropy of the usage: the number of codes effectively used (K when uniform, 1 when collapsed). */
+  readonly perplexity: Value
+}
+
+/**
+ * Vector quantisation of the VQ-VAE (van den Oord et al., 2017): each latent is replaced by its nearest code in a
+ * codebook; the loss has a codebook term ||sg(z) - e||^2 (moves the codes), and a commitment term beta ||z - sg(e)||^2
+ * (keeps the encoder near its codes), where sg stops gradients. The quantised output passes the decoder's gradient
+ * straight through to the latents, z + sg(e - z).
+ *
+ * @param latents - Encoder outputs `[N, D]`.
+ * @param codebook - The codes `[K, D]`.
+ * @param options - beta, the commitment weight (default 0.25), and `ema` to drop the codebook term because the codes
+ *   are updated by {@link vqEmaUpdate} instead.
+ * @returns The quantised latents, indices, the loss terms, the code usage and its perplexity.
+ * @concept vector-quantisation
+ * @example
+ * ```ts
+ * import { vectorQuantise } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const out = vectorQuantise([[0.9, 0], [0, 1.2]], [[1, 0], [0, 1]])
+ * toArray(out.indices) // => [0, 1]
+ * ```
+ */
+export function vectorQuantise(
+  latents: TensorLike,
+  codebook: TensorLike,
+  options: { readonly beta?: number; readonly ema?: boolean } = {},
+): VectorQuantisation {
+  const [z, book] = promoteFloat(latents, codebook) as [Value, Value]
+  const k = book.shape[0] ?? 1
+  const squared = sub(
+    add(sum(square(z), -1, true), transpose(sum(square(book), -1, true))),
+    mul(matmul(z, transpose(book)), 2),
+  )
+  const indices = argmin(stopGradient(squared), -1)
+  const e = take(book, indices)
+  const codebookLoss =
+    options.ema === true
+      ? mul(mean(square(sub(stopGradient(z), stopGradient(e)))), 0)
+      : mean(square(sub(stopGradient(z), e)))
+  const commitmentLoss = mean(square(sub(z, stopGradient(e))))
+  const usage = mean(oneHot(indices, k), 0)
+  const perplexity = exp(neg(sum(mul(usage, log(add(usage, 1e-10))))))
+  return {
+    quantised: add(z, stopGradient(sub(e, z))),
+    indices,
+    codebookLoss,
+    commitmentLoss,
+    loss: add(codebookLoss, mul(commitmentLoss, options.beta ?? 0.25)),
+    usage,
+    perplexity,
+  }
+}
+
+/** The running statistics of an exponential-moving-average codebook. */
+export interface VqEmaState {
+  /** The smoothed number of latents assigned to each code `[K]`. */
+  readonly counts: Value
+  /** The smoothed sum of the latents assigned to each code `[K, D]`. */
+  readonly sums: Value
+  /** The codes `[K, D]`, sums over (smoothed) counts. */
+  readonly codebook: Value
+}
+
+/**
+ * The exponential-moving-average codebook update of the VQ-VAE (appendix A of van den Oord et al., 2017; Sonnet's
+ * VectorQuantizerEMA): the smoothed assignment counts and latent sums per code decay at `decay` and absorb the batch,
+ * and the code is their ratio with Laplace smoothing of the counts (a code no latent picks decays toward zero, the dead-code
+ * problem that codebook restarts address).
+ *
+ * @param state - The previous counts, sums and codebook (start from zeros counts and the initial codebook as sums).
+ * @param latents - Encoder outputs `[N, D]`.
+ * @param indices - The nearest-code indices of the batch `[N]` (from {@link vectorQuantise}).
+ * @param options - decay (default 0.99) and eps of the Laplace smoothing (default 1e-5).
+ * @returns The next state.
+ * @example
+ * ```ts
+ * import { vqEmaUpdate } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const start = { counts: [1, 1], sums: [[1, 0], [0, 1]], codebook: [[1, 0], [0, 1]] }
+ * const next = vqEmaUpdate(start, [[3, 0]], [0], { decay: 0.5, eps: 0 })
+ * toArray(next.codebook)[0] // => [2, 0]
+ * ```
+ */
+export function vqEmaUpdate(
+  state: { readonly counts: TensorLike; readonly sums: TensorLike; readonly codebook: TensorLike },
+  latents: TensorLike,
+  indices: TensorLike,
+  options: { readonly decay?: number; readonly eps?: number } = {},
+): VqEmaState {
+  const decay = options.decay ?? 0.99
+  const eps = options.eps ?? 1e-5
+  const [counts, sums, z] = promoteFloat(state.counts, state.sums, latents) as [Value, Value, Value]
+  const k = counts.shape[0] ?? 1
+  const hot = oneHot(cast(promoteFloat(indices)[0] as Value, 'int32'), k)
+  const batchCounts = sum(hot, 0)
+  const batchSums = matmul(transpose(hot), z)
+  const nextCounts = add(mul(counts, decay), mul(batchCounts, 1 - decay))
+  const nextSums = add(mul(sums, decay), mul(batchSums, 1 - decay))
+  const total = sum(nextCounts)
+  const smoothed = mul(div(add(nextCounts, eps), add(total, k * eps)), total)
+  return { counts: nextCounts, sums: nextSums, codebook: div(nextSums, reshape(smoothed, [k, 1])) }
 }

@@ -77,6 +77,42 @@ def cosface_logits(x: FloatArray, w: FloatArray, labels: FloatArray, s: float, m
     return s * (cosine - one_hot * m)
 
 
+def barlow(z1: FloatArray, z2: FloatArray, lambd: float) -> FloatArray:
+    """The reference code of Barlow Twins: batch norm without affine (biased variance, eps 1e-5), then the loss."""
+    bn = torch.nn.BatchNorm1d(z1.shape[1], affine=False).double()
+    c = bn(to_torch(z1)).T @ bn(to_torch(z2)) / len(z1)
+    on_diag = (torch.diagonal(c) - 1).pow(2).sum()
+    off_diag = c.pow(2).sum() - torch.diagonal(c).pow(2).sum()
+    return to_numpy(on_diag + lambd * off_diag)
+
+
+def vicreg(z1: FloatArray, z2: FloatArray, sim: float, std: float, cov: float) -> FloatArray:
+    """The reference code of VICReg (Bardes et al.): invariance, variance and covariance terms."""
+    x, y = to_torch(z1), to_torch(z2)
+    n, d = x.shape
+    repr_loss = F.mse_loss(x, y)
+    xc, yc = x - x.mean(dim=0), y - y.mean(dim=0)
+    std_x, std_y = torch.sqrt(xc.var(dim=0) + 1e-4), torch.sqrt(yc.var(dim=0) + 1e-4)
+    std_loss = torch.mean(F.relu(1 - std_x)) / 2 + torch.mean(F.relu(1 - std_y)) / 2
+    cov_x, cov_y = (xc.T @ xc) / (n - 1), (yc.T @ yc) / (n - 1)
+
+    def off(m: torch.Tensor) -> torch.Tensor:
+        return m.pow(2).sum() - torch.diagonal(m).pow(2).sum()
+
+    cov_loss = off(cov_x) / d + off(cov_y) / d
+    return to_numpy(sim * repr_loss + std * std_loss + cov * cov_loss)
+
+
+def align_loss(x: FloatArray, y: FloatArray, alpha: float) -> FloatArray:
+    """Wang and Isola's code: (x - y).norm(dim=1).pow(alpha).mean()."""
+    return to_numpy((to_torch(x) - to_torch(y)).norm(dim=1).pow(alpha).mean())
+
+
+def uniform_loss(x: FloatArray, t: float) -> FloatArray:
+    """Wang and Isola's code: torch.pdist(x, p=2).pow(2).mul(-t).exp().mean().log()."""
+    return to_numpy(torch.pdist(to_torch(x), p=2).pow(2).mul(-t).exp().mean().log())
+
+
 def cases() -> list[Case]:
     g = rng(45)
     n, d = 6, 4
@@ -192,5 +228,21 @@ def cases() -> list[Case]:
             ),
             scale=30.0,
         ),
+        case("barlowTwins", "barlowTwins", [a, p], barlow(a, p, 0.0051)),
+        case("barlowTwins/lambda", "barlowTwins", [a, p], barlow(a, p, 0.05), lambda_=0.05),
+        case("vicreg", "vicreg", [a, p], vicreg(a, p, 25.0, 25.0, 1.0)),
+        case(
+            "vicreg/weights",
+            "vicreg",
+            [a, p],
+            vicreg(a, p, 10.0, 5.0, 2.0),
+            invariance=10.0,
+            variance=5.0,
+            covariance=2.0,
+        ),
+        case("alignment", "alignment", [a, p], align_loss(a, p, 2.0)),
+        case("alignment/alpha", "alignment", [a, p], align_loss(a, p, 3.0), alpha=3.0),
+        case("uniformity", "uniformity", [a], uniform_loss(a, 2.0)),
+        case("uniformity/t", "uniformity", [a], uniform_loss(a, 0.5), t=0.5),
     ]
     return out
