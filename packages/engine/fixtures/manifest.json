@@ -3151,6 +3151,14 @@
       "cases": 3
     },
     {
+      "fixture": "optim/dual_cd.json",
+      "source": "oracle/cases/optim/dual_cd.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "optim/first_order.json",
       "source": "oracle/cases/optim/first_order.py",
       "reference": {
