@@ -3974,6 +3974,14 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `box-cox.ts`: `guerreroLambda` (the exponent that makes the block spread independent of the level) and `boxCoxMstl`
   (MSTL on the transformed series with lambda given, by Guerrero or by profile likelihood, the fit, trend and seasonal
   factors carried back to the original scale).
+- `features.ts`: `timeSeriesFeatures` (a labelled vector of about 50 features: location and shape, autocorrelation, sample,
+  approximate, permutation and spectral entropy, spectral shape, trend and stability, crossings and strikes, tsfresh-style
+  closed forms, and with `set: 'all'` the Hurst and detrended-fluctuation exponents), `featureMatrix` and
+  `permutationEntropy`. In the spirit of catch22 and tsfresh with the definitions written out here; the values are not
+  the pycatch22 numbers.
+- `shapelets.ts`: `shapeletDistance` (early abandoning, optional z-normalisation), `shapeletSplit` (information gain with
+  the gap tie-break), `shapeletDiscoveryAlgorithm`/`findShapelets` (one candidate per step, best non-overlapping kept,
+  state serialisable) and `shapeletTransform`.
 - `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
   standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
   cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
