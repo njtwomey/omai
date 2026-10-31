@@ -4568,6 +4568,48 @@ Weka description-length constants, the CORELS cache and symmetry-aware bounds be
 built from: `learn` (iterative base), `patterns` (Eclat), `logic/ilp` (`foilGain`), `trees`, `exposition` (`ruleSet`),
 `numerics/special`, `trace`, `random`
 
+### 4.60 `agents/`, `environments/`, `problems/` and `search/evolutionary/`: function approximation, best-arm bandits, test beds with truth, puzzles and NEAT (Sutton and Barto, Garivier and Kaufmann, Stanley and Miikkulainen)
+
+New files in four existing domains; none changes what was there. In `environments/`, `prediction.ts` holds the test beds
+of prediction and off-policy learning, each carrying its truth: `randomWalk` (the 5-, 19- and 1000-state chains, with
+`randomWalkValues` in closed form or by the exact solve of its model), Baird's counterexample (`bairdCounterexample`,
+with `BAIRD_FEATURES`, the behaviour and target policies, the initial weights and `BAIRD_TRUTH`: every true value is
+zero and semi-gradient off-policy TD diverges) and `infiniteVariance` (Example 5.5: value 1, infinite variance of the
+ordinary importance-sampling estimate). `changing-maze.ts` is the blocking and shortcut mazes of Dyna-Q+ (`blockingMaze`,
+`shortcutMaze`): the clock counts steps across episodes through `resetFrom`, the change is flagged in `info`, and
+`changingMazeTruth` gives the shortest path before and after (10 then 16, and 16 then 10) and the optimal actions.
+`goal-reaching.ts` is `reachGoal`, the sparse-reward point-reaching task of hindsight replay (observation position then
+goal, `achievedGoal`, `desiredGoal`, `goalReward`, `reachGoalOptimalSteps`, a `minDistance` knob that makes the reward
+rare). `bandits.ts` gains `changePointBandit`, a Bernoulli bandit whose probabilities change at a planted pull. All are
+registered in `registry.ts` with tags (59 entries now).
+
+In `agents/`, `approximation.ts` is linear function approximation: sparse feature maps (`oneHotFeatures`,
+`matrixFeatures`, `tileFeatures`, `actionTileFeatures`), `tileCoder` (Sutton's tiles with asymmetric, symmetric or no
+offsets and optional hashing into a fixed memory) and the learners as agents with serialisable state:
+`semiGradientTd` (TD(lambda) with accumulating, replacing and dutch traces, `offline` updating whose summed update equals
+the forward view of the lambda returns, off-policy through importance ratios, and an `optimiser` slot taking any
+gradient transformation of `optim` as the update rule), `semiGradientSarsa`, `gradientTd` (GTD2 and TDC) and `emphaticTd`.
+`best-arm.ts` is fixed-confidence best-arm identification as algorithms with a stopping rule and typed paths
+(`BestArmPath`, `bestArmContract`): `successiveEliminationAlgorithm`, `medianEliminationAlgorithm`, `lucbAlgorithm` and
+`trackAndStopAlgorithm` (Gaussian arms), `runBestArm`, and the quantities the sample complexity is measured against
+(`characteristicTime`, the optimal allocation and `1 / T*` of the lower bound, and `hardness`).
+`non-stationary-bandits.ts` has `slidingWindowUcb` and `discountedUcb`. `off-policy-monte-carlo.ts` has
+`offPolicyMonteCarloPrediction` (ordinary and weighted importance sampling) and `offPolicyMonteCarloControl`.
+`goal-conditioned.ts` has `relabelEpisode` (hindsight strategies `final`, `future` and `episode`) and `goalConditionedQ`.
+
+In `problems/`, `classic-puzzles.ts` has the sliding-tile puzzles (`slidingPuzzle`, `isSolvable` by permutation parity,
+`scrambledBoard`, `optimalMoves`) and `towersOfHanoi`; `tours.ts` has travelling-salesman instances with known optimal
+tours (`circleTour`, `gridTour`, `randomTour` with the exact optimum from `heldKarp`) and Hamiltonian-cycle puzzles
+(`plantedHamiltonian`, `findHamiltonianCycle`); `sat-instances.ts` has `randomKSat`, `plantedKSat` (with the witness),
+`pigeonhole` and `SAT_THRESHOLDS`; `registry.ts` is `problemRegistry`, tagging every family (also queens and Sudoku) by
+kind and solvability, whose `make` builds an instance with its truth (`whereProblems`, `findProblem`). In
+`search/evolutionary/`, `neat.ts` is `neatAlgorithm`: innovation numbers, speciation by the compatibility distance,
+aligned crossover and structural mutation, with XOR (`xorFitness`, `solvesXor`) as its truth and `neatNetwork` to run a
+genome. Where this differs from `LIB.md`: the continuous particle swarm was already `optim/minimize/particle-swarm.ts`
+(inertia or constriction, global or ring topology) and was not duplicated; `randomWalk` and `bairdCounterexample` are in
+`environments/prediction.ts` rather than `toy-text.ts`, `changingMaze` in `changing-maze.ts` rather than `gridworlds.ts`,
+and the goal-reaching task is its own file instead of a variant of `pointMass`.
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
