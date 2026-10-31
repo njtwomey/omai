@@ -1,13 +1,15 @@
 /**
  * System identification: estimating a dynamical model from measured inputs and outputs. Polynomial models
  * (least-squares ARX, ARMAX by the prediction-error method), subspace identification of state-space models (N4SID),
- * dynamic mode decomposition and its extended form approximating the Koopman operator, and SINDy, which finds sparse
- * governing equations from a library of candidate terms.
+ * dynamic mode decomposition and its extended form approximating the Koopman operator, SINDy, which finds sparse
+ * governing equations from a library of candidate terms, and recursive least squares, which updates the estimate one
+ * sample at a time (with a forgetting factor to follow a changing system).
  */
 
-import { MdmlError } from '../base/index.ts'
-import { eig, lstsq, pinv, solve, svd } from '../numerics/linalg/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
+import { ddot, dgemv, eig, lstsq, pinv, solve, svd } from '../numerics/linalg/index.ts'
 import { leastSquares } from '../optim/index.ts'
+import { type Key, key, normal } from '../random/index.ts'
 import {
   add,
   asTensor,
@@ -26,6 +28,15 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor as tensorSource,
+} from '../trace/index.ts'
 import { fromNumbers, numbersOf } from './ode/_vec.ts'
 
 const series = (x: TensorLike): Float64Array => Float64Array.from(numbersOf(primalOf(asTensor(x))))
@@ -601,4 +612,264 @@ export function sindy(
     return `x${i}' = ${terms.length === 0 ? '0' : terms.join(' + ')}`
   })
   return { coefficients: coef, names: lib.names, equations }
+}
+
+/** The regression rows and targets of an ARX model: `phi_t = [-y_{t-1} .. -y_{t-na}, u_{t-nk} .. u_{t-nk-nb+1}]`, target `y_t`. */
+export interface Regression {
+  /** One row per usable sample, `[rows][na + nb]`. */
+  readonly phi: readonly (readonly number[])[]
+  /** The matching outputs. */
+  readonly y: readonly number[]
+}
+
+/**
+ * The regression of an ARX model on a data record, the rows {@link arx} solves in one go and {@link rlsAlgorithm} takes one
+ * at a time.
+ *
+ * @param y - Output series.
+ * @param u - Input series.
+ * @param orders - na, nb and the delay nk (default 1).
+ * @returns The regressors and targets, from the first index where every lag exists.
+ * @throws MdmlError with code `value` for mismatched lengths.
+ * @concept system-identification
+ * @example
+ * ```ts
+ * import { arxRegression } from 'mdml-engine/dynamics'
+ * arxRegression([1, 2, 3, 4], [5, 6, 7, 8], { na: 1, nb: 1 }).phi // => [[-1, 5], [-2, 6], [-3, 7]]
+ * ```
+ */
+export function arxRegression(
+  y: TensorLike,
+  u: TensorLike,
+  orders: { readonly na: number; readonly nb: number; readonly nk?: number },
+): Regression {
+  const ys = series(y)
+  const us = series(u)
+  if (ys.length !== us.length) throw new MdmlError('value', 'arxRegression: y and u need the same length')
+  const { na, nb } = orders
+  const nk = orders.nk ?? 1
+  const start = Math.max(na, nk + nb - 1)
+  const phi: number[][] = []
+  const target: number[] = []
+  for (let t = start; t < ys.length; t++) {
+    phi.push([
+      ...Array.from({ length: na }, (_, i) => -(ys[t - 1 - i] ?? 0)),
+      ...Array.from({ length: nb }, (_, j) => us[t - nk - j] ?? 0),
+    ])
+    target.push(ys[t] ?? 0)
+  }
+  return { phi, y: target }
+}
+
+/** The state of {@link rlsAlgorithm}. */
+export interface RlsState {
+  /** The parameter estimate. */
+  readonly theta: Float64Array
+  /** The covariance `P` (flat `[d, d]`): the inverse of the forgetting-weighted information. */
+  readonly covariance: Float64Array
+  /** Samples used. */
+  readonly t: number
+  /** The a-priori prediction error of the last sample, y - phi . theta before the update. */
+  readonly error: number
+  /** The gain vector of the last update. */
+  readonly gain: Float64Array
+}
+
+/**
+ * One recursive-least-squares update with forgetting factor `lambda`: the gain K = P phi / (lambda + phi' P phi), the
+ * estimate theta + K (y - phi' theta), and P replaced by (P - K phi' P) / lambda, computed in the Joseph form so that it stays
+ * symmetric and positive definite. After t samples the estimate is the weighted least squares of the prior and the samples,
+ * sample k weighted lambda^(t-k): with lambda = 1 the batch fit; with lambda < 1 old samples are discounted, so the estimate
+ * follows a system that changes.
+ *
+ * @param state - The estimate and covariance.
+ * @param phi - The regressor of the new sample.
+ * @param y - Its output.
+ * @param lambda - The forgetting factor, in (0, 1].
+ * @returns The updated state.
+ * @concept recursive-least-squares
+ * @example
+ * ```ts
+ * import { rlsUpdate } from 'mdml-engine/dynamics'
+ * const s0 = { theta: Float64Array.of(0), covariance: Float64Array.of(100), t: 0, error: 0, gain: Float64Array.of(0) }
+ * // One sample of y = 2 phi at phi = 1 moves a weak prior almost all the way to 2.
+ * Math.round(rlsUpdate(s0, [1], 2, 1).theta[0] * 1000) / 1000 // => 1.98
+ * ```
+ */
+export function rlsUpdate(state: RlsState, phi: ArrayLike<number>, y: number, lambda: number): RlsState {
+  const d = state.theta.length
+  const pPhi = dgemv(state.covariance, d, d, phi)
+  const denominator = lambda + ddot(phi, pPhi)
+  const gain = pPhi.map((v) => v / denominator)
+  const error = y - ddot(phi, state.theta)
+  const theta = state.theta.map((v, i) => v + (gain[i] ?? 0) * error)
+  // P+ = (I - K phi') (P / lambda) (I - K phi')' + K K': the Joseph form, symmetric and positive semi-definite by
+  // construction, where the textbook (P - K phi' P) / lambda loses both as the covariance shrinks.
+  const m = new Float64Array(d * d)
+  for (let i = 0; i < d; i++)
+    for (let j = 0; j < d; j++) m[i * d + j] = (i === j ? 1 : 0) - (gain[i] ?? 0) * (phi[j] ?? 0)
+  const mp = new Float64Array(d * d)
+  for (let i = 0; i < d; i++) {
+    for (let k = 0; k < d; k++) {
+      const mik = m[i * d + k] ?? 0
+      for (let j = 0; j < d; j++) mp[i * d + j] = (mp[i * d + j] ?? 0) + mik * (state.covariance[k * d + j] ?? 0)
+    }
+  }
+  const covariance = new Float64Array(d * d)
+  for (let i = 0; i < d; i++) {
+    for (let j = 0; j < d; j++) {
+      let v = 0
+      for (let k = 0; k < d; k++) v += (mp[i * d + k] ?? 0) * (m[j * d + k] ?? 0)
+      covariance[i * d + j] = v / lambda + (gain[i] ?? 0) * (gain[j] ?? 0)
+    }
+  }
+  return { theta, covariance, t: state.t + 1, error, gain }
+}
+
+/** The paths of {@link rlsAlgorithm}. */
+export type RlsPath = 'fit/parameters' | 'fit/error' | 'fit/gain' | 'fit/covarianceTrace'
+
+/** What a recursive-least-squares run logs. */
+export const rlsContract: Contract<RlsState, RlsPath> = defineContract({
+  'fit/parameters': tensorSource({
+    role: 'param',
+    shape: ['d'],
+    description: 'the parameter estimate after the sample',
+  }),
+  'fit/error': scalar({ description: 'the a-priori prediction error of the sample', direction: 'lower' }),
+  'fit/gain': tensorSource({
+    role: 'grad',
+    shape: ['d'],
+    description: 'the update gain: how far the error moves each parameter',
+  }),
+  'fit/covarianceTrace': scalar({
+    description: 'the trace of P: the uncertainty left in the estimate',
+    direction: 'lower',
+  }),
+})
+
+/** Options of {@link rlsAlgorithm}. */
+export interface RlsOptions {
+  /** The forgetting factor, in (0, 1] (default 1: nothing is forgotten). */
+  readonly forgetting?: number
+  /** The prior covariance is `initialVariance` times the identity (default 1000: a vague prior). */
+  readonly initialVariance?: number
+  /** The starting estimate (default zeros). */
+  readonly theta0?: ArrayLike<number>
+}
+
+/**
+ * Recursive least squares as a stepped algorithm: one sample per step, the estimate moving by the gain times the prediction
+ * error, with a forgetting factor that lets it follow a changing system. Logs the parameters, the a-priori error, the gain
+ * and the trace of the covariance. The regression of an ARX model on a record comes from {@link arxRegression}; any linear
+ * regression works.
+ *
+ * @param regression - The regressors and targets, one row per sample.
+ * @param options - Forgetting, the prior and the start.
+ * @returns The algorithm, which ends (completed) after the last sample.
+ * @throws MdmlError with code `value` for a forgetting factor outside (0, 1] or rows of different sizes.
+ * @concept recursive-least-squares
+ * @example
+ * ```ts
+ * import { rlsAlgorithm } from 'mdml-engine/dynamics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * // y = 3 phi exactly: the estimate is 3 after a few samples.
+ * const phi = [[1], [2], [3], [4]]
+ * const alg = rlsAlgorithm({ phi, y: [3, 6, 9, 12] })
+ * Math.round(runAlgorithm(alg, { maxSteps: 10 }).state.theta[0] * 1e3) / 1e3 // => 3
+ * ```
+ */
+export function rlsAlgorithm(regression: Regression, options: RlsOptions = {}): Algorithm<RlsState, RlsPath> {
+  const lambda = options.forgetting ?? 1
+  if (!(lambda > 0 && lambda <= 1)) throw new MdmlError('value', 'rlsAlgorithm: the forgetting factor is in (0, 1]')
+  const d = regression.phi[0]?.length ?? 0
+  if (d === 0 || regression.phi.some((r) => r.length !== d) || regression.y.length !== regression.phi.length) {
+    throw new MdmlError('value', 'rlsAlgorithm: give rows of equal size, one target per row')
+  }
+  const delta = options.initialVariance ?? 1000
+  const n = regression.phi.length
+  return {
+    name: 'recursiveLeastSquares',
+    config: { forgetting: lambda, initialVariance: delta, samples: n, size: d },
+    init: () => {
+      const covariance = new Float64Array(d * d)
+      for (let i = 0; i < d; i++) covariance[i * d + i] = delta
+      return {
+        theta: Float64Array.from(options.theta0 ?? new Float64Array(d)),
+        covariance,
+        t: 0,
+        error: 0,
+        gain: new Float64Array(d),
+      }
+    },
+    step: (s, ctx) => {
+      const next = rlsUpdate(s, regression.phi[s.t] as number[], regression.y[s.t] as number, lambda)
+      ctx.log('fit/parameters', next.theta)
+      ctx.log('fit/error', next.error)
+      ctx.log('fit/gain', next.gain)
+      let trace = 0
+      for (let i = 0; i < d; i++) trace += next.covariance[i * d + i] ?? 0
+      ctx.log('fit/covarianceTrace', trace)
+      return next
+    },
+    done: (s) => (s.t >= n ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j: Json) => stateFromJson(j) as RlsState,
+  }
+}
+
+/** A planted ARX system with its truth: the polynomials, and (optionally) a step at which they change. */
+export interface ArxPlant {
+  /** a_1 .. a_na of A(q) y = B(q) u + e (y_t = -a_1 y_{t-1} - ... + b_1 u_{t-nk} + ...). */
+  readonly a: readonly number[]
+  /** b_1 .. b_nb. */
+  readonly b: readonly number[]
+  readonly nk?: number
+}
+
+/**
+ * Simulate an ARX plant driven by an input record, with white measurement noise from a key, the coefficients switching
+ * to another set at a given sample: data whose truth is known at every step, for studying how identification converges and
+ * how a forgetting factor tracks a change.
+ *
+ * @param plant - The coefficients before the change.
+ * @param u - The input series.
+ * @param options - Noise standard deviation (default 0), its key, and the change (the sample and the new plant).
+ * @returns The output series, and the true coefficient vector `[a, b]` at each sample.
+ * @concept system-identification
+ * @example
+ * ```ts
+ * import { simulateArx } from 'mdml-engine/dynamics'
+ * // y_t = 0.5 y_{t-1} + 2 u_{t-1}.
+ * simulateArx({ a: [-0.5], b: [2] }, [1, 0, 0, 1]).y // => [0, 2, 1, 0.5]
+ * ```
+ */
+export function simulateArx(
+  plant: ArxPlant,
+  u: TensorLike,
+  options: {
+    readonly noise?: number
+    readonly key?: Key
+    readonly change?: { readonly at: number; readonly to: ArxPlant }
+  } = {},
+): { readonly y: number[]; readonly truth: number[][] } {
+  const us = series(u)
+  const noise = options.noise ?? 0
+  const e = noise > 0 ? Array.from(normal(options.key ?? key(0), [us.length], { scale: noise }).data) : []
+  const y: number[] = []
+  const truth: number[][] = []
+  for (let t = 0; t < us.length; t++) {
+    const p = options.change !== undefined && t >= options.change.at ? options.change.to : plant
+    const nk = p.nk ?? 1
+    let v = e[t] ?? 0
+    p.a.forEach((a, i) => {
+      v -= a * (y[t - 1 - i] ?? 0)
+    })
+    p.b.forEach((b, j) => {
+      v += b * (us[t - nk - j] ?? 0)
+    })
+    y.push(v)
+    truth.push([...p.a, ...p.b])
+  }
+  return { y, truth }
 }

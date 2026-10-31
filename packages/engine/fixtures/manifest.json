@@ -413,6 +413,14 @@
       "cases": 8
     },
     {
+      "fixture": "dynamics/control/robust.json",
+      "source": "oracle/cases/dynamics/control/robust.py",
+      "reference": {
+        "slycot": "0.7.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "dynamics/filtering/changepoint.json",
       "source": "oracle/cases/dynamics/filtering/changepoint.py",
       "reference": {
