@@ -4097,16 +4097,71 @@ penalty); logs
 `solver/logLambda`. `backfitting.ts` is Hastie and Tibshirani's backfitting (local scoring for an exponential family),
 one cycle per step, which converges to the same penalised solution at fixed smoothing parameters. `estimators.ts` has
 `gam` and `gamClassifier` on the iterative base: `predict`, `predictTerms`, `standardErrors` (Bayesian posterior
-covariance), `predictDistribution`, `edfTerms`, `smoothingParameters`, `aic`.
+covariance), `predictDistribution`, `edfTerms`, `smoothingParameters`, `aic`. `inference.ts` is inference on a fitted
+model from `fitContext(problem, state)` (the Bayesian and frequentist covariances, `edf` and `edf1` per coefficient):
+`gamSummary` (mgcv's `summary.gam`: Wald tests of the parametric terms, Wood's 2013 reference test `referenceTest` of
+each smooth with the fractional-rank pseudo-inverse and a `weightedChiSquareSf` null, an F reference when the scale is
+estimated, deviance explained), pointwise and simultaneous credible bands (`termBand` for one partial effect,
+`predictionBand` for the predictor or the mean; the simultaneous multiplier is the simulated quantile of the maximal
+standardised deviation), and posterior simulation (`sampleCoefficients`, `simulateCurves`). The estimators expose them
+as the verbs `summary`, `termBand`, `predictionBand`, `sampleCoefficients` and `simulateCurves`. Tested by simulation:
+coverage of the bands, uniformity of the null p-values, power under a real effect.
+
+`shape.ts` makes the shape constraints of a smooth term (`s(0, { shape: 'increasing' | 'decreasing' | 'convex' |
+'concave' | [..], lower, upper })`) into linear inequalities on its coefficients (coefficient differences on a P-spline,
+the fitted effect on a grid on other bases and for bounds); `solvePenalised` then solves the penalised least-squares step
+as a quadratic program (the active-set method of `optim`, the interior-point method if a degenerate grid makes it
+cycle) and inverts the Hessian on the null space of the binding constraints, so `edf`, the posterior covariance and the
+REML determinant are those of the constrained model. The solver slot is `irls` only for such terms.
+
+`outer.ts` is the outer iteration of mgcv (`iteration: 'outer'`; the performance iteration stays the default,
+`iteration: 'performance'`): `innerFit` runs the penalised fit to convergence at a trial `log lambda` (penalised IRLS
+with step halving, or any `glmSolvers` mode warm-started), `evaluateOuter` scores it, and `gamOuterAlgorithm` (one outer
+iteration per step, `fitGamOuter` to the end) minimises the score. REML and ML are the Laplace-approximate marginal
+likelihood with the observed information (`observedWeights`: the Fisher weight times `1 + (y - mu)(V'/V + g''/g')`),
+the scale profiled out when unknown, an analytic gradient in `log lambda` (the implicit derivative of the penalised
+coefficients, the weights differentiated in the linear predictor), and a Hessian from differences of gradients
+(`outerHessian`), with Newton steps, an eigenvalue safeguard and step halving; GCV and UBRE are the deviance scores of the
+converged fit minimised with the simplex. Its state is a `GamState` plus the gradient norm, so inference and the
+estimators (`gam.with({ iteration: 'outer' })`) apply to it unchanged.
+
+`selection.ts` is model selection: `gamInformation` (log-likelihood, AIC and BIC with the effective degrees of freedom
+corrected for smoothing-parameter uncertainty by `smoothingCorrection`, the covariance widened by the inverse Hessian of
+the REML score, and the conditional AIC that takes the smoothing parameters as known), `compareGams` (the approximate F
+or chi-square test between nested fits), and the double penalty (`s(0, { select: true })` in `terms.ts` adds a penalty
+on the null space of the smoothness penalty so the criterion can shrink a term out). `diagnostics.ts` is `gam.check`:
+`gamResiduals` (deviance, Pearson, working, response), `qqData` (QQ data with a band from simulated datasets),
+`residualsVsFitted`, `kIndex` (the basis-dimension check on residuals ordered by the covariate, with a shuffle
+p-value), `concurvity` (worst, observed and estimate), `cooksDistance`.
+
+`derivatives.ts` is functionals of the smooths with bands from the same posterior covariance: `predictTermsSe` (every
+term's effect with its standard error, terms left out by `exclude` without being evaluated, the band of the total),
+`smoothDerivative` (first or second derivative of a one-covariate smooth, by central differences or their Richardson
+extrapolation, since a basis exposes values and not derivatives; stencils shifted inward at the range's ends) and
+`smoothDifference` (the difference of two smooths, the levels of a by-variable, with pointwise or simultaneous bands from the
+joint covariance). The estimators carry them as verbs.
+
+`profile.ts` estimates a scalar parameter of the response family with the smooths (`profileFamilyParameter`: the
+negative binomial's dispersion, the Tweedie power): the converged outer REML score is a marginal likelihood of the
+parameter too (the families' log-likelihoods are exact), so it is minimised over the parameter by bounded
+one-dimensional search, each evaluation an outer fit warm-started at the last smoothing parameters. Beta regression
+(mgcv's `betar`) is not offered: with fixed precision it is not an exponential-dispersion family in the mean, so the
+quasi-weights of penalised IRLS do not reach the likelihood's stationary point; it needs an extended-family Newton
+iteration on the true derivatives of the log-likelihood in the linear predictor (the same machinery ordered
+categorical, Cox, zero-inflated and GAMLSS models need).
 
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
 (a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,
-variance and intercept). pyGAM and mgcv are not in the oracle environment. TODO: GAMLSS (the distributional families
-of `dists/families` have the links and the log-likelihood; the RS algorithm over per-parameter additive predictors is
-not written), the outer-iteration REML of mgcv (the performance iteration here differs from it for non-Gaussian
-families), shape-constrained smooths in terms (`stats/smoothing` has `shapeConstraint`), confidence bands for term
-effects, p-values of terms.
+variance and intercept). The outer iteration is checked against an independent numpy/scipy implementation (`gam/outer`:
+statsmodels' B-spline design, a brute-force profile of the Laplace REML over a grid of `log lambda` refined by scipy, for the
+Gaussian, Poisson, binomial and gamma-log families: `log lambda`, criterion, effective degrees of freedom, coefficients).
+pyGAM and mgcv are not in the oracle environment. TODO: an extended-family Newton iteration on the true derivatives of a log-likelihood in the linear predictors
+(beta regression, ordered categorical, Cox with smooth terms through `survival`'s `coxProblem`, zero-inflated Poisson) and
+on top of it GAMLSS (the distributional families of `dists/families` have the links and the log-likelihood; the RS and
+CG algorithms over per-parameter additive predictors are not written); a Metropolis or HMC sampler of the coefficient
+posterior in addition to the Gaussian approximation of `sampleCoefficients`; a basis-derivative evaluator in
+`stats/smoothing` for exact derivatives of smooths.
 built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
 
 ### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)

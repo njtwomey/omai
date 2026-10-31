@@ -8,7 +8,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
-import { dgemm } from '../numerics/linalg/index.ts'
+import { dgemm, dsyev } from '../numerics/linalg/index.ts'
 import {
   bs,
   cc,
@@ -25,6 +25,7 @@ import {
   ts,
 } from '../stats/smoothing/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { type ConstraintBlock, type ShapeKind, shapeRows } from './shape.ts'
 
 /** The bases a smooth term can use (`stats/smoothing`): the names are mgcv's. */
 export type SmoothKind = 'cr' | 'cc' | 'ps' | 'bs' | 'ns' | 'tp' | 'ts' | 'duchon' | 'gp'
@@ -43,6 +44,20 @@ export interface SmoothOptions {
   readonly by?: number
   /** The label (default `s(x0)`). */
   readonly label?: string
+  /**
+   * Constrain the effect's shape: `increasing`, `decreasing`, `convex`, `concave`, or several (`['increasing',
+   * 'concave']`). One covariate only. The fit is then a quadratic program per step ({@link ShapeKind}).
+   */
+  readonly shape?: ShapeKind | readonly ShapeKind[]
+  /** A lower bound on the (centred) partial effect, imposed on a grid over the covariate's range. */
+  readonly lower?: number
+  /** An upper bound on the (centred) partial effect. */
+  readonly upper?: number
+  /**
+   * Add a penalty on the null space of the smoothing penalty (Marra and Wood's double penalty, mgcv's `select = TRUE`), so
+   * the term can be shrunk out of the model by the smoothing-parameter criterion.
+   */
+  readonly select?: boolean
 }
 
 /** Options of a tensor-product term {@link te} or {@link ti}. */
@@ -65,6 +80,10 @@ export type GamTerm =
       readonly order: number
       readonly by: number | undefined
       readonly label: string
+      readonly shape: readonly ShapeKind[]
+      readonly lower: number | undefined
+      readonly upper: number | undefined
+      readonly select: boolean
     }
   | {
       readonly kind: 'te' | 'ti'
@@ -110,6 +129,10 @@ export function s(feature: number | readonly number[], options: SmoothOptions = 
     order: options.order ?? 2,
     by: options.by,
     label: options.label ?? `s(${names(features)})${options.by === undefined ? '' : `:x${options.by}`}`,
+    shape: options.shape === undefined ? [] : typeof options.shape === 'string' ? [options.shape] : [...options.shape],
+    lower: options.lower,
+    upper: options.upper,
+    select: options.select ?? false,
   }
 }
 
@@ -220,6 +243,8 @@ export interface CompiledTerm {
   readonly penalties: readonly TermPenalty[]
   /** The dimension of the part of the block no penalty touches (the term's unpenalised, parametric part). */
   readonly nullSpaceDimension: number
+  /** Shape and bound constraints on the term's coefficients `rows beta >= rhs`, when it has any. */
+  readonly constraints?: ConstraintBlock
   /** The block `[m, width]`, row-major, at the rows of a matrix. */
   evaluate(x: MatrixView): Float64Array
 }
@@ -235,6 +260,8 @@ export interface GamDesign {
   readonly terms: readonly CompiledTerm[]
   /** The number of smoothing parameters: one per penalty, in the order of the terms. */
   readonly nPenalties: number
+  /** The constraints of all terms `rows beta >= rhs` over the design's columns, when any term has some. */
+  readonly constraints?: ConstraintBlock
 }
 
 function columnsOf(m: MatrixView, features: readonly number[]): Tensor {
@@ -300,6 +327,24 @@ function centre(basis: SmoothBasis): {
   return { X, penalties, Z, k, kc, nullDim: Math.max(0, basis.nullSpaceDimension - 1) }
 }
 
+/** The projector on the null space of the sum of penalty matrices (the double penalty), or undefined if it is empty. */
+function nullSpacePenalty(penalties: readonly Float64Array[], width: number): Float64Array | undefined {
+  const total = new Float64Array(width * width)
+  for (const pen of penalties) for (let i = 0; i < total.length; i++) total[i] = (total[i] ?? 0) + (pen[i] ?? 0)
+  const { w, v } = dsyev(total, width)
+  const top = Math.max(...Array.from(w), 1e-300)
+  const out = new Float64Array(width * width)
+  let any = false
+  w.forEach((value, c) => {
+    if (value > 1e-9 * top) return
+    any = true
+    for (let i = 0; i < width; i++)
+      for (let j = 0; j < width; j++)
+        out[i * width + j] = (out[i * width + j] ?? 0) + (v[i * width + c] ?? 0) * (v[j * width + c] ?? 0)
+  })
+  return any ? out : undefined
+}
+
 function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
   const flat = (t: Tensor): Float64Array => Float64Array.from(toFlat(t))
   switch (term.kind) {
@@ -315,11 +360,51 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
       const kRaw = basis.X.shape[1] ?? 0
       const width = c === undefined ? kRaw : c.kc
       const penalties = (c?.penalties ?? basis.penalties.map(flat)).map((matrix) => ({ matrix }))
+      if (term.select) {
+        const extra = nullSpacePenalty(
+          penalties.map((p) => p.matrix),
+          width,
+        )
+        if (extra !== undefined) penalties.push({ matrix: extra })
+      }
       const scaleBy = (block: Float64Array, rows: number, by: ArrayLike<number> | undefined): Float64Array => {
         if (by === undefined) return block
         for (let i = 0; i < rows; i++)
           for (let j = 0; j < width; j++) block[i * width + j] = (block[i * width + j] ?? 0) * (by[i] ?? 0)
         return block
+      }
+      const evaluate = (q: MatrixView): Float64Array => {
+        const block = flat(basis.evaluate(columnsOf(q, term.features)))
+        const centred = c === undefined ? block : dgemm(block, c.Z, q.n, c.k, c.kc)
+        return scaleBy(centred, q.n, term.by === undefined ? undefined : columnsOf(q, [term.by]).data)
+      }
+      const constrained = term.shape.length > 0 || term.lower !== undefined || term.upper !== undefined
+      let constraints: ConstraintBlock | undefined
+      if (constrained) {
+        if (d !== 1 || term.by !== undefined) {
+          throw new MdmlError(
+            'value',
+            `gam: ${term.label}: shape constraints and bounds need one covariate and no \`by\``,
+          )
+        }
+        const values = Array.from(toFlat(x))
+        const lo = Math.min(...values)
+        const hi = Math.max(...values)
+        const gridSize = Math.min(80, Math.max(30, 3 * kRaw))
+        const gridData = new Float64Array(gridSize * m.d)
+        for (let i = 0; i < gridSize; i++)
+          gridData[i * m.d + (term.features[0] ?? 0)] = lo + ((hi - lo) * i) / (gridSize - 1)
+        constraints = shapeRows({
+          shapes: term.shape,
+          lower: term.lower,
+          upper: term.upper,
+          basis: term.basis,
+          k: kRaw,
+          Z: c?.Z,
+          width,
+          grid: evaluate({ n: gridSize, d: m.d, data: gridData }),
+          gridSize,
+        })
       }
       return {
         term,
@@ -328,11 +413,8 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
         width,
         penalties,
         nullSpaceDimension: c === undefined ? basis.nullSpaceDimension : c.nullDim,
-        evaluate: (q) => {
-          const block = flat(basis.evaluate(columnsOf(q, term.features)))
-          const centred = c === undefined ? block : dgemm(block, c.Z, q.n, c.k, c.kc)
-          return scaleBy(centred, q.n, term.by === undefined ? undefined : columnsOf(q, [term.by]).data)
-        },
+        ...(constraints === undefined ? {} : { constraints }),
+        evaluate,
       }
     }
     case 'te':
@@ -443,6 +525,24 @@ export function buildDesign(x: TensorLike, terms?: readonly GamTerm[]): GamDesig
     compiled.push(c)
     offset += c.width
   }
+  const withConstraints = compiled.filter((t) => t.constraints !== undefined)
+  let constraints: ConstraintBlock | undefined
+  if (withConstraints.length > 0) {
+    const count = withConstraints.reduce((a, t) => a + (t.constraints?.count ?? 0), 0)
+    const rows = new Float64Array(count * offset)
+    const rhs = new Float64Array(count)
+    let at = 0
+    for (const t of withConstraints) {
+      const block = t.constraints as ConstraintBlock
+      for (let r = 0; r < block.count; r++) {
+        for (let j = 0; j < block.width; j++)
+          rows[(at + r) * offset + t.offset + j] = block.rows[r * block.width + j] ?? 0
+        rhs[at + r] = block.rhs[r] ?? 0
+      }
+      at += block.count
+    }
+    constraints = { rows, rhs, count, width: offset }
+  }
   const design: GamDesign = {
     n: m.n,
     p: offset,
@@ -450,6 +550,7 @@ export function buildDesign(x: TensorLike, terms?: readonly GamTerm[]): GamDesig
     X: new Float64Array(m.n * offset),
     terms: compiled,
     nPenalties: compiled.reduce((a, t) => a + t.penalties.length, 0),
+    ...(constraints === undefined ? {} : { constraints }),
   }
   fillDesign(design, m, design.X)
   return design

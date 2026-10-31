@@ -51,6 +51,8 @@ export function backfittingAlgorithm(problem: GamProblem, hyper: GamHyper): Algo
   const { design, structure } = problem
   const { n, p } = design
   const nPen = structure.blocks.length
+  if (design.constraints !== undefined)
+    throw new MdmlError('value', 'backfitting: shape-constrained terms need gamAlgorithm')
   if (hyper.sp !== undefined && hyper.sp.length !== nPen) {
     throw new MdmlError('shape', `backfitting: sp has ${hyper.sp.length} entries for ${nPen} penalties`)
   }

@@ -17,7 +17,27 @@ import { glmSolvers } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { Log } from '../trace/index.ts'
+import { type Algorithm, Log } from '../trace/index.ts'
+import {
+  type DerivativeOptions,
+  predictTermsSe,
+  smoothDerivative,
+  smoothDifference,
+  type TermPredictions,
+} from './derivatives.ts'
+import {
+  type Band,
+  type BandOptions,
+  fitContext,
+  type GamFitContext,
+  type GamSummary,
+  gamSummary,
+  predictionBand,
+  sampleCoefficients,
+  simulateCurves,
+  termBand,
+} from './inference.ts'
+import { gamOuterAlgorithm } from './outer.ts'
 import { posteriorCovariance } from './penalised.ts'
 import {
   GAM_DEFAULTS,
@@ -70,6 +90,30 @@ export interface GamVerbs {
   readonly decisionFunction?: (x: TensorLike) => Tensor
   readonly classes?: readonly number[]
   readonly score: (data: LearnData) => number
+  /** The summary table: per-term tests (Wood's reference test for smooths), the scale and deviance explained. */
+  readonly summary: () => GamSummary
+  /** The credible band of a term's partial effect at new rows (pointwise, or simultaneous by simulation). */
+  readonly termBand: (term: number, x: TensorLike, options?: BandOptions) => Band
+  /** The partial effect of every term with standard errors, with terms left out (`exclude`). */
+  readonly predictTermsSe: (
+    x: TensorLike,
+    options?: BandOptions & { readonly exclude?: readonly number[]; readonly intercept?: boolean },
+  ) => TermPredictions
+  /** The derivative of a smooth of one covariate, with a credible band. */
+  readonly smoothDerivative: (term: number, at: ArrayLike<number>, options?: DerivativeOptions) => Band
+  /** The difference between two smooths of one covariate (levels of a by-variable), with a credible band. */
+  readonly smoothDifference: (a: number, b: number, at: ArrayLike<number>, options?: BandOptions) => Band
+  /** The credible band of the linear predictor or (on the response scale) the mean at new rows. */
+  readonly predictionBand: (x: TensorLike, options?: BandOptions) => Band
+  /** Draws of the coefficients from their Gaussian posterior approximation `[count, p]`. */
+  readonly sampleCoefficients: (count: number, key: Key) => Float64Array
+  /** Draws of a fitted curve (a term's effect, the predictor or the mean) at new rows `[count, m]`. */
+  readonly simulateCurves: (
+    x: TensorLike,
+    count: number,
+    key: Key,
+    options?: { readonly term?: number; readonly scale?: 'link' | 'response' },
+  ) => Float64Array
   readonly nFeaturesIn: number
   readonly coef: readonly number[]
   readonly edf: number
@@ -127,7 +171,37 @@ function verbsOf(p: GamParams, h: GamHyper, kind: 'regressor' | 'classifier'): G
     ),
   )
   const scaleEstimated = h.scale === undefined && !['binomial', 'poisson', 'negativeBinomial'].includes(h.family.name)
+  let context: GamFitContext | undefined
+  const ctx = (): GamFitContext => {
+    if (context === undefined) {
+      const problem = gamProblem(p.xFit, p.yFit, h, p.weights)
+      const eta = Array.from(toFlat(linearPredictor(p.xFit)))
+      const state: GamState = {
+        iteration: 0,
+        beta: p.coef,
+        eta,
+        logLambda: p.logLambda,
+        deviance: p.deviance,
+        penalisedDeviance: p.deviance,
+        edf: p.edf,
+        edfTerms: p.edfTerms,
+        criterion: Number.NaN,
+        scale: p.scale,
+        converged: true,
+      }
+      context = fitContext(problem, state)
+    }
+    return context
+  }
   const base: GamVerbs = {
+    summary: () => gamSummary(ctx()),
+    predictTermsSe: (x, options) => predictTermsSe(ctx(), x, options),
+    smoothDerivative: (term, at, options) => smoothDerivative(ctx(), term, at, options),
+    smoothDifference: (a, b, at, options) => smoothDifference(ctx(), a, b, at, options),
+    termBand: (term, x, options) => termBand(ctx(), term, x, options),
+    predictionBand: (x, options) => predictionBand(ctx(), x, options),
+    sampleCoefficients: (count, key) => sampleCoefficients(ctx(), count, key),
+    simulateCurves: (x, count, key, options) => simulateCurves(ctx(), x, count, key, options),
     predict,
     linearPredictor,
     predictTerms: (x) => {
@@ -190,14 +264,18 @@ function particular(kind: 'regressor' | 'classifier') {
     defaults,
     hyperSpace: (h: GamHyper) =>
       dict({
-        method: choice(['reml', 'gcv', 'ubre', 'fixed'], { default: h.method, label: 'smoothing selection' }),
+        method: choice(['reml', 'ml', 'gcv', 'ubre', 'fixed'], { default: h.method, label: 'smoothing selection' }),
+        iteration: choice(['performance', 'outer'], { default: h.iteration, label: 'smoothing iteration' }),
         gamma: real(Math.min(0.5, h.gamma), Math.max(3, h.gamma), {
           default: h.gamma,
           label: 'degrees of freedom inflation',
         }),
         solver: glmSolvers.space,
       }),
-    algorithm: (data: LearnData, h: GamHyper, key: Key) => gamAlgorithm(prepare(data, h, kind).problem, h, key),
+    algorithm: (data: LearnData, h: GamHyper, key: Key): Algorithm<GamState> => {
+      const { problem } = prepare(data, h, kind)
+      return h.iteration === 'outer' ? gamOuterAlgorithm(problem, h, key) : gamAlgorithm(problem, h, key)
+    },
     maxSteps: (h: GamHyper) => h.maxIter,
     params: (s: GamState, data: LearnData, h: GamHyper): GamParams => {
       const { problem, classes } = prepare(data, h, kind)
