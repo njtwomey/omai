@@ -6229,7 +6229,11 @@ Design rules:
   multi-agent; the chosen entry's spaces, formatted, and its options as controls; `useEnvironment` makes it), both
   drawn by `EntryList` (`EntryList.tsx`: the search box and the list of titles with `Tags` chips, `tagLabel`); and
   `MethodControls` (controls from a method's `hyperSpace`, demo defaults
-  first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  first); `SettingsButton` (a gear that opens a modal of settings and changes nothing until it is confirmed: the dialog
+  edits a draft, Apply hands the whole draft to `onApply`, Cancel, Escape and the close button drop it, a press on the
+  backdrop closes it only while the draft is untouched, Reset returns the draft to given defaults, focus is kept inside and
+  restored; the logic is `settings.ts`: `settingsReducer`, `sameSettings`) and `SpaceSettings` (the same over a `Space`, drawn by
+  `SpaceControls`), which `FigureFrame` takes as `settings` and draws in its toolbar beside export and expand; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas (`ControlLayout` places it).
   Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
   `space-controls.ts`, `datasets.ts` (sources: a collection id, a collection or a registry), `environments.ts`
