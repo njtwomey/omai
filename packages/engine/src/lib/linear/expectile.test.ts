@@ -158,6 +158,6 @@ describe('expectile regression', () => {
       start: { state: json, step: head.steps, serialised: true },
     })
     expect(resumed.state.theta).toEqual(straight.state.theta)
-    expect(expectileSmoothProblem(problem).x0.length).toBe(2)
+    expect(expectileSmoothProblem(problem).x0).toEqual([0, expect.any(Number)])
   })
 })
