@@ -1945,6 +1945,17 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   by coordinate), `ellipticalSlice`.
 - `importance.ts`: `importanceSampling`, `normaliseLogWeights`, `importanceEss`, `selfNormalisedEstimate`,
   `logEvidence`, `paretoSmoothedWeights` (PSIS), `paretoKHat`, `weightDiagnostics`.
+- `variance-reduction.ts`: `monteCarloEstimate` (the baseline), `controlVariateEstimate` (one or several controls, fitted
+  coefficients and multiple correlation), `antitheticEstimate` (uniform and normal reflection, pair correlation),
+  `stratifiedEstimate` with `uniformStrata` (proportional and Neyman allocation, pilot or known spreads),
+  `raoBlackwellEstimate` (with the law-of-total-variance split), `quasiMonteCarloEstimate` (scrambled Sobol or shifted
+  Halton replicates), each an `Estimate` with the plain standard error for the same budget and the reduction factor;
+  `varianceReductionAlgorithm` runs plain, antithetic, control-variate and stratified side by side, one batch per step
+  (`varianceReductionEstimates` reads the state).
+- `gradient-estimators.ts`: gradients of `E_{x ~ p_theta} f(x)` in the parameters: `scoreFunctionGradient` (baselines:
+  none, batch mean, leave-one-out, constant), `pathwiseGradient` (through `rsample`), `straightThroughGradient` (over
+  `dists`' `straightThrough`), `gumbelSoftmaxGradient` (over `relaxedOneHotCategorical`, optionally hard), each returning
+  the mean, the single-sample variance and the standard error per parameter; `gradientError` against an exact gradient.
 - `smc.ts`: resampling schemes (`systematicResample`, `stratifiedResample`, `multinomialResample`, `residualResample`,
   `resample`), `nextTemperature` (adaptive tempering), `adaptiveRandomWalkMove`, `smcAlgorithm` and `smcSampler`
   (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling`.
@@ -3710,6 +3721,36 @@ not written), the outer-iteration REML of mgcv (the performance iteration here d
 families), shape-constrained smooths in terms (`stats/smoothing` has `shapeConstraint`), confidence bands for term
 effects, p-values of terms.
 built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
+
+### 4.52 `sketches/`: probabilistic data structures for streams (datasketch, Redis Bloom, Apache DataSketches)
+
+`hashing.ts` is the shared hash: `hash32` (FNV-1a mixing finished by Murmur3's `fmix32`) of strings and numbers (through
+their IEEE-754 bytes), `hashPair` (a 64-bit pair), `doubleHashIndex` (enhanced Kirsch-Mitzenmacher probes), and `seedOf`,
+which turns a number or a `Key` into a seed, so every sketch is reproducible from a key. `membership.ts`: `bloomFilter`
+(with `optimalBloomParams`, `bloomFalsePositiveRate`, `estimateCount`, `merge`), `countingBloomFilter`, `cuckooFilter`
+(partial-key cuckoo hashing, deletion, and a refused insertion rolls back, so no stored item is ever lost), and the
+algorithms `bloomFilterAlgorithm` (fill, theoretical and measured false-positive rate per insertion) and
+`cuckooFilterAlgorithm` (load factor and kicks). `cardinality.ts`: `hyperLogLog` with the classical estimator (linear
+counting below `5m/2`) and Ertl's improved estimator (no bias tables), `hllMerge`, `hyperLogLogAlgorithm`.
+`frequency.ts`: `countMinSketch` (optionally conservative), `countSketch` (signed, median of rows, second moment),
+`misraGries`, `spaceSavingTopK` (with the guaranteed and the candidate heavy hitters), `countMinAlgorithm` and
+`spaceSavingAlgorithm` (the error against exact counts and the guaranteed bound). `similarity.ts`: `minHash`,
+`minHashJaccard`, `exactJaccard`, `lshIndex` (banded), `lshCollisionProbability`, `lshOptimalParams` (the false-positive
+and false-negative areas of the S-curve integrated exactly). `reservoir.ts`: `reservoirSampler` (Algorithm R, Li's
+Algorithm L, weighted A-Res and A-ExpJ), `reservoirSample`, `reservoirAlgorithm`. `quantiles.ts`: `gkSummary`
+(Greenwald-Khanna, every rank within `epsilon n`), `tDigest` (merging, k1 scale; tails tighter than the middle),
+`kllSketch` (compactors; rank error about `1/k`, mergeable). `skiplist.ts`: `skipList` (Pugh; keyed heights, a comparator,
+search traces), `skipListAlgorithm`.
+
+Each sketch states its guarantee and the property tests check it across many keys: the Bloom rate against the fill-based
+and the classical formula, the cuckoo load factor and bound, HyperLogLog's error against `1.04/sqrt(m)` and its absence of
+bias over seeds, the Count-Min bound `epsilon N` with probability `1 - delta`, the Space-Saving and Misra-Gries counter
+bounds (also after a merge), MinHash's unbiasedness and binomial spread, the LSH S-curve, reservoir inclusion
+probabilities (and the successive-sampling ones for weights), the quantile sketches' rank errors. No oracle: datasketch is
+not in the `oracle-core` group, so there are no goldens. TODO: HyperLogLog++'s sparse representation, a streaming
+algorithm form for the quantile sketches, sliding-window variants, serialisation of the objects (only the algorithms'
+states serialise).
+built from: `base`, `random`, `trace`, `numerics` (the quadrature rule of `lshOptimalParams`)
 
 ## 5. Methods, exposition records and views
 

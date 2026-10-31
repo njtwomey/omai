@@ -181,6 +181,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/signal/image': () => import('mdml-engine/signal/image'),
   'mdml-engine/signal/wavelets': () => import('mdml-engine/signal/wavelets'),
   'mdml-engine/signal/windows': () => import('mdml-engine/signal/windows'),
+  'mdml-engine/sketches': () => import('mdml-engine/sketches'),
   'mdml-engine/space': () => import('mdml-engine/space'),
   'mdml-engine/stats': () => import('mdml-engine/stats'),
   'mdml-engine/stats/smoothing': () => import('mdml-engine/stats/smoothing'),
