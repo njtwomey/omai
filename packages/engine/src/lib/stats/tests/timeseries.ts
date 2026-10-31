@@ -9,6 +9,7 @@ import type { TensorLike } from '../../tensor/index.ts'
 import { ols } from '../_linear.ts'
 import { chi2Sf, normCdf, normSf, sample } from '../_util.ts'
 import { median } from '../quantiles.ts'
+import { TAU_CRIT, TAU_LARGE, TAU_MAX, TAU_MIN, TAU_SMALL, TAU_STAR, type TrendTerms } from './_mackinnon.ts'
 import { testResult } from './result.ts'
 
 /** The sample autocorrelations r_1..r_maxlag (statsmodels acf without fft or adjustment). */
@@ -101,47 +102,7 @@ export function durbinWatson(residuals: TensorLike): TestResult {
   })
 }
 
-/** The deterministic terms of a unit-root regression. */
-export type TrendTerms = 'n' | 'c' | 'ct' | 'ctt'
-
-// MacKinnon (1994) p-value surfaces and MacKinnon (2010) critical values for N = 1 (statsmodels adfvalues).
-const TAU_MAX: Readonly<Record<TrendTerms, number>> = { n: Number.POSITIVE_INFINITY, c: 2.74, ct: 0.7, ctt: 0.54 }
-const TAU_MIN: Readonly<Record<TrendTerms, number>> = { n: -19.04, c: -18.83, ct: -16.18, ctt: -17.17 }
-const TAU_STAR: Readonly<Record<TrendTerms, number>> = { n: -1.04, c: -1.61, ct: -2.89, ctt: -3.21 }
-const TAU_SMALL: Readonly<Record<TrendTerms, readonly number[]>> = {
-  n: [0.6344, 1.2378, 0.032496],
-  c: [2.1659, 1.4412, 0.038269],
-  ct: [3.2512, 1.6047, 0.049588],
-  ctt: [4.0003, 1.658, 0.048288],
-}
-const TAU_LARGE: Readonly<Record<TrendTerms, readonly number[]>> = {
-  n: [0.4797, 0.93557, -0.06999, 0.033066],
-  c: [1.7339, 0.93202, -0.12745, -0.010368],
-  ct: [2.5261, 0.61654, -0.37956, -0.060285],
-  ctt: [3.0778, 0.49529, -0.41477, -0.059359],
-}
-const TAU_CRIT: Readonly<Record<TrendTerms, readonly (readonly number[])[]>> = {
-  n: [
-    [-2.56574, -2.2358, -3.627, 0],
-    [-1.941, -0.2686, -3.365, 31.223],
-    [-1.61682, 0.2656, -2.714, 25.364],
-  ],
-  c: [
-    [-3.43035, -6.5393, -16.786, -79.433],
-    [-2.86154, -2.8903, -4.234, -40.04],
-    [-2.56677, -1.5384, -2.809, 0],
-  ],
-  ct: [
-    [-3.95877, -9.0531, -28.428, -134.155],
-    [-3.41049, -4.3904, -9.036, -45.374],
-    [-3.12705, -2.5856, -3.925, -22.38],
-  ],
-  ctt: [
-    [-4.37113, -11.5882, -35.819, -334.047],
-    [-3.83239, -5.9057, -12.49, -118.284],
-    [-3.55326, -3.6596, -5.293, -63.559],
-  ],
-}
+export type { TrendTerms }
 
 const poly = (c: readonly number[], x: number): number => {
   let r = 0
@@ -150,10 +111,12 @@ const poly = (c: readonly number[], x: number): number => {
 }
 
 /**
- * MacKinnon's approximate p-value of a Dickey-Fuller t statistic (statsmodels mackinnonp, N = 1).
+ * MacKinnon's approximate p-value of a Dickey-Fuller (or Engle-Granger) t statistic (statsmodels mackinnonp).
  *
  * @param stat - The t statistic of the lagged level.
  * @param regression - The deterministic terms (default `'c'`).
+ * @param N - The number of variables believed integrated: 1 for the Dickey-Fuller test, the number of series for
+ *   an Engle-Granger test (1 to 6).
  * @returns The p-value.
  * @example
  * ```ts
@@ -161,18 +124,22 @@ const poly = (c: readonly number[], x: number): number => {
  * mackinnonp(-2.86154) // => 0.05
  * ```
  */
-export function mackinnonp(stat: number, regression: TrendTerms = 'c'): number {
-  if (stat > TAU_MAX[regression]) return 1
-  if (stat < TAU_MIN[regression]) return 0
-  return normCdf(poly(stat <= TAU_STAR[regression] ? TAU_SMALL[regression] : TAU_LARGE[regression], stat))
+export function mackinnonp(stat: number, regression: TrendTerms = 'c', N = 1): number {
+  if (!(Number.isInteger(N) && N >= 1 && N <= 6)) throw new MdmlError('value', 'mackinnonp: N must be 1 to 6')
+  const i = N - 1
+  if (stat > (TAU_MAX[regression][i] ?? 0)) return 1
+  if (stat < (TAU_MIN[regression][i] ?? 0)) return 0
+  const coefficients = stat <= (TAU_STAR[regression][i] ?? 0) ? TAU_SMALL[regression][i] : TAU_LARGE[regression][i]
+  return normCdf(poly(coefficients ?? [], stat))
 }
 
 /**
- * MacKinnon's (2010) finite-sample critical values of the Dickey-Fuller test at 1%, 5% and 10% (statsmodels
- * mackinnoncrit, N = 1).
+ * MacKinnon's (2010) finite-sample critical values of the Dickey-Fuller and Engle-Granger tests at 1%, 5% and 10%
+ * (statsmodels mackinnoncrit).
  *
  * @param nobs - The regression's sample size (Infinity for the asymptotic values).
  * @param regression - The deterministic terms (default `'c'`).
+ * @param N - The number of variables believed integrated (1 to 12; the no-constant case has 1 only).
  * @returns The three critical values.
  * @example
  * ```ts
@@ -180,8 +147,10 @@ export function mackinnonp(stat: number, regression: TrendTerms = 'c'): number {
  * mackinnoncrit(Number.POSITIVE_INFINITY) // => [-3.43035, -2.86154, -2.56677]
  * ```
  */
-export function mackinnoncrit(nobs: number, regression: TrendTerms = 'c'): [number, number, number] {
-  const t = TAU_CRIT[regression]
+export function mackinnoncrit(nobs: number, regression: TrendTerms = 'c', N = 1): [number, number, number] {
+  const t = TAU_CRIT[regression][N - 1]
+  if (t === undefined)
+    throw new MdmlError('value', `mackinnoncrit: no table for N = ${N} with regression '${regression}'`)
   const v = (row: readonly number[]): number => (Number.isFinite(nobs) ? poly(row, 1 / nobs) : (row[0] ?? 0))
   return [v(t[0] ?? []), v(t[1] ?? []), v(t[2] ?? [])]
 }

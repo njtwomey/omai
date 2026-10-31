@@ -1451,8 +1451,9 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 - `tests/multivariate.ts`: `hotellingT2`, `manova`, `boxM`, `mardia`.
 - `tests/proportions.ts`: `binomTest`, `proportionsZtest`, `proportionConfint` (Wald, Wilson, Agresti-Coull,
   Clopper-Pearson, Jeffreys), `proportionsDifference`.
-- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`), `kpss`,
-  `runsTest`.
+- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`, which take the number
+  of integrated variables N for the Engle-Granger tables; the private `tests/_mackinnon.ts` holds the 1994 surfaces and
+  2010 critical values), `kpss`, `runsTest`.
 - `tests/equivalence.ts`: `tost`, `tostProportion`, `tostProportions`.
 - `tests/bayesian.ts`: `bayesFactorTTest` (JZS), `bayesFactorBinomial`, `bayesFactorPearson`, `bayesianAbTest`,
   `highestDensityInterval`, `rope`.
@@ -1548,6 +1549,10 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   batch (`BatchObjective`, `Batches`): the optimiser at a scheduled rate, a batch of `batch` examples drawn without
   replacement from each step's key (null: the whole set), a serialisable `GradientState` (iterate, value, gradient,
   optimiser state, step count, last rate); the engine of the `gradient` mode.
+- `slot.ts`: `familySolvers` (a model's own modes beside every generic solver, over the model's `SmoothProblem`),
+  `slotAlgorithm` (a mode of such a table as the model's `Algorithm`, state serialisable, `solver/gradNorm` and
+  `solver/step` beside the model's channels) and `newtonAt`; used by `timeseries` and `pgm` models (the `linear` and
+  `kernel-methods` folders keep private copies of the wrapper).
 - `solvers.ts`: `smoothSolvers`, the smooth solvers as one slot of modes (gradient descent with its step rules,
   conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent and `gradient`, whose knobs are `optimiser`
   (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
@@ -3960,6 +3965,15 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `hierarchy.ts`: `treeSummingMatrix`, `groupedSummingMatrix`, `reconcile` (bottom-up, OLS, structural and variance WLS,
   MinT with the sample or shrunk covariance of the base errors: y~ = S G y^), `shrinkCovariance`, `topDownProportions`
   and `isCoherent`.
+- `cointegration.ts`: `engleGranger` (the two-step test: the cointegrating regression with `n`/`c`/`ct`/`ctt`, the
+  residual spread tested by ADF with MacKinnon's N-variable p-values and critical values), `johansen` (the trace and
+  maximum-eigenvalue statistics from the reduced-rank eigenproblem with the MacKinnon-Haug-Michelis tables of
+  `_johansen-tables.ts`) and `selectCointegrationRank`.
+- `vecm.ts`: the vector error-correction model. `vecmProblem` builds Johansen's matrices (deterministic terms `n`, `co`,
+  `ci`, `lo`, `li` and the combinations), `vecmSmoothProblem` is the likelihood concentrated on beta = [I; B] as a
+  smooth objective with its analytic gradient, `vecmSolvers` is the slot (`johansen` the closed-form eigen-solve as the
+  model's own mode, beside every generic solver), `vecmAlgorithm`/`vecmFit` fit through it, `vecmForecast` iterates the
+  VAR form (`vecmVarRepresentation`) with intervals from the moving-average representation.
 - private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
   (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
   Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
@@ -3969,8 +3983,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
 `innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,
 `innovations`, `AutoReg`; `ETSModel` smoothing, likelihood and prediction intervals; `seasonal_decompose`, `STL`, `MSTL`;
-`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests) in
-`fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
+`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests; `coint`,
+`coint_johansen` and `VECM` fits with forecasts) in `fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
 recursion identities, recovery of simulated parameters and the algebra of the solutions; properties: the likelihood by the fast filter equals the library's
 Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
 built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
