@@ -5385,6 +5385,15 @@
       "cases": 17
     },
     {
+      "fixture": "timeseries/cointegration.json",
+      "source": "oracle/cases/timeseries/cointegration.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 148
+    },
+    {
       "fixture": "timeseries/decomposition.json",
       "source": "oracle/cases/timeseries/decomposition.py",
       "reference": {

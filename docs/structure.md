@@ -1458,8 +1458,9 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 - `tests/multivariate.ts`: `hotellingT2`, `manova`, `boxM`, `mardia`.
 - `tests/proportions.ts`: `binomTest`, `proportionsZtest`, `proportionConfint` (Wald, Wilson, Agresti-Coull,
   Clopper-Pearson, Jeffreys), `proportionsDifference`.
-- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`), `kpss`,
-  `runsTest`.
+- `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`, which take the number
+  of integrated variables N for the Engle-Granger tables; the private `tests/_mackinnon.ts` holds the 1994 surfaces and
+  2010 critical values), `kpss`, `runsTest`.
 - `tests/equivalence.ts`: `tost`, `tostProportion`, `tostProportions`.
 - `tests/bayesian.ts`: `bayesFactorTTest` (JZS), `bayesFactorBinomial`, `bayesFactorPearson`, `bayesianAbTest`,
   `highestDensityInterval`, `rope`.
@@ -1555,6 +1556,10 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   batch (`BatchObjective`, `Batches`): the optimiser at a scheduled rate, a batch of `batch` examples drawn without
   replacement from each step's key (null: the whole set), a serialisable `GradientState` (iterate, value, gradient,
   optimiser state, step count, last rate); the engine of the `gradient` mode.
+- `slot.ts`: `familySolvers` (a model's own modes beside every generic solver, over the model's `SmoothProblem`),
+  `slotAlgorithm` (a mode of such a table as the model's `Algorithm`, state serialisable, `solver/gradNorm` and
+  `solver/step` beside the model's channels) and `newtonAt`; used by `timeseries` and `pgm` models (the `linear` and
+  `kernel-methods` folders keep private copies of the wrapper).
 - `solvers.ts`: `smoothSolvers`, the smooth solvers as one slot of modes (gradient descent with its step rules,
   conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent and `gradient`, whose knobs are `optimiser`
   (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
@@ -2453,6 +2458,11 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   probabilities. TODO: VMP on conjugate-exponential (Dirichlet, Gaussian) nodes.
 - `inference/ep.ts`: expectation propagation on factor graphs (discrete fully factorised sites; Gaussian sites of a
   latent-Gaussian model: probit, Gaussian and quadrature sites; damping, power EP).
+- `inference/cluster-updates.ts`: Swendsen-Wang and Wolff cluster updates and the Metropolis sweep for the q-state Potts model
+  (Ising at q = 2) on a periodic square lattice (`swendsenWangUpdate`, `wolffUpdate`, `metropolisSweep`,
+  `pottsSamplerAlgorithm` with energy and magnetisation per site on the tape), the exact truth (`pottsCriticalCoupling`,
+  `ISING_CRITICAL_ENERGY_PER_SITE`, `onsagerMagnetisation`) and `integratedAutocorrelationTime`. Tests check detailed balance
+  against exact enumeration of small lattices and the decorrelation advantage over Metropolis at the critical coupling.
 - `inference/map.ts`: MAP and MPE by max-product (elimination and junction trees elsewhere; loopy BP decoding here), by
   LP relaxation (MPLP on its dual, with the integrality gap), and by local search (ICM with restarts).
 - `learning/baum-welch.ts`: Baum-Welch for hidden Markov models (`baumWelchAlgorithm` as a traced algorithm with no past,
@@ -2460,6 +2470,22 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   (diagonal or full covariances with hmmlearn's prior) over `inference/chain.ts`; parameters are plain JSON
   (`HmmParameters`). The golden against hmmlearn keeps its fixture under `methods/models/hmm`. `methods/sequence/hmm.ts`
   is its particular on the iterative base.
+- `ratings.ts`: rating systems as filters over games: `eloExpected`/`eloUpdate`, `glickoUpdate`/`glickoInflate`,
+  `glicko2Update` (the Illinois iteration on the log volatility), `trueskillUpdate` (two players or two teams by Gaussian
+  moment matching, with draws and the dynamics term), and `ratingAlgorithm` (one game, or one period for the Glicko
+  systems, per step; the pre-game win probability's running log-loss on the tape). Goldens are the worked examples of
+  the Glicko and Glicko-2 papers and the reference TrueSkill update (no rating package is an oracle dependency).
+- `choice-models.ts`: Plackett-Luce and Bradley-Terry: `choiceSmoothProblem` (the log-likelihood in the free log strengths),
+  `choiceSolvers` (Hunter's minorise-maximise as the model's own mode beside every generic solver), `choiceAlgorithm`,
+  `fitPlackettLuce`, `fitBradleyTerry`, `pairedComparisons`, `winProbability`.
+- `irt.ts`: item response theory for scored responses: the 1PL, 2PL and 3PL models (`irtProbability`), Bock-Aitkin marginal
+  maximum likelihood on Gauss-Hermite nodes (`irtSmoothProblem` with the analytic gradient by Fisher's identity,
+  `irtSolvers` with `em` as the model's own mode beside every generic solver, `irtAlgorithm`, `fitIrt`), abilities by EAP,
+  MAP or MLE (`irtAbility`), the item and test information functions, and `irtSimulate` (abilities as the truth).
+- `learning/hmm-variants.ts`: the left-right (Bakis) topology (`leftRightParameters`, `isLeftRight`; Baum-Welch preserves
+  the structural zeros) and Viterbi training (`viterbiTrainingAlgorithm`, hard-assignment EM that never decreases the joint
+  score of data and best paths and stops when the paths settle). Hidden semi-Markov, input-output and factorial HMMs, and
+  Gaussian-mixture emissions, are not built yet.
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
@@ -4048,7 +4074,31 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   `garchLogLikelihood`, `garchFilterAlgorithm` (the recursion one observation per step with the running likelihood),
   `garchFitAlgorithm`/`garchFit` (BFGS on parameters mapped into the stationary region, on the series scaled to unit
   spread; standard errors from the numerical Hessian), `garchForecast` (variance forecasts relaxing to the unconditional
-  variance) and `garchSimulate`.
+  variance) and `garchSimulate`. The fit also takes a `solver` from the slot (`garchFitSlot`, or `garchFit` with
+  `options.solver`): the likelihood is a smooth objective of the unconstrained parameters (`_ml.ts`: `likelihoodSlot`,
+  `finiteDifferenceProblem`), BFGS by default, and L-BFGS, conjugate gradient and the rest reach the same optimum.
+- `asymmetric-volatility.ts`: EGARCH(p, o, q) (the log variance with |z| - E|z| and signed z terms, Gaussian or
+  Student-t) and APARCH(p, q) (the power delta estimated): `asymmetricVariance`, `asymmetricLogLikelihood`,
+  `asymmetricFitAlgorithm`/`asymmetricFit` (over the solver slot, on the unit-spread scaling with the parameters mapped
+  back), `asymmetricSimulate`, `asymmetricForecast` (the one-step recursion, simulation beyond it) and
+  `newsImpactCurve` (Engle-Ng, for GARCH, GJR, EGARCH and APARCH). `arch` is not an oracle dependency, so the models are
+  tested by hand-computed recursions, the GARCH limit of APARCH, recovery of planted parameters and agreement of solvers.
+- `ets-intervals.ts`: prediction intervals of every ETS type after Hyndman et al.: `etsClass`, `etsPredictionVariance`
+  (closed form for class 1, additive error, and class 2, multiplicative error with additive or no trend and season:
+  (1 + sigma2) theta_h - mu_h^2) and `etsPredictionIntervals` (closed form where there is one, else the quantiles of
+  `etsSimulate` paths drawn from the final state through the model's own recursion, which also checks the closed forms).
+  Multiplicative season with multiplicative error (class 3) and multiplicative trends are simulated.
+- `box-cox.ts`: `guerreroLambda` (the exponent that makes the block spread independent of the level) and `boxCoxMstl`
+  (MSTL on the transformed series with lambda given, by Guerrero or by profile likelihood, the fit, trend and seasonal
+  factors carried back to the original scale).
+- `features.ts`: `timeSeriesFeatures` (a labelled vector of about 50 features: location and shape, autocorrelation, sample,
+  approximate, permutation and spectral entropy, spectral shape, trend and stability, crossings and strikes, tsfresh-style
+  closed forms, and with `set: 'all'` the Hurst and detrended-fluctuation exponents), `featureMatrix` and
+  `permutationEntropy`. In the spirit of catch22 and tsfresh with the definitions written out here; the values are not
+  the pycatch22 numbers.
+- `shapelets.ts`: `shapeletDistance` (early abandoning, optional z-normalisation), `shapeletSplit` (information gain with
+  the gap tie-break), `shapeletDiscoveryAlgorithm`/`findShapelets` (one candidate per step, best non-overlapping kept,
+  state serialisable) and `shapeletTransform`.
 - `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
   standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
   cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
@@ -4056,6 +4106,15 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `hierarchy.ts`: `treeSummingMatrix`, `groupedSummingMatrix`, `reconcile` (bottom-up, OLS, structural and variance WLS,
   MinT with the sample or shrunk covariance of the base errors: y~ = S G y^), `shrinkCovariance`, `topDownProportions`
   and `isCoherent`.
+- `cointegration.ts`: `engleGranger` (the two-step test: the cointegrating regression with `n`/`c`/`ct`/`ctt`, the
+  residual spread tested by ADF with MacKinnon's N-variable p-values and critical values), `johansen` (the trace and
+  maximum-eigenvalue statistics from the reduced-rank eigenproblem with the MacKinnon-Haug-Michelis tables of
+  `_johansen-tables.ts`) and `selectCointegrationRank`.
+- `vecm.ts`: the vector error-correction model. `vecmProblem` builds Johansen's matrices (deterministic terms `n`, `co`,
+  `ci`, `lo`, `li` and the combinations), `vecmSmoothProblem` is the likelihood concentrated on beta = [I; B] as a
+  smooth objective with its analytic gradient, `vecmSolvers` is the slot (`johansen` the closed-form eigen-solve as the
+  model's own mode, beside every generic solver), `vecmAlgorithm`/`vecmFit` fit through it, `vecmForecast` iterates the
+  VAR form (`vecmVarRepresentation`) with intervals from the moving-average representation.
 - private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
   (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
   Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
@@ -4065,8 +4124,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
 `innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,
 `innovations`, `AutoReg`; `ETSModel` smoothing, likelihood and prediction intervals; `seasonal_decompose`, `STL`, `MSTL`;
-`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests) in
-`fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
+`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests; `coint`,
+`coint_johansen` and `VECM` fits with forecasts) in `fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
 recursion identities, recovery of simulated parameters and the algebra of the solutions; properties: the likelihood by the fast filter equals the library's
 Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
 built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
