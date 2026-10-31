@@ -4688,6 +4688,22 @@
       "cases": 12
     },
     {
+      "fixture": "stochastic/diffusion-models.json",
+      "source": "oracle/cases/stochastic/diffusion-models.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "stochastic/diffusion_models.json",
+      "source": "oracle/cases/stochastic/diffusion_models.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "stochastic/diffusions.json",
       "source": "oracle/cases/stochastic/diffusions.py",
       "reference": {

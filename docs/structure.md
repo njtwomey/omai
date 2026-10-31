@@ -2040,6 +2040,21 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
 - `diffusions.ts`: named processes with exact transitions: Ornstein-Uhlenbeck, geometric Brownian motion, CIR, Vasicek
   (with Vasicek and CIR bond prices), Bessel, overdamped and underdamped Langevin dynamics, jump diffusions (generic, and
   Merton's with its exact simulation, log-return density and option price).
+- `diffusion-models.ts`: diffusion models as generative models (the SDE solvers are `sde.ts`): noise schedules with alpha,
+  sigma, log-SNR and the forward SDE's drift and squared diffusion (`linearSchedule`, `cosineSchedule`,
+  `sigmoidSchedule`, `discreteSchedule` with `linearBetas` and `cosineBetas`, `veSchedule`, `edmSchedule`,
+  `defineSchedule`), `vpSde` and `veSde` (closed-form marginals, as `Sde`s for `reverseSde` and `probabilityFlow`),
+  `samplerTimes` (uniform, quadratic, log-SNR, Karras spacing), `forwardSample` (q(x_t | x_0)), predictions and their
+  conversions (`toX0AndNoise`: epsilon, x0, v, score), training losses with weightings (`x0ErrorWeight`,
+  `weightedDiffusionLoss`: simple, SNR-plus-one, truncated and min-SNR, ELBO, EDM; `diffusionBatch`,
+  `edmPreconditioning`), guidance (`classifierFreeGuidance`, `guidedScore`, `guidedNoise`, `guidedModel`), and
+  `gaussianMixtureTruth`, the exact noised score of a Gaussian mixture, a planted truth for samplers and networks.
+- `diffusion-samplers.ts`: reverse samplers as stepped `Algorithm`s with typed paths (`sampler/xt`, `x0Hat`,
+  `noiseLevel`, `time`, `step`, `cloud`): `diffusionSampler` (DDPM ancestral, DDIM with eta, probability-flow Euler and
+  Heun, DPM-Solver-2), `ddpmSampler`, `ddimSampler`, `sampleDiffusion`, `samplerProperties`.
+- `diffusion-training.ts`: `scoreNetwork` (an MLP over x_t and Fourier time features, from `nn`), `networkModel`,
+  `diffusionTrainer` (the training loop as an `Algorithm` over `nn`'s `TrainState`), so a toy mixture is trained and
+  sampled end to end.
 - `markov-chains.ts`: discrete-time Markov chains: stationary distributions, classification, absorption, hitting
   times, mixing times, spectral gaps, reversibility, simulation.
 - `ctmc.ts`: continuous-time Markov chains (split from `markov-chains.ts` for size): transition matrices exp(tQ)
