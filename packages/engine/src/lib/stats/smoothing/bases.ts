@@ -13,6 +13,7 @@ import { asTensor, item, type Tensor, type TensorLike, toFlat } from '../../tens
 import { matmul, transpose } from '../_linear.ts'
 import { mat, type Rows, rowsOf, sample, sortedCopy } from '../_util.ts'
 import { quantile } from '../quantiles.ts'
+import { bsplineDerivativeDesign } from './basis-derivatives.ts'
 import { constraintNullSpace, derivativePenalty, differencePenalty, sumToZeroConstraint } from './penalties.ts'
 
 /**
@@ -31,6 +32,13 @@ export interface SmoothBasis {
   readonly knots: Tensor
   /** The model matrix at new points (a sample `[M]` for one covariate, `[M, D]` for several). */
   readonly evaluate: (x: TensorLike) => Tensor
+  /**
+   * The exact derivative of the basis functions with respect to the covariate at new points, `[M, k]` like `evaluate`:
+   * `derivative(x, 1)` and `derivative(x, 2)`. Present for the one-covariate bases that have a closed form (B-splines
+   * `bs` and `ps` by the de Boor recursion, the cubic regression splines `cr` and `cc`, the radial bases `tp`, `ts`,
+   * `duchon` and `gp` of one covariate), absent otherwise.
+   */
+  readonly derivative?: (x: TensorLike, order: 1 | 2) => Tensor
 }
 
 /** A knot placement rule. */
@@ -162,6 +170,11 @@ export function bs(x: TensorLike, options: BsOptions = {}): SmoothBasis {
     for (let j = 1; j < k; j++) Z[j * (k - 1) + (j - 1)] = 1
     S = congruence(S, Z, k, k - 1)
   }
+  const derivative = (q: TensorLike, order: 1 | 2): Tensor => {
+    const v = sample('bs', q, 0)
+    const { data, cols } = bsplineDerivativeDesign(knots, degree, v, order)
+    return intercept ? mat(data, v.length, cols) : mat(dropFirstColumn(data, v.length, cols), v.length, cols - 1)
+  }
   return {
     kind: 'bs',
     X,
@@ -169,6 +182,7 @@ export function bs(x: TensorLike, options: BsOptions = {}): SmoothBasis {
     nullSpaceDimension: intercept ? 2 : 1,
     knots: asTensor(knots) as Tensor,
     evaluate,
+    derivative,
   }
 }
 
@@ -289,6 +303,11 @@ export function ps(x: TensorLike, options: PsOptions = {}): SmoothBasis {
     const { data, cols } = designOf(knots, degree, v)
     return mat(data, v.length, cols)
   }
+  const derivative = (q: TensorLike, d: 1 | 2): Tensor => {
+    const v = sample('ps', q, 0)
+    const { data, cols } = bsplineDerivativeDesign(knots, degree, v, d)
+    return mat(data, v.length, cols)
+  }
   return {
     kind: 'ps',
     X: evaluate(a),
@@ -296,6 +315,7 @@ export function ps(x: TensorLike, options: PsOptions = {}): SmoothBasis {
     nullSpaceDimension: order,
     knots: asTensor(knots) as Tensor,
     evaluate,
+    derivative,
   }
 }
 
@@ -347,7 +367,7 @@ function cyclicF(knots: readonly number[]): { F: Float64Array; B: Float64Array; 
   return { F: solveColumns(B, D, n, n), B, D }
 }
 
-function crsDesign(knots: readonly number[], x: Float64Array, cyclic: boolean): Float64Array {
+function crsDesign(knots: readonly number[], x: Float64Array, cyclic: boolean, order: 0 | 1 | 2 = 0): Float64Array {
   const K = knots.length
   const lo = knots[0] ?? 0
   const hi = knots[K - 1] ?? 0
@@ -367,10 +387,25 @@ function crsDesign(knots: readonly number[], x: Float64Array, cyclic: boolean): 
     const h = (knots[j + 1] ?? 0) - (knots[j] ?? 0)
     const right = (knots[j + 1] ?? 0) - v
     const left = v - (knots[j] ?? 0)
-    const ajm = right / h
-    const ajp = left / h
-    const cjm = (v > hi ? 0 : (right * right * right) / (6 * h)) - (h * right) / 6
-    const cjp = (v < lo ? 0 : (left * left * left) / (6 * h)) - (h * left) / 6
+    // The value, or its first or second derivative in x (right = knot - x falls, left = x - knot rises).
+    const ajm = order === 0 ? right / h : order === 1 ? -1 / h : 0
+    const ajp = order === 0 ? left / h : order === 1 ? 1 / h : 0
+    const cjm =
+      order === 0
+        ? (v > hi ? 0 : (right * right * right) / (6 * h)) - (h * right) / 6
+        : order === 1
+          ? (v > hi ? 0 : -(right * right) / (2 * h)) + h / 6
+          : v > hi
+            ? 0
+            : right / h
+    const cjp =
+      order === 0
+        ? (v < lo ? 0 : (left * left * left) / (6 * h)) - (h * left) / 6
+        : order === 1
+          ? (v < lo ? 0 : (left * left) / (2 * h)) - h / 6
+          : v < lo
+            ? 0
+            : left / h
     const j1 = cyclic && j + 1 === n ? 0 : j + 1
     out[r * n + j] = (out[r * n + j] ?? 0) + ajm
     out[r * n + j1] = (out[r * n + j1] ?? 0) + ajp
@@ -415,6 +450,10 @@ export function cr(x: TensorLike, options: CubicRegressionOptions = {}): SmoothB
     const v = sample('cr', q, 0)
     return mat(crsDesign(knots, v, false), v.length, K)
   }
+  const derivative = (q: TensorLike, order: 1 | 2): Tensor => {
+    const v = sample('cr', q, 0)
+    return mat(crsDesign(knots, v, false, order), v.length, K)
+  }
   return {
     kind: 'cr',
     X: evaluate(a),
@@ -422,6 +461,7 @@ export function cr(x: TensorLike, options: CubicRegressionOptions = {}): SmoothB
     nullSpaceDimension: 2,
     knots: asTensor(knots) as Tensor,
     evaluate,
+    derivative,
   }
 }
 
@@ -449,6 +489,10 @@ export function cc(x: TensorLike, options: CubicRegressionOptions = {}): SmoothB
     const v = sample('cc', q, 0)
     return mat(crsDesign(knots, v, true), v.length, n)
   }
+  const derivative = (q: TensorLike, order: 1 | 2): Tensor => {
+    const v = sample('cc', q, 0)
+    return mat(crsDesign(knots, v, true, order), v.length, n)
+  }
   return {
     kind: 'cc',
     X: evaluate(a),
@@ -456,11 +500,12 @@ export function cc(x: TensorLike, options: CubicRegressionOptions = {}): SmoothB
     nullSpaceDimension: 1,
     knots: asTensor(knots) as Tensor,
     evaluate,
+    derivative,
   }
 }
 
 /** The radial kernel of a thin-plate (or Duchon) spline of order m in d dimensions (Wood 2003, eq. 2). */
-function thinPlateKernel(m: number, d: number, s = 0): (r: number) => number {
+function thinPlateKernel(m: number, d: number, s = 0): Kernel {
   const p = 2 * m + 2 * s - d
   // The log term appears when the power is an even integer (for thin plates: when d is even).
   const even = Number.isInteger(p) && p % 2 === 0
@@ -470,7 +515,17 @@ function thinPlateKernel(m: number, d: number, s = 0): (r: number) => number {
       c = (-1) ** (m + 1 + d / 2) / (2 ** (2 * m - 1) * Math.PI ** (d / 2) * factorial(m - 1) * factorial(m - d / 2))
     else c = item(gammaFn(d / 2 - m)) / (2 ** (2 * m) * Math.PI ** (d / 2) * factorial(m - 1))
   } else c = 1
-  return (r) => (r <= 0 ? 0 : even ? c * r ** p * Math.log(r) : c * r ** p)
+  const value = (r: number): number => (r <= 0 ? 0 : even ? c * r ** p * Math.log(r) : c * r ** p)
+  const derivative =
+    (order: 1 | 2) =>
+    (r: number): number => {
+      if (r <= 0) return 0
+      if (order === 1) return even ? c * (p * r ** (p - 1) * Math.log(r) + r ** (p - 1)) : c * p * r ** (p - 1)
+      return even
+        ? c * (p * (p - 1) * r ** (p - 2) * Math.log(r) + (2 * p - 1) * r ** (p - 2))
+        : c * p * (p - 1) * r ** (p - 2)
+    }
+  return Object.assign(value, { derivative })
 }
 
 function factorial(n: number): number {
@@ -503,10 +558,13 @@ export interface RadialOptions {
   readonly centres?: TensorLike
 }
 
+/** A radial kernel of the distance, with its first and second derivative in the distance where it has them. */
+type Kernel = ((r: number) => number) & { readonly derivative?: (order: 1 | 2) => (r: number) => number }
+
 function radialBasis(
   kind: string,
   x: TensorLike,
-  kernel: (r: number) => number,
+  kernel: Kernel,
   nullPowers: number[][],
   k: number,
   centresIn: TensorLike | undefined,
@@ -572,6 +630,35 @@ function radialBasis(
     }
     return mat(out, pts.rows, k)
   }
+  // The derivative in x of a one-covariate basis: sign(x - c)^order kernel^(order)(|x - c|) against the weights, and the
+  // derivative of the monomials of the null space.
+  const kernelDerivative = kernel.derivative
+  const derivative =
+    d === 1 && kernelDerivative !== undefined
+      ? (query: TensorLike, order: 1 | 2): Tensor => {
+          const pts = rowsOf(kind, query)
+          const kd = kernelDerivative(order)
+          const out = new Float64Array(pts.rows * k)
+          for (let r = 0; r < pts.rows; r++) {
+            const xr = pts.data[r] ?? 0
+            for (let c = 0; c < q; c++) {
+              let acc = 0
+              for (let i = 0; i < n; i++) {
+                const diff = xr - (centres.data[i] ?? 0)
+                const sign = diff > 0 ? 1 : diff < 0 ? -1 : 0
+                acc += (order === 1 ? sign : 1) * kd(Math.abs(diff)) * (UkZ[i * q + c] ?? 0)
+              }
+              out[r * k + c] = acc
+            }
+            nullPowers.forEach((pw, j) => {
+              const e = pw[0] ?? 0
+              out[r * k + q + j] =
+                order === 1 ? (e === 0 ? 0 : e * xr ** (e - 1)) : e < 2 ? 0 : e * (e - 1) * xr ** (e - 2)
+            })
+          }
+          return mat(out, pts.rows, k)
+        }
+      : undefined
   return {
     kind,
     X: evaluate(data.cols === 1 ? Array.from(data.data) : x),
@@ -579,6 +666,7 @@ function radialBasis(
     nullSpaceDimension: M,
     knots: mat(centres.data, centres.rows, d),
     evaluate,
+    ...(derivative === undefined ? {} : { derivative }),
   }
 }
 
@@ -688,13 +776,35 @@ export function gp(
       }
   if (!(rho > 0)) throw new MdmlError('value', 'gp: the range rho must be positive')
   const kind = options.kernel ?? 'matern32'
-  const kernel = (r: number): number => {
-    const u = r / rho
-    if (kind === 'exponential') return Math.exp(-u)
-    if (kind === 'squared-exponential') return Math.exp(-u * u)
-    if (kind === 'matern52') return (1 + Math.sqrt(5) * u + (5 * u * u) / 3) * Math.exp(-Math.sqrt(5) * u)
-    return (1 + Math.sqrt(3) * u) * Math.exp(-Math.sqrt(3) * u)
+  // k(u) with u = r / rho and its first and second derivative in u.
+  const a3 = Math.sqrt(3)
+  const a5 = Math.sqrt(5)
+  const profile = (u: number): [number, number, number] => {
+    if (kind === 'exponential') {
+      const e = Math.exp(-u)
+      return [e, -e, e]
+    }
+    if (kind === 'squared-exponential') {
+      const e = Math.exp(-u * u)
+      return [e, -2 * u * e, (4 * u * u - 2) * e]
+    }
+    if (kind === 'matern52') {
+      const e = Math.exp(-a5 * u)
+      return [
+        (1 + a5 * u + (5 * u * u) / 3) * e,
+        -((5 * u) / 3) * (1 + a5 * u) * e,
+        -(5 / 3) * (1 + a5 * u - 5 * u * u) * e,
+      ]
+    }
+    const e = Math.exp(-a3 * u)
+    return [(1 + a3 * u) * e, -3 * u * e, (-3 + 3 * a3 * u) * e]
   }
+  const kernel: Kernel = Object.assign((r: number): number => profile(r / rho)[0], {
+    derivative:
+      (order: 1 | 2) =>
+      (r: number): number =>
+        profile(r / rho)[order] / rho ** order,
+  })
   return radialBasis('gp', x, kernel, monomials(2, d), options.k ?? 10, options.centres)
 }
 

@@ -1312,6 +1312,15 @@ Reparameterisation comes in three forms:
   per-parameter links (`gamlssNormal`, `gamlssStudentT`, `gamlssSkewNormal`, `gamlssGamma`, `gamlssLogNormal`,
   `gamlssWeibull`, `gamlssBeta`, `gamlssPoisson`, `gamlssNegativeBinomial`, `gamlssZeroInflatedPoisson`);
   cumulative-link ordinal families (`ordinalFamily` with logit, probit, cloglog, loglog and cauchit links).
+- `families/extended.ts`: `ExtendedFamily`, a response given by the derivatives of its log-likelihood in one or several
+  linear predictors (`derivatives`: log-likelihood, gradient, packed Hessian by `hessIndex`, optional third
+  derivatives) with `aux` parameters (beta precision, negative binomial dispersion, ordinal cut points, Tweedie power) on an
+  unconstrained scale; `tensorExtendedFamily` builds one from a per-observation log-likelihood over tensor operations
+  (gradient by reverse mode, the Hessian blocks by K Hessian-vector products), `gaussianLocationScale` writes its
+  derivatives out with the third ones, and `betaRegression`, `negativeBinomialTheta`, `zeroInflatedPoissonLogit`,
+  `orderedCategorical`, `multinomialLogit` and `tweedieEstimated` use the tensor route.
+  `families/extended-distributional.ts`: `gamlssExtended` (normal, gamma, negative binomial, Student-t, log-normal) with
+  starting values from the moments.
 
 ### 4.15 `information/`: information theory and coding
 
@@ -1483,7 +1492,11 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 - `robust.ts`: `trimboth`, `trimMean`, `trimmedVariance`, `winsorize`, `winsorizedMean`, `winsorizedVariance`,
   `mEstimateLocation`, `huber`, `tukeyBiweight`, `ransac` (traced `ransacAlgorithm`, generic in points and models).
 - `smoothing/bases.ts`: `SmoothBasis`; `bs`, `ns`, `ps`, `cr`, `cc`, `tp`, `ts`, `duchon`, `gp`, `re`, `fs`, `te`,
-  `ti`, with `placeKnots` (quantile and uniform rules).
+  `ti`, with `placeKnots` (quantile and uniform rules). `SmoothBasis.derivative(x, order)` (optional) is the exact first
+  and second derivative of the basis functions in the covariate for the one-covariate bases with a closed form: `bs` and
+  `ps` through `smoothing/basis-derivatives.ts` (`bsplineDerivativeDesign`, the exact piecewise polynomials of the
+  identity-coefficient B-spline), `cr` and `cc` from the cubic-spline formulas, `tp`, `ts`, `duchon` and `gp` from the
+  kernels' derivatives in the distance; `ns`, `re`, `fs`, `te` and `ti` have none.
 - `smoothing/penalties.ts`: `differencePenalty`, `derivativePenalty`, `nullSpace`, `shrinkagePenalty`,
   `shapeConstraint` (increasing, decreasing, convex, concave reparameterisations), `sumToZeroConstraint`,
   `constraintNullSpace`.
@@ -4517,19 +4530,60 @@ p-value), `concurvity` (worst, observed and estimate), `cooksDistance`.
 
 `derivatives.ts` is functionals of the smooths with bands from the same posterior covariance: `predictTermsSe` (every
 term's effect with its standard error, terms left out by `exclude` without being evaluated, the band of the total),
-`smoothDerivative` (first or second derivative of a one-covariate smooth, by central differences or their Richardson
-extrapolation, since a basis exposes values and not derivatives; stencils shifted inward at the range's ends) and
+`smoothDerivative` (first or second derivative of a one-covariate smooth: exact where the basis has a closed-form
+derivative, otherwise central differences or their Richardson extrapolation with the stencils shifted inward at the
+range's ends) and
 `smoothDifference` (the difference of two smooths, the levels of a by-variable, with pointwise or simultaneous bands from the
 joint covariance). The estimators carry them as verbs.
 
 `profile.ts` estimates a scalar parameter of the response family with the smooths (`profileFamilyParameter`: the
 negative binomial's dispersion, the Tweedie power): the converged outer REML score is a marginal likelihood of the
 parameter too (the families' log-likelihoods are exact), so it is minimised over the parameter by bounded
-one-dimensional search, each evaluation an outer fit warm-started at the last smoothing parameters. Beta regression
-(mgcv's `betar`) is not offered: with fixed precision it is not an exponential-dispersion family in the mean, so the
-quasi-weights of penalised IRLS do not reach the likelihood's stationary point; it needs an extended-family Newton
-iteration on the true derivatives of the log-likelihood in the linear predictor (the same machinery ordered
-categorical, Cox, zero-inflated and GAMLSS models need).
+one-dimensional search, each evaluation an outer fit warm-started at the last smoothing parameters. Beta
+regression is not an exponential-dispersion family in the mean, so it, and the families below, go through the
+extended-family machinery of `extended.ts`.
+
+`extended.ts` is additive modelling for extended families (Wood, Pya and Saefken 2016): the likelihood is a
+`CoefficientLikelihood` (value, gradient and observed information in the stacked coefficients, and the derivative of the
+information along a direction), implemented by `etaLikelihood` for the `ExtendedFamily` of `dists/families` (one design per
+predictor, so a mean and a scale, or K - 1 logits, are blocks of one coefficient vector; the information along a direction
+from the family's third derivatives when it has them, else from differences of its Hessian) and by `differencedLikelihood`
+for anything given in the coefficients (the Cox partial likelihood). `extendedModel` and `modelFromDesigns` prepare the
+designs, stacked penalties and starting point. `innerExtendedFit` is Newton's method on the observed Hessian (not Fisher
+scoring) with negative eigenvalues of the penalised information flipped and floored and step halving; its `solver` is the
+slot: undefined for that Newton, or any configuration of `smoothSolvers` minimising the same penalised negative
+log-likelihood (an `analyticObjective` over the likelihood). `evaluateExtended` is the Laplace-approximate marginal
+likelihood `-l + beta' S beta / 2 + log|H| / 2 - log|S|_+ / 2` with its analytic gradient in `log lambda` (the implicit
+derivative of the coefficients and the derivative of the information along it) and a central difference of the criterion
+(refitted, warm-started) for the aux parameters, which are thereby estimated jointly with the smoothing parameters;
+`extendedAlgorithm` is the outer Newton iteration (Hessian by differences of gradients, eigenvalue safeguard, step halving),
+an `Algorithm<ExtendedState, ExtendedPath>` with `extendedContract` whose state serialises; `fitExtended`,
+`predictExtended` (linear predictors, Bayesian standard errors, parameters through the inverse links) and
+`extendedTermTests` (Wood's reference test of each term). Fourth derivatives are not used: the Hessian of the criterion is
+differenced from the analytic gradient. Families: beta regression, negative binomial with `theta` estimated jointly,
+zero-inflated Poisson (count and inflation predictors), ordered categorical (cut points as aux parameters), multinomial,
+Tweedie with power and dispersion estimated, Gaussian location-scale, and the GAMLSS distributions. `cox.ts` is Cox
+proportional hazards with smooth terms: `coxGamModel` takes the design without its intercept and the partial likelihood of
+`survival`'s `coxProblem` (Efron or Breslow ties, strata) as the likelihood, `coxBaseline` is Breslow's baseline cumulative
+hazard at the fitted predictor and `coxSurvival` the survival curves.
+
+`gamlss.ts` fits a GAMLSS model (every parameter of a distribution an additive predictor with its own smoothing parameters)
+in one of three modes: `newton` (the generic extended iteration), `cg` (Cole and Green: one joint penalised Newton step per
+iteration with the cross derivatives, the smoothing parameters re-chosen on each working model) and `rs` (Rigby and
+Stasinopoulos: the parameters updated in turn, each by a penalised Newton step on its own block, cross derivatives
+ignored); all three reach the same penalised maximum at fixed smoothing parameters. `fitGamlss` reports the global deviance,
+effective degrees of freedom and smoothing parameters per parameter and term; `quantileResiduals` (randomised for discrete
+responses) and `wormPlot` give the diagnostics.
+
+`posterior.ts` samples the coefficient posterior `exp(l(beta) - beta' S beta / (2 scale))` in place of the Gaussian
+approximation: `gamPosteriorTarget` (exponential families, by autodiff) and `extendedPosteriorTarget` are `LogDensity`
+values of `sampling`, `posteriorKernel` its Hamiltonian Monte Carlo or random-walk Metropolis kernel preconditioned by the
+Gaussian approximation's covariance, `samplePosterior` draws and `posteriorSampler` is the chain as an algorithm with a
+serialisable state (the paths are `samplerAlgorithm`'s, untyped).
+
+Exact basis derivatives: `SmoothBasis.derivative` of `stats/smoothing`, carried by `CompiledTerm.derivative`, is what
+`smoothDerivative` uses by default (`method: 'exact'`) for `ps`, `bs`, `cr`, `cc`, `tp`, `ts`, `duchon` and `gp` smooths of
+one covariate, with `richardson` and `central` differences for the other bases.
 
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
@@ -4537,13 +4591,18 @@ B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance
 variance and intercept). The outer iteration is checked against an independent numpy/scipy implementation (`gam/outer`:
 statsmodels' B-spline design, a brute-force profile of the Laplace REML over a grid of `log lambda` refined by scipy, for the
 Gaussian, Poisson, binomial and gamma-log families: `log lambda`, criterion, effective degrees of freedom, coefficients).
-pyGAM and mgcv are not in the oracle environment. TODO: an extended-family Newton iteration on the true derivatives of a log-likelihood in the linear predictors
-(beta regression, ordered categorical, Cox with smooth terms through `survival`'s `coxProblem`, zero-inflated Poisson) and
-on top of it GAMLSS (the distributional families of `dists/families` have the links and the log-likelihood; the RS and
-CG algorithms over per-parameter additive predictors are not written); a Metropolis or HMC sampler of the coefficient
-posterior in addition to the Gaussian approximation of `sampleCoefficients`; a basis-derivative evaluator in
-`stats/smoothing` for exact derivatives of smooths.
-built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
+pyGAM and mgcv are not in the oracle environment. The extended families are checked against an independent numpy/scipy
+implementation (`gam/extended`: scipy's densities, five-point finite differences of the density for the derivatives in the
+predictors, Newton for the penalised coefficients, a brute-force profile over `log lambda` then Nelder-Mead on the joint
+Laplace REML of the smoothing and aux parameters), for beta, negative binomial, Gaussian location-scale, zero-inflated
+Poisson, ordered categorical, multinomial, GAMLSS gamma and Student-t and the penalised Cox partial likelihood: at fixed
+hyperparameters the coefficients, log-likelihood, effective degrees of freedom and criterion to 1e-5, and the selected
+smoothing and family parameters, criterion and effective degrees of freedom to 1e-2. Tweedie has no scipy density and is
+checked by planted truth and by the derivative tests only. Not done: estimators on the iterative base for the extended
+families (they are functions: `extendedModel`, `fitExtended`, `fitGamlss`, `fitCoxGam`), smoothing-parameter-uncertainty
+corrections, simultaneous bands and deviance residuals for them, analytic third derivatives beyond the Gaussian
+location-scale, and the shape-constrained terms.
+built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead, `smoothSolvers`), `survival` (`coxProblem`), `sampling`, `metrics`, `trace`
 
 ### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)
 

@@ -879,6 +879,15 @@
       "cases": 39
     },
     {
+      "fixture": "gam/extended.json",
+      "source": "oracle/cases/gam/extended.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 18
+    },
+    {
       "fixture": "gam/glmgam.json",
       "source": "oracle/cases/gam/glmgam.py",
       "reference": {

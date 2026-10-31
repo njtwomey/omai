@@ -119,8 +119,12 @@ function termBlockAt(ctx: GamFitContext, term: number, at: ArrayLike<number>): F
 export interface DerivativeOptions extends BandOptions {
   /** The order, 1 (default) or 2. */
   readonly order?: 1 | 2
-  /** `central` differences, or `richardson` (the default): central differences at `h` and `h / 2` combined to fourth order. */
-  readonly method?: 'central' | 'richardson'
+  /**
+   * `exact` (the default where the basis has a closed-form derivative: `ps`, `bs`, `cr`, `cc`, `tp`, `ts`, `duchon`,
+   * `gp`), `richardson` (central differences at `h` and `h / 2` combined to fourth order; the default for other bases) or
+   * `central` differences.
+   */
+  readonly method?: 'exact' | 'central' | 'richardson'
   /** The step as a fraction of the covariate's range (default 0.005). */
   readonly step?: number
 }
@@ -128,8 +132,8 @@ export interface DerivativeOptions extends BandOptions {
 /**
  * The derivative of a smooth term of one covariate with a credible band. The derivative of the effect is the derivative of
  * the basis times the coefficients, so the band uses the posterior covariance of the term's coefficients. The basis is
- * differentiated numerically (a basis exposes its values, not their derivative): central differences with step
- * `step * range`, or their Richardson extrapolation, whose error is of fourth order in the step. Near the ends of the
+ * differentiated exactly where the basis has a closed-form derivative (`SmoothBasis.derivative`), and otherwise numerically:
+ * central differences with step `step * range`, or their Richardson extrapolation, whose error is of fourth order in the step. Near the ends of the
  * range the points are shifted inward so the stencil stays inside the training data.
  *
  * @param ctx - The fitted pieces.
@@ -157,11 +161,31 @@ export function smoothDerivative(
 ): Band {
   const t = ctx.problem.design.terms[term]
   if (t === undefined) throw new MdmlError('value', `smoothDerivative: no term ${term}`)
-  const feature = t.term.features[0] ?? 0
+  const spec = t.term
+  if (spec.kind !== 'smooth' || spec.features.length !== 1) {
+    throw new MdmlError('value', `gam: ${t.label}: derivatives and differences are for smooths of one covariate`)
+  }
+  const feature = spec.features[0] ?? 0
   const { lo, hi } = covariateRange(ctx, feature)
   const order = options.order ?? 1
   const h0 = (options.step ?? 0.005) * (hi - lo)
   const m = at.length
+  const p = ctx.problem.design.p
+  const exact =
+    t.derivative !== undefined && (options.method === 'exact' || options.method === undefined)
+      ? (() => {
+          const d = ctx.problem.design.nFeatures
+          const data = new Float64Array(m * d)
+          for (let i = 0; i < m; i++) {
+            data[i * d + feature] = at[i] ?? 0
+            if (spec.by !== undefined) data[i * d + spec.by] = 1
+          }
+          return t.derivative?.({ n: m, d, data }, order)
+        })()
+      : undefined
+  if (options.method === 'exact' && exact === undefined) {
+    throw new MdmlError('value', `smoothDerivative: the basis of ${t.label} has no closed-form derivative`)
+  }
   const stencil = (h: number): Float64Array => {
     // Points x - h, x, x + h per query (shifted inward at the ends), as one block of 3m rows.
     const pts = new Float64Array(3 * m)
@@ -190,14 +214,17 @@ export function smoothDerivative(
     }
     return out
   }
-  const coarse = stencil(h0)
-  let derivative = coarse
-  if (options.method !== 'central') {
-    const fine = stencil(h0 / 2)
-    // Error ~ h^2 for both orders, so (4 fine - coarse) / 3 removes it.
-    derivative = Float64Array.from(fine, (v, i) => (4 * v - (coarse[i] ?? 0)) / 3)
+  let derivative: Float64Array
+  if (exact !== undefined) derivative = exact
+  else {
+    const coarse = stencil(h0)
+    derivative = coarse
+    if (options.method !== 'central') {
+      const fine = stencil(h0 / 2)
+      // Error ~ h^2 for both orders, so (4 fine - coarse) / 3 removes it.
+      derivative = Float64Array.from(fine, (v, i) => (4 * v - (coarse[i] ?? 0)) / 3)
+    }
   }
-  const p = ctx.problem.design.p
   const X = new Float64Array(m * p)
   for (let i = 0; i < m; i++)
     for (let j = 0; j < t.width; j++) X[i * p + t.offset + j] = derivative[i * t.width + j] ?? 0
