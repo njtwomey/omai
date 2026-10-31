@@ -46,6 +46,19 @@ describe('linearClassifier', () => {
     expect((s.probe(0, 'model/margins') as number[]).every((m) => m === 0)).toBe(true)
   })
 
+  it('trains with every smooth loss it offers, each lowering its own objective', () => {
+    const method = linearClassifier({ x, y })
+    const options = (method.config.spaces as Record<string, { options: Record<string, never> }>)['loss']?.options ?? {}
+    for (const name of Object.keys(options)) {
+      const loss = { ...(defaults(options[name] as never) as object), kind: name }
+      const s = session(method, { mode: 'eager', steps: 80, config: { loss } as Partial<Config> })
+      const objective = metricSeries(s.run(), 'solver/objective').values
+      expect(objective.length, name).toBeGreaterThan(0)
+      expect(objective.at(-1) as number, name).toBeLessThan(objective[0] as number)
+      expect(Number.isFinite(objective.at(-1)), name).toBe(true)
+    }
+  })
+
   it('offers only the smooth losses and penalties, and the loss is a knob of the objective', () => {
     const space = linearClassifier({ x, y }).config.spaces as Record<string, { options: object }>
     expect(Object.keys(space['loss']?.options ?? {})).toEqual([
@@ -53,6 +66,8 @@ describe('linearClassifier', () => {
       'squaredHinge',
       'exponential',
       'modifiedHuber',
+      'focal',
+      'smoothedLogistic',
     ])
     expect(Object.keys(space['penalty']?.options ?? {})).toEqual(['none', 'l2'])
   })
