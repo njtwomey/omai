@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 55 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 56 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -421,6 +421,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `anomaly`     | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules              |
 | `sketches`    | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list |
 | `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
+| `causal`      | causal inference from data: treatment-effect estimators (regression adjustment, propensity scores, matching, entropy balancing, AIPW, TMLE, double machine learning), quasi-experimental designs, heterogeneous effects and uplift, sensitivity analysis |
 
 ### 4.1 `base/`
 
@@ -4022,6 +4023,39 @@ Grambsch-Therneau proportional-hazards test.
 built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
 `trace`, `space`, `random`
 
+### 4.56 `causal/`: causal inference from data (DoWhy, EconML, causalml, MatchIt, sensemakr)
+
+Graph-side causal work (structural models, d-separation, back-door and front-door sets, the ID algorithm's cases,
+instruments, counterfactuals, PC, GES, LiNGAM, NOTEARS, FCI) is `pgm/causal` and `pgm/learning`; this domain is what
+runs on data. Every estimator takes `CausalData` (`x` covariates, a 0/1 `treatment`, an `outcome`; `splitTreatment`
+reads the layout of the `treatmentEffects` generator) and returns an `EffectEstimate` (estimand, `Estimate` with
+standard error and interval, p-value, n and, where the estimator has one, the per-unit influence values the standard
+error comes from). `nuisance.ts` is the nuisance-model slot: a propensity model and per-arm outcome models are any
+`Estimator` of the library (`linearModel` logistic and least squares by default; a forest, boosted trees or nearest
+neighbours fit as well), `fitNuisances` fits on training rows and predicts at test rows (so cross-fitting is the same
+call on another split), `crossFitFolds` gives treatment-stratified folds, and the diagnostics are `overlap`,
+`effectiveSampleSize` and `balanceTable` (standardised mean differences before and after weighting).
+`estimation.ts` has `regressionAdjustment` (linear with HC1 errors, Lin's interacted model, or per-arm g-computation of
+any learner with a bootstrap error), `ipwWeights` and `ipw` (Horvitz-Thompson or Hajek, ATE, ATT or ATC, stabilised
+weights, trimming), `stratification`, `aipw` (doubly robust, optional cross-fitting), `tmle` (targeted maximum
+likelihood; its logistic fluctuation is `tmleFluctuationProblem`, a `SmoothProblem` solved by any solver of
+`smoothSolvers`, Newton by default), `doubleMachineLearningAlgorithm` (one cross-fitting fold per step; the partially
+linear and interactive models; the state serialises) with its batch form `doubleMachineLearning`, and
+`bootstrapEffect`. `matching.ts` is nearest-neighbour matching on the propensity logit, standardised covariates or the
+Mahalanobis distance, with or without replacement, `k` neighbours, a caliper, and the Abadie-Imbens variance.
+`balancing.ts` is entropy balancing: the dual is `entropyBalancingProblem` (a `SmoothProblem`; `entropyBalancingAlgorithm`
+is it under `loggedSolver`), and `entropyBalancing` returns weights that match the target's moments exactly.
+The planted generators the tests use are `treatmentEffects` (confounding, overlap, nonlinear setting, heterogeneity),
+`instrumentalVariables`, `panelEffects` and `discontinuityDesign` of `datasets`.
+
+oracle: statsmodels OLS with HC1 errors (regression adjustment) and a GLM with an offset (the TMLE fluctuation);
+scikit-learn's logistic and linear regressions for the nuisance models of the weighting, AIPW, stratification and TMLE
+formulas, which are written out in numpy beside them, and its nearest neighbours for matching; scipy's BFGS on the
+entropy-balancing dual. Planted truth (the effect of the generators, with the naive estimator shown biased) checks
+recovery.
+built from: `learn` (the estimator contract, neighbour search, splitters), `linear` (default nuisance models), `optim`
+(`smoothSolvers`), `numerics`, `random`, `trace`, `space`, `tensor`
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
@@ -5960,7 +5994,7 @@ library for the same computation. They do not set a higher bar than that library
 | NumPyro, Pyro                     | `lib/probprog/`, `lib/sampling/`                                                                  |
 | ArviZ                             | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts`                                        |
 | pgmpy                             | `lib/pgm/`                                                                                        |
-| DoWhy, EconML, causal-learn       | `lib/pgm/causal/`, `methods/causal/`                                                              |
+| DoWhy, EconML, causal-learn       | `lib/causal/`, `lib/pgm/causal/`, `methods/causal/`                                               |
 | NetworkX                          | `lib/graph/`                                                                                      |
 | gymnasium, MinAtar                | `lib/rl/`, `methods/rl/environments/`                                                             |
 | PettingZoo                        | `lib/rl/multi-agent.ts`, `methods/rl/environments/multi-agent.ts`                                 |

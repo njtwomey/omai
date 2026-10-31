@@ -11,6 +11,16 @@
       "cases": 11
     },
     {
+      "fixture": "causal/estimation.json",
+      "source": "oracle/cases/causal/estimation.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "cluster/birch.json",
       "source": "oracle/cases/cluster/birch.py",
       "reference": {
