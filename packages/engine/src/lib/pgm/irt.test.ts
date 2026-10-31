@@ -86,7 +86,7 @@ describe('marginal maximum likelihood', () => {
       const fit = P.fitIrt(problem, { solver, tol: 1e-6, maxSteps: 400 })
       expect(fit.solver).toBe(solver.kind)
       expect(fit.logLikelihood).toBeCloseTo(base.logLikelihood, 2)
-      fit.items.forEach((it, j) => expect(it.b).toBeCloseTo(base.items[j]?.b ?? 0, 1))
+      for (const [j, it] of fit.items.entries()) expect(it.b).toBeCloseTo(base.items[j]?.b ?? 0, 1)
     }
   })
   it('fits a Rasch model with unit discrimination and a 3PL with a floor', () => {

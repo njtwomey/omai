@@ -51,7 +51,7 @@ describe('Plackett-Luce', () => {
     const fit = P.fitPlackettLuce(problem)
     expect(fit.converged).toBe(true)
     const centred = theta.map((t) => t - theta.reduce((a, b) => a + b, 0) / n)
-    fit.theta.forEach((t, i) => expect(Math.abs(t - (centred[i] ?? 0))).toBeLessThan(0.25))
+    for (const [i, t] of fit.theta.entries()) expect(Math.abs(t - (centred[i] ?? 0))).toBeLessThan(0.25)
   })
   it('increases the likelihood at every minorise-maximise step', () => {
     const algorithm = P.choiceAlgorithm(problem)
@@ -73,7 +73,7 @@ describe('Plackett-Luce', () => {
       const fit = P.fitPlackettLuce(problem, { solver, tol: 1e-9 })
       expect(fit.solver).toBe(solver.kind)
       expect(fit.logLikelihood).toBeCloseTo(base.logLikelihood, 6)
-      fit.theta.forEach((t, i) => expect(t).toBeCloseTo(base.theta[i] ?? 0, 4))
+      for (const [i, t] of fit.theta.entries()) expect(t).toBeCloseTo(base.theta[i] ?? 0, 4)
     }
   })
   it('serialises the traced fit', () => {

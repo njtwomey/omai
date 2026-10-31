@@ -265,7 +265,9 @@ export function concurvity(ctx: GamFitContext): Concurvity[] {
     const others: number[] = []
     for (let c = 1; c < p; c++) if (c < t.offset || c >= t.offset + t.width) others.push(c)
     const O = new Float64Array(n * others.length)
-    for (let i = 0; i < n; i++) others.forEach((c, k) => (O[i * others.length + k] = X[i * p + c] ?? 0))
+    for (let i = 0; i < n; i++) {
+      for (let k = 0; k < others.length; k++) O[i * others.length + k] = X[i * p + (others[k] as number)] ?? 0
+    }
     const B = new Float64Array(n * t.width)
     for (let i = 0; i < n; i++) for (let k = 0; k < t.width; k++) B[i * t.width + k] = X[i * p + t.offset + k] ?? 0
     // Project on the span of the others (and the constant): Q from the thin QR of [1, O].

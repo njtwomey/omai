@@ -42,7 +42,13 @@ const sequences = drawn.map((d) => d.x)
 const empiricalEmission = (k: number, symbol: number): number => {
   let hit = 0
   let all = 0
-  for (const { x, z } of drawn) z.forEach((state, t) => (state === k ? (all++, x[t] === symbol ? hit++ : 0) : 0))
+  for (const { x, z } of drawn) {
+    for (const [t, state] of z.entries()) {
+      if (state !== k) continue
+      all++
+      if (x[t] === symbol) hit++
+    }
+  }
   return hit / all
 }
 const empiricalStay = (k: number): number => {

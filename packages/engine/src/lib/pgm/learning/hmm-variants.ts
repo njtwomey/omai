@@ -116,12 +116,12 @@ export function viterbiTrainingAlgorithm(
     if (params.kind === 'categorical') {
       const S = params.emission[0]?.length ?? 0
       const counts = Array.from({ length: K }, () => new Array<number>(S).fill(0))
-      observations.forEach((obs, n) =>
-        obs.forEach((o, t) => {
+      for (const [n, obs] of observations.entries()) {
+        for (const [t, o] of obs.entries()) {
           const k = paths[n]?.[t] ?? 0
           ;(counts[k] as number[])[o as number] = (counts[k]?.[o as number] ?? 0) + 1
-        }),
-      )
+        }
+      }
       const emission = counts.map((row, k) => {
         const z = row.reduce((a, b) => a + b, 0)
         return z > 0 ? row.map((v) => v / z) : (params.emission[k] ?? row)
@@ -133,9 +133,9 @@ export function viterbiTrainingAlgorithm(
     const covariances = params.covariances.map((c) => c.map((r) => [...r]))
     for (let k = 0; k < K; k++) {
       const frames: (readonly number[])[] = []
-      observations.forEach((obs, n) =>
-        obs.forEach((o, t) => (paths[n]?.[t] === k ? frames.push(o as readonly number[]) : null)),
-      )
+      for (const [n, obs] of observations.entries()) {
+        for (const [t, o] of obs.entries()) if (paths[n]?.[t] === k) frames.push(o as readonly number[])
+      }
       if (frames.length === 0) continue
       for (let d = 0; d < D; d++) {
         const mean = frames.reduce((a, f) => a + (f[d] ?? 0), 0) / frames.length
