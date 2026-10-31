@@ -1,11 +1,15 @@
 /**
  * What the embeddings of this folder share and nobody else needs: the parameters and verbs of a fitted embedding, whose
  * `transform` returns the training rows' embedding as fitted and places other rows at the distance-weighted mean of the
- * embeddings of their nearest training rows, and the observation of an embedding per step.
+ * embeddings of their nearest training rows, the PCA start of the layouts, and the locally scaled neighbour lists that
+ * PaCMAP and TriMap both build their pairs and triplets from.
  */
 
+import { pca } from '../decomposition/index.ts'
+import { distanceMatrix } from '../distances/index.ts'
 import { matrixView } from '../learn/index.ts'
-import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
+import { foldIn, type Key, randint } from '../random/index.ts'
+import { fromStorage, type Tensor, type TensorLike, toArray, toFlat } from '../tensor/index.ts'
 
 /** Rows of an embedding. */
 export type Embedding = number[][]
@@ -72,4 +76,78 @@ export function embeddingVerbs(p: EmbeddingParams, prefix: string, k = 5): Embed
 export function trainingRows(x: TensorLike, who: string, minSamples = 1): number[][] {
   const m = matrixView(x, who, { minSamples })
   return Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
+}
+
+/**
+ * The PCA start of an embedding: the first `nComponents` principal scores, scaled so that the first column has standard
+ * deviation `scale` (t-SNE uses 1e-4, PaCMAP and TriMap 1e-2).
+ *
+ * @param x - The rows `[n, d]`.
+ * @param nComponents - The embedding dimension.
+ * @param scale - The standard deviation of the first column.
+ * @returns The start `[n, nComponents]`.
+ */
+export function pcaStart(x: TensorLike, nComponents: number, scale: number): number[][] {
+  const m = matrixView(x, 'pcaStart')
+  const z = toArray(
+    pca
+      .with({ nComponents: Math.min(nComponents, m.d) })
+      .fit({ x })
+      .transform(x),
+  ) as number[][]
+  const col = z.map((r) => r[0] ?? 0)
+  const mu = col.reduce((a, v) => a + v, 0) / col.length
+  const sd = Math.sqrt(col.reduce((a, v) => a + (v - mu) ** 2, 0) / col.length) || 1
+  return z.map((r) => r.map((v) => (v / sd) * scale))
+}
+
+/** The neighbour lists of {@link scaledNeighbours}. */
+export interface ScaledNeighbours {
+  /** The `extra` nearest other rows of each row, nearest first. */
+  readonly nbrs: number[][]
+  /** The Euclidean distance to each of them. */
+  readonly dist: number[][]
+  /** Each row's scale: the mean distance to its 4th to 6th nearest other rows (at least 1e-10). */
+  readonly sigma: number[]
+  /** The squared distance to each neighbour over the product of the two rows' scales: d^2 / (sigma_i sigma_j). */
+  readonly scaled: number[][]
+  /** The full Euclidean distance matrix, flat `[n * n]`. */
+  readonly all: Float64Array
+}
+
+/**
+ * The locally scaled neighbourhoods of PaCMAP and TriMap: for each row its `extra` nearest other rows, the scale
+ * sigma_i (the mean distance to the 4th to 6th nearest, as the `pacmap` and `trimap` packages) and the scaled squared
+ * distance d_ij^2 / (sigma_i sigma_j), which ranks the neighbours so that a dense and a sparse region are on one scale.
+ *
+ * @param x - The rows `[n, d]`.
+ * @param extra - How many neighbours to keep per row (at most n - 1).
+ * @returns The neighbours, distances, scales and scaled distances.
+ */
+export function scaledNeighbours(x: TensorLike, extra: number): ScaledNeighbours {
+  const { n, data } = distanceMatrix(x)
+  const nbrs: number[][] = []
+  const dist: number[][] = []
+  const sigma: number[] = []
+  for (let i = 0; i < n; i++) {
+    const order = Array.from({ length: n }, (_, j) => j)
+      .filter((j) => j !== i)
+      .sort((a, b) => (data[i * n + a] ?? 0) - (data[i * n + b] ?? 0) || a - b)
+    const top = order.slice(0, extra)
+    nbrs.push(top)
+    dist.push(top.map((j) => data[i * n + j] ?? 0))
+    const ring = top.slice(3, 6).map((j) => data[i * n + j] ?? 0)
+    const use = ring.length > 0 ? ring : top.map((j) => data[i * n + j] ?? 0)
+    sigma.push(Math.max(use.reduce((a, v) => a + v, 0) / Math.max(1, use.length), 1e-10))
+  }
+  const scaled = nbrs.map((row, i) => row.map((j, a) => (dist[i]?.[a] ?? 0) ** 2 / ((sigma[i] ?? 1) * (sigma[j] ?? 1))))
+  return { nbrs, dist, sigma, scaled, all: data }
+}
+
+/**
+ * An endless stream of random row indices in `[0, n)` from a key, drawn block by block so that the stream is a pure
+ * function of the key; callers take as many as they need and reject the ones they cannot use.
+ */
+export function* drawIndices(k: Key, n: number): Generator<number, never, undefined> {
+  for (let block = 0; ; block++) yield* Array.from(toFlat(randint(foldIn(k, block), [64], 0, n)))
 }

@@ -202,32 +202,40 @@ export function initialHmmParameters(
   return { kind: 'gaussian', start, transition, means, covariances: means.map(() => covariance.map((r) => [...r])) }
 }
 
-// One EM iteration: the E-step on every sequence, then the M-step from the expected counts.
-function emStep(
+/**
+ * The M-step of the emissions from state occupancies: the symbol frequencies (categorical), or the occupancy-weighted
+ * mean and covariance of the frames (Gaussian, diagonal or full, with hmmlearn's covariance prior). Baum-Welch passes
+ * the forward-backward posteriors, the semi-Markov and input-output variants their own occupancies.
+ *
+ * @param params - The current parameters (the emission family and its shape).
+ * @param observations - The sequences, a symbol index or a vector per step.
+ * @param occupancy - For each sequence the expected occupancy of each state at each step, `[T][K]`.
+ * @param options - The covariance type and prior of Gaussian emissions.
+ * @returns The emission part of the updated parameters: the `emission` table, or the `means` and `covariances`.
+ * @concept hidden-markov-models
+ * @example
+ * ```ts
+ * import { learning } from 'mdml-engine/pgm'
+ * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[0.5, 0.5], [0.5, 0.5]], emission: [[0.5, 0.5], [0.5, 0.5]] } as const
+ * learning.emissionMStep(p, [[0, 1]], [[[1, 0], [0, 1]]], {}) // => { emission: [[1, 0], [0, 1]] }
+ * ```
+ */
+export function emissionMStep(
   params: HmmParameters,
-  observations: readonly (readonly HmmObservation[])[],
-  options: Required<BaumWelchOptions>,
-): { params: HmmParameters; logLikelihood: number } {
+  observations: readonly HmmSequence[],
+  occupancy: readonly (readonly (readonly number[])[])[],
+  options: Pick<BaumWelchOptions, 'covarianceType' | 'covariancePrior'> = {},
+): { emission: number[][] } | { means: number[][]; covariances: number[][][] } {
   const K = params.start.length
-  const model = hmmFromParameters(params)
   const categorical = params.kind === 'categorical'
   const S = categorical ? (params.emission[0]?.length ?? 0) : 0
   const d = params.kind === 'gaussian' ? (params.means[0]?.length ?? 1) : 1
-  const startCounts = new Array<number>(K).fill(0)
-  const trans = Array.from({ length: K }, () => new Array<number>(K).fill(0))
   const post = new Array<number>(K).fill(0)
   const symbolCounts = Array.from({ length: K }, () => new Array<number>(S).fill(0))
   const obs = Array.from({ length: K }, () => new Array<number>(d).fill(0))
   const obs2 = Array.from({ length: K }, () => Array.from({ length: d }, () => new Array<number>(d).fill(0)))
-  let logLikelihood = 0
-  for (const seq of observations) {
-    const fb = forwardBackward(hmmChain(model, seq))
-    logLikelihood += fb.logLikelihood
-    for (let k = 0; k < K; k++) startCounts[k] = (startCounts[k] ?? 0) + (fb.posteriors[0]?.[k] ?? 0)
-    for (const xi of fb.pairwise)
-      for (let i = 0; i < K; i++)
-        for (let j = 0; j < K; j++) (trans[i] as number[])[j] = (trans[i]?.[j] ?? 0) + (xi[i]?.[j] ?? 0)
-    for (const [t, g] of fb.posteriors.entries()) {
+  for (const [n, seq] of observations.entries()) {
+    for (const [t, g] of (occupancy[n] ?? []).entries()) {
       const row = categorical ? [] : vector(seq[t] ?? 0)
       const symbol = categorical ? (seq[t] as number) : 0
       for (let k = 0; k < K; k++) {
@@ -244,10 +252,9 @@ function emStep(
       }
     }
   }
-  const start = normalised(startCounts)
-  const transition = trans.map(normalised)
-  if (categorical)
-    return { params: { kind: 'categorical', start, transition, emission: symbolCounts.map(normalised) }, logLikelihood }
+  if (categorical) return { emission: symbolCounts.map(normalised) }
+  const covarianceType = options.covarianceType ?? 'diag'
+  const prior = options.covariancePrior ?? 1e-2
   const means = obs.map((o, k) => o.map((v) => v / (post[k] ?? 1)))
   const covariances = means.map((mu, k) => {
     const n = post[k] ?? 0
@@ -262,11 +269,38 @@ function emStep(
       ),
     )
     // hmmlearn: diagonal (prior + scatter) / max(n, 1e-5); full (prior + scatter) / n, the prior on every entry.
-    if (options.covarianceType === 'diag')
-      return scatter.map((r, a) => r.map((v, b) => (a === b ? (options.covariancePrior + v) / Math.max(n, 1e-5) : 0)))
-    return scatter.map((r) => r.map((v) => (options.covariancePrior + v) / n))
+    if (covarianceType === 'diag')
+      return scatter.map((r, a) => r.map((v, b) => (a === b ? (prior + v) / Math.max(n, 1e-5) : 0)))
+    return scatter.map((r) => r.map((v) => (prior + v) / n))
   })
-  return { params: { kind: 'gaussian', start, transition, means, covariances }, logLikelihood }
+  return { means, covariances }
+}
+
+// One EM iteration: the E-step on every sequence, then the M-step from the expected counts.
+function emStep(
+  params: HmmParameters,
+  observations: readonly (readonly HmmObservation[])[],
+  options: Required<BaumWelchOptions>,
+): { params: HmmParameters; logLikelihood: number } {
+  const K = params.start.length
+  const model = hmmFromParameters(params)
+  const startCounts = new Array<number>(K).fill(0)
+  const trans = Array.from({ length: K }, () => new Array<number>(K).fill(0))
+  const occupancy: number[][][] = []
+  let logLikelihood = 0
+  for (const seq of observations) {
+    const fb = forwardBackward(hmmChain(model, seq))
+    logLikelihood += fb.logLikelihood
+    occupancy.push(fb.posteriors)
+    for (let k = 0; k < K; k++) startCounts[k] = (startCounts[k] ?? 0) + (fb.posteriors[0]?.[k] ?? 0)
+    for (const xi of fb.pairwise)
+      for (let i = 0; i < K; i++)
+        for (let j = 0; j < K; j++) (trans[i] as number[])[j] = (trans[i]?.[j] ?? 0) + (xi[i]?.[j] ?? 0)
+  }
+  const start = normalised(startCounts)
+  const transition = trans.map(normalised)
+  const emission = emissionMStep(params, observations, occupancy, options)
+  return { params: { ...params, ...emission, start, transition } as HmmParameters, logLikelihood }
 }
 
 /**

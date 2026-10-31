@@ -58,6 +58,7 @@ import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
 import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers.ts'
 import { analogyCorpus, linkageTables, plantedRelations } from './planted-embeddings.ts'
+import { irtResponses, pottsSamples } from './planted-pgm.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
 import {
@@ -101,6 +102,7 @@ import {
   reverseTask,
   sortTask,
 } from './sequence-tasks.ts'
+import { shapeletSeries } from './shapelet-series.ts'
 import {
   airPassengers,
   arma,
@@ -215,6 +217,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   plantedRuleList,
   plantedSeries,
   plantedTransactions,
+  pottsSamples,
   poissonProcess,
   positiveUnlabelled,
   quantileCurves,
@@ -223,7 +226,9 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   rings,
   roundRobin,
   sCurve,
+  irtResponses,
   seasonalSeries,
+  shapeletSeries,
   severedSphere,
   shapes,
   sincCurve,
@@ -327,7 +332,9 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['glmCurve', 'GLM curve (counts and positive responses)'],
     ['growthCurves', 'Growth curves (CDC charts)'],
     ['hastie10_2', 'Hastie 10.2'],
+    ['irtResponses', 'Test responses (item response theory)'],
     ['heatOperator', 'Heat operator'],
+    ['pottsSamples', 'Potts lattice configurations'],
     ['heteroscedastic', 'Heteroscedastic noise'],
     ['instrumentalVariables', 'Instrumental variables'],
     ['labelProportionBags', 'Label-proportion bags'],
@@ -382,6 +389,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['changepointSeries', 'Changepoints'],
     ['regimeSwitching', 'Two Gaussian regimes'],
     ['seasonalSeries', 'Seasonal series'],
+    ['shapeletSeries', 'Series with a planted shapelet'],
     ['sinusoids', 'Sinusoids'],
     ['plantedSeries', 'Planted motif, discord and regime'],
     ['garchReturns', 'GARCH returns'],

@@ -6,14 +6,13 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { pca } from '../decomposition/index.ts'
 import { type DistanceAlias, type DistanceName, distanceMatrix } from '../distances/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { normal } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { type TensorLike, toArray } from '../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
-import { type EmbeddingParams, type EmbeddingVerbs, embeddingVerbs, trainingRows } from './_support.ts'
+import { type EmbeddingParams, type EmbeddingVerbs, embeddingVerbs, pcaStart, trainingRows } from './_support.ts'
 
 const MACHINE_EPSILON = Number.EPSILON
 
@@ -603,18 +602,7 @@ export function tsneSetup(
   let start: number[][]
   if (h.init === 'random')
     start = (toArray(normal(key, [m.n, h.nComponents])) as number[][]).map((r) => r.map((v) => v * 1e-4))
-  else {
-    const z = toArray(
-      pca
-        .with({ nComponents: Math.min(h.nComponents, m.d) })
-        .fit({ x })
-        .transform(x),
-    ) as number[][]
-    const col = z.map((r) => r[0] ?? 0)
-    const mu = col.reduce((a, v) => a + v, 0) / col.length
-    const sd = Math.sqrt(col.reduce((a, v) => a + (v - mu) ** 2, 0) / col.length) || 1
-    start = z.map((r) => r.map((v) => (v / sd) * 1e-4))
-  }
+  else start = pcaStart(x, h.nComponents, 1e-4)
   const affinities =
     h.method === 'barnes-hut'
       ? sparseJointProbabilities(x, h.perplexity, h.metric)

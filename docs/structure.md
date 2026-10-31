@@ -2496,7 +2496,12 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   inputs from parsed CRF++ templates (`crfppCrf`, `crfppObservation`); general CRFs over arbitrary cliques with
   per-assignment feature tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The
   template languages and feature indexes live in `text/templates.ts` and `text/attribute-templates.ts`, the
-  estimators' training algorithms in `methods/models/crf.ts`.
+  estimators' training algorithms in `methods/models/crf.ts`. `crfFeatureCounts` and `crfExpectedFeatureCounts` are the
+  counts whose difference is the objective's gradient.
+- `models/crf-training.ts`: CRF training through the solver slot: `crfSmoothProblem` (the penalised objective with
+  unbiased batch estimates), `crfSolvers` (L-BFGS by default beside every generic smooth solver, whose `gradient` mode is
+  stochastic gradient descent, and the online structured-prediction modes `perceptron`, `averaged`, `passive-aggressive`),
+  `crfTrainAlgorithm` (objective, gradient and sequence error per step), `trainCrf`.
 - `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded
   evidence, pooled (parameter-sharing) maximum likelihood.
 - `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
@@ -2543,8 +2548,23 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   MAP or MLE (`irtAbility`), the item and test information functions, and `irtSimulate` (abilities as the truth).
 - `learning/hmm-variants.ts`: the left-right (Bakis) topology (`leftRightParameters`, `isLeftRight`; Baum-Welch preserves
   the structural zeros) and Viterbi training (`viterbiTrainingAlgorithm`, hard-assignment EM that never decreases the joint
-  score of data and best paths and stops when the paths settle). Hidden semi-Markov, input-output and factorial HMMs, and
-  Gaussian-mixture emissions, are not built yet.
+  score of data and best paths and stops when the paths settle).
+- `learning/hsmm.ts`: the hidden semi-Markov model with explicit durations: `hsmmPosterior` (forward-backward over
+  durations in log space, the last segment right-censored; start, move, duration and occupancy expectations),
+  `hsmmAlgorithm` (EM with nonparametric, shifted Poisson or shifted negative binomial durations, the last two fitted
+  exactly on the truncated support by `fitPoissonDurations` and `fitNegativeBinomialDurations`), `hsmmFromHmm` (geometric
+  durations: equal to the HMM), `hsmmSample`. `emissionMStep` (in `baum-welch.ts`) is the emission update shared with
+  Baum-Welch. Truth: exact enumeration of the segmentations.
+- `learning/io-hmm.ts`: the input-output HMM: transitions and emissions softmax (or Gaussian regressions) of the input
+  features, `ioHmmChain` (per-step transitions on `inference/chain.ts`), `ioHmmAlgorithm` (EM whose softmax M-steps are
+  `softmaxRegressionProblem`s minimised by the smooth solver slot, Newton by default, with a ridge so the EM objective is
+  the penalised likelihood), `ioHmmSample`.
+- `learning/gmm-hmm.ts`: Gaussian-mixture emissions per state (`gmmHmmAlgorithm`, diagonal or full covariances,
+  `initialGmmHmmParameters`, `gmmHmmLogLikelihood`); one component per state is the Gaussian Baum-Welch exactly.
+- `learning/factorial-hmm.ts`: the factorial HMM: `factorialHmmExact` (the product chain, the truth at small sizes),
+  `factorialHmmVariational` (structured mean field across chains, exact within each, the ELBO per sweep),
+  `factorialHmmAlgorithm` (EM with either E-step; the variational one warm-starts so the bound rises at every step),
+  `factorialHmmSample`.
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
@@ -3857,7 +3877,10 @@ Embeddings as traced `Algorithm`s with estimators (`kind: 'transformer'`). The a
 configuration at every step as the `embedding` tensor `[n, k]` (and their objective as a metric), which is what an
 `embeddingSteps` record is built from. A fitted embedding has `transform`: the training rows give their fitted
 embedding, other rows the inverse-distance-weighted mean of their nearest training rows' (none of these methods has a
-closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_support.ts` is private.
+closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_support.ts` is private: the embedding
+verbs, `pcaStart` (the PCA start, scaled), `scaledNeighbours` (each row's nearest rows with the local scale sigma, the
+mean distance to the 4th to 6th nearest, and the scaled squared distance that PaCMAP and TriMap rank neighbours by) and
+`drawIndices` (a keyed stream of random rows); `_planted.ts` (private) holds the planted layouts of the tests.
 - `mds.ts`: `classicalMds`, `classicalMdsAlgorithm`, `smacofAlgorithm` (a Guttman transform per step; metric, or
   non-metric with disparities by isotonic regression through `learn`'s `poolAdjacentViolators`), estimator `mds`.
 - `isomap.ts`: `neighbourEdges`, `geodesicDistances` (Floyd-Warshall over the neighbour graph), `isomap`. `lle.ts`:
@@ -3869,9 +3892,19 @@ closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_
 - `umap.ts`: `findAbParams` (the curve fit by `optim`), `fuzzySimplicialSet`, `umapAlgorithm` (one epoch of edge and
   negative sampling per step), `umapSetup`, `umap`. `som.ts`: `somAlgorithm` (one epoch per step; observes the
   weights and the rows' grid positions), `uMatrix`, `selfOrganisingMap`.
+- `pacmap.ts`: `pacmapPairs` (near pairs by the scaled distance, mid-near pairs as the second closest of six random rows,
+  further pairs), `pacmapWeights` (the three-phase schedule 100/100/250 with the mid-near weight falling from 1000 to 3
+  and then 0), `pacmapLoss` (bounded pair losses, with their gradient), `pacmapProblem` (the loss at one phase's weights
+  as a `SmoothProblem`, so `smoothSolvers` can minimise it), `pacmapAlgorithm` (one iteration per step; the optimiser
+  is a slot over the `optimisers` table, Adam with eps 1e-7 as `pacmapAdam` the named default), `pacmap`. `trimap.ts`:
+  `trimapTriplets` (nearest neighbours with random outliers, random triplets, weights by the tempered log of the
+  similarity ratio), `temperedLog`, `trimapLoss`, `trimapProblem`, `trimapAlgorithm` (delta-bar-delta gains and
+  momentum with the reference's step-size adaptation, or any optimiser of the table in place of it), `trimap`. Neither
+  package is in the oracle: the pair and triplet losses are checked against hand computations, the layouts by
+  trustworthiness on planted manifolds and by the global structure of planted two-scale clusters against UMAP.
 - `quality.ts`: `trustworthiness`, `continuity`, `neighbourhoodPreservation`, `coRankingMatrix`, `rnxCurve`,
   `embeddingStress`, `neighbourRanks`.
-- TODO: PaCMAP and TriMap, Barnes-Hut error control by a tree built once per step in typed arrays, UMAP with a sparse
+- TODO: Barnes-Hut error control by a tree built once per step in typed arrays, UMAP with a sparse
   graph (the memberships are dense `[n, n]`), the supervised and parametric variants.
 
 oracle: scikit-learn trustworthiness, Isomap, LocallyLinearEmbedding, SpectralEmbedding and metric SMACOF
@@ -4247,6 +4280,13 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `shapelets.ts`: `shapeletDistance` (early abandoning, optional z-normalisation), `shapeletSplit` (information gain with
   the gap tie-break), `shapeletDiscoveryAlgorithm`/`findShapelets` (one candidate per step, best non-overlapping kept,
   state serialisable) and `shapeletTransform`.
+- `learned-shapelets.ts`: learned shapelets (Grabocka et al.): `softMinDistance`, `initialShapelets` (k-means centres of
+  the windows), `learnedShapeletProblem` (the cross-entropy of a softmax classifier on soft-minimum distances, as a
+  `SmoothProblem` with batches of series and the analytic gradient through the soft minimum), `learnedShapeletsAlgorithm`
+  (a step of any solver of the slot; the stochastic `gradient` mode with Adam on mini-batches is the default
+  `learnedShapeletSolver`; the shapelets are a tensor per step), `fitLearnedShapelets`, `predictLearnedShapelets`.
+  Started from one k-means centre it can sit on the noise plateau where no window of the pattern has weight; a few
+  shapelets (k-means++ seeding finds the far windows) avoid it. Truth: `datasets/shapelet-series.ts`.
 - `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
   standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
   cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
@@ -6199,6 +6239,12 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `timeseries.ts` also has `plantedSeries` (a motif planted repeatedly, a discord and a regime change with known
   positions), `garchReturns` (the conditional variance as truth) and `coupledSeries` (VAR or coupled logistic maps
   through a known directed graph).
+- `planted-pgm.ts`: `irtResponses` (0/1 test responses from known abilities and 1PL, 2PL or 3PL items, the abilities as
+  the regression target and the true items in the truth) and `pottsSamples` (Swendsen-Wang samples of the Potts lattice at
+  a multiple of the critical coupling, with each sample's magnetisation as the target and the energy, the critical
+  coupling and Onsager's magnetisation in the truth).
+- `shapelet-series.ts`: `shapeletSeries`, noise series in which each class but the first carries one planted pattern
+  (`shapeletPatterns`: a bump, a ramp, a pulse) at a random position; the patterns and positions are the truth.
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino
   (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
   and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`
