@@ -4162,6 +4162,13 @@ against autodiff.
 - `glove.ts`: `gloveProblem` (weighted least squares on the log of the harmonic-weighted co-occurrences),
   `gloveAdaGradAlgorithm`, `gloveSolvers`, `trainGlove`, `gloveModel` (word vector `w + w~`).
 - `count-based.ts`: `ppmiEmbedding`, the closed-form route (windowed counts, shifted PPMI, truncated SVD).
+- `knowledge-graph.ts`: TransE, DistMult, ComplEx and RotatE scorers (`kgScore` in numbers, the same in tensor
+  operations inside the loss, checked against each other), `kgProblem` (margin or logistic negative-sampling loss against
+  corrupted heads and tails drawn once from a key, optional L2), `kgSolvers` (the generic solvers, the stochastic
+  `gradient` mode the default), `trainKg`, `kgEmbedding`, `rankKg` (filtered link prediction: MRR, mean rank, Hits@k,
+  tied ranks averaged). The tests train all four on `plantedRelations` and check what each can express: DistMult
+  scores a fact and its reverse identically, so it cannot orient the cycle and ranks held-out symmetric facts far
+  better than TransE does.
 - `evaluation.ts`: `analogyAccuracy` (3CosAdd or 3CosMul, optionally over a candidate set), `similarityCorrelation`
   (Spearman against judged similarity), `neighbourPurity`.
 built from: `losses`, `optim` (`smoothSolvers`), `text` (co-occurrence, PPMI, SVD, analogies, fastText hashing), `stats`,

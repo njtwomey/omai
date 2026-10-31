@@ -9,4 +9,5 @@
 export * from './count-based.ts'
 export * from './evaluation.ts'
 export * from './glove.ts'
+export * from './knowledge-graph.ts'
 export * from './word2vec.ts'

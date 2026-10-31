@@ -526,6 +526,7 @@ const word2vecSgd: ModeSpec<Word2vecProblem, Word2vecSgdState, VectorParams> = {
  * optimiser, schedule and batch) stay in the table, the model's specific algorithm sits beside them.
  *
  * @param extra - The named modes to add, built over the model's problem.
+ * @param defaultMode - The default solver (default: the first named mode, else gradient descent).
  * @returns The table.
  * @concept word-embeddings
  * @example
@@ -537,6 +538,7 @@ const word2vecSgd: ModeSpec<Word2vecProblem, Word2vecSgdState, VectorParams> = {
 export function solversWith<P extends SmoothProblem>(
   // biome-ignore lint/suspicious/noExplicitAny: each mode has a state of its own; the table erases them
   extra: Readonly<Record<string, ModeSpec<P, any, VectorParams>>>,
+  defaultMode?: string,
 ): ModeTable<P, VectorParams> {
   // biome-ignore lint/suspicious/noExplicitAny: as above
   const generic: Record<string, ModeSpec<P, any, VectorParams>> = {}
@@ -546,7 +548,7 @@ export function solversWith<P extends SmoothProblem>(
     {
       label: 'solver',
       description: 'how the objective is minimised',
-      default: Object.keys(extra)[0] ?? 'gradientDescent',
+      default: defaultMode ?? Object.keys(extra)[0] ?? 'gradientDescent',
     },
   )
 }
