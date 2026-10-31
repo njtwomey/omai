@@ -4650,6 +4650,19 @@ scrubs to the nearest trial. Bayesian optimisation (`methods/tune`) logs `x`, `v
 `{ kind: 'sweep', path: 'value', over: 'x' }` is its sweep. The gallery's `animation/05-compare` recipe runs the toy
 walk as three variants under one player.
 
+**The worker producer, page export and narratives.** `useSession`'s producer is a factory (`SessionHookOptions.producer`):
+the default computes on the main thread; `workerProducer({ createWorker })` (`render/producer/`) hands a Web Worker the
+method's name and its JSON options, computes the run ahead of the cursor (the player tells it where the cursor is, so a
+`lookahead` holds it that many steps ahead; the eager toggle runs it to the end) and streams the tape back, probing derived
+paths in the worker on request; the player and the panels read the same `Session` interface, now a `RemoteSession`. Pause,
+remake and unmount terminate the worker; a failure shows in the player. The gallery's worker entry is `toys/worker.ts`
+(`serveWorker(toyRegistry)`). Measured on the gallery's heavy toy (40,000 rows, 1000 steps of descent, a probe of a grid of
+losses per step): the page's `requestAnimationFrame` cadence stays at 16.7 ms (p99 16.8, longest 33 ms) while the worker
+computes, against a median of 133 ms on the main thread. **Page export:** `SessionPlayer`'s `pageExport` menu captures every
+figure under the title and over the caption; the tape file holds the events and the probes of the layout at up to 120 steps, and
+`useTape` replays it with nothing recomputed. **Narratives:** a `Narrative` is pages (`NarrativePage`: text, layout, `Moment`s
+as steps or event firings) over one session; the gallery's `infrastructure/` recipes show the three.
+
 **No hub.** The hub package and the site's hub section were removed on 2026-10-28: pages that explain a method are
 the encyclopedia's purview. What such a page needs is in the engine (a `Method` run as a `Session`) and in render
 (`react/session/`: the hook, the player, the settings and the panels); the gallery's `animation/` section shows the
@@ -6125,6 +6138,30 @@ Design rules:
 - Views that take rows in input space (clusters, surfaces, margins, neighbours, anomalies) accept `points` and `labels`
   beside the record; views that play return `ViewFrames` (a frame count, a label and the option of each frame).
 
+`producer/` (headless: the computing half of a live session, behind one interface; a worker bundles only this and the engine)
+- `producer.ts`: `Producer` (the sessions the consumer reads, `advance`, `start`/`stop`, `follow` the cursor, `probeAsync`, `subscribe`,
+  `dispose`) and `ProducerFactory`; `inline.ts` is the main-thread producer (slices in the spare time of each frame),
+  `make.ts` makes the sessions of a comparison (the one place, shared with the worker), `step.ts` keeps variants in step.
+- `protocol.ts`: the wire. Requests: `init` (method name, JSON `WireOptions`, variants, lookahead), `run` (`eager` ignores the
+  lookahead), `advance`, `pause`, `cursor`, `probe` (`latest` probes are coalesced: only the newest of a path is computed while
+  the run goes on), `dispose`. Events, numbered by `seq`: `ready` (resolved configuration, seed, the kind of each path), `tape`
+  (a `TapeDelta` per variant: events kept, appended, the step and status, event firings), `idle` (paused, lookahead, advanced,
+  ended, failed), `probed`, `error`. `wireOptions` says what crosses (JSON; hooks by name, `On('name', options)`, resolved
+  against `Method.hooks`; a hook function, a key or a start state cannot).
+- `registry.ts`: `methodRegistry`, methods by name, resolved on the worker's side and when a tape file is loaded.
+- `serve.ts`: `serveProducer(scope, registry)` / `serveWorker(registry)` (a worker entry is one line): makes sessions in live mode,
+  computes in short slices (a pause, a cursor or a probe is heard between slices), stays within the lookahead of the cursor,
+  streams deltas of the tape by identity of events (windows that forget are followed), answers probes with a duty cycle so they
+  cannot starve the run.
+- `client.ts`: `workerProducer({ createWorker, lookahead?, checkpoints?, available? })`: the worker starts when first needed and is
+  terminated by `dispose`; Workers unavailable or options that cannot cross make the main-thread producer, with `fallback` saying why.
+  `remote.ts`: `RemoteSession`, the `Session` the panels read (tape, step and status as streamed; a probe not answered yet
+  shows the last answer of its path, else throws `ProbePending`; no state, fork or algorithm).
+- `tape.ts`: the tape as a file, `mdml.tape/1`: method name, seed, per variant the label, configuration, head, status, the run's
+  events, the kind of each path, event firings and the probes (`TapeProbe`: step, path, arguments, value as `stateToJson`) at a
+  spread of steps (`probeSteps`); `tapeOf`, `parseTape`, `ReplaySession` (nearest stored step when a step was not stored),
+  `replaySessions`. `_fake.ts`: an in-memory worker wire for tests.
+
 `react/` (React 19; React and ECharts are peer dependencies)
 - `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events).
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
@@ -6209,7 +6246,11 @@ Design rules:
   `useSessions`: one producer over one or several sessions, `LiveSession`, `LiveSessions`, `variantsOf`), `compare.ts`
   (the pure part of a comparison: `sharedHead`, `advanceInStep`, `overlayCurves`, `sweepTrials`), `SessionPlayer.tsx`,
   `SessionControls.tsx`, `preferences.ts`, `layout.ts` (the `Panel` vocabulary), `SessionPanels.tsx`, `RowsPanel.tsx`,
-  `cursor.tsx`, `scrub.ts` and `TapeView.tsx`. The rows panel's channels are one mechanism in `overlays.ts` (a number
+  `cursor.tsx`, `scrub.ts` and `TapeView.tsx`; `useSession`'s hook options take a `producer` (see `producer/`), so the same
+  hook computes in a worker; `SessionExport.tsx` (the player's `pageExport` menu: the whole page as PNG or SVG, a recording from step
+  a to b as GIF or WebM, the tape as JSON in and out) over `export.ts` (`probeRequestsOf` a layout, `framesBetween`, `pageSvg`);
+  `useTape.ts` (`useTape(file, registry)`: a tape file as the live handle); `narrative.ts` (moments resolved against the tape,
+  the page switcher that keeps the cursor, the step-through) and `NarrativeView.tsx` (page tabs, text, panels, moments). The rows panel's channels are one mechanism in `overlays.ts` (a number
   per row as colour with a colour bar or as size, a category per row or named sets as hollow marks, regions of the plane
   as boxes or ellipses, one chosen row with its neighbours, a path, a radius and a related point; each is read at the
   viewed step from a probe or a tensor path of the tape, `readChannel`, and drawn as chart layers, `channelLayers`); the

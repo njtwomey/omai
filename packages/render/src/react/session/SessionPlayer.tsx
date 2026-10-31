@@ -4,7 +4,9 @@
  * head when the computation is slower than the rate; the eager toggle computes the whole run at once and shows its
  * end. Seek to either end, step one, a rate menu and a status line; a change held while live is applied when play is
  * pressed; a reset of the page's controls when the page offers one. Over a comparison every verb acts on all the
- * variants, the cursor is shared and the stamp shows the head of the slowest.
+ * variants, the cursor is shared and the stamp shows the head of the slowest. Given `pageExport`, an export menu sits in
+ * the status row (the page as PNG or SVG, a recording as GIF or WebM, the tape as JSON in and out); a session computed
+ * in a worker is told where the cursor stands, and its failures are shown.
  */
 
 import type { Config } from 'mdml-engine/trace'
@@ -12,6 +14,7 @@ import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { Player } from '../Player.tsx'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
 import { setSessionPreferences, useSessionPreferences } from './preferences.ts'
+import { SessionExport, type SessionExportProps } from './SessionExport.tsx'
 import { type LiveSession, type LiveSessions, variantsOf } from './useSession.ts'
 
 /** Steps per second the player's menu offers. */
@@ -33,6 +36,8 @@ export function SessionPlayer<S, C extends Config>(props: {
    * group when given; pressing it also pauses and scrubs to the start.
    */
   readonly onReset?: () => void
+  /** The page's export menu: the element holding the figures, the title and caption, the layout, loading a tape. */
+  readonly pageExport?: Omit<SessionExportProps, 'live' | 'at' | 'onScrub'>
 }): ReactElement {
   const { live, at, onScrub } = props
   const variants = variantsOf(live)
@@ -48,6 +53,11 @@ export function SessionPlayer<S, C extends Config>(props: {
     const text = [...c].map(([k, v]) => `${v} ${k}`).join(', ')
     return variants.length > 1 && text !== '' ? `${text} × ${variants.length} variants` : text
   }, [first, live.version, variants.length])
+  // A producer with a lookahead computes up to the cursor and no more: tell it where the cursor stands (and again after
+  // a remake, which made a new producer).
+  const follow = live.follow
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per step and per remake; `follow` reads the latest producer
+  useEffect(() => follow?.(viewed), [viewed, first])
   const [fps, setFps] = useState(60)
   // The cursor ticks through the tape at `fps` steps per second: it waits at the head of an unfinished run for the
   // producer, and stops at the end of a finished one.
@@ -157,22 +167,35 @@ export function SessionPlayer<S, C extends Config>(props: {
     const distinct = [...new Set(statuses)]
     return distinct.length === 1 ? `${distinct[0]}` : variants.map((v, i) => `${v.label} ${statuses[i]}`).join(', ')
   }
-  const status = live.held
-    ? ' · changes held: press play'
-    : live.done
-      ? ` · ${ended()}`
-      : live.computing
-        ? viewed < head
-          ? ` · computed to ${head}`
-          : ' · computing'
-        : ''
+  const where = live.producer?.kind === 'worker' ? ' · in a worker' : ''
+  const status =
+    live.error !== undefined
+      ? ' · failed'
+      : live.held
+        ? ' · changes held: press play'
+        : live.done
+          ? ` · ${ended()}`
+          : live.computing
+            ? viewed < head
+              ? ` · computed to ${head}`
+              : ' · computing'
+            : ''
   return (
     <div className="flex flex-col gap-3">
-      <Player controller={controller} stamp={(f) => `step ${f} of ${head}${status}`} fpsChoices={RATES} />
+      <Player controller={controller} stamp={(f) => `step ${f} of ${head}${status}${where}`} fpsChoices={RATES} />
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
         <span>{counts || 'nothing recorded'}</span>
         <span>last slice {live.lastMs.toFixed(1)} ms</span>
+        {live.producer?.fallback === undefined ? null : <span>main thread: {live.producer.fallback}</span>}
+        {props.pageExport === undefined ? null : (
+          <SessionExport live={live} at={at} onScrub={onScrub} {...props.pageExport} />
+        )}
       </div>
+      {live.error === undefined ? null : (
+        <div role="alert" className="rounded border border-red-500/50 px-2 py-1 text-xs text-red-500">
+          the session failed: {live.error}
+        </div>
+      )}
     </div>
   )
 }

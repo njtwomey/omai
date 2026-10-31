@@ -65,5 +65,11 @@ export const SECTIONS: readonly Section[] = [
     blurb:
       'The session panels that draw a record probed at the viewed step: vector fields, strips of tokens, tables with marks, grids of images, graphs, matrices with marks, scenes, accumulating points, the complex plane, the simplex and reachability plots, each on a toy method.',
   },
+  {
+    id: 'infrastructure',
+    title: 'Infrastructure',
+    blurb:
+      'What a method page runs on: sessions computed in a Web Worker while the page stays alive, the whole page exported as an image, a recording or a tape file that reproduces it, and one run told in several pages.',
+  },
   { id: 'three-d', title: 'Three dimensions', blurb: 'Surfaces, curves and points in 3-D, orbited by dragging.' },
 ]
