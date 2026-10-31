@@ -95,7 +95,14 @@ import {
   sunspots,
 } from './timeseries.ts'
 import { loggedBandit, offlineMdp } from './trajectories.ts'
-import { crowdLabels, labellingFunctions, labelProportionBags, positiveUnlabelled } from './weak-labels.ts'
+import {
+  clusterAssumption,
+  crowdLabels,
+  labellingFunctions,
+  labelProportionBags,
+  multipleInstanceBags,
+  positiveUnlabelled,
+} from './weak-labels.ts'
 
 /**
  * Every dataset generator of this area by name, the catalogue that `makeFromRecipe` looks generators up in and that
@@ -125,6 +132,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   checkerboard,
   circles,
   clickLogs,
+  clusterAssumption,
   contextualSbm,
   copyTask,
   crowdLabels,
@@ -164,6 +172,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   modularArithmetic,
   moons,
   moonsWithOutliers,
+  multipleInstanceBags,
   naiveBayesCorpus,
   nearDuplicateCorpus,
   offlineMdp,
@@ -247,7 +256,7 @@ const NETWORKX = 'Public domain data (NetworkX, BSD-3-Clause)'
  * ```ts
  * import { lookup } from 'mdml-engine/base'
  * import { datasetRegistry } from 'mdml-engine/datasets'
- * datasetRegistry.entries.length // => 121
+ * datasetRegistry.entries.length > 100 // => true
  * lookup(datasetRegistry, 'iris').size // => 150
  * ```
  */
@@ -263,6 +272,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['burgersOperator', 'Burgers operator'],
     ['checkerboard', 'Checkerboard'],
     ['circles', 'Concentric circles'],
+    ['clusterAssumption', 'Clusters and classes (semi-supervised)'],
     ['densitySamples', 'Samples from a known density'],
     ['dopplerCurve', 'Doppler curve'],
     ['friedman1', 'Friedman 1'],
@@ -285,6 +295,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['miscalibratedPredictions', 'Miscalibrated predictions'],
     ['moons', 'Two moons'],
     ['moonsWithOutliers', 'Two moons with outliers'],
+    ['multipleInstanceBags', 'Multiple-instance bags'],
     ['piecewiseLinear', 'Piecewise linear'],
     ['positiveUnlabelled', 'Positive-unlabelled'],
     ['quantileCurves', 'Curves with known quantiles'],

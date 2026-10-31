@@ -5131,7 +5131,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   behaviour policies (`offlineMdp` on random tabular MDPs or Strens' chain, `policyEvaluation`, `TabularMdp`).
 - `weak-labels.ts`: labelling functions with known accuracies (`labellingFunctions`), crowd labels (`crowdLabels`,
   Dawid-Skene), positive-unlabelled data (`positiveUnlabelled`, SCAR and SAR), label-proportion bags
-  (`labelProportionBags`), each with the exact posterior or mechanism.
+  (`labelProportionBags`), multiple-instance bags with witnesses (`multipleInstanceBags`), clusters whose classes follow
+  or break the cluster assumption (`clusterAssumption`, the exact posterior); crowd workers can be spammers or
+  adversaries. Each carries the exact posterior or mechanism.
 - `operators.ts`: operator-learning pairs (`heatOperator`, `burgersOperator` solved exactly by Cole-Hopf,
   `antiderivativeOperator` with Gaussian-process inputs).
 - `catalogue.ts`: `datasetGenerators` (every generator by name, for recipes and controls), `remoteDatasets`, and
