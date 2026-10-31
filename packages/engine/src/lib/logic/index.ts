@@ -7,6 +7,7 @@
 export * from './answer-sets.ts'
 export * from './argumentation.ts'
 export * from './datalog.ts'
+export * from './description.ts'
 export * from './first-order.ts'
 export * from './maxsat.ts'
 export * from './parse.ts'
