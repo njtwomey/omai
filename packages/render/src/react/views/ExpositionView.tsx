@@ -9,6 +9,7 @@ import type { Figure } from '../../figure/figure.ts'
 import { AgentPlayer } from './agents.tsx'
 import { AnomalyView } from './anomaly.tsx'
 import { AttributionView, ImportanceView } from './attributions.tsx'
+import { AudioView } from './audio.tsx'
 import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ConfusionMatrixView, ValueGridView } from './cells.tsx'
 import { ComplexPlaneView } from './complex-plane.tsx'
@@ -197,6 +198,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <SceneStepsView record={record} {...common} />
     case 'landscapeSlice':
       return <LandscapeSliceView record={record} {...common} />
+    case 'audio':
+      return <AudioView record={record} {...common} />
     case 'equationFit':
       return <EquationFitView record={record} {...common} />
     case 'stabilityRegion':

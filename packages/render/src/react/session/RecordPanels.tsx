@@ -10,6 +10,7 @@ import { figure } from '../../figure/figure.ts'
 import { imageGridFigure } from '../../views/images.ts'
 import { stripAspect } from '../../views/strips.ts'
 import { FigureFrame } from '../FigureFrame.tsx'
+import { AudioView } from '../views/audio.tsx'
 import { EquationFitView } from '../views/equation-fit.tsx'
 import { ImageGridView } from '../views/images.tsx'
 import { LandscapeSliceView } from '../views/landscape-slice.tsx'
@@ -19,6 +20,7 @@ import { SceneStepsView } from '../views/scene-steps.tsx'
 import { StabilityRegionView } from '../views/stability-region.tsx'
 import { StripView } from '../views/strips.tsx'
 import { StructureStepsView } from '../views/structure-steps.tsx'
+import { useStepCursor } from './cursor.tsx'
 import type { Panel } from './layout.ts'
 import { FIG, Note, useProbe } from './RowsPanel.tsx'
 import type { LiveSession } from './useSession.ts'
@@ -278,4 +280,33 @@ export function EquationPanel(props: {
   const { record, problem } = useRecord(props.live, props.t, 'equationFit', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return <EquationFitView record={record} figure={TALL} title={props.title} filename={props.filename} />
+}
+
+/**
+ * An audio clip probed at the viewed step: waveform, spectrogram and a playhead locked to the step cursor, which a click
+ * on the picture and the sound playing both move.
+ *
+ * @param props - The session, the viewed step, the panel and the frame's title and file name.
+ * @returns The figure.
+ */
+export function AudioPanel(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  readonly panel: Extract<Panel, { kind: 'audio' }>
+  readonly t: number
+  readonly title: string
+  readonly filename: string
+}): ReactNode {
+  const { record, problem } = useRecord(props.live, props.t, 'audio', props.panel.path, props.panel.args)
+  const cursor = useStepCursor()
+  if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
+  return (
+    <AudioView
+      record={record}
+      step={props.t}
+      title={props.title}
+      filename={props.filename}
+      onStep={(s) => cursor?.scrub(Math.min(s, cursor.head))}
+    />
+  )
 }

@@ -1,4 +1,4 @@
-import { decisionSurface, equationFit, sampleLandscape, sampleStabilityRegion } from 'mdml-engine/exposition'
+import { audioClip, decisionSurface, equationFit, sampleLandscape, sampleStabilityRegion } from 'mdml-engine/exposition'
 import { dict, int } from 'mdml-engine/space'
 import {
   type Config,
@@ -86,6 +86,18 @@ const toy: Method<State, Config> = defineMethod<State, Config>({
           x: [0, 1, 2],
           fit: [0.5, 2.5, 4.5],
           truth: [0, 2, 4],
+        }),
+    }),
+    clip: derived<State>({
+      description: 'an audio clip',
+      compute: () =>
+        audioClip({
+          sampleRate: 1000,
+          samples: Array.from({ length: 1000 }, (_, i) => Math.sin(i / 5)),
+          frames: [
+            { step: 0, time: 0 },
+            { step: 10, time: 1 },
+          ],
         }),
     }),
     wrong: derived<State>({ description: 'not a surface', compute: () => ({ kind: 'nope' }) }),
@@ -176,5 +188,22 @@ describe('the equation panel', () => {
     expect(html).toContain('matches the truth')
     expect(html).toContain('kept, but not in the law')
     expect(html).toContain('1 of 2 terms match the truth, 1 extra, 0 missing')
+  })
+})
+
+describe('the audio panel', () => {
+  it('draws the clip with the playhead of the viewed step and a play button', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/audio"
+        live={live}
+        at={5}
+        layout={[{ kind: 'audio', path: 'clip', title: 'the clip' }]}
+      />,
+    )
+    expect(html).toContain('the clip at step 5')
+    expect(html).toContain('playhead 0.50 s of 1.00 s')
+    expect(html).toContain('Play the clip from the playhead')
+    expect(html).toContain('Waveform and spectrogram of a 1 s clip, playhead at 0.5 s')
   })
 })

@@ -7,6 +7,7 @@
 import type { AgentSteps } from './agents.ts'
 import type { AnomalyScores } from './anomaly.ts'
 import type { FeatureAttributions, Importances } from './attributions.ts'
+import type { AudioClip } from './audio.ts'
 import type { BoardSteps } from './boards.ts'
 import type { ValueGrids } from './cells.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
@@ -117,6 +118,7 @@ export type Exposition =
   | LandscapeSlice
   | StabilityRegion
   | EquationFit
+  | AudioClip
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -219,4 +221,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'landscapeSlice',
   'stabilityRegion',
   'equationFit',
+  'audio',
 ])

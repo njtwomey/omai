@@ -12,6 +12,7 @@ import type { ViewOptions } from './_view.ts'
 import { agentFrames } from './agents.ts'
 import { anomalyView } from './anomaly.ts'
 import { attributionFrames, beeswarmView, importanceView } from './attributions.ts'
+import { audioScene } from './audio.ts'
 import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
 import { complexPlaneView } from './complex-plane.ts'
@@ -495,6 +496,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => equationFitView(r, o),
+  },
+  audio: {
+    kind: 'audio',
+    component: 'AudioView',
+    title: 'Audio',
+    plays: false,
+    accepts: [],
+    still: (r, o) => audioScene(r, o?.mode === undefined ? {} : { mode: o.mode }),
   },
   dataBias: {
     kind: 'dataBias',

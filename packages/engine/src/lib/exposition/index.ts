@@ -7,6 +7,7 @@
 export * from './agents.ts'
 export * from './anomaly.ts'
 export * from './attributions.ts'
+export * from './audio.ts'
 export * from './boards.ts'
 export * from './cells.ts'
 export * from './clustering.ts'

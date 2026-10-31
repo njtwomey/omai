@@ -300,6 +300,12 @@ export type Panel =
    * the residual in a strip beneath.
    */
   | { readonly kind: 'equation'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * An audio clip probed at the viewed step (an `audio` record): the waveform above its spectrogram, with a playhead
+   * at the time the step stands at (the record's `frames`). Clicking the picture moves the step cursor; the button
+   * plays the clip through WebAudio from the playhead and the cursor follows the sound.
+   */
+  | { readonly kind: 'audio'; readonly path: string; readonly args?: Json; readonly title?: string }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */
