@@ -2882,6 +2882,17 @@ modAL for active learning, diffprivlib and opacus for privacy
   `lib/tune`; these are the sklearn-shaped searches it can generalise.
 - `model-selection/criteria.ts`: AIC, AICc, BIC, Mallows' Cp, GCV, leave-one-out shortcuts for linear smoothers, the
   one-standard-error rule, the .632 and .632+ bootstrap.
+- `model-selection/compare.ts`: comparing learning algorithms from resampled scores: the plain and the corrected
+  resampled t-test (Nadeau-Bengio), Dietterich's 5x2 cv t-test and Alpaydin's 5x2 cv F-test, the Bayesian correlated
+  t-test with a ROPE (Benavoli), `pairedCvScores` (two estimators on the same folds), and Demsar's procedures for many
+  algorithms over many data sets (`compareAlgorithms`: average ranks, Friedman and Iman-Davenport, `nemenyiQ` and
+  `criticalDifference`, cliques, Bonferroni-Dunn and Holm against a control). McNemar, Wilcoxon, Friedman and the
+  Nemenyi p-values are in `stats/tests`. goldens: the published Nemenyi q table (Demsar 2006, table 5); the type I
+  error of each test is checked in simulation against the plain resampled t-test.
+- `model-selection/adaptive.ts`: adaptive data analysis: Thresholdout (`thresholdoutAlgorithm`, one step per query,
+  with an adaptive analyst), the Ladder leaderboard (`ladderAlgorithm`), and the planted problems that show them
+  against naive reuse of a holdout (`adaptiveOverfittingDemo`, `leaderboardAttack`: noise labels, an analyst who
+  combines whatever looks good).
 - `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
   cross-fitted calibrated classifiers; for regression, the probability integral transform (`pitValues`, `pitHistogram`)
