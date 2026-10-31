@@ -41,7 +41,18 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
-import { channels, derived, Log, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  type Contract,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { currentOf, lbfgsbSearch, negatedObjective, type SearchState } from './_search.ts'
 import {
   type ClassLikelihood,
@@ -309,6 +320,18 @@ function verbsOf(params: GpcParams, h: GpClassifierHyper): GpcVerbs {
 }
 
 /**
+ * The paths of the Gaussian-process classifier: the approximate log marginal likelihood, the hyperparameters, the latent function at the training points and the derived `model/posterior`.
+ *
+ * @example
+ * ```ts
+ * import type { GpcPath } from 'mdml-engine/gp'
+ * const path: GpcPath = 'gp/latent'
+ * path // => 'gp/latent'
+ * ```
+ */
+export type GpcPath = 'gp/logMarginalLikelihood' | 'gp/hyper' | 'gp/latent' | 'model/posterior'
+
+/**
  * Gaussian-process classification over any kernel, with the Laplace approximation or expectation propagation. The fit
  * first maximises the approximate log marginal likelihood over the kernel's hyperparameters (L-BFGS-B, the gradient by
  * Rasmussen and Williams' Algorithm 5.1 or its EP counterpart, restarts as in the regressor), each step logging
@@ -328,11 +351,12 @@ function verbsOf(params: GpcParams, h: GpClassifierHyper): GpcVerbs {
  * toFlat(fitted.predict([[-1.8], [1.8]])) // => [0, 1]
  * ```
  */
-export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcParams, GpcVerbs> = iterative<
+export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcParams, GpcVerbs, GpcPath> = iterative<
   GpClassifierHyper,
   GpcState,
   GpcParams,
-  GpcVerbs
+  GpcVerbs,
+  GpcPath
 >({
   name: 'gp/classifier',
   kind: 'classifier',
@@ -353,7 +377,7 @@ export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcPa
     dict({
       restarts: int(0, 10, { default: Math.min(Math.max(h.restarts, 0), 10), label: 'restarts' }),
     }),
-  algorithm: (data, h) => {
+  algorithm: (data, h): Algorithm<GpcState, GpcPath> => {
     const p = prepare(data, h)
     const p0 = thetaOf(h.kernel).shape[0] ?? 0
     const box = thetaBox(h.kernel, h.bounds)
@@ -485,9 +509,9 @@ export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcPa
     return { classes: p.classes, theta: model.x, logMarginalLikelihood: lml, x: p.rows, t: Array.from(p.t), posterior }
   },
   verbs: verbsOf,
-  contract: (data, h) => {
+  contract: (data, h): Contract<GpcState, GpcPath> => {
     const p = prepare(data, h)
-    return {
+    return defineContract({
       'gp/logMarginalLikelihood': scalar({
         description: 'the approximate log marginal likelihood',
         direction: 'higher',
@@ -502,7 +526,7 @@ export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcPa
         cost: 'dear',
         compute: (s, args) => latentGrid(h, p, s, (args as { resolution?: number } | undefined)?.resolution ?? 100),
       }),
-    }
+    })
   },
   logs: { 'gp/logMarginalLikelihood': Log(), 'gp/hyper': Log() },
 })

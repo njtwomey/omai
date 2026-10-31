@@ -38,7 +38,18 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
-import { channels, derived, Log, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  type Contract,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { currentOf, lbfgsbSearch, type SearchState } from './_search.ts'
 import { logMarginalLikelihood, negativeLogMarginalLikelihood } from './likelihood.ts'
 
@@ -250,6 +261,18 @@ function verbsOf(params: GpParams, h: GpHyper): GpVerbs {
 }
 
 /**
+ * The paths of Gaussian-process regression: the log marginal likelihood, the hyperparameters, the derived posterior, its function samples and the likelihood surface over the hyperparameters.
+ *
+ * @example
+ * ```ts
+ * import type { GpPath } from 'mdml-engine/gp'
+ * const path: GpPath = 'gp/hyper'
+ * path // => 'gp/hyper'
+ * ```
+ */
+export type GpPath = 'gp/logMarginalLikelihood' | 'gp/hyper' | 'model/posterior' | 'model/samples' | 'solver/surface'
+
+/**
  * Gaussian-process regression over any kernel of `mdml-engine/kernels`. The fit maximises the exact log marginal
  * likelihood over the kernel's free hyperparameters with L-BFGS-B, the gradient coming from `gramGradient`, restarting from
  * random points inside the bounds `restarts` times and keeping the best; each step is one L-BFGS-B iteration, logging
@@ -268,11 +291,12 @@ function verbsOf(params: GpParams, h: GpHyper): GpVerbs {
  * toFlat(fitted.predict([[0], [4]])).map((v) => Math.round(v * 100) / 100) // => [0, -0.8]
  * ```
  */
-export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerbs> = iterative<
+export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerbs, GpPath> = iterative<
   GpHyper,
   GpState,
   GpParams,
-  GpVerbs
+  GpVerbs,
+  GpPath
 >({
   name: 'gp/regression',
   kind: 'regressor',
@@ -291,7 +315,7 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
       alpha: real(1e-10, 10, { log: true, default: Math.min(Math.max(h.alpha, 1e-10), 10), label: 'noise variance' }),
       restarts: int(0, 10, { default: Math.min(Math.max(h.restarts, 0), 10), label: 'restarts' }),
     }),
-  algorithm: (data, h) => {
+  algorithm: (data, h): Algorithm<GpState, GpPath> => {
     const p = prepare(data, h)
     const p0 = thetaOf(h.kernel).shape[0] ?? 0
     const box = thetaBox(h.kernel, h.bounds)
@@ -364,7 +388,7 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
     }
   },
   verbs: verbsOf,
-  contract: (data, h) => {
+  contract: (data, h): Contract<GpState, GpPath> => {
     const p = prepare(data, h)
     const gridOf = (
       args: { readonly resolution?: number; readonly samples?: number; readonly seed?: number } | undefined,
@@ -410,7 +434,7 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
         observed: { inputs: p.rows, targets: Array.from(p.y) },
       })
     }
-    return {
+    return defineContract({
       'gp/logMarginalLikelihood': scalar({
         description: 'the log marginal likelihood at the current hyperparameters',
         direction: 'higher',
@@ -436,7 +460,7 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
         cost: 'dear',
         compute: (s, args) => surfaceOf(h, p, s, (args as { resolution?: number } | undefined)?.resolution ?? 25),
       }),
-    }
+    })
   },
   logs: { 'gp/logMarginalLikelihood': Log(), 'gp/hyper': Log() },
 })
