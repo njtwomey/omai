@@ -2484,8 +2484,23 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   MAP or MLE (`irtAbility`), the item and test information functions, and `irtSimulate` (abilities as the truth).
 - `learning/hmm-variants.ts`: the left-right (Bakis) topology (`leftRightParameters`, `isLeftRight`; Baum-Welch preserves
   the structural zeros) and Viterbi training (`viterbiTrainingAlgorithm`, hard-assignment EM that never decreases the joint
-  score of data and best paths and stops when the paths settle). Hidden semi-Markov, input-output and factorial HMMs, and
-  Gaussian-mixture emissions, are not built yet.
+  score of data and best paths and stops when the paths settle).
+- `learning/hsmm.ts`: the hidden semi-Markov model with explicit durations: `hsmmPosterior` (forward-backward over
+  durations in log space, the last segment right-censored; start, move, duration and occupancy expectations),
+  `hsmmAlgorithm` (EM with nonparametric, shifted Poisson or shifted negative binomial durations, the last two fitted
+  exactly on the truncated support by `fitPoissonDurations` and `fitNegativeBinomialDurations`), `hsmmFromHmm` (geometric
+  durations: equal to the HMM), `hsmmSample`. `emissionMStep` (in `baum-welch.ts`) is the emission update shared with
+  Baum-Welch. Truth: exact enumeration of the segmentations.
+- `learning/io-hmm.ts`: the input-output HMM: transitions and emissions softmax (or Gaussian regressions) of the input
+  features, `ioHmmChain` (per-step transitions on `inference/chain.ts`), `ioHmmAlgorithm` (EM whose softmax M-steps are
+  `softmaxRegressionProblem`s minimised by the smooth solver slot, Newton by default, with a ridge so the EM objective is
+  the penalised likelihood), `ioHmmSample`.
+- `learning/gmm-hmm.ts`: Gaussian-mixture emissions per state (`gmmHmmAlgorithm`, diagonal or full covariances,
+  `initialGmmHmmParameters`, `gmmHmmLogLikelihood`); one component per state is the Gaussian Baum-Welch exactly.
+- `learning/factorial-hmm.ts`: the factorial HMM: `factorialHmmExact` (the product chain, the truth at small sizes),
+  `factorialHmmVariational` (structured mean field across chains, exact within each, the ELBO per sweep),
+  `factorialHmmAlgorithm` (EM with either E-step; the variational one warm-starts so the bound rises at every step),
+  `factorialHmmSample`.
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
