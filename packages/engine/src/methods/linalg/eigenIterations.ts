@@ -90,7 +90,25 @@ function actionRecord(p: Problem, v: readonly number[] | undefined): CurveSet {
   return curveSet({ series, xLabel: 'along the leading eigenvector', yLabel: 'along the second' })
 }
 
-function contractOf(kind: 'power' | 'qr', c: Config, key: Key): Contract<EigenState> {
+/**
+ * The paths of the eigenvalue iterations ({@link eigenPower} and {@link eigenQr}): the matrix, the iterate, the Rayleigh quotient, the error and the off-diagonal norm of each step, and the derived `matrix/action`.
+ *
+ * @example
+ * ```ts
+ * import type { EigenPath } from 'mdml-engine/methods/linalg'
+ * const path: EigenPath = 'iteration/error'
+ * path // => 'iteration/error'
+ * ```
+ */
+export type EigenPath =
+  | 'iteration/matrix'
+  | 'iteration/vector'
+  | 'iteration/rayleigh'
+  | 'iteration/error'
+  | 'iteration/offDiagonal'
+  | 'matrix/action'
+
+function contractOf(kind: 'power' | 'qr', c: Config, key: Key): Contract<EigenState, EigenPath> {
   const p = problemOf(c, key)
   return {
     'iteration/matrix': tensorSource({
@@ -121,7 +139,7 @@ function contractOf(kind: 'power' | 'qr', c: Config, key: Key): Contract<EigenSt
   }
 }
 
-function makeOf(kind: 'power' | 'qr', c: Config, key: Key): Algorithm<EigenState> {
+function makeOf(kind: 'power' | 'qr', c: Config, key: Key): Algorithm<EigenState, EigenPath> {
   const p = problemOf(c, key)
   const top = p.eigenvalues[p.n - 1] ?? 1
   const sorted = [...p.eigenvalues].sort((x, y) => x - y)
@@ -172,7 +190,7 @@ function makeOf(kind: 'power' | 'qr', c: Config, key: Key): Algorithm<EigenState
  * `iteration/vector` (the unit iterate, full), `iteration/rayleigh`, `iteration/error`, `iteration/matrix`, and the
  * probe `matrix/action` (the leading eigenplane's unit circle, its image under A, and the iterate).
  */
-export const eigenPower: Method<EigenState, Config> = defineMethod<EigenState, Config>({
+export const eigenPower: Method<EigenState, Config, EigenPath> = defineMethod<EigenState, Config, EigenPath>({
   name: 'linalg/power-iteration',
   config: CONFIG,
   make: (c, key) => makeOf('power', c, key),
@@ -191,7 +209,7 @@ export const eigenPower: Method<EigenState, Config> = defineMethod<EigenState, C
  * Configuration as {@link eigenPower}. Paths: `iteration/matrix` (A_k, full), `iteration/vector` (its diagonal, the
  * eigenvalue estimates, full), `iteration/offDiagonal`, `iteration/error`, and the probe `matrix/action`.
  */
-export const eigenQr: Method<EigenState, Config> = defineMethod<EigenState, Config>({
+export const eigenQr: Method<EigenState, Config, EigenPath> = defineMethod<EigenState, Config, EigenPath>({
   name: 'linalg/qr-iteration',
   config: CONFIG,
   make: (c, key) => makeOf('qr', c, key),
