@@ -4044,9 +4044,21 @@ bordering update and a downdate of the inverse), `krlsStep` and `krlsPredict` on
 expansion truncated to `budget`). Logs `solver/dictionarySize`, `solver/novelty`, `solver/loss`, `solver/runningMse`,
 `solver/alpha` and the message `solver/dictionaryAdd`; probe `model/dictionary`.
 
+`feature-ridge.ts` is ridge regression in an explicit feature space (primal, `O(n D^2)` instead of the dual's `O(n^3)`):
+`ridgeSolve` (the normal equations), `featureRidgeProblem` (the same ridge as a `SmoothProblem`, so every solver of
+`smoothSolvers` reaches it), `featureRidge` (over any `FeatureMap`), the estimator `approximateKernelRidge` (draws a
+Nystrom, random Fourier or orthogonal-random map itself; `solver: 'closed-form'` or a value of `smoothSolvers.space`) and
+`ridgeGap`, the explicit approximation error against exact kernel ridge: the fitted-value gap, `|K - K~|_2` and the
+bound `|K - K~|_2 |y| / alpha` that gap satisfies, which falls with the number of features. `kernel-selection.ts` is the
+choice of the kernel and the ridge from the data: `logEvidence` (kernel ridge as a Gaussian process), `looScore` and
+`gcvScore`, all differentiable in the Gram matrix; `kernelCriterionProblem` states the criterion over the log
+hyperparameters and log ridge as a `SmoothProblem` (the gradient is autodiff through the Gram matrix), `tuneKernelRidge`
+minimises it with any solver of the slot (L-BFGS by default), and `gridKernelRidge` scores a grid. `_slot.ts` (private) is
+the slot with the closed form as one more mode; `_testdata.ts` (private) the tests' planted data.
+
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
-sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits. TODO: kernel ridge on the
-Nystroem and random Fourier maps of `kernels/expansion.ts` (the maps exist; the estimator over them does not).
+sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
+pipelines with `Ridge` (same landmarks and draws), and the leave-one-out errors of `RidgeCV`.
 built from: `kernels`, `learn`, `numerics`, `metrics`, `dists`, `trace`
 
 ### 4.51 `gam/`: generalised additive models (mgcv, pyGAM, statsmodels GLMGam)
