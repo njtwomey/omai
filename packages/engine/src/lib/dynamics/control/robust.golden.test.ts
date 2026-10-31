@@ -6,7 +6,8 @@ import { hinfSynthesis } from './robust.ts'
 
 const FNS: Readonly<Record<string, GoldenFn>> = {
   'hinf-controller': ([a, b1, b2, c1, c2, d12, d21, w], p) => {
-    const k = hinfSynthesis({ a, b1, b2, c1, c2, d12, d21 }, p['gamma'] as number).controller
+    const plant = { a, b1, b2, c1, c2, d12, d21 } as Record<string, Tensor>
+    const k = hinfSynthesis(plant as never, p['gamma'] as number).controller
     if (k === undefined) throw new Error('the level should be achievable')
     const freqs = toFlat(w as Tensor)
     const re: number[] = []

@@ -2162,6 +2162,13 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   the horizon: one shot per step, the miss, the trajectory with its costate and control, and the switches as events);
   `doubleIntegratorEnergy` and `minimumTimeDoubleIntegrator` with `minimumTimeShooting` (continuation in the smoothing
   of the bang-bang rule) carry their closed-form truth.
+- `control/robust.ts`: H-infinity synthesis by the two Riccati equations: `hinfStateFeedback`, `hinfSynthesis` (the
+  central output-feedback controller, with the three feasibility conditions reported), `closedLoopFromDisturbance`
+  (w to z, to check the norm with `systems/norms.ts`), and `hinfBisectionAlgorithm` (the smallest achievable gamma, one
+  level per step). Oracle: SLICOT SB10FD through slycot (python-control's engine).
+- `control/adaptive.ts`: model-reference adaptive control of a first-order plant (`mracAlgorithm`: the MIT rule and the
+  Lyapunov law; logs output, model output, parameter, error, gain and the distance from the matching parameters,
+  `matchingParameters`), and `gainSchedule`.
 - `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints, receding horizon as a traced algorithm).
 - `control/pid.ts`: PID control with anti-windup and derivative filtering, Ziegler-Nichols and Cohen-Coon tuning,
   relay auto-tuning.
@@ -2173,7 +2180,9 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `filtering/changepoint.ts`: Bayesian online changepoint detection (conjugate predictives, run-length posteriors,
   hazard functions), PELT, binary segmentation.
 - `filtering/em.ts`: EM for linear-Gaussian state-space parameters (traced).
-- `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD.
+- `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD, and
+  recursive least squares (`rlsAlgorithm`, one sample per step with a forgetting factor, Joseph-form covariance;
+  `arxRegression`, `simulateArx` with a mid-run change of plant as the planted truth).
 - Private helpers: `ode/_vec.ts` (typed-array fast path that falls back to tensor ops on traced values), `ode/_step.ts`
   (step bookkeeping shared by the steppers), `ode/_newton.ts` (simplified Newton, Jacobians, the implicit-function
   correction that makes implicit steps differentiable), `ode/_radau.ts`, `ode/_bdf.ts`, `ode/_bvp.ts`,
