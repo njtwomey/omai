@@ -94,11 +94,10 @@ const orbit: Method<State, Config> = defineMethod<State, Config>({
         return pointsSteps({
           dims: 3,
           features: ['x', 'y', 'z'],
-          range: [
-            [-24, 24],
-            [-32, 32],
-            [0, 52],
-          ],
+          range: [0, 1, 2].map(
+            (d) =>
+              [Math.min(...all.p.map((v) => v[d] ?? 0)), Math.max(...all.p.map((v) => v[d] ?? 0))] as [number, number],
+          ),
           valueName: 'speed',
           valueRange: [lo, hi],
           steps: Array.from({ length: s.k + 1 }, (_, j) => ({

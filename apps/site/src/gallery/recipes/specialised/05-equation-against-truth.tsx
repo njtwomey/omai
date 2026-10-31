@@ -27,18 +27,18 @@ export const recipe: Recipe = {
   title: 'Equation against the truth',
   question: 'How do I show a discovered equation beside the true one, with its error term by term?',
   explain:
-    'A probe that returns an `equationFit` record (terms with their estimated and, when known, true coefficients, the fitted and true functions on a grid, the observations) and the panel `{ kind: "equation", path }`. The fitted expression is typeset with KaTeX, each coefficient coloured by its error and listed in a table with its status in words (matches, differs, kept though not in the law, dropped though in it), the fit is drawn against the truth and the residual sits in a strip beneath. Here the lasso by coordinate descent on a library of six terms recovers y = 0.3 − 0.4 x² + 1.5 sin x from noisy samples: early steps keep spurious terms, later ones prune them.',
+    'A probe that returns an `equationFit` record (terms with their estimated and, when known, true coefficients, the fitted and true functions on a grid, the observations) and the panel `{ kind: "equation", path }`. The fitted expression is typeset with KaTeX, each coefficient coloured by its error and listed in a table with its status in words (matches, differs, kept though not in the law, dropped though in it), the fit is drawn against the truth and the residual sits in a strip beneath. Here the lasso by coordinate descent on a library of six powers recovers y = 0.3 + 1.5 x − 0.6 x³ from noisy samples: the powers are strongly correlated, so it converges over many sweeps, the spurious terms shrinking toward zero as the true ones grow toward their values.',
 }
 
 const STEPS = 60
 const N = 60
 const TERMS = [
   { tex: '1', f: (_: number) => 1, truth: 0.3 },
-  { tex: 'x', f: (x: number) => x, truth: 0 },
-  { tex: 'x^2', f: (x: number) => x * x, truth: -0.4 },
-  { tex: 'x^3', f: (x: number) => x * x * x, truth: 0 },
-  { tex: '\\sin x', f: Math.sin, truth: 1.5 },
-  { tex: '\\cos x', f: Math.cos, truth: 0 },
+  { tex: 'x', f: (x: number) => x, truth: 1.5 },
+  { tex: 'x^2', f: (x: number) => x ** 2, truth: 0 },
+  { tex: 'x^3', f: (x: number) => x ** 3, truth: -0.6 },
+  { tex: 'x^4', f: (x: number) => x ** 4, truth: 0 },
+  { tex: 'x^5', f: (x: number) => x ** 5, truth: 0 },
 ] as const
 
 interface State {
@@ -48,7 +48,7 @@ interface State {
   readonly penalty: number
 }
 
-const xsData = Array.from({ length: N }, (_, i) => -3 + (6 * i) / (N - 1))
+const xsData = Array.from({ length: N }, (_, i) => -2 + (4 * i) / (N - 1))
 // A fixed stream of noise (a linear congruential generator, scaled to roughly unit spread).
 const unitNoise = (): number[] => {
   let seed = 7
@@ -61,7 +61,7 @@ const NOISE = unitNoise()
 const trueY = (x: number): number => TERMS.reduce((s, t) => s + t.truth * t.f(x), 0)
 const design = xsData.map((x) => TERMS.map((t) => t.f(x)))
 const colNorm = TERMS.map((_, j) => design.reduce((s, row) => s + (row[j] ?? 0) ** 2, 0))
-const GRID = Array.from({ length: 121 }, (_, i) => -3 + (6 * i) / 120)
+const GRID = Array.from({ length: 121 }, (_, i) => -2 + (4 * i) / 120)
 
 const soft = (v: number, t: number): number => Math.sign(v) * Math.max(0, Math.abs(v) - t)
 
@@ -85,7 +85,7 @@ const lasso: Method<State, Config> = defineMethod<State, Config>({
   name: 'lasso',
   config: dict({
     noise: real(0, 1, { default: 0.25, label: 'noise' }),
-    penalty: real(0.1, 40, { default: 3, log: true, label: 'penalty' }),
+    penalty: real(0.02, 20, { default: 0.5, log: true, label: 'penalty' }),
   }),
   make: (c) => {
     const noise = c['noise'] as number
@@ -97,7 +97,7 @@ const lasso: Method<State, Config> = defineMethod<State, Config>({
       init: () => ({ k: 0, w: TERMS.map(() => 0), noise, penalty }),
       step: (s, ctx) => {
         const w = sweep(s.w, y, penalty)
-        ctx.log('terms kept', w.filter((v) => v !== 0).length)
+        ctx.log('coefficient error', Math.hypot(...w.map((v, j) => v - (TERMS[j]?.truth ?? 0))))
         ctx.log('coefficients', w)
         return { ...s, k: s.k + 1, w }
       },
@@ -107,7 +107,7 @@ const lasso: Method<State, Config> = defineMethod<State, Config>({
     }
   },
   contract: {
-    'terms kept': scalar({ description: 'how many of the six terms have a coefficient other than zero' }),
+    'coefficient error': scalar({ description: 'the distance of the coefficients from the true ones' }),
     coefficients: tensor({ role: 'state', shape: [TERMS.length], description: 'the coefficients' }),
     equation: derived<State>({
       description: 'the fitted equation beside the truth',
@@ -119,12 +119,13 @@ const lasso: Method<State, Config> = defineMethod<State, Config>({
           fit: GRID.map((x) => TERMS.reduce((sum, t, j) => sum + (s.w[j] ?? 0) * t.f(x), 0)),
           truth: GRID.map(trueY),
           observed: { x: xsData, y },
+          tolerance: 0.25,
           caption: `after ${s.k} sweeps`,
         })
       },
     }),
   },
-  defaults: { 'terms kept': Log() },
+  defaults: { 'coefficient error': Log() },
 })
 
 const LAYOUT: readonly Panel[] = [

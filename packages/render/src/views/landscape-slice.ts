@@ -229,11 +229,11 @@ export function landscapeSliceView(record: LandscapeSlice, options: ViewOptions 
 }
 
 /**
- * A two-dimensional slice as a surface to orbit: the loss as height over the plane (on a log scale when it spans
- * decades), coloured along a ramp, with the iterates as a path lying on it and the current one as a larger point.
+ * A two-dimensional slice as a surface to orbit: the loss as height over the plane (on a log scale when asked and it
+ * spans decades), coloured along a ramp, with the iterates as a path lying on it and the current one as a larger point.
  *
  * @param record - A two-dimensional slice.
- * @param options - The colour mode.
+ * @param options - The colour mode, and `log` to draw the height on a log scale when the loss spans decades.
  * @returns The scene.
  * @example
  * ```ts
@@ -243,11 +243,14 @@ export function landscapeSliceView(record: LandscapeSlice, options: ViewOptions 
  * landscapeSliceScene3d(r).items.length // => 10
  * ```
  */
-export function landscapeSliceScene3d(record: LandscapeSlice, options: { readonly mode?: ColourMode } = {}): Scene3D {
+export function landscapeSliceScene3d(
+  record: LandscapeSlice,
+  options: { readonly mode?: ColourMode; readonly log?: boolean } = {},
+): Scene3D {
   const grid = record.grid ?? []
   const y = record.y ?? []
   const flat = grid.flat()
-  const log = wantsLog(flat)
+  const log = options.log === true && wantsLog(flat)
   const height = (v: number): number => (log ? Math.log(Math.max(v, 1e-300)) : v)
   const [lo, hi] = spanOf(flat.map(height))
   const span = hi > lo ? hi - lo : 1
