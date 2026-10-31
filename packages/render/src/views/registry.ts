@@ -28,6 +28,7 @@ import { groupReportView } from './fairness.ts'
 import { vectorFieldView } from './fields.ts'
 import { paretoFrontView } from './frontiers.ts'
 import { imageFrames } from './images.ts'
+import { landscapeSliceView } from './landscape-slice.ts'
 import { marginFrames } from './margins.ts'
 import { markedTableScene } from './marked-tables.ts'
 import { attributionImageView, attributionSeriesView, tokenStripView } from './modalities.ts'
@@ -468,6 +469,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r) => sceneStepsScene(r),
+  },
+  landscapeSlice: {
+    kind: 'landscapeSlice',
+    component: 'LandscapeSliceView',
+    title: 'Loss landscape slice',
+    plays: false,
+    accepts: [],
+    still: (r, o) => landscapeSliceView(r, o),
   },
   dataBias: {
     kind: 'dataBias',

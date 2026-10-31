@@ -11,6 +11,7 @@ import { imageGridFigure } from '../../views/images.ts'
 import { stripAspect } from '../../views/strips.ts'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { ImageGridView } from '../views/images.tsx'
+import { LandscapeSliceView } from '../views/landscape-slice.tsx'
 import { MarkedTableView } from '../views/marked-tables.tsx'
 import { PointsStepsView } from '../views/points-steps.tsx'
 import { SceneStepsView } from '../views/scene-steps.tsx'
@@ -206,4 +207,32 @@ export function ScenePanel(props: {
   const { record, problem } = useRecord(props.live, props.t, 'sceneSteps', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return <SceneStepsView record={record} step={props.t} figure={FIG} title={props.title} filename={props.filename} />
+}
+
+/**
+ * A slice through a loss landscape probed at the viewed step: a curve or contours with the iterates over them.
+ *
+ * @param props - The session, the viewed step, the panel and the frame's title and file name.
+ * @returns The figure.
+ */
+export function LandscapePanel(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  readonly panel: Extract<Panel, { kind: 'landscape' }>
+  readonly t: number
+  readonly title: string
+  readonly filename: string
+}): ReactNode {
+  const { panel, t } = props
+  const { record, problem } = useRecord(props.live, t, 'landscapeSlice', panel.path, panel.args)
+  if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
+  return (
+    <LandscapeSliceView
+      record={record}
+      figure={FIG}
+      title={props.title}
+      filename={props.filename}
+      {...(panel.surface === undefined ? {} : { surface: panel.surface })}
+    />
+  )
 }

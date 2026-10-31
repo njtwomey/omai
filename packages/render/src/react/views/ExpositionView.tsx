@@ -23,6 +23,7 @@ import { ExplanationQualityView } from './explanation-quality.tsx'
 import { GroupReportView } from './fairness.tsx'
 import { VectorFieldView } from './fields.tsx'
 import { ImagePlayer } from './images.tsx'
+import { LandscapeSliceView } from './landscape-slice.tsx'
 import { MarginView } from './margins.tsx'
 import { MarkedTableView } from './marked-tables.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
@@ -192,5 +193,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <ReachabilityPlotView record={record} {...common} />
     case 'sceneSteps':
       return <SceneStepsView record={record} {...common} />
+    case 'landscapeSlice':
+      return <LandscapeSliceView record={record} {...common} />
   }
 }

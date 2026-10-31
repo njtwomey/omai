@@ -1,4 +1,4 @@
-import { decisionSurface } from 'mdml-engine/exposition'
+import { decisionSurface, sampleLandscape } from 'mdml-engine/exposition'
 import { dict, int } from 'mdml-engine/space'
 import {
   type Config,
@@ -57,6 +57,11 @@ const toy: Method<State, Config> = defineMethod<State, Config>({
         })
       },
     }),
+    slice: derived<State>({
+      description: 'a loss slice',
+      compute: (s) =>
+        sampleLandscape((a) => a * a, [-1, 0, 1], undefined, { paths: [{ coords: [[-1], [s.k * 0.1]] }] }),
+    }),
     wrong: derived<State>({ description: 'not a surface', compute: () => ({ kind: 'nope' }) }),
   },
 })
@@ -93,5 +98,24 @@ describe('the zoom panel', () => {
       />,
     )
     expect(html).toContain('the probe is not a decision surface with values')
+  })
+})
+
+describe('the landscape panel', () => {
+  it('draws the slice probed at the viewed step, or says why it cannot', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/landscape"
+        live={live}
+        at={4}
+        layout={[
+          { kind: 'landscape', path: 'slice', title: 'the slice' },
+          { kind: 'landscape', path: 'wrong', title: 'not a slice' },
+        ]}
+      />,
+    )
+    expect(html).toContain('the slice at step 4')
+    expect(html).toContain('Lowest on the slice: 0.00')
+    expect(html).toContain('the probe is not a landscapeSlice record')
   })
 })

@@ -254,7 +254,8 @@ function PanelView(
       if (panel.kind === 'scene') return <ScenePanel {...common} panel={panel} />
       return <GraphPanel {...common} panel={panel} />
     }
-    case 'zoom': {
+    case 'zoom':
+    case 'landscape': {
       const title = panel.title ?? panel.path
       return (
         <SpecialisedPanel

@@ -27,6 +27,7 @@ import type { GroupReport } from './fairness.ts'
 import type { VectorField } from './fields.ts'
 import type { ParetoFront } from './frontiers.ts'
 import type { ImageSteps } from './images.ts'
+import type { LandscapeSlice } from './landscape-slice.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
 import type { MarginRecord } from './margins.ts'
 import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
@@ -111,6 +112,7 @@ export type Exposition =
   | Simplex
   | Reachability
   | SceneSteps
+  | LandscapeSlice
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -210,4 +212,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'simplex',
   'reachability',
   'sceneSteps',
+  'landscapeSlice',
 ])

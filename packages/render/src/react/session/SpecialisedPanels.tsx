@@ -6,11 +6,12 @@
 
 import type { ReactNode } from 'react'
 import type { Panel } from './layout.ts'
+import { LandscapePanel } from './RecordPanels.tsx'
 import type { LiveSession } from './useSession.ts'
 import { ZoomPanel } from './ZoomPanel.tsx'
 
 /** The kinds of panel this module draws. */
-export type SpecialisedPanelSpec = Extract<Panel, { kind: 'zoom' }>
+export type SpecialisedPanelSpec = Extract<Panel, { kind: 'zoom' | 'landscape' }>
 
 /**
  * One specialised panel of a session at the viewed step.
@@ -30,5 +31,7 @@ export function SpecialisedPanel(props: {
   switch (panel.kind) {
     case 'zoom':
       return <ZoomPanel {...common} panel={panel} />
+    case 'landscape':
+      return <LandscapePanel {...common} panel={panel} />
   }
 }
