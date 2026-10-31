@@ -97,3 +97,23 @@ export interface FittedLike {
   readonly params: Record<string, never>
   readonly predict: (x: TensorLike) => Tensor
 }
+
+/** Scored rows of two groups: labels, a score per row (a probability) and the group (0 majority, 1 minority). */
+export interface ScoredRows {
+  readonly scores: number[]
+  readonly labels: number[]
+  readonly groups: number[]
+}
+
+/**
+ * `n` made-up decisions about two groups. The minority (30%) has a lower base rate, and its scores are pushed down by
+ * `gap` on the log-odds scale, so a single threshold selects it less often and misses more of its positives.
+ */
+export function scoredGroups(seed: number, n: number, gap: number): ScoredRows {
+  const u = uniforms(seed, 2 * n)
+  const z = normals(seed + 1, n)
+  const groups = Array.from({ length: n }, (_, i) => ((u[i] ?? 0) < 0.3 ? 1 : 0))
+  const labels = groups.map((g, i) => ((u[n + i] ?? 0) < (g === 1 ? 0.3 : 0.45) ? 1 : 0))
+  const scores = groups.map((g, i) => sigmoid(1.6 * ((labels[i] ?? 0) - 0.5) * 2 + (z[i] ?? 0) - gap * g))
+  return { scores, labels, groups }
+}
