@@ -9,7 +9,15 @@ import { MdmlError, registry } from '../base/index.ts'
 import type { DatasetGenerator, DatasetRef } from '../data/index.ts'
 import { spokenDigits } from './audio.ts'
 import { captionedShapes } from './captions.ts'
-import { discontinuityDesign, instrumentalVariables, linearScm, panelEffects, treatmentEffects } from './causal.ts'
+import {
+  discontinuityDesign,
+  instrumentalVariables,
+  linearScm,
+  panelEffects,
+  syntheticControlPanel,
+  treatmentEffects,
+  upliftData,
+} from './causal.ts'
 import { changepointSeries } from './changepoints.ts'
 import { blobs, checkerboard, circles, gaussianQuantiles, hastie10_2, moons, spirals, xor } from './classification.ts'
 import {
@@ -221,6 +229,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   stepCurve,
   survivalData,
   swissRoll,
+  syntheticControlPanel,
   taggedCorpus,
   topicCorpus,
   torus,
@@ -229,6 +238,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   twoViews,
   typoPairs,
   unequalVarianceBlobs,
+  upliftData,
   xor,
   zipfianCatalogue,
 } as Readonly<Record<string, DatasetGenerator>>
@@ -341,6 +351,8 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['xor', 'XOR'],
     ['panelEffects', 'Panel with staggered adoption'],
     ['discontinuityDesign', 'Regression discontinuity design'],
+    ['syntheticControlPanel', 'Synthetic control panel'],
+    ['upliftData', 'Uplift experiment'],
     ['networkExperiment', 'Network experiment with spillover'],
     ['carryoverExperiment', 'Chained experiments with carryover'],
     ['mixedSources', 'Mixed independent sources'],

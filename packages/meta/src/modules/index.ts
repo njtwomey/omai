@@ -25,6 +25,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/anomaly': () => import('mdml-engine/anomaly'),
   'mdml-engine/autodiff': () => import('mdml-engine/autodiff'),
   'mdml-engine/base': () => import('mdml-engine/base'),
+  'mdml-engine/causal': () => import('mdml-engine/causal'),
   'mdml-engine/cluster': () => import('mdml-engine/cluster'),
   'mdml-engine/context': () => import('mdml-engine/context'),
   'mdml-engine/covariance': () => import('mdml-engine/covariance'),

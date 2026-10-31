@@ -11,6 +11,50 @@
       "cases": 11
     },
     {
+      "fixture": "causal/designs.json",
+      "source": "oracle/cases/causal/designs.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "causal/discontinuity.json",
+      "source": "oracle/cases/causal/discontinuity.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "causal/estimation.json",
+      "source": "oracle/cases/causal/estimation.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "causal/instrumental.json",
+      "source": "oracle/cases/causal/instrumental.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "causal/sensitivity.json",
+      "source": "oracle/cases/causal/sensitivity.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "cluster/birch.json",
       "source": "oracle/cases/cluster/birch.py",
       "reference": {
