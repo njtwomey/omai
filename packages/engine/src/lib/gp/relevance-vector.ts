@@ -23,7 +23,16 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
-import { channels, derived, Log, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  derived,
+  Log,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 
 /** The hyperparameters of {@link relevanceVectorMachine}. */
 export interface RvmHyper {
@@ -217,6 +226,18 @@ function verbsOf(params: RvmParams, h: RvmHyper): RvmVerbs {
 }
 
 /**
+ * The paths of the relevance vector machine: the derived `model/relevance-vectors` (its algorithm logs through `observe` alone).
+ *
+ * @example
+ * ```ts
+ * import type { RvmPath } from 'mdml-engine/gp'
+ * const path: RvmPath = 'model/relevance-vectors'
+ * path // => 'model/relevance-vectors'
+ * ```
+ */
+export type RvmPath = 'model/relevance-vectors'
+
+/**
  * The relevance vector machine for regression. The model is a sum of kernels centred on the training points, with a
  * Gaussian prior on each weight of its own precision; the evidence updates (MacKay, as `ARDRegression`) raise the precisions
  * of the useless basis functions until they pass `threshold` and are pruned, leaving the relevance vectors (how many
@@ -234,11 +255,12 @@ function verbsOf(params: RvmParams, h: RvmHyper): RvmVerbs {
  * fitted.params.relevant.length < 25 // => true
  * ```
  */
-export const relevanceVectorMachine: IterativeEstimator<RvmHyper, RvmState, RvmParams, RvmVerbs> = iterative<
+export const relevanceVectorMachine: IterativeEstimator<RvmHyper, RvmState, RvmParams, RvmVerbs, RvmPath> = iterative<
   RvmHyper,
   RvmState,
   RvmParams,
-  RvmVerbs
+  RvmVerbs,
+  RvmPath
 >({
   name: 'gp/relevance-vector-machine',
   kind: 'regressor',
@@ -261,7 +283,7 @@ export const relevanceVectorMachine: IterativeEstimator<RvmHyper, RvmState, RvmP
         label: 'pruning threshold',
       }),
     }),
-  algorithm: (data, h) => {
+  algorithm: (data, h): Algorithm<RvmState, RvmPath> => {
     const p = prepare(data, h)
     if (!(h.threshold > 0)) throw new MdmlError('domain', `${WHO}: threshold must be positive`)
     const variance = p.t.reduce((a, b) => a + b * b, 0) / p.n - (p.t.reduce((a, b) => a + b, 0) / p.n) ** 2
@@ -370,9 +392,9 @@ export const relevanceVectorMachine: IterativeEstimator<RvmHyper, RvmState, RvmP
     }
   },
   verbs: verbsOf,
-  contract: (data, h) => {
+  contract: (data, h): Contract<RvmState, RvmPath> => {
     const p = prepare(data, h)
-    return {
+    return defineContract({
       'model/relevance-vectors': derived<RvmState>({
         description:
           'the relevance vectors so far with their weights, the intercept and the residual of every training row',
@@ -391,7 +413,7 @@ export const relevanceVectorMachine: IterativeEstimator<RvmHyper, RvmState, RvmP
           })
         },
       }),
-    }
+    })
   },
   logs: { 'solver/logEvidence': Log(), 'solver/relevant': Log() },
 })

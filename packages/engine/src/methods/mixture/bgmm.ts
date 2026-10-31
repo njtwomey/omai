@@ -20,7 +20,7 @@ import {
 } from '../../lib/mixture/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, tensor } from '../../lib/tensor/index.ts'
-import { derived, Log } from '../../lib/trace/index.ts'
+import { type Contract, defineContract, derived, Log } from '../../lib/trace/index.ts'
 
 /** The hyperparameters of {@link bgmm}. */
 export interface BgmmHyper {
@@ -73,6 +73,18 @@ const posteriorOf = (p: BgmmParams): VariationalPosterior => ({
 })
 
 /**
+ * The paths of the Bayesian Gaussian mixture beyond the solver’s: the component means, derived.
+ *
+ * @example
+ * ```ts
+ * import type { BgmmPath } from 'mdml-engine/methods/mixture'
+ * const path: BgmmPath = 'model/centres'
+ * path // => 'model/centres'
+ * ```
+ */
+export type BgmmPath = 'model/centres'
+
+/**
  * A Bayesian Gaussian mixture fitted by variational inference: unneeded components end with vanishing weight.
  *
  * @example
@@ -82,11 +94,12 @@ const posteriorOf = (p: BgmmParams): VariationalPosterior => ({
  * bgmm.with({ nComponents: 3 }).fit({ x }).params.weights.length // => 3
  * ```
  */
-export const bgmm: IterativeEstimator<BgmmHyper, VariationalState, BgmmParams, BgmmVerbs> = iterative<
+export const bgmm: IterativeEstimator<BgmmHyper, VariationalState, BgmmParams, BgmmVerbs, BgmmPath> = iterative<
   BgmmHyper,
   VariationalState,
   BgmmParams,
-  BgmmVerbs
+  BgmmVerbs,
+  BgmmPath
 >({
   name: 'mixture/bgmm',
   kind: 'clusterer',
@@ -144,12 +157,13 @@ export const bgmm: IterativeEstimator<BgmmHyper, VariationalState, BgmmParams, B
       return fromStorage(Float64Array.from(resp.flat()), [resp.length, p.weights.length], 'float64')
     },
   }),
-  contract: () => ({
-    'model/centres': derived<VariationalState>({
-      description: 'the component means at this step',
-      compute: (s) => s.posterior.means,
+  contract: (): Contract<VariationalState, BgmmPath> =>
+    defineContract({
+      'model/centres': derived<VariationalState>({
+        description: 'the component means at this step',
+        compute: (s) => s.posterior.means,
+      }),
     }),
-  }),
   logs: {
     'solver/lowerBound': Log(),
     'solver/weights': Log({ detail: 'full' }),

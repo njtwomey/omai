@@ -12,7 +12,16 @@ import { ndtr } from '../../lib/numerics/special/index.ts'
 import { type Key, normal, uniform } from '../../lib/random/index.ts'
 import { choice, dict, int } from '../../lib/space/index.ts'
 import { toFlat } from '../../lib/tensor/index.ts'
-import { type Config, defineMethod, derived, Log, type Method, scalar, tensor } from '../../lib/trace/index.ts'
+import {
+  type Config,
+  type Contract,
+  defineMethod,
+  derived,
+  Log,
+  type Method,
+  scalar,
+  tensor,
+} from '../../lib/trace/index.ts'
 
 /** The target laws on offer. */
 export type TransformTarget = 'exponential' | 'cauchy' | 'logistic' | 'lognormal' | 'bimodal'
@@ -215,6 +224,24 @@ function picture(t: Transform, state: TransformSamplingState, batch: number): Cu
 }
 
 /**
+ * The paths of {@link transformSampling}: the base draws and their images of each step, the samples so far, their mean and Kolmogorov-Smirnov distance, and the derived `transform/picture`.
+ *
+ * @example
+ * ```ts
+ * import type { TransformSamplingPath } from 'mdml-engine/methods/probability'
+ * const path: TransformSamplingPath = 'samples/ks'
+ * path // => 'samples/ks'
+ * ```
+ */
+export type TransformSamplingPath =
+  | 'samples/u'
+  | 'samples/y'
+  | 'samples/count'
+  | 'samples/mean'
+  | 'samples/ks'
+  | 'transform/picture'
+
+/**
  * Base samples pushed through a monotone map, a batch per step: sampling by transformation.
  *
  * Configuration: `target` (exponential, cauchy, logistic, lognormal, bimodal) and `batch` (samples per step). Paths:
@@ -222,7 +249,11 @@ function picture(t: Transform, state: TransformSamplingState, batch: number): Cu
  * the pushed samples so far), `samples/ks` (the Kolmogorov-Smirnov distance to the exact law), and the probe
  * `transform/picture` (the map, the densities and histograms on both axes, the latest journeys).
  */
-export const transformSampling: Method<TransformSamplingState, Config> = defineMethod<TransformSamplingState, Config>({
+export const transformSampling: Method<TransformSamplingState, Config, TransformSamplingPath> = defineMethod<
+  TransformSamplingState,
+  Config,
+  TransformSamplingPath
+>({
   name: 'probability/transform-sampling',
   config: dict({
     target: choice(['exponential', 'cauchy', 'logistic', 'lognormal', 'bimodal'] as const, { default: 'exponential' }),
@@ -251,7 +282,7 @@ export const transformSampling: Method<TransformSamplingState, Config> = defineM
       deserialise: (j) => j as unknown as TransformSamplingState,
     }
   },
-  contract: (c) => {
+  contract: (c): Contract<TransformSamplingState, TransformSamplingPath> => {
     const t = transformOf(c['target'] as TransformTarget)
     const batch = c['batch'] as number
     return {

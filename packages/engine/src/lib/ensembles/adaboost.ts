@@ -18,7 +18,18 @@ import { encodeLabels, matrixView, rowsOf, sampleWeightsOf, takeData, targetVect
 import { choice as drawRows, foldIn } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, derived, event, Log, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  derived,
+  event,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { decisionTreeClassifier, decisionTreeRegressor } from '../trees/decision-tree.ts'
 import { memberProba, stagesFromRun } from './_stages.ts'
 
@@ -157,8 +168,37 @@ export interface AdaBoostVerbs extends Verbs, FittedFacts {
   readonly nFeaturesIn: number
 }
 
+/**
+ * The paths of AdaBoost: the member's error and weight, the ensemble's training error and score, the row weights the
+ * member was fitted to, the stop event, and the derived `boost/weights`, `boost/stump` and `model/margins`.
+ *
+ * @example
+ * ```ts
+ * import type { AdaBoostPath } from 'mdml-engine/ensembles'
+ * const path: AdaBoostPath = 'boost/alpha'
+ * path // => 'boost/alpha'
+ * ```
+ */
+export type AdaBoostPath =
+  | 'boost/error'
+  | 'boost/alpha'
+  | 'boost/trainingError'
+  | 'boost/stumps'
+  | 'ensemble/trainScore'
+  | 'ensemble/target'
+  | 'boost/stopped'
+  | 'boost/weights'
+  | 'boost/stump'
+  | 'model/margins'
+
 /** An AdaBoost estimator. */
-export type AdaBoostEstimator = IterativeEstimator<AdaBoostHyper, AdaBoostState, AdaBoostParams, AdaBoostVerbs>
+export type AdaBoostEstimator = IterativeEstimator<
+  AdaBoostHyper,
+  AdaBoostState,
+  AdaBoostParams,
+  AdaBoostVerbs,
+  AdaBoostPath
+>
 
 const EPS = 2.220446049250313e-16
 
@@ -229,7 +269,7 @@ function weightedMedianPredict(preds: readonly Float64Array[], weights: readonly
 
 function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoostHyper): AdaBoostEstimator {
   const classesOf = (data: LearnData): readonly number[] => (classifier ? encodeLabels(data.y ?? [], name).classes : [])
-  const algorithmOf = (data: LearnData, h: AdaBoostHyper): Algorithm<AdaBoostState> => {
+  const algorithmOf = (data: LearnData, h: AdaBoostHyper): Algorithm<AdaBoostState, AdaBoostPath> => {
     const n = rowsOf(data.x)
     const classes = classesOf(data)
     const k = classes.length
@@ -393,7 +433,7 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
       deserialise: (j) => stateFromJson(j) as AdaBoostState,
     }
   }
-  return iterative<AdaBoostHyper, AdaBoostState, AdaBoostParams, AdaBoostVerbs>(
+  return iterative<AdaBoostHyper, AdaBoostState, AdaBoostParams, AdaBoostVerbs, AdaBoostPath>(
     {
       name,
       kind: classifier ? 'classifier' : 'regressor',
@@ -479,51 +519,57 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
         })
       },
       maxSteps: (h) => h.nEstimators,
-      contract: (data, h) => ({
-        'boost/error': scalar({ description: 'the weighted error of the member just added', direction: 'lower' }),
-        'boost/alpha': scalar({ description: 'the member’s weight in the vote' }),
-        'boost/trainingError': scalar({
-          description: 'the ensemble’s training error (1 - accuracy, or 1 - R²)',
-          direction: 'lower',
+      contract: (data, h): Contract<AdaBoostState, AdaBoostPath> =>
+        defineContract({
+          'boost/error': scalar({ description: 'the weighted error of the member just added', direction: 'lower' }),
+          'boost/alpha': scalar({ description: 'the member’s weight in the vote' }),
+          'boost/trainingError': scalar({
+            description: 'the ensemble’s training error (1 - accuracy, or 1 - R²)',
+            direction: 'lower',
+          }),
+          'boost/stumps': scalar({ description: 'members so far' }),
+          'ensemble/trainScore': scalar({
+            description: 'the ensemble’s training accuracy (or R²)',
+            direction: 'higher',
+          }),
+          'ensemble/target': tensor({
+            role: 'output',
+            shape: ['n'],
+            description: 'the row weights the member was fitted to',
+          }),
+          'boost/stopped': event({
+            description: 'boosting ended early: a perfect member, or one no better than chance',
+          }),
+          'boost/weights': derived<AdaBoostState>({
+            description: 'the row weights the next member will be fitted to (concentrating on the misclassified)',
+            compute: (state) => Array.from(state.sampleWeight),
+          }),
+          'boost/stump': derived<AdaBoostState>({
+            description: 'the parameters of one member (args: member)',
+            compute: (state, args) => {
+              const a = (args ?? {}) as { readonly member?: number }
+              return state.members[Math.min(a.member ?? state.members.length - 1, state.members.length - 1)] ?? null
+            },
+          }),
+          'model/margins': derived<AdaBoostState>({
+            description:
+              'the margin of each training row: the vote for its class minus the strongest vote against, in [-1, 1]',
+            compute: (state) => {
+              const k = classesOf(data).length
+              if (k === 0 || state.members.length === 0) return []
+              const y = encodeLabels(data.y ?? [], name).codes
+              const scale =
+                h.algorithm === 'SAMME'
+                  ? (state.weights.reduce((a, b) => a + b, 0) * k) / (k - 1)
+                  : 2 * Math.max(...state.decision.map(Math.abs), EPS)
+              return Array.from(y, (c, i) => {
+                let against = Number.NEGATIVE_INFINITY
+                for (let j = 0; j < k; j++) if (j !== c) against = Math.max(against, state.decision[i * k + j] ?? 0)
+                return ((state.decision[i * k + c] ?? 0) - against) / (scale || 1)
+              })
+            },
+          }),
         }),
-        'boost/stumps': scalar({ description: 'members so far' }),
-        'ensemble/trainScore': scalar({ description: 'the ensemble’s training accuracy (or R²)', direction: 'higher' }),
-        'ensemble/target': tensor({
-          role: 'output',
-          shape: ['n'],
-          description: 'the row weights the member was fitted to',
-        }),
-        'boost/stopped': event({ description: 'boosting ended early: a perfect member, or one no better than chance' }),
-        'boost/weights': derived<AdaBoostState>({
-          description: 'the row weights the next member will be fitted to (concentrating on the misclassified)',
-          compute: (state) => Array.from(state.sampleWeight),
-        }),
-        'boost/stump': derived<AdaBoostState>({
-          description: 'the parameters of one member (args: member)',
-          compute: (state, args) => {
-            const a = (args ?? {}) as { readonly member?: number }
-            return state.members[Math.min(a.member ?? state.members.length - 1, state.members.length - 1)] ?? null
-          },
-        }),
-        'model/margins': derived<AdaBoostState>({
-          description:
-            'the margin of each training row: the vote for its class minus the strongest vote against, in [-1, 1]',
-          compute: (state) => {
-            const k = classesOf(data).length
-            if (k === 0 || state.members.length === 0) return []
-            const y = encodeLabels(data.y ?? [], name).codes
-            const scale =
-              h.algorithm === 'SAMME'
-                ? (state.weights.reduce((a, b) => a + b, 0) * k) / (k - 1)
-                : 2 * Math.max(...state.decision.map(Math.abs), EPS)
-            return Array.from(y, (c, i) => {
-              let against = Number.NEGATIVE_INFINITY
-              for (let j = 0; j < k; j++) if (j !== c) against = Math.max(against, state.decision[i * k + j] ?? 0)
-              return ((state.decision[i * k + c] ?? 0) - against) / (scale || 1)
-            })
-          },
-        }),
-      }),
       projections: {
         'ensemble/stages': (run) =>
           stagesFromRun(run, {

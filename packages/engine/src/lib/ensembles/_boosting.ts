@@ -18,7 +18,18 @@ import { weightedPercentile } from '../metrics/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, derived, event, Log, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  derived,
+  event,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { type GrowOptions, growTree, type MaxFeatures, type TreeData } from '../trees/grow.ts'
 import { applyTree, type Tree, treeFeatureImportances } from '../trees/tree.ts'
 import { stagesFromRun } from './_stages.ts'
@@ -467,7 +478,7 @@ export function boostingAlgorithm(
   classifier: boolean,
   name: string,
   makeGrower: GrowerFactory = exactGrower,
-): Algorithm<BoostingState> {
+): Algorithm<BoostingState, BoostingPath> {
   const m = matrixView(data.x, name, { allowNaN: true })
   const n = m.n
   if (data.y === undefined) throw new MdmlError('value', `${name}: needs targets y`)
@@ -575,12 +586,36 @@ export function boostingAlgorithm(
   }
 }
 
+/**
+ * The paths of gradient boosting (all the variants): the stage's loss, residuals, leaf values and bins, early stopping
+ * (`boost/stopped`) and the derived `model/stagedPrediction`.
+ *
+ * @example
+ * ```ts
+ * import type { BoostingPath } from 'mdml-engine/ensembles'
+ * const path: BoostingPath = 'boost/trainLoss'
+ * path // => 'boost/trainLoss'
+ * ```
+ */
+export type BoostingPath =
+  | 'boost/round'
+  | 'ensemble/weight'
+  | 'boost/trainLoss'
+  | 'boost/validLoss'
+  | 'eval/loss'
+  | 'boost/residuals'
+  | 'boost/bins'
+  | 'boost/leafValues'
+  | 'boost/stopped'
+  | 'model/stagedPrediction'
+
 /** A gradient-boosting estimator. */
 export type GradientBoostingEstimator = IterativeEstimator<
   GradientBoostingHyper,
   BoostingState,
   GradientBoostingParams,
-  GradientBoostingVerbs
+  GradientBoostingVerbs,
+  BoostingPath
 >
 
 export function boostingEstimator(
@@ -590,7 +625,7 @@ export function boostingEstimator(
   makeGrower: GrowerFactory = exactGrower,
 ): GradientBoostingEstimator {
   const classesOf = (data: LearnData): readonly number[] => (classifier ? encodeLabels(data.y ?? [], name).classes : [])
-  return iterative<GradientBoostingHyper, BoostingState, GradientBoostingParams, GradientBoostingVerbs>(
+  return iterative<GradientBoostingHyper, BoostingState, GradientBoostingParams, GradientBoostingVerbs, BoostingPath>(
     {
       name,
       kind: classifier ? 'classifier' : 'regressor',
@@ -632,49 +667,54 @@ export function boostingEstimator(
       },
       verbs: (p) => boostingVerbs(p),
       maxSteps: (h) => h.nEstimators,
-      contract: (data, h) => ({
-        'boost/round': scalar({ description: 'stages so far' }),
-        'ensemble/weight': scalar({ description: 'the learning rate each stage is added with' }),
-        'boost/trainLoss': scalar({ description: 'the loss on the rows the stage was fitted to', direction: 'lower' }),
-        'boost/validLoss': scalar({
-          description: 'the loss on held-out rows (or out of bag, when subsampling)',
-          direction: 'lower',
+      contract: (data, h): Contract<BoostingState, BoostingPath> =>
+        defineContract({
+          'boost/round': scalar({ description: 'stages so far' }),
+          'ensemble/weight': scalar({ description: 'the learning rate each stage is added with' }),
+          'boost/trainLoss': scalar({
+            description: 'the loss on the rows the stage was fitted to',
+            direction: 'lower',
+          }),
+          'boost/validLoss': scalar({
+            description: 'the loss on held-out rows (or out of bag, when subsampling)',
+            direction: 'lower',
+          }),
+          'eval/loss': scalar({
+            description: 'the held-out loss when there is one, the training loss otherwise',
+            direction: 'lower',
+          }),
+          'boost/residuals': tensor({
+            role: 'output',
+            shape: ['n'],
+            description: 'the negative gradient the stage’s tree was fitted to',
+          }),
+          'boost/bins': scalar({ description: 'bins per feature (histogram boosting)' }),
+          'boost/leafValues': tensor({
+            role: 'output',
+            shape: ['leaves'],
+            description: 'the leaf values of the stage’s tree',
+          }),
+          'boost/stopped': event({ description: 'early stopping: the held-out loss stopped improving' }),
+          'model/stagedPrediction': derived<BoostingState>({
+            description:
+              'the model’s raw prediction at this stage on given points (args: x, default the training rows)',
+            compute: (state, args) => {
+              const a = (args ?? {}) as { readonly x?: number[][] }
+              const y = classifier
+                ? Float64Array.from(encodeLabels(data.y ?? [], name).codes)
+                : targetVector(data.y ?? [], name)
+              const p: GradientBoostingParams = {
+                init: lossSpec(h, y, sampleWeightsOf(data.weights, y.length, name), classesOf(data).length).init(),
+                stages: state.stages.map((s) => [...s]),
+                learningRate: h.learningRate,
+                loss: h.loss,
+                classes: [...classesOf(data)],
+                nFeatures: matrixView(data.x, name, { allowNaN: true }).d,
+              }
+              return Array.from(rawOf(p, a.x ?? data.x).f)
+            },
+          }),
         }),
-        'eval/loss': scalar({
-          description: 'the held-out loss when there is one, the training loss otherwise',
-          direction: 'lower',
-        }),
-        'boost/residuals': tensor({
-          role: 'output',
-          shape: ['n'],
-          description: 'the negative gradient the stage’s tree was fitted to',
-        }),
-        'boost/bins': scalar({ description: 'bins per feature (histogram boosting)' }),
-        'boost/leafValues': tensor({
-          role: 'output',
-          shape: ['leaves'],
-          description: 'the leaf values of the stage’s tree',
-        }),
-        'boost/stopped': event({ description: 'early stopping: the held-out loss stopped improving' }),
-        'model/stagedPrediction': derived<BoostingState>({
-          description: 'the model’s raw prediction at this stage on given points (args: x, default the training rows)',
-          compute: (state, args) => {
-            const a = (args ?? {}) as { readonly x?: number[][] }
-            const y = classifier
-              ? Float64Array.from(encodeLabels(data.y ?? [], name).codes)
-              : targetVector(data.y ?? [], name)
-            const p: GradientBoostingParams = {
-              init: lossSpec(h, y, sampleWeightsOf(data.weights, y.length, name), classesOf(data).length).init(),
-              stages: state.stages.map((s) => [...s]),
-              learningRate: h.learningRate,
-              loss: h.loss,
-              classes: [...classesOf(data)],
-              nFeatures: matrixView(data.x, name, { allowNaN: true }).d,
-            }
-            return Array.from(rawOf(p, a.x ?? data.x).f)
-          },
-        }),
-      }),
       projections: {
         'ensemble/stages': (run) =>
           stagesFromRun(run, {

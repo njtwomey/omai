@@ -19,6 +19,7 @@ import {
 import { add, mul, tensor, toFlat } from '../../lib/tensor/index.ts'
 import {
   type Config,
+  type Contract,
   defineMethod,
   derived,
   Log,
@@ -123,6 +124,25 @@ function distributionRecord(p: ProcessSpec, state: DiffusionPathsState): CurveSe
 }
 
 /**
+ * The paths of {@link diffusionPaths}: the bundle’s values, the time, the mean and variance over the bundle and their exact values, and the derived `paths/distribution`.
+ *
+ * @example
+ * ```ts
+ * import type { DiffusionPathsPath } from 'mdml-engine/methods/stochastic'
+ * const path: DiffusionPathsPath = 'paths/mean'
+ * path // => 'paths/mean'
+ * ```
+ */
+export type DiffusionPathsPath =
+  | 'paths/x'
+  | 'paths/t'
+  | 'paths/mean'
+  | 'paths/variance'
+  | 'paths/exactMean'
+  | 'paths/exactVariance'
+  | 'paths/distribution'
+
+/**
  * A bundle of paths of a diffusion, one Euler-Maruyama step per step.
  *
  * Configuration: `process` (ornstein-uhlenbeck, geometric-brownian, brownian, cir), `paths`, `dt`, `theta` (the rate
@@ -131,7 +151,11 @@ function distributionRecord(p: ProcessSpec, state: DiffusionPathsState): CurveSe
  * `paths/variance`, `paths/exactMean`, `paths/exactVariance`, and the probe `paths/distribution` (the bundle's
  * histogram at this time with the exact law over it).
  */
-export const diffusionPaths: Method<DiffusionPathsState, Config> = defineMethod<DiffusionPathsState, Config>({
+export const diffusionPaths: Method<DiffusionPathsState, Config, DiffusionPathsPath> = defineMethod<
+  DiffusionPathsState,
+  Config,
+  DiffusionPathsPath
+>({
   name: 'stochastic/diffusion-paths',
   config: dict({
     process: choice(['ornstein-uhlenbeck', 'geometric-brownian', 'brownian', 'cir'] as const, {
@@ -170,7 +194,7 @@ export const diffusionPaths: Method<DiffusionPathsState, Config> = defineMethod<
       deserialise: (j) => j as unknown as DiffusionPathsState,
     }
   },
-  contract: (c) => {
+  contract: (c): Contract<DiffusionPathsState, DiffusionPathsPath> => {
     const p = processOf(c['process'] as DiffusionName, c)
     return {
       'paths/x': tensorSource({ role: 'state', shape: [c['paths'] as number], description: 'every path’s value' }),

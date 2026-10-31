@@ -25,7 +25,17 @@ import { encodeLabels, matrixView, rowsOf, targetVector } from '../learn/validat
 import { foldIn } from '../random/index.ts'
 import { dict, int } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, derived, Log, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { decisionTreeClassifier, decisionTreeRegressor } from '../trees/decision-tree.ts'
 import { memberProba, stagesFromRun } from './_stages.ts'
 
@@ -87,8 +97,35 @@ export interface StackingVerbs extends Verbs, FittedFacts {
   readonly nFeaturesIn: number
 }
 
+/**
+ * The paths of voting and stacking: what each base adds, the training score (`eval/accuracy` for classifiers,
+ * `eval/r2` for regressors) and the derived `model/diversity`.
+ *
+ * @example
+ * ```ts
+ * import type { StackingPath } from 'mdml-engine/ensembles'
+ * const path: StackingPath = 'ensemble/baseScores'
+ * path // => 'ensemble/baseScores'
+ * ```
+ */
+export type StackingPath =
+  | 'ensemble/baseScores'
+  | 'ensemble/weights'
+  | 'ensemble/diversity'
+  | 'ensemble/weight'
+  | 'ensemble/trainScore'
+  | 'eval/accuracy'
+  | 'eval/r2'
+  | 'model/diversity'
+
 /** A voting or stacking estimator. */
-export type StackingEstimator = IterativeEstimator<StackingHyper, StackingState, StackingParams, StackingVerbs>
+export type StackingEstimator = IterativeEstimator<
+  StackingHyper,
+  StackingState,
+  StackingParams,
+  StackingVerbs,
+  StackingPath
+>
 
 /** How a base is read: probabilities when it has them, else decision scores, else predictions. */
 function methodOf(f: Fitted, classifier: boolean): Method {
@@ -135,7 +172,7 @@ function metaMatrix(parts: readonly (readonly [Float64Array, number])[], m: numb
 
 function stackingEstimator(name: string, classifier: boolean, defaults: StackingHyper): StackingEstimator {
   const classesOf = (data: LearnData): readonly number[] => (classifier ? encodeLabels(data.y ?? [], name).classes : [])
-  const algorithmOf = (data: LearnData, h: StackingHyper): Algorithm<StackingState> => {
+  const algorithmOf = (data: LearnData, h: StackingHyper): Algorithm<StackingState, StackingPath> => {
     if (h.estimators.length === 0) throw new MdmlError('value', `${name}: needs at least one base estimator`)
     if (h.weights !== undefined && h.weights.length !== h.estimators.length)
       throw new MdmlError('value', `${name}: ${h.weights.length} weights for ${h.estimators.length} estimators`)
@@ -247,7 +284,7 @@ function stackingEstimator(name: string, classifier: boolean, defaults: Stacking
       deserialise: (j) => stateFromJson(j) as StackingState,
     }
   }
-  return iterative<StackingHyper, StackingState, StackingParams, StackingVerbs>(
+  return iterative<StackingHyper, StackingState, StackingParams, StackingVerbs, StackingPath>(
     {
       name,
       kind: classifier ? 'classifier' : 'regressor',
@@ -331,33 +368,42 @@ function stackingEstimator(name: string, classifier: boolean, defaults: Stacking
         })
       },
       maxSteps: (h) => h.estimators.length + (h.mode === 'stacking' ? 1 : 0),
-      contract: () => ({
-        'ensemble/baseScores': tensor({
-          role: 'output',
-          shape: ['bases'],
-          description: 'each base estimator’s training score',
-        }),
-        'ensemble/weights': tensor({
-          role: 'output',
-          shape: ['bases'],
-          description: 'the vote weights, or what the meta-learner gave each base',
-        }),
-        'ensemble/diversity': tensor({
-          role: 'output',
-          shape: ['bases', 'bases'],
-          description: 'how often each pair of bases disagree on the training rows',
-        }),
-        'ensemble/weight': scalar({ description: 'the new base’s voting weight' }),
-        'ensemble/trainScore': scalar({ description: 'the ensemble’s training accuracy (or R²)', direction: 'higher' }),
-        [classifier ? 'eval/accuracy' : 'eval/r2']: scalar({
-          description: 'the ensemble’s training accuracy (or R²) so far',
-          direction: 'higher',
-        }),
-        'model/diversity': derived<StackingState>({
-          description: 'the pairwise disagreement of the bases fitted so far',
-          compute: (state) => disagreement(state.labels),
-        }),
-      }),
+      contract: (): Contract<StackingState, StackingPath> => {
+        const fixed = defineContract({
+          'ensemble/baseScores': tensor({
+            role: 'output',
+            shape: ['bases'],
+            description: 'each base estimator’s training score',
+          }),
+          'ensemble/weights': tensor({
+            role: 'output',
+            shape: ['bases'],
+            description: 'the vote weights, or what the meta-learner gave each base',
+          }),
+          'ensemble/diversity': tensor({
+            role: 'output',
+            shape: ['bases', 'bases'],
+            description: 'how often each pair of bases disagree on the training rows',
+          }),
+          'ensemble/weight': scalar({ description: 'the new base’s voting weight' }),
+          'ensemble/trainScore': scalar({
+            description: 'the ensemble’s training accuracy (or R²)',
+            direction: 'higher',
+          }),
+          'model/diversity': derived<StackingState>({
+            description: 'the pairwise disagreement of the bases fitted so far',
+            compute: (state) => disagreement(state.labels),
+          }),
+        })
+        // The training score is one path or the other by the task; the type holds both.
+        return {
+          ...fixed,
+          [classifier ? 'eval/accuracy' : 'eval/r2']: scalar({
+            description: 'the ensemble’s training accuracy (or R²) so far',
+            direction: 'higher',
+          }),
+        } as Contract<StackingState, StackingPath>
+      },
       projections: {
         'ensemble/stages': (run) =>
           stagesFromRun(run, {

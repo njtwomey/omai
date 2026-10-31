@@ -24,10 +24,16 @@ import { encodeLabels, fromView, matrixView, takeColumns, takeData, targetVector
 import { foldIn, type Key, subsample } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { derived, Log } from '../trace/index.ts'
+import { type Contract, defineContract, derived, Log } from '../trace/index.ts'
 import { decisionTreeClassifier, decisionTreeRegressor } from '../trees/decision-tree.ts'
 import { memberProba, stagesFromRun } from './_stages.ts'
-import { type AveragingMember, type AveragingState, averagingAlgorithm, averagingSources } from './averaging.ts'
+import {
+  type AveragingMember,
+  type AveragingPath,
+  type AveragingState,
+  averagingAlgorithm,
+  averagingSources,
+} from './averaging.ts'
 
 /** Hyperparameters of the bagging ensembles. */
 export interface BaggingHyper {
@@ -62,12 +68,25 @@ export interface BaggingVerbs extends Verbs, FittedFacts {
   readonly nFeaturesIn: number
 }
 
+/**
+ * The paths bagging logs and declares: the averaging ensemble's and the derived `model/memberSurface`.
+ *
+ * @example
+ * ```ts
+ * import type { BaggingPath } from 'mdml-engine/ensembles'
+ * const path: BaggingPath = 'model/memberSurface'
+ * path // => 'model/memberSurface'
+ * ```
+ */
+export type BaggingPath = AveragingPath | 'model/memberSurface'
+
 /** A bagging estimator: the iterative base over the averaging state. */
 export type BaggingEstimator = IterativeEstimator<
   BaggingHyper,
   AveragingState<BaggedMember>,
   BaggingParams,
-  BaggingVerbs
+  BaggingVerbs,
+  BaggingPath
 >
 
 /** The columns of learning data at some feature indices. */
@@ -131,7 +150,7 @@ function baggingEstimator(name: string, classifier: boolean, defaults: BaggingHy
       },
     }
   }
-  return iterative<BaggingHyper, AveragingState<BaggedMember>, BaggingParams, BaggingVerbs>(
+  return iterative<BaggingHyper, AveragingState<BaggedMember>, BaggingParams, BaggingVerbs, BaggingPath>(
     {
       name,
       kind: classifier ? 'classifier' : 'regressor',
@@ -212,10 +231,10 @@ function baggingEstimator(name: string, classifier: boolean, defaults: BaggingHy
         })
       },
       maxSteps: (h) => h.nEstimators,
-      contract: (data, h) => {
+      contract: (data, h): Contract<AveragingState<BaggedMember>, BaggingPath> => {
         const features = featureNamesOf(data, matrixView(data.x, name, { allowNaN: true }).d)
         const classes = classifier ? classNamesOf(data, classesOf(data)) : undefined
-        return {
+        return defineContract({
           ...averagingSources(classifier),
           'model/memberSurface': derived<AveragingState<BaggedMember>>({
             description: 'the decision surface of one member (args: member, resolution), beside the average’s',
@@ -231,7 +250,7 @@ function baggingEstimator(name: string, classifier: boolean, defaults: BaggingHy
               })
             },
           }),
-        }
+        })
       },
       projections: {
         'ensemble/stages': (run) =>

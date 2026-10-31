@@ -41,6 +41,18 @@ export interface OdeSystemsState {
 const SYSTEMS = Object.keys(namedSystems) as NamedSystemName[]
 
 /**
+ * The paths of {@link odeSystems}: the time reached, the state, the step taken and the evaluations of the field so far.
+ *
+ * @example
+ * ```ts
+ * import type { OdeSystemsPath } from 'mdml-engine/methods/dynamics'
+ * const path: OdeSystemsPath = 'y'
+ * path // => 'y'
+ * ```
+ */
+export type OdeSystemsPath = 't' | 'y' | 'h' | 'evaluations'
+
+/**
  * Integrate a named system with an adaptive Runge-Kutta method (`RK23`, `RK45` or `DOP853`) at a relative tolerance
  * (the absolute one follows it at a thousandth). A step of the run is one accepted step of the method; the run ends
  * when the system's time span does. Each step starts by evaluating the field where the last one ended, which an
@@ -54,7 +66,11 @@ const SYSTEMS = Object.keys(namedSystems) as NamedSystemName[]
  * s.state.y.length // => 3
  * ```
  */
-export const odeSystems: Method<OdeSystemsState, Config> = defineMethod<OdeSystemsState, Config>({
+export const odeSystems: Method<OdeSystemsState, Config, OdeSystemsPath> = defineMethod<
+  OdeSystemsState,
+  Config,
+  OdeSystemsPath
+>({
   name: 'dynamics/ode-systems',
   config: dict({
     system: choice(SYSTEMS, { default: 'lotka-volterra', label: 'system' }),

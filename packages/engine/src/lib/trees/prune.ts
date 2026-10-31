@@ -44,6 +44,18 @@ function parentsOf(tree: Tree): Int32Array {
 }
 
 /**
+ * The paths the pruning algorithms log: the cost-complexity parameter, the leaves and the training error after each step, and the `prune/pruned` event with the node that was collapsed.
+ *
+ * @example
+ * ```ts
+ * import type { PrunePath } from 'mdml-engine/trees'
+ * const path: PrunePath = 'prune/alpha'
+ * path // => 'prune/alpha'
+ * ```
+ */
+export type PrunePath = 'prune/alpha' | 'prune/leaves' | 'prune/trainError' | 'prune/pruned'
+
+/**
  * Minimal cost-complexity pruning (scikit-learn's `_cost_complexity_prune`) as an algorithm: each step cuts the weakest
  * link, the internal node with the smallest effective alpha (its risk minus its subtree's, per leaf removed), and
  * records the alpha, the total leaf impurity and the leaf count of the pruned tree. It converges at the root. Logs, when
@@ -62,7 +74,10 @@ function parentsOf(tree: Tree): Int32Array {
  * runAlgorithm(weakestLinkAlgorithm(tree), { maxSteps: 10 }).state.alphas // => [0, 1]
  * ```
  */
-export function weakestLinkAlgorithm(tree: Tree, stopAlpha: number = Number.POSITIVE_INFINITY): Algorithm<PruneState> {
+export function weakestLinkAlgorithm(
+  tree: Tree,
+  stopAlpha: number = Number.POSITIVE_INFINITY,
+): Algorithm<PruneState, PrunePath> {
   const n = tree.feature.length
   const total = tree.weightedNSamples[0] ?? 1
   const rNode = Float64Array.from(
@@ -272,7 +287,7 @@ export interface ReducedErrorState {
  * runAlgorithm(reducedErrorAlgorithm(t, { x: [[0], [1]], y: [0.5, 0.5] }), { maxSteps: 5 }).state.pruned // => [1, 0, 0]
  * ```
  */
-export function reducedErrorAlgorithm(tree: Tree, held: LearnData): Algorithm<ReducedErrorState> {
+export function reducedErrorAlgorithm(tree: Tree, held: LearnData): Algorithm<ReducedErrorState, PrunePath> {
   if (held.y === undefined) throw new MdmlError('value', 'reducedErrorAlgorithm: held-out targets are needed')
   const m = matrixView(held.x, 'reducedErrorAlgorithm', { nFeatures: tree.nFeatures, allowNaN: true })
   const w = sampleWeightsOf(held.weights, m.n, 'reducedErrorAlgorithm')

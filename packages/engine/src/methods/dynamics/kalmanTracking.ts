@@ -97,6 +97,18 @@ function present(s: KalmanState): KalmanState {
 }
 
 /**
+ * The paths of {@link kalmanTracking}: the true position, the reading, the filtered position and its covariance, and the normalised innovation and position error of each step.
+ *
+ * @example
+ * ```ts
+ * import type { KalmanTrackingPath } from 'mdml-engine/methods/dynamics'
+ * const path: KalmanTrackingPath = 'nis'
+ * path // => 'nis'
+ * ```
+ */
+export type KalmanTrackingPath = 'truth' | 'observation' | 'estimate' | 'covariance' | 'nis' | 'positionError'
+
+/**
  * Track a moving point with a Kalman filter: a constant-velocity model in the plane, 300 steps of a simulated truth
  * and noisy position readings, and the library's Kalman filter run over them one reading per step. The world has fixed
  * noise (acceleration 0.03, reading noise 5); `processNoise` and `measurementNoise` are what the filter assumes, so
@@ -111,7 +123,11 @@ function present(s: KalmanState): KalmanState {
  * session(kalmanTracking, { mode: 'eager', steps: 10 }).t // => 10
  * ```
  */
-export const kalmanTracking: Method<KalmanState, Config> = defineMethod<KalmanState, Config>({
+export const kalmanTracking: Method<KalmanState, Config, KalmanTrackingPath> = defineMethod<
+  KalmanState,
+  Config,
+  KalmanTrackingPath
+>({
   name: 'dynamics/kalman-tracking',
   config: dict({
     processNoise: real(0.001, 10, {
@@ -128,7 +144,7 @@ export const kalmanTracking: Method<KalmanState, Config> = defineMethod<KalmanSt
     }),
     dt: real(0.1, 2, { default: 1, label: 'time step', description: 'The time between readings.' }),
   }),
-  make: (c, key): Algorithm<KalmanState> => {
+  make: (c, key): Algorithm<KalmanState, KalmanTrackingPath> => {
     const dt = c['dt'] as number
     const { truth, observations } = simulate(dt, key)
     const m = trackingMatrices(dt, c['processNoise'] as number, c['measurementNoise'] as number)

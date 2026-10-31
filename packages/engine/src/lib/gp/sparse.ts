@@ -49,7 +49,18 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
-import { channels, derived, Log, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { currentOf, lbfgsbSearch, type SearchState } from './_search.ts'
 
 /** The approximations: they differ in the diagonal correction of the training covariance and in the predictive variance. */
@@ -350,6 +361,18 @@ export function sparseBound(
 }
 
 /**
+ * The paths of the sparse Gaussian process: the bound, the hyperparameters, the inducing inputs and the derived `model/posterior`.
+ *
+ * @example
+ * ```ts
+ * import type { SparseGpPath } from 'mdml-engine/gp'
+ * const path: SparseGpPath = 'gp/inducing'
+ * path // => 'gp/inducing'
+ * ```
+ */
+export type SparseGpPath = 'gp/bound' | 'gp/hyper' | 'gp/inducing' | 'model/posterior'
+
+/**
  * Sparse Gaussian-process regression with inducing points. `approximation` picks the model: `sor`, `dtc` (the same
  * likelihood, different predictive variance), `fitc` (a diagonal correction of the training covariance) or `vfe` (the
  * variational bound of Titsias, which never overfits the inducing points). The fit maximises the bound over the kernel's
@@ -369,136 +392,132 @@ export function sparseBound(
  * Math.abs((toFlat(fitted.predict([[3]]))[0] as number) - Math.sin(3)) < 0.1 // => true
  * ```
  */
-export const sparseGp: IterativeEstimator<SparseGpHyper, SparseState, SparseParams, SparseGpVerbs> = iterative<
-  SparseGpHyper,
-  SparseState,
-  SparseParams,
-  SparseGpVerbs
->({
-  name: 'gp/sparse',
-  kind: 'regressor',
-  defaults: {
-    kernel: scaleKernel(rbfKernel(), 1),
-    approximation: 'vfe',
-    inducing: 10,
-    noise: 0.1,
-    optimise: true,
-    optimiseInducing: true,
-    jitter: 1e-6,
-    normalizeY: false,
-    restarts: 0,
-    bounds: [1e-5, 1e5],
-    gradTol: 1e-5,
-    maxIter: 300,
-  },
-  hyperSpace: (h) =>
-    dict({
-      ...(typeof h.inducing === 'number'
-        ? { inducing: int(2, 200, { default: Math.min(Math.max(h.inducing, 2), 200), label: 'inducing points' }) }
-        : {}),
-      noise: real(1e-6, 10, { log: true, default: Math.min(Math.max(h.noise, 1e-6), 10), label: 'noise variance' }),
-    }),
-  algorithm: (data, h) => {
-    const p = prepare(data, h)
-    if (
-      h.approximation !== 'sor' &&
-      h.approximation !== 'dtc' &&
-      h.approximation !== 'fitc' &&
-      h.approximation !== 'vfe'
-    )
-      throw new MdmlError('value', `${WHO}: unknown approximation ${String(h.approximation)}`)
-    const p0 = thetaOf(h.kernel).shape[0] ?? 0
-    const box = packedBox(h, p)
-    const objective = objectiveOf(h, p, p0, null)
-    const frozen = !h.optimiseInducing
-    // With the inducing inputs held, they are boxed to where they start (a degenerate box that L-BFGS-B never moves).
-    const search = lbfgsbSearch({
-      objective,
-      lower: box.lower,
-      upper: box.upper,
-      optimise: h.optimise,
-      gradTol: h.gradTol,
-      maxIter: h.maxIter,
-      starts: (k) => {
-        const starts = startsFor(h, p, k, p0)
-        if (frozen) {
-          const first = starts[0] as number[]
-          for (let i = p0 + 1; i < first.length; i++) {
-            box.lower[i] = first[i] as number
-            box.upper[i] = first[i] as number
-          }
-        }
-        return starts
-      },
-    })
-    return {
-      name: 'sparse-gp',
-      config: {
-        approximation: h.approximation,
-        inducing: p.m,
+export const sparseGp: IterativeEstimator<SparseGpHyper, SparseState, SparseParams, SparseGpVerbs, SparseGpPath> =
+  iterative<SparseGpHyper, SparseState, SparseParams, SparseGpVerbs, SparseGpPath>({
+    name: 'gp/sparse',
+    kind: 'regressor',
+    defaults: {
+      kernel: scaleKernel(rbfKernel(), 1),
+      approximation: 'vfe',
+      inducing: 10,
+      noise: 0.1,
+      optimise: true,
+      optimiseInducing: true,
+      jitter: 1e-6,
+      normalizeY: false,
+      restarts: 0,
+      bounds: [1e-5, 1e5],
+      gradTol: 1e-5,
+      maxIter: 300,
+    },
+    hyperSpace: (h) =>
+      dict({
+        ...(typeof h.inducing === 'number'
+          ? { inducing: int(2, 200, { default: Math.min(Math.max(h.inducing, 2), 200), label: 'inducing points' }) }
+          : {}),
+        noise: real(1e-6, 10, { log: true, default: Math.min(Math.max(h.noise, 1e-6), 10), label: 'noise variance' }),
+      }),
+    algorithm: (data, h): Algorithm<SparseState, SparseGpPath> => {
+      const p = prepare(data, h)
+      if (
+        h.approximation !== 'sor' &&
+        h.approximation !== 'dtc' &&
+        h.approximation !== 'fitc' &&
+        h.approximation !== 'vfe'
+      )
+        throw new MdmlError('value', `${WHO}: unknown approximation ${String(h.approximation)}`)
+      const p0 = thetaOf(h.kernel).shape[0] ?? 0
+      const box = packedBox(h, p)
+      const objective = objectiveOf(h, p, p0, null)
+      const frozen = !h.optimiseInducing
+      // With the inducing inputs held, they are boxed to where they start (a degenerate box that L-BFGS-B never moves).
+      const search = lbfgsbSearch({
+        objective,
+        lower: box.lower,
+        upper: box.upper,
         optimise: h.optimise,
-        optimiseInducing: h.optimiseInducing,
-      },
-      schema: channels({
-        metrics: {
-          gradNorm: { description: 'the infinity norm of the projected gradient of the bound' },
-          run: { description: 'the optimiser run in progress' },
+        gradTol: h.gradTol,
+        maxIter: h.maxIter,
+        starts: (k) => {
+          const starts = startsFor(h, p, k, p0)
+          if (frozen) {
+            const first = starts[0] as number[]
+            for (let i = p0 + 1; i < first.length; i++) {
+              box.lower[i] = first[i] as number
+              box.upper[i] = first[i] as number
+            }
+          }
+          return starts
         },
-      }),
-      init: (k) => search.init(k),
-      step: (s, ctx) => {
-        const next = search.step(s, ctx)
-        if (s.inner !== null) {
-          const now = currentOf(next)
-          const un = unpack(h, p, now.x)
-          ctx.log('gp/bound', -now.value)
-          ctx.log('gp/hyper', [
-            ...hyperparameters(un.theta.length === 0 ? h.kernel : withTheta(h.kernel, un.theta)).flatMap((hp) => [
-              ...hp.value,
-            ]),
-            un.noise,
-          ])
-          ctx.log('gp/inducing', un.z)
-        }
-        return next
-      },
-      done: (s) => (s.finished ? 'converged' : undefined),
-      observe: (s) => ({
-        metrics: { run: s.run, ...(s.inner === null ? {} : { gradNorm: s.inner.projectedGradNorm }) },
-      }),
-      serialise: (s) => stateToJson(s),
-      deserialise: (j) => stateFromJson(j) as SparseState,
-    }
-  },
-  maxSteps: (h) => (h.restarts + 1) * h.maxIter + 1,
-  params: (s, data, h) => {
-    const p = prepare(data, h)
-    const model = currentOf(s)
-    const un = unpack(h, p, model.x)
-    return { ...un, bound: -model.value, x: p.rows, y: Array.from(p.y), yMean: p.yMean, yStd: p.yStd }
-  },
-  verbs: verbsOf,
-  contract: (data, h) => {
-    const p = prepare(data, h)
-    return {
-      'gp/bound': scalar({
-        description: 'the bound (or approximate log marginal likelihood) being maximised',
-        direction: 'higher',
-      }),
-      'gp/hyper': tensor({
-        role: 'param',
-        description: 'the kernel hyperparameters in natural units, then the noise variance',
-      }),
-      'gp/inducing': tensor({ role: 'param', description: 'the inducing inputs [m, d]' }),
-      'model/posterior': derived<SparseState>({
-        description: 'the posterior over the first feature with the training data (args: resolution)',
-        cost: 'dear',
-        compute: (s, args) => gridOf(h, p, s, (args as { resolution?: number } | undefined)?.resolution ?? 100),
-      }),
-    }
-  },
-  logs: { 'gp/bound': Log(), 'gp/hyper': Log() },
-})
+      })
+      return {
+        name: 'sparse-gp',
+        config: {
+          approximation: h.approximation,
+          inducing: p.m,
+          optimise: h.optimise,
+          optimiseInducing: h.optimiseInducing,
+        },
+        schema: channels({
+          metrics: {
+            gradNorm: { description: 'the infinity norm of the projected gradient of the bound' },
+            run: { description: 'the optimiser run in progress' },
+          },
+        }),
+        init: (k) => search.init(k),
+        step: (s, ctx) => {
+          const next = search.step(s, ctx)
+          if (s.inner !== null) {
+            const now = currentOf(next)
+            const un = unpack(h, p, now.x)
+            ctx.log('gp/bound', -now.value)
+            ctx.log('gp/hyper', [
+              ...hyperparameters(un.theta.length === 0 ? h.kernel : withTheta(h.kernel, un.theta)).flatMap((hp) => [
+                ...hp.value,
+              ]),
+              un.noise,
+            ])
+            ctx.log('gp/inducing', un.z)
+          }
+          return next
+        },
+        done: (s) => (s.finished ? 'converged' : undefined),
+        observe: (s) => ({
+          metrics: { run: s.run, ...(s.inner === null ? {} : { gradNorm: s.inner.projectedGradNorm }) },
+        }),
+        serialise: (s) => stateToJson(s),
+        deserialise: (j) => stateFromJson(j) as SparseState,
+      }
+    },
+    maxSteps: (h) => (h.restarts + 1) * h.maxIter + 1,
+    params: (s, data, h) => {
+      const p = prepare(data, h)
+      const model = currentOf(s)
+      const un = unpack(h, p, model.x)
+      return { ...un, bound: -model.value, x: p.rows, y: Array.from(p.y), yMean: p.yMean, yStd: p.yStd }
+    },
+    verbs: verbsOf,
+    contract: (data, h): Contract<SparseState, SparseGpPath> => {
+      const p = prepare(data, h)
+      return defineContract({
+        'gp/bound': scalar({
+          description: 'the bound (or approximate log marginal likelihood) being maximised',
+          direction: 'higher',
+        }),
+        'gp/hyper': tensor({
+          role: 'param',
+          description: 'the kernel hyperparameters in natural units, then the noise variance',
+        }),
+        'gp/inducing': tensor({ role: 'param', description: 'the inducing inputs [m, d]' }),
+        'model/posterior': derived<SparseState>({
+          description: 'the posterior over the first feature with the training data (args: resolution)',
+          cost: 'dear',
+          compute: (s, args) => gridOf(h, p, s, (args as { resolution?: number } | undefined)?.resolution ?? 100),
+        }),
+      })
+    },
+    logs: { 'gp/bound': Log(), 'gp/hyper': Log() },
+  })
 
 function gridOf(h: SparseGpHyper, p: Prepared, s: SparseState, resolution: number): PosteriorGrid {
   const model = currentOf(s)

@@ -12,7 +12,7 @@ import { curveSet } from '../../lib/exposition/index.ts'
 import { foldIn, normal, uniform } from '../../lib/random/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
 import { item, neg, tensor, toFlat } from '../../lib/tensor/index.ts'
-import { type Config, defineMethod, derived, Log, type Method, scalar } from '../../lib/trace/index.ts'
+import { type Config, type Contract, defineMethod, derived, Log, type Method, scalar } from '../../lib/trace/index.ts'
 import {
   type Acquisition,
   acquisitions,
@@ -120,6 +120,18 @@ const bestOf = (s: BayesianState): { readonly x: number; readonly value: number 
 }
 
 /**
+ * The paths of {@link bayesianOptimisation}: each trial’s point and value, the best value so far, and the derived `model/params` (the best trial) and `tune/posterior` (the surrogate over the interval).
+ *
+ * @example
+ * ```ts
+ * import type { BayesianOptimisationPath } from 'mdml-engine/methods/tune'
+ * const path: BayesianOptimisationPath = 'best'
+ * path // => 'best'
+ * ```
+ */
+export type BayesianOptimisationPath = 'x' | 'value' | 'best' | 'model/params' | 'tune/posterior'
+
+/**
  * Bayesian optimisation of a function of one variable. After a few random trials, each trial maximises an acquisition
  * over a Gaussian-process surrogate (a Matern-5/2 kernel with fitted length scale, scale and noise) of the trials so far:
  * expected improvement, the lower confidence bound (the mirror of the upper one for a minimised function) or the
@@ -138,7 +150,11 @@ const bestOf = (s: BayesianState): { readonly x: number; readonly value: number 
  * s.t // => 12
  * ```
  */
-export const bayesianOptimisation: Method<BayesianState, Config> = defineMethod<BayesianState, Config>({
+export const bayesianOptimisation: Method<BayesianState, Config, BayesianOptimisationPath> = defineMethod<
+  BayesianState,
+  Config,
+  BayesianOptimisationPath
+>({
   name: 'tune/bayesian-optimisation',
   config: dict({
     objective: choice(BAYESIAN_OBJECTIVES, { default: 'forrester', label: 'function' }),
@@ -189,7 +205,7 @@ export const bayesianOptimisation: Method<BayesianState, Config> = defineMethod<
       },
     }
   },
-  contract: (c) => {
+  contract: (c): Contract<BayesianState, BayesianOptimisationPath> => {
     const land = landscapeOf(c['objective'] as BayesianObjective)
     const shown = SHOWN[c['acquisition'] as BayesianAcquisition]
     return {

@@ -11,7 +11,15 @@
 import { logSumExpOf } from '../base/index.ts'
 import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  Log,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { classifierFromScores, type ScoreClassifierVerbs } from './_classify.ts'
 import { type IterativeEstimator, iterative } from './bases/index.ts'
 import type { LearnData } from './estimator.ts'
@@ -861,8 +869,8 @@ export function tanAlgorithm(
  */
 export function treeAugmentedNaiveBayes(
   hyper: Partial<DiscreteBayesHyper> = {},
-): IterativeEstimator<DiscreteBayesHyper, TanState, TanParams, ReturnType<typeof tanVerbs>> {
-  return iterative<DiscreteBayesHyper, TanState, TanParams, ReturnType<typeof tanVerbs>>(
+): IterativeEstimator<DiscreteBayesHyper, TanState, TanParams, ReturnType<typeof tanVerbs>, never> {
+  return iterative<DiscreteBayesHyper, TanState, TanParams, ReturnType<typeof tanVerbs>, never>(
     {
       name: 'tree-augmented-naive-bayes',
       kind: 'classifier',
@@ -873,7 +881,7 @@ export function treeAugmentedNaiveBayes(
       maxSteps: (_h, data) => Math.max(1, matrixView(data.x, 'treeAugmentedNaiveBayes').d - 1),
       params: (s, data, h) => tanParams(countsOf(data, h.minCategories ?? 0), s.edges, h.alpha),
       verbs: tanVerbs,
-      contract: () => ({}),
+      contract: (): Contract<TanState, never> => defineContract({}),
       logs: { 'solver/edges': Log(), 'solver/weight': Log() },
     },
     { ...DISCRETE_DEFAULTS, ...hyper },

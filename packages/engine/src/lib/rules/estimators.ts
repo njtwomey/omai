@@ -1,4 +1,23 @@
 /**
+ * The paths of CN2 and PRISM: the channels its algorithm reports, renamed to paths by its contract, and the derived `model/rules` every rule learner has.
+ *
+ * @example
+ * ```ts
+ * import type { CoveringPath } from 'mdml-engine/rules'
+ * const path: CoveringPath = 'rule/literal'
+ * path // => 'rule/literal'
+ * ```
+ */
+export type CoveringPath =
+  | 'rule/literal'
+  | 'rule/coverage'
+  | 'rule/precision'
+  | 'ruleset/rules'
+  | 'ruleset/accuracy'
+  | 'ruleset/covered'
+  | 'model/rules'
+
+/**
  * The rule learners as classifiers on the iterative base: `cn2Classifier`, `prismClassifier`, `ripperClassifier`,
  * `corelsClassifier`, `bayesianRuleListClassifier`, `oneRClassifier` and `decisionTableClassifier`. A fit is a session
  * of the learner's algorithm (one rule, one prefix, one proposal or one feature per step), so `.method(data)` and
@@ -16,7 +35,7 @@ import { matrixView } from '../learn/validation.ts'
 import { accuracyScore } from '../metrics/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Contract, derived, Log, message, scalar } from '../trace/index.ts'
+import { type Contract, defineContract, derived, Log, message, scalar } from '../trace/index.ts'
 import { type CoveringOptions, type CoveringState, coveringAlgorithm, coveringModel } from './covering.ts'
 import {
   type BayesianRuleListOptions,
@@ -58,7 +77,13 @@ export interface RuleVerbs extends Verbs, FittedFacts {
 }
 
 /** A rule learner's estimator type. */
-export type RuleEstimator<H extends object, S> = IterativeEstimator<H, S, RuleModel, RuleVerbs>
+export type RuleEstimator<H extends object, S, K extends string = string> = IterativeEstimator<
+  H,
+  S,
+  RuleModel,
+  RuleVerbs,
+  K
+>
 
 function ruleVerbs(model: RuleModel, method: string): RuleVerbs {
   const k = model.classes.length
@@ -98,15 +123,15 @@ function ruleVerbs(model: RuleModel, method: string): RuleVerbs {
 import { firingRule as firing } from './rule.ts'
 
 /** The standard probes of a rule learner: the model as a record at any step. */
-function ruleContract<S>(
+function ruleContract<S, K extends string>(
   learn: LearnData,
   modelOf: (s: S) => RuleModel,
-  aliases: Contract<S>,
+  aliases: Contract<S, K>,
   method: string,
-): Contract<S> {
+): Contract<S, K | 'model/rules'> {
   const d = matrixView(learn.x, method).d
   const features = featureNamesOf(learn, d)
-  return {
+  return defineContract({
     ...aliases,
     'model/rules': derived<S>({
       description: 'the rule model so far: rules with precision and coverage, the default last',
@@ -115,7 +140,7 @@ function ruleContract<S>(
         return modelRecord(model, features, classNamesOf(learn, model.classes), method) as unknown as Json
       },
     }),
-  }
+  })
 }
 
 // ------------------------------------------------------------------------------------------------ CN2 and PRISM
@@ -131,8 +156,11 @@ export interface CoveringHyper
   readonly nominal: readonly number[]
 }
 
-function coveringEstimator(name: string, defaults: CoveringHyper): RuleEstimator<CoveringHyper, CoveringState> {
-  return iterative<CoveringHyper, CoveringState, RuleModel, RuleVerbs>({
+function coveringEstimator(
+  name: string,
+  defaults: CoveringHyper,
+): RuleEstimator<CoveringHyper, CoveringState, CoveringPath> {
+  return iterative<CoveringHyper, CoveringState, RuleModel, RuleVerbs, CoveringPath>({
     name,
     kind: 'classifier',
     defaults,
@@ -151,7 +179,7 @@ function coveringEstimator(name: string, defaults: CoveringHyper): RuleEstimator
     verbs: (model) => ruleVerbs(model, name),
     maxSteps: (h) => h.maxRules + 50,
     contract: (learn, h) =>
-      ruleContract<CoveringState>(
+      ruleContract<CoveringState, Exclude<CoveringPath, 'model/rules'>>(
         learn,
         (s) => coveringModel(learn, s, h),
         {
@@ -213,7 +241,9 @@ function coveringDefaults(mode: CoveringOptions['mode'], hyper: Partial<Covering
  * toFlat(fitted.predict([[0.5], [4.5]])) // => [0, 1]
  * ```
  */
-export function cn2Classifier(hyper: Partial<CoveringHyper> = {}): RuleEstimator<CoveringHyper, CoveringState> {
+export function cn2Classifier(
+  hyper: Partial<CoveringHyper> = {},
+): RuleEstimator<CoveringHyper, CoveringState, CoveringPath> {
   const h = coveringDefaults(hyper.mode === 'unordered' ? 'unordered' : 'ordered', hyper)
   return coveringEstimator(h.mode === 'unordered' ? 'cn2-unordered-classifier' : 'cn2-classifier', h)
 }
@@ -232,7 +262,9 @@ export function cn2Classifier(hyper: Partial<CoveringHyper> = {}): RuleEstimator
  * toFlat(prismClassifier().fit(data).predict([[0.5], [4.5]])) // => [0, 1]
  * ```
  */
-export function prismClassifier(hyper: Partial<CoveringHyper> = {}): RuleEstimator<CoveringHyper, CoveringState> {
+export function prismClassifier(
+  hyper: Partial<CoveringHyper> = {},
+): RuleEstimator<CoveringHyper, CoveringState, CoveringPath> {
   return coveringEstimator(
     'prism-classifier',
     coveringDefaults('prism', { ...hyper, minCovered: hyper.minCovered ?? 1 }),
@@ -245,6 +277,18 @@ export function prismClassifier(hyper: Partial<CoveringHyper> = {}): RuleEstimat
 export interface RipperHyper extends Required<Omit<RipperOptions, 'nominal'>> {
   readonly nominal: readonly number[]
 }
+
+/**
+ * The paths of RIPPER and IREP: the channels its algorithm reports, renamed to paths by its contract, and the derived `model/rules` every rule learner has.
+ *
+ * @example
+ * ```ts
+ * import type { RipperPath } from 'mdml-engine/rules'
+ * const path: RipperPath = 'pass/revision'
+ * path // => 'pass/revision'
+ * ```
+ */
+export type RipperPath = 'rule/descriptionLength' | 'pass/revision' | 'ruleset/size' | 'model/rules'
 
 /**
  * RIPPER (Cohen 1995) or IREP (`mode: 'irep'`): rules per class from the rarest up, each grown by FOIL gain on two thirds
@@ -261,7 +305,9 @@ export interface RipperHyper extends Required<Omit<RipperOptions, 'nominal'>> {
  * ripperClassifier().fit(data, { seed: 1 }).classes // => [0, 1]
  * ```
  */
-export function ripperClassifier(hyper: Partial<RipperHyper> = {}): RuleEstimator<RipperHyper, RipperState> {
+export function ripperClassifier(
+  hyper: Partial<RipperHyper> = {},
+): RuleEstimator<RipperHyper, RipperState, RipperPath> {
   const mode = hyper.mode ?? 'ripper'
   const defaults: RipperHyper = {
     mode,
@@ -273,7 +319,7 @@ export function ripperClassifier(hyper: Partial<RipperHyper> = {}): RuleEstimato
     nominal: hyper.nominal ?? [],
   }
   const name = `${mode}-classifier`
-  return iterative<RipperHyper, RipperState, RuleModel, RuleVerbs>({
+  return iterative<RipperHyper, RipperState, RuleModel, RuleVerbs, RipperPath>({
     name,
     kind: 'classifier',
     defaults,
@@ -288,7 +334,7 @@ export function ripperClassifier(hyper: Partial<RipperHyper> = {}): RuleEstimato
     verbs: (model) => ruleVerbs(model, name),
     maxSteps: () => 5000,
     contract: (learn, h) =>
-      ruleContract<RipperState>(
+      ruleContract<RipperState, Exclude<RipperPath, 'model/rules'>>(
         learn,
         (s) => ripperModel(learn, s, h),
         {
@@ -317,6 +363,18 @@ export interface CorelsHyper extends Required<Omit<CorelsOptions, 'nominal'>> {
 }
 
 /**
+ * The paths of CORELS: the channels its algorithm reports, renamed to paths by its contract, and the derived `model/rules` every rule learner has.
+ *
+ * @example
+ * ```ts
+ * import type { CorelsPath } from 'mdml-engine/rules'
+ * const path: CorelsPath = 'search/bound'
+ * path // => 'search/bound'
+ * ```
+ */
+export type CorelsPath = 'search/bound' | 'search/incumbent' | 'search/nodes' | 'model/rules'
+
+/**
  * Certifiably optimal rule lists (CORELS-style branch and bound over prefixes of pre-mined antecedents). One prefix is
  * expanded per step; the session logs `search/bound`, `search/incumbent` and `search/nodes`. The fitted model's list is
  * optimal for the objective `misclassification rate + lambda * rules` once the queue is empty.
@@ -331,7 +389,9 @@ export interface CorelsHyper extends Required<Omit<CorelsOptions, 'nominal'>> {
  * toFlat(corelsClassifier({ minSupport: 0.3, maxCardinality: 1 }).fit(data).predict([[0], [1]])) // => [0, 1]
  * ```
  */
-export function corelsClassifier(hyper: Partial<CorelsHyper> = {}): RuleEstimator<CorelsHyper, CorelsState> {
+export function corelsClassifier(
+  hyper: Partial<CorelsHyper> = {},
+): RuleEstimator<CorelsHyper, CorelsState, CorelsPath> {
   const defaults: CorelsHyper = {
     lambda: hyper.lambda ?? 0.01,
     maxNodes: hyper.maxNodes ?? 200_000,
@@ -340,7 +400,7 @@ export function corelsClassifier(hyper: Partial<CorelsHyper> = {}): RuleEstimato
     maxThresholds: hyper.maxThresholds ?? 6,
     nominal: hyper.nominal ?? [],
   }
-  return iterative<CorelsHyper, CorelsState, RuleModel, RuleVerbs>({
+  return iterative<CorelsHyper, CorelsState, RuleModel, RuleVerbs, CorelsPath>({
     name: 'corels-classifier',
     kind: 'classifier',
     defaults,
@@ -355,7 +415,7 @@ export function corelsClassifier(hyper: Partial<CorelsHyper> = {}): RuleEstimato
     verbs: (model) => ruleVerbs(model, 'corels-classifier'),
     maxSteps: (h) => Math.min(h.maxNodes, 20_000),
     contract: (learn, h) =>
-      ruleContract<CorelsState>(
+      ruleContract<CorelsState, Exclude<CorelsPath, 'model/rules'>>(
         learn,
         (s) => corelsModel(learn, s, h),
         {
@@ -385,6 +445,18 @@ export interface BayesianRuleListHyper extends Required<Omit<BayesianRuleListOpt
 }
 
 /**
+ * The paths of the Bayesian rule list: the channels its algorithm reports, renamed to paths by its contract, and the derived `model/rules` every rule learner has.
+ *
+ * @example
+ * ```ts
+ * import type { BayesianRuleListPath } from 'mdml-engine/rules'
+ * const path: BayesianRuleListPath = 'chain/list'
+ * path // => 'chain/list'
+ * ```
+ */
+export type BayesianRuleListPath = 'chain/logPosterior' | 'chain/accepted' | 'chain/list' | 'model/rules'
+
+/**
  * Bayesian rule lists sampled by Metropolis-Hastings over pre-mined antecedents, one proposal per step; the fitted
  * model is the highest-posterior list visited. The session logs `chain/logPosterior` and `chain/accepted`.
  *
@@ -399,7 +471,7 @@ export interface BayesianRuleListHyper extends Required<Omit<BayesianRuleListOpt
  */
 export function bayesianRuleListClassifier(
   hyper: Partial<BayesianRuleListHyper> = {},
-): RuleEstimator<BayesianRuleListHyper, BayesianRuleListState> {
+): RuleEstimator<BayesianRuleListHyper, BayesianRuleListState, BayesianRuleListPath> {
   const defaults: BayesianRuleListHyper = {
     listLength: hyper.listLength ?? 3,
     ruleSize: hyper.ruleSize ?? 1,
@@ -410,7 +482,7 @@ export function bayesianRuleListClassifier(
     nominal: hyper.nominal ?? [],
     steps: hyper.steps ?? 2000,
   }
-  return iterative<BayesianRuleListHyper, BayesianRuleListState, RuleModel, RuleVerbs>({
+  return iterative<BayesianRuleListHyper, BayesianRuleListState, RuleModel, RuleVerbs, BayesianRuleListPath>({
     name: 'bayesian-rule-list-classifier',
     kind: 'classifier',
     defaults,
@@ -425,7 +497,7 @@ export function bayesianRuleListClassifier(
     verbs: (model) => ruleVerbs(model, 'bayesian-rule-list-classifier'),
     maxSteps: (h) => h.steps,
     contract: (learn, h) =>
-      ruleContract<BayesianRuleListState>(
+      ruleContract<BayesianRuleListState, Exclude<BayesianRuleListPath, 'model/rules'>>(
         learn,
         (s) => bayesianRuleListModel(learn, s, h),
         {
@@ -454,6 +526,18 @@ export interface OneRHyper extends Required<Omit<OneROptions, 'nominal'>> {
 }
 
 /**
+ * The paths of OneR: the channels its algorithm reports, renamed to paths by its contract, and the derived `model/rules` every rule learner has.
+ *
+ * @example
+ * ```ts
+ * import type { OneRPath } from 'mdml-engine/rules'
+ * const path: OneRPath = 'ruleset/errors'
+ * path // => 'ruleset/errors'
+ * ```
+ */
+export type OneRPath = 'ruleset/errors' | 'ruleset/bestErrors' | 'model/rules'
+
+/**
  * OneR (Holte 1993): the single feature whose per-value (or per-bucket) majority rules make the fewest training errors;
  * one feature is examined per step.
  *
@@ -467,9 +551,9 @@ export interface OneRHyper extends Required<Omit<OneROptions, 'nominal'>> {
  * toFlat(oneRClassifier({ nominal: [0, 1] }).fit(data).predict([[0, 6], [1, 5]])) // => [0, 1]
  * ```
  */
-export function oneRClassifier(hyper: Partial<OneRHyper> = {}): RuleEstimator<OneRHyper, OneRState> {
+export function oneRClassifier(hyper: Partial<OneRHyper> = {}): RuleEstimator<OneRHyper, OneRState, OneRPath> {
   const defaults: OneRHyper = { minBucket: hyper.minBucket ?? 6, nominal: hyper.nominal ?? [] }
-  return iterative<OneRHyper, OneRState, RuleModel, RuleVerbs>({
+  return iterative<OneRHyper, OneRState, RuleModel, RuleVerbs, OneRPath>({
     name: 'one-r-classifier',
     kind: 'classifier',
     defaults,
@@ -479,7 +563,7 @@ export function oneRClassifier(hyper: Partial<OneRHyper> = {}): RuleEstimator<On
     verbs: (model) => ruleVerbs(model, 'one-r-classifier'),
     maxSteps: () => 10_000,
     contract: (learn, h) =>
-      ruleContract<OneRState>(
+      ruleContract<OneRState, Exclude<OneRPath, 'model/rules'>>(
         learn,
         (s) => oneRModel(learn, s, h),
         {
@@ -507,6 +591,18 @@ export interface DecisionTableHyper extends Required<Omit<DecisionTableOptions, 
 }
 
 /**
+ * The paths of the decision table: the channels its algorithm reports, renamed to paths by its contract, and the derived `model/rules` every rule learner has.
+ *
+ * @example
+ * ```ts
+ * import type { DecisionTablePath } from 'mdml-engine/rules'
+ * const path: DecisionTablePath = 'features/chosen'
+ * path // => 'features/chosen'
+ * ```
+ */
+export type DecisionTablePath = 'ruleset/accuracy' | 'features/chosen' | 'model/rules'
+
+/**
  * The decision table majority classifier (Kohavi 1995): class counts looked up by the (binned) values of the features
  * that a forward search chose by leave-one-out accuracy, one feature added per step.
  *
@@ -522,13 +618,13 @@ export interface DecisionTableHyper extends Required<Omit<DecisionTableOptions, 
  */
 export function decisionTableClassifier(
   hyper: Partial<DecisionTableHyper> = {},
-): RuleEstimator<DecisionTableHyper, DecisionTableState> {
+): RuleEstimator<DecisionTableHyper, DecisionTableState, DecisionTablePath> {
   const defaults: DecisionTableHyper = {
     bins: hyper.bins ?? 5,
     nominal: hyper.nominal ?? [],
     maxFeatures: hyper.maxFeatures ?? 1000,
   }
-  return iterative<DecisionTableHyper, DecisionTableState, RuleModel, RuleVerbs>({
+  return iterative<DecisionTableHyper, DecisionTableState, RuleModel, RuleVerbs, DecisionTablePath>({
     name: 'decision-table-classifier',
     kind: 'classifier',
     defaults,
@@ -538,7 +634,7 @@ export function decisionTableClassifier(
     verbs: (model) => ruleVerbs(model, 'decision-table-classifier'),
     maxSteps: () => 1000,
     contract: (learn, h) =>
-      ruleContract<DecisionTableState>(
+      ruleContract<DecisionTableState, Exclude<DecisionTablePath, 'model/rules'>>(
         learn,
         (s) => decisionTableModel(learn, s, h),
         {
