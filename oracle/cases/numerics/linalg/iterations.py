@@ -29,11 +29,20 @@ def cases() -> list[Case]:
     x0 = g.normal(size=(n, k))
     for steps in (1, 5, 25):
         projector, ritz = subspace(a, x0, steps)
-        out.append(case(f"subspace/{steps}/projector", "projector", [a, x0], projector, rtol=1e-9, atol=1e-10, steps=steps))
+        out.append(
+            case(f"subspace/{steps}/projector", "projector", [a, x0], projector, rtol=1e-9, atol=1e-10, steps=steps)
+        )
         out.append(case(f"subspace/{steps}/ritz", "ritz", [a, x0], ritz, rtol=1e-9, atol=1e-10, steps=steps))
     eigenvalues = np.linalg.eigvalsh(a)
     out.append(
-        case("subspace/converged", "converged", [a, x0], eigenvalues[np.argsort(-np.abs(eigenvalues))][:k], rtol=1e-8, atol=1e-9)
+        case(
+            "subspace/converged",
+            "converged",
+            [a, x0],
+            eigenvalues[np.argsort(-np.abs(eigenvalues))][:k],
+            rtol=1e-8,
+            atol=1e-9,
+        )
     )
 
     tall = g.normal(size=(8, 5)) @ np.diag([3.0, 1.0, 0.3, 0.05, 0.001])

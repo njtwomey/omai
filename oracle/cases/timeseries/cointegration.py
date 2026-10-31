@@ -84,7 +84,9 @@ def cases() -> list[Case]:
                 )
             )
             out.append(
-                case(f"johansen/{det}/{kd}/evec", "johansenEvec", [y], np.abs(np.asarray(j.evec)), **TOL, det=det, kd=kd)
+                case(
+                    f"johansen/{det}/{kd}/evec", "johansenEvec", [y], np.abs(np.asarray(j.evec)), **TOL, det=det, kd=kd
+                )
             )
     two = y[:, :2]
     for det in ("n", "co", "ci", "lo", "li", "colo", "cili"):
@@ -102,11 +104,31 @@ def cases() -> list[Case]:
             }
             for name, val in parts.items():
                 out.append(
-                    case(f"vecm/{tag}/{name}", "vecmPart", [two], np.atleast_2d(val), **TOL, det=det, kd=kd, rank=rank, part=name)
+                    case(
+                        f"vecm/{tag}/{name}",
+                        "vecmPart",
+                        [two],
+                        np.atleast_2d(val),
+                        **TOL,
+                        det=det,
+                        kd=kd,
+                        rank=rank,
+                        part=name,
+                    )
                 )
             if m.det_coef.size:
                 out.append(
-                    case(f"vecm/{tag}/det", "vecmPart", [two], np.atleast_2d(m.det_coef), **TOL, det=det, kd=kd, rank=rank, part="det")
+                    case(
+                        f"vecm/{tag}/det",
+                        "vecmPart",
+                        [two],
+                        np.atleast_2d(m.det_coef),
+                        **TOL,
+                        det=det,
+                        kd=kd,
+                        rank=rank,
+                        part="det",
+                    )
                 )
             if m.det_coef_coint.size:
                 out.append(
@@ -124,6 +146,17 @@ def cases() -> list[Case]:
                 )
             fc = m.predict(steps=6, alpha=0.1)
             out.append(
-                case(f"vecm/{tag}/forecast", "vecmForecast", [two], np.stack(fc), **TOL, det=det, kd=kd, rank=rank, steps=6, alpha=0.1)
+                case(
+                    f"vecm/{tag}/forecast",
+                    "vecmForecast",
+                    [two],
+                    np.stack(fc),
+                    **TOL,
+                    det=det,
+                    kd=kd,
+                    rank=rank,
+                    steps=6,
+                    alpha=0.1,
+                )
             )
     return out

@@ -147,7 +147,12 @@ def cases() -> list[Case]:
                 f"heteroscedastic/ml/{name}",
                 "heteroscedastic",
                 [x, y],
-                {"coef": beta[:d], "intercept": np.array(float(beta[d])), "gamma": gamma, "logLikelihood": np.array(llf)},
+                {
+                    "coef": beta[:d],
+                    "intercept": np.array(float(beta[d])),
+                    "gamma": gamma,
+                    "logLikelihood": np.array(llf),
+                },
                 rtol=1e-5,
                 atol=1e-6,
                 method="ml",

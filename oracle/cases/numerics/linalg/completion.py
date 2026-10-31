@@ -50,8 +50,15 @@ def implicit_als(
 
 
 def sgd(
-    triplets: list[tuple[int, int, float]], u: FloatArray, v: FloatArray, bi: FloatArray, bj: FloatArray, mean: float,
-    lam: float, lr: float, epochs: int,
+    triplets: list[tuple[int, int, float]],
+    u: FloatArray,
+    v: FloatArray,
+    bi: FloatArray,
+    bj: FloatArray,
+    mean: float,
+    lam: float,
+    lr: float,
+    epochs: int,
 ) -> None:
     for _ in range(epochs):
         for i, j, val in triplets:
@@ -104,7 +111,19 @@ def cases() -> list[Case]:
         sgd(triplets, u, v, bi, bj, mean, 0.05, 0.02, epochs)
         pred = mean + bi[:, None] + bj[None, :] + u @ v.T
         out.append(
-            case(f"sgd/{epochs}/prediction", "sgd", common, pred, rtol=1e-9, atol=1e-10, epochs=epochs, lam=0.05, lr=0.02, m=m, n=n)
+            case(
+                f"sgd/{epochs}/prediction",
+                "sgd",
+                common,
+                pred,
+                rtol=1e-9,
+                atol=1e-10,
+                epochs=epochs,
+                lam=0.05,
+                lr=0.02,
+                m=m,
+                n=n,
+            )
         )
 
     counts = np.zeros((m, n))
@@ -112,11 +131,65 @@ def cases() -> list[Case]:
     icommon = [rf, cf, counts[rows, cols], u0, v0]
     for half in (1, 2, 6):
         u, v = implicit_als(counts, u0.copy(), v0.copy(), 0.5, 10.0, half)
-        out.append(case(f"implicit/{half}/u", "implicitU", icommon, u, rtol=1e-8, atol=1e-10, half=half, lam=0.5, alpha=10.0, m=m, n=n))
-        out.append(case(f"implicit/{half}/v", "implicitV", icommon, v, rtol=1e-8, atol=1e-10, half=half, lam=0.5, alpha=10.0, m=m, n=n))
+        out.append(
+            case(
+                f"implicit/{half}/u",
+                "implicitU",
+                icommon,
+                u,
+                rtol=1e-8,
+                atol=1e-10,
+                half=half,
+                lam=0.5,
+                alpha=10.0,
+                m=m,
+                n=n,
+            )
+        )
+        out.append(
+            case(
+                f"implicit/{half}/v",
+                "implicitV",
+                icommon,
+                v,
+                rtol=1e-8,
+                atol=1e-10,
+                half=half,
+                lam=0.5,
+                alpha=10.0,
+                m=m,
+                n=n,
+            )
+        )
 
     for steps in (1, 6, 40):
         z, objective = soft_impute(x, mask, 0.8, steps)
-        out.append(case(f"softImpute/{steps}/matrix", "softImpute", common, z, rtol=1e-8, atol=1e-9, steps=steps, lam=0.8, m=m, n=n))
-        out.append(case(f"softImpute/{steps}/objective", "softImputeObjective", common, np.array(objective), rtol=1e-8, atol=1e-9, steps=steps, lam=0.8, m=m, n=n))
+        out.append(
+            case(
+                f"softImpute/{steps}/matrix",
+                "softImpute",
+                common,
+                z,
+                rtol=1e-8,
+                atol=1e-9,
+                steps=steps,
+                lam=0.8,
+                m=m,
+                n=n,
+            )
+        )
+        out.append(
+            case(
+                f"softImpute/{steps}/objective",
+                "softImputeObjective",
+                common,
+                np.array(objective),
+                rtol=1e-8,
+                atol=1e-9,
+                steps=steps,
+                lam=0.8,
+                m=m,
+                n=n,
+            )
+        )
     return out

@@ -63,7 +63,17 @@ def cases() -> list[Case]:
     for method, omega in [("jacobi", 1.0), ("jacobi", 2 / 3), ("gauss-seidel", 1.0), ("sor", 1.3), ("sor", 0.8)]:
         tag = f"{method}/{omega:.2f}"
         gm, _ = iteration_matrix(a, method, omega)
-        out.append(case(f"{tag}/iterate", "iterate", [a, b], iterate(a, b, method, omega, 7), method=method, omega=omega, steps=7))
+        out.append(
+            case(
+                f"{tag}/iterate",
+                "iterate",
+                [a, b],
+                iterate(a, b, method, omega, 7),
+                method=method,
+                omega=omega,
+                steps=7,
+            )
+        )
         out.append(case(f"{tag}/matrix", "matrix", [a], gm, method=method, omega=omega))
         radius = float(np.max(np.abs(np.linalg.eigvals(gm))))
         out.append(case(f"{tag}/radius", "radius", [a], np.array(radius), rtol=1e-10, method=method, omega=omega))
@@ -71,11 +81,15 @@ def cases() -> list[Case]:
     dom = a + 4 * np.eye(n)
     exact = sla.solve(dom, b)
     for method, omega in [("jacobi", 1.0), ("gauss-seidel", 1.0), ("sor", 1.2)]:
-        out.append(case(f"{method}/solution", "solution", [dom, b], exact, rtol=1e-9, atol=1e-10, method=method, omega=omega))
+        out.append(
+            case(f"{method}/solution", "solution", [dom, b], exact, rtol=1e-9, atol=1e-10, method=method, omega=omega)
+        )
     # The two-grid cycle on 1-D Poisson: the iterate after a few cycles, and the converged solution.
     m = 15
     pa = poisson(m)
     pb = g.normal(size=m)
-    out.append(case("twoGrid/iterate", "twoGrid", [pa, pb], two_grid(pa, pb, 3, 2 / 3), rtol=1e-10, atol=1e-12, cycles=3))
+    out.append(
+        case("twoGrid/iterate", "twoGrid", [pa, pb], two_grid(pa, pb, 3, 2 / 3), rtol=1e-10, atol=1e-12, cycles=3)
+    )
     out.append(case("twoGrid/solution", "twoGridSolution", [pa, pb], sla.solve(pa, pb), rtol=1e-8, atol=1e-9))
     return out

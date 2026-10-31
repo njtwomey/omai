@@ -1,6 +1,7 @@
-"""Penalised IRLS at fixed smoothing parameters against statsmodels' GLMGam: coefficients, the leverage of each observation (the diagonal
-of the influence matrix), the effective degrees of freedom (its trace) and the deviance, for the Gaussian, Poisson and binomial families on a B-spline smooth with its
-second-derivative penalty. statsmodels weighs the penalty as 2 alpha, so the engine's smoothing parameter is 2 alpha."""
+"""Penalised IRLS at fixed smoothing parameters against statsmodels' GLMGam: coefficients, the leverage of each
+observation (the diagonal of the influence matrix), the effective degrees of freedom (its trace) and the deviance, for
+the Gaussian, Poisson and binomial families on a B-spline smooth with its second-derivative penalty. statsmodels weighs
+the penalty as 2 alpha, so the engine's smoothing parameter is 2 alpha."""
 
 import numpy as np
 import pandas as pd
@@ -29,8 +30,8 @@ def record(
         "deviance": np.asarray([fit.deviance], dtype=np.float64),
     }
     if family_name == "gamma-log":
-        # statsmodels' hat matrix of a family with an estimated scale is computed after the fit with the scale in it; the
-        # coefficients and deviance are what the penalised IRLS is checked on there.
+        # statsmodels' hat matrix of a family with an estimated scale is computed after the fit with the scale in
+        # it; the coefficients and deviance are what the penalised IRLS is checked on there.
         del output["hat"], output["edf"]
     return case(
         name,
@@ -58,7 +59,9 @@ def cases() -> list[Case]:
     prob = 1.0 / (1.0 + np.exp(-(2.5 * np.cos(4 * x))))
     flips = g.uniform(size=n) < prob
     for alpha in (1e-4, 1e-2):
-        out.append(record(f"binomial/{alpha}", sm.families.Binomial(), "binomial", flips.astype(np.float64), x, 7, alpha))
+        out.append(
+            record(f"binomial/{alpha}", sm.families.Binomial(), "binomial", flips.astype(np.float64), x, 7, alpha)
+        )
     gamma = g.gamma(shape=4.0, scale=np.exp(0.5 + np.sin(4 * x)) / 4.0)
     out.append(record("gamma/0.001", sm.families.Gamma(sm.families.links.Log()), "gamma-log", gamma, x, 7, 1e-3))
     return out

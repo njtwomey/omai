@@ -70,7 +70,19 @@ def cases() -> list[Case]:
     out.append(case("float32", "float32", [xf], xf.astype(np.float32).astype(np.float64), rtol=0))
     # Ties, subnormals (the smallest is 2^-24), the largest finite value and rounding at the top of the range.
     xh = np.array(
-        [0.1, -3.14159, 1 + 2.0**-11, 1 + 3 * 2.0**-11, 2.0**-24 * 1.5, 2.0**-25 * 1.01, 6e-8, 65504.0, 65519.0, 1e-9, -2049.0]
+        [
+            0.1,
+            -3.14159,
+            1 + 2.0**-11,
+            1 + 3 * 2.0**-11,
+            2.0**-24 * 1.5,
+            2.0**-25 * 1.01,
+            6e-8,
+            65504.0,
+            65519.0,
+            1e-9,
+            -2049.0,
+        ]
     )
     out.append(case("float16", "float16", [xh], xh.astype(np.float16).astype(np.float64), rtol=0))
     out.append(
