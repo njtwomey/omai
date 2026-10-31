@@ -4,7 +4,8 @@
  * regression in the Nystrom and random Fourier feature spaces with the explicit approximation error against the exact
  * fit (`approximateKernelRidge`, `featureRidge`, `ridgeGap`); the choice of the kernel and the ridge by evidence,
  * leave-one-out and generalised cross-validation, by gradient or by grid (`tuneKernelRidge`, `gridKernelRidge`); kernel
- * classifiers (`kernelLogisticRegression`, `importVectorMachine`, `lssvm`, `kernelRidgeClassifier`); and the
+ * classifiers (`kernelLogisticRegression`, `importVectorMachine`, `lssvm`, `kernelRidgeClassifier`); multiple kernel
+ * learning (`alignmentWeights`, `easyMkl`, `mklAlgorithm`, `fitMultipleKernel`); and the
  * online learners that take one observation per step, kernel recursive least squares with approximate-linear-dependence,
  * coherence and sliding-window dictionaries (`krls`, `krlsAlgorithm`, `krlsStep`) and NORMA (`norma`).
  */
@@ -13,4 +14,5 @@ export * from './feature-ridge.ts'
 export * from './kernel-classifiers.ts'
 export * from './kernel-ridge.ts'
 export * from './kernel-selection.ts'
+export * from './multiple-kernel.ts'
 export * from './online-kernel.ts'

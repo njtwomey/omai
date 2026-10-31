@@ -4063,6 +4063,12 @@ same optimum; with a linear kernel it is L2-penalised logistic regression with `
 (closed form `[[0, 1'], [1, K + I/C]]` by default, a slot mode) and `kernelRidgeClassifier` (one-versus-rest ridge on plus
 and minus one). The kernel Fisher discriminant is `learn/discriminant.ts`, Gaussian-process classification `gp/`, the
 hinge-loss SVMs `svm/`; multi-class logistic problems go through `learn/multiclass.ts`.
+`multiple-kernel.ts` is multiple kernel learning: `alignmentWeights` (centred kernel-target alignment, ALIGNF: the
+non-negative quadratic programme by projected gradient, or the clipped closed form), `easyMkl` (EasyMKL on two simplices),
+`mklProblem` (the SimpleMKL-style optimal ridge loss over a softmax of the weights: a `SmoothProblem`, so any solver of
+`smoothSolvers` applies) with `mklAlgorithm` and `mklContract` (typed paths: the solver's and `mkl/weights`, the weights at
+every step) and `fitMultipleKernel`, which returns the combined kernel as a `Kernel` object and its Gram matrix. No
+scikit-learn equivalent exists, so it has planted-truth and brute-force checks rather than a golden.
 
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
 sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
