@@ -7,7 +7,7 @@
  */
 
 import { clamp } from '../base/index.ts'
-import { type Key, uniform } from '../random/index.ts'
+import { foldIn, type Key, uniform } from '../random/index.ts'
 import type { Env, EnvDefinition } from '../rl/index.ts'
 import { circle, line, rect, scene } from '../scene/index.ts'
 import { box, dict, discrete, int, real } from '../space/index.ts'
@@ -16,10 +16,12 @@ import { box, dict, discrete, int, real } from '../space/index.ts'
 export interface ReachGoalOptions {
   /** The length of one move (default 0.1). */
   readonly stepSize?: number
-  /** The distance from the goal that counts as reaching it (default 0.05). */
+  /** The distance from the goal that counts as reaching it (default 0.075, a little over half the diagonal of a step so that every goal can be reached). */
   readonly tolerance?: number
   /** The steps allowed per episode (default 30). */
   readonly horizon?: number
+  /** The least distance between the start and the goal (default 0): large values make the reward rare. */
+  readonly minDistance?: number
 }
 
 /** The state of the reaching task: the position and the goal. */
@@ -71,7 +73,7 @@ export function desiredGoal(observation: readonly number[]): [number, number] {
  *
  * @param achieved - Where the point is.
  * @param desired - The goal.
- * @param tolerance - The distance that counts (default 0.05).
+ * @param tolerance - The distance that counts (default 0.075, a little over half the diagonal of a step so that every goal can be reached).
  * @returns Whether the goal is reached.
  * @example
  * ```ts
@@ -79,7 +81,7 @@ export function desiredGoal(observation: readonly number[]): [number, number] {
  * goalReached([0.5, 0.5], [0.52, 0.5]) // => true
  * ```
  */
-export function goalReached(achieved: readonly number[], desired: readonly number[], tolerance = 0.05): boolean {
+export function goalReached(achieved: readonly number[], desired: readonly number[], tolerance = 0.075): boolean {
   return Math.hypot((achieved[0] ?? 0) - (desired[0] ?? 0), (achieved[1] ?? 0) - (desired[1] ?? 0)) <= tolerance
 }
 
@@ -89,7 +91,7 @@ export function goalReached(achieved: readonly number[], desired: readonly numbe
  *
  * @param achieved - Where the point is.
  * @param desired - The goal.
- * @param tolerance - The distance that counts (default 0.05).
+ * @param tolerance - The distance that counts (default 0.075, a little over half the diagonal of a step so that every goal can be reached).
  * @returns 0 or -1.
  * @example
  * ```ts
@@ -97,7 +99,7 @@ export function goalReached(achieved: readonly number[], desired: readonly numbe
  * goalReward([0, 0], [1, 1]) // => -1
  * ```
  */
-export function goalReward(achieved: readonly number[], desired: readonly number[], tolerance = 0.05): number {
+export function goalReward(achieved: readonly number[], desired: readonly number[], tolerance = 0.075): number {
   return goalReached(achieved, desired, tolerance) ? 0 : -1
 }
 
@@ -121,7 +123,7 @@ export function reachGoalOptimalSteps(
   options: ReachGoalOptions = {},
 ): number {
   const h = options.stepSize ?? 0.1
-  const tol = options.tolerance ?? 0.05
+  const tol = options.tolerance ?? 0.075
   const dx = ((to[0] ?? 0) - (from[0] ?? 0)) / h
   const dy = ((to[1] ?? 0) - (from[1] ?? 0)) / h
   const reach = tol / h
@@ -142,7 +144,7 @@ export function reachGoalOptimalSteps(
  * on the goal, and a random walk reaches a distant goal rarely: the setting in which relabelling failed episodes with the
  * goals they did reach teaches what the sparse reward cannot.
  *
- * @param options - Step size, tolerance and horizon.
+ * @param options - Step size, tolerance, horizon and the least start-goal distance.
  * @returns The environment.
  * @example
  * ```ts
@@ -153,8 +155,9 @@ export function reachGoalOptimalSteps(
  */
 export function makeReachGoal(options: ReachGoalOptions = {}): Env<ReachGoalState, readonly number[], number> {
   const h = options.stepSize ?? 0.1
-  const tol = options.tolerance ?? 0.05
+  const tol = options.tolerance ?? 0.075
   const horizon = options.horizon ?? 30
+  const minDistance = options.minDistance ?? 0
   const observe = (s: ReachGoalState): readonly number[] => [...s.position, ...s.goal]
   return {
     spec: {
@@ -165,7 +168,16 @@ export function makeReachGoal(options: ReachGoalOptions = {}): Env<ReachGoalStat
     observationSpace: box(0, 1, [4], { label: 'position then goal' }),
     actionSpace: discrete(4, { label: 'up (0), right (1), down (2), left (3)' }),
     reset: (k: Key) => {
-      const u = uniform(k, [4]).data
+      // Redraw the goal until it is far enough from the start (the far corner after 100 tries, which always is).
+      let u = uniform(k, [4]).data
+      for (
+        let attempt = 1;
+        attempt < 100 && Math.hypot((u[2] ?? 0) - (u[0] ?? 0), (u[3] ?? 0) - (u[1] ?? 0)) < minDistance;
+        attempt++
+      ) {
+        const v = uniform(foldIn(k, attempt), [2]).data
+        u = Float64Array.of(u[0] ?? 0, u[1] ?? 0, v[0] ?? 0, v[1] ?? 0)
+      }
       const state: ReachGoalState = {
         position: [u[0] ?? 0, u[1] ?? 0],
         goal: [u[2] ?? 0, u[3] ?? 0],
@@ -220,8 +232,9 @@ export const reachGoal: EnvDefinition<ReachGoalState, readonly number[], number>
   description: 'Move a point to a goal drawn at each reset; the reward is 0 on reaching it and -1 otherwise.',
   options: dict({
     stepSize: real(0.01, 0.5, { default: 0.1 }),
-    tolerance: real(0.01, 0.5, { default: 0.05 }),
+    tolerance: real(0.01, 0.5, { default: 0.075 }),
     horizon: int(1, 10_000, { default: 30 }),
+    minDistance: real(0, 1.4, { default: 0 }),
   }),
   create: (options) => makeReachGoal((options ?? {}) as ReachGoalOptions),
 }

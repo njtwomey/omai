@@ -33,14 +33,14 @@ describe('the reaching task', () => {
   })
 
   it('knows the fewest moves to a goal, which a greedy walk achieves', () => {
-    const options = { stepSize: 0.1, tolerance: 0.05 }
+    const options = { stepSize: 0.1, tolerance: 0.075 }
     expect(reachGoalOptimalSteps([0.5, 0.5], [0.8, 0.5], options)).toBe(3)
     expect(reachGoalOptimalSteps([0.5, 0.5], [0.5, 0.5], options)).toBe(0)
     const env = makeReachGoal(options)
     const state0: ReachGoalState = { position: [0.2, 0.3], goal: [0.7, 0.9], t: 0 }
     let s = state0
     let steps = 0
-    while (!goalReached(s.position, s.goal, 0.05) && steps < 50) {
+    while (!goalReached(s.position, s.goal, 0.075) && steps < 50) {
       const dx = s.goal[0] - s.position[0]
       const dy = s.goal[1] - s.position[1]
       const a = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : dy > 0 ? 0 : 2
