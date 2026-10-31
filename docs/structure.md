@@ -4072,9 +4072,65 @@ bordering update and a downdate of the inverse), `krlsStep` and `krlsPredict` on
 expansion truncated to `budget`). Logs `solver/dictionarySize`, `solver/novelty`, `solver/loss`, `solver/runningMse`,
 `solver/alpha` and the message `solver/dictionaryAdd`; probe `model/dictionary`.
 
+`feature-ridge.ts` is ridge regression in an explicit feature space (primal, `O(n D^2)` instead of the dual's `O(n^3)`):
+`ridgeSolve` (the normal equations), `featureRidgeProblem` (the same ridge as a `SmoothProblem`, so every solver of
+`smoothSolvers` reaches it), `featureRidge` (over any `FeatureMap`), the estimator `approximateKernelRidge` (draws a
+Nystrom, random Fourier or orthogonal-random map itself; `solver: 'closed-form'` or a value of `smoothSolvers.space`) and
+`ridgeGap`, the explicit approximation error against exact kernel ridge: the fitted-value gap, `|K - K~|_2` and the
+bound `|K - K~|_2 |y| / alpha` that gap satisfies, which falls with the number of features. `kernel-selection.ts` is the
+choice of the kernel and the ridge from the data: `logEvidence` (kernel ridge as a Gaussian process), `looScore` and
+`gcvScore`, all differentiable in the Gram matrix; `kernelCriterionProblem` states the criterion over the log
+hyperparameters and log ridge as a `SmoothProblem` (the gradient is autodiff through the Gram matrix), `tuneKernelRidge`
+minimises it with any solver of the slot (L-BFGS by default), and `gridKernelRidge` scores a grid. `_slot.ts` (private) is
+the slot with the model's own mode (`'closed-form'`, `'irls'`) beside the solvers of `smoothSolvers`; `_classifier.ts`
+(private) the kernel options, training setup and classifier verbs; `_testdata.ts` (private) the tests' planted data.
+`kernel-classifiers.ts` is classification by regularised risk in the dual: `kernelLogisticRegression` (binary; objective
+`kernelLogisticProblem`; the default solver `'irls'` is Newton's method in the dual, any of `smoothSolvers` reaches the
+same optimum; with a linear kernel it is L2-penalised logistic regression with `C = 1 / lambda`), the import vector machine
+`importVectorMachine` (greedy sparse kernel logistic regression, one import vector per step), the least-squares SVM `lssvm`
+(closed form `[[0, 1'], [1, K + I/C]]` by default, a slot mode) and `kernelRidgeClassifier` (one-versus-rest ridge on plus
+and minus one). The kernel Fisher discriminant is `learn/discriminant.ts`, Gaussian-process classification `gp/`, the
+hinge-loss SVMs `svm/`; multi-class logistic problems go through `learn/multiclass.ts`.
+`multiple-kernel.ts` is multiple kernel learning: `alignmentWeights` (centred kernel-target alignment, ALIGNF: the
+non-negative quadratic programme by projected gradient, or the clipped closed form), `easyMkl` (EasyMKL on two simplices),
+`mklProblem` (the SimpleMKL-style optimal ridge loss over a softmax of the weights: a `SmoothProblem`, so any solver of
+`smoothSolvers` applies) with `mklAlgorithm` and `mklContract` (typed paths: the solver's and `mkl/weights`, the weights at
+every step) and `fitMultipleKernel`, which returns the combined kernel as a `Kernel` object and its Gram matrix. No
+scikit-learn equivalent exists, so it has planted-truth and brute-force checks rather than a golden.
+`mean-embedding.ts` is kernel mean embeddings: `meanEmbedding` and `embeddingInnerProduct`, `mmdWitness` (the witness
+function and the biased MMD; the two-sample tests are `kernels/matrices.ts` and `stats/tests/kernel.ts`),
+`conditionalMeanEmbedding` (the regularised operator; the expectation of the output is kernel ridge with ridge `n lambda`),
+`kernelBayesRule` (basic level, prior weights on the sample's input rows) and the kernel Stein discrepancy:
+`steinKernelGram` builds the Stein kernel of any differentiable kernel and score by nested autodiff vectorised with `vmap`,
+`kernelSteinDiscrepancy` its V- or U-statistic, `steinGoodnessOfFit` the test by the multinomial wild bootstrap (an
+`Algorithm`). Kernel herding is `learn/coresets.ts`. Checked by planted truth (a Gaussian posterior, a conditional
+expectation, the closed-form Stein kernel of a Gaussian kernel) and identities (CME is kernel ridge), not goldens.
+`online-learners.ts` has the online learners beside KRLS and NORMA, each an `Algorithm` with a plain-JSON state (the kernel
+expansion) and an estimator on the iterative base: `klms` (kernel LMS; the linear kernel is the LMS filter) and `qklms`
+(quantised: an input within the radius of a centre updates it, so centres stay a radius apart and the dictionary is
+bounded on bounded inputs), `kernelPerceptron` and `kernelPassiveAggressive` (PA, PA-I, PA-II), binary, with the budget
+rules `random-removal`, `oldest`, `forgetron` (a constant-factor shrink before dropping the oldest, a simplification of
+the paper's schedule) and `projectron` (projection onto the span when the residual is below `eta`). Tests check the
+perceptron's `(R / gamma)^2` mistake bound, the passive-aggressive `R^2 |u|^2` squared-loss bound on planted separable
+data, and the Projectron's dictionary never exceeding the dimension for a linear kernel.
+`kernel-multivariate.ts` is the two-block kernel methods through the Gram matrix: `kernelCca` (regularised kernel CCA: the
+canonical correlations are the singular values of the product of the ridge smoothers `K (K + kappa I)^(-1)` of the two
+centred Gram matrices; variates of new rows by centring the cross-kernel on the training Gram matrix) and
+`kernelPlsRegression` (NIPALS on the deflated Gram matrix, one latent component per step of `kernelPlsAlgorithm`, so
+`fittedAt(t)` is the model with `t` components; the linear kernel is linear PLS regression, checked against
+`decomposition` and against scikit-learn `PLSRegression`).
+`kernel-quantile.ts` is asymmetric kernel regression: `kernelExpectileRegression` (the expectile in the RKHS; objective
+`kernelExpectileProblem` for the solver slot, default mode `'irls'` = iteratively reweighted kernel ridge, any of
+`smoothSolvers` otherwise; equal to `kernelRidge` at one half) and `kernelQuantileRegression` (sparse, an L1 penalty on the
+dual coefficients, an exact linear programme through `linear`'s `quantileRegression` on the Gram matrix; the RKHS-norm
+quadratic-programme form is not offered). Not done: a kernel density estimator with scikit-learn's other kernels
+(`stats/density.ts` has the Gaussian one).
+
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
-sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits. TODO: kernel ridge on the
-Nystroem and random Fourier maps of `kernels/expansion.ts` (the maps exist; the estimator over them does not).
+sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
+pipelines with `Ridge` (same landmarks and draws), and the leave-one-out errors of `RidgeCV`.
+Kernel PLS with a linear kernel: `PLSRegression(scale=False)`. Kernel classifiers: `LogisticRegression` (linear kernel; RBF through `Nystroem` with every row a landmark, where the
+penalties coincide), numpy's solve of the LS-SVM system, `RidgeClassifier` and `KernelRidge` on one-versus-rest targets.
 built from: `kernels`, `learn`, `numerics`, `metrics`, `dists`, `trace`
 
 ### 4.51 `gam/`: generalised additive models (mgcv, pyGAM, statsmodels GLMGam)

@@ -1300,12 +1300,36 @@
       "cases": 8
     },
     {
+      "fixture": "kernel_methods/classifiers.json",
+      "source": "oracle/cases/kernel_methods/classifiers.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "kernel_methods/feature_ridge.json",
+      "source": "oracle/cases/kernel_methods/feature_ridge.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "kernel_methods/kernel_ridge.json",
       "source": "oracle/cases/kernel_methods/kernel_ridge.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 9
+    },
+    {
+      "fixture": "kernel_methods/pls.json",
+      "source": "oracle/cases/kernel_methods/pls.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
     },
     {
       "fixture": "kernels/dot_product.json",
