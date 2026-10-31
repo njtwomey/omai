@@ -10,7 +10,18 @@ import { initialCentres, lloydAlgorithm } from '../cluster/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
 
 import type { Tensor, TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor as tensorSource,
+} from '../trace/index.ts'
 import { imageTensor, type Raster, rasterOf, rasterTensor } from './_image.ts'
 import { rgbToLab } from './colour.ts'
 
@@ -336,40 +347,60 @@ export function meanShiftSegmentation(
   const iters = options.maxIter ?? 10
   const modes = new Float64Array(h * w * (c + 2))
   for (let p = 0; p < h * w; p++) {
-    let my = Math.floor(p / w)
-    let mx = p % w
-    const col = Array.from({ length: c }, (_, k) => r.data[p * c + k] ?? 0)
-    for (let it = 0; it < iters; it++) {
-      let sy = 0
-      let sx = 0
-      const sc = new Float64Array(c)
-      let n = 0
-      for (let y = Math.max(0, Math.ceil(my - sp)); y <= Math.min(h - 1, Math.floor(my + sp)); y++)
-        for (let xx = Math.max(0, Math.ceil(mx - sp)); xx <= Math.min(w - 1, Math.floor(mx + sp)); xx++) {
-          let d = 0
-          for (let k = 0; k < c; k++) d += ((r.data[(y * w + xx) * c + k] ?? 0) - (col[k] ?? 0)) ** 2
-          if (d > sr * sr) continue
-          sy += y
-          sx += xx
-          for (let k = 0; k < c; k++) sc[k] = (sc[k] ?? 0) + (r.data[(y * w + xx) * c + k] ?? 0)
-          n++
-        }
-      if (n === 0) break
-      const ny = sy / n
-      const nx = sx / n
-      let shift = (ny - my) ** 2 + (nx - mx) ** 2
-      for (let k = 0; k < c; k++) {
-        const v = (sc[k] ?? 0) / n
-        shift += (v - (col[k] ?? 0)) ** 2
-        col[k] = v
-      }
-      my = ny
-      mx = nx
-      if (shift < 1e-6) break
-    }
-    modes.set([my, mx, ...col], p * (c + 2))
+    const mode = startingMode(r, p)
+    for (let it = 0; it < iters; it++) if (shiftMode(r, sp, sr, mode) < 1e-6) break
+    modes.set(mode, p * (c + 2))
   }
-  // Group pixels whose modes are close, by union of 4-neighbours with near modes.
+  return { labels: imageTensor(groupModes(modes, h, w, c, sp, sr), h, w), filtered: filteredOf(r, modes) }
+}
+
+/** A pixel's starting mode: its position (row, column) and colour. */
+function startingMode(r: Raster, p: number): Float64Array {
+  const mode = new Float64Array(r.c + 2)
+  mode[0] = Math.floor(p / r.w)
+  mode[1] = p % r.w
+  for (let k = 0; k < r.c; k++) mode[2 + k] = r.data[p * r.c + k] ?? 0
+  return mode
+}
+
+/**
+ * One mean-shift iteration of a mode in place: the mean position and colour of the pixels within the spatial radius
+ * and the colour radius. Returns the squared distance moved, or -1 when the window held no pixel (the mode stays).
+ */
+function shiftMode(r: Raster, sp: number, sr: number, mode: Float64Array): number {
+  const { h, w, c } = r
+  const my = mode[0] ?? 0
+  const mx = mode[1] ?? 0
+  let sy = 0
+  let sx = 0
+  const sc = new Float64Array(c)
+  let n = 0
+  for (let y = Math.max(0, Math.ceil(my - sp)); y <= Math.min(h - 1, Math.floor(my + sp)); y++)
+    for (let xx = Math.max(0, Math.ceil(mx - sp)); xx <= Math.min(w - 1, Math.floor(mx + sp)); xx++) {
+      let d = 0
+      for (let k = 0; k < c; k++) d += ((r.data[(y * w + xx) * c + k] ?? 0) - (mode[2 + k] ?? 0)) ** 2
+      if (d > sr * sr) continue
+      sy += y
+      sx += xx
+      for (let k = 0; k < c; k++) sc[k] = (sc[k] ?? 0) + (r.data[(y * w + xx) * c + k] ?? 0)
+      n++
+    }
+  if (n === 0) return -1
+  const ny = sy / n
+  const nx = sx / n
+  let shift = (ny - my) ** 2 + (nx - mx) ** 2
+  for (let k = 0; k < c; k++) {
+    const v = (sc[k] ?? 0) / n
+    shift += (v - (mode[2 + k] ?? 0)) ** 2
+    mode[2 + k] = v
+  }
+  mode[0] = ny
+  mode[1] = nx
+  return shift
+}
+
+/** Labels (from 0, in raster order of first appearance) by union of 4-neighbours whose modes are within half the radii. */
+function groupModes(modes: Float64Array, h: number, w: number, c: number, sp: number, sr: number): Float64Array {
   const parent = Int32Array.from({ length: h * w }, (_, i) => i)
   const find = (i: number): number => {
     let k = i
@@ -406,9 +437,112 @@ export function meanShiftSegmentation(
     }
     labels[p] = id
   }
-  const filtered = new Float64Array(h * w * c)
-  for (let p = 0; p < h * w; p++) for (let k = 0; k < c; k++) filtered[p * c + k] = modes[p * (c + 2) + 2 + k] ?? 0
-  return { labels: imageTensor(labels, h, w), filtered: rasterTensor({ ...r, data: filtered }) }
+  return labels
+}
+
+/** The image with each pixel replaced by its mode's colour. */
+function filteredOf(r: Raster, modes: Float64Array): Tensor {
+  const filtered = new Float64Array(r.h * r.w * r.c)
+  for (let p = 0; p < r.h * r.w; p++)
+    for (let k = 0; k < r.c; k++) filtered[p * r.c + k] = modes[p * (r.c + 2) + 2 + k] ?? 0
+  return rasterTensor({ ...r, data: filtered })
+}
+
+/** The state of {@link meanShiftSegmentationAlgorithm}. */
+export interface MeanShiftSegmentationState {
+  /** Every pixel's mode so far: row, column and colour, `[H W][2 + C]` flat. */
+  readonly modes: Float64Array
+  /** Whether each pixel's window has stopped moving. */
+  readonly settled: Uint8Array
+  /** The pixels still moving. */
+  readonly moving: number
+  /** The regions the modes form now. */
+  readonly labels: Float64Array
+  readonly regions: number
+  readonly iteration: number
+}
+
+/** The paths of {@link meanShiftSegmentationAlgorithm}. */
+export type MeanShiftSegmentationPath = 'shift/moving' | 'shift/regions' | 'shift/positions' | 'shift/labels'
+
+/** What a mean-shift segmentation run logs. */
+export const meanShiftSegmentationContract: Contract<MeanShiftSegmentationState, MeanShiftSegmentationPath> =
+  defineContract({
+    'shift/moving': scalar({ description: 'the pixels whose window is still moving', direction: 'lower' }),
+    'shift/regions': scalar({ description: 'the regions the current modes form', direction: 'lower' }),
+    'shift/positions': tensorSource({
+      role: 'state',
+      shape: ['pixels', 'dims'],
+      description: 'every pixel’s mode: row, column, colour',
+    }),
+    'shift/labels': tensorSource({ role: 'output', shape: ['height', 'width'], description: 'the regions now' }),
+  })
+
+/**
+ * Mean-shift segmentation as an algorithm: each step moves every pixel's window one iteration up the joint
+ * space-colour density, and groups the modes reached so far into regions, so the modes can be watched merging. Each
+ * pixel follows exactly the iteration of {@link meanShiftSegmentation}, so the last state's labels are its labels.
+ *
+ * @param x - Image `[H, W]` or `[H, W, C]`.
+ * @param options - Spatial radius (default 5), colour radius (default 0.1) and the most iterations (default 10).
+ * @returns The algorithm; it ends when no window moves or after `maxIter` steps.
+ * @concept mean-shift
+ * @example
+ * ```ts
+ * import { meanShiftSegmentationAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const img = Array.from({ length: 6 }, () => Array.from({ length: 8 }, (_, j) => (j < 4 ? 0.2 : 0.8)))
+ * runAlgorithm(meanShiftSegmentationAlgorithm(img, { spatialRadius: 2 }), { maxSteps: 20 }).state.regions // => 2
+ * ```
+ */
+export function meanShiftSegmentationAlgorithm(
+  x: TensorLike,
+  options: { readonly spatialRadius?: number; readonly colourRadius?: number; readonly maxIter?: number } = {},
+): Algorithm<MeanShiftSegmentationState, MeanShiftSegmentationPath> {
+  const r = rasterOf(x, 'meanShiftSegmentationAlgorithm')
+  const { h, w, c } = r
+  const sp = options.spatialRadius ?? 5
+  const sr = options.colourRadius ?? 0.1
+  const iters = options.maxIter ?? 10
+  const d = c + 2
+  const regionsOf = (labels: Float64Array): number => labels.reduce((m, v) => Math.max(m, v), -1) + 1
+  return {
+    name: 'meanShiftSegmentation',
+    config: { spatialRadius: sp, colourRadius: sr, maxIter: iters } as Json,
+    init: () => {
+      const modes = new Float64Array(h * w * d)
+      for (let p = 0; p < h * w; p++) modes.set(startingMode(r, p), p * d)
+      const labels = groupModes(modes, h, w, c, sp, sr)
+      return { modes, settled: new Uint8Array(h * w), moving: h * w, labels, regions: regionsOf(labels), iteration: 0 }
+    },
+    step: (s, ctx) => {
+      const modes = Float64Array.from(s.modes)
+      const settled = Uint8Array.from(s.settled)
+      let moving = 0
+      for (let p = 0; p < h * w; p++) {
+        if (settled[p] === 1) continue
+        const mode = modes.subarray(p * d, (p + 1) * d)
+        const shift = shiftMode(r, sp, sr, mode)
+        if (shift < 1e-6) settled[p] = 1
+        else moving++
+      }
+      const labels = groupModes(modes, h, w, c, sp, sr)
+      const regions = regionsOf(labels)
+      ctx.log('shift/moving', moving)
+      ctx.log('shift/regions', regions)
+      if (ctx.wants('shift/positions'))
+        ctx.log('shift/positions', rasterTensor({ h: h * w, w: d, c: 1, rank: 2, data: modes }))
+      if (ctx.wants('shift/labels')) ctx.log('shift/labels', imageTensor(labels, h, w))
+      return { modes, settled, moving, labels, regions, iteration: s.iteration + 1 }
+    },
+    done: (s) => (s.iteration > 0 && s.moving === 0 ? 'converged' : s.iteration >= iters ? 'completed' : undefined),
+    observe: (s) => ({
+      metrics: { moving: s.moving, regions: s.regions },
+      tensors: { labels: { role: 'output', value: s.labels, shape: [h, w] } },
+    }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as MeanShiftSegmentationState,
+  }
 }
 
 /**

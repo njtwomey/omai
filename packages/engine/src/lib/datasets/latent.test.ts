@@ -4,7 +4,7 @@ import { generate } from '../data/index.ts'
 import { inv, sqrtm, svdvals } from '../numerics/linalg/index.ts'
 import { key } from '../random/index.ts'
 import { fromStorage, matmul, type Tensor, toFlat, transpose } from '../tensor/index.ts'
-import { mixedSources, toySuperposition, twoViews } from './index.ts'
+import { mixedSources, sparseDictionary, toySuperposition, twoViews } from './index.ts'
 
 const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length)
 const column = (t: Tensor, j: number): number[] => {
@@ -105,5 +105,26 @@ describe('toySuperposition', () => {
     expect(loss(data.x.data)).toBe(0)
     expect(loss(new Float64Array(5000 * 10))).toBeCloseTo((truth.extra ?? {})['meanSquare'] as number, 12)
     expect((truth.extra ?? {})['meanSquare'] as number).toBeGreaterThan(0)
+  })
+})
+
+describe('sparseDictionary', () => {
+  it('writes sparse codes through unit directions, exactly without noise', () => {
+    const { data, truth } = generate(sparseDictionary, {
+      key: key(5),
+      knobs: { n: 3000, features: 5, dim: 7, sparsity: 0.7, noise: 0 },
+    })
+    const dictionary = (truth.extra ?? {})['dictionary'] as number[][]
+    expect(dictionary).toHaveLength(5)
+    for (const row of dictionary) expect(Math.hypot(...row)).toBeCloseTo(1, 12)
+    const codes = data.y
+    const zeros = mean(Array.from(codes.data, (v) => (v === 0 ? 1 : 0)))
+    expect(Math.abs(zeros - 0.7)).toBeLessThan(0.02)
+    for (const v of codes.data) expect(v === 0 || (v >= 0.5 && v <= 1.5)).toBe(true)
+    // x is codes times the dictionary.
+    const d = fromStorage(Float64Array.from(dictionary.flat()), [5, 7], 'float64')
+    const x = toFlat(matmul(codes, d))
+    for (let i = 0; i < x.length; i++) expect(x[i]).toBeCloseTo(data.x.data[i] ?? 0, 12)
+    expect((truth.extra ?? {})['coherence'] as number).toBeLessThan(1)
   })
 })

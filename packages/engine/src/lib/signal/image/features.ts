@@ -242,24 +242,43 @@ function quantile(sorted: Float64Array, q: number): number {
   return (sorted[lo] ?? 0) + (pos - lo) * ((sorted[hi] ?? 0) - (sorted[lo] ?? 0))
 }
 
+/** The intermediate images of the Canny detector, each `[H, W]`, with the thresholds actually used. */
+export interface CannyStages {
+  /** The image after Gaussian smoothing (normalised against the zero border). */
+  readonly smoothed: Tensor
+  /** The gradient magnitude of the smoothed image. */
+  readonly magnitude: Tensor
+  /** The gradient direction `atan2(row gradient, column gradient)`, in radians. */
+  readonly direction: Tensor
+  /** The magnitude kept where it is a local maximum along the gradient (and at least the low threshold), else 0. */
+  readonly suppressed: Tensor
+  /** The double threshold: 0 for no edge, 1 for a weak candidate (below the high threshold), 2 for a strong one. */
+  readonly thresholded: Tensor
+  /** The 0/1 edge map: the candidates connected to a strong one. */
+  readonly edges: Tensor
+  readonly low: number
+  readonly high: number
+}
+
 /**
- * The Canny edge detector (skimage.feature.canny): Gaussian smoothing (normalised against the zero border), Sobel
- * gradients, non-maximum suppression along the gradient direction with bilinear interpolation, and hysteresis
- * thresholding by connected components.
+ * The Canny edge detector (skimage.feature.canny) stage by stage: Gaussian smoothing (normalised against the zero
+ * border), Sobel gradients, non-maximum suppression along the gradient direction with bilinear interpolation, the
+ * double threshold, and hysteresis by connected components. Each stage's image is returned; {@link canny} is the last.
  *
  * @param x - Image `[H, W]`.
  * @param options - Smoothing, thresholds and border.
- * @returns A 0/1 edge map.
+ * @returns The images of every stage and the thresholds.
  * @concept edge-detection
  * @example
  * ```ts
  * import { image } from 'mdml-engine/signal'
  * import { toFlat } from 'mdml-engine/tensor'
  * const x = Array.from({ length: 12 }, () => Array.from({ length: 12 }, (_, j) => (j < 6 ? 0 : 1)))
- * toFlat(image.canny(x)).reduce((a, b) => a + b, 0) > 0 // => true
+ * const s = image.cannyStages(x)
+ * toFlat(s.thresholded).some((v) => v === 2) // => true
  * ```
  */
-export function canny(x: TensorLike, options: CannyOptions = {}): Tensor {
+export function cannyStages(x: TensorLike, options: CannyOptions = {}): CannyStages {
   const p = planeOf(x, 'canny')
   const sigma = options.sigma ?? 1
   const mode = options.mode ?? 'constant'
@@ -335,6 +354,8 @@ export function canny(x: TensorLike, options: CannyOptions = {}): Tensor {
       }
       if (n12 * wgt + n11 * (1 - wgt) <= v && n22 * wgt + n21 * (1 - wgt) <= v) kept[r * w + c] = v
     }
+
+  const keptT = fromStorage(Float64Array.from(kept), [h, w], 'float64')
   const lowMask = fromStorage(
     Float64Array.from(kept, (v) => (v > 0 ? 1 : 0)),
     [h, w],
@@ -345,11 +366,51 @@ export function canny(x: TensorLike, options: CannyOptions = {}): Tensor {
   const ld = labels.data
   for (let i = 0; i < h * w; i++) if ((kept[i] ?? 0) > 0 && (kept[i] ?? 0) >= high) good[Number(ld[i] ?? 0)] = 1
   good[0] = 0
-  return fromStorage(
+  const edges = fromStorage(
     Float64Array.from({ length: h * w }, (_, i) => good[Number(ld[i] ?? 0)] ?? 0),
     [h, w],
     'float64',
   )
+  const thresholded = fromStorage(
+    Float64Array.from(kept, (v) => (v > 0 ? (v >= high ? 2 : 1) : 0)),
+    [h, w],
+    'float64',
+  )
+  return {
+    smoothed: fromStorage(smoothed, [h, w], 'float64'),
+    magnitude: fromStorage(mag, [h, w], 'float64'),
+    direction: fromStorage(
+      Float64Array.from(isob, (v, i) => Math.atan2(v, jsob[i] ?? 0)),
+      [h, w],
+      'float64',
+    ),
+    suppressed: keptT,
+    thresholded,
+    edges,
+    low,
+    high,
+  }
+}
+
+/**
+ * The Canny edge detector (skimage.feature.canny): Gaussian smoothing (normalised against the zero border), Sobel
+ * gradients, non-maximum suppression along the gradient direction with bilinear interpolation, and hysteresis
+ * thresholding by connected components. The last stage of {@link cannyStages}.
+ *
+ * @param x - Image `[H, W]`.
+ * @param options - Smoothing, thresholds and border.
+ * @returns A 0/1 edge map.
+ * @concept edge-detection
+ * @example
+ * ```ts
+ * import { image } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const x = Array.from({ length: 12 }, () => Array.from({ length: 12 }, (_, j) => (j < 6 ? 0 : 1)))
+ * toFlat(image.canny(x)).reduce((a, b) => a + b, 0) > 0 // => true
+ * ```
+ */
+export function canny(x: TensorLike, options: CannyOptions = {}): Tensor {
+  return cannyStages(x, options).edges
 }
 
 /**

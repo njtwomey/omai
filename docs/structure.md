@@ -2561,7 +2561,7 @@ none of those weights.
   `text/shingles.ts`; private `_ter.ts`.
 - `latent.ts`: latent-factor data with the factors as truth: `mixedSources` (non-Gaussian sources and their mixing
   matrix, for ICA), `twoViews` (shared latent signals in two views, with the population canonical correlations, for CCA
-  and PLS), `toySuperposition` (sparse features with importances).
+  and PLS), `toySuperposition` (sparse features with importances), `sparseDictionary` (sparse non-negative codes through a dictionary of unit directions, the plant a sparse autoencoder must recover; truth: codes, dictionary, coherence).
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
@@ -3416,6 +3416,38 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   Banzhaf, representer points; detecting mislabelled and harmful training rows.
   Built: `influenceFunctions`, `tracIn`, `dataShapley`, `knnShapley`, `subsetUtility`, `betaShapley`,
   `dataBanzhaf` (maximum sample reuse), `representerValues`; the mislabelled-row study is in `methods/explain`.
+- Mechanistic interpretability of transformers (`residual.ts`, `lens.ts`, `patching.ts`, `planted.ts`): the model opened
+  along its residual stream, with a hook at every site where a component writes (`embed`, each head, attention, feed-forward,
+  block output), so everything below is a function of one object.
+  Built: `residualModel` (pre-norm `TransformerLM`, forward pass rebuilt head by head, equals `lm.forward`, differentiable
+  through hooks), `headSite`, `logitLens` (the last depth is the model's logits exactly; ranks and probabilities of given
+  targets), `tunedLensAlgorithm` (affine translator per depth by KL to the final layer, one Adam step per step, paths
+  `lens/loss`, `lens/layerDivergence`, `lens/translators`), `lensDivergence`, `activationPatching` (denoise and noise,
+  every site and position, share of the gap recovered), `causalTrace` (ROME: noised subject embeddings, restore stream,
+  feed-forward or attention), `attributionPatching` (one gradient for every site), `pathPatching` (sender to chosen
+  receivers or the logits, everything else frozen clean), `directLogitAttribution` (exact split of a logit difference
+  including the final norm's frozen scale), the metrics `logitDifference`, `tokenLogProbability`, `tokenProbability`, and
+  `plantedCopyCircuit` (a hand-built one-layer model whose head 0 copies the name tokens, with its truth). Oracle: none
+  (no reference library); tested against the planted circuit and identities (lens at the last depth, self-patching,
+  patching every component equals replacing the run, contributions sum to the logit difference).
+- Probes and sparse autoencoders (`probing.ts`, `sae.ts`): the probe is `linear`'s multinomial (its solver slot passes
+  through) trained on a split with a control task per word type (Hewitt and Liang).
+  Built: `probeAccuracy` (train, test, majority baseline), `controlTask`, `probeSelectivity`, `probeLayers` (accuracy,
+  control and selectivity down a stack); `saeAlgorithm` (L1 or top-k code, unit-norm dictionary rows, Adam on batches,
+  optional resampling of dead features; paths `sae/loss`, `sae/reconstruction`, `sae/l0`, `sae/dead`, `sae/dictionary`),
+  `saeEncode`, `saeDecode`, `dictionaryRecovery` (best cosine per planted direction). The plant is the dataset
+  `sparseDictionary`. Oracle: none; tested by recovery of the planted dictionary (mean cosine above 0.97) and by the
+  dead-feature count with and without resampling.
+- Feature visualisation (`visualisation.ts`): activation maximisation over an image as an algorithm.
+  Built: `featureVisualisation` (a sigmoid of the pixels, or of the real inverse FFT of a spectrum scaled by 1/f^decay;
+  jitter by rolls, scale and rotation by a random affine grid sample, a total-variation penalty, optional blur of pixels;
+  Adam or plain ascent; state is the parameters, optimiser and image; paths `vis/activation`, `vis/loss`, `vis/image`),
+  the objectives `unitObjective` and `channelObjective`, `totalVariation`. Oracle: none; tested by monotone rise of the
+  target channel of a tiny CNN under plain ascent, the smoothness of the Fourier start, the penalty's effect.
+- Sanity checks (`sanity.ts`, Adebayo et al.): `randomisationTestAlgorithm` (one layer randomised per step, last layer
+  first, cascading or independent; paths `sanity/layer`, `sanity/similarity`, `sanity/map`), `modelRandomisationTest`
+  (run to the end), `dataRandomisationTest` (retrain on permuted labels); the comparison is `explanationSimilarity`.
+  Tested: gradient and input-times-gradient maps decorrelate, an input-only map stays at similarity 1 and fails.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
   Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
@@ -3424,7 +3456,7 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Evaluation of explanations (`evaluation.ts`, Quantus's categories): faithfulness (deletion and insertion curves,
   ROAR, faithfulness correlation, monotonicity), robustness (max- and average-sensitivity, local Lipschitz estimate),
   localisation (pointing game, relevance mass and rank against a ground-truth mask), complexity (sparseness, entropy),
-  randomisation sanity checks (model parameter and label randomisation), axiomatic properties (completeness, input
+  randomisation sanity checks (model parameter and label randomisation; `sanity.ts`), axiomatic properties (completeness, input
   invariance, symmetry), agreement between explainers.
   Built: `deletionCurve` (deletion and insertion, with areas), `faithfulnessCorrelation`, `monotonicity`,
   `removeAndRetrain` (ROAR, and least-first), `sensitivity` (maximum and average), `localLipschitz`, `localisation`
@@ -3852,6 +3884,26 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `detectMultiScale`. `hog-detector.ts`: HOG features of windows and sliding-window detection with a linear classifier
   over a pyramid. `lines.ts`: line segment detection as OpenCV's LSD (exact at LSD_REFINE_NONE, scale 1), validated by
   density and the number of false alarms.
+- Stepped forms for sessions (`edges.ts`, and beside the one-shot routines): `cannyAlgorithm` (a step per stage: smoothing,
+  gradient, non-maximum suppression, double threshold, then one hysteresis round per step; the last image is `canny`'s;
+  `cannyStages` in `signal/image/features.ts` returns every stage and `canny` is its last), `houghLineAlgorithm` (the
+  accumulator filling a pixel's votes per step, equal to `houghLine` at the end) with `houghLinePeaks` (strongest cell,
+  suppression window, repeat), `watershedAlgorithm` in `signal/image/segmentation.ts` (flooding by level over the same
+  queue as `watershed`, so the labels are identical; the queue is serialised as arrays) and
+  `meanShiftSegmentationAlgorithm` in `segmentation.ts` (one window iteration per pixel per step, the modes grouped into
+  regions every step; the one-shot function is the same iteration). Paths `canny/*`, `hough/*`, `flood/*`, `shift/*`.
+  Tested against the one-shot results (identical), planted lines, planted basins and planted region colours.
+- Calibration and structure from motion in steps (`calibration.ts`, `refinement.ts`, `sfm.ts`): `calibrationAlgorithm`
+  (the first state is Zhang's closed form, each step one Levenberg-Marquardt iteration of the joint refinement of
+  intrinsics, distortion and poses, the calibration and RMS reprojection error at the iterate in the state; the same
+  optimum as `calibrateCamera`, which now shares its setup), `steppedRefinement` (the wrapper that makes `optim`'s
+  Levenberg-Marquardt algorithm a serialisable refinement with a decoded geometry; paths `refine/cost`,
+  `refine/reprojectionError`, `refine/parameters`), `essentialRansacAlgorithm` (one eight-point hypothesis per step, the
+  best inliers in the state), `twoViewReconstruction` (essential matrix refit to the inliers, cheirality pose, inliers
+  triangulated, up to scale), `addView` (`solvePnP` against the points built so far), `bundleAdjustmentAlgorithm` (all
+  poses but the first and all points, one iteration per step, with the scale free) and `bundleReprojectionError`. Tested
+  on planted rigs: exact correspondences give the pose and structure to 1e-6, noisy ones are corrected by bundle
+  adjustment with the error non-increasing, calibration recovers a planted intrinsic matrix and distortion.
 - Image quality (PSNR, SSIM and the rest) is `metrics/image-quality.ts`; neural detection heads stay in `methods/vision` (5.x).
 - TODO: TC89 chain approximations and RETR_FLOODFILL, `fitEllipseDirect` and AMS, Telea inpainting, the fast mode of
   non-local means, stereoRectify's alpha-dependent camera matrices, StereoBM's pre-filter and SGBM's Birchfield-Tomasi
