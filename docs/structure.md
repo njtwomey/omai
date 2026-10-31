@@ -2977,25 +2977,32 @@ oracle once the oracle environment has it.
   Algorithm, the contract); an estimator whose algorithm logs only through the solver's channels (`observe`) is
   `K = never`. To type an estimator: write `export type FooPath = ...`, return `Contract<S, FooPath>` from `contract`
   (`defineContract`), return `Algorithm<S, FooPath>` from `algorithm`, and give the estimator its `IterativeEstimator<...,
-  FooPath>` type (the recipe is in `IterativeParticular`'s TSDoc). Migrated so far, as the worked examples: `svm/` (`SvmPath`:
-  `svc`, `nuSvc`, `svr`, `nuSvr`, `oneClassSvm`, `svdd`), `trees/` (`GrowPath` and `TreePath` for the CART family,
-  `ClassicPath` for ID3, C4.5 and CHAID), `linear/lars.ts` (`never`), and in `kernel-methods/` `kernelRidge` and `norma`
-  (`never`) and `krls` (`KrlsPath`). **Worklist of the mechanical pass (counted by grep, 2026-10-31, after these
-  migrations; non-test sources under `lib/` and `methods/`, `lib/trace` and `lib/learn/bases` excluded):** 71 files
-  define 116 estimators on the bases (`iterative(`, `defineTrainer(`, `defineAgentMethod(`) with the default `K`; 20 files
-  hold 26 `contract` declarations among them; 13 files hold 71 `ctx.log` and `ctx.emit` sites in algorithms whose paths are
-  not yet checked. By folder, as `base estimators / contracts / log sites`: `lib/linear` 18/0/0 (12 files),
-  `lib/learn` 28/1/0 (10), `lib/cluster` 13/0/0 (8), `lib/decomposition` 8/0/0 (5), `lib/kernel-methods` 8/0/0 (5:
-  `online-learners`, `kernel-classifiers`, `kernel-multivariate`, `kernel-quantile`, `feature-ridge`), `lib/ensembles`
-  7/7/41 (7), `lib/rules` 6/6/0 (1), `lib/gp` 4/4/11 (4), `lib/anomaly` 4/1/0 (2), `lib/covariance` 4/0/0 (3),
-  `lib/manifold` 4/0/0 (4), `lib/gam` 2/0/0 (1), `lib/trees` 1/1/11 (`hoeffding`, and `prune` with 7 sites and no
-  base), `methods/linear` 4/1/0, `methods/mixture` 3/3/0, `methods/cluster` 1/1/0, `methods/sequence` 1/1/0, and sites
-  with no base estimator: `lib/nn` (`training/callbacks.ts`, 7 sites) and `lib/rl` (`training.ts`, 1). Most of the 116
-  need no more than their `K` (`never` when the algorithm logs through `observe` alone) since they declare no contract
-  and log no path: the contracts and log sites (20 and 13 files) are the work. To regenerate the count: take the files
-  whose code, comments stripped, matches `\b(iterative|defineTrainer|defineAgentMethod)\s*[<(]`, `^\s*contract[:(]` or
-  `ctx\.(log|emit)\(`, and drop those that also mention `Algorithm<_, K>`, `Contract<_, K>`, `Method<_, _, K>`,
-  `StepContext<` or `defineContract(` (the file is the unit, so a file typed in part counts as typed).; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
+  FooPath>` type (the recipe is in `IterativeParticular`'s TSDoc). Migrated: `svm/` (`SvmPath`: `svc`, `nuSvc`, `svr`, `nuSvr`, `oneClassSvm`, `svdd`), `trees/` (`GrowPath` and `TreePath` for the
+  CART family, `ClassicPath` for ID3, C4.5 and CHAID, `HoeffdingPath`, `PrunePath` for the two pruning algorithms),
+  `linear/lars.ts` (`never`), in `kernel-methods/` `kernelRidge` and `norma` (`never`) and `krls` (`KrlsPath`), in
+  `ensembles/` (`AveragingPath` and the path of each family: `ForestPath`, `EmbeddingPath`, `BaggingPath`, `CyclicPath`,
+  `StackingPath`, `BoostingPath`, `AdaBoostPath`), in `gp/` (`GpPath`, `GpcPath`, `SparseGpPath`, `RvmPath`), in
+  `rules/` (`CoveringPath`, `RipperPath`, `CorelsPath`, `BayesianRuleListPath`, `OneRPath`, `DecisionTablePath`),
+  `anomaly/isolation.ts` (`IsolationForestPath`), `learn/naive-bayes.ts` (the tree-augmented naive Bayes, `never`),
+  `nn/training/callbacks.ts` (`Callback<K>`, `HookContext<K>` and `CallbackPath`, with template literals for the
+  parameter and tap names), `rl/training.ts` (`TrainingPath`), the methods `mixture/` (`GmmPath`, `BgmmPath`,
+  `MoePath`), `linear/bayesianRegression.ts`, `cluster/kmeans.ts`, `sequence/hmm.ts`, and the `defineMethod` pages of
+  `dynamics/`, `linalg/`, `probability/`, `stochastic/`, `tune/` and `vision/`. **What is left (counted by grep,
+  2026-10-31, after the mechanical pass; non-test sources under `lib/` and `methods/`, `lib/trace` and `lib/learn/bases`
+  excluded):** 51 files define 88 estimators on the bases (`iterative(`, `defineTrainer(`, `defineAgentMethod(`) with
+  the default `K`, and none of them declares a `contract` or logs a path with `ctx.log` or `ctx.emit`, so `string`
+  (unchecked) is already the right `K` and they need nothing: they report through `observe` alone (the solver's
+  `solver/...` channels). By folder, as `files / estimators`: `lib/linear` 12/18, `lib/learn` 9/25, `lib/cluster` 8/13,
+  `lib/decomposition` 5/8, `lib/kernel-methods` 5/8 (`online-learners`, `kernel-classifiers`, `kernel-multivariate`,
+  `kernel-quantile`, `feature-ridge`), `lib/manifold` 4/4, `lib/covariance` 3/4, `methods/linear` 3/3 (`ridge`,
+  `logisticRegression`, `lassoPath`), `lib/anomaly` 1/3 (`neighbours`), `lib/gam` 1/2. A file moves to a typed `K` the
+  day it gains a `contract` or a `ctx.log` (then the recipe above applies, and `never` is the type of an estimator that
+  declares no path of its own). Files with no contract and no log sites are not counted as work; the count above is the
+  truth to compare against after the next migration. To regenerate it: take the files whose code, comments stripped,
+  matches `\b(iterative|defineTrainer|defineAgentMethod)\s*[<(]`, `^\s*contract[:(]` or `ctx\.(log|emit)\(`, and drop
+  those that also mention `Algorithm<_, K>`, `Contract<_, K>`, `Method<_, _, K>`, `StepContext<` or `defineContract(`
+  (the file is the unit, so a file typed in part counts as typed); `callbacks.ts` and `vision/refinement.ts` match the
+  log rule and are typed through `HookContext<K>` and `Algorithm<_, RefinementPath>`, which the pattern does not see.; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
   (a configuration at a repeat) that runs an inner `Method` as an eager `session` over a `grid` or `sample` of some of
   its knobs (`knobsOf` picks them), or over explicit configurations, under paired keys (repeat `r` is the same key in
   every configuration) or fresh ones; it logs `trial/<knob>`, `trial/<metric>` (the final value of each metric path

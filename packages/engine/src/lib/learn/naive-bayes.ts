@@ -13,8 +13,8 @@ import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
   type Algorithm,
-  channels,
   type Contract,
+  channels,
   defineContract,
   Log,
   stateFromJson,

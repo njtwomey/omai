@@ -21,8 +21,8 @@ import { bool, dict, int, real } from '../space/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import {
   type Algorithm,
-  channels,
   type Contract,
+  channels,
   defineContract,
   derived,
   Log,

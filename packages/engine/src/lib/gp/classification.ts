@@ -43,8 +43,8 @@ import {
 } from '../tensor/index.ts'
 import {
   type Algorithm,
-  channels,
   type Contract,
+  channels,
   defineContract,
   derived,
   Log,
