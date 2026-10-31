@@ -4085,11 +4085,17 @@ rules `random-removal`, `oldest`, `forgetron` (a constant-factor shrink before d
 the paper's schedule) and `projectron` (projection onto the span when the residual is below `eta`). Tests check the
 perceptron's `(R / gamma)^2` mistake bound, the passive-aggressive `R^2 |u|^2` squared-loss bound on planted separable
 data, and the Projectron's dictionary never exceeding the dimension for a linear kernel.
+`kernel-multivariate.ts` is the two-block kernel methods through the Gram matrix: `kernelCca` (regularised kernel CCA: the
+canonical correlations are the singular values of the product of the ridge smoothers `K (K + kappa I)^(-1)` of the two
+centred Gram matrices; variates of new rows by centring the cross-kernel on the training Gram matrix) and
+`kernelPlsRegression` (NIPALS on the deflated Gram matrix, one latent component per step of `kernelPlsAlgorithm`, so
+`fittedAt(t)` is the model with `t` components; the linear kernel is linear PLS regression, checked against
+`decomposition` and against scikit-learn `PLSRegression`).
 
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
 sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
 pipelines with `Ridge` (same landmarks and draws), and the leave-one-out errors of `RidgeCV`.
-Kernel classifiers: `LogisticRegression` (linear kernel; RBF through `Nystroem` with every row a landmark, where the
+Kernel PLS with a linear kernel: `PLSRegression(scale=False)`. Kernel classifiers: `LogisticRegression` (linear kernel; RBF through `Nystroem` with every row a landmark, where the
 penalties coincide), numpy's solve of the LS-SVM system, `RidgeClassifier` and `KernelRidge` on one-versus-rest targets.
 built from: `kernels`, `learn`, `numerics`, `metrics`, `dists`, `trace`
 

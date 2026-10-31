@@ -1315,6 +1315,14 @@
       "cases": 9
     },
     {
+      "fixture": "kernel_methods/pls.json",
+      "source": "oracle/cases/kernel_methods/pls.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "kernels/dot_product.json",
       "source": "oracle/cases/kernels/dot_product.py",
       "reference": {
