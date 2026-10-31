@@ -6045,6 +6045,10 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `timeseries.ts` also has `plantedSeries` (a motif planted repeatedly, a discord and a regime change with known
   positions), `garchReturns` (the conditional variance as truth) and `coupledSeries` (VAR or coupled logistic maps
   through a known directed graph).
+- `planted-pgm.ts`: `irtResponses` (0/1 test responses from known abilities and 1PL, 2PL or 3PL items, the abilities as
+  the regression target and the true items in the truth) and `pottsSamples` (Swendsen-Wang samples of the Potts lattice at
+  a multiple of the critical coupling, with each sample's magnetisation as the target and the energy, the critical
+  coupling and Onsager's magnetisation in the truth).
 - `shapelet-series.ts`: `shapeletSeries`, noise series in which each class but the first carries one planted pattern
   (`shapeletPatterns`: a bump, a ramp, a pulse) at a random position; the patterns and positions are the truth.
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino

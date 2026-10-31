@@ -115,6 +115,7 @@ import {
   sunspots,
 } from './timeseries.ts'
 import { loggedBandit, offlineMdp } from './trajectories.ts'
+import { irtResponses, pottsSamples } from './planted-pgm.ts'
 import { shapeletSeries } from './shapelet-series.ts'
 import { plantedTransactions } from './transactions.ts'
 import {
@@ -216,6 +217,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   plantedRuleList,
   plantedSeries,
   plantedTransactions,
+  pottsSamples,
   poissonProcess,
   positiveUnlabelled,
   quantileCurves,
@@ -224,6 +226,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   rings,
   roundRobin,
   sCurve,
+  irtResponses,
   seasonalSeries,
   shapeletSeries,
   severedSphere,
@@ -329,7 +332,9 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['glmCurve', 'GLM curve (counts and positive responses)'],
     ['growthCurves', 'Growth curves (CDC charts)'],
     ['hastie10_2', 'Hastie 10.2'],
+    ['irtResponses', 'Test responses (item response theory)'],
     ['heatOperator', 'Heat operator'],
+    ['pottsSamples', 'Potts lattice configurations'],
     ['heteroscedastic', 'Heteroscedastic noise'],
     ['instrumentalVariables', 'Instrumental variables'],
     ['labelProportionBags', 'Label-proportion bags'],
