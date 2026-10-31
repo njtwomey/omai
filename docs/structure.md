@@ -1386,6 +1386,23 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
   `runningMedian`, `smoothingSpline` (lambda, degrees of freedom or GCV over numerics' `makeSmoothingSpline`).
 - `fit.ts`: `fitDistribution` (closed form or Newton for seventeen families) with standard errors from the
   `observedInformation`; `newtonMle` (traced `newtonMleAlgorithm`).
+- `experiments.ts`: online-experiment estimators: `cuped` (pre-experiment covariate adjustment), `postStratify`,
+  `regressionAdjustment` (Lin's demeaned interaction estimator with HC2 errors), `deltaMethodRatio` (user-level ratio
+  metrics, one and two sample), `clusterRandomisedTest` (ICC, design effect, CR1 errors) and `switchbackAnalysis`
+  (period means, Newey-West errors, optional randomisation p-value). Results carry an `Estimate` and a `TestResult`.
+- `design.ts`: randomisation (`simpleRandomisation`, `permutedBlockRandomisation`, `stratifiedRandomisation`,
+  Pocock-Simon `minimizationAlgorithm`/`minimizationAllocation` as a traced `Algorithm` whose draws come from the step
+  key), `matchedPairsDesign` (exact matching up to 16 units), `fullFactorialDesign`, `fractionalFactorialDesign` and
+  `aliasStructure` (defining relation, resolution, alias chains), `latinSquareDesign`, `oneWayAnova` and `twoWayAnova`
+  (Type I, II and III sums of squares; golden against statsmodels `anova_lm`).
+- `shrinkage.ts`: `jamesStein`, `positivePartJamesStein` (targets zero, a vector or the grand mean; SURE) and
+  `empiricalBayesNormalMeans` (homoscedastic Efron-Morris, heteroscedastic DerSimonian-Laird moments).
+- `missing.ts`: `missingnessProfile` (columns, rows, patterns) and `littleMcarTest` (Gaussian EM moments, chi-square
+  over the pattern means; tested against the closed-form monotone-pattern maximum likelihood, no reference library
+  implements it).
+- `concentration.ts`: `markovBound`, `chebyshevBound`, `chernoffBound`/`chernoffGaussianBound`, `chernoffKlBound`,
+  `hoeffdingBound` with `hoeffdingSampleSize`, `bernsteinBound`, `bennettBound`, `empiricalBernsteinInterval`,
+  `mcDiarmidBound` and the `dkwBand`.
 
 TODO (deferred, esoteric):
 - `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to

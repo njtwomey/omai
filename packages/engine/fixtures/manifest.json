@@ -4086,6 +4086,15 @@
       "cases": 24
     },
     {
+      "fixture": "stats/design.json",
+      "source": "oracle/cases/stats/design.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "stats/effect_size.json",
       "source": "oracle/cases/stats/effect_size.py",
       "reference": {
