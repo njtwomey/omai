@@ -34,6 +34,7 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
+import type { Distribution } from '../distribution.ts'
 import { tweedieDistribution } from './dispersion.ts'
 import { identity, type Link, logit, log as logLink } from './links.ts'
 
@@ -87,6 +88,8 @@ export interface ExtendedFamily {
   ): ExtendedDerivatives
   /** Whether `derivatives` supplies the third derivatives. */
   readonly hasThird: boolean
+  /** The fitted distribution of each observation at predictors `eta` (`K` arrays of `n`), for residuals and simulation. */
+  readonly distribution?: (eta: readonly Float64Array[], aux: readonly number[]) => Distribution
 }
 
 /**

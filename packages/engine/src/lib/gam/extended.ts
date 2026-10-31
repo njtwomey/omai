@@ -445,19 +445,30 @@ export function modelFromDesigns(
   return { n, likelihood: likelihood(columns), structure, predictors, terms: flatTerms, start, aux }
 }
 
-/** A matrix with a positive-definite surrogate: the inverse and the log determinant, and whether it was modified. */
-interface Inverted {
+/** The inverse and log determinant of a symmetric matrix and whether it had to be made positive definite. */
+export interface Inverted {
   readonly inverse: Float64Array
   readonly logDet: number
   readonly modified: boolean
 }
 
 /**
- * The inverse and log determinant of a symmetric matrix, by Cholesky, or, if it is not positive definite, of the matrix
+ * The inverse and log determinant of a symmetric matrix by Cholesky or, if it is not positive definite, of the matrix
  * with its eigenvalues replaced by their absolute values floored at a fraction of the largest (the perturbation that
  * keeps Newton's step an ascent direction and the Laplace determinant defined).
+ *
+ * @param A - The matrix, row-major `[p, p]`.
+ * @param p - Its order.
+ * @returns The inverse, the log determinant and whether it was modified.
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { invertSafely } from 'mdml-engine/gam'
+ * const r = invertSafely(Float64Array.of(2, 0, 0, -2), 2)
+ * [r.modified, Array.from(r.inverse)] // => [true, [0.5, 0, 0, 0.5]]
+ * ```
  */
-function invertSafely(A: Float64Array, p: number): Inverted {
+export function invertSafely(A: Float64Array, p: number): Inverted {
   const chol = dpotrf(A, p)
   if (chol.info === 0) {
     const inverse = new Float64Array(p * p)

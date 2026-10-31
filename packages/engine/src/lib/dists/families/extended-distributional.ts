@@ -52,14 +52,17 @@ export function gamlssExtended(name: GamlssName): ExtendedFamily {
   const build = (
     family: DistributionalFamily,
     start: (y: Float64Array, w: Float64Array) => readonly number[],
-  ): ExtendedFamily =>
-    tensorExtendedFamily({
+  ): ExtendedFamily => ({
+    ...tensorExtendedFamily({
       name: `gamlss(${name})`,
       predictors: family.parameters.map((p) => p.name),
       links: family.parameters.map((p) => p.link),
       start,
       logProb: (y, eta) => family.fromPredictors(eta).logProb(fromStorage(Float64Array.from(y), [y.length], 'float64')),
-    })
+    }),
+    distribution: (eta) =>
+      family.fromPredictors(eta.map((e) => fromStorage(Float64Array.from(e), [e.length], 'float64'))),
+  })
   switch (name) {
     case 'normal':
       return build(gamlssNormal(), (y, w) => {
