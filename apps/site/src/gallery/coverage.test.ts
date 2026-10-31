@@ -14,7 +14,10 @@ import { ENTRIES } from './registry.ts'
 const KIND_EXEMPTIONS: Readonly<Record<string, string>> = {}
 
 /** View components allowed to have no recipe of their own, each with the reason. */
-const VIEW_EXEMPTIONS: Readonly<Record<string, string>> = {}
+const VIEW_EXEMPTIONS: Readonly<Record<string, string>> = {
+  FramesPlayer:
+    'the building block under every playing view (ClusteringPlayer, BoardPlayer and the rest), not a view of any record of its own; each of those has its page',
+}
 
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..')
 const read = (dir: string): string[] =>

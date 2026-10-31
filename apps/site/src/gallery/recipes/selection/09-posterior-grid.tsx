@@ -38,7 +38,8 @@ export default function PosteriorGridRecipe(): ReactNode {
     const mean = Array.from(
       { length: degree + 1 },
       (_, i) =>
-        beta * cov[i]!.reduce((s, c, j) => s + c * design.reduce((a, r, n) => a + (r[j] ?? 0) * (ys[n] ?? 0), 0), 0),
+        beta *
+        (cov[i] ?? []).reduce((s, c, j) => s + c * design.reduce((a, r, n) => a + (r[j] ?? 0) * (ys[n] ?? 0), 0), 0),
     )
     const grid = Array.from({ length: 120 }, (_, i) => -3 + (6 * i) / 119)
     const mu = grid.map((v) => phi(v).reduce((s, p, k) => s + p * (mean[k] ?? 0), 0))
