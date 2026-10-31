@@ -14,8 +14,11 @@ import { shouldRecord, type TracePolicy } from './policy.ts'
 import type { TraceSchema } from './schema.ts'
 import { nullTracer, type RunHandle, startRun, type Tracer } from './tracer.ts'
 
-/** What an algorithm sees at each step. */
-export interface StepContext extends Pick<LogContext, 'log' | 'wants' | 'emit' | 'taps'> {
+/**
+ * What an algorithm sees at each step. The parameter is the type of the paths it may log (`string` by default: any
+ * path; a union of literals when the algorithm is typed by its method's contract, see {@link defineContract}).
+ */
+export interface StepContext<K extends string = string> extends Pick<LogContext<K>, 'log' | 'wants' | 'emit' | 'taps'> {
   readonly t: number
   /** A key derived from the run's key and `t`: the same at step `t` however the run was paused or resumed. */
   readonly key: Key
@@ -68,14 +71,18 @@ export interface Observation {
  * records what the caller's policy asks for. `observe` is only called when someone is recording, so tracing never
  * slows an untraced run.
  *
+ * The second parameter is the type of the paths the algorithm logs (`ctx.log`, `ctx.emit`, `ctx.wants`): `string`
+ * unless its method's contract declares them, when only those compile. An `Algorithm<S, 'a' | 'b'>` can be given
+ * wherever an `Algorithm<S>` is wanted, and a runner hands it a context that accepts any path.
+ *
  * @concept algorithm-protocol
  */
-export interface Algorithm<S> {
+export interface Algorithm<S, K extends string = string> {
   readonly name: string
   readonly config: Json
   readonly schema?: TraceSchema
   init(key: Key): S
-  step(state: S, ctx: StepContext): S
+  step(state: S, ctx: StepContext<K>): S
   /** A status to stop with, or `undefined` to continue. */
   done?(state: S, t: number): RunStatus | undefined
   observe?(state: S, t: number): Observation

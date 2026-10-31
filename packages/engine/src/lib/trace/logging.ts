@@ -5,9 +5,10 @@
  * contract paths, lets through only what is subscribed and due, and holds no more of a path than its `keep` allows.
  */
 
-import type { Json } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { isTensor, type Value } from '../tensor/index.ts'
 import {
+  type Concrete,
   type Hook,
   isPattern,
   type LogValue,
@@ -33,6 +34,11 @@ export interface Scheduler<S = unknown> {
   stepsOf(event: Path): readonly number[]
   /** The subscribed entry a path falls under: its own, or the first pattern it matches. */
   entry(path: Path): Subscribed<S> | undefined
+  /**
+   * Whether the contract has the path (its own key, or a pattern key it falls under), subscribed or not; `true` for
+   * every path when the resolution carries no contract. Remembered per path, so asking again costs a lookup.
+   */
+  known(path: Path): boolean
 }
 
 /**
@@ -63,8 +69,20 @@ export function scheduler<S>(resolved: Resolved<S>): Scheduler<S> {
     found.set(path, e)
     return e
   }
+  const names = resolved.paths === undefined ? undefined : new Set(resolved.paths)
+  const contractPatterns = resolved.paths?.filter(isPattern) ?? []
+  const known = new Map<Path, boolean>()
   return {
     entry,
+    known: (path) => {
+      if (names === undefined) return true
+      let k = known.get(path)
+      if (k === undefined) {
+        k = names.has(path) || contractPatterns.some((p) => matchesPath(p, path))
+        known.set(path, k)
+      }
+      return k
+    },
     due: (path, t) => {
       const e = entry(path)
       if (e === undefined) return false
@@ -95,18 +113,26 @@ export function scheduler<S>(resolved: Resolved<S>): Scheduler<S> {
 
 /**
  * What an algorithm logs through: values by path, events by path, and taps under a prefix. Every call is a no-op for
- * a path nobody subscribed to, so algorithms log freely.
+ * a path nobody subscribed to, so algorithms log freely. A path the contract does not have is another matter: in a
+ * session (not in a bare run, which has no contract) `log` and `emit` throw `MdmlError('value')` for it, since it could
+ * only be a typo that would otherwise drop the value silently. `wants` is a question, not a statement, and answers
+ * `false` (an algorithm shared by methods may ask about a path only some of them have); a typo in a `wants` guard is
+ * caught by the path type, not at run time.
+ *
+ * The parameter is the type of the contract's paths (`string` unless the method declares them, see
+ * {@link defineContract}); then a path that is not one of them does not compile. A contract key that is a pattern
+ * (`model/activations/*`) is logged by any path under it.
  *
  * @concept log-contract
  */
-export interface LogContext {
+export interface LogContext<K extends string = string> {
   readonly enabled: boolean
   /** Whether a path is subscribed and due now (so a computation nobody asked for can be skipped). */
-  wants(path: Path): boolean
+  wants(path: Concrete<K>): boolean
   /** Log a value against a path: a scalar, a tensor, a message, a frame, by the contract's kind or the value's type. */
-  log(path: Path, value: LogValue): void
+  log(path: Concrete<K>, value: LogValue): void
   /** Fire an event: hooks run, schedules on it advance, and it is recorded as a message when subscribed. */
-  emit(path: Path, context?: Json): void
+  emit(path: Concrete<K>, context?: Json): void
   /** A tap context whose names go under `prefix` (`model/activations`), enabled only when something there is due. */
   taps(prefix: Path): TapContext
 }
@@ -160,14 +186,24 @@ export function logContext<S>(
   control: { stop(reason: string): void },
 ): LogContext {
   const enabled = run.enabled
+  // `wants` is a question, and an algorithm shared by methods may ask about a path only some of them have (CHAID's
+  // `tree/merge`), so it answers `false` for a path the contract lacks. `log` and `emit` are statements: the backstop
+  // there is that a path which is not due is either unsubscribed (fine) or not in the contract (a typo that would
+  // drop the value silently), and only the second is an error. The check is a lookup remembered per path, made only
+  // where the answer is already `false`.
   const wants = (path: Path): boolean => enabled && sched.due(path, t)
-  const log = (path: Path, value: LogValue): void => {
-    if (!wants(path)) return
+  const put = (path: Path, value: LogValue): void => {
     const e = sched.entry(path)
     const role: TensorRole = e?.source.kind === 'tensor' ? e.source.role : 'output'
     emitValue(run, t, path, e?.source.kind, role, value)
   }
+  const log = (path: Path, value: LogValue): void => {
+    if (!enabled) return
+    if (sched.due(path, t)) put(path, value)
+    else if (!sched.known(path)) throw new MdmlError('value', `log: the contract has no path '${path}'`)
+  }
   const emit = (path: Path, context: Json = {}): void => {
+    if (enabled && !sched.known(path)) throw new MdmlError('value', `emit: the contract has no path '${path}'`)
     sched.fired(path, t)
     if (wants(path)) run.message(t, path, context)
     const hooks: readonly Hook[] = resolved.hooks.get(path) ?? []
@@ -188,7 +224,8 @@ export function logContext<S>(
         enabled: live,
         entries: inner.entries,
         tap: (name, value, role = 'activation') => {
-          if (live) log(`${under}${name}`, value)
+          // Tap names are only known as the model runs: unsubscribed ones are dropped, never an error.
+          if (live && sched.due(`${under}${name}`, t)) put(`${under}${name}`, value)
           return inner.tap(name, value, role)
         },
       }
