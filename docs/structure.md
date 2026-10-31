@@ -4045,10 +4045,28 @@ linear and interactive models; the state serialises) with its batch form `double
 Mahalanobis distance, with or without replacement, `k` neighbours, a caliper, and the Abadie-Imbens variance.
 `balancing.ts` is entropy balancing: the dual is `entropyBalancingProblem` (a `SmoothProblem`; `entropyBalancingAlgorithm`
 is it under `loggedSolver`), and `entropyBalancing` returns weights that match the target's moments exactly.
+`instrumental.ts` is the k-class family (`instrumentalVariables`: OLS, two-stage least squares, LIML, Fuller; classical or
+HC errors, weights, controls) with `twoStageLeastSquares`, `liml`, the first-stage F statistic and partial R-squared per
+endogenous regressor (`firstStageF`), Sargan's overidentification test and `waldEstimate`. `designs.ts` is the panel
+designs: `splitPanel`, `differenceInDifferences` (two by two, cluster-robust by unit), `twoWayFixedEffects`
+(Frisch-Waugh demeaning, the dummy-variable regression's small-sample factors), `eventStudy` (relative-time dummies, or
+the Callaway-Sant'Anna group-time estimator against never-treated units with a unit bootstrap; the leads' Wald test of
+parallel trends), and synthetic control (`syntheticControl`: simplex-constrained least squares solved exactly by
+`optim`'s active-set quadratic program; `placeboInSpace` and `placeboInSpaceAlgorithm`, one donor per step).
+`discontinuity.ts` is regression discontinuity: local polynomial fits on each side with triangular, uniform or
+Epanechnikov kernels and HC1 errors (`regressionDiscontinuity`, sharp or fuzzy, the fuzzy one as weighted 2SLS with the
+cutoff as the instrument), the Imbens-Kalyanaraman bandwidth (`imbensKalyanaraman`), `rdBandwidthSweep`, and a
+McCrary-style `densityTest`. The generators added to `datasets` for these are `syntheticControlPanel` (a treated unit
+that is an exact convex combination of donors under a factor model, with the effect path and counterfactual as truth) and
+`upliftData` (a randomised experiment with a binary outcome, covariate-dependent uplift including harmed units, and
+the uplift function as truth).
 The planted generators the tests use are `treatmentEffects` (confounding, overlap, nonlinear setting, heterogeneity),
 `instrumentalVariables`, `panelEffects` and `discontinuityDesign` of `datasets`.
 
-oracle: statsmodels OLS with HC1 errors (regression adjustment) and a GLM with an offset (the TMLE fluctuation);
+oracle: statsmodels OLS with HC1 errors (regression adjustment), a GLM with an offset (the TMLE fluctuation), `IV2SLS` and the
+k-class formulas with scipy's generalised eigensolver (LIML, Fuller), dummy-variable OLS with cluster-robust errors (difference
+in differences, two-way fixed effects, event studies), WLS with HC1 errors per side (regression discontinuity) and scipy's
+SLSQP (synthetic control);
 scikit-learn's logistic and linear regressions for the nuisance models of the weighting, AIPW, stratification and TMLE
 formulas, which are written out in numpy beside them, and its nearest neighbours for matching; scipy's BFGS on the
 entropy-balancing dual. Planted truth (the effect of the generators, with the naive estimator shown biased) checks

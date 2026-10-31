@@ -5,7 +5,7 @@
 import { MdmlError } from '../base/index.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import { dgesv } from '../numerics/linalg/index.ts'
-import { fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
+import { chdtrc, fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 
 const item = (v: Parameters<typeof toFlat>[0]): number => toFlat(primalOf(v))[0] ?? Number.NaN
@@ -18,6 +18,8 @@ export const normPpf = (p: number): number => item(ndtri(p))
 export const tCdf = (df: number, t: number): number => item(stdtr(df, t))
 /** Student's t quantile. */
 export const tPpf = (df: number, p: number): number => item(stdtrit(df, p))
+/** The upper tail of the chi-squared distribution. */
+export const chi2Sf = (df: number, x: number): number => item(chdtrc(df, x))
 /** The upper tail of the F distribution. */
 export const fSf = (d1: number, d2: number, x: number): number => item(fdtrc(d1, d2, x))
 
@@ -159,9 +161,12 @@ export function covariance(
   kind: CovKind,
   w?: ArrayLike<number>,
   clusters?: ArrayLike<number>,
+  parameters?: number,
 ): Float64Array {
   const { n, p, bread } = fit
-  if (kind === 'nonrobust') return Float64Array.from(bread, (v) => v * fit.sigma2)
+  const k = parameters ?? p
+  if (kind === 'nonrobust')
+    return Float64Array.from(bread, (v) => (v * fit.sigma2 * Math.max(1, n - p)) / Math.max(1, n - k))
   const meat = new Float64Array(p * p)
   const add = (score: Float64Array): void => {
     for (let r = 0; r < p; r++)
@@ -195,8 +200,8 @@ export function covariance(
     kind === 'HC0'
       ? 1
       : kind === 'HC1'
-        ? n / Math.max(1, n - p)
-        : (groups / Math.max(1, groups - 1)) * ((n - 1) / Math.max(1, n - p))
+        ? n / Math.max(1, n - k)
+        : (groups / Math.max(1, groups - 1)) * ((n - 1) / Math.max(1, n - k))
   const out = new Float64Array(p * p)
   for (let r = 0; r < p; r++)
     for (let c = 0; c < p; c++) {
