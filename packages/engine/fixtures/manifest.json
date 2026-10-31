@@ -1013,6 +1013,22 @@
       "cases": 97
     },
     {
+      "fixture": "graph/percolation.json",
+      "source": "oracle/cases/graph/percolation.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "graph/resistance.json",
+      "source": "oracle/cases/graph/resistance.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 35
+    },
+    {
       "fixture": "graph/spectral.json",
       "source": "oracle/cases/graph/spectral.py",
       "reference": {

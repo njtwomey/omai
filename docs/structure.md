@@ -1189,6 +1189,13 @@ in it (`checkPrimitive`).
   `wattsStrogatzClustering`, `ringLatticePathLength`, `smallWorldSweep`), `blockGrowthAlgorithm` (with
   `blockModelExpectedEdges`), `configurationModelGraph`, `growthGraph`, `unrankPair`. `measures.ts` gained
   `averageShortestPathLength`.
+- `resistance.ts`: electrical flow on a graph: `effectiveResistance` (all pairs, from the Laplacian pseudoinverse per
+  component), `effectiveResistanceBetween` (grounded solve), `commuteTime`, `kirchhoffIndex`,
+  `edgeEffectiveResistances` (Foster's theorem, spanning-tree probabilities), `spanningTreeCount` (matrix-tree).
+- `sampling.ts`: sampling from a graph: `neighbourSample` (GraphSAGE fan-out sampling with unbiasedness weights, the
+  layers, per-hop edges and the sampled subgraph) with `neighbourSampleVariance`, `layerwiseImportanceSample`
+  (FastGCN and LADIES) with `sampledAggregate`, `randomWalks`, `node2vecWalks` with `node2vecTransition` (the exact
+  second-order probabilities), `randomWalkSubgraph` (GraphSAINT).
 
 The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` predates this domain and works on
 string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `maximalCliques` can later delegate to
