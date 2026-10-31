@@ -26,7 +26,7 @@ export function rowsOf(a: CsrMatrix | TensorLike): Rows {
   for (let i = 0; i < rows; i++)
     for (let k = m.indptr[i] ?? 0; k < (m.indptr[i + 1] ?? 0); k++)
       if (m.indices[k] === i) diagonal[i] = (diagonal[i] ?? 0) + (values[k] ?? 0)
-  const zero = diagonal.findIndex((d) => d === 0)
+  const zero = diagonal.indexOf(0)
   if (zero >= 0) throw new MdmlError('value', `stationary iterations need a nonzero diagonal (row ${zero} has none)`)
   return { n: rows, indptr: m.indptr, indices: m.indices, values, diagonal }
 }

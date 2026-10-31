@@ -37,9 +37,9 @@ describe('panelEffects', () => {
     const att = mean(ite.filter((_, i) => treated[i] === 1))
     expect(truth.effects?.att).toBeCloseTo(att, 12)
     // Staggered adopters adopt at several periods, and the effect grows with event time.
-    const adoption = (truth.extra?.['adoptionPeriod'] as number[]).filter((a) => a >= 0)
+    const adoption = ((truth.extra ?? {})['adoptionPeriod'] as number[]).filter((a) => a >= 0)
     expect(new Set(adoption).size).toBeGreaterThan(1)
-    const byEvent = truth.extra?.['eventTimeEffects'] as Record<string, number>
+    const byEvent = (truth.extra ?? {})['eventTimeEffects'] as Record<string, number>
     expect(byEvent['2'] ?? 0).toBeGreaterThan(byEvent['0'] ?? 0)
   })
 
@@ -60,7 +60,7 @@ describe('panelEffects', () => {
               adopter[i] === a && (post ? (period[i] ?? 0) === adoptionAt : (period[i] ?? 0) === adoptionAt - 1),
           ),
         )
-      expect(truth.extra?.['differentialTrend']).toBe(trend)
+      expect((truth.extra ?? {})['differentialTrend']).toBe(trend)
       return cell(1, true) - cell(1, false) - (cell(0, true) - cell(0, false))
     }
     expect(did(0)).toBeCloseTo(2, 0)
@@ -71,31 +71,24 @@ describe('panelEffects', () => {
 
   it('never-adopters have no effect and are marked -1', () => {
     const { truth } = generate(panelEffects, { key: key(3), knobs: { units: 30, periods: 6, adopters: 0 } })
-    expect((truth.extra?.['adoptionPeriod'] as number[]).every((a) => a === -1)).toBe(true)
+    expect(((truth.extra ?? {})['adoptionPeriod'] as number[]).every((a) => a === -1)).toBe(true)
     expect(truth.effects?.ate).toBe(0)
   })
 })
 
 describe('discontinuityDesign', () => {
   /** Local linear estimate of the jump at the cutoff in a window, from each side separately. */
-  function jump(
-    x: Tensor,
-    y: readonly number[],
-    cutoff: number,
-    bandwidth: number,
-    outcome: (i: number) => number,
-  ): number {
+  function jump(x: Tensor, cutoff: number, bandwidth: number, outcome: (i: number) => number): number {
     const r = col(x, 0)
     const side = (above: boolean): number => {
       const idx = r
-        .map((v, i) => i)
+        .map((_v, i) => i)
         .filter(
           (i) => (above ? (r[i] ?? 0) >= cutoff : (r[i] ?? 0) < cutoff) && Math.abs((r[i] ?? 0) - cutoff) < bandwidth,
         )
       const b = ols(idx.map(outcome), [idx.map((i) => (r[i] ?? 0) - cutoff)])
       return b[0] ?? 0
     }
-    void y
     return side(true) - side(false)
   }
 
@@ -105,9 +98,9 @@ describe('discontinuityDesign', () => {
       knobs: { n: 40000, effect: 3, cutoff: 0.5, curvature: 0.2 },
     })
     const y = toFlat(data.y)
-    const est = jump(data.x, y, 0.5, 0.8, (i) => y[i] ?? 0)
+    const est = jump(data.x, 0.5, 0.8, (i) => y[i] ?? 0)
     expect(Math.abs(est - 3)).toBeLessThan(0.25)
-    expect(truth.extra?.['outcomeJump']).toBe(3)
+    expect((truth.extra ?? {})['outcomeJump']).toBe(3)
     // Treatment is exactly the indicator of the running variable above the cutoff.
     const r = col(data.x, 0)
     const d = col(data.x, 1)
@@ -121,9 +114,9 @@ describe('discontinuityDesign', () => {
     })
     const y = toFlat(data.y)
     const treated = col(data.x, 1)
-    const outcomeJump = jump(data.x, y, 0, 1, (i) => y[i] ?? 0)
-    const firstStage = jump(data.x, y, 0, 1, (i) => treated[i] ?? 0)
-    expect(truth.extra?.['firstStageJump']).toBeCloseTo(0.6, 12)
+    const outcomeJump = jump(data.x, 0, 1, (i) => y[i] ?? 0)
+    const firstStage = jump(data.x, 0, 1, (i) => treated[i] ?? 0)
+    expect((truth.extra ?? {})['firstStageJump']).toBeCloseTo(0.6, 12)
     expect(Math.abs(firstStage - 0.6)).toBeLessThan(0.05)
     expect(Math.abs(outcomeJump - 1.2)).toBeLessThan(0.25)
     expect(Math.abs(outcomeJump / firstStage - 2)).toBeLessThan(0.5)
@@ -136,7 +129,7 @@ describe('discontinuityDesign', () => {
           key: key(seed),
           knobs: { n: 3000, effect: 1.5, slopeChange: kink, noise: 0.2 },
         })
-        const f = truth.extra?.['smoothFunction'] as (v: number) => number
+        const f = (truth.extra ?? {})['smoothFunction'] as (v: number) => number
         const y = toFlat(data.y)
         const r = col(data.x, 0)
         const d = col(data.x, 1)
@@ -158,7 +151,7 @@ describe('networkExperiment', () => {
     const b = ols(y, [col(data.x, 0), col(data.x, 1), col(data.x, 3)])
     expect(Math.abs((b[1] ?? 0) - 1)).toBeLessThan(0.1)
     expect(Math.abs((b[2] ?? 0) - 2)).toBeLessThan(0.3)
-    expect(truth.extra?.['totalEffect']).toBe(3)
+    expect((truth.extra ?? {})['totalEffect']).toBe(3)
     expect(truth.effects?.ate).toBe(3)
   })
 
@@ -178,7 +171,7 @@ describe('networkExperiment', () => {
 
   it('exposure is the share of treated neighbours, computed from the edges in the truth', () => {
     const { data, truth } = generate(networkExperiment, { key: key(8), knobs: { units: 100, neighbours: 3 } })
-    const edges = truth.extra?.['edges'] as [number, number][]
+    const edges = (truth.extra ?? {})['edges'] as [number, number][]
     const t = col(data.x, 0)
     const e = col(data.x, 1)
     const nb: number[][] = Array.from({ length: 100 }, () => [])
@@ -203,7 +196,7 @@ describe('carryoverExperiment', () => {
       const t2 = col(data.x, 1)
       return {
         diff: mean(y.filter((_, i) => t2[i] === 1)) - mean(y.filter((_, i) => t2[i] === 0)),
-        bias: truth.extra?.['naiveBias'] as number,
+        bias: (truth.extra ?? {})['naiveBias'] as number,
       }
     }
     const sticky = naive(0.8)

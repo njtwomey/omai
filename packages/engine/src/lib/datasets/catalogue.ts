@@ -7,6 +7,7 @@
 
 import { MdmlError, registry } from '../base/index.ts'
 import type { DatasetGenerator, DatasetRef } from '../data/index.ts'
+import { captionedShapes } from './captions.ts'
 import { discontinuityDesign, instrumentalVariables, linearScm, panelEffects, treatmentEffects } from './causal.ts'
 import { changepointSeries } from './changepoints.ts'
 import { blobs, checkerboard, circles, gaussianQuantiles, hastie10_2, moons, spirals, xor } from './classification.ts'
@@ -27,8 +28,10 @@ import {
   naiveBayesCorpus,
   nearDuplicateCorpus,
   nurseryRhymes,
+  taggedCorpus,
   tinyShakespeare,
   topicCorpus,
+  typoPairs,
   workedExampleCorpus,
 } from './corpus.ts'
 import { densitySamples } from './densities.ts'
@@ -79,6 +82,7 @@ import {
   associativeRecall,
   copyTask,
   dyckTask,
+  inContextRegression,
   modularArithmetic,
   parityTask,
   reverseTask,
@@ -95,6 +99,7 @@ import {
   sunspots,
 } from './timeseries.ts'
 import { loggedBandit, offlineMdp } from './trajectories.ts'
+import { plantedTransactions } from './transactions.ts'
 import {
   clusterAssumption,
   crowdLabels,
@@ -128,6 +133,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   blobs,
   blobsWithOutliers,
   burgersOperator,
+  captionedShapes,
   carryoverExperiment,
   changepointSeries,
   checkerboard,
@@ -158,6 +164,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   heatOperator,
   heteroscedastic,
   implicitFeedback,
+  inContextRegression,
   inhomogeneousPoisson,
   instrumentalVariables,
   kinshipTriples,
@@ -182,6 +189,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   panelEffects,
   parityTask,
   piecewiseLinear,
+  plantedTransactions,
   poissonProcess,
   positiveUnlabelled,
   quantileCurves,
@@ -203,9 +211,11 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   stepCurve,
   survivalData,
   swissRoll,
+  taggedCorpus,
   topicCorpus,
   torus,
   treatmentEffects,
+  typoPairs,
   unequalVarianceBlobs,
   xor,
   zipfianCatalogue,
@@ -327,6 +337,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['digitGlyphs', 'Digit glyphs'],
     ['geometricScenes', 'Geometric scenes'],
     ['shapes', 'Shapes'],
+    ['captionedShapes', 'Captioned shapes'],
   ]),
   ...g('timeSeries', [
     ['arma', 'ARMA process'],
@@ -340,6 +351,9 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['naiveBayesCorpus', 'Labelled corpus (naive Bayes)'],
     ['nearDuplicateCorpus', 'Near-duplicate documents'],
     ['topicCorpus', 'Topic corpus (LDA)'],
+    ['taggedCorpus', 'Tagged corpus (tag HMM)'],
+    ['typoPairs', 'Typos and intended words'],
+    ['plantedTransactions', 'Baskets with planted itemsets'],
   ]),
   ...g('sequence', [
     ['additionTask', 'Addition'],
@@ -351,6 +365,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['parityTask', 'Parity'],
     ['reverseTask', 'Reverse'],
     ['sortTask', 'Sort'],
+    ['inContextRegression', 'In-context linear regression'],
   ]),
   ...g('events', [
     ['hawkesProcess', 'Hawkes process'],

@@ -5107,14 +5107,20 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `corpus.ts`: toy and topic corpora with true topics (`naiveBayesCorpus`, `topicCorpus` with Dirichlet or bars
   topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
   titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
-  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage).
+  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage), tagged sentences
+  from a tag HMM with its tables as truth (`taggedCorpus`), and typed words with the intended ones through an edit
+  channel (`typoPairs`, for noisy-channel spelling correction).
+- `transactions.ts`: baskets with planted itemsets (`plantedTransactions`; the exact `expectedSupport` of any itemset).
+- `captions.ts`: scenes of coloured shapes with template captions and questions (`captionedShapes`; a paired
+  image-text schema in `data/schema/` is still to do, the text sits in the truth).
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino
   (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
   and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`
   collection.
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
-  `modularArithmetic`), each with an exact solver in its truth.
+  `modularArithmetic`), each with an exact solver in its truth, and in-context linear regression written as quantised
+  tokens (`inContextRegression`, with the least-squares and Bayes predictions).
 - `graphs.ts`: karate club (`karateClub`), Les Miserables (`lesMiserables`), contextual stochastic block models
   (`contextualSbm`), graph families (`familyGraph`, `graphFamilies`: Erdos-Renyi, Barabasi-Albert, Watts-Strogatz,
   grids, cycles, paths, stars, complete graphs, trees, geometric graphs), small molecules (`smallMolecules`, read from

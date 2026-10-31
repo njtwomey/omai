@@ -41,7 +41,7 @@ describe('withLeak', () => {
     // The honest posterior still accepts the widened features and ignores the leak.
     const post = out.truth.posterior?.(x)
     expect(post?.shape).toEqual([200, 2])
-    expect((out.truth.extra?.['leak'] as { column: number }).column).toBe(2)
+    expect(((out.truth.extra ?? {})['leak'] as { column: number }).column).toBe(2)
     expect(out.truth.relevantFeatures).toEqual([0, 1])
   })
 
@@ -70,7 +70,7 @@ describe('withDuplicates', () => {
     const dup = toFlat(out.truth.latents?.['isDuplicate'] as never)
     expect(dup.filter((v) => v === 1)).toHaveLength(20)
     const seen = new Map<number, number[]>()
-    source.forEach((s, i) => seen.set(s, [...(seen.get(s) ?? []), i]))
+    for (const [i, s] of source.entries()) seen.set(s, [...(seen.get(s) ?? []), i])
     expect([...seen.values()].filter((rows) => rows.length === 2)).toHaveLength(20)
     for (const rows of seen.values())
       if (rows.length === 2) {
@@ -122,12 +122,16 @@ describe('withSubpopulationShift', () => {
   it('thins the group in the source and gives a density ratio that averages to one over the source', () => {
     const g = twoClasses(2000, 6)
     const out = withSubpopulationShift(g, { keep: 0.2, key: key(3) })
-    const info = out.truth.extra?.['subpopulation'] as { threshold: number; targetShare: number; sourceShare: number }
+    const info = (out.truth.extra ?? {})['subpopulation'] as {
+      threshold: number
+      targetShare: number
+      sourceShare: number
+    }
     const group = toFlat(out.truth.latents?.['group'] as never)
     const share = group.reduce((a, b) => a + b, 0) / group.length
     expect(share).toBeCloseTo(info.sourceShare, 1)
     expect(share).toBeLessThan(info.targetShare / 2)
-    const w = toFlat((out.truth.extra?.['densityRatio'] as (x: unknown) => never)(out.data.x))
+    const w = toFlat(((out.truth.extra ?? {})['densityRatio'] as (x: unknown) => never)(out.data.x))
     expect(w.reduce((a, b) => a + b, 0) / w.length).toBeCloseTo(1, 1)
     for (let i = 0; i < group.length; i++) expect(group[i] === 1).toBe((out.data.x.data[i * 2] ?? 0) > info.threshold)
   })
