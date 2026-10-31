@@ -2556,7 +2556,7 @@ none of those weights.
   `text/shingles.ts`; private `_ter.ts`.
 - `latent.ts`: latent-factor data with the factors as truth: `mixedSources` (non-Gaussian sources and their mixing
   matrix, for ICA), `twoViews` (shared latent signals in two views, with the population canonical correlations, for CCA
-  and PLS), `toySuperposition` (sparse features with importances).
+  and PLS), `toySuperposition` (sparse features with importances), `sparseDictionary` (sparse non-negative codes through a dictionary of unit directions, the plant a sparse autoencoder must recover; truth: codes, dictionary, coherence).
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
@@ -3388,6 +3388,14 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   `plantedCopyCircuit` (a hand-built one-layer model whose head 0 copies the name tokens, with its truth). Oracle: none
   (no reference library); tested against the planted circuit and identities (lens at the last depth, self-patching,
   patching every component equals replacing the run, contributions sum to the logit difference).
+- Probes and sparse autoencoders (`probing.ts`, `sae.ts`): the probe is `linear`'s multinomial (its solver slot passes
+  through) trained on a split with a control task per word type (Hewitt and Liang).
+  Built: `probeAccuracy` (train, test, majority baseline), `controlTask`, `probeSelectivity`, `probeLayers` (accuracy,
+  control and selectivity down a stack); `saeAlgorithm` (L1 or top-k code, unit-norm dictionary rows, Adam on batches,
+  optional resampling of dead features; paths `sae/loss`, `sae/reconstruction`, `sae/l0`, `sae/dead`, `sae/dictionary`),
+  `saeEncode`, `saeDecode`, `dictionaryRecovery` (best cosine per planted direction). The plant is the dataset
+  `sparseDictionary`. Oracle: none; tested by recovery of the planted dictionary (mean cosine above 0.97) and by the
+  dead-feature count with and without resampling.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
   Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
