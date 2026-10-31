@@ -2868,6 +2868,26 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
   selection (k best, percentile, FPR/FDR/FWE), selection from model importances.
 - `feature-selection-wrappers.ts`: RFE and RFECV, sequential selection, stability selection (traced).
+- `knockoffs.ts`: Gaussian model-X knockoffs (`gaussianKnockoffs`) with the equicorrelated scale and a coordinate-ascent
+  scale (`knockoffScaleAlgorithm`, an SDP-free approximation), the knockoff statistics (lasso coefficient difference at a
+  cross-validated penalty, lasso signed maximum along the path, marginal correlation difference) and the knockoff and
+  knockoff+ thresholds (`knockoffThreshold`, `knockoffFilter`); the FDR control is tested over 100 replicates of a
+  planted sparse regression with a known design covariance. The lasso is `optim/sparse.ts`'s.
+- `selective-inference.ts`: post-selection inference by the polyhedral lemma: the truncated-Gaussian pivot
+  (`truncatedNormalCdf` in the log scale, `polyhedralBounds`, `selectiveInference`), the lasso selection event at a fixed
+  penalty (`lassoPolyhedron`, `lassoSelectiveInference`) and forward stepwise (`forwardStepwisePolyhedron`,
+  `forwardStepwiseInference`): selective p-values and intervals for the coefficients of the selected model, next to the
+  naive ones. The polyhedron is checked against independent refits along the contrast; uniformity and coverage in simulation.
+- `mrmr.ts`: minimum-redundancy maximum-relevance selection (MID and MIQ) as a stepped algorithm, mutual information on
+  equal-frequency bins or by the nearest-neighbour estimators of `information`.
+- `relief.ts`: Relief and ReliefF weights as a stepped algorithm, one sampled instance per step (k neighbours,
+  class-prior weighted misses, a discrete mask); finds the XOR halves univariate scores miss.
+- `stability-selection.ts`: the Meinshausen-Buhlmann bound E[V] <= q^2 / ((2 pi - 1) p) (`stabilitySelectionBound`,
+  `stabilityThreshold`) and lasso stability selection as an algorithm (`lassoStabilityAlgorithm`); the generic selector
+  version stays in `feature-selection-wrappers.ts`.
+- `feature-synthesis.ts`: deep feature synthesis over a schema of entity and child tables (`deepFeatureSynthesis`:
+  aggregates of child rows per parent, arithmetic on columns, to a chosen depth, with names and definitions) and
+  `selectSynthesised`, forward selection by the cross-validated score of an estimator.
 - `theory.ts`: learning-theory bounds as functions with their assumptions documented: PAC sample complexity and bounds
   for finite classes (realisable, agnostic) and the union bound; VC bounds (Vapnik's form, the Blumer sample
   complexity, Sauer-Shelah) with the shattering count, growth function and VC dimension of intervals, half-lines, boxes
