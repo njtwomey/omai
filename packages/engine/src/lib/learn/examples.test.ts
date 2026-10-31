@@ -1,11 +1,13 @@
 // Runs every TSDoc @example of the learn domain (and its subfolders) and checks each `// => value` line.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { stripTypeScriptTypes } from 'node:module'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as agents from '../agents/index.ts'
 import * as autodiff from '../autodiff/index.ts'
 import * as base from '../base/index.ts'
 import * as data from '../data/index.ts'
+import * as dists from '../dists/index.ts'
 import * as exposition from '../exposition/index.ts'
 import * as losses from '../losses/index.ts'
 import * as metrics from '../metrics/index.ts'
@@ -14,6 +16,7 @@ import * as optim from '../optim/index.ts'
 import * as random from '../random/index.ts'
 import * as space from '../space/index.ts'
 import * as stats from '../stats/index.ts'
+import * as svm from '../svm/index.ts'
 import * as tensor from '../tensor/index.ts'
 import * as trace from '../trace/index.ts'
 import * as learn from './index.ts'
@@ -23,6 +26,7 @@ const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'mdml-engine/autodiff': autodiff,
   'mdml-engine/base': base,
   'mdml-engine/data': data,
+  'mdml-engine/dists': dists,
   'mdml-engine/exposition': exposition,
   'mdml-engine/losses': losses,
   'mdml-engine/metrics': metrics,
@@ -31,6 +35,7 @@ const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'mdml-engine/random': random,
   'mdml-engine/space': space,
   'mdml-engine/stats': stats,
+  'mdml-engine/svm': svm,
   'mdml-engine/tensor': tensor,
   'mdml-engine/trace': trace,
   'mdml-engine/learn': learn,
@@ -91,7 +96,47 @@ function compileExample(code: readonly string[]): string {
     }
     body.push(line)
   }
-  return body.join('\n')
+  // Examples are TypeScript (`as const`, annotations); the function constructor reads JavaScript.
+  return stripTypeScriptTypes(body.join('\n'))
+}
+
+/**
+ * Whether a computed value matches the value an example states. As in the examples runner of `mdml-meta`
+ * (`runner/compare.ts`), a number written with d decimals matches any value that rounds to it at d decimals; an integer
+ * or a longer literal matches to a relative 1e-12. Arrays and plain objects compare element by element; anything else
+ * must be equal.
+ */
+function matches(actual: unknown, expected: unknown): boolean {
+  if (typeof actual === 'number' && typeof expected === 'number') {
+    if (Object.is(actual, expected) || (Number.isNaN(actual) && Number.isNaN(expected))) return true
+    if (!Number.isFinite(actual) || !Number.isFinite(expected)) return false
+    const m = /^-?\d+(?:\.(\d+))?(?:e([+-]?\d+))?$/.exec(String(expected))
+    const decimals = (m?.[1] ?? '').length
+    const exponent = Number(m?.[2] ?? 0)
+    const half = decimals === 0 ? 0 : 0.5 * 10 ** (exponent - decimals)
+    return Math.abs(actual - expected) <= Math.max(half * 1.000001, 1e-12 * Math.max(1, Math.abs(expected)))
+  }
+  if (Array.isArray(actual) && Array.isArray(expected))
+    return actual.length === expected.length && actual.every((a, i) => matches(a, expected[i]))
+  if (
+    typeof actual === 'object' &&
+    typeof expected === 'object' &&
+    actual !== null &&
+    expected !== null &&
+    Object.getPrototypeOf(actual) === Object.prototype &&
+    Object.getPrototypeOf(expected) === Object.prototype
+  ) {
+    const ka = Object.keys(actual)
+    const kb = Object.keys(expected)
+    return (
+      ka.length === kb.length &&
+      ka.every(
+        (k) =>
+          k in expected && matches((actual as Record<string, unknown>)[k], (expected as Record<string, unknown>)[k]),
+      )
+    )
+  }
+  return Object.is(actual, expected) || JSON.stringify(actual) === JSON.stringify(expected)
 }
 
 function sources(dir: string, prefix = ''): string[] {
@@ -119,7 +164,9 @@ describe('documentation examples', () => {
         run(
           MODULES,
           (actual, expected, text) => {
-            expect(actual(), text).toEqual(expected())
+            const a = actual()
+            const e = expected()
+            if (!matches(a, e)) expect(a, text).toEqual(e)
           },
           (f, code, text) => {
             expect(f, text).toThrow()
