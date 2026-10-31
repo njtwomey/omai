@@ -28,6 +28,8 @@ describe('linearClassifier', () => {
       expect(objective.length, name).toBeGreaterThan(0)
       expect(objective.at(-1) as number, name).toBeLessThan(objective[0] as number)
       expect(metricSeries(s.run(), 'model/accuracy').values.at(-1), name).toBe(1)
+      // Only the stochastic mode has a learning rate; its path is in the contract (it used to be dropped silently).
+      expect(metricSeries(s.run(), 'solver/lr').values.length > 0, name).toBe(name === 'gradient')
       const surface = s.probe(Math.min(2, s.t), 'model/decision-surface') as DecisionSurface
       expect(surface.rows?.points).toHaveLength(8)
       expect(surface.probabilities).toHaveLength(2)

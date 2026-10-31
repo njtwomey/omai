@@ -9,7 +9,16 @@
 
 import { type DecisionSurface, decisionSurface } from '../../lib/exposition/index.ts'
 import { classificationLosses, penalties } from '../../lib/losses/index.ts'
-import { loggedSolver, smoothSolvers, solverContract, solverDefaults } from '../../lib/optim/index.ts'
+import {
+  type GradientPath,
+  gradientContract,
+  gradientDefaults,
+  loggedSolver,
+  type SolverPath,
+  smoothSolvers,
+  solverContract,
+  solverDefaults,
+} from '../../lib/optim/index.ts'
 import { type DictSpace, dict, union } from '../../lib/space/index.ts'
 import { add, asTensor, matmul, type TensorLike, tensor, toFlat, type Value } from '../../lib/tensor/index.ts'
 import {
@@ -21,6 +30,14 @@ import {
   scalar,
   tensor as tensorSource,
 } from '../../lib/trace/index.ts'
+
+/** The paths of the linear classifier: the solver's, and the model's own. */
+export type LinearClassifierPath =
+  | SolverPath
+  | GradientPath
+  | 'model/accuracy'
+  | 'model/weights'
+  | 'model/decision-surface'
 
 /** The data: two features per row and a class (0 or 1) each. */
 export interface TwoClassData {
@@ -57,14 +74,14 @@ const sigmoid = (v: number): number => 1 / (1 + Math.exp(-v))
 /**
  * The linear classifier on a data set, as a method of its configuration: `loss`, `penalty` and `solver`.
  *
- * Paths: `solver/objective`, `solver/gradNorm`, `solver/step` (the solver's), `model/accuracy` (on the rows),
+ * Paths: `solver/objective`, `solver/gradNorm`, `solver/step` (the solver's, and `solver/lr` in the stochastic mode), `model/accuracy` (on the rows),
  * `model/weights` (the two weights and the intercept, kept in full), and the probe `model/decision-surface` (the
  * squashed score over the plane with the rows, at any step).
  *
  * @param data - Two features per row and a class each.
  * @returns The method.
  */
-export function linearClassifier(data: TwoClassData): Method<unknown, Config> {
+export function linearClassifier(data: TwoClassData): Method<unknown, Config, LinearClassifierPath> {
   const flat = toFlat(asTensor(data.x))
   const n = flat.length / 2
   const labels = Array.from(toFlat(asTensor(data.y)), (v) => (v > 0 ? 1 : 0))
@@ -77,7 +94,7 @@ export function linearClassifier(data: TwoClassData): Method<unknown, Config> {
   const hi = [Math.max(...rows.map((r) => r[0])), Math.max(...rows.map((r) => r[1]))] as const
   const grid = (a: number, b: number, k: number): number[] =>
     Array.from({ length: k }, (_, i) => a - 0.15 * (b - a) + (i * 1.3 * (b - a)) / (k - 1))
-  return defineMethod<unknown, Config>({
+  return defineMethod<unknown, Config, LinearClassifierPath>({
     name: 'linear/linear-classifier',
     config: SPACE,
     make: (c, key) => {
@@ -91,6 +108,7 @@ export function linearClassifier(data: TwoClassData): Method<unknown, Config> {
     },
     contract: {
       ...solverContract,
+      ...gradientContract,
       'model/accuracy': scalar({ description: 'the share of the rows classified correctly' }),
       'model/weights': tensorSource({ role: 'state', shape: [3], description: 'the two weights and the intercept' }),
       'model/decision-surface': derived<unknown>({
@@ -113,6 +131,11 @@ export function linearClassifier(data: TwoClassData): Method<unknown, Config> {
         },
       }),
     },
-    defaults: { ...solverDefaults, 'model/accuracy': Log(), 'model/weights': Log({ detail: 'full' }) },
+    defaults: {
+      ...solverDefaults,
+      ...gradientDefaults,
+      'model/accuracy': Log(),
+      'model/weights': Log({ detail: 'full' }),
+    },
   })
 }

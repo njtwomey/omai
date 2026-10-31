@@ -31,21 +31,26 @@ export type Config = Readonly<Record<string, SpaceValue>>
  * A method: a declaration of how to build a run and what can be known about it. It writes no loop and no hook of its
  * own; everything it has to say goes through `ctx.log` against its contract.
  *
+ * The third parameter is the type of the contract's paths (`string`: any path, the default). With the paths as a
+ * union of literals (a contract made by `defineContract`, or `Method<S, C, 'a' | 'b'>`), the algorithm's `ctx.log`
+ * and `ctx.emit`, the `defaults` and every session's `logs` accept only those paths (and patterns, `*`).
+ *
  * @concept log-contract
  */
-export interface Method<S, C extends Config = Config> {
+export interface Method<S, C extends Config = Config, K extends string = string> {
   readonly name: string
   /** Knobs with defaults: the application's parameters, never functions. */
   readonly config: DictSpace
   /** Build the run from constructables (a dataset, a model, an environment, a problem). */
-  make(config: C, key: Key): Algorithm<S>
+  make(config: C, key: Key): Algorithm<S, NoInfer<K>>
   /**
    * What can be logged and hooked, by path. A function of the configuration and key when derived paths need the
-   * constructables `make` builds (the same key builds the same ones).
+   * constructables `make` builds (the same key builds the same ones). It is the one place the path type `K` is
+   * inferred from: the algorithm, `defaults` and the subscriptions of sessions are checked against it.
    */
-  readonly contract: Contract<S> | ((config: C, key: Key) => Contract<S>)
+  readonly contract: Contract<S, K> | ((config: C, key: Key) => Contract<S, K>)
   /** The subscription used when the caller gives none (default: nothing). */
-  readonly defaults?: Subscription
+  readonly defaults?: Subscription<NoInfer<K>>
   /** Hooks exported by name, so `On('name', options)` can cross to a worker. */
   readonly hooks?: Readonly<Record<string, (options?: Json) => Hook>>
   /** Bespoke records from the tape, for views the generic ones cannot give. */
@@ -70,13 +75,13 @@ export interface Method<S, C extends Config = Config> {
  * m.name // => 'count'
  * ```
  */
-export function defineMethod<S, C extends Config>(method: Method<S, C>): Method<S, C> {
+export function defineMethod<S, C extends Config, K extends string = string>(method: Method<S, C, K>): Method<S, C, K> {
   const contract = contractOf(method, defaults(method.config) as C, makeKey(0))
   for (const path of Object.keys(contract)) {
     if (path === '' || path.split('/').some((seg) => seg === ''))
       throw new MdmlError('value', `defineMethod: ${method.name} has a malformed path '${path}'`)
   }
-  resolve(contract, method.defaults ?? {}, { ...(method.hooks === undefined ? {} : { hooks: method.hooks }) })
+  resolve<S, K>(contract, method.defaults ?? 'off', { ...(method.hooks === undefined ? {} : { hooks: method.hooks }) })
   return method
 }
 
@@ -88,7 +93,11 @@ export function defineMethod<S, C extends Config>(method: Method<S, C>): Method<
  * @param key - The key `make` is given.
  * @returns The contract.
  */
-export function contractOf<S, C extends Config>(method: Method<S, C>, config: C, key: Key): Contract<S> {
+export function contractOf<S, C extends Config, K extends string = string>(
+  method: Method<S, C, K>,
+  config: C,
+  key: Key,
+): Contract<S, K> {
   return typeof method.contract === 'function' ? method.contract(config, key) : method.contract
 }
 
@@ -96,14 +105,14 @@ export function contractOf<S, C extends Config>(method: Method<S, C>, config: C,
 export type Mode = 'eager' | 'live' | { readonly eager: number | EventSchedule }
 
 /** Options of {@link session}. */
-export interface SessionOptions<S, C extends Config> {
+export interface SessionOptions<S, C extends Config, K extends string = string> {
   /** Knob values over the method's defaults. */
   readonly config?: Partial<C>
   readonly seed?: number
   /** The run's root key, in place of the seed (an estimator fitting with a key from its options). */
   readonly key?: Key
   /** What to keep (default the method's `defaults`). */
-  readonly logs?: Subscription
+  readonly logs?: Subscription<NoInfer<K>>
   /** Default `live`. */
   readonly mode?: Mode
   /** The whole run's budget in steps (default 1000); eager mode runs to it. */
@@ -124,13 +133,13 @@ export interface SessionOptions<S, C extends Config> {
  *
  * @concept log-contract
  */
-export interface Session<S, C extends Config = Config> {
-  readonly method: Method<S, C>
+export interface Session<S, C extends Config = Config, K extends string = string> {
+  readonly method: Method<S, C, K>
   readonly config: C
   readonly seed: number
-  readonly algorithm: Algorithm<S>
+  readonly algorithm: Algorithm<S, K>
   /** The contract this session was made with. */
-  readonly contract: Contract<S>
+  readonly contract: Contract<S, K>
   /** The step reached, the state there, and the status once the run has ended. */
   readonly t: number
   readonly state: S
@@ -140,15 +149,15 @@ export interface Session<S, C extends Config = Config> {
   /** The state at any recorded step: the nearest earlier checkpoint re-run forward with the original keys. */
   stateAt(t: number): S
   /** A new session starting from `stateAt(t)`: the same seed to continue exactly, another to branch. */
-  fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<C> }): Session<S, C>
+  fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<C> }): Session<S, C, K>
   /** A derived path of the contract, computed on the state at a step. */
-  probe(t: number, path: string, args?: Json): Derived
+  probe(t: number, path: K, args?: Json): Derived
   /** A bespoke record of the method, from the tape so far. */
   project(name: string, options?: Json): Derived | undefined
   /** The tape so far. */
   run(): Run
   /** The steps at which an event has fired so far. */
-  stepsOf(event: string): readonly number[]
+  stepsOf(event: K): readonly number[]
 }
 
 function configOf<C extends Config>(space: DictSpace, given: Partial<C> | undefined, who: string): C {
@@ -183,7 +192,10 @@ function configOf<C extends Config>(space: DictSpace, given: Partial<C> | undefi
  * s.stateAt(3) // => 3
  * ```
  */
-export function session<S, C extends Config>(method: Method<S, C>, options: SessionOptions<S, C> = {}): Session<S, C> {
+export function session<S, C extends Config, K extends string = string>(
+  method: Method<S, C, K>,
+  options: SessionOptions<S, C, K> = {},
+): Session<S, C, K> {
   const config = configOf<C>(method.config, options.config, method.name)
   const seed = options.seed ?? 0
   const root: Key = options.key ?? makeKey(seed)
@@ -191,7 +203,7 @@ export function session<S, C extends Config>(method: Method<S, C>, options: Sess
   const checkpointEvery = options.checkpointEvery ?? Math.max(1, Math.floor(total / 100))
   const makeKeyOf = foldIn(root, 7)
   const contract = contractOf(method, config, makeKeyOf)
-  const resolved: Resolved<S> = resolve(contract, options.logs ?? 'defaults', {
+  const resolved: Resolved<S> = resolve<S, K>(contract, options.logs ?? 'defaults', {
     ...(method.defaults === undefined ? {} : { defaults: method.defaults }),
     ...(method.hooks === undefined ? {} : { hooks: method.hooks }),
     checkpointInterval: checkpointEvery,
@@ -263,7 +275,7 @@ export function session<S, C extends Config>(method: Method<S, C>, options: Sess
     if (rec === undefined) throw new MdmlError('value', `${method.name}: a session without a past keeps no checkpoints`)
     return seek(raw, rec.run(), t, { key: root })
   }
-  const self: Session<S, C> = {
+  const self: Session<S, C, K> = {
     method,
     config,
     seed,
