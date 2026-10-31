@@ -118,9 +118,9 @@ export class BinaryHeap<T> {
  * ```
  */
 export class UnionFind {
-  readonly #parent: Int32Array
-  readonly #rank: Uint8Array
-  readonly #size: Int32Array
+  #parent: Int32Array
+  #rank: Uint8Array
+  #size: Int32Array
   #count: number
 
   /**
@@ -228,6 +228,80 @@ export class UnionFind {
    */
   setSize(x: number): number {
     return this.#size[this.find(x)] ?? 1
+  }
+
+  /**
+   * An independent copy: unions on the copy leave this structure as it was, which is how a stepped algorithm keeps its
+   * states separate.
+   *
+   * @returns The copy.
+   * @example
+   * ```ts
+   * import { UnionFind } from 'mdml-engine/graph'
+   * const a = new UnionFind(3)
+   * const b = a.clone()
+   * b.union(0, 1)
+   * [a.count, b.count] // => [3, 2]
+   * ```
+   */
+  clone(): UnionFind {
+    const copy = new UnionFind(0)
+    copy.#parent = Int32Array.from(this.#parent)
+    copy.#rank = Uint8Array.from(this.#rank)
+    copy.#size = Int32Array.from(this.#size)
+    copy.#count = this.#count
+    return copy
+  }
+
+  /**
+   * The structure as plain data, for checkpoints; {@link UnionFind.fromJSON} restores it.
+   *
+   * @returns The parents, ranks and sizes as arrays, and the number of sets.
+   * @example
+   * ```ts
+   * import { UnionFind } from 'mdml-engine/graph'
+   * const uf = new UnionFind(3)
+   * uf.union(0, 1)
+   * UnionFind.fromJSON(uf.toJSON()).count // => 2
+   * ```
+   */
+  toJSON(): { readonly parent: number[]; readonly rank: number[]; readonly size: number[]; readonly count: number } {
+    return {
+      parent: Array.from(this.#parent),
+      rank: Array.from(this.#rank),
+      size: Array.from(this.#size),
+      count: this.#count,
+    }
+  }
+
+  /**
+   * Rebuild a structure from {@link UnionFind.toJSON}.
+   *
+   * @param json - The plain data.
+   * @returns The structure.
+   * @throws MdmlError with code `value` when the arrays differ in length.
+   * @example
+   * ```ts
+   * import { UnionFind } from 'mdml-engine/graph'
+   * const uf = new UnionFind(4)
+   * uf.union(1, 3)
+   * UnionFind.fromJSON(uf.toJSON()).connected(1, 3) // => true
+   * ```
+   */
+  static fromJSON(json: {
+    readonly parent: readonly number[]
+    readonly rank: readonly number[]
+    readonly size: readonly number[]
+    readonly count: number
+  }): UnionFind {
+    if (json.rank.length !== json.parent.length || json.size.length !== json.parent.length)
+      throw new MdmlError('value', 'UnionFind.fromJSON: the arrays differ in length')
+    const uf = new UnionFind(0)
+    uf.#parent = Int32Array.from(json.parent)
+    uf.#rank = Uint8Array.from(json.rank)
+    uf.#size = Int32Array.from(json.size)
+    uf.#count = json.count
+    return uf
   }
 
   /**

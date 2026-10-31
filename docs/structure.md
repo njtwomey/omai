@@ -1165,6 +1165,38 @@ in it (`checkPrimitive`).
 - `colouring.ts`: `greedyColouring` (largest-first, smallest-last, random-sequential, independent-set,
   connected-sequential BFS/DFS, DSATUR), `isProperColouring`, `maximalIndependentSet`, `maximalCliques`
   (Bron-Kerbosch with Tomita pivoting), `maximumClique`, `cliqueNumber`.
+- `spreading.ts`: things that spread over a network: `networkEpidemicAlgorithm` (SIR, SIS or SEIR by Gillespie's exact
+  method, one event per step, with vaccinated nodes and a horizon), `independentCascadeAlgorithm` and
+  `linearThresholdAlgorithm` (one wave per step), and the results known about them: `sirTransmissibility`,
+  `epidemicFinalSize` (Newman's generating-function relation for any degree sequence), `homogeneousFinalSize`,
+  `epidemicThresholds` (spectral, heterogeneous mean-field and percolation), `wattsCascadeCondition`, `vaccinationSet`
+  (random, targeted, acquaintance), `herdImmunityThreshold`.
+- `influence.ts`: influence maximisation: `liveEdgeSamples` (independent cascade or linear threshold as reachability in
+  sampled live-edge graphs), `liveEdgeReach`, `estimateSpread`, `exactIndependentCascadeSpread` (enumeration, the
+  truth for small graphs) and `influenceMaximisationAlgorithm` (greedy, CELF or highest degree, one seed per step with
+  its marginal gain and the evaluation count on the tape).
+- `opinion.ts`: opinion dynamics: `voterModelAlgorithm` with `voterFixationProbability` (the degree-weighted share),
+  `degrootAlgorithm` (DeGroot and Friedkin-Johnsen with stubbornness) with `degrootConsensus` and
+  `friedkinJohnsenEquilibrium`, and `boundedConfidenceAlgorithm` (Hegselmann-Krause on a graph).
+- `_run.ts`: the state codec, seed resolution and argument checks the stepped processes share.
+- `percolation.ts`: `percolationAlgorithm` (site or bond, any graph, one site or bond per step, clusters by union-find,
+  a spanning cluster between two sides), `sitePercolationAlgorithm`/`bondPercolationAlgorithm` on a square lattice,
+  `latticeSides`, `spanningCluster`, `percolationSweep`, `spanningThresholds` (finite-size scaling),
+  `PERCOLATION_THRESHOLDS` (square, triangular, honeycomb, cubic), `erdosRenyiGiantFraction`, `giantComponentFraction`.
+  `structures.ts`'s `UnionFind` gained `clone`, `toJSON` and `fromJSON` for this.
+- `growth.ts`: networks grown a step at a time, with their known results: `edgeByEdgeAlgorithm` (Erdos-Renyi, with
+  `erdosRenyiConnectivityEdges`), `preferentialAttachmentAlgorithm` (preferential or uniform, with
+  `barabasiAlbertDegreeLaw`, `uniformAttachmentDegreeLaw`), `rewiringAlgorithm` (Watts-Strogatz, with
+  `wattsStrogatzClustering`, `ringLatticePathLength`, `smallWorldSweep`), `blockGrowthAlgorithm` (with
+  `blockModelExpectedEdges`), `configurationModelGraph`, `growthGraph`, `unrankPair`. `measures.ts` gained
+  `averageShortestPathLength`.
+- `resistance.ts`: electrical flow on a graph: `effectiveResistance` (all pairs, from the Laplacian pseudoinverse per
+  component), `effectiveResistanceBetween` (grounded solve), `commuteTime`, `kirchhoffIndex`,
+  `edgeEffectiveResistances` (Foster's theorem, spanning-tree probabilities), `spanningTreeCount` (matrix-tree).
+- `sampling.ts`: sampling from a graph: `neighbourSample` (GraphSAGE fan-out sampling with unbiasedness weights, the
+  layers, per-hop edges and the sampled subgraph) with `neighbourSampleVariance`, `layerwiseImportanceSample`
+  (FastGCN and LADIES) with `sampledAggregate`, `randomWalks`, `node2vecWalks` with `node2vecTransition` (the exact
+  second-order probabilities), `randomWalkSubgraph` (GraphSAINT).
 
 The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` predates this domain and works on
 string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `maximalCliques` can later delegate to
@@ -1289,7 +1321,19 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   the hierarchical softmax in `losses` uses), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
   expected length, prefix encoding and decoding.
 - `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
-  adaptive frequency models.
+  adaptive frequency models; each coder also as a traced algorithm, one symbol per step (`arithmeticEncoderAlgorithm`,
+  `arithmeticDecoderAlgorithm`, `rangeEncoderAlgorithm`, `rangeDecoderAlgorithm`) with the working interval, the bits
+  against the information content and the adaptive counts on the tape, the output identical to the whole-message
+  functions. `source-coding.ts` gained `prefixEncoderAlgorithm`.
+- `sources.ts`: sources with their truth: `memorylessSource` (entropy, the sample's information content),
+  `markovSource` (stationary law, entropy rate).
+- `bottleneck.ts`: the information bottleneck: `informationBottleneckAlgorithm` (Tishby's self-consistent iteration at one
+  beta), `bottleneckCurveAlgorithm` (one beta per step, the information curve), `agglomerativeBottleneckAlgorithm`
+  (merges by relevance cost), `bottleneckCriticalBeta` (1 / lambda_2), `plantedBottleneck` (a joint with the optimal
+  clustering, I(X; Y) and H(G) as truth).
+- `mdl.ts`: minimum description length: `multinomialParametricComplexity`, `nmlRegret`, `nmlRegretAsymptotic`,
+  `nmlCodeLength`, `dirichletCodeLength` (KT and Laplace), `parameterBits`, `gaussianDataBits`, `polynomialMdl` (total =
+  BIC in bits), `histogramMdl`, `bestMdl`, and `mdlSelectionAlgorithm` (one candidate per step).
 - `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
 - `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
 - `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
