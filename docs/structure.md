@@ -2436,6 +2436,11 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   probabilities. TODO: VMP on conjugate-exponential (Dirichlet, Gaussian) nodes.
 - `inference/ep.ts`: expectation propagation on factor graphs (discrete fully factorised sites; Gaussian sites of a
   latent-Gaussian model: probit, Gaussian and quadrature sites; damping, power EP).
+- `inference/cluster-updates.ts`: Swendsen-Wang and Wolff cluster updates and the Metropolis sweep for the q-state Potts model
+  (Ising at q = 2) on a periodic square lattice (`swendsenWangUpdate`, `wolffUpdate`, `metropolisSweep`,
+  `pottsSamplerAlgorithm` with energy and magnetisation per site on the tape), the exact truth (`pottsCriticalCoupling`,
+  `ISING_CRITICAL_ENERGY_PER_SITE`, `onsagerMagnetisation`) and `integratedAutocorrelationTime`. Tests check detailed balance
+  against exact enumeration of small lattices and the decorrelation advantage over Metropolis at the critical coupling.
 - `inference/map.ts`: MAP and MPE by max-product (elimination and junction trees elsewhere; loopy BP decoding here), by
   LP relaxation (MPLP on its dual, with the integrality gap), and by local search (ICM with restarts).
 - `learning/baum-welch.ts`: Baum-Welch for hidden Markov models (`baumWelchAlgorithm` as a traced algorithm with no past,
