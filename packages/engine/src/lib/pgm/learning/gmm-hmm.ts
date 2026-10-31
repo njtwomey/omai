@@ -96,7 +96,7 @@ function logsumexp(xs: readonly number[]): number {
  * ```ts
  * import { learning } from 'mdml-engine/pgm'
  * const p = { start: [1], transition: [[1]], weights: [[0.5, 0.5]], means: [[[-1], [1]]], covariances: [[[[1]], [[1]]]] }
- * Math.round(learning.gmmHmmLogLikelihood(p, [[0]]) * 1e6) / 1e6 // => -1.419385
+ * Math.round(learning.gmmHmmLogLikelihood(p, [[0]]) * 1e6) / 1e6 // => -1.418939
  * ```
  */
 export function gmmHmmLogLikelihood(params: GmmHmmParameters, sequences: readonly HmmSequence[]): number {
