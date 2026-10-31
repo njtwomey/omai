@@ -3141,6 +3141,12 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `setLearningRateScale`; `onBatchEnd` gets the tapped activations. Built-ins: `gradNormLogger` (global and per
   parameter), `paramNormLogger`, `valueLogger` (gradient and parameter tensors), `learningRateMonitor`,
   `earlyStopping`, `bestCheckpoint`, `reduceLROnPlateau` (PyTorch's rule), `activationLogger` (activation taps).
+- `training/alternating.ts`: several modules trained against one another: `alternatingAlgorithm` (players of a module,
+  an optimiser and a loss that sees every player's parameters, stepped through a schedule with `times` per player; one
+  round per step; per-player loss and gradient norm on the tape; buffers carried; frozen players skipped),
+  `ganAlgorithm` (generator and discriminator or critic with `nCritic`, the objectives of `losses/generative`, the WGAN-GP
+  penalty, spectrally normalised layers through `SpectralNorm`, and the tracks `gan/discriminatorAccuracy`,
+  `gan/wasserstein`, `gan/penalty`, `gan/samples`) and `modeCoverage` (modes of a known mixture reached by samples).
 - `training/serialise.ts`: `saveState`/`loadState` and `stateToText`/`stateFromText` (parameters and buffers as JSON
   with dtype and shape), `loadTorchStateDict` (weights exported by the oracle, with renaming).
 - `adversarial.ts`: attacks and adversarial training on any logits function: `fgsm`, `pgd` (random start inside an
