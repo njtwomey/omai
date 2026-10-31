@@ -62,7 +62,8 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - A method is a few dozen lines over the library: a configuration (a `Space`), slots filled from tables of library
   options (`lib/trace/modes.ts` for algorithms, `lib/space/tables.ts` for values; `union` spaces carry a mode and the
   knobs of its own), a contract of paths on the tape, and probes. It never implements an algorithm: if a method needs
-  something the library lacks, the library gets it first.
+  something the library lacks, the library gets it first. Declare the contract with `defineContract` and give the
+  method its path type (`Method<S, C, FooPath>`): `ctx.log`, `ctx.emit`, `defaults` and `logs:` keys are then checked.
 - **Lib or methods?** A piece that would make sense to someone who never reads a tape is library code (algorithms, data
   structures, registries, loops that run other things such as trainers, sweeps and streams, tables of options,
   generators with their truth): it goes in `lib/` with the full standard. Nothing is "shared among methods" as such;

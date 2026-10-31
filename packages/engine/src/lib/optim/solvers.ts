@@ -24,6 +24,7 @@ import {
 import {
   type Algorithm,
   type Contract,
+  defineContract,
   Log,
   type LogSpec,
   type ModeSpec,
@@ -141,8 +142,17 @@ const bfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
 
 const lbfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'limited-memory BFGS',
-  space: dict({ memory: int(1, 50, { default: 10, label: 'curvature pairs kept' }), gradTol }),
-  make: (p, k) => lbfgsAlgorithm(p.objective, p.x0, { memory: k['memory'] as number, gradTol: k['gradTol'] as number }),
+  space: dict({
+    memory: int(1, 50, { default: 10, label: 'curvature pairs kept' }),
+    ftol: real(1e-16, 1e-3, { log: true, default: 2.220446049250313e-9, label: 'relative reduction tolerance' }),
+    gradTol,
+  }),
+  make: (p, k) =>
+    lbfgsAlgorithm(p.objective, p.x0, {
+      memory: k['memory'] as number,
+      ...(k['ftol'] === undefined ? {} : { ftol: k['ftol'] as number }),
+      gradTol: k['gradTol'] as number,
+    }),
   params: vector,
 }
 
@@ -201,6 +211,39 @@ const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
 }
 
 /**
+ * A solver table's configuration with the defaults of the chosen solver filled in where the configuration names only
+ * some knobs (`{ kind: 'lbfgs', gradTol: 1e-9 }` becomes a complete value of the table's space, which a method's
+ * configuration check requires; the `gradient` mode's optimiser and schedule are filled the same way).
+ *
+ * @param table - A table of modes.
+ * @param config - A configuration naming a solver and some of its knobs.
+ * @returns The complete configuration.
+ * @example
+ * ```ts
+ * import { smoothSolvers, solverConfigOf } from 'mdml-engine/optim'
+ * solverConfigOf(smoothSolvers, { kind: 'lbfgs', gradTol: 1e-9 }) // => { memory: 10, ftol: 2.220446049250313e-9, gradTol: 1e-9, kind: 'lbfgs' }
+ * ```
+ */
+export function solverConfigOf<Problem>(table: ModeTable<Problem, VectorParams>, config: SpaceValue): SpaceValue {
+  const name = table.modeOf(config).name
+  const given = typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}
+  const nested: Record<string, SpaceValue> = {}
+  if (name === 'gradient') {
+    if ('optimiser' in given) nested['optimiser'] = filled(optimisers, given['optimiser'] as SpaceValue)
+    if ('schedule' in given) nested['schedule'] = filled(schedules, given['schedule'] as SpaceValue)
+  }
+  return {
+    ...(defaults(table.space.options[name] as DictSpace) as object),
+    ...given,
+    ...nested,
+    kind: name,
+  } as SpaceValue
+}
+
+/** {@link solverConfigOf} for `smoothSolvers`. */
+export const smoothSolverConfig = (config: SpaceValue): SpaceValue => solverConfigOf(smoothSolvers, config)
+
+/**
  * The solvers of a smooth objective as one slot: gradient descent (default), conjugate gradient, Newton, BFGS, L-BFGS,
  * coordinate descent and the stochastic `gradient` mode, each with its own knobs, all yielding the vector reached.
  */
@@ -210,13 +253,81 @@ export const smoothSolvers: ModeTable<SmoothProblem, VectorParams> = modes(
 )
 
 /** The channels every smooth solver's state yields, whichever solver it is. */
-interface Reached {
+export interface SolverReached {
   readonly x: Float64Array
   readonly value: number
   readonly grad: Float64Array
   readonly step: number
   /** The learning rate of the last step (the `gradient` mode only). */
   readonly lr?: number
+}
+
+/** The paths `loggedSolver` logs on every step, whichever solver. */
+export type SolverPath = 'solver/objective' | 'solver/gradNorm' | 'solver/step'
+
+/** The path only the `gradient` mode logs. */
+export type GradientPath = 'solver/lr'
+
+/**
+ * The paths `loggedSolver` logs, for a method's contract. It is a fragment: spread it into the method's own contract
+ * (`defineContract({ ...solverContract, 'model/loss': scalar() })`) and the method's paths include {@link SolverPath}.
+ */
+export const solverContract: Contract<unknown, SolverPath> = defineContract({
+  'solver/objective': scalar({ description: 'the objective at the iterate' }),
+  'solver/gradNorm': scalar({ description: 'the norm of the gradient at the iterate' }),
+  'solver/step': scalar({ description: 'the length of the last step (or trust radius, as the solver calls it)' }),
+})
+
+/** The path only the `gradient` mode logs, for the contract of a method that can take it. */
+export const gradientContract: Contract<unknown, GradientPath> = defineContract({
+  'solver/lr': scalar({ description: 'the learning rate of the last step, from the optimiser and its schedule' }),
+})
+
+/**
+ * A solver table's algorithm as a logged algorithm: the table's solver for the configuration, wrapped so each step
+ * logs the objective, the gradient's norm and the step length (`solver/objective`, `solver/gradNorm`, `solver/step`),
+ * and the learning rate where the solver has one (`solver/lr`), lets the model log what is its own from the iterate
+ * (`extra`), and serialises the state for seeking. `loggedSolver` is this for `smoothSolvers`; a family with its own
+ * table (`glmSolvers`) logs by the same convention through this.
+ *
+ * The algorithm's paths are the solver's ({@link SolverPath}, {@link GradientPath}) and the type parameter `K`, the
+ * model's own, which `extra` may log; a method's contract must have all of them (the `gradient` mode logs
+ * `solver/lr`, so spread {@link gradientContract} too unless the method excludes that mode). `K` is inferred from the
+ * method's path type where the algorithm is returned from `make`.
+ *
+ * @param table - The table of modes, whose states carry `x`, `value`, `grad` and `step`.
+ * @param problem - What the modes build over.
+ * @param config - A value of the table's space.
+ * @param key - The run's key.
+ * @param extra - Called each step with the iterate and the state's channels, to log what the model adds.
+ * @returns The algorithm.
+ */
+export function loggedSolverOf<Problem, K extends string = never>(
+  table: ModeTable<Problem, VectorParams>,
+  problem: Problem,
+  config: SpaceValue,
+  key: Key,
+  extra?: (x: Float64Array, ctx: StepContext<SolverPath | GradientPath | K>, reached: SolverReached) => void,
+): Algorithm<unknown, SolverPath | GradientPath | K> {
+  const inner = table.make(problem, config, key)
+  return {
+    name: inner.name,
+    config: config as Json,
+    init: (k) => inner.init(k),
+    step: (state, ctx) => {
+      const next = inner.step(state, ctx)
+      const r = next as SolverReached
+      ctx.log('solver/objective', r.value)
+      ctx.log('solver/gradNorm', Math.hypot(...r.grad))
+      ctx.log('solver/step', r.step)
+      if (r.lr !== undefined) ctx.log('solver/lr', r.lr)
+      extra?.(r.x, ctx, r)
+      return next
+    },
+    ...(inner.done === undefined ? {} : { done: inner.done }),
+    serialise: (s) => stateToJson(s) as Json,
+    deserialise: (j) => stateFromJson(j),
+  }
 }
 
 /**
@@ -228,55 +339,25 @@ interface Reached {
  * @param config - A value of `smoothSolvers.space` (the tag and the chosen solver's knobs).
  * @param key - The run's key.
  * @param extra - Called each step with the iterate, to log what the method adds.
- * @returns The algorithm.
+ * @returns The algorithm, typed by the solver's paths and the method's own (`K`, see {@link loggedSolverOf}).
  */
-export function loggedSolver(
+export function loggedSolver<K extends string = never>(
   problem: SmoothProblem,
   config: SpaceValue,
   key: Key,
-  extra?: (x: Float64Array, ctx: StepContext) => void,
-): Algorithm<unknown> {
-  const inner = smoothSolvers.make(problem, config, key)
-  return {
-    name: inner.name,
-    config: config as Json,
-    init: (k) => inner.init(k),
-    step: (state, ctx) => {
-      const next = inner.step(state, ctx)
-      const r = next as Reached
-      ctx.log('solver/objective', r.value)
-      ctx.log('solver/gradNorm', Math.hypot(...r.grad))
-      ctx.log('solver/step', r.step)
-      if (r.lr !== undefined) ctx.log('solver/lr', r.lr)
-      extra?.(r.x, ctx)
-      return next
-    },
-    ...(inner.done === undefined ? {} : { done: inner.done }),
-    serialise: (s) => stateToJson(s) as Json,
-    deserialise: (j) => stateFromJson(j),
-  }
-}
-
-/** The paths `loggedSolver` logs, for a method's contract. */
-export const solverContract: Contract<unknown> = {
-  'solver/objective': scalar({ description: 'the objective at the iterate' }),
-  'solver/gradNorm': scalar({ description: 'the norm of the gradient at the iterate' }),
-  'solver/step': scalar({ description: 'the length of the last step (or trust radius, as the solver calls it)' }),
-}
-
-/** The path only the `gradient` mode logs, for the contract of a method that can take it. */
-export const gradientContract: Contract<unknown> = {
-  'solver/lr': scalar({ description: 'the learning rate of the last step, from the optimiser and its schedule' }),
+  extra?: (x: Float64Array, ctx: StepContext<SolverPath | GradientPath | K>) => void,
+): Algorithm<unknown, SolverPath | GradientPath | K> {
+  return loggedSolverOf<SmoothProblem, K>(smoothSolvers, problem, config, key, extra)
 }
 
 /** What `loggedSolver`'s paths keep by default. */
-export const solverDefaults: Readonly<Record<string, LogSpec>> = {
+export const solverDefaults: Readonly<Record<SolverPath, LogSpec>> = {
   'solver/objective': Log(),
   'solver/gradNorm': Log(),
   'solver/step': Log(),
 }
 
 /** What the `gradient` mode's learning-rate path keeps by default. */
-export const gradientDefaults: Readonly<Record<string, LogSpec>> = {
+export const gradientDefaults: Readonly<Record<GradientPath, LogSpec>> = {
   'solver/lr': Log(),
 }

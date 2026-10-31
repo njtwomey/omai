@@ -21,6 +21,7 @@ import { item, tensor, toFlat } from '../../lib/tensor/index.ts'
 import {
   type Algorithm,
   type Config,
+  type Contract,
   defineMethod,
   derived,
   Log,
@@ -42,6 +43,9 @@ export const ANNEALING_ALGORITHMS = ['simulated-annealing', 'hill-climbing', 'la
 
 /** A local search of {@link annealing}. */
 export type AnnealingAlgorithm = (typeof ANNEALING_ALGORITHMS)[number]
+
+/** The paths of {@link annealing}. */
+export type AnnealingPath = 'position' | 'energy' | 'best' | 'temperature' | 'objective/surface'
 
 /** The state of the walk: the library's local-search state over points `{ x, y }` of the search box. */
 export type AnnealingState = LocalSearchState<SpaceValue>
@@ -112,7 +116,11 @@ const xy = (v: SpaceValue): [number, number] => {
  * s.t // => 50
  * ```
  */
-export const annealing: Method<AnnealingState, Config> = defineMethod<AnnealingState, Config>({
+export const annealing: Method<AnnealingState, Config, AnnealingPath> = defineMethod<
+  AnnealingState,
+  Config,
+  AnnealingPath
+>({
   name: 'search/annealing',
   config: dict({
     objective: choice(ANNEALING_OBJECTIVES, { default: 'rastrigin', label: 'objective' }),
@@ -158,7 +166,7 @@ export const annealing: Method<AnnealingState, Config> = defineMethod<AnnealingS
       deserialise: (json) => stateFromJson(json) as AnnealingState,
     }
   },
-  contract: (c) => ({
+  contract: (c): Contract<AnnealingState, AnnealingPath> => ({
     position: tensorSource({ role: 'state', shape: [2], description: 'the point the walk stands at, (x, y)' }),
     energy: scalar({ description: 'the objective at the current point', direction: 'lower' }),
     best: scalar({ description: 'the lowest objective found so far', direction: 'lower' }),

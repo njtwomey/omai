@@ -13,6 +13,8 @@ import type { Distribution } from '../dists/index.ts'
 import { encodeLabels, type IterativeEstimator, iterative, type LearnData, matrixView } from '../learn/index.ts'
 import { accuracyScore, r2Score } from '../metrics/index.ts'
 import { dgemm } from '../numerics/linalg/index.ts'
+import { glmSolvers } from '../optim/index.ts'
+import type { Key } from '../random/index.ts'
 import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { Log } from '../trace/index.ts'
@@ -193,8 +195,9 @@ function particular(kind: 'regressor' | 'classifier') {
           default: h.gamma,
           label: 'degrees of freedom inflation',
         }),
+        solver: glmSolvers.space,
       }),
-    algorithm: (data: LearnData, h: GamHyper) => gamAlgorithm(prepare(data, h, kind).problem, h),
+    algorithm: (data: LearnData, h: GamHyper, key: Key) => gamAlgorithm(prepare(data, h, kind).problem, h, key),
     maxSteps: (h: GamHyper) => h.maxIter,
     params: (s: GamState, data: LearnData, h: GamHyper): GamParams => {
       const { problem, classes } = prepare(data, h, kind)

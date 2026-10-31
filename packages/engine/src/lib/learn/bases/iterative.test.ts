@@ -125,6 +125,8 @@ describe('the iterative base', () => {
       algorithm: (d, _h, k) => ({ ...meanAlgorithm(d, 0), init: () => ({ i: 0, m: k.words[0] % 7 }) }),
       params: (s) => ({ mean: s.m }),
       verbs: constant,
+      // The algorithm logs `extra/gap`: a path the contract lacks is an error in a session, not a silent drop.
+      contract: () => ({ 'extra/gap': scalar({ description: 'how far the mean moved' }) }),
       restarts: { count: () => 3, better: (a, b) => a.m > b.m },
     })
     expect(restarted.fit(data).params.mean).toBe(3)

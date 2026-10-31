@@ -3,12 +3,12 @@
  * regression) with a count distribution (Poisson or negative binomial with log mean `x beta`), so a zero can come from
  * either part; a hurdle model has `pi` as the probability of any zero and a zero-truncated count distribution for the
  * positive counts, so the two parts do not share zeros (statsmodels' `ZeroInflatedPoisson`, `ZeroInflatedNegativeBinomialP`
- * and `HurdleCountModel`, R's `pscl`). `countModelAlgorithm` maximises the likelihood by damped Newton steps (analytic
- * gradient, Hessian by central differences); `zeroInflated` and `hurdle` are the estimators on the iterative base, with
+ * and `HurdleCountModel`, R's `pscl`). `countModelAlgorithm` maximises the likelihood with any solver of the slot (Newton by
+ * default; analytic gradient, Hessian by central differences); `zeroInflated` and `hurdle` are the estimators on the iterative base, with
  * the counts part, the inflation part and Wald tables of both.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
   type IterativeEstimator,
@@ -21,10 +21,12 @@ import {
 } from '../learn/index.ts'
 import { dgemv, dpotrf, dpotrs } from '../numerics/linalg/index.ts'
 import { digamma, lgamma } from '../numerics/special/index.ts'
-import { dict, real } from '../space/index.ts'
+import { analyticObjective, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
+import type { Key } from '../random/index.ts'
+import { dict, real, type SpaceValue } from '../space/index.ts'
 import { fromStorage, item, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
-import { backtrack, newtonDirection } from './_newton.ts'
+import { type Algorithm, Log } from '../trace/index.ts'
+import { infNorm, newtonAt, type SlotState, slotAlgorithm } from './_slot.ts'
 import { waldTable } from './inference.ts'
 
 /** The count distribution of the non-degenerate part. */
@@ -184,10 +186,14 @@ export interface CountModelOptions {
   readonly family?: CountFamily
   /** Stop when the largest gradient entry (per unit weight) falls below this (default 1e-8). */
   readonly tol?: number
+  /** The solver, a value of `smoothSolvers.space` (default Newton at `tol`). */
+  readonly solver?: SpaceValue
+  /** The run's key (for the stochastic solver's batches). */
+  readonly key?: Key
 }
 
 /** The state of {@link countModelAlgorithm}. */
-export type CountModelState = {
+export type CountModelState = SlotState & {
   /** The count coefficients (intercept last), the zero-part coefficients (intercept last), then ln alpha (negative binomial). */
   readonly theta: number[]
   /** The negative log-likelihood. */
@@ -195,6 +201,50 @@ export type CountModelState = {
   readonly gradient: number
   readonly evaluations: number
   readonly stalled: boolean
+}
+
+/**
+ * The zero-inflated or hurdle objective as a smooth problem for the solver slot: the negative log-likelihood per unit
+ * weight in the count coefficients, the zero-part coefficients (intercepts last) and ln alpha (negative binomial), with
+ * its analytic gradient; the Newton mode differences the gradient for the curvature.
+ *
+ * @param problem - The data.
+ * @param options - Zero-inflated or hurdle, and Poisson or negative binomial.
+ * @returns The objective and the start.
+ * @example
+ * ```ts
+ * import { countModelSmoothProblem, countProblemOf } from 'mdml-engine/linear'
+ * const x = [[0.1], [0.4], [0.9], [1.3], [1.8], [2.2], [2.6], [3.1], [0.2], [1.1], [2.9], [1.6]]
+ * const y = [0, 0, 1, 0, 3, 2, 0, 5, 0, 2, 6, 0]
+ * countModelSmoothProblem(countProblemOf({ x, y }, 'constant', 'demo')).x0.length // => 3
+ * ```
+ */
+export function countModelSmoothProblem(problem: CountProblem, options: CountModelOptions = {}): SmoothProblem {
+  const kind = options.kind ?? 'zero-inflated'
+  const family = options.family ?? 'poisson'
+  const { p, q } = problem
+  const m = p + q + (family === 'negative-binomial' ? 1 : 0)
+  const total = problem.w.reduce((a, b) => a + b, 0)
+  const evaluate = (theta: number[]): { objective: number; grad: Float64Array } => {
+    const e = countModelObjective(problem, kind, family, theta)
+    return { objective: e.objective / total, grad: Float64Array.from(e.gradient, (g) => g / total) }
+  }
+  const start = (): number[] => {
+    const positives = Array.from(problem.y).filter((v) => v > 0)
+    const meanPositive = positives.length > 0 ? positives.reduce((a, b) => a + b, 0) / positives.length : 1
+    const share = Math.min(0.9, Math.max(0.1, 1 - positives.length / problem.n))
+    const theta = new Array<number>(m).fill(0)
+    theta[p - 1] = Math.log(Math.max(meanPositive, 0.1))
+    theta[p + q - 1] = Math.log(share / (1 - share)) - (kind === 'zero-inflated' ? 1 : 0)
+    return theta
+  }
+  return {
+    objective: analyticObjective({
+      value: (t) => evaluate(Array.from(t)).objective,
+      gradient: (t) => evaluate(Array.from(t)).grad,
+    }),
+    x0: start(),
+  }
 }
 
 /**
@@ -222,77 +272,34 @@ export function countModelAlgorithm(
   const kind = options.kind ?? 'zero-inflated'
   const family = options.family ?? 'poisson'
   const tol = options.tol ?? 1e-8
-  const { p, q } = problem
-  const m = p + q + (family === 'negative-binomial' ? 1 : 0)
-  const total = problem.w.reduce((a, b) => a + b, 0)
-  const evaluate = (theta: number[]): { objective: number; grad: Float64Array } => {
-    const e = countModelObjective(problem, kind, family, theta)
-    return { objective: e.objective / total, grad: Float64Array.from(e.gradient, (g) => g / total) }
-  }
-  const maxAbs = (v: ArrayLike<number>): number => Array.from(v).reduce((a, b) => Math.max(a, Math.abs(b)), 0)
-  const start = (): number[] => {
-    const positives = Array.from(problem.y).filter((v) => v > 0)
-    const meanPositive = positives.length > 0 ? positives.reduce((a, b) => a + b, 0) / positives.length : 1
-    const share = Math.min(0.9, Math.max(0.1, 1 - positives.length / problem.n))
-    const theta = new Array<number>(m).fill(0)
-    theta[p - 1] = Math.log(Math.max(meanPositive, 0.1))
-    theta[p + q - 1] = Math.log(share / (1 - share)) - (kind === 'zero-inflated' ? 1 : 0)
-    return theta
-  }
-  return {
+  const m = problem.p + problem.q + (family === 'negative-binomial' ? 1 : 0)
+  const solver = options.solver ?? newtonAt(tol)
+  return slotAlgorithm<CountModelState>({
     name: `${kind}-${family}`,
-    config: { kind, family, tol },
-    schema: channels({
+    config: { kind, family, tol, solver } as Json,
+    schema: {
       metrics: {
         objective: { description: 'the negative log-likelihood per unit weight', direction: 'lower' },
         gradient: { description: 'the largest gradient entry', direction: 'lower' },
       },
       tensors: { parameters: { role: 'param', description: 'count, zero-part and dispersion parameters', shape: [m] } },
+    },
+    problem: countModelSmoothProblem(problem, options),
+    solver,
+    ...(options.key === undefined ? {} : { key: options.key }),
+    tol,
+    view: (r, evaluations, stalled) => ({
+      theta: Array.from(r.x),
+      objective: r.value,
+      gradient: infNorm(r.grad),
+      evaluations,
+      stalled,
     }),
-    init: () => {
-      const theta = start()
-      const e = evaluate(theta)
-      return { theta, objective: e.objective, gradient: maxAbs(e.grad), evaluations: 1, stalled: false }
-    },
-    step: (s) => {
-      const g = evaluate(s.theta).grad
-      const H = new Float64Array(m * m)
-      for (let j = 0; j < m; j++) {
-        const h = 1e-5 * Math.max(1, Math.abs(s.theta[j] ?? 0))
-        const up = [...s.theta]
-        const dn = [...s.theta]
-        up[j] = (up[j] ?? 0) + h
-        dn[j] = (dn[j] ?? 0) - h
-        const gu = evaluate(up).grad
-        const gd = evaluate(dn).grad
-        for (let i = 0; i < m; i++) H[i * m + j] = ((gu[i] ?? 0) - (gd[i] ?? 0)) / (2 * h)
-      }
-      for (let i = 0; i < m; i++)
-        for (let j = 0; j < i; j++) {
-          const v = 0.5 * ((H[i * m + j] ?? 0) + (H[j * m + i] ?? 0))
-          H[i * m + j] = v
-          H[j * m + i] = v
-        }
-      const dir = newtonDirection(H, g, m)
-      const found = backtrack(evaluate, s.theta, s.objective, g, dir)
-      const evaluations = s.evaluations + 2 * m + 1 + (found?.evaluations ?? 50)
-      if (found === undefined) return { ...s, evaluations, stalled: true }
-      return {
-        theta: found.u,
-        objective: found.result.objective,
-        gradient: maxAbs(found.result.grad),
-        evaluations,
-        stalled: false,
-      }
-    },
-    done: (s) => (s.gradient <= tol ? 'converged' : s.stalled ? 'stopped' : undefined),
     observe: (s) => ({
       metrics: { objective: s.objective, gradient: s.gradient },
       tensors: { parameters: { role: 'param', value: s.theta, shape: [m] } },
     }),
-    serialise: (s) => stateToJson(s),
-    deserialise: (j) => stateFromJson(j) as CountModelState,
-  }
+  })
 }
 
 /** The hyperparameters of {@link zeroInflated} and {@link hurdle}. */
@@ -302,6 +309,8 @@ export interface CountModelHyper {
   readonly inflation: Inflation
   readonly tol: number
   readonly maxIter: number
+  /** How the likelihood is minimised: a value of `smoothSolvers.space` (default Newton). */
+  readonly solver: SpaceValue
 }
 
 /** The fitted parameters of the count models. */
@@ -415,7 +424,13 @@ function tablesOf(p: CountModelParams): CoefficientTable[] {
   return [waldTable(names, estimates, cov)]
 }
 
-const COUNT_DEFAULTS: CountModelHyper = { family: 'poisson', inflation: 'constant', tol: 1e-8, maxIter: 200 }
+const COUNT_DEFAULTS: CountModelHyper = {
+  family: 'poisson',
+  inflation: 'constant',
+  tol: 1e-8,
+  maxIter: 200,
+  solver: newtonAt(1e-8),
+}
 
 function countEstimator(
   kind: CountModelKind,
@@ -427,9 +442,15 @@ function countEstimator(
       name: kind,
       kind: 'regressor',
       defaults: COUNT_DEFAULTS,
-      hyperSpace: (h) => dict({ tol: real(1e-12, 1e-3, { log: true, default: h.tol }) }),
-      algorithm: (data, h) =>
-        countModelAlgorithm(countProblemOf(data, h.inflation, who), { kind, family: h.family, tol: h.tol }),
+      hyperSpace: (h) => dict({ tol: real(1e-12, 1e-3, { log: true, default: h.tol }), solver: smoothSolvers.space }),
+      algorithm: (data, h, key) =>
+        countModelAlgorithm(countProblemOf(data, h.inflation, who), {
+          kind,
+          family: h.family,
+          tol: h.tol,
+          solver: h.solver,
+          key,
+        }),
       maxSteps: (h) => h.maxIter,
       params: (s, data, h) => paramsOf(countProblemOf(data, h.inflation, who), h, kind, s),
       verbs: (par) => {

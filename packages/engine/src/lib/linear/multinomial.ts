@@ -7,7 +7,7 @@
  * class probabilities, the logits and a Wald table of the free coefficients.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { categorical } from '../dists/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
@@ -21,10 +21,12 @@ import {
   withDefaultScore,
 } from '../learn/index.ts'
 import { dpotrf, dpotrs } from '../numerics/linalg/index.ts'
-import { dict, real } from '../space/index.ts'
+import { analyticObjective, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
+import type { Key } from '../random/index.ts'
+import { dict, real, type SpaceValue } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
-import { backtrack, newtonDirection } from './_newton.ts'
+import { type Algorithm, Log } from '../trace/index.ts'
+import { infNorm, newtonAt, type SlotState, slotAlgorithm } from './_slot.ts'
 import { waldTable } from './inference.ts'
 
 /** A multinomial problem: features, class indices, weights and the number of classes. */
@@ -53,10 +55,14 @@ export interface MultinomialOptions {
   readonly fitIntercept?: boolean
   /** Stop when the largest gradient entry falls below this (default 1e-10). */
   readonly tol?: number
+  /** The solver, a value of `smoothSolvers.space` (default Newton at `tol`). */
+  readonly solver?: SpaceValue
+  /** The run's key (for the stochastic solver's batches). */
+  readonly key?: Key
 }
 
 /** The state of {@link multinomialAlgorithm}. */
-export type MultinomialState = {
+export type MultinomialState = SlotState & {
   /** The free coefficients, class by class: slopes then intercept (classes 1 to C - 1 without a penalty, all with one). */
   readonly theta: number[]
   /** The penalised mean negative log-likelihood. */
@@ -100,29 +106,24 @@ export function softmaxRows(logits: ArrayLike<number>, nClasses: number): Float6
 }
 
 /**
- * Multinomial logistic regression as a traced algorithm: Newton steps with the exact gradient and Hessian of
- * `-sum_i w_i log p_{i, y_i} / W + alpha |W|^2 / 2`. It logs `objective`, `gradient` and the tensor `coefficients`.
+ * The multinomial objective as a smooth problem for the solver slot: the penalised mean negative log-likelihood
+ * `-sum_i w_i log p_{i, y_i} / W + alpha |W|^2 / 2` with its exact gradient and Hessian, so Newton's method converges in
+ * a handful of iterations and every other smooth solver minimises the same function.
  *
  * @param problem - Features, class indices and weights.
- * @param options - The penalty, the intercept and the tolerance.
- * @returns The algorithm.
+ * @param options - The penalty and the intercept.
+ * @returns The objective over the free coefficients (class by class: slopes then intercept) and the start (zeros).
  * @example
  * ```ts
- * import { multinomialAlgorithm } from 'mdml-engine/linear'
+ * import { multinomialSmoothProblem } from 'mdml-engine/linear'
  * import { matrixView } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * const x = matrixView([[0], [1], [2], [3], [0.5], [2.5], [1.5], [3.5]], 'demo')
- * const problem = { x, codes: [0, 0, 1, 2, 1, 2, 0, 2], w: [1, 1, 1, 1, 1, 1, 1, 1], nClasses: 3 }
- * runAlgorithm(multinomialAlgorithm(problem), { maxSteps: 50 }).status // => 'converged'
+ * const x = matrixView([[0], [1], [2], [3], [0.5], [2.5]], 'demo')
+ * multinomialSmoothProblem({ x, codes: [0, 0, 1, 2, 1, 2], w: [1, 1, 1, 1, 1, 1], nClasses: 3 }).x0.length // => 4
  * ```
  */
-export function multinomialAlgorithm(
-  problem: MultinomialProblem,
-  options: MultinomialOptions = {},
-): Algorithm<MultinomialState> {
+export function multinomialSmoothProblem(problem: MultinomialProblem, options: MultinomialOptions = {}): SmoothProblem {
   const alpha = options.alpha ?? 0
   const fitIntercept = options.fitIntercept ?? true
-  const tol = options.tol ?? 1e-10
   const { x, codes, w, nClasses: C } = problem
   const { n, d } = x
   const r = d + (fitIntercept ? 1 : 0)
@@ -177,44 +178,70 @@ export function multinomialAlgorithm(
       for (let k = 0; k < d; k++) H[(f * r + k) * m + f * r + k] = (H[(f * r + k) * m + f * r + k] ?? 0) + alpha
     return H
   }
-  const maxAbs = (v: ArrayLike<number>): number => Array.from(v).reduce((a, b) => Math.max(a, Math.abs(b)), 0)
+  const at = (theta: ArrayLike<number>): { objective: number; grad: Float64Array; probs: Float64Array } =>
+    evaluate(Array.from(theta))
   return {
+    objective: analyticObjective({
+      value: (t) => at(t).objective,
+      gradient: (t) => at(t).grad,
+      hessian: (t) => hessian(at(t).probs),
+    }),
+    x0: new Float64Array(m),
+  }
+}
+
+/**
+ * Multinomial logistic regression as a traced algorithm over the solver slot: any solver of `smoothSolvers` minimises
+ * {@link multinomialSmoothProblem} (default Newton with the exact Hessian). It logs `objective`, `gradient`, `gradNorm`,
+ * `step` and the tensor `coefficients`.
+ *
+ * @param problem - Features, class indices and weights.
+ * @param options - The penalty, the intercept, the tolerance and the solver.
+ * @returns The algorithm.
+ * @example
+ * ```ts
+ * import { multinomialAlgorithm } from 'mdml-engine/linear'
+ * import { matrixView } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = matrixView([[0], [1], [2], [3], [0.5], [2.5], [1.5], [3.5]], 'demo')
+ * const problem = { x, codes: [0, 0, 1, 2, 1, 2, 0, 2], w: [1, 1, 1, 1, 1, 1, 1, 1], nClasses: 3 }
+ * runAlgorithm(multinomialAlgorithm(problem), { maxSteps: 50 }).status // => 'converged'
+ * ```
+ */
+export function multinomialAlgorithm(
+  problem: MultinomialProblem,
+  options: MultinomialOptions = {},
+): Algorithm<MultinomialState> {
+  const alpha = options.alpha ?? 0
+  const tol = options.tol ?? 1e-10
+  const m = freeClasses(problem.nClasses, alpha).length * (problem.x.d + ((options.fitIntercept ?? true) ? 1 : 0))
+  const solver = options.solver ?? newtonAt(tol)
+  return slotAlgorithm<MultinomialState>({
     name: 'multinomial',
-    config: { alpha, fitIntercept, tol, classes: C },
-    schema: channels({
+    config: { alpha, fitIntercept: options.fitIntercept ?? true, tol, classes: problem.nClasses, solver } as Json,
+    schema: {
       metrics: {
         objective: { description: 'the penalised mean negative log-likelihood', direction: 'lower' },
         gradient: { description: 'the largest gradient entry', direction: 'lower' },
       },
       tensors: { coefficients: { role: 'param', description: 'the free coefficients, class by class', shape: [m] } },
+    },
+    problem: multinomialSmoothProblem(problem, options),
+    solver,
+    ...(options.key === undefined ? {} : { key: options.key }),
+    tol,
+    view: (r, evaluations, stalled) => ({
+      theta: Array.from(r.x),
+      objective: r.value,
+      gradient: infNorm(r.grad),
+      evaluations,
+      stalled,
     }),
-    init: () => {
-      const theta = new Array<number>(m).fill(0)
-      const e = evaluate(theta)
-      return { theta, objective: e.objective, gradient: maxAbs(e.grad), evaluations: 1, stalled: false }
-    },
-    step: (s) => {
-      const e0 = evaluate(s.theta)
-      const dir = newtonDirection(hessian(e0.probs), e0.grad, m)
-      const found = backtrack(evaluate, s.theta, s.objective, e0.grad, dir)
-      const evaluations = s.evaluations + 1 + (found?.evaluations ?? 50)
-      if (found === undefined) return { ...s, evaluations, stalled: true }
-      return {
-        theta: found.u,
-        objective: found.result.objective,
-        gradient: maxAbs(found.result.grad),
-        evaluations,
-        stalled: false,
-      }
-    },
-    done: (s) => (s.gradient <= tol ? 'converged' : s.stalled ? 'stopped' : undefined),
     observe: (s) => ({
       metrics: { objective: s.objective, gradient: s.gradient },
       tensors: { coefficients: { role: 'param', value: s.theta, shape: [m] } },
     }),
-    serialise: (s) => stateToJson(s),
-    deserialise: (j) => stateFromJson(j) as MultinomialState,
-  }
+  })
 }
 
 /** The hyperparameters of {@link multinomial}. */
@@ -224,6 +251,8 @@ export interface MultinomialHyper {
   readonly fitIntercept: boolean
   readonly tol: number
   readonly maxIter: number
+  /** How the likelihood is minimised: a value of `smoothSolvers.space` (default Newton, whose steps use the exact Hessian). */
+  readonly solver: SpaceValue
 }
 
 /** The fitted parameters of {@link multinomial}. */
@@ -256,7 +285,13 @@ export interface MultinomialVerbs {
   readonly score: (data: LearnData) => number
 }
 
-const MULTINOMIAL_DEFAULTS: MultinomialHyper = { alpha: 0, fitIntercept: true, tol: 1e-10, maxIter: 100 }
+const MULTINOMIAL_DEFAULTS: MultinomialHyper = {
+  alpha: 0,
+  fitIntercept: true,
+  tol: 1e-10,
+  maxIter: 100,
+  solver: newtonAt(1e-10),
+}
 
 function paramsOf(
   problem: MultinomialProblem,
@@ -374,8 +409,10 @@ export function multinomial(
       name: 'multinomial',
       kind: 'classifier',
       defaults: MULTINOMIAL_DEFAULTS,
-      hyperSpace: (h) => dict({ alpha: real(0, Math.max(10, h.alpha), { default: h.alpha }) }),
-      algorithm: (data, h) => multinomialAlgorithm(multinomialProblemOf(data, 'multinomial').problem, h),
+      hyperSpace: (h) =>
+        dict({ alpha: real(0, Math.max(10, h.alpha), { default: h.alpha }), solver: smoothSolvers.space }),
+      algorithm: (data, h, key) =>
+        multinomialAlgorithm(multinomialProblemOf(data, 'multinomial').problem, { ...h, key }),
       maxSteps: (h) => h.maxIter,
       params: (s, data, h) => {
         const { problem, classes } = multinomialProblemOf(data, 'multinomial')

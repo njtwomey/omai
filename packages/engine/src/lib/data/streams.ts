@@ -12,7 +12,15 @@ import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, normal, split, uniform } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
-import { type Algorithm, type Contract, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 
 /** Whether the stream's target is a class or a number. */
 export type StreamTask = 'classification' | 'regression'
@@ -471,14 +479,17 @@ export interface StreamState {
   readonly batch: StreamBatch | null
 }
 
+/** The paths a stream run logs. */
+export type StreamPath = 'stream/concept' | 'stream/mix' | 'stream/drift' | 'stream/x' | 'stream/y'
+
 /** The paths a stream run logs: the truth beside the points. */
-export const streamContract: Contract<StreamState> = {
+export const streamContract: Contract<StreamState, StreamPath> = defineContract({
   'stream/concept': scalar({ description: 'the dominant concept at the step' }),
   'stream/mix': scalar({ description: 'how far the transition under way has gone (0 outside one)' }),
   'stream/drift': scalar({ description: '1 at the step a drift is centred on, else 0' }),
   'stream/x': tensor({ role: 'output', shape: ['batch', 'dim'], description: 'the features of the step' }),
   'stream/y': tensor({ role: 'output', shape: ['batch'], description: 'the targets of the step' }),
-}
+})
 
 /**
  * A stream as an `Algorithm`: one step delivers one batch, so a learner or a detector can be driven by the stepping of
@@ -497,7 +508,7 @@ export const streamContract: Contract<StreamState> = {
  * [steps, state.batch?.x.shape] // => [20, [4, 2]]
  * ```
  */
-export function streamAlgorithm(options: StreamOptions = {}): Algorithm<StreamState> {
+export function streamAlgorithm(options: StreamOptions = {}): Algorithm<StreamState, StreamPath> {
   const cache = new Map<string, DataStream>()
   const streamOf = (k: Key): DataStream => {
     const id = k.words.join(',')

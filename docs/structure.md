@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 54 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 55 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -420,6 +420,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `covariance`  | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators with Mahalanobis distances and likelihoods, FastMCD and the elliptic envelope, the graphical lasso                          |
 | `anomaly`     | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules              |
 | `sketches`    | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list |
+| `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
 
 ### 4.1 `base/`
 
@@ -687,11 +688,12 @@ oracle: jax and torch for derivative values; finite differences in property test
   detail (`summarise`), and `subsample`.
 - `tracer.ts`: `Tracer`, `nullTracer`, `recorder` (with `forget`, so a kept window can let its oldest event go),
   `tee`, `filtered`, `startRun`, `RunHandle` (applies the policy).
-- `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext`,
+- `algorithm.ts`: `Algorithm<S, K>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext<K>`,
   `runAlgorithm`, `iterate` (a generator for live views), `runFor` (budgeted slices that continue exactly; the budget
   is a step count or milliseconds of an injected clock, since published code reads no clocks).
 - `nesting.ts`: child runs (`subRun`, keyed from the outer step, with the policy `childPolicy` derives); run trees are
-  read back with `runTree` in `query.ts`.
+  read back with `runTree` in `query.ts`; `mountContext` (the step context of an inner method mounted under a prefix,
+  typed `StepContext<K>` over an outer `StepContext<Prefixed<P, K>>`).
 - `taps.ts`: `tapContext` (`taps.tap(name, value)` inside model code, `TapContext`), `tapsFor(run, step)` (records
   activations when the policy asks).
 - `instrument.ts`: `instrument(fn, options)` (trace calls of any function: numeric inputs and outputs as metrics or
@@ -702,14 +704,31 @@ oracle: jax and torch for derivative values; finite differences in property test
   `derived`, `event`), subscriptions (`Log` with `every`, `detail`, `args`, `budget` and `keep`: `all`, `last` or the
   most recent n events of the path, checkpoints never among them; `On`; `off`/`defaults`/`all`), path patterns,
   `resolve` (contract and subscription to a policy, per-path schedules and hooks; it rejects a bad `keep`),
-  `contractSchema`.
+  `contractSchema`. **Typed paths:** a path is a `string` at run time (tapes, saved panel configs, JSON and the render
+  layer name paths as data, subscriptions are patterns) and a type parameter `K` (default `string`) at compile time:
+  `Contract<S, K>`, `Subscription<K>`, `Method<S, C, K>`, `Algorithm<S, K>`, `StepContext<K>`, `Session<S, C, K>`. With
+  `K` a union of literals, `ctx.log`, `ctx.emit` and `ctx.wants` take only those paths (a contract key that is a
+  pattern is logged by any path under it, `Concrete<K>`), `defaults` and a session's `logs` take those paths or any
+  pattern (a `*` in it, `Pattern`; patterns are checked by `resolve` at run time), and `defineMethod` infers `K` from the
+  contract. `defineContract` keeps a literal contract's keys (and checks them), `PathsOf<typeof contract>` reads them
+  back, fragments compose by spreading (`{ ...solverContract, ...own }`), `Prefixed<P, K>` and `prefixContract` mount a
+  contract under a prefix. A path built at run time stays `string`, or a template literal for the part that varies
+  (`layer${number}/weights`); the type cannot see a pattern's matches. Because `isolatedDeclarations` wants an exported
+  constant annotated, an exported contract (a fragment) writes its path union and annotates `Contract<S, FooPath>`; the
+  annotation is the check that the two agree. The default `K = string` leaves every untyped method as it was; a typed
+  `Algorithm<S, 'a'>` is accepted wherever an `Algorithm<S>` is wanted (the context's methods are bivariant). The
+  migration recipe is in `defineContract`'s TSDoc. **Backstop:** a session's log context throws
+  `MdmlError('value', "log: the contract has no path '...'")` when an algorithm logs to or emits a
+  path the resolved contract (`Resolved.paths`) does not hold, as opposed to one that is merely unsubscribed (`wants`
+  is a question and answers `false`; checked once per path, remembered; not in a run with no tape, nor in a bare
+  `runAlgorithm`, which has no contract).
 - `logging.ts`: the scheduler (every n steps, log-spaced, or on the nth firing of an event), the log context
   algorithms write to (`log`, `wants`, `emit`, `taps`), `defaultLogContext` for runs outside a session, and `gated`
   (the tracer that renames native channels to paths, passes only what is subscribed and due, and holds a path's
   `keep` window by having the recorder forget its oldest events as new ones arrive, the budget counting what is held).
-- `session.ts`: `Method` and `defineMethod` (config space, `make`, contract, defaults, named hooks, projections),
-  `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`, `stepsOf`) and `session` with its modes (eager,
-  live, eager to a point).
+- `session.ts`: `Method<S, C, K>` and `defineMethod` (config space, `make`, contract, defaults, named hooks,
+  projections; `K` inferred from the contract), `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`,
+  `stepsOf`) and `session` with its modes (eager, live, eager to a point).
 - `serialise.ts`: `stateToJson` and `stateFromJson`, generic checkpoint serialisation of states made of tensors, typed
   arrays, keys and plain trees.
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
@@ -1387,6 +1406,24 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
   `runningMedian`, `smoothingSpline` (lambda, degrees of freedom or GCV over numerics' `makeSmoothingSpline`).
 - `fit.ts`: `fitDistribution` (closed form or Newton for seventeen families) with standard errors from the
   `observedInformation`; `newtonMle` (traced `newtonMleAlgorithm`).
+- `experiments.ts`: online-experiment estimators: `cuped` (pre-experiment covariate adjustment), `postStratify`,
+  `regressionAdjustment` (Lin's demeaned interaction estimator with HC2 errors), `deltaMethodRatio` (user-level ratio
+  metrics, one and two sample), `clusterRandomisedTest` (ICC, design effect, CR1 errors) and `switchbackAnalysis`
+  (period means, Newey-West errors, optional randomisation p-value). Results carry an `Estimate` and a `TestResult`.
+- `design.ts`: randomisation (`simpleRandomisation`, `permutedBlockRandomisation`, `stratifiedRandomisation`,
+  Pocock-Simon `minimizationAlgorithm`/`minimizationAllocation` as a traced `Algorithm` whose draws come from the step
+  key), `matchedPairsDesign` (exact matching up to 16 units), `fullFactorialDesign`, `fractionalFactorialDesign` and
+  `aliasStructure` (defining relation, resolution, alias chains), `latinSquareDesign`, `oneWayAnova` and `twoWayAnova`
+  (Type I, II and III sums of squares; golden against statsmodels `anova_lm`).
+- `shrinkage.ts`: `jamesStein`, `positivePartJamesStein` (targets zero, a vector or the grand mean; SURE) and
+  `empiricalBayesNormalMeans` (homoscedastic Efron-Morris, heteroscedastic DerSimonian-Laird moments; the
+  heteroscedastic fit is golden-tested against statsmodels `combine_effects`).
+- `missing.ts`: `missingnessProfile` (columns, rows, patterns) and `littleMcarTest` (Gaussian EM moments, chi-square
+  over the pattern means; tested against the closed-form monotone-pattern maximum likelihood, no reference library
+  implements it).
+- `concentration.ts`: `markovBound`, `chebyshevBound`, `chernoffBound`/`chernoffGaussianBound`, `chernoffKlBound`,
+  `hoeffdingBound` with `hoeffdingSampleSize`, `bernsteinBound`, `bennettBound`, `empiricalBernsteinInterval`,
+  `mcDiarmidBound` and the `dkwBand`.
 
 TODO (deferred, esoteric):
 - `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to
@@ -1443,7 +1480,22 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
   `SmoothProblem` (an objective that may take a batch index set, `batches`, a start); `loggedSolver` (logs
   `solver/objective`, `solver/gradNorm`, `solver/step` and, for `gradient`, `solver/lr`; serialises the state),
-  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`.
+  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`; `loggedSolverOf` logs by the same
+  convention for any table whose states carry `x`, `value`, `grad` and `step`.
+- `glm.ts`: the smooth penalised GLM as a problem and a slot. `GlmProblem` (design, family, link, prior weights,
+  offset, intercept, `GlmPenalty`: none, ridge, or a general quadratic penalty matrix as an additive model needs) and
+  `glmSolvers`, the table of its solvers: `irls` (Fisher scoring with step halving, the weighted problem solved by
+  Cholesky) and, from `smoothSolvers` on the GLM objective (`glmSmoothProblem`), `newton` (observed information),
+  `bfgs`, `lbfgs`, `conjugateGradient`, `gradientDescent` and `gradient` (the stochastic mode with its optimiser,
+  schedule and batch). `fitGlm` runs a mode to its fit; `glmValue`, `glmGradient` evaluate. Non-smooth penalties
+  (lasso, elastic net, group lasso) are deliberately not in the table: they are particular algorithms (`linear/lars.ts`,
+  `paths.ts`, `group-lasso.ts`, `optim/sparse.ts`, `proximal.ts`). Home: `optim`, not `linear`, because `optim` may
+  import `dists/families` without a cycle (`dists` imports neither `optim` nor `linear`) and the table serves `linear`,
+  `gam` and any future GLM-shaped model alike. A model whose objective is not GLM-shaped builds a `SmoothProblem` and
+  takes `smoothSolvers`; a model that is a GLM takes `glmSolvers`; the model never carries a solver of its own.
+- `analytic.ts`: `analyticObjective`, an objective written over plain numbers with its analytic gradient (and Hessian)
+  as a differentiable function the solvers accept (the gradient is its reverse rule, the Hessian its forward rule), and
+  `finiteDifferenceHessian` for the Newton mode of a model that has a gradient only.
 - `line-search.ts`: the line-search contract (`LineFunction`, `LineStart`, `LineSearchResult` with every trial point
   recorded, `LineSearch`), `backtracking` (Armijo, scipy's quadratic-cubic interpolation, optionally safeguarded, or
   halving; value-only evaluations), `strongWolfe` (Nocedal-Wright bracketing and zoom by cubic interpolation, scipy's
@@ -3310,8 +3362,9 @@ lasso, which a test checks against the GLM core. oracle: `linear/group_lasso` ag
 
 `ordinal.ts` is ordinal regression: `ordinalLogLikelihood` (the likelihood and its gradient for the cumulative-link
 model `P(Y <= k) = F(theta_k - x beta)` with the logit, probit, cloglog and loglog links, and for the sequential
-(continuation-ratio) model), `ordinalProbabilities`, `ordinalAlgorithm` (damped Newton steps, a Hessian from central
-differences of the analytic gradient, thresholds as a first cutpoint plus log increments) and the `ordinal` classifier
+(continuation-ratio) model), `ordinalProbabilities`, `ordinalSmoothProblem` (the objective with its analytic gradient, thresholds as a first cutpoint plus log
+increments) and `ordinalAlgorithm` (any solver of the slot, Newton by default with a Hessian from central differences
+of the gradient) and the `ordinal` classifier
 (`predictProba`, the latent `decisionFunction`, `predictDistribution`, a Wald table of slopes and thresholds). oracle:
 `linear/ordinal` against statsmodels' `OrderedModel` (slopes, thresholds, log-likelihood, slope standard errors and
 probabilities for the four links; the sequential mode has no reference and is checked by finite differences and its
@@ -3320,12 +3373,22 @@ equality with logistic regression for two categories).
 `mixed.ts` is the linear mixed model `y = X beta + Z b_g + e` for grouped data: `mixedProblemOf` summarises each group's
 rows into sufficient statistics (the group label is a column of `x`; random intercept and slopes, unstructured or
 diagonal covariance), `mixedProfile` is the profiled (restricted) deviance at a relative covariance factor (fixed effects
-and residual variance profiled out, the matrix determinant lemma per group), `mixedAlgorithm` maximises it by damped
-Newton steps (`_newton.ts`, shared with `ordinal.ts`: Levenberg-shifted direction and backtracking), and the `mixedModel`
+and residual variance profiled out, the matrix determinant lemma per group), `mixedSmoothProblem` is it as an objective
+of the solver slot and `mixedAlgorithm` maximises it with any solver of `smoothSolvers` (Newton by default), and the `mixedModel`
 estimator has the fixed-effects Wald table, `randomCovariance`, `sigma2`, the group effects (BLUPs), and `predict`
 (group effects for groups seen in fit) and `predictFixed`. Sample weights are refused. oracle: `linear/mixed` against
 statsmodels' `MixedLM` (REML and ML; random intercept, and correlated random intercept and slope); statsmodels stops
 slightly short of the optimum, so the golden tolerance is 1e-3 and a dense-matrix test checks the likelihood itself.
+
+The solver is a slot, not part of the model (docs/structure.md 4.18, `glm.ts`, `solvers.ts`, `analytic.ts`). The GLM core
+takes `solver` as a name or a configuration of `glmSolvers` (IRLS, Newton on the observed information, BFGS, L-BFGS,
+conjugate gradient, gradient descent, the stochastic mode with Adam and batches) when the penalty is smooth; `multinomial`,
+`ordinal`, `zeroInflated`/`hurdle` and `mixedModel` each build a `SmoothProblem` (`multinomialSmoothProblem`,
+`ordinalSmoothProblem`, `countModelSmoothProblem`, `mixedSmoothProblem`, from their analytic gradients through
+`analyticObjective`) and take `solver` as a configuration of `smoothSolvers`, default Newton, through `_slot.ts`
+(`slotAlgorithm`: the model's state fields read off the solver's state, which is kept inside so any solver serialises
+and resumes; `solver/gradNorm` and `solver/step` beside the model's channels). The lasso, elastic net, LARS, the paths and
+the group lasso are particular algorithms and stay outside the slot.
 
 `robust.ts` is regression that tolerates outliers: `theilSenAlgorithm` and the `theilSen` estimator (least squares on every
 row subset, or `maxSubpopulation` random ones drawn from a key, then Weiszfeld steps to the spatial median of the
@@ -3726,7 +3789,10 @@ solution with the influence-matrix diagonal (effective degrees of freedom per co
 `gcvScore`, `ubreScore` and `remlScore` (the Laplace-approximate marginal likelihood with the scale profiled out), and
 `selectLogLambda`, their minimisation over `log lambda` by Nelder-Mead. `pirls.ts` is `gamAlgorithm`, penalised IRLS
 as a stepped algorithm over any `DispersionFamily` and `Link` of `dists/families` (the performance iteration: the
-smoothing parameters are chosen on each working response, with step halving on the penalised deviance); logs
+smoothing parameters are chosen on each working response, with step halving on the penalised deviance); the inner solve
+is the `solver` hyperparameter, a configuration of `glmSolvers` (default `irls`, one reweighted least-squares step; any
+other mode minimises the penalised deviance at the chosen smoothing parameters, with the penalty matrix as its
+penalty); logs
 `solver/deviance`, `solver/penalisedDeviance`, `solver/edf`, `solver/criterion`, `solver/scale`, `solver/coef`,
 `solver/logLambda`. `backfitting.ts` is Hastie and Tibshirani's backfitting (local scoring for an exponential family),
 one cycle per step, which converges to the same penalised solution at fixed smoothing parameters. `estimators.ts` has
@@ -3828,6 +3894,41 @@ not in the `oracle-core` group, so there are no goldens. TODO: HyperLogLog++'s s
 algorithm form for the quantile sketches, sliding-window variants, serialisation of the objects (only the algorithms'
 states serialise).
 built from: `base`, `random`, `trace`, `numerics` (the quadrature rule of `lshOptimalParams`)
+
+### 4.55 `survival/`: survival analysis of right-censored data (lifelines, statsmodels duration, R survival)
+
+`data.ts` reads right-censored data (`survivalSample`: times and 0/1 event indicators, validated once) and builds the
+table of distinct event times (`eventTable`: at risk, events, censored). `kaplan-meier.ts` is the product-limit
+estimator with Greenwood's variance and the log-log, plain and log intervals (`kaplanMeier`, `survivalAt`,
+`survivalQuantile`, `restrictedMeanSurvival`), the Nelson-Aalen cumulative hazard (`nelsonAalen`), and
+`kaplanMeierAlgorithm`, which takes one subject per step (events before censorings at a tied time) so the curve forms
+as the run proceeds; its state serialises, and after `n` steps it is the batch curve. `log-rank.ts` is the weighted
+K-sample log-rank family (`logRankTest`: log-rank, Gehan-Breslow/Wilcoxon, Tarone-Ware, Peto-Peto, Fleming-Harrington
+`(p, q)`, strata summed over; `logRankZ` for two groups). `cox.ts` is Cox regression: `coxProblem` builds the
+partial likelihood (Breslow or Efron ties, strata, a ridge) as a `SmoothProblem` in differentiable tensor operations
+(one reverse cumulative sum gives every risk set), `coxAlgorithm`/`coxPh` fit it with `solver` a hyperparameter from
+`smoothSolvers` (default Newton to a gradient tolerance of 1e-10, which reproduces the references; every other smooth
+solver reaches the same optimum), and the fit carries the covariance from the observed information, Wald,
+likelihood-ratio and score tests, the concordance, Breslow's baseline cumulative hazard per stratum and
+`coxPredictSurvival`. `aft.ts` is the accelerated failure time family (`aftProblem`, `aftAlgorithm`, `aft`: Weibull,
+log-normal, log-logistic, exponential) on the same slot, with `aftPredictSurvival` and `aftPredictQuantile`.
+`cox.ts` also has the Schoenfeld and martingale residuals. `concordance.ts` is Harrell's C (`concordanceIndex`, with pair
+counts). `prediction.ts` scores predictions under censoring with inverse-probability-of-censoring weights: the
+censoring distribution (`censoringSurvival`), the Brier score and its integral (`brierScore`, `integratedBrierScore`)
+and Uno's cumulative/dynamic AUC (`cumulativeDynamicAuc`). The planted generator is `survivalData` of
+`datasets` (Weibull or exponential proportional hazards and log-normal AFT with known coefficients), which the tests
+use.
+
+oracle: statsmodels `SurvfuncRight` (curve, Greenwood errors, risk sets), `survdiff` (log-rank, Gehan-Breslow,
+Tarone-Ware, Fleming-Harrington, two and three groups, with and without tied times), `PHReg` (coefficients, errors,
+partial log-likelihood, baseline hazard and Schoenfeld residuals for both tie methods, and a stratified fit); the AFT fits are compared with
+a maximum-likelihood fit written from `scipy.stats` log densities (Gumbel, normal, logistic) polished by Newton steps
+on numerical derivatives, and the concordance index with a direct count of the pairs (neither statsmodels nor
+scikit-learn has an equivalent installed); the Brier score and AUC are tested on hand-computed values. TODO: left
+truncation (entry times), case weights, time-varying covariates, interval and left censoring for the AFT family, the
+Grambsch-Therneau proportional-hazards test.
+built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
+`trace`, `space`, `random`
 
 ## 5. Methods, exposition records and views
 
