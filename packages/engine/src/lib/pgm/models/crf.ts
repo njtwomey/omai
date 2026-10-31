@@ -508,6 +508,106 @@ export function crfObjective(
   return { value: penalise(crfParameters(crf), value, gradient, penalty), gradient }
 }
 
+/**
+ * The feature counts of a labelling, phi(x, y): the state, transition and bigram features it switches on (counted with
+ * the attribute values), in {@link crfParameters} order. The score of the labelling is the inner product of the weights
+ * and these counts, and the structured perceptron moves the weights by the difference of two such vectors.
+ *
+ * @param crf - The model (labels, attributes and bigram attributes; the weights are not used).
+ * @param x - The item (and edge) attributes.
+ * @param y - The labels.
+ * @returns The feature count vector.
+ * @throws MdmlError with code `shape` for a different number of labels and items, `value` for an unknown label.
+ * @concept conditional-random-fields
+ * @example
+ * ```ts
+ * import { linearChainCrf, crfFeatureCounts } from 'mdml-engine/pgm'
+ * Array.from(crfFeatureCounts(linearChainCrf(['A', 'B'], ['f']), [{ f: 2 }, { f: 1 }], ['A', 'B'])) // => [2, 1, 0, 1, 0, 0]
+ * ```
+ */
+export function crfFeatureCounts(crf: LinearChainCrf, x: CrfInput, y: readonly (string | number)[]): Float64Array {
+  const K = crf.labels.length
+  const nState = crf.stateWeights.length
+  const nTrans = crf.transitionWeights.length
+  const out = new Float64Array(nState + nTrans + crf.bigramWeights.length)
+  const items = unigramOf(x)
+  const edges = bigramOf(x)
+  const idx = labelIndices(crf, y)
+  if (idx.length !== items.length) throw new MdmlError('shape', 'crfFeatureCounts: one label per item')
+  const index = lookup(crf.attributes)
+  const bindex = lookup(crf.bigramAttributes)
+  for (const [t, item] of items.entries()) {
+    const yt = idx[t] ?? 0
+    for (const [a, v] of Object.entries(item)) {
+      const i = index.get(a)
+      if (i !== undefined) out[i * K + yt] = (out[i * K + yt] ?? 0) + v
+    }
+    if (t === 0) continue
+    const prev = idx[t - 1] ?? 0
+    if (nTrans > 0) out[nState + prev * K + yt] = (out[nState + prev * K + yt] ?? 0) + 1
+    for (const [b, v] of Object.entries(edges?.[t] ?? {})) {
+      const a = bindex.get(b)
+      if (a === undefined) continue
+      const at = nState + nTrans + (a * K + prev) * K + yt
+      out[at] = (out[at] ?? 0) + v
+    }
+  }
+  return out
+}
+
+/**
+ * The expected feature counts of a sequence under the model, E[phi(x, Y)] with Y drawn from p(. | x), from the
+ * forward-backward marginals; with {@link crfFeatureCounts} of the observed labelling this is the gradient of the
+ * negative conditional log-likelihood: expected minus observed counts.
+ *
+ * @param crf - The model.
+ * @param x - The item (and edge) attributes.
+ * @returns The expected counts (in {@link crfParameters} order) and log Z(x).
+ * @concept conditional-random-fields
+ * @example
+ * ```ts
+ * import { linearChainCrf, crfExpectedFeatureCounts } from 'mdml-engine/pgm'
+ * Array.from(crfExpectedFeatureCounts(linearChainCrf(['A', 'B'], ['f']), [{ f: 1 }]).counts) // => [0.5, 0.5, 0, 0, 0, 0]
+ * ```
+ */
+export function crfExpectedFeatureCounts(
+  crf: LinearChainCrf,
+  x: CrfInput,
+): { readonly counts: Float64Array; readonly logPartition: number } {
+  const K = crf.labels.length
+  const nState = crf.stateWeights.length
+  const nTrans = crf.transitionWeights.length
+  const out = new Float64Array(nState + nTrans + crf.bigramWeights.length)
+  const items = unigramOf(x)
+  if (items.length === 0) return { counts: out, logPartition: 0 }
+  const edges = bigramOf(x)
+  const index = lookup(crf.attributes)
+  const bindex = lookup(crf.bigramAttributes)
+  const fb = forwardBackward(crfChain(crf, x))
+  for (const [t, item] of items.entries()) {
+    const post = fb.posteriors[t] ?? []
+    for (const [a, v] of Object.entries(item)) {
+      const i = index.get(a)
+      if (i === undefined) continue
+      for (let k = 0; k < K; k++) out[i * K + k] = (out[i * K + k] ?? 0) + v * (post[k] ?? 0)
+    }
+    if (t === 0) continue
+    const xi = fb.pairwise[t - 1] ?? []
+    for (let i = 0; i < K; i++)
+      for (let j = 0; j < K; j++) {
+        const p = xi[i]?.[j] ?? 0
+        if (nTrans > 0) out[nState + i * K + j] = (out[nState + i * K + j] ?? 0) + p
+        for (const [b, v] of Object.entries(edges?.[t] ?? {})) {
+          const a = bindex.get(b)
+          if (a === undefined) continue
+          const at = nState + nTrans + (a * K + i) * K + j
+          out[at] = (out[at] ?? 0) + v * p
+        }
+      }
+  }
+  return { counts: out, logPartition: fb.logLikelihood }
+}
+
 /** The state of a CRF training run: the parameters, the optimiser state, the objective and its gradient. */
 export type CrfTrainingState = DescentState
 

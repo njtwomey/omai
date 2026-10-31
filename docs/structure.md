@@ -2437,7 +2437,12 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   inputs from parsed CRF++ templates (`crfppCrf`, `crfppObservation`); general CRFs over arbitrary cliques with
   per-assignment feature tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The
   template languages and feature indexes live in `text/templates.ts` and `text/attribute-templates.ts`, the
-  estimators' training algorithms in `methods/models/crf.ts`.
+  estimators' training algorithms in `methods/models/crf.ts`. `crfFeatureCounts` and `crfExpectedFeatureCounts` are the
+  counts whose difference is the objective's gradient.
+- `models/crf-training.ts`: CRF training through the solver slot: `crfSmoothProblem` (the penalised objective with
+  unbiased batch estimates), `crfSolvers` (L-BFGS by default beside every generic smooth solver, whose `gradient` mode is
+  stochastic gradient descent, and the online structured-prediction modes `perceptron`, `averaged`, `passive-aggressive`),
+  `crfTrainAlgorithm` (objective, gradient and sequence error per step), `trainCrf`.
 - `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded
   evidence, pooled (parameter-sharing) maximum likelihood.
 - `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
