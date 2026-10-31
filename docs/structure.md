@@ -3842,6 +3842,15 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `detectMultiScale`. `hog-detector.ts`: HOG features of windows and sliding-window detection with a linear classifier
   over a pyramid. `lines.ts`: line segment detection as OpenCV's LSD (exact at LSD_REFINE_NONE, scale 1), validated by
   density and the number of false alarms.
+- Stepped forms for sessions (`edges.ts`, and beside the one-shot routines): `cannyAlgorithm` (a step per stage: smoothing,
+  gradient, non-maximum suppression, double threshold, then one hysteresis round per step; the last image is `canny`'s;
+  `cannyStages` in `signal/image/features.ts` returns every stage and `canny` is its last), `houghLineAlgorithm` (the
+  accumulator filling a pixel's votes per step, equal to `houghLine` at the end) with `houghLinePeaks` (strongest cell,
+  suppression window, repeat), `watershedAlgorithm` in `signal/image/segmentation.ts` (flooding by level over the same
+  queue as `watershed`, so the labels are identical; the queue is serialised as arrays) and
+  `meanShiftSegmentationAlgorithm` in `segmentation.ts` (one window iteration per pixel per step, the modes grouped into
+  regions every step; the one-shot function is the same iteration). Paths `canny/*`, `hough/*`, `flood/*`, `shift/*`.
+  Tested against the one-shot results (identical), planted lines, planted basins and planted region colours.
 - Image quality (PSNR, SSIM and the rest) is `metrics/image-quality.ts`; neural detection heads stay in `methods/vision` (5.x).
 - TODO: TC89 chain approximations and RETR_FLOODFILL, `fitEllipseDirect` and AMS, Telea inpainting, the fast mode of
   non-local means, stereoRectify's alpha-dependent camera matrices, StereoBM's pre-filter and SGBM's Birchfield-Tomasi
