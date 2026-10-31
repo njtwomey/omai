@@ -2532,6 +2532,14 @@
       "cases": 18
     },
     {
+      "fixture": "nn/blocks/graph.json",
+      "source": "oracle/cases/nn/blocks/graph.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "nn/blocks/masked.json",
       "source": "oracle/cases/nn/blocks/masked.py",
       "reference": {

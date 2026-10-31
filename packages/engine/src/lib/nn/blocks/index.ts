@@ -9,6 +9,7 @@
 export * from './continuous.ts'
 export * from './experts.ts'
 export * from './generative.ts'
+export * from './graph.ts'
 export * from './hopfield.ts'
 export * from './masked.ts'
 export * from './rbm.ts'

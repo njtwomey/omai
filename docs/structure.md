@@ -3011,6 +3011,10 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     reconstruction error, free energy, free-energy gap and exact log partition on the tape).
   - `masked.ts`: `CausalConv1d` (left-padded, dilated, grouped), `pixelCnnMask` (masks A and B, optional colour-channel
     ordering), `MaskedConv2d` (PixelCNN) and `GatedMaskedConv` (Gated PixelCNN vertical and horizontal stacks, no blind spot).
+  - `graph.ts`: `rgcnConv` and `RGCNConv` (relational GCN: one weight per edge type, basis decomposition, mean or sum per
+    relation), `EGNNLayer` and `EGNN` (E(n)-equivariant graph layers: features from distances, coordinates from relative
+    vectors), `GraphTransformerLayer` and `GraphTransformer` (edge-softmax attention, dense when no edges are given,
+    Laplacian or random-walk positional encodings from `graph` with random sign flips in training).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
