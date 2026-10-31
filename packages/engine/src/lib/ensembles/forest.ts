@@ -16,12 +16,28 @@ import { matrixView, sampleWeightsOf, takeRows } from '../learn/validation.ts'
 import { foldIn, uniform } from '../random/index.ts'
 import { choice, dict, int } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, derived, Log, scalar, stateFromJson, stateToJson, tensor } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import type { Criterion, RegressionCriterion } from '../trees/criteria.ts'
 import { type GrowOptions, growTree, type MaxFeatures, type TreeData, treeData } from '../trees/grow.ts'
 import { applyTree, leafCount, type Tree, treeFeatureImportances, treeOutputs } from '../trees/tree.ts'
 import { stagesFromRun } from './_stages.ts'
-import { type AveragingMember, type AveragingState, averagingAlgorithm, averagingSources } from './averaging.ts'
+import {
+  type AveragingMember,
+  type AveragingPath,
+  type AveragingState,
+  averagingAlgorithm,
+  averagingSources,
+} from './averaging.ts'
 
 /** Hyperparameters of the forests. */
 export interface ForestHyper {
@@ -63,8 +79,27 @@ export interface ForestVerbs extends Verbs, FittedFacts {
   readonly featureImportances: readonly number[]
 }
 
+/**
+ * The paths a forest logs and declares: the averaging ensemble's, the importances so far (`ensemble/importances`) and
+ * the derived `model/proximity` and `model/importances`.
+ *
+ * @example
+ * ```ts
+ * import type { ForestPath } from 'mdml-engine/ensembles'
+ * const path: ForestPath = 'model/proximity'
+ * path // => 'model/proximity'
+ * ```
+ */
+export type ForestPath = AveragingPath | 'ensemble/importances' | 'model/proximity' | 'model/importances'
+
 /** A forest estimator. */
-export type ForestEstimator = IterativeEstimator<ForestHyper, AveragingState<Tree>, ForestParams, ForestVerbs>
+export type ForestEstimator = IterativeEstimator<
+  ForestHyper,
+  AveragingState<Tree>,
+  ForestParams,
+  ForestVerbs,
+  ForestPath
+>
 
 function forestVerbs(p: ForestParams): ForestVerbs {
   const classifier = p.classes.length > 0
@@ -161,7 +196,7 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
     minImpurityDecrease: h.minImpurityDecrease,
     record: 0,
   })
-  return iterative<ForestHyper, AveragingState<Tree>, ForestParams, ForestVerbs>(
+  return iterative<ForestHyper, AveragingState<Tree>, ForestParams, ForestVerbs, ForestPath>(
     {
       name,
       kind: classifier ? 'classifier' : 'regressor',
@@ -185,12 +220,12 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
             ? {}
             : { maxDepth: int(1, Math.max(30, h.maxDepth), { default: h.maxDepth, label: 'maximum depth' }) }),
         }),
-      algorithm: (learn, h) => {
+      algorithm: (learn, h): Algorithm<AveragingState<Tree>, ForestPath> => {
         const data = prepare(learn)
         const n = data.x.n
         if (!(h.nEstimators >= 1)) throw new MdmlError('value', `${name}: nEstimators must be at least 1`)
         const options = growOf(h)
-        const member: AveragingMember<Tree> = {
+        const member: AveragingMember<Tree, 'ensemble/importances'> = {
           fit: (counts, key) => {
             const rows = Array.from({ length: n }, (_, i) => i).filter((i) => (counts[i] ?? 0) > 0)
             const sub: TreeData =
@@ -236,29 +271,30 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
       },
       verbs: (p) => forestVerbs(p),
       maxSteps: (h) => h.nEstimators,
-      contract: (learn) => ({
-        ...averagingSources(classifier),
-        'ensemble/importances': tensor({
-          role: 'output',
-          shape: ['features'],
-          description: 'the impurity importance of each feature, averaged over the trees so far',
+      contract: (learn): Contract<AveragingState<Tree>, ForestPath> =>
+        defineContract({
+          ...averagingSources(classifier),
+          'ensemble/importances': tensor({
+            role: 'output',
+            shape: ['features'],
+            description: 'the impurity importance of each feature, averaged over the trees so far',
+          }),
+          'model/proximity': derived<AveragingState<Tree>>({
+            description: 'the fraction of trees in which each pair of training rows share a leaf',
+            cost: 'dear',
+            compute: (state) => proximityOf(state.members, learn.x),
+          }),
+          'model/importances': derived<AveragingState<Tree>>({
+            description: 'the impurity importance of each feature over the trees so far',
+            compute: (state) => {
+              const total = new Array<number>(matrixView(learn.x, name, { allowNaN: true }).d).fill(0)
+              for (const t of state.members)
+                for (const [j, v] of treeFeatureImportances(t).entries())
+                  total[j] = (total[j] ?? 0) + v / state.members.length
+              return total
+            },
+          }),
         }),
-        'model/proximity': derived<AveragingState<Tree>>({
-          description: 'the fraction of trees in which each pair of training rows share a leaf',
-          cost: 'dear',
-          compute: (state) => proximityOf(state.members, learn.x),
-        }),
-        'model/importances': derived<AveragingState<Tree>>({
-          description: 'the impurity importance of each feature over the trees so far',
-          compute: (state) => {
-            const total = new Array<number>(matrixView(learn.x, name, { allowNaN: true }).d).fill(0)
-            for (const t of state.members)
-              for (const [j, v] of treeFeatureImportances(t).entries())
-                total[j] = (total[j] ?? 0) + v / state.members.length
-            return total
-          },
-        }),
-      }),
       projections: {
         'ensemble/stages': (run) =>
           stagesFromRun(run, {
@@ -426,8 +462,26 @@ export interface EmbeddingVerbs extends Verbs, FittedFacts {
   readonly nFeaturesIn: number
 }
 
+/**
+ * The paths the random trees embedding logs: trees so far and leaves in all of them.
+ *
+ * @example
+ * ```ts
+ * import type { EmbeddingPath } from 'mdml-engine/ensembles'
+ * const path: EmbeddingPath = 'ensemble/leaves'
+ * path // => 'ensemble/leaves'
+ * ```
+ */
+export type EmbeddingPath = 'ensemble/member' | 'ensemble/leaves'
+
 /** An embedding estimator. */
-export type EmbeddingEstimator = IterativeEstimator<EmbeddingHyper, EmbeddingState, EmbeddingParams, EmbeddingVerbs>
+export type EmbeddingEstimator = IterativeEstimator<
+  EmbeddingHyper,
+  EmbeddingState,
+  EmbeddingParams,
+  EmbeddingVerbs,
+  EmbeddingPath
+>
 
 /**
  * The random trees embedding as an algorithm: one totally random tree per step, grown on uniformly random targets with
@@ -447,7 +501,10 @@ export type EmbeddingEstimator = IterativeEstimator<EmbeddingHyper, EmbeddingSta
  * runAlgorithm(alg, { maxSteps: 10, seed: 0 }).state.trees.length // => 3
  * ```
  */
-export function randomTreesEmbeddingAlgorithm(data: LearnData, options: EmbeddingHyper): Algorithm<EmbeddingState> {
+export function randomTreesEmbeddingAlgorithm(
+  data: LearnData,
+  options: EmbeddingHyper,
+): Algorithm<EmbeddingState, EmbeddingPath> {
   const m = matrixView(data.x, 'randomTreesEmbedding', { allowNaN: true })
   const w = sampleWeightsOf(undefined, m.n, 'randomTreesEmbedding')
   const grow: GrowOptions = {
@@ -509,7 +566,7 @@ export function randomTreesEmbedding(hyper: Partial<EmbeddingHyper> = {}): Embed
     maxDepth: hyper.maxDepth ?? 5,
     minSamplesSplit: hyper.minSamplesSplit ?? 2,
   }
-  return iterative<EmbeddingHyper, EmbeddingState, EmbeddingParams, EmbeddingVerbs>(
+  return iterative<EmbeddingHyper, EmbeddingState, EmbeddingParams, EmbeddingVerbs, EmbeddingPath>(
     {
       name: 'random-trees-embedding',
       kind: 'transformer',
@@ -554,10 +611,11 @@ export function randomTreesEmbedding(hyper: Partial<EmbeddingHyper> = {}): Embed
         }
       },
       maxSteps: (h) => h.nEstimators,
-      contract: () => ({
-        'ensemble/member': scalar({ description: 'trees so far' }),
-        'ensemble/leaves': scalar({ description: 'leaves in all the trees so far (the embedding’s width)' }),
-      }),
+      contract: (): Contract<EmbeddingState, EmbeddingPath> =>
+        defineContract({
+          'ensemble/member': scalar({ description: 'trees so far' }),
+          'ensemble/leaves': scalar({ description: 'leaves in all the trees so far (the embedding’s width)' }),
+        }),
       logs: { 'ensemble/member': Log(), 'ensemble/leaves': Log() },
     },
     defaults,

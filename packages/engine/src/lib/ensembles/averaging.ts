@@ -22,14 +22,37 @@ import {
 } from '../trace/index.ts'
 import { scoreOfSum } from './_stages.ts'
 
-/** What an averaging ensemble needs of its members. */
-export interface AveragingMember<P extends Json> {
+/**
+ * The paths an averaging ensemble logs (`ensemble/member` ... `ensemble/bootstrap`): those of {@link averagingAlgorithm}
+ * and of the contract {@link averagingSources} declares.
+ *
+ * @example
+ * ```ts
+ * import type { AveragingPath } from 'mdml-engine/ensembles'
+ * const path: AveragingPath = 'ensemble/oobScore'
+ * path // => 'ensemble/oobScore'
+ * ```
+ */
+export type AveragingPath =
+  | 'ensemble/member'
+  | 'ensemble/weight'
+  | 'ensemble/trainScore'
+  | 'ensemble/oobScore'
+  | 'ensemble/oobError'
+  | 'ensemble/memberError'
+  | 'ensemble/bootstrap'
+
+/**
+ * What an averaging ensemble needs of its members. The second parameter is the type of the paths `after` logs beyond
+ * the ensemble's own ({@link AveragingPath}); none by default.
+ */
+export interface AveragingMember<P extends Json, K extends string = never> {
   /** Fit a member on the rows with the given multiplicities (0 for rows left out); returns its parameters. */
   fit(counts: Float64Array, key: Key): P
   /** The member's outputs on the training rows: class probabilities `[n * k]` or values `[n]`. */
   outputs(member: P): Float64Array
   /** Called after each member with all the members so far, to log what only members know (importances). */
-  after?(members: readonly P[], ctx: StepContext): void
+  after?(members: readonly P[], ctx: StepContext<K>): void
 }
 
 /** Options of {@link averagingAlgorithm}. */
@@ -91,12 +114,12 @@ export interface AveragingTarget {
  * runAlgorithm(alg, { maxSteps: 10, seed: 1 }).state.members.length // => 5
  * ```
  */
-export function averagingAlgorithm<P extends Json>(
+export function averagingAlgorithm<P extends Json, K extends string = never>(
   name: string,
   target: AveragingTarget,
   options: AveragingOptions,
-  member: AveragingMember<P>,
-): Algorithm<AveragingState<P>> {
+  member: AveragingMember<P, K>,
+): Algorithm<AveragingState<P>, AveragingPath | K> {
   const n = target.y.length
   const k = target.k
   const width = Math.max(k, 1)
@@ -191,7 +214,7 @@ function errorOf(
  * Object.keys(averagingSources(true)).includes('ensemble/oobError') // => true
  * ```
  */
-export function averagingSources(classifier: boolean): Readonly<Record<string, ScalarSource | TensorSource>> {
+export function averagingSources(classifier: boolean): Readonly<Record<AveragingPath, ScalarSource | TensorSource>> {
   const score = classifier ? 'accuracy' : 'R²'
   const error = classifier ? 'error rate' : 'mean squared error'
   return {

@@ -14,7 +14,17 @@ import { withDefaultScore } from '../learn/estimator.ts'
 import { columnOf, encodeLabels, matrixView, targetVector } from '../learn/validation.ts'
 import { dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, derived, Log, runAlgorithm, scalar, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  derived,
+  Log,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 
 /** A term of a glass-box model: a shape function of one feature, or a surface over a pair, piecewise constant. */
 export type GlassBoxTerm =
@@ -109,6 +119,18 @@ export function binIndex(edges: readonly number[], v: number): number {
   return lo
 }
 
+/**
+ * The paths of the cyclic booster: the cycle count and training loss it logs, and the derived `model/shapeFunctions`.
+ *
+ * @example
+ * ```ts
+ * import type { CyclicPath } from 'mdml-engine/ensembles'
+ * const path: CyclicPath = 'boost/round'
+ * path // => 'boost/round'
+ * ```
+ */
+export type CyclicPath = 'boost/round' | 'boost/trainLoss' | 'model/shapeFunctions'
+
 /** The state of the cyclic booster. */
 export interface CyclicState {
   /** The current scores on the training rows (the link scale for classification). */
@@ -124,7 +146,7 @@ export interface CyclicState {
 
 /** A cyclic booster: the algorithm, and the model any of its states describes. */
 export interface CyclicBooster {
-  readonly algorithm: Algorithm<CyclicState>
+  readonly algorithm: Algorithm<CyclicState, CyclicPath>
   /** The glass-box model of a state: terms centred over the data, the intercept carrying the rest. */
   model(state: CyclicState): GlassBoxModel
 }
@@ -202,7 +224,7 @@ export function cyclicBoosting(data: LearnData, options: ExplainableBoostingOpti
     gains.sort((a, b) => b.gain - a.gain || a.j - b.j || a.k - b.k)
     return gains.slice(0, nPairs).map(({ j, k }) => ({ j, k }))
   }
-  const algorithm: Algorithm<CyclicState> = {
+  const algorithm: Algorithm<CyclicState, CyclicPath> = {
     name: 'cyclicBoosting',
     config: { task, rounds, pairRounds, learningRate: lr },
     init: () => ({
@@ -423,13 +445,13 @@ export interface EbmVerbs extends Verbs, FittedFacts {
 }
 
 /** An explainable boosting machine estimator. */
-export type EbmEstimator = IterativeEstimator<ExplainableBoostingOptions, CyclicState, EbmParams, EbmVerbs>
+export type EbmEstimator = IterativeEstimator<ExplainableBoostingOptions, CyclicState, EbmParams, EbmVerbs, CyclicPath>
 
 function ebmEstimator(name: string, classifier: boolean, options: ExplainableBoostingOptions): EbmEstimator {
   const task = classifier ? 'classification' : 'regression'
   const dataOf = (data: LearnData): LearnData =>
     classifier ? { ...data, y: Array.from(encodeLabels(data.y ?? [], name).codes) } : data
-  return iterative<ExplainableBoostingOptions, CyclicState, EbmParams, EbmVerbs>({
+  return iterative<ExplainableBoostingOptions, CyclicState, EbmParams, EbmVerbs, CyclicPath>({
     name,
     kind: classifier ? 'classifier' : 'regressor',
     defaults: options,
@@ -474,14 +496,15 @@ function ebmEstimator(name: string, classifier: boolean, options: ExplainableBoo
     },
     maxSteps: (h) =>
       (h.rounds ?? 200) + (h.interactions !== undefined && h.interactions > 0 ? (h.pairRounds ?? 100) : 0),
-    contract: (data, h) => ({
-      'boost/round': scalar({ description: 'cycles over the features (then the pairs) so far' }),
-      'boost/trainLoss': scalar({ description: 'the training loss (squared error or log loss)', direction: 'lower' }),
-      'model/shapeFunctions': derived<CyclicState>({
-        description: 'the terms of the model at this cycle: a shape function per feature, tables for the pairs',
-        compute: (state) => cyclicBoosting(dataOf(data), { ...h, task }).model(state) as never,
+    contract: (data, h): Contract<CyclicState, CyclicPath> =>
+      defineContract({
+        'boost/round': scalar({ description: 'cycles over the features (then the pairs) so far' }),
+        'boost/trainLoss': scalar({ description: 'the training loss (squared error or log loss)', direction: 'lower' }),
+        'model/shapeFunctions': derived<CyclicState>({
+          description: 'the terms of the model at this cycle: a shape function per feature, tables for the pairs',
+          compute: (state) => cyclicBoosting(dataOf(data), { ...h, task }).model(state) as never,
+        }),
       }),
-    }),
     logs: { 'boost/round': Log(), 'boost/trainLoss': Log() },
   })
 }
