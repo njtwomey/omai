@@ -403,7 +403,7 @@ export function groupLasso(
       name: 'group-lasso',
       kind: 'regressor',
       defaults: GROUP_LASSO_DEFAULTS,
-      hyperSpace: (h) => dict({ alpha: real(1e-4, 10, { log: true, default: h.alpha }) }),
+      hyperSpace: (h) => dict({ alpha: real(0, Math.max(10, h.alpha), { default: h.alpha }) }),
       algorithm: (data, h) => groupLassoAlgorithm(designOf(data, 'groupLasso'), optionsOf(h)),
       maxSteps: (h) => h.maxIter,
       params: (s, data, h) => {
@@ -726,7 +726,7 @@ export function multiTaskLasso(
       name: 'multi-task-lasso',
       kind: 'regressor',
       defaults: MULTI_TASK_DEFAULTS,
-      hyperSpace: (h) => dict({ alpha: real(1e-4, 10, { log: true, default: h.alpha }) }),
+      hyperSpace: (h) => dict({ alpha: real(0, Math.max(10, h.alpha), { default: h.alpha }) }),
       algorithm: (data, h) =>
         multiTaskLassoAlgorithm(multiTaskDesign(data, 'multiTaskLasso'), {
           alpha: h.alpha,

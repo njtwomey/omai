@@ -3258,6 +3258,15 @@ the multi-task elastic net; `y` is `[n, k]`, `coef` is a row per task as in scik
 lasso, which a test checks against the GLM core. oracle: `linear/group_lasso` against `MultiTaskLasso` and
 `MultiTaskElasticNet`; the group lasso itself has no scikit-learn reference and is tested by its optimality conditions.
 
+`ordinal.ts` is ordinal regression: `ordinalLogLikelihood` (the likelihood and its gradient for the cumulative-link
+model `P(Y <= k) = F(theta_k - x beta)` with the logit, probit, cloglog and loglog links, and for the sequential
+(continuation-ratio) model), `ordinalProbabilities`, `ordinalAlgorithm` (damped Newton steps, a Hessian from central
+differences of the analytic gradient, thresholds as a first cutpoint plus log increments) and the `ordinal` classifier
+(`predictProba`, the latent `decisionFunction`, `predictDistribution`, a Wald table of slopes and thresholds). oracle:
+`linear/ordinal` against statsmodels' `OrderedModel` (slopes, thresholds, log-likelihood, slope standard errors and
+probabilities for the four links; the sequential mode has no reference and is checked by finite differences and its
+equality with logistic regression for two categories).
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 

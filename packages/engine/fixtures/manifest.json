@@ -1418,6 +1418,14 @@
       "cases": 14
     },
     {
+      "fixture": "linear/ordinal.json",
+      "source": "oracle/cases/linear/ordinal.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "logic/answer-sets.json",
       "source": "oracle/cases/logic/answer-sets.py",
       "reference": {
