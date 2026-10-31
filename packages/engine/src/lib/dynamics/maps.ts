@@ -1,5 +1,5 @@
 /**
- * Discrete-time dynamical systems (iterated maps) and their chaos: the logistic, tent, Henon, standard and circle maps,
+ * Discrete-time dynamical systems (iterated maps) and their chaos: the logistic, tent, Henon, standard and circle maps, and the planar attractor maps (de Jong, Clifford, Ikeda),
  * orbits as traced algorithms, cobweb and bifurcation diagrams, and Lyapunov exponents by Benettin's QR method with
  * Jacobians from forward-mode autodiff.
  */
@@ -10,6 +10,8 @@ import { qr } from '../numerics/linalg/index.ts'
 import {
   abs,
   add,
+  cos,
+  div,
   matmul,
   mul,
   primalOf,
@@ -87,6 +89,80 @@ export function henonMap(a = 1.4, b = 0.3): IteratedMap {
     const x = at(s, 0)
     const y = at(s, 1)
     return stack([add(sub(1, mul(mul(x, x), a)), y), mul(x, b)])
+  }
+}
+
+/**
+ * The Peter de Jong map `(x, y) -> (sin(a y) - cos(b x), sin(c x) - cos(d y))`, an attractor drawn as a density.
+ *
+ * @param a - Default 1.4.
+ * @param b - Default -2.3.
+ * @param c - Default 2.4.
+ * @param d - Default -2.1.
+ * @returns The map on states `[2]`.
+ * @concept strange-attractors
+ * @example
+ * ```ts
+ * import { deJongMap } from 'mdml-engine/dynamics'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * toFlat(deJongMap()(tensor([0, 0]))) // => [-1, -1]
+ * ```
+ */
+export function deJongMap(a = 1.4, b = -2.3, c = 2.4, d = -2.1): IteratedMap {
+  return (s) => {
+    const x = at(s, 0)
+    const y = at(s, 1)
+    return stack([sub(sin(mul(y, a)), cos(mul(x, b))), sub(sin(mul(x, c)), cos(mul(y, d)))])
+  }
+}
+
+/**
+ * Clifford Pickover's map `(x, y) -> (sin(a y) + c cos(a x), sin(b x) + d cos(b y))`.
+ *
+ * @param a - Default -1.4.
+ * @param b - Default 1.6.
+ * @param c - Default 1.0.
+ * @param d - Default 0.7.
+ * @returns The map on states `[2]`.
+ * @concept strange-attractors
+ * @example
+ * ```ts
+ * import { cliffordMap } from 'mdml-engine/dynamics'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * toFlat(cliffordMap()(tensor([0, 0]))) // => [1, 0.7]
+ * ```
+ */
+export function cliffordMap(a = -1.4, b = 1.6, c = 1, d = 0.7): IteratedMap {
+  return (s) => {
+    const x = at(s, 0)
+    const y = at(s, 1)
+    return stack([add(sin(mul(y, a)), mul(cos(mul(x, a)), c)), add(sin(mul(x, b)), mul(cos(mul(y, b)), d))])
+  }
+}
+
+/**
+ * The Ikeda map of a laser in a ring cavity: `t = 0.4 - 6 / (1 + x^2 + y^2)`, then
+ * `(x, y) -> (1 + u (x cos t - y sin t), u (x sin t + y cos t))`. It contracts area by the constant factor `u^2`
+ * everywhere, and for `u` near 0.9 has a strange attractor.
+ *
+ * @param u - The dissipation parameter (default 0.9).
+ * @returns The map on states `[2]`.
+ * @concept strange-attractors
+ * @example
+ * ```ts
+ * import { ikedaMap } from 'mdml-engine/dynamics'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * toFlat(ikedaMap()(tensor([0, 0]))) // => [1, 0]
+ * ```
+ */
+export function ikedaMap(u = 0.9): IteratedMap {
+  return (s) => {
+    const x = at(s, 0)
+    const y = at(s, 1)
+    const t = sub(0.4, div(6, add(1, add(mul(x, x), mul(y, y)))))
+    const c = cos(t)
+    const sn = sin(t)
+    return stack([add(1, mul(sub(mul(x, c), mul(y, sn)), u)), mul(add(mul(x, sn), mul(y, c)), u)])
   }
 }
 

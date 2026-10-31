@@ -6,9 +6,10 @@
 
 import { grad } from '../../autodiff/index.ts'
 import { MdmlError } from '../../base/index.ts'
-import { item, mul, stack, sum, type TensorLike, type Value } from '../../tensor/index.ts'
+import { item, mul, reshape, sliceAxis, stack, sum, type TensorLike, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { combine, floatState, numbersOf } from './_vec.ts'
+import type { VectorField } from './problem.ts'
 
 /**
  * A separable Hamiltonian system H(q, p) = T(p) + V(q): the velocity dH/dp = dT/dp and the force -dH/dq = -dV/dq,
@@ -48,6 +49,33 @@ export function separableHamiltonian(
     velocity: (p) => dT(p),
     force: (q) => mul(dV(q), -1),
     energy: (q, p) => item(kinetic(p)) + item(potential(q)),
+  }
+}
+
+/**
+ * The vector field of a separable Hamiltonian system on the stacked phase-space state `[2, ...]` (positions in row 0,
+ * momenta in row 1): dq/dt = dT/dp, dp/dt = -dV/dq. It lets any integrator (a Runge-Kutta method, an adaptive pair)
+ * run a Hamiltonian system, to set against the symplectic splittings.
+ *
+ * @param system - The separable system.
+ * @returns A field `(t, y) => dy/dt` with y of shape `[2, ...shape]`.
+ * @concept hamiltonian-mechanics
+ * @example
+ * ```ts
+ * import { separableField, separableHamiltonian } from 'mdml-engine/dynamics/ode'
+ * import { mul, sum, tensor, toFlat } from 'mdml-engine/tensor'
+ * const f = separableField(separableHamiltonian((q) => mul(sum(mul(q, q)), 0.5)))
+ * toFlat(f(0, tensor([[1], [2]]))) // => [2, -1]
+ * ```
+ */
+export function separableField(system: SeparableSystem): VectorField {
+  return (_t, y) => {
+    const q = sliceAxis(y, 0, 0, 1)
+    const p = sliceAxis(y, 0, 1, 2)
+    const shape = y.shape.slice(1)
+    const qs = reshape(q, shape)
+    const ps = reshape(p, shape)
+    return stack([system.velocity(ps), system.force(qs)])
   }
 }
 

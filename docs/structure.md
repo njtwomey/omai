@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 44 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 59 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -410,6 +410,21 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `explain`     | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                            |
 | `fairness`    | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                     |
 | `vision`      | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                           |
+| `timeseries`  | ARMA and ARIMA theory, estimators and forecasts, exponential smoothing, decomposition, the matrix profile, online detectors, vector autoregression, volatility and reconciliation                |
+| `svm`         | support vector classification and regression (C and nu forms, one-versus-one, Platt probabilities) and novelty detection (one-class, SVDD) as stepped estimators over the SMO duals              |
+| `gp`          | Gaussian-process regression and classification (Laplace, EP), sparse approximations, the relevance vector machine, as stepped estimators                                                         |
+| `trees`       | decision trees: the tree structure, split criteria, the stepped grower, pruning, ID3, C4.5 and CHAID, the Hoeffding tree, CART estimators                                                        |
+| `ensembles`   | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking                                              |
+| `kernel-methods` | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                           |
+| `gam`         | generalised additive models: smooth, tensor-product and parametric terms on the penalised bases of `stats/smoothing`, penalised IRLS with REML, GCV and UBRE smoothing selection, backfitting, effective degrees of freedom |
+| `covariance`  | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators with Mahalanobis distances and likelihoods, FastMCD and the elliptic envelope, the graphical lasso                          |
+| `anomaly`     | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules              |
+| `sketches`    | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list |
+| `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
+| `causal`      | causal inference from data: treatment-effect estimators (regression adjustment, propensity scores, matching, entropy balancing, AIPW, TMLE, double machine learning), quasi-experimental designs, heterogeneous effects and uplift, sensitivity analysis |
+| `embedding`   | embeddings learned from data: word2vec (skip-gram, CBOW, negative sampling, hierarchical softmax), fastText subwords, GloVe, PPMI with SVD, knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE) with filtered ranking, and analogy and similarity evaluation, each loss a smooth problem with the optimiser a slot |
+| `patterns`    | pattern mining: Apriori, FP-growth and Eclat (identical itemsets and counts), closed and maximal itemsets, association rules with their measures, PrefixSpan and GSP with gap constraints, subgroup discovery by quality function with beam, exhaustive, CN2-SD and Apriori-SD search |
+| `rules`       | rule learning on the `learn` contract: CN2 (ordered and unordered), PRISM, RIPPER and IREP, OneR and decision tables, CORELS-style certifiably optimal and Bayesian rule lists, the rule, coverage and quality-measure representation, rules from tree paths |
 
 ### 4.1 `base/`
 
@@ -677,11 +692,12 @@ oracle: jax and torch for derivative values; finite differences in property test
   detail (`summarise`), and `subsample`.
 - `tracer.ts`: `Tracer`, `nullTracer`, `recorder` (with `forget`, so a kept window can let its oldest event go),
   `tee`, `filtered`, `startRun`, `RunHandle` (applies the policy).
-- `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext`,
+- `algorithm.ts`: `Algorithm<S, K>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext<K>`,
   `runAlgorithm`, `iterate` (a generator for live views), `runFor` (budgeted slices that continue exactly; the budget
   is a step count or milliseconds of an injected clock, since published code reads no clocks).
 - `nesting.ts`: child runs (`subRun`, keyed from the outer step, with the policy `childPolicy` derives); run trees are
-  read back with `runTree` in `query.ts`.
+  read back with `runTree` in `query.ts`; `mountContext` (the step context of an inner method mounted under a prefix,
+  typed `StepContext<K>` over an outer `StepContext<Prefixed<P, K>>`).
 - `taps.ts`: `tapContext` (`taps.tap(name, value)` inside model code, `TapContext`), `tapsFor(run, step)` (records
   activations when the policy asks).
 - `instrument.ts`: `instrument(fn, options)` (trace calls of any function: numeric inputs and outputs as metrics or
@@ -692,14 +708,31 @@ oracle: jax and torch for derivative values; finite differences in property test
   `derived`, `event`), subscriptions (`Log` with `every`, `detail`, `args`, `budget` and `keep`: `all`, `last` or the
   most recent n events of the path, checkpoints never among them; `On`; `off`/`defaults`/`all`), path patterns,
   `resolve` (contract and subscription to a policy, per-path schedules and hooks; it rejects a bad `keep`),
-  `contractSchema`.
+  `contractSchema`. **Typed paths:** a path is a `string` at run time (tapes, saved panel configs, JSON and the render
+  layer name paths as data, subscriptions are patterns) and a type parameter `K` (default `string`) at compile time:
+  `Contract<S, K>`, `Subscription<K>`, `Method<S, C, K>`, `Algorithm<S, K>`, `StepContext<K>`, `Session<S, C, K>`. With
+  `K` a union of literals, `ctx.log`, `ctx.emit` and `ctx.wants` take only those paths (a contract key that is a
+  pattern is logged by any path under it, `Concrete<K>`), `defaults` and a session's `logs` take those paths or any
+  pattern (a `*` in it, `Pattern`; patterns are checked by `resolve` at run time), and `defineMethod` infers `K` from the
+  contract. `defineContract` keeps a literal contract's keys (and checks them), `PathsOf<typeof contract>` reads them
+  back, fragments compose by spreading (`{ ...solverContract, ...own }`), `Prefixed<P, K>` and `prefixContract` mount a
+  contract under a prefix. A path built at run time stays `string`, or a template literal for the part that varies
+  (`layer${number}/weights`); the type cannot see a pattern's matches. Because `isolatedDeclarations` wants an exported
+  constant annotated, an exported contract (a fragment) writes its path union and annotates `Contract<S, FooPath>`; the
+  annotation is the check that the two agree. The default `K = string` leaves every untyped method as it was; a typed
+  `Algorithm<S, 'a'>` is accepted wherever an `Algorithm<S>` is wanted (the context's methods are bivariant). The
+  migration recipe is in `defineContract`'s TSDoc. **Backstop:** a session's log context throws
+  `MdmlError('value', "log: the contract has no path '...'")` when an algorithm logs to or emits a
+  path the resolved contract (`Resolved.paths`) does not hold, as opposed to one that is merely unsubscribed (`wants`
+  is a question and answers `false`; checked once per path, remembered; not in a run with no tape, nor in a bare
+  `runAlgorithm`, which has no contract).
 - `logging.ts`: the scheduler (every n steps, log-spaced, or on the nth firing of an event), the log context
   algorithms write to (`log`, `wants`, `emit`, `taps`), `defaultLogContext` for runs outside a session, and `gated`
   (the tracer that renames native channels to paths, passes only what is subscribed and due, and holds a path's
   `keep` window by having the recorder forget its oldest events as new ones arrive, the budget counting what is held).
-- `session.ts`: `Method` and `defineMethod` (config space, `make`, contract, defaults, named hooks, projections),
-  `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`, `stepsOf`) and `session` with its modes (eager,
-  live, eager to a point).
+- `session.ts`: `Method<S, C, K>` and `defineMethod` (config space, `make`, contract, defaults, named hooks,
+  projections; `K` inferred from the contract), `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`,
+  `stepsOf`) and `session` with its modes (eager, live, eager to a point).
 - `serialise.ts`: `stateToJson` and `stateFromJson`, generic checkpoint serialisation of states made of tensors, typed
   arrays, keys and plain trees.
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
@@ -780,6 +813,14 @@ primitives; "custom" means a dedicated rule.
   `kroneckerSolve`.
 - `randomized.ts`: `randomizedSvd`, `randomizedRangeFinder`, `randomProjectionMatrix`, `johnsonLindenstraussDim`,
   `hutchinsonTrace`, `stochasticLogdet`.
+- `subspace.ts`: `subspaceIterationAlgorithm` (a block power iteration, one block product and QR per step, with the
+  Rayleigh-Ritz values and residuals), `subspaceIteration`.
+- `svd-steps.ts`: `jacobiSvdAlgorithm` (one-sided Jacobi, a step is a rotation or a sweep; the off-diagonal measure is
+  the largest column cosine), `jacobiSvd`, `jacobiSingularValues`.
+- `completion.ts`: matrix completion from observed entries (`ObservedEntries`): `alsCompletionAlgorithm` (one
+  half-sweep of ridge solves per step), `sgdCompletionAlgorithm` (biased factorisation, one epoch per step),
+  `implicitAlsAlgorithm` (confidence-weighted implicit feedback), `softImputeAlgorithm` and `softImpute` (iterated
+  soft-thresholded SVD), `softImputeLambdaMax`, `predictEntry`, `factorsToMatrix`.
 
 `sparse/` (scipy.sparse)
 - `csr.ts`: `CsrMatrix`, `csr`, `fromCoo`, `toDense`, `spmv`, `spmm`, `transposeCsr`, `diagCsr`, `csrAdd`,
@@ -789,6 +830,13 @@ primitives; "custom" means a dedicated rule.
   adjoint solves).
 - `eigen.ts`: `lanczos` (full reorthogonalisation, deflation), `arnoldi`, `eigsh` (top k, with locking for repeated
   eigenvalues), `svds`.
+- `lanczos-steps.ts`: `lanczosAlgorithm` (one Krylov vector per step, with the Ritz values and residuals, and a switch
+  for reorthogonalisation to watch the basis lose orthogonality), `lanczosSteps`.
+- `stationary.ts`: `stationaryAlgorithm` (Jacobi with damping, Gauss-Seidel, SOR; one sweep per step), `stationarySolve`,
+  `jacobi`, `gaussSeidel`, `sor`, `iterationMatrix`, `stationarySpectralRadius`, `sorOptimalOmega`.
+- `multigrid.ts`: `poisson1d`, `poisson2d`, `prolongation` (linear and bilinear), `multigridAlgorithm` (two-grid, V and W
+  cycles with Galerkin coarse operators and a stationary smoother; the residual after each stage of a cycle),
+  `multigridCycle` (the iterate after each stage, for the error by frequency), `multigridSolve`.
 
 `polynomial/` (numpy.polynomial; composed)
 - `power.ts` (lowest degree first, as numpy.polynomial): `polyval`, `polyvander`, `polyfit`, `polyder`, `polyint`,
@@ -837,7 +885,8 @@ primitives; "custom" means a dedicated rule.
   equioscillation, `chebyshevSeries`.
 - `pade.ts`: `pade` (approximants from Taylor coefficients), `continuedFraction` (modified Lentz).
 - `acceleration.ts`: `richardson`, `aitken`, `shanks`, `wynnEpsilon`, `eulerTransform`.
-- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, `toFloat32`, `twoSum`, `twoProduct`, `compensatedSum`
+- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon` (for float64, float32, float16, bfloat16), `FLOAT_FORMATS`, `toFloat32`, `toFloat16`, `toBfloat16`,
+  `roundToFormat` (emulated rounding with subnormals and overflow), `twoSum`, `twoProduct`, `compensatedSum`
   (naive, Kahan, and base's Neumaier and pairwise sums), `propagateError`, `conditionNumber`, `significantDigits`.
 
 `fourier/` (numpy.fft, scipy.fft; linear, so differentiable; complex pairs come from `tensor/complex.ts`)
@@ -925,6 +974,15 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
 - `generator.ts`: `DatasetGenerator` (name, kind, knobs as a `Space`, `generate(key, knobs) -> { data, truth }`),
   `Generated`, `generate` (resolves keys from the context, validates knobs, stamps the recipe and key),
   `describeGenerator`, `asGenerated` (a real dataset as `{ data, truth }` for modifiers).
+- `streams.ts`: the stream base: data arriving one batch per step with planted drift. `stream(key, options)` is a
+  `DataStream` (a classification or a regression generator; the concept, covariate or label `shift`; `drift` abrupt,
+  gradual, incremental or recurring, with `points` or an even `count`, a `width`, a `period`, `concepts` and a
+  `severity`) whose `next(t)` is a pure function of the key and the step (random access), and whose `StreamTruth`
+  carries the drift points (`changepoints`, as `Truth` names them), the `PlantedDrift`s, the active concept per step
+  (`conceptAt`, `transitionAt`), each concept's `parameters` and the rule it gives a point (`predict`). `streamKnobs`
+  is the stream's knobs as a `Space` (for a later registry entry); `streamAlgorithm(options)` runs the same stream as
+  a serialisable `Algorithm` (`StreamState`: key, step, last batch) that logs `stream/concept`, `stream/mix`,
+  `stream/drift`, `stream/x` and `stream/y` (`streamContract`).
 - `truth.ts`: the `Truth` interface: `program` (the generating probabilistic program), `logProb`, `posterior`,
   `regressionFunction`, `quantile`, `noiseScale`, `bayesError`, `clusters`, `changepoints`, `latents`, `effects`
   (`CausalEffects`: ATE, ATT, CATE, ITE, potential outcomes), `structure`, `relevantFeatures`; helpers that derive
@@ -954,6 +1012,12 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
   (keeping the density truth consistent; `featureTransform`), `withCorrelatedFeatures` (Toeplitz and equicorrelated).
 - `modifiers/shift.ts`: `withCovariateShift` (with the density ratio), `withConceptDrift` (sudden, gradual,
   recurring), `shiftedSplit`, `semiSupervisedSplit`.
+- `modifiers/shift.ts` also has `withSubpopulationShift` (a group under-represented in the source, with the density ratio) and
+  `withShortcut` (a feature tracking the label at the source and independent of it at the target).
+- `modifiers/leaks.ts`: `withLeak` (a noisy copy of the target, or a target encoding fitted on all rows) and
+  `withDuplicates` (exact or jittered copies shuffled in, with the source row of each as truth).
+- `modifiers/images.ts`: image augmentations with their draws kept as truth: `withRandomCrop` (padding, offsets), `withRandomFlip`,
+  `withCutout`, `withMixup` and `withCutmix` (weights, partners and soft labels), each also a recipe modifier.
 
 ### 4.12 `foundations/`: mathematical foundations
 
@@ -1105,6 +1169,38 @@ in it (`checkPrimitive`).
 - `colouring.ts`: `greedyColouring` (largest-first, smallest-last, random-sequential, independent-set,
   connected-sequential BFS/DFS, DSATUR), `isProperColouring`, `maximalIndependentSet`, `maximalCliques`
   (Bron-Kerbosch with Tomita pivoting), `maximumClique`, `cliqueNumber`.
+- `spreading.ts`: things that spread over a network: `networkEpidemicAlgorithm` (SIR, SIS or SEIR by Gillespie's exact
+  method, one event per step, with vaccinated nodes and a horizon), `independentCascadeAlgorithm` and
+  `linearThresholdAlgorithm` (one wave per step), and the results known about them: `sirTransmissibility`,
+  `epidemicFinalSize` (Newman's generating-function relation for any degree sequence), `homogeneousFinalSize`,
+  `epidemicThresholds` (spectral, heterogeneous mean-field and percolation), `wattsCascadeCondition`, `vaccinationSet`
+  (random, targeted, acquaintance), `herdImmunityThreshold`.
+- `influence.ts`: influence maximisation: `liveEdgeSamples` (independent cascade or linear threshold as reachability in
+  sampled live-edge graphs), `liveEdgeReach`, `estimateSpread`, `exactIndependentCascadeSpread` (enumeration, the
+  truth for small graphs) and `influenceMaximisationAlgorithm` (greedy, CELF or highest degree, one seed per step with
+  its marginal gain and the evaluation count on the tape).
+- `opinion.ts`: opinion dynamics: `voterModelAlgorithm` with `voterFixationProbability` (the degree-weighted share),
+  `degrootAlgorithm` (DeGroot and Friedkin-Johnsen with stubbornness) with `degrootConsensus` and
+  `friedkinJohnsenEquilibrium`, and `boundedConfidenceAlgorithm` (Hegselmann-Krause on a graph).
+- `_run.ts`: the state codec, seed resolution and argument checks the stepped processes share.
+- `percolation.ts`: `percolationAlgorithm` (site or bond, any graph, one site or bond per step, clusters by union-find,
+  a spanning cluster between two sides), `sitePercolationAlgorithm`/`bondPercolationAlgorithm` on a square lattice,
+  `latticeSides`, `spanningCluster`, `percolationSweep`, `spanningThresholds` (finite-size scaling),
+  `PERCOLATION_THRESHOLDS` (square, triangular, honeycomb, cubic), `erdosRenyiGiantFraction`, `giantComponentFraction`.
+  `structures.ts`'s `UnionFind` gained `clone`, `toJSON` and `fromJSON` for this.
+- `growth.ts`: networks grown a step at a time, with their known results: `edgeByEdgeAlgorithm` (Erdos-Renyi, with
+  `erdosRenyiConnectivityEdges`), `preferentialAttachmentAlgorithm` (preferential or uniform, with
+  `barabasiAlbertDegreeLaw`, `uniformAttachmentDegreeLaw`), `rewiringAlgorithm` (Watts-Strogatz, with
+  `wattsStrogatzClustering`, `ringLatticePathLength`, `smallWorldSweep`), `blockGrowthAlgorithm` (with
+  `blockModelExpectedEdges`), `configurationModelGraph`, `growthGraph`, `unrankPair`. `measures.ts` gained
+  `averageShortestPathLength`.
+- `resistance.ts`: electrical flow on a graph: `effectiveResistance` (all pairs, from the Laplacian pseudoinverse per
+  component), `effectiveResistanceBetween` (grounded solve), `commuteTime`, `kirchhoffIndex`,
+  `edgeEffectiveResistances` (Foster's theorem, spanning-tree probabilities), `spanningTreeCount` (matrix-tree).
+- `sampling.ts`: sampling from a graph: `neighbourSample` (GraphSAGE fan-out sampling with unbiasedness weights, the
+  layers, per-hop edges and the sampled subgraph) with `neighbourSampleVariance`, `layerwiseImportanceSample`
+  (FastGCN and LADIES) with `sampledAggregate`, `randomWalks`, `node2vecWalks` with `node2vecTransition` (the exact
+  second-order probabilities), `randomWalkSubgraph` (GraphSAINT).
 
 The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` predates this domain and works on
 string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `maximalCliques` can later delegate to
@@ -1229,7 +1325,19 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   the hierarchical softmax in `losses` uses), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
   expected length, prefix encoding and decoding.
 - `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
-  adaptive frequency models.
+  adaptive frequency models; each coder also as a traced algorithm, one symbol per step (`arithmeticEncoderAlgorithm`,
+  `arithmeticDecoderAlgorithm`, `rangeEncoderAlgorithm`, `rangeDecoderAlgorithm`) with the working interval, the bits
+  against the information content and the adaptive counts on the tape, the output identical to the whole-message
+  functions. `source-coding.ts` gained `prefixEncoderAlgorithm`.
+- `sources.ts`: sources with their truth: `memorylessSource` (entropy, the sample's information content),
+  `markovSource` (stationary law, entropy rate).
+- `bottleneck.ts`: the information bottleneck: `informationBottleneckAlgorithm` (Tishby's self-consistent iteration at one
+  beta), `bottleneckCurveAlgorithm` (one beta per step, the information curve), `agglomerativeBottleneckAlgorithm`
+  (merges by relevance cost), `bottleneckCriticalBeta` (1 / lambda_2), `plantedBottleneck` (a joint with the optimal
+  clustering, I(X; Y) and H(G) as truth).
+- `mdl.ts`: minimum description length: `multinomialParametricComplexity`, `nmlRegret`, `nmlRegretAsymptotic`,
+  `nmlCodeLength`, `dirichletCodeLength` (KT and Laplace), `parameterBits`, `gaussianDataBits`, `polynomialMdl` (total =
+  BIC in bits), `histogramMdl`, `bestMdl`, and `mdlSelectionAlgorithm` (one candidate per step).
 - `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
 - `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
 - `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
@@ -1259,7 +1367,8 @@ first, as scipy.signal. State-space and transfer-function values are differentia
 coefficients, and so are the conversions between them, the responses and the discretisations.
 - `representations.ts`: transfer functions, zero-pole-gain, state space and second-order sections (`tf`, `zpk`, `ss`,
   `sos`); continuous and discrete; conversions between them (`toTf`, `toZpk`, `toSs`, `toSos`), `dimensions`,
-  `isDiscrete`; minimal realisation (`minreal`: staircase reductions, pole-zero cancellation).
+  `isDiscrete`; minimal realisation (`minreal`: staircase reductions, pole-zero cancellation); `pade` (the rational
+  approximation of a delay, python-control's).
 - `conversions.ts`: scipy's pairwise conversions: `normalize`, `abcdNormalize`, `tf2ss` (controller canonical form),
   `ss2tf` (differentiable through `charpoly`), `tf2zpk`, `zpk2tf`, `zpk2ss`, `ss2zpk`.
 - `sections.ts`: second-order sections: `zpk2sos` (nearest, keep-odd and minimal pairing; analog), `sos2zpk`,
@@ -1267,7 +1376,9 @@ coefficients, and so are the conversions between them, the responses and the dis
 - `interconnect.ts`: `series`, `parallel`, `feedback`, `append`, `connect` (python-control semantics; static gains
   accepted; transfer functions combine as polynomials, multivariable systems in state space).
 - `responses.ts`: impulse, step, initial-condition and arbitrary-input responses (`lsim` and the traced
-  `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`.
+  `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`; `stepMeasures` (on
+  sampled data) and `stepInfo` (on a system): rise time, settling time, overshoot, undershoot and peak, as
+  python-control's `step_info`.
 - `frequency.ts`: frequency response (`freqresp`, `evalfr`, `dcgain`, `findfreqs`), Bode, Nyquist (with the
   encirclement count) and Nichols data.
 - `filters.ts`: frequency responses of filters given by coefficients (`freqs` analog, `freqz` digital, FFT for FIR).
@@ -1301,7 +1412,7 @@ maximum likelihood, RANSAC, SPRT) are traced `Algorithm`s; randomness comes from
 linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisation); `tests/_shapiro.ts`,
 `tests/_kolmogorov.ts`, `tests/_cvm.ts` (null distributions).
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, weighted versions,
-  `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`.
+  `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`, `gini`.
 - `running.ts`: Welford moments (`momentState`, `push`, `pushAll`, `merge`, `momentsOf`), P-squared quantiles
   (`p2Quantile`, `p2Push`, `p2Estimate`), exponentially weighted moments (`ewmState`, `ewmPush`, `ewmMean`, `ewmVar`,
   `ewmStd`).
@@ -1368,6 +1479,24 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
   `runningMedian`, `smoothingSpline` (lambda, degrees of freedom or GCV over numerics' `makeSmoothingSpline`).
 - `fit.ts`: `fitDistribution` (closed form or Newton for seventeen families) with standard errors from the
   `observedInformation`; `newtonMle` (traced `newtonMleAlgorithm`).
+- `experiments.ts`: online-experiment estimators: `cuped` (pre-experiment covariate adjustment), `postStratify`,
+  `regressionAdjustment` (Lin's demeaned interaction estimator with HC2 errors), `deltaMethodRatio` (user-level ratio
+  metrics, one and two sample), `clusterRandomisedTest` (ICC, design effect, CR1 errors) and `switchbackAnalysis`
+  (period means, Newey-West errors, optional randomisation p-value). Results carry an `Estimate` and a `TestResult`.
+- `design.ts`: randomisation (`simpleRandomisation`, `permutedBlockRandomisation`, `stratifiedRandomisation`,
+  Pocock-Simon `minimizationAlgorithm`/`minimizationAllocation` as a traced `Algorithm` whose draws come from the step
+  key), `matchedPairsDesign` (exact matching up to 16 units), `fullFactorialDesign`, `fractionalFactorialDesign` and
+  `aliasStructure` (defining relation, resolution, alias chains), `latinSquareDesign`, `oneWayAnova` and `twoWayAnova`
+  (Type I, II and III sums of squares; golden against statsmodels `anova_lm`).
+- `shrinkage.ts`: `jamesStein`, `positivePartJamesStein` (targets zero, a vector or the grand mean; SURE) and
+  `empiricalBayesNormalMeans` (homoscedastic Efron-Morris, heteroscedastic DerSimonian-Laird moments; the
+  heteroscedastic fit is golden-tested against statsmodels `combine_effects`).
+- `missing.ts`: `missingnessProfile` (columns, rows, patterns) and `littleMcarTest` (Gaussian EM moments, chi-square
+  over the pattern means; tested against the closed-form monotone-pattern maximum likelihood, no reference library
+  implements it).
+- `concentration.ts`: `markovBound`, `chebyshevBound`, `chernoffBound`/`chernoffGaussianBound`, `chernoffKlBound`,
+  `hoeffdingBound` with `hoeffdingSampleSize`, `bernsteinBound`, `bennettBound`, `empiricalBernsteinInterval`,
+  `mcDiarmidBound` and the `dkwBand`.
 
 TODO (deferred, esoteric):
 - `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to
@@ -1409,6 +1538,37 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   inverse-time, cosine (`cosineDecay`, `cosineWarmRestarts`, `sgdr`), warmup (`warmupCosineDecay`,
   `warmupExponentialDecay`, `warmupConstant`, `linearSchedule`), one-cycle, piecewise (`piecewiseConstant`,
   `piecewiseInterpolate`, `joinSchedules`), polynomial, cyclical, `reduceOnPlateau`; torch.optim.lr_scheduler and optax.
+- `schedule-table.ts`: `schedules`, the schedules as an option table (constant, step, exponential, inverse-time,
+  cosine, restarts, linear, polynomial, warm-ups), each taking the optimiser's learning rate as its peak, with
+  properties (warm-up, decays, restarts) for validity rules.
+- `optimiser-table.ts`: `optimisers`, the optimisers as an option table (SGD with momentum and Nesterov, RMSprop,
+  Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam, Lion), each a shape that takes a learning rate or a
+  schedule, with its own knobs and properties (adaptive, momentum, decoupled decay).
+- `stochastic.ts`: `gradientAlgorithm`, a transformation-driven descent over an objective that may be summed over a
+  batch (`BatchObjective`, `Batches`): the optimiser at a scheduled rate, a batch of `batch` examples drawn without
+  replacement from each step's key (null: the whole set), a serialisable `GradientState` (iterate, value, gradient,
+  optimiser state, step count, last rate); the engine of the `gradient` mode.
+- `solvers.ts`: `smoothSolvers`, the smooth solvers as one slot of modes (gradient descent with its step rules,
+  conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent and `gradient`, whose knobs are `optimiser`
+  (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
+  `SmoothProblem` (an objective that may take a batch index set, `batches`, a start); `loggedSolver` (logs
+  `solver/objective`, `solver/gradNorm`, `solver/step` and, for `gradient`, `solver/lr`; serialises the state),
+  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`; `loggedSolverOf` logs by the same
+  convention for any table whose states carry `x`, `value`, `grad` and `step`.
+- `glm.ts`: the smooth penalised GLM as a problem and a slot. `GlmProblem` (design, family, link, prior weights,
+  offset, intercept, `GlmPenalty`: none, ridge, or a general quadratic penalty matrix as an additive model needs) and
+  `glmSolvers`, the table of its solvers: `irls` (Fisher scoring with step halving, the weighted problem solved by
+  Cholesky) and, from `smoothSolvers` on the GLM objective (`glmSmoothProblem`), `newton` (observed information),
+  `bfgs`, `lbfgs`, `conjugateGradient`, `gradientDescent` and `gradient` (the stochastic mode with its optimiser,
+  schedule and batch). `fitGlm` runs a mode to its fit; `glmValue`, `glmGradient` evaluate. Non-smooth penalties
+  (lasso, elastic net, group lasso) are deliberately not in the table: they are particular algorithms (`linear/lars.ts`,
+  `paths.ts`, `group-lasso.ts`, `optim/sparse.ts`, `proximal.ts`). Home: `optim`, not `linear`, because `optim` may
+  import `dists/families` without a cycle (`dists` imports neither `optim` nor `linear`) and the table serves `linear`,
+  `gam` and any future GLM-shaped model alike. A model whose objective is not GLM-shaped builds a `SmoothProblem` and
+  takes `smoothSolvers`; a model that is a GLM takes `glmSolvers`; the model never carries a solver of its own.
+- `analytic.ts`: `analyticObjective`, an objective written over plain numbers with its analytic gradient (and Hessian)
+  as a differentiable function the solvers accept (the gradient is its reverse rule, the Hessian its forward rule), and
+  `finiteDifferenceHessian` for the Newton mode of a model that has a gradient only.
 - `line-search.ts`: the line-search contract (`LineFunction`, `LineStart`, `LineSearchResult` with every trial point
   recorded, `LineSearch`), `backtracking` (Armijo, scipy's quadratic-cubic interpolation, optionally safeguarded, or
   halving; value-only evaluations), `strongWolfe` (Nocedal-Wright bracketing and zoom by cubic interpolation, scipy's
@@ -1513,7 +1673,9 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `smo.ts`: sequential minimal optimisation (`smo`, `smoAlgorithm`) for quadratic programs with box constraints and
   one linear equality (the SVM dual family, libsvm's solver): working-set selection (maximal violating pair, second
   order WSS3), shrinking with gradient reconstruction, libsvm's rho, traced working pairs and active sets; `svcDual`
-  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables).
+  (C-SVC with per-sample C) and `svrDual` (epsilon-SVR over 2n variables), `oneClassDual` and `svddDual`; `smoRho`.
+- `smo-nu.ts`: libsvm's Solver_NU (`nuSmoAlgorithm`: two equalities, pairs within a class), the feasible starts
+  (`nuSvcStart`, `nuSvrStart`), `nuRho`, and the `nuSvcDual` and `nuSvrDual` duals.
 - `sparse.ts`: sparse approximation, each a traced algorithm: `matchingPursuit`, `orthogonalMatchingPursuit`
   (sklearn's Cholesky OMP, atoms or squared-residual tolerance), `cosamp`, `iterativeHardThresholding` (normalised
   IHT or a fixed step), `basisPursuit` (ADMM with a cached projection), `basisPursuitDenoising` and
@@ -1590,6 +1752,9 @@ import with the installed jax)
   rational quadratic, scaled kernels, or given draws), `orthogonalRandomFeatures`, `nystroem`, `additiveChi2Sampler`,
   `skewedChi2Sampler`, `polynomialCountSketch`, `tensorSketch`, approximation error helpers (`approximateGram`,
   `approximationError`).
+- `named.ts`: kernels chosen by scikit-learn's names (`KernelChoice`: a metric name or a `Kernel`, `gamma` of `'scale'`
+  or `'auto'` or a number, `degree`, `coef0`), `resolveKernel` against the training rows into plain JSON,
+  `kernelMatrix`, and `kernelSpace` (the choice as knobs).
 - `matrices.ts`: `centerKernel`, `kernelAlignment`, `targetAlignment`, `hsic` (biased, unbiased, normalised),
   `mmdSquared` (biased, unbiased, linear-time), `effectiveDimension`, `kernelPca` projections, `pairwiseKernels`
   (scikit-learn's metric names and parameters).
@@ -1764,6 +1929,28 @@ jellyfish, Biopython, pyphen
   TODO: Németh's non-standard (`/`) patterns.
 - `statistics.ts`: Zipf (log-log and maximum likelihood) and Heaps fits, type-token ratios (root, log, moving average,
   hapax ratio), tokeniser fertility and compression ratio, topic coherence (UMass, NPMI as gensim).
+- `language-models.ts`: n-gram language models (Chen and Goodman 1998): counts of padded n-grams, the smoothers as a
+  mode (maximum likelihood, add-k, Witten-Bell, absolute discounting, interpolated and modified Kneser-Ney with
+  continuation counts, Katz backoff over Good-Turing discounts), `<unk>` for rare words, probabilities, whole
+  next-word distributions, perplexity and samples; `ngramTrainingAlgorithm` counts one sentence per step with the
+  held-out perplexity so far. Oracle: Chen and Goodman's definitions written directly in Python (NLTK's `lm` models
+  differ in convention, see `oracle/cases/text/language_models.py`).
+- `keywords.ts`: RAKE (reproduces the scores of the RAKE paper's worked abstract), the TextRank word graph and keywords
+  with phrase merging (PageRank from `graph`), the sentence graph with Mihalcea and Tarau's overlap similarity and
+  extractive summaries.
+- `linkage.ts`: record linkage: standard and sorted-neighbourhood blocking, field comparison into agreement levels,
+  the Fellegi-Sunter model fitted by EM on the comparison patterns (`fellegiSunterAlgorithm`, one iteration per step,
+  serialisable), match weights and posteriors, pairwise precision and recall, entity clusters from the matched pairs.
+  Tested on `linkageTables`, where the EM recovers the planted agreement rates.
+- `spelling.ts`: the noisy-channel spelling corrector: candidates from a BK-tree, a channel learned from (typed,
+  intended) pairs (weighted Damerau-Levenshtein alignment with counted operation probabilities) or uniform, the prior a
+  word-frequency table or an n-gram language model reading the corrected context, whole sentences left to right.
+- `retrieval.ts`: a positional inverted index (`invertedIndex` with `add` per document, `indexingAlgorithm` one
+  document per step), the scoring models as a mode over its postings (TF-IDF cosine, BM25 with Robertson or Lucene idf,
+  the binary independence model with optional relevance judgements, query likelihood under Dirichlet, Jelinek-Mercer or
+  absolute-discount smoothing), each query term's contribution to a score, `search` (top k), phrase and proximity
+  queries from the positions, boolean queries. BM25 over the postings equals `features.ts`'s rank_bm25 scores in the
+  tests; the other models are checked against their hand formulas and the smoothed models against normalisation.
 
 ### 4.22 `search/`: search, constraint satisfaction and planning (AIMA)
 
@@ -1908,6 +2095,17 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   by coordinate), `ellipticalSlice`.
 - `importance.ts`: `importanceSampling`, `normaliseLogWeights`, `importanceEss`, `selfNormalisedEstimate`,
   `logEvidence`, `paretoSmoothedWeights` (PSIS), `paretoKHat`, `weightDiagnostics`.
+- `variance-reduction.ts`: `monteCarloEstimate` (the baseline), `controlVariateEstimate` (one or several controls, fitted
+  coefficients and multiple correlation), `antitheticEstimate` (uniform and normal reflection, pair correlation),
+  `stratifiedEstimate` with `uniformStrata` (proportional and Neyman allocation, pilot or known spreads),
+  `raoBlackwellEstimate` (with the law-of-total-variance split), `quasiMonteCarloEstimate` (scrambled Sobol or shifted
+  Halton replicates), each an `Estimate` with the plain standard error for the same budget and the reduction factor;
+  `varianceReductionAlgorithm` runs plain, antithetic, control-variate and stratified side by side, one batch per step
+  (`varianceReductionEstimates` reads the state).
+- `gradient-estimators.ts`: gradients of `E_{x ~ p_theta} f(x)` in the parameters: `scoreFunctionGradient` (baselines:
+  none, batch mean, leave-one-out, constant), `pathwiseGradient` (through `rsample`), `straightThroughGradient` (over
+  `dists`' `straightThrough`), `gumbelSoftmaxGradient` (over `relaxedOneHotCategorical`, optionally hard), each returning
+  the mean, the single-sample variance and the standard error per parameter; `gradientError` against an exact gradient.
 - `smc.ts`: resampling schemes (`systematicResample`, `stratifiedResample`, `multinomialResample`, `residualResample`,
   `resample`), `nextTemperature` (adaptive tempering), `adaptiveRandomWalkMove`, `smcAlgorithm` and `smcSampler`
   (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling`.
@@ -1957,6 +2155,32 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
 - `ilp/foil.ts`: FOIL (gain, refinement, coverage), traced.
 - `ilp/progol.ts`: mode declarations, bottom clauses, inverse entailment.
 - `ilp/meta-interpretive.ts`: Metagol-style learning with metarules; learning from failures (Popper-style).
+- `production.ts`: production systems: rules over a working memory of ground facts (`productionRule`, `not(...)`
+  conditions, facts added and removed, `halt`), conflict resolution by rule order, priority, recency (OPS5's LEX) or
+  specificity (`resolveConflict`, ties broken by the matched facts so every matcher fires the same instantiation), a
+  naive matcher and `ReteNetwork` (alpha memories and beta memories of partial matches, updated on `add` and `remove`; a
+  property test checks that both matchers give identical runs on random rule bases), and `productionSystemAlgorithm`
+  (one firing per step, the working memory, the conflict-set size and the rule fired with its bindings in the state).
+- `uncertain.ts`: MYCIN certainty factors (`combineCertainty`, `certaintyInference`), Dempster-Shafer belief functions
+  (`massFunction`, `belief`, `plausibility`, `combineDempster` with its conflict, `combineYager`, `pignistic`,
+  `evidenceAlgorithm` adding one body of evidence per step with the belief intervals), fuzzy logic (membership functions,
+  t-norms and t-conorms, `mamdani` and `sugeno` inference, `defuzzify` with centroid by exact integration of the
+  piecewise-linear curve, bisector and the means/smallest/largest of the maxima) and `possibilityMeasures`.
+- `argumentation.ts`: Dung frameworks: conflict-free and admissible sets, the characteristic function, grounded,
+  complete, preferred and stable extensions (`extensions`, `accepted` sceptically or credulously), and
+  `groundedAlgorithm`, the grounded labelling one round per step (in, out, undecided).
+- `description.ts`: ALC: `parseConcept`, `nnf`, `alcTableauAlgorithm` (one rule per step: and, all, some, or with
+  backtracking, clashes, subset blocking, a TBox of general concept inclusions internalised), `conceptSatisfiable`,
+  `conceptSubsumes` (unsatisfiability of the difference) and `classifyConcepts` (the direct-parent hierarchy of named
+  concepts).
+- `problog.ts`: ProbLog-style probabilistic logic programs: `groundProbabilistic` (forward-chaining grounding of
+  function-free definite rules over probabilistic facts `p::f`), `proofSets` (minimal proofs of every atom to a fixed
+  point, so cycles terminate), `successProbability` (exact weighted model counting by memoised Shannon expansion, with
+  the proofs and their probabilities exposed), `conditionalProbability` (evidence true or false) and `probLogEmAlgorithm`
+  (EM for the facts' probabilities from observed interpretations, one iteration per step). Checked against enumeration of
+  all possible worlds on random cyclic graphs.
+- TODO (not built): Markov logic networks (grounding, pseudo-likelihood weight learning, MC-SAT and Gibbs), differentiable
+  logic (t-norm formula semantics over tensors as in Logic Tensor Networks, a neural theorem prover, differentiable ILP).
 - Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
   built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
@@ -1979,7 +2203,11 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `ode/implicit.ts`: backward Euler, trapezoid (Crank-Nicolson), BDF orders 1 to 5 with variable order, Radau IIA (5),
   SDIRK, Rosenbrock methods, stiffness detection.
 - `ode/symplectic.ts`: symplectic Euler, Stormer-Verlet (leapfrog), velocity Verlet, Forest-Ruth and Yoshida fourth
-  order; energy-drift diagnostics.
+  order; energy-drift diagnostics; `separableField` (the Hamiltonian vector field on stacked positions and momenta, so
+  a Runge-Kutta method can run a Hamiltonian system beside the splittings).
+- `ode/flow.ts`: `flowAlgorithm`, a field integrated at a fixed step by an explicit Runge-Kutta method as an
+  `Algorithm` whose state is plain numbers (serialises, seeks, resumes), with an observer hook for the paths a system
+  logs and a stopping rule (the base of the celestial, named-system and geodesic algorithms below).
 - `ode/exponential.ts`: exponential Euler and ETDRK4 for stiff semilinear problems.
 - `ode/taylor.ts`: Taylor-series integrators using Taylor-mode differentiation.
 - `ode/solve-ivp.ts`: `solveIvp` (scipy semantics: method, evaluation times, dense output, events with direction and
@@ -2005,14 +2233,64 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `fields.ts`: Jacobians, divergence, curl, fixed points (seeded Newton), classification (node, spiral, saddle,
   centre), nullclines, streamlines, flow maps, invariant manifolds.
 - `named-systems.ts`: named systems as vector fields in tensor operations (so they integrate and differentiate):
-  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, and `namedSystems`, each
-  with a start, a time span that shows its behaviour and its component names (what `methods/dynamics/odeSystems.ts`
-  runs).
+  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, `rosslerField` (with
+  `rosslerFixedPoints`), `thomasField` (constant divergence -3b) and the double pendulum from `mechanics.ts`, and
+  `namedSystems`, each with a start, a time span that shows its behaviour and its component names (what
+  `methods/dynamics/odeSystems.ts` runs).
+- `mechanics.ts`: the Euler-Lagrange equations derived by autodiff from a Lagrangian (`lagrangianField`,
+  `lagrangianEnergy`), the Legendre transform (`hamiltonianOfLagrangian`) and Hamilton's equations (`hamiltonianField`)
+  for non-separable systems; the double pendulum worked through (`doublePendulumLagrangian`, the closed-form
+  `doublePendulumField` the derivation must reproduce, `doublePendulumEnergy`, `doublePendulumHamiltonian`,
+  `doublePendulumFlipTime` for the flip map). Oracle: scipy.integrate (`dynamics/mechanics`).
+- `synchronisation.ts`: Kuramoto oscillators (`kuramotoField` all-to-all in mean-field form or on a graph,
+  `orderParameter`, `kuramotoFrequencies` quantile or sampled populations, `kuramotoCriticalCoupling` and
+  `kuramotoTheoreticalOrder` as the closed-form truth, `kuramotoAlgorithm` logging the order parameter and the locked
+  share) and the consensus flow (`consensusField`, whose rate is the algebraic connectivity).
+- `celestial/` (the celestial-mechanics namespace, `mdml-engine/dynamics/celestial`; the chapter tables call it
+  `dynamics/celestial.ts`, it is a folder because it holds five concerns; oracle: scipy.optimize and scipy.integrate):
+  - `kepler.ts`: the anomalies (mean, eccentric, hyperbolic, parabolic, true) and their conversions; Kepler's equation
+    solved by Newton, Halley, bisection, secant and fixed-point iteration as a stepped `Algorithm` (`keplerAlgorithm`:
+    iterate, residual, error against the root and correct digits per step, serialisable) and as a table of modes
+    (`keplerSolvers`, the slot of the `keplers-equation` method); the hyperbolic form M = e sinh H - H; Barker's
+    equation in closed form; the Fourier-Bessel and Lagrange (through e^5, Laplace's limit) series; `solveKepler` on
+    any conic.
+  - `elements.ts`: classical elements to and from state vectors (ellipse, parabola, hyperbola; the circular and
+    equatorial degenerate conventions documented), the analytic propagation `propagateKepler`/`keplerState` (the truth
+    for the integrators), vis-viva, period, escape speed, the Laplace-Runge-Lenz invariants.
+  - `nbody.ts`: the n-body Hamiltonian as a `SeparableSystem` (vectorised force over tensor operations, softening,
+    momentum, angular momentum, centre of mass, closest pair), `nBodyStep` and `nBodyAlgorithm` with the integrator as
+    a choice (the symplectic splittings of `ode/symplectic.ts` against Runge-Kutta) logging energy and its drift,
+    angular momentum and the closest approach, and a `bodies/close` event.
+  - `configurations.ts`: `twoBody` (launch speed to circular, elliptic, parabolic or hyperbolic, with period and energy),
+    `lagrangeTriangle`, `FIGURE_EIGHT`, `PYTHAGOREAN`, and `solarSystem` from the planets' mean elements (`PLANETS`,
+    `GAUSS_K`), each carrying its truth.
+  - `three-body.ts`: the circular restricted three-body field (planar and spatial), pseudo- and effective potential,
+    the Jacobi constant, `lagrangePoints` and their stability (`classifyLagrangePoints`, Routh's critical mass ratio),
+    `zeroVelocityCurves`, and `restrictedThreeBodyAlgorithm` logging the Jacobi constant and its drift.
+  - `geodesics.ts`: null geodesics of the Schwarzschild metric in the Binet form (`schwarzschildNullGeodesicField`,
+    `nullInvariant`), the exact `deflectionAngle` by quadrature with the weak-field `weakFieldDeflection`, the photon sphere
+    and `criticalImpactParameter`, `flammParaboloid`, and `lightRayAlgorithm` (one ray stepped in the angle, logging
+    radius, position, bend so far, with a `ray/captured` event and the exit angle refined; `measuredDeflection`).
 - `maps.ts`: iterated maps, orbits, cobwebs, bifurcation diagrams, Lyapunov exponents.
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
 - `control/optimal.ts`: LQR, discrete LQR, LQE, LQG, finite-horizon Riccati recursions.
 - `control/placement.ts`: pole placement (Kautsky-Nichols-Van Dooren, Ackermann).
+- `control/compensators.ts`: lead and lag compensators from their defining numbers (`leadCompensator`: phase and centre
+  to zero and pole; `lagCompensator`: zero and ratio), `leadLag`, and the textbook design rules from a plant's margins
+  (`leadDesign`: centre where the plant's gain is 1/sqrt(alpha); `lagDesign`: zero a decade below the crossover).
+- `control/indirect.ts`: Pontryagin's maximum principle: `ControlProblem`, the Hamiltonian and the state-costate system
+  (`hamiltonianSystem`), `bangBang`, and `pontryaginAlgorithm` (Newton shooting for the initial costate and, when free,
+  the horizon: one shot per step, the miss, the trajectory with its costate and control, and the switches as events);
+  `doubleIntegratorEnergy` and `minimumTimeDoubleIntegrator` with `minimumTimeShooting` (continuation in the smoothing
+  of the bang-bang rule) carry their closed-form truth.
+- `control/robust.ts`: H-infinity synthesis by the two Riccati equations: `hinfStateFeedback`, `hinfSynthesis` (the
+  central output-feedback controller, with the three feasibility conditions reported), `closedLoopFromDisturbance`
+  (w to z, to check the norm with `systems/norms.ts`), and `hinfBisectionAlgorithm` (the smallest achievable gamma, one
+  level per step). Oracle: SLICOT SB10FD through slycot (python-control's engine).
+- `control/adaptive.ts`: model-reference adaptive control of a first-order plant (`mracAlgorithm`: the MIT rule and the
+  Lyapunov law; logs output, model output, parameter, error, gain and the distance from the matching parameters,
+  `matchingParameters`), and `gainSchedule`.
 - `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints, receding horizon as a traced algorithm).
 - `control/pid.ts`: PID control with anti-windup and derivative filtering, Ziegler-Nichols and Cohen-Coon tuning,
   relay auto-tuning.
@@ -2024,7 +2302,47 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `filtering/changepoint.ts`: Bayesian online changepoint detection (conjugate predictives, run-length posteriors,
   hazard functions), PELT, binary segmentation.
 - `filtering/em.ts`: EM for linear-Gaussian state-space parameters (traced).
-- `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD.
+- `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD, and
+  recursive least squares (`rlsAlgorithm`, one sample per step with a forgetting factor, Joseph-form covariance;
+  `arxRegression`, `simulateArx` with a mid-run change of plant as the planted truth).
+- `automata/` (namespace `dynamics.automata`; no oracle, since no library has these: the tests check hand-worked rows,
+  known periods and displacements, exact densities and conserved quantities): every system is an `Algorithm` whose state
+  (a grid or an agent list in typed arrays) serialises, whose step is a pure function of the state and the step's key,
+  with an exported path union and log contract (`XxxPath`, `xxxContract`) that the matching method adopts.
+  - `elementary.ts`: Wolfram's 256 rules (`ruleTable`, `elementaryStep`, `elementaryBoard`, `elementaryAutomaton`), the
+    mirror and complement symmetries, `wolframClass` (by simulation; class 4 by the rule 110 family), `rule90Cells`
+    (the exact Sierpinski cell count), `bitEntropy`.
+  - `life.ts`: life-like rules by B/S string (`parseLifeRule`), RLE patterns (`parseRle`, `LIFE_PATTERNS` with known
+    periods and drifts: blinker, glider, lightweight spaceship, pentadecathlon, R-pentomino, Gosper's gun), `detectPeriod`,
+    `lifeAutomaton` (births, deaths, population, the period and a `life/stabilised` event).
+  - `ant.ts`: Langton's ant for any rule string and several ants (`langtonsAnt`), `highwayDetected`.
+  - `sandpile.ts`: the Abelian sandpile (`stabilise`, `sandpileAdd`, `sandpileIdentity`, `sandpileAlgorithm` with the
+    avalanche size, duration and sites).
+  - `forest-fire.ts`: Drossel-Schwabl (`forestFire`, with `treeDensityWithoutFire` as its exact check).
+  - `schelling.ts`: Schelling segregation (`schelling`, `segregationIndex`, random or satisfying destinations).
+  - `traffic.ts`: Nagel-Schreckenberg (`nagelSchreckenberg`, `trafficStep`, `deterministicFlow` as the exact check for
+    no dawdling, `trafficDiagram` as the fundamental-diagram sweep).
+  - `wa-tor.ts`: Wa-Tor fish and sharks (`waTor`, with an extinction event).
+  - `sugarscape.ts`: Sugarscape (`sugarLandscape`, `sugarscape` with `stats.gini` of the wealth on the tape; trade and
+    reproduction are not built).
+  - `lattice-gas.ts`: HPP and FHP-I lattice gases (`latticeGas`, `gasMassMomentum`, `coarseGrainGas`, `curl2d`,
+    `gasNeighbour`; exact mass and momentum conservation, bounce-back solids).
+  - `boltzmann.ts`: D2Q9 BGK lattice Boltzmann with Guo forcing, bounce-back walls and obstacles, inlet and outlet
+    (`latticeBoltzmann`, `d2q9Equilibrium`, `d2q9Moments`, `poiseuilleProfile` as the analytic check; the shear-wave
+    decay rate `nu k^2` is checked in the tests).
+  - Private: `_core.ts` (state codec, torus index, board hash, checks), shared by `fractals/`.
+- `fractals/` (namespace `dynamics.fractals`; checked against the dimensions and counts the constructions imply, and
+  hand-known points): each is an `Algorithm` with serialisable state, a path union and a log contract.
+  - `escape-time.ts`: Mandelbrot, Julia, Burning Ship and multibrot (`escapeCount`, `escapeOrbit`, `orbitPeriod`,
+    `pixelGrid`/`ComplexViewport`, `escapeTimeAlgorithm`: one iteration over the whole grid per step, smooth counts).
+  - `newton.ts`: Newton fractals for a polynomial given by its roots (`newtonStep`, `rootsOfUnity`, `newtonFractal`).
+  - `ifs.ts`: affine IFS (`SIERPINSKI`, `SIERPINSKI_CARPET`, `BARNSLEY_FERN`, `similarityDimension`, `chaosGame`,
+    `ifsDeterministic` on a pixel grid).
+  - `box-counting.ts`: `boxCountingDimension` (points) and `boxCountingDimensionOfMask` (pixels), with the fit.
+  - `l-systems.ts`: `rewrite`, `turtle`, `L_SYSTEMS` (Koch, dragon, Hilbert, Peano, arrowhead, plants, one stochastic),
+    `lSystemAlgorithm`.
+  - `attractors.ts`: `mapCloud` (the accumulating cloud of any planar map) and `lobeSwitches`; the maps themselves
+    (`deJongMap`, `cliffordMap`, `ikedaMap`) are in `maps.ts` and `rosslerField`, `thomasField` in `named-systems.ts`.
 - Private helpers: `ode/_vec.ts` (typed-array fast path that falls back to tensor ops on traced values), `ode/_step.ts`
   (step bookkeeping shared by the steppers), `ode/_newton.ts` (simplified Newton, Jacobians, the implicit-function
   correction that makes implicit steps differentiable), `ode/_radau.ts`, `ode/_bdf.ts`, `ode/_bvp.ts`,
@@ -2206,6 +2524,11 @@ none of those weights.
   retrieved denominators), `meanReciprocalRank`, `dcgScore` and `ndcgScore` (linear and exponential gains,
   tie-averaged), `expectedReciprocalRank`, `rankBiasedPrecision`; beyond-accuracy measures (`catalogCoverage`,
   `intraListDiversity`, `novelty`, `serendipity`, `exposureGini`).
+- `sequence-labelling.ts`: entity-level scores as seqeval reports them (conlleval's chunk rules): `entitySpans` (BIO,
+  IOB1, BIOES, BILOU), `bioViolations` (an inside tag that continues nothing), `entityScores` (micro, macro and weighted
+  precision, recall and F1 with the per-type scores), `entityF1`. Checked on the worked example of seqeval's README.
+- `interleaving.ts`: team-draft interleaving of two rankers (`teamDraftInterleave`, one coin flip per round), the
+  clicks credited to each (`interleavingCredit`) and the preference over many impressions (`interleavingPreference`).
 - `clustering.ts`: Rand, adjusted Rand and Fowlkes-Mallows (`randScore`, `adjustedRandScore`,
   `fowlkesMallowsScore`, `pairConfusionMatrix`); `mutualInfoScore`, NMI variants (`normalizedMutualInfoScore`:
   arithmetic, geometric, min, max), AMI (`adjustedMutualInfoScore`), V-measure, homogeneity and completeness;
@@ -2231,12 +2554,18 @@ none of those weights.
   or a stemmer can be supplied); SQuAD exact match and token F1; BERTScore from embeddings (idf weights, baseline
   rescaling); perplexity; distinct-n. The edit alignment, LCS and n-gram counts come from `text/similarity.ts` and
   `text/shingles.ts`; private `_ter.ts`.
+- `latent.ts`: latent-factor data with the factors as truth: `mixedSources` (non-Gaussian sources and their mixing
+  matrix, for ICA), `twoViews` (shared latent signals in two views, with the population canonical correlations, for CCA
+  and PLS), `toySuperposition` (sparse features with importances).
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
   supplied model (torchmetrics' windows and calibration, 16 kHz); windows, FIR design, polyphase resampling and
   framed spectra come from `signal`. TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted C
   that cannot be ported under the licence.
+- `uplift.ts`: scoring of uplift models and targeting rules on randomised data: `upliftCurve` (the Qini and uplift gain
+  curves with the random line), `qiniCoefficient`, `auuc`, `upliftAtK`, `upliftDeciles` and the inverse-propensity
+  `policyValue` (with the treat-all and treat-none values). The estimators that produce the scores are `lib/causal`.
 
 ### 4.29 `losses/`: differentiable objectives (torch.nn losses, optax losses)
 
@@ -2500,7 +2829,18 @@ oracle once the oracle environment has it.
   `policyAt(t)`, `train()` runs it to completion). Private: `_session.ts` (`extendSession`, a session with extra verbs
   that its forks keep, behind `fittedSession` and the agent session), `_trainer.ts` (plan arithmetic, layer records,
   evaluation, curves and the verbs of a network) and `_agent.ts` (the value and action maps on a grid, an episode as a
-  record). The one-shot, sweep and procedure bases follow.
+  record).; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
+  (a configuration at a repeat) that runs an inner `Method` as an eager `session` over a `grid` or `sample` of some of
+  its knobs (`knobsOf` picks them), or over explicit configurations, under paired keys (repeat `r` is the same key in
+  every configuration) or fresh ones; it logs `trial/<knob>`, `trial/<metric>` (the final value of each metric path
+  and of each derived `final` path), `trial/config`, `trial/repeat`, `trial/best`, and the running mean and spread of
+  the configuration's repeats (`config/<metric>/mean`, `config/<metric>/std`), keeps the inner tapes by `keep`
+  (`'none'` summarises each in its `TrialRecord`, `'last'`, `'all'`), serialises its `SweepState`, and has the readers
+  `sweepConfigurations` and `sweepBest`; `sweepTrials` counts the steps. `sweepMethod(spec)` is the study as a
+  `Method` (repeats, steps, keep, design, points and trials as knobs; derived `sweep/configurations` and
+  `sweep/best`). `race(method, variants)` is the sweep over a slot in one run: a method whose state holds every
+  variant's, stepped in lockstep from the same key, logging each under `race/<variant>/`, with the inner contract's
+  paths prefixed. The one-shot and procedure bases follow.
 
 oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
 modAL for active learning, diffprivlib and opacus for privacy
@@ -2539,15 +2879,88 @@ modAL for active learning, diffprivlib and opacus for privacy
   one-standard-error rule, the .632 and .632+ bootstrap.
 - `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
-  cross-fitted calibrated classifiers.
+  cross-fitted calibrated classifiers; for regression, the probability integral transform (`pitValues`, `pitHistogram`)
+  and Kuleshov's quantile recalibration (`quantileCalibration`, `quantileCalibrationCurve`, `recalibratedQuantiles`).
+- `neighbours.ts`: `neighbourIndex` (exact k-nearest and radius search under any metric of `distances`, brute force or a KD
+  or ball tree), the k-nearest classifier and regressor and their radius twins (uniform or distance weights, an outlier
+  label), and the nearest centroid with Tibshirani's shrinkage and `shrunkenCentroidPath`; estimators on the iterative
+  base that absorb the training rows one per step (`solver/rows`), so `fittedAt(t)` is the model on the first `t` rows.
+  oracle: `learn/neighbours` against `sklearn.neighbors`.
+- `discriminant.ts`: `discriminantAnalysis` (pooled or per-class Gaussian covariances, shrinkage by a fixed intensity or
+  Ledoit-Wolf, Friedman's mix of the two, eigenvalue regularisation, priors, singular covariances by pseudo-inverse;
+  Fisher's axes as `transform` with `explainedVarianceRatio`), its presets `linearDiscriminant` and
+  `quadraticDiscriminant`, and `kernelFisherDiscriminant` (the axes in a kernel's span with a ridge on the within-class
+  scatter). Iterative base, one row per step. oracle: `learn/discriminant` against `sklearn.discriminant_analysis`.
+- `naive-bayes.ts`: `naiveBayes` (Gaussian, multinomial, Bernoulli, categorical and complement as one family whose fitted
+  parameters are sufficient statistics; `naiveBayesPartialFit` adds one weighted row, and the fit is the algorithm that
+  absorbs rows one per step logging `rows`, the prequential `accuracy` and `logLoss`), and on integer-coded features
+  `treeAugmentedNaiveBayes` (`tanAlgorithm`: Prim over the conditional mutual information, one edge per step, logging
+  `edges`, `weight` and the message `edge`) and `aode` (averaged one-dependence estimators, counted a row at a time).
+  oracle: `learn/naive_bayes` against `sklearn.naive_bayes` and, for the last two, numpy forms of their definitions.
+- `multiclass.ts`: `oneVsRest`, `oneVsOne`, `outputCode` (error-correcting output codes, random or given code book) and
+  `nestedDichotomies` (random hierarchies or one given, averaged) over any base `Estimator`; iterative base, one binary
+  problem per step (`solver/problems`), so `fittedAt(t)` is the classifier of the problems solved so far.
+  oracle: `learn/multiclass` against `sklearn.multiclass` (the codes and hierarchies from its fitted binary models).
+- `multilabel.ts`: `binaryRelevance`, `classifierChain` (order and chain method as knobs) and `labelPowerset` over a base
+  classifier, on a 0/1 label matrix. `multioutput.ts`: `multiOutputRegressor`, `multiOutputClassifier`,
+  `regressorChain` and the engines (`outputsEstimator`, `independentOutputs`, `outputChain`) the multilabel wrappers
+  share. oracle: `learn/multilabel` and `learn/multioutput` against `sklearn.multioutput` and `sklearn.multiclass`.
+- `_staged.ts` (private): the algorithm that fits one base-estimator problem per step, and readers of a fitted base.
+- `metric-learning.ts`: neighbourhood components analysis (`ncaValueAndGradient`, the objective and exact gradient;
+  `ncaAlgorithm`, L-BFGS on it logging `objective`, `gradNorm` and the map as `transform`;
+  `neighbourhoodComponentsAnalysis` with the LDA, PCA, identity, random or given start) and large margin nearest
+  neighbour (`lmnnAlgorithm`, gradient descent with the adaptive step logging `objective`, `impostors`, `step` and
+  `transform`; `largeMarginNearestNeighbour`). Transformers on the iterative base. oracle: `learn/metric_learning`
+  against `sklearn.neighbors.NeighborhoodComponentsAnalysis` (objective, gradient and fits scored by its own loss).
+- `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
+  the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
-  RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
+  RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference),
+  and weighted conformal regression under covariate shift (`weightedConformalQuantile`, `weightedConformalRegressor`, which
+  takes the `predictRatio` of any density-ratio estimator).
 - Explanation, inspection and data valuation are their own domain, `lib/explain/` (4.38).
 - `active-learning.ts`: the pool-based and stream-based active-learning loop as a traced algorithm (query, label,
   refit), query-strategy contract (uncertainty, margin, entropy, random, ranked batch, expected error reduction, query
-  by committee), budget handling.
+  by committee, expected model change, BALD and BatchBALD, density-weighted uncertainty, k-centre core sets through
+  `coresets.ts`, BADGE), budget handling. `activeLearningAlgorithm` is the stepped form.
+- `coresets.ts`: Gonzalez's k-centre traversal (`kCenterGreedyAlgorithm`, with fixed outside centres), kernel herding,
+  leverage-score and sensitivity-sampling coresets with their importance weights, Frank-Wolfe Bayesian coresets.
+- `uncertainty.ts`: deep ensembles (`deepEnsembleAlgorithm`, one member per step under its own key, optionally on
+  bootstrap resamples; `deepEnsemble`, `ensembleUncertainty`), Monte Carlo dropout over any stochastic forward pass
+  (`mcDropoutAlgorithm`, `mcDropoutPredict`), and the epistemic/aleatoric decomposition (`deepEnsemblePredict`,
+  `disagreement`).
+- `drift.ts`: stream drift detectors as algorithms (`ddmAlgorithm`, `eddmAlgorithm`, `adwinAlgorithm` with the
+  exponential histogram, `kswinAlgorithm`) with batch runners, and the population stability index.
+- `shift.ts`: label shift: black-box shift estimation (`blackBoxShiftEstimate`), Saerens' EM (`emPriorAdjustmentAlgorithm`)
+  and `adjustPriors`.
+- `density-ratio.ts`: covariate-shift density ratios: `classifierDensityRatio` (any base estimator), KLIEP and uLSIF
+  (relative uLSIF with `alpha`) as problems whose solver is a slot (`kliepProblem`/`kliepSolvers`,
+  `ulsifProblem`/`ulsifSolvers`: the closed form, or any smooth solver of `optim`), and the closed-form leave-pair-out
+  score `ulsifLoo`.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
+- `semi-supervised.ts`: rows with target `-1` (NaN for regression) are unlabelled. `selfTraining`, `coTraining` (two
+  feature views, shared labelled set, product of the views) and `triTraining` (Zhou and Li's error and size conditions)
+  over any probabilistic base `Estimator`; `labelPropagation` and `labelSpreading` (`sklearn.semi_supervised`, rbf and
+  neighbour graphs, with the algorithms of both); `laplacianRlsClassifier` and `laplacianRlsRegressor` (manifold
+  regularisation, closed form); `s3vm` (Joachims' transductive SVM, one pair switch or weight doubling per step) over any
+  weighted binary base (e.g. `svc` of `lib/svm`, which `learn` cannot import). Iterative base, one round per step.
+  oracle: `learn/semi_supervised` against `LabelPropagation`, `LabelSpreading` and `SelfTrainingClassifier`.
+- `weak-supervision.ts`: votes `[items, sources]` with `-1` for an abstention. `labellingMatrixSummary`, `majorityVote`;
+  `dawidSkene` (full, one-coin and GLAD modes, EM whose log-likelihood never decreases) and `labelModel` (accuracies from
+  agreements alone by the triplet method refined by coordinate descent, with dependency residuals) on the iterative base;
+  `estimateNoiseTransition`, `confidentJoint`, `labelQuality`, `findLabelIssues` (confident learning); `puRisk`
+  (uPU and nnPU, differentiable), `puClassifier`, `elkanNoto`; `bagData`, `labelProportionClassifier` (proportion loss, L-BFGS) and
+  `multipleInstanceSvm` (mi-SVM and MI-SVM over any binary base). oracle: `learn/weak_supervision` against numpy
+  references written from the papers (EM for Dawid-Skene, the confident joint and the prune rules).
+- `click-models.ts`: click models for logs of ranked lists: `clickSessions` (an interaction log grouped into sessions),
+  the position-based model (`positionBasedAlgorithm`, EM one iteration per step, `positionBasedModel`), the cascade
+  model (`cascadeModel`, closed form) and the dynamic Bayesian network model of Chapelle and Zhang (`dbnAlgorithm`, EM
+  with a forward-backward pass over the examination chain, `dbnModel`), each with click probabilities by rank. Tested
+  on `clickLogs` and `dbnClickLogs`, where the examination curve, the relevance, the satisfaction and the continuation
+  are recovered.
+- `noisy-labels.ts`: `forwardCorrectedLoss` and `backwardCorrectedLoss` (Patrini et al.), `smallLossSelection` and
+  `coTeaching` (two models exchanging their small-loss rows over any probabilistic base).
 
 ### 4.34 `nn/`: neural networks (torch.nn, torch.nn.functional, Flax, Haiku)
 
@@ -2647,6 +3060,45 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `generative.ts`: `timestepEmbedding`, `noiseLevelEmbedding` and `fourierFrequencies`, `TimeEmbedding`,
     `DiffusionResBlock`, `SpatialSelfAttention`, `DiffusionDownStage` and `DiffusionUpStage`, `AffineCoupling`
     (RealNVP) and `AdditiveCoupling` (NICE).
+  - `hopfield.ts`: associative memories: `hopfieldWeights` (Hebb or pseudo-inverse rule), `hopfieldEnergy`,
+    `classicalMemory` and `denseAssociativeMemory` (Krotov-Hopfield polynomial or exponential interaction) as one
+    `AssociativeMemory` contract, `hopfieldRecallAlgorithm` (asynchronous updates, sequential or random, the energy,
+    overlap and state on the tape; the energy never rises), and the modern continuous network:
+    `modernHopfieldUpdate` (attention over the patterns), `modernHopfieldEnergy`, `modernHopfieldAlgorithm`,
+    `ModernHopfield` (a layer with learnable patterns).
+  - `rbm.ts`: restricted Boltzmann machines: `RBM` (binary or Gaussian visible units), `rbmFreeEnergy`,
+    `rbmHiddenProbabilities`, `rbmVisibleMean`, `rbmGibbs` (block Gibbs), `rbmContrastiveLoss` (the surrogate whose
+    gradient is the CD update), the exact `rbmLogPartition`, `rbmLogLikelihood` and `rbmModelStatistics` for small
+    machines, and `contrastiveDivergenceAlgorithm` (CD-k or persistent CD with momentum and weight decay; the
+    reconstruction error, free energy, free-energy gap and exact log partition on the tape).
+  - `masked.ts`: `CausalConv1d` (left-padded, dilated, grouped), `pixelCnnMask` (masks A and B, optional colour-channel
+    ordering), `MaskedConv2d` (PixelCNN) and `GatedMaskedConv` (Gated PixelCNN vertical and horizontal stacks, no blind spot).
+  - `graph.ts`: `rgcnConv` and `RGCNConv` (relational GCN: one weight per edge type, basis decomposition, mean or sum per
+    relation), `EGNNLayer` and `EGNN` (E(n)-equivariant graph layers: features from distances, coordinates from relative
+    vectors), `GraphTransformerLayer` and `GraphTransformer` (edge-softmax attention, dense when no edges are given,
+    Laplacian or random-walk positional encodings from `graph` with random sign flips in training).
+  - `operators.ts`: operator learning: `DeepONet` (branch over sensors, trunk over the query point), `SpectralConv1d`
+    and `SpectralConv2d` (low Fourier modes times learned complex weights, through the differentiable FFT),
+    `FourierLayer` and `FNO` (lift, Fourier layers, projection, in one or two dimensions).
+  - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
+    `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
+  - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),
+    `FieldAwareFm`, `DeepFm`, `WideAndDeep` over `{ids, values}` feature rows; `NeuralCF` (NeuMF: GMF and MLP branches,
+    modes), `TwoTower` (with `embeddingTower`, in-batch logits, `logQCorrection`), `CrossNetwork` (DCN), `dotInteraction`
+    and `Dlrm`. The sequential recommenders are the existing `GRU` and `TransformerLM` (no separate block).
+  - `flow.ts`: `CNF` (FFJORD continuous normalising flow: the state and the accumulated Jacobian trace integrated
+    together; exact or Hutchinson trace, Rademacher or Gaussian noise; `logProb`, `sample` by backward integration) and
+    `standardNormalLogProb`.
+  - `mechanics.ts`: `HamiltonianNet` (a network for H(q, p), the field its symplectic gradient, energy conserved
+    along the flow) and `LagrangianNet` (a network for L(q, qdot), accelerations from the Euler-Lagrange equation).
+- `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
+  `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
+  containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
+- `swag.ts`: SWAG (stochastic weight averaging Gaussian): `swagState`, `swagCollect` (running mean, mean square and the
+  last deviations), `swagVariance`, `swagCovariance` (dense, small models), `swagSample` (diagonal plus low-rank, or
+  diagonal), `swagAlgorithm` (collection along any constant-step optimiser, as a stepped algorithm with the mean and
+  deviation matrix on the tape), `swagUnravel`, `swagPredictive`. Lives here, not in `training/callbacks.ts`, so it
+  works with any trajectory.
 - `describe.ts`: `describe` (a module to a `Structure`: blocks, tensor shapes, repeats, skip connections into `add`
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen
@@ -2895,7 +3347,7 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Surrogates and rules (`surrogates.ts`, `rules.ts`): global surrogate trees and fidelity, anchors (precision and
   coverage), RuleFit-style rule ensembles, rule lists and Boolean rules (BRCG-style), linearity measure.
   Built: `treeRules`, `ruleMask`, `ruleFit` and `ruleFitPredict` (lasso from `optim`), `linearityMeasure` in
-  `rules.ts`; `anchors`, `surrogateTree`, `fidelity`, `globalSurrogate`, `lime`, `limeMasked` in `surrogates.ts`.
+  `rules.ts`; `anchors`, `surrogateTree` (the grower of `trees`), `fidelity`, `globalSurrogate`, `lime`, `limeMasked` in `surrogates.ts`.
   TODO: rule lists and Boolean rules (BRCG).
 - Example-based (`examples.ts`): prototypes and criticisms (MMD-critic, ProtoSelect), k-nearest explanations, gradient
   similarity explanations, trust scores.
@@ -3037,15 +3489,104 @@ Left in 4.39 after round two (one line each):
 - TODO: dedicated records and views for exposure in rankings, causal decompositions and repeated decisions.
 - TODO: thin methods for causal, regression and ranking fairness (the core is built).
 
-### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster)
+### 4.40 `cluster/`: clustering algorithms (scikit-learn cluster, scipy hierarchy)
 
-Clustering as traced `Algorithm`s, moved out of the parked methods layer. `kmeans.ts` holds Lloyd's algorithm and
-mini-batch k-means, the initial centres (k-means++, random rows or given) and the nearest-centre assignment. A state
-keeps no past: `observe` exposes the metrics `inertia` and `moved` and the `state` tensors `centres` `[k, d]` and
-`labels` `[n]`, declared in the schema, and the tape records the history. The other clusterers (bisecting, kernel,
-density, hierarchical, spectral, ...) are still parked and arrive here as they are needed.
+Clustering as traced `Algorithm`s with estimators on the iterative base. A state keeps no past: `observe` exposes the
+metrics and the `state` tensors (`labels` `[n]`, `centres` `[k, d]`, ...) declared in the schema, and the tape records
+the history; every state serialises (`stateToJson`). Estimators are `iterative(...)` values (`kind: 'clusterer'`), so
+`.method(data)`, `.session(data)` and `fittedAt(t)` exist and the standard `model/assignments` probe works at any step;
+the distance-based ones take a `metric` from `distances` (or `'precomputed'`, through `distanceMatrix`).
+- `kmeans.ts`: Lloyd's algorithm and mini-batch k-means, the initial centres (k-means++, random rows or given) and the
+  nearest-centre assignment. `kmeans-variants.ts`: Elkan's bounds (`elkanAlgorithm`, counting the distances computed and
+  skipped), bisecting k-means (one split per step) and kernel k-means (`kernelKMeansAlgorithm` over a Gram matrix, with
+  the spectral relaxation as an initial labelling), each with an estimator (`elkanKMeans`, `bisectingKMeans`,
+  `kernelKMeans`).
+- `density.ts`: `dbscanAlgorithm` (one cluster grown per step), `opticsAlgorithm` (one point of the reachability
+  ordering per step) with `opticsOrdering` and `opticsClustersAt`, `hdbscan` (core distances, the single-linkage tree of
+  the mutual reachability distance, `condenseTree`, `selectClusters` by excess of mass: labels, probabilities, the
+  condensed tree and the stabilities), `meanShiftAlgorithm` (every seed moves each step) with `estimateBandwidth` and
+  `meanShiftCentres`; estimators `dbscan`, `optics`, `hdbscanClustering`, `meanShift`.
+- `hierarchical.ts`: `agglomerativeAlgorithm` (one merge per step, every linkage by Lance-Williams, the partition and the
+  linkage matrix on the tape), `linkageMatrix`, `singleLinkageTree`, `cutTree`, `copheneticDistances`,
+  `copheneticCorrelation`, `dendrogram`; BIRCH as a CF-tree in an arena (`birchAlgorithm` inserts one row per step,
+  node splits and the chain of leaves as scikit-learn's); estimators `agglomerativeClustering` and `birch`.
+- `medoids.ts`: PAM (`pamAlgorithm`: the BUILD steps, then the best swap per step), CLARA (`claraAlgorithm`: PAM on a
+  random sample per step), `kMedoids`. `fuzzy.ts`: `fuzzyCMeansAlgorithm`, `fuzzyMemberships`, `fuzzyCMeans`.
+- `spectral.ts`: the assembly over `graph/spectral.ts` (`affinityMatrix`, `spectralClusteringEmbedding`,
+  `spectralClusteringAlgorithm`: the embedding, then Lloyd's steps on it) and `spectralClustering`. `exemplar.ts`:
+  `affinityPropagationAlgorithm` (one damped round of messages per step, scikit-learn's tie-breaking noise from a key),
+  `affinityPropagationFit`, `affinityPropagation`. `constrained.ts`: `copKMeansAlgorithm`, `constrainedAssignment`,
+  `brokenConstraints`, `copKMeans`.
+- `validity.ts`: the choice of k: `kmeansElbow`, `gapStatistic` (Tibshirani's rule over uniform references) and
+  `stabilityIndex` (adjusted Rand agreement of clusterings of subsamples). `_support.ts` is private to the folder.
 
-oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path)
+oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path, also
+checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
+(`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
+leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`)
+### 4.40a `decomposition/`: linear and factor decompositions (scikit-learn decomposition, cross_decomposition, random_projection)
+
+Decompositions as transformers: each iterative routine is a traced `Algorithm` with a serialising state, each model an
+estimator on the iterative base (`kind: 'transformer'`, so the standard `model/embedding` probe exists at every step and
+`fittedAt(t)` is the model so far). `_linear.ts` (private) holds the matrix helpers they share: column means, centring, a
+thin SVD with scikit-learn's sign convention, projection and reconstruction.
+- `pca.ts`: `pcaSvdAlgorithm` (one step finds every component; exact or the randomised SVD of `numerics/linalg`),
+  `powerPcaAlgorithm` (power iteration, one component per step, kept orthogonal to those found), `incrementalPcaAlgorithm`
+  (one batch folded into the running mean, variance and SVD per step), `sparsePcaAlgorithm` (a penalised rank-one
+  decomposition, one soft-thresholded component per step), `pcaLogLikelihood`, `pcaVerbs` (transform with whitening,
+  inverse transform, the probabilistic score) and the estimators `pca` (solver `full`, `randomized` or `power`),
+  `incrementalPca`, `sparsePca`.
+- `ica.ts`: FastICA on whitened data: `fastIcaAlgorithm` (parallel: symmetric decorrelation, one iteration per step),
+  `fastIcaDeflationAlgorithm` (one component per step), the contrasts `logcosh`, `exp` and `cube`, the estimator `fastIca`.
+- `nmf.ts`: `nmfAlgorithm` (multiplicative updates for the Frobenius or Kullback-Leibler loss, HALS sweeps for Frobenius;
+  the stopping rule lives in the state, so a replay stops where the run did), `nndsvda`, `nmfDivergence`, the estimator
+  `nmf` (transform solves W for new rows with H fixed).
+- `cross-decomposition.ts`: `plsAlgorithm` (NIPALS for PLS regression, PLS canonical and CCA, one component per step, the
+  score correlation on the tape), estimators `plsRegression`, `plsCanonical`, `cca`, and `plsSvd` (closed form).
+- `rank-regression.ts`: `pcr` (principal-component regression, closed form, the same fit as a scikit-learn PCA plus
+  `LinearRegression` pipeline) and `reducedRankRegression` (multi-output least squares constrained to a rank by the SVD of
+  the fitted values; `identity` or `covariance` (canonical) weighting of the outputs, an optional ridge; the Eckart-Young
+  excess error is tested). oracle: `decomposition/rank_regression`.
+- `probabilistic.ts`: `probabilisticPca` (closed form from the SVD), `factorAnalysisAlgorithm` (scikit-learn's SVD-based
+  maximum-likelihood iteration, one per step), `factorAnalysis` with varimax and quartimax (`rotateLoadings`),
+  `latentVerbs` and `latentCovariance`. `random-projection.ts`: `randomProjection` (Gaussian and sparse, the
+  Johnson-Lindenstrauss dimension, a distortion report).
+- TODO: Infomax ICA, online and coordinate-descent NMF with penalties, truncated SVD and dictionary learning as
+  estimators (`text/representations.ts` and `optim/dictionary.ts` have the routines), kernel PCA pre-images.
+
+oracle: scikit-learn PCA, IncrementalPCA, FastICA (parallel, with fixed initial unmixing), NMF (`mu` from fixed factors),
+PLSRegression, PLSCanonical, CCA, PLSSVD and FactorAnalysis (`methods/decomposition/*` fixtures, kept at their old
+paths; PCA is also checked through power iteration), plus deflationary FastICA (`decomposition/ica_deflation`) and NMF
+by coordinate descent against HALS (`decomposition/nmf_hals`)
+
+### 4.40b `manifold/`: embeddings and manifold learning (scikit-learn manifold, umap-learn)
+
+Embeddings as traced `Algorithm`s with estimators (`kind: 'transformer'`). The algorithms that iterate observe the
+configuration at every step as the `embedding` tensor `[n, k]` (and their objective as a metric), which is what an
+`embeddingSteps` record is built from. A fitted embedding has `transform`: the training rows give their fitted
+embedding, other rows the inverse-distance-weighted mean of their nearest training rows' (none of these methods has a
+closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_support.ts` is private.
+- `mds.ts`: `classicalMds`, `classicalMdsAlgorithm`, `smacofAlgorithm` (a Guttman transform per step; metric, or
+  non-metric with disparities by isotonic regression through `learn`'s `poolAdjacentViolators`), estimator `mds`.
+- `isomap.ts`: `neighbourEdges`, `geodesicDistances` (Floyd-Warshall over the neighbour graph), `isomap`. `lle.ts`:
+  `barycentreWeights`, `locallyLinearEmbedding` (standard; modified, Hessian and LTSA are TODO). `spectral.ts`:
+  `spectralEmbedding` (Laplacian eigenmaps over `cluster`'s affinities and `graph/spectral.ts`) and `diffusionMap`.
+- `tsne.ts`: `conditionalProbabilities` (the perplexity search), `jointProbabilities`, `sparseJointProbabilities`,
+  `tsneGradient`, `barnesHutKl` (a quadtree or octree of the embedding), `tsneAlgorithm` (early exaggeration, momentum,
+  gains, the two stages as scikit-learn runs them; exact for dense P, Barnes-Hut for sparse), `tsneSetup`, `tsne`.
+- `umap.ts`: `findAbParams` (the curve fit by `optim`), `fuzzySimplicialSet`, `umapAlgorithm` (one epoch of edge and
+  negative sampling per step), `umapSetup`, `umap`. `som.ts`: `somAlgorithm` (one epoch per step; observes the
+  weights and the rows' grid positions), `uMatrix`, `selfOrganisingMap`.
+- `quality.ts`: `trustworthiness`, `continuity`, `neighbourhoodPreservation`, `coRankingMatrix`, `rnxCurve`,
+  `embeddingStress`, `neighbourRanks`.
+- TODO: PaCMAP and TriMap, Barnes-Hut error control by a tree built once per step in typed arrays, UMAP with a sparse
+  graph (the memberships are dense `[n, n]`), the supervised and parametric variants.
+
+oracle: scikit-learn trustworthiness, Isomap, LocallyLinearEmbedding, SpectralEmbedding and metric SMACOF
+(`methods/manifold/*`, kept at their old paths), non-metric SMACOF (`manifold/mds_nonmetric`), and t-SNE through
+scikit-learn's own `_joint_probabilities`, `_joint_probabilities_nn`, `_kl_divergence`, `_kl_divergence_bh` (angle 0) and
+`_gradient_descent` (`manifold/tsne`; umap-learn is not in the oracle group, so UMAP is checked by properties)
+
 ### 4.41 `linear/`: linear and generalised linear models (statsmodels, scikit-learn linear_model)
 
 The algorithms behind linear models, moved from the parked methods layer. `design.ts` (private) builds the design
@@ -3061,6 +3602,117 @@ and `beta`) and `polynomialBasis` (features scaled to `[-1, 1]`, then the librar
 factories (lasso, ridge, logistic, GLM, robust, online, LARS, isotonic) stay parked until the new methods base; the
 sequential Bayesian regression is the method `methods/linear/bayesianRegression`. Goldens of the parked factories keep
 their fixtures under `methods/linear/`.
+
+`online.ts` holds the online learners that take one example per step (iterative base, logging `solver/mistakes`):
+`perceptronAlgorithm` and `perceptron` (plain, averaged, voted and pocket-with-ratchet variants, passes in the data's
+order or a fresh random order each), `kernelPerceptronAlgorithm` and `kernelPerceptron` (the dual), and
+`passiveAggressiveAlgorithm`, `passiveAggressive` and `passiveAggressiveRegressor` (PA, PA-I, PA-II). Classifiers are
+binary; `learn`'s `oneVsRest` makes them multiclass. oracle: `linear/online` against scikit-learn's SGD with the
+perceptron loss (plain and averaged) and the passive-aggressive learning rates, and numpy loops for the voted, pocket
+and kernel variants.
+
+`lars.ts` is least angle regression: `larsAlgorithm` (one knot per step, plain LAR or the lasso modification where a
+variable leaves when its coefficient crosses zero; logs `alpha`, `active`, the `coefficients` tensor and the message
+`event`), `larsPath` (the whole path: penalties, coefficients, entry order), `coefficientsAt` (interpolation at a
+penalty) and the `lars` estimator (the model at a penalty or active count, the path in `params.path`; `fittedAt(t)` is
+knot `t`). oracle: `linear/lars` against `sklearn.linear_model.lars_path` and `LassoLars`.
+
+`diagnostics.ts` is regression diagnostics from one SVD of the (weighted, intercept-last) design: `olsInfluence` (leverage,
+internal and external studentised residuals, Cook's distance, DFFITS and its internal form, DFBETA(S), COVRATIO,
+leave-one-out sigma), the single-measure functions (`hatMatrix`, `leverage`, `studentizedResiduals`, `cooksDistance`,
+`dffits`, `dfbetas`, `covRatio`), collinearity (`varianceInflationFactors`, `conditionIndices` with variance-decomposition
+proportions), the `breuschPagan` (Koenker or classical) and `whiteTest` heteroscedasticity tests, and
+`regressionDiagnostics`, the report with the observations the usual cut-offs flag (it adds the Durbin-Watson test of
+`stats/tests`). Weighted fits are those of the whitened data. oracle: `linear/diagnostics` against statsmodels
+(`OLSInfluence`, `variance_inflation_factor`, `het_breuschpagan`, `het_white`; weighted cases use the whitened ordinary
+fit because `OLSInfluence` on a WLS result mixes raw and whitened designs in its hat matrix).
+
+`group-lasso.ts` is structured sparsity: `groupStructure` (labels to groups, with weights sqrt(size) by default),
+`groupLassoAlgorithm` and the `groupLasso` estimator (block proximal-gradient sweeps or FISTA with restarts and the
+library's `proxGroupLasso`; the KKT violation is the stopping measure and a logged metric), `groupLassoAlphaMax`;
+`multiTaskDesign`, `multiTaskLassoAlgorithm` and the `multiTaskLasso` estimator (the l2,1 row penalty, with `l1Ratio`
+the multi-task elastic net; `y` is `[n, k]`, `coef` is a row per task as in scikit-learn). Singleton groups are the
+lasso, which a test checks against the GLM core. oracle: `linear/group_lasso` against `MultiTaskLasso` and
+`MultiTaskElasticNet`; the group lasso itself has no scikit-learn reference and is tested by its optimality conditions.
+
+`ordinal.ts` is ordinal regression: `ordinalLogLikelihood` (the likelihood and its gradient for the cumulative-link
+model `P(Y <= k) = F(theta_k - x beta)` with the logit, probit, cloglog and loglog links, and for the sequential
+(continuation-ratio) model), `ordinalProbabilities`, `ordinalSmoothProblem` (the objective with its analytic gradient, thresholds as a first cutpoint plus log
+increments) and `ordinalAlgorithm` (any solver of the slot, Newton by default with a Hessian from central differences
+of the gradient) and the `ordinal` classifier
+(`predictProba`, the latent `decisionFunction`, `predictDistribution`, a Wald table of slopes and thresholds). oracle:
+`linear/ordinal` against statsmodels' `OrderedModel` (slopes, thresholds, log-likelihood, slope standard errors and
+probabilities for the four links; the sequential mode has no reference and is checked by finite differences and its
+equality with logistic regression for two categories).
+
+`mixed.ts` is the linear mixed model `y = X beta + Z b_g + e` for grouped data: `mixedProblemOf` summarises each group's
+rows into sufficient statistics (the group label is a column of `x`; random intercept and slopes, unstructured or
+diagonal covariance), `mixedProfile` is the profiled (restricted) deviance at a relative covariance factor (fixed effects
+and residual variance profiled out, the matrix determinant lemma per group), `mixedSmoothProblem` is it as an objective
+of the solver slot and `mixedAlgorithm` maximises it with any solver of `smoothSolvers` (Newton by default), and the `mixedModel`
+estimator has the fixed-effects Wald table, `randomCovariance`, `sigma2`, the group effects (BLUPs), and `predict`
+(group effects for groups seen in fit) and `predictFixed`. Sample weights are refused. oracle: `linear/mixed` against
+statsmodels' `MixedLM` (REML and ML; random intercept, and correlated random intercept and slope); statsmodels stops
+slightly short of the optimum, so the golden tolerance is 1e-3 and a dense-matrix test checks the likelihood itself.
+
+The solver is a slot, not part of the model (docs/structure.md 4.18, `glm.ts`, `solvers.ts`, `analytic.ts`). The GLM core
+takes `solver` as a name or a configuration of `glmSolvers` (IRLS, Newton on the observed information, BFGS, L-BFGS,
+conjugate gradient, gradient descent, the stochastic mode with Adam and batches) when the penalty is smooth; `multinomial`,
+`ordinal`, `zeroInflated`/`hurdle` and `mixedModel` each build a `SmoothProblem` (`multinomialSmoothProblem`,
+`ordinalSmoothProblem`, `countModelSmoothProblem`, `mixedSmoothProblem`, from their analytic gradients through
+`analyticObjective`) and take `solver` as a configuration of `smoothSolvers`, default Newton, through `_slot.ts`
+(`slotAlgorithm`: the model's state fields read off the solver's state, which is kept inside so any solver serialises
+and resumes; `solver/gradNorm` and `solver/step` beside the model's channels). The lasso, elastic net, LARS, the paths and
+the group lasso are particular algorithms and stay outside the slot.
+
+`robust.ts` is regression that tolerates outliers: `theilSenAlgorithm` and the `theilSen` estimator (least squares on every
+row subset, or `maxSubpopulation` random ones drawn from a key, then Weiszfeld steps to the spatial median of the
+solutions, as scikit-learn), `huberAlgorithm`, `huberObjective` and the `huber` estimator (majorise-minimise steps with
+a jointly estimated scale, the objective of scikit-learn's `HuberRegressor`, `params.outliers` marking the linearly
+treated rows) and `quantileRegression` and the `quantileRegressor` estimator (the pinball loss with an optional L1
+penalty, solved exactly by `optim`'s `linprog`). RANSAC stays `stats/robust.ts`'s generic `ransac`. oracle:
+`linear/robust` against scikit-learn's `TheilSenRegressor` (all subsets), `HuberRegressor` and `QuantileRegressor`.
+
+`zero-inflated.ts` is count regression for excess zeros: `countProblemOf` (counts, the count design and the zero-part
+design, whose features are `'constant'`, `'all'` or a list), `countModelObjective` (the negative log-likelihood and its
+analytic gradient for the zero-inflated and the hurdle models over Poisson or negative-binomial counts),
+`countModelAlgorithm` (damped Newton steps, Hessian by central differences of the gradient) and the `zeroInflated` and
+`hurdle` estimators (`predict` the mean, `predictInflation`, `predictCount`, `predictZero`; Wald tables of the count and
+zero parts). oracle: `linear/zero_inflated` against statsmodels' `ZeroInflatedPoisson`, `ZeroInflatedNegativeBinomialP`
+and, for the hurdle model's two independent parts, `Logit` with `TruncatedLFPoisson` and
+`TruncatedLFNegativeBinomialP`.
+
+`expectile.ts` is expectile regression (Newey and Powell): `expectileProblemOf`, `expectileObjective` (the mean
+asymmetric squared loss with its gradient and generalised Hessian), `expectileSmoothProblem` for the solver slot,
+`expectileAlgorithm` (Newton, which is IRLS, by default, any solver of `smoothSolvers`) and the `expectileRegressor`
+estimator with the sandwich covariance. `tobit.ts` is censored regression: `tobitProblemOf` (limits, the censoring
+pattern), `tobitObjective` (the concave likelihood in Olsen's parameters `(beta/sigma, 1/sigma)` with analytic gradient
+and Hessian), `tobitSmoothProblem`, `tobitAlgorithm` over the slot and the `tobit` estimator (`predict` the latent mean,
+`predictCensored` the expected clipped value, Wald errors of the coefficients and sigma by the delta method).
+`gls.ts` is generalised least squares: `glsFit` and `gls` (known covariance as a scalar, per-row variances or a matrix,
+closed form; `ar1Covariance`), `glsarAlgorithm` and `glsar` (statsmodels' `GLSAR.iterative_fit`: Yule-Walker AR
+coefficients alternating with a whitened fit that drops the first p rows) and `heteroscedasticRegressor` (a log-linear
+variance `exp(z gamma)`: `method: 'fgls'` iterates a weighted fit with a regression of the log squared residuals, one
+round being the textbook estimator, and `method: 'ml'` maximises the joint Gaussian likelihood over the solver slot).
+`errors-in-variables.ts` is total least squares and Deming regression (`totalLeastSquares`, `deming`: the smallest
+singular vector of the centred, error-scaled `[X y]`). `subset.ts` is variable selection by an information criterion
+(`subsetAlgorithm`, `subsetRegression`: best subset, forward, backward and stepwise by AIC, BIC, AICc, Cp or adjusted
+R-squared, scored from the Gram matrix, the visited subsets and their criteria on the path). `sur.ts` is seemingly
+unrelated regressions (`surAlgorithm`, `sur`: Zellner's feasible GLS over the stacked system, iterable to maximum
+likelihood). `_verbs.ts` (affine-map verbs) and `_cov.ts` (inverse and sandwich helpers) are private to the folder.
+oracle: `linear/expectile` against scipy BFGS on the asymmetric loss; `linear/tobit` against a statsmodels
+`GenericLikelihoodModel` (coefficients, sigma, log-likelihood, standard errors); `linear/gls` against statsmodels `GLS`
+and `GLSAR`, with FGLS written as statsmodels `WLS`/`OLS` rounds and the heteroscedastic likelihood by scipy BFGS;
+`linear/errors_in_variables` against the orthogonal-distance objective minimised with scipy (`scipy.odr` is deprecated
+and returned wrong fits in this build); `linear/subset` against statsmodels OLS criteria over the same searches
+written in Python; `linear/sur` against the stacked Kronecker GLS in numpy.
+
+`multinomial.ts` is the multinomial logit (softmax regression as a GLM): `multinomialProblemOf`, `softmaxRows`,
+`multinomialAlgorithm` (Newton steps with the exact Hessian) and the `multinomial` classifier (class 0 the reference
+when unpenalised, every class free with a ridge penalty; `predictProba`, logits as `decisionFunction`,
+`predictDistribution`, a Wald table). oracle: `linear/multinomial` against statsmodels' `MNLogit` (coefficients,
+standard errors, log-likelihood, probabilities) and scikit-learn's multinomial `LogisticRegression` (ridge; centred
+intercepts, which the penalty leaves determined only up to a common shift).
 
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
@@ -3187,8 +3839,9 @@ index picks a metric by name and a control can draw its knobs. Every computation
 - `evaluate.ts`: `distance(a, b, name, options)` and `similarity(a, b, name, options)` between corresponding rows, two
   points, or a point and rows; `pairwiseDistances(a, b?, name, options)` and `pairwiseSimilarities(a, b?, name,
   options)` for the `[m, n]` matrix (`b` omitted: among the rows of `a`); shapes checked once, scipy's defaults for
-  seuclidean and mahalanobis filled from the points. An unknown name is a `value` error, mismatched points a `shape`
-  error.
+  seuclidean and mahalanobis filled from the points. `distanceMatrix(x, metric, options)` is the flat `n x n` form
+  for algorithms that work on distances (clusterers, embeddings, outlier factors), with `'precomputed'` as a metric
+  (the input is the matrix). An unknown name is a `value` error, mismatched points a `shape` error.
 
 oracle: scipy.spatial.distance (cdist and the scalar functions row by row), scikit-learn's cosine_similarity,
 linear_kernel, rbf_kernel, laplacian_kernel and haversine_distances, numpy.corrcoef (`fixtures/distances/evaluate.json`);
@@ -3197,6 +3850,570 @@ diagonal of pairwise, derivative conformance of every continuous distance.
 built from: `numerics/geometry`, `numerics/linalg`, `space`, `tensor`. Sequence and string distances (DTW in
 `signal/similarity.ts`, Levenshtein and set Jaccard in `text/similarity.ts`, chi-square in `kernels/structured.ts`)
 keep their homes, as do the `Kernel` objects of `kernels/` (`pairwiseKernels` by scikit-learn's names).
+
+### 4.45 `timeseries/`: time-series models and mining (statsmodels, stumpy, sktime)
+
+Series modelled and mined, moved out of the parked methods layer and extended to what `methods/time-series` asks of
+the library. A domain over `signal` (sliding dot products, MASS, Yule-Walker and Burg), `dynamics/filtering` (the
+Kalman filter, BOCPD), `optim` (BFGS), `stats` and `numerics`. Every iterative routine is an `Algorithm` whose state
+serialises (`stateToJson`), and every fitted model is plain JSON data with pure functions over it, so it serialises.
+Series are `TensorLike` or number arrays; AR coefficients follow `x_t = sum phi_j x_(t-j) + e_t + sum theta_j e_(t-j)`
+throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
+- `differencing.ts`: `difference(y, order, lag)`, `differencePolynomial(d, D, s)` (the coefficients of
+  `(1 - B)^d (1 - B^s)^D`), `integrate(z, initial, order, lag)`, the inverse.
+- `acf.ts`: `autocovariance` (biased or adjusted), `acf` (with Bartlett bands), `pacf` (Yule-Walker adjusted or biased,
+  or by regressions on lags) and `ccf`, as statsmodels.
+- `arma.ts`: the theory of ARMA processes: `armaPsiWeights`, `armaPiWeights`, `armaAutocovariance`, `armaAcf`,
+  `armaPacf`, `isStationary`, `isInvertible`, and the innovations algorithm `innovationsAlgorithm(gamma)` (one row, one
+  lag, per step; state `InnovationsState`) with its runner `innovations`.
+- `state-space.ts`: `armaForm` (the Harvey state-space form with the stationary initial covariance by doubling),
+  `armaStateSpace` (as a `LinearGaussianModel`, so `kalmanLogLikelihood` applies), the O(r^2)-per-step scalar filter
+  `armaFilter` and `armaLogLikelihood` (exact Gaussian likelihood, variance concentrated out, missing values skipped),
+  and `forecastStateSpace` (h-step means and variances of any single-noise linear Gaussian form).
+- `arima.ts`: `arimaFit(y, spec, options)` for ARIMA(p, d, q)(P, D, Q)_s with trend (`n`, `c`, `t`, `ct`) and exogenous
+  regressors (regression with ARIMA errors, as statsmodels' `ARIMA`), by `mle`, `css` or `css-mle`; the fit is
+  `arimaFitAlgorithm` (BFGS on the unconstrained partial autocorrelations, so the polynomials stay stationary and
+  invertible; `logLikelihood` per iteration; the likelihood is that of the differenced series, the diffuse limit),
+  `arimaResiduals`, `arimaForecast` (exact means and variances on the original scale by augmenting the state with the
+  last observations that the differencing operator integrates; intervals by level). `ArimaFit` is plain data with
+  standard errors from the numerical Hessian.
+- `arma-fit.ts`: `fitAr` (Yule-Walker adjusted or biased, Burg, least squares), `selectArOrder` (AIC, BIC, HQIC),
+  `fitMa` (innovations), `hannanRissanen` (with the bias-correction step), `fitArma` and `armaFitAlgorithm`.
+- `smoothing.ts`: ETS models (`EtsSpec`: error, trend, damped, seasonal, period; the presets `smoothingModels`
+  (`simple`, `holt`, `damped`), `holtWintersAdditive`, `holtWintersMultiplicative`): `etsFilter` (fitted values,
+  residuals, states and the concentrated log-likelihood at given parameters and initial states), `etsAlgorithm` (one
+  observation per step: forecast, residual, states and the running likelihood as metrics; serialisable), `etsFitAlgorithm`
+  and `etsFit` (BFGS on logistic-bounded smoothing parameters and the initial states), `etsForecast` (point forecasts,
+  analytic standard errors and intervals for additive models). Recursions and likelihood follow statsmodels' `ETSModel`.
+- `decomposition.ts`: `seasonalDecompose` (classical, moving averages, additive or multiplicative, one- or two-sided,
+  trend extrapolation) and the shared `DecompositionResult`.
+- `stl.ts`: `stlAlgorithm(y, options)` (STL by loess, a port of the netlib routine as statsmodels has it; one inner
+  loop per step, robustness weights after each pass), `stl`, `mstlAlgorithm` (one STL fit per step) and `mstl`.
+- the matrix profile family, ported from the parked methods layer with its STUMPY goldens (fixtures kept at their old
+  path `fixtures/methods/timeseries/matrix_profile/`), over the kernels of `signal/sliding.ts` and `signal/mass.ts`:
+  `matrix-profile.ts` (`stumpAlgorithm`/`stump` by diagonals with the O(1) covariance update, z-normalised or raw
+  p-norm distances (AAMP), AB-joins and top-k neighbours with left and right neighbours; `stompAlgorithm`/`stomp` by rows;
+  `stampAlgorithm`/`stamp` by random rows through MASS), `scrimp.ts` (`prescrump`, `scrumpAlgorithm`/`scrump`: the
+  anytime SCRIMP++), `stumpi.ts` (`stumpiInit`, `stumpiUpdate`, `stumpiAlgorithm`: the streaming profile, with or
+  without egress), `motifs.ts` (`match`, `motifs`, `discords`, `atsc`, `allc`: anchored and all time-series chains),
+  `segmentation.ts` (`arcCounts`, `idealArcCurve`, `correctedArcCurve`, `regimeLocations`, `fluss`, and the streaming
+  `flossInit`, `flossUpdate`, `flossAlgorithm`), `snippets.ts` (`mpdist`, `snippets`, `ostinato`), `pan-profile.ts`
+  (`stimpAlgorithm`/`stimp`, breadth-first over window lengths; `panImage`) and `multidimensional-profile.ts`
+  (`mstumpAlgorithm`/`mstump`, `multiDistanceProfile`, `subspace`, `mdl`). Each algorithm's step is a batch of
+  diagonals or rows (or one value, or one window length) and its state serialises.
+- `online-detection.ts`: `cusumAlgorithm`/`cusum` (two-sided tabular CUSUM in standard deviations, with a known or
+  warm-up-estimated target) and `pageHinkleyAlgorithm`/`pageHinkley` (cumulative deviation from the running mean above its
+  minimum, with forgetting and direction), one observation per step, recording their statistics and alarms. Bayesian
+  online changepoint detection stays in `dynamics/filtering/changepoint.ts` and is not repeated.
+- `volatility.ts`: GARCH(p, o, q) in the `arch` convention (`GarchSpec`; ARCH, GJR through `o`; constant or zero
+  mean; Gaussian or standardised Student-t): `garchVariance` (the recursion with the `arch` backcast),
+  `garchLogLikelihood`, `garchFilterAlgorithm` (the recursion one observation per step with the running likelihood),
+  `garchFitAlgorithm`/`garchFit` (BFGS on parameters mapped into the stationary region, on the series scaled to unit
+  spread; standard errors from the numerical Hessian), `garchForecast` (variance forecasts relaxing to the unconditional
+  variance) and `garchSimulate`.
+- `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
+  standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
+  cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
+  (F or Wald). Matrices are arrays of rows, via the private `_matrix.ts`.
+- `hierarchy.ts`: `treeSummingMatrix`, `groupedSummingMatrix`, `reconcile` (bottom-up, OLS, structural and variance WLS,
+  MinT with the sample or shrunk covariance of the base errors: y~ = S G y^), `shrinkCovariance`, `topDownProportions`
+  and `isCoherent`.
+- private: `_params.ts` (partial autocorrelations to and from coefficients, the stationary transform), `_ml.ts`
+  (a number-level likelihood as an `Objective` by central differences for `bfgsAlgorithm`, least squares, a numerical
+  Hessian), `_arima-model.ts` (specifications, regression columns, seasonal polynomial expansion, the CSS and exact
+  objectives), `_series.ts`, `_profile.ts` (STUMPY's diagonal kernels and the `MatrixProfile` container) and
+  `_matrix-profile.ts` (the setup, merge and batch helpers of the profile algorithms).
+
+oracle: statsmodels (`acf`, `acovf`, `pacf`, `ccf`; `arma_acovf`, `arma_acf`, `arma_pacf`, `arma2ma`, `arma2ar`,
+`innovations_algo`; `ARIMA` fits and forecasts with exogenous regressors and seasonal terms; `hannan_rissanen`,
+`innovations`, `AutoReg`; `ETSModel` smoothing, likelihood and prediction intervals; `seasonal_decompose`, `STL`, `MSTL`;
+`VAR` fits, order selection, forecasts, impulse responses, variance decompositions and Granger tests) in
+`fixtures/timeseries/`; CUSUM, Page-Hinkley, GARCH and the reconciliation have no available reference and are tested by
+recursion identities, recovery of simulated parameters and the algebra of the solutions; properties: the likelihood by the fast filter equals the library's
+Kalman filter and the innovations form, psi and pi weights multiply to one, integrate inverts difference.
+built from: `signal`, `dynamics/filtering`, `optim`, `autodiff` (the custom derivative), `numerics`, `trace`.
+
+### 4.46 `svm/`: support vector machines (sklearn.svm, libsvm)
+
+oracle: scikit-learn (`SVC`, `NuSVC`, `SVR`, `NuSVR`, `OneClassSVM`); `optim/smo_nu` for the nu and one-class duals
+Every estimator is built on the iterative base (`learn/bases/iterative.ts`), so `.fit`, `.method(data)` and
+`.session(data)` all exist. The fit is the dual solve stepped: one SMO working-pair update per step, without shrinking so
+the gradient (and with it the objective and the gap) is exact at every step. Every machine logs `solver/dual` (the dual
+objective, to be maximised), `solver/gap` (the primal-dual gap, at least zero and closing to zero), `solver/violation`,
+`solver/support`, `solver/alphas`, `solver/pair`, `smo/alphaChanged` (|da_i| + |da_j| of the step) and the derived
+`model/support-vectors` (a `marginRecord` of the model at that step); the base adds `model/params`, `model/predictions`
+and the decision surface. Parameters are plain JSON (the support vectors, their coefficients, the intercepts and the
+resolved kernel), so `revive` rebuilds the verbs and `fittedAt(t)` gives the model at any step.
+- `_dual.ts` (private): the six duals behind one interface (`Dual`: the algorithm, the kernel expansion of a state, the
+  dual, the gap, the margins, the tube): `cSvcDual`, `nuSvcDual`, `svrDual`, `nuSvrDual`, `oneClassDual`, `svddDual`. The
+  gap of each is its primal at the best slack threshold (`hingeMinimum`) minus the dual.
+- `classifier.ts`: `svc` (C-SVC; `form: 'nu'` is NuSVC, also `nuSvc`): any `kernels` kernel (`rbf`, `linear`, `poly`,
+  `sigmoid`, `laplacian` by scikit-learn's names with `gamma` of `'scale'`, `'auto'` or a number, or a `Kernel` object),
+  one-versus-one for more than two classes (the pairs solved in turn, libsvm's class order and scikit-learn's
+  `decisionShape` `ovr` or `ovo`), class weights (`balanced` or by label) and sample weights, and Platt probabilities
+  (`probability: true`: a last step fits each pair's sigmoid on internal cross-validated decision values, coupled for more
+  than two classes). The parameters hold `supportIndex` and `nSupport` (scikit-learn's `support_`, `n_support_`) and
+  per pair the coefficients and intercept.
+- `regressor.ts`: `svr` (epsilon-SVR; `form: 'nu'` is NuSVR, also `nuSvr`), the tube width given or found
+  (`params.tube`), the probe's margins being the residuals.
+- `one-class.ts`: `oneClassSvm` (nu) and `svdd` (C, at least 1/n), the signed score positive inside the learnt region;
+  with a kernel of constant diagonal they are one machine (C = 1 / (nu n)).
+- `probability.ts`: `pairwiseCoupling` (libsvm's second method of Wu, Lin and Weng).
+  The duals themselves are in `optim/smo.ts` (`oneClassDual`, `svddDual`, `smoRho`) and `optim/smo-nu.ts` (`nuSmoAlgorithm`,
+  libsvm's Solver_NU: both equalities kept by moving pairs within a class; `nuSvcDual`, `nuSvrDual`, `nuRho`). Kernel
+  choice by scikit-learn's names is `kernels/named.ts` (`resolveKernel`, `kernelMatrix`, `kernelSpace`).
+  tests: goldens against scikit-learn on small data (support vectors, dual coefficients, intercepts, ovo and ovr decision
+  values, predictions; libsvm keeps its kernel cache in single precision, so agreement is to 1e-4, and the nu forms divide
+  by the margin, so 1e-3); probabilities (scikit-learn's cross-validation is random) are checked by properties.
+  built from: `optim` (SMO), `kernels`, `learn` (the iterative base, Platt scaling), `exposition`, `trace`.
+
+### 4.47 `gp/`: Gaussian processes (sklearn.gaussian_process, GPML)
+
+oracle: scikit-learn (`GaussianProcessRegressor`, `GaussianProcessClassifier`, `ARDRegression`); numpy forms for EP (GPML Algorithm 3.5 with loops) and the dense sparse-GP likelihoods
+Estimators on the iterative base. The hyperparameter fits are one stepped L-BFGS-B search (`_search.ts`: one iteration per
+step, restarts in turn, the best run kept; the objective is a `customVjp` function whose derivative is the analytic
+gradient, so any `optim` minimiser could use it).
+- `likelihood.ts`: `logMarginalLikelihood` (value and gradient in theta through `gramGradient`, scikit-learn's
+  `log_marginal_likelihood(theta, eval_gradient=True)`), `negativeLogMarginalLikelihood`, `hyperparameterCount`.
+- `regression.ts`: `gpRegression` over any `Kernel` (alpha noise, `normalizeY`, `restarts`, bounds as scikit-learn's): logs
+  `gp/logMarginalLikelihood` and `gp/hyper` per step; verbs `predict`, `predictWithStd`, `predictCovariance`,
+  `predictDistribution`, `sample` (posterior functions); probes `model/posterior`, `model/samples`, `solver/surface` (the
+  likelihood over two hyperparameters, a `hyperparameterSurface`).
+- `approximations.ts`: `laplaceAlgorithm` (one Newton iteration per step), `epAlgorithm` (one site update per step, probit),
+  `laplaceMarginal` and `epMarginal` (approximate log marginal likelihood with gradient, Algorithm 5.1 and its EP form),
+  `latentTerms`.
+- `classification.ts`: `gpClassifier` (two classes; `method` laplace or ep, `likelihood` logit or probit): phase one the
+  hyperparameter search, phase two the approximation itself stepped (`gp/latent`); `predictive` scikit-learn's five-erf
+  approximation or quadrature.
+- `sparse.ts`: `sparseGp` (`sor`, `dtc`, `fitc`, `vfe`; the kernel, the noise and the inducing inputs optimised together by
+  autodiff of the Woodbury form; logs `gp/bound`, `gp/hyper`, `gp/inducing`), `sparseBound`.
+- `relevance-vector.ts`: `relevanceVectorMachine`, the evidence updates of `ARDRegression` on the kernel columns, pruning
+  at a precision threshold; logs `solver/precisions`, `solver/relevant`, `solver/logEvidence`.
+  tests: goldens against scikit-learn (fixed kernels to 1e-8 for the likelihood, gradient, mean, std and covariance; the
+  optimised fit and the Laplace classifier, including gradients and latent moments), a numpy GPML reference for EP, dense
+  numpy forms for the sparse approximations, ARDRegression for the RVM; properties by finite differences and exact limits (one
+  observation for EP, two by quadrature, m = n for the sparse bounds). Not built: multi-class and multi-output GPs, the
+  stochastic variational GP, RVM classification.
+  built from: `kernels`, `optim` (L-BFGS-B), `learn`, `stochastic` (posterior sampling), `numerics`, `exposition`, `trace`.
+
+### 4.48 `trees/`: decision trees (scikit-learn tree, river)
+
+A fitted tree is plain arrays in the layout of scikit-learn's `tree_` (`Tree`), with categorical subset splits and a
+missing-value direction per split; `tree.ts` holds prediction, `applyTree`, `decisionPath`, `nodeRegions`, impurity
+importances, `treeToStructure`, `exportText`, and `TreeModel` and `treePredict` (the scalar-valued view tree SHAP and rule
+extraction read; moved from `explain/shapley.ts`, which re-exports them). `criteria.ts` holds Gini, entropy (bits; the same
+as log loss), squared error, Friedman's improvement, absolute error, Poisson deviance and C4.5's gain ratio, and
+`searchSplits`: every threshold between consecutive values (or one random threshold, for extra trees), the best subset of
+the codes of a categorical feature, missing values sent to the better side, sample weights and leaf-size limits, with
+every candidate evaluated and recorded. `grow.ts` is the grower as an `Algorithm`, one node decided per step, depth-first
+(ids in preorder, as scikit-learn), breadth-first or best-first under a leaf limit, with depth, samples, minimum impurity
+decrease and a per-split feature subset (`maxFeatures`, for forests); a state, even a partial one, gives a `Tree`
+(`treeOfState`) and a `TreeRecord` with every node's candidates (`treeRecordOf`); `growTree` runs it. `prune.ts` has
+minimal cost-complexity pruning as an algorithm (the weakest link per step; `costComplexityPath` is the `PruningPath`
+record, `pruneTree` stops at an alpha) and reduced-error pruning on held-out rows (also an algorithm).
+`classic.ts` is ID3, C4.5 (gain ratio, continuous thresholds, pessimistic error pruning) and CHAID (chi-square merging of
+categories), growing multiway `ClassicTree`s one node per step; their records list each node's `branches`.
+`hoeffding.ts` is the Hoeffding tree (`hoeffdingTreeAlgorithm`, one stream example per step, Gaussian and categorical leaf
+statistics, the Hoeffding bound, prequential accuracy). `decision-tree.ts` holds the estimators on the iterative base,
+`decisionTreeClassifier`, `decisionTreeRegressor`, `extraTreeClassifier` and `extraTreeRegressor`: `.method(data)` and
+`.session(data)` beside `.fit`, `fittedAt(t)` the tree after t nodes, logging `tree/split`, `tree/candidates`,
+`tree/leaves`, `tree/depth`, `tree/impurity` and `eval/accuracy` (or `eval/r2`), probes `model/structure` and
+`model/importances`. `surrogateTree` in `explain` is the depth-first grower on a model's predictions.
+
+oracle: scikit-learn trees (`trees/grow` fixture): the arrays of the grown tree (features, thresholds, children,
+impurities, counts, values, missing-value directions), the pruning path and the pruned tree, importances, for Gini and
+entropy, squared, absolute and Poisson error, best-first growth with a minimum decrease, sample weights, and missing
+values. TODO: the Hoeffding tree has no reference (river is not an oracle group); its tests are behavioural.
+built from: `learn`, `metrics`, `stats/tests` (CHAID), `exposition`, `scene`
+
+### 4.49 `ensembles/`: ensembles of learners (scikit-learn ensemble, LightGBM)
+
+Every ensemble is a stepped algorithm on the iterative base, one member or stage per step. `averaging.ts` is the core of
+bagging and forests: members on bootstrap samples (or samples without replacement), the running sum of outputs, the
+out-of-bag sum and the training and out-of-bag scores after each member; logs `ensemble/member`, `ensemble/oobError`,
+`ensemble/memberError`, `ensemble/bootstrap`, `ensemble/trainScore`, `ensemble/oobScore`. `bagging.ts` takes any
+estimator of the library as the member (random subspaces and pasting as modes). `forest.ts` has random forests and extra
+trees (`ensemble/importances`, probes `model/proximity` and `model/importances`) and the random trees embedding.
+`adaboost.ts` is AdaBoost over any base estimator (SAMME, SAMME.R, and R2 for regression) with the weighted stump search
+`bestStump` that `vision/haar.ts` shares; logs `boost/error`, `boost/alpha`, `boost/trainingError`, `boost/stumps`, probes
+`boost/weights`, `boost/stump`, `model/margins`. `gradient-boosting.ts` (machinery in `_boosting.ts`) has the squared,
+absolute, Huber, quantile and Poisson losses, the logistic and exponential losses, Friedman's leaf line search or Newton
+leaves with an L2 penalty, subsampling and early stopping on a held-out loss (event `boost/stopped`); logs `boost/round`,
+`boost/trainLoss`, `boost/residuals`, `boost/leafValues`, `eval/loss`, probe `model/stagedPrediction`.
+`histogram-boosting.ts` plugs a histogram grower into the same loop: features binned as scikit-learn (`binFeatures`),
+leaf-wise growth, the subtraction trick, missing values to the better side (`boost/bins`). `cyclic.ts` is the cyclic
+booster of explainable boosting machines (moved from `explain/glassbox.ts`, which re-exports it): `cyclicBoosting` is an
+algorithm with one cycle over the features per step, `explainableBoosting` runs it, and the estimators
+`explainableBoostingRegressor` and `explainableBoostingClassifier` have the probe `model/shapeFunctions`.
+`stacking.ts` has voting (hard, soft, weighted) and stacking (the final estimator on out-of-fold predictions), one base
+estimator per step, logging `ensemble/baseScores`, `ensemble/weights`, `ensemble/diversity`. The fit of each records the
+stages (`ensemble/stages`, an `EnsembleStages` projection of the tape).
+
+oracle: scikit-learn `ensemble`: AdaBoost SAMME (weights, errors, decision function, stage by stage), gradient boosting
+(squared, Huber and quantile losses; binary and multinomial log loss; exponential loss; every stage) and histogram
+gradient boosting (squared error, L2, missing values, Poisson, coarse bins, binary and multinomial). TODO: the absolute
+error loss (tied splits), SAMME.R and R2 (scikit-learn dropped the first and resamples the second), categorical features
+in histogram boosting, LambdaMART.
+built from: `trees`, `learn`, `metrics`, `exposition`
+
+### 4.50 `kernel-methods/`: kernel regression, batch and online (scikit-learn kernel_ridge, KRLS, NORMA)
+
+`kernel-ridge.ts` is the closed-form dual solve `(K + alpha I)^(-1) y` over any kernel of `kernels` (a name with
+`gamma`, `degree`, `coef0` by `kernels/named.ts`, or a `Kernel` object), for one or several outputs. `solveKernelRidge`,
+`hatDiagonal`, `looPredictions` and `looPress` work on a Gram matrix: the leave-one-out residual is
+`c_i / [(K + alpha I)^(-1)]_ii`, exact, from one inverse. The estimator `kernelRidge` (kind regressor, one step) logs
+`solver/looMse` and `solver/effectiveDf`; its verbs add `hatDiagonal`, `looPredictions`, `looPress` and a normal
+`predictDistribution`. Sample weights are refused. `online-kernel.ts` has the learners that take one observation per step:
+`krls` (Engel, Mannor and Meir: the dictionary grows by a block inversion when the approximate-linear-dependence
+residual exceeds `aldThreshold`, otherwise a reduced-order recursive least squares step; `criterion: 'coherence'` for the
+coherence test; `criterion: 'sliding-window'` keeps the exact ridge solution on the last `budget` observations by a
+bordering update and a downdate of the inverse), `krlsStep` and `krlsPredict` on the plain-JSON `KrlsState`, and `norma`
+(stochastic gradient descent in the RKHS with weight decay `1 - eta_t lambda`, squared or epsilon-insensitive loss, an
+expansion truncated to `budget`). Logs `solver/dictionarySize`, `solver/novelty`, `solver/loss`, `solver/runningMse`,
+`solver/alpha` and the message `solver/dictionaryAdd`; probe `model/dictionary`.
+
+oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
+sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits. TODO: kernel ridge on the
+Nystroem and random Fourier maps of `kernels/expansion.ts` (the maps exist; the estimator over them does not).
+built from: `kernels`, `learn`, `numerics`, `metrics`, `dists`, `trace`
+
+### 4.51 `gam/`: generalised additive models (mgcv, pyGAM, statsmodels GLMGam)
+
+`terms.ts` is the formula layer: `s` (a smooth of one or several covariates on any basis of `stats/smoothing`: `cr`, `cc`,
+`ps`, `bs`, `ns`, `tp`, `ts`, `duchon`, `gp`; a `by` covariate for varying coefficients), `te` and `ti` (tensor products and
+interactions, one smoothing parameter per margin), `linear` and `factor` (dummy columns or a random effect). `buildDesign`
+compiles terms against training data into one block of columns per term with its penalty matrices and null-space
+dimension (smooths centred by the sum-to-zero constraint so the intercept is identifiable) and `evaluateDesign` evaluates
+the blocks at new rows. `penalised.ts` is the numerics: the assembled penalty, the penalised weighted least-squares
+solution with the influence-matrix diagonal (effective degrees of freedom per coefficient and, by `termEdf`, per term),
+`gcvScore`, `ubreScore` and `remlScore` (the Laplace-approximate marginal likelihood with the scale profiled out), and
+`selectLogLambda`, their minimisation over `log lambda` by Nelder-Mead. `pirls.ts` is `gamAlgorithm`, penalised IRLS
+as a stepped algorithm over any `DispersionFamily` and `Link` of `dists/families` (the performance iteration: the
+smoothing parameters are chosen on each working response, with step halving on the penalised deviance); the inner solve
+is the `solver` hyperparameter, a configuration of `glmSolvers` (default `irls`, one reweighted least-squares step; any
+other mode minimises the penalised deviance at the chosen smoothing parameters, with the penalty matrix as its
+penalty); logs
+`solver/deviance`, `solver/penalisedDeviance`, `solver/edf`, `solver/criterion`, `solver/scale`, `solver/coef`,
+`solver/logLambda`. `backfitting.ts` is Hastie and Tibshirani's backfitting (local scoring for an exponential family),
+one cycle per step, which converges to the same penalised solution at fixed smoothing parameters. `estimators.ts` has
+`gam` and `gamClassifier` on the iterative base: `predict`, `predictTerms`, `standardErrors` (Bayesian posterior
+covariance), `predictDistribution`, `edfTerms`, `smoothingParameters`, `aic`.
+
+oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
+B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
+(a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,
+variance and intercept). pyGAM and mgcv are not in the oracle environment. TODO: GAMLSS (the distributional families
+of `dists/families` have the links and the log-likelihood; the RS algorithm over per-parameter additive predictors is
+not written), the outer-iteration REML of mgcv (the performance iteration here differs from it for non-Gaussian
+families), shape-constrained smooths in terms (`stats/smoothing` has `shapeConstraint`), confidence bands for term
+effects, p-values of terms.
+built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
+
+### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)
+
+`shrinkage.ts` wraps `stats/covariance.ts` (`empiricalCovariance`, `shrunkCovariance`, `ledoitWolf`, `oas`: not
+duplicated here) as `covarianceEstimator` on the iterative base, with the location, covariance, precision (by
+pseudo-inverse), shrinkage intensity, `mahalanobis` (squared distances) and `score` (the mean Gaussian log likelihood)
+verbs; `squaredMahalanobis`, `mahalanobisDistances` and `mahalanobisRecord` (an `anomalyScores` record against the 97.5%
+chi-squared quantile) are the helpers. `robust.ts` is FastMCD (Rousseeuw and Van Driessen): `cStepAlgorithm` (one
+concentration step per step, the determinant falling), `fastMcdAlgorithm` (random `h`-subsets screened by two C-steps in
+`init`, the best refined step by step, then scikit-learn's consistency correction of the distances and the reweighting at
+the 97.5% quantile with the Croux-Haesbroeck factor), `minCovDet` and `ellipticEnvelope` (the Mahalanobis detector over
+`'mcd'`, `'empirical'`, `'shrunk'`, `'ledoit-wolf'` or `'oas'`, thresholded at the contamination quantile; it uses the
+outlier verbs of `anomaly`, so `covariance` imports `anomaly` and `anomaly` never imports `covariance`).
+`graphical-lasso.ts` is the graphical lasso by block coordinate descent as scikit-learn does it (each column's lasso
+through `optim`'s `lassoCoordinateDescent` in the Gram form, factored by Cholesky; the duality gap as the stopping rule),
+`graphicalLassoAlgorithm`, `graphicalLasso` and `graphicalLassoEstimator`, whose exposition is a `regularisationPath`
+of the partial correlations over a penalty grid. The block coordinate descent is intrinsic to the problem (the L1 term is
+not smooth, so it is not a `smoothSolvers` slot); the inner lasso is the library's.
+
+oracle: scikit-learn `graphical_lasso` at two penalties (tolerances tightened), `MinCovDet` (default and 0.9 support
+fraction) and `EllipticEnvelope` on data with planted outliers, where the oracle picks a data seed for which
+scikit-learn's random starts all find the same minimum (the determinant has several nearby local minima on the clean
+rows, and a golden needs the global one). The shrinkage estimators are tested in `stats/covariance`. TODO: the nested
+subsets of FastMCD for more than 500 rows, `assume_centered` in the MCD, `GraphicalLassoCV`, the LARS-solved lasso mode.
+built from: `stats` (covariance), `anomaly` (outlier verbs), `learn`, `numerics` (linalg), `optim` (lasso), `dists`
+(chi-squared), `random`, `trace`
+
+### 4.53 `anomaly/`: anomaly and outlier detection (scikit-learn ensemble and neighbors, PyOD ideas)
+
+`isolation.ts` is the isolation forest (Liu, Ting and Zhou) and the extended variant (Hariri, Kind and Brunner):
+`isolationTree` (random split per node on a subsample, flat node list; or a random hyperplane through a uniform point of
+the bounding box), `pathLength`, `isolationPath` (the nodes a point visits, for the explanation), `averagePathLength`
+(`c(n)`), `isolationForestAlgorithm` (one tree per step, the running scores and their change), `isolationForest`,
+`extendedIsolationForest` and the classes. The trees have no criterion, so they do not use `trees`; the growing is
+intrinsic. `neighbours.ts` is the local outlier factor (`lofAlgorithm` in three stages: neighbourhoods and
+k-distances, reachability densities, factors; `localOutlierFactors`, `localOutlierFactor`), the connectivity-based
+outlier factor (`averageChainingDistance` of the set-based nearest path, `cofAlgorithm`, `connectivityOutlierFactor`)
+and the k-nearest-neighbour distance (`knnAlgorithm`, `knnDetector`, aggregation `largest`, `mean` or `median`), all over
+`neighbourIndex` of `learn` (any metric of `distances`, brute force or tree); a training row is left out of its own
+neighbourhood as `kneighbors()` does, the verbs score new rows (novelty mode). `combine.ts` is what every detector ends
+in: `outlierVerbs` (`scoreSamples` higher is more anomalous, `decisionFunction` as `threshold - score`, `predict` -1 or
+1), `outlierExposition`, the thresholds (`contaminationThreshold`, `quantileThreshold`, `potThreshold` peaks over
+threshold with a generalised Pareto tail, `iqrThreshold`, `madThreshold`), the normalisations (`zscoreNormalise`,
+`minmaxNormalise`, `rankNormalise`, `unifyScores`) and the combinations (`averageScores`, `maximizationScores`,
+`aomScores`, `moaScores`, `combineScores`). Scores here are the positive anomaly scores, so `scoreSamples` is the negative
+of scikit-learn's.
+
+oracle: scikit-learn `LocalOutlierFactor` (training factors and novelty scores at two `k` and two metrics, the decision
+function, labels and threshold at a contamination and at `'auto'`). The isolation forest is tested through statistical
+properties (the outlier's score, the spread of the score falling with the trees, the contamination fraction flagged,
+reproducibility under a key), as its random trees do not match scikit-learn's draw for draw; the connectivity-based
+factor and the neighbour-distance score have no scikit-learn reference and are tested on hand-computed values. TODO:
+the statistical detectors (z-scores, Mahalanobis, PCA reconstruction, HBOS) and the one-class methods, which the chapter
+README lists.
+built from: `learn` (neighbours, iterative base), `distances`, `stats` (quantiles, ranks, extreme values), `random`,
+`trace`, `exposition`
+
+### 4.54 `sketches/`: probabilistic data structures for streams (datasketch, Redis Bloom, Apache DataSketches)
+
+`hashing.ts` is the shared hash: `hash32` (FNV-1a mixing finished by Murmur3's `fmix32`) of strings and numbers (through
+their IEEE-754 bytes), `hashPair` (a 64-bit pair), `doubleHashIndex` (enhanced Kirsch-Mitzenmacher probes), and `seedOf`,
+which turns a number or a `Key` into a seed, so every sketch is reproducible from a key. `membership.ts`: `bloomFilter`
+(with `optimalBloomParams`, `bloomFalsePositiveRate`, `estimateCount`, `merge`), `countingBloomFilter`, `cuckooFilter`
+(partial-key cuckoo hashing, deletion, and a refused insertion rolls back, so no stored item is ever lost), and the
+algorithms `bloomFilterAlgorithm` (fill, theoretical and measured false-positive rate per insertion) and
+`cuckooFilterAlgorithm` (load factor and kicks). `cardinality.ts`: `hyperLogLog` with the classical estimator (linear
+counting below `5m/2`) and Ertl's improved estimator (no bias tables), `hllMerge`, `hyperLogLogAlgorithm`.
+`frequency.ts`: `countMinSketch` (optionally conservative), `countSketch` (signed, median of rows, second moment),
+`misraGries`, `spaceSavingTopK` (with the guaranteed and the candidate heavy hitters), `countMinAlgorithm` and
+`spaceSavingAlgorithm` (the error against exact counts and the guaranteed bound). `similarity.ts`: `minHash`,
+`minHashJaccard`, `exactJaccard`, `lshIndex` (banded), `lshCollisionProbability`, `lshOptimalParams` (the false-positive
+and false-negative areas of the S-curve integrated exactly). `reservoir.ts`: `reservoirSampler` (Algorithm R, Li's
+Algorithm L, weighted A-Res and A-ExpJ), `reservoirSample`, `reservoirAlgorithm`. `quantiles.ts`: `gkSummary`
+(Greenwald-Khanna, every rank within `epsilon n`), `tDigest` (merging, k1 scale; tails tighter than the middle),
+`kllSketch` (compactors; rank error about `1/k`, mergeable). `skiplist.ts`: `skipList` (Pugh; keyed heights, a comparator,
+search traces), `skipListAlgorithm`.
+
+Each sketch states its guarantee and the property tests check it across many keys: the Bloom rate against the fill-based
+and the classical formula, the cuckoo load factor and bound, HyperLogLog's error against `1.04/sqrt(m)` and its absence of
+bias over seeds, the Count-Min bound `epsilon N` with probability `1 - delta`, the Space-Saving and Misra-Gries counter
+bounds (also after a merge), MinHash's unbiasedness and binomial spread, the LSH S-curve, reservoir inclusion
+probabilities (and the successive-sampling ones for weights), the quantile sketches' rank errors. No oracle: datasketch is
+not in the `oracle-core` group, so there are no goldens. TODO: HyperLogLog++'s sparse representation, a streaming
+algorithm form for the quantile sketches, sliding-window variants, serialisation of the objects (only the algorithms'
+states serialise).
+built from: `base`, `random`, `trace`, `numerics` (the quadrature rule of `lshOptimalParams`)
+
+### 4.55 `survival/`: survival analysis of right-censored data (lifelines, statsmodels duration, R survival)
+
+`data.ts` reads right-censored data (`survivalSample`: times and 0/1 event indicators, validated once) and builds the
+table of distinct event times (`eventTable`: at risk, events, censored). `kaplan-meier.ts` is the product-limit
+estimator with Greenwood's variance and the log-log, plain and log intervals (`kaplanMeier`, `survivalAt`,
+`survivalQuantile`, `restrictedMeanSurvival`), the Nelson-Aalen cumulative hazard (`nelsonAalen`), and
+`kaplanMeierAlgorithm`, which takes one subject per step (events before censorings at a tied time) so the curve forms
+as the run proceeds; its state serialises, and after `n` steps it is the batch curve. `log-rank.ts` is the weighted
+K-sample log-rank family (`logRankTest`: log-rank, Gehan-Breslow/Wilcoxon, Tarone-Ware, Peto-Peto, Fleming-Harrington
+`(p, q)`, strata summed over; `logRankZ` for two groups). `cox.ts` is Cox regression: `coxProblem` builds the
+partial likelihood (Breslow or Efron ties, strata, a ridge) as a `SmoothProblem` in differentiable tensor operations
+(one reverse cumulative sum gives every risk set), `coxAlgorithm`/`coxPh` fit it with `solver` a hyperparameter from
+`smoothSolvers` (default Newton to a gradient tolerance of 1e-10, which reproduces the references; every other smooth
+solver reaches the same optimum), and the fit carries the covariance from the observed information, Wald,
+likelihood-ratio and score tests, the concordance, Breslow's baseline cumulative hazard per stratum and
+`coxPredictSurvival`. `aft.ts` is the accelerated failure time family (`aftProblem`, `aftAlgorithm`, `aft`: Weibull,
+log-normal, log-logistic, exponential) on the same slot, with `aftPredictSurvival` and `aftPredictQuantile`.
+`cox.ts` also has the Schoenfeld and martingale residuals. `concordance.ts` is Harrell's C (`concordanceIndex`, with pair
+counts). `prediction.ts` scores predictions under censoring with inverse-probability-of-censoring weights: the
+censoring distribution (`censoringSurvival`), the Brier score and its integral (`brierScore`, `integratedBrierScore`)
+and Uno's cumulative/dynamic AUC (`cumulativeDynamicAuc`). The planted generator is `survivalData` of
+`datasets` (Weibull or exponential proportional hazards and log-normal AFT with known coefficients), which the tests
+use.
+
+oracle: statsmodels `SurvfuncRight` (curve, Greenwood errors, risk sets), `survdiff` (log-rank, Gehan-Breslow,
+Tarone-Ware, Fleming-Harrington, two and three groups, with and without tied times), `PHReg` (coefficients, errors,
+partial log-likelihood, baseline hazard and Schoenfeld residuals for both tie methods, and a stratified fit); the AFT fits are compared with
+a maximum-likelihood fit written from `scipy.stats` log densities (Gumbel, normal, logistic) polished by Newton steps
+on numerical derivatives, and the concordance index with a direct count of the pairs (neither statsmodels nor
+scikit-learn has an equivalent installed); the Brier score and AUC are tested on hand-computed values. TODO: left
+truncation (entry times), case weights, time-varying covariates, interval and left censoring for the AFT family, the
+Grambsch-Therneau proportional-hazards test.
+built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
+`trace`, `space`, `random`
+
+### 4.56 `causal/`: causal inference from data (DoWhy, EconML, causalml, MatchIt, sensemakr)
+
+Graph-side causal work (structural models, d-separation, back-door and front-door sets, the ID algorithm's cases,
+instruments, counterfactuals, PC, GES, LiNGAM, NOTEARS, FCI) is `pgm/causal` and `pgm/learning`; this domain is what
+runs on data. Every estimator takes `CausalData` (`x` covariates, a 0/1 `treatment`, an `outcome`; `splitTreatment`
+reads the layout of the `treatmentEffects` generator) and returns an `EffectEstimate` (estimand, `Estimate` with
+standard error and interval, p-value, n and, where the estimator has one, the per-unit influence values the standard
+error comes from). `nuisance.ts` is the nuisance-model slot: a propensity model and per-arm outcome models are any
+`Estimator` of the library (`linearModel` logistic and least squares by default; a forest, boosted trees or nearest
+neighbours fit as well), `fitNuisances` fits on training rows and predicts at test rows (so cross-fitting is the same
+call on another split), `crossFitFolds` gives treatment-stratified folds, and the diagnostics are `overlap`,
+`effectiveSampleSize` and `balanceTable` (standardised mean differences before and after weighting).
+`estimation.ts` has `regressionAdjustment` (linear with HC1 errors, Lin's interacted model, or per-arm g-computation of
+any learner with a bootstrap error), `ipwWeights` and `ipw` (Horvitz-Thompson or Hajek, ATE, ATT or ATC, stabilised
+weights, trimming), `stratification`, `aipw` (doubly robust, optional cross-fitting), `tmle` (targeted maximum
+likelihood; its logistic fluctuation is `tmleFluctuationProblem`, a `SmoothProblem` solved by any solver of
+`smoothSolvers`, Newton by default), `doubleMachineLearningAlgorithm` (one cross-fitting fold per step; the partially
+linear and interactive models; the state serialises) with its batch form `doubleMachineLearning`, and
+`bootstrapEffect`. `matching.ts` is nearest-neighbour matching on the propensity logit, standardised covariates or the
+Mahalanobis distance, with or without replacement, `k` neighbours, a caliper, and the Abadie-Imbens variance.
+`balancing.ts` is entropy balancing: the dual is `entropyBalancingProblem` (a `SmoothProblem`; `entropyBalancingAlgorithm`
+is it under `loggedSolver`), and `entropyBalancing` returns weights that match the target's moments exactly.
+`instrumental.ts` is the k-class family (`instrumentalVariables`: OLS, two-stage least squares, LIML, Fuller; classical or
+HC errors, weights, controls) with `twoStageLeastSquares`, `liml`, the first-stage F statistic and partial R-squared per
+endogenous regressor (`firstStageF`), Sargan's overidentification test and `waldEstimate`. `designs.ts` is the panel
+designs: `splitPanel`, `differenceInDifferences` (two by two, cluster-robust by unit), `twoWayFixedEffects`
+(Frisch-Waugh demeaning, the dummy-variable regression's small-sample factors), `eventStudy` (relative-time dummies, or
+the Callaway-Sant'Anna group-time estimator against never-treated units with a unit bootstrap; the leads' Wald test of
+parallel trends), and synthetic control (`syntheticControl`: simplex-constrained least squares solved exactly by
+`optim`'s active-set quadratic program; `placeboInSpace` and `placeboInSpaceAlgorithm`, one donor per step).
+`discontinuity.ts` is regression discontinuity: local polynomial fits on each side with triangular, uniform or
+Epanechnikov kernels and HC1 errors (`regressionDiscontinuity`, sharp or fuzzy, the fuzzy one as weighted 2SLS with the
+cutoff as the instrument), the Imbens-Kalyanaraman bandwidth (`imbensKalyanaraman`), `rdBandwidthSweep`, and a
+McCrary-style `densityTest`. The generators added to `datasets` for these are `syntheticControlPanel` (a treated unit
+that is an exact convex combination of donors under a factor model, with the effect path and counterfactual as truth) and
+`upliftData` (a randomised experiment with a binary outcome, covariate-dependent uplift including harmed units, and
+the uplift function as truth).
+`heterogeneous.ts` is the meta-learners over the base-learner slot (`sLearner`, `tLearner`, `xLearner`, `rLearner` as a weighted
+regression of the residual ratio, `drLearner` on the AIPW score; each returns a `CateModel` with `predict`; R and DR cross-fit
+their nuisance models) and `pehe`. `causal-forest.ts` is the causal forest: nuisance-centred outcome and treatment, honest
+trees from `trees` (`decisionTreeRegressor`) grown on the gradient pseudo-outcomes of the residual-on-residual moment, and a
+forest estimate that is the residual regression weighted by shared leaves; `causalForestAlgorithm` grows one tree per step
+(serialisable state), `causalForestOf` and `causalForest` give `predict`, `predictOutOfBag`, the doubly robust
+`averageEffect` and split importances. `uplift-tree.ts` is the Rzepakowski-Jaroszewicz uplift tree (`upliftTree` with the
+`KL`, `ED`, `Chi` divergences for 0/1 outcomes and the `tau` criterion for any outcome) and the bagged `upliftForest`.
+`metrics/uplift.ts` (4.28 `metrics/`) holds the scoring: `upliftCurve` (Qini and uplift gain curves with the random
+line), `qiniCoefficient`, `auuc`, `upliftAtK`, `upliftDeciles` and the inverse-propensity `policyValue` with the treat-all
+and treat-none values.
+`sensitivity.ts` is how strong a hidden confounder would have to be: `eValue` (VanderWeele-Ding, with the conversions from odds
+and hazard ratios and standardised differences), `rosenbaumBounds` (the signed-rank bounds on matched pairs, normal
+approximation) and `rosenbaumBoundsBinary` (exact McNemar tails) with the critical Gamma, `matchedPairs` (the pairs of a
+matching result), the Cinelli-Hazlett omitted-variable bias (`omittedVariableBias`, `robustnessValue`, `partialR2`,
+`ovbContour` for the contour grid, `sensitivityModel` and `benchmarkStrength` for benchmarks from observed covariates, which
+reproduce the dropped-covariate estimate exactly when given its true partial R-squared), and `refute` (placebo treatment,
+random common cause, data subset).
+`graph.ts` joins `pgm/causal` to the estimators: `backdoorEffect` takes a minimal back-door set from the graph and adjusts for it
+(Lin's regression adjustment or AIPW for a 0/1 treatment, robust least squares for a numeric one) and `frontdoorEffect` applies
+the front-door formula through the graph's mediators for a binary treatment and discrete mediators when a hidden confounder
+closes the back-door, with a bootstrap error. The graph side (d-separation, back-door and front-door sets, instruments, the
+cases of the ID algorithm, the PC algorithm in `pgm/learning`, GES, LiNGAM, NOTEARS and FCI in `pgm/causal`) was already in
+`pgm` and is not repeated here.
+The planted generators the tests use are `treatmentEffects` (confounding, overlap, nonlinear setting, heterogeneity),
+`instrumentalVariables`, `panelEffects` and `discontinuityDesign` of `datasets`.
+
+oracle: statsmodels OLS with HC1 errors (regression adjustment), a GLM with an offset (the TMLE fluctuation), `IV2SLS` and the
+k-class formulas with scipy's generalised eigensolver (LIML, Fuller), dummy-variable OLS with cluster-robust errors (difference
+in differences, two-way fixed effects, event studies), WLS with HC1 errors per side (regression discontinuity) and scipy's
+SLSQP (synthetic control), scipy's Wilcoxon test and binomial tails (Rosenbaum bounds; the published sensemakr and E-value
+examples are unit tests);
+scikit-learn's logistic and linear regressions for the nuisance models of the weighting, AIPW, stratification and TMLE
+formulas, which are written out in numpy beside them, and its nearest neighbours for matching; scipy's BFGS on the
+entropy-balancing dual. Planted truth (the effect of the generators, with the naive estimator shown biased) checks
+recovery.
+built from: `learn` (the estimator contract, neighbour search, splitters), `linear` (default nuisance models), `trees`
+(causal forests), `pgm` (graph queries), `optim` (`smoothSolvers`, `quadprog`), `numerics`, `random`, `trace`, `space`, `tensor`
+### 4.57 `embedding/`: embeddings learned from data (word2vec, fastText, GloVe, knowledge-graph embeddings)
+
+oracle: numpy (the GloVe loss and gradient from the definition, `oracle/cases/embedding/glove.py`; the four knowledge-graph
+scoring functions in numpy complex arithmetic and the filtered rank with scipy's `rankdata`,
+`oracle/cases/embedding/knowledge_graph.py`); the PPMI and SVD steps
+are `text`'s and are checked there against numpy and gensim's `KeyedVectors`. gensim and torch train stochastically and
+differently, so the trainers are checked on planted truth instead: a gradient check of each analytic update against
+autodiff, the loss decreasing under several solvers, and analogies and clusters recovered on `analogyCorpus`.
+
+A model is an objective and the optimiser is a slot. Each trainer builds a `SmoothProblem` (`word2vecProblem`,
+`gloveProblem`; the examples, with their negatives or Huffman paths, are drawn once from a key, so the loss is a fixed
+smooth function of the matrices and the `gradient` mode can draw batches of examples), and its table of solvers
+(`word2vecSolvers`, `gloveSolvers`, built by `solversWith`) holds the library's generic solvers (gradient descent,
+conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent, the stochastic `gradient` mode with its optimiser,
+schedule and batch) beside the model's own algorithm as a named mode: word2vec's plain SGD with a linearly decaying rate
+touching only the rows involved (`word2vecSgd`), GloVe's AdaGrad (`gloveAdaGrad`). The named modes are `Algorithm`s with
+serialisable states; their per-example updates are the exact gradient of the problem's loss, which the tests check
+against autodiff.
+- `word2vec.ts`: `word2vecVocabulary`, `word2vecExamples` (skip-gram pairs or CBOW windows, a dynamic window, frequent
+  word subsampling, unigram^0.75 negatives), `word2vecProblem` (negative sampling, or the hierarchical softmax over a
+  Huffman tree through `losses`' `hierarchicalSoftmax`; fastText's hashed character n-gram rows as an input option),
+  `word2vecSgdAlgorithm`, `word2vecSolvers`, `trainWord2vec`, `word2vecModel`, `subwordVector` (a vector for an unseen
+  word from its n-grams), `solversWith` (any model's own mode beside the generic solvers).
+- `glove.ts`: `gloveProblem` (weighted least squares on the log of the harmonic-weighted co-occurrences),
+  `gloveAdaGradAlgorithm`, `gloveSolvers`, `trainGlove`, `gloveModel` (word vector `w + w~`).
+- `count-based.ts`: `ppmiEmbedding`, the closed-form route (windowed counts, shifted PPMI, truncated SVD).
+- `knowledge-graph.ts`: TransE, DistMult, ComplEx and RotatE scorers (`kgScore` in numbers, the same in tensor
+  operations inside the loss, checked against each other), `kgProblem` (margin or logistic negative-sampling loss against
+  corrupted heads and tails drawn once from a key, optional L2), `kgSolvers` (the generic solvers, the stochastic
+  `gradient` mode the default), `trainKg`, `kgEmbedding`, `rankKg` (filtered link prediction: MRR, mean rank, Hits@k,
+  tied ranks averaged). The tests train all four on `plantedRelations` and check what each can express: DistMult
+  scores a fact and its reverse identically, so it cannot orient the cycle and ranks held-out symmetric facts far
+  better than TransE does.
+- `evaluation.ts`: `analogyAccuracy` (3CosAdd or 3CosMul, optionally over a candidate set), `similarityCorrelation`
+  (Spearman against judged similarity), `neighbourPurity`.
+built from: `losses`, `optim` (`smoothSolvers`), `text` (co-occurrence, PPMI, SVD, analogies, fastText hashing), `stats`,
+`trace`, `random`, `space`, `tensor`
+### 4.58 `patterns/`: pattern mining (mlxtend, SPMF, pysubgroup)
+
+`itemsets.ts` mines frequent itemsets from baskets of item ids three ways that return the same itemsets with the same
+counts on every input: Apriori (`apriori`, `aprioriAlgorithm`: one level per step, candidates joined from a shared
+prefix and pruned by the downward closure, with the joined, pruned and counted candidates on the tape), FP-growth
+(`fpGrowth`, `fpGrowthAlgorithm`: one transaction inserted into the FP-tree per step, then one conditional tree mined
+per step, the pending conditional pattern bases in the state) and Eclat (`eclat`, `eclatAlgorithm`: one prefix class
+per step, tid-lists intersected). `exhaustiveItemsets` enumerates every subset and is the reference the three are
+tested against (property tests on random baskets, with and without `maxLength`); `closedItemsets` and `maximalItemsets`
+filter a complete result. `association-rules.ts` has `ruleMeasures` (support, confidence, lift, leverage, conviction and
+Zhang's metric from the four counts, mlxtend's definitions) and `associationRules` (every split of every frequent
+itemset, filtered and ranked by any measure). `sequences.ts` mines sequences of itemsets: `prefixSpanAlgorithm` (one
+prefix extension per step over projected databases that remember the earliest match) and `gspAlgorithm` (one level per
+step, the join of the paper, pruned by contiguous subsequences, with minimum and maximum gap and maximum span),
+`containsPattern`, `exhaustivePatterns` as the reference (PrefixSpan and GSP equal it on random sequences, and GSP equals
+it under random gap constraints). `subgroups.ts` is subgroup discovery: `subgroupQuality` (the Klösgen family with
+weighted relative accuracy, relative accuracy, lift, signed chi-squared), `columnSelectors` (nominal values and
+equal-frequency numeric cuts), `subgroupProblem` and `discoverSubgroups` (the conjunction language of
+`search/refinement.ts` searched by beam or exhaustively with the optimistic estimate of WRAcc; binary or numeric
+targets), and the covering variants `cn2SdAlgorithm` (beam search under example weights that fall for covered
+positives) and `aprioriSdAlgorithm` (candidate levels, then weighted selection), one rule per step. The planted
+generator is `plantedTransactions` of `datasets`.
+
+oracle: pysubgroup (`StandardQF(a)` for a = 0, 0.5, 1 and `StandardQFNumeric`, DFS with optimistic estimates, top-k
+qualities); mlxtend and SPMF are not installed in the oracle group, so the itemset and sequence miners are checked by
+exact agreement with exhaustive enumeration and by the worked examples of the Apriori and PrefixSpan papers. TODO:
+planted sequences, SD-Map, interval selectors for numeric columns, exceptional model mining, frequent subgraphs.
+built from: `search` (refinement), `trace`, `base`
+
+### 4.59 `rules/`: rule learning on the `learn` contract (Orange, imodels, CORELS, Weka)
+
+`rule.ts` is the shared representation: a `Literal` (a test on one feature: `==` a category, `<=` or `>` a threshold),
+a `Rule` (literals, the class it predicts, the class counts of the rows it covered when learned) and a `RuleModel` (an
+ordered `list` that takes the first rule that fires, or a `set` whose firing rules vote by summing their counts, with the
+default counts for rows nothing covers: `predictCounts`, `firingRule`, Laplace-smoothed `smoothedProbabilities`). The
+quality measures are `ruleStatistics` (support, confidence, lift, Laplace accuracy, WRAcc of a rule on data),
+`ruleQuality` (entropy, Laplace, accuracy, m-estimate and WRAcc from covered class counts, the heuristics of the
+searches) and CN2's `likelihoodRatio` and `ruleSignificance` (chi-squared, k - 1 degrees of freedom); `modelText`,
+`ruleLine` and `modelRecord` print a model or turn it into the `rules` record. `covering.ts` is sequential covering as an
+`Algorithm` with a rule per step: ordered CN2 (a beam over conjunctions, entropy or Laplace, kept only if significant,
+the majority class of the covered rows, all covered rows removed), unordered CN2 (rules per class over all rows, only the
+covered rows of that class removed, rules vote) and PRISM (greedy on precision to a pure rule). `ripper.ts` is RIPPER and
+IREP: classes from the rarest, a rule grown by FOIL's gain (`logic/ilp`) on two thirds and pruned on a third by
+(p - n) / (p + n), the 50% error stop and the description-length stop (`ruleSetDescriptionLength`, Cohen's code for rules
+plus the exceptions, 64 bits of slack), then replacement and revision of each rule keeping whichever gives the set the
+shortest description, a rebuild and a deletion pass; its randomness is the grow/prune split from the step's key.
+`lists.ts` has the pre-mined antecedents (`mineAntecedents`: Eclat of `patterns` over the literals each row satisfies)
+and two rule-list learners over them: `corelsAlgorithm`, a CORELS-style branch and bound over prefixes (objective and
+look-ahead bounds, the minimum-support bound, the equivalent-points bound and the permutation bound; the queue emptying
+certifies optimality, `fitCorels` reports it), and `bayesianRuleListAlgorithm`, Metropolis-Hastings over ordered lists
+(truncated Poisson priors on length and rule size, Dirichlet-multinomial likelihood, add/remove/swap proposals with the
+Hastings ratios; `ruleListLogPosterior` is its target density). `sets.ts` has `oneRAlgorithm` (Holte's buckets, one
+feature per step), `decisionTableAlgorithm` (Kohavi's table, forward selection by leave-one-out accuracy) and
+`treeRuleSet` (one rule per leaf of a `trees` classification tree, predicting exactly as the tree). `estimators.ts` puts
+each learner on the iterative base: `cn2Classifier` (ordered or unordered), `prismClassifier`, `ripperClassifier` (RIPPER
+or IREP), `corelsClassifier`, `bayesianRuleListClassifier`, `oneRClassifier`, `decisionTableClassifier`, each with
+`method(data)`, `session(data)` and `fittedAt(t)` (the rule model after t steps), logging the README's tracks
+(`rule/literal`, `rule/coverage`, `rule/precision`, `ruleset/rules`, `ruleset/accuracy`, `ruleset/covered`,
+`rule/descriptionLength`, `pass/revision`, `search/bound`, `search/incumbent`, `search/nodes`, `chain/logPosterior`,
+`chain/accepted`) and answering the probe `model/rules`. The planted generator is `plantedRuleList` of `datasets`
+(categorical rows labelled by a planted decision list with label noise; the list, the noise and the exact accuracy are
+the truth). The contracts of the estimators go through the iterative base, whose paths are not yet typed.
+
+oracle: none for the learners (no installed reference implements these exactly: Orange and imodels are not in the oracle
+group); the checks are exhaustive enumeration (CORELS equals the best list found by trying every list up to length 3),
+the exact posterior (the sampler's visit frequencies converge to the enumerated posterior over all 65 lists of a small
+problem), Cendrowska's contact lenses data (PRISM's pure rules, OneR's 17 of 24 as Weka reports), the likelihood ratio
+and description length by hand, and recovery of the planted list with generalisation to fresh draws. TODO: RuleFit
+(`explain/rules.ts` has it), Apriori-based classification (CBA, CMAR), numeric interval literals, RIPPER's exact
+Weka description-length constants, the CORELS cache and symmetry-aware bounds beyond the permutation bound.
+built from: `learn` (iterative base), `patterns` (Eclat), `logic/ilp` (`foilGain`), `trees`, `exposition` (`ruleSet`),
+`numerics/special`, `trace`, `random`
 
 ## 5. Methods, exposition records and views
 
@@ -3452,6 +4669,19 @@ built from: `linear` (the GLM core), `stats/smoothing`, `optim`, `numerics/linal
 - `checks.ts`: basis-dimension checks (k-index), concurvity, residual diagnostics, posterior simulation of smooths.
 - `gamlss.ts`: distributional regression (location, scale and shape each with an additive predictor).
 - `bayesian.ts`: GAMs as probabilistic programs (smoothness priors from penalties), solved by NUTS or Laplace.
+
+`covariance/` (sklearn.covariance)
+built from: `stats/covariance.ts`, `anomaly` (outlier verbs), `learn`, `optim` (lasso), `numerics/linalg`
+- `shrinkage.ts`: the empirical, shrunk, Ledoit-Wolf and OAS estimators on the iterative base, Mahalanobis distances,
+  the Gaussian log likelihood.
+- `robust.ts`: the C-step, FastMCD, `minCovDet`, the elliptic envelope.
+- `graphical-lasso.ts`: the graphical lasso by block coordinate descent, its regularisation path.
+
+`anomaly/` (sklearn.ensemble.IsolationForest, sklearn.neighbors.LocalOutlierFactor, PyOD)
+built from: `learn` (neighbour index, iterative base), `distances`, `stats`, `random`
+- `isolation.ts`: isolation trees and forests, the extended variant, isolation paths.
+- `neighbours.ts`: the local and connectivity-based outlier factors, the k-nearest-neighbour distance.
+- `combine.ts`: outlier verbs and exposition, thresholds, score normalisation and combination.
 
 `svm/` (sklearn.svm, LIBSVM, LIBLINEAR)
 built from: `optim/smo.ts`, `optim/quadratic.ts`, `kernels`, `learn/calibration.ts`
@@ -4355,17 +5585,34 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `ranking.ts`: explicit ratings with low-rank truth (`lowRankRatings`, observed at random or not), click logs
   (`clickLogs`: position and cascade models with logging-policy propensities), implicit feedback (`implicitFeedback`,
   Poisson factorisation), Zipfian catalogues (`zipfianCatalogue`), a small MovieLens (`movielensSmall`, remote).
+- `click-sessions.ts`: `dbnClickLogs`, click sessions from a dynamic Bayesian network with each item's attractiveness
+  and satisfaction and the continuation probability as truth.
 - `corpus.ts`: toy and topic corpora with true topics (`naiveBayesCorpus`, `topicCorpus` with Dirichlet or bars
   topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
   titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
-  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage).
+  corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage), tagged sentences
+  from a tag HMM with its tables as truth (`taggedCorpus`), and typed words with the intended ones through an edit
+  channel (`typoPairs`, for noisy-channel spelling correction).
+- `planted-embeddings.ts`: `analogyCorpus` (target words that combine a concept and an attribute, so the parallelogram
+  analogies and the concept clusters are planted and listed in the truth), `plantedRelations` (a knowledge graph whose
+  relations are symmetric, inverse, a directed cycle and a composition, with the inferable facts held out as a test set),
+  `linkageTables` (two tables of person records, the second with typos, and the matching pairs).
+- `transactions.ts`: baskets with planted itemsets (`plantedTransactions`; the exact `expectedSupport` of any itemset).
+- `captions.ts`: scenes of coloured shapes with template captions and questions (`captionedShapes`; a paired
+  image-text schema in `data/schema/` is still to do, the text sits in the truth).
+- `audio.ts`: `spokenDigits`, a stream of synthetic spoken digits (formant trajectories over a harmonic source, speakers
+  with pitch, speed and vocal-tract scale) with the digit of every sample and the utterance list as truth.
+- `timeseries.ts` also has `plantedSeries` (a motif planted repeatedly, a discord and a regime change with known
+  positions), `garchReturns` (the conditional variance as truth) and `coupledSeries` (VAR or coupled logistic maps
+  through a known directed graph).
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino
   (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
   and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`
   collection.
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
-  `modularArithmetic`), each with an exact solver in its truth.
+  `modularArithmetic`), each with an exact solver in its truth, and in-context linear regression written as quantised
+  tokens (`inContextRegression`, with the least-squares and Bayes predictions).
 - `graphs.ts`: karate club (`karateClub`), Les Miserables (`lesMiserables`), contextual stochastic block models
   (`contextualSbm`), graph families (`familyGraph`, `graphFamilies`: Erdos-Renyi, Barabasi-Albert, Watts-Strogatz,
   grids, cycles, paths, stars, complete graphs, trees, geometric graphs), small molecules (`smallMolecules`, read from
@@ -4375,14 +5622,20 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   corners (`geometricScenes`), a small Fashion-MNIST (`fashionMnistTest`, remote, parsed by `parseIdxImages`).
 - `causal.ts`: synthetic causal datasets with known structural models, ATEs and CATEs: `linearScm` (random DAGs,
   Gaussian or non-Gaussian noise, total effects, interventional means), `treatmentEffects` (confounded treatment,
-  potential outcomes, CATE, propensities), `instrumentalVariables`.
+  potential outcomes, CATE, propensities), `instrumentalVariables`, `panelEffects` (a unit-by-period panel with
+  staggered or simultaneous adoption, a differential pre-trend and dynamic effects, for difference in differences and
+  event studies), `discontinuityDesign` (sharp or fuzzy, the jump and the first stage as truth).
 - `experiments.ts`: A/B test data with known effects (`abTest`: conversion, continuous or revenue metrics, several
-  arms, pre-period covariates for CUPED, arrival days and novelty effects).
+  arms, pre-period covariates for CUPED, arrival days and novelty effects), `networkExperiment` (a small-world network
+  with unit or cluster randomisation and spillover: direct, spillover and total effects), `carryoverExperiment` (two
+  chained experiments with a persistent first effect and the naive bias).
 - `trajectories.ts`: logged bandit data (`loggedBandit`, with exact policy values), offline RL datasets from known
   behaviour policies (`offlineMdp` on random tabular MDPs or Strens' chain, `policyEvaluation`, `TabularMdp`).
 - `weak-labels.ts`: labelling functions with known accuracies (`labellingFunctions`), crowd labels (`crowdLabels`,
   Dawid-Skene), positive-unlabelled data (`positiveUnlabelled`, SCAR and SAR), label-proportion bags
-  (`labelProportionBags`), each with the exact posterior or mechanism.
+  (`labelProportionBags`), multiple-instance bags with witnesses (`multipleInstanceBags`), clusters whose classes follow
+  or break the cluster assumption (`clusterAssumption`, the exact posterior); crowd workers can be spammers or
+  adversaries. Each carries the exact posterior or mechanism.
 - `operators.ts`: operator-learning pairs (`heatOperator`, `burgersOperator` solved exactly by Cole-Hopf,
   `antiderivativeOperator` with Gaussian-process inputs).
 - `catalogue.ts`: `datasetGenerators` (every generator by name, for recipes and controls), `remoteDatasets`, and
@@ -5025,8 +6278,8 @@ library for the same computation. They do not set a higher bar than that library
 | `base`, estimator API                                       | `lib/learn/estimator.ts`                              |
 | `linear_model`                                              | `methods/linear/`                                     |
 | `svm`                                                       | `methods/svm/`, `lib/optim/smo.ts`                    |
-| `tree`                                                      | `methods/trees/`                                      |
-| `ensemble`                                                  | `methods/ensemble/`                                   |
+| `tree`                                                      | `lib/trees/`                                          |
+| `ensemble`                                                  | `lib/ensembles/`                                      |
 | `neighbors`                                                 | `methods/neighbours/`, `lib/numerics/spatial/`        |
 | `naive_bayes`, `discriminant_analysis`                      | `methods/naive-bayes/`, `methods/discriminant/`       |
 | `gaussian_process`                                          | `methods/gp/`, `lib/kernels/`                         |
@@ -5106,7 +6359,7 @@ library for the same computation. They do not set a higher bar than that library
 | NumPyro, Pyro                     | `lib/probprog/`, `lib/sampling/`                                                                  |
 | ArviZ                             | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts`                                        |
 | pgmpy                             | `lib/pgm/`                                                                                        |
-| DoWhy, EconML, causal-learn       | `lib/pgm/causal/`, `methods/causal/`                                                              |
+| DoWhy, EconML, causal-learn       | `lib/causal/`, `lib/pgm/causal/`, `methods/causal/`                                               |
 | NetworkX                          | `lib/graph/`                                                                                      |
 | gymnasium, MinAtar                | `lib/rl/`, `methods/rl/environments/`                                                             |
 | PettingZoo                        | `lib/rl/multi-agent.ts`, `methods/rl/environments/multi-agent.ts`                                 |

@@ -1,14 +1,15 @@
 /**
  * A/B and A/B/n test data with known treatment effects: users allocated to a control and treatment arms over several
- * days, with a pre-experiment covariate for variance reduction by CUPED, for conversion, continuous or revenue metrics.
+ * days, with a pre-experiment covariate for variance reduction by CUPED, for conversion, continuous or revenue metrics;
+ * experiments with interference on a network, and two experiments in a row with carryover.
  */
 
-import { type DatasetGenerator, type TableData, table } from '../data/index.ts'
+import { type DatasetGenerator, type RegressionData, type TableData, table, xy } from '../data/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { categorical, foldIn, normal, randint, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { item } from '../tensor/index.ts'
-import { stamp } from './_util.ts'
+import { matrix, stamp, vector } from './_util.ts'
 
 /** The outcome metrics of {@link abTest}. */
 export type AbMetric = 'conversion' | 'continuous' | 'revenue'
@@ -141,6 +142,201 @@ export const abTest: DatasetGenerator<TableData> = {
           cupedVarianceReduction: metric === 'continuous' ? rho * rho : undefined,
           novelty,
         },
+      },
+    }
+  },
+}
+
+/**
+ * An experiment on a network with interference: units on a ring lattice with random rewiring (a small-world graph),
+ * assigned to treatment individually or in contiguous blocks, whose outcome depends on their own treatment and on the
+ * share of their neighbours treated, `y = base + direct T + spillover S + noise`. Individual randomisation
+ * mis-estimates the effect of treating everyone, since control units next to treated ones benefit too. Features are
+ * `[treatment, exposure, degree, covariate]`. The truth has the direct effect, the spillover (the effect of all
+ * neighbours treated), the total effect of treating everyone against no one, the edges and the clusters.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { networkExperiment } from 'mdml-engine/datasets'
+ * generate(networkExperiment, { knobs: { units: 40 } }).truth.extra?.['totalEffect'] // => 1.5
+ * ```
+ */
+export const networkExperiment: DatasetGenerator<RegressionData> = {
+  name: 'networkExperiment',
+  kind: 'regression',
+  description:
+    'Treatment assigned on a network with spillover onto untreated neighbours; direct and total effects known.',
+  knobs: dict({
+    units: int(10, 1_000_000, { label: 'units', description: 'The number of units (nodes).', default: 500 }),
+    neighbours: int(1, 50, {
+      label: 'neighbours per side',
+      description: 'Each node is linked to this many nodes on each side of the ring.',
+      default: 2,
+    }),
+    rewiring: real(0, 1, {
+      label: 'rewiring',
+      description: 'The chance that an edge is moved to a random node.',
+      default: 0.1,
+    }),
+    randomisation: choice(['unit', 'cluster'], {
+      label: 'randomisation',
+      description: 'Each unit is assigned alone, or blocks of consecutive nodes are assigned together.',
+      default: 'unit',
+    }),
+    clusterSize: int(1, 10_000, {
+      label: 'cluster size',
+      description: 'Nodes per block under cluster randomisation.',
+      default: 25,
+    }),
+    treated: real(0, 1, {
+      label: 'treated share',
+      description: 'The chance that a unit (or block) is treated.',
+      default: 0.5,
+    }),
+    direct: real(-100, 100, {
+      label: 'direct effect',
+      description: 'The effect of a unit’s own treatment.',
+      default: 1,
+    }),
+    spillover: real(-100, 100, {
+      label: 'spillover',
+      description: 'The effect on a unit of all its neighbours being treated.',
+      default: 0.5,
+    }),
+    noise: real(0, 10, { label: 'noise standard deviation', description: 'The outcome noise.', default: 1 }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['units'] as number
+    const half = Math.min(knobs['neighbours'] as number, Math.floor((n - 1) / 2))
+    const rewire = knobs['rewiring'] as number
+    const ur = uniform(foldIn(k, 0), [n * half, 2]).data
+    const neighbours: Set<number>[] = Array.from({ length: n }, () => new Set<number>())
+    const edges: [number, number][] = []
+    for (let i = 0; i < n; i++)
+      for (let s = 1; s <= half; s++) {
+        const idx = i * half + (s - 1)
+        let j = (i + s) % n
+        if ((ur[2 * idx] ?? 1) < rewire) {
+          j = Math.floor((ur[2 * idx + 1] ?? 0) * n)
+          if (j === i) j = (i + 1) % n
+        }
+        if (!neighbours[i]?.has(j)) {
+          neighbours[i]?.add(j)
+          neighbours[j]?.add(i)
+          edges.push([i, j])
+        }
+      }
+    const size = knobs['randomisation'] === 'cluster' ? (knobs['clusterSize'] as number) : 1
+    const blocks = Math.ceil(n / size)
+    const ut = uniform(foldIn(k, 1), [blocks]).data
+    const cluster = Array.from({ length: n }, (_, i) => Math.floor(i / size))
+    const treatment = cluster.map((b) => ((ut[b] ?? 1) < (knobs['treated'] as number) ? 1 : 0))
+    const exposure = treatment.map((_, i) => {
+      const nb = [...(neighbours[i] ?? [])]
+      return nb.length === 0 ? 0 : nb.reduce((a, j) => a + (treatment[j] ?? 0), 0) / nb.length
+    })
+    const covariate = normal(foldIn(k, 2), [n]).data
+    const eps = normal(foldIn(k, 3), [n]).data
+    const direct = knobs['direct'] as number
+    const spill = knobs['spillover'] as number
+    const sd = knobs['noise'] as number
+    const y = treatment.map(
+      (t, i) => (covariate[i] ?? 0) + direct * t + spill * (exposure[i] ?? 0) + sd * (eps[i] ?? 0),
+    )
+    const x = new Float64Array(n * 4)
+    for (let i = 0; i < n; i++)
+      x.set([treatment[i] ?? 0, exposure[i] ?? 0, neighbours[i]?.size ?? 0, covariate[i] ?? 0], i * 4)
+    return {
+      data: xy(matrix(x, n, 4), vector(y), {
+        ...stamp('networkExperiment', networkExperiment.description, knobs),
+        featureNames: ['treatment', 'exposure', 'degree', 'covariate'],
+        targetNames: ['outcome'],
+      }),
+      truth: {
+        noiseScale: sd,
+        effects: { ate: direct + spill },
+        extra: {
+          directEffect: direct,
+          spillover: spill,
+          totalEffect: direct + spill,
+          edges,
+          clusters: cluster,
+          exposureColumn: 1,
+        },
+      },
+    }
+  },
+}
+
+/**
+ * Two experiments chained on one user population, with carryover: the first assigns treatment `T1` whose effect
+ * persists (by a factor `persistence`) into the second period, and the second experiment's assignment `T2` repeats a
+ * user's first arm with probability `stickiness` (users who stay in their arm). A naive comparison in the second
+ * experiment mixes its own effect with the first's carryover. Features are `[t1, t2, pre]`; the outcome is the second
+ * period's. The truth has both effects and the exact carryover bias of the naive difference in means.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { carryoverExperiment } from 'mdml-engine/datasets'
+ * generate(carryoverExperiment, { knobs: { users: 20, stickiness: 1, persistence: 0.5, firstEffect: 2 } }).truth.extra?.['naiveBias'] // => 1
+ * ```
+ */
+export const carryoverExperiment: DatasetGenerator<RegressionData> = {
+  name: 'carryoverExperiment',
+  kind: 'regression',
+  description: 'Two experiments in a row on one population, the first leaving a persistent effect in the second.',
+  knobs: dict({
+    users: int(4, 10_000_000, { label: 'users', description: 'The number of users.', default: 4000 }),
+    firstEffect: real(-100, 100, {
+      label: 'first effect',
+      description: 'The first experiment’s effect in its own period.',
+      default: 1,
+    }),
+    secondEffect: real(-100, 100, {
+      label: 'second effect',
+      description: 'The second experiment’s effect.',
+      default: 0.5,
+    }),
+    persistence: real(0, 1, {
+      label: 'persistence',
+      description: 'The share of the first effect that remains in the second period.',
+      default: 0.6,
+    }),
+    stickiness: real(0, 1, {
+      label: 'stickiness',
+      description: 'The chance that a user keeps the arm of the first experiment in the second.',
+      default: 0.5,
+    }),
+    noise: real(0, 10, { label: 'noise standard deviation', description: 'The outcome noise.', default: 1 }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['users'] as number
+    const stick = knobs['stickiness'] as number
+    const u = uniform(foldIn(k, 0), [n, 3]).data
+    const t1 = Array.from({ length: n }, (_, i) => ((u[3 * i] ?? 1) < 0.5 ? 1 : 0))
+    const t2 = t1.map((t, i) => ((u[3 * i + 1] ?? 1) < stick ? t : (u[3 * i + 2] ?? 1) < 0.5 ? 1 : 0))
+    const pre = normal(foldIn(k, 1), [n]).data
+    const eps = normal(foldIn(k, 2), [n]).data
+    const e1 = knobs['firstEffect'] as number
+    const e2 = knobs['secondEffect'] as number
+    const carry = (knobs['persistence'] as number) * e1
+    const sd = knobs['noise'] as number
+    const y = t2.map((t, i) => 0.8 * (pre[i] ?? 0) + e2 * t + carry * (t1[i] ?? 0) + sd * (eps[i] ?? 0))
+    const x = new Float64Array(n * 3)
+    for (let i = 0; i < n; i++) x.set([t1[i] ?? 0, t2[i] ?? 0, pre[i] ?? 0], i * 3)
+    // P(T1 = 1 | T2 = 1) - P(T1 = 1 | T2 = 0) = stickiness for fair coins.
+    return {
+      data: xy(matrix(x, n, 3), vector(y), {
+        ...stamp('carryoverExperiment', carryoverExperiment.description, knobs),
+        featureNames: ['t1', 't2', 'pre'],
+        targetNames: ['outcome'],
+      }),
+      truth: {
+        noiseScale: sd,
+        effects: { ate: e2 },
+        extra: { firstEffect: e1, secondEffect: e2, carryover: carry, naiveBias: carry * stick },
       },
     }
   },

@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { derived, event, frame, Log, matchesPath, message, On, resolve, scalar, tensor } from './contract.ts'
+import {
+  derived,
+  event,
+  frame,
+  Log,
+  matchesPath,
+  message,
+  On,
+  resolve,
+  type Subscription,
+  scalar,
+  tensor,
+} from './contract.ts'
 import type { TraceEvent } from './events.ts'
 import { defaultLogContext, gated, logContext, scheduler } from './logging.ts'
 import { recorder, startRun } from './tracer.ts'
@@ -52,7 +64,7 @@ describe('resolve', () => {
   })
 
   it('rejects unknown exact paths, hooks on non-events and unknown named hooks', () => {
-    expect(() => resolve(contract, { 'training/nope': Log() })).toThrow(/no path/)
+    expect(() => resolve(contract, { 'training/nope': Log() } as Subscription)).toThrow(/no path/)
     expect(() => resolve(contract, { 'training/loss': On(() => {}) })).toThrow(/not an event/)
     expect(() => resolve(contract, { 'training/epoch/end': On('missing') })).toThrow(/no hook/)
     expect(resolve(contract, { 'nothing/**': Log() }).logs).toEqual([])

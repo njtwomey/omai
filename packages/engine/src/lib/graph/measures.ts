@@ -277,6 +277,47 @@ export function averageClustering(
 }
 
 /**
+ * The average shortest path length (NetworkX average_shortest_path_length): the mean number of edges on a shortest
+ * path, over all ordered pairs of distinct nodes joined by a path. For a connected graph this is NetworkX's value;
+ * where NetworkX raises on a disconnected graph, pairs with no path are left out here.
+ *
+ * @param g - The graph (edge directions followed when directed).
+ * @returns The mean path length in hops (0 when no two nodes are joined).
+ * @concept graph-measures
+ * @example
+ * ```ts
+ * import { averageShortestPathLength, pathGraph } from 'mdml-engine/graph'
+ * averageShortestPathLength(pathGraph(4)) // => 1.6666666666666667
+ * ```
+ */
+export function averageShortestPathLength(g: Graph): number {
+  const dist = new Int32Array(g.n)
+  const queue = new Int32Array(g.n)
+  let total = 0
+  let pairs = 0
+  for (let source = 0; source < g.n; source++) {
+    dist.fill(-1)
+    dist[source] = 0
+    let head = 0
+    let tail = 0
+    queue[tail++] = source
+    while (head < tail) {
+      const u = queue[head++] as number
+      for (let e = g.out.indptr[u] ?? 0; e < (g.out.indptr[u + 1] ?? 0); e++) {
+        const v = g.out.indices[e] ?? 0
+        if (dist[v] === -1) {
+          dist[v] = (dist[u] ?? 0) + 1
+          total += dist[v] ?? 0
+          pairs += 1
+          queue[tail++] = v
+        }
+      }
+    }
+  }
+  return pairs === 0 ? 0 : total / pairs
+}
+
+/**
  * The transitivity (NetworkX transitivity): three times the number of triangles over the number of connected triples,
  * the global clustering coefficient.
  *

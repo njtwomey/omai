@@ -8,6 +8,7 @@
 // TODO: OpenCV's cascade XML format, tilted (45 degree) features and Gentle or Real AdaBoost.
 
 import { type Json, MdmlError } from '../base/index.ts'
+import { bestStump, sortedRows } from '../ensembles/index.ts'
 import { image } from '../signal/index.ts'
 import { type Tensor, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -265,7 +266,7 @@ export function adaBoostAlgorithm(
   const label = (i: number): number => (i < m ? 1 : 0)
   // Feature values and their sort order, computed once.
   const values = pool.map((f) => Float64Array.from(windows, (win) => standardised(win, f, 0, 0, h, w, 1)))
-  const order = values.map((v) => Array.from({ length: n }, (_, i) => i).sort((a, b) => (v[a] ?? 0) - (v[b] ?? 0)))
+  const order = values.map(sortedRows)
   const featureIndex = new Map(pool.map((f, j) => [f, j]))
   const strongError = (weak: readonly WeakClassifier[]): number => {
     const half = weak.reduce((s, k) => s + k.alpha, 0) / 2
@@ -295,37 +296,8 @@ export function adaBoostAlgorithm(
     step: (s) => {
       const total = s.weights.reduce((a, b) => a + b, 0)
       const wt = Float64Array.from(s.weights, (v) => v / total)
-      let tPos = 0
-      let tNeg = 0
-      for (let i = 0; i < m; i++) tPos += wt[i] ?? 0
-      for (let i = m; i < n; i++) tNeg += wt[i] ?? 0
-      let best = { error: Number.POSITIVE_INFINITY, j: 0, threshold: 0, polarity: 1 as 1 | -1 }
-      for (const [j, idx] of order.entries()) {
-        const v = values[j] as Float64Array
-        let sPos = 0
-        let sNeg = 0
-        for (let q = 0; q <= n; q++) {
-          // Split before sorted position q: below are the first q samples.
-          if (q === 0 || q === n || (v[idx[q] ?? 0] ?? 0) !== (v[idx[q - 1] ?? 0] ?? 0)) {
-            const thr =
-              q === 0
-                ? (v[idx[0] ?? 0] ?? 0) - 1
-                : q === n
-                  ? (v[idx[n - 1] ?? 0] ?? 0) + 1
-                  : ((v[idx[q] ?? 0] ?? 0) + (v[idx[q - 1] ?? 0] ?? 0)) / 2
-            // Polarity 1 votes positive below the threshold; -1 above.
-            const e1 = sNeg + (tPos - sPos)
-            const e2 = sPos + (tNeg - sNeg)
-            if (e1 < best.error) best = { error: e1, j, threshold: thr, polarity: 1 }
-            if (e2 < best.error) best = { error: e2, j, threshold: thr, polarity: -1 }
-          }
-          if (q < n) {
-            const i = idx[q] ?? 0
-            if (label(i) === 1) sPos += wt[i] ?? 0
-            else sNeg += wt[i] ?? 0
-          }
-        }
-      }
+      const found = bestStump(values, order, (i) => label(i) === 1, wt)
+      const best = { error: found.error, j: found.feature, threshold: found.threshold, polarity: found.polarity }
       const e = Math.min(Math.max(best.error, 1e-10), 0.5 - 1e-10)
       const beta = e / (1 - e)
       const feature = pool[best.j] as HaarFeature

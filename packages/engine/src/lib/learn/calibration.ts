@@ -2,10 +2,12 @@
  * Probability calibration, which maps a classifier's scores to probabilities that match observed frequencies. The
  * calibrators (isotonic regression by pool-adjacent-violators, Platt scaling, beta calibration, histogram binning,
  * temperature and vector scaling), each fitted to a map with its parameters as data, and `calibratedClassifierCV` with
- * cross-fitting as in scikit-learn.
+ * cross-fitting as in scikit-learn. For regression, the calibration of a predictive distribution: the probability
+ * integral transform and its histogram, and Kuleshov's quantile recalibration with its curve.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
+import type { Distribution } from '../dists/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { fminbound, lbfgs } from '../optim/index.ts'
@@ -907,4 +909,183 @@ export function calibrateFitted(
     const p = memberProba(member, x, all, method)
     return fromStorage(p, [p.length / all.length, all.length], 'float64')
   }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Calibration of a predictive distribution (regression)
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * The probability integral transform of observations under a batch of predictive distributions: `u_i = F_i(y_i)`.
+ * Under a calibrated predictive distribution the values are uniform on [0, 1]; a U shape means the distribution is
+ * overconfident (too narrow), a hump underconfident, a lopsided histogram biased.
+ *
+ * @param predictive - A batch distribution with one member per observation (`cdf` on `y`).
+ * @param y - The observations `[n]`.
+ * @returns The PIT values `[n]`.
+ * @concept calibration
+ * @example
+ * ```ts
+ * import { pitValues } from 'mdml-engine/learn'
+ * import { normal } from 'mdml-engine/dists'
+ * pitValues(normal([0, 0], [1, 1]), [0, 1.96]).map((u) => Math.round(u * 100) / 100) // => [0.5, 0.98]
+ * ```
+ */
+export function pitValues(predictive: Distribution, y: TensorLike): number[] {
+  return toFlat(predictive.cdf(targetVector(y, 'pitValues')))
+}
+
+/** A histogram of PIT values against the uniform density. */
+export interface PitHistogram {
+  /** The bin edges `[bins + 1]` on [0, 1]. */
+  readonly edges: number[]
+  /** The counts `[bins]`. */
+  readonly counts: number[]
+  /** The density `[bins]`: 1 in every bin when calibrated. */
+  readonly density: number[]
+  /** The mean absolute deviation of the density from 1, 0 for a flat histogram. */
+  readonly deviation: number
+}
+
+/**
+ * The histogram of PIT values (Diebold, Gunther and Tay 1998; Gneiting, Balabdaoui and Raftery 2007): flat when the
+ * predictive distribution is calibrated.
+ *
+ * @param pit - PIT values in [0, 1] `[n]`.
+ * @param bins - The number of bins (default 10).
+ * @returns The edges, counts, density and deviation from uniform.
+ * @concept calibration
+ * @example
+ * ```ts
+ * import { pitHistogram } from 'mdml-engine/learn'
+ * pitHistogram([0.05, 0.15, 0.55, 0.95], 2).counts // => [2, 2]
+ * ```
+ */
+export function pitHistogram(pit: ArrayLike<number>, bins = 10): PitHistogram {
+  if (!Number.isInteger(bins) || bins < 1) throw new MdmlError('value', 'pitHistogram: bins must be a positive integer')
+  const n = pit.length
+  if (n === 0) throw new MdmlError('value', 'pitHistogram: no PIT values')
+  const counts = new Array<number>(bins).fill(0)
+  for (const u of Array.from(pit)) {
+    if (!(u >= 0 && u <= 1)) throw new MdmlError('value', 'pitHistogram: PIT values must lie in [0, 1]')
+    const b = Math.min(bins - 1, Math.floor(u * bins))
+    counts[b] = (counts[b] ?? 0) + 1
+  }
+  const density = counts.map((c) => (c / n) * bins)
+  return {
+    edges: Array.from({ length: bins + 1 }, (_, i) => i / bins),
+    counts,
+    density,
+    deviation: density.reduce((a, d) => a + Math.abs(d - 1), 0) / bins,
+  }
+}
+
+/** A quantile recalibration map (Kuleshov, Fenner and Ermon 2018) fitted on PIT values. */
+export interface QuantileCalibrator {
+  /** The recalibration map `R(p)` from a nominal quantile level to the observed fraction of PIT values below it. */
+  readonly recalibrate: (p: ArrayLike<number>) => number[]
+  /** Its inverse: the nominal level to ask the model for to obtain the observed level `tau`. */
+  readonly inverse: (tau: ArrayLike<number>) => number[]
+  /** The knots `(p, R(p))` of the piecewise-linear map, from (0, 0) to (1, 1). */
+  readonly knots: { readonly p: number[]; readonly r: number[] }
+}
+
+/**
+ * Quantile (regression) recalibration (Kuleshov, Fenner and Ermon 2018): fit the isotonic map `R` from the nominal
+ * level `p = F(y)` to the observed frequency `P(F(Y) <= p)` on held-out data, which for the empirical frequencies is the
+ * empirical distribution function of the PIT values, interpolated linearly. The recalibrated predictive distribution is
+ * `R(F(y))`, and its quantile at level `tau` is `F^{-1}(R^{-1}(tau))`.
+ *
+ * @param pit - PIT values of held-out observations `[n]`.
+ * @returns The map and its inverse.
+ * @concept calibration
+ * @example
+ * ```ts
+ * import { quantileCalibration } from 'mdml-engine/learn'
+ * // Four of the eight observations fell below the predicted 45th percentile or at it: R(0.45) = 0.5.
+ * const c = quantileCalibration([0.05, 0.1, 0.9, 0.95, 0.4, 0.6, 0.45, 0.55])
+ * c.recalibrate([0.45]) // => [0.5]
+ * ```
+ */
+export function quantileCalibration(pit: ArrayLike<number>): QuantileCalibrator {
+  const n = pit.length
+  if (n === 0) throw new MdmlError('value', 'quantileCalibration: no PIT values')
+  const sorted = Array.from(pit).sort((a, b) => a - b)
+  if ((sorted[0] ?? 0) < 0 || (sorted[n - 1] ?? 0) > 1)
+    throw new MdmlError('value', 'quantileCalibration: PIT values must lie in [0, 1]')
+  // Distinct knots with the largest rank at each (the empirical distribution function), anchored at (0, 0) and (1, 1).
+  const p: number[] = [0]
+  const r: number[] = [0]
+  sorted.forEach((u, k) => {
+    if (u <= 0) return
+    if (u === p[p.length - 1]) r[r.length - 1] = (k + 1) / n
+    else {
+      p.push(u)
+      r.push((k + 1) / n)
+    }
+  })
+  if (p[p.length - 1] !== 1) {
+    p.push(1)
+    r.push(1)
+  } else r[r.length - 1] = 1
+  const through = (x: ArrayLike<number>, from: number[], to: number[]): number[] =>
+    toFlat(interp(Array.from(x), from, to) as Tensor)
+  return {
+    recalibrate: (q) => through(q, p, r),
+    inverse: (tau) => through(tau, r, p),
+    knots: { p, r },
+  }
+}
+
+/**
+ * The quantile calibration curve: for each nominal level, the observed fraction of PIT values at or below it. The
+ * diagonal is perfect calibration; below it the model's quantiles sit too high, above it too low.
+ *
+ * @param pit - PIT values `[n]`.
+ * @param levels - The nominal levels (default 0.05 to 0.95 in steps of 0.05).
+ * @returns The nominal and the observed levels.
+ * @concept calibration
+ * @example
+ * ```ts
+ * import { quantileCalibrationCurve } from 'mdml-engine/learn'
+ * quantileCalibrationCurve([0.1, 0.2, 0.6, 0.9], [0.5]).observed // => [0.5]
+ * ```
+ */
+export function quantileCalibrationCurve(
+  pit: ArrayLike<number>,
+  levels: ArrayLike<number> = Array.from({ length: 19 }, (_, i) => (i + 1) / 20),
+): { readonly nominal: number[]; readonly observed: number[] } {
+  const u = Array.from(pit)
+  if (u.length === 0) throw new MdmlError('value', 'quantileCalibrationCurve: no PIT values')
+  const nominal = Array.from(levels)
+  return { nominal, observed: nominal.map((p) => u.filter((v) => v <= p).length / u.length) }
+}
+
+/**
+ * The quantiles of a recalibrated predictive distribution: at nominal level `tau`, `F^{-1}(R^{-1}(tau))` per member of a
+ * batch distribution, so a central interval built from the levels `(1 - c) / 2` and `(1 + c) / 2` has observed
+ * coverage near `c` where the raw one does not.
+ *
+ * @param predictive - A batch distribution `[n]` with `ppf`.
+ * @param calibrator - A map fitted by {@link quantileCalibration} on held-out PIT values.
+ * @param levels - The levels in (0, 1) `[m]`.
+ * @returns The quantiles, `[n]` rows by `[m]` levels.
+ * @concept calibration
+ * @example
+ * ```ts
+ * import { recalibratedQuantiles, quantileCalibration } from 'mdml-engine/learn'
+ * import { normal } from 'mdml-engine/dists'
+ * const identity = quantileCalibration([0.2, 0.4, 0.6, 0.8, 1])
+ * recalibratedQuantiles(normal([0], [1]), identity, [0.5]) // => [[0]]
+ * ```
+ */
+export function recalibratedQuantiles(
+  predictive: Distribution,
+  calibrator: QuantileCalibrator,
+  levels: ArrayLike<number>,
+): number[][] {
+  const inner = calibrator.inverse(levels)
+  const columns = inner.map((p) => toFlat(predictive.ppf(p)))
+  const n = columns[0]?.length ?? 0
+  return Array.from({ length: n }, (_, i) => columns.map((c) => c[i] ?? Number.NaN))
 }

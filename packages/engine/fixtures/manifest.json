@@ -2,6 +2,95 @@
   "schema": "mdml.fixtures/1",
   "fixtures": [
     {
+      "fixture": "anomaly/lof.json",
+      "source": "oracle/cases/anomaly/lof.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "causal/designs.json",
+      "source": "oracle/cases/causal/designs.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "causal/discontinuity.json",
+      "source": "oracle/cases/causal/discontinuity.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "causal/estimation.json",
+      "source": "oracle/cases/causal/estimation.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "causal/instrumental.json",
+      "source": "oracle/cases/causal/instrumental.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "causal/sensitivity.json",
+      "source": "oracle/cases/causal/sensitivity.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "cluster/birch.json",
+      "source": "oracle/cases/cluster/birch.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "cluster/mean_shift.json",
+      "source": "oracle/cases/cluster/mean_shift.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "covariance/graphical_lasso.json",
+      "source": "oracle/cases/covariance/graphical_lasso.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "covariance/robust.json",
+      "source": "oracle/cases/covariance/robust.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "data/batching.json",
       "source": "oracle/cases/data/batching.py",
       "reference": {
@@ -95,6 +184,24 @@
         "statsmodels": "0.15.0"
       },
       "cases": 4
+    },
+    {
+      "fixture": "decomposition/ica_deflation.json",
+      "source": "oracle/cases/decomposition/ica_deflation.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "decomposition/nmf_hals.json",
+      "source": "oracle/cases/decomposition/nmf_hals.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 9
     },
     {
       "fixture": "distances/evaluate.json",
@@ -324,6 +431,15 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/celestial.json",
+      "source": "oracle/cases/dynamics/celestial.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "dynamics/control/optimal.json",
       "source": "oracle/cases/dynamics/control/optimal.py",
       "reference": {
@@ -339,6 +455,14 @@
         "scipy": "1.18.1"
       },
       "cases": 8
+    },
+    {
+      "fixture": "dynamics/control/robust.json",
+      "source": "oracle/cases/dynamics/control/robust.py",
+      "reference": {
+        "slycot": "0.7.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "dynamics/filtering/changepoint.json",
@@ -371,6 +495,15 @@
         "pysindy": "2.1.0"
       },
       "cases": 3
+    },
+    {
+      "fixture": "dynamics/mechanics.json",
+      "source": "oracle/cases/dynamics/mechanics.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 6
     },
     {
       "fixture": "dynamics/nonlinear.json",
@@ -441,6 +574,47 @@
         "numpy": "2.5.4"
       },
       "cases": 9
+    },
+    {
+      "fixture": "embedding/glove.json",
+      "source": "oracle/cases/embedding/glove.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "embedding/knowledge_graph.json",
+      "source": "oracle/cases/embedding/knowledge_graph.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
+      "fixture": "ensembles/adaboost.json",
+      "source": "oracle/cases/ensembles/adaboost.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 2
+    },
+    {
+      "fixture": "ensembles/gradient_boosting.json",
+      "source": "oracle/cases/ensembles/gradient_boosting.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "ensembles/histogram_boosting.json",
+      "source": "oracle/cases/ensembles/histogram_boosting.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
     },
     {
       "fixture": "explain/gradients.json",
@@ -696,6 +870,22 @@
       "cases": 39
     },
     {
+      "fixture": "gam/glmgam.json",
+      "source": "oracle/cases/gam/glmgam.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "gam/reml.json",
+      "source": "oracle/cases/gam/reml.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "games/cooperative.json",
       "source": "oracle/cases/games/cooperative.py",
       "reference": {
@@ -794,6 +984,38 @@
       "cases": 13
     },
     {
+      "fixture": "gp/classification.json",
+      "source": "oracle/cases/gp/classification.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "gp/regression.json",
+      "source": "oracle/cases/gp/regression.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 23
+    },
+    {
+      "fixture": "gp/relevance_vector.json",
+      "source": "oracle/cases/gp/relevance_vector.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "gp/sparse.json",
+      "source": "oracle/cases/gp/sparse.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "graph/centrality.json",
       "source": "oracle/cases/graph/centrality.py",
       "reference": {
@@ -876,6 +1098,22 @@
         "scipy": "1.18.1"
       },
       "cases": 97
+    },
+    {
+      "fixture": "graph/percolation.json",
+      "source": "oracle/cases/graph/percolation.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "graph/resistance.json",
+      "source": "oracle/cases/graph/resistance.py",
+      "reference": {
+        "networkx": "3.7"
+      },
+      "cases": 35
     },
     {
       "fixture": "graph/spectral.json",
@@ -1053,6 +1291,14 @@
       "cases": 8
     },
     {
+      "fixture": "kernel_methods/kernel_ridge.json",
+      "source": "oracle/cases/kernel_methods/kernel_ridge.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "kernels/dot_product.json",
       "source": "oracle/cases/kernels/dot_product.py",
       "reference": {
@@ -1140,12 +1386,28 @@
       "cases": 11
     },
     {
+      "fixture": "learn/discriminant.json",
+      "source": "oracle/cases/learn/discriminant.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 23
+    },
+    {
+      "fixture": "learn/metric_learning.json",
+      "source": "oracle/cases/learn/metric_learning.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
     },
     {
       "fixture": "learn/model_selection/criteria.json",
@@ -1179,6 +1441,46 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 28
+    },
+    {
+      "fixture": "learn/multiclass.json",
+      "source": "oracle/cases/learn/multiclass.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "learn/multilabel.json",
+      "source": "oracle/cases/learn/multilabel.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "learn/multioutput.json",
+      "source": "oracle/cases/learn/multioutput.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
+      "fixture": "learn/naive_bayes.json",
+      "source": "oracle/cases/learn/naive_bayes.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "learn/neighbours.json",
+      "source": "oracle/cases/learn/neighbours.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 33
     },
     {
       "fixture": "learn/preprocessing/encoders.json",
@@ -1230,10 +1532,148 @@
       "cases": 17
     },
     {
+      "fixture": "learn/semi_supervised.json",
+      "source": "oracle/cases/learn/semi_supervised.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
+      "fixture": "learn/weak_supervision.json",
+      "source": "oracle/cases/learn/weak_supervision.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "linear/bayesian.json",
       "source": "oracle/cases/linear/bayesian.py",
       "reference": {
         "numpy": "2.5.4"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "linear/diagnostics.json",
+      "source": "oracle/cases/linear/diagnostics.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "linear/errors_in_variables.json",
+      "source": "oracle/cases/linear/errors_in_variables.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "linear/expectile.json",
+      "source": "oracle/cases/linear/expectile.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "linear/gls.json",
+      "source": "oracle/cases/linear/gls.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "linear/group_lasso.json",
+      "source": "oracle/cases/linear/group_lasso.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "linear/lars.json",
+      "source": "oracle/cases/linear/lars.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "linear/mixed.json",
+      "source": "oracle/cases/linear/mixed.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "linear/multinomial.json",
+      "source": "oracle/cases/linear/multinomial.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "linear/online.json",
+      "source": "oracle/cases/linear/online.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "linear/ordinal.json",
+      "source": "oracle/cases/linear/ordinal.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "linear/robust.json",
+      "source": "oracle/cases/linear/robust.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "linear/subset.json",
+      "source": "oracle/cases/linear/subset.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "linear/sur.json",
+      "source": "oracle/cases/linear/sur.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "linear/tobit.json",
+      "source": "oracle/cases/linear/tobit.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "linear/zero_inflated.json",
+      "source": "oracle/cases/linear/zero_inflated.py",
+      "reference": {
+        "statsmodels": "0.15.0"
       },
       "cases": 6
     },
@@ -1428,13 +1868,22 @@
       "cases": 18
     },
     {
-      "fixture": "methods/anomaly/neighbours.json",
-      "source": "oracle/cases/methods/anomaly/neighbours.py",
+      "fixture": "manifold/mds_nonmetric.json",
+      "source": "oracle/cases/manifold/mds_nonmetric.py",
       "reference": {
         "scikit-learn": "1.9.1",
         "numpy": "2.5.4"
       },
-      "cases": 4
+      "cases": 2
+    },
+    {
+      "fixture": "manifold/tsne.json",
+      "source": "oracle/cases/manifold/tsne.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 6
     },
     {
       "fixture": "methods/cluster/density.json",
@@ -1472,15 +1921,6 @@
         "numpy": "2.5.4"
       },
       "cases": 6
-    },
-    {
-      "fixture": "methods/covariance/graphical_lasso.json",
-      "source": "oracle/cases/methods/covariance/graphical_lasso.py",
-      "reference": {
-        "scikit-learn": "1.9.1",
-        "numpy": "2.5.4"
-      },
-      "cases": 4
     },
     {
       "fixture": "methods/decomposition/cross_decomposition.json",
@@ -2109,6 +2549,30 @@
       "cases": 18
     },
     {
+      "fixture": "nn/blocks/graph.json",
+      "source": "oracle/cases/nn/blocks/graph.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "nn/blocks/masked.json",
+      "source": "oracle/cases/nn/blocks/masked.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "nn/blocks/recommender.json",
+      "source": "oracle/cases/nn/blocks/recommender.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "nn/functional/activations.json",
       "source": "oracle/cases/nn/functional/activations.py",
       "reference": {
@@ -2219,7 +2683,7 @@
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 15
+      "cases": 16
     },
     {
       "fixture": "numerics/convolution/convolution.json",
@@ -2336,6 +2800,15 @@
       "cases": 4
     },
     {
+      "fixture": "numerics/linalg/completion.json",
+      "source": "oracle/cases/numerics/linalg/completion.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 20
+    },
+    {
       "fixture": "numerics/linalg/decompositions.json",
       "source": "oracle/cases/numerics/linalg/decompositions.py",
       "reference": {
@@ -2360,6 +2833,15 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 20
+    },
+    {
+      "fixture": "numerics/linalg/iterations.json",
+      "source": "oracle/cases/numerics/linalg/iterations.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 10
     },
     {
       "fixture": "numerics/linalg/lu.json",
@@ -2429,12 +2911,30 @@
       "cases": 43
     },
     {
+      "fixture": "numerics/sparse/lanczos.json",
+      "source": "oracle/cases/numerics/sparse/lanczos.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "numerics/sparse/sparse.json",
       "source": "oracle/cases/numerics/sparse/sparse.py",
       "reference": {
         "scipy": "1.18.1"
       },
       "cases": 17
+    },
+    {
+      "fixture": "numerics/sparse/stationary.json",
+      "source": "oracle/cases/numerics/sparse/stationary.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 20
     },
     {
       "fixture": "numerics/spatial/spatial.json",
@@ -2869,6 +3369,14 @@
       "cases": 4
     },
     {
+      "fixture": "optim/smo_nu.json",
+      "source": "oracle/cases/optim/smo_nu.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "optim/sparse.json",
       "source": "oracle/cases/optim/sparse.py",
       "reference": {
@@ -2925,6 +3433,14 @@
         "scipy": "1.18.1"
       },
       "cases": 9
+    },
+    {
+      "fixture": "patterns/subgroups.json",
+      "source": "oracle/cases/patterns/subgroups.py",
+      "reference": {
+        "pysubgroup": "0.8.0"
+      },
+      "cases": 12
     },
     {
       "fixture": "pgm/causal/discovery.json",
@@ -3790,6 +4306,15 @@
       "cases": 24
     },
     {
+      "fixture": "stats/design.json",
+      "source": "oracle/cases/stats/design.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "stats/effect_size.json",
       "source": "oracle/cases/stats/effect_size.py",
       "reference": {
@@ -3875,6 +4400,14 @@
         "pandas": "3.1.0"
       },
       "cases": 34
+    },
+    {
+      "fixture": "stats/shrinkage.json",
+      "source": "oracle/cases/stats/shrinkage.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 2
     },
     {
       "fixture": "stats/smoothing/bases.json",
@@ -4184,6 +4717,39 @@
       "cases": 5
     },
     {
+      "fixture": "survival/estimators.json",
+      "source": "oracle/cases/survival/estimators.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "svm/classifier.json",
+      "source": "oracle/cases/svm/classifier.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "svm/one_class.json",
+      "source": "oracle/cases/svm/one_class.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "svm/regressor.json",
+      "source": "oracle/cases/svm/regressor.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "symbolic/compile.json",
       "source": "oracle/cases/symbolic/compile.py",
       "reference": {
@@ -4339,6 +4905,14 @@
         "control": "0.10.2"
       },
       "cases": 77
+    },
+    {
+      "fixture": "systems/measures.json",
+      "source": "oracle/cases/systems/measures.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 20
     },
     {
       "fixture": "systems/norms.json",
@@ -4497,6 +5071,14 @@
         "pyphen": "0.18.1"
       },
       "cases": 3
+    },
+    {
+      "fixture": "text/language_models.json",
+      "source": "oracle/cases/text/language_models.py",
+      "reference": {
+        "python": "stdlib"
+      },
+      "cases": 16
     },
     {
       "fixture": "text/lemmatise.json",
@@ -4661,12 +5243,83 @@
       "cases": 70
     },
     {
+      "fixture": "timeseries/acf.json",
+      "source": "oracle/cases/timeseries/acf.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 10
+    },
+    {
+      "fixture": "timeseries/arima.json",
+      "source": "oracle/cases/timeseries/arima.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 19
+    },
+    {
+      "fixture": "timeseries/arma.json",
+      "source": "oracle/cases/timeseries/arma.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 36
+    },
+    {
+      "fixture": "timeseries/arma_fit.json",
+      "source": "oracle/cases/timeseries/arma_fit.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "timeseries/decomposition.json",
+      "source": "oracle/cases/timeseries/decomposition.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 16
+    },
+    {
+      "fixture": "timeseries/smoothing.json",
+      "source": "oracle/cases/timeseries/smoothing.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 20
+    },
+    {
+      "fixture": "timeseries/var.json",
+      "source": "oracle/cases/timeseries/var.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 34
+    },
+    {
       "fixture": "trace/summaries.json",
       "source": "oracle/cases/trace/summaries.py",
       "reference": {
         "numpy": "2.5.4"
       },
       "cases": 20
+    },
+    {
+      "fixture": "trees/grow.json",
+      "source": "oracle/cases/trees/grow.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
     },
     {
       "fixture": "tune/bayesian.json",
