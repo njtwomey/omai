@@ -19,7 +19,17 @@ import {
 import { foldIn, type Key, normal, subsample, uniformStream } from '../random/index.ts'
 import { bool, dict, int, real } from '../space/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, derived, Log, scalar, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  type Contract,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { contaminationThreshold, type OutlierVerbs, outlierExposition, outlierVerbs } from './combine.ts'
 
 /**
@@ -389,6 +399,18 @@ function forestVerbs(p: IsolationForestParams): OutlierVerbs {
 }
 
 /**
+ * The paths of the isolation forest: the trees so far and the change in the scores, renamed from the algorithm’s channels by its contract, and the derived `model/isolationPath`.
+ *
+ * @example
+ * ```ts
+ * import type { IsolationForestPath } from 'mdml-engine/anomaly'
+ * const path: IsolationForestPath = 'forest/trees'
+ * path // => 'forest/trees'
+ * ```
+ */
+export type IsolationForestPath = 'forest/trees' | 'forest/scoreChange' | 'model/isolationPath'
+
+/**
  * The isolation forest (sklearn.ensemble.IsolationForest; extended trees optionally) on the iterative base: trees
  * grown on subsamples one tree per step; a point's anomaly score is `2^(-E[h(x)] / c(psi))` from its mean path length.
  * Its exposition is an `anomalyScores` record with the mean path lengths as evidence and, for one or two features, a
@@ -407,14 +429,14 @@ function forestVerbs(p: IsolationForestParams): OutlierVerbs {
  */
 export function isolationForest(
   hyper: Partial<IsolationForestHyper> = {},
-): IterativeEstimator<IsolationForestHyper, ForestState, IsolationForestParams, OutlierVerbs> {
+): IterativeEstimator<IsolationForestHyper, ForestState, IsolationForestParams, OutlierVerbs, IsolationForestPath> {
   const defaults: IsolationForestHyper = {
     nEstimators: hyper.nEstimators ?? 100,
     maxSamples: hyper.maxSamples ?? 256,
     contamination: hyper.contamination ?? 'auto',
     extended: hyper.extended ?? false,
   }
-  return iterative<IsolationForestHyper, ForestState, IsolationForestParams, OutlierVerbs>({
+  return iterative<IsolationForestHyper, ForestState, IsolationForestParams, OutlierVerbs, IsolationForestPath>({
     name: defaults.extended ? 'extended-isolation-forest' : 'isolation-forest',
     kind: 'outlier',
     defaults,
@@ -459,9 +481,9 @@ export function isolationForest(
       }
     },
     verbs: forestVerbs,
-    contract: (data) => {
+    contract: (data): Contract<ForestState, IsolationForestPath> => {
       const m = matrixView(data.x, 'isolationForest', { minSamples: 2 })
-      return {
+      return defineContract({
         'forest/trees': scalar({ from: 'trees', description: 'the number of isolation trees grown so far' }),
         'forest/scoreChange': scalar({
           from: 'scoreChange',
@@ -478,7 +500,7 @@ export function isolationForest(
             return isolationPath(tree, pt) as unknown as Json
           },
         }),
-      }
+      })
     },
     records: (s, data, h) => {
       const m = matrixView(data.x, 'isolationForest', { minSamples: 2 })
@@ -527,7 +549,7 @@ export function isolationForest(
  */
 export function extendedIsolationForest(
   hyper: Partial<Omit<IsolationForestHyper, 'extended'>> = {},
-): IterativeEstimator<IsolationForestHyper, ForestState, IsolationForestParams, OutlierVerbs> {
+): IterativeEstimator<IsolationForestHyper, ForestState, IsolationForestParams, OutlierVerbs, IsolationForestPath> {
   return isolationForest({ ...hyper, extended: true })
 }
 
