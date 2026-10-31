@@ -22,7 +22,7 @@ export const inputBoxClass: string =
 
 /** The class of a floating menu's panel (placed by `Popover`). */
 export const menuClass: string =
-  'z-50 max-h-64 min-w-24 overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-1 text-(--wb-fg) shadow-lg'
+  'z-[1200] max-h-64 min-w-24 overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-1 text-(--wb-fg) shadow-lg'
 
 /** The class of one item of a floating menu (`data-selected` marks the current one). */
 export const menuItemClass: string =
