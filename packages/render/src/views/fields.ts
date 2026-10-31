@@ -28,7 +28,8 @@ export interface VectorFieldViewOptions extends ViewOptions {
   readonly fixedPoints?: boolean
 }
 
-const CLASS_LOOK: Readonly<Record<FixedPointClass, { colour: string; symbol: string }>> = {
+/** How a fixed point of each stability class is drawn: a colour token and a marker, shared by the views that classify them. */
+export const FIXED_POINT_LOOK: Readonly<Record<FixedPointClass, { colour: string; symbol: string }>> = {
   stable: { colour: 'success', symbol: 'circle' },
   unstable: { colour: 'danger', symbol: 'emptyCircle' },
   saddle: { colour: 'warning', symbol: 'diamond' },
@@ -169,10 +170,10 @@ export function vectorFieldLayers(record: VectorField, options: VectorFieldViewO
       )
     })
   if (options.fixedPoints !== false) {
-    const sets = (Object.keys(CLASS_LOOK) as FixedPointClass[]).flatMap((c) => {
+    const sets = (Object.keys(FIXED_POINT_LOOK) as FixedPointClass[]).flatMap((c) => {
       const at = (record.fixedPoints ?? []).filter((p) => p.stability === c)
       if (at.length === 0) return []
-      const look = CLASS_LOOK[c]
+      const look = FIXED_POINT_LOOK[c]
       return [
         {
           x: at.map((p) => p.at[0]),

@@ -26,7 +26,7 @@ import { leaf, overlayCurves, sweepTrials } from './compare.ts'
 import { StepCursorProvider } from './cursor.tsx'
 import { FieldPanel } from './FieldPanel.tsx'
 import type { Panel } from './layout.ts'
-import { GraphPanel, ImagesPanel, StripPanel, TablePanel } from './RecordPanels.tsx'
+import { GraphPanel, ImagesPanel, PointsPanel, ScenePanel, StripPanel, TablePanel } from './RecordPanels.tsx'
 import { FIG, Note, RowsPanel, useProbe, useRun } from './RowsPanel.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import { TapeChannels } from './TapeView.tsx'
@@ -227,12 +227,16 @@ function PanelView(
     case 'strip':
     case 'table':
     case 'images':
+    case 'points':
+    case 'scene':
     case 'graph': {
       const title = panel.title ?? panel.path
       const common = { live, t, title: titled(`${title} at step ${t}`), filename: file(title) }
       if (panel.kind === 'strip') return <StripPanel {...common} panel={panel} />
       if (panel.kind === 'table') return <TablePanel {...common} panel={panel} />
       if (panel.kind === 'images') return <ImagesPanel {...common} panel={panel} />
+      if (panel.kind === 'points') return <PointsPanel {...common} panel={panel} />
+      if (panel.kind === 'scene') return <ScenePanel {...common} panel={panel} />
       return <GraphPanel {...common} panel={panel} />
     }
     case 'projection': {

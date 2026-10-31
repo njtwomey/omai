@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { structure } from '../scene/index.ts'
+import { scene, structure } from '../scene/index.ts'
+import { complexPlane, isStablePole } from './complex-plane.ts'
 import { sampleVectorField, vectorFieldRecord } from './fields.ts'
 import { imageSteps } from './images.ts'
+import { pointsAt, pointsSteps } from './points-steps.ts'
+import { reachabilityRecord } from './reachability.ts'
 import { isExposition } from './record.ts'
+import { sceneStepAt, sceneSteps } from './scene-steps.ts'
+import { simplexRecord } from './simplex.ts'
 import { stripRecord } from './strips.ts'
 import { structureStepAt, structureSteps } from './structure-steps.ts'
 import { markedTable } from './tables.ts'
@@ -79,5 +84,105 @@ describe('the records the generic panels draw', () => {
     expect(
       imageSteps({ ...base, steps: [{ iteration: 0, images: [[[0], [1]]], labels: [['a', 'b']] }] }).steps[0]?.labels,
     ).toEqual([['a', 'b']])
+  })
+
+  it("check points: each point has the record's dimension, groups match, steps run in order; accumulation adds up", () => {
+    expect(() => pointsSteps({ dims: 3, steps: [{ step: 0, points: [[1, 2]] }] })).toThrow(/expected 3/)
+    expect(() => pointsSteps({ dims: 2, steps: [{ step: 0, points: [[1, 2]], groups: [0, 1] }] })).toThrow(/groups/)
+    expect(() =>
+      pointsSteps({
+        dims: 2,
+        steps: [
+          { step: 2, points: [] },
+          { step: 1, points: [] },
+        ],
+      }),
+    ).toThrow(/order/)
+    const grow = pointsSteps({
+      dims: 2,
+      steps: [
+        { step: 0, points: [[0, 0]], groups: [0], caption: 'one' },
+        {
+          step: 4,
+          points: [
+            [1, 1],
+            [2, 2],
+          ],
+          groups: [1, 1],
+          caption: 'three',
+        },
+      ],
+    })
+    expect(pointsAt(grow, 3)).toEqual({ points: [[0, 0]], groups: [0], caption: 'one', fresh: 1 })
+    expect(pointsAt(grow, 9).points).toHaveLength(3)
+    expect(pointsAt(grow, 9).groups).toEqual([0, 1, 1])
+    expect(pointsAt(grow, 9).fresh).toBe(2)
+    expect(pointsAt(grow, -5).points).toHaveLength(1)
+    const move = pointsSteps({ ...grow, accumulate: false })
+    expect(pointsAt(move, 9).points).toEqual([
+      [1, 1],
+      [2, 2],
+    ])
+    expect(isExposition(grow)).toBe(true)
+  })
+
+  it('check the complex plane: finite points, a label per pole, stability by domain', () => {
+    expect(() => complexPlane({ domain: 's', poles: [[Number.NaN, 0]] })).toThrow(/poles\[0\]/)
+    expect(() => complexPlane({ domain: 's', poles: [[-1, 0]], labels: [] })).toThrow(/labels/)
+    expect(isStablePole('s', [-0.1, 5])).toBe(true)
+    expect(isStablePole('s', [0, 1])).toBe(false)
+    expect(isStablePole('z', [0.6, 0.7])).toBe(true)
+    expect(isStablePole('z', [1, 0])).toBe(false)
+    expect(isExposition(complexPlane({ domain: 'z', poles: [[0.5, 0]], zeros: [[0, 0]] }))).toBe(true)
+  })
+
+  it("check the simplex: the shape's coordinates, probabilities, a triangle summing to one", () => {
+    const labels = ['a', 'b', 'c']
+    expect(() => simplexRecord({ shape: 'triangle', labels: ['a', 'b'] })).toThrow(/labels/)
+    expect(() => simplexRecord({ shape: 'triangle', labels, paths: [{ name: 'p', points: [[0.5, 0.5]] }] })).toThrow(
+      /expected 3/,
+    )
+    expect(() =>
+      simplexRecord({ shape: 'triangle', labels, paths: [{ name: 'p', points: [[0.5, 0.5, 0.5]] }] }),
+    ).toThrow(/sum/)
+    expect(() =>
+      simplexRecord({ shape: 'square', labels: ['x', 'y'], paths: [{ name: 'p', points: [[1.5, 0]] }] }),
+    ).toThrow(/probability/)
+    expect(() => simplexRecord({ shape: 'triangle', labels, field: { at: [[1, 0, 0]], by: [] } })).toThrow(/directions/)
+    expect(
+      isExposition(
+        simplexRecord({ shape: 'triangle', labels, fixedPoints: [{ at: [0.2, 0.3, 0.5], stability: 'centre' }] }),
+      ),
+    ).toBe(true)
+  })
+
+  it('check a reachability plot: one entry per position, distances that are distances', () => {
+    expect(() => reachabilityRecord({ reach: [null, 1], order: [0] })).toThrow(/order/)
+    expect(() => reachabilityRecord({ reach: [null, 1], labels: [0] })).toThrow(/labels/)
+    expect(() => reachabilityRecord({ reach: [null, -1] })).toThrow(/reach\[1\]/)
+    expect(isExposition(reachabilityRecord({ reach: [null, 0.2] }))).toBe(true)
+  })
+
+  it('check scenes per step: in order, the latest at or before the step', () => {
+    const s = (w: number) => scene(w, w, [])
+    expect(() =>
+      sceneSteps({
+        steps: [
+          { step: 3, scene: s(1) },
+          { step: 1, scene: s(1) },
+        ],
+      }),
+    ).toThrow(/order/)
+    const r = sceneSteps({
+      steps: [
+        { step: 0, scene: s(10) },
+        { step: 5, scene: s(20), caption: 'later' },
+      ],
+    })
+    expect(sceneStepAt(r, 4)?.scene.width).toBe(10)
+    expect(sceneStepAt(r, 5)?.caption).toBe('later')
+    expect(sceneStepAt(r, -1)?.scene.width).toBe(10)
+    expect(sceneStepAt(sceneSteps({ steps: [] }), 0)).toBeUndefined()
+    expect(isExposition(r)).toBe(true)
   })
 })

@@ -10,6 +10,7 @@ import type { FeatureAttributions, Importances } from './attributions.ts'
 import type { BoardSteps } from './boards.ts'
 import type { ValueGrids } from './cells.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
+import type { ComplexPlane } from './complex-plane.ts'
 import type { ConceptScores } from './concepts.ts'
 import type { CurveSet } from './curves.ts'
 import type { DataBias } from './data-bias.ts'
@@ -30,11 +31,15 @@ import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from 
 import type { MarginRecord } from './margins.ts'
 import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
 import type { PipelineStages } from './pipelines.ts'
+import type { PointsSteps } from './points-steps.ts'
 import type { PopulationSteps } from './populations.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
+import type { Reachability } from './reachability.ts'
 import type { RuleSet } from './rules.ts'
+import type { SceneSteps } from './scene-steps.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
+import type { Simplex } from './simplex.ts'
 import type { Strip } from './strips.ts'
 import type { StructureSteps } from './structure-steps.ts'
 import type { SubgroupReport } from './subgroups.ts'
@@ -101,6 +106,11 @@ export type Exposition =
   | Strip
   | MarkedTable
   | StructureSteps
+  | PointsSteps
+  | ComplexPlane
+  | Simplex
+  | Reachability
+  | SceneSteps
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -195,4 +205,9 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'strip',
   'markedTable',
   'structureSteps',
+  'pointsSteps',
+  'complexPlane',
+  'simplex',
+  'reachability',
+  'sceneSteps',
 ])

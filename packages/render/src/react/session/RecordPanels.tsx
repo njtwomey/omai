@@ -12,6 +12,8 @@ import { stripAspect } from '../../views/strips.ts'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { ImageGridView } from '../views/images.tsx'
 import { MarkedTableView } from '../views/marked-tables.tsx'
+import { PointsStepsView } from '../views/points-steps.tsx'
+import { SceneStepsView } from '../views/scene-steps.tsx'
 import { StripView } from '../views/strips.tsx'
 import { StructureStepsView } from '../views/structure-steps.tsx'
 import type { Panel } from './layout.ts'
@@ -154,4 +156,42 @@ export function GraphPanel(props: {
       {...(panel.layout === undefined ? {} : { layout: panel.layout })}
     />
   )
+}
+
+/**
+ * A point set probed at the viewed step: the points so far on axes that hold still, or a cloud to orbit.
+ *
+ * @param props - The session, the viewed step, the panel and the frame's title and file name.
+ * @returns The figure.
+ */
+export function PointsPanel(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  readonly panel: Extract<Panel, { kind: 'points' }>
+  readonly t: number
+  readonly title: string
+  readonly filename: string
+}): ReactNode {
+  const { record, problem } = useRecord(props.live, props.t, 'pointsSteps', props.panel.path, props.panel.args)
+  if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
+  return <PointsStepsView record={record} step={props.t} figure={FIG} title={props.title} filename={props.filename} />
+}
+
+/**
+ * A scene probed at the viewed step: the latest scene recorded at or before it.
+ *
+ * @param props - The session, the viewed step, the panel and the frame's title and file name.
+ * @returns The figure.
+ */
+export function ScenePanel(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  readonly panel: Extract<Panel, { kind: 'scene' }>
+  readonly t: number
+  readonly title: string
+  readonly filename: string
+}): ReactNode {
+  const { record, problem } = useRecord(props.live, props.t, 'sceneSteps', props.panel.path, props.panel.args)
+  if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
+  return <SceneStepsView record={record} step={props.t} figure={FIG} title={props.title} filename={props.filename} />
 }

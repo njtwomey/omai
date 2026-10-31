@@ -10,7 +10,7 @@ import type { MatrixMark } from '../../views/matrix-marks.ts'
 
 /**
  * One panel of a layout. Panels of the tape (`curves`, `series`, `sweep`) scrub the cursor on click; panels of a step
- * (`rows`, `probe`, `tensor`, `trajectory`, `field`, `strip`, `table`, `images`, `graph`) follow it.
+ * (`rows`, `probe`, `tensor`, `trajectory`, `field`, `strip`, `table`, `images`, `graph`, `points`, `scene`) follow it.
  */
 export type Panel =
   /** The training rows with the probe overlay at the viewed step (sessions on a dataset only). */
@@ -135,6 +135,16 @@ export type Panel =
       readonly layout?: 'force' | 'circular'
       readonly title?: string
     }
+  /**
+   * A point set probed at the viewed step (a `pointsSteps` record): the points of every step up to it, or the set at it,
+   * on axes that hold still over the whole run; in three dimensions a cloud to orbit.
+   */
+  | { readonly kind: 'points'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A scene probed at the viewed step (a `sceneSteps` record): the latest recorded scene at or before it, with its
+   * caption (agents on a plane, a plant and its horizon, a drawing being built).
+   */
+  | { readonly kind: 'scene'; readonly path: string; readonly args?: Json; readonly title?: string }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */
