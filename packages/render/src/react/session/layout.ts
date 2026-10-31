@@ -6,10 +6,11 @@
  */
 
 import type { Json } from 'mdml-engine/base'
+import type { MatrixMark } from '../../views/matrix-marks.ts'
 
 /**
  * One panel of a layout. Panels of the tape (`curves`, `series`, `sweep`) scrub the cursor on click; panels of a step
- * (`rows`, `probe`, `tensor`, `trajectory`) follow it.
+ * (`rows`, `probe`, `tensor`, `trajectory`, `field`, `strip`, `table`, `images`, `graph`) follow it.
  */
 export type Panel =
   /** The training rows with the probe overlay at the viewed step (sessions on a dataset only). */
@@ -66,8 +67,74 @@ export type Panel =
    * viewed one ringed; a click scrubs to the nearest trial's step.
    */
   | { readonly kind: 'sweep'; readonly path: string; readonly over?: string; readonly title?: string }
-  /** A tensor path at the viewed step as a heatmap (a matrix being factorised, a transition matrix, an image). */
-  | { readonly kind: 'tensor'; readonly path: string; readonly title?: string }
+  /**
+   * A tensor path at the viewed step as a heatmap (a matrix being factorised, a transition matrix, an image). Given
+   * `rowLabels`, `colLabels` or marks it is drawn as labelled cells with the values written in: `marks` are fixed
+   * (a boundary between users and items), `marksPath` is a probe at the viewed step returning marks (the cell just
+   * updated, the observed entries): a cell or a row or a column outlined, a dashed boundary between two rows or two
+   * columns.
+   */
+  | {
+      readonly kind: 'tensor'
+      readonly path: string
+      readonly rowLabels?: readonly string[]
+      readonly colLabels?: readonly string[]
+      readonly marks?: readonly MatrixMark[]
+      readonly marksPath?: string
+      readonly marksArgs?: Json
+      readonly title?: string
+    }
+  /**
+   * A vector field probed at the viewed step (a `vectorField` record: a flow, a score field, a phase portrait with
+   * nullclines and classified fixed points) drawn as arrows or streamlines, and, with `trajectory`, tensor paths of the
+   * tape over it up to the viewed step, each ending in its current point.
+   */
+  | {
+      readonly kind: 'field'
+      readonly path: string
+      readonly args?: Json
+      readonly style?: 'arrows' | 'streamlines' | 'both'
+      readonly trajectory?: {
+        readonly paths: readonly string[]
+        readonly dims?: readonly [number, number]
+        readonly trail?: number
+        readonly points?: boolean
+      }
+      readonly title?: string
+    }
+  /**
+   * A position-aligned strip probed at the viewed step (a `strip` record): tokens on x, a row of cells per track beneath
+   * them (probabilities, an attention row, gates, the states of a trellis), tags, the chosen path and marks.
+   */
+  | { readonly kind: 'strip'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A small table probed at the viewed step (a `markedTable` record): cells tinted by status, the decision outlined.
+   */
+  | { readonly kind: 'table'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * Many small images probed at the viewed step (an `imageSteps` record; the latest step at or before the viewed one):
+   * a row per group with its name, and a caption under each image when the step has them.
+   */
+  | {
+      readonly kind: 'images'
+      readonly path: string
+      readonly args?: Json
+      /** The most images drawn per group (default 12). */
+      readonly columns?: number
+      readonly title?: string
+    }
+  /**
+   * A graph probed at the viewed step (a `structureSteps` record): the same nodes and edges, each node's colour, size,
+   * label and position and each edge's width, label and dash read from the latest recorded step at or before the viewed
+   * one.
+   */
+  | {
+      readonly kind: 'graph'
+      readonly path: string
+      readonly args?: Json
+      readonly layout?: 'force' | 'circular'
+      readonly title?: string
+    }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */

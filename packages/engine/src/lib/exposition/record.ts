@@ -23,6 +23,7 @@ import type { ConfusionMatrix } from './evaluation.ts'
 import type { CounterfactualSet, PrototypeSet } from './examples.ts'
 import type { ExplanationQuality } from './explanation-quality.ts'
 import type { GroupReport } from './fairness.ts'
+import type { VectorField } from './fields.ts'
 import type { ParetoFront } from './frontiers.ts'
 import type { ImageSteps } from './images.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
@@ -34,8 +35,11 @@ import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { RuleSet } from './rules.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
+import type { Strip } from './strips.ts'
+import type { StructureSteps } from './structure-steps.ts'
 import type { SubgroupReport } from './subgroups.ts'
 import type { DecisionSurface } from './surfaces.ts'
+import type { MarkedTable } from './tables.ts'
 import type { ThresholdSweep } from './thresholds.ts'
 import type { PruningPath, TreeRecord } from './trees.ts'
 import type { CalibrationRecord, ConformalRecord } from './trust.ts'
@@ -93,6 +97,10 @@ export type Exposition =
   | SubgroupReport
   | DataBias
   | ParetoFront
+  | VectorField
+  | Strip
+  | MarkedTable
+  | StructureSteps
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -183,4 +191,8 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'subgroupReport',
   'dataBias',
   'paretoFront',
+  'vectorField',
+  'strip',
+  'markedTable',
+  'structureSteps',
 ])

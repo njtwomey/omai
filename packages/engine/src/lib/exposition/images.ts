@@ -18,6 +18,8 @@ export interface ImageStep {
   readonly images: readonly (readonly (readonly number[])[])[]
   /** The training objective at this step. */
   readonly objective?: number
+  /** labels[g][k]: a short caption under image k of group g (its class, its prediction, a score). */
+  readonly labels?: readonly (readonly string[])[]
 }
 
 /**
@@ -74,6 +76,11 @@ export function imageSteps(record: Omit<ImageSteps, 'kind'>): ImageSteps {
     for (const [g, group] of step.images.entries())
       for (const [k, img] of group.entries())
         sameLength('imageSteps', `steps[${t}].images[${g}][${k}]`, img.length, height * width * channels)
+    if (step.labels !== undefined) {
+      sameLength('imageSteps', `steps[${t}].labels`, step.labels.length, record.groups.length)
+      for (const [g, group] of step.labels.entries())
+        sameLength('imageSteps', `steps[${t}].labels[${g}]`, group.length, step.images[g]?.length ?? 0)
+    }
   }
   return { kind: 'imageSteps', ...record }
 }
