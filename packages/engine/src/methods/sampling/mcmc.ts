@@ -25,6 +25,7 @@ import { add, exp, log, mul, split, square, sub, sum, type Value } from '../../l
 import {
   type Algorithm,
   type Config,
+  type Contract,
   defineMethod,
   derived,
   Log,
@@ -39,6 +40,14 @@ import {
 export type McmcTarget = 'banana' | 'funnel' | 'gaussian' | 'mixture'
 /** The kernels on offer. */
 export type McmcKernelName = 'random-walk' | 'hmc'
+
+/** The paths of {@link mcmc}. */
+export type McmcPath =
+  | 'chain/position'
+  | 'chain/logDensity'
+  | 'chain/acceptanceRate'
+  | 'chain/acceptance'
+  | 'target/density'
 
 /** The chain's state: the sampler's step plus the running count of transitions and acceptances. */
 export interface McmcState extends SamplerStep<MCMCState> {
@@ -153,7 +162,7 @@ function surfaceOf(name: McmcTarget): DecisionSurface {
  * `chain/acceptanceRate` (this transition's probability), `chain/acceptance` (the running rate), and the probe
  * `target/density` (the target over its window as a `decisionSurface`).
  */
-export const mcmc: Method<McmcState, Config> = defineMethod<McmcState, Config>({
+export const mcmc: Method<McmcState, Config, McmcPath> = defineMethod<McmcState, Config, McmcPath>({
   name: 'sampling/mcmc',
   config: dict({
     target: choice(['banana', 'funnel', 'gaussian', 'mixture'] as const, { default: 'banana' }),
@@ -161,7 +170,7 @@ export const mcmc: Method<McmcState, Config> = defineMethod<McmcState, Config>({
     stepSize: real(0.01, 5, { default: 1, log: true, label: 'step size' }),
     leapfrogSteps: int(1, 50, { default: 10, label: 'leapfrog steps (HMC)' }),
   }),
-  make: (c, key: Key): Algorithm<McmcState> => {
+  make: (c, key: Key): Algorithm<McmcState, McmcPath> => {
     const spec = targetOf(c['target'] as McmcTarget)
     const kernel = kernelOf(spec.density, c)
     const jitter = normal(key, [2], { scale: 0.5 }).data
@@ -181,7 +190,7 @@ export const mcmc: Method<McmcState, Config> = defineMethod<McmcState, Config>({
       deserialise: (j) => stateFromJson(j) as McmcState,
     }
   },
-  contract: (c) => ({
+  contract: (c): Contract<McmcState, McmcPath> => ({
     'chain/position': tensor({ from: 'position', role: 'state', shape: [2], description: 'the current position' }),
     'chain/logDensity': scalar({ from: 'logDensity', description: 'the log density at the current position' }),
     'chain/acceptanceRate': scalar({

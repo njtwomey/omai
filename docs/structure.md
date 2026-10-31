@@ -687,11 +687,12 @@ oracle: jax and torch for derivative values; finite differences in property test
   detail (`summarise`), and `subsample`.
 - `tracer.ts`: `Tracer`, `nullTracer`, `recorder` (with `forget`, so a kept window can let its oldest event go),
   `tee`, `filtered`, `startRun`, `RunHandle` (applies the policy).
-- `algorithm.ts`: `Algorithm<S>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext`,
+- `algorithm.ts`: `Algorithm<S, K>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext<K>`,
   `runAlgorithm`, `iterate` (a generator for live views), `runFor` (budgeted slices that continue exactly; the budget
   is a step count or milliseconds of an injected clock, since published code reads no clocks).
 - `nesting.ts`: child runs (`subRun`, keyed from the outer step, with the policy `childPolicy` derives); run trees are
-  read back with `runTree` in `query.ts`.
+  read back with `runTree` in `query.ts`; `mountContext` (the step context of an inner method mounted under a prefix,
+  typed `StepContext<K>` over an outer `StepContext<Prefixed<P, K>>`).
 - `taps.ts`: `tapContext` (`taps.tap(name, value)` inside model code, `TapContext`), `tapsFor(run, step)` (records
   activations when the policy asks).
 - `instrument.ts`: `instrument(fn, options)` (trace calls of any function: numeric inputs and outputs as metrics or
@@ -702,14 +703,31 @@ oracle: jax and torch for derivative values; finite differences in property test
   `derived`, `event`), subscriptions (`Log` with `every`, `detail`, `args`, `budget` and `keep`: `all`, `last` or the
   most recent n events of the path, checkpoints never among them; `On`; `off`/`defaults`/`all`), path patterns,
   `resolve` (contract and subscription to a policy, per-path schedules and hooks; it rejects a bad `keep`),
-  `contractSchema`.
+  `contractSchema`. **Typed paths:** a path is a `string` at run time (tapes, saved panel configs, JSON and the render
+  layer name paths as data, subscriptions are patterns) and a type parameter `K` (default `string`) at compile time:
+  `Contract<S, K>`, `Subscription<K>`, `Method<S, C, K>`, `Algorithm<S, K>`, `StepContext<K>`, `Session<S, C, K>`. With
+  `K` a union of literals, `ctx.log`, `ctx.emit` and `ctx.wants` take only those paths (a contract key that is a
+  pattern is logged by any path under it, `Concrete<K>`), `defaults` and a session's `logs` take those paths or any
+  pattern (a `*` in it, `Pattern`; patterns are checked by `resolve` at run time), and `defineMethod` infers `K` from the
+  contract. `defineContract` keeps a literal contract's keys (and checks them), `PathsOf<typeof contract>` reads them
+  back, fragments compose by spreading (`{ ...solverContract, ...own }`), `Prefixed<P, K>` and `prefixContract` mount a
+  contract under a prefix. A path built at run time stays `string`, or a template literal for the part that varies
+  (`layer${number}/weights`); the type cannot see a pattern's matches. Because `isolatedDeclarations` wants an exported
+  constant annotated, an exported contract (a fragment) writes its path union and annotates `Contract<S, FooPath>`; the
+  annotation is the check that the two agree. The default `K = string` leaves every untyped method as it was; a typed
+  `Algorithm<S, 'a'>` is accepted wherever an `Algorithm<S>` is wanted (the context's methods are bivariant). The
+  migration recipe is in `defineContract`'s TSDoc. **Backstop:** a session's log context throws
+  `MdmlError('value', "log: the contract has no path '...'")` when an algorithm logs to or emits a
+  path the resolved contract (`Resolved.paths`) does not hold, as opposed to one that is merely unsubscribed (`wants`
+  is a question and answers `false`; checked once per path, remembered; not in a run with no tape, nor in a bare
+  `runAlgorithm`, which has no contract).
 - `logging.ts`: the scheduler (every n steps, log-spaced, or on the nth firing of an event), the log context
   algorithms write to (`log`, `wants`, `emit`, `taps`), `defaultLogContext` for runs outside a session, and `gated`
   (the tracer that renames native channels to paths, passes only what is subscribed and due, and holds a path's
   `keep` window by having the recorder forget its oldest events as new ones arrive, the budget counting what is held).
-- `session.ts`: `Method` and `defineMethod` (config space, `make`, contract, defaults, named hooks, projections),
-  `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`, `stepsOf`) and `session` with its modes (eager,
-  live, eager to a point).
+- `session.ts`: `Method<S, C, K>` and `defineMethod` (config space, `make`, contract, defaults, named hooks,
+  projections; `K` inferred from the contract), `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`,
+  `stepsOf`) and `session` with its modes (eager, live, eager to a point).
 - `serialise.ts`: `stateToJson` and `stateFromJson`, generic checkpoint serialisation of states made of tensors, typed
   arrays, keys and plain trees.
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
