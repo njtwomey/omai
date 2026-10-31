@@ -66,6 +66,12 @@ export const SECTIONS: readonly Section[] = [
       'The session panels that draw a record probed at the viewed step: vector fields, strips of tokens, tables with marks, grids of images, graphs, matrices with marks, scenes, accumulating points, the complex plane, the simplex and reachability plots, each on a toy method.',
   },
   {
+    id: 'specialised',
+    title: 'Specialised panels',
+    blurb:
+      'Panels for one kind of method: a zoomable picture with a pixel inspector, loss landscapes with the optimiser on them, regions of stability, equations against their truth, audio in sync, transcripts, samples over training, small multiples and a session inside a session.',
+  },
+  {
     id: 'infrastructure',
     title: 'Infrastructure',
     blurb:

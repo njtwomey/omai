@@ -4688,8 +4688,20 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   `complex-plane.ts`: poles, zeros and locus branches in `s` or `z`, `isStablePole`), `Simplex` (`simplex`,
   `simplex.ts`: a triangle of three strategies or the square of two populations with paths, a field and classified
   fixed points; `simplexRecord`), `Reachability` (`reachability`, `reachability.ts`: OPTICS distances in visiting
-  order with a cut; `reachabilityRecord`) and `SceneSteps` (`sceneSteps`, `scene-steps.ts`: a `Scene` per recorded step;
-  `sceneStepAt`). `ImageSteps` steps may carry a caption under each image (`labels`);
+  order with a cut; `reachabilityRecord`), `SceneSteps` (`sceneSteps`, `scene-steps.ts`: a `Scene` per recorded step;
+  `sceneStepAt`) and the records of the specialised panels (wave R2): `LandscapeSlice` (`landscapeSlice`,
+  `landscape-slice.ts`: the loss along one direction through the iterate, or over a plane, with the optimiser's iterates
+  and the Armijo and Wolfe lines on it; `sampleLandscape`, `sliceCoordinates`, the projection of parameters onto the
+  directions), `StabilityRegion` (`stabilityRegion`, `stability-region.ts`: `|R(z)|` on a grid of the complex plane
+  with the eigenvalues times the step size marked; `explicitRungeKutta` from a Butcher tableau, `stabilityModulus`,
+  `sampleStabilityRegion`, `stableArea`, `realAxisLimit`, `markVerdict`), `EquationFit` (`equationFit`,
+  `equation-fit.ts`: terms with estimated and true coefficients or a whole expression as TeX, the fit and the truth on
+  a grid, the observations; `coefficientErrors`, `fitResidual`), `AudioClip` (`audio`, `audio.ts`: mono samples, an
+  optional spectrogram and the `frames` that map tape steps to times; `playheadAt`, `stepAt`, `audioDuration`),
+  `Transcript` (`transcript`, `transcript.ts`: tokens by role with a weight per named track and the emitted token;
+  `turnsOf`) and `SampleGrid` (`sampleGrid`, `sample-grid.ts`: images or text from fixed noise at recorded steps;
+  `sampleStepAt`, `filmstripSteps`). `PointsSteps` steps may carry a `values` channel (with `valueName`, `valueRange`),
+  and `pointsAt` returns each point's `born` step. `ImageSteps` steps may carry a caption under each image (`labels`);
 - `CurveSet` (`curves`: several series on shared axes, each with an optional band, a group sharing its colour and an
   optional right-hand axis; optimiser races and studies of schemes or strengths), `DiagramRecord` (`diagram`: a
   `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
@@ -4721,8 +4733,17 @@ controls to their defaults when the page offers one), `SessionControls` (seed, s
 preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe, curves, per-element series, a
 trajectory, a tensor with row and column labels and marks (`rowLabels`, `colLabels`, `marks`, `marksPath`), a sweep, a
 projection, the whole tape, and the panels of probed records: `field` (a `vectorField` with tape paths over it as a
-trajectory), `strip`, `table`, `images`, `graph` (a `structureSteps` record), `points` (`pointsSteps`) and `scene`
-(`sceneSteps`); `record-panels` in `RecordPanels.tsx`, `FieldPanel.tsx`, `trajectory.ts`), `SessionPanels` that draws a layout under one
+trajectory), `strip`, `table`, `images`, `graph` (a `structureSteps` record), `points` (`pointsSteps`, coloured by
+class or by a `values` channel, with a fading trail and camera presets) and `scene` (`sceneSteps`); the specialised
+panels (`SpecialisedPanels.tsx` dispatches them): `zoom` (a probe asked for a viewport and a raster size, panned and
+zoomed by wheel, drag and pinch, with a minimap, reset and a pixel inspector; `ZoomPanel.tsx`, the maths in
+`views/zoom.ts`), `landscape` (`landscapeSlice`), `stability` (`stabilityRegion`), `equation` (`equationFit`), `audio`
+(`audio`: a playhead locked to the step cursor, WebAudio playback), `transcript`, `samples` (`sampleGrid` with a
+filmstrip) and `inner` (a session registered by name on `SessionPanels` (`inner` prop, `InnerSessionSpec`), run for
+the viewed outer step and drawn with its own layout and cursor, or the outer one; `InnerPanel.tsx`); and the layout
+feature `multiples` (one panel spec repeated over a facet: the variants of a comparison, the paths of a curves panel or
+the values of a probe argument, with the vertical axis of curves shared; `Multiples.tsx`, `multiples.ts`);
+`record-panels` in `RecordPanels.tsx`, `FieldPanel.tsx`, `trajectory.ts`), `SessionPanels` that draws a layout under one
 `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic `TapeView`. A page
 anywhere (the encyclopedia, the gallery's `animation/` recipes) composes these.
 
@@ -6217,8 +6238,11 @@ Design rules:
   (`Strip`), `marked-tables.ts` (`MarkedTable` as a scene), `structure-steps.ts` (`StructureSteps` as a scene at a step),
   `matrix-marks.ts` (a labelled matrix with outlined cells, rows, columns and dashed boundaries, and `cellShapes`, the
   pixel-exact outlines the strip uses too), `points-steps.ts` (`PointsSteps`: a scatter on fixed axes, a 3-D scene to
-  orbit, a projected still), `complex-plane.ts`, `simplex.ts`, `reachability.ts` (`Reachability` bars by cluster,
-  `reachabilityClusters`), `scene-steps.ts`, `images.ts` also giving `imageGridView`, `imageGridFigure` and
+  orbit, a projected still; colour by a value channel, a fading trail, camera presets), `complex-plane.ts`, `simplex.ts`,
+  `reachability.ts` (`Reachability` bars by cluster, `reachabilityClusters`), `scene-steps.ts`, `zoom.ts` (viewport
+  maths and the raster of a grid), `landscape-slice.ts` (curve, contours, surface), `stability-region.ts`, `equation-fit.ts`
+  (TeX of the fit and the truth, the fit against the truth, the residual strip), `audio.ts` (waveform and spectrogram
+  as a scene with a playhead; `spectrogramOf`), `transcript.ts`, `sample-grid.ts` (a scene: grid and filmstrip), `images.ts` also giving `imageGridView`, `imageGridFigure` and
   `imageStepIndex` (the images at a tape step as a grid with captions),
   `curves.ts` (`CurveSet`, revealed along x as a player), `cells.ts` (`ValueGrids` as blocky small multiples on one
   colour range, `ConfusionMatrix`, both played through training), `diagrams.ts` (`DiagramRecord` as a scene with a
@@ -6338,6 +6362,9 @@ Design rules:
   `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`; `fields.tsx`: `VectorFieldView`;
   `strips.tsx`: `StripView`; `marked-tables.tsx`: `MarkedTableView`; `structure-steps.tsx`: `StructureStepsView`;
   `points-steps.tsx`: `PointsStepsView`; `complex-plane.tsx`: `ComplexPlaneView`; `simplex.tsx`: `SimplexView`;
+  `landscape-slice.tsx`: `LandscapeSliceView`; `stability-region.tsx`: `StabilityRegionView`; `equation-fit.tsx`:
+  `EquationFitView`; `audio.tsx`: `AudioView`, `useClipPlayback`; `transcript.tsx`: `TranscriptView`; `sample-grid.tsx`:
+  `SampleGridView`;
   `reachability.tsx`: `ReachabilityPlotView`; `scene-steps.tsx`: `SceneStepsView`; `images.tsx` also `ImageGridView`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `session/`: sessions in React (the Sessions and Comparisons paragraphs of section 5): `useSession.ts` (`useSession`,
@@ -6455,7 +6482,9 @@ failing example to itself).
   reliability, confusion matrices), hierarchies and flows (treemaps, sunbursts, Sankey), time (calendars, candles),
   parts of a whole (pies, funnels, gauges), and panels (`panels/`: one recipe per record kind of the generic panels on
   a toy method of a few dozen lines, shown with the session panel that draws it: vector field, strip, table, images,
-  graph, matrix with marks, scene, accumulating points, complex plane, simplex, reachability). Every figure has one frame (expand, export) and a live control. Toy data
+  graph, matrix with marks, scene, accumulating points, complex plane, simplex, reachability) and `specialised/` (the
+  specialised panels, each on a toy method: zoomable picture, orbiting cloud, loss landscape, stability region, equation
+  against the truth, audio in sync, transcript, samples over training, small multiples, inner session). Every figure has one frame (expand, export) and a live control. Toy data
   only, no model training: model demonstrations are the encyclopedia's.
 
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,

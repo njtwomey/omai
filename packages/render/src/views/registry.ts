@@ -12,6 +12,7 @@ import type { ViewOptions } from './_view.ts'
 import { agentFrames } from './agents.ts'
 import { anomalyView } from './anomaly.ts'
 import { attributionFrames, beeswarmView, importanceView } from './attributions.ts'
+import { audioScene } from './audio.ts'
 import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
 import { complexPlaneView } from './complex-plane.ts'
@@ -22,12 +23,14 @@ import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
 import { epicycleFrames } from './epicycles.ts'
 import { episodeView } from './episodes.ts'
+import { equationFitView } from './equation-fit.ts'
 import { counterfactualTableView, prototypeView } from './examples.ts'
 import { explanationQualityView } from './explanation-quality.ts'
 import { groupReportView } from './fairness.ts'
 import { vectorFieldView } from './fields.ts'
 import { paretoFrontView } from './frontiers.ts'
 import { imageFrames } from './images.ts'
+import { landscapeSliceView } from './landscape-slice.ts'
 import { marginFrames } from './margins.ts'
 import { markedTableScene } from './marked-tables.ts'
 import { attributionImageView, attributionSeriesView, tokenStripView } from './modalities.ts'
@@ -35,9 +38,11 @@ import { crossValidationView, learningCurveView, pruningPathView, regularisation
 import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
 import { reachabilityPlot } from './reachability.ts'
 import { conceptView, ruleListView } from './rules.ts'
+import { sampleGridScene } from './sample-grid.ts'
 import { sceneStepsScene } from './scene-steps.ts'
 import { stateSequenceView } from './sequences.ts'
 import { simplexView } from './simplex.ts'
+import { stabilityRegionView } from './stability-region.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
 import { stripView } from './strips.ts'
@@ -46,6 +51,7 @@ import { subgroupView } from './subgroups.ts'
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
 import { thresholdSweepView } from './thresholds.ts'
+import { transcriptScene } from './transcript.ts'
 import { treeScene } from './trees.ts'
 import { conformalFrames, conformalView, reliabilityView } from './trust.ts'
 
@@ -468,6 +474,54 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r) => sceneStepsScene(r),
+  },
+  landscapeSlice: {
+    kind: 'landscapeSlice',
+    component: 'LandscapeSliceView',
+    title: 'Loss landscape slice',
+    plays: false,
+    accepts: [],
+    still: (r, o) => landscapeSliceView(r, o),
+  },
+  stabilityRegion: {
+    kind: 'stabilityRegion',
+    component: 'StabilityRegionView',
+    title: 'Stability region',
+    plays: false,
+    accepts: [],
+    still: (r, o) => stabilityRegionView(r, o),
+  },
+  equationFit: {
+    kind: 'equationFit',
+    component: 'EquationFitView',
+    title: 'Equation against the truth',
+    plays: false,
+    accepts: [],
+    still: (r, o) => equationFitView(r, o),
+  },
+  audio: {
+    kind: 'audio',
+    component: 'AudioView',
+    title: 'Audio',
+    plays: false,
+    accepts: [],
+    still: (r, o) => audioScene(r, o?.mode === undefined ? {} : { mode: o.mode }),
+  },
+  transcript: {
+    kind: 'transcript',
+    component: 'TranscriptView',
+    title: 'Transcript',
+    plays: false,
+    accepts: [],
+    still: (r) => transcriptScene(r),
+  },
+  sampleGrid: {
+    kind: 'sampleGrid',
+    component: 'SampleGridView',
+    title: 'Samples over training',
+    plays: false,
+    accepts: [],
+    still: (r) => sampleGridScene(r, undefined, { filmstrip: 4 }),
   },
   dataBias: {
     kind: 'dataBias',
