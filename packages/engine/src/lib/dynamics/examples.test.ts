@@ -20,6 +20,7 @@ const MODULES: Readonly<Record<string, unknown>> = {
   'mdml-engine/tensor': tensor,
   'mdml-engine/trace': trace,
   'mdml-engine/dynamics': dynamics,
+  'mdml-engine/dynamics/celestial': dynamics.celestial,
   'mdml-engine/dynamics/ode': dynamics.ode,
   'mdml-engine/dynamics/automata': dynamics.automata,
   'mdml-engine/dynamics/fractals': dynamics.fractals,

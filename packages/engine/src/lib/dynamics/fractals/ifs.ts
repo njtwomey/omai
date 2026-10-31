@@ -132,7 +132,7 @@ export function ifsProbabilities(ifs: Ifs): number[] {
  * @example
  * ```ts
  * import { fractals } from 'mdml-engine/dynamics'
- * fractals.similarityDimension(fractals.SIERPINSKI) // => 1.5849625007211563
+ * Math.round(fractals.similarityDimension(fractals.SIERPINSKI) * 1e9) / 1e9 // => 1.584962501
  * ```
  */
 export function similarityDimension(ifs: Ifs): number {

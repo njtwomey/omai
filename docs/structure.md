@@ -1363,7 +1363,8 @@ first, as scipy.signal. State-space and transfer-function values are differentia
 coefficients, and so are the conversions between them, the responses and the discretisations.
 - `representations.ts`: transfer functions, zero-pole-gain, state space and second-order sections (`tf`, `zpk`, `ss`,
   `sos`); continuous and discrete; conversions between them (`toTf`, `toZpk`, `toSs`, `toSos`), `dimensions`,
-  `isDiscrete`; minimal realisation (`minreal`: staircase reductions, pole-zero cancellation).
+  `isDiscrete`; minimal realisation (`minreal`: staircase reductions, pole-zero cancellation); `pade` (the rational
+  approximation of a delay, python-control's).
 - `conversions.ts`: scipy's pairwise conversions: `normalize`, `abcdNormalize`, `tf2ss` (controller canonical form),
   `ss2tf` (differentiable through `charpoly`), `tf2zpk`, `zpk2tf`, `zpk2ss`, `ss2zpk`.
 - `sections.ts`: second-order sections: `zpk2sos` (nearest, keep-odd and minimal pairing; analog), `sos2zpk`,
@@ -1371,7 +1372,9 @@ coefficients, and so are the conversions between them, the responses and the dis
 - `interconnect.ts`: `series`, `parallel`, `feedback`, `append`, `connect` (python-control semantics; static gains
   accepted; transfer functions combine as polynomials, multivariable systems in state space).
 - `responses.ts`: impulse, step, initial-condition and arbitrary-input responses (`lsim` and the traced
-  `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`.
+  `lsimAlgorithm`, zero- and first-order hold, continuous and discrete), `defaultResponseTimes`; `stepMeasures` (on
+  sampled data) and `stepInfo` (on a system): rise time, settling time, overshoot, undershoot and peak, as
+  python-control's `step_info`.
 - `frequency.ts`: frequency response (`freqresp`, `evalfr`, `dcgain`, `findfreqs`), Bode, Nyquist (with the
   encirclement count) and Nichols data.
 - `filters.ts`: frequency responses of filters given by coefficients (`freqs` analog, `freqz` digital, FFT for FIR).
@@ -2148,7 +2151,11 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `ode/implicit.ts`: backward Euler, trapezoid (Crank-Nicolson), BDF orders 1 to 5 with variable order, Radau IIA (5),
   SDIRK, Rosenbrock methods, stiffness detection.
 - `ode/symplectic.ts`: symplectic Euler, Stormer-Verlet (leapfrog), velocity Verlet, Forest-Ruth and Yoshida fourth
-  order; energy-drift diagnostics.
+  order; energy-drift diagnostics; `separableField` (the Hamiltonian vector field on stacked positions and momenta, so
+  a Runge-Kutta method can run a Hamiltonian system beside the splittings).
+- `ode/flow.ts`: `flowAlgorithm`, a field integrated at a fixed step by an explicit Runge-Kutta method as an
+  `Algorithm` whose state is plain numbers (serialises, seeks, resumes), with an observer hook for the paths a system
+  logs and a stopping rule (the base of the celestial, named-system and geodesic algorithms below).
 - `ode/exponential.ts`: exponential Euler and ETDRK4 for stiff semilinear problems.
 - `ode/taylor.ts`: Taylor-series integrators using Taylor-mode differentiation.
 - `ode/solve-ivp.ts`: `solveIvp` (scipy semantics: method, evaluation times, dense output, events with direction and
@@ -2174,14 +2181,64 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `fields.ts`: Jacobians, divergence, curl, fixed points (seeded Newton), classification (node, spiral, saddle,
   centre), nullclines, streamlines, flow maps, invariant manifolds.
 - `named-systems.ts`: named systems as vector fields in tensor operations (so they integrate and differentiate):
-  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, and `namedSystems`, each
-  with a start, a time span that shows its behaviour and its component names (what `methods/dynamics/odeSystems.ts`
-  runs).
+  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, `rosslerField` (with
+  `rosslerFixedPoints`), `thomasField` (constant divergence -3b) and the double pendulum from `mechanics.ts`, and
+  `namedSystems`, each with a start, a time span that shows its behaviour and its component names (what
+  `methods/dynamics/odeSystems.ts` runs).
+- `mechanics.ts`: the Euler-Lagrange equations derived by autodiff from a Lagrangian (`lagrangianField`,
+  `lagrangianEnergy`), the Legendre transform (`hamiltonianOfLagrangian`) and Hamilton's equations (`hamiltonianField`)
+  for non-separable systems; the double pendulum worked through (`doublePendulumLagrangian`, the closed-form
+  `doublePendulumField` the derivation must reproduce, `doublePendulumEnergy`, `doublePendulumHamiltonian`,
+  `doublePendulumFlipTime` for the flip map). Oracle: scipy.integrate (`dynamics/mechanics`).
+- `synchronisation.ts`: Kuramoto oscillators (`kuramotoField` all-to-all in mean-field form or on a graph,
+  `orderParameter`, `kuramotoFrequencies` quantile or sampled populations, `kuramotoCriticalCoupling` and
+  `kuramotoTheoreticalOrder` as the closed-form truth, `kuramotoAlgorithm` logging the order parameter and the locked
+  share) and the consensus flow (`consensusField`, whose rate is the algebraic connectivity).
+- `celestial/` (the celestial-mechanics namespace, `mdml-engine/dynamics/celestial`; the chapter tables call it
+  `dynamics/celestial.ts`, it is a folder because it holds five concerns; oracle: scipy.optimize and scipy.integrate):
+  - `kepler.ts`: the anomalies (mean, eccentric, hyperbolic, parabolic, true) and their conversions; Kepler's equation
+    solved by Newton, Halley, bisection, secant and fixed-point iteration as a stepped `Algorithm` (`keplerAlgorithm`:
+    iterate, residual, error against the root and correct digits per step, serialisable) and as a table of modes
+    (`keplerSolvers`, the slot of the `keplers-equation` method); the hyperbolic form M = e sinh H - H; Barker's
+    equation in closed form; the Fourier-Bessel and Lagrange (through e^5, Laplace's limit) series; `solveKepler` on
+    any conic.
+  - `elements.ts`: classical elements to and from state vectors (ellipse, parabola, hyperbola; the circular and
+    equatorial degenerate conventions documented), the analytic propagation `propagateKepler`/`keplerState` (the truth
+    for the integrators), vis-viva, period, escape speed, the Laplace-Runge-Lenz invariants.
+  - `nbody.ts`: the n-body Hamiltonian as a `SeparableSystem` (vectorised force over tensor operations, softening,
+    momentum, angular momentum, centre of mass, closest pair), `nBodyStep` and `nBodyAlgorithm` with the integrator as
+    a choice (the symplectic splittings of `ode/symplectic.ts` against Runge-Kutta) logging energy and its drift,
+    angular momentum and the closest approach, and a `bodies/close` event.
+  - `configurations.ts`: `twoBody` (launch speed to circular, elliptic, parabolic or hyperbolic, with period and energy),
+    `lagrangeTriangle`, `FIGURE_EIGHT`, `PYTHAGOREAN`, and `solarSystem` from the planets' mean elements (`PLANETS`,
+    `GAUSS_K`), each carrying its truth.
+  - `three-body.ts`: the circular restricted three-body field (planar and spatial), pseudo- and effective potential,
+    the Jacobi constant, `lagrangePoints` and their stability (`classifyLagrangePoints`, Routh's critical mass ratio),
+    `zeroVelocityCurves`, and `restrictedThreeBodyAlgorithm` logging the Jacobi constant and its drift.
+  - `geodesics.ts`: null geodesics of the Schwarzschild metric in the Binet form (`schwarzschildNullGeodesicField`,
+    `nullInvariant`), the exact `deflectionAngle` by quadrature with the weak-field `weakFieldDeflection`, the photon sphere
+    and `criticalImpactParameter`, `flammParaboloid`, and `lightRayAlgorithm` (one ray stepped in the angle, logging
+    radius, position, bend so far, with a `ray/captured` event and the exit angle refined; `measuredDeflection`).
 - `maps.ts`: iterated maps, orbits, cobwebs, bifurcation diagrams, Lyapunov exponents.
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
 - `control/optimal.ts`: LQR, discrete LQR, LQE, LQG, finite-horizon Riccati recursions.
 - `control/placement.ts`: pole placement (Kautsky-Nichols-Van Dooren, Ackermann).
+- `control/compensators.ts`: lead and lag compensators from their defining numbers (`leadCompensator`: phase and centre
+  to zero and pole; `lagCompensator`: zero and ratio), `leadLag`, and the textbook design rules from a plant's margins
+  (`leadDesign`: centre where the plant's gain is 1/sqrt(alpha); `lagDesign`: zero a decade below the crossover).
+- `control/indirect.ts`: Pontryagin's maximum principle: `ControlProblem`, the Hamiltonian and the state-costate system
+  (`hamiltonianSystem`), `bangBang`, and `pontryaginAlgorithm` (Newton shooting for the initial costate and, when free,
+  the horizon: one shot per step, the miss, the trajectory with its costate and control, and the switches as events);
+  `doubleIntegratorEnergy` and `minimumTimeDoubleIntegrator` with `minimumTimeShooting` (continuation in the smoothing
+  of the bang-bang rule) carry their closed-form truth.
+- `control/robust.ts`: H-infinity synthesis by the two Riccati equations: `hinfStateFeedback`, `hinfSynthesis` (the
+  central output-feedback controller, with the three feasibility conditions reported), `closedLoopFromDisturbance`
+  (w to z, to check the norm with `systems/norms.ts`), and `hinfBisectionAlgorithm` (the smallest achievable gamma, one
+  level per step). Oracle: SLICOT SB10FD through slycot (python-control's engine).
+- `control/adaptive.ts`: model-reference adaptive control of a first-order plant (`mracAlgorithm`: the MIT rule and the
+  Lyapunov law; logs output, model output, parameter, error, gain and the distance from the matching parameters,
+  `matchingParameters`), and `gainSchedule`.
 - `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints, receding horizon as a traced algorithm).
 - `control/pid.ts`: PID control with anti-windup and derivative filtering, Ziegler-Nichols and Cohen-Coon tuning,
   relay auto-tuning.
@@ -2193,7 +2250,9 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `filtering/changepoint.ts`: Bayesian online changepoint detection (conjugate predictives, run-length posteriors,
   hazard functions), PELT, binary segmentation.
 - `filtering/em.ts`: EM for linear-Gaussian state-space parameters (traced).
-- `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD.
+- `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD, and
+  recursive least squares (`rlsAlgorithm`, one sample per step with a forgetting factor, Joseph-form covariance;
+  `arxRegression`, `simulateArx` with a mid-run change of plant as the planted truth).
 - `automata/` (namespace `dynamics.automata`; no oracle, since no library has these: the tests check hand-worked rows,
   known periods and displacements, exact densities and conserved quantities): every system is an `Algorithm` whose state
   (a grid or an agent list in typed arrays) serialises, whose step is a pure function of the state and the step's key,

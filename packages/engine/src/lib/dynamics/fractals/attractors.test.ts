@@ -54,7 +54,7 @@ describe('planar maps for attractors', () => {
 describe('flows for attractors', () => {
   it("Rossler's divergence is a + x - c and Thomas' is the constant -3b", () => {
     expect(fieldDivergence(rosslerField(), [2, 0.5, 1])).toBeCloseTo(0.2 + 2 - 5.7, 9)
-    expect(fieldDivergence(thomasField(0.3), [1, -2, 0.5])).toBeCloseTo(-0.9, 9)
+    expect(fieldDivergence(thomasField({ b: 0.3 }), [1, -2, 0.5])).toBeCloseTo(-0.9, 9)
   })
   it('Thomas has the origin as an equilibrium', () => {
     expect(toFlat(thomasField()(0, tensor([0, 0, 0])))).toEqual([0, 0, 0])

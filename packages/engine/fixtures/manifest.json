@@ -387,6 +387,15 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/celestial.json",
+      "source": "oracle/cases/dynamics/celestial.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 17
+    },
+    {
       "fixture": "dynamics/control/optimal.json",
       "source": "oracle/cases/dynamics/control/optimal.py",
       "reference": {
@@ -402,6 +411,14 @@
         "scipy": "1.18.1"
       },
       "cases": 8
+    },
+    {
+      "fixture": "dynamics/control/robust.json",
+      "source": "oracle/cases/dynamics/control/robust.py",
+      "reference": {
+        "slycot": "0.7.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "dynamics/filtering/changepoint.json",
@@ -434,6 +451,15 @@
         "pysindy": "2.1.0"
       },
       "cases": 3
+    },
+    {
+      "fixture": "dynamics/mechanics.json",
+      "source": "oracle/cases/dynamics/mechanics.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 6
     },
     {
       "fixture": "dynamics/nonlinear.json",
@@ -4786,6 +4812,14 @@
         "control": "0.10.2"
       },
       "cases": 77
+    },
+    {
+      "fixture": "systems/measures.json",
+      "source": "oracle/cases/systems/measures.py",
+      "reference": {
+        "control": "0.10.2"
+      },
+      "cases": 20
     },
     {
       "fixture": "systems/norms.json",

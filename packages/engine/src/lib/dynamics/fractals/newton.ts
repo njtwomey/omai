@@ -28,7 +28,7 @@ import { type ComplexViewport, pixelGrid } from './escape-time.ts'
  * @example
  * ```ts
  * import { fractals } from 'mdml-engine/dynamics'
- * fractals.rootsOfUnity(4).map(([re, im]) => [Math.round(re), Math.round(im)]) // => [[1, 0], [0, 1], [-1, 0], [0, -1]]
+ * fractals.rootsOfUnity(4).map(([re, im]) => [Math.round(re) + 0, Math.round(im) + 0]) // => [[1, 0], [0, 1], [-1, 0], [0, -1]]
  * ```
  */
 export function rootsOfUnity(n: number): [number, number][] {

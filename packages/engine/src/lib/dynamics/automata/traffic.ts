@@ -180,7 +180,7 @@ export interface FundamentalDiagram {
  * ```ts
  * import { automata } from 'mdml-engine/dynamics'
  * const d = automata.trafficDiagram({ length: 100, densities: [0.1, 0.5], dawdle: 0, settle: 200, measure: 20 })
- * Array.from(d.flow) // => [0.5, 0.5]
+ * Array.from(d.flow).map((v) => Math.round(v * 1e9) / 1e9) // => [0.5, 0.5]
  * ```
  */
 export function trafficDiagram(options: {
