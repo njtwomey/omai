@@ -1931,6 +1931,12 @@ jellyfish, Biopython, pyphen
   next-word distributions, perplexity and samples; `ngramTrainingAlgorithm` counts one sentence per step with the
   held-out perplexity so far. Oracle: Chen and Goodman's definitions written directly in Python (NLTK's `lm` models
   differ in convention, see `oracle/cases/text/language_models.py`).
+- `retrieval.ts`: a positional inverted index (`invertedIndex` with `add` per document, `indexingAlgorithm` one
+  document per step), the scoring models as a mode over its postings (TF-IDF cosine, BM25 with Robertson or Lucene idf,
+  the binary independence model with optional relevance judgements, query likelihood under Dirichlet, Jelinek-Mercer or
+  absolute-discount smoothing), each query term's contribution to a score, `search` (top k), phrase and proximity
+  queries from the positions, boolean queries. BM25 over the postings equals `features.ts`'s rank_bm25 scores in the
+  tests; the other models are checked against their hand formulas and the smoothed models against normalisation.
 
 ### 4.22 `search/`: search, constraint satisfaction and planning (AIMA)
 
