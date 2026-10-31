@@ -90,3 +90,15 @@ export function logGrid(max: number, ratio: number, n: number): number[] {
   if (n === 1) return [max]
   return Array.from({ length: n }, (_, i) => max * ratio ** (i / (n - 1)))
 }
+
+/** The design with an intercept column appended (last), row-major. */
+export function withIntercept(design: Design, fitIntercept: boolean): { readonly a: Float64Array; readonly p: number } {
+  const { n, d } = design.x
+  const p = d + (fitIntercept ? 1 : 0)
+  const a = new Float64Array(n * p)
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < d; j++) a[i * p + j] = design.x.data[i * d + j] ?? 0
+    if (fitIntercept) a[i * p + d] = 1
+  }
+  return { a, p }
+}

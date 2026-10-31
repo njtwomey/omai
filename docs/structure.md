@@ -3240,6 +3240,24 @@ variable leaves when its coefficient crosses zero; logs `alpha`, `active`, the `
 penalty) and the `lars` estimator (the model at a penalty or active count, the path in `params.path`; `fittedAt(t)` is
 knot `t`). oracle: `linear/lars` against `sklearn.linear_model.lars_path` and `LassoLars`.
 
+`diagnostics.ts` is regression diagnostics from one SVD of the (weighted, intercept-last) design: `olsInfluence` (leverage,
+internal and external studentised residuals, Cook's distance, DFFITS and its internal form, DFBETA(S), COVRATIO,
+leave-one-out sigma), the single-measure functions (`hatMatrix`, `leverage`, `studentizedResiduals`, `cooksDistance`,
+`dffits`, `dfbetas`, `covRatio`), collinearity (`varianceInflationFactors`, `conditionIndices` with variance-decomposition
+proportions), the `breuschPagan` (Koenker or classical) and `whiteTest` heteroscedasticity tests, and
+`regressionDiagnostics`, the report with the observations the usual cut-offs flag (it adds the Durbin-Watson test of
+`stats/tests`). Weighted fits are those of the whitened data. oracle: `linear/diagnostics` against statsmodels
+(`OLSInfluence`, `variance_inflation_factor`, `het_breuschpagan`, `het_white`; weighted cases use the whitened ordinary
+fit because `OLSInfluence` on a WLS result mixes raw and whitened designs in its hat matrix).
+
+`group-lasso.ts` is structured sparsity: `groupStructure` (labels to groups, with weights sqrt(size) by default),
+`groupLassoAlgorithm` and the `groupLasso` estimator (block proximal-gradient sweeps or FISTA with restarts and the
+library's `proxGroupLasso`; the KKT violation is the stopping measure and a logged metric), `groupLassoAlphaMax`;
+`multiTaskDesign`, `multiTaskLassoAlgorithm` and the `multiTaskLasso` estimator (the l2,1 row penalty, with `l1Ratio`
+the multi-task elastic net; `y` is `[n, k]`, `coef` is a row per task as in scikit-learn). Singleton groups are the
+lasso, which a test checks against the GLM core. oracle: `linear/group_lasso` against `MultiTaskLasso` and
+`MultiTaskElasticNet`; the group lasso itself has no scikit-learn reference and is tested by its optimality conditions.
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 

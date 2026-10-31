@@ -11,25 +11,13 @@ import { featureNamesOf, type LearnData } from '../learn/index.ts'
 import { inv, pinv } from '../numerics/linalg/index.ts'
 import { fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
 import { primalOf, toFlat } from '../tensor/index.ts'
-import { type Design, designOf, matrixTensor } from './design.ts'
+import { type Design, designOf, matrixTensor, withIntercept } from './design.ts'
 import { leastSquaresSolve } from './solvers.ts'
 
 /** Heteroscedasticity-consistent covariance types (statsmodels' `cov_type`). */
 export type CovarianceType = 'nonrobust' | 'HC0' | 'HC1' | 'HC2' | 'HC3'
 
 const scalar = (v: Parameters<typeof toFlat>[0]): number => toFlat(primalOf(v))[0] ?? Number.NaN
-
-/** The design with an intercept column appended (last), row-major. */
-function withIntercept(design: Design, fitIntercept: boolean): { readonly a: Float64Array; readonly p: number } {
-  const { n, d } = design.x
-  const p = d + (fitIntercept ? 1 : 0)
-  const a = new Float64Array(n * p)
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < d; j++) a[i * p + j] = design.x.data[i * d + j] ?? 0
-    if (fitIntercept) a[i * p + d] = 1
-  }
-  return { a, p }
-}
 
 /** (A^T W A)^{-1}, by a pseudo-inverse when singular. */
 function bread(a: Float64Array, n: number, p: number, w: ArrayLike<number>): Float64Array {

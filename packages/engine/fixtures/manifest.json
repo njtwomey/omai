@@ -1386,6 +1386,22 @@
       "cases": 6
     },
     {
+      "fixture": "linear/diagnostics.json",
+      "source": "oracle/cases/linear/diagnostics.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "linear/group_lasso.json",
+      "source": "oracle/cases/linear/group_lasso.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "linear/lars.json",
       "source": "oracle/cases/linear/lars.py",
       "reference": {
