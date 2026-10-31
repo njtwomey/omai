@@ -89,6 +89,7 @@ import {
   mtcars,
   mtcarsRegression,
 } from './regression-real.ts'
+import { plantedRuleList } from './rule-lists.ts'
 import {
   additionTask,
   associativeRecall,
@@ -211,6 +212,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   parityTask,
   piecewiseLinear,
   plantedRelations,
+  plantedRuleList,
   plantedSeries,
   plantedTransactions,
   poissonProcess,
@@ -339,6 +341,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['moonsWithOutliers', 'Two moons with outliers'],
     ['multipleInstanceBags', 'Multiple-instance bags'],
     ['piecewiseLinear', 'Piecewise linear'],
+    ['plantedRuleList', 'Planted rule list'],
     ['positiveUnlabelled', 'Positive-unlabelled'],
     ['quantileCurves', 'Curves with known quantiles'],
     ['rings', 'Rings'],

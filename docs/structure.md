@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 57 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 59 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -423,6 +423,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
 | `causal`      | causal inference from data: treatment-effect estimators (regression adjustment, propensity scores, matching, entropy balancing, AIPW, TMLE, double machine learning), quasi-experimental designs, heterogeneous effects and uplift, sensitivity analysis |
 | `embedding`   | embeddings learned from data: word2vec (skip-gram, CBOW, negative sampling, hierarchical softmax), fastText subwords, GloVe, PPMI with SVD, knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE) with filtered ranking, and analogy and similarity evaluation, each loss a smooth problem with the optimiser a slot |
+| `patterns`    | pattern mining: Apriori, FP-growth and Eclat (identical itemsets and counts), closed and maximal itemsets, association rules with their measures, PrefixSpan and GSP with gap constraints, subgroup discovery by quality function with beam, exhaustive, CN2-SD and Apriori-SD search |
+| `rules`       | rule learning on the `learn` contract: CN2 (ordered and unordered), PRISM, RIPPER and IREP, OneR and decision tables, CORELS-style certifiably optimal and Bayesian rule lists, the rule, coverage and quality-measure representation, rules from tree paths |
 
 ### 4.1 `base/`
 
@@ -2153,6 +2155,32 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
 - `ilp/foil.ts`: FOIL (gain, refinement, coverage), traced.
 - `ilp/progol.ts`: mode declarations, bottom clauses, inverse entailment.
 - `ilp/meta-interpretive.ts`: Metagol-style learning with metarules; learning from failures (Popper-style).
+- `production.ts`: production systems: rules over a working memory of ground facts (`productionRule`, `not(...)`
+  conditions, facts added and removed, `halt`), conflict resolution by rule order, priority, recency (OPS5's LEX) or
+  specificity (`resolveConflict`, ties broken by the matched facts so every matcher fires the same instantiation), a
+  naive matcher and `ReteNetwork` (alpha memories and beta memories of partial matches, updated on `add` and `remove`; a
+  property test checks that both matchers give identical runs on random rule bases), and `productionSystemAlgorithm`
+  (one firing per step, the working memory, the conflict-set size and the rule fired with its bindings in the state).
+- `uncertain.ts`: MYCIN certainty factors (`combineCertainty`, `certaintyInference`), Dempster-Shafer belief functions
+  (`massFunction`, `belief`, `plausibility`, `combineDempster` with its conflict, `combineYager`, `pignistic`,
+  `evidenceAlgorithm` adding one body of evidence per step with the belief intervals), fuzzy logic (membership functions,
+  t-norms and t-conorms, `mamdani` and `sugeno` inference, `defuzzify` with centroid by exact integration of the
+  piecewise-linear curve, bisector and the means/smallest/largest of the maxima) and `possibilityMeasures`.
+- `argumentation.ts`: Dung frameworks: conflict-free and admissible sets, the characteristic function, grounded,
+  complete, preferred and stable extensions (`extensions`, `accepted` sceptically or credulously), and
+  `groundedAlgorithm`, the grounded labelling one round per step (in, out, undecided).
+- `description.ts`: ALC: `parseConcept`, `nnf`, `alcTableauAlgorithm` (one rule per step: and, all, some, or with
+  backtracking, clashes, subset blocking, a TBox of general concept inclusions internalised), `conceptSatisfiable`,
+  `conceptSubsumes` (unsatisfiability of the difference) and `classifyConcepts` (the direct-parent hierarchy of named
+  concepts).
+- `problog.ts`: ProbLog-style probabilistic logic programs: `groundProbabilistic` (forward-chaining grounding of
+  function-free definite rules over probabilistic facts `p::f`), `proofSets` (minimal proofs of every atom to a fixed
+  point, so cycles terminate), `successProbability` (exact weighted model counting by memoised Shannon expansion, with
+  the proofs and their probabilities exposed), `conditionalProbability` (evidence true or false) and `probLogEmAlgorithm`
+  (EM for the facts' probabilities from observed interpretations, one iteration per step). Checked against enumeration of
+  all possible worlds on random cyclic graphs.
+- TODO (not built): Markov logic networks (grounding, pseudo-likelihood weight learning, MC-SAT and Gibbs), differentiable
+  logic (t-norm formula semantics over tensors as in Logic Tensor Networks, a neural theorem prover, differentiable ILP).
 - Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
   built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
@@ -4314,6 +4342,78 @@ against autodiff.
   (Spearman against judged similarity), `neighbourPurity`.
 built from: `losses`, `optim` (`smoothSolvers`), `text` (co-occurrence, PPMI, SVD, analogies, fastText hashing), `stats`,
 `trace`, `random`, `space`, `tensor`
+### 4.58 `patterns/`: pattern mining (mlxtend, SPMF, pysubgroup)
+
+`itemsets.ts` mines frequent itemsets from baskets of item ids three ways that return the same itemsets with the same
+counts on every input: Apriori (`apriori`, `aprioriAlgorithm`: one level per step, candidates joined from a shared
+prefix and pruned by the downward closure, with the joined, pruned and counted candidates on the tape), FP-growth
+(`fpGrowth`, `fpGrowthAlgorithm`: one transaction inserted into the FP-tree per step, then one conditional tree mined
+per step, the pending conditional pattern bases in the state) and Eclat (`eclat`, `eclatAlgorithm`: one prefix class
+per step, tid-lists intersected). `exhaustiveItemsets` enumerates every subset and is the reference the three are
+tested against (property tests on random baskets, with and without `maxLength`); `closedItemsets` and `maximalItemsets`
+filter a complete result. `association-rules.ts` has `ruleMeasures` (support, confidence, lift, leverage, conviction and
+Zhang's metric from the four counts, mlxtend's definitions) and `associationRules` (every split of every frequent
+itemset, filtered and ranked by any measure). `sequences.ts` mines sequences of itemsets: `prefixSpanAlgorithm` (one
+prefix extension per step over projected databases that remember the earliest match) and `gspAlgorithm` (one level per
+step, the join of the paper, pruned by contiguous subsequences, with minimum and maximum gap and maximum span),
+`containsPattern`, `exhaustivePatterns` as the reference (PrefixSpan and GSP equal it on random sequences, and GSP equals
+it under random gap constraints). `subgroups.ts` is subgroup discovery: `subgroupQuality` (the Klösgen family with
+weighted relative accuracy, relative accuracy, lift, signed chi-squared), `columnSelectors` (nominal values and
+equal-frequency numeric cuts), `subgroupProblem` and `discoverSubgroups` (the conjunction language of
+`search/refinement.ts` searched by beam or exhaustively with the optimistic estimate of WRAcc; binary or numeric
+targets), and the covering variants `cn2SdAlgorithm` (beam search under example weights that fall for covered
+positives) and `aprioriSdAlgorithm` (candidate levels, then weighted selection), one rule per step. The planted
+generator is `plantedTransactions` of `datasets`.
+
+oracle: pysubgroup (`StandardQF(a)` for a = 0, 0.5, 1 and `StandardQFNumeric`, DFS with optimistic estimates, top-k
+qualities); mlxtend and SPMF are not installed in the oracle group, so the itemset and sequence miners are checked by
+exact agreement with exhaustive enumeration and by the worked examples of the Apriori and PrefixSpan papers. TODO:
+planted sequences, SD-Map, interval selectors for numeric columns, exceptional model mining, frequent subgraphs.
+built from: `search` (refinement), `trace`, `base`
+
+### 4.59 `rules/`: rule learning on the `learn` contract (Orange, imodels, CORELS, Weka)
+
+`rule.ts` is the shared representation: a `Literal` (a test on one feature: `==` a category, `<=` or `>` a threshold),
+a `Rule` (literals, the class it predicts, the class counts of the rows it covered when learned) and a `RuleModel` (an
+ordered `list` that takes the first rule that fires, or a `set` whose firing rules vote by summing their counts, with the
+default counts for rows nothing covers: `predictCounts`, `firingRule`, Laplace-smoothed `smoothedProbabilities`). The
+quality measures are `ruleStatistics` (support, confidence, lift, Laplace accuracy, WRAcc of a rule on data),
+`ruleQuality` (entropy, Laplace, accuracy, m-estimate and WRAcc from covered class counts, the heuristics of the
+searches) and CN2's `likelihoodRatio` and `ruleSignificance` (chi-squared, k - 1 degrees of freedom); `modelText`,
+`ruleLine` and `modelRecord` print a model or turn it into the `rules` record. `covering.ts` is sequential covering as an
+`Algorithm` with a rule per step: ordered CN2 (a beam over conjunctions, entropy or Laplace, kept only if significant,
+the majority class of the covered rows, all covered rows removed), unordered CN2 (rules per class over all rows, only the
+covered rows of that class removed, rules vote) and PRISM (greedy on precision to a pure rule). `ripper.ts` is RIPPER and
+IREP: classes from the rarest, a rule grown by FOIL's gain (`logic/ilp`) on two thirds and pruned on a third by
+(p - n) / (p + n), the 50% error stop and the description-length stop (`ruleSetDescriptionLength`, Cohen's code for rules
+plus the exceptions, 64 bits of slack), then replacement and revision of each rule keeping whichever gives the set the
+shortest description, a rebuild and a deletion pass; its randomness is the grow/prune split from the step's key.
+`lists.ts` has the pre-mined antecedents (`mineAntecedents`: Eclat of `patterns` over the literals each row satisfies)
+and two rule-list learners over them: `corelsAlgorithm`, a CORELS-style branch and bound over prefixes (objective and
+look-ahead bounds, the minimum-support bound, the equivalent-points bound and the permutation bound; the queue emptying
+certifies optimality, `fitCorels` reports it), and `bayesianRuleListAlgorithm`, Metropolis-Hastings over ordered lists
+(truncated Poisson priors on length and rule size, Dirichlet-multinomial likelihood, add/remove/swap proposals with the
+Hastings ratios; `ruleListLogPosterior` is its target density). `sets.ts` has `oneRAlgorithm` (Holte's buckets, one
+feature per step), `decisionTableAlgorithm` (Kohavi's table, forward selection by leave-one-out accuracy) and
+`treeRuleSet` (one rule per leaf of a `trees` classification tree, predicting exactly as the tree). `estimators.ts` puts
+each learner on the iterative base: `cn2Classifier` (ordered or unordered), `prismClassifier`, `ripperClassifier` (RIPPER
+or IREP), `corelsClassifier`, `bayesianRuleListClassifier`, `oneRClassifier`, `decisionTableClassifier`, each with
+`method(data)`, `session(data)` and `fittedAt(t)` (the rule model after t steps), logging the README's tracks
+(`rule/literal`, `rule/coverage`, `rule/precision`, `ruleset/rules`, `ruleset/accuracy`, `ruleset/covered`,
+`rule/descriptionLength`, `pass/revision`, `search/bound`, `search/incumbent`, `search/nodes`, `chain/logPosterior`,
+`chain/accepted`) and answering the probe `model/rules`. The planted generator is `plantedRuleList` of `datasets`
+(categorical rows labelled by a planted decision list with label noise; the list, the noise and the exact accuracy are
+the truth). The contracts of the estimators go through the iterative base, whose paths are not yet typed.
+
+oracle: none for the learners (no installed reference implements these exactly: Orange and imodels are not in the oracle
+group); the checks are exhaustive enumeration (CORELS equals the best list found by trying every list up to length 3),
+the exact posterior (the sampler's visit frequencies converge to the enumerated posterior over all 65 lists of a small
+problem), Cendrowska's contact lenses data (PRISM's pure rules, OneR's 17 of 24 as Weka reports), the likelihood ratio
+and description length by hand, and recovery of the planted list with generalisation to fresh draws. TODO: RuleFit
+(`explain/rules.ts` has it), Apriori-based classification (CBA, CMAR), numeric interval literals, RIPPER's exact
+Weka description-length constants, the CORELS cache and symmetry-aware bounds beyond the permutation bound.
+built from: `learn` (iterative base), `patterns` (Eclat), `logic/ilp` (`foilGain`), `trees`, `exposition` (`ruleSet`),
+`numerics/special`, `trace`, `random`
 
 ## 5. Methods, exposition records and views
 
