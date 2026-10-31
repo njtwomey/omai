@@ -95,7 +95,7 @@ describe('the strip view', () => {
   it('draws the cells, the tag labels, the path through its cells and the outlined marks', () => {
     const option = stripView(strip) as { xAxis: { data?: string[] }[]; yAxis: { data?: string[] }[] }
     const names = seriesOf(option).map((s) => s.name)
-    expect(names).toEqual(['__matrix', '__tags', '__path', '__marks'])
+    expect(names).toEqual(['__matrix', '__tags', '__path', '__cellShapes'])
     expect(option.xAxis[0]?.data).toEqual(['the', 'cat', 'sat'])
     // Rows are listed bottom-up: the tag row first, then the tracks reversed.
     expect(option.yAxis[0]?.data).toEqual(['tag', 'verb', 'noun'])

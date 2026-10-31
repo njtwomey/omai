@@ -170,5 +170,7 @@ export function structureStepsScene(
         },
       ),
     )
-  return scene(width, height, children)
+  return scene(width, height, children, {
+    title: `Graph of ${record.structure.nodes.length} nodes and ${record.structure.edges.length} edges${at?.caption === undefined ? '' : `: ${at.caption}`}`,
+  })
 }

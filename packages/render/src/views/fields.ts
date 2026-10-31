@@ -10,7 +10,7 @@ import { vectorField as arrows, fieldArrows, streamlines } from '../charts/field
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
-import { type ViewOptions, viewFigure } from './_view.ts'
+import { ariaOf, type ViewOptions, viewFigure } from './_view.ts'
 
 /** Options of {@link vectorFieldView} and {@link vectorFieldLayers}. */
 export interface VectorFieldViewOptions extends ViewOptions {
@@ -218,5 +218,8 @@ export function vectorFieldView(record: VectorField, options: VectorFieldViewOpt
       legend: (record.nullclines?.length ?? 0) + (record.fixedPoints?.length ?? 0) > 0,
     }),
     animation: false,
+    ...ariaOf(
+      `Vector field over ${names[0]} and ${names[1]}${record.fixedPoints === undefined ? '' : `, with ${record.fixedPoints.length} fixed points (${record.fixedPoints.map((p) => p.stability).join(', ')})`}${record.nullclines === undefined ? '' : ` and ${record.nullclines.length} nullclines`}`,
+    ),
   }
 }

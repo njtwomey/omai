@@ -11,7 +11,8 @@ import { matrix } from '../charts/matrices.ts'
 import { cartesian, type Layer, layer } from '../charts/plot.ts'
 import { categoricalColour } from '../theme/palettes.ts'
 import { tokens } from '../theme/tokens.ts'
-import { short, spanOf, type ViewOptions, viewFigure } from './_view.ts'
+import { ariaOf, short, spanOf, type ViewOptions, viewFigure } from './_view.ts'
+import { cellShapes } from './matrix-marks.ts'
 
 /** Options of {@link stripView}. */
 export interface StripViewOptions extends ViewOptions {
@@ -101,20 +102,31 @@ export function stripView(record: Strip, options: StripViewOptions = {}): EChart
   if (record.path !== undefined) {
     const x = record.path.map((_, i) => i)
     const y = record.path.map((k) => yOf(k))
-    layers.push(lines([{ x, y, name: '__path', colour: 'accent', width: 2.5, markers: true }], { mode }))
+    layers.push(lines([{ x, y, name: '__path', colour: 'fg', width: 2, opacity: 0.85, markers: true }], { mode }))
   }
-  if ((record.marks ?? []).length > 0) {
-    const x: number[] = []
-    const y: number[] = []
-    for (const m of record.marks ?? []) {
-      x.push(m - 0.5, m + 0.5, m + 0.5, m - 0.5, m - 0.5, Number.NaN)
-      y.push(-0.5, -0.5, rows - 0.5, rows - 0.5, -0.5, Number.NaN)
-    }
-    layers.push(lines([{ x, y, name: '__marks', colour: 'danger', width: 2 }], { mode }))
-  }
+  if ((record.marks ?? []).length > 0)
+    layers.push(
+      cellShapes(
+        (record.marks ?? []).map((m) => ({
+          shape: 'box' as const,
+          x0: m - 0.5,
+          y0: rows - 0.5,
+          x1: m + 0.5,
+          y1: -0.5,
+          colour: 'danger',
+          width: 2,
+        })),
+        rows,
+        n,
+        mode,
+      ),
+    )
   return {
     ...cartesian(layers, { mode, figure: fig, legend: false, tooltip: false }),
     animation: false,
+    ...ariaOf(
+      `Strip of ${n} tokens (${record.tokens.join(' ')}) with ${record.tracks.length} tracks of ${record.valueName ?? 'values'}: ${record.tracks.map((k) => k.name).join(', ')}${(record.marks ?? []).length === 0 ? '' : `; positions ${(record.marks ?? []).join(', ')} are marked`}`,
+    ),
   }
 }
 

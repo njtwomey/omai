@@ -24,10 +24,9 @@ export function ComplexPlaneView(props: RecordViewProps<ComplexPlane>): ReactEle
   const figure = useViewFigure(props.figure, DEFAULTS)
   const build = useCallback((fig: Figure) => complexPlaneView(record, { figure: fig }), [record])
   const unstable = record.poles.filter((p) => !isStablePole(record.domain, p)).length
-  const verdict =
-    unstable === 0
-      ? 'stable: every pole is inside the stable region'
-      : `unstable: ${unstable} of ${record.poles.length} poles outside it`
+  const boundary = record.domain === 'z' ? 'the unit circle' : 'the imaginary axis'
+  const where = unstable === 0 ? 'every pole is inside' : `${unstable} of ${record.poles.length} poles are outside`
+  const verdict = `${unstable === 0 ? 'stable' : 'unstable'}: ${where} the dashed line, ${boundary}`
   const caption = props.caption ?? (record.caption === undefined ? verdict : `${record.caption}: ${verdict}`)
   return (
     <RecordFigure

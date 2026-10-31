@@ -23,6 +23,8 @@ export interface PointsSteps {
   readonly dims: 2 | 3
   /** The coordinates' names (default `x`, `y`, `z`). */
   readonly features?: readonly string[]
+  /** The extent of each coordinate over the whole run, when the method knows it (default: the span of every step). */
+  readonly range?: readonly (readonly [number, number])[]
   readonly steps: readonly PointsStep[]
   /**
    * Whether each step adds its points to those of the steps before it (default `true`: an attractor filling in), or
@@ -45,8 +47,8 @@ export interface PointsAt {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a point does not have `dims` coordinates or groups do not match the points; `value`
- *   when the steps are not in order.
+ * @throws MdmlError `shape` when a point does not have `dims` coordinates, groups do not match the points or `range`
+ *   does not have one entry per coordinate; `value` when the steps are not in order.
  * @example
  * ```ts
  * import { pointsSteps } from 'mdml-engine/exposition'
@@ -55,6 +57,8 @@ export interface PointsAt {
  * ```
  */
 export function pointsSteps(record: Omit<PointsSteps, 'kind'>): PointsSteps {
+  if (record.range !== undefined && record.range.length !== record.dims)
+    throw new MdmlError('shape', `pointsSteps: range has ${record.range.length} entries, expected ${record.dims}`)
   let previous = Number.NEGATIVE_INFINITY
   for (const [t, s] of record.steps.entries()) {
     if (s.step < previous) throw new MdmlError('value', `pointsSteps: steps[${t}] is out of order`)

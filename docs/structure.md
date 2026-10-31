@@ -4472,6 +4472,19 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
 - `ImageSteps` (small grey images per recorded step in named groups: a generative model's data, reconstructions and
   samples from fixed noise, with the objective per step);
 - `StateSequence` (a hidden-state model's posteriors over time, the decoded path and the true states);
+- The records of the generic panels (wave R1 of `methods/RENDER.md`): `VectorField` (`vectorField`, `fields.ts`: a flow,
+  a score or a phase portrait on a grid with nullclines and fixed points classified by stability; `sampleVectorField`),
+  `Strip` (`strip`, `strips.ts`: tokens along x with a track of values per class, rows of tags, the chosen path and
+  marks), `MarkedTable` (`markedTable`, `tables.ts`: a small table whose cells, rows and columns carry a status and a
+  note, and the decision outlined; named apart from the coefficient and likelihood tables), `StructureSteps`
+  (`structureSteps`, `structure-steps.ts`: one `Structure` with the looks of its nodes and edges at recorded steps;
+  `structureStepAt`), `PointsSteps` (`pointsSteps`, `points-steps.ts`: a two- or three-dimensional point set that
+  accumulates or moves, with an optional fixed `range`; `pointsAt`), `ComplexPlane` (`complexPlane`,
+  `complex-plane.ts`: poles, zeros and locus branches in `s` or `z`, `isStablePole`), `Simplex` (`simplex`,
+  `simplex.ts`: a triangle of three strategies or the square of two populations with paths, a field and classified
+  fixed points; `simplexRecord`), `Reachability` (`reachability`, `reachability.ts`: OPTICS distances in visiting
+  order with a cut; `reachabilityRecord`) and `SceneSteps` (`sceneSteps`, `scene-steps.ts`: a `Scene` per recorded step;
+  `sceneStepAt`). `ImageSteps` steps may carry a caption under each image (`labels`);
 - `CurveSet` (`curves`: several series on shared axes, each with an optional band, a group sharing its colour and an
   optional right-hand axis; optimiser races and studies of schemes or strengths), `DiagramRecord` (`diagram`: a
   `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
@@ -4501,7 +4514,10 @@ consumer: the cursor through the tape at a chosen rate, waiting at the head when
 toggle computes the whole run at once and shows its end; seek to either end and step one; a reset of the page's
 controls to their defaults when the page offers one), `SessionControls` (seed, steps, subscription, and the same
 preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe, curves, per-element series, a
-trajectory, a tensor, a sweep, a projection, the whole tape), `SessionPanels` that draws a layout under one
+trajectory, a tensor with row and column labels and marks (`rowLabels`, `colLabels`, `marks`, `marksPath`), a sweep, a
+projection, the whole tape, and the panels of probed records: `field` (a `vectorField` with tape paths over it as a
+trajectory), `strip`, `table`, `images`, `graph` (a `structureSteps` record), `points` (`pointsSteps`) and `scene`
+(`sceneSteps`); `record-panels` in `RecordPanels.tsx`, `FieldPanel.tsx`, `trajectory.ts`), `SessionPanels` that draws a layout under one
 `StepCursor` (`cursor.tsx`; curves scrub it on click, `scrub.ts`), the rows panel, and the generic `TapeView`. A page
 anywhere (the encyclopedia, the gallery's `animation/` recipes) composes these.
 
@@ -5978,6 +5994,13 @@ Design rules:
   `MixtureSteps`, `EmbeddingSteps` as timelines), `tables.ts` (`CoefficientTable`, `LikelihoodTable`,
   `NeighbourRecord`, `SearchTrials`), `margins.ts`, `anomaly.ts`, `components.ts`, `episodes.ts`, `boards.ts`
   (`BoardSteps` and `PopulationSteps` as players), `images.ts` (`ImageSteps` as a mosaic of image rows per step),
+  `fields.ts` (`VectorField`: arrows or streamlines, nullclines, fixed points by class; `FIXED_POINT_LOOK`), `strips.ts`
+  (`Strip`), `marked-tables.ts` (`MarkedTable` as a scene), `structure-steps.ts` (`StructureSteps` as a scene at a step),
+  `matrix-marks.ts` (a labelled matrix with outlined cells, rows, columns and dashed boundaries, and `cellShapes`, the
+  pixel-exact outlines the strip uses too), `points-steps.ts` (`PointsSteps`: a scatter on fixed axes, a 3-D scene to
+  orbit, a projected still), `complex-plane.ts`, `simplex.ts`, `reachability.ts` (`Reachability` bars by cluster,
+  `reachabilityClusters`), `scene-steps.ts`, `images.ts` also giving `imageGridView`, `imageGridFigure` and
+  `imageStepIndex` (the images at a tape step as a grid with captions),
   `curves.ts` (`CurveSet`, revealed along x as a player), `cells.ts` (`ValueGrids` as blocky small multiples on one
   colour range, `ConfusionMatrix`, both played through training), `diagrams.ts` (`DiagramRecord` as a scene with a
   step's overlay) and `attributions.ts` (`FeatureAttributions` as a waterfall, played through a sampled estimate's
@@ -6060,7 +6083,10 @@ Design rules:
   data table and fitted parameters beside the figure), `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
   `BoardPlayer`, `PopulationPlayer`; `curves.tsx`: `CurvesView`; `densities.tsx`: `DensityView`; `sequences.tsx`:
   `StateSequenceView`; `cells.tsx`: `ValueGridView`, `ConfusionMatrixView`; `diagrams.tsx`: `DiagramPlayer`, a
-  `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`), each one figure in one
+  `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`; `fields.tsx`: `VectorFieldView`;
+  `strips.tsx`: `StripView`; `marked-tables.tsx`: `MarkedTableView`; `structure-steps.tsx`: `StructureStepsView`;
+  `points-steps.tsx`: `PointsStepsView`; `complex-plane.tsx`: `ComplexPlaneView`; `simplex.tsx`: `SimplexView`;
+  `reachability.tsx`: `ReachabilityPlotView`; `scene-steps.tsx`: `SceneStepsView`; `images.tsx` also `ImageGridView`), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
 - `session/`: sessions in React (the Sessions and Comparisons paragraphs of section 5): `useSession.ts` (`useSession`,
   `useSessions`: one producer over one or several sessions, `LiveSession`, `LiveSessions`, `variantsOf`), `compare.ts`
@@ -6161,7 +6187,9 @@ failing example to itself).
   structures, multivariate (parallel coordinates, radar, scatter matrices), tuning studies, environments and worlds
   (maps, mazes, the ray-cast view), three-d, evaluation (contingency tables, ROC, precision-recall and PR-gain,
   reliability, confusion matrices), hierarchies and flows (treemaps, sunbursts, Sankey), time (calendars, candles),
-  parts of a whole (pies, funnels, gauges). Every figure has one frame (expand, export) and a live control. Toy data
+  parts of a whole (pies, funnels, gauges), and panels (`panels/`: one recipe per record kind of the generic panels on
+  a toy method of a few dozen lines, shown with the session panel that draws it: vector field, strip, table, images,
+  graph, matrix with marks, scene, accumulating points, complex plane, simplex, reachability). Every figure has one frame (expand, export) and a live control. Toy data
   only, no model training: model demonstrations are the encyclopedia's.
 
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,

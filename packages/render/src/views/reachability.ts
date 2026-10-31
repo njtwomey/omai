@@ -9,7 +9,7 @@ import type { Reachability } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
-import { short, spanOf, type ViewOptions, viewFigure } from './_view.ts'
+import { ariaOf, short, spanOf, type ViewOptions, viewFigure } from './_view.ts'
 
 /**
  * The clusters a reachability plot cuts out at its threshold: a valley is a run of positions whose distance is at most
@@ -97,5 +97,8 @@ export function reachabilityPlot(record: Reachability, options: ViewOptions = {}
       tooltip: 'item',
     }),
     animation: false,
+    ...ariaOf(
+      `Reachability plot of ${values.length} points in visiting order with ${ids.filter((c) => c >= 0).length} clusters${record.threshold === undefined ? '' : ` cut at ${short(record.threshold)}`}`,
+    ),
   }
 }

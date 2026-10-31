@@ -21,10 +21,10 @@ import {
 import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
 import { categoricalColour } from '../theme/palettes.ts'
-import { spanOf, type ViewOptions, viewFigure } from './_view.ts'
+import { ariaOf, spanOf, type ViewOptions, viewFigure } from './_view.ts'
 
 /**
- * The span of each coordinate over every step of the record, so the picture's axes do not move as points arrive.
+ * The extent of each coordinate (the record's `range`, else the span over every step of the record), so the picture's axes do not move as points arrive.
  *
  * @param record - The record.
  * @returns One `[low, high]` per coordinate.
@@ -37,6 +37,7 @@ import { spanOf, type ViewOptions, viewFigure } from './_view.ts'
  * ```
  */
 export function pointsStepsLimits(record: PointsSteps): [number, number][] {
+  if (record.range !== undefined) return record.range.map((r) => [r[0], r[1]])
   return Array.from({ length: record.dims }, (_, d) =>
     spanOf(record.steps.flatMap((s) => s.points.map((p) => p[d] ?? 0))),
   )
@@ -44,7 +45,7 @@ export function pointsStepsLimits(record: PointsSteps): [number, number][] {
 
 /**
  * A two-dimensional points record at a step as a figure: all the points drawn so far, small and faint, the points the
- * latest step added in the accent colour, groups in tab10.
+ * latest step added in the warning colour, groups in tab10.
  *
  * @param record - The record (two-dimensional).
  * @param step - The tape step (default the last recorded one).
@@ -91,7 +92,7 @@ export function pointsStepsView(record: PointsSteps, step?: number, options: Vie
     )
   if (fresh)
     layers.push(
-      points([{ ...xy(at.points.slice(old)), name: 'latest', colour: 'accent', size: 6, outline: false }], { mode }),
+      points([{ ...xy(at.points.slice(old)), name: 'latest', colour: 'warning', size: 7, outline: false }], { mode }),
     )
   return {
     ...cartesian(layers, {
@@ -103,6 +104,9 @@ export function pointsStepsView(record: PointsSteps, step?: number, options: Vie
       tooltip: false,
     }),
     animation: false,
+    ...ariaOf(
+      `Scatter plot of ${at.points.length} points in ${names.join(' and ')}${at.caption === undefined ? '' : `: ${at.caption}`}`,
+    ),
   }
 }
 
@@ -135,7 +139,7 @@ export function pointsStepsScene3d(record: PointsSteps, step?: number): Scene3D 
       fill:
         at.groups === undefined
           ? i >= old && record.accumulate !== false
-            ? 'accent'
+            ? 'tab1'
             : 'tab0'
           : (categoricalColour((at.groups[i] ?? 0) % 10) as Paint),
       r: i >= old && record.accumulate !== false ? 2.6 : 1.8,

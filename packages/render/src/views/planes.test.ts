@@ -1,7 +1,16 @@
-import { complexPlane, pointsSteps, reachabilityRecord, sceneSteps, simplexRecord } from 'mdml-engine/exposition'
+import {
+  complexPlane,
+  imageSteps,
+  pointsSteps,
+  reachabilityRecord,
+  sceneSteps,
+  simplexRecord,
+} from 'mdml-engine/exposition'
 import { circle, scene } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { complexPlaneLayers, complexPlaneLimits, complexPlaneView } from './complex-plane.ts'
+import { imageGridFigure } from './images.ts'
+import { cellShapes, matrixMarkLayers, matrixMarksView } from './matrix-marks.ts'
 import { pointsStepsLimits, pointsStepsScene, pointsStepsScene3d, pointsStepsView } from './points-steps.ts'
 import { reachabilityClusters, reachabilityPlot } from './reachability.ts'
 import { stillOf, viewFor } from './registry.ts'
@@ -86,7 +95,7 @@ describe('the complex plane view', () => {
 
   it('draws the boundary, the locus, the zeros and the poles apart by stability', () => {
     const layers = complexPlaneLayers(plane)
-    expect(layers.map((l) => l.series[0]?.name)).toEqual(['imaginary axis', 'branch', 'zeros', 'poles (stable)'])
+    expect(layers.map((l) => l.series[0]?.name)).toEqual(['__imaginary axis', 'branch', 'zeros', 'poles (stable)'])
     expect(layers[3]?.series.map((s) => (s as Series).name)).toEqual(['poles (stable)', 'poles (unstable)'])
     const stable = layers[3]?.series[0] as { data: { value: number[] }[] }
     expect(stable.data).toHaveLength(2)
@@ -94,7 +103,7 @@ describe('the complex plane view', () => {
 
   it('draws the unit circle for a discrete-time system and keeps both axes to the same range', () => {
     const z = complexPlane({ domain: 'z', poles: [[0.5, 0.5]] })
-    expect(complexPlaneLayers(z)[0]?.series[0]?.name).toBe('unit circle')
+    expect(complexPlaneLayers(z)[0]?.series[0]?.name).toBe('__unit circle')
     const limits = complexPlaneLimits(z)
     expect(limits.real).toEqual(limits.imaginary)
     expect(limits.real[1]).toBeGreaterThanOrEqual(1)
@@ -236,5 +245,115 @@ describe('the registry of the second set of kinds', () => {
     expect(stillOf(simplexRecord({ shape: 'square', labels: ['a', 'b'] }))).toHaveProperty('series')
     expect(stillOf(reachabilityRecord({ reach: [null, 1] }))).toHaveProperty('series')
     expect(stillOf(sceneSteps({ steps: [] }))).toHaveProperty('children')
+  })
+})
+
+describe('the matrix marks', () => {
+  type Item = { renderItem: (p: { dataIndex: number }, api: unknown) => Record<string, unknown>; data: number[][] }
+  // A fake axis: column c centres at 100 + 20 c, row index y (bottom-up) at 200 - 10 y, cells 20 by 10.
+  const api = {
+    coord: (p: number[]): number[] => [100 + 20 * (p[0] ?? 0), 200 - 10 * (p[1] ?? 0)],
+    size: (): number[] => [20, 10],
+    value: (): number => 0,
+  }
+
+  it('draws a box on the cell edges in pixels, and a dashed boundary as a line', () => {
+    // A 3 by 4 matrix: row 1, and the boundary left of column 2.
+    const layers = matrixMarkLayers([{ row: 1 }, { cell: [0, 3] }, { colEdge: 2 }, { rowEdge: 2 }], 3, 4, 'light')
+    expect(layers).toHaveLength(1)
+    const series = layers[0]?.series[0] as unknown as Item
+    expect(series.data).toHaveLength(4)
+    // Row 1 of 3 is index 1 from the bottom: its top edge is at y = 1.5, its left edge at x = -0.5, 4 cells wide.
+    expect(series.renderItem({ dataIndex: 0 }, api)).toMatchObject({
+      type: 'rect',
+      shape: { x: 90, y: 185, width: 80, height: 10 },
+    })
+    expect(series.renderItem({ dataIndex: 1 }, api)).toMatchObject({ shape: { x: 150, y: 175, width: 20, height: 10 } })
+    expect(series.renderItem({ dataIndex: 2 }, api)).toMatchObject({
+      type: 'line',
+      shape: { x1: 130, x2: 130 },
+      style: { lineDash: [6, 4] },
+    })
+    expect(series.renderItem({ dataIndex: 3 }, api)).toMatchObject({ type: 'line', shape: { y1: 195, y2: 195 } })
+  })
+
+  it('drops marks outside the matrix and has no layer when nothing is left', () => {
+    expect(matrixMarkLayers([{ row: 5 }, { cell: [0, -1] }, { colEdge: 0 }], 3, 3, 'light')).toEqual([])
+    expect(cellShapes([], 2, 2, 'light').series).toEqual([])
+  })
+
+  it('writes the labels, names every column and puts the marks over the cells', () => {
+    const option = matrixMarksView(
+      [
+        [1, 2],
+        [3, 4],
+      ],
+      { rowLabels: ['u1', 'u2'], colLabels: ['a', 'b'], marks: [{ cell: [1, 0] }] },
+    ) as { xAxis: { data: string[]; axisLabel: { interval: number } }[]; series: { name?: string }[] }
+    expect(option.xAxis[0]?.data).toEqual(['a', 'b'])
+    expect(option.xAxis[0]?.axisLabel.interval).toBe(0)
+    expect(option.series.map((s) => s.name)).toEqual(['__matrix', '__colourbar', '__cellShapes'])
+  })
+})
+
+describe('the image grid figure', () => {
+  it('gives the tiles room: the given width, almost no padding, and a height for square tiles', () => {
+    const r = imageSteps({
+      method: 'm',
+      height: 2,
+      width: 2,
+      groups: ['a', 'b'],
+      steps: [
+        {
+          iteration: 0,
+          images: [
+            [
+              [0, 0, 0, 0],
+              [1, 1, 1, 1],
+            ],
+            [
+              [0, 1, 0, 1],
+              [1, 0, 1, 0],
+            ],
+          ],
+        },
+      ],
+    })
+    const fig = imageGridFigure(r, 440)
+    expect(fig.width).toBe(440)
+    expect(fig.padding.left).toBe(8)
+    // 2 images and a names' column of 2.2 tiles across, 2 groups down: a tile is (440 - 16) / 4.2 wide.
+    expect(fig.height).toBe(Math.round(424 / (4.2 / 2)) + 16)
+  })
+})
+
+describe('the fixed range of points', () => {
+  it('overrides the span of the steps, so the axes hold from the first step', () => {
+    const r = pointsSteps({
+      dims: 2,
+      range: [
+        [0, 10],
+        [-5, 5],
+      ],
+      steps: [{ step: 0, points: [[1, 1]] }],
+    })
+    expect(pointsStepsLimits(r)).toEqual([
+      [0, 10],
+      [-5, 5],
+    ])
+    const unit = pointsStepsScene3d(
+      pointsSteps({
+        dims: 3,
+        range: [
+          [0, 10],
+          [0, 10],
+          [0, 10],
+        ],
+        steps: [{ step: 0, points: [[5, 10, 0]] }],
+      }),
+      0,
+    )
+    const point = unit.items.find((i) => i.kind === 'point') as { at: readonly number[] }
+    expect(point.at).toEqual([0, 1, -1])
   })
 })

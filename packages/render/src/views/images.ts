@@ -12,10 +12,11 @@ import { lines } from '../charts/lines.ts'
 import { imageSeries } from '../charts/matrices.ts'
 import { cartesian, layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
+import { type Figure, figure } from '../figure/figure.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { parseColour } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
-import { short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
+import { ariaOf, short, type ViewFrames, type ViewOptions, viewFigure } from './_view.ts'
 
 /** Options of {@link imageFrames}. */
 export interface ImageViewOptions extends ViewOptions {
@@ -256,6 +257,35 @@ export function imageStepIndex(record: ImageSteps, step: number): number {
   )
 }
 
+// The padding of a grid of images: the axes are hidden, so the figure is nearly all picture.
+const GRID_PADDING = 8
+
+/**
+ * The figure that fits a grid of images: the given width, a height that makes the tiles square (the captions' strip
+ * and the names' column counted) and almost no padding.
+ *
+ * @param record - The record.
+ * @param width - The figure's width in pixels (default 440).
+ * @param columns - The most images drawn per group (default 12).
+ * @returns The figure.
+ * @example
+ * ```ts
+ * import { imageSteps } from 'mdml-engine/exposition'
+ * import { imageGridFigure } from 'mdml-render/views'
+ * const r = imageSteps({ method: 'm', height: 2, width: 2, groups: ['g'], steps: [{ iteration: 0, images: [[[0, 0, 0, 0], [1, 1, 1, 1]]] }] })
+ * imageGridFigure(r, 440).width // => 440
+ * ```
+ */
+export function imageGridFigure(record: ImageSteps, width = 440, columns?: number): Figure {
+  const inner = width - 2 * GRID_PADDING
+  const height = Math.round(inner / mosaicAspectOf(record, columnsOf(record, columns))) + 2 * GRID_PADDING
+  return figure({
+    width,
+    height,
+    padding: { top: GRID_PADDING, right: GRID_PADDING, bottom: GRID_PADDING, left: GRID_PADDING },
+  })
+}
+
 /**
  * The images of a record at a tape step as a grid: a row of small images per group with the group's name, and the
  * captions under the images when the step has them; no objective, no player.
@@ -273,6 +303,13 @@ export function imageStepIndex(record: ImageSteps, step: number): number {
  * ```
  */
 export function imageGridView(record: ImageSteps, step?: number, options: ImageViewOptions = {}): EChartsOption {
-  const frames = imageFrames(record, { ...options, objective: false })
-  return frames.option(step === undefined ? frames.count - 1 : imageStepIndex(record, step))
+  const frames = imageFrames(record, {
+    ...options,
+    objective: false,
+    figure: options.figure ?? imageGridFigure(record, 440, options.columns),
+  })
+  return {
+    ...frames.option(step === undefined ? frames.count - 1 : imageStepIndex(record, step)),
+    ...ariaOf(`Grid of images in ${record.groups.length} rows: ${record.groups.join(', ')}`),
+  }
 }

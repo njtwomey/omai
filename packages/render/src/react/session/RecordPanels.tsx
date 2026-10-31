@@ -7,7 +7,7 @@
 import type { Exposition, ExpositionKind } from 'mdml-engine/exposition'
 import { type ReactNode, useMemo } from 'react'
 import { figure } from '../../figure/figure.ts'
-import { imageAspect } from '../../views/images.ts'
+import { imageGridFigure } from '../../views/images.ts'
 import { stripAspect } from '../../views/strips.ts'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { ImageGridView } from '../views/images.tsx'
@@ -113,7 +113,7 @@ export function ImagesPanel(props: {
   const { panel, t } = props
   const { record, problem } = useRecord(props.live, t, 'imageSteps', panel.path, panel.args)
   const fig = useMemo(
-    () => (record === undefined ? FIG : figure({ width: WIDTH, aspect: imageAspect(record, panel.columns, false) })),
+    () => (record === undefined ? FIG : imageGridFigure(record, WIDTH, panel.columns)),
     [record, panel.columns],
   )
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />

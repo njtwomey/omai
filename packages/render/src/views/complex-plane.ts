@@ -9,10 +9,10 @@ import { type Complex, type ComplexPlane, isStablePole } from 'mdml-engine/expos
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
-import { spanOf, type ViewOptions, viewFigure } from './_view.ts'
+import { ariaOf, spanOf, type ViewOptions, viewFigure } from './_view.ts'
 
-// A cross, drawn as two strokes: the marker of a pole.
-const CROSS = 'path://M-1,-1L1,1M-1,1L1,-1'
+// A filled cross (an x), the marker of a pole: a path symbol is a filled shape, so strokes alone would not show.
+const CROSS = 'path://M-3,-2L-2,-3L0,-1L2,-3L3,-2L1,0L3,2L2,3L0,1L-2,3L-3,2L-1,0Z'
 
 /**
  * The axis limits of a complex plane: symmetric about the origin's side, wide enough for every point, the locus and
@@ -60,7 +60,16 @@ export function complexPlaneLayers(record: ComplexPlane, options: ViewOptions = 
     const t = Array.from({ length: 129 }, (_, i) => (2 * Math.PI * i) / 128)
     layers.push(
       lines(
-        [{ x: t.map(Math.cos), y: t.map(Math.sin), name: 'unit circle', colour: 'muted', width: 1.4, dash: 'dashed' }],
+        [
+          {
+            x: t.map(Math.cos),
+            y: t.map(Math.sin),
+            name: '__unit circle',
+            colour: 'muted',
+            width: 1.4,
+            dash: 'dashed',
+          },
+        ],
         {
           mode,
         },
@@ -68,7 +77,7 @@ export function complexPlaneLayers(record: ComplexPlane, options: ViewOptions = 
     )
   } else
     layers.push(
-      lines([{ x: [0, 0], y: imaginary, name: 'imaginary axis', colour: 'muted', width: 1.4, dash: 'dashed' }], {
+      lines([{ x: [0, 0], y: imaginary, name: '__imaginary axis', colour: 'muted', width: 1.4, dash: 'dashed' }], {
         mode,
       }),
     )
@@ -79,7 +88,7 @@ export function complexPlaneLayers(record: ComplexPlane, options: ViewOptions = 
           {
             x: b.path.map((p) => p[0]),
             y: b.path.map((p) => p[1]),
-            name: b.name ?? `branch ${k + 1}`,
+            name: b.name ?? (k === 0 ? 'locus' : `__locus ${k}`),
             colour: `tab${(k + 3) % 10}`,
             width: 1.2,
             opacity: 0.8,
@@ -153,5 +162,8 @@ export function complexPlaneView(record: ComplexPlane, options: ViewOptions = {}
       legend: true,
     }),
     animation: false,
+    ...ariaOf(
+      `Complex plane (${record.domain}): ${record.poles.length} poles, ${record.poles.filter((p) => !isStablePole(record.domain, p)).length} of them unstable, and ${(record.zeros ?? []).length} zeros`,
+    ),
   }
 }

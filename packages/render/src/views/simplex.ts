@@ -4,13 +4,14 @@
  * fixed points marked by their stability. `simplexPoint` is the map from a state to the plane that the figure uses.
  */
 
-import type { EChartsOption } from 'echarts'
+import type { EChartsOption, SeriesOption } from 'echarts'
 import type { FixedPointClass, Simplex } from 'mdml-engine/exposition'
 import { vectorField as arrows, type FieldArrow } from '../charts/fields.ts'
 import { lines } from '../charts/lines.ts'
-import { cartesian, type Layer } from '../charts/plot.ts'
+import { cartesian, type Layer, layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
-import { type ViewOptions, viewFigure } from './_view.ts'
+import { tokens } from '../theme/tokens.ts'
+import { ariaOf, type ViewOptions, viewFigure } from './_view.ts'
 import { FIXED_POINT_LOOK } from './fields.ts'
 
 const HEIGHT = Math.sqrt(3) / 2
@@ -79,33 +80,42 @@ export function simplexLayers(record: Simplex, options: ViewOptions = {}): Layer
       mode,
     }),
   ]
-  // The names sit outside the corners (for a square: beside the two axes it has, at the foot and the left).
-  const names =
+  // The names sit outside the corners (for a square: along the two axes it has, at the foot and the left).
+  const t = tokens(mode)
+  const names: { at: [number, number]; text: string; position: string; rotate?: number }[] =
     shape === 'triangle'
-      ? record.labels.map((text, i) => {
-          const c = VERTICES[i] as readonly [number, number]
-          const away: [number, number] = [c[0] - 0.5, c[1] - HEIGHT / 3]
-          const n = Math.hypot(away[0], away[1])
-          return { at: [c[0] + (0.1 * away[0]) / n, c[1] + (0.1 * away[1]) / n] as [number, number], text }
-        })
+      ? record.labels.map((text, i) => ({
+          at: VERTICES[i] as [number, number],
+          text,
+          position: (['left', 'right', 'top'] as const)[i] ?? 'top',
+        }))
       : [
-          { at: [0.5, -0.07] as [number, number], text: `${record.labels[0] ?? ''} →` },
-          { at: [-0.07, 0.5] as [number, number], text: `${record.labels[1] ?? ''} ↑` },
+          { at: [0.5, 0], text: `${record.labels[0] ?? ''} →`, position: 'bottom' },
+          { at: [0, 0.5], text: `${record.labels[1] ?? ''} →`, position: 'left', rotate: 90 },
         ]
   layers.push(
-    points(
-      [
-        {
-          x: names.map((n) => n.at[0]),
-          y: names.map((n) => n.at[1]),
-          labels: names.map((n) => n.text),
-          name: '__names',
-          size: 0.1,
-          symbol: 'none',
-        },
-      ],
-      { mode },
-    ),
+    layer([
+      {
+        type: 'scatter',
+        name: '__names',
+        silent: true,
+        symbolSize: 0,
+        data: names.map((n) => ({
+          value: n.at,
+          label: {
+            show: true,
+            formatter: n.text,
+            position: n.position,
+            distance: 8,
+            color: t.fg,
+            fontFamily: t.font,
+            fontSize: 12,
+            fontWeight: 600,
+            ...(n.rotate === undefined ? {} : { rotate: n.rotate }),
+          },
+        })),
+      } as unknown as SeriesOption,
+    ]),
   )
   if (record.field !== undefined) {
     const arrowList: FieldArrow[] = []
@@ -122,7 +132,7 @@ export function simplexLayers(record: Simplex, options: ViewOptions = {}): Layer
         magnitude: m,
       })
     }
-    layers.push(arrows(arrowList, { mode, colour: 'grid' }))
+    layers.push(arrows(arrowList, { mode, colour: 'muted' }))
   }
   const heads: { x: number; y: number }[] = []
   ;(record.paths ?? []).forEach((path, k) => {
@@ -192,5 +202,8 @@ export function simplexView(record: Simplex, options: ViewOptions = {}): ECharts
       legend: (record.paths?.length ?? 0) + (record.fixedPoints?.length ?? 0) > 0,
     }),
     animation: false,
+    ...ariaOf(
+      `${triangle ? 'Triangle' : 'Square'} of strategies ${record.labels.join(', ')}${record.caption === undefined ? '' : `: ${record.caption}`}, with ${(record.paths ?? []).length} paths`,
+    ),
   }
 }

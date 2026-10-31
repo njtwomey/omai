@@ -6,7 +6,7 @@
 import type { ImageSteps } from 'mdml-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
-import { imageAspect, imageFrames, imageGridView } from '../../views/images.ts'
+import { imageAspect, imageFrames, imageGridFigure, imageGridView } from '../../views/images.ts'
 import { FramesPlayer, type PlayerViewProps, RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'
 
 /**
@@ -44,8 +44,8 @@ export interface ImageGridViewProps extends RecordViewProps<ImageSteps> {
  */
 export function ImageGridView(props: ImageGridViewProps): ReactElement {
   const { record, columns, step } = props
-  const defaults = useMemo(() => ({ aspect: imageAspect(record, columns, false) }), [record, columns])
-  const figure = useViewFigure(props.figure, defaults)
+  const given = useMemo(() => props.figure ?? imageGridFigure(record, 440, columns), [props.figure, record, columns])
+  const figure = useViewFigure(given, {})
   const build = useCallback(
     (fig: Figure) => imageGridView(record, step, { figure: fig, ...(columns === undefined ? {} : { columns }) }),
     [record, step, columns],

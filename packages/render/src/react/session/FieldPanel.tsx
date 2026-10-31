@@ -46,7 +46,7 @@ export function FieldPanel(props: {
         mode,
         style: panel.style ?? 'arrows',
         // Under a trajectory the field recedes.
-        ...(over === undefined ? {} : { colour: 'grid' }),
+        ...(over === undefined ? {} : { colour: 'muted' }),
       }),
       ...(over === undefined
         ? []

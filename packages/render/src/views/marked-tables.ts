@@ -159,5 +159,8 @@ export function markedTableScene(record: MarkedTable): Scene {
   const rules = Array.from({ length: body.length + 2 }, (_, r) =>
     line(0, top + ROW * r, width, top + ROW * r, { stroke: 'grid', strokeWidth: r === 1 ? 1.5 : 0.8 }),
   )
-  return scene(width, height, [...children, ...tints, ...rules, ...words, ...outlines])
+  const title =
+    record.caption ??
+    `Table of ${body.length} rows and ${record.columns.length} columns${record.cells.length === 0 ? '' : `: ${record.columns.join(', ')}`}`
+  return scene(width, height, [...children, ...tints, ...rules, ...words, ...outlines], { title })
 }
