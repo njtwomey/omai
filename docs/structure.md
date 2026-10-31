@@ -1178,6 +1178,17 @@ in it (`checkPrimitive`).
   `degrootAlgorithm` (DeGroot and Friedkin-Johnsen with stubbornness) with `degrootConsensus` and
   `friedkinJohnsenEquilibrium`, and `boundedConfidenceAlgorithm` (Hegselmann-Krause on a graph).
 - `_run.ts`: the state codec, seed resolution and argument checks the stepped processes share.
+- `percolation.ts`: `percolationAlgorithm` (site or bond, any graph, one site or bond per step, clusters by union-find,
+  a spanning cluster between two sides), `sitePercolationAlgorithm`/`bondPercolationAlgorithm` on a square lattice,
+  `latticeSides`, `spanningCluster`, `percolationSweep`, `spanningThresholds` (finite-size scaling),
+  `PERCOLATION_THRESHOLDS` (square, triangular, honeycomb, cubic), `erdosRenyiGiantFraction`, `giantComponentFraction`.
+  `structures.ts`'s `UnionFind` gained `clone`, `toJSON` and `fromJSON` for this.
+- `growth.ts`: networks grown a step at a time, with their known results: `edgeByEdgeAlgorithm` (Erdos-Renyi, with
+  `erdosRenyiConnectivityEdges`), `preferentialAttachmentAlgorithm` (preferential or uniform, with
+  `barabasiAlbertDegreeLaw`, `uniformAttachmentDegreeLaw`), `rewiringAlgorithm` (Watts-Strogatz, with
+  `wattsStrogatzClustering`, `ringLatticePathLength`, `smallWorldSweep`), `blockGrowthAlgorithm` (with
+  `blockModelExpectedEdges`), `configurationModelGraph`, `growthGraph`, `unrankPair`. `measures.ts` gained
+  `averageShortestPathLength`.
 
 The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` predates this domain and works on
 string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `maximalCliques` can later delegate to
