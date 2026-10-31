@@ -162,6 +162,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/numerics/special': () => import('mdml-engine/numerics/special'),
   'mdml-engine/optim': () => import('mdml-engine/optim'),
   'mdml-engine/optim/minimize': () => import('mdml-engine/optim/minimize'),
+  'mdml-engine/patterns': () => import('mdml-engine/patterns'),
   'mdml-engine/pgm': () => import('mdml-engine/pgm'),
   'mdml-engine/pgm/causal': () => import('mdml-engine/pgm/causal'),
   'mdml-engine/pgm/inference': () => import('mdml-engine/pgm/inference'),

@@ -3324,6 +3324,14 @@
       "cases": 9
     },
     {
+      "fixture": "patterns/subgroups.json",
+      "source": "oracle/cases/patterns/subgroups.py",
+      "reference": {
+        "pysubgroup": "0.8.0"
+      },
+      "cases": 12
+    },
+    {
       "fixture": "pgm/causal/discovery.json",
       "source": "oracle/cases/pgm/causal/discovery.py",
       "reference": {

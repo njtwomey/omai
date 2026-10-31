@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 55 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 57 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -421,6 +421,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `anomaly`     | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules              |
 | `sketches`    | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list |
 | `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
+| `patterns`    | pattern mining: Apriori, FP-growth and Eclat (identical itemsets and counts), closed and maximal itemsets, association rules with their measures, PrefixSpan and GSP with gap constraints, subgroup discovery by quality function with beam, exhaustive, CN2-SD and Apriori-SD search |
+| `rules`       | rule learning on the `learn` contract: CN2 (ordered and unordered), PRISM, RIPPER and IREP, OneR and decision tables, CORELS-style certifiably optimal and Bayesian rule lists, the rule, coverage and quality-measure representation, rules from tree paths |
 
 ### 4.1 `base/`
 
@@ -4065,6 +4067,35 @@ truncation (entry times), case weights, time-varying covariates, interval and le
 Grambsch-Therneau proportional-hazards test.
 built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
 `trace`, `space`, `random`
+
+### 4.56 `patterns/`: pattern mining (mlxtend, SPMF, pysubgroup)
+
+`itemsets.ts` mines frequent itemsets from baskets of item ids three ways that return the same itemsets with the same
+counts on every input: Apriori (`apriori`, `aprioriAlgorithm`: one level per step, candidates joined from a shared
+prefix and pruned by the downward closure, with the joined, pruned and counted candidates on the tape), FP-growth
+(`fpGrowth`, `fpGrowthAlgorithm`: one transaction inserted into the FP-tree per step, then one conditional tree mined
+per step, the pending conditional pattern bases in the state) and Eclat (`eclat`, `eclatAlgorithm`: one prefix class
+per step, tid-lists intersected). `exhaustiveItemsets` enumerates every subset and is the reference the three are
+tested against (property tests on random baskets, with and without `maxLength`); `closedItemsets` and `maximalItemsets`
+filter a complete result. `association-rules.ts` has `ruleMeasures` (support, confidence, lift, leverage, conviction and
+Zhang's metric from the four counts, mlxtend's definitions) and `associationRules` (every split of every frequent
+itemset, filtered and ranked by any measure). `sequences.ts` mines sequences of itemsets: `prefixSpanAlgorithm` (one
+prefix extension per step over projected databases that remember the earliest match) and `gspAlgorithm` (one level per
+step, the join of the paper, pruned by contiguous subsequences, with minimum and maximum gap and maximum span),
+`containsPattern`, `exhaustivePatterns` as the reference (PrefixSpan and GSP equal it on random sequences, and GSP equals
+it under random gap constraints). `subgroups.ts` is subgroup discovery: `subgroupQuality` (the Klösgen family with
+weighted relative accuracy, relative accuracy, lift, signed chi-squared), `columnSelectors` (nominal values and
+equal-frequency numeric cuts), `subgroupProblem` and `discoverSubgroups` (the conjunction language of
+`search/refinement.ts` searched by beam or exhaustively with the optimistic estimate of WRAcc; binary or numeric
+targets), and the covering variants `cn2SdAlgorithm` (beam search under example weights that fall for covered
+positives) and `aprioriSdAlgorithm` (candidate levels, then weighted selection), one rule per step. The planted
+generator is `plantedTransactions` of `datasets`.
+
+oracle: pysubgroup (`StandardQF(a)` for a = 0, 0.5, 1 and `StandardQFNumeric`, DFS with optimistic estimates, top-k
+qualities); mlxtend and SPMF are not installed in the oracle group, so the itemset and sequence miners are checked by
+exact agreement with exhaustive enumeration and by the worked examples of the Apriori and PrefixSpan papers. TODO:
+planted sequences, SD-Map, interval selectors for numeric columns, exceptional model mining, frequent subgraphs.
+built from: `search` (refinement), `trace`, `base`
 
 ## 5. Methods, exposition records and views
 
