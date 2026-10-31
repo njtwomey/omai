@@ -3024,6 +3024,11 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     `FieldAwareFm`, `DeepFm`, `WideAndDeep` over `{ids, values}` feature rows; `NeuralCF` (NeuMF: GMF and MLP branches,
     modes), `TwoTower` (with `embeddingTower`, in-batch logits, `logQCorrection`), `CrossNetwork` (DCN), `dotInteraction`
     and `Dlrm`. The sequential recommenders are the existing `GRU` and `TransformerLM` (no separate block).
+  - `flow.ts`: `CNF` (FFJORD continuous normalising flow: the state and the accumulated Jacobian trace integrated
+    together; exact or Hutchinson trace, Rademacher or Gaussian noise; `logProb`, `sample` by backward integration) and
+    `standardNormalLogProb`.
+  - `mechanics.ts`: `HamiltonianNet` (a network for H(q, p), the field its symplectic gradient, energy conserved
+    along the flow) and `LagrangianNet` (a network for L(q, qdot), accelerations from the Euler-Lagrange equation).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
