@@ -6,6 +6,7 @@ import {
   goalReached,
   goalReward,
   makeReachGoal,
+  type ReachGoalState,
   reachGoalOptimalSteps,
 } from './goal-reaching.ts'
 
@@ -36,7 +37,7 @@ describe('the reaching task', () => {
     expect(reachGoalOptimalSteps([0.5, 0.5], [0.8, 0.5], options)).toBe(3)
     expect(reachGoalOptimalSteps([0.5, 0.5], [0.5, 0.5], options)).toBe(0)
     const env = makeReachGoal(options)
-    const state0 = { position: [0.2, 0.3] as const, goal: [0.7, 0.9] as const, t: 0 }
+    const state0: ReachGoalState = { position: [0.2, 0.3], goal: [0.7, 0.9], t: 0 }
     let s = state0
     let steps = 0
     while (!goalReached(s.position, s.goal, 0.05) && steps < 50) {
