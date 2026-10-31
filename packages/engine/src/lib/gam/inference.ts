@@ -28,6 +28,8 @@ export interface GamFitContext {
   /** Whether the scale was estimated (so tests use `t` and `F` references instead of the normal and chi-square). */
   readonly scaleEstimated: boolean
   readonly logLambda: readonly number[]
+  /** `X'WX` at the fit (Fisher weights), `[p, p]` row-major. */
+  readonly information: Float64Array
   /** The Bayesian covariance `scale (X'WX + S)^(-1)`, `[p, p]` row-major. */
   readonly vp: Float64Array
   /** The frequentist covariance `scale (X'WX + S)^(-1) X'WX (X'WX + S)^(-1)`. */
@@ -97,6 +99,7 @@ export function fitContext(problem: GamProblem, state: GamState): GamFitContext 
     scale,
     scaleEstimated: problem.knownScale === undefined,
     logLambda: state.logLambda,
+    information: g.xtwx,
     vp,
     vf,
     edf,

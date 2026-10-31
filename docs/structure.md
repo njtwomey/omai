@@ -4125,6 +4125,15 @@ coefficients, the weights differentiated in the linear predictor), and a Hessian
 converged fit minimised with the simplex. Its state is a `GamState` plus the gradient norm, so inference and the
 estimators (`gam.with({ iteration: 'outer' })`) apply to it unchanged.
 
+`selection.ts` is model selection: `gamInformation` (log-likelihood, AIC and BIC with the effective degrees of freedom
+corrected for smoothing-parameter uncertainty by `smoothingCorrection`, the covariance widened by the inverse Hessian of
+the REML score, and the conditional AIC that takes the smoothing parameters as known), `compareGams` (the approximate F
+or chi-square test between nested fits), and the double penalty (`s(0, { select: true })` in `terms.ts` adds a penalty
+on the null space of the smoothness penalty so the criterion can shrink a term out). `diagnostics.ts` is `gam.check`:
+`gamResiduals` (deviance, Pearson, working, response), `qqData` (QQ data with a band from simulated datasets),
+`residualsVsFitted`, `kIndex` (the basis-dimension check on residuals ordered by the covariate, with a shuffle
+p-value), `concurvity` (worst, observed and estimate), `cooksDistance`.
+
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
 (a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,

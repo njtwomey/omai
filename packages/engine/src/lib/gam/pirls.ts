@@ -92,6 +92,8 @@ export interface GamProblem {
   readonly link: Link
   /** The scale when it is known. */
   readonly knownScale: number | undefined
+  /** The covariates `[n, d]` the problem was built on (for diagnostics that need them). */
+  readonly covariates?: Float64Array
 }
 
 const KNOWN_SCALE = new Set(['binomial', 'poisson', 'negativeBinomial'])
@@ -129,6 +131,7 @@ export function gamProblem(x: TensorLike, y: TensorLike, hyper: GamHyper, weight
     family: hyper.family,
     link,
     knownScale: hyper.scale ?? (KNOWN_SCALE.has(hyper.family.name) ? 1 : undefined),
+    covariates: Float64Array.from(m.data),
   }
 }
 
