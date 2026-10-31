@@ -532,6 +532,14 @@
       "cases": 9
     },
     {
+      "fixture": "embedding/glove.json",
+      "source": "oracle/cases/embedding/glove.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
       "fixture": "ensembles/adaboost.json",
       "source": "oracle/cases/ensembles/adaboost.py",
       "reference": {

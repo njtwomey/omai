@@ -48,6 +48,7 @@ import { makeClassification, makeMultilabelClassification } from './make-classif
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
 import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers.ts'
+import { analogyCorpus, linkageTables, plantedRelations } from './planted-embeddings.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
 import {
@@ -129,6 +130,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   abTest,
   additionTask,
   additiveModel,
+  analogyCorpus,
   anisotropicBlobs,
   antiderivativeOperator,
   arma,
@@ -179,6 +181,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   labellingFunctions,
   linearOutliers,
   linearScm,
+  linkageTables,
   loggedBandit,
   lowRankRatings,
   makeClassification,
@@ -197,6 +200,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   panelEffects,
   parityTask,
   piecewiseLinear,
+  plantedRelations,
   plantedSeries,
   plantedTransactions,
   poissonProcess,
@@ -365,7 +369,9 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['coupledSeries', 'Coupled series'],
   ]),
   ...g('text', [
+    ['analogyCorpus', 'Planted analogies and clusters'],
     ['driftingTopics', 'Drifting topics'],
+    ['linkageTables', 'Two tables of person records'],
     ['naiveBayesCorpus', 'Labelled corpus (naive Bayes)'],
     ['nearDuplicateCorpus', 'Near-duplicate documents'],
     ['topicCorpus', 'Topic corpus (LDA)'],
@@ -395,6 +401,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['contextualSbm', 'Contextual stochastic block model'],
     ['graphFamilies', 'Random graph families'],
     ['kinshipTriples', 'Kinship triples'],
+    ['plantedRelations', 'Planted relation patterns'],
   ]),
   ...g('interactions', [
     ['clickLogs', 'Click logs'],

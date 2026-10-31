@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 55 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 56 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -421,6 +421,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `anomaly`     | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules              |
 | `sketches`    | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list |
 | `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
+| `embedding`   | embeddings learned from data: word2vec (skip-gram, CBOW, negative sampling, hierarchical softmax), fastText subwords, GloVe, PPMI with SVD, knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE) with filtered ranking, and analogy and similarity evaluation, each loss a smooth problem with the optimiser a slot |
 
 ### 4.1 `base/`
 
@@ -4137,6 +4138,35 @@ Grambsch-Therneau proportional-hazards test.
 built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
 `trace`, `space`, `random`
 
+### 4.56 `embedding/`: embeddings learned from data (word2vec, fastText, GloVe, knowledge-graph embeddings)
+
+oracle: numpy (the GloVe loss and gradient from the definition, `oracle/cases/embedding/glove.py`); the PPMI and SVD steps
+are `text`'s and are checked there against numpy and gensim's `KeyedVectors`. gensim and torch train stochastically and
+differently, so the trainers are checked on planted truth instead: a gradient check of each analytic update against
+autodiff, the loss decreasing under several solvers, and analogies and clusters recovered on `analogyCorpus`.
+
+A model is an objective and the optimiser is a slot. Each trainer builds a `SmoothProblem` (`word2vecProblem`,
+`gloveProblem`; the examples, with their negatives or Huffman paths, are drawn once from a key, so the loss is a fixed
+smooth function of the matrices and the `gradient` mode can draw batches of examples), and its table of solvers
+(`word2vecSolvers`, `gloveSolvers`, built by `solversWith`) holds the library's generic solvers (gradient descent,
+conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent, the stochastic `gradient` mode with its optimiser,
+schedule and batch) beside the model's own algorithm as a named mode: word2vec's plain SGD with a linearly decaying rate
+touching only the rows involved (`word2vecSgd`), GloVe's AdaGrad (`gloveAdaGrad`). The named modes are `Algorithm`s with
+serialisable states; their per-example updates are the exact gradient of the problem's loss, which the tests check
+against autodiff.
+- `word2vec.ts`: `word2vecVocabulary`, `word2vecExamples` (skip-gram pairs or CBOW windows, a dynamic window, frequent
+  word subsampling, unigram^0.75 negatives), `word2vecProblem` (negative sampling, or the hierarchical softmax over a
+  Huffman tree through `losses`' `hierarchicalSoftmax`; fastText's hashed character n-gram rows as an input option),
+  `word2vecSgdAlgorithm`, `word2vecSolvers`, `trainWord2vec`, `word2vecModel`, `subwordVector` (a vector for an unseen
+  word from its n-grams), `solversWith` (any model's own mode beside the generic solvers).
+- `glove.ts`: `gloveProblem` (weighted least squares on the log of the harmonic-weighted co-occurrences),
+  `gloveAdaGradAlgorithm`, `gloveSolvers`, `trainGlove`, `gloveModel` (word vector `w + w~`).
+- `count-based.ts`: `ppmiEmbedding`, the closed-form route (windowed counts, shifted PPMI, truncated SVD).
+- `evaluation.ts`: `analogyAccuracy` (3CosAdd or 3CosMul, optionally over a candidate set), `similarityCorrelation`
+  (Spearman against judged similarity), `neighbourPurity`.
+built from: `losses`, `optim` (`smoothSolvers`), `text` (co-occurrence, PPMI, SVD, analogies, fastText hashing), `stats`,
+`trace`, `random`, `space`, `tensor`
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
@@ -5313,6 +5343,10 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage), tagged sentences
   from a tag HMM with its tables as truth (`taggedCorpus`), and typed words with the intended ones through an edit
   channel (`typoPairs`, for noisy-channel spelling correction).
+- `planted-embeddings.ts`: `analogyCorpus` (target words that combine a concept and an attribute, so the parallelogram
+  analogies and the concept clusters are planted and listed in the truth), `plantedRelations` (a knowledge graph whose
+  relations are symmetric, inverse, a directed cycle and a composition, with the inferable facts held out as a test set),
+  `linkageTables` (two tables of person records, the second with typos, and the matching pairs).
 - `transactions.ts`: baskets with planted itemsets (`plantedTransactions`; the exact `expectedSupport` of any itemset).
 - `captions.ts`: scenes of coloured shapes with template captions and questions (`captionedShapes`; a paired
   image-text schema in `data/schema/` is still to do, the text sits in the truth).
