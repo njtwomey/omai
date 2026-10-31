@@ -1,6 +1,6 @@
 import { bool, box, choice, dict, int, real, tuple, union } from 'mdml-engine/space'
 import { describe, expect, it } from 'vitest'
-import { settleValue, spaceControls, valueAt, withValueAt } from './space-controls.ts'
+import { greyOptions, settleValue, spaceControls, valueAt, withValueAt } from './space-controls.ts'
 
 const space = dict({
   model: choice(['linear', 'tree'], { label: 'model' }),
@@ -96,5 +96,28 @@ describe('settling values', () => {
     const v = withValueAt(s, [[0, 0], 1], [0, 1], 0.5)
     expect(v).toEqual([[0, 0.5], 1])
     expect(valueAt(v, [0, 1])).toBe(0.5)
+  })
+})
+
+describe('greyOptions', () => {
+  it('leaves the options as they are without a rule', () => {
+    expect(greyOptions(['a', 'b'], ['x'], undefined)).toEqual(['a', 'b'])
+  })
+
+  it('disables the inadmissible options with the reason as their description', () => {
+    const rule = {
+      admissible: (path: readonly (string | number)[], o: string | number | boolean) =>
+        !(path[0] === 'solver' && o === 'lars'),
+      why: (_path: readonly (string | number)[], o: string | number | boolean) => `${o} needs an l1 penalty`,
+    }
+    expect(greyOptions(['lars', 'lbfgs'], ['solver', 'kind'], rule)).toEqual([
+      { value: 'lars', disabled: true, description: 'lars needs an l1 penalty' },
+      'lbfgs',
+    ])
+    expect(greyOptions(['lars'], ['other'], rule)).toEqual(['lars'])
+    expect(greyOptions(['x'], [], { admissible: () => false })[0]).toMatchObject({
+      disabled: true,
+      description: 'not available with the current settings',
+    })
   })
 })

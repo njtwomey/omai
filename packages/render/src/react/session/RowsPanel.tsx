@@ -19,7 +19,16 @@ import { Chart } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
-import type { Panel } from './layout.ts'
+import type { Panel, RowSource } from './layout.ts'
+import {
+  channelFocus,
+  channelLayers,
+  channelMarks,
+  channelNumbers,
+  channelRegions,
+  isProbed,
+  readChannel,
+} from './overlays.ts'
 import type { LiveSession } from './useSession.ts'
 
 /** The figure every session panel is drawn at. */
@@ -64,6 +73,49 @@ export function useRun(live: LiveSession<any, any>): Run {
   return useMemo(() => live.session.run(), [live.session, live.version])
 }
 
+/** The channels of the rows panel (see the layout's `rows` panel): each read from a path at the viewed step. */
+export type RowChannelSpecs = Pick<Extract<Panel, { kind: 'rows' }>, 'values' | 'size' | 'marks' | 'regions' | 'focus'>
+
+/**
+ * One channel of the rows panel at a step, never throwing: a derived path is probed (once per step), a tensor path is
+ * read from the tape (and re-read as it grows).
+ *
+ * @param live - The session.
+ * @param t - The step.
+ * @param source - The path and arguments (`undefined` reads nothing).
+ * @returns The value or the error.
+ */
+export function useChannel(
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  live: LiveSession<any, any>,
+  t: number,
+  source: RowSource | undefined,
+): Probed {
+  const argsKey = JSON.stringify(source?.args ?? null)
+  const version = isProbed(live.session, source) ? 0 : live.version
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the path and arguments, not the source object
+  return useMemo(() => {
+    if (source === undefined) return {}
+    try {
+      return { value: readChannel(live.session, t, source) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  }, [live.session, t, source?.path, argsKey, version])
+}
+
+// Whether a column looks like class labels: a few distinct whole numbers.
+function looksLikeClasses(ys: ArrayLike<number>): boolean {
+  const seen = new Set<number>()
+  for (let i = 0; i < ys.length; i++) {
+    const v = ys[i] as number
+    if (!Number.isInteger(v)) return false
+    seen.add(v)
+    if (seen.size > 12) return false
+  }
+  return true
+}
+
 /** The one-line note a panel shows in its frame when its probe failed. */
 export const Note = (props: { readonly children: ReactNode }): ReactNode => (
   <span className="text-xs text-muted">{props.children}</span>
@@ -84,8 +136,10 @@ export function RowsPanel(props: {
   readonly t: number
   readonly x: Tensor
   readonly y?: Tensor
+  /** The per-row channels: values, size, marks, regions and focus. */
+  readonly channels?: RowChannelSpecs
 }): ReactNode {
-  const { overlay, live, t, x, y } = props
+  const { overlay, live, t, x, y, channels = {} } = props
   const mode = useColourMode()
   const withCentres = overlay === 'assignments' || overlay === 'components'
   const byExpert = overlay === 'experts'
@@ -99,6 +153,12 @@ export function RowsPanel(props: {
   // A predictive band: the mean and the band's edges per training row (a Bayesian model's posterior predictive).
   const predictive = useProbe(live, t, overlay === 'band' ? 'model/predictive' : undefined)
   const surface = useProbe(live, t, overlay === 'surface' ? 'model/decision-surface' : undefined)
+  const valuesIn = useChannel(live, t, channels.values)
+  const sizeIn = useChannel(live, t, channels.size)
+  const marksIn = useChannel(live, t, channels.marks)
+  const regionsIn = useChannel(live, t, channels.regions)
+  const focusIn = useChannel(live, t, channels.focus)
+  const hasChannels = Object.values(channels).some((c) => c !== undefined)
   const xs = useMemo(() => toFlat(x), [x])
   const ys = useMemo(() => (y === undefined ? undefined : toFlat(y)), [y])
   const d = x.shape[1] ?? 1
@@ -109,7 +169,13 @@ export function RowsPanel(props: {
     [xs, ys, n, d],
   )
   const labels = assignments.value as number[] | undefined
-  const classes = overlay === 'surface' && ys !== undefined ? Array.from(ys) : undefined
+  const classes = useMemo(
+    () =>
+      ys !== undefined && ((overlay === 'surface' && d > 1) || (hasChannels && d > 1 && looksLikeClasses(ys)))
+        ? Array.from(ys)
+        : undefined,
+    [ys, overlay, d, hasChannels],
+  )
   const groups = labels ?? classes
   const centreRows = centres.value as number[][] | undefined
   const covs = (params.value as { readonly covariances?: number[][][] } | undefined)?.covariances
@@ -118,9 +184,69 @@ export function RowsPanel(props: {
     | undefined
   const fitted = (fit.value as number[] | undefined) ?? interval?.mean
   const expertRows = (expertLines.value as { readonly lines?: number[][] } | undefined)?.lines
-  const error = [assignments, centres, params, fit, expertLines, predictive, surface].find(
-    (p) => p.error !== undefined,
-  )?.error
+  const error = [
+    assignments,
+    centres,
+    params,
+    fit,
+    expertLines,
+    predictive,
+    surface,
+    valuesIn,
+    sizeIn,
+    marksIn,
+    regionsIn,
+    focusIn,
+  ].find((p) => p.error !== undefined)?.error
+  // The channels' layers: regions beneath, the rows coloured and sized, the focus and the marks over them.
+  const extra = useMemo(() => {
+    if (!hasChannels || d < 2 || byExpert) return undefined
+    const numbers = channelNumbers(valuesIn.value)
+    const sizes = channelNumbers(sizeIn.value)
+    const categories = channelMarks(marksIn.value, n)
+    const focus = channelFocus(focusIn.value)
+    return channelLayers({
+      mode,
+      x: rowX,
+      y: rowY,
+      ...(groups === undefined ? {} : { groups }),
+      ...(numbers === undefined
+        ? {}
+        : {
+            values: {
+              numbers,
+              diverging: channels.values?.diverging === true,
+              ...(channels.values?.range === undefined ? {} : { range: channels.values.range }),
+              ...(channels.values?.label === undefined ? {} : { label: channels.values.label }),
+            },
+          }),
+      ...(sizes === undefined
+        ? {}
+        : { sizes: { numbers: sizes, ...(channels.size?.range === undefined ? {} : { range: channels.size.range }) } }),
+      ...(categories === undefined
+        ? {}
+        : { marks: { categories, ...(channels.marks?.names === undefined ? {} : { names: channels.marks.names }) } }),
+      regions: channelRegions(regionsIn.value),
+      ...(focus === undefined ? {} : { focus }),
+    })
+  }, [
+    hasChannels,
+    d,
+    byExpert,
+    n,
+    mode,
+    rowX,
+    rowY,
+    groups,
+    valuesIn.value,
+    sizeIn.value,
+    marksIn.value,
+    regionsIn.value,
+    focusIn.value,
+    channels.values,
+    channels.size,
+    channels.marks,
+  ])
   const option = useMemo(() => {
     const layers: Layer[] =
       byExpert && labels !== undefined
@@ -147,6 +273,11 @@ export function RowsPanel(props: {
             },
           )
         : [points([{ x: rowX, y: rowY, ...(groups === undefined ? {} : { groups }), opacity: 0.7 }], { mode })]
+    if (extra !== undefined) {
+      if (extra.rows !== undefined) layers.splice(0, 1, extra.rows)
+      layers.unshift(...extra.under)
+      layers.push(...extra.over)
+    }
     if (centreRows !== undefined)
       layers.push(
         points(
@@ -241,13 +372,15 @@ export function RowsPanel(props: {
         )
     }
     return { ...cartesian(layers, { mode, figure: FIG }), animation: false }
-  }, [rowX, rowY, groups, labels, byExpert, expertRows, centreRows, covs, fitted, interval, d, mode])
+  }, [rowX, rowY, groups, labels, byExpert, expertRows, centreRows, covs, fitted, interval, d, mode, extra])
   // The decision surface is an exposition view (its own frame); the rest is one chart in this panel's frame.
   if (surface.value !== undefined)
     return (
       <ExpositionView
         record={surface.value as never}
         figure={FIG}
+        title={props.title}
+        filename={props.filename}
         points={rowsOf(xs, d)}
         {...(groups === undefined ? {} : { labels: groups })}
       />

@@ -179,6 +179,86 @@ export function band(bands: readonly Band[], options: LineOptions = {}): Layer {
   })
 }
 
+/** A filled polygon in data coordinates (a rule's box, a leaf's region, an ellipse). */
+export interface Polygon {
+  /** The vertices, in order; the polygon closes itself. */
+  readonly points: readonly (readonly [number, number])[]
+  readonly name?: string
+  readonly colour?: string
+  /** Fill opacity (default 0.15). */
+  readonly opacity?: number
+  /** Stroke the outline (default true). */
+  readonly edges?: boolean
+  readonly dash?: 'solid' | 'dashed' | 'dotted'
+}
+
+/**
+ * Polygons as a layer: each a filled shape with an optional outline, in data coordinates, so a region of the plane (a
+ * box, a leaf, an ellipse) combines with any other layer.
+ *
+ * @param shapes - The polygons.
+ * @param options - Colour mode and colour offset.
+ * @returns The layer.
+ * @example
+ * ```ts
+ * import { polygons } from 'mdml-render/charts'
+ * polygons([{ points: [[0, 0], [2, 0], [1, 3]] }]).extent // => { x: [0, 2], y: [0, 3] }
+ * ```
+ */
+export function polygons(shapes: readonly Polygon[], options: LineOptions = {}): Layer {
+  const mode = options.mode ?? 'light'
+  const offset = options.colourOffset ?? 0
+  const all: Pt[] = []
+  const series: SeriesOption[] = []
+  shapes.forEach((s, i) => {
+    const pts = s.points.filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))
+    if (pts.length < 3) return
+    all.push(...pts)
+    const colour = colourFor(s.colour, mode, offset + i)
+    const opacity = s.opacity ?? 0.15
+    series.push({
+      type: 'custom',
+      name: s.name ?? `__polygon${i}`,
+      data: [[0]],
+      renderItem: (_: unknown, api: PolygonApi) => {
+        const shape = { points: pts.map((p) => api.coord(p)) }
+        return {
+          type: 'group',
+          silent: true,
+          children: [
+            { type: 'polygon', shape, style: { fill: colour, opacity, stroke: 'none' } },
+            ...(s.edges === false
+              ? []
+              : [
+                  {
+                    type: 'polygon',
+                    shape,
+                    style: {
+                      fill: 'none',
+                      stroke: colour,
+                      lineWidth: 1.5,
+                      ...(s.dash === undefined || s.dash === 'solid'
+                        ? {}
+                        : { lineDash: s.dash === 'dashed' ? [5, 4] : [2, 3] }),
+                    },
+                  },
+                ]),
+          ],
+        }
+      },
+      color: colour,
+      clip: true,
+      silent: true,
+      z: 1,
+      tooltip: { show: false },
+    } as unknown as SeriesOption)
+  })
+  return layer(
+    series,
+    all.length > 0 ? { x: extentOf(all.map((p) => p[0])) ?? [0, 1], y: extentOf(all.map((p) => p[1])) ?? [0, 1] } : {},
+  )
+}
+
 /**
  * Curves from a tensor: a 1-D tensor is one curve against its index, a tensor of shape `[n, 2]` (n other than 2) is
  * points `(x, y)`, and any other `[k, n]` tensor is k curves against the index.

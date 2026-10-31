@@ -9,6 +9,43 @@ import type { Json } from 'mdml-engine/base'
 import type { MatrixMark } from '../../views/matrix-marks.ts'
 
 /**
+ * Where a channel of the rows panel is read at the viewed step: a derived path (probed with `args`) or a tensor path of
+ * the tape (the latest full value at or before the step).
+ */
+export interface RowSource {
+  readonly path: string
+  readonly args?: Json
+}
+
+/** A line the estimates are judged against: a constant (`value`) or a path of the tape (`path`), drawn dashed. */
+export interface TruthLine {
+  readonly value?: number
+  readonly path?: string
+  readonly label?: string
+}
+
+/** A band around a scalar path, between two other paths (a metric with its lower and upper bounds). */
+export interface BandSpec {
+  readonly path: string
+  readonly lower: string
+  readonly upper: string
+  readonly name?: string
+}
+
+/** A reference slope for a log-log chart, drawn through the first curve's first point (`through` overrides). */
+export interface ReferenceSlope {
+  readonly slope: number
+  readonly label?: string
+  readonly through?: readonly [number, number]
+}
+
+/** Events of the tape as vertical marks: the steps at which a scalar path was logged with a non-zero value. */
+export interface EventMarks {
+  readonly path: string
+  readonly label?: string
+}
+
+/**
  * One panel of a layout. Panels of the tape (`curves`, `series`, `sweep`) scrub the cursor on click; panels of a step
  * (`rows`, `probe`, `tensor`, `trajectory`, `field`, `strip`, `table`, `images`, `graph`, `points`, `scene`) follow it.
  */
@@ -25,12 +62,54 @@ export type Panel =
        * the mixture's own line, bolder (`model/predictions`).
        */
       readonly overlay?: 'assignments' | 'components' | 'fit' | 'band' | 'surface' | 'experts'
+      /**
+       * A number per row as colour along a ramp, with a colour bar (`diverging`: a ramp centred on zero, for weights,
+       * attributions and residuals; `range` fixes the ends; `label` titles the bar). The class shows as marker shape.
+       */
+      readonly values?: RowSource & {
+        readonly label?: string
+        readonly diverging?: boolean
+        readonly range?: readonly [number, number]
+      }
+      /** A number per row as marker size (`range` in pixels, default 4 to 16). */
+      readonly size?: RowSource & { readonly range?: readonly [number, number] }
+      /**
+       * A category per row (`null` for none) or `{ sets: { name: [rows] } }`, each category a hollow marker shape named
+       * in the legend (`names` renames): labelled against unlabelled, flagged, chosen at step k, a witness.
+       */
+      readonly marks?: RowSource & { readonly names?: Readonly<Record<string, string>> }
+      /** Regions of the plane: boxes (`{ lower, upper }`, open sides `null`) or ellipses (`{ centre, radii, angle }`). */
+      readonly regions?: RowSource
+      /**
+       * One chosen row (`{ row, neighbours?, path?, radius?, point? }`) ringed, with thin lines to its neighbours, a
+       * bold path through rows, a circle of a radius around it and a related point joined by a dashed line.
+       */
+      readonly focus?: RowSource
       readonly title?: string
     }
   /** A derived path at the viewed step: an exposition record is drawn by its view, anything else as JSON. */
   | { readonly kind: 'probe'; readonly path: string; readonly args?: Json; readonly title?: string }
   /** Scalar paths of the tape as curves on one chart, against the step. */
-  | { readonly kind: 'curves'; readonly paths: readonly string[]; readonly title?: string }
+  | {
+      readonly kind: 'curves'
+      readonly paths: readonly string[]
+      /**
+       * The variants of a comparison are repeats of one thing: each one a faint curve, the mean across them in bold
+       * (one colour per path instead of per variant).
+       */
+      readonly runs?: boolean
+      /** Bands (and, nested, fans) between a lower and an upper path, in the colour of the path's curve. */
+      readonly bands?: readonly BandSpec[]
+      /** A dashed line to compare against: a constant or a path. */
+      readonly truth?: TruthLine
+      /** Logarithmic axes (non-positive points are left out). */
+      readonly log?: 'x' | 'y' | 'xy'
+      /** Reference slopes on log-log axes. */
+      readonly slopes?: readonly ReferenceSlope[]
+      /** Vertical marks where scalar paths fired: planted changes, alarms, restarts. */
+      readonly events?: readonly EventMarks[]
+      readonly title?: string
+    }
   /**
    * Each element of a tensor path as a curve, against the step or against a scalar path (`x`, the time an equation has
    * reached, say): the paths of a process, the weights of a mixture, the components of a state. Up to `max` elements
@@ -66,7 +145,23 @@ export type Panel =
    * logged at the same step; default the step itself), each point a trial, those after the viewed step faint and the
    * viewed one ringed; a click scrubs to the nearest trial's step.
    */
-  | { readonly kind: 'sweep'; readonly path: string; readonly over?: string; readonly title?: string }
+  | {
+      readonly kind: 'sweep'
+      readonly path: string
+      readonly over?: string
+      /** Logarithmic axes (non-positive trials are left out). */
+      readonly log?: 'x' | 'y' | 'xy'
+      /** A dashed horizontal line to compare against (`value`); with `intervals`, the truth: a value or a path. */
+      readonly truth?: TruthLine
+      /** Reference slopes on log-log axes. */
+      readonly slopes?: readonly ReferenceSlope[]
+      /**
+       * An interval strip instead: `path` is each trial's estimate and the bounds are two paths logged at the same
+       * steps; every trial a horizontal bar, the misses of `truth` (a constant or a path) in red.
+       */
+      readonly intervals?: { readonly lower: string; readonly upper: string }
+      readonly title?: string
+    }
   /**
    * A tensor path at the viewed step as a heatmap (a matrix being factorised, a transition matrix, an image). Given
    * `rowLabels`, `colLabels` or marks it is drawn as labelled cells with the values written in: `marks` are fixed

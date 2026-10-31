@@ -44,6 +44,12 @@ export const SECTIONS: readonly Section[] = [
   { id: 'interaction', title: 'Interaction', blurb: 'Dragging and adding points, constraints, probes and brushes.' },
   { id: 'animation', title: 'Animation', blurb: 'The player: precomputed timelines and live algorithms.' },
   {
+    id: 'pages',
+    title: 'Method pages',
+    blurb:
+      'Whole pages of a method as the encyclopedia composes them, from the controls, the session layer and the panels: the templates to copy.',
+  },
+  {
     id: 'diagrams',
     title: 'Diagrams and structures',
     blurb: 'Scenes, graph layouts, graphical models, computation graphs, architectures, trees and automata.',

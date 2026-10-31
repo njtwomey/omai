@@ -479,13 +479,25 @@ export function chartFrame(
  * ```
  */
 export function cartesian(layers: readonly Layer[], options: PlotOptions = {}): EChartsOption {
-  const fig = options.figure ?? makeFigure({ mode: options.mode ?? 'light' })
-  const mode = options.mode ?? fig.mode
+  const given = options.figure ?? makeFigure({ mode: options.mode ?? 'light' })
+  const mode = options.mode ?? given.mode
   const hasBar = layers.some((l) => l.colourBar !== undefined)
   const hasY2 = layers.some((l) => l.secondary === true)
-  const area = plotArea(fig)
-  const rect: Rect = { ...area, width: area.width - (hasBar ? 64 : 0) - (hasY2 ? 40 : 0) }
-  const parts = panelParts(layers, { ...options, mode }, rect, 0, 0, 0)
+  const rectOf = (f: Figure): Rect => {
+    const area = plotArea(f)
+    return { ...area, width: area.width - (hasBar ? 64 : 0) - (hasY2 ? 40 : 0) }
+  }
+  let fig = given
+  let parts = panelParts(layers, { ...options, mode }, rectOf(fig), 0, 0, 0)
+  // A legend too long for one line wraps; the plot area gives way beneath it, a line of type for each extra row.
+  if (options.legend ?? parts.legendNames.length > 1) {
+    const need = parts.legendNames.reduce((w, n) => w + n.length * fig.fontSize * 0.62 + 44, 0)
+    const rows = Math.max(1, Math.ceil(need / Math.max(1, fig.width - fig.padding.left - fig.padding.right)))
+    if (rows > 1) {
+      fig = { ...fig, padding: { ...fig.padding, top: fig.padding.top + (rows - 1) * (fig.fontSize + 9) } }
+      parts = panelParts(layers, { ...options, mode }, rectOf(fig), 0, 0, 0)
+    }
+  }
   const option: Record<string, unknown> = {
     ...chartFrame(
       { ...fig, mode },

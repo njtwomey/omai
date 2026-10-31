@@ -38,6 +38,8 @@ export type LinearClassifierPath =
   | 'model/accuracy'
   | 'model/weights'
   | 'model/decision-surface'
+  | 'model/margins'
+  | 'model/errors'
 
 /** The data: two features per row and a class (0 or 1) each. */
 export interface TwoClassData {
@@ -75,8 +77,10 @@ const sigmoid = (v: number): number => 1 / (1 + Math.exp(-v))
  * The linear classifier on a data set, as a method of its configuration: `loss`, `penalty` and `solver`.
  *
  * Paths: `solver/objective`, `solver/gradNorm`, `solver/step` (the solver's, and `solver/lr` in the stochastic mode), `model/accuracy` (on the rows),
- * `model/weights` (the two weights and the intercept, kept in full), and the probe `model/decision-surface` (the
- * squashed score over the plane with the rows, at any step).
+ * `model/weights` (the two weights and the intercept, kept in full), and the probes `model/decision-surface` (the
+ * squashed score over the plane with the rows, at any step), `model/margins` (the signed score of each row, positive when
+ * the row is on its class's side: a value per row for the rows panel, diverging) and `model/errors` (the rows on the
+ * wrong side, as the named set `misclassified`, for the rows panel's marks).
  *
  * @param data - Two features per row and a class each.
  * @returns The method.
@@ -111,6 +115,24 @@ export function linearClassifier(data: TwoClassData): Method<unknown, Config, Li
       ...gradientContract,
       'model/accuracy': scalar({ description: 'the share of the rows classified correctly' }),
       'model/weights': tensorSource({ role: 'state', shape: [3], description: 'the two weights and the intercept' }),
+      'model/margins': derived<unknown>({
+        description: 'the signed score of each row, positive when it is on its class’s side of the line',
+        compute: (s) => {
+          const w = (s as { readonly x: Float64Array }).x
+          return rows.map(([a, b], i) => (labels[i] === 1 ? 1 : -1) * score(w, a, b))
+        },
+      }),
+      'model/errors': derived<unknown>({
+        description: 'the rows on the wrong side of the line, as a named set for the rows panel’s marks',
+        compute: (s) => {
+          const w = (s as { readonly x: Float64Array }).x
+          return {
+            sets: {
+              misclassified: rows.flatMap(([a, b], i) => ((score(w, a, b) > 0 ? 1 : 0) === labels[i] ? [] : [i])),
+            },
+          }
+        },
+      }),
       'model/decision-surface': derived<unknown>({
         description: 'the squashed score over the plane of the two features, with the rows',
         cost: 'dear',

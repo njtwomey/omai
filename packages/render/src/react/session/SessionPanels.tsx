@@ -25,6 +25,7 @@ import { ExpositionView } from '../views/ExpositionView.tsx'
 import { leaf, overlayCurves, sweepTrials } from './compare.ts'
 import { StepCursorProvider } from './cursor.tsx'
 import { FieldPanel } from './FieldPanel.tsx'
+import { type FamilyOptions, familyOption, hasFamily, intervalOption, logAxes, sweepFamily } from './families.ts'
 import type { Panel } from './layout.ts'
 import { GraphPanel, ImagesPanel, PointsPanel, ScenePanel, StripPanel, TablePanel } from './RecordPanels.tsx'
 import { FIG, Note, RowsPanel, useProbe, useRun } from './RowsPanel.tsx'
@@ -143,6 +144,7 @@ function TapePanel(
         title={title}
         filename={file(title)}
         t={t}
+        family={panel}
         {...(onScrub === undefined ? {} : { onScrub })}
       />
     )
@@ -174,7 +176,12 @@ function PanelView(
   switch (panel.kind) {
     case 'rows': {
       if (props.x === undefined) return null
-      const title = panel.title ?? ROWS_TITLES[panel.overlay ?? 'assignments']
+      const channelled = [panel.values, panel.size, panel.marks, panel.regions, panel.focus].some(
+        (c) => c !== undefined,
+      )
+      const title =
+        panel.title ??
+        (panel.overlay === undefined && channelled ? 'rows' : ROWS_TITLES[panel.overlay ?? 'assignments'])
       return (
         <RowsPanel
           overlay={panel.overlay}
@@ -184,6 +191,13 @@ function PanelView(
           t={t}
           x={props.x}
           {...(props.y === undefined ? {} : { y: props.y })}
+          channels={{
+            ...(panel.values === undefined ? {} : { values: panel.values }),
+            ...(panel.size === undefined ? {} : { size: panel.size }),
+            ...(panel.marks === undefined ? {} : { marks: panel.marks }),
+            ...(panel.regions === undefined ? {} : { regions: panel.regions }),
+            ...(panel.focus === undefined ? {} : { focus: panel.focus }),
+          }}
         />
       )
     }
@@ -281,12 +295,20 @@ function CurvesView(props: {
   readonly filename: string
   /** The viewed step, marked on the chart. */
   readonly t: number
+  /** The curve families the panel asks for (many runs, bands, a truth line, log axes, slopes, events). */
+  readonly family?: FamilyOptions
   readonly onScrub?: (t: number | null) => void
 }): ReactNode {
-  const { variants, paths, t } = props
+  const { variants, paths, t, family } = props
   const mode = useColourMode()
   const runs = useRuns(variants)
   const option = useMemo(() => {
+    if (family !== undefined && hasFamily(family))
+      return familyOption(
+        runs.map((run, i) => ({ label: variants[i]?.label ?? '', run })),
+        paths,
+        { ...family, t, mode, figure: FIG },
+      )
     const curves = overlayCurves(
       runs.map((run, i) => ({ label: variants[i]?.label ?? '', run })),
       paths,
@@ -298,7 +320,7 @@ function CurvesView(props: {
       x: { label: 'step' },
       legend: true,
     })
-  }, [runs, variants, paths, mode, t])
+  }, [runs, variants, paths, mode, t, family])
   const steps = useMemo(
     () => [...new Set(runs.flatMap((run) => recordedSteps(run, paths)))].sort((a, b) => a - b),
     [runs, paths],
@@ -326,8 +348,45 @@ function SweepView(props: {
   const { variants, panel, t } = props
   const mode = useColourMode()
   const runs = useRuns(variants)
-  const trials = useMemo(() => runs.map((run) => sweepTrials(run, panel.path, panel.over)), [runs, panel])
+  const log = logAxes(panel.log)
+  const trials = useMemo(
+    () =>
+      runs.map((run) => {
+        const all = sweepTrials(run, panel.path, panel.over)
+        if (!log.x && !log.y) return all
+        // A log axis shows only the positive.
+        const keep = all.steps.flatMap((_, k) =>
+          (!log.x || (all.x[k] ?? 0) > 0) && (!log.y || (all.y[k] ?? 0) > 0) ? [k] : [],
+        )
+        return {
+          steps: keep.map((k) => all.steps[k] ?? 0),
+          x: keep.map((k) => all.x[k] ?? 0),
+          y: keep.map((k) => all.y[k] ?? 0),
+        }
+      }),
+    [runs, panel, log.x, log.y],
+  )
   const option = useMemo(() => {
+    if (panel.intervals !== undefined) {
+      const run = runs[0]
+      if (run === undefined) return {}
+      const lower = sweepTrials(run, panel.intervals.lower, panel.over)
+      const upper = sweepTrials(run, panel.intervals.upper, panel.over)
+      const centre = sweepTrials(run, panel.path, panel.over)
+      const truth =
+        panel.truth?.value ?? (panel.truth?.path === undefined ? undefined : sweepTrials(run, panel.truth.path).y)
+      return intervalOption(
+        {
+          steps: centre.steps,
+          centre: centre.y,
+          lower: lower.y,
+          upper: upper.y,
+          ...(truth === undefined ? {} : { truth }),
+          t,
+        },
+        { mode, figure: FIG, label: leaf(panel.path) },
+      )
+    }
     const compared = trials.length > 1
     const sets: PointSet[] = []
     trials.forEach((trial, i) => {
@@ -359,20 +418,35 @@ function SweepView(props: {
         })
     })
     const layer = sets.length === 0 ? lines([], { mode }) : points(sets, { mode })
+    const extra = sweepFamily(
+      { x: trials.flatMap((trial) => trial.x), y: trials.flatMap((trial) => trial.y) },
+      {
+        mode,
+        ...(panel.truth === undefined ? {} : { truth: panel.truth }),
+        ...(panel.slopes === undefined ? {} : { slopes: panel.slopes }),
+      },
+    )
     return {
-      ...cartesian([layer], {
+      ...cartesian([layer, ...extra], {
         mode,
         figure: FIG,
-        x: { label: panel.over === undefined ? 'trial (step)' : leaf(panel.over) },
-        y: { label: leaf(panel.path) },
-        legend: compared,
+        x: {
+          label: panel.over === undefined ? 'trial (step)' : leaf(panel.over),
+          ...(log.x ? { scale: 'log' as const } : {}),
+        },
+        y: { label: leaf(panel.path), ...(log.y ? { scale: 'log' as const } : {}) },
+        legend: compared || extra.length > 0,
       }),
       animation: false,
     }
-  }, [trials, variants, panel, t, mode])
+  }, [trials, runs, variants, panel, t, mode, log.x, log.y])
+  // The interval strip has a trial per row, not per x: a click there scrubs nowhere.
   const { steps, xs } = useMemo(
-    () => ({ steps: trials.flatMap((trial) => trial.steps), xs: trials.flatMap((trial) => trial.x) }),
-    [trials],
+    () =>
+      panel.intervals === undefined
+        ? { steps: trials.flatMap((trial) => trial.steps), xs: trials.flatMap((trial) => trial.x) }
+        : { steps: [], xs: [] },
+    [trials, panel.intervals],
   )
   const onInit = useScrubClick(steps, props.head, props.onScrub, xs)
   return (
