@@ -1461,6 +1461,31 @@
       "cases": 7
     },
     {
+      "fixture": "linear/errors_in_variables.json",
+      "source": "oracle/cases/linear/errors_in_variables.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "linear/expectile.json",
+      "source": "oracle/cases/linear/expectile.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
+      "fixture": "linear/gls.json",
+      "source": "oracle/cases/linear/gls.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "linear/group_lasso.json",
       "source": "oracle/cases/linear/group_lasso.py",
       "reference": {
@@ -1516,6 +1541,30 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 14
+    },
+    {
+      "fixture": "linear/subset.json",
+      "source": "oracle/cases/linear/subset.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 12
+    },
+    {
+      "fixture": "linear/sur.json",
+      "source": "oracle/cases/linear/sur.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "linear/tobit.json",
+      "source": "oracle/cases/linear/tobit.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 3
     },
     {
       "fixture": "linear/zero_inflated.json",

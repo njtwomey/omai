@@ -3272,6 +3272,10 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
   `nmf` (transform solves W for new rows with H fixed).
 - `cross-decomposition.ts`: `plsAlgorithm` (NIPALS for PLS regression, PLS canonical and CCA, one component per step, the
   score correlation on the tape), estimators `plsRegression`, `plsCanonical`, `cca`, and `plsSvd` (closed form).
+- `rank-regression.ts`: `pcr` (principal-component regression, closed form, the same fit as a scikit-learn PCA plus
+  `LinearRegression` pipeline) and `reducedRankRegression` (multi-output least squares constrained to a rank by the SVD of
+  the fitted values; `identity` or `covariance` (canonical) weighting of the outputs, an optional ridge; the Eckart-Young
+  excess error is tested). oracle: `decomposition/rank_regression`.
 - `probabilistic.ts`: `probabilisticPca` (closed form from the SVD), `factorAnalysisAlgorithm` (scikit-learn's SVD-based
   maximum-likelihood iteration, one per step), `factorAnalysis` with varimax and quartimax (`rotateLoadings`),
   `latentVerbs` and `latentCovariance`. `random-projection.ts`: `randomProjection` (Gaussian and sparse, the
@@ -3406,6 +3410,31 @@ analytic gradient for the zero-inflated and the hurdle models over Poisson or ne
 zero parts). oracle: `linear/zero_inflated` against statsmodels' `ZeroInflatedPoisson`, `ZeroInflatedNegativeBinomialP`
 and, for the hurdle model's two independent parts, `Logit` with `TruncatedLFPoisson` and
 `TruncatedLFNegativeBinomialP`.
+
+`expectile.ts` is expectile regression (Newey and Powell): `expectileProblemOf`, `expectileObjective` (the mean
+asymmetric squared loss with its gradient and generalised Hessian), `expectileSmoothProblem` for the solver slot,
+`expectileAlgorithm` (Newton, which is IRLS, by default, any solver of `smoothSolvers`) and the `expectileRegressor`
+estimator with the sandwich covariance. `tobit.ts` is censored regression: `tobitProblemOf` (limits, the censoring
+pattern), `tobitObjective` (the concave likelihood in Olsen's parameters `(beta/sigma, 1/sigma)` with analytic gradient
+and Hessian), `tobitSmoothProblem`, `tobitAlgorithm` over the slot and the `tobit` estimator (`predict` the latent mean,
+`predictCensored` the expected clipped value, Wald errors of the coefficients and sigma by the delta method).
+`gls.ts` is generalised least squares: `glsFit` and `gls` (known covariance as a scalar, per-row variances or a matrix,
+closed form; `ar1Covariance`), `glsarAlgorithm` and `glsar` (statsmodels' `GLSAR.iterative_fit`: Yule-Walker AR
+coefficients alternating with a whitened fit that drops the first p rows) and `heteroscedasticRegressor` (a log-linear
+variance `exp(z gamma)`: `method: 'fgls'` iterates a weighted fit with a regression of the log squared residuals, one
+round being the textbook estimator, and `method: 'ml'` maximises the joint Gaussian likelihood over the solver slot).
+`errors-in-variables.ts` is total least squares and Deming regression (`totalLeastSquares`, `deming`: the smallest
+singular vector of the centred, error-scaled `[X y]`). `subset.ts` is variable selection by an information criterion
+(`subsetAlgorithm`, `subsetRegression`: best subset, forward, backward and stepwise by AIC, BIC, AICc, Cp or adjusted
+R-squared, scored from the Gram matrix, the visited subsets and their criteria on the path). `sur.ts` is seemingly
+unrelated regressions (`surAlgorithm`, `sur`: Zellner's feasible GLS over the stacked system, iterable to maximum
+likelihood). `_verbs.ts` (affine-map verbs) and `_cov.ts` (inverse and sandwich helpers) are private to the folder.
+oracle: `linear/expectile` against scipy BFGS on the asymmetric loss; `linear/tobit` against a statsmodels
+`GenericLikelihoodModel` (coefficients, sigma, log-likelihood, standard errors); `linear/gls` against statsmodels `GLS`
+and `GLSAR`, with FGLS written as statsmodels `WLS`/`OLS` rounds and the heteroscedastic likelihood by scipy BFGS;
+`linear/errors_in_variables` against the orthogonal-distance objective minimised with scipy (`scipy.odr` is deprecated
+and returned wrong fits in this build); `linear/subset` against statsmodels OLS criteria over the same searches
+written in Python; `linear/sur` against the stacked Kronecker GLS in numpy.
 
 `multinomial.ts` is the multinomial logit (softmax regression as a GLM): `multinomialProblemOf`, `softmaxRows`,
 `multinomialAlgorithm` (Newton steps with the exact Hessian) and the `multinomial` classifier (class 0 the reference
