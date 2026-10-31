@@ -3103,6 +3103,13 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen
   counts and sizes), FLOP estimates (`flops`, `functionFlops`, counted from traced primitives) and `memoryEstimate`.
+- `module/adapters.ts`: parameter-efficient fine-tuning as module wrappers that freeze the base: `LoRA` (low-rank
+  `(alpha / r) B A` updates of chosen weights, by default a `Linear`'s weight or an attention layer's query and value
+  rows; `merged`, `unmerge`, `delta`, rank-stabilised scaling), `loraTargets`, `loraParameterCount` (`r (d_in + d_out)`),
+  `BottleneckAdapter` and `withAdapter` (near-identity residual adapters), `PromptTuning` (learnt input embeddings
+  prepended to a sequence), `PrefixAttention` (learnt key and value rows prepended in an attention layer's input space),
+  `trainOnly` and `bitFit` (train selected parameters only, through the module's `trainableMask`), and
+  `parameterCounts` (total, trainable and frozen).
 - `training/state.ts`: `TrainState` (params, optimiser state, buffers, step and update counts, key, update scale,
   accumulation window), `trainState`, `lossAndGrads`, `applyGradients` (masking frozen parameters), `trainStep` (the
   functional step), `accumulate`, `hasFrozen`.
