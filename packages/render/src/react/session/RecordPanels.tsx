@@ -174,7 +174,19 @@ export function PointsPanel(props: {
 }): ReactNode {
   const { record, problem } = useRecord(props.live, props.t, 'pointsSteps', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <PointsStepsView record={record} step={props.t} figure={FIG} title={props.title} filename={props.filename} />
+  const { colour, fade, camera } = props.panel
+  return (
+    <PointsStepsView
+      record={record}
+      step={props.t}
+      figure={FIG}
+      title={props.title}
+      filename={props.filename}
+      {...(colour === undefined ? {} : { colour })}
+      {...(fade === undefined ? {} : { fade })}
+      {...(camera === undefined ? {} : { camera })}
+    />
+  )
 }
 
 /**

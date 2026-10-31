@@ -235,7 +235,21 @@ export type Panel =
    * A point set probed at the viewed step (a `pointsSteps` record): the points of every step up to it, or the set at it,
    * on axes that hold still over the whole run; in three dimensions a cloud to orbit.
    */
-  | { readonly kind: 'points'; readonly path: string; readonly args?: Json; readonly title?: string }
+  | {
+      readonly kind: 'points'
+      readonly path: string
+      readonly args?: Json
+      /**
+       * What colours the points: `groups` (a class each), `values` (the record's per-point `values` along a ramp, with
+       * a colour bar) or `none` (default: groups when the record has them, else values).
+       */
+      readonly colour?: 'groups' | 'values' | 'none'
+      /** Fade a trail: points this many recorded steps old (or older) are drawn at a tenth of the opacity. */
+      readonly fade?: number
+      /** The viewpoint a three-dimensional cloud starts from (buttons choose others): `iso` (default), `front`, `side`, `top`. */
+      readonly camera?: 'iso' | 'front' | 'side' | 'top'
+      readonly title?: string
+    }
   /**
    * A scene probed at the viewed step (a `sceneSteps` record): the latest recorded scene at or before it, with its
    * caption (agents on a plane, a plant and its horizon, a drawing being built).
