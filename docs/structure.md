@@ -2128,6 +2128,21 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   hazard functions), PELT, binary segmentation.
 - `filtering/em.ts`: EM for linear-Gaussian state-space parameters (traced).
 - `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD.
+- `automata/` (namespace `dynamics.automata`; no oracle, since no library has these: the tests check hand-worked rows,
+  known periods and displacements, exact densities and conserved quantities): every system is an `Algorithm` whose state
+  (a grid or an agent list in typed arrays) serialises, whose step is a pure function of the state and the step's key,
+  with an exported path union and log contract (`XxxPath`, `xxxContract`) that the matching method adopts.
+  - `elementary.ts`: Wolfram's 256 rules (`ruleTable`, `elementaryStep`, `elementaryBoard`, `elementaryAutomaton`), the
+    mirror and complement symmetries, `wolframClass` (by simulation; class 4 by the rule 110 family), `rule90Cells`
+    (the exact Sierpinski cell count), `bitEntropy`.
+  - `life.ts`: life-like rules by B/S string (`parseLifeRule`), RLE patterns (`parseRle`, `LIFE_PATTERNS` with known
+    periods and drifts: blinker, glider, lightweight spaceship, pentadecathlon, R-pentomino, Gosper's gun), `detectPeriod`,
+    `lifeAutomaton` (births, deaths, population, the period and a `life/stabilised` event).
+  - `ant.ts`: Langton's ant for any rule string and several ants (`langtonsAnt`), `highwayDetected`.
+  - `sandpile.ts`: the Abelian sandpile (`stabilise`, `sandpileAdd`, `sandpileIdentity`, `sandpileAlgorithm` with the
+    avalanche size, duration and sites).
+  - `forest-fire.ts`: Drossel-Schwabl (`forestFire`, with `treeDensityWithoutFire` as its exact check).
+  - Private: `_core.ts` (state codec, torus index, board hash, checks).
 - Private helpers: `ode/_vec.ts` (typed-array fast path that falls back to tensor ops on traced values), `ode/_step.ts`
   (step bookkeeping shared by the steppers), `ode/_newton.ts` (simplified Newton, Jacobians, the implicit-function
   correction that makes implicit steps differentiable), `ode/_radau.ts`, `ode/_bdf.ts`, `ode/_bvp.ts`,
