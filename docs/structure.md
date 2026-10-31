@@ -2873,6 +2873,9 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `preprocessing/features.ts`: polynomial features, spline features, binning, binariser, function transformers,
   interaction features.
 - `preprocessing/imputation.ts`: simple, k-NN and iterative imputers, missing indicators.
+- `preprocessing/aggregates.ts`: per-row group statistics (`groupAggregates`, pandas `groupby.transform`, with a
+  leave-one-out option), rolling-window statistics (`rollingFeatures`, pandas `rolling` with `min_periods` and
+  `center`) and lagged copies (`lagFeatures`); NaN where there is no history.
 - `preprocessing/resampling.ts`: random over- and under-sampling, SMOTE, borderline SMOTE, ADASYN, Tomek links,
   NearMiss (resamplers apply only in fit, also inside pipelines).
 - `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
@@ -2910,6 +2913,8 @@ modAL for active learning, diffprivlib and opacus for privacy
   study as `biasVarianceAlgorithm`); degrees of freedom (Efron's covariance definition by Monte Carlo, the closed forms
   for ridge, lasso and k-NN). The tests are planted-truth: each bound holds across simulated draws and is within a
   stated factor of the observed gap.
+- `representation.ts`: measures of learned representations: alignment and uniformity (Wang and Isola), the effective
+  rank (Roy and Vetterli, RankMe) and centred kernel alignment (`cka`, linear and RBF; invariant to rotations).
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
