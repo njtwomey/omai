@@ -3020,6 +3020,10 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     `FourierLayer` and `FNO` (lift, Fourier layers, projection, in one or two dimensions).
   - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
     `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
+  - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),
+    `FieldAwareFm`, `DeepFm`, `WideAndDeep` over `{ids, values}` feature rows; `NeuralCF` (NeuMF: GMF and MLP branches,
+    modes), `TwoTower` (with `embeddingTower`, in-batch logits, `logQCorrection`), `CrossNetwork` (DCN), `dotInteraction`
+    and `Dlrm`. The sequential recommenders are the existing `GRU` and `TransformerLM` (no separate block).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).

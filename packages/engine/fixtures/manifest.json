@@ -2548,6 +2548,14 @@
       "cases": 8
     },
     {
+      "fixture": "nn/blocks/recommender.json",
+      "source": "oracle/cases/nn/blocks/recommender.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "nn/functional/activations.json",
       "source": "oracle/cases/nn/functional/activations.py",
       "reference": {
