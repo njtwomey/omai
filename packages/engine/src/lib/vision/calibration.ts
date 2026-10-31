@@ -11,9 +11,11 @@
 import { MdmlError } from '../base/index.ts'
 import { homography } from '../numerics/geometry/index.ts'
 import { concat, reshape, sliceAxis, sub, tensor, type Value } from '../tensor/index.ts'
+import type { Algorithm } from '../trace/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
 import { invOf, type Matrix, matMul, nullVector, points3Of, refine, transposeOf } from './_refine.ts'
 import { type Distortion, type Pose, projectValue, reprojectionError, rodrigues, rodriguesVector } from './camera.ts'
+import { type RefinementPath, type RefinementState, steppedRefinement } from './refinement.ts'
 
 /** The output of {@link calibrateCamera}. */
 export interface Calibration {
@@ -121,6 +123,25 @@ export function calibrateCamera(
   imagePoints: readonly PointsLike[],
   options: { readonly iterations?: number; readonly fixK3?: boolean } = {},
 ): Calibration {
+  const problem = calibrationProblem(objectPoints, imagePoints, options.fixK3 === true)
+  const s = refine(problem.residuals, problem.start, options.iterations ?? 100)
+  return problem.calibrationAt(Float64Array.from(s))
+}
+
+/** Everything a calibration refinement needs: the start (Zhang's closed form), the residuals, and the reading of a parameter vector. */
+interface CalibrationProblem {
+  readonly residuals: (p: Value) => Value
+  readonly start: number[]
+  readonly closedForm: Calibration
+  /** The calibration a parameter vector describes, with its RMS reprojection error. */
+  calibrationAt(s: ArrayLike<number>): Calibration
+}
+
+function calibrationProblem(
+  objectPoints: readonly (readonly (readonly number[])[])[],
+  imagePoints: readonly PointsLike[],
+  fixK3: boolean,
+): CalibrationProblem {
   const views = objectPoints.length
   if (views < 2 || imagePoints.length !== views)
     throw new MdmlError('value', 'calibrateCamera: at least two views, one image point set per view')
@@ -139,7 +160,6 @@ export function calibrateCamera(
   )
   const K0 = zhangIntrinsics(hs)
   const poses0 = hs.map((h) => zhangPose(h, K0))
-  const fixK3 = options.fixK3 === true
   const nd = fixK3 ? 4 : 5
   const objs = X.map((o) => tensor(o.map((p) => [...p])))
   const obs = x.map((p) => tensor(p.map((q) => [...q])))
@@ -161,25 +181,69 @@ export function calibrateCamera(
     ...new Array<number>(nd).fill(0),
     ...poses0.flatMap((q) => [...q.rvec, ...q.tvec]),
   ]
-  const s = refine(residuals, start, options.iterations ?? 100)
-  const cameraMatrix = [
-    [s[0] ?? 1, 0, s[2] ?? 0],
-    [0, s[1] ?? 1, s[3] ?? 0],
-    [0, 0, 1],
-  ]
-  const distortion = Array.from({ length: 5 }, (_, i) => (i < nd ? (s[4 + i] ?? 0) : 0))
-  const poses: Pose[] = X.map((_, v) => {
-    const b = 4 + nd + 6 * v
-    return { rvec: [s[b] ?? 0, s[b + 1] ?? 0, s[b + 2] ?? 0], tvec: [s[b + 3] ?? 0, s[b + 4] ?? 0, s[b + 5] ?? 0] }
-  })
-  let total = 0
-  let count = 0
-  X.forEach((o, v) => {
-    const e = reprojectionError(o, x[v] as [number, number][], poses[v] as Pose, cameraMatrix, distortion)
-    total += e * e * o.length
-    count += o.length
-  })
-  return { rms: Math.sqrt(total / Math.max(1, count)), cameraMatrix, distortion, poses }
+  const calibrationAt = (s: ArrayLike<number>): Calibration => {
+    const cameraMatrix = [
+      [s[0] ?? 1, 0, s[2] ?? 0],
+      [0, s[1] ?? 1, s[3] ?? 0],
+      [0, 0, 1],
+    ]
+    const distortion = Array.from({ length: 5 }, (_, i) => (i < nd ? (s[4 + i] ?? 0) : 0))
+    const poses: Pose[] = X.map((_, v) => {
+      const b = 4 + nd + 6 * v
+      return { rvec: [s[b] ?? 0, s[b + 1] ?? 0, s[b + 2] ?? 0], tvec: [s[b + 3] ?? 0, s[b + 4] ?? 0, s[b + 5] ?? 0] }
+    })
+    let total = 0
+    let count = 0
+    X.forEach((o, v) => {
+      const e = reprojectionError(o, x[v] as [number, number][], poses[v] as Pose, cameraMatrix, distortion)
+      total += e * e * o.length
+      count += o.length
+    })
+    return { rms: Math.sqrt(total / Math.max(1, count)), cameraMatrix, distortion, poses }
+  }
+  return { residuals, start, closedForm: calibrationAt(start), calibrationAt }
+}
+
+/** The state of {@link calibrationAlgorithm}: the refinement's state, whose decoded part is the calibration at the iterate. */
+export type CalibrationState = RefinementState<Calibration>
+
+/**
+ * Zhang's calibration with its Levenberg-Marquardt refinement one iteration per step: the first state is the closed-form
+ * calibration (intrinsics from the homographies, zero distortion), and every step is one iteration of the joint
+ * refinement of the intrinsics, the distortion and every pose, with the reprojection error and the calibration at the
+ * iterate in the state. Run to convergence it reaches {@link calibrateCamera}'s optimum.
+ *
+ * @param objectPoints - Per view, target points `[n, 3]` with z = 0.
+ * @param imagePoints - Per view, their image points `[n, 2]`.
+ * @param options - The most iterations (default 100) and whether to fix k3 at 0 (default false).
+ * @returns The algorithm; read `state.decoded` for the camera matrix, distortion and poses, `state.rms` for the error.
+ * @throws MdmlError with code `value` for fewer than two views or a non-planar target.
+ * @concept camera-calibration
+ * @example
+ * ```ts
+ * import { calibrationAlgorithm, projectPoints } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const K = [[300, 0, 160], [0, 310, 120], [0, 0, 1]]
+ * const board = Array.from({ length: 20 }, (_, i) => [i % 5, Math.floor(i / 5), 0])
+ * const poses = [{ rvec: [0.2, 0.1, 0], tvec: [-2, -1.5, 8] }, { rvec: [-0.1, 0.3, 0.1], tvec: [-2, -2, 9] }, { rvec: [0.3, -0.2, 0.2], tvec: [-1.5, -1, 7] }]
+ * const alg = calibrationAlgorithm(poses.map(() => board), poses.map((p) => projectPoints(board, p, K)), { fixK3: true })
+ * runAlgorithm(alg, { maxSteps: 100 }).state.rms < 1e-6 // => true
+ * ```
+ */
+export function calibrationAlgorithm(
+  objectPoints: readonly (readonly (readonly number[])[])[],
+  imagePoints: readonly PointsLike[],
+  options: { readonly iterations?: number; readonly fixK3?: boolean } = {},
+): Algorithm<CalibrationState, RefinementPath> {
+  const problem = calibrationProblem(objectPoints, imagePoints, options.fixK3 === true)
+  return steppedRefinement(
+    'cameraCalibration',
+    { views: objectPoints.length, fixK3: options.fixK3 === true },
+    problem.residuals,
+    problem.start,
+    (x) => problem.calibrationAt(x),
+    options.iterations ?? 100,
+  )
 }
 
 /** The output of {@link stereoRectify}. */

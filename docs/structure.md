@@ -3851,6 +3851,17 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `meanShiftSegmentationAlgorithm` in `segmentation.ts` (one window iteration per pixel per step, the modes grouped into
   regions every step; the one-shot function is the same iteration). Paths `canny/*`, `hough/*`, `flood/*`, `shift/*`.
   Tested against the one-shot results (identical), planted lines, planted basins and planted region colours.
+- Calibration and structure from motion in steps (`calibration.ts`, `refinement.ts`, `sfm.ts`): `calibrationAlgorithm`
+  (the first state is Zhang's closed form, each step one Levenberg-Marquardt iteration of the joint refinement of
+  intrinsics, distortion and poses, the calibration and RMS reprojection error at the iterate in the state; the same
+  optimum as `calibrateCamera`, which now shares its setup), `steppedRefinement` (the wrapper that makes `optim`'s
+  Levenberg-Marquardt algorithm a serialisable refinement with a decoded geometry; paths `refine/cost`,
+  `refine/reprojectionError`, `refine/parameters`), `essentialRansacAlgorithm` (one eight-point hypothesis per step, the
+  best inliers in the state), `twoViewReconstruction` (essential matrix refit to the inliers, cheirality pose, inliers
+  triangulated, up to scale), `addView` (`solvePnP` against the points built so far), `bundleAdjustmentAlgorithm` (all
+  poses but the first and all points, one iteration per step, with the scale free) and `bundleReprojectionError`. Tested
+  on planted rigs: exact correspondences give the pose and structure to 1e-6, noisy ones are corrected by bundle
+  adjustment with the error non-increasing, calibration recovers a planted intrinsic matrix and distortion.
 - Image quality (PSNR, SSIM and the rest) is `metrics/image-quality.ts`; neural detection heads stay in `methods/vision` (5.x).
 - TODO: TC89 chain approximations and RETR_FLOODFILL, `fitEllipseDirect` and AMS, Telea inpainting, the fast mode of
   non-local means, stereoRectify's alpha-dependent camera matrices, StereoBM's pre-filter and SGBM's Birchfield-Tomasi
