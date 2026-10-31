@@ -3957,7 +3957,15 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   `garchLogLikelihood`, `garchFilterAlgorithm` (the recursion one observation per step with the running likelihood),
   `garchFitAlgorithm`/`garchFit` (BFGS on parameters mapped into the stationary region, on the series scaled to unit
   spread; standard errors from the numerical Hessian), `garchForecast` (variance forecasts relaxing to the unconditional
-  variance) and `garchSimulate`.
+  variance) and `garchSimulate`. The fit also takes a `solver` from the slot (`garchFitSlot`, or `garchFit` with
+  `options.solver`): the likelihood is a smooth objective of the unconstrained parameters (`_ml.ts`: `likelihoodSlot`,
+  `finiteDifferenceProblem`), BFGS by default, and L-BFGS, conjugate gradient and the rest reach the same optimum.
+- `asymmetric-volatility.ts`: EGARCH(p, o, q) (the log variance with |z| - E|z| and signed z terms, Gaussian or
+  Student-t) and APARCH(p, q) (the power delta estimated): `asymmetricVariance`, `asymmetricLogLikelihood`,
+  `asymmetricFitAlgorithm`/`asymmetricFit` (over the solver slot, on the unit-spread scaling with the parameters mapped
+  back), `asymmetricSimulate`, `asymmetricForecast` (the one-step recursion, simulation beyond it) and
+  `newsImpactCurve` (Engle-Ng, for GARCH, GJR, EGARCH and APARCH). `arch` is not an oracle dependency, so the models are
+  tested by hand-computed recursions, the GARCH limit of APARCH, recovery of planted parameters and agreement of solvers.
 - `var.ts`: `varFit` (least squares per equation with statsmodels' covariance, likelihood, AIC/BIC/HQIC/FPE and
   standard errors), `varSelectOrder`, `varForecast` (with intervals), `varImpulseResponse` (plain, orthogonalised,
   cumulative), `varForecastErrorVarianceDecomposition`, `varStability` (companion eigenvalues) and `grangerCausality`
