@@ -6632,6 +6632,23 @@ failing example to itself).
   against the truth, audio in sync, transcript, samples over training, small multiples, inner session). Every figure has one frame (expand, export) and a live control. Toy data
   only, no model training: model demonstrations are the encyclopedia's.
 
+  Coverage: every exposition record kind and every view component has a gallery page, and a test keeps it so. A recipe
+  lists what it really draws in an optional `shows` field of its `recipe` (`readonly string[]`: record kinds such as
+  `'groupReport'`, and view components beyond a kind's standard one such as `'WaterfallView'`); the registry passes it
+  through on each entry. `apps/site/src/gallery/coverage.test.ts` derives the kinds from the code (the exposition
+  interfaces' `readonly kind: '...'`, checked against `viewedKinds()` of the render registry, which the compiler keeps
+  exhaustive over the `Exposition` union), the views from the exported `*View` and `*Player` components of
+  `packages/render/src/react/views`, and fails for any not named by some recipe's `shows` (a view is also covered when it
+  is the standard component of a shown kind). Its two short exemption tables (kinds, views) start from one entry, each
+  with its reason. The record recipes build their records on made-up data with the engine's constructors and library
+  functions (`apps/site/src/gallery/toys/synthetic.ts` holds the shared generators) and live in four sections:
+  `explanations/` (attributions in every variant, dependence, importances, concepts, rules, prototypes,
+  counterfactuals, explanation quality), `trust/` (calibration, conformal, threshold sweep, group and subgroup reports,
+  bias in data, Pareto fronts, anomaly scores), `selection/` (paths, tables, curves, trees, searches, surfaces,
+  posteriors, margins, neighbours, components, likelihoods) and `steps/` (clustering, mixture, embedding, population,
+  board, agent, ensemble, pipeline, epicycle, state, value, curve, diagram and episode records); the older records
+  keep their recipes in `panels/`, `specialised/`, `evaluation/` and `animation/`.
+
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,
   `fairness/` and `trust/` sections and the RL episodes) moved to the hub, which was removed on 2026-10-28. The
   `animation/` section shows the session player on a toy method.

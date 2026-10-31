@@ -29,6 +29,7 @@ export const recipe: Recipe = {
   question: 'How do I show a clip with its spectrogram, with a playhead locked to the step cursor, and play it?',
   explain:
     'A probe that returns an `audio` record (the samples and their rate, the `frames` that say what time of the clip each tape step stands at) and the panel `{ kind: "audio", path }`: the waveform above the spectrogram, the playhead at the time of the viewed step, and a button that plays the clip through WebAudio from there while the step cursor follows the sound. Clicking the picture moves the cursor, and so every other panel. Here a method analyses the clip one window per step, logging the dominant frequency of the window under the playhead, and the curve beside it marks the same step.',
+  shows: ['audio', 'AudioView'],
 }
 
 const RATE = 8000

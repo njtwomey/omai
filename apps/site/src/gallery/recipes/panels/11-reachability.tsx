@@ -31,6 +31,7 @@ export const recipe: Recipe = {
     'How do I show the order a density-based clustering visits the points in, and where a cut would split them?',
   explain:
     "A probe that returns a `reachability` record (each position's reachability distance in the order OPTICS visited the points, the cut as a threshold, and optionally the clusters) drawn as bars, valleys being clusters and the dashed line the cut; shown with the probe panel. Here three blobs of different density; the cut slides down from the top over the run, and the curve beneath counts the clusters it gives, so you can see the three valleys appear and then break up. Move the core size to change how smooth the plot is.",
+  shows: ['reachability', 'ReachabilityPlotView'],
 }
 
 const STEPS = 60

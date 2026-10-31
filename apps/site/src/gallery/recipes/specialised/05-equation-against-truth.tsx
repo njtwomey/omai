@@ -28,6 +28,7 @@ export const recipe: Recipe = {
   question: 'How do I show a discovered equation beside the true one, with its error term by term?',
   explain:
     'A probe that returns an `equationFit` record (terms with their estimated and, when known, true coefficients, the fitted and true functions on a grid, the observations) and the panel `{ kind: "equation", path }`. The fitted expression is typeset with KaTeX, each coefficient coloured by its error and listed in a table with its status in words (matches, differs, kept though not in the law, dropped though in it), the fit is drawn against the truth and the residual sits in a strip beneath. Here the lasso by coordinate descent on a library of six powers recovers y = 0.3 + 1.5 x − 0.6 x³ from noisy samples: the powers are strongly correlated, so it converges over many sweeps, the spurious terms shrinking toward zero as the true ones grow toward their values.',
+  shows: ['equationFit', 'EquationFitView', 'strip'],
 }
 
 const STEPS = 60

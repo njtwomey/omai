@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I let the reader pan and zoom a picture of a grid, with the method re-rendering it deeper?',
   explain:
     'The panel `{ kind: "zoom", path, view }` asks a derived path for the grid it needs by passing the viewport and the raster size as probe arguments, and draws the `decisionSurface` with `values` that comes back. Drag to pan, scroll or pinch to zoom, double-click to reset; while the gesture runs the last picture is moved and scaled, and once it stands still the probe is asked again at the new viewport. The minimap shows where the viewport sits in the whole domain, and the line under the figure reads the value under the cursor. Here the escape-time picture of the Mandelbrot set (or the burning ship) is refined by the run: each step raises the iteration budget, so playing sharpens the boundary, and zooming in at any step re-renders it.',
+  shows: ['decisionSurface'],
 }
 
 const STEPS = 60

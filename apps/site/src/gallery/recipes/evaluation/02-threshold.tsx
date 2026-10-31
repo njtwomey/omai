@@ -8,6 +8,7 @@ export const recipe: Recipe = {
   question: 'How does the threshold on a classifier’s scores move its contingency table?',
   explain:
     'Scores of two classes overlap; a threshold turns them into decisions. `analyseThresholds(yTrue, scores)` cuts the scores at every distinct threshold in one sorted pass and returns a `thresholdSweep` record (the four counts, the rates, ROC and precision-recall points at each), and `ThresholdExplorer` draws it with one threshold shared by every figure. Drag the line on the histograms (or type it) to trade false positives for false negatives: the operating point moves along the ROC and precision-recall curves and the contingency table and its rates update together. Separation and prevalence change the problem itself.',
+  shows: ['thresholdSweep', 'ThresholdExplorer'],
 }
 
 const n = 400

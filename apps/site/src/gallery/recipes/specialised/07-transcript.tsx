@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show the tokens of a conversation or a generation as it grows, with attention on them?',
   explain:
     'A probe that returns a `transcript` record (the tokens so far with their role, a weight per token for each named track, the index of the token emitted at this step) and the panel `{ kind: "transcript", path }`: the tokens in turns by role, each tinted by its weight on the chosen track (buttons switch heads), the token emitted at the viewed step outlined and marked with an arrow, every weight in the token\'s tooltip and the heaviest tokens named under the figure. Here a toy agent answers a question, calls a tool and answers again, one token per step; two "heads" attend to the recent tokens and to earlier occurrences of the same word.',
+  shows: ['transcript', 'TranscriptView'],
 }
 
 const SCRIPT: readonly (readonly [string, string])[] = [

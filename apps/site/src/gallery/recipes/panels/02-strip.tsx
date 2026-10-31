@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show per-position values under a sequence: tag probabilities, a chosen path, the errors?',
   explain:
     'A probe that returns a `strip` record (the tokens, a track of values per class, rows of tags, the chosen path through the tracks, marked positions) and the panel `{ kind: "strip", path }`, which draws the record at the viewed step: one row of cells per track under the tokens, the argmax path as a line through its cells and the positions it gets wrong outlined. Here a toy tagger learns the parts of speech of one sentence by gradient steps; scrub back to see it start out unsure.',
+  shows: ['strip', 'StripView'],
 }
 
 const TOKENS = ['the', 'quick', 'fox', 'jumps', 'over', 'the', 'lazy', 'dog']

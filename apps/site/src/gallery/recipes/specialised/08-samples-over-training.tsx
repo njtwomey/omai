@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show what a generative model produces from fixed noise as training goes on?',
   explain:
     'A probe that returns a `sampleGrid` record (images, or text, drawn from the same noise at recorded steps) and the panel `{ kind: "samples", path, filmstrip }`: the grid of the latest recorded step at or before the viewed one, with the filmstrip beneath, a row per earlier step spread over the run on a log scale (the early steps, where the samples change most, are close together), so the reader sees the samples sharpen. Here a toy generator turns noise into a shape (or garbled text into a sentence) as its quality rises over the epochs.',
+  shows: ['sampleGrid', 'SampleGridView'],
 }
 
 const STEPS = 40

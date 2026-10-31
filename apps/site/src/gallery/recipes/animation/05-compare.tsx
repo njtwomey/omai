@@ -29,6 +29,7 @@ export const recipe: Recipe = {
     'How do I run one method several ways under one player, with the curves overlaid and the probes side by side?',
   explain:
     '`useSessions(method, options, variants, deps)` runs one variant per entry (the same seed, data, budget and subscription; only the knobs differ) under one producer that keeps them in step: each frame the variant furthest behind takes the next slice, so the heads never drift apart and the shared cursor, clamped to the slowest, hardly waits. `SessionPlayer` drives all of them at once (play, pause, eager, seeks, steps, held changes), its stamp showing the slowest head. `SessionPanels` overlays the variants on curves and sweep panels (one colour per variant, the step marker shared) and draws the per-step panels side by side, one column per variant. Here the walk of the session recipe with three wobbles; `turns` is shared. The sweep panel puts a logged knob on x and a metric on y, each point a step: click one to scrub. The rewind button resets the knobs to their defaults.',
+  shows: ['decisionSurface'],
 }
 
 interface State {
