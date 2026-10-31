@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show the loss around the optimiser: a line search at the iterate, and the path over a plane?',
   explain:
     'A probe that returns a `landscapeSlice` record and the panel `{ kind: "landscape", path }`. On one direction it is the loss as a curve through the iterate with the iterates marked and straight lines on it (the tangent and the Armijo bound a step must stay under); on two it is contours (or a surface to orbit, from the button) with the path of the iterates drawn over them. The slice is recomputed at the viewed step and centred on the iterate, so scrubbing moves it along the run. Here gradient descent, with or without momentum, on a curved valley: too large a step overshoots the Armijo line and bounces across the valley.',
+  shows: ['landscapeSlice', 'LandscapeSliceView'],
 }
 
 const STEPS = 60

@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I draw a trajectory in three dimensions as it grows, coloured by a channel, with a fading trail?',
   explain:
     'The `points` panel over a `pointsSteps` record whose steps carry a `values` array (a number per point). `colour: "values"` colours the points along a ramp with a colour bar, `"groups"` by class and `"none"` leaves them plain; `fade` makes points older than that many recorded steps fade to a tenth of their opacity, so the front of the trajectory stands out; the buttons under the figure jump to the isometric, front, side and top viewpoints, and dragging or the arrow keys orbit from there. Here the Lorenz system, a few points per step, coloured by speed.',
+  shows: ['pointsSteps'],
 }
 
 const STEPS = 120

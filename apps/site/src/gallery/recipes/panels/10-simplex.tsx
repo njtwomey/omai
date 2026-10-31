@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show the state of a game as a point on the simplex, with the flow over it and the path it takes?',
   explain:
     'A probe that returns a `simplex` record: a triangle for three strategies (barycentric states) or a square for two populations of two (a pair of probabilities), with the paths of the state, a field of directions, and the fixed points classified by stability. Shown with the probe panel. Here replicator dynamics of rock, paper and scissors in a triangle, and of matching pennies in a square. A loss costs more than a win earns when the penalty is above zero, and the state spirals in to the mixed point; below zero it spirals out to the edge; at zero it cycles. Matching pennies always circles its centre.',
+  shows: ['simplex', 'SimplexView'],
 }
 
 const STEPS = 400

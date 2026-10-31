@@ -28,6 +28,7 @@ export const recipe: Recipe = {
   question: 'How do I show agents on a plane, or any drawing, as it was at the viewed step?',
   explain:
     'A probe that returns a `sceneSteps` record (a `Scene` at a step, with a caption) and the panel `{ kind: "scene", path }`, which draws the latest scene recorded at or before the viewed step. Any drawing the engine can build as a scene goes this way: agents, a plant and its horizon, a game. Here twenty-four oscillators with their own natural frequencies sit on a circle, each pulled towards the mean phase with the coupling you choose; the arrow from the centre is the mean field, longer the more they agree. Below the critical coupling they drift apart; above it they lock.',
+  shows: ['sceneSteps', 'SceneStepsView'],
 }
 
 const N = 24

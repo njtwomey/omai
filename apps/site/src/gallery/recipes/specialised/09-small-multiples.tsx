@@ -28,6 +28,7 @@ export const recipe: Recipe = {
   question: 'How do I draw one panel many times, once per variant, per quantity or per value, on shared axes?',
   explain:
     'The layout entry `{ kind: "multiples", panel, over }` repeats one panel spec over a facet in a grid of titled cells under the one step cursor. `over: { by: "variants" }` makes a cell of each variant of a comparison (here four learning rates), with the vertical axis of the curves shared so that the cells compare by eye (`shared: false` lets each find its own scale); `{ by: "paths" }` makes a chart of each path of a curves panel; `{ by: "args", key, values }` asks the panel\'s probe once per value (a flow per curvature). Every cell follows the player.',
+  shows: ['vectorField'],
 }
 
 const STEPS = 50

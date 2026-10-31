@@ -33,6 +33,7 @@ export const recipe: Recipe = {
   question: 'What does a method page look like: one objective, every solver, one player?',
   explain:
     'The template for the pages of the encyclopedia. A `Method` declares its slots (here a loss, a penalty and a solver); the page fills the objective from the option tables, runs one session per solver with `useSessions` and `variantsOfSlot`, and draws the same tape three ways under one cursor: curves overlaid, the decision surface of each solver side by side, and per-row margins. Controls come from the slots: a dataset picker, `SpaceControls` over the loss and penalty (options that would stall a gradient method are listed greyed, with the reason), and `SlotVariants` for the solvers, each with its own knobs.',
+  shows: ['decisionSurface'],
 }
 
 // The page's configuration: the objective is the model (a loss and a penalty); the solver is the mode, one variant each.

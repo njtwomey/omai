@@ -28,6 +28,7 @@ export const recipe: Recipe = {
     'How do I show a small table at the viewed step, with cells coloured by status and the rule that decided outlined?',
   explain:
     'A probe that returns a `markedTable` record (columns, cells, and marks on cells, rows or columns with a status and a note) and the panel `{ kind: "table", path }`. Here the Benjamini-Hochberg step-up procedure looks at ten p-values one rank at a time: each examined row is tinted by whether its p-value is under its own threshold, the rows the procedure rejects so far are tinted, and the largest rank under its threshold is outlined. Hover a tinted cell for its note; move the false discovery rate to see the line move.',
+  shows: ['markedTable', 'MarkedTableView'],
 }
 
 const P = [0.001, 0.008, 0.012, 0.021, 0.034, 0.041, 0.18, 0.35, 0.62, 0.9]

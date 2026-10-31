@@ -28,6 +28,7 @@ export const recipe: Recipe = {
   question: 'How do I show one graph whose nodes and edges change as the run goes on?',
   explain:
     'A probe that returns a `structureSteps` record (the structure once, and at a step the looks of its nodes and edges: a value as colour, a size, a label, the width of an edge) and the panel `{ kind: "graph", path }`, which draws the same nodes in the same places with the looks of the viewed step. Here heat spreads over a ring with chords from the node at the top: a node is brighter and larger the hotter it is, an edge thicker the more heat crosses it. Scrub to watch it arrive; the spread rate is a control.',
+  shows: ['structureSteps', 'StructureStepsView'],
 }
 
 const N = 10

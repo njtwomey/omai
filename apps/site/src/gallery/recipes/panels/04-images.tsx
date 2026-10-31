@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show many small images at the viewed step, with captions, as a run goes on?',
   explain:
     'A probe that returns an `imageSteps` record (a row of images per group, optionally a caption under each image) and the panel `{ kind: "images", path }`, which draws the latest step at or before the viewed one as a grid with the group names down the side. Here a toy denoiser learns to clean six noisy glyphs: the first row is the input, the second the estimate, the third what is left of the error; the caption under each image is its error. Raise the noise to make the task harder.',
+  shows: ['imageSteps', 'ImagePlayer'],
 }
 
 const W = 7

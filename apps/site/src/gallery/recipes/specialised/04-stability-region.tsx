@@ -27,6 +27,7 @@ export const recipe: Recipe = {
   question: 'How do I show where an ODE method is stable, and whether the step size in use keeps the problem inside?',
   explain:
     'A probe that returns a `stabilityRegion` record (the grid of |R(z)| of the method, the eigenvalues of the problem times the step size) and the panel `{ kind: "stability", path }`: the region where |R(z)| ≤ 1 is filled, its boundary drawn, and each value of hλ marked by a circle inside it, a cross outside, a diamond when it falls off the plot; the caption states the verdict in words. Here the step size grows over the run, carrying the two eigenvalues of a damped oscillator and one stiff mode out of the region of forward Euler (a disc about −1) much sooner than out of RK4 or the implicit methods, whose regions contain the whole left half-plane or most of it.',
+  shows: ['stabilityRegion', 'StabilityRegionView'],
 }
 
 const STEPS = 60
