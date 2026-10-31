@@ -29,6 +29,7 @@ import { type FamilyOptions, familyOption, hasFamily, intervalOption, logAxes, s
 import type { Panel } from './layout.ts'
 import { GraphPanel, ImagesPanel, PointsPanel, ScenePanel, StripPanel, TablePanel } from './RecordPanels.tsx'
 import { FIG, Note, RowsPanel, useProbe, useRun } from './RowsPanel.tsx'
+import { SpecialisedPanel } from './SpecialisedPanels.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import { TapeChannels } from './TapeView.tsx'
 import { tensorAt, trajectoryLayers } from './trajectory.ts'
@@ -252,6 +253,18 @@ function PanelView(
       if (panel.kind === 'points') return <PointsPanel {...common} panel={panel} />
       if (panel.kind === 'scene') return <ScenePanel {...common} panel={panel} />
       return <GraphPanel {...common} panel={panel} />
+    }
+    case 'zoom': {
+      const title = panel.title ?? panel.path
+      return (
+        <SpecialisedPanel
+          live={live}
+          panel={panel}
+          t={t}
+          title={titled(`${title} at step ${t}`)}
+          filename={file(title)}
+        />
+      )
     }
     case 'projection': {
       const title = panel.title ?? panel.name

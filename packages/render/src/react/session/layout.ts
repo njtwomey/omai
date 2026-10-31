@@ -7,6 +7,7 @@
 
 import type { Json } from 'mdml-engine/base'
 import type { MatrixMark } from '../../views/matrix-marks.ts'
+import type { Viewport } from '../../views/zoom.ts'
 
 /**
  * Where a channel of the rows panel is read at the viewed step: a derived path (probed with `args`) or a tensor path of
@@ -240,6 +241,27 @@ export type Panel =
    * caption (agents on a plane, a plant and its horizon, a drawing being built).
    */
   | { readonly kind: 'scene'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A zoomable picture of a grid: the panel probes `path` with `args` extended by `view` (`{ x: [low, high], y: [low,
+   * high] }`, the viewport being drawn) and `size` (`[columns, rows]` of the raster wanted), and draws the
+   * `decisionSurface` with `values` it returns (a fractal's escape times, a field). The wheel, dragging and pinching
+   * pan and zoom; the picture is asked for again once the gesture has stopped. A minimap of the `domain` shows the
+   * viewport, and the value under the cursor is read out.
+   */
+  | {
+      readonly kind: 'zoom'
+      readonly path: string
+      readonly args?: Json
+      /** The viewport the panel starts on and returns to on reset. */
+      readonly view: Viewport
+      /** The whole picture, which the viewport never leaves (default `view`). */
+      readonly domain?: Viewport
+      /** The raster asked of the probe, as `[columns, rows]` (default 220 by 160). */
+      readonly resolution?: readonly [number, number]
+      /** The values mapped to the ends of the colour ramp (default the minimap's own range). */
+      readonly range?: readonly [number, number]
+      readonly title?: string
+    }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */
