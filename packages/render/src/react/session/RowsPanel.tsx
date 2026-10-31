@@ -8,6 +8,7 @@
 import type { Json } from 'mdml-engine/base'
 import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
 import { type Tensor, toFlat } from 'mdml-engine/tensor'
+import type { Run } from 'mdml-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import { band, lines } from '../../charts/lines.ts'
 import { cartesian, type Layer } from '../../charts/plot.ts'
@@ -63,6 +64,13 @@ export function useProbe(
       return { error: e instanceof Error ? e.message : String(e) }
     }
   }, [live.session, t, path, argsKey])
+}
+
+/** The tape of a session, re-read whenever it grows. */
+// biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+export function useRun(live: LiveSession<any, any>): Run {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
+  return useMemo(() => live.session.run(), [live.session, live.version])
 }
 
 /** The channels of the rows panel (see the layout's `rows` panel): each read from a path at the viewed step. */

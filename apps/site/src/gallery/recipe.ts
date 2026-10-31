@@ -59,5 +59,11 @@ export const SECTIONS: readonly Section[] = [
     title: 'Environments and worlds',
     blurb: 'Grid worlds, mazes, ray casting and environment episodes.',
   },
+  {
+    id: 'panels',
+    title: 'Panels of records',
+    blurb:
+      'The session panels that draw a record probed at the viewed step: vector fields, strips of tokens, tables with marks, grids of images, graphs, matrices with marks, scenes, accumulating points, the complex plane, the simplex and reachability plots, each on a toy method.',
+  },
   { id: 'three-d', title: 'Three dimensions', blurb: 'Surfaces, curves and points in 3-D, orbited by dragging.' },
 ]

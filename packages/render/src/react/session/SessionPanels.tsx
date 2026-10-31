@@ -7,9 +7,8 @@
  */
 
 import { isExposition } from 'mdml-engine/exposition'
-import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
-import { type Tensor, toFlat } from 'mdml-engine/tensor'
-import { type Run, type TensorEvent, tensorSeries } from 'mdml-engine/trace'
+import type { Tensor } from 'mdml-engine/tensor'
+import type { Run } from 'mdml-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import { contours } from '../../charts/fields.ts'
 import { lines } from '../../charts/lines.ts'
@@ -18,17 +17,21 @@ import { cartesian, type Layer } from '../../charts/plot.ts'
 import { type PointSet, points } from '../../charts/points.ts'
 import { categoricalColour } from '../../theme/palettes.ts'
 import { parameterTrajectories, stepPositions } from '../../trace/tensors.ts'
+import { type MatrixMark, matrixMarksView } from '../../views/matrix-marks.ts'
 import { Chart } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
 import { leaf, overlayCurves, sweepTrials } from './compare.ts'
 import { StepCursorProvider } from './cursor.tsx'
+import { FieldPanel } from './FieldPanel.tsx'
 import { type FamilyOptions, familyOption, hasFamily, intervalOption, logAxes, sweepFamily } from './families.ts'
 import type { Panel } from './layout.ts'
-import { FIG, Note, RowsPanel, useProbe } from './RowsPanel.tsx'
+import { GraphPanel, ImagesPanel, PointsPanel, ScenePanel, StripPanel, TablePanel } from './RecordPanels.tsx'
+import { FIG, Note, RowsPanel, useProbe, useRun } from './RowsPanel.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import { TapeChannels } from './TapeView.tsx'
+import { tensorAt, trajectoryLayers } from './trajectory.ts'
 import { type LiveSession, type LiveSessions, type LiveVariant, variantsOf } from './useSession.ts'
 
 /**
@@ -227,7 +230,28 @@ function PanelView(
     }
     case 'tensor': {
       const title = panel.title ?? leaf(panel.path)
-      return <TensorView live={live} path={panel.path} title={titled(title)} filename={file(title)} t={t} />
+      return <TensorView live={live} panel={panel} title={titled(title)} filename={file(title)} t={t} />
+    }
+    case 'field': {
+      const title = panel.title ?? panel.path
+      return (
+        <FieldPanel live={live} panel={panel} t={t} title={titled(`${title} at step ${t}`)} filename={file(title)} />
+      )
+    }
+    case 'strip':
+    case 'table':
+    case 'images':
+    case 'points':
+    case 'scene':
+    case 'graph': {
+      const title = panel.title ?? panel.path
+      const common = { live, t, title: titled(`${title} at step ${t}`), filename: file(title) }
+      if (panel.kind === 'strip') return <StripPanel {...common} panel={panel} />
+      if (panel.kind === 'table') return <TablePanel {...common} panel={panel} />
+      if (panel.kind === 'images') return <ImagesPanel {...common} panel={panel} />
+      if (panel.kind === 'points') return <PointsPanel {...common} panel={panel} />
+      if (panel.kind === 'scene') return <ScenePanel {...common} panel={panel} />
+      return <GraphPanel {...common} panel={panel} />
     }
     case 'projection': {
       const title = panel.title ?? panel.name
@@ -251,13 +275,6 @@ function PanelView(
         </div>
       )
   }
-}
-
-// The tape, re-read whenever it grows.
-// biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
-function useRun(live: LiveSession<any, any>): Run {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
-  return useMemo(() => live.session.run(), [live.session, live.version])
 }
 
 // The tapes of every variant, re-read whenever they grow (they share one version and are remade together).
@@ -439,18 +456,6 @@ function SweepView(props: {
   )
 }
 
-/** The tensor events of a path with full values (subsampled or summarised ones cannot be drawn element by element). */
-function fullTensors(run: Run, path: string): TensorEvent[] {
-  return tensorSeries(run, path).filter((e) => e.values !== undefined && e.indices === undefined)
-}
-
-/** The latest tensor event of a path at or before step `t`, with full values. */
-function tensorAt(run: Run, path: string, t: number): TensorEvent | undefined {
-  return fullTensors(run, path)
-    .filter((e) => e.step <= t)
-    .at(-1)
-}
-
 // Each element of a tensor path as a curve against the step or a scalar path; a click scrubs to the nearest step.
 function SeriesView(props: {
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
@@ -520,54 +525,16 @@ function TrajectoryView(props: {
           name: '__surface',
         }),
       )
-    const heads: { x: number; y: number }[] = []
-    panel.paths.forEach((path, k) => {
-      const events = fullTensors(run, path).filter((e) => e.step <= t)
-      const trail = panel.trail === undefined ? events : events.slice(-panel.trail)
-      const x = trail.map((e) => e.values?.[i] ?? Number.NaN)
-      const y = trail.map((e) => e.values?.[j] ?? Number.NaN)
-      const name = leaf(path)
-      if (x.length === 0) return
-      layers.push(
-        panel.points === true
-          ? points([{ x, y, name, opacity: 0.6, size: 5 }], { mode, colourOffset: k })
-          : lines([{ x, y, name, width: 1.5, opacity: 0.9 }], { mode, colourOffset: k }),
-      )
-      heads.push({ x: x.at(-1) ?? Number.NaN, y: y.at(-1) ?? Number.NaN })
-    })
-    if (heads.length > 0)
-      layers.push(
-        points(
-          heads.map((h, k) => ({ x: [h.x], y: [h.y], name: `__head${k}`, size: 12, symbol: 'circle' })),
-          { mode },
-        ),
-      )
-    if (panel.ellipse !== undefined && heads[0] !== undefined) {
-      const cov = tensorAt(run, panel.ellipse, t)
-      const d = cov?.shape[0] ?? 0
-      if (cov?.values !== undefined && d > Math.max(i, j)) {
-        const sigma = [
-          [cov.values[i * d + i] ?? 0, cov.values[i * d + j] ?? 0],
-          [cov.values[j * d + i] ?? 0, cov.values[j * d + j] ?? 0],
-        ]
-        const flat = toFlat(covarianceEllipse([heads[0].x, heads[0].y], sigma, { nStd: 1, points: 72 }).points)
-        layers.push(
-          lines(
-            [
-              {
-                x: Array.from({ length: 73 }, (_, k) => flat[(2 * k) % flat.length] ?? 0),
-                y: Array.from({ length: 73 }, (_, k) => flat[(2 * k + 1) % flat.length] ?? 0),
-                name: '__ellipse',
-                colour: 'muted',
-                width: 1,
-                dash: 'dashed',
-              },
-            ],
-            { mode },
-          ),
-        )
-      }
-    }
+    layers.push(
+      ...trajectoryLayers(run, t, {
+        paths: panel.paths,
+        dims: [i, j],
+        mode,
+        ...(panel.trail === undefined ? {} : { trail: panel.trail }),
+        ...(panel.points === undefined ? {} : { points: panel.points }),
+        ...(panel.ellipse === undefined ? {} : { ellipse: panel.ellipse }),
+      }),
+    )
     return { ...cartesian(layers, { mode, figure: FIG, legend: panel.paths.length > 1 }), animation: false }
   }, [run, over.value, panel, t, i, j, mode])
   return (
@@ -583,32 +550,53 @@ function TrajectoryView(props: {
 }
 
 // A tensor path at the viewed step as a heatmap: a vector as one row, a matrix as is, a deeper tensor by its last axis.
+// With labels or marks (fixed, or probed at the viewed step) it is drawn as labelled cells with the marks over them.
 function TensorView(props: {
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   readonly live: LiveSession<any, any>
-  readonly path: string
+  readonly panel: Extract<Panel, { kind: 'tensor' }>
   readonly title: string
   readonly filename: string
   readonly t: number
 }): ReactNode {
-  const { live, path, t } = props
+  const { live, panel, t } = props
   const mode = useColourMode()
   const run = useRun(live)
-  const at = useMemo(() => tensorAt(run, path, t), [run, path, t])
+  const at = useMemo(() => tensorAt(run, panel.path, t), [run, panel.path, t])
+  const probedMarks = useProbe(live, t, panel.marksPath, panel.marksArgs)
+  const marked =
+    panel.rowLabels !== undefined ||
+    panel.colLabels !== undefined ||
+    panel.marks !== undefined ||
+    panel.marksPath !== undefined
   const option = useMemo(() => {
     if (at?.values === undefined) return undefined
     const width = at.shape.length >= 2 ? (at.shape[at.shape.length - 1] ?? 1) : at.values.length
     const z: number[][] = []
     for (let r = 0; r < at.values.length; r += width) z.push([...at.values.slice(r, r + width)])
+    if (marked) {
+      const probed = Array.isArray(probedMarks.value) ? (probedMarks.value as MatrixMark[]) : []
+      return matrixMarksView(z, {
+        mode,
+        figure: FIG,
+        marks: [...(panel.marks ?? []), ...probed],
+        ...(panel.rowLabels === undefined ? {} : { rowLabels: panel.rowLabels }),
+        ...(panel.colLabels === undefined ? {} : { colLabels: panel.colLabels }),
+      })
+    }
     // Row 0 at the top, as a matrix is read.
     return { ...heatmapChart(z.reverse(), { smooth: 'cells' }, { mode, figure: FIG }), animation: false }
-  }, [at, mode])
+  }, [at, mode, marked, panel, probedMarks.value])
   return (
     <FigureFrame
       figure={FIG}
       title={`${props.title} at step ${at?.step ?? t}${at === undefined ? '' : ` (${at.shape.join('×')})`}`}
       filename={props.filename}
-      {...(option === undefined ? { caption: <Note>nothing recorded yet</Note> } : {})}
+      {...(option === undefined
+        ? { caption: <Note>nothing recorded yet</Note> }
+        : probedMarks.error === undefined
+          ? {}
+          : { caption: <Note>marks unavailable: {probedMarks.error}</Note> })}
     >
       {option === undefined ? <div className="h-full" /> : <Chart figure={FIG} option={option} />}
     </FigureFrame>

@@ -91,3 +91,21 @@ export function outlined(l: Layer, mode: ColourMode, width = 0.9): Layer {
     }),
   }
 }
+
+/**
+ * The option fragment that gives a chart its description for assistive technology: ECharts' `aria` component with a
+ * stated label, so a figure is announced as what it shows and not only as an image.
+ *
+ * @param description - What the figure shows, in a sentence.
+ * @returns The fragment to spread into the option.
+ * @example
+ * ```ts
+ * import { ariaOf } from 'mdml-render/views'
+ * ariaOf('A vector field').aria.label.description // => 'A vector field'
+ * ```
+ */
+export function ariaOf(description: string): {
+  readonly aria: { readonly enabled: true; readonly label: { readonly description: string } }
+} {
+  return { aria: { enabled: true, label: { description } } }
+}

@@ -14,6 +14,7 @@ import { anomalyView } from './anomaly.ts'
 import { attributionFrames, beeswarmView, importanceView } from './attributions.ts'
 import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
+import { complexPlaneView } from './complex-plane.ts'
 import { componentsView } from './components.ts'
 import { curveSetView } from './curves.ts'
 import { dataBiasView } from './data-bias.ts'
@@ -24,15 +25,23 @@ import { episodeView } from './episodes.ts'
 import { counterfactualTableView, prototypeView } from './examples.ts'
 import { explanationQualityView } from './explanation-quality.ts'
 import { groupReportView } from './fairness.ts'
+import { vectorFieldView } from './fields.ts'
 import { paretoFrontView } from './frontiers.ts'
 import { imageFrames } from './images.ts'
 import { marginFrames } from './margins.ts'
+import { markedTableScene } from './marked-tables.ts'
 import { attributionImageView, attributionSeriesView, tokenStripView } from './modalities.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
+import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
+import { reachabilityPlot } from './reachability.ts'
 import { conceptView, ruleListView } from './rules.ts'
+import { sceneStepsScene } from './scene-steps.ts'
 import { stateSequenceView } from './sequences.ts'
+import { simplexView } from './simplex.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
+import { stripView } from './strips.ts'
+import { structureStepsScene } from './structure-steps.ts'
 import { subgroupView } from './subgroups.ts'
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
@@ -387,6 +396,78 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => paretoFrontView(r, o),
+  },
+  vectorField: {
+    kind: 'vectorField',
+    component: 'VectorFieldView',
+    title: 'Vector field',
+    plays: false,
+    accepts: [],
+    still: (r, o) => vectorFieldView(r, o),
+  },
+  strip: {
+    kind: 'strip',
+    component: 'StripView',
+    title: 'Strip',
+    plays: false,
+    accepts: [],
+    still: (r, o) => stripView(r, o),
+  },
+  markedTable: {
+    kind: 'markedTable',
+    component: 'MarkedTableView',
+    title: 'Table',
+    plays: false,
+    accepts: [],
+    still: (r) => markedTableScene(r),
+  },
+  structureSteps: {
+    kind: 'structureSteps',
+    component: 'StructureStepsView',
+    title: 'Graph',
+    plays: false,
+    accepts: [],
+    still: (r, o) => structureStepsScene(r, undefined, o?.mode === undefined ? {} : { mode: o.mode }),
+  },
+  pointsSteps: {
+    kind: 'pointsSteps',
+    component: 'PointsStepsView',
+    title: 'Points',
+    plays: false,
+    accepts: [],
+    still: (r, o) => (r.dims === 3 ? pointsStepsScene(r) : pointsStepsView(r, undefined, o)),
+  },
+  complexPlane: {
+    kind: 'complexPlane',
+    component: 'ComplexPlaneView',
+    title: 'Complex plane',
+    plays: false,
+    accepts: [],
+    still: (r, o) => complexPlaneView(r, o),
+  },
+  simplex: {
+    kind: 'simplex',
+    component: 'SimplexView',
+    title: 'Simplex',
+    plays: false,
+    accepts: [],
+    still: (r, o) => simplexView(r, o),
+  },
+  reachability: {
+    kind: 'reachability',
+    component: 'ReachabilityPlotView',
+    title: 'Reachability',
+    plays: false,
+    accepts: [],
+    still: (r, o) => reachabilityPlot(r, o),
+  },
+  sceneSteps: {
+    kind: 'sceneSteps',
+    component: 'SceneStepsView',
+    title: 'Scene',
+    plays: false,
+    accepts: [],
+    still: (r) => sceneStepsScene(r),
   },
   dataBias: {
     kind: 'dataBias',

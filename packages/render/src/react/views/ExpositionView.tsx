@@ -11,6 +11,7 @@ import { AnomalyView } from './anomaly.tsx'
 import { AttributionView, ImportanceView } from './attributions.tsx'
 import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ConfusionMatrixView, ValueGridView } from './cells.tsx'
+import { ComplexPlaneView } from './complex-plane.tsx'
 import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
 import { DependenceView } from './dependence.tsx'
@@ -20,13 +21,21 @@ import { EpisodeView } from './episodes.tsx'
 import { CounterfactualView, PrototypeView } from './examples.tsx'
 import { ExplanationQualityView } from './explanation-quality.tsx'
 import { GroupReportView } from './fairness.tsx'
+import { VectorFieldView } from './fields.tsx'
 import { ImagePlayer } from './images.tsx'
 import { MarginView } from './margins.tsx'
+import { MarkedTableView } from './marked-tables.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
+import { PointsStepsView } from './points-steps.tsx'
+import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
+import { SceneStepsView } from './scene-steps.tsx'
 import { StateSequenceView } from './sequences.tsx'
+import { SimplexView } from './simplex.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
+import { StripView } from './strips.tsx'
+import { StructureStepsView } from './structure-steps.tsx'
 import { DataBiasView, ParetoFrontView, SubgroupView } from './subgroups.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
 import { CoefficientTableView, LikelihoodView, NeighbourView, SearchTrialsView } from './tables.tsx'
@@ -165,5 +174,23 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <DataBiasView record={record} {...common} />
     case 'paretoFront':
       return <ParetoFrontView record={record} {...common} />
+    case 'vectorField':
+      return <VectorFieldView record={record} {...common} />
+    case 'strip':
+      return <StripView record={record} {...common} />
+    case 'markedTable':
+      return <MarkedTableView record={record} {...common} />
+    case 'structureSteps':
+      return <StructureStepsView record={record} {...common} />
+    case 'pointsSteps':
+      return <PointsStepsView record={record} {...common} />
+    case 'complexPlane':
+      return <ComplexPlaneView record={record} {...common} />
+    case 'simplex':
+      return <SimplexView record={record} {...common} />
+    case 'reachability':
+      return <ReachabilityPlotView record={record} {...common} />
+    case 'sceneSteps':
+      return <SceneStepsView record={record} {...common} />
   }
 }

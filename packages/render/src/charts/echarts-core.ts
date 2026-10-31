@@ -23,6 +23,7 @@ import {
   TreemapChart,
 } from 'echarts/charts'
 import {
+  AriaComponent,
   AxisPointerComponent,
   CalendarComponent,
   DataZoomInsideComponent,
@@ -75,6 +76,7 @@ export function echartsCore(): typeof echarts {
     TreemapChart,
     RadarChart,
     ScatterChart,
+    AriaComponent,
     AxisPointerComponent,
     CalendarComponent,
     DataZoomInsideComponent,
