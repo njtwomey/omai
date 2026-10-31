@@ -1,6 +1,6 @@
 """Label propagation, label spreading and self-training against sklearn.semi_supervised: the RBF and neighbour graphs,
 the clamped and soft-clamped diffusions with their label distributions and out-of-sample probabilities, and the
-threshold and k-best selection of self-training over Gaussian naive Bayes with the round at which each row was labelled."""
+threshold and k-best selection of self-training (naive Bayes, logistic regression), with each row's round."""
 
 import numpy as np
 import sklearn

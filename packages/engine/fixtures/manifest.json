@@ -1386,6 +1386,14 @@
       "cases": 11
     },
     {
+      "fixture": "learn/weak_supervision.json",
+      "source": "oracle/cases/learn/weak_supervision.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "linear/bayesian.json",
       "source": "oracle/cases/linear/bayesian.py",
       "reference": {
