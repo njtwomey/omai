@@ -2128,6 +2128,32 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
 - `ilp/foil.ts`: FOIL (gain, refinement, coverage), traced.
 - `ilp/progol.ts`: mode declarations, bottom clauses, inverse entailment.
 - `ilp/meta-interpretive.ts`: Metagol-style learning with metarules; learning from failures (Popper-style).
+- `production.ts`: production systems: rules over a working memory of ground facts (`productionRule`, `not(...)`
+  conditions, facts added and removed, `halt`), conflict resolution by rule order, priority, recency (OPS5's LEX) or
+  specificity (`resolveConflict`, ties broken by the matched facts so every matcher fires the same instantiation), a
+  naive matcher and `ReteNetwork` (alpha memories and beta memories of partial matches, updated on `add` and `remove`; a
+  property test checks that both matchers give identical runs on random rule bases), and `productionSystemAlgorithm`
+  (one firing per step, the working memory, the conflict-set size and the rule fired with its bindings in the state).
+- `uncertain.ts`: MYCIN certainty factors (`combineCertainty`, `certaintyInference`), Dempster-Shafer belief functions
+  (`massFunction`, `belief`, `plausibility`, `combineDempster` with its conflict, `combineYager`, `pignistic`,
+  `evidenceAlgorithm` adding one body of evidence per step with the belief intervals), fuzzy logic (membership functions,
+  t-norms and t-conorms, `mamdani` and `sugeno` inference, `defuzzify` with centroid by exact integration of the
+  piecewise-linear curve, bisector and the means/smallest/largest of the maxima) and `possibilityMeasures`.
+- `argumentation.ts`: Dung frameworks: conflict-free and admissible sets, the characteristic function, grounded,
+  complete, preferred and stable extensions (`extensions`, `accepted` sceptically or credulously), and
+  `groundedAlgorithm`, the grounded labelling one round per step (in, out, undecided).
+- `description.ts`: ALC: `parseConcept`, `nnf`, `alcTableauAlgorithm` (one rule per step: and, all, some, or with
+  backtracking, clashes, subset blocking, a TBox of general concept inclusions internalised), `conceptSatisfiable`,
+  `conceptSubsumes` (unsatisfiability of the difference) and `classifyConcepts` (the direct-parent hierarchy of named
+  concepts).
+- `problog.ts`: ProbLog-style probabilistic logic programs: `groundProbabilistic` (forward-chaining grounding of
+  function-free definite rules over probabilistic facts `p::f`), `proofSets` (minimal proofs of every atom to a fixed
+  point, so cycles terminate), `successProbability` (exact weighted model counting by memoised Shannon expansion, with
+  the proofs and their probabilities exposed), `conditionalProbability` (evidence true or false) and `probLogEmAlgorithm`
+  (EM for the facts' probabilities from observed interpretations, one iteration per step). Checked against enumeration of
+  all possible worlds on random cyclic graphs.
+- TODO (not built): Markov logic networks (grounding, pseudo-likelihood weight learning, MC-SAT and Gibbs), differentiable
+  logic (t-norm formula semantics over tensors as in Logic Tensor Networks, a neural theorem prover, differentiable ILP).
 - Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
   built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
