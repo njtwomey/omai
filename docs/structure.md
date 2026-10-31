@@ -2148,7 +2148,12 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   - `wa-tor.ts`: Wa-Tor fish and sharks (`waTor`, with an extinction event).
   - `sugarscape.ts`: Sugarscape (`sugarLandscape`, `sugarscape` with `stats.gini` of the wealth on the tape; trade and
     reproduction are not built).
-  - Private: `_core.ts` (state codec, torus index, board hash, checks).
+  - `lattice-gas.ts`: HPP and FHP-I lattice gases (`latticeGas`, `gasMassMomentum`, `coarseGrainGas`, `curl2d`,
+    `gasNeighbour`; exact mass and momentum conservation, bounce-back solids).
+  - `boltzmann.ts`: D2Q9 BGK lattice Boltzmann with Guo forcing, bounce-back walls and obstacles, inlet and outlet
+    (`latticeBoltzmann`, `d2q9Equilibrium`, `d2q9Moments`, `poiseuilleProfile` as the analytic check; the shear-wave
+    decay rate `nu k^2` is checked in the tests).
+  - Private: `_core.ts` (state codec, torus index, board hash, checks), shared by `fractals/`.
 - `fractals/` (namespace `dynamics.fractals`; checked against the dimensions and counts the constructions imply, and
   hand-known points): each is an `Algorithm` with serialisable state, a path union and a log contract.
   - `escape-time.ts`: Mandelbrot, Julia, Burning Ship and multibrot (`escapeCount`, `escapeOrbit`, `orbitPeriod`,
