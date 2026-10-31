@@ -3402,6 +3402,10 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   Adam or plain ascent; state is the parameters, optimiser and image; paths `vis/activation`, `vis/loss`, `vis/image`),
   the objectives `unitObjective` and `channelObjective`, `totalVariation`. Oracle: none; tested by monotone rise of the
   target channel of a tiny CNN under plain ascent, the smoothness of the Fourier start, the penalty's effect.
+- Sanity checks (`sanity.ts`, Adebayo et al.): `randomisationTestAlgorithm` (one layer randomised per step, last layer
+  first, cascading or independent; paths `sanity/layer`, `sanity/similarity`, `sanity/map`), `modelRandomisationTest`
+  (run to the end), `dataRandomisationTest` (retrain on permuted labels); the comparison is `explanationSimilarity`.
+  Tested: gradient and input-times-gradient maps decorrelate, an input-only map stays at similarity 1 and fails.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
   Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
@@ -3410,7 +3414,7 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Evaluation of explanations (`evaluation.ts`, Quantus's categories): faithfulness (deletion and insertion curves,
   ROAR, faithfulness correlation, monotonicity), robustness (max- and average-sensitivity, local Lipschitz estimate),
   localisation (pointing game, relevance mass and rank against a ground-truth mask), complexity (sparseness, entropy),
-  randomisation sanity checks (model parameter and label randomisation), axiomatic properties (completeness, input
+  randomisation sanity checks (model parameter and label randomisation; `sanity.ts`), axiomatic properties (completeness, input
   invariance, symmetry), agreement between explainers.
   Built: `deletionCurve` (deletion and insertion, with areas), `faithfulnessCorrelation`, `monotonicity`,
   `removeAndRetrain` (ROAR, and least-first), `sensitivity` (maximum and average), `localLipschitz`, `localisation`
