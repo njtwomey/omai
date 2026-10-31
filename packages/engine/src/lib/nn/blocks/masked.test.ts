@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { expectClose } from '../../../testing/close.ts'
 import { checkPrimitive, grad } from '../../autodiff/index.ts'
 import { key, normal } from '../../random/index.ts'
-import { asTensor, reshape, sum, toArray, toFlat, type Value, zeros } from '../../tensor/index.ts'
+import { asTensor, reshape, sum, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import { Conv1d } from '../module/conv.ts'
 import { CausalConv1d, GatedMaskedConv, MaskedConv2d, pixelCnnMask } from './masked.ts'
 

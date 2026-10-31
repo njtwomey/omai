@@ -3015,6 +3015,11 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     relation), `EGNNLayer` and `EGNN` (E(n)-equivariant graph layers: features from distances, coordinates from relative
     vectors), `GraphTransformerLayer` and `GraphTransformer` (edge-softmax attention, dense when no edges are given,
     Laplacian or random-walk positional encodings from `graph` with random sign flips in training).
+  - `operators.ts`: operator learning: `DeepONet` (branch over sensors, trunk over the query point), `SpectralConv1d`
+    and `SpectralConv2d` (low Fourier modes times learned complex weights, through the differentiable FFT),
+    `FourierLayer` and `FNO` (lift, Fourier layers, projection, in one or two dimensions).
+  - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
+    `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
