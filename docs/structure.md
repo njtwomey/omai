@@ -1925,6 +1925,12 @@ jellyfish, Biopython, pyphen
   TODO: Németh's non-standard (`/`) patterns.
 - `statistics.ts`: Zipf (log-log and maximum likelihood) and Heaps fits, type-token ratios (root, log, moving average,
   hapax ratio), tokeniser fertility and compression ratio, topic coherence (UMass, NPMI as gensim).
+- `language-models.ts`: n-gram language models (Chen and Goodman 1998): counts of padded n-grams, the smoothers as a
+  mode (maximum likelihood, add-k, Witten-Bell, absolute discounting, interpolated and modified Kneser-Ney with
+  continuation counts, Katz backoff over Good-Turing discounts), `<unk>` for rare words, probabilities, whole
+  next-word distributions, perplexity and samples; `ngramTrainingAlgorithm` counts one sentence per step with the
+  held-out perplexity so far. Oracle: Chen and Goodman's definitions written directly in Python (NLTK's `lm` models
+  differ in convention, see `oracle/cases/text/language_models.py`).
 
 ### 4.22 `search/`: search, constraint satisfaction and planning (AIMA)
 
