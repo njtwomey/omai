@@ -217,6 +217,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-render/gym': () => import('mdml-render/gym'),
   'mdml-render/layout': () => import('mdml-render/layout'),
   'mdml-render/maths': () => import('mdml-render/maths'),
+  'mdml-render/producer': () => import('mdml-render/producer'),
   'mdml-render/structures': () => import('mdml-render/structures'),
   'mdml-render/svg': () => import('mdml-render/svg'),
   'mdml-render/theme': () => import('mdml-render/theme'),

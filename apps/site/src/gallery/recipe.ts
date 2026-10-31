@@ -71,5 +71,11 @@ export const SECTIONS: readonly Section[] = [
     blurb:
       'Panels for one kind of method: a zoomable picture with a pixel inspector, loss landscapes with the optimiser on them, regions of stability, equations against their truth, audio in sync, transcripts, samples over training, small multiples and a session inside a session.',
   },
+  {
+    id: 'infrastructure',
+    title: 'Infrastructure',
+    blurb:
+      'What a method page runs on: sessions computed in a Web Worker while the page stays alive, the whole page exported as an image, a recording or a tape file that reproduces it, and one run told in several pages.',
+  },
   { id: 'three-d', title: 'Three dimensions', blurb: 'Surfaces, curves and points in 3-D, orbited by dragging.' },
 ]

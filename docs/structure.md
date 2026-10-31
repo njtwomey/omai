@@ -1726,6 +1726,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `chebyshev`, `augmentedChebyshev`, `epsilonConstraint`), `VectorObjective`.
 - `nsga2.ts`: `nsga2` (binary tournaments by rank and crowding, elitist survival, constrained domination, hypervolume
   traced against a reference point), the operators `sbxCrossover` and `polynomialMutation` (bounded, as Deb's code).
+- `landscape.ts`: loss landscapes after Li et al.: `filterNormalise` and `randomDirection` (per-filter, per-layer or no
+  normalisation; biases zeroed or normalised; any filter axis), `slice1d`, `slice2d` and `randomSlice` (losses along one
+  or two directions, with the directions returned), `interpolationSlice` and `bezierSlice` (the line and a quadratic
+  Bezier path between two minima) with `barrier`, and `sharpness` (the largest Hessian eigenvalue by Lanczos through
+  `eigsh` or by power iteration, on Hessian-vector products from `flatObjective`) with `stabilityThreshold` (2 / eta).
 - `implicit.ts`: differentiation through solutions by the implicit function theorem, with any solver: `implicitRoot`
   (F(x, ...thetas) = 0, reverse and forward rules, dense solves that differentiate again or matrix-free GMRES/CG),
   `implicitFixedPoint` (equilibrium layers, default fixed-point solver), `implicitArgmin` (optimisation layers through
@@ -2556,7 +2561,7 @@ none of those weights.
   `text/shingles.ts`; private `_ter.ts`.
 - `latent.ts`: latent-factor data with the factors as truth: `mixedSources` (non-Gaussian sources and their mixing
   matrix, for ICA), `twoViews` (shared latent signals in two views, with the population canonical correlations, for CCA
-  and PLS), `toySuperposition` (sparse features with importances).
+  and PLS), `toySuperposition` (sparse features with importances), `sparseDictionary` (sparse non-negative codes through a dictionary of unit directions, the plant a sparse autoencoder must recover; truth: codes, dictionary, coherence).
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
@@ -2939,6 +2944,19 @@ modAL for active learning, diffprivlib and opacus for privacy
   score `ulsifLoo`.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
+- `dp-sgd.ts`: differentially private training: `perExampleGradients` (`vmap` of `valueAndGrad`), `clipPerExample`
+  (flat clipping to a norm bound, the clipped share), `privateGradient` and `dpGradientTransformation` (the Gaussian
+  noise stage, a `GradientTransformation` for the sum of clipped gradients), `dpSgdStep` (a step over `TrainState`),
+  `dpSgdAlgorithm` (Poisson batches, the Renyi account on the tape: `budget/epsilon`, `budget/rdp`, with
+  `training/clippedShare` and `training/noiseNorm`), `dpEpsilon` and `noiseMultiplierFor` (the accountant and its
+  inverse over `privacy.ts`). The accountant is checked against opacus on Abadi et al.'s, TensorFlow Privacy's and
+  Opacus's MNIST settings (`oracle/cases/learn/privacy.py`).
+- `privacy-attacks.ts`: attacks on a trained model, models as logits functions: membership inference by
+  `lossThresholdAttack`, `shadowModelAttack` (shadows calibrate the loss threshold) and `likelihoodRatioAttack` (LiRA,
+  online, per-record Gaussians of `confidenceLogit`), scored by `membershipReport` (AUC, best accuracy, advantage, TPR
+  at low FPR); `attributeInference` (Bayes over candidate values of a hidden feature); `modelInversionAlgorithm`
+  (gradient ascent on a class, stepped); gradient leakage by `analyticGradientLeak` (exact for a first linear layer) and
+  `gradientLeakageAlgorithm` (deep leakage from gradients, stepped); `extractionAttack`.
 - `semi-supervised.ts`: rows with target `-1` (NaN for regression) are unlabelled. `selfTraining`, `coTraining` (two
   feature views, shared labelled set, product of the views) and `triTraining` (Zhou and Li's error and size conditions)
   over any probabilistic base `Estimator`; `labelPropagation` and `labelSpreading` (`sklearn.semi_supervised`, rbf and
@@ -3103,6 +3121,13 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen
   counts and sizes), FLOP estimates (`flops`, `functionFlops`, counted from traced primitives) and `memoryEstimate`.
+- `module/adapters.ts`: parameter-efficient fine-tuning as module wrappers that freeze the base: `LoRA` (low-rank
+  `(alpha / r) B A` updates of chosen weights, by default a `Linear`'s weight or an attention layer's query and value
+  rows; `merged`, `unmerge`, `delta`, rank-stabilised scaling), `loraTargets`, `loraParameterCount` (`r (d_in + d_out)`),
+  `BottleneckAdapter` and `withAdapter` (near-identity residual adapters), `PromptTuning` (learnt input embeddings
+  prepended to a sequence), `PrefixAttention` (learnt key and value rows prepended in an attention layer's input space),
+  `trainOnly` and `bitFit` (train selected parameters only, through the module's `trainableMask`), and
+  `parameterCounts` (total, trainable and frozen).
 - `training/state.ts`: `TrainState` (params, optimiser state, buffers, step and update counts, key, update scale,
   accumulation window), `trainState`, `lossAndGrads`, `applyGradients` (masking frozen parameters), `trainStep` (the
   functional step), `accumulate`, `hasFrozen`.
@@ -3116,8 +3141,25 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `setLearningRateScale`; `onBatchEnd` gets the tapped activations. Built-ins: `gradNormLogger` (global and per
   parameter), `paramNormLogger`, `valueLogger` (gradient and parameter tensors), `learningRateMonitor`,
   `earlyStopping`, `bestCheckpoint`, `reduceLROnPlateau` (PyTorch's rule), `activationLogger` (activation taps).
+- `training/alternating.ts`: several modules trained against one another: `alternatingAlgorithm` (players of a module,
+  an optimiser and a loss that sees every player's parameters, stepped through a schedule with `times` per player; one
+  round per step; per-player loss and gradient norm on the tape; buffers carried; frozen players skipped),
+  `ganAlgorithm` (generator and discriminator or critic with `nCritic`, the objectives of `losses/generative`, the WGAN-GP
+  penalty, spectrally normalised layers through `SpectralNorm`, and the tracks `gan/discriminatorAccuracy`,
+  `gan/wasserstein`, `gan/penalty`, `gan/samples`) and `modeCoverage` (modes of a known mixture reached by samples).
 - `training/serialise.ts`: `saveState`/`loadState` and `stateToText`/`stateFromText` (parameters and buffers as JSON
   with dtype and shape), `loadTorchStateDict` (weights exported by the oracle, with renaming).
+- `adversarial.ts`: attacks and adversarial training on any logits function: `fgsm`, `pgd` (random start inside an
+  l-infinity or l2 ball, targeted or untargeted, cross-entropy, margin or TRADES-KL loss, data range), `pgdAlgorithm` (one
+  gradient step per step, `attack/*` paths, serialisable), `marginLoss`, `carliniWagnerL2` (Adam on the penalised margin,
+  closest adversarial point kept), `deepFool`, `transferAttack`, `squareAttack` (black box: logits only, query counts),
+  `accuracyOf`, `robustAccuracy` (the sweep over radii) and `adversarialTrainStep` (PGD inner maximisation, or TRADES, as a
+  step over `TrainState`).
+- `certify.ts`: certificates: randomised smoothing (`smoothedCounts`, `randomisedSmoothing` with the Clopper-Pearson
+  bound and the radius sigma Phi^-1(p), `certifiedRadius`, `certifiedAccuracy`, `smoothingAlgorithm` stepped with
+  `sample/*`, `vote/*`, `certify/*` paths, `linearSmoothedRadius` the closed form for a linear classifier), interval
+  bound propagation through a `Sequential` (`intervalBoundPropagation`, `ibpCertify` with the margin bounded exactly
+  through the last layer) and the Lipschitz bound from spectral norms (`lipschitzBound`, `lipschitzCertifiedRadius`).
 - `language-model.ts`: the `LanguageModel` contract (a structural `Tokenizer`, `logits(tokens)`, optional embeddings
   and a cached `step`), implemented by local models and by adapters in `methods/llm`; `languageModelFromModule`,
   `bigramLanguageModel` and `characterTokenizer` (reference models), `nextTokenLogits`, `sequenceLogProb`,
@@ -3374,6 +3416,38 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   Banzhaf, representer points; detecting mislabelled and harmful training rows.
   Built: `influenceFunctions`, `tracIn`, `dataShapley`, `knnShapley`, `subsetUtility`, `betaShapley`,
   `dataBanzhaf` (maximum sample reuse), `representerValues`; the mislabelled-row study is in `methods/explain`.
+- Mechanistic interpretability of transformers (`residual.ts`, `lens.ts`, `patching.ts`, `planted.ts`): the model opened
+  along its residual stream, with a hook at every site where a component writes (`embed`, each head, attention, feed-forward,
+  block output), so everything below is a function of one object.
+  Built: `residualModel` (pre-norm `TransformerLM`, forward pass rebuilt head by head, equals `lm.forward`, differentiable
+  through hooks), `headSite`, `logitLens` (the last depth is the model's logits exactly; ranks and probabilities of given
+  targets), `tunedLensAlgorithm` (affine translator per depth by KL to the final layer, one Adam step per step, paths
+  `lens/loss`, `lens/layerDivergence`, `lens/translators`), `lensDivergence`, `activationPatching` (denoise and noise,
+  every site and position, share of the gap recovered), `causalTrace` (ROME: noised subject embeddings, restore stream,
+  feed-forward or attention), `attributionPatching` (one gradient for every site), `pathPatching` (sender to chosen
+  receivers or the logits, everything else frozen clean), `directLogitAttribution` (exact split of a logit difference
+  including the final norm's frozen scale), the metrics `logitDifference`, `tokenLogProbability`, `tokenProbability`, and
+  `plantedCopyCircuit` (a hand-built one-layer model whose head 0 copies the name tokens, with its truth). Oracle: none
+  (no reference library); tested against the planted circuit and identities (lens at the last depth, self-patching,
+  patching every component equals replacing the run, contributions sum to the logit difference).
+- Probes and sparse autoencoders (`probing.ts`, `sae.ts`): the probe is `linear`'s multinomial (its solver slot passes
+  through) trained on a split with a control task per word type (Hewitt and Liang).
+  Built: `probeAccuracy` (train, test, majority baseline), `controlTask`, `probeSelectivity`, `probeLayers` (accuracy,
+  control and selectivity down a stack); `saeAlgorithm` (L1 or top-k code, unit-norm dictionary rows, Adam on batches,
+  optional resampling of dead features; paths `sae/loss`, `sae/reconstruction`, `sae/l0`, `sae/dead`, `sae/dictionary`),
+  `saeEncode`, `saeDecode`, `dictionaryRecovery` (best cosine per planted direction). The plant is the dataset
+  `sparseDictionary`. Oracle: none; tested by recovery of the planted dictionary (mean cosine above 0.97) and by the
+  dead-feature count with and without resampling.
+- Feature visualisation (`visualisation.ts`): activation maximisation over an image as an algorithm.
+  Built: `featureVisualisation` (a sigmoid of the pixels, or of the real inverse FFT of a spectrum scaled by 1/f^decay;
+  jitter by rolls, scale and rotation by a random affine grid sample, a total-variation penalty, optional blur of pixels;
+  Adam or plain ascent; state is the parameters, optimiser and image; paths `vis/activation`, `vis/loss`, `vis/image`),
+  the objectives `unitObjective` and `channelObjective`, `totalVariation`. Oracle: none; tested by monotone rise of the
+  target channel of a tiny CNN under plain ascent, the smoothness of the Fourier start, the penalty's effect.
+- Sanity checks (`sanity.ts`, Adebayo et al.): `randomisationTestAlgorithm` (one layer randomised per step, last layer
+  first, cascading or independent; paths `sanity/layer`, `sanity/similarity`, `sanity/map`), `modelRandomisationTest`
+  (run to the end), `dataRandomisationTest` (retrain on permuted labels); the comparison is `explanationSimilarity`.
+  Tested: gradient and input-times-gradient maps decorrelate, an input-only map stays at similarity 1 and fails.
 - Modality helpers (`modalities.ts`): token, superpixel and time-window feature masks and baselines, so every
   attribution applies to text, images and series.
   Built: `tokenise`, `tokenPredictor`, `gridSuperpixels`, `slicSuperpixels`, `timeWindows`, `maskGroups`,
@@ -3382,7 +3456,7 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Evaluation of explanations (`evaluation.ts`, Quantus's categories): faithfulness (deletion and insertion curves,
   ROAR, faithfulness correlation, monotonicity), robustness (max- and average-sensitivity, local Lipschitz estimate),
   localisation (pointing game, relevance mass and rank against a ground-truth mask), complexity (sparseness, entropy),
-  randomisation sanity checks (model parameter and label randomisation), axiomatic properties (completeness, input
+  randomisation sanity checks (model parameter and label randomisation; `sanity.ts`), axiomatic properties (completeness, input
   invariance, symmetry), agreement between explainers.
   Built: `deletionCurve` (deletion and insertion, with areas), `faithfulnessCorrelation`, `monotonicity`,
   `removeAndRetrain` (ROAR, and least-first), `sensitivity` (maximum and average), `localLipschitz`, `localisation`
@@ -3810,6 +3884,26 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `detectMultiScale`. `hog-detector.ts`: HOG features of windows and sliding-window detection with a linear classifier
   over a pyramid. `lines.ts`: line segment detection as OpenCV's LSD (exact at LSD_REFINE_NONE, scale 1), validated by
   density and the number of false alarms.
+- Stepped forms for sessions (`edges.ts`, and beside the one-shot routines): `cannyAlgorithm` (a step per stage: smoothing,
+  gradient, non-maximum suppression, double threshold, then one hysteresis round per step; the last image is `canny`'s;
+  `cannyStages` in `signal/image/features.ts` returns every stage and `canny` is its last), `houghLineAlgorithm` (the
+  accumulator filling a pixel's votes per step, equal to `houghLine` at the end) with `houghLinePeaks` (strongest cell,
+  suppression window, repeat), `watershedAlgorithm` in `signal/image/segmentation.ts` (flooding by level over the same
+  queue as `watershed`, so the labels are identical; the queue is serialised as arrays) and
+  `meanShiftSegmentationAlgorithm` in `segmentation.ts` (one window iteration per pixel per step, the modes grouped into
+  regions every step; the one-shot function is the same iteration). Paths `canny/*`, `hough/*`, `flood/*`, `shift/*`.
+  Tested against the one-shot results (identical), planted lines, planted basins and planted region colours.
+- Calibration and structure from motion in steps (`calibration.ts`, `refinement.ts`, `sfm.ts`): `calibrationAlgorithm`
+  (the first state is Zhang's closed form, each step one Levenberg-Marquardt iteration of the joint refinement of
+  intrinsics, distortion and poses, the calibration and RMS reprojection error at the iterate in the state; the same
+  optimum as `calibrateCamera`, which now shares its setup), `steppedRefinement` (the wrapper that makes `optim`'s
+  Levenberg-Marquardt algorithm a serialisable refinement with a decoded geometry; paths `refine/cost`,
+  `refine/reprojectionError`, `refine/parameters`), `essentialRansacAlgorithm` (one eight-point hypothesis per step, the
+  best inliers in the state), `twoViewReconstruction` (essential matrix refit to the inliers, cheirality pose, inliers
+  triangulated, up to scale), `addView` (`solvePnP` against the points built so far), `bundleAdjustmentAlgorithm` (all
+  poses but the first and all points, one iteration per step, with the scale free) and `bundleReprojectionError`. Tested
+  on planted rigs: exact correspondences give the pose and structure to 1e-6, noisy ones are corrected by bundle
+  adjustment with the error non-increasing, calibration recovers a planted intrinsic matrix and distortion.
 - Image quality (PSNR, SSIM and the rest) is `metrics/image-quality.ts`; neural detection heads stay in `methods/vision` (5.x).
 - TODO: TC89 chain approximations and RETR_FLOODFILL, `fitEllipseDirect` and AMS, Telea inpainting, the fast mode of
   non-local means, stereoRectify's alpha-dependent camera matrices, StereoBM's pre-filter and SGBM's Birchfield-Tomasi
@@ -4670,6 +4764,19 @@ without one), each point a trial (`sweepTrials`), those after the viewed step fa
 scrubs to the nearest trial. Bayesian optimisation (`methods/tune`) logs `x`, `value` and `best` per trial, so
 `{ kind: 'sweep', path: 'value', over: 'x' }` is its sweep. The gallery's `animation/05-compare` recipe runs the toy
 walk as three variants under one player.
+
+**The worker producer, page export and narratives.** `useSession`'s producer is a factory (`SessionHookOptions.producer`):
+the default computes on the main thread; `workerProducer({ createWorker })` (`render/producer/`) hands a Web Worker the
+method's name and its JSON options, computes the run ahead of the cursor (the player tells it where the cursor is, so a
+`lookahead` holds it that many steps ahead; the eager toggle runs it to the end) and streams the tape back, probing derived
+paths in the worker on request; the player and the panels read the same `Session` interface, now a `RemoteSession`. Pause,
+remake and unmount terminate the worker; a failure shows in the player. The gallery's worker entry is `toys/worker.ts`
+(`serveWorker(toyRegistry)`). Measured on the gallery's heavy toy (40,000 rows, 1000 steps of descent, a probe of a grid of
+losses per step): the page's `requestAnimationFrame` cadence stays at 16.7 ms (p99 16.8, longest 33 ms) while the worker
+computes, against a median of 133 ms on the main thread. **Page export:** `SessionPlayer`'s `pageExport` menu captures every
+figure under the title and over the caption; the tape file holds the events and the probes of the layout at up to 120 steps, and
+`useTape` replays it with nothing recomputed. **Narratives:** a `Narrative` is pages (`NarrativePage`: text, layout, `Moment`s
+as steps or event firings) over one session; the gallery's `infrastructure/` recipes show the three.
 
 **No hub.** The hub package and the site's hub section were removed on 2026-10-28: pages that explain a method are
 the encyclopedia's purview. What such a page needs is in the engine (a `Method` run as a `Session`) and in render
@@ -6149,6 +6256,30 @@ Design rules:
 - Views that take rows in input space (clusters, surfaces, margins, neighbours, anomalies) accept `points` and `labels`
   beside the record; views that play return `ViewFrames` (a frame count, a label and the option of each frame).
 
+`producer/` (headless: the computing half of a live session, behind one interface; a worker bundles only this and the engine)
+- `producer.ts`: `Producer` (the sessions the consumer reads, `advance`, `start`/`stop`, `follow` the cursor, `probeAsync`, `subscribe`,
+  `dispose`) and `ProducerFactory`; `inline.ts` is the main-thread producer (slices in the spare time of each frame),
+  `make.ts` makes the sessions of a comparison (the one place, shared with the worker), `step.ts` keeps variants in step.
+- `protocol.ts`: the wire. Requests: `init` (method name, JSON `WireOptions`, variants, lookahead), `run` (`eager` ignores the
+  lookahead), `advance`, `pause`, `cursor`, `probe` (`latest` probes are coalesced: only the newest of a path is computed while
+  the run goes on), `dispose`. Events, numbered by `seq`: `ready` (resolved configuration, seed, the kind of each path), `tape`
+  (a `TapeDelta` per variant: events kept, appended, the step and status, event firings), `idle` (paused, lookahead, advanced,
+  ended, failed), `probed`, `error`. `wireOptions` says what crosses (JSON; hooks by name, `On('name', options)`, resolved
+  against `Method.hooks`; a hook function, a key or a start state cannot).
+- `registry.ts`: `methodRegistry`, methods by name, resolved on the worker's side and when a tape file is loaded.
+- `serve.ts`: `serveProducer(scope, registry)` / `serveWorker(registry)` (a worker entry is one line): makes sessions in live mode,
+  computes in short slices (a pause, a cursor or a probe is heard between slices), stays within the lookahead of the cursor,
+  streams deltas of the tape by identity of events (windows that forget are followed), answers probes with a duty cycle so they
+  cannot starve the run.
+- `client.ts`: `workerProducer({ createWorker, lookahead?, checkpoints?, available? })`: the worker starts when first needed and is
+  terminated by `dispose`; Workers unavailable or options that cannot cross make the main-thread producer, with `fallback` saying why.
+  `remote.ts`: `RemoteSession`, the `Session` the panels read (tape, step and status as streamed; a probe not answered yet
+  shows the last answer of its path, else throws `ProbePending`; no state, fork or algorithm).
+- `tape.ts`: the tape as a file, `mdml.tape/1`: method name, seed, per variant the label, configuration, head, status, the run's
+  events, the kind of each path, event firings and the probes (`TapeProbe`: step, path, arguments, value as `stateToJson`) at a
+  spread of steps (`probeSteps`); `tapeOf`, `parseTape`, `ReplaySession` (nearest stored step when a step was not stored),
+  `replaySessions`. `_fake.ts`: an in-memory worker wire for tests.
+
 `react/` (React 19; React and ECharts are peer dependencies)
 - `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events).
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
@@ -6211,7 +6342,11 @@ Design rules:
   multi-agent; the chosen entry's spaces, formatted, and its options as controls; `useEnvironment` makes it), both
   drawn by `EntryList` (`EntryList.tsx`: the search box and the list of titles with `Tags` chips, `tagLabel`); and
   `MethodControls` (controls from a method's `hyperSpace`, demo defaults
-  first); and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  first); `SettingsButton` (a gear that opens a modal of settings and changes nothing until it is confirmed: the dialog
+  edits a draft, Apply hands the whole draft to `onApply`, Cancel, Escape and the close button drop it, a press on the
+  backdrop closes it only while the draft is untouched, Reset returns the draft to given defaults, focus is kept inside and
+  restored; the logic is `settings.ts`: `settingsReducer`, `sameSettings`) and `SpaceSettings` (the same over a `Space`, drawn by
+  `SpaceControls`), which `FigureFrame` takes as `settings` and draws in its toolbar beside export and expand; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas (`ControlLayout` places it).
   Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
   `space-controls.ts`, `datasets.ts` (sources: a collection id, a collection or a registry), `environments.ts`
@@ -6236,7 +6371,11 @@ Design rules:
   `useSessions`: one producer over one or several sessions, `LiveSession`, `LiveSessions`, `variantsOf`), `compare.ts`
   (the pure part of a comparison: `sharedHead`, `advanceInStep`, `overlayCurves`, `sweepTrials`), `SessionPlayer.tsx`,
   `SessionControls.tsx`, `preferences.ts`, `layout.ts` (the `Panel` vocabulary), `SessionPanels.tsx`, `RowsPanel.tsx`,
-  `cursor.tsx`, `scrub.ts` and `TapeView.tsx`. The rows panel's channels are one mechanism in `overlays.ts` (a number
+  `cursor.tsx`, `scrub.ts` and `TapeView.tsx`; `useSession`'s hook options take a `producer` (see `producer/`), so the same
+  hook computes in a worker; `SessionExport.tsx` (the player's `pageExport` menu: the whole page as PNG or SVG, a recording from step
+  a to b as GIF or WebM, the tape as JSON in and out) over `export.ts` (`probeRequestsOf` a layout, `framesBetween`, `pageSvg`);
+  `useTape.ts` (`useTape(file, registry)`: a tape file as the live handle); `narrative.ts` (moments resolved against the tape,
+  the page switcher that keeps the cursor, the step-through) and `NarrativeView.tsx` (page tabs, text, panels, moments). The rows panel's channels are one mechanism in `overlays.ts` (a number
   per row as colour with a colour bar or as size, a category per row or named sets as hollow marks, regions of the plane
   as boxes or ellipses, one chosen row with its neighbours, a path, a radius and a related point; each is read at the
   viewed step from a probe or a tensor path of the tape, `readChannel`, and drawn as chart layers, `channelLayers`); the

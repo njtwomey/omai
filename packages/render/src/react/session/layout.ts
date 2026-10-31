@@ -372,3 +372,33 @@ export type Panel =
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */
   | { readonly kind: 'tape' }
+
+/**
+ * A key moment of a narrative page: a step (`at`: a number, `'start'` or `'end'` for the head of a finished run), or
+ * the steps at which an event of the contract fired (`event`; every firing, or only the `nth`, counted from 0, or the
+ * `'last'`). The step-through of a page moves the cursor from one moment to the next.
+ */
+export type Moment =
+  | { readonly at: number | 'start' | 'end'; readonly label?: string }
+  | { readonly event: string; readonly nth?: number | 'last'; readonly label?: string }
+
+/**
+ * One page of a narrative: a text block and a layout of panels over the narrative's session (the one tape every page
+ * reads, each subscribing to its own paths), with the moments the page is about.
+ */
+export interface NarrativePage {
+  readonly id: string
+  /** The page's name in the switcher. */
+  readonly title: string
+  /** The text above the panels: paragraphs separated by a blank line, `code` in backticks, **bold**. */
+  readonly text: string
+  readonly layout: readonly Panel[]
+  /** The steps the page is about, for the step-through. */
+  readonly moments?: readonly Moment[]
+}
+
+/** A narrative: one session told in several pages, ordered. A page switch keeps the step cursor. */
+export interface Narrative {
+  readonly title?: string
+  readonly pages: readonly NarrativePage[]
+}

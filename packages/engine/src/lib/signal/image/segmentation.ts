@@ -4,9 +4,18 @@
  * by a minimum graph cut of a data term plus a contrast-sensitive smoothness term (Boykov and Jolly).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { digraph, minCut } from '../../graph/index.ts'
-import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
+import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor as tensorSource,
+} from '../../trace/index.ts'
 import { float } from '../_shared.ts'
 import { gaussianFilter } from './filters.ts'
 
@@ -152,6 +161,26 @@ class Heap {
   get size(): number {
     return this.v.length
   }
+  /** The smallest value waiting (infinity when empty). */
+  top(): number {
+    return this.v[0] ?? Number.POSITIVE_INFINITY
+  }
+  /** The queue as plain arrays (a valid heap), to serialise. */
+  snapshot(): { readonly v: number[]; readonly a: number[]; readonly i: number[] } {
+    return { v: [...this.v], a: [...this.a], i: [...this.i] }
+  }
+  /** A queue from a {@link snapshot}. */
+  static restore(s: {
+    readonly v: readonly number[]
+    readonly a: readonly number[]
+    readonly i: readonly number[]
+  }): Heap {
+    const h = new Heap()
+    h.v.push(...s.v)
+    h.a.push(...s.a)
+    h.i.push(...s.i)
+    return h
+  }
   private less(p: number, q: number): boolean {
     const vp = this.v[p] ?? 0
     const vq = this.v[q] ?? 0
@@ -264,6 +293,133 @@ export function watershed(
     }
   }
   return fromStorage(out, [h, w], 'float64')
+}
+
+/** The state of {@link watershedAlgorithm}. */
+export interface WatershedState {
+  /** The labels so far (0 is unreached). */
+  readonly labels: Float64Array
+  /** The flooding queue as plain arrays (a heap of value, age, index). */
+  readonly queue: { readonly v: number[]; readonly a: number[]; readonly i: number[] }
+  readonly age: number
+  /** The flood level reached: every queued pixel at or below it has been processed. */
+  readonly level: number
+  readonly step: number
+}
+
+/** The paths of {@link watershedAlgorithm}. */
+export type WatershedPath = 'flood/level' | 'flood/labels' | 'flood/labelled'
+
+/** What a watershed run logs. */
+export const watershedContract: Contract<WatershedState, WatershedPath> = defineContract({
+  'flood/level': scalar({ description: 'the image value the flood has reached' }),
+  'flood/labels': tensorSource({
+    role: 'state',
+    shape: ['height', 'width'],
+    description: 'the basins so far (0 is not yet reached)',
+  }),
+  'flood/labelled': scalar({ description: 'the pixels labelled so far' }),
+})
+
+/**
+ * Marker-based watershed as an algorithm flooded by level: the range of the image is cut into `levels` equal steps and
+ * each step processes every queued pixel whose value is at or below the next level (pixels reached on the way join the
+ * same step if they are low enough). The queue and the order are those of {@link watershed}, so the last state's labels
+ * are identical to its result; the steps only say when each pixel was reached.
+ *
+ * @param x - Image `[H, W]` (for example a gradient magnitude).
+ * @param markers - Labelled markers (0 is unlabelled), the shape of x.
+ * @param options - Connectivity (1 or 2), a mask, and the number of levels (default 16).
+ * @returns The algorithm.
+ * @concept watershed
+ * @example
+ * ```ts
+ * import { image } from 'mdml-engine/signal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = image.watershedAlgorithm([[0, 1, 5, 1, 0]], [[1, 0, 0, 0, 2]], { levels: 5 })
+ * Array.from(runAlgorithm(alg, { maxSteps: 20 }).state.labels) // => [1, 1, 1, 2, 2]
+ * ```
+ */
+export function watershedAlgorithm(
+  x: TensorLike,
+  markers: TensorLike,
+  options: { readonly connectivity?: 1 | 2; readonly mask?: TensorLike; readonly levels?: number } = {},
+): Algorithm<WatershedState, WatershedPath> {
+  const img = valuesOf(x)
+  if (img.shape.length !== 2) throw new MdmlError('shape', 'watershedAlgorithm: images are [H, W]')
+  const [h = 0, w = 0] = img.shape
+  const lab = valuesOf(markers).data
+  if (lab.length !== h * w) throw new MdmlError('shape', 'watershedAlgorithm: markers must have the image shape')
+  const mask = options.mask === undefined ? new Float64Array(h * w).fill(1) : valuesOf(options.mask).data
+  const levels = Math.max(1, Math.round(options.levels ?? 16))
+  let lo = Number.POSITIVE_INFINITY
+  let hi = Number.NEGATIVE_INFINITY
+  for (const v of img.data) {
+    lo = Math.min(lo, v)
+    hi = Math.max(hi, v)
+  }
+  const offsets: [number, number][] =
+    (options.connectivity ?? 1) === 1
+      ? [
+          [-1, 0],
+          [0, -1],
+          [0, 1],
+          [1, 0],
+        ]
+      : [
+          [-1, 0],
+          [0, -1],
+          [0, 1],
+          [1, 0],
+          [-1, -1],
+          [-1, 1],
+          [1, -1],
+          [1, 1],
+        ]
+  const labelled = (l: ArrayLike<number>): number => Array.from(l).filter((v) => v !== 0).length
+  return {
+    name: 'watershedLevels',
+    config: { levels, connectivity: options.connectivity ?? 1 } as Json,
+    init: () => {
+      const out = Float64Array.from(lab, (v, i) => ((mask[i] ?? 0) !== 0 ? v : 0))
+      const heap = new Heap()
+      for (let i = 0; i < h * w; i++) if ((out[i] ?? 0) !== 0) heap.push(img.data[i] ?? 0, 0, i)
+      return { labels: out, queue: heap.snapshot(), age: 1, level: lo, step: 0 }
+    },
+    step: (s, ctx) => {
+      const heap = Heap.restore(s.queue)
+      const out = Float64Array.from(s.labels)
+      let age = s.age
+      const level = s.step + 1 >= levels ? Number.POSITIVE_INFINITY : lo + ((s.step + 1) / levels) * (hi - lo)
+      while (heap.size > 0 && heap.top() <= level) {
+        const p = heap.pop()
+        const r = Math.floor(p / w)
+        const c = p % w
+        for (const [dr, dc] of offsets) {
+          const rr = r + dr
+          const cc = c + dc
+          if (rr < 0 || rr >= h || cc < 0 || cc >= w) continue
+          const q = rr * w + cc
+          if ((mask[q] ?? 0) === 0 || (out[q] ?? 0) !== 0) continue
+          age++
+          out[q] = out[p] ?? 0
+          heap.push(img.data[q] ?? 0, age, q)
+        }
+      }
+      const shown = Number.isFinite(level) ? level : hi
+      ctx.log('flood/level', shown)
+      ctx.log('flood/labelled', labelled(out))
+      if (ctx.wants('flood/labels')) ctx.log('flood/labels', fromStorage(out, [h, w], 'float64'))
+      return { labels: out, queue: heap.snapshot(), age, level: shown, step: s.step + 1 }
+    },
+    done: (s) => (s.queue.v.length === 0 ? 'completed' : undefined),
+    observe: (s) => ({
+      metrics: { level: s.level, labelled: labelled(s.labels) },
+      tensors: { labels: { role: 'state', value: toFlat(fromStorage(s.labels, [h, w], 'float64')), shape: [h, w] } },
+    }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as WatershedState,
+  }
 }
 
 /**
