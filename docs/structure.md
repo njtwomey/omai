@@ -2951,6 +2951,12 @@ modAL for active learning, diffprivlib and opacus for privacy
   `training/clippedShare` and `training/noiseNorm`), `dpEpsilon` and `noiseMultiplierFor` (the accountant and its
   inverse over `privacy.ts`). The accountant is checked against opacus on Abadi et al.'s, TensorFlow Privacy's and
   Opacus's MNIST settings (`oracle/cases/learn/privacy.py`).
+- `privacy-attacks.ts`: attacks on a trained model, models as logits functions: membership inference by
+  `lossThresholdAttack`, `shadowModelAttack` (shadows calibrate the loss threshold) and `likelihoodRatioAttack` (LiRA,
+  online, per-record Gaussians of `confidenceLogit`), scored by `membershipReport` (AUC, best accuracy, advantage, TPR
+  at low FPR); `attributeInference` (Bayes over candidate values of a hidden feature); `modelInversionAlgorithm`
+  (gradient ascent on a class, stepped); gradient leakage by `analyticGradientLeak` (exact for a first linear layer) and
+  `gradientLeakageAlgorithm` (deep leakage from gradients, stepped); `extractionAttack`.
 - `semi-supervised.ts`: rows with target `-1` (NaN for regression) are unlabelled. `selfTraining`, `coTraining` (two
   feature views, shared labelled set, product of the views) and `triTraining` (Zhou and Li's error and size conditions)
   over any probabilistic base `Estimator`; `labelPropagation` and `labelSpreading` (`sklearn.semi_supervised`, rbf and
