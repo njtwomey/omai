@@ -371,54 +371,78 @@ export function extendedModel(
   const weights =
     options.weights === undefined ? new Float64Array(m.n).fill(1) : targetVector(options.weights, 'gam', m.n)
   const designs = Array.from({ length: K }, (_, k) => buildDesign(x, terms?.[k]))
-  const predictors: ExtendedPredictor[] = []
-  const flatTerms: ExtendedTerm[] = []
-  let P = 0
-  designs.forEach((design, k) => {
-    if (design.constraints !== undefined) {
-      throw new MdmlError('value', 'gam: shape-constrained terms are not supported by the extended families')
-    }
-    predictors.push({ name: family.predictors[k] as string, design, dropIntercept: false, offset: P, width: design.p })
-    for (const t of design.terms) {
-      flatTerms.push({
-        predictor: family.predictors[k] as string,
-        label: t.label,
-        offset: P + t.offset,
-        width: t.width,
-      })
-    }
-    P += design.p
-  })
-  if (P > m.n * K) throw new MdmlError('value', `gam: ${P} coefficients for ${m.n} observations`)
-  const start = new Float64Array(P)
   const constants = family.start(response, weights)
-  predictors.forEach((pr, k) => {
-    start[pr.offset] = constants[k] ?? 0
-  })
-  let shift = 0
-  const structure = combineStructures(
-    designs.map((d) => {
-      const part = { structure: penaltyStructure(d), shift }
-      shift += d.p
-      return part
-    }),
-    P,
-  )
   return {
-    n: m.n,
-    likelihood: etaLikelihood(
-      family,
-      response,
-      weights,
-      designs.map((d) => ({ X: d.X, p: d.p })),
+    ...modelFromDesigns(
+      m.n,
+      designs.map((design, k) => ({ name: family.predictors[k] as string, design, dropIntercept: false })),
+      (columns) => etaLikelihood(family, response, weights, columns),
+      family.aux(response, weights),
+      constants,
     ),
-    structure,
-    predictors,
-    terms: flatTerms,
-    start,
-    aux: family.aux(response, weights),
     family,
   }
+}
+
+/**
+ * Assemble a model from designs and a likelihood in the stacked coefficients: the predictors' columns (the intercept
+ * column dropped where a predictor has none, as in Cox's partial likelihood), their stacked penalties, the term map and
+ * the starting coefficients (each predictor's intercept at a constant).
+ *
+ * @param n - The number of observations.
+ * @param parts - For each predictor its name, design and whether to drop the intercept column.
+ * @param likelihood - The likelihood given the columns each predictor uses.
+ * @param aux - The aux parameters.
+ * @param constants - The starting value of each predictor's intercept (ignored where it is dropped).
+ * @returns The model.
+ * @throws MdmlError `value` for a shape-constrained term.
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { buildDesign, differencedLikelihood, linear, modelFromDesigns } from 'mdml-engine/gam'
+ * const design = buildDesign([[0], [1], [2]], [linear(0)])
+ * const model = modelFromDesigns(3, [{ name: 'mean', design, dropIntercept: false }], (cols) =>
+ *   differencedLikelihood(cols[0].p, () => ({ logLik: 0, gradient: new Float64Array(2), information: new Float64Array(4) })), [], [0])
+ * model.likelihood.p // => 2
+ * ```
+ */
+export function modelFromDesigns(
+  n: number,
+  parts: readonly { readonly name: string; readonly design: GamDesign; readonly dropIntercept: boolean }[],
+  likelihood: (columns: readonly { readonly X: Float64Array; readonly p: number }[]) => CoefficientLikelihood,
+  aux: readonly AuxParameter[],
+  constants: readonly number[],
+): ExtendedModel {
+  const predictors: ExtendedPredictor[] = []
+  const flatTerms: ExtendedTerm[] = []
+  const shifts: number[] = []
+  let P = 0
+  for (const { name, design, dropIntercept } of parts) {
+    if (design.constraints !== undefined) {
+      throw new MdmlError('value', 'gam: shape-constrained terms are not supported by the extended models')
+    }
+    const drop = dropIntercept ? 1 : 0
+    const width = design.p - drop
+    predictors.push({ name, design, dropIntercept, offset: P, width })
+    shifts.push(P - drop)
+    for (const t of design.terms) {
+      flatTerms.push({ predictor: name, label: t.label, offset: P + t.offset - drop, width: t.width })
+    }
+    P += width
+  }
+  const start = new Float64Array(P)
+  predictors.forEach((pr, k) => {
+    if (!pr.dropIntercept) start[pr.offset] = constants[k] ?? 0
+  })
+  const structure = combineStructures(
+    parts.map(({ design }, k) => ({ structure: penaltyStructure(design), shift: shifts[k] ?? 0 })),
+    P,
+  )
+  const columns = parts.map(({ design, dropIntercept }) => ({
+    X: designColumns(design, dropIntercept),
+    p: design.p - (dropIntercept ? 1 : 0),
+  }))
+  return { n, likelihood: likelihood(columns), structure, predictors, terms: flatTerms, start, aux }
 }
 
 /** A matrix with a positive-definite surrogate: the inverse and the log determinant, and whether it was modified. */
@@ -520,7 +544,7 @@ export function innerExtendedFit(
 ): ExtendedInnerFit {
   const { likelihood } = model
   const p = likelihood.p
-  const tol = options.tol ?? 1e-11
+  const tol = options.tol ?? 1e-13
   let beta = Float64Array.from(options.warm ?? model.start)
   const objective = (b: Float64Array): number => {
     const ev = likelihood.evaluate(b, aux)
@@ -567,7 +591,7 @@ export function innerExtendedFit(
     const { inverse } = invertSafely(A, p)
     const delta = dgemv(inverse, p, p, g)
     const decrement = dot(g, delta)
-    if (decrement <= tol * (1 + Math.abs(f)) && gradNorm < 1e-6 * (1 + Math.abs(f))) break
+    if (decrement <= tol * (1 + Math.abs(f)) && gradNorm < 1e-9 * (1 + Math.abs(f))) break
     let a = 1
     let next = beta
     let fNext = Number.POSITIVE_INFINITY
