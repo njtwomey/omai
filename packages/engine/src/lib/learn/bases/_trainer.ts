@@ -67,8 +67,16 @@ export const layersOf = (model: Module): readonly Layer[] =>
 export const under = (tree: Params, l: Layer): Params =>
   l.name === undefined ? tree : ((tree[l.name] as Params) ?? {})
 
+/** The paths of a layer on the tape. */
+export type LayerPath = `layer/${number}/${'activations' | 'weights' | 'params'}`
+
 /** The layers' parameters, flattened parameters and outputs on the probe rows, for the paths that are due. */
-export function recordLayers(layers: readonly Layer[], probe: Tensor, state: TrainState, ctx: StepContext): void {
+export function recordLayers(
+  layers: readonly Layer[],
+  probe: Tensor,
+  state: TrainState,
+  ctx: StepContext<LayerPath>,
+): void {
   for (const l of layers) {
     const own = Object.entries(treePaths(under(state.params, l)))
     if (own.length === 0) continue

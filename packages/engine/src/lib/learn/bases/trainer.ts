@@ -43,6 +43,7 @@ import {
   evaluate,
   heldOut,
   type Layer,
+  type LayerPath,
   layersOf,
   type Metrics,
   networkVerbs,
@@ -50,7 +51,7 @@ import {
   tabular,
 } from './_trainer.ts'
 import { fittedSession, type IterativeSession, type IterativeSessionOptions } from './iterative.ts'
-import { kindProbes } from './kinds.ts'
+import { type KindPath, kindProbes } from './kinds.ts'
 
 /** Data that arrives rather than sits: `draw(n, key)` gives `n` fresh rows, and a trainer draws what its budget needs. */
 export interface LearnStream {
@@ -78,8 +79,36 @@ export interface TrainerSettings {
   readonly probeRows?: number
 }
 
-/** What a particular declares over the trainer base. */
-export interface TrainerParticular<H extends object> {
+/**
+ * The paths of a session of the trainer base: the particular's own (`K`), the base's (`train/...`, `eval/<metric>`
+ * for the validation metrics, `layer/<i>/...` for the layers, `model/params`) and the kind's probes. With `K` left at
+ * `string` every path is allowed.
+ *
+ * @example
+ * ```ts
+ * import type { TrainerPath } from 'mdml-engine/learn'
+ * type P = TrainerPath<'gan/critic'>   // 'gan/critic' | 'train/loss' | 'train/gradNorm' | ...
+ * ```
+ */
+export type TrainerPath<K extends string = string> =
+  | K
+  | 'train/loss'
+  | 'train/gradNorm'
+  | 'train/lr'
+  | 'train/step/end'
+  | 'train/epoch/end'
+  | 'eval/loss'
+  | `eval/${string}`
+  | LayerPath
+  | 'model/params'
+  | KindPath
+
+/**
+ * What a particular declares over the trainer base. The last parameter is the type of the paths it adds to the base's
+ * (`string` by default: unchecked); type them as for the iterative base (`IterativeParticular`): a `FooPath` union, the
+ * `contract` returning `Contract<TrainState, FooPath>`, the estimator typed `TrainerEstimator<H, FooPath>`.
+ */
+export interface TrainerParticular<H extends object, K extends string = string> {
   readonly name: string
   readonly kind: EstimatorKind
   readonly defaults: H
@@ -98,11 +127,11 @@ export interface TrainerParticular<H extends object> {
   /** Metrics of predictions and targets logged as `eval/<name>` (default accuracy for a classifier, rmse otherwise). */
   metrics?(hyper: H): Readonly<Record<string, (prediction: Value, target: Value) => number>>
   /** What the state can tell beyond the standard paths. */
-  contract?(data: LearnData, hyper: H): Contract<TrainState>
+  contract?(data: LearnData, hyper: H): Contract<TrainState, K>
   records?(state: TrainState, data: LearnData, hyper: H): readonly Exposition[]
   readonly projections?: Readonly<Record<string, (run: Run, data: LearnData, hyper: H) => Exposition | undefined>>
   /** What `fit` keeps by default (default the loss, gradient norm and learning rate, and `eval/` when validating). */
-  readonly logs?: Subscription
+  readonly logs?: Subscription<NoInfer<TrainerPath<K>>>
 }
 
 /** The parameters of a trained network as data, with what rebuilds its architecture. */
@@ -120,14 +149,22 @@ export type TrainerFitted = Fitted<TrainerParams> &
   Verbs &
   FittedFacts & { readonly exposition: readonly Exposition[]; readonly run: Run }
 
-/** A session of training: the iterative session, whose `fittedAt(t)` is the network at a reached step. */
-export type TrainerSession = IterativeSession<TrainState, TrainerParams, Verbs & FittedFacts>
+/**
+ * A session of training: the iterative session, whose `fittedAt(t)` is the network at a reached step. The parameter is
+ * the type of the session's paths ({@link TrainerPath} of the particular's).
+ */
+export type TrainerSession<K extends string = string> = IterativeSession<
+  TrainState,
+  TrainerParams,
+  Verbs & FittedFacts,
+  K
+>
 
 /** An estimator on the trainer base: `fit`, its method and a session of its training. */
-export interface TrainerEstimator<H extends object> extends Estimator<H, TrainerFitted> {
-  method(data: LearnData): Method<TrainState, Config>
-  session(data: LearnData, options?: IterativeSessionOptions): TrainerSession
-  with(changes: Partial<H>): TrainerEstimator<H>
+export interface TrainerEstimator<H extends object, K extends string = string> extends Estimator<H, TrainerFitted> {
+  method(data: LearnData): Method<TrainState, Config, TrainerPath<K>>
+  session(data: LearnData, options?: IterativeSessionOptions<TrainerPath<K>>): TrainerSession<TrainerPath<K>>
+  with(changes: Partial<H>): TrainerEstimator<H, K>
 }
 
 const isStream = (s: LearnData | LearnStream): s is LearnStream => 'draw' in s
@@ -136,7 +173,7 @@ const EMPTY_RUN: Run = { schema: 'mdml.run/1', events: [] }
 /** Everything the loop needs for one (data, hyperparameters, key), built once. */
 interface Built {
   readonly model: Module
-  readonly algorithm: Algorithm<TrainState>
+  readonly algorithm: Algorithm<TrainState, TrainerPath>
   readonly validation: TabularData | undefined
   readonly loss: (prediction: Value, target: Value) => Value
   readonly metrics: Metrics
@@ -180,7 +217,10 @@ interface Plan {
  * toFlat(net.fit(data, { key: key(1) }).predict(data.x)).length // => 4
  * ```
  */
-export function defineTrainer<H extends object>(p: TrainerParticular<H>, hyper: H = p.defaults): TrainerEstimator<H> {
+export function defineTrainer<H extends object, K extends string = string>(
+  p: TrainerParticular<H, K>,
+  hyper: H = p.defaults,
+): TrainerEstimator<H, K> {
   const space: DictSpace = p.hyperSpace?.(hyper) ?? dict({})
   const knobs = Object.keys(space.spaces)
   const hyperOf = (c: Config): H => ({ ...hyper, ...c }) as H
@@ -243,7 +283,7 @@ export function defineTrainer<H extends object>(p: TrainerParticular<H>, hyper: 
       Array.from({ length: Math.min(settings.probeRows ?? 64, rowCount(rows)) }, (_, i) => i),
     ).x
     const rate = (updates: number): number => (typeof lr === 'number' ? lr : lr(updates))
-    const algorithm: Algorithm<TrainState> = {
+    const algorithm: Algorithm<TrainState, TrainerPath> = {
       ...inner,
       name: p.name,
       step: (s, ctx) => {
@@ -296,7 +336,7 @@ export function defineTrainer<H extends object>(p: TrainerParticular<H>, hyper: 
       },
     }
   }
-  const contractOf = (data: LearnData, h: H, key: Key): Contract<TrainState> => {
+  const contractOf = (data: LearnData, h: H, key: Key): Contract<TrainState, TrainerPath<K>> => {
     const b = builtOf(data, h, key)
     const out: Record<string, Contract<TrainState>[string]> = {
       'train/loss': scalar({ description: 'minibatch loss (the epoch’s mean per epoch step)', direction: 'lower' }),
@@ -328,18 +368,19 @@ export function defineTrainer<H extends object>(p: TrainerParticular<H>, hyper: 
     const params = (s: TrainState): Json => ({ params: stateToJson(s.params), buffers: stateToJson(s.buffers) })
     out['model/params'] = derived<TrainState>({ description: 'the network’s parameters at this step', compute: params })
     Object.assign(out, kindProbes<TrainState>(p.kind, { data, fitted: (s) => fittedOf(b, s, data) }))
-    return { ...out, ...(p.contract?.(data, h) ?? {}) }
+    // The layers and the validation metrics depend on the data, so `out` is a plain record of `TrainerPath` keys.
+    return { ...out, ...(p.contract?.(data, h) ?? {}) } as Contract<TrainState, TrainerPath<K>>
   }
-  const defaultLogs = (data: LearnData): Subscription => {
+  const defaultLogs = (data: LearnData): Subscription<TrainerPath<K>> => {
     const known = contractOf(data, hyper, makeKey(0))
     const out: Record<string, ReturnType<typeof Log>> = {}
     for (const path of ['train/loss', 'train/gradNorm', 'train/lr']) out[path] = Log()
     for (const path of Object.keys(known))
       if (path.startsWith('eval/')) out[path] = Log({ every: ['train/epoch/end', 1] })
-    return out
+    return out as Subscription<TrainerPath<K>>
   }
-  const method = (data: LearnData): Method<TrainState, Config> =>
-    defineMethod<TrainState, Config>({
+  const method = (data: LearnData): Method<TrainState, Config, TrainerPath<K>> =>
+    defineMethod<TrainState, Config, TrainerPath<K>>({
       name: p.name,
       config: space,
       make: (c, key) => builtOf(data, hyperOf(c), key).algorithm,
@@ -352,9 +393,17 @@ export function defineTrainer<H extends object>(p: TrainerParticular<H>, hyper: 
         ),
       },
     })
-  const wrap = (data: LearnData, key: Key, s: Session<TrainState, Config>): TrainerSession =>
+  const wrap = (
+    data: LearnData,
+    key: Key,
+    s: Session<TrainState, Config, TrainerPath<K>>,
+  ): TrainerSession<TrainerPath<K>> =>
     fittedSession(s, (state, config) => fittedOf(builtOf(data, hyperOf(config), foldIn(key, 7)), state, data))
-  const sessionOf = (data: LearnData, options: IterativeSessionOptions, key: Key): TrainerSession => {
+  const sessionOf = (
+    data: LearnData,
+    options: IterativeSessionOptions<TrainerPath<K>>,
+    key: Key,
+  ): TrainerSession<TrainerPath<K>> => {
     const steps = options.steps ?? planOf(data, hyper).steps
     return wrap(
       data,
@@ -371,7 +420,11 @@ export function defineTrainer<H extends object>(p: TrainerParticular<H>, hyper: 
     )
   }
   const fit = (data: LearnData, options: FitOptions = {}): TrainerFitted => {
-    const s = sessionOf(data, { ...options, mode: 'eager', past: false }, resolveKey(options, p.name))
+    const s = sessionOf(
+      data,
+      { ...options, mode: 'eager', past: false } as IterativeSessionOptions<TrainerPath<K>>,
+      resolveKey(options, p.name),
+    )
     const run = s.run()
     const fitted = s.fittedAt(s.t)
     const records: Exposition[] = [

@@ -21,7 +21,7 @@ import { r2Score } from '../metrics/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import { dict, real } from '../space/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { channels, stateFromJson, stateToJson } from '../trace/index.ts'
+import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 
 /** The hyperparameters of {@link kernelRidge}. */
 export interface KernelRidgeHyper {
@@ -334,77 +334,82 @@ function verbsOf(p: KernelRidgeParams, h: KernelRidgeHyper): KernelRidgeVerbs {
  * toFlat(fitted.predict([[1, 3]])).map((v) => Math.round(v * 1000) / 1000) // => [7]
  * ```
  */
-export const kernelRidge: IterativeEstimator<KernelRidgeHyper, KernelRidgeState, KernelRidgeParams, KernelRidgeVerbs> =
-  iterative<KernelRidgeHyper, KernelRidgeState, KernelRidgeParams, KernelRidgeVerbs>({
-    name: 'kernel-methods/kernel-ridge',
-    kind: 'regressor',
-    defaults: { alpha: 1, kernel: 'linear', gamma: 'auto', degree: 3, coef0: 1 },
-    hyperSpace: (h) =>
-      dict({
-        alpha: real(Math.min(1e-6, h.alpha), Math.max(1e3, h.alpha), { log: true, default: h.alpha, label: 'alpha' }),
-        ...kernelSpace(h),
-      }),
-    algorithm: (data, h) => {
-      const p = prepare(data, h)
-      const solve = (): KernelRidgeState => {
-        const sys = gramSystem(fromStorage(p.gram, [p.n, p.n], 'float64'), h.alpha, WHO)
-        const c = matmulRows(sys.inverse, p.y, p.n, p.k)
-        const fitted = matmulRows(p.gram, c, p.n, p.k)
-        let rss = 0
-        for (let i = 0; i < p.y.length; i++) rss += ((p.y[i] ?? 0) - (fitted[i] ?? 0)) ** 2
-        return {
-          solved: true,
-          dual: Array.from({ length: p.n }, (_, i) => Array.from(c.subarray(i * p.k, (i + 1) * p.k))),
-          inverseDiagonal: Array.from({ length: p.n }, (_, i) => sys.inverse[i * p.n + i] ?? 0),
-          rss,
-        }
-      }
+export const kernelRidge: IterativeEstimator<
+  KernelRidgeHyper,
+  KernelRidgeState,
+  KernelRidgeParams,
+  KernelRidgeVerbs,
+  never
+> = iterative<KernelRidgeHyper, KernelRidgeState, KernelRidgeParams, KernelRidgeVerbs, never>({
+  name: 'kernel-methods/kernel-ridge',
+  kind: 'regressor',
+  defaults: { alpha: 1, kernel: 'linear', gamma: 'auto', degree: 3, coef0: 1 },
+  hyperSpace: (h) =>
+    dict({
+      alpha: real(Math.min(1e-6, h.alpha), Math.max(1e3, h.alpha), { log: true, default: h.alpha, label: 'alpha' }),
+      ...kernelSpace(h),
+    }),
+  algorithm: (data, h): Algorithm<KernelRidgeState, never> => {
+    const p = prepare(data, h)
+    const solve = (): KernelRidgeState => {
+      const sys = gramSystem(fromStorage(p.gram, [p.n, p.n], 'float64'), h.alpha, WHO)
+      const c = matmulRows(sys.inverse, p.y, p.n, p.k)
+      const fitted = matmulRows(p.gram, c, p.n, p.k)
+      let rss = 0
+      for (let i = 0; i < p.y.length; i++) rss += ((p.y[i] ?? 0) - (fitted[i] ?? 0)) ** 2
       return {
-        name: 'kernel-ridge',
-        config: { alpha: h.alpha, kernel: p.kernel.kernel, gamma: p.kernel.gamma },
-        schema: channels({
-          metrics: {
-            looMse: { description: 'the exact leave-one-out mean squared error', direction: 'lower' },
-            effectiveDf: { description: 'the effective degrees of freedom tr(K (K + alpha I)^(-1))' },
-          },
-        }),
-        init: () => ({ solved: false, dual: [], inverseDiagonal: [], rss: 0 }),
-        step: () => solve(),
-        done: (s) => (s.solved ? 'converged' : undefined),
-        observe: (s) => {
-          if (!s.solved) return {}
-          let press = 0
-          for (let i = 0; i < p.n; i++) {
-            for (let j = 0; j < p.k; j++) {
-              press += ((s.dual[i]?.[j] ?? 0) / (s.inverseDiagonal[i] ?? 1)) ** 2
-            }
-          }
-          const edf = s.inverseDiagonal.reduce((a, v) => a + 1 - h.alpha * v, 0)
-          return { metrics: { looMse: press / (p.n * p.k), effectiveDf: edf } }
+        solved: true,
+        dual: Array.from({ length: p.n }, (_, i) => Array.from(c.subarray(i * p.k, (i + 1) * p.k))),
+        inverseDiagonal: Array.from({ length: p.n }, (_, i) => sys.inverse[i * p.n + i] ?? 0),
+        rss,
+      }
+    }
+    return {
+      name: 'kernel-ridge',
+      config: { alpha: h.alpha, kernel: p.kernel.kernel, gamma: p.kernel.gamma },
+      schema: channels({
+        metrics: {
+          looMse: { description: 'the exact leave-one-out mean squared error', direction: 'lower' },
+          effectiveDf: { description: 'the effective degrees of freedom tr(K (K + alpha I)^(-1))' },
         },
-        serialise: (s) => stateToJson(s),
-        deserialise: (j) => stateFromJson(j) as KernelRidgeState,
-      }
-    },
-    maxSteps: () => 1,
-    params: (s, data, h) => {
-      const p = prepare(data, h)
-      let press = 0
-      for (let i = 0; i < p.n; i++) {
-        for (let j = 0; j < p.k; j++) press += ((s.dual[i]?.[j] ?? 0) / (s.inverseDiagonal[i] ?? 1)) ** 2
-      }
-      const edf = s.inverseDiagonal.reduce((a, v) => a + 1 - h.alpha * v, 0)
-      const m = matrixView(data.x, WHO)
-      return {
-        kernel: p.kernel,
-        alpha: h.alpha,
-        xFit: Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d))),
-        dualCoef: s.dual,
-        multiOutput: p.multi,
-        effectiveDf: edf,
-        looPress: press,
-        residualStd: Math.sqrt(s.rss / Math.max(p.n * p.k - edf * p.k, 1)),
-      }
-    },
-    verbs: verbsOf,
-  })
+      }),
+      init: () => ({ solved: false, dual: [], inverseDiagonal: [], rss: 0 }),
+      step: () => solve(),
+      done: (s) => (s.solved ? 'converged' : undefined),
+      observe: (s) => {
+        if (!s.solved) return {}
+        let press = 0
+        for (let i = 0; i < p.n; i++) {
+          for (let j = 0; j < p.k; j++) {
+            press += ((s.dual[i]?.[j] ?? 0) / (s.inverseDiagonal[i] ?? 1)) ** 2
+          }
+        }
+        const edf = s.inverseDiagonal.reduce((a, v) => a + 1 - h.alpha * v, 0)
+        return { metrics: { looMse: press / (p.n * p.k), effectiveDf: edf } }
+      },
+      serialise: (s) => stateToJson(s),
+      deserialise: (j) => stateFromJson(j) as KernelRidgeState,
+    }
+  },
+  maxSteps: () => 1,
+  params: (s, data, h) => {
+    const p = prepare(data, h)
+    let press = 0
+    for (let i = 0; i < p.n; i++) {
+      for (let j = 0; j < p.k; j++) press += ((s.dual[i]?.[j] ?? 0) / (s.inverseDiagonal[i] ?? 1)) ** 2
+    }
+    const edf = s.inverseDiagonal.reduce((a, v) => a + 1 - h.alpha * v, 0)
+    const m = matrixView(data.x, WHO)
+    return {
+      kernel: p.kernel,
+      alpha: h.alpha,
+      xFit: Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d))),
+      dualCoef: s.dual,
+      multiOutput: p.multi,
+      effectiveDf: edf,
+      looPress: press,
+      residualStd: Math.sqrt(s.rss / Math.max(p.n * p.k - edf * p.k, 1)),
+    }
+  },
+  verbs: verbsOf,
+})

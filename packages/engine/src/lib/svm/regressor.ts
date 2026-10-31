@@ -27,8 +27,19 @@ import {
 import type { SmoState } from '../optim/index.ts'
 import { dict, real } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { channels, derived, Log, scalar, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { type Dual, nuSvrDual, svrDual } from './_dual.ts'
+import type { SvmPath } from './classifier.ts'
 
 /** The hyperparameters of {@link svr}. */
 export interface SvrHyper {
@@ -135,11 +146,12 @@ const snapshot = (dual: Dual, smo: SmoState): Pick<SvrState, 'smo' | 'live' | 'r
  * toFlat(fitted.predict([[4]])).map((v) => Math.round(v * 10) / 10) // => [9]
  * ```
  */
-export const svr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs> = iterative<
+export const svr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs, SvmPath> = iterative<
   SvrHyper,
   SvrState,
   SvrParams,
-  SvrVerbs
+  SvrVerbs,
+  SvmPath
 >({
   name: 'svm/svr',
   kind: 'regressor',
@@ -164,7 +176,7 @@ export const svr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs> = 
         : { nu: real(0.01, 1, { default: Math.min(Math.max(h.nu, 0.01), 1), label: 'nu' }) }),
       ...kernelSpace(h),
     }),
-  algorithm: (data, h) => {
+  algorithm: (data, h): Algorithm<SvrState, SvmPath> => {
     const { kernel, dual } = prepare(data, h)
     return {
       name: 'svr',
@@ -256,26 +268,27 @@ export const svr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs> = 
       nFeaturesIn: d,
     }
   },
-  contract: () => ({
-    'smo/alphaChanged': scalar({
-      description: 'the change of the two dual variables updated in the step, |da_i| + |da_j|',
+  contract: (): Contract<SvrState, SvmPath> =>
+    defineContract({
+      'smo/alphaChanged': scalar({
+        description: 'the change of the two dual variables updated in the step, |da_i| + |da_j|',
+      }),
+      'model/support-vectors': derived<SvrState>({
+        description:
+          'the support vectors of the tube so far: coefficients, intercept and the residual of every training row',
+        compute: (s) => {
+          const support: number[] = []
+          const dualCoefficients: number[] = []
+          s.live.coef.forEach((c, i) => {
+            if (c !== 0) {
+              support.push(i)
+              dualCoefficients.push(c)
+            }
+          })
+          return marginRecord({ support, dualCoefficients, intercept: -s.live.rho, margins: s.residuals })
+        },
+      }),
     }),
-    'model/support-vectors': derived<SvrState>({
-      description:
-        'the support vectors of the tube so far: coefficients, intercept and the residual of every training row',
-      compute: (s) => {
-        const support: number[] = []
-        const dualCoefficients: number[] = []
-        s.live.coef.forEach((c, i) => {
-          if (c !== 0) {
-            support.push(i)
-            dualCoefficients.push(c)
-          }
-        })
-        return marginRecord({ support, dualCoefficients, intercept: -s.live.rho, margins: s.residuals })
-      },
-    }),
-  }),
   logs: { 'solver/dual': Log(), 'solver/gap': Log() },
 })
 
@@ -289,4 +302,4 @@ export const svr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs> = 
  * nuSvr.fit({ x: [[0], [1], [2], [3]], y: [1, 3, 5, 7] }).params.tube >= 0 // => true
  * ```
  */
-export const nuSvr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs> = svr.with({ form: 'nu' })
+export const nuSvr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs, SvmPath> = svr.with({ form: 'nu' })

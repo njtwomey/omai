@@ -30,7 +30,17 @@ import { type SmoState, nuSvcDual as solveNuSvc, svcDual as solveSvc } from '../
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { dict, real } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { channels, derived, Log, scalar, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { cSvcDual, type Dual, nuSvcDual, submatrix } from './_dual.ts'
 import { pairwiseCoupling } from './probability.ts'
 
@@ -60,6 +70,19 @@ export interface SvcHyper {
   /** The shape of `decisionFunction` for more than two classes: scikit-learn's `ovr` transform of the votes, or the raw `ovo` pairs. */
   readonly decisionShape: 'ovr' | 'ovo'
 }
+
+/**
+ * The paths the support vector machines (`svc`, `svr`, `oneClassSvm`, `svdd`) log beside the base's: the change of the
+ * working pair and the model so far (the SMO's own channels are the base's `solver/...`).
+ *
+ * @example
+ * ```ts
+ * import type { SvmPath } from 'mdml-engine/svm'
+ * const path: SvmPath = 'smo/alphaChanged'
+ * path // => 'smo/alphaChanged'
+ * ```
+ */
+export type SvmPath = 'smo/alphaChanged' | 'model/support-vectors'
 
 /** One machine of the one-versus-one decomposition. */
 export type SvcPair = {
@@ -413,11 +436,12 @@ const toLive = (e: { readonly coef: Float64Array; readonly rho: number }): SvcSt
  * fitted.params.nSupport // => [1, 1]
  * ```
  */
-export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs> = iterative<
+export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs, SvmPath> = iterative<
   SvcHyper,
   SvcState,
   SvcParams,
-  SvcVerbs
+  SvcVerbs,
+  SvmPath
 >({
   name: 'svm/svc',
   kind: 'classifier',
@@ -444,7 +468,7 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs> = 
         : { nu: real(0.01, 1, { default: Math.min(Math.max(h.nu, 0.01), 1), label: 'nu' }) }),
       ...kernelSpace(h),
     }),
-  algorithm: (data, h) => {
+  algorithm: (data, h): Algorithm<SvcState, SvmPath> => {
     const { layout, K, C, dualOf } = prepare(data, h)
     const pairCount = layout.pairs.length
     const start = (k: number, key: Key): Pick<SvcState, 'smo' | 'live' | 'margins'> => {
@@ -553,9 +577,9 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs> = 
   maxSteps: (h) => h.maxIter,
   params: paramsOf,
   verbs: verbsOf,
-  contract: (data, h) => {
+  contract: (data, h): Contract<SvcState, SvmPath> => {
     const layout = layoutOf(data, h)
-    return {
+    return defineContract({
       'smo/alphaChanged': scalar({
         description: 'the change of the two dual variables updated in the step, |da_i| + |da_j|',
       }),
@@ -576,7 +600,7 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs> = 
           return marginRecord({ support, dualCoefficients, intercept: -s.live.rho, margins: s.margins })
         },
       }),
-    }
+    })
   },
   logs: { 'solver/dual': Log(), 'solver/gap': Log() },
 })
@@ -590,4 +614,4 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs> = 
  * nuSvc.fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] }).classes // => [0, 1]
  * ```
  */
-export const nuSvc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs> = svc.with({ form: 'nu' })
+export const nuSvc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs, SvmPath> = svc.with({ form: 'nu' })

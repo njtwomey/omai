@@ -95,7 +95,7 @@ const dot = (a: ArrayLike<number>, b: ArrayLike<number>): number => {
  * end.events.map((e) => e.feature) // => [0, 1]
  * ```
  */
-export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algorithm<LarsState> {
+export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algorithm<LarsState, never> {
   const method = options.method ?? 'lasso'
   const fitIntercept = options.fitIntercept ?? true
   const alphaMin = options.alphaMin ?? 0
@@ -389,8 +389,10 @@ const LARS_DEFAULTS: LarsHyper = { method: 'lasso', alpha: 0, fitIntercept: true
  * toFlat(f.predict([[5, 0]]))[0] > 4 // => true
  * ```
  */
-export function lars(hyper: Partial<LarsHyper> = {}): IterativeEstimator<LarsHyper, LarsState, LarsParams, LarsVerbs> {
-  return iterative<LarsHyper, LarsState, LarsParams, LarsVerbs>(
+export function lars(
+  hyper: Partial<LarsHyper> = {},
+): IterativeEstimator<LarsHyper, LarsState, LarsParams, LarsVerbs, never> {
+  return iterative<LarsHyper, LarsState, LarsParams, LarsVerbs, never>(
     {
       name: 'lars',
       kind: 'regressor',

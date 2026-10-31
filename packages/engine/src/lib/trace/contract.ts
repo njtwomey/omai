@@ -354,7 +354,15 @@ export interface HookSpec {
  */
 export type SubscriptionMap<K extends string = string> = string extends K
   ? Readonly<Record<string, LogSpec | HookSpec>>
-  : Readonly<Partial<Record<K, LogSpec | HookSpec>>> & Readonly<Record<Pattern, LogSpec | HookSpec>>
+  : Readonly<Partial<Record<LiteralPaths<K>, LogSpec | HookSpec>>> &
+      Readonly<Record<Exclude<K, LiteralPaths<K>> | Pattern, LogSpec | HookSpec>>
+
+/**
+ * The members of a union of paths that are single literals, without the template literals (`solver/${string}`) among
+ * them: those are index signatures, which cannot be optional without admitting `undefined`, and a subscription over
+ * them would then not be assignable to the same subscription over `string`.
+ */
+type LiteralPaths<K extends string> = K extends string ? (Record<never, never> extends Record<K, 1> ? never : K) : never
 
 /**
  * What a caller asks of a method: nothing (`off`: the raw algorithm at full speed), the method's own small choice

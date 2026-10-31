@@ -6,17 +6,17 @@
 
 import type { Config, Session } from '../../trace/index.ts'
 
-/** A session with extra verbs, which its forks keep. */
-export type SessionWith<S, X> = Omit<Session<S, Config>, 'fork'> &
+/** A session with extra verbs, which its forks keep. The last parameter is the type of the session's paths. */
+export type SessionWith<S, X, K extends string = string> = Omit<Session<S, Config, K>, 'fork'> &
   X & {
-    fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<Config> }): SessionWith<S, X>
+    fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<Config> }): SessionWith<S, X, K>
   }
 
 /** The session `s` with the verbs `extra` builds from it, on its forks too. */
-export function extendSession<S, X extends object>(
-  s: Session<S, Config>,
-  extra: (s: Session<S, Config>) => X,
-): SessionWith<S, X> {
+export function extendSession<S, X extends object, K extends string = string>(
+  s: Session<S, Config, K>,
+  extra: (s: Session<S, Config, K>) => X,
+): SessionWith<S, X, K> {
   return {
     method: s.method,
     config: s.config,

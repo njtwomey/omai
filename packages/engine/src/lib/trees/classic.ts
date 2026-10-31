@@ -18,7 +18,16 @@ import { encodeLabels, matrixView, rowsOf, sampleWeightsOf } from '../learn/vali
 import { choice, dict, int, real } from '../space/index.ts'
 import { chi2Contingency } from '../stats/tests/contingency.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, derived, Log, message, scalar, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  derived,
+  Log,
+  message,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 
 /** Which classic grower. */
 export type ClassicMode = 'id3' | 'c45' | 'chaid'
@@ -174,7 +183,10 @@ function bonferroni(c: number, r: number): number {
  * classicTreeOf(runAlgorithm(alg, { maxSteps: 20 }).state, data, options).children[0] // => [1, 2, 3]
  * ```
  */
-export function classicTreeAlgorithm(data: LearnData, options: ClassicOptions): Algorithm<ClassicState> {
+export function classicTreeAlgorithm(
+  data: LearnData,
+  options: ClassicOptions,
+): Algorithm<ClassicState, ClassicGrowPath> {
   const m = matrixView(data.x, 'classicTree', { allowNaN: true })
   if (data.y === undefined) throw new MdmlError('value', 'classicTree: needs targets y')
   const { classes, codes } = encodeLabels(data.y, 'classicTree', m.n)
@@ -703,8 +715,14 @@ export interface ClassicVerbs extends Verbs, FittedFacts {
   readonly nFeaturesIn: number
 }
 
+/** The paths {@link classicTreeAlgorithm} logs: the node just decided, the leaves so far, and CHAID's merged categories. */
+export type ClassicGrowPath = 'tree/split' | 'tree/leaves' | 'tree/merge'
+
+/** The paths a classic tree estimator adds to the base's: the grower's and the tree so far. */
+export type ClassicPath = ClassicGrowPath | 'model/structure'
+
 /** A classic tree estimator on the iterative base. */
-export type ClassicEstimator = IterativeEstimator<ClassicHyper, ClassicState, ClassicTree, ClassicVerbs>
+export type ClassicEstimator = IterativeEstimator<ClassicHyper, ClassicState, ClassicTree, ClassicVerbs, ClassicPath>
 
 /**
  * A classic decision tree classifier (ID3, C4.5 or CHAID) on the iterative base: a session of the growth, one node per
@@ -737,7 +755,7 @@ export function classicTreeClassifier(mode: ClassicMode, hyper: Partial<ClassicH
     confidence: hyper.confidence ?? 0.25,
     prune: hyper.prune ?? mode === 'c45',
   }
-  return iterative<ClassicHyper, ClassicState, ClassicTree, ClassicVerbs>(
+  return iterative<ClassicHyper, ClassicState, ClassicTree, ClassicVerbs, ClassicPath>(
     {
       name: `${mode}-classifier`,
       kind: 'classifier',
@@ -788,9 +806,10 @@ export function classicTreeClassifier(mode: ClassicMode, hyper: Partial<ClassicH
         })
       },
       maxSteps: (_h, data) => 4 * rowsOf(data.x) + 10,
-      contract: (data) => {
+      contract: (data): Contract<ClassicState, ClassicPath> => {
         const names = featureNamesOf(data, matrixView(data.x, 'classicTree', { allowNaN: true }).d)
         const classes = classNamesOf(data, encodeLabels(data.y ?? [], 'classicTree').classes)
+        // `tree/merge` is CHAID's only, so it is in the contract of that mode alone.
         return {
           'tree/split': message({ description: 'the node just decided: its feature, how many branches, the gain' }),
           'tree/leaves': scalar({ description: 'leaves so far' }),
@@ -810,7 +829,7 @@ export function classicTreeClassifier(mode: ClassicMode, hyper: Partial<ClassicH
                 classes,
               }),
           }),
-        }
+        } as Contract<ClassicState, ClassicPath>
       },
       records: (state, data) => {
         const names = featureNamesOf(data, matrixView(data.x, 'classicTree', { allowNaN: true }).d)

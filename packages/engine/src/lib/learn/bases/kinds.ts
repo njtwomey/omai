@@ -21,6 +21,14 @@ export interface KindContext<S> {
 /** The standard derived paths of a kind. */
 export type KindProbes<S> = Readonly<Record<string, DerivedSource<S>>>
 
+/** The paths the kinds add (see {@link kindProbes}), as a type: the bases include them in the paths of their sessions. */
+export type KindPath =
+  | 'model/decision-surface'
+  | 'model/predictions'
+  | 'model/assignments'
+  | 'model/embedding'
+  | 'model/scores'
+
 const rows = (t: Tensor): number[][] => {
   const d = t.shape[1] ?? 1
   const flat = toFlat(t)
