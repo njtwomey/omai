@@ -433,7 +433,7 @@ export function conceptSubsumes(sup: string, sub: string, tbox: TBox = []): bool
  * @example
  * ```ts
  * import { classifyConcepts } from 'mdml-engine/logic'
- * const tbox = [['Man', 'Human'], ['Woman', 'Human'], ['Mother', 'Woman'], ['Mother', 'some hasChild Human']] as const
+ * const tbox = [['Man', 'Human'], ['Woman', 'Human'], ['Mother', 'Woman'], ['Mother', 'some hasChild Human']]
  * classifyConcepts(['Human', 'Man', 'Woman', 'Mother'], tbox) // => { Human: [], Man: ['Human'], Woman: ['Human'], Mother: ['Woman'] }
  * ```
  */

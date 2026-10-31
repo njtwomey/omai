@@ -224,11 +224,11 @@ export interface QueryResult {
  * ```ts
  * import { successProbability } from 'mdml-engine/logic'
  * const program = {
- *   facts: [[0.8, 'edge(a,b)'], [0.6, 'edge(b,c)'], [0.3, 'edge(a,c)']] as const,
+ *   facts: [[0.8, 'edge(a,b)'], [0.6, 'edge(b,c)'], [0.3, 'edge(a,c)']],
  *   certain: [],
  *   rules: ['path(X,Y) :- edge(X,Y)', 'path(X,Y) :- edge(X,Z), path(Z,Y)'],
  * }
- * successProbability(program, 'path(a,c)').probability // => 1 - (1 - 0.8 * 0.6) * (1 - 0.3)
+ * Math.round(successProbability(program, 'path(a,c)').probability * 1e9) / 1e9 // => 0.636
  * ```
  */
 export function successProbability(program: ProbabilisticProgram, query: string): QueryResult {
@@ -259,7 +259,7 @@ export function successProbability(program: ProbabilisticProgram, query: string)
  * @example
  * ```ts
  * import { conditionalProbability } from 'mdml-engine/logic'
- * const alarm = { facts: [[0.1, 'burglary'], [0.2, 'earthquake']] as const, certain: [], rules: ['alarm :- burglary', 'alarm :- earthquake'] }
+ * const alarm = { facts: [[0.1, 'burglary'], [0.2, 'earthquake']], certain: [], rules: ['alarm :- burglary', 'alarm :- earthquake'] }
  * conditionalProbability(alarm, 'burglary', [['alarm', true]]) // => 0.1 / 0.28
  * ```
  */
@@ -402,7 +402,7 @@ export function probLogEmAlgorithm(
  * @example
  * ```ts
  * import { learnProbabilities } from 'mdml-engine/logic'
- * const obs = [true, true, true, false].map((t) => [['heads', t]] as const)
+ * const obs = [true, true, true, false].map((t) => [['heads', t]])
  * learnProbabilities({ facts: [[0.5, 'heads']], certain: [], rules: [] }, obs).probabilities // => [0.75]
  * ```
  */

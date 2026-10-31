@@ -191,7 +191,7 @@ export interface Combination {
  * import { combineDempster, massFunction } from 'mdml-engine/logic'
  * const f = ['a', 'b', 'c']
  * const r = combineDempster(massFunction(f, [[['a'], 0.99], [['b'], 0.01]]), massFunction(f, [[['c'], 0.99], [['b'], 0.01]]))
- * [r.mass['b'], r.conflict] // => [1, 0.9999]
+ * [Math.round(r.mass['b'] * 1e9) / 1e9, r.conflict] // => [1, 0.9999]
  * ```
  */
 export function combineDempster(a: MassFunction, b: MassFunction): Combination {
@@ -413,7 +413,7 @@ export type TNorm = 'min' | 'product' | 'lukasiewicz'
  * @example
  * ```ts
  * import { tNorm } from 'mdml-engine/logic'
- * [tNorm('min', 0.6, 0.7), tNorm('product', 0.6, 0.7), tNorm('lukasiewicz', 0.6, 0.7)] // => [0.6, 0.42, 0.3]
+ * [tNorm('min', 0.6, 0.7), tNorm('product', 0.6, 0.7), tNorm('lukasiewicz', 0.6, 0.7)].map((v) => Math.round(v * 1e9) / 1e9) // => [0.6, 0.42, 0.3]
  * ```
  */
 export function tNorm(kind: TNorm, a: number, b: number): number {
@@ -430,7 +430,7 @@ export function tNorm(kind: TNorm, a: number, b: number): number {
  * @example
  * ```ts
  * import { tConorm } from 'mdml-engine/logic'
- * [tConorm('min', 0.6, 0.7), tConorm('product', 0.6, 0.7), tConorm('lukasiewicz', 0.6, 0.7)] // => [0.7, 0.88, 1]
+ * [tConorm('min', 0.6, 0.7), tConorm('product', 0.6, 0.7), tConorm('lukasiewicz', 0.6, 0.7)].map((v) => Math.round(v * 1e9) / 1e9) // => [0.7, 0.88, 1]
  * ```
  */
 export function tConorm(kind: TNorm, a: number, b: number): number {
@@ -548,7 +548,7 @@ export interface FuzzyOptions {
  * import { linspaceUniverse, mamdani, triangular } from 'mdml-engine/logic'
  * const x = { universe: linspaceUniverse(0, 10, 11), sets: { high: triangular(5, 10, 10) } }
  * const y = { universe: linspaceUniverse(0, 10, 101), sets: { big: triangular(0, 5, 10) } }
- * mamdani({ x }, y, [{ conditions: [['x', 'high']], connective: 'and', consequent: 'big' }], { x: 7.5 }).output // => 5
+ * Math.round(mamdani({ x }, y, [{ conditions: [['x', 'high']], connective: 'and', consequent: 'big' }], { x: 7.5 }).output * 1e9) / 1e9 // => 5
  * ```
  */
 export function mamdani(
@@ -603,8 +603,8 @@ export interface SugenoRule {
  * import { linspaceUniverse, sugeno, triangular } from 'mdml-engine/logic'
  * const x = { universe: linspaceUniverse(0, 10, 11), sets: { low: triangular(0, 0, 10), high: triangular(0, 10, 10) } }
  * const rules = [
- *   { conditions: [['x', 'low']] as const, connective: 'and' as const, constant: 0 },
- *   { conditions: [['x', 'high']] as const, connective: 'and' as const, constant: 10 },
+ *   { conditions: [['x', 'low']], connective: 'and', constant: 0 },
+ *   { conditions: [['x', 'high']], connective: 'and', constant: 10 },
  * ]
  * sugeno({ x }, rules, { x: 2.5 }).output // => 2.5
  * ```
