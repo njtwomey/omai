@@ -7,6 +7,7 @@
 export * from './baum-welch.ts'
 export * from './equivalence.ts'
 export * from './hmm-variants.ts'
+export * from './hsmm.ts'
 export * from './independence.ts'
 export * from './parameters.ts'
 export * from './scores.ts'
