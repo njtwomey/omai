@@ -1320,7 +1320,12 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   the hierarchical softmax in `losses` uses), canonical codes, Shannon-Fano (Fano's splits and Shannon's cumulative code),
   expected length, prefix encoding and decoding.
 - `stream-coding.ts`: arithmetic coding (32-bit integer, pending bits) and carry-less range coding, with static and
-  adaptive frequency models.
+  adaptive frequency models; each coder also as a traced algorithm, one symbol per step (`arithmeticEncoderAlgorithm`,
+  `arithmeticDecoderAlgorithm`, `rangeEncoderAlgorithm`, `rangeDecoderAlgorithm`) with the working interval, the bits
+  against the information content and the adaptive counts on the tape, the output identical to the whole-message
+  functions. `source-coding.ts` gained `prefixEncoderAlgorithm`.
+- `sources.ts`: sources with their truth: `memorylessSource` (entropy, the sample's information content),
+  `markovSource` (stationary law, entropy rate).
 - `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
 - `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
 - `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
