@@ -4489,6 +4489,15 @@
       "cases": 5
     },
     {
+      "fixture": "survival/estimators.json",
+      "source": "oracle/cases/survival/estimators.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "statsmodels": "0.15.0"
+      },
+      "cases": 34
+    },
+    {
       "fixture": "svm/classifier.json",
       "source": "oracle/cases/svm/classifier.py",
       "reference": {

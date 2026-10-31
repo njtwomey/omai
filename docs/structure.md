@@ -3786,6 +3786,38 @@ README lists.
 built from: `learn` (neighbours, iterative base), `distances`, `stats` (quantiles, ranks, extreme values), `random`,
 `trace`, `exposition`
 
+### 4.54 `survival/`: survival analysis of right-censored data (lifelines, statsmodels duration, R survival)
+
+`data.ts` reads right-censored data (`survivalSample`: times and 0/1 event indicators, validated once) and builds the
+table of distinct event times (`eventTable`: at risk, events, censored). `kaplan-meier.ts` is the product-limit
+estimator with Greenwood's variance and the log-log, plain and log intervals (`kaplanMeier`, `survivalAt`,
+`survivalQuantile`, `restrictedMeanSurvival`), the Nelson-Aalen cumulative hazard (`nelsonAalen`), and
+`kaplanMeierAlgorithm`, which takes one subject per step (events before censorings at a tied time) so the curve forms
+as the run proceeds; its state serialises, and after `n` steps it is the batch curve. `log-rank.ts` is the weighted
+K-sample log-rank family (`logRankTest`: log-rank, Gehan-Breslow/Wilcoxon, Tarone-Ware, Peto-Peto, Fleming-Harrington
+`(p, q)`, strata summed over; `logRankZ` for two groups). `cox.ts` is Cox regression: `coxProblem` builds the
+partial likelihood (Breslow or Efron ties, strata, a ridge) as a `SmoothProblem` in differentiable tensor operations
+(one reverse cumulative sum gives every risk set), `coxAlgorithm`/`coxPh` fit it with `solver` a hyperparameter from
+`smoothSolvers` (default Newton to a gradient tolerance of 1e-10, which reproduces the references; every other smooth
+solver reaches the same optimum), and the fit carries the covariance from the observed information, Wald,
+likelihood-ratio and score tests, the concordance, Breslow's baseline cumulative hazard per stratum and
+`coxPredictSurvival`. `aft.ts` is the accelerated failure time family (`aftProblem`, `aftAlgorithm`, `aft`: Weibull,
+log-normal, log-logistic, exponential) on the same slot, with `aftPredictSurvival` and `aftPredictQuantile`.
+`concordance.ts` is Harrell's C (`concordanceIndex`, with pair counts). The planted generator is `survivalData` of
+`datasets` (Weibull or exponential proportional hazards and log-normal AFT with known coefficients), which the tests
+use.
+
+oracle: statsmodels `SurvfuncRight` (curve, Greenwood errors, risk sets), `survdiff` (log-rank, Gehan-Breslow,
+Tarone-Ware, Fleming-Harrington, two and three groups, with and without tied times), `PHReg` (coefficients, errors,
+partial log-likelihood and baseline hazard for both tie methods, and a stratified fit); the AFT fits are compared with
+a maximum-likelihood fit written from `scipy.stats` log densities (Gumbel, normal, logistic) polished by Newton steps
+on numerical derivatives, and the concordance index with a direct count of the pairs (neither statsmodels nor
+scikit-learn has an equivalent installed). TODO: left truncation (entry times), case weights, time-varying
+covariates, interval and left censoring for the AFT family, Schoenfeld residuals and the proportional-hazards test,
+the time-dependent Brier score and AUC.
+built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
+`trace`, `space`, `random`
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
