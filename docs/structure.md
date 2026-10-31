@@ -1143,6 +1143,19 @@ in it (`checkPrimitive`).
 - `colouring.ts`: `greedyColouring` (largest-first, smallest-last, random-sequential, independent-set,
   connected-sequential BFS/DFS, DSATUR), `isProperColouring`, `maximalIndependentSet`, `maximalCliques`
   (Bron-Kerbosch with Tomita pivoting), `maximumClique`, `cliqueNumber`.
+- `spreading.ts`: things that spread over a network: `networkEpidemicAlgorithm` (SIR, SIS or SEIR by Gillespie's exact
+  method, one event per step, with vaccinated nodes and a horizon), `independentCascadeAlgorithm` and
+  `linearThresholdAlgorithm` (one wave per step), and the results known about them: `sirTransmissibility`,
+  `epidemicFinalSize` (Newman's generating-function relation for any degree sequence), `homogeneousFinalSize`,
+  `epidemicThresholds` (spectral, heterogeneous mean-field and percolation), `wattsCascadeCondition`.
+- `influence.ts`: influence maximisation: `liveEdgeSamples` (independent cascade or linear threshold as reachability in
+  sampled live-edge graphs), `liveEdgeReach`, `estimateSpread`, `exactIndependentCascadeSpread` (enumeration, the
+  truth for small graphs) and `influenceMaximisationAlgorithm` (greedy, CELF or highest degree, one seed per step with
+  its marginal gain and the evaluation count on the tape).
+- `opinion.ts`: opinion dynamics: `voterModelAlgorithm` with `voterFixationProbability` (the degree-weighted share),
+  `degrootAlgorithm` (DeGroot and Friedkin-Johnsen with stubbornness) with `degrootConsensus` and
+  `friedkinJohnsenEquilibrium`, and `boundedConfidenceAlgorithm` (Hegselmann-Krause on a graph).
+- `_run.ts`: the state codec, seed resolution and argument checks the stepped processes share.
 
 The graph machinery in `pgm/graphs.ts` and `pgm/triangulation.ts` predates this domain and works on
 string-named adjacency maps; `pgm.connectedComponents`, `topologicalOrder` and `maximalCliques` can later delegate to
