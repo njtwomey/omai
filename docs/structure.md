@@ -1169,7 +1169,8 @@ in it (`checkPrimitive`).
   method, one event per step, with vaccinated nodes and a horizon), `independentCascadeAlgorithm` and
   `linearThresholdAlgorithm` (one wave per step), and the results known about them: `sirTransmissibility`,
   `epidemicFinalSize` (Newman's generating-function relation for any degree sequence), `homogeneousFinalSize`,
-  `epidemicThresholds` (spectral, heterogeneous mean-field and percolation), `wattsCascadeCondition`.
+  `epidemicThresholds` (spectral, heterogeneous mean-field and percolation), `wattsCascadeCondition`, `vaccinationSet`
+  (random, targeted, acquaintance), `herdImmunityThreshold`.
 - `influence.ts`: influence maximisation: `liveEdgeSamples` (independent cascade or linear threshold as reachability in
   sampled live-edge graphs), `liveEdgeReach`, `estimateSpread`, `exactIndependentCascadeSpread` (enumeration, the
   truth for small graphs) and `influenceMaximisationAlgorithm` (greedy, CELF or highest degree, one seed per step with
@@ -1326,6 +1327,13 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   functions. `source-coding.ts` gained `prefixEncoderAlgorithm`.
 - `sources.ts`: sources with their truth: `memorylessSource` (entropy, the sample's information content),
   `markovSource` (stationary law, entropy rate).
+- `bottleneck.ts`: the information bottleneck: `informationBottleneckAlgorithm` (Tishby's self-consistent iteration at one
+  beta), `bottleneckCurveAlgorithm` (one beta per step, the information curve), `agglomerativeBottleneckAlgorithm`
+  (merges by relevance cost), `bottleneckCriticalBeta` (1 / lambda_2), `plantedBottleneck` (a joint with the optimal
+  clustering, I(X; Y) and H(G) as truth).
+- `mdl.ts`: minimum description length: `multinomialParametricComplexity`, `nmlRegret`, `nmlRegretAsymptotic`,
+  `nmlCodeLength`, `dirichletCodeLength` (KT and Laplace), `parameterBits`, `gaussianDataBits`, `polynomialMdl` (total =
+  BIC in bits), `histogramMdl`, `bestMdl`, and `mdlSelectionAlgorithm` (one candidate per step).
 - `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
 - `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
 - `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and

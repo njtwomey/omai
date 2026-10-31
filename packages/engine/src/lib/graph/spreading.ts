@@ -9,7 +9,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { eigsh } from '../numerics/sparse/index.ts'
-import { foldIn, uniform, uniformStream } from '../random/index.ts'
+import { foldIn, type Key, subsample, uniform, uniformStream } from '../random/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, event, scalar, tensor } from '../trace/index.ts'
 import { checkNumber, codec, resolveSeeds } from './_run.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
@@ -391,6 +391,76 @@ export function epidemicThresholds(g: Graph): EpidemicThresholds {
     heterogeneous: second > 0 ? mean / second : Number.POSITIVE_INFINITY,
     percolation: second - mean > 0 ? mean / (second - mean) : Number.POSITIVE_INFINITY,
   }
+}
+
+/** Whom to vaccinate: at random, the highest-degree nodes (targeted), or a random neighbour of a random node (the acquaintance immunisation of Cohen, Havlin and ben-Avraham). */
+export type VaccinationStrategy = 'random' | 'degree' | 'acquaintance'
+
+/**
+ * Choose `count` nodes to make immune ({@link NetworkEpidemicOptions.immune}). Targeting the hubs protects a heavy-tailed
+ * network with far fewer doses than vaccinating at random, because the hubs carry most of the edges; acquaintance
+ * immunisation gets much of that benefit without knowing the degrees, since a random neighbour of a random node is
+ * likely to be a hub.
+ *
+ * @param g - The contact network.
+ * @param count - How many nodes.
+ * @param strategy - `'random'`, `'degree'` (highest degree first, ties by index) or `'acquaintance'`.
+ * @param key - The random key (unused by `'degree'`).
+ * @returns The nodes, ascending.
+ * @throws MdmlError with code `value` for a count beyond the number of nodes or an unknown strategy.
+ * @concept network-epidemics
+ * @example
+ * ```ts
+ * import { starGraph, vaccinationSet } from 'mdml-engine/graph'
+ * import { key } from 'mdml-engine/random'
+ * vaccinationSet(starGraph(6), 1, 'degree', key(0)) // => [0]
+ * ```
+ */
+export function vaccinationSet(g: Graph, count: number, strategy: VaccinationStrategy, key: Key): number[] {
+  if (!(Number.isInteger(count) && count >= 0 && count <= g.n))
+    throw new MdmlError('value', `vaccinationSet: count must be an integer in [0, ${g.n}]`)
+  const degree = (v: number): number => (g.out.indptr[v + 1] ?? 0) - (g.out.indptr[v] ?? 0)
+  if (strategy === 'random') return Array.from(subsample(key, g.n, count).data).sort((a, b) => a - b)
+  if (strategy === 'degree')
+    return Array.from({ length: g.n }, (_, v) => v)
+      .sort((a, b) => degree(b) - degree(a) || a - b)
+      .slice(0, count)
+      .sort((a, b) => a - b)
+  if (strategy !== 'acquaintance')
+    throw new MdmlError('value', `vaccinationSet: unknown strategy '${String(strategy)}'`)
+  const chosen = new Set<number>()
+  const next = uniformStream(key, 64)
+  for (let guard = 0; chosen.size < count && guard < 200 * Math.max(count, 1); guard++) {
+    const v = Math.min(g.n - 1, Math.floor(next() * g.n))
+    const lo = g.out.indptr[v] ?? 0
+    const d = degree(v)
+    if (d > 0) chosen.add(g.out.indices[lo + Math.min(d - 1, Math.floor(next() * d))] ?? 0)
+  }
+  // A graph with too few nodes of positive degree is topped up with the highest-degree nodes left.
+  for (const v of vaccinationSet(g, g.n, 'degree', key).sort((a, b) => degree(b) - degree(a) || a - b)) {
+    if (chosen.size >= count) break
+    chosen.add(v)
+  }
+  return [...chosen].sort((a, b) => a - b)
+}
+
+/**
+ * The herd-immunity threshold of the homogeneous-mixing epidemic: vaccinating the share 1 - 1/R0 of the population at
+ * random leaves an effective reproduction number of one, so the epidemic cannot take off.
+ *
+ * @param r0 - The basic reproduction number.
+ * @returns The share to immunise, in [0, 1).
+ * @throws MdmlError with code `value` for a negative R0.
+ * @concept network-epidemics
+ * @example
+ * ```ts
+ * import { herdImmunityThreshold } from 'mdml-engine/graph'
+ * herdImmunityThreshold(4) // => 0.75
+ * ```
+ */
+export function herdImmunityThreshold(r0: number): number {
+  if (!(r0 >= 0)) throw new MdmlError('value', 'herdImmunityThreshold: R0 must be non-negative')
+  return r0 <= 1 ? 0 : 1 - 1 / r0
 }
 
 /** Options shared by the cascade algorithms. */

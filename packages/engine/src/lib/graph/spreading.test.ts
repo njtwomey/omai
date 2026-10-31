@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { key } from '../random/index.ts'
 import { policies, recorder, runAlgorithm } from '../trace/index.ts'
 import {
+  barabasiAlbertGraph,
   completeGraph,
   cycleGraph,
   epidemicFinalSize,
   epidemicThresholds,
   erdosRenyiGraph,
+  herdImmunityThreshold,
   homogeneousFinalSize,
   independentCascadeAlgorithm,
   linearThresholdAlgorithm,
@@ -14,6 +16,7 @@ import {
   pathGraph,
   sirTransmissibility,
   starGraph,
+  vaccinationSet,
   wattsCascadeCondition,
 } from './index.ts'
 
@@ -195,6 +198,47 @@ describe('epidemic results', () => {
     expect(cycle.heterogeneous).toBeCloseTo(0.5, 12)
     expect(cycle.percolation).toBeCloseTo(1, 12)
     expect(epidemicThresholds(pathGraph(2)).lambdaMax).toBe(1)
+  })
+})
+
+describe('vaccination', () => {
+  it('chooses the stated number of nodes by each strategy; targeting takes the hubs', () => {
+    const g = barabasiAlbertGraph(key(3), 300, 2)
+    const degree = (v: number): number => (g.out.indptr[v + 1] ?? 0) - (g.out.indptr[v] ?? 0)
+    const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
+    const by = (s: 'random' | 'degree' | 'acquaintance'): number[] => vaccinationSet(g, 30, s, key(1))
+    for (const s of ['random', 'degree', 'acquaintance'] as const) expect(new Set(by(s)).size).toBe(30)
+    expect(mean(by('degree').map(degree))).toBeGreaterThan(2 * mean(by('acquaintance').map(degree)))
+    expect(mean(by('acquaintance').map(degree))).toBeGreaterThan(1.5 * mean(by('random').map(degree)))
+    expect(vaccinationSet(starGraph(6), 1, 'degree', key(0))).toEqual([0])
+    expect(() => vaccinationSet(starGraph(3), 9, 'random', key(0))).toThrow(/count/)
+    expect(() => vaccinationSet(starGraph(3), 1, 'x' as 'random', key(0))).toThrow(/strategy/)
+  })
+
+  it('on a scale-free network vaccinating hubs stops an epidemic that random vaccination does not', () => {
+    const g = barabasiAlbertGraph(key(4), 1500, 2)
+    const attack = (immune: number[]): number => {
+      let total = 0
+      for (let s = 0; s < 4; s++) {
+        const eligible = Array.from({ length: g.n }, (_, v) => v).filter((v) => !immune.includes(v))
+        total +=
+          runAlgorithm(
+            networkEpidemicAlgorithm(g, { beta: 1, gamma: 1, seeds: eligible.slice(s * 50, s * 50 + 5), immune }),
+            { seed: s, maxSteps: 200000 },
+          ).state.ever / g.n
+      }
+      return total / 4
+    }
+    const doses = 150
+    expect(attack(vaccinationSet(g, doses, 'degree', key(0)))).toBeLessThan(
+      0.5 * attack(vaccinationSet(g, doses, 'random', key(0))),
+    )
+  })
+
+  it('has the herd-immunity threshold 1 - 1 / R0', () => {
+    expect(herdImmunityThreshold(4)).toBe(0.75)
+    expect(herdImmunityThreshold(0.5)).toBe(0)
+    expect(() => herdImmunityThreshold(-1)).toThrow(/R0/)
   })
 })
 
