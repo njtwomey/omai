@@ -2,7 +2,8 @@
  * Conformal prediction, which turns any model's point predictions into prediction intervals or label sets with
  * guaranteed coverage under exchangeability, MAPIE style. Split conformal regression and classification (including APS
  * and RAPS scores), conformalised quantile regression, jackknife+ and CV+, Mondrian group-conditional intervals,
- * adaptive conformal inference for shifting data, and coverage checks.
+ * adaptive conformal inference for shifting data, weighted conformal prediction under covariate shift, and coverage
+ * checks.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -761,4 +762,116 @@ export function intervalCoverage(
     width += (hi[i] ?? 0) - (lo[i] ?? 0)
   })
   return { coverage: inside / t.length, width: width / t.length }
+}
+
+/**
+ * The weighted conformal quantile of calibration scores for one test point (Tibshirani, Barber, Candes and Ramdas
+ * 2019): the smallest score `s` with `sum_{s_i <= s} w_i / (sum_j w_j + w) >= 1 - alpha`, where `w` is the test point's
+ * weight (the mass `w / (sum_j w_j + w)` sits at `+infinity`), or `+infinity` when no score reaches the level. With equal
+ * weights this is {@link conformalQuantile}.
+ *
+ * @param scores - Calibration conformity scores.
+ * @param weights - Their weights, the density ratio `p_test(x_i) / p_calibration(x_i)` `[n]`.
+ * @param testWeight - The weight of the test point.
+ * @param alpha - The miscoverage level in (0, 1).
+ * @returns The quantile.
+ * @concept conformal-prediction
+ * @example
+ * ```ts
+ * import { weightedConformalQuantile } from 'mdml-engine/learn'
+ * weightedConformalQuantile([1, 2, 3, 4], [1, 1, 1, 1], 1, 0.4) // => 3
+ * weightedConformalQuantile([1, 2, 3, 4], [1, 1, 1, 5], 1, 0.4) // => 4
+ * ```
+ */
+export function weightedConformalQuantile(
+  scores: ArrayLike<number>,
+  weights: ArrayLike<number>,
+  testWeight: number,
+  alpha: number,
+): number {
+  fractionOption(alpha, 'alpha', 'weightedConformalQuantile')
+  if (scores.length !== weights.length)
+    throw new MdmlError('shape', 'weightedConformalQuantile: scores and weights differ')
+  if (scores.length === 0) throw new MdmlError('value', 'weightedConformalQuantile: no calibration scores')
+  if (!(testWeight >= 0) || Array.from(weights).some((w) => !(w >= 0)))
+    throw new MdmlError('value', 'weightedConformalQuantile: weights must be >= 0')
+  const order = Array.from(scores, (s, i) => ({ s, w: weights[i] ?? 0 })).sort((a, b) => a.s - b.s)
+  const total = order.reduce((a, o) => a + o.w, 0) + testWeight
+  if (!(total > 0)) throw new MdmlError('value', 'weightedConformalQuantile: all weights are zero')
+  let cumulative = 0
+  for (const o of order) {
+    cumulative += o.w
+    if (cumulative / total >= 1 - alpha - 1e-12) return o.s
+  }
+  return Number.POSITIVE_INFINITY
+}
+
+/** Options of {@link weightedConformalRegressor}. */
+export interface WeightedConformalOptions {
+  /** Miscoverage (default 0.1). */
+  readonly alpha?: number
+  /** The density ratio `p_test(x) / p_calibration(x)`, the `predictRatio` of `classifierDensityRatio`, `kliep` or `ulsif`. */
+  readonly ratio: (x: TensorLike) => TensorLike
+}
+
+/** A weighted conformal regressor: intervals whose half-width depends on the test point through its weight. */
+export interface WeightedConformalRegressor extends Omit<ConformalRegressor, 'quantile'> {
+  /** The half-width of the interval at each test point, `[n]`. */
+  readonly quantileAt: (x: TensorLike) => Float64Array
+}
+
+/**
+ * Weighted split conformal regression under covariate shift (Tibshirani et al. 2019): the calibration residuals are
+ * weighted by the density ratio `w(x) = p_test(x) / p_calibration(x)` at the calibration points, and the interval at a
+ * test point `x` uses the weighted quantile with that point's own weight `w(x)` at infinity. With the true ratio the
+ * coverage under the test distribution is at least `1 - alpha`; with an estimated ratio (a classifier, KLIEP, uLSIF) it is
+ * restored as far as the ratio is right. Plain split conformal on the same scores covers the calibration distribution only.
+ *
+ * @param fitted - A fitted regressor (its `predict` is used).
+ * @param calibration - Held-out calibration data from the source distribution.
+ * @param options - `alpha` and the density-ratio function.
+ * @returns The regressor, with `predictInterval` and `quantileAt`.
+ * @concept conformal-prediction
+ * @example
+ * ```ts
+ * import { weightedConformalRegressor } from 'mdml-engine/learn'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const zero = { estimator: 'zero', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => 0)) }
+ * const cal = { x: [[0], [1], [2], [3]], y: [1, 2, 3, 4] }
+ * // Test points far to the right of the calibration data carry weight: the large residuals count for more.
+ * const c = weightedConformalRegressor(zero, cal, { alpha: 0.4, ratio: (x) => x.map((row) => row[0] + 1) })
+ * Array.from(c.quantileAt([[3]])) // => [4]
+ * ```
+ */
+export function weightedConformalRegressor(
+  fitted: Fitted,
+  calibration: LearnData,
+  options: WeightedConformalOptions,
+): WeightedConformalRegressor {
+  const who = 'weightedConformalRegressor'
+  const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', who)
+  const predict = predictOf(fitted, who)
+  const n = rowsOf(calibration.x)
+  const y = targetVector(requireTargets(calibration, who), who, n)
+  const yhat = predict(calibration.x)
+  const scores = Array.from(y, (v, i) => Math.abs(v - (yhat[i] ?? 0)))
+  const ratio = (x: TensorLike, expected: number): Float64Array => targetVector(options.ratio(x), who, expected)
+  const weights = ratio(calibration.x, n)
+  const quantileAt = (x: TensorLike): Float64Array => {
+    const w = ratio(x, rowsOf(x))
+    return Float64Array.from(w, (wi) => weightedConformalQuantile(scores, weights, wi, alpha))
+  }
+  return {
+    alpha,
+    quantileAt,
+    predictInterval: (x) => {
+      const p = predict(x)
+      const q = quantileAt(x)
+      return {
+        prediction: vec(p),
+        lower: vec(p.map((v, i) => v - (q[i] ?? 0))),
+        upper: vec(p.map((v, i) => v + (q[i] ?? 0))),
+      }
+    },
+  }
 }

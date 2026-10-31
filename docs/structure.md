@@ -2601,7 +2601,8 @@ modAL for active learning, diffprivlib and opacus for privacy
   one-standard-error rule, the .632 and .632+ bootstrap.
 - `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
-  cross-fitted calibrated classifiers.
+  cross-fitted calibrated classifiers; for regression, the probability integral transform (`pitValues`, `pitHistogram`)
+  and Kuleshov's quantile recalibration (`quantileCalibration`, `quantileCalibrationCurve`, `recalibratedQuantiles`).
 - `neighbours.ts`: `neighbourIndex` (exact k-nearest and radius search under any metric of `distances`, brute force or a KD
   or ball tree), the k-nearest classifier and regressor and their radius twins (uniform or distance weights, an outlier
   label), and the nearest centroid with Tibshirani's shrinkage and `shrunkenCentroidPath`; estimators on the iterative
@@ -2636,11 +2637,28 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `_classify.ts` (private): the verbs of a classifier from class scores, the default scores, `rowsAlgorithm` (the rows of
   the training set revealed one per step, which closed-form and memory-based learners use as their algorithm).
 - `conformal.ts`: split conformal regression, conformalised quantile regression, conformal classification (LAC, APS,
-  RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference).
+  RAPS with tuning), Mondrian conformal, jackknife+ and CV+, conformal for time series (adaptive conformal inference),
+  and weighted conformal regression under covariate shift (`weightedConformalQuantile`, `weightedConformalRegressor`, which
+  takes the `predictRatio` of any density-ratio estimator).
 - Explanation, inspection and data valuation are their own domain, `lib/explain/` (4.38).
 - `active-learning.ts`: the pool-based and stream-based active-learning loop as a traced algorithm (query, label,
   refit), query-strategy contract (uncertainty, margin, entropy, random, ranked batch, expected error reduction, query
-  by committee), budget handling.
+  by committee, expected model change, BALD and BatchBALD, density-weighted uncertainty, k-centre core sets through
+  `coresets.ts`, BADGE), budget handling. `activeLearningAlgorithm` is the stepped form.
+- `coresets.ts`: Gonzalez's k-centre traversal (`kCenterGreedyAlgorithm`, with fixed outside centres), kernel herding,
+  leverage-score and sensitivity-sampling coresets with their importance weights, Frank-Wolfe Bayesian coresets.
+- `uncertainty.ts`: deep ensembles (`deepEnsembleAlgorithm`, one member per step under its own key, optionally on
+  bootstrap resamples; `deepEnsemble`, `ensembleUncertainty`), Monte Carlo dropout over any stochastic forward pass
+  (`mcDropoutAlgorithm`, `mcDropoutPredict`), and the epistemic/aleatoric decomposition (`deepEnsemblePredict`,
+  `disagreement`).
+- `drift.ts`: stream drift detectors as algorithms (`ddmAlgorithm`, `eddmAlgorithm`, `adwinAlgorithm` with the
+  exponential histogram, `kswinAlgorithm`) with batch runners, and the population stability index.
+- `shift.ts`: label shift: black-box shift estimation (`blackBoxShiftEstimate`), Saerens' EM (`emPriorAdjustmentAlgorithm`)
+  and `adjustPriors`.
+- `density-ratio.ts`: covariate-shift density ratios: `classifierDensityRatio` (any base estimator), KLIEP and uLSIF
+  (relative uLSIF with `alpha`) as problems whose solver is a slot (`kliepProblem`/`kliepSolvers`,
+  `ulsifProblem`/`ulsifSolvers`: the closed form, or any smooth solver of `optim`), and the closed-form leave-pair-out
+  score `ulsifLoo`.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
 - `semi-supervised.ts`: rows with target `-1` (NaN for regression) are unlabelled. `selfTraining`, `coTraining` (two
