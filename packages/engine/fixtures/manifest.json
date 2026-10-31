@@ -387,6 +387,15 @@
       "cases": 4
     },
     {
+      "fixture": "dynamics/celestial.json",
+      "source": "oracle/cases/dynamics/celestial.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "dynamics/control/optimal.json",
       "source": "oracle/cases/dynamics/control/optimal.py",
       "reference": {

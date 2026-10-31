@@ -43,6 +43,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/dists/families': () => import('mdml-engine/dists/families'),
   'mdml-engine/dists/multivariate': () => import('mdml-engine/dists/multivariate'),
   'mdml-engine/dynamics': () => import('mdml-engine/dynamics'),
+  'mdml-engine/dynamics/celestial': () => import('mdml-engine/dynamics/celestial'),
   'mdml-engine/dynamics/control': () => import('mdml-engine/dynamics/control'),
   'mdml-engine/dynamics/filtering': () => import('mdml-engine/dynamics/filtering'),
   'mdml-engine/dynamics/ode': () => import('mdml-engine/dynamics/ode'),

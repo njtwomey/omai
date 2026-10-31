@@ -2082,7 +2082,11 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `ode/implicit.ts`: backward Euler, trapezoid (Crank-Nicolson), BDF orders 1 to 5 with variable order, Radau IIA (5),
   SDIRK, Rosenbrock methods, stiffness detection.
 - `ode/symplectic.ts`: symplectic Euler, Stormer-Verlet (leapfrog), velocity Verlet, Forest-Ruth and Yoshida fourth
-  order; energy-drift diagnostics.
+  order; energy-drift diagnostics; `separableField` (the Hamiltonian vector field on stacked positions and momenta, so
+  a Runge-Kutta method can run a Hamiltonian system beside the splittings).
+- `ode/flow.ts`: `flowAlgorithm`, a field integrated at a fixed step by an explicit Runge-Kutta method as an
+  `Algorithm` whose state is plain numbers (serialises, seeks, resumes), with an observer hook for the paths a system
+  logs and a stopping rule (the base of the celestial, named-system and geodesic algorithms below).
 - `ode/exponential.ts`: exponential Euler and ETDRK4 for stiff semilinear problems.
 - `ode/taylor.ts`: Taylor-series integrators using Taylor-mode differentiation.
 - `ode/solve-ivp.ts`: `solveIvp` (scipy semantics: method, evaluation times, dense output, events with direction and
@@ -2111,6 +2115,27 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, and `namedSystems`, each
   with a start, a time span that shows its behaviour and its component names (what `methods/dynamics/odeSystems.ts`
   runs).
+- `celestial/` (the celestial-mechanics namespace, `mdml-engine/dynamics/celestial`; the chapter tables call it
+  `dynamics/celestial.ts`, it is a folder because it holds five concerns; oracle: scipy.optimize and scipy.integrate):
+  - `kepler.ts`: the anomalies (mean, eccentric, hyperbolic, parabolic, true) and their conversions; Kepler's equation
+    solved by Newton, Halley, bisection, secant and fixed-point iteration as a stepped `Algorithm` (`keplerAlgorithm`:
+    iterate, residual, error against the root and correct digits per step, serialisable) and as a table of modes
+    (`keplerSolvers`, the slot of the `keplers-equation` method); the hyperbolic form M = e sinh H - H; Barker's
+    equation in closed form; the Fourier-Bessel and Lagrange (through e^5, Laplace's limit) series; `solveKepler` on
+    any conic.
+  - `elements.ts`: classical elements to and from state vectors (ellipse, parabola, hyperbola; the circular and
+    equatorial degenerate conventions documented), the analytic propagation `propagateKepler`/`keplerState` (the truth
+    for the integrators), vis-viva, period, escape speed, the Laplace-Runge-Lenz invariants.
+  - `nbody.ts`: the n-body Hamiltonian as a `SeparableSystem` (vectorised force over tensor operations, softening,
+    momentum, angular momentum, centre of mass, closest pair), `nBodyStep` and `nBodyAlgorithm` with the integrator as
+    a choice (the symplectic splittings of `ode/symplectic.ts` against Runge-Kutta) logging energy and its drift,
+    angular momentum and the closest approach, and a `bodies/close` event.
+  - `configurations.ts`: `twoBody` (launch speed to circular, elliptic, parabolic or hyperbolic, with period and energy),
+    `lagrangeTriangle`, `FIGURE_EIGHT`, `PYTHAGOREAN`, and `solarSystem` from the planets' mean elements (`PLANETS`,
+    `GAUSS_K`), each carrying its truth.
+  - `three-body.ts`: the circular restricted three-body field (planar and spatial), pseudo- and effective potential,
+    the Jacobi constant, `lagrangePoints` and their stability (`classifyLagrangePoints`, Routh's critical mass ratio),
+    `zeroVelocityCurves`, and `restrictedThreeBodyAlgorithm` logging the Jacobi constant and its drift.
 - `maps.ts`: iterated maps, orbits, cobwebs, bifurcation diagrams, Lyapunov exponents.
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
