@@ -2149,6 +2149,18 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   - `sugarscape.ts`: Sugarscape (`sugarLandscape`, `sugarscape` with `stats.gini` of the wealth on the tape; trade and
     reproduction are not built).
   - Private: `_core.ts` (state codec, torus index, board hash, checks).
+- `fractals/` (namespace `dynamics.fractals`; checked against the dimensions and counts the constructions imply, and
+  hand-known points): each is an `Algorithm` with serialisable state, a path union and a log contract.
+  - `escape-time.ts`: Mandelbrot, Julia, Burning Ship and multibrot (`escapeCount`, `escapeOrbit`, `orbitPeriod`,
+    `pixelGrid`/`ComplexViewport`, `escapeTimeAlgorithm`: one iteration over the whole grid per step, smooth counts).
+  - `newton.ts`: Newton fractals for a polynomial given by its roots (`newtonStep`, `rootsOfUnity`, `newtonFractal`).
+  - `ifs.ts`: affine IFS (`SIERPINSKI`, `SIERPINSKI_CARPET`, `BARNSLEY_FERN`, `similarityDimension`, `chaosGame`,
+    `ifsDeterministic` on a pixel grid).
+  - `box-counting.ts`: `boxCountingDimension` (points) and `boxCountingDimensionOfMask` (pixels), with the fit.
+  - `l-systems.ts`: `rewrite`, `turtle`, `L_SYSTEMS` (Koch, dragon, Hilbert, Peano, arrowhead, plants, one stochastic),
+    `lSystemAlgorithm`.
+  - `attractors.ts`: `mapCloud` (the accumulating cloud of any planar map) and `lobeSwitches`; the maps themselves
+    (`deJongMap`, `cliffordMap`, `ikedaMap`) are in `maps.ts` and `rosslerField`, `thomasField` in `named-systems.ts`.
 - Private helpers: `ode/_vec.ts` (typed-array fast path that falls back to tensor ops on traced values), `ode/_step.ts`
   (step bookkeeping shared by the steppers), `ode/_newton.ts` (simplified Newton, Jacobians, the implicit-function
   correction that makes implicit steps differentiable), `ode/_radau.ts`, `ode/_bdf.ts`, `ode/_bvp.ts`,

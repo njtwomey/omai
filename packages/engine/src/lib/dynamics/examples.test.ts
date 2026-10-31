@@ -21,6 +21,8 @@ const MODULES: Readonly<Record<string, unknown>> = {
   'mdml-engine/trace': trace,
   'mdml-engine/dynamics': dynamics,
   'mdml-engine/dynamics/ode': dynamics.ode,
+  'mdml-engine/dynamics/automata': dynamics.automata,
+  'mdml-engine/dynamics/fractals': dynamics.fractals,
   'mdml-engine/dynamics/pde': (dynamics as Record<string, unknown>)['pde'],
   'mdml-engine/dynamics/control': (dynamics as Record<string, unknown>)['control'],
   'mdml-engine/dynamics/filtering': (dynamics as Record<string, unknown>)['filtering'],
