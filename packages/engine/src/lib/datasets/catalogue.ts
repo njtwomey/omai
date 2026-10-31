@@ -22,6 +22,7 @@ import {
   titanic,
   wine,
 } from './classification-real.ts'
+import { dbnClickLogs } from './click-sessions.ts'
 import { anisotropicBlobs, oldFaithful, rings, unequalVarianceBlobs } from './clustering.ts'
 import { eloGames, roundRobin } from './comparisons.ts'
 import {
@@ -150,6 +151,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   contextualSbm,
   copyTask,
   coupledSeries,
+  dbnClickLogs,
   crowdLabels,
   densitySamples,
   digitGlyphs,
@@ -405,6 +407,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
   ]),
   ...g('interactions', [
     ['clickLogs', 'Click logs'],
+    ['dbnClickLogs', 'Click sessions (dynamic Bayesian network)'],
     ['crowdLabels', 'Crowd labels'],
     ['eloGames', 'Games between rated players'],
     ['implicitFeedback', 'Implicit feedback'],

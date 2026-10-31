@@ -2495,6 +2495,11 @@ none of those weights.
   retrieved denominators), `meanReciprocalRank`, `dcgScore` and `ndcgScore` (linear and exponential gains,
   tie-averaged), `expectedReciprocalRank`, `rankBiasedPrecision`; beyond-accuracy measures (`catalogCoverage`,
   `intraListDiversity`, `novelty`, `serendipity`, `exposureGini`).
+- `sequence-labelling.ts`: entity-level scores as seqeval reports them (conlleval's chunk rules): `entitySpans` (BIO,
+  IOB1, BIOES, BILOU), `bioViolations` (an inside tag that continues nothing), `entityScores` (micro, macro and weighted
+  precision, recall and F1 with the per-type scores), `entityF1`. Checked on the worked example of seqeval's README.
+- `interleaving.ts`: team-draft interleaving of two rankers (`teamDraftInterleave`, one coin flip per round), the
+  clicks credited to each (`interleavingCredit`) and the preference over many impressions (`interleavingPreference`).
 - `clustering.ts`: Rand, adjusted Rand and Fowlkes-Mallows (`randScore`, `adjustedRandScore`,
   `fowlkesMallowsScore`, `pairConfusionMatrix`); `mutualInfoScore`, NMI variants (`normalizedMutualInfoScore`:
   arithmetic, geometric, min, max), AMI (`adjustedMutualInfoScore`), V-measure, homogeneity and completeness;
@@ -2916,6 +2921,12 @@ modAL for active learning, diffprivlib and opacus for privacy
   (uPU and nnPU, differentiable), `puClassifier`, `elkanNoto`; `bagData`, `labelProportionClassifier` (proportion loss, L-BFGS) and
   `multipleInstanceSvm` (mi-SVM and MI-SVM over any binary base). oracle: `learn/weak_supervision` against numpy
   references written from the papers (EM for Dawid-Skene, the confident joint and the prune rules).
+- `click-models.ts`: click models for logs of ranked lists: `clickSessions` (an interaction log grouped into sessions),
+  the position-based model (`positionBasedAlgorithm`, EM one iteration per step, `positionBasedModel`), the cascade
+  model (`cascadeModel`, closed form) and the dynamic Bayesian network model of Chapelle and Zhang (`dbnAlgorithm`, EM
+  with a forward-backward pass over the examination chain, `dbnModel`), each with click probabilities by rank. Tested
+  on `clickLogs` and `dbnClickLogs`, where the examination curve, the relevance, the satisfaction and the continuation
+  are recovered.
 - `noisy-labels.ts`: `forwardCorrectedLoss` and `backwardCorrectedLoss` (Patrini et al.), `smallLossSelection` and
   `coTeaching` (two models exchanging their small-loss rows over any probabilistic base).
 
@@ -5354,6 +5365,8 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `ranking.ts`: explicit ratings with low-rank truth (`lowRankRatings`, observed at random or not), click logs
   (`clickLogs`: position and cascade models with logging-policy propensities), implicit feedback (`implicitFeedback`,
   Poisson factorisation), Zipfian catalogues (`zipfianCatalogue`), a small MovieLens (`movielensSmall`, remote).
+- `click-sessions.ts`: `dbnClickLogs`, click sessions from a dynamic Bayesian network with each item's attractiveness
+  and satisfaction and the continuation probability as truth.
 - `corpus.ts`: toy and topic corpora with true topics (`naiveBayesCorpus`, `topicCorpus` with Dirichlet or bars
   topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
   titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
