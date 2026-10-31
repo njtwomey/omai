@@ -108,7 +108,7 @@ function trainStep<G, S, O, A>(
   agent: Agent<G, O, A>,
   options: TrainOptions,
   s: TrainState<G, S, O>,
-  ctx: StepContext,
+  ctx: StepContext<TrainingPath>,
 ): TrainState<G, S, O> {
   const keep = options.checkpoints ?? true
   const action = agent.act(s.agent, s.observation, foldIn(ctx.key, 0))
@@ -180,6 +180,18 @@ function trainStep<G, S, O, A>(
 }
 
 /**
+ * The paths the training algorithm emits by path: the `rl/episode/end` event with the episode’s index, return and length (the per-step reward and the agent’s statistics are channels of its schema).
+ *
+ * @example
+ * ```ts
+ * import type { TrainingPath } from 'mdml-engine/rl'
+ * const path: TrainingPath = 'rl/episode/end'
+ * path // => 'rl/episode/end'
+ * ```
+ */
+export type TrainingPath = 'rl/episode/end'
+
+/**
  * Training an agent in an environment as an {@link Algorithm}: one environment step per algorithm step (act, step,
  * learn), resetting between episodes. Records the reward each step, the agent's own statistics (its `metrics`: epsilon,
  * losses, TD errors), an `episode` event per episode, the greedy evaluations as child runs with an `evalReturn`
@@ -202,7 +214,7 @@ export function trainingAlgorithm<G, S, O, A>(
   env: Env<S, O, A>,
   agent: Agent<G, O, A>,
   options: TrainOptions = {},
-): Algorithm<TrainState<G, S, O>> {
+): Algorithm<TrainState<G, S, O>, TrainingPath> {
   return {
     name: `train:${agent.name}`,
     config: {
