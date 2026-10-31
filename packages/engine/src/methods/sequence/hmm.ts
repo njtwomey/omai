@@ -10,7 +10,7 @@ import { type IterativeEstimator, iterative, type LearnData } from '../../lib/le
 import { learning } from '../../lib/pgm/index.ts'
 import { choice, dict, int, real } from '../../lib/space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
-import { derived, Log } from '../../lib/trace/index.ts'
+import { type Contract, defineContract, derived, Log } from '../../lib/trace/index.ts'
 
 /** The hyperparameters of {@link hmm}. */
 export interface HmmHyper {
@@ -114,6 +114,18 @@ function readingOf(params: HmmParams, data: LearnData): ReturnType<typeof stateS
 }
 
 /**
+ * The paths of the hidden Markov model beyond the solver’s: the state posteriors and decoded path at a step, derived.
+ *
+ * @example
+ * ```ts
+ * import type { HmmPath } from 'mdml-engine/methods/sequence'
+ * const path: HmmPath = 'model/posterior'
+ * path // => 'model/posterior'
+ * ```
+ */
+export type HmmPath = 'model/posterior'
+
+/**
  * A hidden Markov model fitted by Baum-Welch: the rows of `x` are the time steps of one sequence, with a symbol index
  * (categorical emissions) or a vector (Gaussian) per step. `predict` is the Viterbi path and `predictProba` the state
  * posteriors. On the tape: `solver/logLikelihood`, `solver/transition` and `solver/emission` (the categorical table or
@@ -127,11 +139,12 @@ function readingOf(params: HmmParams, data: LearnData): ReturnType<typeof stateS
  * hmm.with({ nStates: 2 }).fit({ x }).params.kind // => 'categorical'
  * ```
  */
-export const hmm: IterativeEstimator<HmmHyper, learning.BaumWelchState, HmmParams, HmmVerbs> = iterative<
+export const hmm: IterativeEstimator<HmmHyper, learning.BaumWelchState, HmmParams, HmmVerbs, HmmPath> = iterative<
   HmmHyper,
   learning.BaumWelchState,
   HmmParams,
-  HmmVerbs
+  HmmVerbs,
+  HmmPath
 >({
   name: 'sequence/hmm',
   kind: 'clusterer',
@@ -161,12 +174,13 @@ export const hmm: IterativeEstimator<HmmHyper, learning.BaumWelchState, HmmParam
     },
     score: (data) => learning.hmmDecode(p, sequenceOf(data.x, p.kind)).logLikelihood,
   }),
-  contract: (data) => ({
-    'model/posterior': derived<learning.BaumWelchState>({
-      description: 'the state posteriors over time and the decoded path under the parameters at this step',
-      compute: (s) => readingOf(s.params, data),
+  contract: (data): Contract<learning.BaumWelchState, HmmPath> =>
+    defineContract({
+      'model/posterior': derived<learning.BaumWelchState>({
+        description: 'the state posteriors over time and the decoded path under the parameters at this step',
+        compute: (s) => readingOf(s.params, data),
+      }),
     }),
-  }),
   records: (s, data) => [readingOf(s.params, data)],
   logs: {
     'solver/logLikelihood': Log(),

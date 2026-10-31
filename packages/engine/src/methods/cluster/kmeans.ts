@@ -9,7 +9,7 @@ import { clusteringSteps } from '../../lib/exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../../lib/learn/index.ts'
 import { choice, dict, int } from '../../lib/space/index.ts'
 import { type Tensor, type TensorLike, tensor } from '../../lib/tensor/index.ts'
-import { derived, Log, metricSeries, tensorSeries } from '../../lib/trace/index.ts'
+import { type Contract, defineContract, derived, Log, metricSeries, tensorSeries } from '../../lib/trace/index.ts'
 
 /** The hyperparameters of {@link kmeans}. */
 export interface KMeansHyper {
@@ -38,6 +38,18 @@ export interface KMeansVerbs {
 }
 
 /**
+ * The paths of k-means beyond the solver’s: the cluster centres, derived.
+ *
+ * @example
+ * ```ts
+ * import type { KMeansPath } from 'mdml-engine/methods/cluster'
+ * const path: KMeansPath = 'model/centres'
+ * path // => 'model/centres'
+ * ```
+ */
+export type KMeansPath = 'model/centres'
+
+/**
  * k-means clustering by Lloyd's algorithm.
  *
  * @example
@@ -46,11 +58,12 @@ export interface KMeansVerbs {
  * kmeans.with({ nClusters: 2 }).fit({ x: [[0, 0], [0, 1], [9, 9], [9, 8]] }).params.centres.length // => 2
  * ```
  */
-export const kmeans: IterativeEstimator<KMeansHyper, LloydState, KMeansParams, KMeansVerbs> = iterative<
+export const kmeans: IterativeEstimator<KMeansHyper, LloydState, KMeansParams, KMeansVerbs, KMeansPath> = iterative<
   KMeansHyper,
   LloydState,
   KMeansParams,
-  KMeansVerbs
+  KMeansVerbs,
+  KMeansPath
 >({
   name: 'cluster/kmeans',
   kind: 'clusterer',
@@ -65,12 +78,13 @@ export const kmeans: IterativeEstimator<KMeansHyper, LloydState, KMeansParams, K
   restarts: { count: (h) => h.nInit, better: (a, b) => a.inertia < b.inertia },
   params: (s) => ({ centres: s.centres, labels: s.labels, inertia: s.inertia }),
   verbs: (p) => ({ predict: (x) => tensor(nearestCentres(x, p.centres).labels) }),
-  contract: () => ({
-    'model/centres': derived<LloydState>({
-      description: 'the cluster centres at this step',
-      compute: (s) => s.centres,
+  contract: (): Contract<LloydState, KMeansPath> =>
+    defineContract({
+      'model/centres': derived<LloydState>({
+        description: 'the cluster centres at this step',
+        compute: (s) => s.centres,
+      }),
     }),
-  }),
   logs: {
     'solver/inertia': Log(),
     'solver/centres': Log({ detail: 'full' }),

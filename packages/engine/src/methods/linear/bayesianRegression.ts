@@ -20,7 +20,7 @@ import {
 import { permutation } from '../../lib/random/index.ts'
 import { dict, int, real } from '../../lib/space/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../../lib/tensor/index.ts'
-import { derived, Log } from '../../lib/trace/index.ts'
+import { type Contract, defineContract, derived, Log } from '../../lib/trace/index.ts'
 
 /** The hyperparameters of {@link bayesianRegression}. */
 export interface BayesianRegressionHyper {
@@ -58,6 +58,18 @@ export interface BayesianRegressionVerbs {
 }
 
 /**
+ * The paths of Bayesian regression beyond the solver’s: the posterior predictive on the training rows, derived.
+ *
+ * @example
+ * ```ts
+ * import type { BayesianRegressionPath } from 'mdml-engine/methods/linear'
+ * const path: BayesianRegressionPath = 'model/predictive'
+ * path // => 'model/predictive'
+ * ```
+ */
+export type BayesianRegressionPath = 'model/predictive'
+
+/**
  * Bayesian polynomial regression with a Gaussian prior on the coefficients and known noise precision, one training
  * row per step. The fitted model is the posterior after all rows (the batch closed form); any step's posterior can be
  * probed, and `model/predictive` gives its mean and +/- 2 predictive standard deviations over the training rows.
@@ -73,8 +85,15 @@ export const bayesianRegression: IterativeEstimator<
   BayesianRegressionHyper,
   BayesianPosterior,
   BayesianRegressionParams,
-  BayesianRegressionVerbs
-> = iterative<BayesianRegressionHyper, BayesianPosterior, BayesianRegressionParams, BayesianRegressionVerbs>({
+  BayesianRegressionVerbs,
+  BayesianRegressionPath
+> = iterative<
+  BayesianRegressionHyper,
+  BayesianPosterior,
+  BayesianRegressionParams,
+  BayesianRegressionVerbs,
+  BayesianRegressionPath
+>({
   name: 'linear/bayesian-regression',
   kind: 'regressor',
   defaults: { degree: 3, alpha: 1, beta: 25 },
@@ -115,9 +134,9 @@ export const bayesianRegression: IterativeEstimator<
       nFeaturesIn: p.scaler.scale.length,
     }
   },
-  contract: (data, h) => {
+  contract: (data, h): Contract<BayesianPosterior, BayesianRegressionPath> => {
     const x = polynomialBasis(h.degree, data.x).expand(data.x)
-    return {
+    return defineContract({
       'model/predictive': derived<BayesianPosterior>({
         description: 'the posterior predictive on the training rows: its mean and the mean ± 2 predictive deviations',
         compute: (s) => {
@@ -130,7 +149,7 @@ export const bayesianRegression: IterativeEstimator<
           }
         },
       }),
-    }
+    })
   },
   logs: { 'solver/logEvidence': Log(), 'solver/meanPredictiveStd': Log() },
 })
