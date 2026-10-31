@@ -4141,15 +4141,27 @@ extrapolation, since a basis exposes values and not derivatives; stencils shifte
 `smoothDifference` (the difference of two smooths, the levels of a by-variable, with pointwise or simultaneous bands from the
 joint covariance). The estimators carry them as verbs.
 
+`profile.ts` estimates a scalar parameter of the response family with the smooths (`profileFamilyParameter`: the
+negative binomial's dispersion, the Tweedie power): the converged outer REML score is a marginal likelihood of the
+parameter too (the families' log-likelihoods are exact), so it is minimised over the parameter by bounded
+one-dimensional search, each evaluation an outer fit warm-started at the last smoothing parameters. Beta regression
+(mgcv's `betar`) is not offered: with fixed precision it is not an exponential-dispersion family in the mean, so the
+quasi-weights of penalised IRLS do not reach the likelihood's stationary point; it needs an extended-family Newton
+iteration on the true derivatives of the log-likelihood in the linear predictor (the same machinery ordered
+categorical, Cox, zero-inflated and GAMLSS models need).
+
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
 (a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,
 variance and intercept). The outer iteration is checked against an independent numpy/scipy implementation (`gam/outer`:
 statsmodels' B-spline design, a brute-force profile of the Laplace REML over a grid of `log lambda` refined by scipy, for the
 Gaussian, Poisson, binomial and gamma-log families: `log lambda`, criterion, effective degrees of freedom, coefficients).
-pyGAM and mgcv are not in the oracle environment. TODO: GAMLSS (the distributional families
-of `dists/families` have the links and the log-likelihood; the RS algorithm over per-parameter additive predictors is
-not written).
+pyGAM and mgcv are not in the oracle environment. TODO: an extended-family Newton iteration on the true derivatives of a log-likelihood in the linear predictors
+(beta regression, ordered categorical, Cox with smooth terms through `survival`'s `coxProblem`, zero-inflated Poisson) and
+on top of it GAMLSS (the distributional families of `dists/families` have the links and the log-likelihood; the RS and
+CG algorithms over per-parameter additive predictors are not written); a Metropolis or HMC sampler of the coefficient
+posterior in addition to the Gaussian approximation of `sampleCoefficients`; a basis-derivative evaluator in
+`stats/smoothing` for exact derivatives of smooths.
 built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
 
 ### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)

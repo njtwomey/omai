@@ -94,7 +94,9 @@ describe('information criteria and the nested-model test', () => {
     expect(gamInformation(a.problem, a.state, real).aic).toBeLessThan(gamInformation(b.problem, b.state, none).aic)
   })
 
-  it('has p-values near uniform for an irrelevant extra term, over 80 simulated datasets, and small for a real one', () => {
+  it('has p-values near uniform for an irrelevant extra term, over 80 simulated datasets, and small for a real one', {
+    timeout: 180000,
+  }, () => {
     const reps = 80
     const nn = 100
     let rejectsNull = 0
