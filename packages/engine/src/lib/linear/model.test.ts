@@ -24,4 +24,31 @@ describe('linearModel', () => {
     )
     for (const [j, v] of (p[0] ?? []).entries()) expect(v).toBeCloseTo(p[1]?.[j] ?? 0, 4)
   })
+
+  it('takes the solver as a hyperparameter: IRLS, Newton, L-BFGS and Adam fit one logistic model', () => {
+    const raw = diabetes()
+    const data = { x: standardScaler().fit(raw).transform(raw.x), y: toFlat(raw.y).map((v) => (v > 140 ? 1 : 0)) }
+    const base = { family: 'binomial', alpha: 0.02 } as const
+    const reference = linearModel({ ...base, solver: 'irls' }).fit(data).params
+    expect(reference.solver).toBe('irls')
+    const solvers = [
+      { kind: 'irls' },
+      { kind: 'newton', gradTol: 1e-10 },
+      { kind: 'lbfgs', gradTol: 1e-10 },
+      { kind: 'gradient', optimiser: { kind: 'adam' }, learningRate: 0.05, gradTol: 1e-7 },
+    ]
+    for (const solver of solvers) {
+      const fit = linearModel({ ...base, solver, maxIter: 6000 }).fit(data).params
+      expect(fit.solver).toBe(solver.kind)
+      for (const [j, v] of fit.coef.entries()) expect(v, `${solver.kind} ${j}`).toBeCloseTo(reference.coef[j] ?? 0, 3)
+      expect(fit.intercept, solver.kind).toBeCloseTo(reference.intercept, 3)
+    }
+  })
+
+  it('refuses a glmSolvers configuration for an L1 penalty, which is not smooth', () => {
+    const data = { x: [[0], [1], [2], [3]], y: [0, 1, 0, 1] }
+    expect(() =>
+      linearModel({ family: 'binomial', alpha: 0.1, l1Ratio: 1, solver: { kind: 'newton' } }).fit(data),
+    ).toThrow(/non-smooth/)
+  })
 })

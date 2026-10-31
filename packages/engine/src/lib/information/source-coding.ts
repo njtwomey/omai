@@ -7,7 +7,20 @@
 
 import { heap, type Json, MdmlError, pairwiseSum } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  contractSchema,
+  defineContract,
+  event,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { float } from './_shared.ts'
 
 /** A code assigning each symbol 0..m-1 a codeword of digits in 0..arity-1 (an empty codeword: the symbol is unused). */
@@ -528,4 +541,95 @@ export function prefixDecode(code: PrefixCode, digits: readonly number[]): numbe
   }
   if (t !== root) throw new MdmlError('value', 'prefixDecode: the last codeword is truncated')
   return out
+}
+
+/** State of {@link prefixEncoderAlgorithm}. */
+export interface PrefixEncoderState {
+  /** Symbols coded. */
+  readonly index: number
+  /** The digits written. */
+  readonly output: readonly number[]
+  /** The information content of the symbols coded under the stated probabilities, in bits (0 without them). */
+  readonly ideal: number
+}
+
+/** The paths of {@link prefixEncoderAlgorithm}. */
+export type PrefixEncoderPath =
+  | 'symbol/index'
+  | 'code/length'
+  | 'code/bits'
+  | 'code/ideal'
+  | 'code/output'
+  | 'code/done'
+
+/** The log contract of {@link prefixEncoderAlgorithm}. */
+export const prefixEncoderContract: Contract<PrefixEncoderState, PrefixEncoderPath> = defineContract({
+  'symbol/index': scalar({ description: 'symbols coded so far' }),
+  'code/length': scalar({ description: 'the length of the codeword just written' }),
+  'code/bits': scalar({ description: 'digits written so far' }),
+  'code/ideal': scalar({
+    description: 'the information content so far, the sum of -log2 p of the symbols (0 without probabilities)',
+  }),
+  'code/output': tensor({ role: 'output', shape: ['digits'], description: 'the code so far' }),
+  'code/done': event({ context: { digits: 'the length of the finished code' } }),
+})
+
+/**
+ * Encoding with a prefix code as a traced algorithm, one symbol per step: its codeword is appended, and the digits
+ * written are tracked against the information content of the symbols under the source probabilities (a prefix code
+ * spends a whole number of digits per symbol, so it falls behind the entropy by up to one digit per symbol, the gap
+ * arithmetic coding closes). The output is exactly {@link prefixEncode}'s. The state serialises.
+ *
+ * @param code - The prefix code.
+ * @param symbols - The symbols to encode.
+ * @param probs - The source probabilities, for the information content (optional).
+ * @returns The algorithm; it completes after one step per symbol.
+ * @throws MdmlError with code `value` for a symbol without a codeword.
+ * @concept huffman-coding
+ * @example
+ * ```ts
+ * import { canonicalCode, prefixEncoderAlgorithm } from 'mdml-engine/information'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(prefixEncoderAlgorithm(canonicalCode([1, 2, 2]), [0, 2, 1]), { seed: 0, maxSteps: 10 }).state.output // => [0, 1, 1, 1, 0]
+ * ```
+ */
+export function prefixEncoderAlgorithm(
+  code: PrefixCode,
+  symbols: readonly number[],
+  probs?: TensorLike,
+): Algorithm<PrefixEncoderState, PrefixEncoderPath> {
+  const p = probs === undefined ? undefined : probabilities(probs, 'prefixEncoderAlgorithm')
+  for (const s of symbols) {
+    if ((code.codewords[s]?.length ?? 0) === 0)
+      throw new MdmlError('value', `prefixEncoderAlgorithm: symbol ${s} has no codeword`)
+  }
+  return {
+    name: 'information/prefix-encoder',
+    config: { symbols: symbols.length, arity: code.arity },
+    schema: contractSchema(prefixEncoderContract),
+    init: () => ({ index: 0, output: [], ideal: 0 }),
+    step: (s, ctx) => {
+      const symbol = symbols[s.index] as number
+      const word = code.codewords[symbol] as readonly number[]
+      const next = {
+        index: s.index + 1,
+        output: [...s.output, ...word],
+        ideal: s.ideal + (p === undefined ? 0 : -Math.log2(p[symbol] ?? 1)),
+      }
+      if (next.index >= symbols.length) ctx.emit('code/done', { digits: next.output.length })
+      return next
+    },
+    done: (s) => (s.index >= symbols.length ? 'completed' : undefined),
+    observe: (s) => ({
+      metrics: {
+        'symbol/index': s.index,
+        'code/length': s.index === 0 ? 0 : (code.codewords[symbols[s.index - 1] as number]?.length ?? 0),
+        'code/bits': s.output.length,
+        'code/ideal': s.ideal,
+      },
+      tensors: { 'code/output': { role: 'output', value: s.output, shape: [s.output.length] } },
+    }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as PrefixEncoderState,
+  }
 }

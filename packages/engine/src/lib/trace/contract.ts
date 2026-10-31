@@ -16,6 +16,24 @@ import type { RunHandle } from './tracer.ts'
 /** A path in the contract's hierarchy: segments joined by `/`. */
 export type Path = string
 
+/**
+ * A pattern over paths: any string with a `*` in it (`model/params/**`, `*\/loss`). A subscription may use patterns
+ * wherever it may use a path; the type does not check a pattern against the contract's paths, the resolver does.
+ */
+export type Pattern = `${string}*${string}`
+
+/**
+ * What a contract key can be logged as. A key that is a pattern (`model/activations/*`, for names only known as the
+ * model runs) is logged by any path under it, so its `*` becomes `${string}`; every other key is itself.
+ *
+ * @example
+ * ```ts
+ * import type { Concrete } from 'mdml-engine/trace'
+ * type Logged = Concrete<'solver/step' | 'taps/*'>   // 'solver/step' | `taps/${string}`
+ * ```
+ */
+export type Concrete<K extends string> = K extends `${infer A}*${infer B}` ? `${A}${string}${Concrete<B>}` : K
+
 interface SourceBase {
   readonly description: string
   /**
@@ -78,9 +96,111 @@ export type Source<S> = ScalarSource | TensorSource | MessageSource | FrameSourc
  * What a method can log and hook, by path. A key may be a pattern (`model/activations/*`) when the names are only
  * known as the model runs (taps).
  *
+ * The second parameter is the type of the paths. It defaults to `string`, a contract whose paths are only known at
+ * run time (per-layer paths built from the configuration); a contract written as an object literal gives its keys as a
+ * union of literals (see {@link defineContract}), and then `ctx.log`, `ctx.emit`, the subscription's keys and the
+ * method's `defaults` are all checked against them. A contract with a computed part can still type the part it knows:
+ * `Contract<S, \`layer${number}/weights\` | 'loss'>`.
+ *
  * @concept log-contract
  */
-export type Contract<S> = Readonly<Record<Path, Source<S> | EventSource>>
+export type Contract<S, K extends string = string> = Readonly<Record<K, Source<S> | EventSource>>
+
+/**
+ * The paths of a contract, as a union of literals (`string` when the contract is not typed any finer).
+ *
+ * @example
+ * ```ts
+ * import { type PathsOf, defineContract, scalar } from 'mdml-engine/trace'
+ * const c = defineContract({ 'a/loss': scalar(), 'a/lr': scalar() })
+ * type P = PathsOf<typeof c>   // 'a/loss' | 'a/lr'
+ * ```
+ */
+export type PathsOf<C> = Extract<keyof C, string>
+
+/**
+ * A path under a prefix: `Prefixed<'inner', 'a' | 'b'>` is `'inner/a' | 'inner/b'`.
+ *
+ * @example
+ * ```ts
+ * import type { Prefixed } from 'mdml-engine/trace'
+ * type P = Prefixed<'solver', 'step'>   // 'solver/step'
+ * ```
+ */
+export type Prefixed<P extends string, K extends string> = `${P}/${K}`
+
+/**
+ * Declare a contract so that its paths are kept as literal types. It returns the contract unchanged (after checking
+ * that every path is well formed: no empty segment), but typed by what it holds, so `PathsOf<typeof contract>` is the
+ * union of its paths and a fragment composes by spreading: `{ ...solverContract, 'model/loss': scalar() }` has the
+ * paths of both. Hand the result to {@link defineMethod}, whose `ctx.log`, `ctx.emit`, `defaults` and session
+ * subscriptions are then checked against those paths.
+ *
+ * Migrating a file to the typed form is mechanical:
+ *
+ * 1. Write the paths as a type: `export type FooPath = 'foo/loss' | 'foo/lr' | ...` (a computed part is a template
+ *    literal, `layer${number}/weights`). The union is written out because `isolatedDeclarations` wants every exported
+ *    constant annotated, and because the annotation is the check: it makes the compiler compare the union with the
+ *    keys of the contract, both ways. (For a contract that is local to a function, skip this step and use
+ *    `PathsOf<typeof contract>`.)
+ * 2. Annotate the contract: `const fooContract: Contract<S, FooPath> = defineContract({ ... })`, the object literal
+ *    wrapped in `defineContract`. A computed contract (a function of the configuration) returns `Contract<S, FooPath>`
+ *    when the parts are known, or stays `Contract<S>` when they are not. A fragment spread into others is annotated the
+ *    same way, and the method's union is the union of the fragments' and its own.
+ * 3. Give the method (or the algorithm) the path type: `Method<S, C, FooPath>`, `Algorithm<S, FooPath>`,
+ *    `defineMethod<S, C, FooPath>(...)`. A call to `defineMethod` without type arguments infers it from the contract.
+ * 4. Fix what the compiler now reports: every `ctx.log('x')`, `ctx.emit('x')` and `ctx.wants('x')` of a path the
+ *    contract lacks (before this it was dropped silently), and every key of `defaults` that is not a path.
+ * 5. Type the keys of any `defaults` constant that is spread into the method: `Readonly<Record<FooPath, LogSpec>>`.
+ *
+ * What the type cannot do: a path built from a runtime value (a layer index, a solver's name) is `string` unless the
+ * part that varies is a template literal (`layer${number}/weights`), and a pattern in a subscription is only checked
+ * at run time against the contract. The backstop in the log context catches the rest: a session throws when an
+ * algorithm logs or emits to a path the resolved contract does not hold (`wants` answers `false`: it is a question).
+ *
+ * @param contract - The paths and what each is.
+ * @returns The same contract, typed by its keys.
+ * @throws MdmlError with code `value` for an empty or malformed path.
+ * @concept log-contract
+ * @example
+ * ```ts
+ * import { type Contract, type PathsOf, defineContract, scalar } from 'mdml-engine/trace'
+ * type BasePath = 'solver/objective'
+ * const base: Contract<unknown, BasePath> = defineContract({ 'solver/objective': scalar() })
+ * const own = defineContract({ ...base, 'model/accuracy': scalar() })
+ * const paths: PathsOf<typeof own>[] = Object.keys(own) as PathsOf<typeof own>[]   // 'solver/objective' | 'model/accuracy'
+ * paths // => ['solver/objective', 'model/accuracy']
+ * ```
+ */
+export function defineContract<C extends Contract<never>>(contract: C): C {
+  for (const path of Object.keys(contract)) {
+    if (path === '' || path.split('/').some((seg) => seg === ''))
+      throw new MdmlError('value', `defineContract: malformed path '${path}'`)
+  }
+  return contract
+}
+
+/**
+ * Mount a contract under a prefix, for a method that nests another (`inner/` plus each of the inner method's paths).
+ *
+ * @param prefix - The prefix, without a trailing `/`.
+ * @param contract - The inner contract.
+ * @returns The contract with every path under the prefix; its type has the paths as `Prefixed` literals.
+ * @concept log-contract
+ * @example
+ * ```ts
+ * import { prefixContract, scalar } from 'mdml-engine/trace'
+ * Object.keys(prefixContract('inner', { loss: scalar() })) // => ['inner/loss']
+ * ```
+ */
+export function prefixContract<P extends string, C extends Contract<never>>(
+  prefix: P,
+  contract: C,
+): { readonly [Q in PathsOf<C> as Prefixed<P, Q>]: C[Q] } {
+  const out: Record<string, unknown> = {}
+  for (const [path, source] of Object.entries(contract)) out[`${prefix}/${path}`] = source
+  return out as { readonly [Q in PathsOf<C> as Prefixed<P, Q>]: C[Q] }
+}
 
 type Described<T> = Omit<T, 'kind' | 'description'> & { readonly description?: string }
 
@@ -228,12 +348,22 @@ export interface HookSpec {
 }
 
 /**
+ * The paths and patterns of a subscription, with how to log or hook each. Over a contract with literal paths `K` a
+ * plain key must be one of them (a typo is a type error) and a pattern is any string with a `*`; over `string` any key
+ * goes.
+ */
+export type SubscriptionMap<K extends string = string> = string extends K
+  ? Readonly<Record<string, LogSpec | HookSpec>>
+  : Readonly<Partial<Record<K, LogSpec | HookSpec>>> & Readonly<Record<Pattern, LogSpec | HookSpec>>
+
+/**
  * What a caller asks of a method: nothing (`off`: the raw algorithm at full speed), the method's own small choice
- * (`defaults`), everything at summary detail (`all`), or paths and patterns with how to log or hook them.
+ * (`defaults`), everything at summary detail (`all`), or paths and patterns with how to log or hook them. The
+ * parameter is the type of the contract's paths (see {@link Contract}); `Subscription` alone accepts any string key.
  *
  * @concept log-contract
  */
-export type Subscription = 'off' | 'defaults' | 'all' | Readonly<Record<string, LogSpec | HookSpec>>
+export type Subscription<K extends string = string> = 'off' | 'defaults' | 'all' | SubscriptionMap<K>
 
 /**
  * Ask for a path: how often, at what detail, with what arguments, and how much of it the tape holds.
@@ -319,15 +449,20 @@ export interface Subscribed<S> {
 export interface Resolved<S> {
   /** `true` for the `off` subscription: no tracer, no derived work, no hooks. */
   readonly off: boolean
+  /**
+   * Every key of the contract (patterns included), so the log context can tell a path nobody subscribed to from a path
+   * the contract does not have. Absent for a resolution made without a contract: nothing is then checked.
+   */
+  readonly paths?: readonly Path[]
   readonly policy: TracePolicy
   readonly logs: readonly Subscribed<S>[]
   readonly hooks: ReadonlyMap<Path, readonly Hook[]>
 }
 
 /** Options of {@link resolve}. */
-export interface ResolveOptions {
+export interface ResolveOptions<K extends string = string> {
   /** What `defaults` means for this method. */
-  readonly defaults?: Subscription
+  readonly defaults?: Subscription<K>
   /** Hooks the method exports by name, for `On('name', options)`. */
   readonly hooks?: Readonly<Record<string, (options?: Json) => Hook>>
   /** Store checkpoints every this many steps (default none). */
@@ -351,7 +486,7 @@ function everything<S>(contract: Contract<S>): Readonly<Record<string, LogSpec>>
  * Reconcile a contract with a subscription: match patterns to paths, build the trace policy that selects the matched
  * channels (with checkpoints when asked), keep each path's schedule and detail, and bind the hooks.
  *
- * @param contract - The method's contract.
+ * @param given - The method's contract.
  * @param subscription - What the caller asks for.
  * @param options - The method's defaults and named hooks, and the checkpoint interval.
  * @returns The resolved subscription.
@@ -366,18 +501,20 @@ function everything<S>(contract: Contract<S>): Readonly<Record<string, LogSpec>>
  * r.policy.metrics // => ['training/loss', 'training/lr']
  * ```
  */
-export function resolve<S>(
-  contract: Contract<S>,
-  subscription: Subscription,
-  options: ResolveOptions = {},
+export function resolve<S, K extends string = string>(
+  given: Contract<S, K>,
+  subscription: Subscription<NoInfer<K>>,
+  options: ResolveOptions<NoInfer<K>> = {},
 ): Resolved<S> {
-  if (subscription === 'off') return { off: true, policy: policies.minimal, logs: [], hooks: new Map() }
+  const contract = given as Contract<S>
+  const paths = Object.keys(contract)
+  if (subscription === 'off') return { off: true, paths, policy: policies.minimal, logs: [], hooks: new Map() }
   const asked: Subscription =
     subscription === 'all'
       ? everything(contract)
       : subscription === 'defaults'
-        ? (options.defaults ?? {})
-        : subscription
+        ? ((options.defaults ?? {}) as Subscription)
+        : (subscription as Subscription)
   if (asked === 'off' || asked === 'all' || asked === 'defaults')
     return resolve(contract, asked, { ...options, defaults: {} })
   const logs = new Map<Path, Subscribed<S>>()
@@ -440,7 +577,7 @@ export function resolve<S>(
     detail: full ? 'full' : 'summary',
     ...(full ? { maxTensorSize: 1_000_000 } : {}),
   }
-  return { off: false, policy, logs: subscribed, hooks }
+  return { off: false, paths, policy, logs: subscribed, hooks }
 }
 
 /**

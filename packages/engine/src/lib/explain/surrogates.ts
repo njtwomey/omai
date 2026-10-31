@@ -11,6 +11,8 @@ import { pinv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, permutation, randint } from '../random/index.ts'
 import { asTensor, fromStorage, matmul, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import { growTree, treeData } from '../trees/grow.ts'
+import { treeModel } from '../trees/tree.ts'
 import type { PredictFunction, TreeModel } from './shapley.ts'
 
 /** A weighted ridge fit with an unpenalised intercept (sklearn Ridge with sample weights). */
@@ -551,7 +553,8 @@ export interface SurrogateTreeOptions {
 /**
  * Fit a CART tree (Breiman et al. 1984; sklearn DecisionTreeRegressor and DecisionTreeClassifier's best splitter) to a
  * model's predictions: a global surrogate that approximates the model by a readable tree. Splits minimise the
- * children's weighted variance (or Gini impurity) at midpoints between consecutive distinct values.
+ * children's weighted variance (or Gini impurity) at midpoints between consecutive distinct values. The tree is grown
+ * by the `trees` domain's grower (depth-first), here as arrays of scalars.
  *
  * @param x - Features `[n, d]`.
  * @param targets - The model's predictions `[n]` (labels for classification).
@@ -567,93 +570,21 @@ export interface SurrogateTreeOptions {
  * ```
  */
 export function surrogateTree(x: TensorLike, targets: TensorLike, options: SurrogateTreeOptions = {}): TreeModel {
-  const m = matrixView(x, 'surrogateTree')
-  const y = targetVector(targets, 'surrogateTree', m.n)
   const classification = options.task === 'classification'
-  const classes = classification ? Array.from(new Set(y)).sort((a, b) => a - b) : []
-  const maxDepth = options.maxDepth ?? 3
-  const minLeaf = options.minSamplesLeaf ?? 1
-  const minSplit = options.minSamplesSplit ?? 2
-  const tree = {
-    childrenLeft: [] as number[],
-    childrenRight: [] as number[],
-    feature: [] as number[],
-    threshold: [] as number[],
-    value: [] as number[],
-    cover: [] as number[],
-  }
-  const impurityOf = (rows: readonly number[]): { readonly value: number; readonly impurity: number } => {
-    if (!classification) {
-      const mu = rows.reduce((s, i) => s + (y[i] ?? 0), 0) / rows.length
-      return { value: mu, impurity: rows.reduce((s, i) => s + ((y[i] ?? 0) - mu) ** 2, 0) / rows.length }
-    }
-    const counts = classes.map((c) => rows.filter((i) => y[i] === c).length)
-    let best = 0
-    counts.forEach((c, k) => {
-      if (c > (counts[best] ?? 0)) best = k
-    })
-    return { value: classes[best] ?? 0, impurity: 1 - counts.reduce((s, c) => s + (c / rows.length) ** 2, 0) }
-  }
-  const grow = (rows: number[], depth: number): number => {
-    const id = tree.value.length
-    const { value, impurity } = impurityOf(rows)
-    tree.childrenLeft.push(-1)
-    tree.childrenRight.push(-1)
-    tree.feature.push(-2)
-    tree.threshold.push(-2)
-    tree.value.push(value)
-    tree.cover.push(rows.length)
-    if (depth >= maxDepth || rows.length < minSplit || rows.length < 2 * minLeaf || impurity <= 2.220446049250313e-16)
-      return id
-    let best: { readonly f: number; readonly t: number; readonly score: number } | undefined
-    for (let f = 0; f < m.d; f++) {
-      const sorted = [...rows].sort((a, b) => (m.data[a * m.d + f] ?? 0) - (m.data[b * m.d + f] ?? 0))
-      // Running sums give each split's weighted child impurity in O(n).
-      let sumL = 0
-      let sqL = 0
-      const countsL = classes.map(() => 0)
-      const total = sorted.reduce((s, i) => s + (y[i] ?? 0), 0)
-      const totalSq = sorted.reduce((s, i) => s + (y[i] ?? 0) ** 2, 0)
-      const countsAll = classes.map((c) => sorted.filter((i) => y[i] === c).length)
-      for (let p = 1; p < sorted.length; p++) {
-        const prev = sorted[p - 1] ?? 0
-        const yi = y[prev] ?? 0
-        sumL += yi
-        sqL += yi * yi
-        if (classification) countsL[classes.indexOf(yi)] = (countsL[classes.indexOf(yi)] ?? 0) + 1
-        const a = m.data[prev * m.d + f] ?? 0
-        const b = m.data[(sorted[p] ?? 0) * m.d + f] ?? 0
-        if (b <= a + 1e-7 || p < minLeaf || sorted.length - p < minLeaf) continue
-        const nl = p
-        const nr = sorted.length - p
-        let score: number
-        if (classification) {
-          const gl = 1 - countsL.reduce((s, c) => s + (c / nl) ** 2, 0)
-          const gr = 1 - countsAll.reduce((s, c, k) => s + ((c - (countsL[k] ?? 0)) / nr) ** 2, 0)
-          score = nl * gl + nr * gr
-        } else {
-          score = sqL - (sumL * sumL) / nl + (totalSq - sqL) - ((total - sumL) * (total - sumL)) / nr
-        }
-        // sklearn's threshold: the midpoint, or the lower value when rounding lands on the upper one.
-        const mid = a / 2 + b / 2
-        if (best === undefined || score < best.score - 1e-12) best = { f, t: mid === b ? a : mid, score }
-      }
-    }
-    if (best === undefined) return id
-    const split = best
-    const left = rows.filter((i) => (m.data[i * m.d + split.f] ?? 0) <= split.t)
-    const right = rows.filter((i) => (m.data[i * m.d + split.f] ?? 0) > split.t)
-    tree.feature[id] = split.f
-    tree.threshold[id] = split.t
-    tree.childrenLeft[id] = grow(left, depth + 1)
-    tree.childrenRight[id] = grow(right, depth + 1)
-    return id
-  }
-  grow(
-    Array.from({ length: m.n }, (_, i) => i),
-    0,
-  )
-  return tree
+  const data = treeData({ x, y: targets }, classification, 'surrogateTree')
+  const { tree } = growTree(data, {
+    criterion: classification ? 'gini' : 'squared_error',
+    splitter: 'best',
+    growth: 'depth',
+    maxDepth: options.maxDepth ?? 3,
+    minSamplesSplit: options.minSamplesSplit ?? 2,
+    minSamplesLeaf: options.minSamplesLeaf ?? 1,
+    minWeightFractionLeaf: 0,
+    maxFeatures: 'all',
+    minImpurityDecrease: 0,
+    record: 0,
+  })
+  return treeModel(tree, 'label')
 }
 
 /**

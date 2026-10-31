@@ -5,15 +5,37 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { categorical, type Key, uniform } from '../../random/index.ts'
+import { categorical, type Key, normal, uniform } from '../../random/index.ts'
 import { choice, dict, real } from '../../space/index.ts'
-import { add, exp, fromStorage, matmul, mul, neg, sub, type Tensor, tensor, type Value } from '../../tensor/index.ts'
+import {
+  add,
+  exp,
+  fromStorage,
+  greater,
+  matmul,
+  mul,
+  neg,
+  sliceAxis,
+  squeeze,
+  sub,
+  type Tensor,
+  tensor,
+  type Value,
+  where,
+} from '../../tensor/index.ts'
 import type { Generated } from '../generator.ts'
 import type { Modifier } from '../recipes.ts'
 import { stratifiedIndices, take } from '../rows.ts'
 import { type Dataset, rowCount } from '../schema/common.ts'
-import type { TabularData } from '../schema/tabular.ts'
-import { columnStats, logistic, requireTabular, withoutProgram } from './_shared.ts'
+import type { ClassificationData, TabularData } from '../schema/tabular.ts'
+import {
+  columnStats,
+  composedFunctions,
+  logistic,
+  requireClassification,
+  requireTabular,
+  withoutProgram,
+} from './_shared.ts'
 
 /** A standardised projection `z(x) = (x - mean) . direction / sd` of the rows of a feature matrix. */
 function projection(
@@ -302,6 +324,146 @@ export function semiSupervisedSplit<D extends TabularData & Dataset>(
   return { labelled, unlabelled: { ...rest, y: blank }, hidden, labelledIndices: lab, unlabelledIndices: unl }
 }
 
+/** Options of {@link withSubpopulationShift}. */
+export interface SubpopulationShiftOptions {
+  /** The feature that defines the groups (default 0): the group is the rows above `threshold`. */
+  readonly column?: number
+  /** The cut (default the column's median). */
+  readonly threshold?: number
+  /** The chance that a row of the group is kept in the source (default 0.1; other rows are all kept). */
+  readonly keep?: number
+  readonly key: Key
+}
+
+/**
+ * Subpopulation shift: a group (the rows above a cut of one feature) is under-represented in the source, so a model
+ * trained on it does worse on that group in the target, which is the unshifted data. `p(y | x)` is unchanged; `p(x)`
+ * changes by the group's weight alone.
+ *
+ * @param input - Data with a feature matrix and its truth.
+ * @param options - Group definition, retention of the group and key.
+ * @returns The source sample; `truth.latents.group` `[n]` marks the group's rows, and `truth.extra.densityRatio`
+ *   maps features to `p_target(x) / p_source(x)` (constant on each side of the cut), with `truth.extra.subpopulation`
+ *   recording the column, cut and retention.
+ * @example
+ * ```ts
+ * import { asGenerated, withSubpopulationShift, xy } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
+ * const d = asGenerated(xy([[0], [1], [2], [3], [4], [5]], [0, 1, 2, 3, 4, 5]))
+ * withSubpopulationShift(d, { keep: 0, key: key(0) }).data.x.shape // => [3, 1]
+ * ```
+ */
+export function withSubpopulationShift<D extends TabularData>(
+  input: Generated<D>,
+  options: SubpopulationShiftOptions,
+): Generated<D> {
+  const { data, truth } = requireTabular(input, 'withSubpopulationShift') as Generated<D>
+  const [n = 0, d = 1] = data.x.shape
+  const column = options.column ?? 0
+  if (!(Number.isInteger(column) && column >= 0 && column < d))
+    throw new MdmlError('value', `withSubpopulationShift: no column ${column} in ${d}`)
+  const values = Array.from({ length: n }, (_, i) => data.x.data[i * d + column] ?? 0)
+  const sorted = [...values].sort((a, b) => a - b)
+  const threshold = options.threshold ?? ((sorted[Math.floor((n - 1) / 2)] ?? 0) + (sorted[Math.floor(n / 2)] ?? 0)) / 2
+  const keep = options.keep ?? 0.1
+  const u = uniform(options.key, [n]).data
+  const rows: number[] = []
+  const inGroup: number[] = []
+  let groupRows = 0
+  values.forEach((v, i) => {
+    const g = v > threshold
+    if (g) groupRows++
+    if (!g || (u[i] ?? 1) < keep) {
+      rows.push(i)
+      inGroup.push(g ? 1 : 0)
+    }
+  })
+  const share = groupRows / Math.max(1, n)
+  const z = 1 - share + keep * share
+  const ratioGroup = keep > 0 ? z / keep : Number.POSITIVE_INFINITY
+  const out = take(data, rows)
+  const latents = { ...(truth.latents ?? {}), group: fromStorage(Uint8Array.from(inGroup), [rows.length], 'bool') }
+  return {
+    data: out,
+    truth: {
+      ...withoutProgram(truth),
+      latents,
+      extra: {
+        ...(truth.extra ?? {}),
+        subpopulation: { column, threshold, keep, targetShare: share, sourceShare: (keep * share) / z },
+        densityRatio: (x: Value): Value =>
+          where(greater(squeeze(sliceAxis(x, 1, column, column + 1), 1), threshold), ratioGroup, z),
+      },
+    },
+  }
+}
+
+/** Options of {@link withShortcut}. */
+export interface ShortcutOptions {
+  /** `source` (default): the shortcut agrees with the label with probability `agreement`; `target`: it is independent of the label. */
+  readonly mode?: 'source' | 'target'
+  /** The chance that the shortcut equals the label in the source (default 0.95). */
+  readonly agreement?: number
+  /** Standard deviation of Gaussian noise added to the shortcut value (default 0.1). */
+  readonly noise?: number
+  readonly key: Key
+}
+
+/**
+ * Plant a shortcut: append a feature that tracks the class label (its value is the class index, with noise) and
+ * agrees with it with probability `agreement` in the source, but is independent of the label in the target. A model
+ * that relies on it does well at the source and falls to chance-level reliance at the target. The truth's posterior is
+ * that of the honest problem, which ignores the shortcut column.
+ *
+ * @param input - Classification data with its truth.
+ * @param options - Mode, agreement, noise and key.
+ * @returns The data with a `shortcut` column; `truth.latents.shortcutAgrees` `[n]` marks the rows where it equals the
+ *   label, and `truth.extra.shortcut` records the column, mode and agreement.
+ * @example
+ * ```ts
+ * import { asGenerated, withShortcut, xyClasses } from 'mdml-engine/data'
+ * import { key } from 'mdml-engine/random'
+ * const d = asGenerated(xyClasses([[0], [1], [2], [3]], [0, 1, 0, 1]))
+ * withShortcut(d, { agreement: 1, noise: 0, key: key(0) }).data.featureNames // => ['x0', 'shortcut']
+ * ```
+ */
+export function withShortcut<D extends ClassificationData>(
+  input: Generated<D>,
+  options: ShortcutOptions,
+): Generated<D> {
+  const { data, truth } = requireClassification(input, 'withShortcut') as Generated<D>
+  const [n = 0, d = 1] = data.x.shape
+  const k = data.classes.length
+  const mode = options.mode ?? 'source'
+  const agreement = mode === 'source' ? (options.agreement ?? 0.95) : 1 / k
+  const u = uniform(options.key, [n, 2]).data
+  const z = normal(options.key, [n]).data
+  const noise = options.noise ?? 0.1
+  const agrees = new Uint8Array(n)
+  const wide = new Float64Array(n * (d + 1))
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < d; j++) wide[i * (d + 1) + j] = data.x.data[i * d + j] ?? 0
+    const label = data.y.data[i] ?? 0
+    let value = label
+    if (mode === 'target') value = Math.min(k - 1, Math.floor((u[i * 2] ?? 0) * k))
+    else if ((u[i * 2] ?? 1) >= agreement && k > 1) value = (label + 1 + Math.floor((u[i * 2 + 1] ?? 0) * (k - 1))) % k
+    agrees[i] = value === label ? 1 : 0
+    wide[i * (d + 1) + d] = value + noise * (z[i] ?? 0)
+  }
+  const original = (v: Value): Value => sliceAxis(v, 1, 0, d)
+  const { logProb: _logProb, ...rest } = withoutProgram(truth)
+  return {
+    data: { ...data, x: fromStorage(wide, [n, d + 1], 'float64'), featureNames: [...data.featureNames, 'shortcut'] },
+    truth: {
+      ...rest,
+      ...composedFunctions(truth, original),
+      relevantFeatures: truth.relevantFeatures ?? Array.from({ length: d }, (_, j) => j),
+      latents: { ...(truth.latents ?? {}), shortcutAgrees: fromStorage(agrees, [n], 'bool') },
+      extra: { ...(truth.extra ?? {}), shortcut: { column: d, mode, agreement } },
+    },
+  }
+}
+
 /**
  * {@link withCovariateShift} as a recipe modifier.
  *
@@ -339,6 +501,47 @@ export const conceptDriftModifier: Modifier = {
     withConceptDrift(input as Generated<TabularData>, {
       at: [knobs['at'] as number],
       kind: knobs['kind'] as 'sudden' | 'gradual' | 'recurring',
+      key,
+    }),
+}
+
+/**
+ * {@link withSubpopulationShift} as a recipe modifier.
+ *
+ * @example
+ * ```ts
+ * import { subpopulationShiftModifier } from 'mdml-engine/data'
+ * subpopulationShiftModifier.name // => 'subpopulationShift'
+ * ```
+ */
+export const subpopulationShiftModifier: Modifier = {
+  name: 'subpopulationShift',
+  description: 'Under-represent the rows above the median of the first feature.',
+  knobs: dict({ keep: real(0, 1, { default: 0.1, label: 'retention of the group' }) }),
+  apply: (key, input, knobs) =>
+    withSubpopulationShift(input as Generated<TabularData>, { keep: knobs['keep'] as number, key }),
+}
+
+/**
+ * {@link withShortcut} as a recipe modifier.
+ *
+ * @example
+ * ```ts
+ * import { shortcutModifier } from 'mdml-engine/data'
+ * shortcutModifier.name // => 'shortcut'
+ * ```
+ */
+export const shortcutModifier: Modifier = {
+  name: 'shortcut',
+  description: 'Append a feature that tracks the label in the source and not in the target.',
+  knobs: dict({
+    mode: choice(['source', 'target'], { default: 'source' }),
+    agreement: real(0, 1, { default: 0.95, label: 'agreement with the label' }),
+  }),
+  apply: (key, input, knobs) =>
+    withShortcut(input as Generated<ClassificationData>, {
+      mode: knobs['mode'] as 'source' | 'target',
+      agreement: knobs['agreement'] as number,
       key,
     }),
 }

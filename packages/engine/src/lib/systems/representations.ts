@@ -408,3 +408,51 @@ function minrealOf(sys: Lti, options: MinrealOptions): Lti {
     }
   }
 }
+
+/**
+ * The Pade approximation of a pure delay e^{-sT} as a proper rational transfer function (python-control's `pade`): the
+ * ratio of a polynomial of degree `numOrder` to one of degree `order`, matching the series of the exponential through
+ * the term of degree `order + numOrder`. `pade(T, n)` is the diagonal approximant, all-pass in magnitude at order n, with
+ * the right-half-plane zeros of the delay's phase lag and so the non-minimum-phase behaviour (an initial undershoot) a
+ * delay really has; a smaller `numOrder` gives a strictly proper one.
+ *
+ * @param delay - The delay T (non-negative).
+ * @param order - The denominator degree n.
+ * @param numOrder - The numerator degree, 0 to n (default n; a negative value counts back from n).
+ * @returns The transfer function, with a monic denominator.
+ * @throws MdmlError with code `value` for a negative delay or order, or a numerator degree outside 0..n.
+ * @concept transfer-functions
+ * @example
+ * ```ts
+ * import { pade } from 'mdml-engine/systems'
+ * import { toArray } from 'mdml-engine/tensor'
+ * [toArray(pade(1, 3).num), toArray(pade(1, 3).den)] // => [[-1, 12, -60, 120], [1, 12, 60, 120]]
+ * ```
+ */
+export function pade(delay: number, order: number, numOrder?: number): TransferFunction {
+  const n = order
+  const m = numOrder === undefined ? n : numOrder < 0 ? numOrder + n : numOrder
+  if (!(delay >= 0)) throw new MdmlError('value', 'pade: the delay must be non-negative')
+  if (!(Number.isInteger(n) && n >= 0)) throw new MdmlError('value', 'pade: the order must be a non-negative integer')
+  if (!(Number.isInteger(m) && m >= 0 && m <= n)) throw new MdmlError('value', 'pade: the numerator degree is 0..order')
+  if (delay === 0) return tf([1], [1])
+  const num = new Array<number>(m + 1).fill(0)
+  num[m] = 1
+  let cn = 1
+  for (let k = 1; k <= m; k++) {
+    cn *= (-delay * (m - k + 1)) / (m + n - k + 1) / k
+    num[m - k] = cn
+  }
+  const den = new Array<number>(n + 1).fill(0)
+  den[n] = 1
+  let cd = 1
+  for (let k = 1; k <= n; k++) {
+    cd *= (delay * (n - k + 1)) / (m + n - k + 1) / k
+    den[n - k] = cd
+  }
+  const lead = den[0] as number
+  return tf(
+    num.map((c) => c / lead),
+    den.map((c) => c / lead),
+  )
+}

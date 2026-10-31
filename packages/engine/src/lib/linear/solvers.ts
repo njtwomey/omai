@@ -9,7 +9,17 @@ import { type Json, MdmlError } from '../base/index.ts'
 import type { DispersionFamily, Link } from '../dists/families/index.ts'
 import { collecting, type MatrixView } from '../learn/index.ts'
 import { cholesky, choSolve, ddot, lstsq, svd } from '../numerics/linalg/index.ts'
-import { lassoCoordinateDescentAlgorithm, lbfgs, owlqn } from '../optim/index.ts'
+import {
+  type GlmProblem as FactoryProblem,
+  fitGlm,
+  type GlmState,
+  glmSolvers,
+  lassoCoordinateDescentAlgorithm,
+  lbfgs,
+  owlqn,
+} from '../optim/index.ts'
+import { key } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import {
   add,
   fromStorage,
@@ -46,7 +56,8 @@ export interface GlmProblem {
 export interface GlmSolution {
   readonly coef: Float64Array
   readonly intercept: number
-  readonly solver: Exclude<LinearSolver, 'auto'>
+  /** The solver that ran: a `LinearSolver` name, or the mode of `glmSolvers` a configuration named. */
+  readonly solver: string
   readonly iterations: number
   readonly converged: boolean
   /** The penalised objective at the solution. */
@@ -68,7 +79,11 @@ export interface GlmIterate {
 
 /** Options of {@link solveGlm}. */
 export interface SolveOptions extends Partial<Pick<RunOptions, 'key' | 'tracer' | 'policy' | 'parent'>> {
-  readonly solver?: LinearSolver
+  /**
+   * A named solver, or a configuration of `glmSolvers.space` (`{ kind: 'bfgs', gradTol: 1e-9 }`, a stochastic
+   * `{ kind: 'gradient', optimiser: { kind: 'adam' } }`, and so on) for a smooth (unpenalised or ridge) problem.
+   */
+  readonly solver?: LinearSolver | SpaceValue
   readonly maxIter?: number
   readonly tol?: number
   /** A warm start: coefficients (and intercept). */
@@ -123,6 +138,73 @@ export function glmObjective(problem: GlmProblem, coef: ArrayLike<number>, inter
   return (
     deviance / (2 * sumOf(w)) + problem.alpha * problem.l1Ratio * l1 + (problem.alpha * (1 - problem.l1Ratio) * l2) / 2
   )
+}
+
+const isConfig = (solver: SolveOptions['solver']): solver is Exclude<SolveOptions['solver'], string | undefined> =>
+  typeof solver === 'object' && solver !== null
+
+/**
+ * The problem as the GLM factory's problem of `optim`: the design, family, link and weights with the ridge part of the
+ * penalty (a smooth problem; the lasso part has no mode of `glmSolvers`).
+ *
+ * @param problem - The problem.
+ * @param start - Coefficients and intercept to start from.
+ * @returns The factory problem, to be solved by any mode of `glmSolvers`.
+ * @throws MdmlError `value` when the penalty has an L1 part.
+ */
+export function factoryProblem(problem: GlmProblem, start?: SolveOptions['start']): FactoryProblem {
+  if (problem.alpha * problem.l1Ratio > 0)
+    throw new MdmlError('value', 'a penalty with an L1 part is non-smooth: use the elastic-net solvers, not glmSolvers')
+  const { x, y, w } = problem.design
+  return {
+    x: x.data,
+    n: x.n,
+    d: x.d,
+    y,
+    weights: w,
+    family: problem.family,
+    link: problem.link,
+    fitIntercept: problem.fitIntercept,
+    penalty: { l2: problem.alpha },
+    normalise: true,
+    ...(start === undefined
+      ? {}
+      : { start: [...Array.from(start.coef), ...(problem.fitIntercept ? [start.intercept] : [])] }),
+  }
+}
+
+/**
+ * Solve a smooth penalised GLM with a mode of `glmSolvers`: the solver is the configuration, the model is the problem.
+ *
+ * @param problem - The problem (no L1 part).
+ * @param config - A value of `glmSolvers.space`.
+ * @param options - Iterations (default per mode), warm start and run options.
+ * @returns The solution, with the objective after each step and the iterates (the start first).
+ */
+export function solveGlmWith(problem: GlmProblem, config: SpaceValue, options: SolveOptions = {}): GlmSolution {
+  const factory = factoryProblem(problem, options.start)
+  const fit = fitGlm(factory, config, {
+    ...(options.maxIter === undefined ? {} : { maxSteps: options.maxIter }),
+    key: options.key ?? key(0),
+    ...runOf(options),
+  })
+  const d = problem.design.x.d
+  const at = (x: ArrayLike<number>, objective: number): GlmIterate => ({
+    coef: Array.from({ length: d }, (_, j) => x[j] ?? 0),
+    intercept: problem.fitIntercept ? (x[d] ?? 0) : 0,
+    objective,
+  })
+  const start = factory.start ?? new Float64Array(d + (problem.fitIntercept ? 1 : 0))
+  return {
+    coef: fit.coef,
+    intercept: fit.intercept,
+    solver: fit.solver,
+    iterations: fit.steps,
+    converged: fit.converged,
+    objective: fit.objective,
+    history: fit.history,
+    path: [at(start, Number.POSITIVE_INFINITY), ...fit.path.map((x, i) => at(x, fit.history[i] ?? Number.NaN))],
+  }
 }
 
 /**
@@ -296,11 +378,60 @@ export interface IrlsState {
  * glmnet's proximal Newton step), and halves the step while the penalised objective increases. Records the objective,
  * its change, the step halvings and the coefficients.
  *
+ * Without an L1 weight this is the `irls` mode of `glmSolvers` (the same algorithm, with this folder's state); with one it
+ * is the elastic-net IRLS of this folder, a particular algorithm outside the slot.
+ *
  * @param problem - The problem.
  * @param options - Tolerance on the largest relative coefficient change (default 1e-10) and a warm start.
  * @returns The algorithm.
  */
 export function irlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): Algorithm<IrlsState> {
+  if (problem.alpha * problem.l1Ratio > 0) return elasticNetIrlsAlgorithm(problem, options)
+  const inner = glmSolvers
+    .modeOf({ kind: 'irls' })
+    .make(factoryProblem(problem, options.start), { tol: options.tol ?? 1e-10 }, key(0)) as Algorithm<GlmState>
+  const d = problem.design.x.d
+  const toState = (s: GlmState): IrlsState => ({
+    coef: s.x.slice(0, d),
+    intercept: problem.fitIntercept ? (s.x[d] ?? 0) : 0,
+    objective: s.value,
+    change: s.change,
+    halvings: s.halvings,
+  })
+  const fromState = (s: IrlsState): GlmState => ({
+    x: Float64Array.from([...s.coef, ...(problem.fitIntercept ? [s.intercept] : [])]),
+    value: s.objective,
+    grad: new Float64Array(d + (problem.fitIntercept ? 1 : 0)),
+    step: 0,
+    change: s.change,
+    halvings: s.halvings,
+    iteration: 0,
+  })
+  return {
+    name: 'irls',
+    config: inner.config,
+    schema: channels({
+      metrics: {
+        objective: { description: 'penalised deviance / (2 sum w)', direction: 'lower' },
+        change: { description: 'largest coefficient change, relative' },
+        halvings: { description: 'step halvings' },
+      },
+      tensors: { coef: { role: 'param', description: 'coefficients' } },
+    }),
+    init: (k) => toState(inner.init(k)),
+    step: (s, ctx) => toState(inner.step(fromState(s), ctx)),
+    done: (s) => (s.change <= (options.tol ?? 1e-10) ? 'converged' : undefined),
+    observe: (state) => ({
+      metrics: { objective: state.objective, change: state.change, halvings: state.halvings },
+      tensors: { coef: { role: 'param', value: state.coef } },
+    }),
+    serialise: (state) => stateToJson(state),
+    deserialise: (json) => stateFromJson(json) as IrlsState,
+  }
+}
+
+/** The elastic-net IRLS: Fisher scoring with coordinate descent inside for the L1 part (glmnet's proximal Newton step). */
+function elasticNetIrlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): Algorithm<IrlsState> {
   const { x, y, w } = problem.design
   const s = sumOf(w)
   const tol = options.tol ?? 1e-10
@@ -446,7 +577,8 @@ export function quasiNewtonSolve(problem: GlmProblem, options: SolveOptions = {}
 }
 
 /**
- * Solve a penalised GLM with the chosen (or automatically chosen) solver.
+ * Solve a penalised GLM with the chosen (or automatically chosen) solver: a name, or a configuration of `glmSolvers`
+ * (any of its modes, with its knobs) for a problem without an L1 weight.
  *
  * @param problem - The problem.
  * @param options - Solver, iterations, tolerance, warm start and run options.
@@ -454,6 +586,7 @@ export function quasiNewtonSolve(problem: GlmProblem, options: SolveOptions = {}
  * @throws MdmlError `value` when a direct least-squares solver is asked for a problem it cannot solve.
  */
 export function solveGlm(problem: GlmProblem, options: SolveOptions = {}): GlmSolution {
+  if (isConfig(options.solver)) return solveGlmWith(problem, options.solver, options)
   const solver =
     options.solver === undefined || options.solver === 'auto' ? chooseSolver(problem).solver : options.solver
   const l1 = problem.alpha * problem.l1Ratio > 0
@@ -469,7 +602,10 @@ export function solveGlm(problem: GlmProblem, options: SolveOptions = {}): GlmSo
     if (!isLeastSquares(problem)) return irls(problem, options)
     return coordinateDescentSolve(problem.design, problem.alpha, problem.l1Ratio, problem.fitIntercept, options)
   }
-  if (solver === 'lbfgs' || solver === 'owlqn') return quasiNewtonSolve(problem, options)
+  if (solver === 'lbfgs' || solver === 'owlqn')
+    return l1
+      ? quasiNewtonSolve(problem, options)
+      : solveGlmWith(problem, { kind: 'lbfgs', gradTol: options.tol ?? 1e-10, ftol: 1e-15 }, options)
   return irls(problem, options)
 }
 

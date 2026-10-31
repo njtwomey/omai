@@ -38,7 +38,9 @@ describe('approximation against numpy and closed forms', () => {
                               ? xs().map(A.ulp)
                               : c.fn === 'float32'
                                 ? xs().map(A.toFloat32)
-                                : [A.machineEpsilon(), A.machineEpsilon('float32')]
+                                : c.fn === 'float16'
+                                  ? xs().map(A.toFloat16)
+                                  : [A.machineEpsilon(), A.machineEpsilon('float32')]
       expectMatches(
         Array.isArray(actual) ? tensor(c.fn === 'chebfunSum' ? (actual[0] as number) : actual) : actual,
         c.output,

@@ -1,7 +1,8 @@
 /**
  * Time-domain responses of linear systems, scipy.signal style: `lsim` (and `dlsim`) simulation of the response to any
  * input by exact discretisation, also as a traced algorithm, the step and impulse responses, the free response from an
- * initial state, and default time grids from the slowest pole.
+ * initial state, default time grids from the slowest pole, and the measures read off a step response (rise time,
+ * overshoot, settling time).
  */
 
 import { type Json, linspaceNumbers, MdmlError, minOf } from '../base/index.ts'
@@ -26,6 +27,7 @@ import {
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { float, numbers } from './_shared.ts'
+import { dcgain } from './frequency.ts'
 import { isDiscrete, type Lti, type StateSpace, toSs } from './representations.ts'
 
 // Time responses follow scipy.signal (lsim, step, impulse; dlsim, dstep, dimpulse) and python-control's
@@ -390,4 +392,139 @@ export function initial(sys: Lti, x0: TensorLike, options: Omit<ResponseOptions,
   const { t: _t, n: _n, ...rest } = options
   const t = responseTimes(s, options)
   return lsim(s, null, t, { ...rest, x0, interp: false })
+}
+
+/** What {@link stepMeasures} reads off a step response. */
+export interface StepMeasures {
+  /** Time to go from 10% to 90% of the final value (the limits are options). */
+  readonly riseTime: number
+  /** The time after which the response stays within the threshold (2%) of the final value; NaN if it never settles. */
+  readonly settlingTime: number
+  /** The least value after the rise. */
+  readonly settlingMin: number
+  /** The greatest value after the rise. */
+  readonly settlingMax: number
+  /** The percentage by which the response exceeds the final value. */
+  readonly overshoot: number
+  /** The percentage by which it dips the wrong way before rising (a non-minimum-phase zero's undershoot). */
+  readonly undershoot: number
+  /** The largest magnitude of the response. */
+  readonly peak: number
+  /** The time of the peak. */
+  readonly peakTime: number
+  /** The final value the response is measured against. */
+  readonly steadyStateValue: number
+}
+
+/** Options of {@link stepMeasures} and {@link stepInfo}. */
+export interface StepMeasureOptions {
+  /** The final value (the last sample for data, the DC gain for a system). */
+  readonly final?: number
+  /** Settling band as a fraction of the final value (default 0.02). */
+  readonly settlingThreshold?: number
+  /** The fractions of the final value that bound the rise (default `[0.1, 0.9]`). */
+  readonly riseLimits?: readonly [number, number]
+}
+
+/**
+ * The step-response measures of sampled data (python-control's `step_info`): rise time between two fractions of the final
+ * value, settling time to a band, the overshoot and undershoot as percentages, the peak with its time, and the range after
+ * the rise. A response that never reaches a rise limit, or whose final value is not finite, gives NaN measures.
+ *
+ * @param t - Sample times, increasing.
+ * @param y - The response, one value per time.
+ * @param options - The final value, the settling band and the rise limits.
+ * @returns The measures.
+ * @throws MdmlError with code `shape` when `t` and `y` differ in length or are empty.
+ * @concept time-response
+ * @example
+ * ```ts
+ * import { stepMeasures } from 'mdml-engine/systems'
+ * const t = [0, 1, 2, 3, 4]
+ * const m = stepMeasures(t, [0, 0.5, 1.2, 1.05, 1], {})
+ * [m.overshoot.toFixed(1), m.peakTime, m.riseTime] // => ['20.0', 2, 1]
+ * ```
+ */
+export function stepMeasures(
+  t: ArrayLike<number>,
+  y: ArrayLike<number>,
+  options: StepMeasureOptions = {},
+): StepMeasures {
+  const n = t.length
+  if (n === 0 || y.length !== n) throw new MdmlError('shape', 'stepMeasures: give one response value per time')
+  const final = options.final ?? (y[n - 1] as number)
+  const band = options.settlingThreshold ?? 0.02
+  const [lowFraction, highFraction] = options.riseLimits ?? [0.1, 0.9]
+  const nan: StepMeasures = {
+    riseTime: Number.NaN,
+    settlingTime: Number.NaN,
+    settlingMin: Number.NaN,
+    settlingMax: Number.NaN,
+    overshoot: Number.NaN,
+    undershoot: Number.NaN,
+    peak: Number.POSITIVE_INFINITY,
+    peakTime: Number.POSITIVE_INFINITY,
+    steadyStateValue: Number.NaN,
+  }
+  if (!Number.isFinite(final)) return nan
+  const sign = Math.sign(final)
+  const yv = Array.from(y)
+  const first = (limit: number): number => yv.findIndex((v) => sign * (v - limit * final) >= 0)
+  const lower = first(lowFraction)
+  const upper = first(highFraction)
+  if (lower < 0 || upper < 0) return { ...nan, steadyStateValue: final }
+  let settled = 0
+  for (let i = n - 1; i >= 0; i--) {
+    if (Math.abs((yv[i] as number) / final - 1) >= band) {
+      settled = i + 1
+      break
+    }
+  }
+  const after = yv.slice(upper)
+  const top = Math.max(...yv.map((v) => sign * v))
+  const overshoot =
+    Math.abs(top) - Math.abs(final) > 0 ? Math.abs((100 * (Math.abs(top) - Math.abs(final))) / final) : 0
+  const lowest = yv.reduce((best, v, i) => (sign * v < sign * (yv[best] as number) ? i : best), 0)
+  const dip = yv[lowest] as number
+  const undershoot = sign * dip < 0 ? (-100 * dip) / final : 0
+  const peakIndex = yv.reduce((best, v, i) => (Math.abs(v) > Math.abs(yv[best] as number) ? i : best), 0)
+  return {
+    riseTime: (t[upper] as number) - (t[lower] as number),
+    settlingTime: settled < n ? (t[settled] as number) : Number.NaN,
+    settlingMin: Math.min(Math.min(...after), final),
+    settlingMax: Math.max(Math.max(...after), final),
+    overshoot,
+    undershoot,
+    peak: Math.abs(yv[peakIndex] as number),
+    peakTime: t[peakIndex] as number,
+    steadyStateValue: final,
+  }
+}
+
+/**
+ * The step-response measures of a single-input single-output system: its step response, measured against its DC gain
+ * (python-control's `step_info`).
+ *
+ * @param sys - The system (SISO, stable for the DC gain to be the final value).
+ * @param options - Times (as {@link step}), the final value, the settling band and the rise limits.
+ * @returns The measures.
+ * @throws MdmlError with code `shape` for a system with several inputs or outputs.
+ * @concept time-response
+ * @example
+ * ```ts
+ * import { stepInfo, tf } from 'mdml-engine/systems'
+ * // A first-order lag 1 / (s + 1): rise time ln 9, no overshoot, 2% settling at ln 50.
+ * const m = stepInfo(tf([1], [1, 1]), { t: Array.from({ length: 2001 }, (_, i) => i * 0.005) })
+ * [m.riseTime.toFixed(2), m.overshoot, m.settlingTime.toFixed(2)] // => ['2.20', 0, '3.92']
+ * ```
+ */
+export function stepInfo(sys: Lti, options: StepMeasureOptions & Pick<ResponseOptions, 't' | 'n'> = {}): StepMeasures {
+  const s = toSs(sys)
+  if ((s.b.shape[1] ?? 0) !== 1 || (s.c.shape[0] ?? 0) !== 1) {
+    throw new MdmlError('shape', 'stepInfo: a single-input single-output system')
+  }
+  const { t, n, ...rest } = options
+  const r = step(sys, { ...(t === undefined ? {} : { t }), ...(n === undefined ? {} : { n }) })
+  const final = options.final ?? (toFlat(dcgain(sys))[0] as number)
+  return stepMeasures(toFlat(r.t), toFlat(r.y), { ...rest, final })
 }

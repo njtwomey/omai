@@ -145,6 +145,28 @@ function defaultScore(kind: EstimatorKind, verbs: Verbs): ((data: LearnData) => 
   return undefined
 }
 
+/**
+ * The verbs with the default `score` of the kind added when they lack one (accuracy for classifiers, R^2 for
+ * regressors): what `defineEstimator` does for its fitted values, for estimators that build their verbs themselves.
+ *
+ * @param kind - The estimator's kind.
+ * @param verbs - The verbs (and facts) of a fitted value.
+ * @returns The same verbs plus `score`, when the kind has a default and the verbs predict.
+ * @example
+ * ```ts
+ * import { withDefaultScore } from 'mdml-engine/learn'
+ * const verbs = withDefaultScore('regressor', { predict: (x) => x })
+ * verbs.score({ x: [1, 2], y: [1, 2] }) // => 1
+ * ```
+ */
+export function withDefaultScore<V extends Verbs>(
+  kind: EstimatorKind,
+  verbs: V,
+): V & { readonly score?: (data: LearnData) => number } {
+  const score = verbs.score ?? defaultScore(kind, verbs)
+  return score === undefined ? verbs : { ...verbs, score }
+}
+
 function optionalWeights(data: LearnData): { readonly sampleWeight?: TensorLike } {
   return data.weights === undefined ? {} : { sampleWeight: data.weights }
 }

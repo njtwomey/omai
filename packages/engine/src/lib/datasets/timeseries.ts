@@ -16,8 +16,8 @@ import {
   timeSeries,
   unzip,
 } from '../data/index.ts'
-import { foldIn, type Key, normal, uniform } from '../random/index.ts'
-import { bool, dict, int, real } from '../space/index.ts'
+import { foldIn, type Key, normal, studentT, uniform } from '../random/index.ts'
+import { bool, choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 import { AIR_PASSENGERS_COLUMNS, AIR_PASSENGERS_SHA256 } from './_data/air-passengers.data.ts'
 import { COAL_COLUMNS, COAL_SHA256 } from './_data/coal.data.ts'
@@ -546,4 +546,250 @@ export const electrocardiogram: DatasetRef<TimeSeriesData> = {
   size: 119_035,
   licence: 'ODC-By 1.0 (PhysioNet)',
   parse: parseElectrocardiogram,
+}
+
+/**
+ * A series with a planted motif, discord and regime change for the matrix profile: Gaussian noise with a slow wander,
+ * a smooth pattern of length `motifLength` inserted `occurrences` times at non-overlapping places (each with a little
+ * extra noise), one subsequence replaced by an anomaly no other window resembles (a flat segment with a spike), and a
+ * change of the noise level and the wander at a midpoint. The truth has where each occurrence begins, the discord's
+ * start, the change point and the pattern itself.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { plantedSeries } from 'mdml-engine/datasets'
+ * (generate(plantedSeries, { knobs: { n: 600 } }).truth.extra?.['motifStarts'] as number[]).length // => 2
+ * ```
+ */
+export const plantedSeries: DatasetGenerator<TimeSeriesData> = {
+  name: 'plantedSeries',
+  kind: 'timeseries',
+  description: 'Noise with a motif planted repeatedly, one discord and a regime change, all with known positions.',
+  knobs: dict({
+    n: int(200, 1_000_000, { label: 'length', description: 'The number of samples.', default: 1000 }),
+    motifLength: int(8, 500, {
+      label: 'motif length',
+      description: 'The length of the planted pattern and of the discord.',
+      default: 50,
+    }),
+    occurrences: int(2, 10, { label: 'occurrences', description: 'How many times the motif is planted.', default: 2 }),
+    motifNoise: real(0, 2, {
+      label: 'motif noise',
+      description: 'The standard deviation of the noise added to each planted copy.',
+      default: 0.05,
+    }),
+    regimeNoise: real(1, 10, {
+      label: 'regime noise ratio',
+      description: 'The noise level after the change, relative to before.',
+      default: 2,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const m = knobs['motifLength'] as number
+    const occ = knobs['occurrences'] as number
+    const change = Math.floor(n / 2)
+    const z = normal(foldIn(k, 0), [n]).data
+    const wander = normal(foldIn(k, 1), [n]).data
+    const y = new Float64Array(n)
+    let level = 0
+    for (let i = 0; i < n; i++) {
+      level += 0.1 * (wander[i] ?? 0)
+      y[i] = level + (i < change ? 1 : (knobs['regimeNoise'] as number)) * 0.03 * (z[i] ?? 0)
+    }
+    // Disjoint slots for the motif copies and the discord, placed by a random permutation of equal-width cells.
+    const cells = Math.floor(n / (2 * m))
+    const order = Array.from({ length: cells }, (_, i) => i)
+    const u = uniform(foldIn(k, 2), [cells]).data
+    order.sort((a, b) => (u[a] ?? 0) - (u[b] ?? 0))
+    const slot = (j: number): number => (order[j] ?? 0) * 2 * m + Math.floor(m / 2)
+    if (cells < occ + 1)
+      throw new MdmlError('value', 'plantedSeries: the series is too short for that many motifs of this length')
+    const shape = Array.from(
+      { length: m },
+      (_, i) => 2.5 * Math.sin((2 * Math.PI * 1.5 * i) / m) * Math.sin((Math.PI * i) / m) ** 0.5,
+    )
+    const motifStarts = Array.from({ length: occ }, (_, j) => slot(j))
+    const extra = normal(foldIn(k, 3), [occ * m]).data
+    motifStarts.forEach((start, j) => {
+      const base = y[start] ?? 0
+      for (let i = 0; i < m; i++)
+        y[start + i] = base + (shape[i] ?? 0) + (knobs['motifNoise'] as number) * (extra[j * m + i] ?? 0)
+    })
+    const discord = slot(occ)
+    const d0 = y[discord] ?? 0
+    for (let i = 0; i < m; i++) y[discord + i] = d0 + (i === Math.floor(m / 2) ? 6 : 0)
+    return {
+      data: timeSeries(y, {
+        segments: Int32Array.from({ length: n }, (_, i) => (i < change ? 0 : 1)),
+        meta: stamp('plantedSeries', plantedSeries.description, knobs),
+      }),
+      truth: {
+        changepoints: [change],
+        extra: { motifStarts, motifLength: m, motif: shape, discordStart: discord, changePoint: change },
+      },
+    }
+  },
+}
+
+/**
+ * Returns with GARCH(1,1) volatility clustering: `r_t = sigma_t z_t`, `sigma_t^2 = omega + alpha r_{t-1}^2 + beta
+ * sigma_{t-1}^2`, with Gaussian or Student-t innovations (unit variance). The truth has the conditional variance of
+ * every step, the parameters and the unconditional variance `omega / (1 - alpha - beta)`.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { garchReturns } from 'mdml-engine/datasets'
+ * generate(garchReturns, { knobs: { n: 100 } }).data.values.shape // => [100, 1]
+ * ```
+ */
+export const garchReturns: DatasetGenerator<TimeSeriesData> = {
+  name: 'garchReturns',
+  kind: 'timeseries',
+  description: 'A GARCH(1,1) returns series with its conditional variance as truth.',
+  knobs: dict({
+    n: int(2, 10_000_000, { label: 'length', description: 'The number of returns.', default: 1500 }),
+    omega: real(1e-8, 10, {
+      label: 'omega',
+      description: 'The constant of the variance recursion.',
+      default: 0.05,
+      log: true,
+    }),
+    alpha: real(0, 0.99, { label: 'alpha', description: 'The weight of the last squared return.', default: 0.1 }),
+    beta: real(0, 0.99, {
+      label: 'beta',
+      description: 'The weight of the last variance (alpha + beta must be below one).',
+      default: 0.85,
+    }),
+    innovations: choice(['gaussian', 'student'], {
+      label: 'innovations',
+      description: 'Gaussian, or Student-t with five degrees of freedom scaled to unit variance.',
+      default: 'gaussian',
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const omega = knobs['omega'] as number
+    const alpha = knobs['alpha'] as number
+    const beta = knobs['beta'] as number
+    if (alpha + beta >= 1)
+      throw new MdmlError('value', 'garchReturns: alpha + beta must be below one for a stationary series')
+    const nu = 5
+    const z =
+      knobs['innovations'] === 'student'
+        ? Array.from(studentT(foldIn(k, 0), [n], nu).data, (v) => v / Math.sqrt(nu / (nu - 2)))
+        : Array.from(normal(foldIn(k, 0), [n]).data)
+    const unconditional = omega / (1 - alpha - beta)
+    const r = new Float64Array(n)
+    const variance = new Float64Array(n)
+    let s2 = unconditional
+    for (let t = 0; t < n; t++) {
+      variance[t] = s2
+      r[t] = Math.sqrt(s2) * (z[t] ?? 0)
+      s2 = omega + alpha * (r[t] ?? 0) ** 2 + beta * s2
+    }
+    return {
+      data: timeSeries(r, { channelNames: ['return'], meta: stamp('garchReturns', garchReturns.description, knobs) }),
+      truth: {
+        latents: { variance: vector(variance) },
+        extra: { omega, alpha, beta, unconditionalVariance: unconditional, persistence: alpha + beta },
+      },
+    }
+  },
+}
+
+/**
+ * Coupled series with a known directed coupling graph, for Granger causality, transfer entropy and convergent
+ * cross-mapping: either a stable linear vector autoregression whose off-diagonal entries are the couplings, or coupled
+ * chaotic logistic maps. Each potential link `j -> i` is present with probability `density` and has strength
+ * `coupling`; the truth is the adjacency matrix (`adjacency[i][j]` is 1 when `j` drives `i`) and the lag.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { coupledSeries } from 'mdml-engine/datasets'
+ * generate(coupledSeries, { knobs: { n: 50, series: 3 } }).data.values.shape // => [50, 3]
+ * ```
+ */
+export const coupledSeries: DatasetGenerator<TimeSeriesData> = {
+  name: 'coupledSeries',
+  kind: 'timeseries',
+  description: 'Several series driven through a known directed coupling graph (VAR or coupled logistic maps).',
+  knobs: dict({
+    n: int(10, 10_000_000, { label: 'length', description: 'The number of time steps.', default: 1000 }),
+    series: int(2, 20, { label: 'series', description: 'The number of coupled series.', default: 3 }),
+    dynamics: choice(['var', 'logistic'], {
+      label: 'dynamics',
+      description: 'A linear vector autoregression, or chaotic logistic maps with diffusive coupling.',
+      default: 'var',
+    }),
+    density: real(0, 1, {
+      label: 'link density',
+      description: 'The chance that each directed link is present.',
+      default: 0.3,
+    }),
+    coupling: real(0, 1, { label: 'coupling', description: 'The strength of each present link.', default: 0.4 }),
+    lag: int(1, 10, { label: 'lag', description: 'The delay of the coupling in steps (VAR only).', default: 1 }),
+    noise: real(0, 5, {
+      label: 'noise standard deviation',
+      description: 'The innovation noise (VAR) or observation noise (logistic).',
+      default: 1,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const d = knobs['series'] as number
+    const lag = knobs['lag'] as number
+    const coupling = knobs['coupling'] as number
+    const sd = knobs['noise'] as number
+    const ul = uniform(foldIn(k, 0), [d * d]).data
+    const adjacency: number[][] = Array.from({ length: d }, (_, i) =>
+      Array.from({ length: d }, (_, j) => (i !== j && (ul[i * d + j] ?? 1) < (knobs['density'] as number) ? 1 : 0)),
+    )
+    const out = new Float64Array(n * d)
+    const burn = 200
+    if (knobs['dynamics'] === 'logistic') {
+      const f = (x: number): number => 3.9 * x * (1 - x)
+      let x = Array.from(uniform(foldIn(k, 1), [d]).data, (v) => 0.2 + 0.6 * v)
+      const obs = normal(foldIn(k, 2), [(n + burn) * d]).data
+      for (let t = 0; t < n + burn; t++) {
+        if (t >= burn)
+          for (let i = 0; i < d; i++) out[(t - burn) * d + i] = (x[i] ?? 0) + 0.01 * sd * (obs[t * d + i] ?? 0)
+        const fx = x.map(f)
+        x = x.map((_, i) => {
+          const parents = adjacency[i]?.reduce((a, b) => a + b, 0) ?? 0
+          const drive = parents === 0 ? 0 : (adjacency[i] ?? []).reduce((s, a, j) => s + a * (fx[j] ?? 0), 0) / parents
+          return Math.min(
+            0.999,
+            Math.max(0.001, (1 - coupling) * (fx[i] ?? 0) + coupling * (parents === 0 ? (fx[i] ?? 0) : drive)),
+          )
+        })
+      }
+    } else {
+      // x_t = 0.5 x_{t-1} + coupling * (sum of parents at lag) / sqrt(max parents) + noise: stable by construction.
+      const maxParents = Math.max(1, ...adjacency.map((row) => row.reduce((a, b) => a + b, 0)))
+      const eps = normal(foldIn(k, 2), [(n + burn) * d]).data
+      const x = new Float64Array((n + burn) * d)
+      for (let t = 1; t < n + burn; t++)
+        for (let i = 0; i < d; i++) {
+          let v = 0.5 * (x[(t - 1) * d + i] ?? 0)
+          if (t - lag >= 0)
+            for (let j = 0; j < d; j++)
+              v += (coupling / Math.sqrt(maxParents)) * (adjacency[i]?.[j] ?? 0) * (x[(t - lag) * d + j] ?? 0)
+          x[t * d + i] = v + sd * (eps[t * d + i] ?? 0)
+        }
+      out.set(x.subarray(burn * d))
+    }
+    return {
+      data: timeSeries(fromStorage(out, [n, d], 'float64'), {
+        channelNames: Array.from({ length: d }, (_, i) => `s${i}`),
+        meta: stamp('coupledSeries', coupledSeries.description, knobs),
+      }),
+      truth: {
+        extra: { adjacency, lag: knobs['dynamics'] === 'var' ? lag : 1, dynamics: knobs['dynamics'], coupling },
+      },
+    }
+  },
 }

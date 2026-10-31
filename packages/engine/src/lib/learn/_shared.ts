@@ -1,6 +1,7 @@
 // Helpers shared by the learn modules (not exported from the domain).
 import { MdmlError } from '../base/index.ts'
 import { resolveKey } from '../context/index.ts'
+import { dgemm } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
 import type { RunOptions } from '../trace/index.ts'
 import type { FitOptions } from './estimator.ts'
@@ -89,4 +90,34 @@ export function innerFitOptions(
 /** Numbers of a typed array as a plain array (for JSON parameters). */
 export function plain(xs: ArrayLike<number>): number[] {
   return Array.from(xs)
+}
+
+/**
+ * The squared Euclidean distances between the rows of two views, `[a.n, b.n]` row-major, by the identity
+ * `|a - b|^2 = |a|^2 + |b|^2 - 2 a . b` on one product (clamped at zero against rounding). `b` defaults to `a`.
+ */
+export function squaredDistances(a: MatrixView, b: MatrixView = a): Float64Array {
+  if (a.d !== b.d) throw new MdmlError('shape', `squaredDistances: ${a.d} and ${b.d} columns`)
+  const norms = (m: MatrixView): Float64Array =>
+    Float64Array.from({ length: m.n }, (_, i) => {
+      let s = 0
+      for (let j = 0; j < m.d; j++) s += (m.data[i * m.d + j] ?? 0) ** 2
+      return s
+    })
+  const na = norms(a)
+  const nb = b === a ? na : norms(b)
+  const out = dgemm(a.data, b.data, a.n, a.d, b.n, { transposeB: true })
+  for (let i = 0; i < a.n; i++) {
+    for (let j = 0; j < b.n; j++) {
+      out[i * b.n + j] = Math.max(0, (na[i] ?? 0) + (nb[j] ?? 0) - 2 * (out[i * b.n + j] ?? 0))
+    }
+  }
+  return out
+}
+
+/** The Gaussian (RBF) Gram matrix `exp(-gamma |a_i - b_j|^2)` between the rows of two views, `[a.n, b.n]` row-major. */
+export function rbfGram(a: MatrixView, b: MatrixView, gamma: number): Float64Array {
+  const sq = squaredDistances(a, b)
+  for (let i = 0; i < sq.length; i++) sq[i] = Math.exp(-gamma * (sq[i] ?? 0))
+  return sq
 }
