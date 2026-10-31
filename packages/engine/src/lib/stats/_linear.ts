@@ -76,6 +76,19 @@ export function invSpd(a: ArrayLike<number>, n: number): Float64Array {
 }
 
 /**
+ * The inverse of a symmetric positive definite matrix, or its pseudo-inverse when it is singular (a covariance of
+ * collinear columns).
+ */
+export function invSpdOrPinv(a: ArrayLike<number>, n: number): Float64Array {
+  try {
+    return invSpd(a, n)
+  } catch (error) {
+    if (error instanceof MdmlError && error.code === 'singular') return pinvSym(a, n)
+    throw error
+  }
+}
+
+/**
  * The Moore-Penrose pseudo-inverse of a symmetric matrix (numpy.linalg.pinv with hermitian=True): eigenvalues below
  * rcond times the largest in magnitude are treated as zero.
  */

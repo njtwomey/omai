@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 54 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 55 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -420,6 +420,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `covariance`  | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators with Mahalanobis distances and likelihoods, FastMCD and the elliptic envelope, the graphical lasso                          |
 | `anomaly`     | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules              |
 | `sketches`    | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list |
+| `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
 
 ### 4.1 `base/`
 
@@ -1387,6 +1388,24 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
   `runningMedian`, `smoothingSpline` (lambda, degrees of freedom or GCV over numerics' `makeSmoothingSpline`).
 - `fit.ts`: `fitDistribution` (closed form or Newton for seventeen families) with standard errors from the
   `observedInformation`; `newtonMle` (traced `newtonMleAlgorithm`).
+- `experiments.ts`: online-experiment estimators: `cuped` (pre-experiment covariate adjustment), `postStratify`,
+  `regressionAdjustment` (Lin's demeaned interaction estimator with HC2 errors), `deltaMethodRatio` (user-level ratio
+  metrics, one and two sample), `clusterRandomisedTest` (ICC, design effect, CR1 errors) and `switchbackAnalysis`
+  (period means, Newey-West errors, optional randomisation p-value). Results carry an `Estimate` and a `TestResult`.
+- `design.ts`: randomisation (`simpleRandomisation`, `permutedBlockRandomisation`, `stratifiedRandomisation`,
+  Pocock-Simon `minimizationAlgorithm`/`minimizationAllocation` as a traced `Algorithm` whose draws come from the step
+  key), `matchedPairsDesign` (exact matching up to 16 units), `fullFactorialDesign`, `fractionalFactorialDesign` and
+  `aliasStructure` (defining relation, resolution, alias chains), `latinSquareDesign`, `oneWayAnova` and `twoWayAnova`
+  (Type I, II and III sums of squares; golden against statsmodels `anova_lm`).
+- `shrinkage.ts`: `jamesStein`, `positivePartJamesStein` (targets zero, a vector or the grand mean; SURE) and
+  `empiricalBayesNormalMeans` (homoscedastic Efron-Morris, heteroscedastic DerSimonian-Laird moments; the
+  heteroscedastic fit is golden-tested against statsmodels `combine_effects`).
+- `missing.ts`: `missingnessProfile` (columns, rows, patterns) and `littleMcarTest` (Gaussian EM moments, chi-square
+  over the pattern means; tested against the closed-form monotone-pattern maximum likelihood, no reference library
+  implements it).
+- `concentration.ts`: `markovBound`, `chebyshevBound`, `chernoffBound`/`chernoffGaussianBound`, `chernoffKlBound`,
+  `hoeffdingBound` with `hoeffdingSampleSize`, `bernsteinBound`, `bennettBound`, `empiricalBernsteinInterval`,
+  `mcDiarmidBound` and the `dkwBand`.
 
 TODO (deferred, esoteric):
 - `tests/bayesian.ts`: the Gauss hypergeometric series behind `bayesFactorPearson` is private; move it to
@@ -3839,6 +3858,41 @@ not in the `oracle-core` group, so there are no goldens. TODO: HyperLogLog++'s s
 algorithm form for the quantile sketches, sliding-window variants, serialisation of the objects (only the algorithms'
 states serialise).
 built from: `base`, `random`, `trace`, `numerics` (the quadrature rule of `lshOptimalParams`)
+
+### 4.55 `survival/`: survival analysis of right-censored data (lifelines, statsmodels duration, R survival)
+
+`data.ts` reads right-censored data (`survivalSample`: times and 0/1 event indicators, validated once) and builds the
+table of distinct event times (`eventTable`: at risk, events, censored). `kaplan-meier.ts` is the product-limit
+estimator with Greenwood's variance and the log-log, plain and log intervals (`kaplanMeier`, `survivalAt`,
+`survivalQuantile`, `restrictedMeanSurvival`), the Nelson-Aalen cumulative hazard (`nelsonAalen`), and
+`kaplanMeierAlgorithm`, which takes one subject per step (events before censorings at a tied time) so the curve forms
+as the run proceeds; its state serialises, and after `n` steps it is the batch curve. `log-rank.ts` is the weighted
+K-sample log-rank family (`logRankTest`: log-rank, Gehan-Breslow/Wilcoxon, Tarone-Ware, Peto-Peto, Fleming-Harrington
+`(p, q)`, strata summed over; `logRankZ` for two groups). `cox.ts` is Cox regression: `coxProblem` builds the
+partial likelihood (Breslow or Efron ties, strata, a ridge) as a `SmoothProblem` in differentiable tensor operations
+(one reverse cumulative sum gives every risk set), `coxAlgorithm`/`coxPh` fit it with `solver` a hyperparameter from
+`smoothSolvers` (default Newton to a gradient tolerance of 1e-10, which reproduces the references; every other smooth
+solver reaches the same optimum), and the fit carries the covariance from the observed information, Wald,
+likelihood-ratio and score tests, the concordance, Breslow's baseline cumulative hazard per stratum and
+`coxPredictSurvival`. `aft.ts` is the accelerated failure time family (`aftProblem`, `aftAlgorithm`, `aft`: Weibull,
+log-normal, log-logistic, exponential) on the same slot, with `aftPredictSurvival` and `aftPredictQuantile`.
+`cox.ts` also has the Schoenfeld and martingale residuals. `concordance.ts` is Harrell's C (`concordanceIndex`, with pair
+counts). `prediction.ts` scores predictions under censoring with inverse-probability-of-censoring weights: the
+censoring distribution (`censoringSurvival`), the Brier score and its integral (`brierScore`, `integratedBrierScore`)
+and Uno's cumulative/dynamic AUC (`cumulativeDynamicAuc`). The planted generator is `survivalData` of
+`datasets` (Weibull or exponential proportional hazards and log-normal AFT with known coefficients), which the tests
+use.
+
+oracle: statsmodels `SurvfuncRight` (curve, Greenwood errors, risk sets), `survdiff` (log-rank, Gehan-Breslow,
+Tarone-Ware, Fleming-Harrington, two and three groups, with and without tied times), `PHReg` (coefficients, errors,
+partial log-likelihood, baseline hazard and Schoenfeld residuals for both tie methods, and a stratified fit); the AFT fits are compared with
+a maximum-likelihood fit written from `scipy.stats` log densities (Gumbel, normal, logistic) polished by Newton steps
+on numerical derivatives, and the concordance index with a direct count of the pairs (neither statsmodels nor
+scikit-learn has an equivalent installed); the Brier score and AUC are tested on hand-computed values. TODO: left
+truncation (entry times), case weights, time-varying covariates, interval and left censoring for the AFT family, the
+Grambsch-Therneau proportional-hazards test.
+built from: `optim` (`smoothSolvers`, `loggedSolver`), `autodiff`, `tensor`, `numerics` (special functions, LAPACK),
+`trace`, `space`, `random`
 
 ## 5. Methods, exposition records and views
 
