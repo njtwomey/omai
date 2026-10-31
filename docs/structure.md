@@ -3709,7 +3709,10 @@ Embeddings as traced `Algorithm`s with estimators (`kind: 'transformer'`). The a
 configuration at every step as the `embedding` tensor `[n, k]` (and their objective as a metric), which is what an
 `embeddingSteps` record is built from. A fitted embedding has `transform`: the training rows give their fitted
 embedding, other rows the inverse-distance-weighted mean of their nearest training rows' (none of these methods has a
-closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_support.ts` is private.
+closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_support.ts` is private: the embedding
+verbs, `pcaStart` (the PCA start, scaled), `scaledNeighbours` (each row's nearest rows with the local scale sigma, the
+mean distance to the 4th to 6th nearest, and the scaled squared distance that PaCMAP and TriMap rank neighbours by) and
+`drawIndices` (a keyed stream of random rows); `_planted.ts` (private) holds the planted layouts of the tests.
 - `mds.ts`: `classicalMds`, `classicalMdsAlgorithm`, `smacofAlgorithm` (a Guttman transform per step; metric, or
   non-metric with disparities by isotonic regression through `learn`'s `poolAdjacentViolators`), estimator `mds`.
 - `isomap.ts`: `neighbourEdges`, `geodesicDistances` (Floyd-Warshall over the neighbour graph), `isomap`. `lle.ts`:
@@ -3721,9 +3724,19 @@ closed-form out-of-sample map; the exact Isomap and LLE extensions are TODO). `_
 - `umap.ts`: `findAbParams` (the curve fit by `optim`), `fuzzySimplicialSet`, `umapAlgorithm` (one epoch of edge and
   negative sampling per step), `umapSetup`, `umap`. `som.ts`: `somAlgorithm` (one epoch per step; observes the
   weights and the rows' grid positions), `uMatrix`, `selfOrganisingMap`.
+- `pacmap.ts`: `pacmapPairs` (near pairs by the scaled distance, mid-near pairs as the second closest of six random rows,
+  further pairs), `pacmapWeights` (the three-phase schedule 100/100/250 with the mid-near weight falling from 1000 to 3
+  and then 0), `pacmapLoss` (bounded pair losses, with their gradient), `pacmapProblem` (the loss at one phase's weights
+  as a `SmoothProblem`, so `smoothSolvers` can minimise it), `pacmapAlgorithm` (one iteration per step; the optimiser
+  is a slot over the `optimisers` table, Adam with eps 1e-7 as `pacmapAdam` the named default), `pacmap`. `trimap.ts`:
+  `trimapTriplets` (nearest neighbours with random outliers, random triplets, weights by the tempered log of the
+  similarity ratio), `temperedLog`, `trimapLoss`, `trimapProblem`, `trimapAlgorithm` (delta-bar-delta gains and
+  momentum with the reference's step-size adaptation, or any optimiser of the table in place of it), `trimap`. Neither
+  package is in the oracle: the pair and triplet losses are checked against hand computations, the layouts by
+  trustworthiness on planted manifolds and by the global structure of planted two-scale clusters against UMAP.
 - `quality.ts`: `trustworthiness`, `continuity`, `neighbourhoodPreservation`, `coRankingMatrix`, `rnxCurve`,
   `embeddingStress`, `neighbourRanks`.
-- TODO: PaCMAP and TriMap, Barnes-Hut error control by a tree built once per step in typed arrays, UMAP with a sparse
+- TODO: Barnes-Hut error control by a tree built once per step in typed arrays, UMAP with a sparse
   graph (the memberships are dense `[n, n]`), the supervised and parametric variants.
 
 oracle: scikit-learn trustworthiness, Isomap, LocallyLinearEmbedding, SpectralEmbedding and metric SMACOF
