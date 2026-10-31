@@ -4081,6 +4081,12 @@ matching result), the Cinelli-Hazlett omitted-variable bias (`omittedVariableBia
 `ovbContour` for the contour grid, `sensitivityModel` and `benchmarkStrength` for benchmarks from observed covariates, which
 reproduce the dropped-covariate estimate exactly when given its true partial R-squared), and `refute` (placebo treatment,
 random common cause, data subset).
+`graph.ts` joins `pgm/causal` to the estimators: `backdoorEffect` takes a minimal back-door set from the graph and adjusts for it
+(Lin's regression adjustment or AIPW for a 0/1 treatment, robust least squares for a numeric one) and `frontdoorEffect` applies
+the front-door formula through the graph's mediators for a binary treatment and discrete mediators when a hidden confounder
+closes the back-door, with a bootstrap error. The graph side (d-separation, back-door and front-door sets, instruments, the
+cases of the ID algorithm, the PC algorithm in `pgm/learning`, GES, LiNGAM, NOTEARS and FCI in `pgm/causal`) was already in
+`pgm` and is not repeated here.
 The planted generators the tests use are `treatmentEffects` (confounding, overlap, nonlinear setting, heterogeneity),
 `instrumentalVariables`, `panelEffects` and `discontinuityDesign` of `datasets`.
 
@@ -4093,8 +4099,8 @@ scikit-learn's logistic and linear regressions for the nuisance models of the we
 formulas, which are written out in numpy beside them, and its nearest neighbours for matching; scipy's BFGS on the
 entropy-balancing dual. Planted truth (the effect of the generators, with the naive estimator shown biased) checks
 recovery.
-built from: `learn` (the estimator contract, neighbour search, splitters), `linear` (default nuisance models), `optim`
-(`smoothSolvers`), `numerics`, `random`, `trace`, `space`, `tensor`
+built from: `learn` (the estimator contract, neighbour search, splitters), `linear` (default nuisance models), `trees`
+(causal forests), `pgm` (graph queries), `optim` (`smoothSolvers`, `quadprog`), `numerics`, `random`, `trace`, `space`, `tensor`
 
 ## 5. Methods, exposition records and views
 
