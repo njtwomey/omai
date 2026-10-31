@@ -17,10 +17,11 @@ import { rowsOf } from '../learn/validation.ts'
 import type { Structure } from '../scene/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { derived, Log, message, scalar, tensor } from '../trace/index.ts'
+import { type Contract, derived, Log, message, scalar, tensor } from '../trace/index.ts'
 import type { ClassificationCriterion, Criterion, RegressionCriterion } from './criteria.ts'
 import {
   type GrowOptions,
+  type GrowPath,
   type GrowState,
   growTreeAlgorithm,
   splitProblem,
@@ -100,8 +101,11 @@ export function treeVerbs(tree: Tree): TreeVerbs {
   }
 }
 
+/** The paths a tree estimator adds to the base's: the grower's and the two derived records of the tree so far. */
+export type TreePath = GrowPath | 'model/structure' | 'model/importances'
+
 /** The tree estimators' type: the iterative base over growth states, with a tree as parameters. */
-export type TreeEstimator = IterativeEstimator<DecisionTreeHyper, GrowState, Tree, TreeVerbs>
+export type TreeEstimator = IterativeEstimator<DecisionTreeHyper, GrowState, Tree, TreeVerbs, TreePath>
 
 /** The tree's data and facts, prepared once per dataset. */
 interface Prepared {
@@ -126,7 +130,7 @@ function treeEstimator(name: string, classifier: boolean, defaults: DecisionTree
   const criteria: readonly Criterion[] = classifier
     ? ['gini', 'entropy', 'log_loss', 'gain_ratio']
     : ['squared_error', 'friedman_mse', 'absolute_error', 'poisson']
-  return iterative<DecisionTreeHyper, GrowState, Tree, TreeVerbs>({
+  return iterative<DecisionTreeHyper, GrowState, Tree, TreeVerbs, TreePath>({
     name,
     kind: classifier ? 'classifier' : 'regressor',
     defaults,
@@ -158,10 +162,11 @@ function treeEstimator(name: string, classifier: boolean, defaults: DecisionTree
     params: (state, learn, h) => pruneTree(treeOfState(state, prepare(learn).info), h.ccpAlpha),
     verbs: (tree) => withDefaultScore(classifier ? 'classifier' : 'regressor', treeVerbs(tree)),
     maxSteps: (_h, learn) => 4 * rowsOf(learn.x) + 10,
-    contract: (learn, h) => {
+    contract: (learn, h): Contract<GrowState, TreePath> => {
       const { info } = prepare(learn)
       const names = featureNamesOf(learn, info.nFeatures)
       const classNames = info.task === 'classification' ? classNamesOf(learn, info.classes) : undefined
+      // The training score is `eval/accuracy` or `eval/r2` by the task, so only one of the two is in the contract.
       return {
         'tree/split': message({
           description: 'the node just decided: its feature, threshold and impurity decrease, or that it is a leaf',
@@ -197,7 +202,7 @@ function treeEstimator(name: string, classifier: boolean, defaults: DecisionTree
           description: 'the impurity importance of each feature in the tree so far',
           compute: (state) => treeFeatureImportances(pruneTree(treeOfState(state, info), h.ccpAlpha)) as Json,
         }),
-      }
+      } as Contract<GrowState, TreePath>
     },
     records: (state, learn, h): readonly Exposition[] => {
       if (h.record === 0) return []

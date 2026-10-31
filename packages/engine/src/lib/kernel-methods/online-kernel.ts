@@ -22,7 +22,16 @@ import { type IterativeEstimator, iterative, type LearnData, matrixView, targetV
 import { r2Score } from '../metrics/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, derived, Log, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  derived,
+  Log,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 
 /** How KRLS decides which observations enter the dictionary. */
 export type KrlsCriterion = 'ald' | 'coherence' | 'sliding-window'
@@ -48,6 +57,19 @@ export interface OnlineKernelHyper {
   readonly degree: number
   readonly coef0: number
 }
+
+/**
+ * The path {@link krls} adds to the base's: the dictionary so far (the algorithm logs through the solver's channels
+ * alone).
+ *
+ * @example
+ * ```ts
+ * import type { KrlsPath } from 'mdml-engine/kernel-methods'
+ * const path: KrlsPath = 'model/dictionary'
+ * path // => 'model/dictionary'
+ * ```
+ */
+export type KrlsPath = 'model/dictionary'
 
 /** The state of KRLS after `step` observations: plain JSON. */
 export type KrlsState = {
@@ -390,7 +412,7 @@ export function krlsPredict(
  * runAlgorithm(alg, { maxSteps: 10 }).state.dictionary.length // => 1
  * ```
  */
-export function krlsAlgorithm(data: LearnData, hyper: OnlineKernelHyper): Algorithm<KrlsState> {
+export function krlsAlgorithm(data: LearnData, hyper: OnlineKernelHyper): Algorithm<KrlsState, never> {
   validate(hyper, WHO)
   const m = matrixView(data.x, WHO)
   const y = targetVector(data.y ?? [], WHO, m.n)
@@ -488,52 +510,50 @@ function expansionVerbs(
  * fitted.dictionarySize <= 4 // => true
  * ```
  */
-export const krls: IterativeEstimator<OnlineKernelHyper, KrlsState, OnlineKernelParams, OnlineKernelVerbs> = iterative<
-  OnlineKernelHyper,
-  KrlsState,
-  OnlineKernelParams,
-  OnlineKernelVerbs
->({
-  name: 'kernel-methods/krls',
-  kind: 'regressor',
-  defaults: KRLS_DEFAULTS,
-  hyperSpace: (h) =>
-    dict({
-      criterion: choice(['ald', 'coherence', 'sliding-window'], { default: h.criterion, label: 'dictionary rule' }),
-      budget: int(Math.min(2, h.budget), Math.max(256, h.budget), { default: h.budget, label: 'dictionary size' }),
-      aldThreshold: real(h.aldThreshold > 0 ? Math.min(1e-5, h.aldThreshold) : 0, Math.max(1, h.aldThreshold), {
-        log: h.aldThreshold > 0,
-        default: h.aldThreshold,
-        label: 'ALD threshold',
-        when: { key: 'criterion', in: ['ald'] },
+export const krls: IterativeEstimator<OnlineKernelHyper, KrlsState, OnlineKernelParams, OnlineKernelVerbs, KrlsPath> =
+  iterative<OnlineKernelHyper, KrlsState, OnlineKernelParams, OnlineKernelVerbs, KrlsPath>({
+    name: 'kernel-methods/krls',
+    kind: 'regressor',
+    defaults: KRLS_DEFAULTS,
+    hyperSpace: (h) =>
+      dict({
+        criterion: choice(['ald', 'coherence', 'sliding-window'], { default: h.criterion, label: 'dictionary rule' }),
+        budget: int(Math.min(2, h.budget), Math.max(256, h.budget), { default: h.budget, label: 'dictionary size' }),
+        aldThreshold: real(h.aldThreshold > 0 ? Math.min(1e-5, h.aldThreshold) : 0, Math.max(1, h.aldThreshold), {
+          log: h.aldThreshold > 0,
+          default: h.aldThreshold,
+          label: 'ALD threshold',
+          when: { key: 'criterion', in: ['ald'] },
+        }),
+        regularisation: real(Math.min(1e-6, h.regularisation), Math.max(1, h.regularisation), {
+          log: true,
+          default: h.regularisation,
+          label: 'regularisation',
+          when: { key: 'criterion', in: ['sliding-window'] },
+        }),
+        ...kernelSpace(h),
       }),
-      regularisation: real(Math.min(1e-6, h.regularisation), Math.max(1, h.regularisation), {
-        log: true,
-        default: h.regularisation,
-        label: 'regularisation',
-        when: { key: 'criterion', in: ['sliding-window'] },
+    algorithm: (data, h): Algorithm<KrlsState, KrlsPath> => krlsAlgorithm(data, h),
+    maxSteps: (_h, data) => matrixView(data.x, WHO).n,
+    params: (s, data, h) => ({
+      kernel: resolveKernel(h as KernelChoice, data.x),
+      dictionary: s.dictionary,
+      dualCoef: s.alpha,
+      nFeatures: s.nFeatures,
+      nObservations: s.step,
+      prequentialMse: s.step === 0 ? 0 : s.sse / s.step,
+    }),
+    verbs: (p, h) =>
+      expansionVerbs(WHO, p.dictionary, p.dualCoef, p.nFeatures, p.kernel, h, Math.sqrt(p.prequentialMse)),
+    contract: (): Contract<KrlsState, KrlsPath> =>
+      defineContract({
+        'model/dictionary': derived<KrlsState>({
+          description: 'the dictionary centres and their coefficients so far',
+          compute: (s) => ({ centres: s.dictionary, coef: s.alpha }),
+        }),
       }),
-      ...kernelSpace(h),
-    }),
-  algorithm: (data, h) => krlsAlgorithm(data, h),
-  maxSteps: (_h, data) => matrixView(data.x, WHO).n,
-  params: (s, data, h) => ({
-    kernel: resolveKernel(h as KernelChoice, data.x),
-    dictionary: s.dictionary,
-    dualCoef: s.alpha,
-    nFeatures: s.nFeatures,
-    nObservations: s.step,
-    prequentialMse: s.step === 0 ? 0 : s.sse / s.step,
-  }),
-  verbs: (p, h) => expansionVerbs(WHO, p.dictionary, p.dualCoef, p.nFeatures, p.kernel, h, Math.sqrt(p.prequentialMse)),
-  contract: () => ({
-    'model/dictionary': derived<KrlsState>({
-      description: 'the dictionary centres and their coefficients so far',
-      compute: (s) => ({ centres: s.dictionary, coef: s.alpha }),
-    }),
-  }),
-  logs: { 'solver/dictionarySize': Log(), 'solver/runningMse': Log() },
-})
+    logs: { 'solver/dictionarySize': Log(), 'solver/runningMse': Log() },
+  })
 
 // ---------------------------------------------------------------------------------------------------------------------
 // NORMA
@@ -616,7 +636,7 @@ const NORMA_DEFAULTS: NormaHyper = {
  * runAlgorithm(alg, { maxSteps: 10 }).state.step // => 3
  * ```
  */
-export function normaAlgorithm(data: LearnData, hyper: NormaHyper): Algorithm<NormaState> {
+export function normaAlgorithm(data: LearnData, hyper: NormaHyper): Algorithm<NormaState, never> {
   const who = 'norma'
   if (!(hyper.eta > 0)) throw new MdmlError('value', `${who}: eta must be positive`)
   if (!(hyper.lambda >= 0)) throw new MdmlError('value', `${who}: lambda must not be negative`)
@@ -699,11 +719,12 @@ export const normaDefaults: NormaHyper = NORMA_DEFAULTS
  * f.dictionarySize <= 100 // => true
  * ```
  */
-export const norma: IterativeEstimator<NormaHyper, NormaState, NormaParams, OnlineKernelVerbs> = iterative<
+export const norma: IterativeEstimator<NormaHyper, NormaState, NormaParams, OnlineKernelVerbs, never> = iterative<
   NormaHyper,
   NormaState,
   NormaParams,
-  OnlineKernelVerbs
+  OnlineKernelVerbs,
+  never
 >({
   name: 'kernel-methods/norma',
   kind: 'regressor',
@@ -719,7 +740,7 @@ export const norma: IterativeEstimator<NormaHyper, NormaState, NormaParams, Onli
       budget: int(Math.min(2, h.budget), Math.max(500, h.budget), { default: h.budget, label: 'expansion size' }),
       ...kernelSpace(h),
     }),
-  algorithm: (data, h) => normaAlgorithm(data, h),
+  algorithm: (data, h): Algorithm<NormaState, never> => normaAlgorithm(data, h),
   maxSteps: (h, data) => matrixView(data.x, 'norma').n * h.epochs,
   params: (s, data, h) => ({
     kernel: resolveKernel(h as KernelChoice, data.x),

@@ -93,6 +93,26 @@ export interface GrowState {
   readonly decided: number
 }
 
+/**
+ * The paths {@link growTreeAlgorithm} logs: the node just decided, its candidate splits, the tree's size and impurity,
+ * and the training score (`eval/accuracy` for classification, `eval/r2` for regression).
+ *
+ * @example
+ * ```ts
+ * import type { GrowPath } from 'mdml-engine/trees'
+ * const path: GrowPath = 'tree/split'
+ * path // => 'tree/split'
+ * ```
+ */
+export type GrowPath =
+  | 'tree/split'
+  | 'tree/candidates'
+  | 'tree/leaves'
+  | 'tree/depth'
+  | 'tree/impurity'
+  | 'eval/accuracy'
+  | 'eval/r2'
+
 const EPSILON = 2.220446049250313e-16
 
 function featureCount(m: MaxFeatures, d: number): number {
@@ -140,7 +160,11 @@ function withoutFound(node: GrownNode): GrownNode {
  * treeOfState(run.state, info).threshold // => [1.5, -2, -2]
  * ```
  */
-export function growTreeAlgorithm(problem: SplitProblem, options: GrowOptions, info: TreeInfo): Algorithm<GrowState> {
+export function growTreeAlgorithm(
+  problem: SplitProblem,
+  options: GrowOptions,
+  info: TreeInfo,
+): Algorithm<GrowState, GrowPath> {
   const { x } = problem
   const nf = featureCount(options.maxFeatures, x.d)
   const maxDepth = options.maxDepth ?? Number.POSITIVE_INFINITY

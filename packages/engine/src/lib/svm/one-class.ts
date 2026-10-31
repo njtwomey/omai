@@ -21,8 +21,19 @@ import { type IterativeEstimator, iterative, type LearnData, matrixView } from '
 import type { SmoState } from '../optim/index.ts'
 import { dict, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { channels, derived, Log, scalar, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  derived,
+  Log,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { type Dual, oneClassDual, svddDual } from './_dual.ts'
+import type { SvmPath } from './classifier.ts'
 
 /** The hyperparameters shared by {@link oneClassSvm} and {@link svdd}. */
 export interface NoveltyHyper {
@@ -107,13 +118,13 @@ function noveltyEstimator<H extends Hyper>(
   svdd: boolean,
   defaults: H,
   knob: (h: H) => ReturnType<typeof dict>['spaces'],
-): IterativeEstimator<H, NoveltyState, NoveltyParams, NoveltyVerbs> {
-  return iterative<H, NoveltyState, NoveltyParams, NoveltyVerbs>({
+): IterativeEstimator<H, NoveltyState, NoveltyParams, NoveltyVerbs, SvmPath> {
+  return iterative<H, NoveltyState, NoveltyParams, NoveltyVerbs, SvmPath>({
     name,
     kind: 'outlier',
     defaults,
     hyperSpace: (h) => dict({ ...knob(h), ...kernelSpace(h) }),
-    algorithm: (data, h) => {
+    algorithm: (data, h): Algorithm<NoveltyState, SvmPath> => {
       const { kernel, dual } = prepare(data, h, svdd)
       return {
         name: svdd ? 'svdd' : 'one-class-svm',
@@ -217,25 +228,26 @@ function noveltyEstimator<H extends Hyper>(
         nFeaturesIn: d,
       }
     },
-    contract: () => ({
-      'smo/alphaChanged': scalar({
-        description: 'the change of the two dual variables updated in the step, |da_i| + |da_j|',
+    contract: (): Contract<NoveltyState, SvmPath> =>
+      defineContract({
+        'smo/alphaChanged': scalar({
+          description: 'the change of the two dual variables updated in the step, |da_i| + |da_j|',
+        }),
+        'model/support-vectors': derived<NoveltyState>({
+          description: 'the support vectors so far, their coefficients, the offset and the score of every training row',
+          compute: (s) => {
+            const support: number[] = []
+            const dualCoefficients: number[] = []
+            s.live.coef.forEach((c, i) => {
+              if (c > 0) {
+                support.push(i)
+                dualCoefficients.push(c)
+              }
+            })
+            return marginRecord({ support, dualCoefficients, intercept: -s.live.rho, margins: s.scores })
+          },
+        }),
       }),
-      'model/support-vectors': derived<NoveltyState>({
-        description: 'the support vectors so far, their coefficients, the offset and the score of every training row',
-        compute: (s) => {
-          const support: number[] = []
-          const dualCoefficients: number[] = []
-          s.live.coef.forEach((c, i) => {
-            if (c > 0) {
-              support.push(i)
-              dualCoefficients.push(c)
-            }
-          })
-          return marginRecord({ support, dualCoefficients, intercept: -s.live.rho, margins: s.scores })
-        },
-      }),
-    }),
     logs: { 'solver/dual': Log(), 'solver/gap': Log() },
   })
 }
@@ -265,7 +277,7 @@ const base: NoveltyHyper = {
  * toFlat(oneClassSvm.with({ nu: 0.2, gamma: 1 }).fit({ x }).predict([[0], [10]])) // => [1, -1]
  * ```
  */
-export const oneClassSvm: IterativeEstimator<OneClassHyper, NoveltyState, NoveltyParams, NoveltyVerbs> =
+export const oneClassSvm: IterativeEstimator<OneClassHyper, NoveltyState, NoveltyParams, NoveltyVerbs, SvmPath> =
   noveltyEstimator<OneClassHyper>('svm/one-class', false, { ...base, nu: 0.5 } as OneClassHyper, (h) => ({
     nu: real(0.01, 1, { default: Math.min(Math.max(h.nu, 0.01), 1), label: 'nu' }),
   }))
@@ -284,7 +296,7 @@ export const oneClassSvm: IterativeEstimator<OneClassHyper, NoveltyState, Novelt
  * toFlat(svdd.with({ C: 0.5, gamma: 1 }).fit({ x }).predict([[0], [10]])) // => [1, -1]
  * ```
  */
-export const svdd: IterativeEstimator<SvddHyper, NoveltyState, NoveltyParams, NoveltyVerbs> =
+export const svdd: IterativeEstimator<SvddHyper, NoveltyState, NoveltyParams, NoveltyVerbs, SvmPath> =
   noveltyEstimator<SvddHyper>('svm/svdd', true, { ...base, C: 1 } as SvddHyper, (h) => ({
     C: real(0.01, 1, { log: true, default: Math.min(Math.max(h.C, 0.01), 1), label: 'C' }),
   }))

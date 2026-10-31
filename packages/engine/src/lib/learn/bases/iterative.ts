@@ -27,6 +27,7 @@ import {
   type Run,
   type Session,
   type Source,
+  type StepContext,
   type Subscription,
   scalar,
   session,
@@ -35,10 +36,49 @@ import {
 import type { Estimator, EstimatorKind, FitOptions, Fitted, FittedFacts, LearnData, Verbs } from '../estimator.ts'
 import { withInputRows } from '../explained.ts'
 import { extendSession } from './_session.ts'
-import { kindProbes } from './kinds.ts'
+import { type KindPath, kindProbes } from './kinds.ts'
 
-/** What a particular method declares over the iterative base. */
-export interface IterativeParticular<H extends object, S, P extends Json, V extends Verbs & FittedFacts> {
+/**
+ * The paths of a session of the iterative base: the particular's own (`K`), the base's (`fit/iteration/end`,
+ * `model/params`, the kind's probes) and the solver's channels (`solver/<name>`, named by the algorithm's schema at run
+ * time, hence a template literal). With `K` left at `string` every path is allowed, as before.
+ *
+ * @example
+ * ```ts
+ * import type { IterativePath } from 'mdml-engine/learn'
+ * type P = IterativePath<'tree/split'>   // 'tree/split' | 'fit/iteration/end' | 'model/params' | ... | `solver/${string}`
+ * ```
+ */
+export type IterativePath<K extends string = string> =
+  | K
+  | 'fit/iteration/end'
+  | 'model/params'
+  | KindPath
+  | `solver/${string}`
+
+/**
+ * What a particular method declares over the iterative base.
+ *
+ * The last parameter is the type of the paths the particular adds to the base's (`string` by default: unchecked). To
+ * type them, in the file of the particular (the same mechanical steps as {@link defineContract}):
+ *
+ * 1. `export type FooPath = 'foo/a' | 'foo/b'` (template literals for computed parts).
+ * 2. `contract(data, h): Contract<S, FooPath>` returning `defineContract({ ... })`.
+ * 3. `algorithm(...): Algorithm<S, FooPath>`, so its `ctx.log`, `ctx.emit` and `ctx.wants` are checked; a library
+ *    algorithm that is itself typed (`Algorithm<S, SolverPath>`) is returned as it is when its paths are in `FooPath`.
+ * 4. Type `logs` and give the estimator its type: `IterativeEstimator<H, S, P, V, FooPath>`. The estimator's `method`
+ *    and `session` then carry `IterativePath<FooPath>`: `logs:` keys and `probe` paths of a session are checked.
+ *
+ * The solver's channels (`solver/<name>` renames of the algorithm's `observe`) and the base's paths need no entry in
+ * `FooPath`; only what the particular's algorithm logs by path and what its `contract` adds.
+ */
+export interface IterativeParticular<
+  H extends object,
+  S,
+  P extends Json,
+  V extends Verbs & FittedFacts,
+  K extends string = string,
+> {
   readonly name: string
   readonly kind: EstimatorKind
   /** The hyperparameters, with their defaults. */
@@ -46,13 +86,13 @@ export interface IterativeParticular<H extends object, S, P extends Json, V exte
   /** The knobs a demo or a search varies (the rest of `H` keeps its values). */
   readonly hyperSpace?: (hyper: H) => DictSpace
   /** The library's algorithm over the data: untouched solvers from `lib/`. */
-  algorithm(data: LearnData, hyper: H, key: Key): Algorithm<S>
+  algorithm(data: LearnData, hyper: H, key: Key): Algorithm<S, K>
   /** The fitted parameters of a state (plain JSON, what `revive` rebuilds verbs from). */
   params(state: S, data: LearnData, hyper: H): P
   /** The verbs and facts of fitted parameters. */
   verbs(params: P, hyper: H): V
   /** What the state can tell beyond the solver's channels: aliases, derived paths, events. */
-  contract?(data: LearnData, hyper: H): Contract<S>
+  contract?(data: LearnData, hyper: H): Contract<S, K>
   /** The step budget of a fit, which may depend on the data (default 10,000; the algorithm's `done` usually ends it sooner). */
   readonly maxSteps?: (hyper: H, data: LearnData) => number
   /** Restarts: how many, and which final state wins. */
@@ -62,15 +102,20 @@ export interface IterativeParticular<H extends object, S, P extends Json, V exte
   /** Step-like records from the tape; `undefined` when the tape has nothing to project (a fit leaves it out). */
   readonly projections?: Readonly<Record<string, (run: Run, data: LearnData, hyper: H) => Exposition | undefined>>
   /** What `fit` keeps by default (default nothing: the raw algorithm). */
-  readonly logs?: Subscription
+  readonly logs?: Subscription<NoInfer<IterativePath<K>>>
 }
 
 /** A fitted value of the iterative base: the fitted estimator, its records and the tape of its fit. */
 export type IterativeFitted<P extends Json, V> = Fitted<P> &
   V & { readonly exposition: readonly Exposition[]; readonly run: Run }
 
-/** Options of {@link IterativeEstimator.session}: the fit options, and when to compute. */
-export interface IterativeSessionOptions extends FitOptions {
+/**
+ * Options of {@link IterativeEstimator.session}: the fit options, and when to compute. The parameter is the type of the
+ * session's paths (`logs` keys are checked against it; `string`: any).
+ */
+export interface IterativeSessionOptions<K extends string = string> extends Omit<FitOptions, 'logs'> {
+  /** What to keep (default the estimator's `logs`). */
+  readonly logs?: Subscription<NoInfer<K>>
   readonly mode?: Mode
   readonly steps?: number
   /** Keep checkpoints under `logs: 'off'` so the session can seek and probe (default `true`; a fit sets `false`). */
@@ -79,26 +124,39 @@ export interface IterativeSessionOptions extends FitOptions {
 
 /**
  * A session of a fit on the iterative base: the session's verbs, plus the fitted value at any reached step. Its forks
- * are iterative sessions too.
+ * are iterative sessions too. The last parameter is the type of the session's paths (see {@link IterativePath}).
  */
-export interface IterativeSession<S, P extends Json, V extends Verbs & FittedFacts> extends Session<S, Config> {
+export interface IterativeSession<S, P extends Json, V extends Verbs & FittedFacts, K extends string = string>
+  extends Session<S, Config, K> {
   /**
    * The fitted value at a step (the verbs of the kind, built from the parameters of `stateAt(t)`), so "the model at
    * step 40 on new data" is `fittedAt(40).predict(x)`. Any reached step, through the checkpoints; at the head, the
    * value `fit` would return.
    */
   fittedAt(t: number): Fitted<P> & V
-  fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<Config> }): IterativeSession<S, P, V>
+  fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<Config> }): IterativeSession<S, P, V, K>
 }
 
-/** An estimator on the iterative base: scikit-learn's surface, plus its method and a session of its fit. */
-export interface IterativeEstimator<H extends object, S, P extends Json, V extends Verbs & FittedFacts>
-  extends Estimator<H, IterativeFitted<P, V>> {
+/**
+ * An estimator on the iterative base: scikit-learn's surface, plus its method and a session of its fit. The last
+ * parameter is the type of the paths the particular adds (see {@link IterativeParticular}); the method and the sessions
+ * carry it together with the base's, `IterativePath<K>`.
+ */
+export interface IterativeEstimator<
+  H extends object,
+  S,
+  P extends Json,
+  V extends Verbs & FittedFacts,
+  K extends string = string,
+> extends Estimator<H, IterativeFitted<P, V>> {
   /** The method of this estimator on a dataset (to drive as a session, or to read its contract). */
-  method(data: LearnData): Method<S, Config>
+  method(data: LearnData): Method<S, Config, IterativePath<K>>
   /** A session of the fit on a dataset: the tape to advance, seek, probe and fork, and the fitted value at any step. */
-  session(data: LearnData, options?: IterativeSessionOptions): IterativeSession<S, P, V>
-  with(changes: Partial<H>): IterativeEstimator<H, S, P, V>
+  session(
+    data: LearnData,
+    options?: IterativeSessionOptions<IterativePath<K>>,
+  ): IterativeSession<S, P, V, IterativePath<K>>
+  with(changes: Partial<H>): IterativeEstimator<H, S, P, V, K>
 }
 
 /**
@@ -123,13 +181,13 @@ export interface IterativeEstimator<H extends object, S, P extends Json, V exten
  * s.fittedAt(3).params // => { n: 3 }
  * ```
  */
-export function fittedSession<S, P extends Json, V extends Verbs & FittedFacts>(
-  s: Session<S, Config>,
+export function fittedSession<S, P extends Json, V extends Verbs & FittedFacts, K extends string = string>(
+  s: Session<S, Config, K>,
   fitted: (state: S, config: Config) => Fitted<P> & V,
-): IterativeSession<S, P, V> {
+): IterativeSession<S, P, V, K> {
   return extendSession(s, (inner) => ({
     fittedAt: (t: number): Fitted<P> & V => fitted(inner.stateAt(t), inner.config),
-  })) as IterativeSession<S, P, V>
+  })) as IterativeSession<S, P, V, K>
 }
 
 const EMPTY_RUN: Run = { schema: 'mdml.run/1', events: [] }
@@ -161,10 +219,13 @@ const EMPTY_RUN: Run = { schema: 'mdml.run/1', events: [] }
  * mean.fit({ x: [[0], [1], [2]], y: [1, 2, 6] }).params // => { mean: 3 }
  * ```
  */
-export function iterative<H extends object, S, P extends Json, V extends Verbs & FittedFacts>(
-  p: IterativeParticular<H, S, P, V>,
-  hyper: H = p.defaults,
-): IterativeEstimator<H, S, P, V> {
+export function iterative<
+  H extends object,
+  S,
+  P extends Json,
+  V extends Verbs & FittedFacts,
+  K extends string = string,
+>(p: IterativeParticular<H, S, P, V, K>, hyper: H = p.defaults): IterativeEstimator<H, S, P, V, K> {
   const space: DictSpace = p.hyperSpace?.(hyper) ?? dict({})
   const knobs = Object.keys(space.spaces)
   const hyperOf = (c: Config): H => ({ ...hyper, ...c }) as H
@@ -177,8 +238,8 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
     params,
   })
   // The algorithm is built once per (data, hyper, key): `make` and the contract both need it.
-  const cache = new WeakMap<LearnData, Map<string, Algorithm<S>>>()
-  const algorithmOf = (data: LearnData, h: H, key: Key): Algorithm<S> => {
+  const cache = new WeakMap<LearnData, Map<string, Algorithm<S, K>>>()
+  const algorithmOf = (data: LearnData, h: H, key: Key): Algorithm<S, K> => {
     const id = `${JSON.stringify(h)}|${key.words.join(',')}`
     let forData = cache.get(data)
     if (forData === undefined) {
@@ -192,7 +253,7 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
     }
     return alg
   }
-  const contractOf = (data: LearnData, h: H, key: Key): Contract<S> => {
+  const contractOf = (data: LearnData, h: H, key: Key): Contract<S, IterativePath<K>> => {
     const alg = algorithmOf(data, h, key)
     const out: Record<string, Source<S> | EventSource> = {}
     const schema = alg.schema
@@ -229,10 +290,11 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
     })
     Object.assign(out, kindProbes<S>(p.kind, { data, fitted: (s) => build(p.params(s, data, h), h) }))
     Object.assign(out, p.contract?.(data, h) ?? {})
-    return out
+    // The base's paths are computed from the algorithm's schema, so `out` is a plain record; its keys are `IterativePath<K>`.
+    return out as Contract<S, IterativePath<K>>
   }
-  const method = (data: LearnData): Method<S, Config> =>
-    defineMethod<S, Config>({
+  const method = (data: LearnData): Method<S, Config, IterativePath<K>> =>
+    defineMethod<S, Config, IterativePath<K>>({
       name: p.name,
       config: space,
       make: (c, key) => {
@@ -241,7 +303,7 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
           ...alg,
           step: (s, ctx) => {
             const next = alg.step(s, ctx)
-            ctx.emit('fit/iteration/end', { t: ctx.t + 1 })
+            ;(ctx as StepContext<'fit/iteration/end'>).emit('fit/iteration/end', { t: ctx.t + 1 })
             return next
           },
         }
@@ -258,12 +320,19 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
           }),
     })
   // The fitted value at a step is the kind's verbs over the parameters there, under the session's own configuration.
-  const wrap = (s: Session<S, Config>, data: LearnData): IterativeSession<S, P, V> =>
+  const wrap = (
+    s: Session<S, Config, IterativePath<K>>,
+    data: LearnData,
+  ): IterativeSession<S, P, V, IterativePath<K>> =>
     fittedSession(s, (state, config) => {
       const h = hyperOf(config)
       return build(p.params(state, data, h), h)
     })
-  const sessionOf = (data: LearnData, options: IterativeSessionOptions, key: Key): IterativeSession<S, P, V> => {
+  const sessionOf = (
+    data: LearnData,
+    options: IterativeSessionOptions<IterativePath<K>>,
+    key: Key,
+  ): IterativeSession<S, P, V, IterativePath<K>> => {
     const steps = p.maxSteps?.(hyper, data) ?? 10_000
     return wrap(
       session(method(data), {
@@ -281,12 +350,16 @@ export function iterative<H extends object, S, P extends Json, V extends Verbs &
   const fit = (data: LearnData, options: FitOptions = {}): IterativeFitted<P, V> => {
     const key = resolveKey(options, p.name)
     const n = Math.max(1, p.restarts?.count(hyper) ?? 1)
-    let best: IterativeSession<S, P, V> | undefined
+    let best: IterativeSession<S, P, V, IterativePath<K>> | undefined
     for (let r = 0; r < n; r++) {
-      const s = sessionOf(data, { ...options, mode: 'eager', past: false }, n === 1 ? key : foldIn(key, r))
+      const s = sessionOf(
+        data,
+        { ...options, mode: 'eager', past: false } as IterativeSessionOptions<IterativePath<K>>,
+        n === 1 ? key : foldIn(key, r),
+      )
       if (best === undefined || p.restarts?.better(s.state, best.state) === true) best = s
     }
-    const chosen = best as IterativeSession<S, P, V>
+    const chosen = best as IterativeSession<S, P, V, IterativePath<K>>
     const state = chosen.state
     const run = chosen.run()
     const fitted = chosen.fittedAt(chosen.t)

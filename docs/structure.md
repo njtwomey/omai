@@ -721,7 +721,11 @@ oracle: jax and torch for derivative values; finite differences in property test
   constant annotated, an exported contract (a fragment) writes its path union and annotates `Contract<S, FooPath>`; the
   annotation is the check that the two agree. The default `K = string` leaves every untyped method as it was; a typed
   `Algorithm<S, 'a'>` is accepted wherever an `Algorithm<S>` is wanted (the context's methods are bivariant). The
-  migration recipe is in `defineContract`'s TSDoc. **Backstop:** a session's log context throws
+  migration recipe is in `defineContract`'s TSDoc. A path union may hold template literals (`solver/${string}`,
+  `layer${number}/weights`): `SubscriptionMap` keeps the literal members as optional keys and the template members as
+  index signatures, so that a method or session typed with them is still assignable to the untyped `Method<S, C>` and
+  `Session<S, C>` that the render layer takes. The estimator bases (`learn/bases`) carry the same parameter: see 4.33.
+  **Backstop:** a session's log context throws
   `MdmlError('value', "log: the contract has no path '...'")` when an algorithm logs to or emits a
   path the resolved contract (`Resolved.paths`) does not hold, as opposed to one that is merely unsubscribed (`wants`
   is a question and answers `false`; checked once per path, remembered; not in a run with no tape, nor in a bare
@@ -2884,7 +2888,7 @@ oracle once the oracle environment has it.
   fitted value, with the kind's verbs, at any reached step through the checkpoints, and `fit`'s value at the head);
   `kinds.ts`: the estimator kinds as add-ons
   (`kindProbes`: the standard derived paths of classifiers and regressors, clusterers, transformers and outlier
-  detectors); `trainer.ts`: the trainer base (`defineTrainer(particular)`: minibatch training of one `nn` module as an
+  detectors; `KindPath`, their paths as a type); `trainer.ts`: the trainer base (`defineTrainer(particular)`: minibatch training of one `nn` module as an
   `Algorithm` over `fitAlgorithm`, a session step being an optimiser step or, with `unit: 'epoch'`, an epoch; the
   particular declares `model`, `objective`, `optimiser(learningRate)`, `settings` (learning rate, a `schedules`
   configuration, epochs or steps, batch size, clipping, accumulation, callbacks, a validation fraction), an optional
@@ -2904,7 +2908,39 @@ oracle once the oracle environment has it.
   `policyAt(t)`, `train()` runs it to completion). Private: `_session.ts` (`extendSession`, a session with extra verbs
   that its forks keep, behind `fittedSession` and the agent session), `_trainer.ts` (plan arithmetic, layer records,
   evaluation, curves and the verbs of a network) and `_agent.ts` (the value and action maps on a grid, an episode as a
-  record).; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
+  record).; **Typed paths in the bases:** each base takes the type `K` of the paths its particular adds (default
+  `string`, so every estimator written before stays as it was): `iterative<H, S, P, V, K>`, `IterativeParticular<..., K>`,
+  `IterativeEstimator<..., K>`, `defineTrainer<H, K>`, `TrainerEstimator<H, K>`, `defineAgentMethod<H, G, O, A, K>`,
+  `AgentMethod<..., K>`, and the sessions (`IterativeSession<S, P, V, K>`, `TrainerSession<K>`, `AgentSession<G, O, A, K>`
+  with `SessionWith<S, X, K>`) and their options (`IterativeSessionOptions<K>`, `AgentSessionOptions<K>`). The session
+  and the method of an estimator are typed by the paths of the whole run, the particular's with the base's:
+  `IterativePath<K>` (the base's `fit/iteration/end`, `model/params`, the kind's `KindPath` and the solver's channels
+  `solver/${string}`), `TrainerPath<K>` (`train/...`, `eval/${string}`, `layer/${number}/...`, `model/params`, the kind's)
+  and `AgentPath<K>` (`episode/...`, `eval/return`, `eval/episode`, `train/loss`, `agent/${string}`, the maps, the
+  events); so the `logs:` of a session and its `probe` and `stepsOf` paths are checked, and a typed estimator is accepted
+  wherever the untyped one is. `K` is inferred from the particular's annotations (no type arguments needed for the
+  Algorithm, the contract); an estimator whose algorithm logs only through the solver's channels (`observe`) is
+  `K = never`. To type an estimator: write `export type FooPath = ...`, return `Contract<S, FooPath>` from `contract`
+  (`defineContract`), return `Algorithm<S, FooPath>` from `algorithm`, and give the estimator its `IterativeEstimator<...,
+  FooPath>` type (the recipe is in `IterativeParticular`'s TSDoc). Migrated so far, as the worked examples: `svm/` (`SvmPath`:
+  `svc`, `nuSvc`, `svr`, `nuSvr`, `oneClassSvm`, `svdd`), `trees/` (`GrowPath` and `TreePath` for the CART family,
+  `ClassicPath` for ID3, C4.5 and CHAID), `linear/lars.ts` (`never`), and in `kernel-methods/` `kernelRidge` and `norma`
+  (`never`) and `krls` (`KrlsPath`). **Worklist of the mechanical pass (counted by grep, 2026-10-31, after these
+  migrations; non-test sources under `lib/` and `methods/`, `lib/trace` and `lib/learn/bases` excluded):** 71 files
+  define 116 estimators on the bases (`iterative(`, `defineTrainer(`, `defineAgentMethod(`) with the default `K`; 20 files
+  hold 26 `contract` declarations among them; 13 files hold 71 `ctx.log` and `ctx.emit` sites in algorithms whose paths are
+  not yet checked. By folder, as `base estimators / contracts / log sites`: `lib/linear` 18/0/0 (12 files),
+  `lib/learn` 28/1/0 (10), `lib/cluster` 13/0/0 (8), `lib/decomposition` 8/0/0 (5), `lib/kernel-methods` 8/0/0 (5:
+  `online-learners`, `kernel-classifiers`, `kernel-multivariate`, `kernel-quantile`, `feature-ridge`), `lib/ensembles`
+  7/7/41 (7), `lib/rules` 6/6/0 (1), `lib/gp` 4/4/11 (4), `lib/anomaly` 4/1/0 (2), `lib/covariance` 4/0/0 (3),
+  `lib/manifold` 4/0/0 (4), `lib/gam` 2/0/0 (1), `lib/trees` 1/1/11 (`hoeffding`, and `prune` with 7 sites and no
+  base), `methods/linear` 4/1/0, `methods/mixture` 3/3/0, `methods/cluster` 1/1/0, `methods/sequence` 1/1/0, and sites
+  with no base estimator: `lib/nn` (`training/callbacks.ts`, 7 sites) and `lib/rl` (`training.ts`, 1). Most of the 116
+  need no more than their `K` (`never` when the algorithm logs through `observe` alone) since they declare no contract
+  and log no path: the contracts and log sites (20 and 13 files) are the work. To regenerate the count: take the files
+  whose code, comments stripped, matches `\b(iterative|defineTrainer|defineAgentMethod)\s*[<(]`, `^\s*contract[:(]` or
+  `ctx\.(log|emit)\(`, and drop those that also mention `Algorithm<_, K>`, `Contract<_, K>`, `Method<_, _, K>`,
+  `StepContext<` or `defineContract(` (the file is the unit, so a file typed in part counts as typed).; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
   (a configuration at a repeat) that runs an inner `Method` as an eager `session` over a `grid` or `sample` of some of
   its knobs (`knobsOf` picks them), or over explicit configurations, under paired keys (repeat `r` is the same key in
   every configuration) or fresh ones; it logs `trial/<knob>`, `trial/<metric>` (the final value of each metric path
@@ -2915,7 +2951,9 @@ oracle once the oracle environment has it.
   `Method` (repeats, steps, keep, design, points and trials as knobs; derived `sweep/configurations` and
   `sweep/best`). `race(method, variants)` is the sweep over a slot in one run: a method whose state holds every
   variant's, stepped in lockstep from the same key, logging each under `race/<variant>/`, with the inner contract's
-  paths prefixed. The one-shot and procedure bases follow.
+  paths prefixed (typed: `SweepPath` for the study, `RacePath<K>` = `race/${string}/${K}`, with `mountContext` giving
+  each variant its corner of the context; `SweepSpec<S, C, K>` checks `metrics`, `final` and `logs` against the inner
+  method's paths). The one-shot and procedure bases follow.
 
 oracle: scikit-learn, statsmodels, imbalanced-learn, mapie for conformal, captum and shap for explanations, lime,
 modAL for active learning, diffprivlib and opacus for privacy

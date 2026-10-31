@@ -25,6 +25,7 @@ import {
 } from '../../rl/index.ts'
 import { type DictSpace, dict, type SpaceValue } from '../../space/index.ts'
 import {
+  type Algorithm,
   type Config,
   type Contract,
   defineMethod,
@@ -67,8 +68,35 @@ export interface AgentSchedule {
   readonly unit?: 'step' | 'episode'
 }
 
-/** What a particular declares over the agent base. */
-export interface AgentParticular<H extends object, G, O, A> {
+/**
+ * The paths of a session of the agent base: the particular's own (`K`) and the base's (`episode/...`, `eval/return`,
+ * `eval/episode`, `train/loss`, `rl/episode/end`, `env/frame`, `agent/<statistic>` for the agent's own, and the maps of
+ * a tabular agent). With `K` left at `string` every path is allowed.
+ *
+ * @example
+ * ```ts
+ * import type { AgentPath } from 'mdml-engine/learn'
+ * type P = AgentPath<'dqn/replay'>   // 'dqn/replay' | 'episode/return' | 'episode/length' | ...
+ * ```
+ */
+export type AgentPath<K extends string = string> =
+  | K
+  | 'episode/return'
+  | 'episode/length'
+  | 'rl/episode/end'
+  | 'env/frame'
+  | 'eval/return'
+  | 'eval/episode'
+  | 'train/loss'
+  | `agent/${string}`
+  | 'agent/value-map'
+  | 'agent/action-map'
+
+/**
+ * What a particular declares over the agent base. The last parameter is the type of the paths it adds to the base's
+ * (`string` by default: unchecked); type them as for the iterative base (`IterativeParticular`).
+ */
+export interface AgentParticular<H extends object, G, O, A, K extends string = string> {
   readonly name: string
   readonly defaults: H
   readonly hyperSpace?: (hyper: H) => DictSpace
@@ -79,16 +107,17 @@ export interface AgentParticular<H extends object, G, O, A> {
   /** The layout of a tabular agent's states for `agent/value-map` and `agent/action-map` (default one row). */
   grid?(hyper: H): GridLayout
   /** What the state can tell beyond the standard paths. */
-  contract?(hyper: H): Contract<TrainState<G, unknown, O>>
+  contract?(hyper: H): Contract<TrainState<G, unknown, O>, K>
   readonly projections?: Readonly<Record<string, (run: Run, hyper: H) => Exposition | undefined>>
   /** What a run keeps by default (default the returns, lengths, the agent's loss and evaluations). */
-  readonly logs?: Subscription
+  readonly logs?: Subscription<NoInfer<AgentPath<K>>>
 }
 
 /** A session of an agent's run: the verbs of a session, and the agent and its greedy policy at any reached step. */
-export type AgentSession<G, O, A> = SessionWith<
+export type AgentSession<G, O, A, K extends string = string> = SessionWith<
   TrainState<G, unknown, O>,
-  { agentAt(t: number): G; policyAt(t: number): Policy<O, A> }
+  { agentAt(t: number): G; policyAt(t: number): Policy<O, A> },
+  K
 >
 
 /** The outcome of {@link AgentMethod.train}: the agent, the returns and the tape. */
@@ -103,23 +132,23 @@ export interface AgentTrained<G, O> {
   readonly exposition: readonly Exposition[]
 }
 
-/** A method on the agent base. */
-export interface AgentMethod<H extends object, G, O, A> {
+/** A method on the agent base. The last parameter is the type of the paths the particular adds to the base's. */
+export interface AgentMethod<H extends object, G, O, A, K extends string = string> {
   readonly name: string
   readonly hyper: H
-  method(): Method<TrainState<G, unknown, O>, Config>
+  method(): Method<TrainState<G, unknown, O>, Config, AgentPath<K>>
   /** A session of the run: advance, seek, probe and fork it, and read the agent at any step. */
-  session(options?: AgentSessionOptions): AgentSession<G, O, A>
+  session(options?: AgentSessionOptions<AgentPath<K>>): AgentSession<G, O, A, AgentPath<K>>
   /** The run to completion with the method's defaults. */
-  train(options?: AgentSessionOptions): AgentTrained<G, O>
-  with(changes: Partial<H>): AgentMethod<H, G, O, A>
+  train(options?: AgentSessionOptions<AgentPath<K>>): AgentTrained<G, O>
+  with(changes: Partial<H>): AgentMethod<H, G, O, A, K>
 }
 
-/** Options of {@link AgentMethod.session}. */
-export interface AgentSessionOptions {
+/** Options of {@link AgentMethod.session}; the parameter is the type of the session's paths (`logs` keys are checked). */
+export interface AgentSessionOptions<K extends string = string> {
   readonly seed?: number
   readonly key?: Key
-  readonly logs?: Subscription
+  readonly logs?: Subscription<NoInfer<K>>
   readonly mode?: 'live' | 'eager'
   /** Override the budget in session steps. */
   readonly steps?: number
@@ -148,10 +177,10 @@ const metricNames = (agent: Agent<unknown, never, never>): string[] => Object.ke
  * metricSeries(q.train().run, 'episode/return').values.length // => 20
  * ```
  */
-export function defineAgentMethod<H extends object, G, O, A>(
-  p: AgentParticular<H, G, O, A>,
+export function defineAgentMethod<H extends object, G, O, A, K extends string = string>(
+  p: AgentParticular<H, G, O, A, K>,
   hyper: H = p.defaults,
-): AgentMethod<H, G, O, A> {
+): AgentMethod<H, G, O, A, K> {
   const space: DictSpace = p.hyperSpace?.(hyper) ?? dict({})
   const knobs = Object.keys(space.spaces)
   const hyperOf = (c: Config): H => ({ ...hyper, ...c }) as H
@@ -191,7 +220,7 @@ export function defineAgentMethod<H extends object, G, O, A>(
     if (steps === undefined) throw new MdmlError('value', `${p.name}: give schedule.episodes or schedule.steps`)
     return steps
   }
-  const algorithmOf = (h: H, key: Key): ReturnType<typeof trainingAlgorithm<G, unknown, O, A>> => {
+  const algorithmOf = (h: H, key: Key): Algorithm<TrainState<G, unknown, O>, AgentPath> => {
     const { env, agent } = partsOf(h, key)
     const s = p.schedule(h)
     const inner = trainingAlgorithm(env, agent, {
@@ -224,7 +253,7 @@ export function defineAgentMethod<H extends object, G, O, A>(
       },
     }
   }
-  const contractOf = (h: H, key: Key): Contract<TrainState<G, unknown, O>> => {
+  const contractOf = (h: H, key: Key): Contract<TrainState<G, unknown, O>, AgentPath<K>> => {
     const { env, agent } = partsOf(h, key)
     const s = p.schedule(h)
     const out: Record<string, Contract<TrainState<G, unknown, O>>[string]> = {
@@ -263,17 +292,18 @@ export function defineAgentMethod<H extends object, G, O, A>(
       description: 'a tabular agent’s action values, one grid per action, and its greedy action',
       compute: (st) => valueGrids({ grids: mapsOf(st).actions, valueName: 'action value', diverging: true }),
     })
-    return { ...out, ...(p.contract?.(h) ?? {}) }
+    // The agent's statistics depend on the agent, so `out` is a plain record of `AgentPath` keys.
+    return { ...out, ...(p.contract?.(h) ?? {}) } as Contract<TrainState<G, unknown, O>, AgentPath<K>>
   }
-  const defaultLogs = (): Subscription => {
+  const defaultLogs = (): Subscription<AgentPath<K>> => {
     const known = contractOf(hyper, makeKey(0))
     const out: Record<string, ReturnType<typeof Log>> = {}
     for (const path of ['episode/return', 'episode/length', 'eval/return', 'train/loss'])
       if (path in known) out[path] = Log()
-    return out
+    return out as Subscription<AgentPath<K>>
   }
-  const method = (): Method<TrainState<G, unknown, O>, Config> =>
-    defineMethod<TrainState<G, unknown, O>, Config>({
+  const method = (): Method<TrainState<G, unknown, O>, Config, AgentPath<K>> =>
+    defineMethod<TrainState<G, unknown, O>, Config, AgentPath<K>>({
       name: p.name,
       config: space,
       make: (c, key) => algorithmOf(hyperOf(c), key),
@@ -287,7 +317,7 @@ export function defineAgentMethod<H extends object, G, O, A>(
             ),
           }),
     })
-  const sessionOf = (options: AgentSessionOptions): AgentSession<G, O, A> => {
+  const sessionOf = (options: AgentSessionOptions<AgentPath<K>>): AgentSession<G, O, A, AgentPath<K>> => {
     const root = options.key ?? makeKey(options.seed ?? 0)
     const steps = options.steps ?? budget(hyper, envOf(hyper))
     const s = session(method(), {
@@ -299,7 +329,8 @@ export function defineAgentMethod<H extends object, G, O, A>(
       steps,
       checkpointEvery: Math.max(1, Math.floor(steps / 100)),
     })
-    const agentOf = (inner: Session<TrainState<G, unknown, O>, Config>, t: number): G => inner.stateAt(t).agent
+    const agentOf = (inner: Session<TrainState<G, unknown, O>, Config, AgentPath<K>>, t: number): G =>
+      inner.stateAt(t).agent
     return extendSession(s, (inner) => {
       const { agent } = partsOf(hyperOf(inner.config), foldIn(root, 7))
       return {

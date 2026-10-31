@@ -15,6 +15,7 @@ import { foldIn, type Key } from '../../random/index.ts'
 import { choice, type DictSpace, dict, grid, int, type Space, type SpaceValue, sample } from '../../space/index.ts'
 import {
   type Algorithm,
+  type Concrete,
   type Config,
   type Contract,
   contractOf,
@@ -26,10 +27,13 @@ import {
   type Method,
   message,
   metricSeries,
+  mountContext,
+  type Pattern,
+  type Prefixed,
   type Run,
   type RunStatus,
+  type SessionOptions,
   type Source,
-  type StepContext,
   scalar,
   session,
   stateFromJson,
@@ -42,10 +46,36 @@ export type SweepKeep = 'none' | 'last' | 'all'
 /** Which way is better for the objective of a sweep. */
 export type SweepDirection = 'lower' | 'higher'
 
-/** What a sweep is told: the inner method, the knobs to vary and how, what to read from each trial, what to keep. */
-export interface SweepSpec<S, C extends Config> {
+/**
+ * The paths of a sweep: each trial's knob values and metrics (`trial/<knob>`, `trial/<metric>`), the configuration's
+ * spread (`config/<metric>/mean`, `config/<metric>/std`), the best objective so far, and the derived summaries.
+ */
+export type SweepPath =
+  | 'trial/config'
+  | 'trial/repeat'
+  | 'trial/best'
+  | `trial/${string}`
+  | `config/${string}/mean`
+  | `config/${string}/std`
+  | 'sweep/configurations'
+  | 'sweep/best'
+
+/** The paths of a race of variants of a method with paths `K`: each variant's own, under `race/<variant>/`. */
+export type RacePath<K extends string = string> = Prefixed<`race/${string}`, K>
+
+/** Subscriptions of `LogSpec`s over the paths `K` (any string key for `string`; a plain key must be one of `K`). */
+type LogMap<K extends string> = string extends K
+  ? Readonly<Record<string, LogSpec>>
+  : Readonly<Partial<Record<K, LogSpec>>> & Readonly<Record<Pattern, LogSpec>>
+
+/**
+ * What a sweep is told: the inner method, the knobs to vary and how, what to read from each trial, what to keep. The
+ * last parameter is the type of the inner method's paths (`string`: any); with literal paths, `metrics`, `final` and
+ * `logs` are checked against them.
+ */
+export interface SweepSpec<S, C extends Config, K extends string = string> {
   /** The inner method, run as a session for every trial. */
-  readonly method: Method<S, C>
+  readonly method: Method<S, C, K>
   /** The knobs to vary, as a dict over some of the method's knob names (see {@link knobsOf}); none for a repeated fit. */
   readonly vary?: DictSpace
   /** The configurations to try, in place of a grid or sample of `vary`. */
@@ -63,15 +93,15 @@ export interface SweepSpec<S, C extends Config> {
   /** Steps of each inner session (default 1000). */
   readonly steps?: number
   /** Metric paths of the inner method read at the end of each trial (the last value logged). */
-  readonly metrics: readonly string[]
+  readonly metrics: readonly NoInfer<Concrete<K>>[]
   /** Derived paths of the inner method computed on each trial's final state; they must give numbers. */
-  readonly final?: readonly string[]
+  readonly final?: readonly NoInfer<K>[]
   /** What `trial/best` and the best configuration are judged by (default the first metric, lower). */
   readonly objective?: { readonly metric?: string; readonly direction?: SweepDirection }
   /** What of the inner tapes to keep (default none: the trial's record summarises them). */
   readonly keep?: SweepKeep
   /** Extra subscriptions for the inner sessions, so the kept tapes hold more than the metrics. */
-  readonly logs?: Readonly<Record<string, LogSpec>>
+  readonly logs?: LogMap<NoInfer<K>>
   /**
    * Whether repeat `r` uses the same key in every configuration (default `true`: the same data and start, so the only
    * difference between configurations is the configuration), or every trial a key of its own.
@@ -146,8 +176,8 @@ export interface ConfigurationSummary {
  * Object.keys(knobsOf(method, ['alpha']).spaces) // => ['alpha']
  * ```
  */
-export function knobsOf<S, C extends Config>(
-  method: Method<S, C>,
+export function knobsOf<S, C extends Config, K extends string = string>(
+  method: Method<S, C, K>,
   names: readonly string[],
   ranges: Readonly<Record<string, Space>> = {},
 ): DictSpace {
@@ -164,13 +194,13 @@ export function knobsOf<S, C extends Config>(
 const isRecord = (v: unknown): v is Readonly<Record<string, SpaceValue>> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
 
-const knobNames = <S, C extends Config>(spec: SweepSpec<S, C>): string[] =>
+const knobNames = <S, C extends Config, K extends string>(spec: SweepSpec<S, C, K>): string[] =>
   spec.vary !== undefined
     ? Object.keys(spec.vary.spaces)
     : [...new Set((spec.configs ?? []).flatMap((c) => Object.keys(c)))]
 
 /** The configurations a spec tries, given the study's key (only `sample` uses it). */
-function designOf<S, C extends Config>(spec: SweepSpec<S, C>, k: Key): SpaceValue[] {
+function designOf<S, C extends Config, K extends string>(spec: SweepSpec<S, C, K>, k: Key): SpaceValue[] {
   if (spec.configs !== undefined) return spec.configs.map((c) => ({ ...c }) as SpaceValue)
   const vary = spec.vary ?? dict({})
   if ((spec.design ?? 'grid') === 'sample') {
@@ -193,7 +223,7 @@ function designOf<S, C extends Config>(spec: SweepSpec<S, C>, k: Key): SpaceValu
  * sweepTrials({ method, vary: dict({ a: real(0, 1) }), points: 4, repeats: 3, metrics: [] }) // => 12
  * ```
  */
-export function sweepTrials<S, C extends Config>(spec: SweepSpec<S, C>): number {
+export function sweepTrials<S, C extends Config, K extends string = string>(spec: SweepSpec<S, C, K>): number {
   const repeats = spec.repeats ?? 1
   if (spec.configs !== undefined) return spec.configs.length * repeats
   if ((spec.design ?? 'grid') === 'sample') return (spec.trials ?? 10) * repeats
@@ -288,8 +318,10 @@ function knobSource(space: Space | undefined): Source<SweepState> {
 }
 
 /** The contract of a sweep: the trial's knob values and metrics, the configuration's spread, the best so far. */
-function sweepContract<S, C extends Config>(spec: SweepSpec<S, C>): Contract<SweepState> {
-  const metrics = [...spec.metrics, ...(spec.final ?? [])]
+function sweepContract<S, C extends Config, K extends string>(
+  spec: SweepSpec<S, C, K>,
+): Contract<SweepState, SweepPath> {
+  const metrics: string[] = [...spec.metrics, ...(spec.final ?? [])]
   const out: Record<string, Source<SweepState> | EventSource> = {
     'trial/config': scalar({ description: 'the index of the trial’s configuration in the design' }),
     'trial/repeat': scalar({ description: 'which repeat of the configuration this trial is' }),
@@ -309,12 +341,13 @@ function sweepContract<S, C extends Config>(spec: SweepSpec<S, C>): Contract<Swe
     out[`config/${m}/mean`] = scalar({ description: `the mean of ${m} over the configuration’s repeats so far` })
     out[`config/${m}/std`] = scalar({ description: `the standard deviation of ${m} over the repeats so far` })
   }
-  return out
+  // The knobs and metrics are named by the spec, so `out` is a plain record of `SweepPath` keys.
+  return out as Contract<SweepState, SweepPath>
 }
 
 /** Run one trial: the inner method as an eager session under a key, read at the end. */
-function runTrial<S, C extends Config>(
-  spec: SweepSpec<S, C>,
+function runTrial<S, C extends Config, K extends string>(
+  spec: SweepSpec<S, C, K>,
   values: SpaceValue,
   k: Key,
   seed: number,
@@ -324,7 +357,7 @@ function runTrial<S, C extends Config>(
   keep: boolean,
 ): { readonly record: TrialRecord; readonly tape: Run | undefined } {
   const logs: Record<string, LogSpec> = {}
-  for (const m of spec.metrics) logs[m] = Log()
+  for (const m of spec.metrics) logs[m as string] = Log()
   Object.assign(logs, spec.logs)
   const s = session(spec.method, {
     config: { ...spec.fixed, ...(isRecord(values) ? values : {}) } as Partial<C>,
@@ -332,13 +365,13 @@ function runTrial<S, C extends Config>(
     key: k,
     mode: 'eager',
     steps: spec.steps ?? 1000,
-    logs: Object.keys(logs).length === 0 ? 'off' : logs,
+    logs: (Object.keys(logs).length === 0 ? 'off' : logs) as NonNullable<SessionOptions<S, C, K>['logs']>,
     past: false,
   })
   const run = s.run()
   const metrics: Record<string, number> = {}
   const series: Record<string, SeriesSummary> = {}
-  for (const m of spec.metrics) {
+  for (const m of spec.metrics as readonly string[]) {
     const xs = metricSeries(run, m).values
     if (xs.length === 0) throw new MdmlError('value', `sweep: ${spec.method.name} logged no '${m}' in trial ${index}`)
     series[m] = summariseSeries(xs)
@@ -385,10 +418,12 @@ function runTrial<S, C extends Config>(
  * state.trials.map((t) => t.values.a) // => [0, 0.25, 0.5, 0.75, 1]
  * ```
  */
-export function sweep<S, C extends Config>(spec: SweepSpec<S, C>): Algorithm<SweepState> {
+export function sweep<S, C extends Config, K extends string = string>(
+  spec: SweepSpec<S, C, K>,
+): Algorithm<SweepState, SweepPath> {
   const repeats = spec.repeats ?? 1
   const keep = spec.keep ?? 'none'
-  const metrics = [...spec.metrics, ...(spec.final ?? [])]
+  const metrics: string[] = [...spec.metrics, ...(spec.final ?? [])]
   if (metrics.length === 0) throw new MdmlError('value', 'sweep: name at least one metric to read from each trial')
   if (!Number.isInteger(repeats) || repeats < 1)
     throw new MdmlError('value', 'sweep: repeats must be a positive integer')
@@ -412,7 +447,7 @@ export function sweep<S, C extends Config>(spec: SweepSpec<S, C>): Algorithm<Swe
       objective,
     },
     init: (k) => ({ key: k, configs: designOf(spec, k), trials: [], tapes: [], best: null, objective }),
-    step: (s, ctx: StepContext) => {
+    step: (s, ctx) => {
       const t = s.trials.length
       const c = Math.floor(t / repeats)
       const r = t % repeats
@@ -471,7 +506,9 @@ export function sweep<S, C extends Config>(spec: SweepSpec<S, C>): Algorithm<Swe
  * sweepMethod({ method: inner, vary: dict({ a: real(0, 1) }), metrics: ['loss'], repeats: 4 }).name // => 'sweep(noop)'
  * ```
  */
-export function sweepMethod<S, C extends Config>(spec: SweepSpec<S, C>): Method<SweepState, Config> {
+export function sweepMethod<S, C extends Config, K extends string = string>(
+  spec: SweepSpec<S, C, K>,
+): Method<SweepState, Config, SweepPath> {
   const explicit = spec.configs !== undefined
   const knobs: Record<string, Space> = {
     repeats: int(1, 100_000, { default: spec.repeats ?? 1, label: 'repeats per configuration' }),
@@ -493,7 +530,7 @@ export function sweepMethod<S, C extends Config>(spec: SweepSpec<S, C>): Method<
           }),
         }),
   }
-  return defineMethod<SweepState, Config>({
+  return defineMethod<SweepState, Config, SweepPath>({
     name: `sweep(${spec.method.name})`,
     config: dict(knobs),
     make: (config) =>
@@ -518,18 +555,6 @@ export function sweepMethod<S, C extends Config>(spec: SweepSpec<S, C>): Method<
 export interface RaceState {
   readonly states: Readonly<Record<string, unknown>>
   readonly finished: Readonly<Record<string, RunStatus | null>>
-}
-
-/** A step context whose paths are all under a prefix, so a variant logs into its own corner of the tape. */
-function under(ctx: StepContext, prefix: string): StepContext {
-  const at = (path: string): string => `${prefix}/${path}`
-  return {
-    ...ctx,
-    log: (path, value) => ctx.log(at(path), value),
-    wants: (path) => ctx.wants(at(path)),
-    emit: (path, context) => ctx.emit(at(path), context),
-    taps: (name) => ctx.taps(at(name)),
-  }
 }
 
 /**
@@ -559,25 +584,25 @@ function under(ctx: StepContext, prefix: string): StepContext {
  * r.state.states // => { slow: 6, fast: 6 }
  * ```
  */
-export function race<S, C extends Config>(
-  method: Method<S, C>,
+export function race<S, C extends Config, K extends string = string>(
+  method: Method<S, C, K>,
   variants: Readonly<Record<string, Partial<C>>>,
-): Method<RaceState, C> {
+): Method<RaceState, C, RacePath<K>> {
   const names = Object.keys(variants)
   if (names.length === 0) throw new MdmlError('value', 'race: need at least one variant')
   const configOf = (config: C, v: string): C => ({ ...config, ...variants[v] }) as C
-  return defineMethod<RaceState, C>({
+  return defineMethod<RaceState, C, RacePath<K>>({
     name: `race(${method.name})`,
     config: method.config,
     make: (config, k) => {
-      const algorithms: Record<string, Algorithm<S>> = {}
+      const algorithms: Record<string, Algorithm<S, K>> = {}
       for (const v of names) algorithms[v] = method.make(configOf(config, v), k)
-      const each = <T>(f: (v: string, a: Algorithm<S>) => T): Record<string, T> =>
-        Object.fromEntries(names.map((v) => [v, f(v, algorithms[v] as Algorithm<S>)]))
+      const each = <T>(f: (v: string, a: Algorithm<S, K>) => T): Record<string, T> =>
+        Object.fromEntries(names.map((v) => [v, f(v, algorithms[v] as Algorithm<S, K>)]))
       const serialisable = names.every(
         (v) => algorithms[v]?.serialise !== undefined && algorithms[v]?.deserialise !== undefined,
       )
-      const status = (a: Algorithm<S>, s: S, t: number): RunStatus | null => a.done?.(s, t) ?? null
+      const status = (a: Algorithm<S, K>, s: S, t: number): RunStatus | null => a.done?.(s, t) ?? null
       return {
         name: `race(${method.name})`,
         config: { variants: names } as Json,
@@ -590,8 +615,8 @@ export function race<S, C extends Config>(
           const finished: Record<string, RunStatus | null> = { ...s.finished }
           for (const v of names) {
             if (finished[v] !== null) continue
-            const a = algorithms[v] as Algorithm<S>
-            const next = a.step(s.states[v] as S, under(ctx, `race/${v}`))
+            const a = algorithms[v] as Algorithm<S, K>
+            const next = a.step(s.states[v] as S, mountContext<`race/${string}`, K>(ctx, `race/${v}`))
             states[v] = next
             finished[v] = status(a, next, ctx.t + 1)
           }
@@ -618,7 +643,7 @@ export function race<S, C extends Config>(
     contract: (config, k) => {
       const out: Record<string, Source<RaceState> | EventSource> = {}
       for (const v of names) {
-        for (const [path, source] of Object.entries(contractOf(method, configOf(config, v), k))) {
+        for (const [path, source] of Object.entries(contractOf(method, configOf(config, v), k) as Contract<S>)) {
           out[`race/${v}/${path}`] =
             source.kind === 'derived'
               ? derived<RaceState>({
@@ -629,7 +654,8 @@ export function race<S, C extends Config>(
               : (source as Source<RaceState> | EventSource)
         }
       }
-      return out
+      // The variants are named by the caller, so `out` is a plain record of `race/<variant>/<path>` keys.
+      return out as Contract<RaceState, RacePath<K>>
     },
   })
 }
