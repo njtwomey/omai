@@ -3125,6 +3125,17 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `earlyStopping`, `bestCheckpoint`, `reduceLROnPlateau` (PyTorch's rule), `activationLogger` (activation taps).
 - `training/serialise.ts`: `saveState`/`loadState` and `stateToText`/`stateFromText` (parameters and buffers as JSON
   with dtype and shape), `loadTorchStateDict` (weights exported by the oracle, with renaming).
+- `adversarial.ts`: attacks and adversarial training on any logits function: `fgsm`, `pgd` (random start inside an
+  l-infinity or l2 ball, targeted or untargeted, cross-entropy, margin or TRADES-KL loss, data range), `pgdAlgorithm` (one
+  gradient step per step, `attack/*` paths, serialisable), `marginLoss`, `carliniWagnerL2` (Adam on the penalised margin,
+  closest adversarial point kept), `deepFool`, `transferAttack`, `squareAttack` (black box: logits only, query counts),
+  `accuracyOf`, `robustAccuracy` (the sweep over radii) and `adversarialTrainStep` (PGD inner maximisation, or TRADES, as a
+  step over `TrainState`).
+- `certify.ts`: certificates: randomised smoothing (`smoothedCounts`, `randomisedSmoothing` with the Clopper-Pearson
+  bound and the radius sigma Phi^-1(p), `certifiedRadius`, `certifiedAccuracy`, `smoothingAlgorithm` stepped with
+  `sample/*`, `vote/*`, `certify/*` paths, `linearSmoothedRadius` the closed form for a linear classifier), interval
+  bound propagation through a `Sequential` (`intervalBoundPropagation`, `ibpCertify` with the margin bounded exactly
+  through the last layer) and the Lipschitz bound from spectral norms (`lipschitzBound`, `lipschitzCertifiedRadius`).
 - `language-model.ts`: the `LanguageModel` contract (a structural `Tokenizer`, `logits(tokens)`, optional embeddings
   and a cached `step`), implemented by local models and by adapters in `methods/llm`; `languageModelFromModule`,
   `bigramLanguageModel` and `characterTokenizer` (reference models), `nextTokenLogits`, `sequenceLogProb`,
