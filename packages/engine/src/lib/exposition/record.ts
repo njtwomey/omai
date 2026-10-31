@@ -50,6 +50,7 @@ import type { SubgroupReport } from './subgroups.ts'
 import type { DecisionSurface } from './surfaces.ts'
 import type { MarkedTable } from './tables.ts'
 import type { ThresholdSweep } from './thresholds.ts'
+import type { Transcript } from './transcript.ts'
 import type { PruningPath, TreeRecord } from './trees.ts'
 import type { CalibrationRecord, ConformalRecord } from './trust.ts'
 
@@ -119,6 +120,7 @@ export type Exposition =
   | StabilityRegion
   | EquationFit
   | AudioClip
+  | Transcript
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -222,4 +224,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'stabilityRegion',
   'equationFit',
   'audio',
+  'transcript',
 ])

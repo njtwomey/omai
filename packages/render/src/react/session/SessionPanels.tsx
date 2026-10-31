@@ -258,7 +258,8 @@ function PanelView(
     case 'landscape':
     case 'stability':
     case 'equation':
-    case 'audio': {
+    case 'audio':
+    case 'transcript': {
       const title = panel.title ?? panel.path
       return (
         <SpecialisedPanel

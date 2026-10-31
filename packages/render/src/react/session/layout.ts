@@ -306,6 +306,12 @@ export type Panel =
    * plays the clip through WebAudio from the playhead and the cursor follows the sound.
    */
   | { readonly kind: 'audio'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A transcript probed at the viewed step (a `transcript` record): the tokens so far in turns by role, tinted by the
+   * weights of a track (an attention head; buttons choose among several), the token the step emitted outlined and
+   * marked, and the heaviest tokens named beneath.
+   */
+  | { readonly kind: 'transcript'; readonly path: string; readonly args?: Json; readonly title?: string }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */

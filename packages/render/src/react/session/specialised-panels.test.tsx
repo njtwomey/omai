@@ -1,4 +1,11 @@
-import { audioClip, decisionSurface, equationFit, sampleLandscape, sampleStabilityRegion } from 'mdml-engine/exposition'
+import {
+  audioClip,
+  decisionSurface,
+  equationFit,
+  sampleLandscape,
+  sampleStabilityRegion,
+  transcript,
+} from 'mdml-engine/exposition'
 import { dict, int } from 'mdml-engine/space'
 import {
   type Config,
@@ -98,6 +105,21 @@ const toy: Method<State, Config> = defineMethod<State, Config>({
             { step: 0, time: 0 },
             { step: 10, time: 1 },
           ],
+        }),
+    }),
+    words: derived<State>({
+      description: 'a transcript',
+      compute: () =>
+        transcript({
+          tokens: [
+            { text: 'Hello', role: 'user' },
+            { text: ' there', role: 'assistant' },
+          ],
+          tracks: [
+            { name: 'head 1', weights: [0.25, 0.75] },
+            { name: 'head 2', weights: [1, 0] },
+          ],
+          emitted: 1,
         }),
     }),
     wrong: derived<State>({ description: 'not a surface', compute: () => ({ kind: 'nope' }) }),
@@ -205,5 +227,22 @@ describe('the audio panel', () => {
     expect(html).toContain('playhead 0.50 s of 1.00 s')
     expect(html).toContain('Play the clip from the playhead')
     expect(html).toContain('Waveform and spectrogram of a 1 s clip, playhead at 0.5 s')
+  })
+})
+
+describe('the transcript panel', () => {
+  it('draws the turns, marks the emitted token and names the heaviest', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/transcript"
+        live={live}
+        at={2}
+        layout={[{ kind: 'transcript', path: 'words', title: 'the words' }]}
+      />,
+    )
+    expect(html).toContain('the words at step 2')
+    expect(html).toContain('data-emitted="true"')
+    expect(html).toContain('Heaviest head 1: “there” 0.75, “Hello” 0.25.')
+    expect(html).toContain('Tint the tokens by head 2')
   })
 })

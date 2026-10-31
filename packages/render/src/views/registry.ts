@@ -50,6 +50,7 @@ import { subgroupView } from './subgroups.ts'
 import { decisionSurfaceFrames, decisionSurfaceView, hyperparameterSurfaceView, posteriorView } from './surfaces.ts'
 import { coefficientView, likelihoodView, neighbourView, searchTrialsView } from './tables.ts'
 import { thresholdSweepView } from './thresholds.ts'
+import { transcriptScene } from './transcript.ts'
 import { treeScene } from './trees.ts'
 import { conformalFrames, conformalView, reliabilityView } from './trust.ts'
 
@@ -504,6 +505,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => audioScene(r, o?.mode === undefined ? {} : { mode: o.mode }),
+  },
+  transcript: {
+    kind: 'transcript',
+    component: 'TranscriptView',
+    title: 'Transcript',
+    plays: false,
+    accepts: [],
+    still: (r) => transcriptScene(r),
   },
   dataBias: {
     kind: 'dataBias',

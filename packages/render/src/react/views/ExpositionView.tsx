@@ -44,6 +44,7 @@ import { DataBiasView, ParetoFrontView, SubgroupView } from './subgroups.tsx'
 import { DecisionSurfaceView, HyperparameterSurfaceView, PosteriorView } from './surfaces.tsx'
 import { CoefficientTableView, LikelihoodView, NeighbourView, SearchTrialsView } from './tables.tsx'
 import { ThresholdSweepView } from './thresholds.tsx'
+import { TranscriptView } from './transcript.tsx'
 import { TreeView } from './trees.tsx'
 import { CalibrationView, ConformalView } from './trust.tsx'
 
@@ -198,6 +199,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <SceneStepsView record={record} {...common} />
     case 'landscapeSlice':
       return <LandscapeSliceView record={record} {...common} />
+    case 'transcript':
+      return <TranscriptView record={record} {...common} />
     case 'audio':
       return <AudioView record={record} {...common} />
     case 'equationFit':
