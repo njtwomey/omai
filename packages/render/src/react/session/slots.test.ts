@@ -49,3 +49,39 @@ describe('variantsOfSlot', () => {
     expect(() => variantsOfSlot(space, 'nothing')).toThrow(/not a union/)
   })
 })
+
+describe('variantsOfSlot knobs', () => {
+  it('lays the knobs the page holds for an option over its defaults', () => {
+    const variants = variantsOfSlot(space, 'solver', {}, { knobs: { lbfgs: { memory: 4 } }, only: ['lbfgs', 'bfgs'] })
+    expect((variants[0] as Variant<Config>).config['solver']).toMatchObject({ kind: 'lbfgs', memory: 4 })
+    expect((variants[0] as Variant<Config>).config['solver']).toHaveProperty('gradTol')
+    expect((variants[1] as Variant<Config>).config['solver']).toMatchObject({ kind: 'bfgs' })
+  })
+})
+
+describe('a comparison over the solver slot of a method', () => {
+  it('runs one session per solver on one objective, and every deterministic one reaches the same minimum', async () => {
+    const { linearClassifier } = await import('mdml-engine/methods/linear')
+    const { metricSeries, session } = await import('mdml-engine/trace')
+    const x = [
+      [-1.2, -0.8],
+      [-0.9, -1.1],
+      [-1.5, -0.3],
+      [0.9, 1.1],
+      [1.2, 0.7],
+      [0.6, 1.3],
+    ]
+    const method = linearClassifier({ x, y: [0, 0, 0, 1, 1, 1] })
+    const shared = { loss: { kind: 'logistic' }, penalty: { kind: 'l2', alpha: 0.1 } }
+    const variants = variantsOfSlot(method.config, 'solver', shared)
+    expect(variants.map((v) => v.label)).toEqual([...smoothSolvers.names])
+    // The stochastic mode at its default learning rate has not arrived in so few steps; the rest have.
+    const finals = variants
+      .filter((v) => v.label !== 'gradient')
+      .map((v) => {
+        const s = session(method, { mode: 'eager', steps: 300, config: { ...shared, ...v.config } as never })
+        return metricSeries(s.run(), 'solver/objective').values.at(-1) as number
+      })
+    for (const f of finals) expect(f).toBeCloseTo(finals[0] as number, 2)
+  })
+})

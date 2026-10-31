@@ -210,6 +210,9 @@ export interface ChannelLayers {
 
 const SYMBOLS = ['circle', 'triangle', 'rect', 'diamond'] as const
 const MARK_SYMBOLS = ['circle', 'rect', 'triangle', 'diamond'] as const
+// Tab10 slots for the marks, leaving out grey (7), which would read as unmarked.
+const MARK_SLOTS = [6, 9, 8, 4, 1] as const
+const markColour = (k: number): string => categoricalColour(MARK_SLOTS[k % MARK_SLOTS.length] ?? 6)
 
 // Size of a row in pixels from its channel value, between the range's ends (square-root scale: area is the value).
 function sizeScale(numbers: readonly number[], range: readonly [number, number] = [4, 16]): (i: number) => number {
@@ -414,8 +417,8 @@ export function channelLayers(channels: RowChannels): ChannelLayers {
           name: names?.[c] ?? c,
           symbol: MARK_SYMBOLS[k % MARK_SYMBOLS.length],
           symbolSize: 13 + (k % MARK_SYMBOLS.length === 2 ? 2 : 0),
-          color: categoricalColour(k + 6),
-          itemStyle: { color: 'transparent', borderColor: categoricalColour(k + 6), borderWidth: 2 },
+          color: markColour(k),
+          itemStyle: { color: 'transparent', borderColor: markColour(k), borderWidth: 2 },
           data: categories.flatMap((cat, i) => (cat === c ? [{ value: at(i), index: i }] : [])),
           clip: true,
         }) as SeriesOption,

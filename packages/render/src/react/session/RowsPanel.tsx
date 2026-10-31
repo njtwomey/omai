@@ -371,6 +371,8 @@ export function RowsPanel(props: {
       <ExpositionView
         record={surface.value as never}
         figure={FIG}
+        title={props.title}
+        filename={props.filename}
         points={rowsOf(xs, d)}
         {...(groups === undefined ? {} : { labels: groups })}
       />

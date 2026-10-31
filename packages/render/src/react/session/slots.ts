@@ -19,6 +19,8 @@ export interface SlotOptions {
   readonly admissible?: (option: string) => boolean
   /** A label for an option (default its name). */
   readonly label?: (option: string) => string
+  /** The knobs the page holds for each option (a settings popover each), over the option's defaults. */
+  readonly knobs?: Readonly<Record<string, Readonly<Record<string, SpaceValue>>>>
 }
 
 const recordOf = (v: SpaceValue | undefined): Readonly<Record<string, SpaceValue>> =>
@@ -72,8 +74,9 @@ export function variantsOfSlot<C extends Config>(
   )
   const kept = recordOf(valueAt(start, at))
   return names.map((name): Variant<C> => {
-    // The option's knobs as the base has them when it is the base's own, else at their defaults.
-    const knobs = kept[tag] === name ? kept : recordOf(defaults(slot.options[name] as Space))
+    // The option's knobs: those the page holds for it, else the base's when it is the base's own, over the defaults.
+    const own = recordOf(defaults(slot.options[name] as Space))
+    const knobs = { ...own, ...(options.knobs?.[name] ?? (kept[tag] === name ? kept : {})) }
     const whole = withValueAt(space, start, at, { ...knobs, [tag]: name })
     return {
       label: options.label?.(name) ?? name,

@@ -5864,14 +5864,15 @@ Design rules:
 `charts/` (ECharts option builders; each returns an `EChartsOption`, built from layers)
 - `plot.ts`: `Layer` (series with their data extent, colour bar and categories; every builder returns layers so they
   combine), `cartesian(layers, options)` (axes from limit policies and the data aspect, legend, tooltip, zoom),
-  `panelParts` and `chartFrame` (shared with `compose.ts`). A colour bar is calculable (draggable handles, clickable
+  `panelParts` and `chartFrame` (shared with `compose.ts`); a legend too long for one line pushes the plot area down. A colour bar is calculable (draggable handles, clickable
   bands) only when its layer answers a selection (`ColourBar.select`); otherwise it is a plain legend.
 - `selection.ts`: colour bar range selections for layers ECharts cannot recolour (heatmap images, matrix cells):
   `ColourSelect`, `selectionFilter` (a `datarangeselected` event as soft value weights), `dimColour` (values outside
   faded towards the background) and `colourSelection` (the option update the React `Chart` merges, once per frame).
 - `echarts-core.ts`: `echartsCore`, the tree-shaken ECharts core with every chart type the builders use, both
   renderers and the registered themes (shared by the React bindings and server-side export).
-- `lines.ts`: curves, steps, areas, bands, fill-between, series from tensors.
+- `lines.ts`: curves, steps, areas, bands, fill-between, polygons (a rule's box, a leaf, an ellipse in data coordinates),
+  series from tensors.
 - `points.ts`: scatter plots (labels, sizes, categorical colours), bubbles, rugs.
 - `bars.ts`: bar charts, histograms, Pareto charts.
 - `distributions.ts`: densities from a `Distribution` or KDE, ECDFs, box and violin plots, QQ plots, PMFs, prior and
@@ -6039,7 +6040,12 @@ Design rules:
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
-  `Toggle`, `SeedInput`; `DatasetPicker` (a dataset collection from `lib/datasets/collections.ts`, with the
+  `Toggle`, `SeedInput`; validity greying (`SpaceControls` takes `admissible` and `why`, and an option a rule rules out is
+  drawn disabled with the reason as its title; `validity.ts` reads the rule from the option tables: `tableSlot` (from the
+  properties of a table of losses, penalties or schedules), `modeSlot` (from a mode table's `needs`), `tableRules`,
+  `settleAdmissible`); `ModelSelector` (the options of a union as a list, each with a settings popover; the knobs set for
+  an option are remembered) and `SlotVariants` (the same list for a comparison over a slot: every option that applies
+  is a variant with its colour and its own knobs, held by the page as `SlotKnobs`); `DatasetPicker` (a dataset collection from `lib/datasets/collections.ts`, with the
   chosen generator's knobs as controls, `DatasetKnobs`, and `useDataset` over a collection or a registry);
   `DatasetSelector` (the tagged `datasetRegistry` filtered by its props, kinds, modalities, real, form, with a search
   box, each entry's title and tags, and the chosen entry's description, provenance and knobs) and
@@ -6066,7 +6072,17 @@ Design rules:
   `useSessions`: one producer over one or several sessions, `LiveSession`, `LiveSessions`, `variantsOf`), `compare.ts`
   (the pure part of a comparison: `sharedHead`, `advanceInStep`, `overlayCurves`, `sweepTrials`), `SessionPlayer.tsx`,
   `SessionControls.tsx`, `preferences.ts`, `layout.ts` (the `Panel` vocabulary), `SessionPanels.tsx`, `RowsPanel.tsx`,
-  `cursor.tsx`, `scrub.ts` and `TapeView.tsx`.
+  `cursor.tsx`, `scrub.ts` and `TapeView.tsx`. The rows panel's channels are one mechanism in `overlays.ts` (a number
+  per row as colour with a colour bar or as size, a category per row or named sets as hollow marks, regions of the plane
+  as boxes or ellipses, one chosen row with its neighbours, a path, a radius and a related point; each is read at the
+  viewed step from a probe or a tensor path of the tape, `readChannel`, and drawn as chart layers, `channelLayers`); the
+  curve families of the `curves` and `sweep` panels are pure layer builders in `families.ts` (`curveFamily`: many runs
+  faint with their mean in bold, bands and fans, a truth line, reference slopes on log-log axes, event marks;
+  `intervalStrip`: many intervals as bars against a truth, the misses in red); and `slots.ts` is the comparison over a
+  slot (`variantsOfSlot`: one `Variant` per option of a union of a method's configuration, each with its knobs, for
+  `useSessions`). The gallery's `pages/linear-classifier` is the template of a method page (a dataset picker, the
+  objective's controls with validity greying, `SlotVariants` for the solvers, one player, curves overlaid and the
+  decision surface of each solver side by side).
 - `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
   or a prop), dark by default; no system-preference detection.
