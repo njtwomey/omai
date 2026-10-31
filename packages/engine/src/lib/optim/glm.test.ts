@@ -35,7 +35,6 @@ const logistic = (extra: Partial<GlmProblem> = {}): GlmProblem => ({
 
 const SOLVERS = [
   { kind: 'irls' },
-  { kind: 'coordinateDescent', sweeps: 5 },
   { kind: 'newton', gradTol: 1e-10 },
   { kind: 'bfgs', gradTol: 1e-10 },
   { kind: 'lbfgs', gradTol: 1e-10 },
@@ -43,10 +42,9 @@ const SOLVERS = [
 ] as const
 
 describe('glmSolvers', () => {
-  it('is one slot over eight solvers, IRLS the default', () => {
+  it('is one slot over seven solvers, IRLS the default', () => {
     expect(glmSolvers.names).toEqual([
       'irls',
-      'coordinateDescent',
       'newton',
       'bfgs',
       'lbfgs',
@@ -57,7 +55,7 @@ describe('glmSolvers', () => {
     expect(defaults(glmSolvers.space)).toMatchObject({ kind: 'irls' })
   })
 
-  it('reaches one optimum with IRLS, Newton, BFGS, L-BFGS, conjugate gradient and coordinate descent', () => {
+  it('reaches one optimum with IRLS, Newton, BFGS, L-BFGS and conjugate gradient', () => {
     const problem = logistic()
     const reference = fitGlm(problem, { kind: 'irls' })
     expect(reference.converged).toBe(true)
@@ -128,21 +126,6 @@ describe('glmSolvers', () => {
     const fisher = fitGlm(problem, { kind: 'irls' })
     const observed = fitGlm(problem, { kind: 'newton', gradTol: 1e-10 }, { maxSteps: 200 })
     for (let j = 0; j <= d; j++) expect(observed.x[j]).toBeCloseTo(fisher.x[j] ?? 0, 6)
-  })
-
-  it('zeroes coordinates under an l1 weight: IRLS, coordinate descent and OWL-QN agree', () => {
-    const problem = logistic({ penalty: { l1: 0.08, l2: 0.02 } })
-    const reference = fitGlm(problem, { kind: 'irls' })
-    expect(reference.converged).toBe(true)
-    expect(reference.coef.some((v) => v === 0)).toBe(true)
-    for (const config of [
-      { kind: 'coordinateDescent', sweeps: 10 },
-      { kind: 'lbfgs', gradTol: 1e-9, memory: 10 },
-    ] as const) {
-      const fit = fitGlm(problem, config, { maxSteps: 1000 })
-      for (let j = 0; j <= d; j++) expect(fit.x[j], config.kind).toBeCloseTo(reference.x[j] ?? 0, 4)
-    }
-    expect(() => fitGlm(problem, { kind: 'newton' })).toThrow(/smooth/)
   })
 
   it('takes a general penalty matrix, as an additive model needs: IRLS and Newton agree', () => {

@@ -20,7 +20,8 @@ import {
   featureNamesOf,
   type LearnData,
 } from '../learn/index.ts'
-import { bool, choice, dict, real, type Space } from '../space/index.ts'
+import { glmSolvers } from '../optim/index.ts'
+import { bool, choice, dict, real, type Space, type SpaceValue } from '../space/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Design, designOf, designPredictor, linearPredictor, vectorTensor } from './design.ts'
 import { glmCovariance, waldTable } from './inference.ts'
@@ -50,7 +51,11 @@ export interface LinearModelHyper {
   /** The L1 share of the penalty (0 ridge, 1 lasso). */
   readonly l1Ratio: number
   readonly fitIntercept: boolean
-  readonly solver: LinearSolver
+  /**
+   * A named solver, or a configuration of `glmSolvers.space` for a model without an L1 part: `{ kind: 'lbfgs' }`,
+   * `{ kind: 'newton' }`, a stochastic `{ kind: 'gradient', optimiser: { kind: 'adam' }, batch: 32 }`, and so on.
+   */
+  readonly solver: LinearSolver | SpaceValue
   readonly maxIter: number
   /** Solver tolerance (default per solver). */
   readonly tol?: number
@@ -143,9 +148,15 @@ export function fitLinear(
   if (!(h.alpha >= 0) || !(h.l1Ratio >= 0 && h.l1Ratio <= 1))
     throw new MdmlError('value', `${who}: alpha must be >= 0 and l1Ratio in [0, 1]`)
   const problem: GlmProblem = { design, family, link, alpha: h.alpha, l1Ratio: h.l1Ratio, fitIntercept: h.fitIntercept }
-  const chosen = h.solver === 'auto' ? chooseSolver(problem) : { solver: h.solver, reason: 'chosen by the caller' }
+  const chosen =
+    h.solver === 'auto'
+      ? chooseSolver(problem)
+      : {
+          solver: typeof h.solver === 'string' ? h.solver : glmSolvers.modeOf(h.solver).name,
+          reason: 'chosen by the caller',
+        }
   const solution = solveGlm(problem, {
-    solver: chosen.solver,
+    solver: typeof h.solver === 'string' ? chosen.solver : h.solver,
     maxIter: h.maxIter,
     ...(h.tol === undefined ? {} : { tol: h.tol }),
     ...(options.start === undefined ? {} : { start: options.start }),
@@ -261,6 +272,7 @@ export function linearModel(
           alpha: real(0, 10, { default: h.alpha, label: 'penalty strength' }),
           l1Ratio: real(0, 1, { default: h.l1Ratio, label: 'L1 share' }),
           fitIntercept: bool({ default: h.fitIntercept }),
+          solver: glmSolvers.space,
         }),
       fit: (data, h, options) => {
         const f = fitLinear(data, h, options, 'linearModel')

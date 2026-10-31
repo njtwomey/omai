@@ -141,8 +141,17 @@ const bfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
 
 const lbfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'limited-memory BFGS',
-  space: dict({ memory: int(1, 50, { default: 10, label: 'curvature pairs kept' }), gradTol }),
-  make: (p, k) => lbfgsAlgorithm(p.objective, p.x0, { memory: k['memory'] as number, gradTol: k['gradTol'] as number }),
+  space: dict({
+    memory: int(1, 50, { default: 10, label: 'curvature pairs kept' }),
+    ftol: real(1e-16, 1e-3, { log: true, default: 2.220446049250313e-9, label: 'relative reduction tolerance' }),
+    gradTol,
+  }),
+  make: (p, k) =>
+    lbfgsAlgorithm(p.objective, p.x0, {
+      memory: k['memory'] as number,
+      ...(k['ftol'] === undefined ? {} : { ftol: k['ftol'] as number }),
+      gradTol: k['gradTol'] as number,
+    }),
   params: vector,
 }
 

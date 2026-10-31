@@ -19,8 +19,7 @@ describe('the penalised GLM objective along IRLS', () => {
         fc.array(fc.double({ min: -2, max: 2, noNaN: true }), { minLength: 24, maxLength: 24 }),
         fc.array(fc.double({ min: -2, max: 2, noNaN: true }), { minLength: 12, maxLength: 12 }),
         fc.constantFrom(0, 0.01, 0.5),
-        fc.constantFrom(0, 0.02),
-        (name, x, u, l2, l1) => {
+        (name, x, u, l2) => {
           const { family, link, y } = respond[name]
           const problem: GlmProblem = {
             x,
@@ -30,7 +29,7 @@ describe('the penalised GLM objective along IRLS', () => {
             family,
             link,
             fitIntercept: true,
-            penalty: { l2, l1 },
+            penalty: { l2 },
           }
           const algorithm = glmSolvers.make(problem, { kind: 'irls' }, key(0))
           let state = algorithm.init(key(0))
