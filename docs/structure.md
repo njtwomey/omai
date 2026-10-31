@@ -4367,9 +4367,10 @@ Laplace REML of the smoothing and aux parameters), for beta, negative binomial, 
 Poisson, ordered categorical, multinomial, GAMLSS gamma and Student-t and the penalised Cox partial likelihood: at fixed
 hyperparameters the coefficients, log-likelihood, effective degrees of freedom and criterion to 1e-5, and the selected
 smoothing and family parameters, criterion and effective degrees of freedom to 1e-2. Tweedie has no scipy density and is
-checked by planted truth and by the derivative tests only. Not done: smoothing-parameter-uncertainty corrections and
-simultaneous bands for the extended families, term tests for the Cox model's baseline, the Tweedie and multinomial
-oracle cases.
+checked by planted truth and by the derivative tests only. Not done: estimators on the iterative base for the extended
+families (they are functions: `extendedModel`, `fitExtended`, `fitGamlss`, `fitCoxGam`), smoothing-parameter-uncertainty
+corrections, simultaneous bands and deviance residuals for them, analytic third derivatives beyond the Gaussian
+location-scale, and the shape-constrained terms.
 built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead, `smoothSolvers`), `survival` (`coxProblem`), `sampling`, `metrics`, `trace`
 
 ### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)
