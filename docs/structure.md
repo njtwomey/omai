@@ -2112,9 +2112,19 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `fields.ts`: Jacobians, divergence, curl, fixed points (seeded Newton), classification (node, spiral, saddle,
   centre), nullclines, streamlines, flow maps, invariant manifolds.
 - `named-systems.ts`: named systems as vector fields in tensor operations (so they integrate and differentiate):
-  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, and `namedSystems`, each
-  with a start, a time span that shows its behaviour and its component names (what `methods/dynamics/odeSystems.ts`
-  runs).
+  `lotkaVolterraField`, `lorenzField`, `vanDerPolField`, `dampedPendulumField`, `sirField`, `rosslerField` (with
+  `rosslerFixedPoints`), `thomasField` (constant divergence -3b) and the double pendulum from `mechanics.ts`, and
+  `namedSystems`, each with a start, a time span that shows its behaviour and its component names (what
+  `methods/dynamics/odeSystems.ts` runs).
+- `mechanics.ts`: the Euler-Lagrange equations derived by autodiff from a Lagrangian (`lagrangianField`,
+  `lagrangianEnergy`), the Legendre transform (`hamiltonianOfLagrangian`) and Hamilton's equations (`hamiltonianField`)
+  for non-separable systems; the double pendulum worked through (`doublePendulumLagrangian`, the closed-form
+  `doublePendulumField` the derivation must reproduce, `doublePendulumEnergy`, `doublePendulumHamiltonian`,
+  `doublePendulumFlipTime` for the flip map). Oracle: scipy.integrate (`dynamics/mechanics`).
+- `synchronisation.ts`: Kuramoto oscillators (`kuramotoField` all-to-all in mean-field form or on a graph,
+  `orderParameter`, `kuramotoFrequencies` quantile or sampled populations, `kuramotoCriticalCoupling` and
+  `kuramotoTheoreticalOrder` as the closed-form truth, `kuramotoAlgorithm` logging the order parameter and the locked
+  share) and the consensus flow (`consensusField`, whose rate is the algebraic connectivity).
 - `celestial/` (the celestial-mechanics namespace, `mdml-engine/dynamics/celestial`; the chapter tables call it
   `dynamics/celestial.ts`, it is a folder because it holds five concerns; oracle: scipy.optimize and scipy.integrate):
   - `kepler.ts`: the anomalies (mean, eccentric, hyperbolic, parabolic, true) and their conversions; Kepler's equation

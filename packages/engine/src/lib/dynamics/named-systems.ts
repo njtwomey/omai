@@ -1,11 +1,13 @@
 /**
  * Named dynamical systems as vector fields for the ODE solvers and the phase-portrait tools: predator and prey
- * (Lotka-Volterra), the Lorenz attractor, the Van der Pol oscillator, a damped pendulum and the SIR epidemic. Each is
+ * (Lotka-Volterra), the Lorenz, Rossler and Thomas attractors, the Van der Pol oscillator, a damped pendulum, the SIR
+ * epidemic and the double pendulum. Each is
  * written in tensor operations, so a field can be differentiated (Jacobians, fixed points) as well as integrated, and
  * comes with a start, a time span that shows its behaviour and the names of its components.
  */
 
-import { mul, neg, sin, sliceAxis, stack, sub, sum, type Value } from '../tensor/index.ts'
+import { add, mul, neg, sin, sliceAxis, stack, sub, sum, type Value } from '../tensor/index.ts'
+import { doublePendulumField } from './mechanics.ts'
 import type { VectorField } from './ode/problem.ts'
 
 /** Component `i` of a state vector, as a scalar. */
@@ -130,6 +132,93 @@ export function dampedPendulumField(parameters: DampedPendulumParameters = {}): 
   }
 }
 
+/** The parameters of {@link rosslerField}. */
+export interface RosslerParameters {
+  /** The spiral's growth in the plane (default 0.2). */
+  readonly a?: number
+  /** The constant feeding the vertical excursions (default 0.2). */
+  readonly b?: number
+  /** The threshold of the vertical excursions: the bifurcation parameter (default 5.7, in the chaotic regime). */
+  readonly c?: number
+}
+
+/**
+ * Rossler's attractor on `(x, y, z)`: `x' = -y - z`, `y' = x + a y`, `z' = b + z (x - c)`. A spiral in the plane
+ * stretches outwards until `z` kicks it back: the simplest strange attractor (one fold), reached from a period-doubling
+ * cascade as `c` grows (a limit cycle near 3, period doubling to chaos by about 4.2, the classic 5.7).
+ *
+ * @param parameters - a, b and c.
+ * @returns The vector field.
+ * @concept rossler-attractor
+ * @example
+ * ```ts
+ * import { rosslerField } from 'mdml-engine/dynamics'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * toFlat(rosslerField()(0, tensor([1, 1, 1]))) // => [-2, 1.2, -4.5]
+ * ```
+ */
+export function rosslerField(parameters: RosslerParameters = {}): VectorField {
+  const { a = 0.2, b = 0.2, c = 5.7 } = parameters
+  return (_t, s) => {
+    const x = at(s, 0)
+    const y = at(s, 1)
+    const z = at(s, 2)
+    return stack([sub(neg(y), z), add(x, mul(y, a)), add(b, mul(z, sub(x, c)))])
+  }
+}
+
+/**
+ * The two equilibria of Rossler's system, `x = (c +- sqrt(c^2 - 4 a b)) / 2`, `y = -x / a`, `z = x / a`: the near one
+ * at the centre of the spiral and the far one that the vertical excursions orbit.
+ *
+ * @param parameters - a, b and c.
+ * @returns The two fixed points (empty when `c^2 < 4 a b`).
+ * @concept rossler-attractor
+ * @example
+ * ```ts
+ * import { rosslerFixedPoints } from 'mdml-engine/dynamics'
+ * rosslerFixedPoints({ a: 0.2, b: 0.2, c: 5.7 })[0]?.map((v) => Math.round(v * 1e4) / 1e4) // => [0.007, -0.0351, 0.0351]
+ * ```
+ */
+export function rosslerFixedPoints(parameters: RosslerParameters = {}): [number, number, number][] {
+  const { a = 0.2, b = 0.2, c = 5.7 } = parameters
+  const disc = c * c - 4 * a * b
+  if (disc < 0) return []
+  return [(c - Math.sqrt(disc)) / 2, (c + Math.sqrt(disc)) / 2].map((x): [number, number, number] => [x, -x / a, x / a])
+}
+
+/** The parameters of {@link thomasField}. */
+export interface ThomasParameters {
+  /** The dissipation (default 0.208186, in the chaotic regime; chaos needs b below about 0.21, 0 conserves volume). */
+  readonly b?: number
+}
+
+/**
+ * Thomas' cyclically symmetric attractor on `(x, y, z)`: `x' = sin y - b x`, `y' = sin z - b y`, `z' = sin x - b z`.
+ * One parameter: the dissipation `b`. The divergence is the constant `-3 b` (volume shrinks at that rate), the origin
+ * is always an equilibrium, and as `b` falls through about 0.208 the motion goes from a stable fixed point through
+ * limit cycles to chaos, then, near 0, to a random walk through a lattice of cells.
+ *
+ * @param parameters - b.
+ * @returns The vector field.
+ * @concept thomas-attractor
+ * @example
+ * ```ts
+ * import { thomasField } from 'mdml-engine/dynamics'
+ * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * toFlat(thomasField({ b: 0.2 })(0, tensor([0, 0, 0]))) // => [0, 0, 0]
+ * ```
+ */
+export function thomasField(parameters: ThomasParameters = {}): VectorField {
+  const { b = 0.208186 } = parameters
+  return (_t, s) => {
+    const x = at(s, 0)
+    const y = at(s, 1)
+    const z = at(s, 2)
+    return stack([sub(sin(y), mul(x, b)), sub(sin(z), mul(y, b)), sub(sin(x), mul(z, b))])
+  }
+}
+
 /** The parameters of {@link sirField}. */
 export interface SirParameters {
   /** Infections per infectious person per day in a fully susceptible population (default 0.4). */
@@ -164,7 +253,15 @@ export function sirField(parameters: SirParameters = {}): VectorField {
 }
 
 /** The names of the systems in {@link namedSystems}. */
-export type NamedSystemName = 'lotka-volterra' | 'lorenz' | 'van-der-pol' | 'damped-pendulum' | 'sir'
+export type NamedSystemName =
+  | 'lotka-volterra'
+  | 'lorenz'
+  | 'van-der-pol'
+  | 'damped-pendulum'
+  | 'sir'
+  | 'rossler'
+  | 'thomas'
+  | 'double-pendulum'
 
 /** A named system ready to integrate: its field, a start, a span that shows its behaviour and its components. */
 export interface NamedSystem {
@@ -186,7 +283,7 @@ export interface NamedSystem {
  * @example
  * ```ts
  * import { namedSystems } from 'mdml-engine/dynamics'
- * Object.keys(namedSystems) // => ['lotka-volterra', 'lorenz', 'van-der-pol', 'damped-pendulum', 'sir']
+ * Object.keys(namedSystems) // => ['lotka-volterra', 'lorenz', 'van-der-pol', 'damped-pendulum', 'sir', 'rossler', 'thomas', 'double-pendulum']
  * ```
  */
 export const namedSystems: Readonly<Record<NamedSystemName, NamedSystem>> = {
@@ -229,5 +326,29 @@ export const namedSystems: Readonly<Record<NamedSystemName, NamedSystem>> = {
     y0: [0.99, 0.01, 0],
     span: [0, 160],
     names: ['susceptible', 'infectious', 'recovered'],
+  },
+  rossler: {
+    label: 'Rossler',
+    description: 'A spiral in the plane thrown upwards and folded back: the simplest strange attractor.',
+    field: rosslerField(),
+    y0: [1, 1, 1],
+    span: [0, 250],
+    names: ['x', 'y', 'z'],
+  },
+  thomas: {
+    label: 'Thomas',
+    description: 'Three sines chasing one another round a cube: a symmetric attractor with a single dissipation knob.',
+    field: thomasField(),
+    y0: [1.1, 1.1, -0.01],
+    span: [0, 400],
+    names: ['x', 'y', 'z'],
+  },
+  'double-pendulum': {
+    label: 'Double pendulum',
+    description: 'A pendulum hung from a pendulum: regular for small swings, chaotic for large ones.',
+    field: doublePendulumField(),
+    y0: [2.2, 2.0, 0, 0],
+    span: [0, 20],
+    names: ['inner angle', 'outer angle', 'inner angular velocity', 'outer angular velocity'],
   },
 }

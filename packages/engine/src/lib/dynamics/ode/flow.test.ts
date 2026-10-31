@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { mul, neg, stack, sum, tensor, toFlat } from '../../tensor/index.ts'
+import { mul, neg, stack, sum, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { metricSeries, recorder, runAlgorithm } from '../../trace/index.ts'
 import { MIDPOINT, RK4 } from './explicit.ts'
 import { flowAlgorithm } from './flow.ts'
 import { separableField, separableHamiltonian } from './symplectic.ts'
 
-const sumAt = (y: ReturnType<typeof tensor>, i: number) => sum(mul(y, tensor(i === 0 ? [1, 0] : [0, 1])))
+const sumAt = (y: Value, i: number) => sum(mul(y, tensor(i === 0 ? [1, 0] : [0, 1])))
 
 describe('flowAlgorithm', () => {
   // y'' = -y as a first-order field (y0' = y1, y1' = -y0): from (1, 0) the solution is (cos t, -sin t).
-  const field = (_t: number, y: ReturnType<typeof tensor>) => stack([sumAt(y, 1), neg(sumAt(y, 0))])
+  const field = (_t: number, y: Value) => stack([sumAt(y, 1), neg(sumAt(y, 0))])
 
   const error = (dt: number, method = RK4): number => {
     const steps = Math.round(2 / dt)
