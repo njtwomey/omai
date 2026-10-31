@@ -2460,6 +2460,10 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   maximum likelihood on Gauss-Hermite nodes (`irtSmoothProblem` with the analytic gradient by Fisher's identity,
   `irtSolvers` with `em` as the model's own mode beside every generic solver, `irtAlgorithm`, `fitIrt`), abilities by EAP,
   MAP or MLE (`irtAbility`), the item and test information functions, and `irtSimulate` (abilities as the truth).
+- `learning/hmm-variants.ts`: the left-right (Bakis) topology (`leftRightParameters`, `isLeftRight`; Baum-Welch preserves
+  the structural zeros) and Viterbi training (`viterbiTrainingAlgorithm`, hard-assignment EM that never decreases the joint
+  score of data and best paths and stops when the paths settle). Hidden semi-Markov, input-output and factorial HMMs, and
+  Gaussian-mixture emissions, are not built yet.
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
