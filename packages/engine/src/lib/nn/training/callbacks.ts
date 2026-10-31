@@ -9,10 +9,36 @@ import type { RunHandle, TensorRole } from '../../trace/index.ts'
 import type { Params } from '../module/module.ts'
 
 /**
- * What a training hook sees (the ideas of PyTorch Lightning's hooks, without its machinery): where training is, the
- * current parameters, and ways to log into the run's trace and to stop.
+ * The paths the logging callbacks write, which have a computed part (a parameter's path in the network, a tap's name),
+ * hence template literals: the norms (`grad_norm/total`, `grad_norm/<parameter>`, `param_norm/...`), the full tensors
+ * (`grad/<parameter>`, `param/<parameter>`), the learning rate (`lr`, `lr_scale`) and the tapped activations
+ * (`activation/<name>`, `activation_norm/<name>`).
+ *
+ * @example
+ * ```ts
+ * import type { CallbackPath } from 'mdml-engine/nn'
+ * const path: CallbackPath = 'grad_norm/layers/0/weight'
+ * path // => 'grad_norm/layers/0/weight'
+ * ```
  */
-export interface HookContext {
+export type CallbackPath =
+  | 'grad_norm/total'
+  | `grad_norm/${string}`
+  | 'param_norm/total'
+  | `param_norm/${string}`
+  | `grad/${string}`
+  | `param/${string}`
+  | 'lr'
+  | 'lr_scale'
+  | `activation/${string}`
+  | `activation_norm/${string}`
+
+/**
+ * What a training hook sees (the ideas of PyTorch Lightning's hooks, without its machinery): where training is, the
+ * current parameters, and ways to log into the run's trace and to stop. The parameter is the type of the paths a
+ * callback logs (`string`: any; the library's callbacks declare theirs, see {@link CallbackPath}).
+ */
+export interface HookContext<K extends string = string> {
   /** Optimiser updates applied so far. */
   readonly step: number
   readonly epoch: number
@@ -20,9 +46,9 @@ export interface HookContext {
   readonly batch: number
   readonly params: Params
   /** Log a scalar into the run's trace at this step (Lightning's self.log); recorded when the policy selects it. */
-  log(name: string, value: number): void
+  log(name: K, value: number): void
   /** Log a tensor (by role) into the trace, recorded when the policy selects the name and role. */
-  logTensor(name: string, role: TensorRole, value: Value): void
+  logTensor(name: K, role: TensorRole, value: Value): void
   /** Stop training after this hook (the run ends with status `stopped`). */
   stop(reason: string): void
   /** The factor every update is multiplied by (1 unless lowered). */
@@ -39,23 +65,23 @@ export interface HookContext {
  *
  * @concept training-callbacks
  */
-export interface Callback {
+export interface Callback<K extends string = string> {
   readonly name: string
   /** Ask the loop to tap activations in the forward pass (delivered to `onBatchEnd`). */
   readonly tapsActivations?: boolean
-  onTrainStart?(ctx: HookContext): void
-  onEpochStart?(ctx: HookContext): void
-  onBatchStart?(ctx: HookContext): void
+  onTrainStart?(ctx: HookContext<K>): void
+  onEpochStart?(ctx: HookContext<K>): void
+  onBatchStart?(ctx: HookContext<K>): void
   /** After the loss has been differentiated: the gradients by parameter path's tree. */
-  onAfterBackward?(ctx: HookContext & { readonly loss: number; readonly grads: Params }): void
+  onAfterBackward?(ctx: HookContext<K> & { readonly loss: number; readonly grads: Params }): void
   /** Just before the updates are applied (after any clipping by the optimiser chain). */
-  onBeforeOptimizerStep?(ctx: HookContext & { readonly grads: Params; readonly updates: Params }): void
+  onBeforeOptimizerStep?(ctx: HookContext<K> & { readonly grads: Params; readonly updates: Params }): void
   /** After the update, with the loss and the activations tapped in the forward pass (when a callback asked). */
-  onBatchEnd?(ctx: HookContext & { readonly loss: number; readonly activations: ReadonlyMap<string, Value> }): void
-  onEpochEnd?(ctx: HookContext & { readonly meanLoss: number }): void
+  onBatchEnd?(ctx: HookContext<K> & { readonly loss: number; readonly activations: ReadonlyMap<string, Value> }): void
+  onEpochEnd?(ctx: HookContext<K> & { readonly meanLoss: number }): void
   /** After validation, with every validation metric (always `valLoss`). */
-  onValidationEnd?(ctx: HookContext & { readonly metrics: Readonly<Record<string, number>> }): void
-  onTrainEnd?(ctx: HookContext & { readonly status: 'completed' | 'stopped' }): void
+  onValidationEnd?(ctx: HookContext<K> & { readonly metrics: Readonly<Record<string, number>> }): void
+  onTrainEnd?(ctx: HookContext<K> & { readonly status: 'completed' | 'stopped' }): void
 }
 
 /** The L2 norm of a value, as a number. */
@@ -82,7 +108,7 @@ export interface LoggerOptions {
  * gradNormLogger().name // => 'gradNormLogger'
  * ```
  */
-export function gradNormLogger(options: LoggerOptions = {}): Callback {
+export function gradNormLogger(options: LoggerOptions = {}): Callback<'grad_norm/total' | `grad_norm/${string}`> {
   const every = options.every ?? 1
   return {
     name: 'gradNormLogger',
@@ -110,7 +136,7 @@ export function gradNormLogger(options: LoggerOptions = {}): Callback {
  * paramNormLogger({ every: 10 }).name // => 'paramNormLogger'
  * ```
  */
-export function paramNormLogger(options: LoggerOptions = {}): Callback {
+export function paramNormLogger(options: LoggerOptions = {}): Callback<'param_norm/total' | `param_norm/${string}`> {
   const every = options.every ?? 1
   return {
     name: 'paramNormLogger',
@@ -139,7 +165,7 @@ export function paramNormLogger(options: LoggerOptions = {}): Callback {
  * valueLogger().name // => 'valueLogger'
  * ```
  */
-export function valueLogger(options: { readonly every?: number } = {}): Callback {
+export function valueLogger(options: { readonly every?: number } = {}): Callback<`grad/${string}` | `param/${string}`> {
   const every = options.every ?? 1
   return {
     name: 'valueLogger',
@@ -162,7 +188,7 @@ export function valueLogger(options: { readonly every?: number } = {}): Callback
  * learningRateMonitor((t) => 0.1 / (1 + t)).name // => 'learningRateMonitor'
  * ```
  */
-export function learningRateMonitor(learningRate: number | ((step: number) => number)): Callback {
+export function learningRateMonitor(learningRate: number | ((step: number) => number)): Callback<'lr'> {
   return {
     name: 'learningRateMonitor',
     onBatchStart: (ctx) => ctx.log('lr', typeof learningRate === 'number' ? learningRate : learningRate(ctx.step)),
@@ -194,14 +220,14 @@ export interface EarlyStoppingOptions {
  * earlyStopping({ patience: 5 }).name // => 'earlyStopping'
  * ```
  */
-export function earlyStopping(options: EarlyStoppingOptions = {}): Callback & { readonly best: () => number } {
+export function earlyStopping(options: EarlyStoppingOptions = {}): Callback<never> & { readonly best: () => number } {
   const monitor = options.monitor ?? 'valLoss'
   const patience = options.patience ?? 3
   const delta = options.minDelta ?? 0
   const sign = options.mode === 'max' ? -1 : 1
   let best = Number.POSITIVE_INFINITY
   let wait = 0
-  const check = (ctx: HookContext, value: number | undefined): void => {
+  const check = (ctx: HookContext<never>, value: number | undefined): void => {
     if (value === undefined) return
     if (sign * value < best - delta) {
       best = sign * value
@@ -234,7 +260,9 @@ export function earlyStopping(options: EarlyStoppingOptions = {}): Callback & { 
  * bestCheckpoint().best().params // => undefined
  * ```
  */
-export function bestCheckpoint(options: { readonly monitor?: string; readonly mode?: 'min' | 'max' } = {}): Callback & {
+export function bestCheckpoint(
+  options: { readonly monitor?: string; readonly mode?: 'min' | 'max' } = {},
+): Callback<never> & {
   readonly best: () => { readonly value: number; readonly params: Params | undefined; readonly epoch: number }
 } {
   const monitor = options.monitor ?? 'valLoss'
@@ -242,7 +270,7 @@ export function bestCheckpoint(options: { readonly monitor?: string; readonly mo
   let value = Number.POSITIVE_INFINITY
   let params: Params | undefined
   let epoch = -1
-  const offer = (ctx: HookContext, v: number | undefined): void => {
+  const offer = (ctx: HookContext<never>, v: number | undefined): void => {
     if (v === undefined || !(sign * v < value)) return
     value = sign * v
     params = ctx.params
@@ -291,7 +319,9 @@ export interface PlateauOptions {
  * reduceLROnPlateau({ patience: 2 }).scale() // => 1
  * ```
  */
-export function reduceLROnPlateau(options: PlateauOptions = {}): Callback & { readonly scale: () => number } {
+export function reduceLROnPlateau(
+  options: PlateauOptions = {},
+): Callback<'lr_scale'> & { readonly scale: () => number } {
   const monitor = options.monitor ?? 'valLoss'
   const sign = options.mode === 'max' ? -1 : 1
   const factor = options.factor ?? 0.1
@@ -303,7 +333,7 @@ export function reduceLROnPlateau(options: PlateauOptions = {}): Callback & { re
   let bad = 0
   let cooling = 0
   let scale = 1
-  const check = (ctx: HookContext, value: number | undefined): void => {
+  const check = (ctx: HookContext<'lr_scale'>, value: number | undefined): void => {
     if (value === undefined) return
     const v = sign * value
     // PyTorch's 'rel' mode: improvement means v < best (1 - threshold) for positive best.
@@ -354,7 +384,7 @@ export function reduceLROnPlateau(options: PlateauOptions = {}): Callback & { re
  */
 export function activationLogger(
   options: { readonly every?: number; readonly filter?: (name: string) => boolean; readonly norms?: boolean } = {},
-): Callback {
+): Callback<`activation/${string}` | `activation_norm/${string}`> {
   const every = options.every ?? 1
   return {
     name: 'activationLogger',
