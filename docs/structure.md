@@ -3258,6 +3258,67 @@ variable leaves when its coefficient crosses zero; logs `alpha`, `active`, the `
 penalty) and the `lars` estimator (the model at a penalty or active count, the path in `params.path`; `fittedAt(t)` is
 knot `t`). oracle: `linear/lars` against `sklearn.linear_model.lars_path` and `LassoLars`.
 
+`diagnostics.ts` is regression diagnostics from one SVD of the (weighted, intercept-last) design: `olsInfluence` (leverage,
+internal and external studentised residuals, Cook's distance, DFFITS and its internal form, DFBETA(S), COVRATIO,
+leave-one-out sigma), the single-measure functions (`hatMatrix`, `leverage`, `studentizedResiduals`, `cooksDistance`,
+`dffits`, `dfbetas`, `covRatio`), collinearity (`varianceInflationFactors`, `conditionIndices` with variance-decomposition
+proportions), the `breuschPagan` (Koenker or classical) and `whiteTest` heteroscedasticity tests, and
+`regressionDiagnostics`, the report with the observations the usual cut-offs flag (it adds the Durbin-Watson test of
+`stats/tests`). Weighted fits are those of the whitened data. oracle: `linear/diagnostics` against statsmodels
+(`OLSInfluence`, `variance_inflation_factor`, `het_breuschpagan`, `het_white`; weighted cases use the whitened ordinary
+fit because `OLSInfluence` on a WLS result mixes raw and whitened designs in its hat matrix).
+
+`group-lasso.ts` is structured sparsity: `groupStructure` (labels to groups, with weights sqrt(size) by default),
+`groupLassoAlgorithm` and the `groupLasso` estimator (block proximal-gradient sweeps or FISTA with restarts and the
+library's `proxGroupLasso`; the KKT violation is the stopping measure and a logged metric), `groupLassoAlphaMax`;
+`multiTaskDesign`, `multiTaskLassoAlgorithm` and the `multiTaskLasso` estimator (the l2,1 row penalty, with `l1Ratio`
+the multi-task elastic net; `y` is `[n, k]`, `coef` is a row per task as in scikit-learn). Singleton groups are the
+lasso, which a test checks against the GLM core. oracle: `linear/group_lasso` against `MultiTaskLasso` and
+`MultiTaskElasticNet`; the group lasso itself has no scikit-learn reference and is tested by its optimality conditions.
+
+`ordinal.ts` is ordinal regression: `ordinalLogLikelihood` (the likelihood and its gradient for the cumulative-link
+model `P(Y <= k) = F(theta_k - x beta)` with the logit, probit, cloglog and loglog links, and for the sequential
+(continuation-ratio) model), `ordinalProbabilities`, `ordinalAlgorithm` (damped Newton steps, a Hessian from central
+differences of the analytic gradient, thresholds as a first cutpoint plus log increments) and the `ordinal` classifier
+(`predictProba`, the latent `decisionFunction`, `predictDistribution`, a Wald table of slopes and thresholds). oracle:
+`linear/ordinal` against statsmodels' `OrderedModel` (slopes, thresholds, log-likelihood, slope standard errors and
+probabilities for the four links; the sequential mode has no reference and is checked by finite differences and its
+equality with logistic regression for two categories).
+
+`mixed.ts` is the linear mixed model `y = X beta + Z b_g + e` for grouped data: `mixedProblemOf` summarises each group's
+rows into sufficient statistics (the group label is a column of `x`; random intercept and slopes, unstructured or
+diagonal covariance), `mixedProfile` is the profiled (restricted) deviance at a relative covariance factor (fixed effects
+and residual variance profiled out, the matrix determinant lemma per group), `mixedAlgorithm` maximises it by damped
+Newton steps (`_newton.ts`, shared with `ordinal.ts`: Levenberg-shifted direction and backtracking), and the `mixedModel`
+estimator has the fixed-effects Wald table, `randomCovariance`, `sigma2`, the group effects (BLUPs), and `predict`
+(group effects for groups seen in fit) and `predictFixed`. Sample weights are refused. oracle: `linear/mixed` against
+statsmodels' `MixedLM` (REML and ML; random intercept, and correlated random intercept and slope); statsmodels stops
+slightly short of the optimum, so the golden tolerance is 1e-3 and a dense-matrix test checks the likelihood itself.
+
+`robust.ts` is regression that tolerates outliers: `theilSenAlgorithm` and the `theilSen` estimator (least squares on every
+row subset, or `maxSubpopulation` random ones drawn from a key, then Weiszfeld steps to the spatial median of the
+solutions, as scikit-learn), `huberAlgorithm`, `huberObjective` and the `huber` estimator (majorise-minimise steps with
+a jointly estimated scale, the objective of scikit-learn's `HuberRegressor`, `params.outliers` marking the linearly
+treated rows) and `quantileRegression` and the `quantileRegressor` estimator (the pinball loss with an optional L1
+penalty, solved exactly by `optim`'s `linprog`). RANSAC stays `stats/robust.ts`'s generic `ransac`. oracle:
+`linear/robust` against scikit-learn's `TheilSenRegressor` (all subsets), `HuberRegressor` and `QuantileRegressor`.
+
+`zero-inflated.ts` is count regression for excess zeros: `countProblemOf` (counts, the count design and the zero-part
+design, whose features are `'constant'`, `'all'` or a list), `countModelObjective` (the negative log-likelihood and its
+analytic gradient for the zero-inflated and the hurdle models over Poisson or negative-binomial counts),
+`countModelAlgorithm` (damped Newton steps, Hessian by central differences of the gradient) and the `zeroInflated` and
+`hurdle` estimators (`predict` the mean, `predictInflation`, `predictCount`, `predictZero`; Wald tables of the count and
+zero parts). oracle: `linear/zero_inflated` against statsmodels' `ZeroInflatedPoisson`, `ZeroInflatedNegativeBinomialP`
+and, for the hurdle model's two independent parts, `Logit` with `TruncatedLFPoisson` and
+`TruncatedLFNegativeBinomialP`.
+
+`multinomial.ts` is the multinomial logit (softmax regression as a GLM): `multinomialProblemOf`, `softmaxRows`,
+`multinomialAlgorithm` (Newton steps with the exact Hessian) and the `multinomial` classifier (class 0 the reference
+when unpenalised, every class free with a ridge penalty; `predictProba`, logits as `decisionFunction`,
+`predictDistribution`, a Wald table). oracle: `linear/multinomial` against statsmodels' `MNLogit` (coefficients,
+standard errors, log-likelihood, probabilities) and scikit-learn's multinomial `LogisticRegression` (ridge; centred
+intercepts, which the penalty leaves determined only up to a common shift).
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 

@@ -1426,6 +1426,22 @@
       "cases": 6
     },
     {
+      "fixture": "linear/diagnostics.json",
+      "source": "oracle/cases/linear/diagnostics.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "linear/group_lasso.json",
+      "source": "oracle/cases/linear/group_lasso.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "linear/lars.json",
       "source": "oracle/cases/linear/lars.py",
       "reference": {
@@ -1434,12 +1450,53 @@
       "cases": 8
     },
     {
+      "fixture": "linear/mixed.json",
+      "source": "oracle/cases/linear/mixed.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "linear/multinomial.json",
+      "source": "oracle/cases/linear/multinomial.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 6
+    },
+    {
       "fixture": "linear/online.json",
       "source": "oracle/cases/linear/online.py",
       "reference": {
         "scikit-learn": "1.9.1"
       },
       "cases": 14
+    },
+    {
+      "fixture": "linear/ordinal.json",
+      "source": "oracle/cases/linear/ordinal.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "linear/robust.json",
+      "source": "oracle/cases/linear/robust.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 14
+    },
+    {
+      "fixture": "linear/zero_inflated.json",
+      "source": "oracle/cases/linear/zero_inflated.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 6
     },
     {
       "fixture": "logic/answer-sets.json",
