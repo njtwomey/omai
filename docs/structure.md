@@ -2629,6 +2629,22 @@ modAL for active learning, diffprivlib and opacus for privacy
   by committee), budget handling.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
+- `semi-supervised.ts`: rows with target `-1` (NaN for regression) are unlabelled. `selfTraining`, `coTraining` (two
+  feature views, shared labelled set, product of the views) and `triTraining` (Zhou and Li's error and size conditions)
+  over any probabilistic base `Estimator`; `labelPropagation` and `labelSpreading` (`sklearn.semi_supervised`, rbf and
+  neighbour graphs, with the algorithms of both); `laplacianRlsClassifier` and `laplacianRlsRegressor` (manifold
+  regularisation, closed form); `s3vm` (Joachims' transductive SVM, one pair switch or weight doubling per step) over any
+  weighted binary base (e.g. `svc` of `lib/svm`, which `learn` cannot import). Iterative base, one round per step.
+  oracle: `learn/semi_supervised` against `LabelPropagation`, `LabelSpreading` and `SelfTrainingClassifier`.
+- `weak-supervision.ts`: votes `[items, sources]` with `-1` for an abstention. `labellingMatrixSummary`, `majorityVote`;
+  `dawidSkene` (full, one-coin and GLAD modes, EM whose log-likelihood never decreases) and `labelModel` (accuracies from
+  agreements alone by the triplet method refined by coordinate descent, with dependency residuals) on the iterative base;
+  `estimateNoiseTransition`, `confidentJoint`, `labelQuality`, `findLabelIssues` (confident learning); `puRisk`
+  (uPU and nnPU, differentiable), `puClassifier`, `elkanNoto`; `bagData`, `labelProportionClassifier` (proportion loss, L-BFGS) and
+  `multipleInstanceSvm` (mi-SVM and MI-SVM over any binary base). oracle: `learn/weak_supervision` against numpy
+  references written from the papers (EM for Dawid-Skene, the confident joint and the prune rules).
+- `noisy-labels.ts`: `forwardCorrectedLoss` and `backwardCorrectedLoss` (Patrini et al.), `smallLossSelection` and
+  `coTeaching` (two models exchanging their small-loss rows over any probabilistic base).
 
 ### 4.34 `nn/`: neural networks (torch.nn, torch.nn.functional, Flax, Haiku)
 
