@@ -3009,6 +3009,11 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     gradient is the CD update), the exact `rbmLogPartition`, `rbmLogLikelihood` and `rbmModelStatistics` for small
     machines, and `contrastiveDivergenceAlgorithm` (CD-k or persistent CD with momentum and weight decay; the
     reconstruction error, free energy, free-energy gap and exact log partition on the tape).
+  - `masked.ts`: `CausalConv1d` (left-padded, dilated, grouped), `pixelCnnMask` (masks A and B, optional colour-channel
+    ordering), `MaskedConv2d` (PixelCNN) and `GatedMaskedConv` (Gated PixelCNN vertical and horizontal stacks, no blind spot).
+- `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
+  `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
+  containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
 - `describe.ts`: `describe` (a module to a `Structure`: blocks, tensor shapes, repeats, skip connections into `add`
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen

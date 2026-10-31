@@ -2532,6 +2532,14 @@
       "cases": 18
     },
     {
+      "fixture": "nn/blocks/masked.json",
+      "source": "oracle/cases/nn/blocks/masked.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "nn/functional/activations.json",
       "source": "oracle/cases/nn/functional/activations.py",
       "reference": {
