@@ -11,7 +11,7 @@
 import { type Json, MdmlError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative, type LearnData } from '../learn/index.ts'
-import { logNdtr, ndtr, normalPdf, normalLogPdf } from '../numerics/special/index.ts'
+import { logNdtr, ndtr, normalLogPdf, normalPdf } from '../numerics/special/index.ts'
 import { analyticObjective, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import { dict, real, type SpaceValue } from '../space/index.ts'
@@ -66,7 +66,8 @@ export function tobitProblemOf(
   const lower = options.lower ?? Number.NEGATIVE_INFINITY
   const upper = options.upper ?? Number.POSITIVE_INFINITY
   const fitIntercept = options.fitIntercept ?? true
-  if (!(lower < upper)) throw new MdmlError('value', `${who}: the lower limit ${lower} must be below the upper ${upper}`)
+  if (!(lower < upper))
+    throw new MdmlError('value', `${who}: the lower limit ${lower} must be below the upper ${upper}`)
   const design = designOf(data, who)
   const { a, p } = withIntercept(design, fitIntercept)
   const censoring = new Int8Array(design.x.n)
@@ -199,7 +200,7 @@ export function tobitSmoothProblem(problem: TobitProblem): SmoothProblem {
 
 /** Options of {@link tobitAlgorithm}. */
 export interface TobitOptions {
-  /** Stop when the largest gradient entry falls below this (default 1e-10). */
+  /** Stop when the largest gradient entry falls below this (default 1e-8). */
   readonly tol?: number
   /** The solver, a value of `smoothSolvers.space` (default Newton at `tol`). */
   readonly solver?: SpaceValue
@@ -235,18 +236,27 @@ export type TobitState = SlotState & {
  * ```
  */
 export function tobitAlgorithm(problem: TobitProblem, options: TobitOptions = {}): Algorithm<TobitState> {
-  const tol = options.tol ?? 1e-10
+  const tol = options.tol ?? 1e-8
   const solver = options.solver ?? newtonAt(tol)
   return slotAlgorithm<TobitState>({
     name: 'tobit',
-    config: { lower: Number.isFinite(problem.lower) ? problem.lower : null, upper: Number.isFinite(problem.upper) ? problem.upper : null, tol, solver } as Json,
+    config: {
+      lower: Number.isFinite(problem.lower) ? problem.lower : null,
+      upper: Number.isFinite(problem.upper) ? problem.upper : null,
+      tol,
+      solver,
+    } as Json,
     schema: {
       metrics: {
         objective: { description: 'the mean negative log-likelihood', direction: 'lower' },
         gradient: { description: 'the largest gradient entry', direction: 'lower' },
       },
       tensors: {
-        parameters: { role: 'param', description: 'beta / sigma (intercept last), then 1 / sigma', shape: [problem.p + 1] },
+        parameters: {
+          role: 'param',
+          description: 'beta / sigma (intercept last), then 1 / sigma',
+          shape: [problem.p + 1],
+        },
       },
     },
     problem: tobitSmoothProblem(problem),
@@ -309,9 +319,9 @@ const DEFAULTS: TobitHyper = {
   lower: Number.NEGATIVE_INFINITY,
   upper: Number.POSITIVE_INFINITY,
   fitIntercept: true,
-  tol: 1e-10,
+  tol: 1e-8,
   maxIter: 200,
-  solver: newtonAt(1e-10),
+  solver: newtonAt(1e-8),
 }
 
 function paramsOf(problem: TobitProblem, h: TobitHyper, s: TobitState): TobitParams {
@@ -406,7 +416,8 @@ export function tobit(
       name: 'tobit',
       kind: 'regressor',
       defaults: DEFAULTS,
-      hyperSpace: () => dict({ tol: real(1e-12, 1e-3, { log: true, default: DEFAULTS.tol }), solver: smoothSolvers.space }),
+      hyperSpace: () =>
+        dict({ tol: real(1e-12, 1e-3, { log: true, default: DEFAULTS.tol }), solver: smoothSolvers.space }),
       algorithm: (data, h, key) => tobitAlgorithm(tobitProblemOf(data, h, who), { tol: h.tol, solver: h.solver, key }),
       maxSteps: (h) => h.maxIter,
       params: (s, data, h) => paramsOf(tobitProblemOf(data, h, who), h, s),

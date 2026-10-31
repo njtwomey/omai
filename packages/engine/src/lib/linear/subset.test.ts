@@ -8,7 +8,9 @@ import { subsetAlgorithm, subsetRegression } from './subset.ts'
 const n = 120
 const z = toFlat(normal(key(5), [n * 7]))
 // Six features, of which 0, 2 and 4 matter.
-const x = Array.from({ length: n }, (_, i) => Array.from({ length: 6 }, (_, j) => (z[i * 7 + j] ?? 0) + (j === 1 ? 0.6 * (z[i * 7] ?? 0) : 0)))
+const x = Array.from({ length: n }, (_, i) =>
+  Array.from({ length: 6 }, (_, j) => (z[i * 7 + j] ?? 0) + (j === 1 ? 0.6 * (z[i * 7] ?? 0) : 0)),
+)
 const y = x.map((r, i) => 1 + 2 * (r[0] ?? 0) - 1.5 * (r[2] ?? 0) + 1 * (r[4] ?? 0) + 0.5 * (z[i * 7 + 6] ?? 0))
 
 describe('subsetRegression', () => {
@@ -29,7 +31,8 @@ describe('subsetRegression', () => {
   it('fits ordinary least squares on the selected features', () => {
     const f = subsetRegression({ method: 'best', criterion: 'bic' }).fit({ x, y })
     const ols = olsSummary({ x: x.map((r) => [r[0] ?? 0, r[2] ?? 0, r[4] ?? 0]), y })
-    ;[0, 2, 4].forEach((j, c) => expect(f.params.coef[j]).toBeCloseTo(ols.table.estimates[c] ?? Number.NaN, 9))
+    for (const [c, j] of [0, 2, 4].entries())
+      expect(f.params.coef[j]).toBeCloseTo(ols.table.estimates[c] ?? Number.NaN, 9)
     expect(f.params.coef[1]).toBe(0)
     expect(f.params.intercept).toBeCloseTo(ols.table.estimates[3] ?? Number.NaN, 9)
   })
@@ -43,7 +46,11 @@ describe('subsetRegression', () => {
   it('best subset is never beaten by a greedy path, and its criterion path has the best at the chosen size', () => {
     // A suppressor design: x0 alone is useless but with x1 explains y, so forward selection can miss it.
     const a = toFlat(normal(key(9), [n * 3]))
-    const sx = Array.from({ length: n }, (_, i) => [(a[i * 3] ?? 0) + (a[i * 3 + 1] ?? 0), a[i * 3 + 1] ?? 0, a[i * 3 + 2] ?? 0])
+    const sx = Array.from({ length: n }, (_, i) => [
+      (a[i * 3] ?? 0) + (a[i * 3 + 1] ?? 0),
+      a[i * 3 + 1] ?? 0,
+      a[i * 3 + 2] ?? 0,
+    ])
     const sy = sx.map((r, i) => (r[0] ?? 0) - (r[1] ?? 0) + 0.1 * (a[i * 3 + 2] ?? 0))
     const best = subsetRegression({ method: 'best', criterion: 'bic' }).fit({ x: sx, y: sy }).params
     for (const method of ['forward', 'backward', 'stepwise'] as const) {
@@ -60,13 +67,24 @@ describe('subsetRegression', () => {
     const straight = runAlgorithm(algorithm, { key: key(0), maxSteps: 12 })
     const head = runAlgorithm(algorithm, { key: key(0), maxSteps: 2 })
     const json = algorithm.serialise?.(head.state)
-    const resumed = runAlgorithm(algorithm, { key: key(0), maxSteps: 10, start: { state: json, step: head.steps, serialised: true } })
+    const resumed = runAlgorithm(algorithm, {
+      key: key(0),
+      maxSteps: 10,
+      start: { state: json, step: head.steps, serialised: true },
+    })
     expect(resumed.state.best).toEqual(straight.state.best)
   })
 
   it('refuses best-subset search over too many features and Cp without degrees of freedom', () => {
     const wide = Array.from({ length: 30 }, (_, i) => Array.from({ length: 25 }, (_, j) => Math.sin(i * (j + 1))))
-    expect(() => subsetRegression({ method: 'best' }).fit({ x: wide, y: wide.map((r) => r[0] ?? 0) })).toThrow(/too large/)
-    expect(() => subsetRegression({ criterion: 'cp' }).fit({ x: wide.map((r) => r.slice(0, 10)).slice(0, 8), y: wide.slice(0, 8).map((r) => r[0] ?? 0) })).toThrow(/Cp/)
+    expect(() => subsetRegression({ method: 'best' }).fit({ x: wide, y: wide.map((r) => r[0] ?? 0) })).toThrow(
+      /too large/,
+    )
+    expect(() =>
+      subsetRegression({ criterion: 'cp' }).fit({
+        x: wide.map((r) => r.slice(0, 10)).slice(0, 8),
+        y: wide.slice(0, 8).map((r) => r[0] ?? 0),
+      }),
+    ).toThrow(/Cp/)
   })
 })

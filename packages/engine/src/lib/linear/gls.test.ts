@@ -5,9 +5,9 @@ import { smoothSolverConfig } from '../optim/index.ts'
 import { key, normal as randomNormal } from '../random/index.ts'
 import { item, primalOf, toFlat } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
+import { matrixTensor } from './design.ts'
 import { ar1Covariance, gls, glsar, glsarAlgorithm, glsFit, heteroscedasticRegressor } from './gls.ts'
 import { olsSummary } from './inference.ts'
-import { matrixTensor } from './design.ts'
 
 const frac = (v: number): number => v - Math.floor(v)
 const normal = (i: number, a = 0.5698402909980532): number => item(ndtri(frac((i + 1) * a) * 0.998 + 0.001))
@@ -49,14 +49,17 @@ describe('gls', () => {
     const resid = y.map((v, i) => v - (a[i] ?? []).reduce((acc, aj, j) => acc + aj * (beta[j] ?? 0), 0))
     for (let j = 0; j < p; j++) {
       let g = 0
-      for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) g += (a[i]?.[j] ?? 0) * (s[i * n + k] ?? 0) * (resid[k] ?? 0)
+      for (let i = 0; i < n; i++)
+        for (let k = 0; k < n; k++) g += (a[i]?.[j] ?? 0) * (s[i * n + k] ?? 0) * (resid[k] ?? 0)
       expect(Math.abs(g)).toBeLessThan(1e-9)
     }
   })
 
   it('rejects a covariance of the wrong size or one that is not positive definite', () => {
     expect(() => glsFit({ x, y }, { sigma: [1, 2] })).toThrow(/rows/)
-    expect(() => glsFit({ x, y }, { sigma: Array.from({ length: n }, () => new Array<number>(n).fill(1)) })).toThrow(/positive definite/)
+    expect(() => glsFit({ x, y }, { sigma: Array.from({ length: n }, () => new Array<number>(n).fill(1)) })).toThrow(
+      /positive definite/,
+    )
   })
 
   it('predicts the mean and reports a coefficient table', () => {
@@ -108,7 +111,11 @@ describe('glsar', () => {
     expect(straight.steps).toBeLessThan(29)
     const head = runAlgorithm(algorithm, { key: key(0), maxSteps: 2 })
     const json = algorithm.serialise?.(head.state)
-    const resumed = runAlgorithm(algorithm, { key: key(0), maxSteps: 29 - head.steps, start: { state: json, step: head.steps, serialised: true } })
+    const resumed = runAlgorithm(algorithm, {
+      key: key(0),
+      maxSteps: 29 - head.steps,
+      start: { state: json, step: head.steps, serialised: true },
+    })
     expect(resumed.state.rho).toEqual(straight.state.rho)
   })
 })
@@ -138,7 +145,10 @@ describe('heteroscedasticRegressor', () => {
 
   it('maximum likelihood reaches one optimum with Newton, BFGS and L-BFGS', () => {
     const ref = heteroscedasticRegressor({ method: 'ml' }).fit({ x, y }).params
-    for (const solver of [smoothSolverConfig({ kind: 'bfgs', gradTol: 1e-10 }), smoothSolverConfig({ kind: 'lbfgs', gradTol: 1e-10, ftol: 1e-16 })]) {
+    for (const solver of [
+      smoothSolverConfig({ kind: 'bfgs', gradTol: 1e-10 }),
+      smoothSolverConfig({ kind: 'lbfgs', gradTol: 1e-10, ftol: 1e-16 }),
+    ]) {
       const p = heteroscedasticRegressor({ method: 'ml', solver, tol: 1e-8, maxIter: 3000 }).fit({ x, y }).params
       expect(p.coef[0]).toBeCloseTo(ref.coef[0] ?? Number.NaN, 4)
       expect(p.gamma[0]).toBeCloseTo(ref.gamma[0] ?? Number.NaN, 4)

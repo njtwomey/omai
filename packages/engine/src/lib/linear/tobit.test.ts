@@ -33,7 +33,8 @@ describe('tobit likelihood', () => {
       const eu = tobitObjective(problem, up)
       const ed = tobitObjective(problem, dn)
       expect(e.gradient[j]).toBeCloseTo((eu.value - ed.value) / (2 * h), 5)
-      for (let k = 0; k < 3; k++) expect(e.hessian[j * 3 + k]).toBeCloseTo(((eu.gradient[k] ?? 0) - (ed.gradient[k] ?? 0)) / (2 * h), 5)
+      for (let k = 0; k < 3; k++)
+        expect(e.hessian[j * 3 + k]).toBeCloseTo(((eu.gradient[k] ?? 0) - (ed.gradient[k] ?? 0)) / (2 * h), 5)
     }
   })
 
@@ -121,7 +122,11 @@ describe('tobit', () => {
     const straight = runAlgorithm(algorithm, { key: key(0), maxSteps: 6 })
     const head = runAlgorithm(algorithm, { key: key(0), maxSteps: 3 })
     const json = algorithm.serialise?.(head.state)
-    const resumed = runAlgorithm(algorithm, { key: key(0), maxSteps: 3, start: { state: json, step: head.steps, serialised: true } })
+    const resumed = runAlgorithm(algorithm, {
+      key: key(0),
+      maxSteps: 3,
+      start: { state: json, step: head.steps, serialised: true },
+    })
     expect(resumed.state.theta).toEqual(straight.state.theta)
   })
 })

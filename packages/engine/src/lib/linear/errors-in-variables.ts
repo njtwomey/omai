@@ -66,7 +66,8 @@ export function totalLeastSquares(
         const design = designOf(data, 'totalLeastSquares')
         const { n, d } = design.x
         const sx = typeof h.errorX === 'number' ? new Array<number>(d).fill(h.errorX) : [...h.errorX]
-        if (sx.length !== d) throw new MdmlError('shape', `totalLeastSquares: ${sx.length} feature errors for ${d} features`)
+        if (sx.length !== d)
+          throw new MdmlError('shape', `totalLeastSquares: ${sx.length} feature errors for ${d} features`)
         if (!sx.every((v) => v > 0) || !(h.errorY > 0))
           throw new MdmlError('value', 'totalLeastSquares: the error standard deviations must be positive')
         if (n <= d) throw new MdmlError('value', 'totalLeastSquares: needs more rows than features')
@@ -80,11 +81,12 @@ export function totalLeastSquares(
         const r = linalg.svd(fromStorage(z, [n, m], 'float64'))
         const vt = toFlat(r.vh)
         const s = Array.from(toFlat(r.s))
-        const last = (s.length >= m ? m : s.length) - 1
+        const last = Math.min(s.length, m) - 1
         // The right singular vector of the smallest singular value: row `last` of V^T (a null direction when n < m).
         const v = Array.from({ length: m }, (_, j) => vt[last * m + j] ?? 0)
         const vy = v[d] ?? 0
-        if (Math.abs(vy) < 1e-12) throw new MdmlError('value', 'totalLeastSquares: the best hyperplane is vertical in the target')
+        if (Math.abs(vy) < 1e-12)
+          throw new MdmlError('value', 'totalLeastSquares: the best hyperplane is vertical in the target')
         // Scaled model y/sy = sum b_j x_j/sx_j with b = -v[:d]/v[d]; undo the scaling.
         const coef = Array.from({ length: d }, (_, j) => ((-(v[j] ?? 0) / vy) * h.errorY) / (sx[j] ?? 1))
         const intercept = h.fitIntercept ? c.yMean - coef.reduce((a, b, j) => a + b * (c.xMean[j] ?? 0), 0) : 0

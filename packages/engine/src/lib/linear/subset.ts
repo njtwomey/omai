@@ -7,12 +7,7 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
-import {
-  type IterativeEstimator,
-  iterative,
-  type LearnData,
-  modelSelection,
-} from '../learn/index.ts'
+import { type IterativeEstimator, iterative, type LearnData, modelSelection } from '../learn/index.ts'
 import { dpotrf, dpotrs } from '../numerics/linalg/index.ts'
 import { choice, dict } from '../space/index.ts'
 import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -69,7 +64,10 @@ interface Gram {
   readonly sigma2Full: number
 }
 
-function gramOf(data: LearnData, fitIntercept: boolean): Gram & { readonly xMean: Float64Array; readonly yMean: number } {
+function gramOf(
+  data: LearnData,
+  fitIntercept: boolean,
+): Gram & { readonly xMean: Float64Array; readonly yMean: number } {
   const design = designOf(data, 'subsetRegression')
   const { n, d } = design.x
   const cen = centre(design, fitIntercept)
@@ -88,13 +86,19 @@ function gramOf(data: LearnData, fitIntercept: boolean): Gram & { readonly xMean
   for (let j = 0; j < d; j++) for (let k = j + 1; k < d; k++) g[j * d + k] = g[k * d + j] ?? 0
   const extra = 1
   const base = { n, d, g, c, yy, extra, sigma2Full: Number.NaN }
-  const full = fitSubset(base, Array.from({ length: d }, (_, j) => j))
+  const full = fitSubset(
+    base,
+    Array.from({ length: d }, (_, j) => j),
+  )
   const dfFull = n - d - (fitIntercept ? 1 : 0)
   return { ...base, sigma2Full: dfFull > 0 ? full.rss / dfFull : Number.NaN, xMean: cen.xMean, yMean: cen.yMean }
 }
 
 /** The least-squares fit of a subset from the Gram matrix: coefficients and residual sum of squares. */
-function fitSubset(gram: Pick<Gram, 'd' | 'g' | 'c' | 'yy'>, subset: readonly number[]): { coef: Float64Array; rss: number } {
+function fitSubset(
+  gram: Pick<Gram, 'd' | 'g' | 'c' | 'yy'>,
+  subset: readonly number[],
+): { coef: Float64Array; rss: number } {
   const k = subset.length
   if (k === 0) return { coef: new Float64Array(0), rss: gram.yy }
   const a = new Float64Array(k * k)
@@ -142,7 +146,7 @@ function criterionOf(
     case 'adjusted-r2': {
       // R-squared about the mean (or about zero without an intercept): 1 - (rss / df) / (tss / (n - 1)).
       const dfResid = n - size - (fitIntercept ? 1 : 0)
-      natural = dfResid > 0 ? 1 - (rss / dfResid) / (gram.yy / (n - (fitIntercept ? 1 : 0))) : Number.NEGATIVE_INFINITY
+      natural = dfResid > 0 ? 1 - rss / dfResid / (gram.yy / (n - (fitIntercept ? 1 : 0))) : Number.NEGATIVE_INFINITY
       break
     }
   }
@@ -197,7 +201,8 @@ export function subsetAlgorithm(data: LearnData, options: SubsetOptions = {}): A
   const gram = gramOf(data, fitIntercept)
   const { d } = gram
   const maxSize = Math.min(options.maxSize ?? d, d)
-  if (method === 'best' && d > 24) throw new MdmlError('value', `subsetRegression: best-subset search over ${d} features is too large (at most 24)`)
+  if (method === 'best' && d > 24)
+    throw new MdmlError('value', `subsetRegression: best-subset search over ${d} features is too large (at most 24)`)
   if (criterion === 'cp' && !Number.isFinite(gram.sigma2Full))
     throw new MdmlError('value', 'subsetRegression: Cp needs more rows than features for the full-model variance')
   const evaluate = (subset: readonly number[]): { natural: number; score: number; rss: number } => {
@@ -282,7 +287,13 @@ export function subsetAlgorithm(data: LearnData, options: SubsetOptions = {}): A
     done: (s) => (s.finished ? 'converged' : undefined),
     observe: (s) => ({
       metrics: { criterion: s.path[s.path.length - 1]?.criterion ?? Number.NaN, size: s.subset.length },
-      tensors: { support: { role: 'state', value: Array.from({ length: d }, (_, j) => (s.subset.includes(j) ? 1 : 0)), shape: [d] } },
+      tensors: {
+        support: {
+          role: 'state',
+          value: Array.from({ length: d }, (_, j) => (s.subset.includes(j) ? 1 : 0)),
+          shape: [d],
+        },
+      },
     }),
     serialise: (s) => stateToJson(s) as Json,
     deserialise: (j) => stateFromJson(j) as SubsetState,

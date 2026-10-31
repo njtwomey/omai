@@ -14,8 +14,8 @@ import { analyticObjective, type SmoothProblem, smoothSolvers } from '../optim/i
 import type { Key } from '../random/index.ts'
 import { dict, real, type SpaceValue } from '../space/index.ts'
 import { type Algorithm, Log } from '../trace/index.ts'
-import { infNorm, newtonAt, type SlotState, slotAlgorithm } from './_slot.ts'
 import { inverseOf, sandwich } from './_cov.ts'
+import { infNorm, newtonAt, type SlotState, slotAlgorithm } from './_slot.ts'
 import { type AffineVerbs, affineVerbs } from './_verbs.ts'
 import { type Design, designOf, withIntercept } from './design.ts'
 import { waldTable } from './inference.ts'
@@ -106,7 +106,8 @@ export function expectileObjective(
     for (let j = 0; j < p; j++) {
       const aj = a[i * p + j] ?? 0
       gradient[j] = (gradient[j] ?? 0) - 2 * wi * si * ri * aj
-      for (let k = 0; k <= j; k++) hessian[j * p + k] = (hessian[j * p + k] ?? 0) + 2 * wi * si * aj * (a[i * p + k] ?? 0)
+      for (let k = 0; k <= j; k++)
+        hessian[j * p + k] = (hessian[j * p + k] ?? 0) + 2 * wi * si * aj * (a[i * p + k] ?? 0)
     }
   }
   for (let j = 0; j < p; j++) for (let k = j + 1; k < p; k++) hessian[j * p + k] = hessian[k * p + j] ?? 0
@@ -184,7 +185,10 @@ export type ExpectileState = SlotState & {
  * runAlgorithm(expectileAlgorithm(problem), { maxSteps: 50 }).status // => 'converged'
  * ```
  */
-export function expectileAlgorithm(problem: ExpectileProblem, options: ExpectileOptions = {}): Algorithm<ExpectileState> {
+export function expectileAlgorithm(
+  problem: ExpectileProblem,
+  options: ExpectileOptions = {},
+): Algorithm<ExpectileState> {
   const tol = options.tol ?? 1e-10
   const solver = options.solver ?? newtonAt(tol)
   return slotAlgorithm<ExpectileState>({
@@ -271,7 +275,9 @@ function paramsOf(problem: ExpectileProblem, h: ExpectileHyper, s: ExpectileStat
   for (let j = 0; j < problem.d; j++) bread[j * p + j] = (bread[j * p + j] ?? 0) + 0.5 * h.alpha * total
   const inverse = inverseOf(bread, p)
   const cov = sandwich(inverse, meat, p)
-  const covariance = Array.from({ length: p }, (_, i) => Array.from({ length: p }, (_, j) => cov[i * p + j] ?? Number.NaN))
+  const covariance = Array.from({ length: p }, (_, i) =>
+    Array.from({ length: p }, (_, j) => cov[i * p + j] ?? Number.NaN),
+  )
   return {
     coef: s.theta.slice(0, problem.d),
     intercept: problem.fitIntercept ? (s.theta[problem.d] ?? 0) : 0,
@@ -286,7 +292,10 @@ function paramsOf(problem: ExpectileProblem, h: ExpectileHyper, s: ExpectileStat
 function tableOf(par: ExpectileParams, fitIntercept: boolean): CoefficientTable {
   const p = par.covariance.length
   const names = [...par.coef.map((_, j) => `x${j}`), ...(fitIntercept ? ['intercept'] : [])]
-  const cov = Float64Array.from({ length: p * p }, (_, idx) => par.covariance[Math.floor(idx / p)]?.[idx % p] ?? Number.NaN)
+  const cov = Float64Array.from(
+    { length: p * p },
+    (_, idx) => par.covariance[Math.floor(idx / p)]?.[idx % p] ?? Number.NaN,
+  )
   return waldTable(names, [...par.coef, ...(fitIntercept ? [par.intercept] : [])], cov)
 }
 

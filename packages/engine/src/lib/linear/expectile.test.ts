@@ -50,7 +50,8 @@ describe('expectile objective', () => {
       const eu = expectileObjective(problem, up)
       const ed = expectileObjective(problem, dn)
       expect(e.gradient[j]).toBeCloseTo((eu.value - ed.value) / (2 * h), 5)
-      for (let k = 0; k < 2; k++) expect(e.hessian[j * 2 + k]).toBeCloseTo(((eu.gradient[k] ?? 0) - (ed.gradient[k] ?? 0)) / (2 * h), 5)
+      for (let k = 0; k < 2; k++)
+        expect(e.hessian[j * 2 + k]).toBeCloseTo(((eu.gradient[k] ?? 0) - (ed.gradient[k] ?? 0)) / (2 * h), 5)
     }
   })
 
@@ -95,7 +96,12 @@ describe('expectile regression', () => {
   })
 
   it('orders the fitted expectiles by level', () => {
-    const at = (tau: number): number => toFlat(expectileRegressor({ tau }).fit({ x, y }).predict([[0.3]]))[0] ?? 0
+    const at = (tau: number): number =>
+      toFlat(
+        expectileRegressor({ tau })
+          .fit({ x, y })
+          .predict([[0.3]]),
+      )[0] ?? 0
     expect(at(0.1)).toBeLessThan(at(0.5))
     expect(at(0.5)).toBeLessThan(at(0.9))
   })

@@ -95,7 +95,10 @@ function summary(fit: Transformed, n: number, p: number, fitIntercept: boolean, 
 function tableOf(par: GlsParams, fitIntercept: boolean): CoefficientTable {
   const p = par.covariance.length
   const names = [...par.coef.map((_, j) => `x${j}`), ...(fitIntercept ? ['intercept'] : [])]
-  const cov = Float64Array.from({ length: p * p }, (_, idx) => par.covariance[Math.floor(idx / p)]?.[idx % p] ?? Number.NaN)
+  const cov = Float64Array.from(
+    { length: p * p },
+    (_, idx) => par.covariance[Math.floor(idx / p)]?.[idx % p] ?? Number.NaN,
+  )
   return waldTable(names, [...par.coef, ...(fitIntercept ? [par.intercept] : [])], cov, { df: par.dfResid })
 }
 
@@ -133,7 +136,11 @@ export interface GlsHyper {
 export type GlsVerbs = AffineVerbs
 
 /** The covariance as a full inverse and the log of its determinant. */
-function precisionOf(sigma: GlsHyper['sigma'], n: number, who: string): { inverse: Float64Array | null; diag: Float64Array | null; logDet: number } {
+function precisionOf(
+  sigma: GlsHyper['sigma'],
+  n: number,
+  who: string,
+): { inverse: Float64Array | null; diag: Float64Array | null; logDet: number } {
   if (typeof sigma === 'number') {
     if (!(sigma > 0)) throw new MdmlError('value', `${who}: the variance must be positive, got ${sigma}`)
     return { inverse: null, diag: new Float64Array(n).fill(sigma), logDet: n * Math.log(sigma) }
@@ -343,13 +350,15 @@ export function glsarAlgorithm(data: LearnData, options: GlsarOptions = {}): Alg
   const rtol = options.rtol ?? 1e-4
   const fitIntercept = options.fitIntercept ?? true
   const maxIter = options.maxIter ?? 3
-  if (!Number.isInteger(order) || order < 1) throw new MdmlError('value', `glsar: the order must be a positive integer, got ${order}`)
+  if (!Number.isInteger(order) || order < 1)
+    throw new MdmlError('value', `glsar: the order must be a positive integer, got ${order}`)
   const design = designOf(data, 'glsar')
   const { n } = design.x
   const { a, p } = withIntercept(design, fitIntercept)
   if (n - order <= p) throw new MdmlError('value', 'glsar: needs more observations than coefficients and the order')
   const start = options.rho === undefined ? new Array<number>(order).fill(0) : [...options.rho]
-  if (start.length !== order) throw new MdmlError('shape', `glsar: ${start.length} starting coefficients for order ${order}`)
+  if (start.length !== order)
+    throw new MdmlError('shape', `glsar: ${start.length} starting coefficients for order ${order}`)
   return {
     name: 'glsar',
     config: { order, rtol, maxIter, fitIntercept } as Json,
@@ -455,7 +464,11 @@ export function glsar(
       params: paramsOf,
       verbs: (par) => affineVerbs(par.coef, par.intercept, 'glsar'),
       records: (s, data, h): readonly Exposition[] => [tableOf(paramsOf(s, data, h), h.fitIntercept)],
-      logs: { 'solver/change': Log(), 'solver/rho': Log({ detail: 'full' }), 'solver/parameters': Log({ detail: 'full' }) },
+      logs: {
+        'solver/change': Log(),
+        'solver/rho': Log({ detail: 'full' }),
+        'solver/parameters': Log({ detail: 'full' }),
+      },
     },
     { ...GLSAR_DEFAULTS, ...hyper },
   )
@@ -492,13 +505,17 @@ interface HeteroProblem {
   readonly fitIntercept: boolean
 }
 
-function heteroProblemOf(data: LearnData, h: Pick<HeteroscedasticHyper, 'varianceFeatures' | 'fitIntercept'>): HeteroProblem {
+function heteroProblemOf(
+  data: LearnData,
+  h: Pick<HeteroscedasticHyper, 'varianceFeatures' | 'fitIntercept'>,
+): HeteroProblem {
   const design = designOf(data, 'heteroscedasticRegressor')
   const { n, d } = design.x
   const { a, p } = withIntercept(design, h.fitIntercept)
   const cols = h.varianceFeatures === 'all' ? Array.from({ length: d }, (_, j) => j) : [...h.varianceFeatures]
   for (const j of cols)
-    if (!Number.isInteger(j) || j < 0 || j >= d) throw new MdmlError('value', `heteroscedasticRegressor: variance feature ${j} is not a column`)
+    if (!Number.isInteger(j) || j < 0 || j >= d)
+      throw new MdmlError('value', `heteroscedasticRegressor: variance feature ${j} is not a column`)
   const q = cols.length + 1
   const z = new Float64Array(n * q)
   for (let i = 0; i < n; i++) {
@@ -512,7 +529,10 @@ function heteroProblemOf(data: LearnData, h: Pick<HeteroscedasticHyper, 'varianc
 }
 
 /** The variance-weighted fit with row variances `exp(z gamma)`. */
-function weightedFit(problem: HeteroProblem, gamma: ArrayLike<number>): Transformed & { readonly weights: Float64Array } {
+function weightedFit(
+  problem: HeteroProblem,
+  gamma: ArrayLike<number>,
+): Transformed & { readonly weights: Float64Array } {
   const { n, p, q, a, z, y } = problem
   const logVar = dgemv(z, n, q, gamma)
   const weights = Float64Array.from(logVar, (v) => Math.exp(-v))
@@ -558,14 +578,20 @@ function fglsAlgorithm(problem: HeteroProblem, tol: number): Algorithm<FglsState
         gamma: { role: 'param', description: 'the log-variance coefficients', shape: [q] },
       },
     }),
-    init: () => ({ beta: new Array<number>(p).fill(0), gamma: new Array<number>(q).fill(0), iteration: 0, change: Number.POSITIVE_INFINITY }),
+    init: () => ({
+      beta: new Array<number>(p).fill(0),
+      gamma: new Array<number>(q).fill(0),
+      iteration: 0,
+      change: Number.POSITIVE_INFINITY,
+    }),
     step: (s) => {
       const fit = weightedFit(problem, s.gamma)
       const beta = Array.from(fit.beta)
       const fitted = dgemv(a, n, p, beta)
-      const logSq = Float64Array.from(y, (v, i) => Math.log(Math.max(((v - (fitted[i] ?? 0)) ** 2), 1e-300)))
+      const logSq = Float64Array.from(y, (v, i) => Math.log(Math.max((v - (fitted[i] ?? 0)) ** 2, 1e-300)))
       const reg = leastSquares(z, logSq, n, q)
-      const change = s.iteration === 0 ? Number.POSITIVE_INFINITY : Math.max(...beta.map((v, j) => Math.abs(v - (s.beta[j] ?? 0))))
+      const change =
+        s.iteration === 0 ? Number.POSITIVE_INFINITY : Math.max(...beta.map((v, j) => Math.abs(v - (s.beta[j] ?? 0))))
       return { beta, gamma: Array.from(reg.beta), iteration: s.iteration + 1, change }
     },
     done: (s) => (s.change <= tol ? 'converged' : undefined),
@@ -611,12 +637,15 @@ function heteroObjective(
       const aj = a[i * p + j] ?? 0
       gradient[j] = (gradient[j] ?? 0) - (r * inv * aj) / n
       for (let k = 0; k < p; k++) hessian[j * m + k] = (hessian[j * m + k] ?? 0) + (inv * aj * (a[i * p + k] ?? 0)) / n
-      for (let k = 0; k < q; k++) hessian[j * m + p + k] = (hessian[j * m + p + k] ?? 0) + (r * inv * aj * (z[i * q + k] ?? 0)) / n
+      for (let k = 0; k < q; k++)
+        hessian[j * m + p + k] = (hessian[j * m + p + k] ?? 0) + (r * inv * aj * (z[i * q + k] ?? 0)) / n
     }
     for (let j = 0; j < q; j++) {
       const zj = z[i * q + j] ?? 0
       gradient[p + j] = (gradient[p + j] ?? 0) + (0.5 * (1 - r2inv) * zj) / n
-      for (let k = 0; k < q; k++) hessian[(p + j) * m + p + k] = (hessian[(p + j) * m + p + k] ?? 0) + (0.5 * r2inv * zj * (z[i * q + k] ?? 0)) / n
+      for (let k = 0; k < q; k++)
+        hessian[(p + j) * m + p + k] =
+          (hessian[(p + j) * m + p + k] ?? 0) + (0.5 * r2inv * zj * (z[i * q + k] ?? 0)) / n
     }
   }
   for (let j = 0; j < p; j++) for (let k = 0; k < q; k++) hessian[(p + k) * m + j] = hessian[j * m + p + k] ?? 0
@@ -654,23 +683,39 @@ function heteroSmoothProblem(problem: HeteroProblem): SmoothProblem {
   }
 }
 
-function heteroMlAlgorithm(problem: HeteroProblem, tol: number, solver: SpaceValue, key: Key): Algorithm<HeteroMlState> {
+function heteroMlAlgorithm(
+  problem: HeteroProblem,
+  tol: number,
+  solver: SpaceValue,
+  key: Key,
+): Algorithm<HeteroMlState> {
   const m = problem.p + problem.q
   return slotAlgorithm<HeteroMlState>({
     name: 'heteroscedastic-ml',
     config: { tol, solver } as Json,
     schema: {
       metrics: {
-        objective: { description: 'the negative log-likelihood per observation, constants dropped', direction: 'lower' },
+        objective: {
+          description: 'the negative log-likelihood per observation, constants dropped',
+          direction: 'lower',
+        },
         gradient: { description: 'the largest gradient entry', direction: 'lower' },
       },
-      tensors: { parameters: { role: 'param', description: 'the mean then the log-variance coefficients', shape: [m] } },
+      tensors: {
+        parameters: { role: 'param', description: 'the mean then the log-variance coefficients', shape: [m] },
+      },
     },
     problem: heteroSmoothProblem(problem),
     solver,
     key,
     tol,
-    view: (r, evaluations, stalled) => ({ theta: Array.from(r.x), objective: r.value, gradient: infNorm(r.grad), evaluations, stalled }),
+    view: (r, evaluations, stalled) => ({
+      theta: Array.from(r.x),
+      objective: r.value,
+      gradient: infNorm(r.grad),
+      evaluations,
+      stalled,
+    }),
     observe: (s) => ({
       metrics: { objective: s.objective, gradient: s.gradient },
       tensors: { parameters: { role: 'param', value: s.theta, shape: [m] } },
@@ -738,8 +783,15 @@ export function heteroscedasticRegressor(
     const logVar = dgemv(problem.z, n, q, gamma)
     let llf = 0
     for (let i = 0; i < n; i++)
-      llf -= 0.5 * (Math.log(2 * Math.PI) + (logVar[i] ?? 0) + ((problem.y[i] ?? 0) - (mean[i] ?? 0)) ** 2 * Math.exp(-(logVar[i] ?? 0)))
-    const cols = h.varianceFeatures === 'all' ? Array.from({ length: p - (h.fitIntercept ? 1 : 0) }, (_, j) => j) : [...h.varianceFeatures]
+      llf -=
+        0.5 *
+        (Math.log(2 * Math.PI) +
+          (logVar[i] ?? 0) +
+          ((problem.y[i] ?? 0) - (mean[i] ?? 0)) ** 2 * Math.exp(-(logVar[i] ?? 0)))
+    const cols =
+      h.varianceFeatures === 'all'
+        ? Array.from({ length: p - (h.fitIntercept ? 1 : 0) }, (_, j) => j)
+        : [...h.varianceFeatures]
     return {
       ...base,
       logLikelihood: llf,

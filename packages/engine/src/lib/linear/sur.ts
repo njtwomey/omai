@@ -8,13 +8,7 @@
 
 import { type Json, MdmlError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
-import {
-  type IterativeEstimator,
-  iterative,
-  type LearnData,
-  matrixView,
-  requireTargets,
-} from '../learn/index.ts'
+import { type IterativeEstimator, iterative, type LearnData, matrixView, requireTargets } from '../learn/index.ts'
 import { dict, int } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -55,10 +49,13 @@ function systemOf(data: LearnData, h: Pick<SurHyper, 'equations' | 'fitIntercept
   if ((yt.shape[0] ?? 0) !== m.n) throw new MdmlError('shape', `sur: ${yt.shape[0]} targets for ${m.n} rows`)
   if (data.weights !== undefined) throw new MdmlError('value', 'sur: sample weights are not supported')
   const columns =
-    h.equations === 'all' ? Array.from({ length: k }, () => Array.from({ length: m.d }, (_, j) => j)) : h.equations.map((c) => [...c])
+    h.equations === 'all'
+      ? Array.from({ length: k }, () => Array.from({ length: m.d }, (_, j) => j))
+      : h.equations.map((c) => [...c])
   if (columns.length !== k) throw new MdmlError('shape', `sur: ${columns.length} equations for ${k} outputs`)
   for (const cols of columns)
-    for (const j of cols) if (!Number.isInteger(j) || j < 0 || j >= m.d) throw new MdmlError('value', `sur: feature ${j} is not a column`)
+    for (const j of cols)
+      if (!Number.isInteger(j) || j < 0 || j >= m.d) throw new MdmlError('value', `sur: feature ${j} is not a column`)
   const flatY = toFlat(yt)
   const widths = columns.map((cols) => cols.length + (h.fitIntercept ? 1 : 0))
   const designs = columns.map((cols, e) => {
@@ -98,7 +95,8 @@ function crossMoment(sys: System, e: number, f: number): Float64Array {
   const a = sys.designs[e] ?? new Float64Array(0)
   const y = sys.y[f] ?? new Float64Array(0)
   const out = new Float64Array(pe)
-  for (let i = 0; i < sys.n; i++) for (let r = 0; r < pe; r++) out[r] = (out[r] ?? 0) + (a[i * pe + r] ?? 0) * (y[i] ?? 0)
+  for (let i = 0; i < sys.n; i++)
+    for (let r = 0; r < pe; r++) out[r] = (out[r] ?? 0) + (a[i * pe + r] ?? 0) * (y[i] ?? 0)
   return out
 }
 
@@ -116,7 +114,9 @@ function glsSolve(sys: System, sigma: Float64Array): { beta: number[]; cov: Floa
       const gram = crossGram(sys, e, f)
       const pe = sys.widths[e] ?? 0
       const pf = sys.widths[f] ?? 0
-      for (let r = 0; r < pe; r++) for (let c = 0; c < pf; c++) a[((offsets[e] ?? 0) + r) * total + (offsets[f] ?? 0) + c] = s * (gram[r * pf + c] ?? 0)
+      for (let r = 0; r < pe; r++)
+        for (let c = 0; c < pf; c++)
+          a[((offsets[e] ?? 0) + r) * total + (offsets[f] ?? 0) + c] = s * (gram[r * pf + c] ?? 0)
       const mom = crossMoment(sys, e, f)
       for (let r = 0; r < pe; r++) rhs[(offsets[e] ?? 0) + r] = (rhs[(offsets[e] ?? 0) + r] ?? 0) + s * (mom[r] ?? 0)
     }
@@ -198,7 +198,12 @@ export function surAlgorithm(
         sigma: { role: 'state', description: 'the cross-equation error covariance', shape: [k, k] },
       },
     }),
-    init: () => ({ beta: glsSolve(sys, identity).beta, sigma: nested(identity, k), iteration: 0, change: Number.POSITIVE_INFINITY }),
+    init: () => ({
+      beta: glsSolve(sys, identity).beta,
+      sigma: nested(identity, k),
+      iteration: 0,
+      change: Number.POSITIVE_INFINITY,
+    }),
     step: (s) => {
       const sigma = residualCovariance(sys, s.beta)
       const beta = glsSolve(sys, sigma).beta
@@ -308,7 +313,10 @@ export function sur(hyper: Partial<SurHyper> = {}): IterativeEstimator<SurHyper,
       }
     })
     const m = names.length
-    const cov = Float64Array.from({ length: m * m }, (_, idx) => par.covariance[Math.floor(idx / m)]?.[idx % m] ?? Number.NaN)
+    const cov = Float64Array.from(
+      { length: m * m },
+      (_, idx) => par.covariance[Math.floor(idx / m)]?.[idx % m] ?? Number.NaN,
+    )
     return waldTable(names, estimates, cov)
   }
   return iterative<SurHyper, SurState, SurParams, SurVerbs>(
@@ -336,7 +344,8 @@ export function sur(hyper: Partial<SurHyper> = {}): IterativeEstimator<SurHyper,
         }
         const base = {
           nFeaturesIn: d,
-          predict: (x: TensorLike): Tensor => fromStorage(predictRows(x), k === 1 ? [matrixView(x, 'sur').n] : [matrixView(x, 'sur').n, k], 'float64'),
+          predict: (x: TensorLike): Tensor =>
+            fromStorage(predictRows(x), k === 1 ? [matrixView(x, 'sur').n] : [matrixView(x, 'sur').n, k], 'float64'),
           featureImportances: par.coef.map((row) => row.reduce((a, v) => a + Math.abs(v), 0)),
         }
         return {
@@ -362,9 +371,12 @@ export function sur(hyper: Partial<SurHyper> = {}): IterativeEstimator<SurHyper,
         }
       },
       records: (s, data, h): readonly Exposition[] => [tableOf(paramsOf(s, data, h), h.fitIntercept)],
-      logs: { 'solver/change': Log(), 'solver/parameters': Log({ detail: 'full' }), 'solver/sigma': Log({ detail: 'full' }) },
+      logs: {
+        'solver/change': Log(),
+        'solver/parameters': Log({ detail: 'full' }),
+        'solver/sigma': Log({ detail: 'full' }),
+      },
     },
     { ...DEFAULTS, ...hyper },
   )
 }
-

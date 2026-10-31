@@ -11,9 +11,9 @@ const t1 = Array.from({ length: n }, (_, i) => Math.sin(i * 0.37) * 2)
 const t2 = Array.from({ length: n }, (_, i) => Math.cos(i * 0.91))
 const x = t1.map((v, i) => [
   v + 0.05 * (noise[i * 6] ?? 0),
-  0.5 * v + t2[i]! + 0.05 * (noise[i * 6 + 1] ?? 0),
-  -v + 0.5 * t2[i]! + 0.05 * (noise[i * 6 + 2] ?? 0),
-  t2[i]! + 0.05 * (noise[i * 6 + 3] ?? 0),
+  0.5 * v + (t2[i] ?? 0) + 0.05 * (noise[i * 6 + 1] ?? 0),
+  -v + 0.5 * (t2[i] ?? 0) + 0.05 * (noise[i * 6 + 2] ?? 0),
+  (t2[i] ?? 0) + 0.05 * (noise[i * 6 + 3] ?? 0),
 ])
 
 describe('pcr', () => {
@@ -22,7 +22,7 @@ describe('pcr', () => {
   it('is ordinary least squares with every component', () => {
     const f = pcr({ nComponents: 4 }).fit({ x, y })
     const ols = olsSummary({ x, y })
-    f.params.coef.forEach((c, j) => expect(c).toBeCloseTo(ols.table.estimates[j] ?? Number.NaN, 6))
+    for (const [j, c] of f.params.coef.entries()) expect(c).toBeCloseTo(ols.table.estimates[j] ?? Number.NaN, 6)
     expect(f.params.intercept).toBeCloseTo(ols.table.estimates[4] ?? Number.NaN, 6)
   })
 
@@ -45,7 +45,12 @@ describe('pcr', () => {
     const fitted = toFlat(f.predict(x))
     const ybar = y.reduce((s, v) => s + v, 0) / n
     for (let i = 0; i < n; i++)
-      expect(fitted[i]).toBeCloseTo(ybar + (f.params.scoreCoef[0] ?? 0) * (scores[i * 2] ?? 0) + (f.params.scoreCoef[1] ?? 0) * (scores[i * 2 + 1] ?? 0), 9)
+      expect(fitted[i]).toBeCloseTo(
+        ybar +
+          (f.params.scoreCoef[0] ?? 0) * (scores[i * 2] ?? 0) +
+          (f.params.scoreCoef[1] ?? 0) * (scores[i * 2 + 1] ?? 0),
+        9,
+      )
     expect(f.score({ x, y })).toBeGreaterThan(0.95)
   })
 
@@ -55,10 +60,10 @@ describe('pcr', () => {
   })
 
   it('in standardised units, is invariant to the scale of the features', () => {
-    const scaled = x.map((r) => [r[0]! * 100, r[1]!, r[2]! * 0.01, r[3]!])
+    const scaled = x.map((r) => [(r[0] ?? 0) * 100, r[1] ?? 0, (r[2] ?? 0) * 0.01, r[3] ?? 0])
     const a = toFlat(pcr({ nComponents: 2, scale: true }).fit({ x, y }).predict(x))
     const b = toFlat(pcr({ nComponents: 2, scale: true }).fit({ x: scaled, y }).predict(scaled))
-    a.forEach((v, i) => expect(v).toBeCloseTo(b[i] ?? Number.NaN, 8))
+    for (const [i, v] of a.entries()) expect(v).toBeCloseTo(b[i] ?? Number.NaN, 8)
   })
 })
 
@@ -101,12 +106,10 @@ describe('reducedRankRegression', () => {
     // The features are nearly collinear, so judge the coefficients by what they predict, not entry by entry.
     const pred = toFlat(f.predict(x))
     let err = 0
-    x.forEach((r, i) => {
+    for (const [i, r] of x.entries()) {
       const z = r.reduce((sum, v, j) => sum + v * (u[j] ?? 0), 0)
-      load.forEach((l, c) => {
-        err += ((pred[i * 3 + c] ?? 0) - (l * z + 0.02 * c)) ** 2
-      })
-    })
+      for (const [c, l] of load.entries()) err += ((pred[i * 3 + c] ?? 0) - (l * z + 0.02 * c)) ** 2
+    }
     expect(Math.sqrt(err / (n * 3))).toBeLessThan(0.05)
     expect(f.score({ x, y })).toBeGreaterThan(0.99)
   })
@@ -114,7 +117,8 @@ describe('reducedRankRegression', () => {
   it('with the covariance weighting and full rank is also least squares, and at rank one differs from the identity weighting', () => {
     const cov = reducedRankRegression({ rank: 3, weighting: 'covariance' }).fit({ x, y })
     const id = reducedRankRegression({ rank: 3 }).fit({ x, y })
-    cov.params.coef.forEach((row, j) => row.forEach((v, c) => expect(v).toBeCloseTo(id.params.coef[j]?.[c] ?? Number.NaN, 6)))
+    for (const [j, row] of cov.params.coef.entries())
+      for (const [c, v] of row.entries()) expect(v).toBeCloseTo(id.params.coef[j]?.[c] ?? Number.NaN, 6)
     // Outputs with very different scales: the weightings choose different rank-one fits.
     const skewed = y.map((r) => [r[0] ?? 0, (r[1] ?? 0) * 50, (r[2] ?? 0) + 0.3 * Math.sin((r[0] ?? 0) * 40)])
     const a = reducedRankRegression({ rank: 1 }).fit({ x, y: skewed }).params.coef

@@ -53,7 +53,11 @@ describe('sur', () => {
     expect(run.status).toBe('converged')
     const head = runAlgorithm(algorithm, { key: key(0), maxSteps: 2 })
     const json = algorithm.serialise?.(head.state)
-    const resumed = runAlgorithm(algorithm, { key: key(0), maxSteps: 58, start: { state: json, step: head.steps, serialised: true } })
+    const resumed = runAlgorithm(algorithm, {
+      key: key(0),
+      maxSteps: 58,
+      start: { state: json, step: head.steps, serialised: true },
+    })
     expect(resumed.state.beta).toEqual(run.state.beta)
   })
 

@@ -83,7 +83,7 @@ export interface PcrVerbs {
  * const x = [[0, 0.1], [1, 1.2], [2, 1.9], [3, 3.1], [4, 3.9]]
  * const y = [1, 3, 5, 7, 9]
  * const f = pcr({ nComponents: 1 }).fit({ x, y })
- * Math.round((toFlat(f.predict([[5, 5]]))[0] ?? 0) * 10) / 10 // => 11
+ * Math.round((toFlat(f.predict([[5, 5]]))[0] ?? 0) * 10) / 10 // => 11.1
  * ```
  */
 export function pcr(hyper: Partial<PcrHyper> = {}): Estimator<PcrHyper, Fitted<PcrParams> & PcrVerbs> {
@@ -276,14 +276,20 @@ export function reducedRankRegression(
       kind: 'regressor',
       hyperSpace: (h) => dict({ rank: int(1, 20, { default: h.rank }), alpha: real(0, 10, { default: h.alpha }) }),
       fit: (data, h) => {
-        if (data.weights !== undefined) throw new MdmlError('value', 'reducedRankRegression: sample weights are not supported')
+        if (data.weights !== undefined)
+          throw new MdmlError('value', 'reducedRankRegression: sample weights are not supported')
         const m = matrixView(data.x, 'reducedRankRegression')
         const yt = asTensor(requireTargets(data, 'reducedRankRegression'))
         const k = yt.shape.length === 1 ? 1 : (yt.shape[1] ?? 1)
-        if ((yt.shape[0] ?? 0) !== m.n) throw new MdmlError('shape', `reducedRankRegression: ${yt.shape[0]} targets for ${m.n} rows`)
+        if ((yt.shape[0] ?? 0) !== m.n)
+          throw new MdmlError('shape', `reducedRankRegression: ${yt.shape[0]} targets for ${m.n} rows`)
         if (!Number.isInteger(h.rank) || h.rank < 1 || h.rank > Math.min(m.d, k))
-          throw new MdmlError('value', `reducedRankRegression: the rank must be an integer in [1, ${Math.min(m.d, k)}], got ${h.rank}`)
-        if (!(h.alpha >= 0)) throw new MdmlError('value', `reducedRankRegression: alpha must be non-negative, got ${h.alpha}`)
+          throw new MdmlError(
+            'value',
+            `reducedRankRegression: the rank must be an integer in [1, ${Math.min(m.d, k)}], got ${h.rank}`,
+          )
+        if (!(h.alpha >= 0))
+          throw new MdmlError('value', `reducedRankRegression: alpha must be non-negative, got ${h.alpha}`)
         const yFlat = toFlat(yt)
         const xMean = h.fitIntercept ? columnMeans(m) : new Array<number>(m.d).fill(0)
         const yMean = Array.from({ length: k }, (_, c) => {
@@ -345,7 +351,8 @@ export function reducedRankRegression(
             const out = Array.from({ length: m.n }, (_, i) =>
               Array.from({ length: rankOf }, (_, c) => {
                 let v = 0
-                for (let j = 0; j < d; j++) v += ((m.data[i * d + j] ?? 0) - (p.mean[j] ?? 0)) * (p.inputLoadings[j]?.[c] ?? 0)
+                for (let j = 0; j < d; j++)
+                  v += ((m.data[i * d + j] ?? 0) - (p.mean[j] ?? 0)) * (p.inputLoadings[j]?.[c] ?? 0)
                 return v
               }),
             )

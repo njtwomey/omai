@@ -1,6 +1,6 @@
 import { learnGolden, num, rows, str } from '../../testing/learn.ts'
 import { type Tensor, toFlat } from '../tensor/index.ts'
-import { glsFit, glsar, heteroscedasticRegressor } from './gls.ts'
+import { glsar, glsFit, heteroscedasticRegressor } from './gls.ts'
 
 const bseOf = (cov: number[][]): number[] => cov.map((r, j) => Math.sqrt(r[j] ?? Number.NaN))
 
@@ -9,7 +9,13 @@ learnGolden('generalised least squares against statsmodels GLS, GLSAR and refere
     const [x, y, s] = inputs as [Tensor, Tensor, Tensor]
     const sigma = s.shape.length === 1 ? Array.from(toFlat(s)) : rows(s)
     const f = glsFit({ x, y }, { sigma })
-    return { coef: f.coef, intercept: f.intercept, scale: f.scale, logLikelihood: f.logLikelihood, bse: bseOf(f.covariance) }
+    return {
+      coef: f.coef,
+      intercept: f.intercept,
+      scale: f.scale,
+      logLikelihood: f.logLikelihood,
+      bse: bseOf(f.covariance),
+    }
   },
   glsar: (inputs, p) => {
     const [x, y] = inputs as [Tensor, Tensor]
@@ -33,7 +39,7 @@ learnGolden('generalised least squares against statsmodels GLS, GLSAR and refere
       intercept: f.params.intercept,
       gamma: f.params.gamma,
     }
-    if (method === 'ml') out.logLikelihood = f.params.logLikelihood
+    if (method === 'ml') out['logLikelihood'] = f.params.logLikelihood
     return out
   },
 })
