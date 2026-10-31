@@ -1440,7 +1440,22 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
   `SmoothProblem` (an objective that may take a batch index set, `batches`, a start); `loggedSolver` (logs
   `solver/objective`, `solver/gradNorm`, `solver/step` and, for `gradient`, `solver/lr`; serialises the state),
-  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`.
+  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`; `loggedSolverOf` logs by the same
+  convention for any table whose states carry `x`, `value`, `grad` and `step`.
+- `glm.ts`: the penalised GLM as a problem and a slot. `GlmProblem` (design, family, link, prior weights, offset,
+  intercept, `GlmPenalty`: lasso, ridge, a general quadratic penalty matrix as an additive model needs) and
+  `glmSolvers`, the table of its solvers: `irls` (Fisher scoring with step halving, the weighted problem solved exactly
+  by Cholesky or, under an l1 weight, by coordinate descent), `coordinateDescent` (glmnet), and `newton` (observed
+  information), `bfgs`, `lbfgs` (OWL-QN under an l1 weight), `conjugateGradient`, `gradientDescent` and `gradient` (the
+  stochastic mode with its optimiser, schedule and batch) from `smoothSolvers` on the GLM objective
+  (`glmSmoothProblem`). `fitGlm` runs a mode to its fit; `glmValue`, `glmGradient` evaluate. Home: `optim`, not
+  `linear`, because `optim` may import `dists/families` without a cycle (`dists` imports neither `optim` nor `linear`)
+  and the table serves `linear`, `gam` and any future GLM-shaped model alike. A model whose objective is not
+  GLM-shaped builds a `SmoothProblem` and takes `smoothSolvers`; a model that is a GLM takes `glmSolvers`; the model
+  never carries a solver of its own.
+- `analytic.ts`: `analyticObjective`, an objective written over plain numbers with its analytic gradient (and Hessian)
+  as a differentiable function the solvers accept (the gradient is its reverse rule, the Hessian its forward rule), and
+  `finiteDifferenceHessian` for the Newton mode of a model that has a gradient only.
 - `line-search.ts`: the line-search contract (`LineFunction`, `LineStart`, `LineSearchResult` with every trial point
   recorded, `LineSearch`), `backtracking` (Armijo, scipy's quadratic-cubic interpolation, optionally safeguarded, or
   halving; value-only evaluations), `strongWolfe` (Nocedal-Wright bracketing and zoom by cubic interpolation, scipy's

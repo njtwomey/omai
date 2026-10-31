@@ -210,13 +210,55 @@ export const smoothSolvers: ModeTable<SmoothProblem, VectorParams> = modes(
 )
 
 /** The channels every smooth solver's state yields, whichever solver it is. */
-interface Reached {
+export interface SolverReached {
   readonly x: Float64Array
   readonly value: number
   readonly grad: Float64Array
   readonly step: number
   /** The learning rate of the last step (the `gradient` mode only). */
   readonly lr?: number
+}
+
+/**
+ * A solver table's algorithm as a logged algorithm: the table's solver for the configuration, wrapped so each step
+ * logs the objective, the gradient's norm and the step length (`solver/objective`, `solver/gradNorm`, `solver/step`),
+ * and the learning rate where the solver has one (`solver/lr`), lets the model log what is its own from the iterate
+ * (`extra`), and serialises the state for seeking. `loggedSolver` is this for `smoothSolvers`; a family with its own
+ * table (`glmSolvers`) logs by the same convention through this.
+ *
+ * @param table - The table of modes, whose states carry `x`, `value`, `grad` and `step`.
+ * @param problem - What the modes build over.
+ * @param config - A value of the table's space.
+ * @param key - The run's key.
+ * @param extra - Called each step with the iterate and the state's channels, to log what the model adds.
+ * @returns The algorithm.
+ */
+export function loggedSolverOf<Problem>(
+  table: ModeTable<Problem, VectorParams>,
+  problem: Problem,
+  config: SpaceValue,
+  key: Key,
+  extra?: (x: Float64Array, ctx: StepContext, reached: SolverReached) => void,
+): Algorithm<unknown> {
+  const inner = table.make(problem, config, key)
+  return {
+    name: inner.name,
+    config: config as Json,
+    init: (k) => inner.init(k),
+    step: (state, ctx) => {
+      const next = inner.step(state, ctx)
+      const r = next as SolverReached
+      ctx.log('solver/objective', r.value)
+      ctx.log('solver/gradNorm', Math.hypot(...r.grad))
+      ctx.log('solver/step', r.step)
+      if (r.lr !== undefined) ctx.log('solver/lr', r.lr)
+      extra?.(r.x, ctx, r)
+      return next
+    },
+    ...(inner.done === undefined ? {} : { done: inner.done }),
+    serialise: (s) => stateToJson(s) as Json,
+    deserialise: (j) => stateFromJson(j),
+  }
 }
 
 /**
@@ -236,25 +278,7 @@ export function loggedSolver(
   key: Key,
   extra?: (x: Float64Array, ctx: StepContext) => void,
 ): Algorithm<unknown> {
-  const inner = smoothSolvers.make(problem, config, key)
-  return {
-    name: inner.name,
-    config: config as Json,
-    init: (k) => inner.init(k),
-    step: (state, ctx) => {
-      const next = inner.step(state, ctx)
-      const r = next as Reached
-      ctx.log('solver/objective', r.value)
-      ctx.log('solver/gradNorm', Math.hypot(...r.grad))
-      ctx.log('solver/step', r.step)
-      if (r.lr !== undefined) ctx.log('solver/lr', r.lr)
-      extra?.(r.x, ctx)
-      return next
-    },
-    ...(inner.done === undefined ? {} : { done: inner.done }),
-    serialise: (s) => stateToJson(s) as Json,
-    deserialise: (j) => stateFromJson(j),
-  }
+  return loggedSolverOf(smoothSolvers, problem, config, key, extra)
 }
 
 /** The paths `loggedSolver` logs, for a method's contract. */
