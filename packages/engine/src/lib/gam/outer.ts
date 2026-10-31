@@ -189,8 +189,21 @@ export interface OuterEvaluation {
   readonly edf: number
 }
 
-/** The derivative of `log |S_lambda|_+` in each `log lambda_r`: `tr(S_lambda^+ lambda_r S_r)` on the term's block. */
-function logDetDerivative(structure: PenaltyStructure, logLambda: ArrayLike<number>): Float64Array {
+/**
+ * The derivative of `log |S_lambda|_+` in each `log lambda_r`: `tr(S_lambda^+ lambda_r S_r)` on the term's block.
+ *
+ * @param structure - The penalty structure.
+ * @param logLambda - The log smoothing parameters, one per block.
+ * @returns The derivatives, one per block.
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { buildDesign, logDetDerivative, penaltyStructure, s } from 'mdml-engine/gam'
+ * const design = buildDesign([[0], [1], [2], [3], [4], [5], [6]], [s(0, { k: 5 })])
+ * Math.round(logDetDerivative(penaltyStructure(design), [0])[0] ?? 0) // => 3
+ * ```
+ */
+export function logDetDerivative(structure: PenaltyStructure, logLambda: ArrayLike<number>): Float64Array {
   const out = new Float64Array(structure.blocks.length)
   for (const t of structure.terms) {
     const S = new Float64Array(t.size * t.size)
