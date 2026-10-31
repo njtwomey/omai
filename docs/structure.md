@@ -2220,8 +2220,14 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   solver is a slot of `smoothSolvers`, L-BFGS by default; recovers planted weights), and the discriminative voted
   perceptron `mlnPerceptronAlgorithm` (MAP counts from `mlnMap`, or exact expected counts; the weights averaged over
   the passes).
-- TODO (not built): differentiable logic (t-norm formula semantics over tensors as in Logic Tensor Networks, a neural
-  theorem prover, differentiable ILP).
+- `fuzzy-logic.ts`: fuzzy logic over tensors in the manner of Logic Tensor Networks: t-norm families as differentiable
+  tensor ops (`normFamily`: product, Lukasiewicz, Goedel, Hamacher with their t-conorms, standard negation, residuated
+  and material implications, folds along an axis), aggregators for the quantifiers (`pMean`, `pMeanError`, the extremes,
+  a t-norm), `formulaSatisfaction` (propositional formulas over a network's outputs), learnable predicates
+  (`tablePredicate` over constants, `networkPredicate` on features), and `fuzzyTheory` (first-order axioms evaluated to
+  tensors with one axis per free variable, satisfaction as the objective, a `SmoothProblem` for the solver slot) with
+  `fuzzyTheoryAlgorithm` and `trainFuzzyTheory`.
+- TODO (not built): a neural theorem prover, differentiable ILP.
 - Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
   built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
