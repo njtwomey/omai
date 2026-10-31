@@ -3720,7 +3720,10 @@ solution with the influence-matrix diagonal (effective degrees of freedom per co
 `gcvScore`, `ubreScore` and `remlScore` (the Laplace-approximate marginal likelihood with the scale profiled out), and
 `selectLogLambda`, their minimisation over `log lambda` by Nelder-Mead. `pirls.ts` is `gamAlgorithm`, penalised IRLS
 as a stepped algorithm over any `DispersionFamily` and `Link` of `dists/families` (the performance iteration: the
-smoothing parameters are chosen on each working response, with step halving on the penalised deviance); logs
+smoothing parameters are chosen on each working response, with step halving on the penalised deviance); the inner solve
+is the `solver` hyperparameter, a configuration of `glmSolvers` (default `irls`, one reweighted least-squares step; any
+other mode minimises the penalised deviance at the chosen smoothing parameters, with the penalty matrix as its
+penalty); logs
 `solver/deviance`, `solver/penalisedDeviance`, `solver/edf`, `solver/criterion`, `solver/scale`, `solver/coef`,
 `solver/logLambda`. `backfitting.ts` is Hastie and Tibshirani's backfitting (local scoring for an exponential family),
 one cycle per step, which converges to the same penalised solution at fixed smoothing parameters. `estimators.ts` has
