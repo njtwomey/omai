@@ -2596,6 +2596,10 @@ share a concept they share a definition but not a name.
   padded targets, input and target lengths, mean-by-length reduction, `zeroInfinity`), `ctcTrellis` (alpha, beta and the
   state and label alignment posteriors; the loss's gradient is minus the label posterior), `ctcForcedAlignment`
   (Viterbi), `ctcGreedyDecode`.
+- `invariance.ts`: penalties for behaving the same across environments: the IRMv1 gradient penalty (`irmPenalty`, biased and
+  unbiased; `irmObjective`), V-REx (`vrexPenalty`, `vrexObjective`), `coral` (Deep CORAL, optional mean matching),
+  `mmdPenalty` (pairwise MMD between environments), and gradient criteria: `environmentGradient`, `gradientAlignment`
+  (cosine, and Fish's inner product), `perSampleGradients` and `fishrPenalty` (per-environment gradient variances).
 - `preference.ts`: preference objectives on response log-probabilities: `bradleyTerry` (reward-model pairwise loss with a
   margin), `dpo` (with conservative label smoothing and the reference-free form), `implicitRewards`, `ipo`, `kto`,
   `orpo`, `simpo`, `sequenceLogProb`; `tables.ts` has them as `preferenceLosses` (needs a reference, length-normalised,

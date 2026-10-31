@@ -1863,6 +1863,14 @@
       "cases": 27
     },
     {
+      "fixture": "losses/invariance.json",
+      "source": "oracle/cases/losses/invariance.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "losses/margin.json",
       "source": "oracle/cases/losses/margin.py",
       "reference": {
