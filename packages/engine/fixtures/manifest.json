@@ -1562,7 +1562,7 @@
         "diffprivlib": "0.6.6",
         "opacus": "1.6.0"
       },
-      "cases": 17
+      "cases": 20
     },
     {
       "fixture": "learn/semi_supervised.json",
