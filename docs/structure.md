@@ -2998,6 +2998,17 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `generative.ts`: `timestepEmbedding`, `noiseLevelEmbedding` and `fourierFrequencies`, `TimeEmbedding`,
     `DiffusionResBlock`, `SpatialSelfAttention`, `DiffusionDownStage` and `DiffusionUpStage`, `AffineCoupling`
     (RealNVP) and `AdditiveCoupling` (NICE).
+  - `hopfield.ts`: associative memories: `hopfieldWeights` (Hebb or pseudo-inverse rule), `hopfieldEnergy`,
+    `classicalMemory` and `denseAssociativeMemory` (Krotov-Hopfield polynomial or exponential interaction) as one
+    `AssociativeMemory` contract, `hopfieldRecallAlgorithm` (asynchronous updates, sequential or random, the energy,
+    overlap and state on the tape; the energy never rises), and the modern continuous network:
+    `modernHopfieldUpdate` (attention over the patterns), `modernHopfieldEnergy`, `modernHopfieldAlgorithm`,
+    `ModernHopfield` (a layer with learnable patterns).
+  - `rbm.ts`: restricted Boltzmann machines: `RBM` (binary or Gaussian visible units), `rbmFreeEnergy`,
+    `rbmHiddenProbabilities`, `rbmVisibleMean`, `rbmGibbs` (block Gibbs), `rbmContrastiveLoss` (the surrogate whose
+    gradient is the CD update), the exact `rbmLogPartition`, `rbmLogLikelihood` and `rbmModelStatistics` for small
+    machines, and `contrastiveDivergenceAlgorithm` (CD-k or persistent CD with momentum and weight decay; the
+    reconstruction error, free energy, free-energy gap and exact log partition on the tape).
 - `describe.ts`: `describe` (a module to a `Structure`: blocks, tensor shapes, repeats, skip connections into `add`
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen
