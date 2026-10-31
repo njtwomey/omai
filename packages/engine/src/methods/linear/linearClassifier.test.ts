@@ -36,6 +36,16 @@ describe('linearClassifier', () => {
     }
   })
 
+  it('probes the margin of every row and the rows on the wrong side, at any step', () => {
+    const s = session(linearClassifier({ x, y }), { mode: 'eager', steps: 60 })
+    const margins = s.probe(s.t, 'model/margins') as number[]
+    const errors = s.probe(s.t, 'model/errors') as { sets: { misclassified: number[] } }
+    expect(margins).toHaveLength(8)
+    expect(errors.sets.misclassified).toEqual(margins.flatMap((m, i) => (m <= 0 ? [i] : [])))
+    // At the start every score is zero, so no row is on its class's side.
+    expect((s.probe(0, 'model/margins') as number[]).every((m) => m === 0)).toBe(true)
+  })
+
   it('offers only the smooth losses and penalties, and the loss is a knob of the objective', () => {
     const space = linearClassifier({ x, y }).config.spaces as Record<string, { options: object }>
     expect(Object.keys(space['loss']?.options ?? {})).toEqual([

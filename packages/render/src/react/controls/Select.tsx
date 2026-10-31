@@ -70,7 +70,7 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
           >
             {at < 0 ? <option value="">(none)</option> : null}
             {options.map((o, i) => (
-              <option key={String(o.value)} value={String(i)} disabled={o.disabled}>
+              <option key={String(o.value)} value={String(i)} disabled={o.disabled} title={o.description}>
                 {o.label}
               </option>
             ))}

@@ -92,6 +92,21 @@ describe('cartesian', () => {
   })
 })
 
+describe('a legend that wraps', () => {
+  const curves = (names: string[]) => lines(names.map((name) => ({ y: [1, 2], name })))
+  const top = (names: string[]): number =>
+    opt(cartesian([curves(names)], { figure: figure({ width: 440, height: 320 }) })).grid[0].top
+
+  it('leaves the plot area where it was while the legend fits one line', () => {
+    expect(top(['a', 'b', 'c'])).toBe(28)
+  })
+
+  it('moves the plot area down a line of type for each extra row of the legend', () => {
+    const seven = ['gradientDescent', 'conjugateGradient', 'newton', 'bfgs', 'lbfgs', 'coordinateDescent', 'gradient']
+    expect(top(seven)).toBeGreaterThan(28 + 15)
+  })
+})
+
 describe('lines and bands', () => {
   it('breaks lines at non-finite values and fills areas to zero', () => {
     const l = lines([{ x: [0, 1, 2], y: [1, Number.NaN, 3], area: true, step: 'end', dash: [2, 2] }], { mode: 'dark' })
