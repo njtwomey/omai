@@ -40,7 +40,6 @@ import {
   min as minReduce,
   mul,
   pow,
-  prod,
   reshape,
   sigmoid,
   sliceAxis,
@@ -131,8 +130,9 @@ const product = makeFamily(
   'product',
   mul,
   (a, b) => where(lessEqual(a, b), 1, div(b, maximum(a, EPS))),
-  (x, axis) => prod(x, axis),
-  (x, axis) => one(prod(one(x), axis)),
+  // Folded, not `prod`: the gradient of a product divides by its inputs, which is undefined at a truth value of 0.
+  (x, axis) => foldAxis(x, axis, mul, 1),
+  (x, axis) => one(foldAxis(one(x), axis, mul, 1)),
 )
 
 const lukasiewicz = makeFamily(

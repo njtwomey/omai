@@ -2227,7 +2227,19 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   (`tablePredicate` over constants, `networkPredicate` on features), and `fuzzyTheory` (first-order axioms evaluated to
   tensors with one axis per free variable, satisfaction as the objective, a `SmoothProblem` for the solver slot) with
   `fuzzyTheoryAlgorithm` and `trainFuzzyTheory`.
-- TODO (not built): a neural theorem prover, differentiable ILP.
+- `neural-theorem-prover.ts`: the neural theorem prover of Rocktaschel and Riedel: symbol embeddings, soft unification by
+  a Gaussian kernel, backward chaining to a depth over facts and rules (including `#template` predicates whose vectors
+  are learned), proof score the maximum over proofs of the minimum of the unification scores, all proofs batched as
+  tensors (`neuralTheoremProver`, `ntpTrainingSet` with leave-one-out positives and corrupted negatives, `trainNtp` with
+  restarts, `ntpAlgorithm` over the solver slot, `decode` of a template to the nearest predicate). With crisp embeddings
+  the network is classical backward chaining (tested to the proof depth). Goals with an unbound variable are proved
+  against facts only; a template's rule is not reliably induced from scratch at this scale (see the test notes).
+- `diff-ilp.ts`: differentiable ILP (Evans and Grefenstette): clause templates over a language, candidate clauses with
+  precomputed groundings, a softmax over each template's candidates, forward-chained valuation (product conjunction,
+  maximum over existential groundings, previous valuation amalgamated by maximum) as tensor ops, the example
+  cross-entropy as a `SmoothProblem` (`diffIlp`, `diffIlpAlgorithm`, `learnProgram` with restarts), `extract` of the
+  program by taking each template's most probable clause and a crisp forward chainer (`derive`, `accuracy`) to check it.
+  Learns the predecessor, graph reachability (recursive) and, with restarts, the even numbers with an invented auxiliary.
 - Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
   built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of
