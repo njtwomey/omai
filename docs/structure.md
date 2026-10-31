@@ -2944,6 +2944,13 @@ modAL for active learning, diffprivlib and opacus for privacy
   score `ulsifLoo`.
 - `privacy.ts`: Laplace, Gaussian (classic and analytic) and exponential mechanisms, randomised response, composition,
   RDP accounting for the subsampled Gaussian.
+- `dp-sgd.ts`: differentially private training: `perExampleGradients` (`vmap` of `valueAndGrad`), `clipPerExample`
+  (flat clipping to a norm bound, the clipped share), `privateGradient` and `dpGradientTransformation` (the Gaussian
+  noise stage, a `GradientTransformation` for the sum of clipped gradients), `dpSgdStep` (a step over `TrainState`),
+  `dpSgdAlgorithm` (Poisson batches, the Renyi account on the tape: `budget/epsilon`, `budget/rdp`, with
+  `training/clippedShare` and `training/noiseNorm`), `dpEpsilon` and `noiseMultiplierFor` (the accountant and its
+  inverse over `privacy.ts`). The accountant is checked against opacus on Abadi et al.'s, TensorFlow Privacy's and
+  Opacus's MNIST settings (`oracle/cases/learn/privacy.py`).
 - `semi-supervised.ts`: rows with target `-1` (NaN for regression) are unlabelled. `selfTraining`, `coTraining` (two
   feature views, shared labelled set, product of the views) and `triTraining` (Zhou and Li's error and size conditions)
   over any probabilistic base `Estimator`; `labelPropagation` and `labelSpreading` (`sklearn.semi_supervised`, rbf and
