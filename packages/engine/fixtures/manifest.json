@@ -878,6 +878,15 @@
       "cases": 8
     },
     {
+      "fixture": "gam/outer.json",
+      "source": "oracle/cases/gam/outer.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "scipy": "1.18.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "gam/reml.json",
       "source": "oracle/cases/gam/reml.py",
       "reference": {

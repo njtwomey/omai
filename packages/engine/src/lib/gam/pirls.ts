@@ -40,6 +40,14 @@ export interface GamHyper {
   readonly link: Link | undefined
   /** How the smoothing parameters are chosen; `fixed` uses `sp` (default `reml`). */
   readonly method: SmoothingMethod
+  /**
+   * How the criterion is optimised: `performance` (the default) chooses the smoothing parameters afresh on every
+   * working response inside the reweighted least-squares loop (Gu's performance iteration, exact for a Gaussian model);
+   * `outer` fits the model to convergence at each trial smoothing parameter and optimises the criterion of the
+   * converged fit (Wood 2011, as mgcv), with Newton steps on the Laplace-approximate REML or ML score for `reml` and
+   * `ml`, and the simplex for `gcv` and `ubre`.
+   */
+  readonly iteration: 'performance' | 'outer'
   /** Smoothing parameters `lambda`, one per penalty: used as given by `fixed`, as starting values otherwise. */
   readonly sp: readonly number[] | undefined
   /** The inflation of the effective degrees of freedom in GCV and UBRE (default 1). */
@@ -64,6 +72,7 @@ export const GAM_DEFAULTS: GamHyper = {
   family: gaussian(),
   link: undefined,
   method: 'reml',
+  iteration: 'performance',
   sp: undefined,
   gamma: 1,
   scale: undefined,
@@ -269,7 +278,22 @@ export function influenceDiagonal(problem: GamProblem, state: GamState): Float64
   return out
 }
 
-function pearsonScale(problem: GamProblem, mu: Float64Array, edf: number): number {
+/**
+ * The Pearson estimate of the scale, `sum w (y - mu)^2 / V(mu) / (n - edf)` (the known scale when there is one).
+ *
+ * @param problem - The problem.
+ * @param mu - The fitted means.
+ * @param edf - The total effective degrees of freedom.
+ * @returns The scale.
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { GAM_DEFAULTS, gamProblem, pearsonScale } from 'mdml-engine/gam'
+ * const p = gamProblem([[0], [1], [2], [3]], [1, 2, 3, 5], { ...GAM_DEFAULTS, terms: [] })
+ * pearsonScale(p, Float64Array.of(1, 2, 3, 4), 2) // => 0.5
+ * ```
+ */
+export function pearsonScale(problem: GamProblem, mu: Float64Array, edf: number): number {
   if (problem.knownScale !== undefined) return problem.knownScale
   const variance = flat(problem.family.variance(vec(mu)))
   let chi = 0

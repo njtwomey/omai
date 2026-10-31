@@ -8,6 +8,7 @@
 export * from './backfitting.ts'
 export * from './estimators.ts'
 export * from './inference.ts'
+export * from './outer.ts'
 export * from './penalised.ts'
 export * from './pirls.ts'
 export * from './shape.ts'

@@ -17,7 +17,7 @@ import { glmSolvers } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { Log } from '../trace/index.ts'
+import { type Algorithm, Log } from '../trace/index.ts'
 import {
   type Band,
   type BandOptions,
@@ -30,6 +30,7 @@ import {
   simulateCurves,
   termBand,
 } from './inference.ts'
+import { gamOuterAlgorithm } from './outer.ts'
 import { posteriorCovariance } from './penalised.ts'
 import {
   GAM_DEFAULTS,
@@ -244,14 +245,18 @@ function particular(kind: 'regressor' | 'classifier') {
     defaults,
     hyperSpace: (h: GamHyper) =>
       dict({
-        method: choice(['reml', 'gcv', 'ubre', 'fixed'], { default: h.method, label: 'smoothing selection' }),
+        method: choice(['reml', 'ml', 'gcv', 'ubre', 'fixed'], { default: h.method, label: 'smoothing selection' }),
+        iteration: choice(['performance', 'outer'], { default: h.iteration, label: 'smoothing iteration' }),
         gamma: real(Math.min(0.5, h.gamma), Math.max(3, h.gamma), {
           default: h.gamma,
           label: 'degrees of freedom inflation',
         }),
         solver: glmSolvers.space,
       }),
-    algorithm: (data: LearnData, h: GamHyper, key: Key) => gamAlgorithm(prepare(data, h, kind).problem, h, key),
+    algorithm: (data: LearnData, h: GamHyper, key: Key): Algorithm<GamState> => {
+      const { problem } = prepare(data, h, kind)
+      return h.iteration === 'outer' ? gamOuterAlgorithm(problem, h, key) : gamAlgorithm(problem, h, key)
+    },
     maxSteps: (h: GamHyper) => h.maxIter,
     params: (s: GamState, data: LearnData, h: GamHyper): GamParams => {
       const { problem, classes } = prepare(data, h, kind)

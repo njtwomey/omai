@@ -15,7 +15,7 @@ import type { ConstraintBlock } from './shape.ts'
 import type { GamDesign } from './terms.ts'
 
 /** How the smoothing parameters are chosen. */
-export type SmoothingMethod = 'fixed' | 'gcv' | 'ubre' | 'reml'
+export type SmoothingMethod = 'fixed' | 'gcv' | 'ubre' | 'reml' | 'ml'
 
 /** One penalty `lambda_r S_r` of the model, placed at the columns of its term. */
 export interface PenaltyBlock {
@@ -410,8 +410,22 @@ export interface CriterionContext {
   readonly logLambda: ArrayLike<number>
 }
 
-/** `log |S_lambda|_+` and the number of unpenalised dimensions, from the structural ranks of the term penalties. */
-function pseudoDeterminant(
+/**
+ * `log |S_lambda|_+`, the log pseudo-determinant of the assembled penalty, and the number of unpenalised dimensions,
+ * from the structural ranks of the term penalties.
+ *
+ * @param structure - The penalty structure.
+ * @param logLambda - The log smoothing parameters, one per block.
+ * @returns The log pseudo-determinant and the dimension of the null space.
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { buildDesign, penaltyLogDet, penaltyStructure, s } from 'mdml-engine/gam'
+ * const design = buildDesign([[0], [1], [2], [3], [4], [5], [6]], [s(0, { k: 5 })])
+ * penaltyLogDet(penaltyStructure(design), [0]).nullDim // => 2
+ * ```
+ */
+export function penaltyLogDet(
   structure: PenaltyStructure,
   logLambda: ArrayLike<number>,
 ): { logDet: number; nullDim: number } {
@@ -503,13 +517,13 @@ export function ubreScore(
  */
 export function remlScore(
   sol: PenalisedSolution,
-  ctx: Pick<CriterionContext, 'n' | 'scale' | 'structure' | 'logLambda'>,
+  ctx: Pick<CriterionContext, 'n' | 'scale' | 'structure' | 'logLambda'> & { readonly ml?: boolean },
 ): number {
-  const { logDet, nullDim } = pseudoDeterminant(ctx.structure, ctx.logLambda)
+  const { logDet, nullDim } = penaltyLogDet(ctx.structure, ctx.logLambda)
   const dev = sol.rss + sol.penalty
   const half = 0.5 * (sol.logDetA - logDet)
   if (ctx.scale !== undefined) return dev / (2 * ctx.scale) + half
-  const dof = ctx.n - nullDim
+  const dof = ctx.n - (ctx.ml === true ? 0 : nullDim)
   const phi = Math.max(dev / dof, 1e-300)
   return dof / 2 + (dof / 2) * Math.log(2 * Math.PI * phi) + half
 }
@@ -524,6 +538,8 @@ function criterionOf(sol: PenalisedSolution, ctx: CriterionContext): number {
       return ubreScore(sol, ctx.n, ctx.scale, ctx.gamma)
     case 'reml':
       return remlScore(sol, ctx)
+    case 'ml':
+      return remlScore(sol, { ...ctx, ml: true })
   }
 }
 

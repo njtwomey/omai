@@ -4114,13 +4114,26 @@ as a quadratic program (the active-set method of `optim`, the interior-point met
 cycle) and inverts the Hessian on the null space of the binding constraints, so `edf`, the posterior covariance and the
 REML determinant are those of the constrained model. The solver slot is `irls` only for such terms.
 
+`outer.ts` is the outer iteration of mgcv (`iteration: 'outer'`; the performance iteration stays the default,
+`iteration: 'performance'`): `innerFit` runs the penalised fit to convergence at a trial `log lambda` (penalised IRLS
+with step halving, or any `glmSolvers` mode warm-started), `evaluateOuter` scores it, and `gamOuterAlgorithm` (one outer
+iteration per step, `fitGamOuter` to the end) minimises the score. REML and ML are the Laplace-approximate marginal
+likelihood with the observed information (`observedWeights`: the Fisher weight times `1 + (y - mu)(V'/V + g''/g')`),
+the scale profiled out when unknown, an analytic gradient in `log lambda` (the implicit derivative of the penalised
+coefficients, the weights differentiated in the linear predictor), and a Hessian from differences of gradients
+(`outerHessian`), with Newton steps, an eigenvalue safeguard and step halving; GCV and UBRE are the deviance scores of the
+converged fit minimised with the simplex. Its state is a `GamState` plus the gradient norm, so inference and the
+estimators (`gam.with({ iteration: 'outer' })`) apply to it unchanged.
+
 oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
 B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
 (a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,
-variance and intercept). pyGAM and mgcv are not in the oracle environment. TODO: GAMLSS (the distributional families
+variance and intercept). The outer iteration is checked against an independent numpy/scipy implementation (`gam/outer`:
+statsmodels' B-spline design, a brute-force profile of the Laplace REML over a grid of `log lambda` refined by scipy, for the
+Gaussian, Poisson, binomial and gamma-log families: `log lambda`, criterion, effective degrees of freedom, coefficients).
+pyGAM and mgcv are not in the oracle environment. TODO: GAMLSS (the distributional families
 of `dists/families` have the links and the log-likelihood; the RS algorithm over per-parameter additive predictors is
-not written), the outer-iteration REML of mgcv (the performance iteration here differs from it for non-Gaussian
-families).
+not written).
 built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
 
 ### 4.52 `covariance/`: covariance and precision matrices (scikit-learn covariance)
