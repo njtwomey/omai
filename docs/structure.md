@@ -2451,6 +2451,10 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `choice-models.ts`: Plackett-Luce and Bradley-Terry: `choiceSmoothProblem` (the log-likelihood in the free log strengths),
   `choiceSolvers` (Hunter's minorise-maximise as the model's own mode beside every generic solver), `choiceAlgorithm`,
   `fitPlackettLuce`, `fitBradleyTerry`, `pairedComparisons`, `winProbability`.
+- `irt.ts`: item response theory for scored responses: the 1PL, 2PL and 3PL models (`irtProbability`), Bock-Aitkin marginal
+  maximum likelihood on Gauss-Hermite nodes (`irtSmoothProblem` with the analytic gradient by Fisher's identity,
+  `irtSolvers` with `em` as the model's own mode beside every generic solver, `irtAlgorithm`, `fitIrt`), abilities by EAP,
+  MAP or MLE (`irtAbility`), the item and test information functions, and `irtSimulate` (abilities as the truth).
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
