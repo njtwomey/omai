@@ -1917,6 +1917,14 @@
       "cases": 18
     },
     {
+      "fixture": "losses/sequence.json",
+      "source": "oracle/cases/losses/sequence.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "manifold/mds_nonmetric.json",
       "source": "oracle/cases/manifold/mds_nonmetric.py",
       "reference": {

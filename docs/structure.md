@@ -2592,6 +2592,10 @@ share a concept they share a definition but not a name.
   losses: Dirichlet (`evidentialNll`: squared error, log and digamma forms with the KL regulariser; `dirichletUncertainty`:
   vacuity, aleatoric and epistemic parts) and normal-inverse-gamma (`normalInverseGammaNll`,
   `normalInverseGammaUncertainty`).
+- `sequence.ts`: CTC: `ctc` (log-semiring forward algorithm over the blank-extended target, torch's CTCLoss conventions:
+  padded targets, input and target lengths, mean-by-length reduction, `zeroInfinity`), `ctcTrellis` (alpha, beta and the
+  state and label alignment posteriors; the loss's gradient is minus the label posterior), `ctcForcedAlignment`
+  (Viterbi), `ctcGreedyDecode`.
 - `ranking.ts`: `marginRanking`, `rankNet`, `pairwiseHinge`, `bpr`, `lambdaRank` (NDCG@k deltas), `listNet`,
   `softmaxRanking`, `listMle`, `approxNdcg`; padded lists through a mask.
 - `contrastive.ts`: `infoNce` (in-batch, shared or per-query negatives), `ntXent`, `tripletMargin`, `contrastive`,
