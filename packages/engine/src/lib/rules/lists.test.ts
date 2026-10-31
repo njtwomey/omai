@@ -103,7 +103,8 @@ describe('CORELS', () => {
     )
     expect(fitted.score(test.data)).toBeGreaterThan(0.9)
     expect(modelText(fitted.model).split('\n').at(-1)).toMatch(/^ELSE/)
-  })
+    // The search takes about five seconds alone: the full suite runs many files at once.
+  }, 120_000)
 
   it('the bound never exceeds the incumbent and the queue empties at the certificate', () => {
     const alg = corelsAlgorithm(table(64), { nominal: [0, 1, 2, 3], minSupport: 0.1, maxCardinality: 2, lambda: 0.02 })

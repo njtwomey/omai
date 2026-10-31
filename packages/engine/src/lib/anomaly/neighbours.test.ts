@@ -118,6 +118,11 @@ describe('the local outlier factor', () => {
         fc.integer({ min: 1, max: 5 }),
         (pts, k) => {
           const x = pts.map(([a, b]) => [a, b])
+          // A point with k or more exact duplicates has a zero k-distance: its density is then 1 / 1e-10 (the
+          // scikit-learn floor), which is not scale invariant, so such inputs are outside the property.
+          const copies = new Map<string, number>()
+          for (const p of x) copies.set(String(p), (copies.get(String(p)) ?? 0) + 1)
+          fc.pre([...copies.values()].every((c) => c <= k))
           const base = localOutlierFactors(x, { nNeighbors: k, algorithm: 'brute' }).lof
           expect(base.every((v) => v > 0 && Number.isFinite(v))).toBe(true)
           const moved = x.map(([a, b]) => [4 * (a ?? 0) + 3, 4 * (b ?? 0) - 7])
