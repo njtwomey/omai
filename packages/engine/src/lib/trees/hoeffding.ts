@@ -12,7 +12,17 @@ import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import { type LearnData, withDefaultScore } from '../learn/estimator.ts'
 import { encodeLabels, matrixView, rowsOf } from '../learn/validation.ts'
 import { choice, dict, int, real } from '../space/index.ts'
-import { type Algorithm, derived, Log, message, scalar, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  derived,
+  Log,
+  message,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { type TreeVerbs, treeVerbs } from './decision-tree.ts'
 import { type Tree, treeFeatureImportances } from './tree.ts'
 
@@ -204,6 +214,18 @@ function routeTo(nodes: readonly HoeffdingNode[], row: ArrayLike<number>): numbe
 }
 
 /**
+ * The paths of the Hoeffding tree: the splits as they happen, the leaf count and depth, the prequential accuracy, and the derived `model/importances`.
+ *
+ * @example
+ * ```ts
+ * import type { HoeffdingPath } from 'mdml-engine/trees'
+ * const path: HoeffdingPath = 'tree/split'
+ * path // => 'tree/split'
+ * ```
+ */
+export type HoeffdingPath = 'tree/split' | 'tree/leaves' | 'tree/depth' | 'eval/accuracy' | 'model/importances'
+
+/**
  * The Hoeffding tree as an algorithm, one stream example per step: the example is first classified by the tree so far
  * (test-then-train, which gives the prequential accuracy), then taught to its leaf, and the leaf tries to split when it
  * has seen `gracePeriod` examples since it last tried. Logs, when subscribed: `tree/split` (the leaf that split, its
@@ -224,7 +246,10 @@ function routeTo(nodes: readonly HoeffdingNode[], row: ArrayLike<number>): numbe
  * hoeffdingTreeOf(run.state, { classes: [0, 1], nFeatures: 1 }).feature[0] // => 0
  * ```
  */
-export function hoeffdingTreeAlgorithm(data: LearnData, options: HoeffdingOptions): Algorithm<HoeffdingState> {
+export function hoeffdingTreeAlgorithm(
+  data: LearnData,
+  options: HoeffdingOptions,
+): Algorithm<HoeffdingState, HoeffdingPath> {
   const m = matrixView(data.x, 'hoeffdingTree', { allowNaN: true })
   if (data.y === undefined) throw new MdmlError('value', 'hoeffdingTree: needs targets y')
   const { classes, codes } = encodeLabels(data.y, 'hoeffdingTree', m.n)
@@ -376,7 +401,7 @@ export function hoeffdingTreeOf(
 }
 
 /** A Hoeffding tree estimator on the iterative base. */
-export type HoeffdingEstimator = IterativeEstimator<HoeffdingOptions, HoeffdingState, Tree, TreeVerbs>
+export type HoeffdingEstimator = IterativeEstimator<HoeffdingOptions, HoeffdingState, Tree, TreeVerbs, HoeffdingPath>
 
 /**
  * A Hoeffding tree classifier (river's HoeffdingTreeClassifier) on the iterative base: a fit streams the rows once in
@@ -410,7 +435,7 @@ export function hoeffdingTreeClassifier(hyper: Partial<HoeffdingOptions> = {}): 
     passes: hyper.passes ?? 1,
   }
   const classesOf = (data: LearnData): readonly number[] => encodeLabels(data.y ?? [], 'hoeffdingTree').classes
-  return iterative<HoeffdingOptions, HoeffdingState, Tree, TreeVerbs>(
+  return iterative<HoeffdingOptions, HoeffdingState, Tree, TreeVerbs, HoeffdingPath>(
     {
       name: 'hoeffding-tree-classifier',
       kind: 'classifier',
@@ -430,27 +455,28 @@ export function hoeffdingTreeClassifier(hyper: Partial<HoeffdingOptions> = {}): 
         }),
       verbs: (tree) => withDefaultScore('classifier', treeVerbs(tree)),
       maxSteps: (h, data) => h.passes * rowsOf(data.x),
-      contract: (data) => ({
-        'tree/split': message({
-          description: 'a leaf split: its feature and threshold, the merit, the runner-up and the bound',
+      contract: (data): Contract<HoeffdingState, HoeffdingPath> =>
+        defineContract({
+          'tree/split': message({
+            description: 'a leaf split: its feature and threshold, the merit, the runner-up and the bound',
+          }),
+          'tree/leaves': scalar({ description: 'leaves so far' }),
+          'tree/depth': scalar({ description: 'depth of the deepest node' }),
+          'eval/accuracy': scalar({
+            description: 'prequential accuracy: each example classified before it is learnt',
+            direction: 'higher',
+          }),
+          'model/importances': derived<HoeffdingState>({
+            description: 'impurity importance of each feature in the tree so far',
+            compute: (state) =>
+              treeFeatureImportances(
+                hoeffdingTreeOf(state, {
+                  classes: classesOf(data),
+                  nFeatures: matrixView(data.x, 'hoeffdingTree', { allowNaN: true }).d,
+                }),
+              ),
+          }),
         }),
-        'tree/leaves': scalar({ description: 'leaves so far' }),
-        'tree/depth': scalar({ description: 'depth of the deepest node' }),
-        'eval/accuracy': scalar({
-          description: 'prequential accuracy: each example classified before it is learnt',
-          direction: 'higher',
-        }),
-        'model/importances': derived<HoeffdingState>({
-          description: 'impurity importance of each feature in the tree so far',
-          compute: (state) =>
-            treeFeatureImportances(
-              hoeffdingTreeOf(state, {
-                classes: classesOf(data),
-                nFeatures: matrixView(data.x, 'hoeffdingTree', { allowNaN: true }).d,
-              }),
-            ),
-        }),
-      }),
       logs: { 'tree/split': Log(), 'tree/leaves': Log(), 'eval/accuracy': Log() },
     },
     defaults,
