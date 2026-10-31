@@ -2443,6 +2443,14 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   (diagonal or full covariances with hmmlearn's prior) over `inference/chain.ts`; parameters are plain JSON
   (`HmmParameters`). The golden against hmmlearn keeps its fixture under `methods/models/hmm`. `methods/sequence/hmm.ts`
   is its particular on the iterative base.
+- `ratings.ts`: rating systems as filters over games: `eloExpected`/`eloUpdate`, `glickoUpdate`/`glickoInflate`,
+  `glicko2Update` (the Illinois iteration on the log volatility), `trueskillUpdate` (two players or two teams by Gaussian
+  moment matching, with draws and the dynamics term), and `ratingAlgorithm` (one game, or one period for the Glicko
+  systems, per step; the pre-game win probability's running log-loss on the tape). Goldens are the worked examples of
+  the Glicko and Glicko-2 papers and the reference TrueSkill update (no rating package is an oracle dependency).
+- `choice-models.ts`: Plackett-Luce and Bradley-Terry: `choiceSmoothProblem` (the log-likelihood in the free log strengths),
+  `choiceSolvers` (Hunter's minorise-maximise as the model's own mode beside every generic solver), `choiceAlgorithm`,
+  `fitPlackettLuce`, `fitBradleyTerry`, `pairedComparisons`, `winProbability`.
 - `learning/parameters.ts`: state counts, maximum-likelihood and Bayesian (BDeu, K2, Dirichlet) parameter estimation,
   data log-likelihood, EM with missing data and latent variables (traced), linear-Gaussian least squares.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
