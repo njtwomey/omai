@@ -2206,8 +2206,22 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   the proofs and their probabilities exposed), `conditionalProbability` (evidence true or false) and `probLogEmAlgorithm`
   (EM for the facts' probabilities from observed interpretations, one iteration per step). Checked against enumeration of
   all possible worlds on random cyclic graphs.
-- TODO (not built): Markov logic networks (grounding, pseudo-likelihood weight learning, MC-SAT and Gibbs), differentiable
-  logic (t-norm formula semantics over tensors as in Logic Tensor Networks, a neural theorem prover, differentiable ILP).
+- `markov-logic.ts`: Markov logic networks: `groundMln` (weighted first-order formulas over a finite domain into ground
+  atoms and ground formulas; free variables universally quantified, quantifiers expanded, `=` decided; a hard formula has
+  infinite weight), `mlnExact` (the exact distribution by enumeration: log partition, marginals, query probabilities,
+  expected counts; the truth the samplers are tested against), `mlnSampleWorlds` (exact samples of complete worlds, the
+  generator with its planted weights as truth), `mlnGibbsAlgorithm` (one sweep per step), `mlnMcSatAlgorithm` (slice
+  sampling; the slice by `sampleSat`, Wei-Erenrich-Selman's near-uniform SampleSAT, or exactly by enumeration) with
+  marginals, query probabilities and energy on the tape (`MlnSamplerPath`, `mlnSamplerContract`), and `mlnMap` (MAP as
+  weighted partial MaxSAT through `maxsat.ts`).
+- `mln-learning.ts`: weight learning: `mlnPseudoLikelihoodProblem` (a convex logistic regression on the changes in each
+  formula's true-grounding count, as a `SmoothProblem` with value, gradient and Hessian), `mlnLikelihoodProblem` and
+  `mlnConditionalLikelihoodProblem` (exact, by enumeration), `learnMlnWeights` and `mlnPseudoLikelihoodAlgorithm` (the
+  solver is a slot of `smoothSolvers`, L-BFGS by default; recovers planted weights), and the discriminative voted
+  perceptron `mlnPerceptronAlgorithm` (MAP counts from `mlnMap`, or exact expected counts; the weights averaged over
+  the passes).
+- TODO (not built): differentiable logic (t-norm formula semantics over tensors as in Logic Tensor Networks, a neural
+  theorem prover, differentiable ILP).
 - Internal: `_errors.ts` (ISO error terms), `_arith.ts` (arithmetic with SWI-Prolog's defaults), `_builtins.ts` (the
   built-in predicates), `_library.ts` (the standard library in Prolog), `_cdcl.ts` (the CDCL core shared by `sat` and
   `maxsat`), `_relations.ts` (fact stores and joins shared by Datalog and answer-set grounding). Test generators of

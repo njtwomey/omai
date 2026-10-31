@@ -10,7 +10,7 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
-import { type Key, uniformStream } from '../random/index.ts'
+import { categorical, type Key, uniformStream } from '../random/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -485,7 +485,7 @@ const ENUMERATION_LIMIT = 22
  * ```ts
  * import { groundMln, mlnExact } from 'mdml-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: Math.log(3), formula: 'p(a)' }] })
- * mlnExact(g).marginals['p(a)'] // => 0.75
+ * (mlnExact(g).marginals['p(a)'] ?? 0).toFixed(4) // => '0.7500'
  * ```
  */
 export function mlnExact(
@@ -541,6 +541,56 @@ export function mlnExact(
     expectedCounts: counts,
     worlds: total,
   }
+}
+
+/**
+ * Exact samples of complete worlds from a ground network by enumeration (a generator whose truth is the network's
+ * weights), for tiny domains: the data weight learning is tested against.
+ *
+ * @param ground - The ground network.
+ * @param count - The number of worlds.
+ * @param k - The random key.
+ * @param options - Evidence atoms the worlds are conditioned on.
+ * @returns The worlds as records of every atom's truth value.
+ * @throws MdmlError with code `value` for more than 22 unobserved atoms or impossible evidence.
+ * @example
+ * ```ts
+ * import { groundMln, mlnSampleWorlds } from 'mdml-engine/logic'
+ * import { key } from 'mdml-engine/random'
+ * const g = groundMln({ domain: ['a'], formulas: [{ weight: 30, formula: 'p(a)' }] })
+ * mlnSampleWorlds(g, 2, key(0)) // => [{ 'p(a)': true }, { 'p(a)': true }]
+ * ```
+ */
+export function mlnSampleWorlds(
+  ground: GroundMln,
+  count: number,
+  k: Key,
+  options: { readonly evidence?: World } = {},
+): Record<string, boolean>[] {
+  const n = ground.atoms.length
+  const fixed = new Map<number, number>()
+  for (const [name, v] of Object.entries(options.evidence ?? {})) {
+    const i = ground.atomIndex.get(name)
+    if (i === undefined) throw new MdmlError('value', `mlnSampleWorlds: unknown ground atom ${name}`)
+    fixed.set(i, v ? 1 : 0)
+  }
+  const free = [...Array(n).keys()].filter((i) => !fixed.has(i))
+  if (free.length > ENUMERATION_LIMIT)
+    throw new MdmlError('value', `mlnSampleWorlds: ${free.length} unobserved atoms is too many to enumerate`)
+  const world = new Uint8Array(n)
+  for (const [i, v] of fixed) world[i] = v
+  const logits = new Array<number>(2 ** free.length)
+  for (let m = 0; m < logits.length; m++) {
+    for (let j = 0; j < free.length; j++) world[free[j] as number] = (m >> j) & 1
+    logits[m] = mlnLogWeight(ground, world)
+  }
+  if (!logits.some((l) => l > Number.NEGATIVE_INFINITY))
+    throw new MdmlError('value', 'mlnSampleWorlds: the evidence has probability zero')
+  const picks = categorical(k, logits, [count], { logits: true }).data
+  return Array.from(picks, (m) => {
+    for (let j = 0; j < free.length; j++) world[free[j] as number] = (m >> j) & 1
+    return worldRecord(ground, world)
+  })
 }
 
 // ------------------------------------------------------------------------------------------------ clause encodings
