@@ -3267,6 +3267,16 @@ differences of the analytic gradient, thresholds as a first cutpoint plus log in
 probabilities for the four links; the sequential mode has no reference and is checked by finite differences and its
 equality with logistic regression for two categories).
 
+`mixed.ts` is the linear mixed model `y = X beta + Z b_g + e` for grouped data: `mixedProblemOf` summarises each group's
+rows into sufficient statistics (the group label is a column of `x`; random intercept and slopes, unstructured or
+diagonal covariance), `mixedProfile` is the profiled (restricted) deviance at a relative covariance factor (fixed effects
+and residual variance profiled out, the matrix determinant lemma per group), `mixedAlgorithm` maximises it by damped
+Newton steps (`_newton.ts`, shared with `ordinal.ts`: Levenberg-shifted direction and backtracking), and the `mixedModel`
+estimator has the fixed-effects Wald table, `randomCovariance`, `sigma2`, the group effects (BLUPs), and `predict`
+(group effects for groups seen in fit) and `predictFixed`. Sample weights are refused. oracle: `linear/mixed` against
+statsmodels' `MixedLM` (REML and ML; random intercept, and correlated random intercept and slope); statsmodels stops
+slightly short of the optimum, so the golden tolerance is 1e-3 and a dense-matrix test checks the likelihood itself.
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 

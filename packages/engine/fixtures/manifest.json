@@ -1410,6 +1410,14 @@
       "cases": 8
     },
     {
+      "fixture": "linear/mixed.json",
+      "source": "oracle/cases/linear/mixed.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "linear/online.json",
       "source": "oracle/cases/linear/online.py",
       "reference": {

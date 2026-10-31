@@ -26,6 +26,7 @@ import { ndtr, ndtri } from '../numerics/special/index.ts'
 import { dict, real } from '../space/index.ts'
 import { fromStorage, item, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
+import { backtrack, newtonDirection } from './_newton.ts'
 import { waldTable } from './inference.ts'
 
 /** The link F of an ordinal model. */
@@ -359,44 +360,17 @@ export function ordinalAlgorithm(problem: OrdinalProblem, options: OrdinalOption
           H[i * m + j] = v
           H[j * m + i] = v
         }
-      // Newton direction with a Levenberg shift until the Hessian is positive definite.
-      let shift = 0
-      let dir: Float64Array = new Float64Array(m)
-      for (let attempt = 0; attempt < 40; attempt++) {
-        const a = Float64Array.from(H)
-        for (let i = 0; i < m; i++) a[i * m + i] = (a[i * m + i] ?? 0) + shift
-        const { factor, info } = dpotrf(a, m)
-        if (info === 0) {
-          dir = dpotrs(
-            factor,
-            Float64Array.from(g, (v) => -v),
-            m,
-          )
-          break
-        }
-        shift = shift === 0 ? 1e-6 : shift * 10
+      const dir = newtonDirection(H, g, m)
+      const found = backtrack(evaluate, s.u, s.objective, g, dir)
+      const evaluations = s.evaluations + 2 * m + 1 + (found?.evaluations ?? 50)
+      if (found === undefined) return { ...s, evaluations, stalled: true }
+      return {
+        u: found.u,
+        objective: found.result.objective,
+        gradient: maxAbs(found.result.grad),
+        evaluations,
+        stalled: false,
       }
-      // Backtrack until the objective decreases.
-      let t = 1
-      let next = { objective: Number.POSITIVE_INFINITY, grad: g }
-      let u = s.u
-      let evaluations = s.evaluations + 2 * m + 1
-      for (let tries = 0; tries < 50; tries++) {
-        const trial = s.u.map((v, i) => v + t * (dir[i] ?? 0))
-        const e = evaluate(trial)
-        evaluations++
-        if (
-          Number.isFinite(e.objective) &&
-          e.objective <= s.objective + 1e-4 * t * dir.reduce((a, v, i) => a + v * (g[i] ?? 0), 0)
-        ) {
-          next = e
-          u = trial
-          break
-        }
-        t /= 2
-      }
-      if (u === s.u) return { ...s, evaluations, stalled: true }
-      return { u, objective: next.objective, gradient: maxAbs(next.grad), evaluations, stalled: false }
     },
     done: (s) => (s.gradient <= tol ? 'converged' : s.stalled ? 'stopped' : undefined),
     observe: (s) => ({
