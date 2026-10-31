@@ -1726,6 +1726,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `chebyshev`, `augmentedChebyshev`, `epsilonConstraint`), `VectorObjective`.
 - `nsga2.ts`: `nsga2` (binary tournaments by rank and crowding, elitist survival, constrained domination, hypervolume
   traced against a reference point), the operators `sbxCrossover` and `polynomialMutation` (bounded, as Deb's code).
+- `landscape.ts`: loss landscapes after Li et al.: `filterNormalise` and `randomDirection` (per-filter, per-layer or no
+  normalisation; biases zeroed or normalised; any filter axis), `slice1d`, `slice2d` and `randomSlice` (losses along one
+  or two directions, with the directions returned), `interpolationSlice` and `bezierSlice` (the line and a quadratic
+  Bezier path between two minima) with `barrier`, and `sharpness` (the largest Hessian eigenvalue by Lanczos through
+  `eigsh` or by power iteration, on Hessian-vector products from `flatObjective`) with `stabilityThreshold` (2 / eta).
 - `implicit.ts`: differentiation through solutions by the implicit function theorem, with any solver: `implicitRoot`
   (F(x, ...thetas) = 0, reverse and forward rules, dense solves that differentiate again or matrix-free GMRES/CG),
   `implicitFixedPoint` (equilibrium layers, default fixed-point solver), `implicitArgmin` (optimisation layers through
