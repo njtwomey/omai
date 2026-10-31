@@ -43,6 +43,7 @@ import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, karateClub, kinshipTriples, lesMiserables, smallMolecules } from './graphs.ts'
 import { dishonestCasino, regimeSwitching } from './hidden-markov.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
+import { mixedSources, toySuperposition, twoViews } from './latent.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
@@ -184,6 +185,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   makeMultilabelClassification,
   makeRegression,
   miscalibratedPredictions,
+  mixedSources,
   modularArithmetic,
   moons,
   moonsWithOutliers,
@@ -222,7 +224,9 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   taggedCorpus,
   topicCorpus,
   torus,
+  toySuperposition,
   treatmentEffects,
+  twoViews,
   typoPairs,
   unequalVarianceBlobs,
   xor,
@@ -339,6 +343,9 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['discontinuityDesign', 'Regression discontinuity design'],
     ['networkExperiment', 'Network experiment with spillover'],
     ['carryoverExperiment', 'Chained experiments with carryover'],
+    ['mixedSources', 'Mixed independent sources'],
+    ['twoViews', 'Two views of shared factors'],
+    ['toySuperposition', 'Toy model of superposition'],
   ]),
   ...g('image', [
     ['barsAndStripes', 'Bars and stripes'],
