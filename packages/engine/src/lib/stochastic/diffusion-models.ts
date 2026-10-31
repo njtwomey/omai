@@ -947,10 +947,10 @@ export interface GaussianMixtureTruth {
  * @example
  * ```ts
  * import { gaussianMixtureTruth, linearSchedule } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { item, sum } from 'mdml-engine/tensor'
  * // One standard normal: the score at x is -x at every noise level.
  * const t = gaussianMixtureTruth({ means: [[0]], stds: 1 })
- * toArray(t.score([[2]], linearSchedule(), 0.5)) // => [[-2]]
+ * Math.abs(item(sum(t.score([[2]], linearSchedule(), 0.5))) + 2) < 1e-12 // => true
  * ```
  */
 export function gaussianMixtureTruth(spec: GaussianMixtureSpec): GaussianMixtureTruth {
