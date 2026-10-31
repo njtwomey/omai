@@ -6,3 +6,6 @@
 export * from './csr.ts'
 export * from './eigen.ts'
 export * from './iterative.ts'
+export * from './lanczos-steps.ts'
+export * from './multigrid.ts'
+export * from './stationary.ts'

@@ -809,6 +809,14 @@ primitives; "custom" means a dedicated rule.
   `kroneckerSolve`.
 - `randomized.ts`: `randomizedSvd`, `randomizedRangeFinder`, `randomProjectionMatrix`, `johnsonLindenstraussDim`,
   `hutchinsonTrace`, `stochasticLogdet`.
+- `subspace.ts`: `subspaceIterationAlgorithm` (a block power iteration, one block product and QR per step, with the
+  Rayleigh-Ritz values and residuals), `subspaceIteration`.
+- `svd-steps.ts`: `jacobiSvdAlgorithm` (one-sided Jacobi, a step is a rotation or a sweep; the off-diagonal measure is
+  the largest column cosine), `jacobiSvd`, `jacobiSingularValues`.
+- `completion.ts`: matrix completion from observed entries (`ObservedEntries`): `alsCompletionAlgorithm` (one
+  half-sweep of ridge solves per step), `sgdCompletionAlgorithm` (biased factorisation, one epoch per step),
+  `implicitAlsAlgorithm` (confidence-weighted implicit feedback), `softImputeAlgorithm` and `softImpute` (iterated
+  soft-thresholded SVD), `softImputeLambdaMax`, `predictEntry`, `factorsToMatrix`.
 
 `sparse/` (scipy.sparse)
 - `csr.ts`: `CsrMatrix`, `csr`, `fromCoo`, `toDense`, `spmv`, `spmm`, `transposeCsr`, `diagCsr`, `csrAdd`,
@@ -818,6 +826,13 @@ primitives; "custom" means a dedicated rule.
   adjoint solves).
 - `eigen.ts`: `lanczos` (full reorthogonalisation, deflation), `arnoldi`, `eigsh` (top k, with locking for repeated
   eigenvalues), `svds`.
+- `lanczos-steps.ts`: `lanczosAlgorithm` (one Krylov vector per step, with the Ritz values and residuals, and a switch
+  for reorthogonalisation to watch the basis lose orthogonality), `lanczosSteps`.
+- `stationary.ts`: `stationaryAlgorithm` (Jacobi with damping, Gauss-Seidel, SOR; one sweep per step), `stationarySolve`,
+  `jacobi`, `gaussSeidel`, `sor`, `iterationMatrix`, `stationarySpectralRadius`, `sorOptimalOmega`.
+- `multigrid.ts`: `poisson1d`, `poisson2d`, `prolongation` (linear and bilinear), `multigridAlgorithm` (two-grid, V and W
+  cycles with Galerkin coarse operators and a stationary smoother; the residual after each stage of a cycle),
+  `multigridCycle` (the iterate after each stage, for the error by frequency), `multigridSolve`.
 
 `polynomial/` (numpy.polynomial; composed)
 - `power.ts` (lowest degree first, as numpy.polynomial): `polyval`, `polyvander`, `polyfit`, `polyder`, `polyint`,
@@ -866,7 +881,8 @@ primitives; "custom" means a dedicated rule.
   equioscillation, `chebyshevSeries`.
 - `pade.ts`: `pade` (approximants from Taylor coefficients), `continuedFraction` (modified Lentz).
 - `acceleration.ts`: `richardson`, `aitken`, `shanks`, `wynnEpsilon`, `eulerTransform`.
-- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon`, `toFloat32`, `twoSum`, `twoProduct`, `compensatedSum`
+- `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon` (for float64, float32, float16, bfloat16), `FLOAT_FORMATS`, `toFloat32`, `toFloat16`, `toBfloat16`,
+  `roundToFormat` (emulated rounding with subnormals and overflow), `twoSum`, `twoProduct`, `compensatedSum`
   (naive, Kahan, and base's Neumaier and pairwise sums), `propagateError`, `conditionNumber`, `significantDigits`.
 
 `fourier/` (numpy.fft, scipy.fft; linear, so differentiable; complex pairs come from `tensor/complex.ts`)
