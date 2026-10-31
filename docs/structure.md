@@ -4097,6 +4097,50 @@ exact agreement with exhaustive enumeration and by the worked examples of the Ap
 planted sequences, SD-Map, interval selectors for numeric columns, exceptional model mining, frequent subgraphs.
 built from: `search` (refinement), `trace`, `base`
 
+### 4.57 `rules/`: rule learning on the `learn` contract (Orange, imodels, CORELS, Weka)
+
+`rule.ts` is the shared representation: a `Literal` (a test on one feature: `==` a category, `<=` or `>` a threshold),
+a `Rule` (literals, the class it predicts, the class counts of the rows it covered when learned) and a `RuleModel` (an
+ordered `list` that takes the first rule that fires, or a `set` whose firing rules vote by summing their counts, with the
+default counts for rows nothing covers: `predictCounts`, `firingRule`, Laplace-smoothed `smoothedProbabilities`). The
+quality measures are `ruleStatistics` (support, confidence, lift, Laplace accuracy, WRAcc of a rule on data),
+`ruleQuality` (entropy, Laplace, accuracy, m-estimate and WRAcc from covered class counts, the heuristics of the
+searches) and CN2's `likelihoodRatio` and `ruleSignificance` (chi-squared, k - 1 degrees of freedom); `modelText`,
+`ruleLine` and `modelRecord` print a model or turn it into the `rules` record. `covering.ts` is sequential covering as an
+`Algorithm` with a rule per step: ordered CN2 (a beam over conjunctions, entropy or Laplace, kept only if significant,
+the majority class of the covered rows, all covered rows removed), unordered CN2 (rules per class over all rows, only the
+covered rows of that class removed, rules vote) and PRISM (greedy on precision to a pure rule). `ripper.ts` is RIPPER and
+IREP: classes from the rarest, a rule grown by FOIL's gain (`logic/ilp`) on two thirds and pruned on a third by
+(p - n) / (p + n), the 50% error stop and the description-length stop (`ruleSetDescriptionLength`, Cohen's code for rules
+plus the exceptions, 64 bits of slack), then replacement and revision of each rule keeping whichever gives the set the
+shortest description, a rebuild and a deletion pass; its randomness is the grow/prune split from the step's key.
+`lists.ts` has the pre-mined antecedents (`mineAntecedents`: Eclat of `patterns` over the literals each row satisfies)
+and two rule-list learners over them: `corelsAlgorithm`, a CORELS-style branch and bound over prefixes (objective and
+look-ahead bounds, the minimum-support bound, the equivalent-points bound and the permutation bound; the queue emptying
+certifies optimality, `fitCorels` reports it), and `bayesianRuleListAlgorithm`, Metropolis-Hastings over ordered lists
+(truncated Poisson priors on length and rule size, Dirichlet-multinomial likelihood, add/remove/swap proposals with the
+Hastings ratios; `ruleListLogPosterior` is its target density). `sets.ts` has `oneRAlgorithm` (Holte's buckets, one
+feature per step), `decisionTableAlgorithm` (Kohavi's table, forward selection by leave-one-out accuracy) and
+`treeRuleSet` (one rule per leaf of a `trees` classification tree, predicting exactly as the tree). `estimators.ts` puts
+each learner on the iterative base: `cn2Classifier` (ordered or unordered), `prismClassifier`, `ripperClassifier` (RIPPER
+or IREP), `corelsClassifier`, `bayesianRuleListClassifier`, `oneRClassifier`, `decisionTableClassifier`, each with
+`method(data)`, `session(data)` and `fittedAt(t)` (the rule model after t steps), logging the README's tracks
+(`rule/literal`, `rule/coverage`, `rule/precision`, `ruleset/rules`, `ruleset/accuracy`, `ruleset/covered`,
+`rule/descriptionLength`, `pass/revision`, `search/bound`, `search/incumbent`, `search/nodes`, `chain/logPosterior`,
+`chain/accepted`) and answering the probe `model/rules`. The planted generator is `plantedRuleList` of `datasets`
+(categorical rows labelled by a planted decision list with label noise; the list, the noise and the exact accuracy are
+the truth). The contracts of the estimators go through the iterative base, whose paths are not yet typed.
+
+oracle: none for the learners (no installed reference implements these exactly: Orange and imodels are not in the oracle
+group); the checks are exhaustive enumeration (CORELS equals the best list found by trying every list up to length 3),
+the exact posterior (the sampler's visit frequencies converge to the enumerated posterior over all 65 lists of a small
+problem), Cendrowska's contact lenses data (PRISM's pure rules, OneR's 17 of 24 as Weka reports), the likelihood ratio
+and description length by hand, and recovery of the planted list with generalisation to fresh draws. TODO: RuleFit
+(`explain/rules.ts` has it), Apriori-based classification (CBA, CMAR), numeric interval literals, RIPPER's exact
+Weka description-length constants, the CORELS cache and symmetry-aware bounds beyond the permutation bound.
+built from: `learn` (iterative base), `patterns` (Eclat), `logic/ilp` (`foilGain`), `trees`, `exposition` (`ruleSet`),
+`numerics/special`, `trace`, `random`
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,

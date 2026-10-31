@@ -173,6 +173,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/probprog/engines': () => import('mdml-engine/probprog/engines'),
   'mdml-engine/random': () => import('mdml-engine/random'),
   'mdml-engine/rl': () => import('mdml-engine/rl'),
+  'mdml-engine/rules': () => import('mdml-engine/rules'),
   'mdml-engine/sampling': () => import('mdml-engine/sampling'),
   'mdml-engine/sampling/diagnostics': () => import('mdml-engine/sampling/diagnostics'),
   'mdml-engine/sampling/hamiltonian': () => import('mdml-engine/sampling/hamiltonian'),
