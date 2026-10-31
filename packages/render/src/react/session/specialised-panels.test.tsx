@@ -272,3 +272,33 @@ describe('the samples panel', () => {
     expect(html).toContain('Show earlier steps beneath the grid')
   })
 })
+
+describe('small multiples', () => {
+  it('draws one titled cell per path, each a chart, with the curves on one scale unless told not to', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/multiples"
+        live={live}
+        at={3}
+        layout={[
+          {
+            kind: 'multiples',
+            title: 'the repeats',
+            panel: { kind: 'curves', paths: ['position'] },
+            over: { by: 'args', key: 'k', values: [1, 2] },
+          },
+          {
+            kind: 'multiples',
+            panel: { kind: 'zoom', path: 'picture', view: { x: [0, 1], y: [0, 1] } },
+            over: { by: 'args', key: 'k', values: [1, 2], labels: ['first', 'second'] },
+          },
+        ]}
+      />,
+    )
+    expect(html).toContain('the repeats')
+    expect(html).toContain('Nothing to repeat')
+    expect(html).toContain('first at step 3')
+    expect(html).toContain('second at step 3')
+    expect((html.match(/data-testid="multiples"/g) ?? []).length).toBe(2)
+  })
+})

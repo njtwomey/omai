@@ -27,6 +27,7 @@ import { StepCursorProvider } from './cursor.tsx'
 import { FieldPanel } from './FieldPanel.tsx'
 import { type FamilyOptions, familyOption, hasFamily, intervalOption, logAxes, sweepFamily } from './families.ts'
 import type { Panel } from './layout.ts'
+import { Multiples } from './Multiples.tsx'
 import { GraphPanel, ImagesPanel, PointsPanel, ScenePanel, StripPanel, TablePanel } from './RecordPanels.tsx'
 import { FIG, Note, RowsPanel, useProbe, useRun } from './RowsPanel.tsx'
 import { SpecialisedPanel } from './SpecialisedPanels.tsx'
@@ -94,6 +95,40 @@ export function SessionPanels(props: PanelContext & { readonly layout: readonly 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" data-testid="panels">
         {layout.map((panel) => {
           const key = JSON.stringify(panel)
+          if (panel.kind === 'multiples')
+            return (
+              <div key={key} className="col-span-full min-w-0">
+                <Multiples
+                  spec={panel}
+                  variants={variants}
+                  renderCell={(cell, limits) => {
+                    const cellVariants =
+                      cell.variant === undefined ? variants : variants.filter((_, i) => i === cell.variant)
+                    const inner = cell.panel
+                    if (inner.kind === 'curves' || inner.kind === 'sweep')
+                      return (
+                        <TapePanel
+                          panel={
+                            limits !== undefined && inner.kind === 'curves' ? { ...inner, yLimits: limits } : inner
+                          }
+                          variants={cellVariants}
+                          head={head}
+                          {...ctx}
+                        />
+                      )
+                    const v = cellVariants[0]
+                    return v === undefined ? null : (
+                      <PanelView
+                        panel={inner}
+                        live={v.live}
+                        {...(cell.variant === undefined ? {} : { head })}
+                        {...ctx}
+                      />
+                    )
+                  }}
+                />
+              </div>
+            )
           if (panel.kind === 'curves' || panel.kind === 'sweep')
             return (
               <div key={key} className="min-w-0">
@@ -166,7 +201,7 @@ function TapePanel(
 }
 
 function PanelView(
-  props: VariantContext & { readonly panel: Exclude<Panel, { kind: 'curves' | 'sweep' }> },
+  props: VariantContext & { readonly panel: Exclude<Panel, { kind: 'curves' | 'sweep' | 'multiples' }> },
 ): ReactNode {
   const { panel, id, live, at, onScrub, label } = props
   // The viewed step, never past this variant's head nor the shared one (a variant may run a few steps ahead).

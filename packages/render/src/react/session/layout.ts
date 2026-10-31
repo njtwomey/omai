@@ -47,6 +47,16 @@ export interface EventMarks {
 }
 
 /**
+ * What a small-multiples panel repeats its panel over: the variants of a comparison (`variants`: one cell each, curves
+ * included), the paths of a curves panel (`paths`: one chart per path), or the values of one probe argument (`args`:
+ * the layers of a network, the classes of a problem; the panel's probe is asked with `{ ...args, [key]: value }`).
+ */
+export type Facet =
+  | { readonly by: 'variants' }
+  | { readonly by: 'paths' }
+  | { readonly by: 'args'; readonly key: string; readonly values: readonly Json[]; readonly labels?: readonly string[] }
+
+/**
  * One panel of a layout. Panels of the tape (`curves`, `series`, `sweep`) scrub the cursor on click; panels of a step
  * (`rows`, `probe`, `tensor`, `trajectory`, `field`, `strip`, `table`, `images`, `graph`, `points`, `scene`) follow it.
  */
@@ -109,6 +119,8 @@ export type Panel =
       readonly slopes?: readonly ReferenceSlope[]
       /** Vertical marks where scalar paths fired: planted changes, alarms, restarts. */
       readonly events?: readonly EventMarks[]
+      /** Fix the vertical axis to `[low, high]` (small multiples share one across their cells). */
+      readonly yLimits?: readonly [number, number]
       readonly title?: string
     }
   /**
@@ -323,6 +335,22 @@ export type Panel =
       readonly args?: Json
       /** Rows of earlier steps in the filmstrip (default 4; zero for none). */
       readonly filmstrip?: number
+      readonly title?: string
+    }
+  /**
+   * Small multiples: one panel spec repeated over a facet (see {@link Facet}) in a grid of titled cells, all under the
+   * one step cursor, with the vertical axes of curves shared across the cells (`shared`, default true) so the cells
+   * can be compared by eye.
+   */
+  | {
+      readonly kind: 'multiples'
+      /** The panel in every cell (not itself small multiples or an inner session). */
+      readonly panel: Exclude<Panel, { readonly kind: 'multiples' | 'inner' }>
+      readonly over: Facet
+      /** Cells per row (default 3). */
+      readonly columns?: number
+      /** Share the vertical axis of curves across the cells (default true). */
+      readonly shared?: boolean
       readonly title?: string
     }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */

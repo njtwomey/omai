@@ -25,6 +25,8 @@ export interface FamilyOptions {
   readonly log?: 'x' | 'y' | 'xy'
   readonly slopes?: readonly ReferenceSlope[]
   readonly events?: readonly EventMarks[]
+  /** Fix the vertical axis to `[low, high]`. */
+  readonly yLimits?: readonly [number, number]
 }
 
 /** Whether a panel asks for any curve family beyond plain overlaid curves. */
@@ -35,7 +37,8 @@ export function hasFamily(options: FamilyOptions): boolean {
     options.truth !== undefined ||
     options.log !== undefined ||
     (options.slopes?.length ?? 0) > 0 ||
-    (options.events?.length ?? 0) > 0
+    (options.events?.length ?? 0) > 0 ||
+    options.yLimits !== undefined
   )
 }
 
@@ -410,7 +413,14 @@ export function familyOption(
     mode,
     figure: options.figure,
     x: { label: 'step', ...(log.x ? { scale: 'log' as const } : {}) },
-    ...(log.y ? { y: { scale: 'log' as const } } : {}),
+    ...(log.y || options.yLimits !== undefined
+      ? {
+          y: {
+            ...(log.y ? { scale: 'log' as const } : {}),
+            ...(options.yLimits === undefined ? {} : { limits: [...options.yLimits] as [number, number] }),
+          },
+        }
+      : {}),
     legend: true,
   })
 }
