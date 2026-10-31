@@ -288,6 +288,12 @@ export type Panel =
       readonly surface?: boolean
       readonly title?: string
     }
+  /**
+   * The region of absolute stability of an ODE method probed at the viewed step (a `stabilityRegion` record): the
+   * region of the complex plane where `|R(z)| <= 1` filled, with its boundary, and the eigenvalues times the step size
+   * marked inside or outside it.
+   */
+  | { readonly kind: 'stability'; readonly path: string; readonly args?: Json; readonly title?: string }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */

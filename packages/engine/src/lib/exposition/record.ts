@@ -41,6 +41,7 @@ import type { SceneSteps } from './scene-steps.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
 import type { Simplex } from './simplex.ts'
+import type { StabilityRegion } from './stability-region.ts'
 import type { Strip } from './strips.ts'
 import type { StructureSteps } from './structure-steps.ts'
 import type { SubgroupReport } from './subgroups.ts'
@@ -113,6 +114,7 @@ export type Exposition =
   | Reachability
   | SceneSteps
   | LandscapeSlice
+  | StabilityRegion
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -213,4 +215,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'reachability',
   'sceneSteps',
   'landscapeSlice',
+  'stabilityRegion',
 ])

@@ -1,4 +1,4 @@
-import { decisionSurface, sampleLandscape } from 'mdml-engine/exposition'
+import { decisionSurface, sampleLandscape, sampleStabilityRegion } from 'mdml-engine/exposition'
 import { dict, int } from 'mdml-engine/space'
 import {
   type Config,
@@ -62,6 +62,19 @@ const toy: Method<State, Config> = defineMethod<State, Config>({
       compute: (s) =>
         sampleLandscape((a) => a * a, [-1, 0, 1], undefined, { paths: [{ coords: [[-1], [s.k * 0.1]] }] }),
     }),
+    region: derived<State>({
+      description: 'a stability region',
+      compute: () =>
+        sampleStabilityRegion(
+          'forward Euler',
+          { numerator: [1, 1] },
+          { real: [-3, 1], imaginary: [-2, 2] },
+          {
+            n: 41,
+            marks: [{ at: [-1, 0] }, { at: [-2.5, 0] }],
+          },
+        ),
+    }),
     wrong: derived<State>({ description: 'not a surface', compute: () => ({ kind: 'nope' }) }),
   },
 })
@@ -117,5 +130,20 @@ describe('the landscape panel', () => {
     expect(html).toContain('the slice at step 4')
     expect(html).toContain('Lowest on the slice: 0.00')
     expect(html).toContain('the probe is not a landscapeSlice record')
+  })
+})
+
+describe('the stability panel', () => {
+  it('draws the region with its marks and the verdict in words', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/stability"
+        live={live}
+        at={2}
+        layout={[{ kind: 'stability', path: 'region', title: 'the region' }]}
+      />,
+    )
+    expect(html).toContain('the region at step 2')
+    expect(html).toContain('forward Euler is unstable: 1 of 2 values of hλ are outside the region')
   })
 })

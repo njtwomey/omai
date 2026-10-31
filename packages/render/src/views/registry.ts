@@ -39,6 +39,7 @@ import { conceptView, ruleListView } from './rules.ts'
 import { sceneStepsScene } from './scene-steps.ts'
 import { stateSequenceView } from './sequences.ts'
 import { simplexView } from './simplex.ts'
+import { stabilityRegionView } from './stability-region.ts'
 import { ensembleFrames, pipelineScene } from './stages.ts'
 import { clusteringFrames, dendrogramView, embeddingFrames, mixtureFrames, reachabilityView } from './steps.ts'
 import { stripView } from './strips.ts'
@@ -477,6 +478,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => landscapeSliceView(r, o),
+  },
+  stabilityRegion: {
+    kind: 'stabilityRegion',
+    component: 'StabilityRegionView',
+    title: 'Stability region',
+    plays: false,
+    accepts: [],
+    still: (r, o) => stabilityRegionView(r, o),
   },
   dataBias: {
     kind: 'dataBias',

@@ -33,6 +33,7 @@ import { ConceptView, RuleListView } from './rules.tsx'
 import { SceneStepsView } from './scene-steps.tsx'
 import { StateSequenceView } from './sequences.tsx'
 import { SimplexView } from './simplex.tsx'
+import { StabilityRegionView } from './stability-region.tsx'
 import { EnsembleView, PipelineView } from './stages.tsx'
 import { ClusteringPlayer, DendrogramView, EmbeddingPlayer, MixturePlayer, ReachabilityView } from './steps.tsx'
 import { StripView } from './strips.tsx'
@@ -195,5 +196,7 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <SceneStepsView record={record} {...common} />
     case 'landscapeSlice':
       return <LandscapeSliceView record={record} {...common} />
+    case 'stabilityRegion':
+      return <StabilityRegionView record={record} {...common} />
   }
 }

@@ -255,7 +255,8 @@ function PanelView(
       return <GraphPanel {...common} panel={panel} />
     }
     case 'zoom':
-    case 'landscape': {
+    case 'landscape':
+    case 'stability': {
       const title = panel.title ?? panel.path
       return (
         <SpecialisedPanel

@@ -15,6 +15,7 @@ import { LandscapeSliceView } from '../views/landscape-slice.tsx'
 import { MarkedTableView } from '../views/marked-tables.tsx'
 import { PointsStepsView } from '../views/points-steps.tsx'
 import { SceneStepsView } from '../views/scene-steps.tsx'
+import { StabilityRegionView } from '../views/stability-region.tsx'
 import { StripView } from '../views/strips.tsx'
 import { StructureStepsView } from '../views/structure-steps.tsx'
 import type { Panel } from './layout.ts'
@@ -235,4 +236,23 @@ export function LandscapePanel(props: {
       {...(panel.surface === undefined ? {} : { surface: panel.surface })}
     />
   )
+}
+
+/**
+ * The region of absolute stability probed at the viewed step, with the eigenvalues times the step size marked.
+ *
+ * @param props - The session, the viewed step, the panel and the frame's title and file name.
+ * @returns The figure.
+ */
+export function StabilityPanel(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  readonly panel: Extract<Panel, { kind: 'stability' }>
+  readonly t: number
+  readonly title: string
+  readonly filename: string
+}): ReactNode {
+  const { record, problem } = useRecord(props.live, props.t, 'stabilityRegion', props.panel.path, props.panel.args)
+  if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
+  return <StabilityRegionView record={record} figure={FIG} title={props.title} filename={props.filename} />
 }
