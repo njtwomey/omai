@@ -58,6 +58,7 @@ import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
 import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers.ts'
 import { analogyCorpus, linkageTables, plantedRelations } from './planted-embeddings.ts'
+import { irtResponses, pottsSamples } from './planted-pgm.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
 import {
@@ -101,6 +102,7 @@ import {
   reverseTask,
   sortTask,
 } from './sequence-tasks.ts'
+import { shapeletSeries } from './shapelet-series.ts'
 import {
   airPassengers,
   arma,
@@ -115,8 +117,6 @@ import {
   sunspots,
 } from './timeseries.ts'
 import { loggedBandit, offlineMdp } from './trajectories.ts'
-import { irtResponses, pottsSamples } from './planted-pgm.ts'
-import { shapeletSeries } from './shapelet-series.ts'
 import { plantedTransactions } from './transactions.ts'
 import {
   clusterAssumption,

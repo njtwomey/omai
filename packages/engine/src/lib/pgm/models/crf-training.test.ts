@@ -57,7 +57,7 @@ describe('CRF feature counts', () => {
     const expected = new Float64Array(crfFeatureCounts(crf, x, all[0] ?? []).length)
     all.forEach((y, i) => {
       const p = Math.exp((scores[i] ?? 0) - logZ)
-      crfFeatureCounts(crf, x, y).forEach((v, q) => (expected[q] = (expected[q] ?? 0) + p * v))
+      for (const [q, v] of crfFeatureCounts(crf, x, y).entries()) expected[q] = (expected[q] ?? 0) + p * v
     })
     return { expected, logZ }
   }
@@ -70,7 +70,7 @@ describe('CRF feature counts', () => {
     const truth = enumerated()
     const { counts, logPartition } = crfExpectedFeatureCounts(crf, x)
     expect(logPartition).toBeCloseTo(truth.logZ, 12)
-    counts.forEach((v, q) => expect(v).toBeCloseTo(truth.expected[q] ?? Number.NaN, 12))
+    for (const [q, v] of counts.entries()) expect(v).toBeCloseTo(truth.expected[q] ?? Number.NaN, 12)
   })
 
   it('the objective gradient is the expected minus the observed counts, exactly', () => {
@@ -78,7 +78,7 @@ describe('CRF feature counts', () => {
     const g = crfObjective(crf, [{ x, y }]).gradient
     const e = crfExpectedFeatureCounts(crf, x).counts
     const phi = crfFeatureCounts(crf, x, y)
-    g.forEach((v, q) => expect(v).toBeCloseTo((e[q] ?? 0) - (phi[q] ?? 0), 12))
+    for (const [q, v] of g.entries()) expect(v).toBeCloseTo((e[q] ?? 0) - (phi[q] ?? 0), 12)
   })
 })
 

@@ -17,7 +17,8 @@ describe('planted generators of the graphical-model and time-series domains', ()
     expect(x.every((v) => v === 0 || v === 1)).toBe(true)
     const score = Array.from({ length: 400 }, (_, i) => x.slice(i * 15, (i + 1) * 15).reduce((a, v) => a + v, 0))
     expect(spearman(score, toFlat(data.y)).statistic).toBeGreaterThan(0.7)
-    expect((truth.latents?.['theta'] as number[]).length).toBe(400)
+    const theta = truth.latents?.['theta'] as number[]
+    expect(theta.length).toBe(400)
     const items = truth.extra?.['items'] as { a: number; b: number; c: number }[]
     expect(items.map((i) => i.c)).toEqual(new Array(15).fill(0.2))
     expect(items[0]?.b).toBe(-2)
@@ -50,7 +51,7 @@ describe('planted generators of the graphical-model and time-series domains', ()
     )
     // the energy per site is lower (more aligned bonds) in the ordered phase
     const energy = (t: typeof ordered.truth): number =>
-      (t.latents?.['energy'] as number[]).reduce((a, v) => a + v, 0) / 30
+      ((t.latents?.['energy'] ?? []) as number[]).reduce((a, v) => a + v, 0) / 30
     expect(energy(ordered.truth)).toBeLessThan(energy(disordered.truth) - 0.5)
   })
 
@@ -72,9 +73,10 @@ describe('planted generators of the graphical-model and time-series domains', ()
       const start = at[i] as number
       expect(start).toBeGreaterThanOrEqual(0)
       expect(start + pattern.length).toBeLessThanOrEqual(50)
-      pattern.forEach((v, j) => expect(x[i * 50 + start + j]).toBeCloseTo(v, 0))
+      for (const [j, v] of pattern.entries()) expect(x[i * 50 + start + j]).toBeCloseTo(v, 0)
     }
-    expect((truth.extra?.['patterns'] as number[][]).length).toBe(2)
+    const patterns = truth.extra?.['patterns'] as number[][]
+    expect(patterns.length).toBe(2)
   })
 
   it('are registered with tags', () => {

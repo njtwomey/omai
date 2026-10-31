@@ -162,7 +162,7 @@ describe('Gaussian-mixture HMM EM', () => {
     const a = collect(baumWelchAlgorithm([x], bwStart, { tol: -1 }))
     const b = collect(gmmHmmAlgorithm([x], start, { tol: -1, minCovar: 0 }))
     expect(b.length).toBe(a.length)
-    b.forEach((v, i) => expect(v).toBeCloseTo(a[i] ?? Number.NaN, 8))
+    for (const [i, v] of b.entries()) expect(v).toBeCloseTo(a[i] ?? Number.NaN, 8)
   })
 
   const truth: GmmHmmParameters = {

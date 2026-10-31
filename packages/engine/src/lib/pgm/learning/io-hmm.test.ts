@@ -65,7 +65,7 @@ function brute(
     for (let t = 1; t < T; t++)
       prob *= (ioTransition(p, [inputs[t] ?? 0])[z[t - 1] ?? 0]?.[z[t] ?? 0] ?? 0) * emit(z[t] ?? 0, t)
     total += prob
-    z.forEach((k, t) => ((marginals[t] as number[])[k] = (marginals[t]?.[k] ?? 0) + prob))
+    for (const [t, k] of z.entries()) (marginals[t] as number[])[k] = (marginals[t]?.[k] ?? 0) + prob
   }
   return { total, marginals: marginals.map((r) => r.map((v) => v / total)) }
 }
@@ -162,7 +162,7 @@ describe('the softmax M-step problem', () => {
     ]) {
       const other = optimum(solver)
       expect(other.value).toBeCloseTo(newton.value, 9)
-      other.x.forEach((v, i) => expect(v).toBeCloseTo(newton.x[i] ?? Number.NaN, 5))
+      for (const [i, v] of other.x.entries()) expect(v).toBeCloseTo(newton.x[i] ?? Number.NaN, 5)
     }
   })
 })

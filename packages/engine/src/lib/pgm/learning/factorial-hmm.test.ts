@@ -229,7 +229,7 @@ describe('factorial HMM EM', () => {
     for (let t = 1; t < lls.length; t++) expect(lls[t] ?? 0).toBeGreaterThanOrEqual((lls[t - 1] ?? 0) - 1e-8)
     expect((lls.at(-1) ?? 0) - (lls[0] ?? 0)).toBeGreaterThan(20)
     // the four joint means (bias plus both loadings): planted 0.5, 1.7, 3.5, 4.7 (the sums are identified, the split is not)
-    meansOf(last).forEach((m, i) => expect(Math.abs(m - (meansOf(truth)[i] ?? 0))).toBeLessThan(0.15))
+    for (const [i, m] of meansOf(last).entries()) expect(Math.abs(m - (meansOf(truth)[i] ?? 0))).toBeLessThan(0.15)
     expect(Math.abs((last.variances[0] ?? 0) - 0.1)).toBeLessThan(0.05)
     const stays = [
       last.transition[0]?.[0]?.[0],
@@ -256,7 +256,7 @@ describe('factorial HMM EM', () => {
     }
     for (let t = 1; t < bounds.length; t++) expect(bounds[t] ?? 0).toBeGreaterThanOrEqual((bounds[t - 1] ?? 0) - 1e-8)
     expect((bounds.at(-1) ?? 0) - (bounds[0] ?? 0)).toBeGreaterThan(20)
-    meansOf(last).forEach((m, i) => expect(Math.abs(m - (meansOf(truth)[i] ?? 0))).toBeLessThan(0.3))
+    for (const [i, m] of meansOf(last).entries()) expect(Math.abs(m - (meansOf(truth)[i] ?? 0))).toBeLessThan(0.3)
     // the bound of the fitted model stays below its exact log likelihood
     const exact = sequences.reduce((a, s) => a + factorialHmmExact(last, s).objective, 0)
     expect(bounds.at(-1) ?? 0).toBeLessThanOrEqual(exact + 1e-6)

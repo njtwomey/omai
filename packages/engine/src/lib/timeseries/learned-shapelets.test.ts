@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { grad } from '../autodiff/index.ts'
 import { generate } from '../data/index.ts'
 import { shapeletPatterns, shapeletSeries } from '../datasets/index.ts'
 import { key, normal } from '../random/index.ts'
 import { pearson } from '../stats/index.ts'
-import { grad } from '../autodiff/index.ts'
 import { asTensor, toFlat, type Value } from '../tensor/index.ts'
 import { iterate, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import {
@@ -61,7 +61,7 @@ describe('the learned-shapelets objective', () => {
     const f = problem.objective as unknown as (x: Value, batch?: readonly number[]) => Value
     const x0 = Array.from(
       toFlat(normal(key(4), [(problem.x0 as number[]).length])),
-      (v, i) => (problem.x0 as number[])[i]! + 0.1 * v,
+      (v, i) => ((problem.x0 as number[])[i] ?? 0) + 0.1 * v,
     )
     const value = (x: number[], batch?: readonly number[]): number =>
       toFlat(f(asTensor(Float64Array.from(x)), batch))[0] ?? Number.NaN

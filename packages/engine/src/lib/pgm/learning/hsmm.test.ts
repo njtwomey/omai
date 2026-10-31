@@ -186,7 +186,7 @@ describe('duration families', () => {
     }
     // a negative binomial of size one is the geometric distribution
     const geo = negativeBinomialDurations(1, 0.4, 5)
-    expect(geo[1]! / geo[0]!).toBeCloseTo(0.6, 12)
+    expect((geo[1] ?? 0) / (geo[0] ?? 1)).toBeCloseTo(0.6, 12)
     expect(poissonDurations(1, 3).reduce((a, v) => a + v, 0)).toBeCloseTo(1, 14)
   })
 })

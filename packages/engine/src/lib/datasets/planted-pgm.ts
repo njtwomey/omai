@@ -8,8 +8,8 @@
 import { type DatasetGenerator, type RegressionData, xy } from '../data/index.ts'
 import {
   type IrtItem,
-  irtSimulate,
   ISING_CRITICAL_ENERGY_PER_SITE,
+  irtSimulate,
   onsagerMagnetisation,
   pottsCriticalCoupling,
   pottsSamplerAlgorithm,
