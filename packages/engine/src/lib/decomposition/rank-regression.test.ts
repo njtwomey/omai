@@ -104,7 +104,7 @@ describe('reducedRankRegression', () => {
     x.forEach((r, i) => {
       const z = r.reduce((sum, v, j) => sum + v * (u[j] ?? 0), 0)
       load.forEach((l, c) => {
-        err += (pred[i * 3 + c] - (l * z + 0.02 * c)) ** 2
+        err += ((pred[i * 3 + c] ?? 0) - (l * z + 0.02 * c)) ** 2
       })
     })
     expect(Math.sqrt(err / (n * 3))).toBeLessThan(0.05)

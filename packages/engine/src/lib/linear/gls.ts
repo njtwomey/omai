@@ -4,7 +4,8 @@
  * ordinary least squares. `glsar` estimates the covariance of autoregressive errors by alternating a whitened fit with
  * Yule-Walker estimates of the AR coefficients from its residuals (statsmodels' `GLSAR.iterative_fit`, the
  * Cochrane-Orcutt family). `heteroscedasticRegressor` models the variance as `exp(z gamma)`: `fgls` iterates a weighted
- * fit with a regression of the log squared residuals on `z` (feasible GLS), and `ml` maximises the joint Gaussian
+ * fit with a regression of the log squared residuals on `z` (feasible GLS; one round is the textbook estimator, and
+ * further rounds are not guaranteed to converge), and `ml` maximises the joint Gaussian
  * likelihood of the mean and variance coefficients over the solver slot (Harvey's multiplicative heteroscedasticity).
  */
 
@@ -68,12 +69,13 @@ export type GlsParams = {
   /** The covariance of the slopes then the intercept, `[p][p]`. */
   readonly covariance: number[][]
   readonly logLikelihood: number
-  /** The residual degrees of freedom `n - p`. */
+  /** The residual degrees of freedom: the rows used (all of them, but for an AR fit) minus the coefficients. */
   readonly dfResid: number
 }
 
 function summary(fit: Transformed, n: number, p: number, fitIntercept: boolean, logDet: number): GlsParams {
-  const dfResid = n - p
+  // The residual degrees of freedom count the rows the fit used (an AR fit drops its first p rows).
+  const dfResid = fit.rows - p
   const scale = fit.ssr / dfResid
   const cov = Float64Array.from(fit.bread, (v) => v * scale)
   const d = p - (fitIntercept ? 1 : 0)
@@ -439,8 +441,7 @@ export function glsar(
     const { n } = design.x
     const { a, p } = withIntercept(design, h.fitIntercept)
     const { fit } = glsarFitAt(a, design.y, n, p, s.rho)
-    // statsmodels keeps the full number of observations in the degrees of freedom of a GLSAR fit.
-    const base = summary({ ...fit, rows: n }, n, p, h.fitIntercept, 0)
+    const base = summary(fit, n, p, h.fitIntercept, 0)
     return { ...base, rho: s.rho, iterations: s.iteration, converged: s.converged }
   }
   return iterative<GlsarHyper, GlsarState, GlsarParams, GlsVerbs>(
