@@ -247,6 +247,12 @@ export interface CompiledTerm {
   readonly constraints?: ConstraintBlock
   /** The block `[m, width]`, row-major, at the rows of a matrix. */
   evaluate(x: MatrixView): Float64Array
+  /**
+   * The exact first or second derivative of the block in the term's covariate `[m, width]`, for a smooth of one covariate
+   * on a basis with a closed-form derivative (`ps`, `bs`, `cr`, `cc`, `tp`, `ts`, `duchon`, `gp`), centred and scaled by
+   * its `by` covariate like `evaluate`.
+   */
+  derivative?(x: MatrixView, order: 1 | 2): Float64Array
 }
 
 /** A penalised design: the intercept and the blocks of the terms. */
@@ -378,6 +384,15 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
         const centred = c === undefined ? block : dgemm(block, c.Z, q.n, c.k, c.kc)
         return scaleBy(centred, q.n, term.by === undefined ? undefined : columnsOf(q, [term.by]).data)
       }
+      const basisDerivative = basis.derivative
+      const derivative =
+        basisDerivative === undefined || d !== 1
+          ? undefined
+          : (q: MatrixView, order: 1 | 2): Float64Array => {
+              const block = flat(basisDerivative(columnsOf(q, term.features), order))
+              const centred = c === undefined ? block : dgemm(block, c.Z, q.n, c.k, c.kc)
+              return scaleBy(centred, q.n, term.by === undefined ? undefined : columnsOf(q, [term.by]).data)
+            }
       const constrained = term.shape.length > 0 || term.lower !== undefined || term.upper !== undefined
       let constraints: ConstraintBlock | undefined
       if (constrained) {
@@ -415,6 +430,7 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
         nullSpaceDimension: c === undefined ? basis.nullSpaceDimension : c.nullDim,
         ...(constraints === undefined ? {} : { constraints }),
         evaluate,
+        ...(derivative === undefined ? {} : { derivative }),
       }
     }
     case 'te':
