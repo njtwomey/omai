@@ -3285,6 +3285,22 @@ treated rows) and `quantileRegression` and the `quantileRegressor` estimator (th
 penalty, solved exactly by `optim`'s `linprog`). RANSAC stays `stats/robust.ts`'s generic `ransac`. oracle:
 `linear/robust` against scikit-learn's `TheilSenRegressor` (all subsets), `HuberRegressor` and `QuantileRegressor`.
 
+`zero-inflated.ts` is count regression for excess zeros: `countProblemOf` (counts, the count design and the zero-part
+design, whose features are `'constant'`, `'all'` or a list), `countModelObjective` (the negative log-likelihood and its
+analytic gradient for the zero-inflated and the hurdle models over Poisson or negative-binomial counts),
+`countModelAlgorithm` (damped Newton steps, Hessian by central differences of the gradient) and the `zeroInflated` and
+`hurdle` estimators (`predict` the mean, `predictInflation`, `predictCount`, `predictZero`; Wald tables of the count and
+zero parts). oracle: `linear/zero_inflated` against statsmodels' `ZeroInflatedPoisson`, `ZeroInflatedNegativeBinomialP`
+and, for the hurdle model's two independent parts, `Logit` with `TruncatedLFPoisson` and
+`TruncatedLFNegativeBinomialP`.
+
+`multinomial.ts` is the multinomial logit (softmax regression as a GLM): `multinomialProblemOf`, `softmaxRows`,
+`multinomialAlgorithm` (Newton steps with the exact Hessian) and the `multinomial` classifier (class 0 the reference
+when unpenalised, every class free with a ridge penalty; `predictProba`, logits as `decisionFunction`,
+`predictDistribution`, a Wald table). oracle: `linear/multinomial` against statsmodels' `MNLogit` (coefficients,
+standard errors, log-likelihood, probabilities) and scikit-learn's multinomial `LogisticRegression` (ridge; centred
+intercepts, which the penalty leaves determined only up to a common shift).
+
 oracle: `bayesian` forms the closed forms with numpy (`linear/bayesian` fixture): posterior, log evidence, predictive,
 and a fixed number of evidence-maximisation updates
 
