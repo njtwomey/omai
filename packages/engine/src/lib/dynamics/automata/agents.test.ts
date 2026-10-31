@@ -58,7 +58,8 @@ describe('Nagel-Schreckenberg traffic', () => {
       settle: 600,
       measure: 20,
     })
-    d.density.forEach((rho, i) => expect(d.flow[i]).toBeCloseTo(a.deterministicFlow(rho, 5), 9))
+    for (const [i, rho] of Array.from(d.density).entries())
+      expect(d.flow[i]).toBeCloseTo(a.deterministicFlow(rho, 5), 9)
   })
   it('a lone car accelerates one cell per step up to the top speed', () => {
     let road: Int8Array = Int8Array.of(0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
