@@ -2868,6 +2868,18 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
   selection (k best, percentile, FPR/FDR/FWE), selection from model importances.
 - `feature-selection-wrappers.ts`: RFE and RFECV, sequential selection, stability selection (traced).
+- `theory.ts`: learning-theory bounds as functions with their assumptions documented: PAC sample complexity and bounds
+  for finite classes (realisable, agnostic) and the union bound; VC bounds (Vapnik's form, the Blumer sample
+  complexity, Sauer-Shelah) with the shattering count, growth function and VC dimension of intervals, half-lines, boxes
+  and half-spaces by enumeration (`conceptClasses`, half-space separability by `linprog`); Rademacher complexity (the
+  Monte Carlo estimate as `rademacherAlgorithm`, Massart's finite-class bound, the linear-class closed form, the
+  generalisation bound); margin bounds; algorithmic stability (the closed-form uniform stability of ridge, the
+  Bousquet-Elisseeff bound, `empiricalStability` by replacement); PAC-Bayes (McAllester, Seeger by `klInverse`, Catoni,
+  `gaussianKl`, the closed-form Gibbs risk of a Gaussian linear classifier); the Hedge and online-gradient regret bounds;
+  the information-theoretic bound; the bias-variance decomposition (squared loss, Domingos' 0-1 loss, the Monte Carlo
+  study as `biasVarianceAlgorithm`); degrees of freedom (Efron's covariance definition by Monte Carlo, the closed forms
+  for ridge, lasso and k-NN). The tests are planted-truth: each bound holds across simulated draws and is within a
+  stated factor of the observed gap.
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
