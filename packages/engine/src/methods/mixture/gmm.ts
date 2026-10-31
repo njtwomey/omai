@@ -16,7 +16,7 @@ import {
 } from '../../lib/mixture/index.ts'
 import { choice, dict, int } from '../../lib/space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, tensor } from '../../lib/tensor/index.ts'
-import { derived, Log, metricSeries, tensorSeries } from '../../lib/trace/index.ts'
+import { type Contract, defineContract, derived, Log, metricSeries, tensorSeries } from '../../lib/trace/index.ts'
 
 /** The hyperparameters of {@link gmm}. */
 export interface GmmHyper {
@@ -53,6 +53,18 @@ export interface GmmVerbs {
 }
 
 /**
+ * The paths of the Gaussian mixture beyond the solver’s: the component means and the log density over the plane, both derived.
+ *
+ * @example
+ * ```ts
+ * import type { GmmPath } from 'mdml-engine/methods/mixture'
+ * const path: GmmPath = 'model/centres'
+ * path // => 'model/centres'
+ * ```
+ */
+export type GmmPath = 'model/centres' | 'model/density'
+
+/**
  * A Gaussian mixture fitted by expectation-maximisation.
  *
  * @example
@@ -61,11 +73,12 @@ export interface GmmVerbs {
  * gmm.with({ nComponents: 2 }).fit({ x: [[0, 0], [0, 1], [9, 9], [9, 8]] }).params.means.length // => 2
  * ```
  */
-export const gmm: IterativeEstimator<GmmHyper, GaussianEmState, GmmParams, GmmVerbs> = iterative<
+export const gmm: IterativeEstimator<GmmHyper, GaussianEmState, GmmParams, GmmVerbs, GmmPath> = iterative<
   GmmHyper,
   GaussianEmState,
   GmmParams,
-  GmmVerbs
+  GmmVerbs,
+  GmmPath
 >({
   name: 'mixture/gmm',
   kind: 'clusterer',
@@ -91,31 +104,32 @@ export const gmm: IterativeEstimator<GmmHyper, GaussianEmState, GmmParams, GmmVe
       return fromStorage(Float64Array.from(resp.flat()), [resp.length, p.weights.length], 'float64')
     },
   }),
-  contract: (data) => ({
-    'model/centres': derived<GaussianEmState>({
-      description: 'the component means at this step',
-      compute: (s) => s.means,
+  contract: (data): Contract<GaussianEmState, GmmPath> =>
+    defineContract({
+      'model/centres': derived<GaussianEmState>({
+        description: 'the component means at this step',
+        compute: (s) => s.means,
+      }),
+      'model/density': derived<GaussianEmState>({
+        description: 'the mixture’s log density over the plane of the first two features, with the training rows',
+        cost: 'dear',
+        compute: (s, args) => {
+          const res = (args as { readonly resolution?: number } | undefined)?.resolution
+          const names = (data as { readonly featureNames?: readonly string[] }).featureNames
+          const fitted = {
+            estimator: 'mixture/gmm',
+            kind: 'density' as const,
+            params: {},
+            predict: (x: TensorLike): Tensor => tensor(mixturePosterior(x, s).logNorm),
+          }
+          return decisionSurfaceOf(fitted, data.x, {
+            ...(res === undefined ? {} : { resolution: res }),
+            ...(names === undefined ? {} : { featureNames: names }),
+            field: { name: 'log density', smooth: true },
+          })
+        },
+      }),
     }),
-    'model/density': derived<GaussianEmState>({
-      description: 'the mixture’s log density over the plane of the first two features, with the training rows',
-      cost: 'dear',
-      compute: (s, args) => {
-        const res = (args as { readonly resolution?: number } | undefined)?.resolution
-        const names = (data as { readonly featureNames?: readonly string[] }).featureNames
-        const fitted = {
-          estimator: 'mixture/gmm',
-          kind: 'density' as const,
-          params: {},
-          predict: (x: TensorLike): Tensor => tensor(mixturePosterior(x, s).logNorm),
-        }
-        return decisionSurfaceOf(fitted, data.x, {
-          ...(res === undefined ? {} : { resolution: res }),
-          ...(names === undefined ? {} : { featureNames: names }),
-          field: { name: 'log density', smooth: true },
-        })
-      },
-    }),
-  }),
   logs: {
     'solver/logLikelihood': Log(),
     'solver/responsibilities': Log({ detail: 'full' }),

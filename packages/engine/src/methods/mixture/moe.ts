@@ -18,7 +18,7 @@ import {
 } from '../../lib/mixture/index.ts'
 import { dict, int, real } from '../../lib/space/index.ts'
 import type { Tensor, TensorLike } from '../../lib/tensor/index.ts'
-import { derived, Log } from '../../lib/trace/index.ts'
+import { type Contract, defineContract, derived, Log } from '../../lib/trace/index.ts'
 
 /** The hyperparameters of {@link moe}. */
 export interface MoeHyper {
@@ -58,6 +58,18 @@ const paramsOf = (s: MoeState): Pick<MoeState, 'gate' | 'experts' | 'variances'>
 })
 
 /**
+ * The paths of the mixture of experts beyond the solver’s, all derived: each row’s expert, the experts’ lines and the gate against the first feature.
+ *
+ * @example
+ * ```ts
+ * import type { MoePath } from 'mdml-engine/methods/mixture'
+ * const path: MoePath = 'model/gating'
+ * path // => 'model/gating'
+ * ```
+ */
+export type MoePath = 'model/assignments' | 'model/experts' | 'model/gating'
+
+/**
  * A mixture of linear experts (Jacobs and Jordan): a gate that shares the rows among linear-Gaussian experts by a
  * softmax of linear functions of x, fitted by expectation-maximisation.
  *
@@ -69,11 +81,12 @@ const paramsOf = (s: MoeState): Pick<MoeState, 'gate' | 'experts' | 'variances'>
  * moe.fit({ x, y }).params.experts.length // => 2
  * ```
  */
-export const moe: IterativeEstimator<MoeHyper, MoeState, MoeParams, MoeVerbs> = iterative<
+export const moe: IterativeEstimator<MoeHyper, MoeState, MoeParams, MoeVerbs, MoePath> = iterative<
   MoeHyper,
   MoeState,
   MoeParams,
-  MoeVerbs
+  MoeVerbs,
+  MoePath
 >({
   name: 'mixture/moe',
   kind: 'regressor',
@@ -97,31 +110,32 @@ export const moe: IterativeEstimator<MoeHyper, MoeState, MoeParams, MoeVerbs> = 
     },
     nFeaturesIn: (p.gate[0]?.length ?? 1) - 1,
   }),
-  contract: (data) => ({
-    'model/assignments': derived<MoeState>({
-      description: 'the most responsible expert of each training row',
-      compute: (s) => moeAssignments(data.x, data.y ?? [], s),
+  contract: (data): Contract<MoeState, MoePath> =>
+    defineContract({
+      'model/assignments': derived<MoeState>({
+        description: 'the most responsible expert of each training row',
+        compute: (s) => moeAssignments(data.x, data.y ?? [], s),
+      }),
+      'model/experts': derived<MoeState>({
+        description: 'each expert’s line over the training rows: lines[k][i] is expert k’s prediction at row i',
+        compute: (s) => ({ lines: transposed(moeExpertMeans(data.x, s.experts)) }),
+      }),
+      'model/gating': derived<MoeState>({
+        description: 'each expert’s gate probability against the first feature, over the training rows in order of x',
+        compute: (s) => {
+          const m = matrixView(data.x, 'mixture/moe')
+          const xs = Array.from({ length: m.n }, (_, i) => m.data[i * m.d] ?? 0)
+          const order = xs.map((_, i) => i).sort((a, b) => (xs[a] ?? 0) - (xs[b] ?? 0))
+          const gate = moeGate(data.x, s.gate)
+          return curveSet({
+            x: order.map((i) => xs[i] ?? 0),
+            xLabel: 'x',
+            yLabel: 'gate probability',
+            series: s.gate.map((_, k) => ({ name: `expert ${k}`, y: order.map((i) => gate[i]?.[k] ?? 0) })),
+          })
+        },
+      }),
     }),
-    'model/experts': derived<MoeState>({
-      description: 'each expert’s line over the training rows: lines[k][i] is expert k’s prediction at row i',
-      compute: (s) => ({ lines: transposed(moeExpertMeans(data.x, s.experts)) }),
-    }),
-    'model/gating': derived<MoeState>({
-      description: 'each expert’s gate probability against the first feature, over the training rows in order of x',
-      compute: (s) => {
-        const m = matrixView(data.x, 'mixture/moe')
-        const xs = Array.from({ length: m.n }, (_, i) => m.data[i * m.d] ?? 0)
-        const order = xs.map((_, i) => i).sort((a, b) => (xs[a] ?? 0) - (xs[b] ?? 0))
-        const gate = moeGate(data.x, s.gate)
-        return curveSet({
-          x: order.map((i) => xs[i] ?? 0),
-          xLabel: 'x',
-          yLabel: 'gate probability',
-          series: s.gate.map((_, k) => ({ name: `expert ${k}`, y: order.map((i) => gate[i]?.[k] ?? 0) })),
-        })
-      },
-    }),
-  }),
   logs: {
     'solver/logLikelihood': Log(),
     'solver/responsibilities': Log({ detail: 'full' }),
