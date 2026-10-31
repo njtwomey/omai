@@ -3032,6 +3032,11 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
+- `swag.ts`: SWAG (stochastic weight averaging Gaussian): `swagState`, `swagCollect` (running mean, mean square and the
+  last deviations), `swagVariance`, `swagCovariance` (dense, small models), `swagSample` (diagonal plus low-rank, or
+  diagonal), `swagAlgorithm` (collection along any constant-step optimiser, as a stepped algorithm with the mean and
+  deviation matrix on the tape), `swagUnravel`, `swagPredictive`. Lives here, not in `training/callbacks.ts`, so it
+  works with any trajectory.
 - `describe.ts`: `describe` (a module to a `Structure`: blocks, tensor shapes, repeats, skip connections into `add`
   nodes, parallel branches, parameter counts, FLOPs, optionally composite blocks' parts), `describeFunction` (any
   functional model, by its computation graph), `layerTable`, `summary` (torchinfo-style, with trainable and frozen
