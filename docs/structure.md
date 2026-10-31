@@ -2404,6 +2404,9 @@ none of those weights.
   supplied model (torchmetrics' windows and calibration, 16 kHz); windows, FIR design, polyphase resampling and
   framed spectra come from `signal`. TODO: PESQ (ITU-T P.862), whose reference implementation is ITU-copyrighted C
   that cannot be ported under the licence.
+- `uplift.ts`: scoring of uplift models and targeting rules on randomised data: `upliftCurve` (the Qini and uplift gain
+  curves with the random line), `qiniCoefficient`, `auuc`, `upliftAtK`, `upliftDeciles` and the inverse-propensity
+  `policyValue` (with the treat-all and treat-none values). The estimators that produce the scores are `lib/causal`.
 
 ### 4.29 `losses/`: differentiable objectives (torch.nn losses, optax losses)
 
@@ -4060,6 +4063,17 @@ McCrary-style `densityTest`. The generators added to `datasets` for these are `s
 that is an exact convex combination of donors under a factor model, with the effect path and counterfactual as truth) and
 `upliftData` (a randomised experiment with a binary outcome, covariate-dependent uplift including harmed units, and
 the uplift function as truth).
+`heterogeneous.ts` is the meta-learners over the base-learner slot (`sLearner`, `tLearner`, `xLearner`, `rLearner` as a weighted
+regression of the residual ratio, `drLearner` on the AIPW score; each returns a `CateModel` with `predict`; R and DR cross-fit
+their nuisance models) and `pehe`. `causal-forest.ts` is the causal forest: nuisance-centred outcome and treatment, honest
+trees from `trees` (`decisionTreeRegressor`) grown on the gradient pseudo-outcomes of the residual-on-residual moment, and a
+forest estimate that is the residual regression weighted by shared leaves; `causalForestAlgorithm` grows one tree per step
+(serialisable state), `causalForestOf` and `causalForest` give `predict`, `predictOutOfBag`, the doubly robust
+`averageEffect` and split importances. `uplift-tree.ts` is the Rzepakowski-Jaroszewicz uplift tree (`upliftTree` with the
+`KL`, `ED`, `Chi` divergences for 0/1 outcomes and the `tau` criterion for any outcome) and the bagged `upliftForest`.
+`metrics/uplift.ts` (4.28 `metrics/`) holds the scoring: `upliftCurve` (Qini and uplift gain curves with the random
+line), `qiniCoefficient`, `auuc`, `upliftAtK`, `upliftDeciles` and the inverse-propensity `policyValue` with the treat-all
+and treat-none values.
 The planted generators the tests use are `treatmentEffects` (confounding, overlap, nonlinear setting, heterogeneity),
 `instrumentalVariables`, `panelEffects` and `discontinuityDesign` of `datasets`.
 

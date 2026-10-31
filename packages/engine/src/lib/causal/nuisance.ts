@@ -77,7 +77,8 @@ export function probabilityOf(fitted: Fitted, x: TensorLike): Float64Array {
   return Float64Array.from(toFlat(fitted.predict(x)))
 }
 
-function expectation(fitted: Fitted, x: TensorLike, binary: boolean): Float64Array {
+/** The mean prediction of a fitted outcome model: its probability of 1 for a binary outcome, else its `predict`. */
+export function expectationOf(fitted: Fitted, x: TensorLike, binary: boolean): Float64Array {
   if (binary) return probabilityOf(fitted, x)
   if (fitted.predict === undefined)
     throw new MdmlError('value', `${fitted.estimator}: cannot predict, so it cannot be a nuisance model`)
@@ -105,13 +106,31 @@ export function fitPropensity(
   options: NuisanceOptions = {},
   fold = 0,
 ): Float64Array {
+  return propensityModel(p, train, options, fold)(matrixOf(pickRows(p.x, p.d, test), p.d))
+}
+
+/**
+ * Fit the propensity model on the training rows and return it as a function of covariates (clipped scores).
+ *
+ * @param p - The prepared data.
+ * @param train - Rows to fit on.
+ * @param options - The propensity learner, clipping and key.
+ * @param fold - A number folded into the key.
+ * @returns A function from a covariate matrix to propensity scores.
+ */
+export function propensityModel(
+  p: Prepared,
+  train: ArrayLike<number>,
+  options: NuisanceOptions = {},
+  fold = 0,
+): (x: TensorLike) => Float64Array {
   const key = foldIn(options.key ?? makeKey(0), fold)
   const prop = options.propensity ?? defaultPropensity()
   const fitted = prop.fit(
     { x: matrixOf(pickRows(p.x, p.d, train), p.d), y: pick(p.t, train) },
     { key: foldIn(key, 0), explain: false },
   )
-  return clipTo(probabilityOf(fitted, matrixOf(pickRows(p.x, p.d, test), p.d)), options.clip ?? 0.01)
+  return (x) => clipTo(probabilityOf(fitted, x), options.clip ?? 0.01)
 }
 
 /** Nuisance predictions at the test rows of a split. */
@@ -157,11 +176,11 @@ export function fitNuisances(
       { x: matrixOf(pickRows(p.x, p.d, rows), p.d), y: pick(p.y, rows) },
       { key: foldIn(key, 1 + a), explain: false },
     )
-    return expectation(fitted, xTest, options.binaryOutcome ?? false)
+    return expectationOf(fitted, xTest, options.binaryOutcome ?? false)
   }
   const m =
     options.pooled === true
-      ? expectation(
+      ? expectationOf(
           outc.fit({ x: matrixOf(xTrain, p.d), y: pick(p.y, train) }, { key: foldIn(key, 3), explain: false }),
           xTest,
           options.binaryOutcome ?? false,
