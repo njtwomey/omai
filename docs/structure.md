@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 56 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 57 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -422,6 +422,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `sketches`    | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list |
 | `survival`    | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC |
 | `causal`      | causal inference from data: treatment-effect estimators (regression adjustment, propensity scores, matching, entropy balancing, AIPW, TMLE, double machine learning), quasi-experimental designs, heterogeneous effects and uplift, sensitivity analysis |
+| `embedding`   | embeddings learned from data: word2vec (skip-gram, CBOW, negative sampling, hierarchical softmax), fastText subwords, GloVe, PPMI with SVD, knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE) with filtered ranking, and analogy and similarity evaluation, each loss a smooth problem with the optimiser a slot |
 
 ### 4.1 `base/`
 
@@ -1926,6 +1927,28 @@ jellyfish, Biopython, pyphen
   TODO: Németh's non-standard (`/`) patterns.
 - `statistics.ts`: Zipf (log-log and maximum likelihood) and Heaps fits, type-token ratios (root, log, moving average,
   hapax ratio), tokeniser fertility and compression ratio, topic coherence (UMass, NPMI as gensim).
+- `language-models.ts`: n-gram language models (Chen and Goodman 1998): counts of padded n-grams, the smoothers as a
+  mode (maximum likelihood, add-k, Witten-Bell, absolute discounting, interpolated and modified Kneser-Ney with
+  continuation counts, Katz backoff over Good-Turing discounts), `<unk>` for rare words, probabilities, whole
+  next-word distributions, perplexity and samples; `ngramTrainingAlgorithm` counts one sentence per step with the
+  held-out perplexity so far. Oracle: Chen and Goodman's definitions written directly in Python (NLTK's `lm` models
+  differ in convention, see `oracle/cases/text/language_models.py`).
+- `keywords.ts`: RAKE (reproduces the scores of the RAKE paper's worked abstract), the TextRank word graph and keywords
+  with phrase merging (PageRank from `graph`), the sentence graph with Mihalcea and Tarau's overlap similarity and
+  extractive summaries.
+- `linkage.ts`: record linkage: standard and sorted-neighbourhood blocking, field comparison into agreement levels,
+  the Fellegi-Sunter model fitted by EM on the comparison patterns (`fellegiSunterAlgorithm`, one iteration per step,
+  serialisable), match weights and posteriors, pairwise precision and recall, entity clusters from the matched pairs.
+  Tested on `linkageTables`, where the EM recovers the planted agreement rates.
+- `spelling.ts`: the noisy-channel spelling corrector: candidates from a BK-tree, a channel learned from (typed,
+  intended) pairs (weighted Damerau-Levenshtein alignment with counted operation probabilities) or uniform, the prior a
+  word-frequency table or an n-gram language model reading the corrected context, whole sentences left to right.
+- `retrieval.ts`: a positional inverted index (`invertedIndex` with `add` per document, `indexingAlgorithm` one
+  document per step), the scoring models as a mode over its postings (TF-IDF cosine, BM25 with Robertson or Lucene idf,
+  the binary independence model with optional relevance judgements, query likelihood under Dirichlet, Jelinek-Mercer or
+  absolute-discount smoothing), each query term's contribution to a score, `search` (top k), phrase and proximity
+  queries from the positions, boolean queries. BM25 over the postings equals `features.ts`'s rank_bm25 scores in the
+  tests; the other models are checked against their hand formulas and the smoothed models against normalisation.
 
 ### 4.22 `search/`: search, constraint satisfaction and planning (AIMA)
 
@@ -2473,6 +2496,11 @@ none of those weights.
   retrieved denominators), `meanReciprocalRank`, `dcgScore` and `ndcgScore` (linear and exponential gains,
   tie-averaged), `expectedReciprocalRank`, `rankBiasedPrecision`; beyond-accuracy measures (`catalogCoverage`,
   `intraListDiversity`, `novelty`, `serendipity`, `exposureGini`).
+- `sequence-labelling.ts`: entity-level scores as seqeval reports them (conlleval's chunk rules): `entitySpans` (BIO,
+  IOB1, BIOES, BILOU), `bioViolations` (an inside tag that continues nothing), `entityScores` (micro, macro and weighted
+  precision, recall and F1 with the per-type scores), `entityF1`. Checked on the worked example of seqeval's README.
+- `interleaving.ts`: team-draft interleaving of two rankers (`teamDraftInterleave`, one coin flip per round), the
+  clicks credited to each (`interleavingCredit`) and the preference over many impressions (`interleavingPreference`).
 - `clustering.ts`: Rand, adjusted Rand and Fowlkes-Mallows (`randScore`, `adjustedRandScore`,
   `fowlkesMallowsScore`, `pairConfusionMatrix`); `mutualInfoScore`, NMI variants (`normalizedMutualInfoScore`:
   arithmetic, geometric, min, max), AMI (`adjustedMutualInfoScore`), V-measure, homogeneity and completeness;
@@ -2897,6 +2925,12 @@ modAL for active learning, diffprivlib and opacus for privacy
   (uPU and nnPU, differentiable), `puClassifier`, `elkanNoto`; `bagData`, `labelProportionClassifier` (proportion loss, L-BFGS) and
   `multipleInstanceSvm` (mi-SVM and MI-SVM over any binary base). oracle: `learn/weak_supervision` against numpy
   references written from the papers (EM for Dawid-Skene, the confident joint and the prune rules).
+- `click-models.ts`: click models for logs of ranked lists: `clickSessions` (an interaction log grouped into sessions),
+  the position-based model (`positionBasedAlgorithm`, EM one iteration per step, `positionBasedModel`), the cascade
+  model (`cascadeModel`, closed form) and the dynamic Bayesian network model of Chapelle and Zhang (`dbnAlgorithm`, EM
+  with a forward-backward pass over the examination chain, `dbnModel`), each with click probabilities by rank. Tested
+  on `clickLogs` and `dbnClickLogs`, where the examination curve, the relevance, the satisfaction and the continuation
+  are recovered.
 - `noisy-labels.ts`: `forwardCorrectedLoss` and `backwardCorrectedLoss` (Patrini et al.), `smallLossSelection` and
   `coTeaching` (two models exchanging their small-loss rows over any probabilistic base).
 
@@ -4243,6 +4277,43 @@ entropy-balancing dual. Planted truth (the effect of the generators, with the na
 recovery.
 built from: `learn` (the estimator contract, neighbour search, splitters), `linear` (default nuisance models), `trees`
 (causal forests), `pgm` (graph queries), `optim` (`smoothSolvers`, `quadprog`), `numerics`, `random`, `trace`, `space`, `tensor`
+### 4.57 `embedding/`: embeddings learned from data (word2vec, fastText, GloVe, knowledge-graph embeddings)
+
+oracle: numpy (the GloVe loss and gradient from the definition, `oracle/cases/embedding/glove.py`; the four knowledge-graph
+scoring functions in numpy complex arithmetic and the filtered rank with scipy's `rankdata`,
+`oracle/cases/embedding/knowledge_graph.py`); the PPMI and SVD steps
+are `text`'s and are checked there against numpy and gensim's `KeyedVectors`. gensim and torch train stochastically and
+differently, so the trainers are checked on planted truth instead: a gradient check of each analytic update against
+autodiff, the loss decreasing under several solvers, and analogies and clusters recovered on `analogyCorpus`.
+
+A model is an objective and the optimiser is a slot. Each trainer builds a `SmoothProblem` (`word2vecProblem`,
+`gloveProblem`; the examples, with their negatives or Huffman paths, are drawn once from a key, so the loss is a fixed
+smooth function of the matrices and the `gradient` mode can draw batches of examples), and its table of solvers
+(`word2vecSolvers`, `gloveSolvers`, built by `solversWith`) holds the library's generic solvers (gradient descent,
+conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent, the stochastic `gradient` mode with its optimiser,
+schedule and batch) beside the model's own algorithm as a named mode: word2vec's plain SGD with a linearly decaying rate
+touching only the rows involved (`word2vecSgd`), GloVe's AdaGrad (`gloveAdaGrad`). The named modes are `Algorithm`s with
+serialisable states; their per-example updates are the exact gradient of the problem's loss, which the tests check
+against autodiff.
+- `word2vec.ts`: `word2vecVocabulary`, `word2vecExamples` (skip-gram pairs or CBOW windows, a dynamic window, frequent
+  word subsampling, unigram^0.75 negatives), `word2vecProblem` (negative sampling, or the hierarchical softmax over a
+  Huffman tree through `losses`' `hierarchicalSoftmax`; fastText's hashed character n-gram rows as an input option),
+  `word2vecSgdAlgorithm`, `word2vecSolvers`, `trainWord2vec`, `word2vecModel`, `subwordVector` (a vector for an unseen
+  word from its n-grams), `solversWith` (any model's own mode beside the generic solvers).
+- `glove.ts`: `gloveProblem` (weighted least squares on the log of the harmonic-weighted co-occurrences),
+  `gloveAdaGradAlgorithm`, `gloveSolvers`, `trainGlove`, `gloveModel` (word vector `w + w~`).
+- `count-based.ts`: `ppmiEmbedding`, the closed-form route (windowed counts, shifted PPMI, truncated SVD).
+- `knowledge-graph.ts`: TransE, DistMult, ComplEx and RotatE scorers (`kgScore` in numbers, the same in tensor
+  operations inside the loss, checked against each other), `kgProblem` (margin or logistic negative-sampling loss against
+  corrupted heads and tails drawn once from a key, optional L2), `kgSolvers` (the generic solvers, the stochastic
+  `gradient` mode the default), `trainKg`, `kgEmbedding`, `rankKg` (filtered link prediction: MRR, mean rank, Hits@k,
+  tied ranks averaged). The tests train all four on `plantedRelations` and check what each can express: DistMult
+  scores a fact and its reverse identically, so it cannot orient the cycle and ranks held-out symmetric facts far
+  better than TransE does.
+- `evaluation.ts`: `analogyAccuracy` (3CosAdd or 3CosMul, optionally over a candidate set), `similarityCorrelation`
+  (Spearman against judged similarity), `neighbourPurity`.
+built from: `losses`, `optim` (`smoothSolvers`), `text` (co-occurrence, PPMI, SVD, analogies, fastText hashing), `stats`,
+`trace`, `random`, `space`, `tensor`
 
 ## 5. Methods, exposition records and views
 
@@ -5414,12 +5485,18 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `ranking.ts`: explicit ratings with low-rank truth (`lowRankRatings`, observed at random or not), click logs
   (`clickLogs`: position and cascade models with logging-policy propensities), implicit feedback (`implicitFeedback`,
   Poisson factorisation), Zipfian catalogues (`zipfianCatalogue`), a small MovieLens (`movielensSmall`, remote).
+- `click-sessions.ts`: `dbnClickLogs`, click sessions from a dynamic Bayesian network with each item's attractiveness
+  and satisfaction and the continuation probability as truth.
 - `corpus.ts`: toy and topic corpora with true topics (`naiveBayesCorpus`, `topicCorpus` with Dirichlet or bars
   topics), drifting topics (`driftingTopics`), worked-example corpora (`workedExampleCorpus`: Deerwester's LSA
   titles, the IR book's Caesar passages), `nurseryRhymes`, Tiny Shakespeare (`tinyShakespeare`, remote), near-duplicate
   corpora with planted duplicates (`nearDuplicateCorpus`, for shingle matching and record linkage), tagged sentences
   from a tag HMM with its tables as truth (`taggedCorpus`), and typed words with the intended ones through an edit
   channel (`typoPairs`, for noisy-channel spelling correction).
+- `planted-embeddings.ts`: `analogyCorpus` (target words that combine a concept and an attribute, so the parallelogram
+  analogies and the concept clusters are planted and listed in the truth), `plantedRelations` (a knowledge graph whose
+  relations are symmetric, inverse, a directed cycle and a composition, with the inferable facts held out as a test set),
+  `linkageTables` (two tables of person records, the second with typos, and the matching pairs).
 - `transactions.ts`: baskets with planted itemsets (`plantedTransactions`; the exact `expectedSupport` of any itemset).
 - `captions.ts`: scenes of coloured shapes with template captions and questions (`captionedShapes`; a paired
   image-text schema in `data/schema/` is still to do, the text sits in the truth).

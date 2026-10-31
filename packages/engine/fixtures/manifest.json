@@ -576,6 +576,23 @@
       "cases": 9
     },
     {
+      "fixture": "embedding/glove.json",
+      "source": "oracle/cases/embedding/glove.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 3
+    },
+    {
+      "fixture": "embedding/knowledge_graph.json",
+      "source": "oracle/cases/embedding/knowledge_graph.py",
+      "reference": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1"
+      },
+      "cases": 9
+    },
+    {
       "fixture": "ensembles/adaboost.json",
       "source": "oracle/cases/ensembles/adaboost.py",
       "reference": {
@@ -5046,6 +5063,14 @@
         "pyphen": "0.18.1"
       },
       "cases": 3
+    },
+    {
+      "fixture": "text/language_models.json",
+      "source": "oracle/cases/text/language_models.py",
+      "reference": {
+        "python": "stdlib"
+      },
+      "cases": 16
     },
     {
       "fixture": "text/lemmatise.json",

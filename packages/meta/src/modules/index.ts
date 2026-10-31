@@ -51,6 +51,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/dynamics/fractals': () => import('mdml-engine/dynamics/fractals'),
   'mdml-engine/dynamics/ode': () => import('mdml-engine/dynamics/ode'),
   'mdml-engine/dynamics/pde': () => import('mdml-engine/dynamics/pde'),
+  'mdml-engine/embedding': () => import('mdml-engine/embedding'),
   'mdml-engine/ensembles': () => import('mdml-engine/ensembles'),
   'mdml-engine/environments': () => import('mdml-engine/environments'),
   'mdml-engine/explain': () => import('mdml-engine/explain'),
