@@ -15,7 +15,6 @@ import {
   type IterativeEstimator,
   iterative,
   type LearnData,
-  withDefaultScore,
 } from '../learn/index.ts'
 import { ddot, pinv } from '../numerics/linalg/index.ts'
 import { linprog } from '../optim/index.ts'
@@ -24,25 +23,14 @@ import { dict, real } from '../space/index.ts'
 import { median } from '../stats/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
-import { type Design, designOf, linearPredictor, matrixTensor, vectorTensor } from './design.ts'
+import { type AffineVerbs, affineVerbs } from './_verbs.ts'
+import { type Design, designOf, matrixTensor, vectorTensor } from './design.ts'
 import { leastSquaresSolve } from './solvers.ts'
 
-/** The verbs every robust linear regressor shares. */
-export interface RobustVerbs {
-  readonly nFeaturesIn: number
-  readonly predict: (x: TensorLike) => Tensor
-  readonly featureImportances: number[]
-  readonly score: (data: LearnData) => number
-}
+/** The verbs every robust linear regressor shares: those of an affine map. */
+export type RobustVerbs = AffineVerbs
 
-function robustVerbs(coef: readonly number[], intercept: number, who: string): RobustVerbs {
-  const base = {
-    nFeaturesIn: coef.length,
-    predict: (x: TensorLike): Tensor => vectorTensor(linearPredictor(x, coef, intercept, who)),
-    featureImportances: coef.map(Math.abs),
-  }
-  return { ...base, score: withDefaultScore('regressor', base).score ?? ((): number => Number.NaN) }
-}
+const robustVerbs = affineVerbs
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Theil-Sen
