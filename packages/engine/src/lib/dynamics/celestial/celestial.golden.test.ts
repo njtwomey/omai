@@ -1,8 +1,9 @@
 import { describe, it } from 'vitest'
 import { type GoldenFn, runFixture } from '../../../testing/systems.ts'
 import { fromStorage, type Tensor, tensor, toFlat } from '../../tensor/index.ts'
-import type { StepContext } from '../../trace/index.ts'
+import { runAlgorithm, type StepContext } from '../../trace/index.ts'
 import { elementsFromState, keplerState, type Vec3 } from './elements.ts'
+import { deflectionAngle, lightRayAlgorithm, measuredDeflection } from './geodesics.ts'
 import { solveKepler } from './kepler.ts'
 import { nBodyHamiltonian, nBodyStep } from './nbody.ts'
 import { lagrangePoints, restrictedThreeBodyAlgorithm } from './three-body.ts'
@@ -43,6 +44,16 @@ const FNS: Readonly<Record<string, GoldenFn>> = {
     })
     return fromStorage(Float64Array.from(rows.flat()), [rows.length, 3], 'float64')
   },
+  deflection: ([bs]) => tensor(flat(bs as Tensor).map((b) => deflectionAngle(b, 1))),
+  'deflection-ray': ([bs]) =>
+    tensor(
+      flat(bs as Tensor).map((b) => {
+        const { state } = runAlgorithm(lightRayAlgorithm(1, b, { dphi: 0.002, startRadius: 400 * b }), {
+          maxSteps: 60000,
+        })
+        return measuredDeflection(state, b, 1, 400 * b)
+      }),
+    ),
   cr3bp: ([y0, times], p) => {
     const t = flat(times as Tensor)
     const dt = p['dt'] as number

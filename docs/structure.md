@@ -2149,6 +2149,10 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   - `three-body.ts`: the circular restricted three-body field (planar and spatial), pseudo- and effective potential,
     the Jacobi constant, `lagrangePoints` and their stability (`classifyLagrangePoints`, Routh's critical mass ratio),
     `zeroVelocityCurves`, and `restrictedThreeBodyAlgorithm` logging the Jacobi constant and its drift.
+  - `geodesics.ts`: null geodesics of the Schwarzschild metric in the Binet form (`schwarzschildNullGeodesicField`,
+    `nullInvariant`), the exact `deflectionAngle` by quadrature with the weak-field `weakFieldDeflection`, the photon sphere
+    and `criticalImpactParameter`, `flammParaboloid`, and `lightRayAlgorithm` (one ray stepped in the angle, logging
+    radius, position, bend so far, with a `ray/captured` event and the exit angle refined; `measuredDeflection`).
 - `maps.ts`: iterated maps, orbits, cobwebs, bifurcation diagrams, Lyapunov exponents.
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).

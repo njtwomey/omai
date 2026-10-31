@@ -224,7 +224,7 @@ export type NBodyIntegrator =
  * ```ts
  * import { nBodyHamiltonian, nBodyStep } from 'mdml-engine/dynamics/celestial'
  * const two = nBodyHamiltonian([1, 1], 2)
- * nBodyStep(two, [0, 0, 1, 0], [0, 0, 0, 0], 0.0).q // => Float64Array [0, 0, 1, 0]
+ * Array.from(nBodyStep(two, [0, 0, 1, 0], [0, 0, 0, 0], 0.0).q) // => [0, 0, 1, 0]
  * ```
  */
 export function nBodyStep(

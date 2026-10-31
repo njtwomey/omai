@@ -85,6 +85,42 @@ def collinear(mu: float) -> FloatArray:
     return np.array(roots, dtype=np.float64)
 
 
+def turning_point(b: float) -> float:
+    """The smaller positive root of 1/b^2 - u^2 + 2 u^3 (M = 1), below the photon sphere's u = 1/3."""
+    root: float = so.brentq(lambda u: 1 / b**2 - u**2 + 2 * u**3, 0.0, 1 / 3, xtol=1e-16, rtol=1e-15)
+    return root
+
+
+def deflection_quad(b: float) -> float:
+    """2 integral du / sqrt(f) from 0 to the turning point, minus pi, by QUADPACK's algebraic end-point weight."""
+    um = turning_point(b)
+    c = 1 - 2 * um
+
+    def inverse_root_h(u: float) -> float:
+        return float(1 / np.sqrt(-2 * u**2 + c * u + c * um))
+
+    value, _err = si.quad(inverse_root_h, 0.0, um, weight="alg", wvar=(0.0, -0.5), epsabs=1e-14, epsrel=1e-13)
+    return float(2 * value - np.pi)
+
+
+def deflection_ode(b: float, start_radius: float) -> float:
+    """The same deflection by integrating u'' + u = 3 u^2 in phi from the start radius to the exit, with an event."""
+    u0 = 1 / start_radius
+    phi0, _err = si.quad(lambda u: 1 / np.sqrt(1 / b**2 - u**2 + 2 * u**3), 0.0, u0, epsabs=1e-14, epsrel=1e-13)
+
+    def field(_phi: float, y: FloatArray) -> FloatArray:
+        return np.array([y[1], -y[0] + 3 * y[0] ** 2])
+
+    def exit_event(_phi: float, y: FloatArray) -> float:
+        return float(y[0] - u0) if y[1] < 0 else -1.0
+
+    exit_event.terminal = True  # type: ignore[attr-defined]
+    exit_event.direction = -1.0  # type: ignore[attr-defined]
+    y0 = np.array([u0, np.sqrt(1 / b**2 - u0**2 + 2 * u0**3)])
+    sol = si.solve_ivp(field, (phi0, 20.0), y0, method="DOP853", events=exit_event, rtol=1e-13, atol=1e-15)
+    return float(sol.t_events[0][0] + phi0 - np.pi)
+
+
 def cases() -> list[Case]:
     out: list[Case] = []
     ms = np.array([-7.5, -3.0, -0.4, 0.0, 1e-4, 0.5, 1.0, 2.0, 3.0, 3.14, 5.5, 12.0])
@@ -170,5 +206,20 @@ def cases() -> list[Case]:
     )
     out.append(
         case("cr3bp/trajectory", "cr3bp", [y3, t3], np.asarray(sol3.y.T), rtol=1e-8, atol=1e-9, mu=mu3, dt=0.0005)
+    )
+    bs = np.array([5.3, 5.5, 6.0, 8.0, 12.0, 30.0, 100.0, 1000.0])
+    out.append(
+        case("light/deflection", "deflection", [bs], np.array([deflection_quad(float(b)) for b in bs]), rtol=1e-9)
+    )
+    ray_b = np.array([8.0, 20.0, 100.0])
+    out.append(
+        case(
+            "light/ray",
+            "deflection-ray",
+            [ray_b],
+            np.array([deflection_ode(float(b), 400.0 * float(b)) for b in ray_b]),
+            rtol=1e-5,
+            atol=1e-7,
+        )
     )
     return out

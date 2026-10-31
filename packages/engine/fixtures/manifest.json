@@ -393,7 +393,7 @@
         "numpy": "2.5.4",
         "scipy": "1.18.1"
       },
-      "cases": 15
+      "cases": 17
     },
     {
       "fixture": "dynamics/control/optimal.json",

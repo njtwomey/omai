@@ -199,7 +199,7 @@ export function doublePendulumLagrangian(parameters: DoublePendulumParameters = 
  * import { doublePendulumField } from 'mdml-engine/dynamics'
  * import { tensor, toFlat } from 'mdml-engine/tensor'
  * // Hanging at rest is an equilibrium.
- * toFlat(doublePendulumField()(0, tensor([0, 0, 0, 0]))) // => [0, 0, 0, 0]
+ * toFlat(doublePendulumField()(0, tensor([0, 0, 0, 0]))).map((v) => v + 0) // => [0, 0, 0, 0]
  * ```
  */
 export function doublePendulumField(parameters: DoublePendulumParameters = {}): VectorField {

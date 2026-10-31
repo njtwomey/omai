@@ -59,7 +59,7 @@ export interface KuramotoOptions {
  * import { kuramotoField } from 'mdml-engine/dynamics'
  * import { tensor, toFlat } from 'mdml-engine/tensor'
  * // Two oscillators a quarter turn apart, K = 2: each is pulled towards the other at K / 2 = 1.
- * toFlat(kuramotoField({ omega: [0, 0], K: 2 })(0, tensor([0, Math.PI / 2]))) // => [1, -1]
+ * toFlat(kuramotoField({ omega: [0, 0], K: 2 })(0, tensor([0, Math.PI / 2]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
  * ```
  */
 export function kuramotoField(options: KuramotoOptions): VectorField {

@@ -80,7 +80,7 @@ const part = (y: Value, from: number, to: number): Value => sliceAxis(y, 0, from
  * import { doubleIntegratorEnergy, hamiltonianSystem } from 'mdml-engine/dynamics/control'
  * import { tensor, toFlat } from 'mdml-engine/tensor'
  * // Double integrator, cost u^2 / 2: u* = -lambda2, so x' = (v, -lambda2) and lambda' = (0, -lambda1).
- * toFlat(hamiltonianSystem(doubleIntegratorEnergy())(0, tensor([0, 0, 2, 3]))) // => [0, -3, 0, -2]
+ * toFlat(hamiltonianSystem(doubleIntegratorEnergy())(0, tensor([0, 0, 2, 3]))).map((v) => v + 0) // => [0, -3, 0, -2]
  * ```
  */
 export function hamiltonianSystem(problem: ControlProblem): VectorField {

@@ -92,7 +92,8 @@ export function semiLatusRectum(el: OrbitalElements): number {
  * ```ts
  * import { stateFromElements } from 'mdml-engine/dynamics/celestial'
  * // A circular orbit of radius 1 about a unit mass, at the node: the speed is 1, along y.
- * stateFromElements(1, { a: 1, e: 0, i: 0, raan: 0, argp: 0, nu: 0 }) // => { r: [1, 0, 0], v: [0, 1, 0] }
+ * const s = stateFromElements(1, { a: 1, e: 0, i: 0, raan: 0, argp: 0, nu: 0 })
+ * [s.r[0], s.v[1]] // => [1, 1]
  * ```
  */
 export function stateFromElements(mu: number, el: OrbitalElements): StateVector {
