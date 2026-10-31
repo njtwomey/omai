@@ -5,7 +5,7 @@
 import { MdmlError } from '../base/index.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import { dgesv } from '../numerics/linalg/index.ts'
-import { chdtrc, fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
+import { betainc, chdtrc, fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 
 const item = (v: Parameters<typeof toFlat>[0]): number => toFlat(primalOf(v))[0] ?? Number.NaN
@@ -18,6 +18,8 @@ export const normPpf = (p: number): number => item(ndtri(p))
 export const tCdf = (df: number, t: number): number => item(stdtr(df, t))
 /** Student's t quantile. */
 export const tPpf = (df: number, p: number): number => item(stdtrit(df, p))
+/** The regularised incomplete beta function. */
+export const betaInc = (a: number, b: number, x: number): number => item(betainc(a, b, x))
 /** The upper tail of the chi-squared distribution. */
 export const chi2Sf = (df: number, x: number): number => item(chdtrc(df, x))
 /** The upper tail of the F distribution. */

@@ -47,6 +47,14 @@
       "cases": 8
     },
     {
+      "fixture": "causal/sensitivity.json",
+      "source": "oracle/cases/causal/sensitivity.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "cluster/birch.json",
       "source": "oracle/cases/cluster/birch.py",
       "reference": {

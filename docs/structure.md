@@ -4074,13 +4074,21 @@ forest estimate that is the residual regression weighted by shared leaves; `caus
 `metrics/uplift.ts` (4.28 `metrics/`) holds the scoring: `upliftCurve` (Qini and uplift gain curves with the random
 line), `qiniCoefficient`, `auuc`, `upliftAtK`, `upliftDeciles` and the inverse-propensity `policyValue` with the treat-all
 and treat-none values.
+`sensitivity.ts` is how strong a hidden confounder would have to be: `eValue` (VanderWeele-Ding, with the conversions from odds
+and hazard ratios and standardised differences), `rosenbaumBounds` (the signed-rank bounds on matched pairs, normal
+approximation) and `rosenbaumBoundsBinary` (exact McNemar tails) with the critical Gamma, `matchedPairs` (the pairs of a
+matching result), the Cinelli-Hazlett omitted-variable bias (`omittedVariableBias`, `robustnessValue`, `partialR2`,
+`ovbContour` for the contour grid, `sensitivityModel` and `benchmarkStrength` for benchmarks from observed covariates, which
+reproduce the dropped-covariate estimate exactly when given its true partial R-squared), and `refute` (placebo treatment,
+random common cause, data subset).
 The planted generators the tests use are `treatmentEffects` (confounding, overlap, nonlinear setting, heterogeneity),
 `instrumentalVariables`, `panelEffects` and `discontinuityDesign` of `datasets`.
 
 oracle: statsmodels OLS with HC1 errors (regression adjustment), a GLM with an offset (the TMLE fluctuation), `IV2SLS` and the
 k-class formulas with scipy's generalised eigensolver (LIML, Fuller), dummy-variable OLS with cluster-robust errors (difference
 in differences, two-way fixed effects, event studies), WLS with HC1 errors per side (regression discontinuity) and scipy's
-SLSQP (synthetic control);
+SLSQP (synthetic control), scipy's Wilcoxon test and binomial tails (Rosenbaum bounds; the published sensemakr and E-value
+examples are unit tests);
 scikit-learn's logistic and linear regressions for the nuisance models of the weighting, AIPW, stratification and TMLE
 formulas, which are written out in numpy beside them, and its nearest neighbours for matching; scipy's BFGS on the
 entropy-balancing dual. Planted truth (the effect of the generators, with the naive estimator shown biased) checks

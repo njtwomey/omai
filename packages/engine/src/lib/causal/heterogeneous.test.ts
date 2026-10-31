@@ -24,7 +24,8 @@ import {
 const effects = (knobs: Record<string, number | string>, seed = 1, n = 3000) => {
   const g = generate(treatmentEffects, { key: key(seed), knobs: { n, ...knobs } })
   const data = splitTreatment(g.data)
-  const truth = Array.from(toFlat((g.truth.effects?.cate as (v: Tensor) => Tensor)(data.x as Tensor)))
+  const cate = g.truth.effects?.cate as (v: Tensor) => Tensor
+  const truth = Array.from(toFlat(cate(data.x as Tensor)))
   return { data, truth, x: data.x }
 }
 

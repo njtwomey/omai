@@ -84,7 +84,8 @@ function leafMoments(
   const out: Record<string, [number, number, number]> = {}
   rows.forEach((r, i) => {
     const id = String(leaves[i] ?? 0)
-    const cell = (out[id] ??= [0, 0, 0])
+    const cell = out[id] ?? [0, 0, 0]
+    out[id] = cell
     cell[0] += (ty[r] ?? 0) * (tt[r] ?? 0)
     cell[1] += (tt[r] ?? 0) ** 2
     cell[2] += 1
