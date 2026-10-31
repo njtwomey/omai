@@ -1378,6 +1378,14 @@
       "cases": 17
     },
     {
+      "fixture": "learn/semi_supervised.json",
+      "source": "oracle/cases/learn/semi_supervised.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "linear/bayesian.json",
       "source": "oracle/cases/linear/bayesian.py",
       "reference": {
