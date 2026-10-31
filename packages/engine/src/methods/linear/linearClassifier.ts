@@ -1,10 +1,10 @@
 /**
  * A linear classifier on two features with every slot open: the loss and the penalty are the model (the objective),
- * the solver is the mode. The tables of `methods/shared/options` fill the slots with the smooth options (a loss that
- * is not smooth, or an l1 penalty, would stall a gradient method, and the tables' properties say so), and the solver
- * is the union of six minimisers from `optim`, each with the knobs of its own. Run one variant per solver on one data
- * set and the same objective is minimised six ways: the objective curves overlay, the decision surfaces sit side by
- * side, and what differs is how each got there.
+ * the solver is the mode. The tables of `lib/losses` and `lib/optim` fill the slots with the smooth options (a loss
+ * that is not smooth, or an l1 penalty, would stall a gradient method, and the tables' properties say so), and the
+ * solver is the union of the minimisers of `smoothSolvers` in `lib/optim`, each with the knobs of its own. Run one
+ * variant per solver on one data set and the same objective is minimised every way: the objective curves overlay, the
+ * decision surfaces sit side by side, and what differs is how each got there.
  */
 
 import { type DecisionSurface, decisionSurface } from '../../lib/exposition/index.ts'

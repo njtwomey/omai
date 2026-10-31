@@ -2,12 +2,12 @@
  * Ordinal regression for ordered categories: the cumulative-link family (proportional odds with the logit link, the
  * ordered probit, and the complementary log-log and log-log links), where `P(Y <= k | x) = F(theta_k - x beta)` with
  * increasing thresholds, and the sequential (continuation-ratio) model `P(Y = k | Y >= k, x) = F(theta_k - x beta)`.
- * `ordinalLogLikelihood` is the likelihood with its gradient; `ordinalAlgorithm` maximises it by damped Newton steps
- * (the thresholds parameterised as a first cutpoint and log increments, as statsmodels' `OrderedModel`); `ordinal` is
+ * `ordinalLogLikelihood` is the likelihood with its gradient; `ordinalAlgorithm` maximises it with any solver of the slot (Newton by default;
+ * the thresholds parameterised as a first cutpoint and log increments, as statsmodels' `OrderedModel`); `ordinal` is
  * the classifier on the iterative base with class probabilities, the latent score and a Wald table.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { categorical } from '../dists/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
@@ -23,10 +23,12 @@ import {
 } from '../learn/index.ts'
 import { dgemv, dpotrf, dpotrs } from '../numerics/linalg/index.ts'
 import { ndtr, ndtri } from '../numerics/special/index.ts'
-import { dict, real } from '../space/index.ts'
+import { analyticObjective, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
+import type { Key } from '../random/index.ts'
+import { dict, real, type SpaceValue } from '../space/index.ts'
 import { fromStorage, item, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
-import { backtrack, newtonDirection } from './_newton.ts'
+import { type Algorithm, Log } from '../trace/index.ts'
+import { infNorm, newtonAt, type SlotState, slotAlgorithm } from './_slot.ts'
 import { waldTable } from './inference.ts'
 
 /** The link F of an ordinal model. */
@@ -215,10 +217,14 @@ export interface OrdinalOptions {
   readonly alpha?: number
   /** Stop when the largest gradient entry falls below this (default 1e-9). */
   readonly tol?: number
+  /** The solver, a value of `smoothSolvers.space` (default Newton at `tol`). */
+  readonly solver?: SpaceValue
+  /** The run's key (for the stochastic solver's batches). */
+  readonly key?: Key
 }
 
 /** The state of {@link ordinalAlgorithm}. */
-export type OrdinalState = {
+export type OrdinalState = SlotState & {
   /** The slopes followed by the threshold parameters (first cutpoint and log increments when cumulative). */
   readonly u: number[]
   readonly objective: number
@@ -273,29 +279,25 @@ export function ordinalProblemOf(
 }
 
 /**
- * Maximum-likelihood ordinal regression as a traced algorithm: damped Newton steps (a Hessian from central differences
- * of the analytic gradient, a Levenberg shift until it is positive definite, backtracking on the objective) on the
- * objective `-loglik / W + alpha |beta|^2 / 2`. It logs `objective`, `gradient` (the largest gradient entry) and the
- * tensor `parameters`.
+ * The ordinal objective as a smooth problem for the solver slot: the penalised negative log-likelihood per unit weight
+ * in the unconstrained parameters (slopes, then the first cutpoint and log increments when cumulative) with its
+ * analytic gradient; the Newton mode differences the gradient for the curvature.
  *
  * @param problem - Features, class indices and weights.
- * @param options - Link, mode, ridge penalty and tolerance.
- * @returns The algorithm.
+ * @param options - Link, mode and ridge penalty.
+ * @returns The objective and the start.
  * @example
  * ```ts
- * import { ordinalAlgorithm } from 'mdml-engine/linear'
+ * import { ordinalSmoothProblem } from 'mdml-engine/linear'
  * import { matrixView } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
  * const x = matrixView([[0], [1], [2], [3], [4], [5]], 'demo')
- * const problem = { x, codes: [0, 0, 1, 0, 1, 1], w: [1, 1, 1, 1, 1, 1], nClasses: 2 }
- * runAlgorithm(ordinalAlgorithm(problem), { maxSteps: 30 }).status // => 'converged'
+ * ordinalSmoothProblem({ x, codes: [0, 0, 1, 0, 1, 1], w: [1, 1, 1, 1, 1, 1], nClasses: 2 }).x0.length // => 2
  * ```
  */
-export function ordinalAlgorithm(problem: OrdinalProblem, options: OrdinalOptions = {}): Algorithm<OrdinalState> {
+export function ordinalSmoothProblem(problem: OrdinalProblem, options: OrdinalOptions = {}): SmoothProblem {
   const link = options.link ?? 'logit'
   const mode = options.mode ?? 'cumulative'
   const alpha = options.alpha ?? 0
-  const tol = options.tol ?? 1e-9
   const d = problem.x.d
   const K = problem.nClasses
   const m = d + K - 1
@@ -320,66 +322,67 @@ export function ordinalAlgorithm(problem: OrdinalProblem, options: OrdinalOption
     const penalty = (alpha * beta.reduce((a, b) => a + b * b, 0)) / 2
     return { objective: -e.logLikelihood / total + penalty, grad }
   }
-  const maxAbs = (v: ArrayLike<number>): number => {
-    let s = 0
-    for (let i = 0; i < v.length; i++) s = Math.max(s, Math.abs(v[i] ?? 0))
-    return s
-  }
   return {
+    objective: analyticObjective({
+      value: (u) => evaluate(u).objective,
+      gradient: (u) => evaluate(u).grad,
+    }),
+    x0: startOf(problem, link, mode),
+  }
+}
+
+/**
+ * Maximum-likelihood ordinal regression as a traced algorithm over the solver slot: any solver of `smoothSolvers`
+ * (Newton by default, with a Hessian from central differences of the analytic gradient) minimises the objective of
+ * {@link ordinalSmoothProblem}, `-loglik / W + alpha |beta|^2 / 2`. It logs `objective`, `gradient` (the largest
+ * gradient entry), `gradNorm`, `step` and the tensor `parameters`.
+ *
+ * @param problem - Features, class indices and weights.
+ * @param options - Link, mode, ridge penalty and tolerance.
+ * @returns The algorithm.
+ * @example
+ * ```ts
+ * import { ordinalAlgorithm } from 'mdml-engine/linear'
+ * import { matrixView } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = matrixView([[0], [1], [2], [3], [4], [5]], 'demo')
+ * const problem = { x, codes: [0, 0, 1, 0, 1, 1], w: [1, 1, 1, 1, 1, 1], nClasses: 2 }
+ * runAlgorithm(ordinalAlgorithm(problem), { maxSteps: 30 }).status // => 'converged'
+ * ```
+ */
+export function ordinalAlgorithm(problem: OrdinalProblem, options: OrdinalOptions = {}): Algorithm<OrdinalState> {
+  const link = options.link ?? 'logit'
+  const mode = options.mode ?? 'cumulative'
+  const alpha = options.alpha ?? 0
+  const tol = options.tol ?? 1e-9
+  const m = problem.x.d + problem.nClasses - 1
+  const solver = options.solver ?? newtonAt(tol)
+  return slotAlgorithm<OrdinalState>({
     name: `ordinal-${mode}-${link}`,
-    config: { link, mode, alpha, tol },
-    schema: channels({
+    config: { link, mode, alpha, tol, solver } as Json,
+    schema: {
       metrics: {
         objective: { description: 'the penalised negative log-likelihood per unit weight', direction: 'lower' },
         gradient: { description: 'the largest gradient entry', direction: 'lower' },
       },
       tensors: { parameters: { role: 'param', description: 'slopes then threshold parameters', shape: [m] } },
+    },
+    problem: ordinalSmoothProblem(problem, options),
+    solver,
+    ...(options.key === undefined ? {} : { key: options.key }),
+    tol,
+    view: (r, evaluations, stalled) => ({
+      u: Array.from(r.x),
+      objective: r.value,
+      gradient: infNorm(r.grad),
+      evaluations,
+      stalled,
     }),
-    init: () => {
-      const u = startOf(problem, link, mode)
-      const e = evaluate(u)
-      return { u, objective: e.objective, gradient: maxAbs(e.grad), evaluations: 1, stalled: false }
-    },
-    step: (s) => {
-      const g = evaluate(s.u).grad
-      // The Hessian by central differences of the gradient, symmetrised.
-      const H = new Float64Array(m * m)
-      for (let j = 0; j < m; j++) {
-        const h = 1e-5 * Math.max(1, Math.abs(s.u[j] ?? 0))
-        const up = Float64Array.from(s.u)
-        const dn = Float64Array.from(s.u)
-        up[j] = (up[j] ?? 0) + h
-        dn[j] = (dn[j] ?? 0) - h
-        const gu = evaluate(up).grad
-        const gd = evaluate(dn).grad
-        for (let i = 0; i < m; i++) H[i * m + j] = ((gu[i] ?? 0) - (gd[i] ?? 0)) / (2 * h)
-      }
-      for (let i = 0; i < m; i++)
-        for (let j = 0; j < i; j++) {
-          const v = 0.5 * ((H[i * m + j] ?? 0) + (H[j * m + i] ?? 0))
-          H[i * m + j] = v
-          H[j * m + i] = v
-        }
-      const dir = newtonDirection(H, g, m)
-      const found = backtrack(evaluate, s.u, s.objective, g, dir)
-      const evaluations = s.evaluations + 2 * m + 1 + (found?.evaluations ?? 50)
-      if (found === undefined) return { ...s, evaluations, stalled: true }
-      return {
-        u: found.u,
-        objective: found.result.objective,
-        gradient: maxAbs(found.result.grad),
-        evaluations,
-        stalled: false,
-      }
-    },
-    done: (s) => (s.gradient <= tol ? 'converged' : s.stalled ? 'stopped' : undefined),
     observe: (s) => ({
       metrics: { objective: s.objective, gradient: s.gradient },
       tensors: { parameters: { role: 'param', value: s.u, shape: [m] } },
     }),
-    serialise: (s) => stateToJson(s),
-    deserialise: (j) => stateFromJson(j) as OrdinalState,
-  }
+  })
 }
 
 /** The hyperparameters of {@link ordinal}. */
@@ -389,6 +392,8 @@ export interface OrdinalHyper {
   readonly alpha: number
   readonly tol: number
   readonly maxIter: number
+  /** How the likelihood is minimised: a value of `smoothSolvers.space` (default Newton). */
+  readonly solver: SpaceValue
 }
 
 /** The fitted parameters of {@link ordinal}. */
@@ -421,7 +426,14 @@ export interface OrdinalVerbs {
   readonly score: (data: LearnData) => number
 }
 
-const ORDINAL_DEFAULTS: OrdinalHyper = { link: 'logit', mode: 'cumulative', alpha: 0, tol: 1e-9, maxIter: 100 }
+const ORDINAL_DEFAULTS: OrdinalHyper = {
+  link: 'logit',
+  mode: 'cumulative',
+  alpha: 0,
+  tol: 1e-9,
+  maxIter: 100,
+  solver: newtonAt(1e-9),
+}
 
 /** The covariance of (slopes, thresholds): the inverse of the observed information at the fit, by central differences. */
 function covarianceAt(
@@ -512,8 +524,9 @@ export function ordinal(
       name: 'ordinal',
       kind: 'classifier',
       defaults: ORDINAL_DEFAULTS,
-      hyperSpace: (h) => dict({ alpha: real(0, Math.max(10, h.alpha), { default: h.alpha }) }),
-      algorithm: (data, h) => ordinalAlgorithm(ordinalProblemOf(data, 'ordinal').problem, h),
+      hyperSpace: (h) =>
+        dict({ alpha: real(0, Math.max(10, h.alpha), { default: h.alpha }), solver: smoothSolvers.space }),
+      algorithm: (data, h, key) => ordinalAlgorithm(ordinalProblemOf(data, 'ordinal').problem, { ...h, key }),
       maxSteps: (h) => h.maxIter,
       params: (s, data, h) => {
         const { problem, classes } = ordinalProblemOf(data, 'ordinal')

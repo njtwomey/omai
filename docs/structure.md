@@ -1443,7 +1443,22 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   (`optimisers`), `learningRate`, `schedule` (`schedules`), `batch` (0: the whole set) and `gradTol`), over a
   `SmoothProblem` (an objective that may take a batch index set, `batches`, a start); `loggedSolver` (logs
   `solver/objective`, `solver/gradNorm`, `solver/step` and, for `gradient`, `solver/lr`; serialises the state),
-  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`.
+  `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`; `loggedSolverOf` logs by the same
+  convention for any table whose states carry `x`, `value`, `grad` and `step`.
+- `glm.ts`: the smooth penalised GLM as a problem and a slot. `GlmProblem` (design, family, link, prior weights,
+  offset, intercept, `GlmPenalty`: none, ridge, or a general quadratic penalty matrix as an additive model needs) and
+  `glmSolvers`, the table of its solvers: `irls` (Fisher scoring with step halving, the weighted problem solved by
+  Cholesky) and, from `smoothSolvers` on the GLM objective (`glmSmoothProblem`), `newton` (observed information),
+  `bfgs`, `lbfgs`, `conjugateGradient`, `gradientDescent` and `gradient` (the stochastic mode with its optimiser,
+  schedule and batch). `fitGlm` runs a mode to its fit; `glmValue`, `glmGradient` evaluate. Non-smooth penalties
+  (lasso, elastic net, group lasso) are deliberately not in the table: they are particular algorithms (`linear/lars.ts`,
+  `paths.ts`, `group-lasso.ts`, `optim/sparse.ts`, `proximal.ts`). Home: `optim`, not `linear`, because `optim` may
+  import `dists/families` without a cycle (`dists` imports neither `optim` nor `linear`) and the table serves `linear`,
+  `gam` and any future GLM-shaped model alike. A model whose objective is not GLM-shaped builds a `SmoothProblem` and
+  takes `smoothSolvers`; a model that is a GLM takes `glmSolvers`; the model never carries a solver of its own.
+- `analytic.ts`: `analyticObjective`, an objective written over plain numbers with its analytic gradient (and Hessian)
+  as a differentiable function the solvers accept (the gradient is its reverse rule, the Hessian its forward rule), and
+  `finiteDifferenceHessian` for the Newton mode of a model that has a gradient only.
 - `line-search.ts`: the line-search contract (`LineFunction`, `LineStart`, `LineSearchResult` with every trial point
   recorded, `LineSearch`), `backtracking` (Armijo, scipy's quadratic-cubic interpolation, optionally safeguarded, or
   halving; value-only evaluations), `strongWolfe` (Nocedal-Wright bracketing and zoom by cubic interpolation, scipy's
@@ -3292,8 +3307,9 @@ lasso, which a test checks against the GLM core. oracle: `linear/group_lasso` ag
 
 `ordinal.ts` is ordinal regression: `ordinalLogLikelihood` (the likelihood and its gradient for the cumulative-link
 model `P(Y <= k) = F(theta_k - x beta)` with the logit, probit, cloglog and loglog links, and for the sequential
-(continuation-ratio) model), `ordinalProbabilities`, `ordinalAlgorithm` (damped Newton steps, a Hessian from central
-differences of the analytic gradient, thresholds as a first cutpoint plus log increments) and the `ordinal` classifier
+(continuation-ratio) model), `ordinalProbabilities`, `ordinalSmoothProblem` (the objective with its analytic gradient, thresholds as a first cutpoint plus log
+increments) and `ordinalAlgorithm` (any solver of the slot, Newton by default with a Hessian from central differences
+of the gradient) and the `ordinal` classifier
 (`predictProba`, the latent `decisionFunction`, `predictDistribution`, a Wald table of slopes and thresholds). oracle:
 `linear/ordinal` against statsmodels' `OrderedModel` (slopes, thresholds, log-likelihood, slope standard errors and
 probabilities for the four links; the sequential mode has no reference and is checked by finite differences and its
@@ -3302,12 +3318,22 @@ equality with logistic regression for two categories).
 `mixed.ts` is the linear mixed model `y = X beta + Z b_g + e` for grouped data: `mixedProblemOf` summarises each group's
 rows into sufficient statistics (the group label is a column of `x`; random intercept and slopes, unstructured or
 diagonal covariance), `mixedProfile` is the profiled (restricted) deviance at a relative covariance factor (fixed effects
-and residual variance profiled out, the matrix determinant lemma per group), `mixedAlgorithm` maximises it by damped
-Newton steps (`_newton.ts`, shared with `ordinal.ts`: Levenberg-shifted direction and backtracking), and the `mixedModel`
+and residual variance profiled out, the matrix determinant lemma per group), `mixedSmoothProblem` is it as an objective
+of the solver slot and `mixedAlgorithm` maximises it with any solver of `smoothSolvers` (Newton by default), and the `mixedModel`
 estimator has the fixed-effects Wald table, `randomCovariance`, `sigma2`, the group effects (BLUPs), and `predict`
 (group effects for groups seen in fit) and `predictFixed`. Sample weights are refused. oracle: `linear/mixed` against
 statsmodels' `MixedLM` (REML and ML; random intercept, and correlated random intercept and slope); statsmodels stops
 slightly short of the optimum, so the golden tolerance is 1e-3 and a dense-matrix test checks the likelihood itself.
+
+The solver is a slot, not part of the model (docs/structure.md 4.18, `glm.ts`, `solvers.ts`, `analytic.ts`). The GLM core
+takes `solver` as a name or a configuration of `glmSolvers` (IRLS, Newton on the observed information, BFGS, L-BFGS,
+conjugate gradient, gradient descent, the stochastic mode with Adam and batches) when the penalty is smooth; `multinomial`,
+`ordinal`, `zeroInflated`/`hurdle` and `mixedModel` each build a `SmoothProblem` (`multinomialSmoothProblem`,
+`ordinalSmoothProblem`, `countModelSmoothProblem`, `mixedSmoothProblem`, from their analytic gradients through
+`analyticObjective`) and take `solver` as a configuration of `smoothSolvers`, default Newton, through `_slot.ts`
+(`slotAlgorithm`: the model's state fields read off the solver's state, which is kept inside so any solver serialises
+and resumes; `solver/gradNorm` and `solver/step` beside the model's channels). The lasso, elastic net, LARS, the paths and
+the group lasso are particular algorithms and stay outside the slot.
 
 `robust.ts` is regression that tolerates outliers: `theilSenAlgorithm` and the `theilSen` estimator (least squares on every
 row subset, or `maxSubpopulation` random ones drawn from a key, then Weiszfeld steps to the spatial median of the
@@ -3708,7 +3734,10 @@ solution with the influence-matrix diagonal (effective degrees of freedom per co
 `gcvScore`, `ubreScore` and `remlScore` (the Laplace-approximate marginal likelihood with the scale profiled out), and
 `selectLogLambda`, their minimisation over `log lambda` by Nelder-Mead. `pirls.ts` is `gamAlgorithm`, penalised IRLS
 as a stepped algorithm over any `DispersionFamily` and `Link` of `dists/families` (the performance iteration: the
-smoothing parameters are chosen on each working response, with step halving on the penalised deviance); logs
+smoothing parameters are chosen on each working response, with step halving on the penalised deviance); the inner solve
+is the `solver` hyperparameter, a configuration of `glmSolvers` (default `irls`, one reweighted least-squares step; any
+other mode minimises the penalised deviance at the chosen smoothing parameters, with the penalty matrix as its
+penalty); logs
 `solver/deviance`, `solver/penalisedDeviance`, `solver/edf`, `solver/criterion`, `solver/scale`, `solver/coef`,
 `solver/logLambda`. `backfitting.ts` is Hastie and Tibshirani's backfitting (local scoring for an exponential family),
 one cycle per step, which converges to the same penalised solution at fixed smoothing parameters. `estimators.ts` has

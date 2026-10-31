@@ -11,6 +11,9 @@ import { MdmlError } from '../base/index.ts'
 import { type DispersionFamily, gaussian, type Link } from '../dists/families/index.ts'
 import { matrixView, sampleWeightsOf, targetVector } from '../learn/index.ts'
 import { dpotrs } from '../numerics/linalg/index.ts'
+import { fitGlm, glmSolvers, solverConfigOf } from '../optim/index.ts'
+import { type Key, key as makeKey } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import {
@@ -47,6 +50,12 @@ export interface GamHyper {
   readonly maxIter: number
   /** Convergence tolerance on the relative change of the penalised deviance (default 1e-8). */
   readonly tol: number
+  /**
+   * How the coefficients are found at the smoothing parameters each iteration chose: a value of `glmSolvers.space`.
+   * `irls` (the default) is one penalised reweighted least-squares step, Wood's performance iteration; any other mode
+   * minimises the penalised deviance at those smoothing parameters, warm-started at the current coefficients.
+   */
+  readonly solver: SpaceValue
 }
 
 /** The defaults of {@link GamHyper}. */
@@ -60,6 +69,7 @@ export const GAM_DEFAULTS: GamHyper = {
   scale: undefined,
   maxIter: 100,
   tol: 1e-8,
+  solver: solverConfigOf(glmSolvers, { kind: 'irls' }),
 }
 
 /** A model prepared on data: the design, its penalties and the response. */
@@ -278,7 +288,8 @@ function pearsonScale(problem: GamProblem, mu: Float64Array, edf: number): numbe
  * as tensors; it ends when the penalised deviance and the smoothing parameters stop moving.
  *
  * @param problem - The prepared problem.
- * @param hyper - The method, starting smoothing parameters, tolerance and iteration limit.
+ * @param hyper - The method, starting smoothing parameters, tolerance, iteration limit and inner solver.
+ * @param key - The run's key (for a stochastic inner solver).
  * @returns The algorithm.
  * @concept generalized-additive-models
  * @reference S. N. Wood, Generalized Additive Models: An Introduction with R (2nd ed., 2017), chapters 3 and 6.
@@ -293,7 +304,7 @@ function pearsonScale(problem: GamProblem, mu: Float64Array, edf: number): numbe
  * run.state.edf > 2 // => true
  * ```
  */
-export function gamAlgorithm(problem: GamProblem, hyper: GamHyper): Algorithm<GamState> {
+export function gamAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key = makeKey(0)): Algorithm<GamState> {
   const { design, structure } = problem
   const n = design.n
   const nPen = structure.blocks.length
@@ -317,9 +328,42 @@ export function gamAlgorithm(problem: GamProblem, hyper: GamHyper): Algorithm<Ga
     }
     return devianceAt(problem, eta) + pen
   }
+  const inner = glmSolvers.modeOf(hyper.solver).name === 'irls' ? undefined : hyper.solver
+  const slotSolution = (S: Float64Array, start: ArrayLike<number>): { beta: Float64Array; eta: Float64Array } => {
+    const p = design.p
+    const fit = fitGlm(
+      {
+        x: design.X,
+        n,
+        d: p,
+        y: problem.y,
+        weights: problem.prior,
+        family: problem.family,
+        link: problem.link,
+        penalty: { matrix: S },
+        normalise: false,
+        start,
+      },
+      inner as SpaceValue,
+      { key },
+    )
+    const eta = new Float64Array(n)
+    for (let i = 0; i < n; i++) {
+      let t = 0
+      for (let j = 0; j < p; j++) t += (design.X[i * p + j] ?? 0) * (fit.x[j] ?? 0)
+      eta[i] = t
+    }
+    return { beta: fit.x, eta }
+  }
   return {
     name: 'gam-pirls',
-    config: { method: hyper.method, family: problem.family.name, link: problem.link.name, gamma: hyper.gamma },
+    config: {
+      method: hyper.method,
+      family: problem.family.name,
+      link: problem.link.name,
+      gamma: hyper.gamma,
+      solver: hyper.solver,
+    },
     schema: channels({
       metrics: {
         deviance: { description: 'the deviance of the model', direction: 'lower' },
@@ -366,16 +410,18 @@ export function gamAlgorithm(problem: GamProblem, hyper: GamHyper): Algorithm<Ga
       }
       const S = assemblePenalty(structure, logLambda)
       const sol = solvePenalised(g, S)
-      let beta: ArrayLike<number> = sol.beta
-      let eta: ArrayLike<number> = sol.eta
+      // The coefficients at these smoothing parameters: the reweighted least-squares step, or a solver of the slot.
+      const target = inner === undefined ? sol : slotSolution(S, s.iteration === 0 ? sol.beta : s.beta)
+      let beta: ArrayLike<number> = target.beta
+      let eta: ArrayLike<number> = target.eta
       let pdev = penalisedDeviance(eta, beta, S)
       if (s.iteration > 0) {
         const before = penalisedDeviance(s.eta, s.beta, S)
         let a = 1
         while (pdev > before + 1e-12 * (Math.abs(before) + 1) && a > 1e-4) {
           a /= 2
-          beta = Float64Array.from(sol.beta, (v, i) => (s.beta[i] ?? 0) + a * (v - (s.beta[i] ?? 0)))
-          eta = Float64Array.from(sol.eta, (v, i) => (s.eta[i] ?? 0) + a * (v - (s.eta[i] ?? 0)))
+          beta = Float64Array.from(target.beta, (v, i) => (s.beta[i] ?? 0) + a * (v - (s.beta[i] ?? 0)))
+          eta = Float64Array.from(target.eta, (v, i) => (s.eta[i] ?? 0) + a * (v - (s.eta[i] ?? 0)))
           pdev = penalisedDeviance(eta, beta, S)
         }
       }
