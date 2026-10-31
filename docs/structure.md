@@ -361,7 +361,7 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. mdml-engine core, `packages/engine/src/lib/`
 
-The core has 49 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 51 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
@@ -415,6 +415,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `gp`          | Gaussian-process regression and classification (Laplace, EP), sparse approximations, the relevance vector machine, as stepped estimators                                                         |
 | `trees`       | decision trees: the tree structure, split criteria, the stepped grower, pruning, ID3, C4.5 and CHAID, the Hoeffding tree, CART estimators                                                        |
 | `ensembles`   | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking                                              |
+| `kernel-methods` | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                           |
+| `gam`         | generalised additive models: smooth, tensor-product and parametric terms on the penalised bases of `stats/smoothing`, penalised IRLS with REML, GCV and UBRE smoothing selection, backfitting, effective degrees of freedom |
 
 ### 4.1 `base/`
 
@@ -3581,6 +3583,56 @@ gradient boosting (squared error, L2, missing values, Poisson, coarse bins, bina
 error loss (tied splits), SAMME.R and R2 (scikit-learn dropped the first and resamples the second), categorical features
 in histogram boosting, LambdaMART.
 built from: `trees`, `learn`, `metrics`, `exposition`
+
+### 4.50 `kernel-methods/`: kernel regression, batch and online (scikit-learn kernel_ridge, KRLS, NORMA)
+
+`kernel-ridge.ts` is the closed-form dual solve `(K + alpha I)^(-1) y` over any kernel of `kernels` (a name with
+`gamma`, `degree`, `coef0` by `kernels/named.ts`, or a `Kernel` object), for one or several outputs. `solveKernelRidge`,
+`hatDiagonal`, `looPredictions` and `looPress` work on a Gram matrix: the leave-one-out residual is
+`c_i / [(K + alpha I)^(-1)]_ii`, exact, from one inverse. The estimator `kernelRidge` (kind regressor, one step) logs
+`solver/looMse` and `solver/effectiveDf`; its verbs add `hatDiagonal`, `looPredictions`, `looPress` and a normal
+`predictDistribution`. Sample weights are refused. `online-kernel.ts` has the learners that take one observation per step:
+`krls` (Engel, Mannor and Meir: the dictionary grows by a block inversion when the approximate-linear-dependence
+residual exceeds `aldThreshold`, otherwise a reduced-order recursive least squares step; `criterion: 'coherence'` for the
+coherence test; `criterion: 'sliding-window'` keeps the exact ridge solution on the last `budget` observations by a
+bordering update and a downdate of the inverse), `krlsStep` and `krlsPredict` on the plain-JSON `KrlsState`, and `norma`
+(stochastic gradient descent in the RKHS with weight decay `1 - eta_t lambda`, squared or epsilon-insensitive loss, an
+expansion truncated to `budget`). Logs `solver/dictionarySize`, `solver/novelty`, `solver/loss`, `solver/runningMse`,
+`solver/alpha` and the message `solver/dictionaryAdd`; probe `model/dictionary`.
+
+oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
+sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits. TODO: kernel ridge on the
+Nystroem and random Fourier maps of `kernels/expansion.ts` (the maps exist; the estimator over them does not).
+built from: `kernels`, `learn`, `numerics`, `metrics`, `dists`, `trace`
+
+### 4.51 `gam/`: generalised additive models (mgcv, pyGAM, statsmodels GLMGam)
+
+`terms.ts` is the formula layer: `s` (a smooth of one or several covariates on any basis of `stats/smoothing`: `cr`, `cc`,
+`ps`, `bs`, `ns`, `tp`, `ts`, `duchon`, `gp`; a `by` covariate for varying coefficients), `te` and `ti` (tensor products and
+interactions, one smoothing parameter per margin), `linear` and `factor` (dummy columns or a random effect). `buildDesign`
+compiles terms against training data into one block of columns per term with its penalty matrices and null-space
+dimension (smooths centred by the sum-to-zero constraint so the intercept is identifiable) and `evaluateDesign` evaluates
+the blocks at new rows. `penalised.ts` is the numerics: the assembled penalty, the penalised weighted least-squares
+solution with the influence-matrix diagonal (effective degrees of freedom per coefficient and, by `termEdf`, per term),
+`gcvScore`, `ubreScore` and `remlScore` (the Laplace-approximate marginal likelihood with the scale profiled out), and
+`selectLogLambda`, their minimisation over `log lambda` by Nelder-Mead. `pirls.ts` is `gamAlgorithm`, penalised IRLS
+as a stepped algorithm over any `DispersionFamily` and `Link` of `dists/families` (the performance iteration: the
+smoothing parameters are chosen on each working response, with step halving on the penalised deviance); logs
+`solver/deviance`, `solver/penalisedDeviance`, `solver/edf`, `solver/criterion`, `solver/scale`, `solver/coef`,
+`solver/logLambda`. `backfitting.ts` is Hastie and Tibshirani's backfitting (local scoring for an exponential family),
+one cycle per step, which converges to the same penalised solution at fixed smoothing parameters. `estimators.ts` has
+`gam` and `gamClassifier` on the iterative base: `predict`, `predictTerms`, `standardErrors` (Bayesian posterior
+covariance), `predictDistribution`, `edfTerms`, `smoothingParameters`, `aic`.
+
+oracle: statsmodels `GLMGam` at fixed smoothing parameters (Gaussian, Poisson, binomial and gamma-log families on a
+B-spline smooth: coefficients, leverages, effective degrees of freedom, deviance) and statsmodels `MixedLM` for REML
+(a random-effect term is a penalty of the identity with `lambda = sigma^2 / sigma_b^2`: the REML smoothing parameter,
+variance and intercept). pyGAM and mgcv are not in the oracle environment. TODO: GAMLSS (the distributional families
+of `dists/families` have the links and the log-likelihood; the RS algorithm over per-parameter additive predictors is
+not written), the outer-iteration REML of mgcv (the performance iteration here differs from it for non-Gaussian
+families), shape-constrained smooths in terms (`stats/smoothing` has `shapeConstraint`), confidence bands for term
+effects, p-values of terms.
+built from: `stats/smoothing`, `dists` (families, links), `learn`, `numerics`, `optim` (Nelder-Mead), `metrics`, `trace`
 
 ## 5. Methods, exposition records and views
 

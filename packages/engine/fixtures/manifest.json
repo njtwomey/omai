@@ -756,6 +756,22 @@
       "cases": 39
     },
     {
+      "fixture": "gam/glmgam.json",
+      "source": "oracle/cases/gam/glmgam.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 8
+    },
+    {
+      "fixture": "gam/reml.json",
+      "source": "oracle/cases/gam/reml.py",
+      "reference": {
+        "statsmodels": "0.15.0"
+      },
+      "cases": 2
+    },
+    {
       "fixture": "games/cooperative.json",
       "source": "oracle/cases/games/cooperative.py",
       "reference": {
@@ -1143,6 +1159,14 @@
         "bitarray": "3.12.3"
       },
       "cases": 8
+    },
+    {
+      "fixture": "kernel_methods/kernel_ridge.json",
+      "source": "oracle/cases/kernel_methods/kernel_ridge.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 9
     },
     {
       "fixture": "kernels/dot_product.json",
