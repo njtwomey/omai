@@ -177,8 +177,8 @@ export function pointsStepsView(
   const old = at.points.length - at.fresh
   const how = colouring(at, options)
   const trail = options.fade !== undefined && options.fade > 0
-  // The newest points are set apart in the warning colour unless colour or fading already says what is new.
-  const fresh = old > 0 && record.accumulate !== false && how === 'none' && !trail
+  // The newest points are set apart in the warning colour unless a value channel or a fading trail already says what is new.
+  const fresh = old > 0 && record.accumulate !== false && how !== 'values' && !trail
   const layers: Layer[] = []
   const opacity = trailOpacity(at.born, options.fade)
   const colours = how === 'values' && at.values !== undefined ? valueColours(record, at.values, mode) : undefined

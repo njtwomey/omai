@@ -80,7 +80,7 @@ describe('the look of accumulating points', () => {
     expect(o.series.length).toBe(3)
     expect(o.aria.label.description).toContain('coloured by speed from 0 to 10')
     expect(o.aria.label.description).toContain('fading')
-    // With no colour channel, the newest points are set apart in their own series, as before.
+    // With no colour channel or fade, the newest points are set apart in their own series, as before.
     expect((pointsStepsView(flat, 10, { colour: 'none' }) as { series: unknown[] }).series.length).toBe(2)
   })
 

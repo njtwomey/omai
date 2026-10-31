@@ -240,7 +240,7 @@ export function landscapeSliceView(record: LandscapeSlice, options: ViewOptions 
  * import { sampleLandscape } from 'mdml-engine/exposition'
  * import { landscapeSliceScene3d } from 'mdml-render/views'
  * const r = sampleLandscape((a, b) => a * a + b * b, [-1, 0, 1], [-1, 0, 1])
- * landscapeSliceScene3d(r).items.length // => 4 + 8
+ * landscapeSliceScene3d(r).items.length // => 10
  * ```
  */
 export function landscapeSliceScene3d(record: LandscapeSlice, options: { readonly mode?: ColourMode } = {}): Scene3D {

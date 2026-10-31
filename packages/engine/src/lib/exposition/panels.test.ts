@@ -113,7 +113,7 @@ describe('the records the generic panels draw', () => {
         },
       ],
     })
-    expect(pointsAt(grow, 3)).toEqual({ points: [[0, 0]], groups: [0], caption: 'one', fresh: 1 })
+    expect(pointsAt(grow, 3)).toEqual({ points: [[0, 0]], groups: [0], born: [0], caption: 'one', fresh: 1 })
     expect(pointsAt(grow, 9).points).toHaveLength(3)
     expect(pointsAt(grow, 9).groups).toEqual([0, 1, 1])
     expect(pointsAt(grow, 9).fresh).toBe(2)
