@@ -264,13 +264,33 @@ export interface RegressionEffect {
   readonly df: number
 }
 
-/** The partial R-squared of the treatment with the outcome given the other regressors: `t^2 / (t^2 + df)`. */
+/**
+ * The partial R-squared of the treatment with the outcome given the other regressors: `t^2 / (t^2 + df)`.
+ *
+ * @param reg - The treatment's coefficient, standard error and residual degrees of freedom.
+ * @returns The partial R-squared.
+ * @example
+ * ```ts
+ * import { partialR2 } from 'mdml-engine/causal'
+ * partialR2({ estimate: 2, standardError: 1, df: 8 }).toFixed(3) // => '0.333'
+ * ```
+ */
 export function partialR2(reg: RegressionEffect): number {
   const t = reg.estimate / reg.standardError
   return (t * t) / (t * t + reg.df)
 }
 
-/** The partial Cohen's f of the treatment: `|t| / sqrt(df)`. */
+/**
+ * The partial Cohen's f of the treatment: `|t| / sqrt(df)`.
+ *
+ * @param reg - The treatment's coefficient, standard error and residual degrees of freedom.
+ * @returns Cohen's f.
+ * @example
+ * ```ts
+ * import { partialCohenF } from 'mdml-engine/causal'
+ * partialCohenF({ estimate: 2, standardError: 1, df: 8 }).toFixed(3) // => '0.707'
+ * ```
+ */
 export function partialCohenF(reg: RegressionEffect): number {
   return Math.abs(reg.estimate / reg.standardError) / Math.sqrt(reg.df)
 }

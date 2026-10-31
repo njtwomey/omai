@@ -60,7 +60,20 @@ export function defaultOutcome(): Learner {
   return linearModel({ family: 'gaussian', solver: 'auto' })
 }
 
-/** The probability of class 1 (or the mean, for a regressor) of a fitted model at the rows of `x`. */
+/**
+ * The probability of class 1 (or the mean, for a regressor) of a fitted model at the rows of `x`.
+ *
+ * @param fitted - A fitted estimator with `predictProba` or `predict`.
+ * @param x - The covariates.
+ * @returns One value per row.
+ * @example
+ * ```ts
+ * import { probabilityOf } from 'mdml-engine/causal'
+ * import { decisionTreeClassifier } from 'mdml-engine/trees'
+ * const fitted = decisionTreeClassifier().fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] })
+ * Array.from(probabilityOf(fitted, [[0.5], [2.5]])) // => [0, 1]
+ * ```
+ */
 export function probabilityOf(fitted: Fitted, x: TensorLike): Float64Array {
   if (fitted.predictProba !== undefined) {
     const p = fitted.predictProba(x)
@@ -77,7 +90,20 @@ export function probabilityOf(fitted: Fitted, x: TensorLike): Float64Array {
   return Float64Array.from(toFlat(fitted.predict(x)))
 }
 
-/** The mean prediction of a fitted outcome model: its probability of 1 for a binary outcome, else its `predict`. */
+/**
+ * The mean prediction of a fitted outcome model: its probability of 1 for a binary outcome, else its `predict`.
+ *
+ * @param fitted - A fitted estimator.
+ * @param x - The covariates.
+ * @param binary - Whether the outcome is 0/1.
+ * @returns One value per row.
+ * @example
+ * ```ts
+ * import { defaultOutcome, expectationOf } from 'mdml-engine/causal'
+ * const fitted = defaultOutcome().fit({ x: [[0], [1], [2], [3]], y: [1, 3, 5, 7] })
+ * Array.from(expectationOf(fitted, [[5]], false)) // => [11]
+ * ```
+ */
 export function expectationOf(fitted: Fitted, x: TensorLike, binary: boolean): Float64Array {
   if (binary) return probabilityOf(fitted, x)
   if (fitted.predict === undefined)
@@ -98,6 +124,12 @@ const clipTo = (v: Float64Array, c: number): Float64Array => v.map((p) => Math.m
  * @param options - The propensity learner, clipping and key.
  * @param fold - A number folded into the key.
  * @returns The propensity at each test row.
+ * @example
+ * ```ts
+ * import { fitPropensity } from 'mdml-engine/causal'
+ * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
+ * fitPropensity(p, [0, 1, 2, 3, 4, 5, 6, 7], [0, 7]).length // => 2
+ * ```
  */
 export function fitPropensity(
   p: Prepared,
@@ -117,6 +149,12 @@ export function fitPropensity(
  * @param options - The propensity learner, clipping and key.
  * @param fold - A number folded into the key.
  * @returns A function from a covariate matrix to propensity scores.
+ * @example
+ * ```ts
+ * import { propensityModel } from 'mdml-engine/causal'
+ * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
+ * propensityModel(p, [0, 1, 2, 3, 4, 5, 6, 7])([[0], [1]]).length // => 2
+ * ```
  */
 export function propensityModel(
   p: Prepared,
@@ -155,6 +193,12 @@ export interface Nuisances {
  * @param options - The learners, clipping and key, and `pooled` to also fit `E[Y | X]` on all training rows.
  * @param fold - A number folded into the key so each fold's stochastic learners differ.
  * @returns The propensity and outcome predictions at the test rows.
+ * @example
+ * ```ts
+ * import { fitNuisances } from 'mdml-engine/causal'
+ * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
+ * fitNuisances(p, [0, 1, 2, 3, 4, 5, 6, 7], [0, 7]).mu1.length // => 2
+ * ```
  */
 export function fitNuisances(
   p: Prepared,
@@ -189,7 +233,17 @@ export function fitNuisances(
   return { e, mu0: arm(0), mu1: arm(1), ...(m === undefined ? {} : { m }) }
 }
 
-/** The rows `0..n-1` as an array. */
+/**
+ * The rows `0..n-1` as an array.
+ *
+ * @param n - The number of rows.
+ * @returns The indices.
+ * @example
+ * ```ts
+ * import { allRows } from 'mdml-engine/causal'
+ * Array.from(allRows(3)) // => [0, 1, 2]
+ * ```
+ */
 export function allRows(n: number): Int32Array {
   return Int32Array.from({ length: n }, (_, i) => i)
 }

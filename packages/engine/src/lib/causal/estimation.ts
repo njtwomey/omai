@@ -434,7 +434,19 @@ export interface AipwOptions extends EffectOptions {
   readonly trim?: number
 }
 
-/** The cross-fitted (or in-sample) nuisance predictions at every unit. */
+/**
+ * The nuisance predictions at every unit: fitted on all units, or cross-fitted over `folds` stratified folds.
+ *
+ * @param p - The prepared data.
+ * @param options - The learners, `folds`, `pooled` and key.
+ * @returns The propensity and outcome predictions per unit.
+ * @example
+ * ```ts
+ * import { nuisancesFor } from 'mdml-engine/causal'
+ * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
+ * nuisancesFor(p, {}).e.length // => 8
+ * ```
+ */
 export function nuisancesFor(
   p: Prepared,
   options: NuisanceOptions & { readonly folds?: number; readonly pooled?: boolean },
@@ -457,7 +469,20 @@ export function nuisancesFor(
   return { e, mu0, mu1, ...(m === undefined ? {} : { m }) }
 }
 
-/** The AIPW score and estimate for given nuisances. */
+/**
+ * The AIPW estimate and its influence values from given nuisance predictions.
+ *
+ * @param p - Treatment and outcome of each unit.
+ * @param nu - Propensity and outcome predictions per unit.
+ * @param estimand - The ATE, ATT or ATC.
+ * @returns The value and the per-unit influence values.
+ * @example
+ * ```ts
+ * import { aipwFrom } from 'mdml-engine/causal'
+ * const nu = { e: Float64Array.of(0.5, 0.5), mu0: Float64Array.of(1, 1), mu1: Float64Array.of(3, 3) }
+ * aipwFrom({ n: 2, t: Float64Array.of(1, 0), y: Float64Array.of(3, 1) }, nu, 'ate').value // => 2
+ * ```
+ */
 export function aipwFrom(
   p: Pick<Prepared, 'n' | 't' | 'y'>,
   nu: Nuisances,

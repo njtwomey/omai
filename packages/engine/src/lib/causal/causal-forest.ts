@@ -208,6 +208,17 @@ export function causalForestAlgorithm(
  * @param state - The state of {@link causalForestAlgorithm}, after any number of steps.
  * @param data - The training data the forest was grown on.
  * @returns The forest.
+ * @example
+ * ```ts
+ * import { causalForestAlgorithm, causalForestOf } from 'mdml-engine/causal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = Array.from({ length: 60 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
+ * const treatment = x.map((_, i) => (Math.sin(5 * i) > 0 ? 1 : 0))
+ * const outcome = x.map((r, i) => (r[0] ?? 0) + (treatment[i] ?? 0))
+ * const data = { x, treatment, outcome }
+ * const state = runAlgorithm(causalForestAlgorithm(data, { trees: 3 }), { maxSteps: 5 }).state
+ * causalForestOf(state, data).trees // => 3
+ * ```
  */
 export function causalForestOf(state: CausalForestState, data: CausalData): CausalForest {
   const p: Prepared = prepare(data.x, data.treatment, data.outcome, 'causalForest')
