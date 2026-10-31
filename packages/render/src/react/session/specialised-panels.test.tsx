@@ -1,4 +1,4 @@
-import { decisionSurface, sampleLandscape, sampleStabilityRegion } from 'mdml-engine/exposition'
+import { decisionSurface, equationFit, sampleLandscape, sampleStabilityRegion } from 'mdml-engine/exposition'
 import { dict, int } from 'mdml-engine/space'
 import {
   type Config,
@@ -75,6 +75,19 @@ const toy: Method<State, Config> = defineMethod<State, Config>({
           },
         ),
     }),
+    law: derived<State>({
+      description: 'a fitted equation',
+      compute: () =>
+        equationFit({
+          terms: [
+            { tex: 'x', estimate: 2, truth: 2 },
+            { tex: '1', estimate: 0.5, truth: 0 },
+          ],
+          x: [0, 1, 2],
+          fit: [0.5, 2.5, 4.5],
+          truth: [0, 2, 4],
+        }),
+    }),
     wrong: derived<State>({ description: 'not a surface', compute: () => ({ kind: 'nope' }) }),
   },
 })
@@ -145,5 +158,23 @@ describe('the stability panel', () => {
     )
     expect(html).toContain('the region at step 2')
     expect(html).toContain('forward Euler is unstable: 1 of 2 values of hλ are outside the region')
+  })
+})
+
+describe('the equation panel', () => {
+  it('typesets the fit beside the truth with the status of each term in words', () => {
+    const html = renderToString(
+      <SessionPanels
+        id="test/equation"
+        live={live}
+        at={1}
+        layout={[{ kind: 'equation', path: 'law', title: 'the law' }]}
+      />,
+    )
+    expect(html).toContain('the law at step 1')
+    expect(html).toContain('katex')
+    expect(html).toContain('matches the truth')
+    expect(html).toContain('kept, but not in the law')
+    expect(html).toContain('1 of 2 terms match the truth, 1 extra, 0 missing')
   })
 })

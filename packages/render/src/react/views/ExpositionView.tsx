@@ -18,6 +18,7 @@ import { DependenceView } from './dependence.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
 import { EpicyclePlayer } from './epicycles.tsx'
 import { EpisodeView } from './episodes.tsx'
+import { EquationFitView } from './equation-fit.tsx'
 import { CounterfactualView, PrototypeView } from './examples.tsx'
 import { ExplanationQualityView } from './explanation-quality.tsx'
 import { GroupReportView } from './fairness.tsx'
@@ -196,6 +197,8 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <SceneStepsView record={record} {...common} />
     case 'landscapeSlice':
       return <LandscapeSliceView record={record} {...common} />
+    case 'equationFit':
+      return <EquationFitView record={record} {...common} />
     case 'stabilityRegion':
       return <StabilityRegionView record={record} {...common} />
   }

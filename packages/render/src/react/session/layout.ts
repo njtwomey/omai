@@ -294,6 +294,12 @@ export type Panel =
    * marked inside or outside it.
    */
   | { readonly kind: 'stability'; readonly path: string; readonly args?: Json; readonly title?: string }
+  /**
+   * A fitted equation probed at the viewed step (an `equationFit` record): the expression typeset beside the true one
+   * with each coefficient coloured by its error and listed with its status in words, the fit against the truth, and
+   * the residual in a strip beneath.
+   */
+  | { readonly kind: 'equation'; readonly path: string; readonly args?: Json; readonly title?: string }
   /** One of the method's projections of the tape so far; hidden while it has nothing to project. */
   | { readonly kind: 'projection'; readonly name: string; readonly title?: string }
   /** The generic view of everything the tape holds, for debugging. */

@@ -22,6 +22,7 @@ import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
 import { epicycleFrames } from './epicycles.ts'
 import { episodeView } from './episodes.ts'
+import { equationFitView } from './equation-fit.ts'
 import { counterfactualTableView, prototypeView } from './examples.ts'
 import { explanationQualityView } from './explanation-quality.ts'
 import { groupReportView } from './fairness.ts'
@@ -486,6 +487,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => stabilityRegionView(r, o),
+  },
+  equationFit: {
+    kind: 'equationFit',
+    component: 'EquationFitView',
+    title: 'Equation against the truth',
+    plays: false,
+    accepts: [],
+    still: (r, o) => equationFitView(r, o),
   },
   dataBias: {
     kind: 'dataBias',

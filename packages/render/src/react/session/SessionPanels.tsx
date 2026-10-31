@@ -256,7 +256,8 @@ function PanelView(
     }
     case 'zoom':
     case 'landscape':
-    case 'stability': {
+    case 'stability':
+    case 'equation': {
       const title = panel.title ?? panel.path
       return (
         <SpecialisedPanel

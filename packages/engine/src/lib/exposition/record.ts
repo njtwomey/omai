@@ -20,6 +20,7 @@ import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
 import type { Epicycles } from './epicycles.ts'
 import type { EpisodeRecord } from './episodes.ts'
+import type { EquationFit } from './equation-fit.ts'
 import type { ConfusionMatrix } from './evaluation.ts'
 import type { CounterfactualSet, PrototypeSet } from './examples.ts'
 import type { ExplanationQuality } from './explanation-quality.ts'
@@ -115,6 +116,7 @@ export type Exposition =
   | SceneSteps
   | LandscapeSlice
   | StabilityRegion
+  | EquationFit
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -216,4 +218,5 @@ const KINDS: ReadonlySet<string> = new Set<ExpositionKind>([
   'sceneSteps',
   'landscapeSlice',
   'stabilityRegion',
+  'equationFit',
 ])

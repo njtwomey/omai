@@ -10,6 +10,7 @@ import { figure } from '../../figure/figure.ts'
 import { imageGridFigure } from '../../views/images.ts'
 import { stripAspect } from '../../views/strips.ts'
 import { FigureFrame } from '../FigureFrame.tsx'
+import { EquationFitView } from '../views/equation-fit.tsx'
 import { ImageGridView } from '../views/images.tsx'
 import { LandscapeSliceView } from '../views/landscape-slice.tsx'
 import { MarkedTableView } from '../views/marked-tables.tsx'
@@ -55,6 +56,9 @@ function Nothing(props: { readonly title: string; readonly filename: string; rea
 
 /** The width the record panels draw at: the session panels' figure width, whatever the record's shape. */
 const WIDTH = FIG.width
+
+// The figure of the equation panel: the expressions, the table of terms, the curve and the residual strip stacked.
+const TALL = figure({ width: WIDTH, height: 500 })
 
 /**
  * A strip probed at the viewed step: tokens on x, a row of cells per track, tags, the chosen path and marks.
@@ -255,4 +259,23 @@ export function StabilityPanel(props: {
   const { record, problem } = useRecord(props.live, props.t, 'stabilityRegion', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return <StabilityRegionView record={record} figure={FIG} title={props.title} filename={props.filename} />
+}
+
+/**
+ * A fitted equation probed at the viewed step, beside the truth with its residual.
+ *
+ * @param props - The session, the viewed step, the panel and the frame's title and file name.
+ * @returns The figure.
+ */
+export function EquationPanel(props: {
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  readonly live: LiveSession<any, any>
+  readonly panel: Extract<Panel, { kind: 'equation' }>
+  readonly t: number
+  readonly title: string
+  readonly filename: string
+}): ReactNode {
+  const { record, problem } = useRecord(props.live, props.t, 'equationFit', props.panel.path, props.panel.args)
+  if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
+  return <EquationFitView record={record} figure={TALL} title={props.title} filename={props.filename} />
 }
