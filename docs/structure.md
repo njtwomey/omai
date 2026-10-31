@@ -4069,6 +4069,14 @@ non-negative quadratic programme by projected gradient, or the clipped closed fo
 `smoothSolvers` applies) with `mklAlgorithm` and `mklContract` (typed paths: the solver's and `mkl/weights`, the weights at
 every step) and `fitMultipleKernel`, which returns the combined kernel as a `Kernel` object and its Gram matrix. No
 scikit-learn equivalent exists, so it has planted-truth and brute-force checks rather than a golden.
+`mean-embedding.ts` is kernel mean embeddings: `meanEmbedding` and `embeddingInnerProduct`, `mmdWitness` (the witness
+function and the biased MMD; the two-sample tests are `kernels/matrices.ts` and `stats/tests/kernel.ts`),
+`conditionalMeanEmbedding` (the regularised operator; the expectation of the output is kernel ridge with ridge `n lambda`),
+`kernelBayesRule` (basic level, prior weights on the sample's input rows) and the kernel Stein discrepancy:
+`steinKernelGram` builds the Stein kernel of any differentiable kernel and score by nested autodiff vectorised with `vmap`,
+`kernelSteinDiscrepancy` its V- or U-statistic, `steinGoodnessOfFit` the test by the multinomial wild bootstrap (an
+`Algorithm`). Kernel herding is `learn/coresets.ts`. Checked by planted truth (a Gaussian posterior, a conditional
+expectation, the closed-form Stein kernel of a Gaussian kernel) and identities (CME is kernel ridge), not goldens.
 
 oracle: scikit-learn `KernelRidge`: dual coefficients and predictions for the linear, RBF, polynomial, Laplacian and
 sigmoid kernels, one and two outputs, and the leave-one-out predictions against n refits; `Nystroem` and `RBFSampler`
