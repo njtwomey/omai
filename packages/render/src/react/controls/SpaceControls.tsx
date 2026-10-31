@@ -10,7 +10,15 @@ import { cx, labelClass } from './classes.ts'
 import { NumberField } from './NumberField.tsx'
 import type { OptionValue } from './options.ts'
 import { Select } from './Select.tsx'
-import { type ControlSpec, type SpaceControlOptions, spaceControls, valueAt, withValueAt } from './space-controls.ts'
+import {
+  type Admissibility,
+  type ControlSpec,
+  greyOptions,
+  type SpaceControlOptions,
+  spaceControls,
+  valueAt,
+  withValueAt,
+} from './space-controls.ts'
 import { Toggle } from './Toggle.tsx'
 
 /** Props of {@link SpaceControls}. */
@@ -21,6 +29,14 @@ export interface SpaceControlsProps<V extends SpaceValue> extends SpaceControlOp
   /** Top-level keys to leave out (a dict space's dimensions the page sets itself). */
   readonly exclude?: readonly string[]
   readonly disabled?: boolean
+  /**
+   * Whether an option of a choice may be chosen, given the path of the control and the option: an option that may not
+   * is drawn disabled, titled with the reason. The control stays generic; the page supplies the rule (a mode table's
+   * `admissible`, say). Without it every option is available.
+   */
+  readonly admissible?: Admissibility['admissible']
+  /** The note on an inadmissible option, shown as its title. */
+  readonly why?: Admissibility['why']
 }
 
 /**
@@ -33,10 +49,14 @@ export interface SpaceControlsProps<V extends SpaceValue> extends SpaceControlOp
  */
 export function SpaceControls<V extends SpaceValue>(props: SpaceControlsProps<V>): ReactNode {
   const { space, value, onChange, exclude = [], disabled = false } = props
+  const rule: Admissibility | undefined =
+    props.admissible === undefined
+      ? undefined
+      : { admissible: props.admissible, ...(props.why === undefined ? {} : { why: props.why }) }
   const options: SpaceControlOptions = props.segmentedUpTo === undefined ? {} : { segmentedUpTo: props.segmentedUpTo }
   const controls = spaceControls(space, value, options).filter((c) => !exclude.includes(String(c.path[0])))
   const set = (spec: ControlSpec, leaf: SpaceValue): void => onChange(withValueAt(space, value, spec.path, leaf) as V)
-  return controls.map((c) => <ControlFor key={c.id} spec={c} value={value} set={set} disabled={disabled} />)
+  return controls.map((c) => <ControlFor key={c.id} spec={c} value={value} set={set} disabled={disabled} rule={rule} />)
 }
 
 function ControlFor(props: {
@@ -44,8 +64,9 @@ function ControlFor(props: {
   readonly value: SpaceValue
   readonly set: (spec: ControlSpec, leaf: SpaceValue) => void
   readonly disabled: boolean
+  readonly rule: Admissibility | undefined
 }): ReactNode {
-  const { spec, value, set, disabled } = props
+  const { spec, value, set, disabled, rule } = props
   const current = valueAt(value, spec.path)
   switch (spec.kind) {
     case 'number':
@@ -66,7 +87,7 @@ function ControlFor(props: {
         <Component<OptionValue>
           label={spec.label}
           value={current as OptionValue}
-          options={spec.options}
+          options={greyOptions(spec.options, spec.path, rule)}
           onChange={(v) => set(spec, v)}
           disabled={disabled}
         />
@@ -87,7 +108,7 @@ function ControlFor(props: {
           {spec.label === '' ? null : <legend className={cx(labelClass, 'mb-1')}>{spec.label}</legend>}
           <div className="flex flex-wrap gap-2">
             {spec.children.map((c) => (
-              <ControlFor key={c.id} spec={c} value={value} set={set} disabled={disabled} />
+              <ControlFor key={c.id} spec={c} value={value} set={set} disabled={disabled} rule={rule} />
             ))}
           </div>
         </fieldset>

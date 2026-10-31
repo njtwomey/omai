@@ -6,7 +6,7 @@
 
 import { activeDims, defaults, type Space, type SpaceValue } from 'mdml-engine/space'
 import type { NumberSpec } from './number.ts'
-import type { OptionValue } from './options.ts'
+import type { OptionInput, OptionValue } from './options.ts'
 
 /** Where a control's value sits inside a space's value: dict keys and tuple or vector indices. */
 export type ControlPath = readonly (string | number)[]
@@ -268,4 +268,39 @@ export function withValueAt(space: Space, value: SpaceValue, path: ControlPath, 
     return record
   }
   return settleValue(space, write(value, 0))
+}
+
+/** Which options of a choice are admissible: a predicate over the control's path and the option, and why not. */
+export interface Admissibility {
+  /** Whether the option may be chosen given the page's other settings (the mode table's `admissible`). */
+  readonly admissible: (path: ControlPath, option: OptionValue) => boolean
+  /** The note on an option that may not be chosen (default a general one). */
+  readonly why?: (path: ControlPath, option: OptionValue) => string | undefined
+}
+
+/**
+ * The options of a choice control with the inadmissible ones disabled and annotated: a disabled option keeps its place
+ * and carries the reason as its description (its title), so the reader sees what exists and why it is out of reach.
+ *
+ * @param options - The choice's options.
+ * @param path - The control's path in the space's value.
+ * @param rule - The admissibility rule (none leaves the options as they are).
+ * @returns The options.
+ */
+export function greyOptions(
+  options: readonly OptionValue[],
+  path: ControlPath,
+  rule: Admissibility | undefined,
+): OptionInput<OptionValue>[] {
+  if (rule === undefined) return [...options]
+  return options.map(
+    (value): OptionInput<OptionValue> =>
+      rule.admissible(path, value)
+        ? value
+        : {
+            value,
+            disabled: true,
+            description: rule.why?.(path, value) ?? 'not available with the current settings',
+          },
+  )
 }
