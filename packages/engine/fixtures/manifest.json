@@ -1889,6 +1889,14 @@
       "cases": 8
     },
     {
+      "fixture": "losses/quantisation.json",
+      "source": "oracle/cases/losses/quantisation.py",
+      "reference": {
+        "torch": "2.14.1"
+      },
+      "cases": 7
+    },
+    {
       "fixture": "losses/ranking.json",
       "source": "oracle/cases/losses/ranking.py",
       "reference": {
