@@ -85,8 +85,8 @@ describe('NBeats', () => {
     expectClose(out.forecast, sum(out.contributions, 0), 1e-12)
     expectClose(out.residual, sub(x, sum(out.backcasts, 0)), 1e-12)
     // Each block reads the residual left by the ones before it.
-    const first = model.part('block0').forward(x as Value)
-    const second = model.part('block1').forward(sub(x, first.backcast))
+    const first = model.part<NBeatsBlock>('block0').forward(x as Value)
+    const second = model.part<NBeatsBlock>('block1').forward(sub(x, first.backcast))
     expectClose(toFlat(out.contributions).slice(12, 24), second.forecast, 1e-12)
   })
 
