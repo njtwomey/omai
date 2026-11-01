@@ -5,6 +5,7 @@ import { key, normal, uniform } from '../../random/index.ts'
 import { concat, mul, ones, sliceAxis, tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import {
   causalConvolution,
+  channelCausalConvolution,
   deltaRule,
   discretise,
   discretiseDiagonal,
@@ -394,3 +395,30 @@ describe('limiting cases of the selective scan', () => {
 function zerosA(d: number, s: number): Value {
   return mul(ones([d, s]), 0)
 }
+
+describe('gradients of the scans and the per-channel convolution', () => {
+  it('pass the finite-difference check', () => {
+    const a = uniform(key(71), [4, 2], { low: -0.9, high: 0.9 })
+    ok((aa, bb, hh) => parallelScan(aa, bb, 0, hh), [a, n(72, [4, 2]), n(73, [2])])
+    ok(
+      (ar, ai, br, bi) => parallelScanComplex({ re: ar, im: ai }, { re: br, im: bi }, 0).re,
+      [a, uniform(key(74), [4, 2], { low: -0.5, high: 0.5 }), n(75, [4, 2]), n(76, [4, 2])],
+    )
+    ok((u, k) => channelCausalConvolution(u, k), [n(77, [2, 5, 3]), n(78, [3, 4])])
+    ok(
+      (x, h0) =>
+        selectiveScan({
+          x,
+          dt: uniform(key(79), [1, 3, 2], { low: 0.1, high: 0.4 }),
+          a: tensor([
+            [-1, -2],
+            [-0.5, -1.5],
+          ]),
+          b: n(80, [1, 3, 2]),
+          c: n(81, [1, 3, 2]),
+          h0,
+        }).y,
+      [n(82, [1, 3, 2]), n(83, [1, 2, 2])],
+    )
+  })
+})
