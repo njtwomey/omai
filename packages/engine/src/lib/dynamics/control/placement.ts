@@ -4,7 +4,7 @@
  * well-conditioned eigenvectors, and `acker` is Ackermann's formula for the single-input case.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { det, eigvals, lstsq, matrixPower, matrixRank, nullSpace, qr, solve, svd } from '../../numerics/linalg/index.ts'
 import { ctrb } from '../../systems/index.ts'
 import {
@@ -19,6 +19,18 @@ import {
   type TensorLike,
   transpose,
 } from '../../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  numberFromJson,
+  numbersFromJson,
+  numbersToJson,
+  numberToJson,
+  runAlgorithm,
+  scalar,
+  tensor,
+} from '../../trace/index.ts'
 import { fromNumbers, numbersOf } from '../ode/_vec.ts'
 
 /** A pole: a real number or a complex value (its conjugate must be requested too). */
@@ -255,35 +267,64 @@ export interface PlacementResult {
   readonly rtol: number
 }
 
+/** The paths {@link placeAlgorithm} logs. */
+export type PlacePath = 'place/conditioning' | 'place/sweep' | 'place/poles' | 'place/change'
+
 /**
- * State-feedback pole placement after Kautsky, Nichols and Van Dooren (scipy.signal.place_poles): the closed-loop
- * eigenvectors are chosen in the kernels of u1^T (A - lambda I) and improved for robustness by KNV method 0 sweeps
- * or Tits and Yang's pairwise updates (the default), then K follows from B K = A - X Lambda X^-1 in the range of B.
- * With as many independent inputs as states the gain is the least-squares solution. Complex poles keep their
- * initial eigenvectors (the iterations improve the real ones).
- *
- * @param a - A `[n, n]`.
- * @param b - B `[n, m]`.
- * @param poles - The desired poles (complex ones as {re, im} with their conjugates).
- * @param options - Method (`YT` or `KNV0`), relative tolerance (default 1e-3) and iteration cap (default 30).
- * @returns The gain, requested and achieved poles, eigenvector matrix and iteration count.
- * @throws MdmlError with code `value` for the wrong number of poles, poles repeated more than rank(B) times, or
- * poles that cannot be placed.
- * @concept pole-placement
- * @example
- * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { toArray } from 'mdml-engine/tensor'
- * // The double integrator with poles -1, -2: K = [2, 3].
- * toArray(control.place([[0, 1], [0, 0]], [[0], [1]], [-1, -2]).gain).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 3]]
- * ```
+ * What pole placement logs per sweep: the condition number of the closed-loop eigenvector matrix (the robustness the
+ * sweeps improve), the sweep, the relative change of its determinant (the stopping test), and on request the closed-loop
+ * poles the gain gives.
  */
-export function place(
-  a: TensorLike,
-  b: TensorLike,
-  poles: readonly Pole[],
-  options: { readonly method?: 'YT' | 'KNV0'; readonly rtol?: number; readonly maxIterations?: number } = {},
-): PlacementResult {
+export const placeContract: Contract<unknown, PlacePath> = defineContract({
+  'place/conditioning': scalar({ description: 'the condition number of the eigenvector matrix X', direction: 'lower' }),
+  'place/sweep': scalar({ description: 'the sweep over the pole pairs, counting from 1' }),
+  'place/change': scalar({ description: 'the relative change of |det X| over the sweep', direction: 'lower' }),
+  'place/poles': tensor({
+    role: 'output',
+    shape: ['poles', 2],
+    description: 'the closed-loop poles (real, imaginary) the gain gives',
+  }),
+})
+
+/** Options of {@link place} and {@link placeAlgorithm}. */
+export interface PlaceOptions {
+  /** The update scheme: Tits and Yang's pairwise (`YT`, default) or Kautsky-Nichols-Van Dooren method 0 (`KNV0`). */
+  readonly method?: 'YT' | 'KNV0'
+  /** Stop when |det X| changes by less than this relative amount over a sweep (default 1e-3). */
+  readonly rtol?: number
+  /** The most sweeps (default 30). */
+  readonly maxIterations?: number
+}
+
+/** The state of {@link placeAlgorithm}: the eigenvector matrix, the sweeps made and the last relative change of |det X|. */
+export interface PlacementState {
+  /** The closed-loop eigenvector matrix `[n, n]`, flat (the identity when B has full rank). */
+  readonly X: Float64Array
+  readonly iterations: number
+  /** The relative change of |det X| in the last sweep (NaN before the first). */
+  readonly rtol: number
+  /** True once the change fell below the tolerance. */
+  readonly stop: boolean
+}
+
+interface PlacementSetup {
+  readonly A: Mat
+  readonly Bt: Tensor
+  readonly n: number
+  readonly m: number
+  readonly ps: Cpole[]
+  readonly rankB: number
+  readonly u0r: Mat
+  readonly zr: Mat
+  readonly kernels: { re: Mat; im: Mat; d: number }[]
+  readonly X: Mat
+  readonly method: 'YT' | 'KNV0'
+  readonly rtol: number
+  readonly maxIter: number
+}
+
+/** Everything before the sweeps: the poles, the bases of range(B) and its complement, the kernels and the initial X. */
+function placementSetup(a: TensorLike, b: TensorLike, poles: readonly Pole[], options: PlaceOptions): PlacementSetup {
   const A = numbers2(a)
   const Bt = primalOf(asTensor(b))
   const n = asTensor(a).shape[0] ?? 0
@@ -308,8 +349,51 @@ export function place(
   for (let i = 0; i < n; i++) for (let k = 0; k < rankB; k++) u0r[i * rankB + k] = u0[i * u0cols + k] ?? 0
   const zr = new Float64Array(rankB * m)
   for (let k = 0; k < rankB; k++) for (let j = 0; j < m; j++) zr[k * m + j] = z[k * m + j] ?? 0
+  const kernels: { re: Mat; im: Mat; d: number }[] = []
+  const X = new Float64Array(n * n)
+  if (rankB === n) {
+    for (let i = 0; i < n; i++) X[i * n + i] = 1
+    return { A, Bt, n, m, ps, rankB, u0r, zr, kernels, X, method, rtol, maxIter }
+  }
   const { basis: u1, cols: r1 } = complement(u0r, n, rankB)
-  const blockPoles = (): Float64Array => {
+  for (let j = 0; j < n; j++) {
+    const p = ps[j] as Cpole
+    const k = kernelFor(A, u1, n, r1, p)
+    kernels.push(k)
+    const sre = new Float64Array(n)
+    const sim = new Float64Array(n)
+    for (let i = 0; i < n; i++) {
+      for (let c = 0; c < k.d; c++) {
+        sre[i] = (sre[i] ?? 0) + (k.re[i * k.d + c] ?? 0)
+        sim[i] = (sim[i] ?? 0) + (k.im[i * k.d + c] ?? 0)
+      }
+    }
+    const nr = Math.sqrt(norm(sre) ** 2 + norm(sim) ** 2)
+    setCol(
+      X,
+      n,
+      j,
+      Float64Array.from(sre, (v) => v / nr),
+    )
+    if (!isReal(p)) {
+      setCol(
+        X,
+        n,
+        j + 1,
+        Float64Array.from(sim, (v) => v / nr),
+      )
+      kernels.push(k)
+      j += 1
+    }
+  }
+  return { A, Bt, n, m, ps, rankB, u0r, zr, kernels, X, method, rtol, maxIter }
+}
+
+/** The gain, achieved poles and the rest of the result, from the setup and the eigenvector matrix the sweeps reached. */
+function placementFinish(S: PlacementSetup, X: Mat, iterations: number, curRtol: number): PlacementResult {
+  const { A, Bt, n, m, ps, rankB, u0r, zr } = S
+  let gain: Tensor
+  if (rankB === n) {
     const D = new Float64Array(n * n)
     for (let i = 0; i < n; i++) {
       const p = ps[i] as Cpole
@@ -322,67 +406,8 @@ export function place(
         i += 1
       }
     }
-    return D
-  }
-  let gain: Tensor
-  let X = new Float64Array(n * n)
-  let iterations = 0
-  let curRtol = Number.NaN
-  if (rankB === n) {
-    gain = primalOf(mul(lstsq(Bt, sub(tensor2(blockPoles(), n, n), tensor2(A, n, n))), -1)) as Tensor
-    X = Float64Array.from(primalOf(eye(n)).data)
+    gain = primalOf(mul(lstsq(Bt, sub(tensor2(D, n, n), tensor2(A, n, n))), -1)) as Tensor
   } else {
-    const kernels: { re: Mat; im: Mat; d: number }[] = []
-    for (let j = 0; j < n; j++) {
-      const p = ps[j] as Cpole
-      const k = kernelFor(A, u1, n, r1, p)
-      kernels.push(k)
-      const sre = new Float64Array(n)
-      const sim = new Float64Array(n)
-      for (let i = 0; i < n; i++) {
-        for (let c = 0; c < k.d; c++) {
-          sre[i] = (sre[i] ?? 0) + (k.re[i * k.d + c] ?? 0)
-          sim[i] = (sim[i] ?? 0) + (k.im[i * k.d + c] ?? 0)
-        }
-      }
-      const nr = Math.sqrt(norm(sre) ** 2 + norm(sim) ** 2)
-      setCol(
-        X,
-        n,
-        j,
-        Float64Array.from(sre, (v) => v / nr),
-      )
-      if (!isReal(p)) {
-        setCol(
-          X,
-          n,
-          j + 1,
-          Float64Array.from(sim, (v) => v / nr),
-        )
-        kernels.push(k)
-        j += 1
-      }
-    }
-    if (rankB > 1) {
-      const order = method === 'KNV0' ? Array.from({ length: n }, (_, j) => [j, j] as [number, number]) : ytOrder(ps)
-      let stop = false
-      while (iterations < maxIter && !stop) {
-        const before = Math.abs(primalDet(X, n))
-        for (const [i, j] of order) {
-          const pi = ps[i] as Cpole
-          const pj = ps[j] as Cpole
-          if (!isReal(pi) || !isReal(pj)) continue
-          const ki = kernels[i] as { re: Mat; d: number }
-          const kj = kernels[j] as { re: Mat; d: number }
-          if (i === j) knv0(X, n, ki.re, ki.d, i)
-          else ytReal(X, n, ki.re, ki.d, kj.re, kj.d, i, j)
-        }
-        const after = Math.max(Math.sqrt(Number.EPSILON), Math.abs(primalDet(X, n)))
-        curRtol = Math.abs((after - before) / after)
-        if (curRtol < rtol && after > Math.sqrt(Number.EPSILON)) stop = true
-        iterations += 1
-      }
-    }
     // M = X Lambda X^-1 with the 2 x 2 real blocks for complex pairs; K = z^-1 u0^T (M - A), then negated.
     const Xt = tensor2(X, n, n)
     const Mfull = primalOf(transpose(solve(transpose(Xt), transpose(matmul(Xt, blockFor(ps, n))))))
@@ -398,6 +423,154 @@ export function place(
   const cl = eigvals(sub(tensor2(A, n, n), matmul(Bt, gain)))
   const computed = orderPoles(Array.from(cl.re.data, (re, i) => ({ re, im: snap(cl.im.data[i] ?? 0) })))
   return { gain, requestedPoles: ps, computedPoles: computed, X: tensor2(X, n, n), iterations, rtol: curRtol }
+}
+
+/**
+ * Pole placement (Kautsky, Nichols and Van Dooren, as scipy.signal.place_poles) as a stepped algorithm, one sweep per
+ * step: the setup chooses each closed-loop eigenvector in the kernel of u1^T (A - lambda I), and each sweep updates the
+ * eigenvectors of the real poles by KNV method 0 (one at a time) or Tits and Yang (pairwise, in scipy's order) so that
+ * the eigenvector matrix becomes better conditioned, stopping when |det X| changes by less than `rtol`. It logs the
+ * conditioning of X, the sweep and the change, and the closed-loop poles on request, and is done (`converged`) when the
+ * change is small or no sweeping is needed (B of full rank, or a single input) and `completed` after `maxIterations`. The
+ * state serialises; read the gain and poles with {@link placementOf}.
+ *
+ * @param a - A `[n, n]`.
+ * @param b - B `[n, m]`.
+ * @param poles - The desired poles.
+ * @param options - Method, relative tolerance and sweep cap.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for the wrong number of poles or a pole repeated more than rank(B) times.
+ * @concept pole-placement
+ * @example
+ * ```ts
+ * import { control } from 'mdml-engine/dynamics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = control.placeAlgorithm([[0, 1, 0], [0, 0, 1], [0, 0, 0]], [[0, 0], [1, 0], [0, 1]], [-1, -2, -3])
+ * runAlgorithm(alg, { maxSteps: 30 }).state.iterations >= 1 // => true
+ * ```
+ */
+export function placeAlgorithm(
+  a: TensorLike,
+  b: TensorLike,
+  poles: readonly Pole[],
+  options: PlaceOptions = {},
+): Algorithm<PlacementState, PlacePath> {
+  const S = placementSetup(a, b, poles, options)
+  const { n, ps, rankB, kernels } = S
+  const sweeps = rankB > 1 && rankB < n
+  const order = S.method === 'KNV0' ? Array.from({ length: n }, (_, j) => [j, j] as [number, number]) : ytOrder(ps)
+  return {
+    name: 'dynamics/place-poles',
+    config: { n, rankB, method: S.method, rtol: S.rtol },
+    init: () => ({ X: Float64Array.from(S.X), iterations: 0, rtol: Number.NaN, stop: !sweeps }),
+    step: (st, ctx) => {
+      const X = Float64Array.from(st.X)
+      const before = Math.abs(primalDet(X, n))
+      for (const [i, j] of order) {
+        const pi = ps[i] as Cpole
+        const pj = ps[j] as Cpole
+        if (!isReal(pi) || !isReal(pj)) continue
+        const ki = kernels[i] as { re: Mat; d: number }
+        const kj = kernels[j] as { re: Mat; d: number }
+        if (i === j) knv0(X, n, ki.re, ki.d, i)
+        else ytReal(X, n, ki.re, ki.d, kj.re, kj.d, i, j)
+      }
+      const after = Math.max(Math.sqrt(Number.EPSILON), Math.abs(primalDet(X, n)))
+      const curRtol = Math.abs((after - before) / after)
+      const stop = curRtol < S.rtol && after > Math.sqrt(Number.EPSILON)
+      const sv = numbersOf(primalOf(svd(tensor2(X, n, n)).s))
+      ctx.log('place/sweep', st.iterations + 1)
+      ctx.log('place/change', curRtol)
+      ctx.log('place/conditioning', (sv[0] ?? 0) / Math.max(sv[sv.length - 1] ?? 0, Number.MIN_VALUE))
+      if (ctx.wants('place/poles')) {
+        const res = placementFinish(S, X, st.iterations + 1, curRtol)
+        ctx.log(
+          'place/poles',
+          res.computedPoles.flatMap((p) => [p.re, p.im]),
+        )
+      }
+      return { X, iterations: st.iterations + 1, rtol: curRtol, stop }
+    },
+    done: (st) => (st.stop ? 'converged' : st.iterations >= S.maxIter ? 'completed' : undefined),
+    serialise: (st) => ({
+      X: numbersToJson(st.X),
+      iterations: st.iterations,
+      rtol: numberToJson(st.rtol),
+      stop: st.stop,
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as { X: Json; iterations: number; rtol: Json; stop: boolean }
+      return {
+        X: Float64Array.from(numbersFromJson(o.X)),
+        iterations: o.iterations,
+        rtol: numberFromJson(o.rtol),
+        stop: o.stop,
+      }
+    },
+  }
+}
+
+/**
+ * The gain and poles a pole-placement state gives: the closed loop is A - B K.
+ *
+ * @param a - A `[n, n]`.
+ * @param b - B `[n, m]`.
+ * @param poles - The desired poles the state was run with.
+ * @param state - A state of {@link placeAlgorithm}.
+ * @param options - The options it was run with.
+ * @returns The gain, requested and achieved poles, eigenvector matrix and sweep count.
+ * @throws MdmlError with code `value` when the poles cannot be placed.
+ * @concept pole-placement
+ * @example
+ * ```ts
+ * import { control } from 'mdml-engine/dynamics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const a = [[0, 1], [0, 0]]
+ * const b = [[0], [1]]
+ * control.placementOf(a, b, [-1, -2], runAlgorithm(control.placeAlgorithm(a, b, [-1, -2]), { maxSteps: 5 }).state).iterations // => 0
+ * ```
+ */
+export function placementOf(
+  a: TensorLike,
+  b: TensorLike,
+  poles: readonly Pole[],
+  state: PlacementState,
+  options: PlaceOptions = {},
+): PlacementResult {
+  return placementFinish(placementSetup(a, b, poles, options), state.X, state.iterations, state.rtol)
+}
+
+/**
+ * State-feedback pole placement after Kautsky, Nichols and Van Dooren (scipy.signal.place_poles): the closed-loop
+ * eigenvectors are chosen in the kernels of u1^T (A - lambda I) and improved for robustness by KNV method 0 sweeps
+ * or Tits and Yang's pairwise updates (the default), then K follows from B K = A - X Lambda X^-1 in the range of B.
+ * With as many independent inputs as states the gain is the least-squares solution. Complex poles keep their
+ * initial eigenvectors (the iterations improve the real ones).
+ *
+ * @param a - A `[n, n]`.
+ * @param b - B `[n, m]`.
+ * @param poles - The desired poles (complex ones as {re, im} with their conjugates).
+ * @param options - Method (`YT` or `KNV0`), relative tolerance (default 1e-3) and iteration cap (default 30).
+ * @returns The gain, requested and achieved poles, eigenvector matrix and iteration count.
+ * @throws MdmlError with code `value` for the wrong number of poles, poles repeated more than rank(B) times, or
+ * poles that cannot be placed. {@link placeAlgorithm} run to the end.
+ * @concept pole-placement
+ * @example
+ * ```ts
+ * import { control } from 'mdml-engine/dynamics'
+ * import { toArray } from 'mdml-engine/tensor'
+ * // The double integrator with poles -1, -2: K = [2, 3].
+ * toArray(control.place([[0, 1], [0, 0]], [[0], [1]], [-1, -2]).gain).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 3]]
+ * ```
+ */
+export function place(
+  a: TensorLike,
+  b: TensorLike,
+  poles: readonly Pole[],
+  options: PlaceOptions = {},
+): PlacementResult {
+  const run = runAlgorithm(placeAlgorithm(a, b, poles, options), { maxSteps: options.maxIterations ?? 30 })
+  return placementOf(a, b, poles, run.state, options)
 }
 
 function snap(v: number): number {

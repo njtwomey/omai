@@ -118,7 +118,8 @@ describe('softNmsAlgorithm', () => {
       expect(run.state.kept).toEqual(direct.scores)
       expect(run.state.indices[0]).toBe(0)
       // Kept scores come out no larger than the originals.
-      run.state.indices.forEach((i, k) => expect(run.state.kept[k] ?? 9).toBeLessThanOrEqual((scores[i] ?? 0) + 1e-6))
+      for (const [k, i] of run.state.indices.entries())
+        expect(run.state.kept[k] ?? 9).toBeLessThanOrEqual((scores[i] ?? 0) + 1e-6)
     }
   })
 

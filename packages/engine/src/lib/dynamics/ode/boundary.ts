@@ -6,7 +6,7 @@
 
 import { MdmlError, maxOf } from '../../base/index.ts'
 import { pinv } from '../../numerics/linalg/index.ts'
-import { fsolve } from '../../numerics/roots/index.ts'
+import { fsolveAlgorithm, type SystemPath, type SystemState, systemContract } from '../../numerics/roots/index.ts'
 import { concat, reshape, sliceAxis, sub, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
@@ -422,8 +422,113 @@ function integrate(f: VectorField, t0: number, t1: number, y0: Value, options: S
   return sol.ys[sol.ys.length - 1] as Value
 }
 
+/** The paths the shooting algorithms log, as a type: the Newton iteration's own, plus the miss and the unknown. */
+export type ShootPath = SystemPath | 'shoot/miss' | 'shoot/slope'
+
 /**
- * Single shooting: find the initial state s with bc(s, y(b; s)) = 0 by Newton's method, the Jacobian of the end
+ * What the shooting methods log per Newton iteration: the norm of the miss (the boundary residual at the end of the
+ * integration), the unknown states, and the paths of the Newton iteration itself (the step length, backtracks).
+ */
+export const shootContract: Contract<unknown, ShootPath> = defineContract({
+  ...(systemContract as unknown as Contract<unknown, SystemPath>),
+  'shoot/miss': scalar({ description: 'the norm of the boundary residual at the iterate', direction: 'lower' }),
+  'shoot/slope': tensor({
+    role: 'state',
+    shape: ['unknowns'],
+    description: 'the unknown initial state (all node states for multiple shooting)',
+  }),
+})
+
+/** Wrap Newton's method on a shooting residual as an algorithm that also logs the miss and the unknowns. */
+function shootingAlgorithm(
+  name: string,
+  residual: (z: Value) => Value,
+  z0: Value,
+  options: ShootingOptions,
+): Algorithm<SystemState, ShootPath> {
+  const maxIterations = options.maxIterations ?? 50
+  const inner = fsolveAlgorithm(residual, z0, { maxIterations, ftol: options.ftol ?? 1e-10 })
+  return {
+    ...inner,
+    name,
+    step: (s, ctx) => {
+      const next = inner.step(s, ctx)
+      ctx.log('shoot/miss', next.history[next.history.length - 1] ?? Number.NaN)
+      ctx.log('shoot/slope', Float64Array.from(next.x))
+      return next
+    },
+  }
+}
+
+/** The result of a finished shooting run from its Newton state. */
+function shootingResult(s: SystemState, maxIterations: number, n: number, segments: number): ShootingResult {
+  return {
+    y0: fromNumbers(s.x.slice(0, n), [n]),
+    nodes: fromNumbers(s.x, [segments, n]),
+    residual: s.history[s.history.length - 1] ?? Number.NaN,
+    iterations: s.converged ? s.iteration : maxIterations,
+    converged: s.converged,
+    message: s.converged ? 'converged' : 'maximum iterations',
+  }
+}
+
+/**
+ * Single shooting as a stepped algorithm, one Newton iteration per step: find the initial state s with bc(s, y(b; s)) = 0,
+ * integrating from a to b for the miss and differentiating through the integrator for the Jacobian. It logs the miss
+ * (`shoot/miss`), the unknown initial state (`shoot/slope`) and the Newton iteration's step length and backtracks, and is
+ * done (`converged`) when the miss or the step is small and `stopped` at the iteration cap. The state is a
+ * {@link SystemState} and serialises; read the result with {@link shootingOf}.
+ *
+ * @param f - The vector field dy/dt = f(t, y).
+ * @param bc - Boundary residuals bc(ya, yb) of length n.
+ * @param span - [a, b].
+ * @param guess - The initial-state guess `[n]`.
+ * @param options - Integrator, tolerances and iteration cap.
+ * @returns The algorithm.
+ * @concept shooting-method
+ * @example
+ * ```ts
+ * import { shootingOf, singleShootingAlgorithm } from 'mdml-engine/dynamics/ode'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
+ * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
+ * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
+ * const run = runAlgorithm(singleShootingAlgorithm(f, bc, [0, Math.PI / 2], [0, 0.5]), { maxSteps: 50 })
+ * Math.abs((shootingOf(run.state, 2).y0.data[1] ?? 0) - 1) < 1e-8 // => true
+ * ```
+ */
+export function singleShootingAlgorithm(
+  f: VectorField,
+  bc: (ya: Value, yb: Value) => Value,
+  span: readonly [number, number],
+  guess: TensorLike,
+  options: ShootingOptions = {},
+): Algorithm<SystemState, ShootPath> {
+  const s0 = floatState(guess)
+  const residual = (s: Value): Value => bc(s, integrate(f, span[0], span[1], s, options))
+  return shootingAlgorithm('ode/shooting', residual, s0, options)
+}
+
+/**
+ * The result of a shooting state: the initial state, the states at the nodes, the final miss and the iterations.
+ *
+ * @param state - A state of {@link singleShootingAlgorithm} or {@link multipleShootingAlgorithm}.
+ * @param n - The dimension of the state.
+ * @param options - The options the run used (for the iteration cap).
+ * @returns The result.
+ * @concept shooting-method
+ * @example
+ * ```ts
+ * import { shootingOf } from 'mdml-engine/dynamics/ode'
+ * shootingOf({ x: [0, 1], residual: [0], iteration: 3, functionCalls: 5, history: [1, 0], jacobian: null, stepLength: 1, backtracks: 0, jacobianAge: 0, converged: true }, 2).iterations // => 3
+ * ```
+ */
+export function shootingOf(state: SystemState, n: number, options: ShootingOptions = {}): ShootingResult {
+  return shootingResult(state, options.maxIterations ?? 50, n, Math.max(1, Math.floor(state.x.length / n)))
+}
+
+/**
+ * Single shooting ({@link singleShootingAlgorithm} run to the end): find the initial state s with bc(s, y(b; s)) = 0 by Newton's method, the Jacobian of the end
  * state with respect to s taken by differentiating through the integrator.
  *
  * @param f - The vector field dy/dt = f(t, y).
@@ -450,21 +555,65 @@ export function shooting(
   guess: TensorLike,
   options: ShootingOptions = {},
 ): ShootingResult {
-  const s0 = floatState(guess)
-  const residual = (s: Value): Value => bc(s, integrate(f, span[0], span[1], s, options))
-  const r = fsolve(residual, s0, { maxIterations: options.maxIterations ?? 50, ftol: options.ftol ?? 1e-10 })
-  return {
-    y0: r.x,
-    nodes: reshape(r.x, [1, -1]) as Tensor,
-    residual: r.history[r.history.length - 1] ?? Number.NaN,
-    iterations: r.iterations,
-    converged: r.converged,
-    message: r.message,
-  }
+  const n = floatState(guess).shape[0] ?? 0
+  const run = runAlgorithm(singleShootingAlgorithm(f, bc, span, guess, options), {
+    maxSteps: options.maxIterations ?? 50,
+  })
+  const r = shootingResult(run.state, options.maxIterations ?? 50, n, 1)
+  return { ...r, nodes: reshape(fromNumbers(run.state.x, [run.state.x.length]), [1, -1]) as Tensor }
 }
 
 /**
- * Multiple shooting: unknown states at every node t_0 < ... < t_M-1 (with t_0 = a and the last interval ending at b),
+ * Multiple shooting as a stepped algorithm, one Newton iteration per step: unknown states at every node, matched by
+ * continuity and the boundary conditions, all solved together. It logs what {@link singleShootingAlgorithm} logs, with the
+ * unknowns the states at all the nodes but the last.
+ *
+ * @param f - The vector field.
+ * @param bc - Boundary residuals bc(ya, yb) of length n.
+ * @param nodes - The shooting nodes, starting at a, ending at b.
+ * @param guesses - Guesses `[nodes - 1, n]` for the state at each node but the last.
+ * @param options - Integrator, tolerances and iteration cap.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for fewer than two nodes or mismatched guesses.
+ * @concept shooting-method
+ * @example
+ * ```ts
+ * import { multipleShootingAlgorithm } from 'mdml-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
+ * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
+ * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
+ * multipleShootingAlgorithm(f, bc, [0, 0.8, Math.PI / 2], [[0, 0.5], [0.5, 0.5]]).name // => 'ode/multiple-shooting'
+ * ```
+ */
+export function multipleShootingAlgorithm(
+  f: VectorField,
+  bc: (ya: Value, yb: Value) => Value,
+  nodes: readonly number[],
+  guesses: TensorLike,
+  options: ShootingOptions = {},
+): Algorithm<SystemState, ShootPath> {
+  if (nodes.length < 2) throw new MdmlError('value', 'multipleShooting: give at least two nodes')
+  const g = floatState(guesses)
+  const segments = nodes.length - 1
+  if (g.shape.length !== 2 || g.shape[0] !== segments) {
+    throw new MdmlError('value', `multipleShooting: give ${segments} guesses as [${segments}, n]`)
+  }
+  const n = g.shape[1] ?? 0
+  const residual = (z: Value): Value => {
+    const s = (j: number): Value => sliceAxis(z, 0, j * n, (j + 1) * n)
+    const parts: Value[] = []
+    for (let j = 0; j < segments - 1; j++) {
+      parts.push(sub(integrate(f, nodes[j] as number, nodes[j + 1] as number, s(j), options), s(j + 1)))
+    }
+    const end = integrate(f, nodes[segments - 1] as number, nodes[segments] as number, s(segments - 1), options)
+    parts.push(bc(s(0), end))
+    return concat(parts, 0)
+  }
+  return shootingAlgorithm('ode/multiple-shooting', residual, reshape(g, [-1]), options)
+}
+
+/**
+ * Multiple shooting ({@link multipleShootingAlgorithm} run to the end): unknown states at every node t_0 < ... < t_M-1 (with t_0 = a and the last interval ending at b),
  * matched by continuity y(t_{j+1}; s_j) = s_{j+1} and the boundary conditions, all solved together by Newton's
  * method. Better conditioned than single shooting for unstable or long intervals.
  *
@@ -493,33 +642,8 @@ export function multipleShooting(
   guesses: TensorLike,
   options: ShootingOptions = {},
 ): ShootingResult {
-  if (nodes.length < 2) throw new MdmlError('value', 'multipleShooting: give at least two nodes')
+  const alg = multipleShootingAlgorithm(f, bc, nodes, guesses, options)
   const g = floatState(guesses)
-  const segments = nodes.length - 1
-  if (g.shape.length !== 2 || g.shape[0] !== segments) {
-    throw new MdmlError('value', `multipleShooting: give ${segments} guesses as [${segments}, n]`)
-  }
-  const n = g.shape[1] ?? 0
-  const residual = (z: Value): Value => {
-    const s = (j: number): Value => sliceAxis(z, 0, j * n, (j + 1) * n)
-    const parts: Value[] = []
-    for (let j = 0; j < segments - 1; j++) {
-      parts.push(sub(integrate(f, nodes[j] as number, nodes[j + 1] as number, s(j), options), s(j + 1)))
-    }
-    const end = integrate(f, nodes[segments - 1] as number, nodes[segments] as number, s(segments - 1), options)
-    parts.push(bc(s(0), end))
-    return concat(parts, 0)
-  }
-  const r = fsolve(residual, reshape(g, [-1]), {
-    maxIterations: options.maxIterations ?? 50,
-    ftol: options.ftol ?? 1e-10,
-  })
-  return {
-    y0: fromNumbers(numbersOf(r.x).slice(0, n), [n]),
-    nodes: fromNumbers(numbersOf(r.x), [segments, n]),
-    residual: r.history[r.history.length - 1] ?? Number.NaN,
-    iterations: r.iterations,
-    converged: r.converged,
-    message: r.message,
-  }
+  const run = runAlgorithm(alg, { maxSteps: options.maxIterations ?? 50 })
+  return shootingResult(run.state, options.maxIterations ?? 50, g.shape[1] ?? 0, nodes.length - 1)
 }

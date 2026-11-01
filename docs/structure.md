@@ -2379,7 +2379,8 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   termination), `odeint`, `diffeqsolve` (diffrax style: solver, step-size controller, saving policy).
 - `ode/adjoint.ts`: continuous adjoint sensitivities (backsolve, interpolated and checkpointed adjoints), forward
   sensitivities, gradient-method comparison helpers (memory and accuracy).
-- `ode/boundary.ts`: shooting and multiple shooting, collocation (`solveBvp`, that run to the end of
+- `ode/boundary.ts`: shooting and multiple shooting (`singleShootingAlgorithm`, `multipleShootingAlgorithm`: Newton on the
+  miss, one iteration per step, `shoot/` paths; `shootingOf` reads the state; `boundary-options.ts`: `shootingAccuracies`), collocation (`solveBvp`, that run to the end of
   `solveBvpAlgorithm`: one Newton solve and mesh refinement per step, the state the mesh, the solution values and the
   residuals, so it serialises and resumes; logs `bvp/residual`, `mesh-size`, `bc-residual`, `mesh`, `solution`;
   `bvpSolution` reads the spline off a finished state).
@@ -2459,7 +2460,8 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
 - `control/optimal.ts`: LQR, discrete LQR, LQE, LQG, finite-horizon Riccati recursions.
-- `control/placement.ts`: pole placement (Kautsky-Nichols-Van Dooren, Ackermann).
+- `control/placement.ts`: pole placement (Kautsky-Nichols-Van Dooren, Ackermann; `placeAlgorithm`, one eigenvector sweep per
+  step, `place/` paths, `placementOf` reads the gain; `placement-options.ts`: `placementSchemes`).
 - `control/compensators.ts`: lead and lag compensators from their defining numbers (`leadCompensator`: phase and centre
   to zero and pole; `lagCompensator`: zero and ratio), `leadLag`, and the textbook design rules from a plant's margins
   (`leadDesign`: centre where the plant's gain is 1/sqrt(alpha); `lagDesign`: zero a decade below the crossover).
