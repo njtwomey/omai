@@ -2941,7 +2941,8 @@ its zero-sum stage games (minimax-Q), matrix-game payoffs and Kuhn/Leduc rules f
 - `classic.ts`: the textbook games: prisoner's dilemma, matching pennies, rock-paper-scissors, battle of the sexes,
   stag hunt, Aumann's chicken, hawk-dove, Shapley's game, n-player coordination, `randomGame`.
 - `dominance.ts`: strict and weak dominance by pure or mixed strategies (mixed by LP), `dominatedActions`,
-  `iteratedElimination`, `restrictGame`, `pureMaxmin`.
+  `iteratedElimination`/`iteratedEliminationAlgorithm` (one round per step, `eliminationContract`, the slot
+  `dominanceRules`), `restrictGame`, `pureMaxmin`.
 - `enumeration.ts`: `supportEnumeration`, `vertexEnumeration` (best-response polytopes, labels, degenerate games),
   `distinctEquilibria`.
 - `lemke-howson.ts`: Lemke-Howson with lexicographic pivoting as a traced algorithm (each pivot a step),
@@ -2957,7 +2958,8 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
 - `no-regret.ts`: regret matching (OpenSpiel's, with regret matching+ and linear averaging) and multiplicative weights
   (Hedge) in self-play; average strategies, average joint play, NashConv and external regret per iteration.
 - `evolutionary.ts`: the replicator(-mutator) field and dynamics, two-population replicator dynamics (Runge-Kutta to
-  given time points), projected replicator dynamics (OpenSpiel's, n players).
+  given time points) as `replicatorDynamicsAlgorithm`/`asymmetricReplicatorDynamicsAlgorithm` (`replicatorContract`,
+  the slot `replicatorIntegrators`), projected replicator dynamics (OpenSpiel's, n players).
 
 `extensive-form/` (inlined into `games`):
 - `tree.ts`: `ExtensiveGame` (OpenSpiel-style states: current player, `CHANCE` or `TERMINAL`, legal actions, chance
@@ -2977,7 +2979,8 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
 Cooperative games and mechanisms:
 - `cooperative.ts`: coalitional games (characteristic functions over bitmasks, `coalitionValue`, `membersOf`),
   weighted voting, glove, bankruptcy and unanimity games, Shapley values (exact, and by permutation sampling with
-  standard errors for worths given as functions), the Shapley interaction index (`shapleyInteractionIndex`), Banzhaf
+  standard errors for worths given as functions: `sampledShapleyAlgorithm`, one order per step, `shapleyContract`, the
+  slot `orderSamplers`), the Shapley interaction index (`shapleyInteractionIndex`), Banzhaf
   indices (raw and normalised), superadditivity and convexity; `explain/shapley.ts` computes its exact Shapley
   and interaction values with them.
 - `core.ts`: excesses, core membership, a core point or emptiness, the least core, the nucleolus and prenucleolus

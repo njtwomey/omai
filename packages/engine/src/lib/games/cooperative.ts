@@ -8,7 +8,17 @@
 
 import { MdmlError, meanOf, popcount, varianceOf } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
+import { dict, type OptionTable, optionTable } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 
 /**
  * A coalitional (transferable-utility) game: the worth `v(S)` of every coalition S of `n` players, indexed by the
@@ -285,12 +295,60 @@ export function shapleyInteractionIndex(game: CoalitionalGame): number[][] {
   return out
 }
 
+/** How the random orders of arrival are drawn: the order at sample `t` of `n` players. */
+export type OrderSampler = (key: Key, n: number) => (t: number) => number[]
+
+/** What an order sampler can do, for validity rules and selectors. */
+export interface OrderSamplerProperties {
+  /** Whether consecutive samples are negatively correlated by construction (a variance reduction). */
+  readonly antithetic: boolean
+}
+
+/**
+ * The samplers of arrival orders as one slot: `independent` (a fresh uniform permutation per sample) and `antithetic`
+ * (each uniform permutation is followed by its reverse, so a player early in one order is late in the next, which
+ * lowers the variance of the average marginal contribution).
+ *
+ * @concept shapley-value
+ * @example
+ * ```ts
+ * import { orderSamplers } from 'mdml-engine/games'
+ * orderSamplers.where((p) => p.antithetic) // => ['antithetic']
+ * ```
+ */
+export const orderSamplers: OptionTable<OrderSampler, OrderSamplerProperties> = optionTable(
+  {
+    independent: {
+      description: 'a fresh uniform permutation for every sample',
+      properties: { antithetic: false },
+      space: dict({}),
+      make: () => (base, n) => (t) => Array.from(toFlat(permutation(foldIn(base, t), n))),
+    },
+    antithetic: {
+      description: 'each uniform permutation followed by its reverse',
+      properties: { antithetic: true },
+      space: dict({}),
+      make: () => (base, n) => (t) => {
+        const order = Array.from(toFlat(permutation(foldIn(base, Math.floor(t / 2)), n)))
+        return t % 2 === 0 ? order : order.reverse()
+      },
+    },
+  },
+  {
+    default: 'independent',
+    label: 'order sampler',
+    description: 'How the random orders of arrival are drawn.',
+  },
+)
+
 /** Options for {@link sampledShapley}. */
 export interface SampledShapleyOptions {
   /** Random orders to average over (default 1000). */
   readonly samples?: number
   /** The random key (default `key(0)`). */
   readonly key?: Key
+  /** Pair every order with its reverse (default false; see {@link orderSamplers}). */
+  readonly antithetic?: boolean
 }
 
 /** The outcome of {@link sampledShapley}: estimates with their standard errors. */
@@ -298,6 +356,114 @@ export interface SampledShapleyResult {
   readonly values: readonly number[]
   readonly standardErrors: readonly number[]
   readonly samples: number
+}
+
+/** The paths sampled Shapley estimation logs, as a type. */
+export type ShapleyPath = 'shapley/phi' | 'shapley/stderr' | 'shapley/permutation'
+
+/**
+ * What sampled Shapley estimation logs, by path: the order of arrival sampled at this step, and the estimate and its
+ * standard error for every player so far.
+ */
+export const shapleyContract: Contract<unknown, ShapleyPath> = defineContract({
+  'shapley/permutation': tensor({
+    role: 'state',
+    shape: ['players'],
+    description: 'the order of arrival sampled at this step',
+  }),
+  'shapley/phi': tensor({
+    role: 'state',
+    shape: ['players'],
+    description: 'the Shapley estimate of every player so far',
+  }),
+  'shapley/stderr': tensor({
+    role: 'state',
+    shape: ['players'],
+    description: 'the standard error of every estimate so far (0 until two samples)',
+  }),
+})
+
+/** The state of {@link sampledShapleyAlgorithm}. */
+export interface SampledShapleyState {
+  /** The marginal contribution of each player in each sample so far: `draws[player][sample]`. */
+  readonly draws: readonly (readonly number[])[]
+  /** Samples drawn so far. */
+  readonly t: number
+  /** The order of arrival sampled at the last step (empty before the first). */
+  readonly order: readonly number[]
+}
+
+/** Estimates and standard errors from the draws so far. */
+function shapleyEstimate(draws: readonly (readonly number[])[]): { values: number[]; standardErrors: number[] } {
+  return {
+    values: draws.map((d) => meanOf(d)),
+    standardErrors: draws.map((d) => (d.length > 1 ? Math.sqrt(varianceOf(d, 1) / d.length) : 0)),
+  }
+}
+
+/**
+ * Permutation-sampling Shapley estimation as a steppable algorithm: each step draws one random order of arrival, lets
+ * the players join in it and records every player's marginal contribution. The estimates and their standard errors can
+ * be watched converging.
+ *
+ * @param n - The number of players.
+ * @param value - The worth of a coalition given its members (ascending), or a tabulated game.
+ * @param options - The number of orders, the key and `antithetic` pairing.
+ * @returns The algorithm; it is done after `samples` steps.
+ * @throws MdmlError with code `value` for fewer than one sample.
+ * @concept shapley-value
+ * @example
+ * ```ts
+ * import { gloveGame, sampledShapleyAlgorithm } from 'mdml-engine/games'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(sampledShapleyAlgorithm(3, gloveGame(1, 2), { samples: 50 }), { maxSteps: 50 })
+ * [run.state.t, run.state.draws.length] // => [50, 3]
+ * ```
+ */
+export function sampledShapleyAlgorithm(
+  n: number,
+  value: ((members: readonly number[]) => number) | CoalitionalGame,
+  options: SampledShapleyOptions = {},
+): Algorithm<SampledShapleyState, ShapleyPath> {
+  const samples = options.samples ?? 1000
+  if (!(samples >= 1)) throw new MdmlError('value', 'sampledShapley: at least one sample is needed')
+  const worth =
+    typeof value === 'function'
+      ? (members: readonly number[]): number => value([...members].sort((a, b) => a - b))
+      : (members: readonly number[]): number => coalitionValue(value, members)
+  const orderAt = orderSamplers.make({ kind: options.antithetic === true ? 'antithetic' : 'independent' })(
+    options.key ?? makeKey(0),
+    n,
+  )
+  let empty: number | undefined
+  return {
+    name: 'shapley-sampling',
+    config: { n, samples, antithetic: options.antithetic ?? false },
+    init: () => ({ draws: Array.from({ length: n }, () => []), t: 0, order: [] }),
+    step: (s, ctx) => {
+      empty ??= worth([])
+      const order = orderAt(s.t)
+      const draws = s.draws.map((d) => [...d])
+      const members: number[] = []
+      let previous = empty
+      for (const i of order) {
+        members.push(i)
+        const v = worth(members)
+        draws[i]?.push(v - previous)
+        previous = v
+      }
+      if (ctx.wants('shapley/permutation')) ctx.log('shapley/permutation', Int32Array.from(order))
+      if (ctx.wants('shapley/phi') || ctx.wants('shapley/stderr')) {
+        const { values, standardErrors } = shapleyEstimate(draws)
+        if (ctx.wants('shapley/phi')) ctx.log('shapley/phi', Float64Array.from(values))
+        if (ctx.wants('shapley/stderr')) ctx.log('shapley/stderr', Float64Array.from(standardErrors))
+      }
+      return { draws, t: s.t + 1, order }
+    },
+    done: (s) => (s.t >= samples ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as SampledShapleyState,
+  }
 }
 
 /**
@@ -324,30 +490,8 @@ export function sampledShapley(
   options: SampledShapleyOptions = {},
 ): SampledShapleyResult {
   const samples = options.samples ?? 1000
-  if (!(samples >= 1)) throw new MdmlError('value', 'sampledShapley: at least one sample is needed')
-  const worth =
-    typeof value === 'function'
-      ? (members: readonly number[]): number => value([...members].sort((a, b) => a - b))
-      : (members: readonly number[]): number => coalitionValue(value, members)
-  const base = options.key ?? makeKey(0)
-  const draws: number[][] = Array.from({ length: n }, () => [])
-  const empty = worth([])
-  for (let t = 0; t < samples; t++) {
-    const order = toFlat(permutation(foldIn(base, t), n))
-    const members: number[] = []
-    let previous = empty
-    for (const i of order) {
-      members.push(i)
-      const v = worth(members)
-      draws[i]?.push(v - previous)
-      previous = v
-    }
-  }
-  return {
-    values: draws.map((d) => meanOf(d)),
-    standardErrors: draws.map((d) => (d.length > 1 ? Math.sqrt(varianceOf(d, 1) / d.length) : 0)),
-    samples,
-  }
+  const { state } = runAlgorithm(sampledShapleyAlgorithm(n, value, options), { maxSteps: samples })
+  return { ...shapleyEstimate(state.draws), samples }
 }
 
 /**

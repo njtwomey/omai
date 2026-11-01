@@ -6,6 +6,17 @@
 
 import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { linprog } from '../../optim/index.ts'
+import { dict, type Option, type OptionTable, optionTable } from '../../space/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { actionRows, decodeProfile, profileCount, stridesOf } from './_profiles.ts'
 import type { NormalFormGame } from './game.ts'
 
@@ -171,6 +182,152 @@ export interface EliminationResult {
   readonly eliminated: readonly { readonly round: number; readonly player: number; readonly action: number }[]
 }
 
+/** The paths iterated elimination logs, as a type. */
+export type EliminationPath = 'elim/round' | 'elim/removed' | 'elim/remaining'
+
+/**
+ * What iterated elimination logs, by path: the round just judged (the last one removes nothing), the actions it removed
+ * as `[player, action, player, action, ...]` pairs (original indices) and how many actions each player has left.
+ */
+export const eliminationContract: Contract<unknown, EliminationPath> = defineContract({
+  'elim/round': scalar({ description: 'the round just judged, from 1; the last removes nothing' }),
+  'elim/removed': tensor({
+    role: 'state',
+    shape: ['pairs'],
+    description: 'the actions removed in the round as flat [player, action] pairs, original indices',
+  }),
+  'elim/remaining': tensor({
+    role: 'state',
+    shape: ['players'],
+    description: 'the number of actions each player has left',
+  }),
+})
+
+/** The state of {@link iteratedEliminationAlgorithm}. */
+export interface EliminationState {
+  /** Rounds judged so far. */
+  readonly round: number
+  /** The surviving actions of each player, as indices into the original game. */
+  readonly actions: readonly (readonly number[])[]
+  /** Every removal in order. */
+  readonly eliminated: readonly { readonly round: number; readonly player: number; readonly action: number }[]
+  /** True once a round removed nothing. */
+  readonly finished: boolean
+}
+
+/** What a dominance rule is: strict or weak, pure or mixed dominating strategies. */
+export type DominanceRule = Pick<DominanceOptions, 'strict' | 'mixed'>
+
+/** What a dominance rule can do, for validity rules and selectors. */
+export interface DominanceRuleProperties {
+  /** Whether the order of elimination can change the result (weak dominance). */
+  readonly orderDependent: boolean
+  /** Whether it solves a linear program per action. */
+  readonly linearProgram: boolean
+}
+
+function rule(
+  description: string,
+  properties: DominanceRuleProperties,
+  value: DominanceRule,
+): Option<DominanceRule, DominanceRuleProperties> {
+  return { description, properties, space: dict({}), make: () => value }
+}
+
+/**
+ * The dominance rules as one slot: strict or weak dominance by pure or by mixed strategies (mixed ones are decided by a
+ * linear program per action).
+ *
+ * @concept dominance
+ * @example
+ * ```ts
+ * import { dominanceRules } from 'mdml-engine/games'
+ * dominanceRules.make({ kind: 'weak-pure' }) // => { strict: false, mixed: false }
+ * ```
+ */
+export const dominanceRules: OptionTable<DominanceRule, DominanceRuleProperties> = optionTable(
+  {
+    'strict-pure': rule(
+      'strictly better against every profile, by a pure action',
+      { orderDependent: false, linearProgram: false },
+      { strict: true, mixed: false },
+    ),
+    'strict-mixed': rule(
+      'strictly better against every profile, by a mixed strategy',
+      { orderDependent: false, linearProgram: true },
+      { strict: true, mixed: true },
+    ),
+    'weak-pure': rule(
+      'never worse and once better, by a pure action',
+      { orderDependent: true, linearProgram: false },
+      { strict: false, mixed: false },
+    ),
+    'weak-mixed': rule(
+      'never worse and once better, by a mixed strategy',
+      { orderDependent: true, linearProgram: true },
+      { strict: false, mixed: true },
+    ),
+  },
+  {
+    default: 'strict-pure',
+    label: 'dominance rule',
+    description: 'Which actions count as dominated and may be removed.',
+  },
+)
+
+/**
+ * Iterated elimination of dominated strategies as a steppable algorithm: each step is one round that removes every
+ * dominated action of every player (judged in the game that remains at the start of the round); the last round finds
+ * nothing and ends the run.
+ *
+ * @param game - The game.
+ * @param options - Strict or weak, pure or mixed, and the margin.
+ * @returns The algorithm.
+ * @concept dominance
+ * @example
+ * ```ts
+ * import { iteratedEliminationAlgorithm, prisonersDilemma } from 'mdml-engine/games'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(iteratedEliminationAlgorithm(prisonersDilemma()), { maxSteps: 10 })
+ * [run.steps, run.state.actions] // => [2, [[1], [1]]]
+ * ```
+ */
+export function iteratedEliminationAlgorithm(
+  game: NormalFormGame,
+  options: DominanceOptions = {},
+): Algorithm<EliminationState, EliminationPath> {
+  return {
+    name: 'iterated-elimination',
+    config: { players: game.shape.length, strict: options.strict ?? true, mixed: options.mixed ?? false },
+    init: () => ({
+      round: 0,
+      actions: game.shape.map((k) => Array.from({ length: k }, (_, a) => a)),
+      eliminated: [],
+      finished: false,
+    }),
+    step: (s, ctx) => {
+      if (s.finished) return s
+      const current = restrictGame(game, s.actions)
+      const drop = current.shape.map((_, p) => dominatedActions(current, p, options))
+      const round = s.round + 1
+      const removed = drop.flatMap((d, p) => d.map((a) => ({ round, player: p, action: s.actions[p]?.[a] ?? a })))
+      const actions = s.actions.map((list, p) => list.filter((_, a) => !(drop[p] ?? []).includes(a)))
+      if (ctx.wants('elim/round')) ctx.log('elim/round', round)
+      if (ctx.wants('elim/removed'))
+        ctx.log('elim/removed', Int32Array.from(removed.flatMap((r) => [r.player, r.action])))
+      if (ctx.wants('elim/remaining'))
+        ctx.log(
+          'elim/remaining',
+          Int32Array.from(actions, (l) => l.length),
+        )
+      return { round, actions, eliminated: [...s.eliminated, ...removed], finished: removed.length === 0 }
+    },
+    done: (s) => (s.finished ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EliminationState,
+  }
+}
+
 /**
  * Iterated elimination of dominated strategies: in each round, remove every dominated action of every player (judged
  * in the game that remains at the start of the round), until none is left. With strict dominance the result does not
@@ -187,21 +344,15 @@ export interface EliminationResult {
  * ```
  */
 export function iteratedElimination(game: NormalFormGame, options: DominanceOptions = {}): EliminationResult {
-  let actions = game.shape.map((k) => Array.from({ length: k }, (_, a) => a))
-  const eliminated: { round: number; player: number; action: number }[] = []
-  let current = game
-  for (let round = 1; round <= profileCount(game.shape) + 1; round++) {
-    const drop = current.shape.map((_, p) => dominatedActions(current, p, options))
-    if (drop.every((d) => d.length === 0)) break
-    for (const [p, d] of drop.entries())
-      for (const a of d) eliminated.push({ round, player: p, action: actions[p]?.[a] ?? a })
-    const keep = current.shape.map((k, p) =>
-      Array.from({ length: k }, (_, a) => a).filter((a) => !(drop[p] ?? []).includes(a)),
-    )
-    actions = keep.map((l, p) => l.map((a) => actions[p]?.[a] ?? a))
-    current = restrictGame(current, keep)
+  const { state } = runAlgorithm(iteratedEliminationAlgorithm(game, options), {
+    maxSteps: profileCount(game.shape) + 2,
+  })
+  const removedAny = state.eliminated.length > 0
+  return {
+    game: removedAny ? restrictGame(game, state.actions) : game,
+    actions: state.actions,
+    eliminated: state.eliminated,
   }
-  return { game: current, actions, eliminated }
 }
 
 /**
