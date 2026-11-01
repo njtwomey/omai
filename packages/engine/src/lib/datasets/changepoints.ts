@@ -5,7 +5,7 @@
  * true run-length posterior.
  */
 
-import { logSumExpOf, MdmlError } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
 import { type DatasetGenerator, type TimeSeriesData, timeSeries } from '../data/index.ts'
 import { bocpd, type ConjugateModel } from '../dynamics/filtering/index.ts'
 import { foldIn, gamma, normal, poisson, uniform } from '../random/index.ts'
@@ -32,26 +32,8 @@ export type SegmentModel =
       readonly slopeStd: number
     }
 
-const LOG_2PI = Math.log(2 * Math.PI)
-
-/** A run's posterior: the predictive log density and mean of the next value, and the update by one observation. */
-interface Run {
-  /** Observations in the run so far. */
-  readonly length: number
-  readonly logPredictive: (y: number, t: number, prev: number) => number
-  readonly predictiveMean: (t: number, prev: number) => number
-  readonly update: (y: number, t: number, prev: number) => Run
-}
-
-function gaussianLog(y: number, mean: number, variance: number): number {
-  return -0.5 * (LOG_2PI + Math.log(variance) + (y - mean) ** 2 / variance)
-}
-
-/** The segment models whose predictive depends on the time or the previous value (dynamics' `bocpd` has the rest). */
-type RegressionModel = Extract<SegmentModel, { readonly kind: 'ar' | 'trend' }>
-
-/** The conjugate model of dynamics' `bocpd` for a segment model, or undefined for the regression models. */
-function conjugateOf(model: SegmentModel): ConjugateModel | undefined {
+/** The conjugate model of dynamics' `bocpd` for a segment model. */
+function conjugateOf(model: SegmentModel): ConjugateModel {
   switch (model.kind) {
     case 'mean':
       return { kind: 'normal-known-variance', sigma: model.sigma, priorMean: model.priorMean, priorStd: model.priorStd }
@@ -59,56 +41,16 @@ function conjugateOf(model: SegmentModel): ConjugateModel | undefined {
       return { kind: 'normal-known-mean', mean: model.mean, alpha: model.alpha, beta: model.beta }
     case 'rate':
       return { kind: 'poisson-gamma', shape: model.shape, rate: model.rate }
-    default:
-      return undefined
-  }
-}
-
-/** The prior run of a regression model, for a segment that starts at step `start`. */
-function emptyRun(model: RegressionModel, start: number): Run {
-  switch (model.kind) {
-    case 'ar': {
-      // Bayesian regression of y_t on y_{t-1} with a N(0, priorStd^2) coefficient and known noise.
-      const s2 = model.sigma ** 2
-      const make = (length: number, precision: number, xy: number): Run => {
-        const m = xy / precision
-        return {
-          length,
-          logPredictive: (y, _t, prev) => gaussianLog(y, m * prev, s2 + (prev * prev) / precision),
-          predictiveMean: (_t, prev) => m * prev,
-          update: (y, _t, prev) => make(length + 1, precision + (prev * prev) / s2, xy + (prev * y) / s2),
-        }
+    case 'ar':
+      return { kind: 'ar1-known-noise', sigma: model.sigma, priorStd: model.priorStd }
+    case 'trend':
+      return {
+        kind: 'trend-known-noise',
+        sigma: model.sigma,
+        priorMean: model.priorMean,
+        interceptStd: model.interceptStd,
+        slopeStd: model.slopeStd,
       }
-      return make(0, 1 / model.priorStd ** 2, 0)
-    }
-    case 'trend': {
-      // Bayesian regression on [1, t - start] with independent Normal priors on the intercept and the slope.
-      const s2 = model.sigma ** 2
-      const make = (length: number, p: readonly [number, number, number], q: readonly [number, number]): Run => {
-        const [a, b, c] = p
-        const det = a * c - b * b
-        const [ia, ib, ic] = [c / det, -b / det, a / det]
-        const m0 = ia * q[0] + ib * q[1]
-        const m1 = ib * q[0] + ic * q[1]
-        return {
-          length,
-          logPredictive: (y, t) => {
-            const u = t - start
-            return gaussianLog(y, m0 + m1 * u, s2 + ia + 2 * ib * u + ic * u * u)
-          },
-          predictiveMean: (t) => m0 + m1 * (t - start),
-          update: (y, t) => {
-            const u = t - start
-            return make(length + 1, [a + 1 / s2, b + u / s2, c + (u * u) / s2], [q[0] + y / s2, q[1] + (u * y) / s2])
-          },
-        }
-      }
-      return make(
-        0,
-        [1 / model.interceptStd ** 2, 0, 1 / model.slopeStd ** 2],
-        [model.priorMean / model.interceptStd ** 2, 0],
-      )
-    }
   }
 }
 
@@ -132,9 +74,9 @@ export interface BocpdResult {
 /**
  * Exact Bayesian online changepoint detection (Adams and MacKay, 2007) for a hazard (constant, or a function of the
  * current run length) and a conjugate segment model: run-length posteriors, one-step predictives and the evidence. The
- * `mean`, `variance` and `rate` models run dynamics' `filtering.bocpd`; the `ar` and `trend` regressions run the same
- * recursion here.
- * Hypotheses whose posterior falls below `e^-40` of the total are dropped, which changes nothing at double precision.
+ * models all run dynamics' `filtering.bocpd` (the one implementation; the oracle's brute-force enumeration over every
+ * segmentation is the independent check). Hypotheses whose posterior falls below `e^-40` of the total are dropped,
+ * which changes nothing at double precision.
  * It is the exact truth for data drawn by {@link changepointSeries} from the same model.
  *
  * @param y - The series.
@@ -156,59 +98,14 @@ export function exactBocpd(
 ): BocpdResult {
   if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
     throw new MdmlError('value', 'exactBocpd: the hazard must be in (0, 1)')
-  const conjugate = conjugateOf(model)
-  if (conjugate !== undefined) {
-    const r = bocpd(y, conjugate, hazard)
-    return {
-      logPredictive: r.logPredictive,
-      predictiveMean: r.predictiveMean,
-      runLength: r.runLength,
-      mapRunLength: r.mapRunLength,
-      logEvidence: r.logEvidence,
-    }
+  const r = bocpd(y, conjugateOf(model), hazard)
+  return {
+    logPredictive: r.logPredictive,
+    predictiveMean: r.predictiveMean,
+    runLength: r.runLength,
+    mapRunLength: r.mapRunLength,
+    logEvidence: r.logEvidence,
   }
-  return regressionBocpd(y, model as RegressionModel, typeof hazard === 'number' ? () => hazard : hazard)
-}
-
-/** The same recursion for the regression models, whose predictives read the time and the previous value. */
-function regressionBocpd(y: readonly number[], model: RegressionModel, h: (runLength: number) => number): BocpdResult {
-  // Hypotheses before y_t: (log prior probability, run posterior).
-  let hyps: { logp: number; run: Run }[] = [{ logp: 0, run: emptyRun(model, 0) }]
-  const logPredictive: number[] = []
-  const predictiveMean: number[] = []
-  const runLength: Float64Array[] = []
-  const mapRunLength: number[] = []
-  let logEvidence = 0
-  for (const [t, yt] of y.entries()) {
-    const prev = t > 0 ? (y[t - 1] ?? 0) : 0
-    let mean = 0
-    for (const h of hyps) mean += Math.exp(h.logp) * h.run.predictiveMean(t, prev)
-    const joint = hyps.map((h) => h.logp + h.run.logPredictive(yt, t, prev))
-    const lp = logSumExpOf(joint)
-    logPredictive.push(lp)
-    predictiveMean.push(mean)
-    logEvidence += lp
-    const posterior = hyps.map((h, i) => ({ logp: (joint[i] ?? 0) - lp, run: h.run.update(yt, t, prev) }))
-    const rl = new Float64Array(t + 2)
-    let best = 0
-    for (const h of posterior) {
-      rl[h.run.length] = Math.exp(h.logp)
-      if ((rl[h.run.length] ?? 0) > (rl[best] ?? 0)) best = h.run.length
-    }
-    runLength.push(rl)
-    mapRunLength.push(best)
-    // Before y_{t+1}: a run of length r continues with probability 1 - h(r), or a new segment starts with h(r).
-    const kept = posterior.filter((p) => p.logp > -40)
-    const change = logSumExpOf(kept.map((p) => p.logp + Math.log(h(p.run.length))))
-    const next = kept.flatMap((p) => {
-      const stay = 1 - h(p.run.length)
-      return stay > 0 ? [{ logp: p.logp + Math.log(stay), run: p.run }] : []
-    })
-    hyps = change === Number.NEGATIVE_INFINITY ? next : [{ logp: change, run: emptyRun(model, t + 1) }, ...next]
-    const z = logSumExpOf(hyps.map((p) => p.logp))
-    hyps = hyps.map((p) => ({ logp: p.logp - z, run: p.run }))
-  }
-  return { logPredictive, predictiveMean, runLength, mapRunLength, logEvidence }
 }
 
 /** The segment model behind each kind, from the generator's knobs. */
