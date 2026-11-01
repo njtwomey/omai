@@ -3249,6 +3249,12 @@ modAL for active learning, diffprivlib and opacus for privacy
   with an adaptive analyst), the Ladder leaderboard (`ladderAlgorithm`), and the planted problems that show them
   against naive reuse of a holdout (`adaptiveOverfittingDemo`, `leaderboardAttack`: noise labels, an analyst who
   combines whatever looks good).
+- `stream-active-learning.ts`, `active-learning-options.ts`: `streamActiveLearningAlgorithm` (one arriving row per step;
+  logs `stream/row`, `uncertainty`, `queried`, `labeled`, `score`; the state is the labelled data, the model is refitted from
+  it) with the uncertainty measure as the `streamUncertainties` table; `streamActiveLearning` is that run.
+- `conformal.ts`, `conformal-options.ts`: also `adaptiveConformalAlgorithm` (one time step; `aci/*` paths; the residual
+  memory is the `scoreMemories` table) and `crossConformalAlgorithm` (one fold per step; `cross/*` paths); the functions
+  `adaptiveConformalInference` and `crossConformalRegressor` are those runs.
 - `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
   cross-fitted calibrated classifiers; for regression, the probability integral transform (`pitValues`, `pitHistogram`)

@@ -3,7 +3,7 @@
  * labels, modAL style. Uncertainty measures and query strategies (least confidence, margin, entropy, query by
  * committee, expected error reduction, expected model change, BALD and BatchBALD, density-weighted uncertainty, greedy
  * k-center core-sets, BADGE, ranked batches), pool-based `activeLearningAlgorithm` and `activeLearning` as a traced
- * loop of fit, query and label, and stream-based selective sampling.
+ * loop of fit, query and label (the stream-based case is in `stream-active-learning.ts`).
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -1099,95 +1099,6 @@ export function activeLearning(estimator: Estimator, options: ActiveLearningOpti
     labeled,
     scores: state.scores,
   }
-}
-
-/** Options of {@link streamActiveLearning}. */
-export interface StreamOptions extends FitOptions {
-  readonly labeled: LearnData
-  /** Rows arriving in order `[T, d]`. */
-  readonly stream: TensorLike
-  readonly oracle: (index: number) => number
-  /** Query a row when its least-confidence uncertainty exceeds this (default 0.3). */
-  readonly threshold?: number
-  /** The most labels bought (default unlimited). */
-  readonly budget?: number
-}
-
-/**
- * Stream-based selective sampling (Cohn, Atlas and Ladner 1994): rows arrive one at a time and each is labelled (and
- * the model refitted) only when the current model's uncertainty on it exceeds a threshold, until the budget is spent.
- * A traced algorithm with one step per arriving row.
- *
- * @param estimator - The classifier.
- * @param options - labeled, stream, oracle, threshold, budget, key and tracing.
- * @returns The final model and the stream indices queried.
- * @example
- * ```ts
- * import { streamActiveLearning, defineEstimator } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
- * const logistic = defineEstimator(
- *   { name: 'l', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
- *   {},
- * )
- * const r = streamActiveLearning(logistic, { labeled: { x: [[-5], [5]], y: [0, 1] }, stream: [[4], [0.2], [-6], [-0.1]], oracle: () => 0 })
- * r.queried // => [1, 3]
- * ```
- */
-export function streamActiveLearning(
-  estimator: Estimator,
-  options: StreamOptions,
-): { readonly fitted: Fitted; readonly queried: readonly number[] } {
-  const stream = matrixView(options.stream, 'streamActiveLearning')
-  const x0 = matrixView(options.labeled.x, 'streamActiveLearning', { nFeatures: stream.d })
-  const y0 = targetVector(options.labeled.y ?? [], 'streamActiveLearning', x0.n)
-  const threshold = options.threshold ?? 0.3
-  const budget = options.budget ?? Number.POSITIVE_INFINITY
-  type State = {
-    readonly t: number
-    readonly x: MatrixView
-    readonly y: readonly number[]
-    readonly fitted: Fitted
-    readonly queried: readonly number[]
-  }
-  const key = keyFor(options, 'streamActiveLearning')
-  const algorithm: Algorithm<State> = {
-    name: 'stream-active-learning',
-    config: { estimator: estimator.name, threshold, rows: stream.n },
-    schema: channels({
-      metrics: {
-        uncertainty: { description: 'the uncertainty of the arriving row' },
-        labeled: { description: 'labels bought' },
-      },
-    }),
-    init: () => ({
-      t: 0,
-      x: x0,
-      y: Array.from(y0),
-      fitted: estimator.fit(
-        { x: fromView(x0), y: Array.from(y0) },
-        innerFitOptions(options, foldIn(key, 0), options.parent),
-      ),
-      queried: [],
-    }),
-    step: (s, ctx) => {
-      const row = takeRows(stream, [s.t])
-      const u = leastConfidence(requireVerb(s.fitted, 'predictProba', 'streamActiveLearning')(fromView(row)))[0] ?? 0
-      if (u <= threshold || s.queried.length >= budget) return { ...s, t: s.t + 1 }
-      const x = stackRows(s.x, row)
-      const y = [...s.y, options.oracle(s.t)]
-      return {
-        t: s.t + 1,
-        x,
-        y,
-        fitted: estimator.fit({ x: fromView(x), y }, innerFitOptions(options, foldIn(ctx.key, 0), ctx.run)),
-        queried: [...s.queried, s.t],
-      }
-    },
-    done: (s) => (s.t >= stream.n ? 'completed' : undefined),
-    observe: (s) => ({ metrics: { labeled: s.queried.length } }),
-  }
-  const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'streamActiveLearning'), maxSteps: stream.n })
-  return { fitted: state.fitted, queried: state.queried }
 }
 
 /**

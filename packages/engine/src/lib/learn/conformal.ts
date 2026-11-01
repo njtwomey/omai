@@ -8,9 +8,20 @@
 
 import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { innerFitOptions, keyFor, runOptionsFor } from './_shared.ts'
+import { scoreMemories } from './conformal-options.ts'
 import {
   type Estimator,
   type FitOptions,
@@ -19,6 +30,7 @@ import {
   requireTargets,
   requireVerb,
 } from './estimator.ts'
+import { scoresFromJson, scoresToJson } from './model-selection/_state.ts'
 import { type CvOption, checkCv, splitInputOf } from './model-selection/cross-validation.ts'
 import { splitIndices } from './model-selection/splitters.ts'
 import { encodeLabels, fractionOption, matrixView, rowsOf, takeData, targetVector } from './validation.ts'
@@ -233,11 +245,123 @@ export interface CrossConformalOptions extends FitOptions {
   readonly method?: 'plus' | 'minmax' | 'base'
 }
 
+/** The paths {@link crossConformalAlgorithm} logs. */
+export type CrossConformalPath = 'cross/fold' | 'cross/trainSize' | 'cross/residual' | 'cross/maxResidual'
+
+/** What a stepped cross-conformal fit logs, by path. */
+export const crossConformalContract: Contract<unknown, CrossConformalPath> = defineContract({
+  'cross/fold': scalar({ description: 'the fold just fitted (from 0)' }),
+  'cross/trainSize': scalar({ description: 'rows the fold model was fitted on' }),
+  'cross/residual': scalar({ description: 'the mean out-of-fold absolute residual of the fold' }),
+  'cross/maxResidual': scalar({ description: 'the largest out-of-fold absolute residual so far' }),
+})
+
+/**
+ * The state of {@link crossConformalAlgorithm}: the folds fitted, the fold each sample was held out in and its
+ * out-of-fold absolute residual (zero and fold 0 until its fold is done).
+ */
+export interface CrossConformalState {
+  readonly done: number
+  readonly foldOf: readonly number[]
+  readonly residuals: readonly number[]
+}
+
+function crossConformalRun(
+  estimator: Estimator,
+  data: LearnData,
+  options: CrossConformalOptions,
+): {
+  readonly algorithm: Algorithm<CrossConformalState, CrossConformalPath>
+  readonly models: Fitted[]
+  readonly folds: number
+  readonly alpha: number
+  readonly n: number
+  readonly key: Key
+} {
+  const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'crossConformalRegressor')
+  const method = options.method ?? 'plus'
+  const n = rowsOf(data.x)
+  const y = targetVector(requireTargets(data, 'crossConformalRegressor'), 'crossConformalRegressor', n)
+  const splitter = checkCv(options.cv, estimator)
+  if (!splitter.partition)
+    throw new MdmlError('value', 'crossConformalRegressor: the splitter must partition the samples')
+  const key = keyFor(options, 'crossConformalRegressor')
+  const folds = splitIndices(splitter, splitInputOf(data), foldIn(key, 0))
+  const models: Fitted[] = []
+  const algorithm: Algorithm<CrossConformalState, CrossConformalPath> = {
+    name: 'cross-conformal',
+    config: { estimator: estimator.name, folds: folds.length, method },
+    init: () => ({ done: 0, foldOf: new Array<number>(n).fill(0), residuals: new Array<number>(n).fill(0) }),
+    step: (s, ctx) => {
+      const fold = folds[s.done]
+      if (fold === undefined) return { ...s, done: s.done + 1 }
+      const fitted = estimator.fit(takeData(data, fold.train), innerFitOptions(options, foldIn(ctx.key, 0), ctx.run))
+      const p = predictOf(fitted, 'crossConformalRegressor')(takeData(data, fold.test).x)
+      const foldOf = [...s.foldOf]
+      const residuals = [...s.residuals]
+      for (const [r, i] of fold.test.entries()) {
+        foldOf[i] = s.done
+        residuals[i] = Math.abs((y[i] ?? 0) - (p[r] ?? 0))
+      }
+      models.push(fitted)
+      ctx.log('cross/fold', s.done)
+      ctx.log('cross/trainSize', fold.train.length)
+      ctx.log('cross/residual', meanOfRows(residuals, fold.test))
+      ctx.log('cross/maxResidual', Math.max(...residuals))
+      return { done: s.done + 1, foldOf, residuals }
+    },
+    done: (s) => (s.done >= folds.length ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as CrossConformalState,
+  }
+  return { algorithm, models, folds: folds.length, alpha, n, key }
+}
+
+const meanOfRows = (values: readonly number[], rows: ArrayLike<number>): number => {
+  let t = 0
+  for (let i = 0; i < rows.length; i++) t += values[rows[i] ?? 0] ?? 0
+  return rows.length === 0 ? 0 : t / rows.length
+}
+
+/**
+ * The folds of the jackknife+ and CV+ as a stepped algorithm: each step fits the estimator on one fold's training rows
+ * and records the held-out rows' absolute residuals. The state (each sample's fold and residual) serialises; the fitted
+ * fold models are kept by {@link crossConformalRegressor}, not in the state, so only a run from the start gives a
+ * regressor.
+ *
+ * @param estimator - The regressor.
+ * @param data - The training data.
+ * @param options - alpha, cv (a partitioning splitter), method and key.
+ * @returns The algorithm, one step per fold.
+ * @throws MdmlError with code `value` when the splitter does not partition the samples.
+ * @concept conformal-prediction
+ * @example
+ * ```ts
+ * import { crossConformalAlgorithm, defineEstimator, rowsOf } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { full, item, mean } from 'mdml-engine/tensor'
+ * const meanModel = defineEstimator(
+ *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
+ *   {},
+ * )
+ * const alg = crossConformalAlgorithm(meanModel, { x: [[0], [1], [2], [3]], y: [0, 2, 4, 6] }, { cv: 2 })
+ * runAlgorithm(alg, { maxSteps: 5 }).state.residuals // => [5, 3, 3, 5]
+ * ```
+ */
+export function crossConformalAlgorithm(
+  estimator: Estimator,
+  data: LearnData,
+  options: CrossConformalOptions = {},
+): Algorithm<CrossConformalState, CrossConformalPath> {
+  return crossConformalRun(estimator, data, options).algorithm
+}
+
 /**
  * The jackknife+ and CV+ (Barber, Candes, Ramdas and Tibshirani 2021; MAPIE CrossConformalRegressor): fit one model
  * per fold, score each sample by its out-of-fold residual R_i, and bound a new point by the floor(alpha (n + 1))-th
  * smallest of mu_-k(i)(x) - R_i and the ceil((1 - alpha)(n + 1))-th smallest of mu_-k(i)(x) + R_i. Coverage is at
- * least 1 - 2 alpha without a held-out set (about 1 - alpha in practice). One step per fold, traced.
+ * least 1 - 2 alpha without a held-out set (about 1 - alpha in practice). The folds are
+ * {@link crossConformalAlgorithm} run to the end: one step per fold, traced.
  *
  * @param estimator - The regressor.
  * @param data - The training data.
@@ -262,37 +386,11 @@ export function crossConformalRegressor(
   data: LearnData,
   options: CrossConformalOptions = {},
 ): ConformalRegressor {
-  const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'crossConformalRegressor')
+  const { algorithm, models, folds, alpha, n, key } = crossConformalRun(estimator, data, options)
   const method = options.method ?? 'plus'
-  const n = rowsOf(data.x)
-  const y = targetVector(requireTargets(data, 'crossConformalRegressor'), 'crossConformalRegressor', n)
-  const splitter = checkCv(options.cv, estimator)
-  if (!splitter.partition)
-    throw new MdmlError('value', 'crossConformalRegressor: the splitter must partition the samples')
-  const key = keyFor(options, 'crossConformalRegressor')
-  const folds = splitIndices(splitter, splitInputOf(data), foldIn(key, 0))
-  const foldOf = new Int32Array(n)
-  const residuals = new Float64Array(n)
-  const models: Fitted[] = []
-  const algorithm: Algorithm<number> = {
-    name: 'cross-conformal',
-    config: { estimator: estimator.name, folds: folds.length, method },
-    init: () => 0,
-    step: (f, ctx) => {
-      const fold = folds[f]
-      if (fold === undefined) return f + 1
-      const fitted = estimator.fit(takeData(data, fold.train), innerFitOptions(options, foldIn(ctx.key, 0), ctx.run))
-      const p = predictOf(fitted, 'crossConformalRegressor')(takeData(data, fold.test).x)
-      fold.test.forEach((i, r) => {
-        foldOf[i] = f
-        residuals[i] = Math.abs((y[i] ?? 0) - (p[r] ?? 0))
-      })
-      models.push(fitted)
-      return f + 1
-    },
-    done: (f) => (f >= folds.length ? 'completed' : undefined),
-  }
-  runAlgorithm(algorithm, { ...runOptionsFor(options, 'crossConformalRegressor'), maxSteps: folds.length })
+  const end = runAlgorithm(algorithm, { ...runOptionsFor(options, 'crossConformalRegressor'), maxSteps: folds }).state
+  const foldOf = Int32Array.from(end.foldOf)
+  const residuals = Float64Array.from(end.residuals)
   const q = conformalQuantile(residuals, alpha)
   const full =
     method === 'base' ? estimator.fit(data, innerFitOptions(options, foldIn(key, 1), options.parent)) : undefined
@@ -625,6 +723,8 @@ export interface AciOptions {
   readonly gamma?: number
   /** Scores used for each quantile: all past ones (default) or the last `window`. */
   readonly window?: number
+  /** The score memory, a value of `scoreMemories.space` (default all past scores; takes precedence over `window`). */
+  readonly memory?: SpaceValue
   /** Scores available before the stream starts (warm start; default none). */
   readonly initialScores?: ArrayLike<number>
   readonly tracer?: FitOptions['tracer']
@@ -644,11 +744,174 @@ export interface AciResult {
   readonly coverage: number
 }
 
+/** The paths {@link adaptiveConformalAlgorithm} logs. */
+export type AciPath = 'aci/alpha' | 'aci/covered' | 'aci/width' | 'aci/quantile' | 'aci/coverage'
+
+/** What a stepped adaptive conformal run logs, by path: the working level, whether y_t was covered, the width. */
+export const aciContract: Contract<unknown, AciPath> = defineContract({
+  'aci/alpha': scalar({ description: 'the working miscoverage level alpha_t used at this time' }),
+  'aci/covered': scalar({ description: '1 when y_t fell inside its interval, else 0', direction: 'higher' }),
+  'aci/width': scalar({
+    description: 'the width of the interval at this time (-1 when it is unbounded)',
+    direction: 'lower',
+  }),
+  'aci/quantile': scalar({ description: 'the half-width of the interval (-1 when it is unbounded)' }),
+  'aci/coverage': scalar({ description: 'the realised coverage so far', direction: 'higher' }),
+})
+
+/**
+ * The state of {@link adaptiveConformalAlgorithm}: the time, the working level, the absolute residuals so far and the
+ * trajectory (intervals, levels and errors) up to now. Intervals can be unbounded, so the state serialises them as
+ * strings where needed.
+ */
+export interface AciState {
+  readonly t: number
+  readonly alphaT: number
+  readonly scores: readonly number[]
+  readonly lower: readonly number[]
+  readonly upper: readonly number[]
+  readonly alphas: readonly number[]
+  readonly errors: readonly number[]
+}
+
+const aciResult = (s: AciState): AciResult => ({
+  lower: s.lower,
+  upper: s.upper,
+  alphas: s.alphas,
+  errors: s.errors,
+  coverage: s.errors.length === 0 ? Number.NaN : 1 - s.errors.reduce((a, b) => a + b, 0) / s.errors.length,
+})
+
+/**
+ * Adaptive conformal inference as a stepped algorithm (Gibbs and Candes 2021): at each time, predict yhat_t -/+ the
+ * (1 - alpha_t) quantile of past absolute residuals, observe y_t, and update alpha_{t+1} = alpha_t + gamma (alpha -
+ * err_t). One time step per step; the state serialises.
+ *
+ * @param predictions - Point forecasts yhat_t, in time order.
+ * @param targets - The realised values y_t.
+ * @param options - alpha, gamma, window or memory, and initialScores.
+ * @returns The algorithm, one step per time.
+ * @throws MdmlError with code `value` for a non-positive gamma and `shape` for mismatched lengths.
+ * @concept conformal-prediction
+ * @example
+ * ```ts
+ * import { adaptiveConformalAlgorithm } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const y = [1, -1, 2, -2, 1, -1]
+ * const run = runAlgorithm(adaptiveConformalAlgorithm(y.map(() => 0), y, { alpha: 0.2, gamma: 0.1 }), { maxSteps: 10 })
+ * run.state.errors.length // => 6
+ * ```
+ */
+export function adaptiveConformalAlgorithm(
+  predictions: ArrayLike<number>,
+  targets: ArrayLike<number>,
+  options: AciOptions = {},
+): Algorithm<AciState, AciPath> {
+  const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'adaptiveConformalInference')
+  const gamma = options.gamma ?? 0.005
+  if (!(gamma > 0)) throw new MdmlError('value', 'adaptiveConformalInference: gamma must be positive')
+  const T = predictions.length
+  if (targets.length !== T) throw new MdmlError('shape', 'adaptiveConformalInference: one target per prediction')
+  const memory = scoreMemories.make(
+    options.memory ?? (options.window === undefined ? undefined : { kind: 'window', size: options.window }),
+  )
+  const quantileAt = (scores: readonly number[], level: number): number => {
+    if (level <= 0) return Number.POSITIVE_INFINITY
+    if (level >= 1 || scores.length === 0) return level >= 1 ? 0 : Number.POSITIVE_INFINITY
+    const s = [...scores].sort((a, b) => a - b)
+    const kk = Math.ceil((1 - level) * (s.length + 1))
+    return kk > s.length ? Number.POSITIVE_INFINITY : (s[kk - 1] ?? 0)
+  }
+  return {
+    name: 'adaptive-conformal-inference',
+    config: {
+      alpha,
+      gamma,
+      window: options.window ?? null,
+      memory: scoreMemories.optionOf(options.memory).name,
+      steps: T,
+    },
+    schema: channels({
+      metrics: {
+        alpha: { description: 'the working level alpha_t' },
+        coverage: { description: 'the running coverage', direction: 'higher' },
+      },
+    }),
+    init: () => ({
+      t: 0,
+      alphaT: alpha,
+      scores: Array.from(options.initialScores ?? []),
+      lower: [],
+      upper: [],
+      alphas: [],
+      errors: [],
+    }),
+    step: (s, ctx) => {
+      const q = quantileAt(memory(s.scores), s.alphaT)
+      const yhat = predictions[s.t] ?? 0
+      const y = targets[s.t] ?? 0
+      // A level at or above 1 asks for the empty set (always an error), at or below 0 for the whole line.
+      const err = s.alphaT >= 1 || Math.abs(y - yhat) > q ? 1 : 0
+      const next: AciState = {
+        t: s.t + 1,
+        alphaT: s.alphaT + gamma * (alpha - err),
+        scores: [...s.scores, Math.abs(y - yhat)],
+        lower: [...s.lower, yhat - q],
+        upper: [...s.upper, yhat + q],
+        alphas: [...s.alphas, s.alphaT],
+        errors: [...s.errors, err],
+      }
+      ctx.log('aci/alpha', s.alphaT)
+      ctx.log('aci/covered', 1 - err)
+      ctx.log('aci/width', Number.isFinite(q) ? 2 * q : -1)
+      ctx.log('aci/quantile', Number.isFinite(q) ? q : -1)
+      ctx.log('aci/coverage', aciResult(next).coverage)
+      return next
+    },
+    done: (s) => (s.t >= T ? 'completed' : undefined),
+    observe: (s) => {
+      const { coverage } = aciResult(s)
+      return { metrics: { alpha: s.alphaT, ...(Number.isNaN(coverage) ? {} : { coverage }) } }
+    },
+    serialise: (s) =>
+      stateToJson({
+        t: s.t,
+        alphaT: s.alphaT,
+        scores: scoresToJson(s.scores),
+        lower: scoresToJson(s.lower),
+        upper: scoresToJson(s.upper),
+        alphas: scoresToJson(s.alphas),
+        errors: scoresToJson(s.errors),
+      }),
+    deserialise: (j) => {
+      const o = stateFromJson(j) as {
+        readonly t: number
+        readonly alphaT: number
+        readonly scores: never
+        readonly lower: never
+        readonly upper: never
+        readonly alphas: never
+        readonly errors: never
+      }
+      return {
+        t: o.t,
+        alphaT: o.alphaT,
+        scores: scoresFromJson(o.scores),
+        lower: scoresFromJson(o.lower),
+        upper: scoresFromJson(o.upper),
+        alphas: scoresFromJson(o.alphas),
+        errors: scoresFromJson(o.errors),
+      }
+    },
+  }
+}
+
 /**
  * Adaptive conformal inference for time series and shifting distributions (Gibbs and Candes 2021): at each time,
  * predict yhat_t -/+ the (1 - alpha_t) quantile of past absolute residuals, observe y_t, and update
  * alpha_{t+1} = alpha_t + gamma (alpha - err_t). Without any exchangeability, the long-run error rate stays within
- * (max(alpha_1, 1 - alpha_1) + gamma) / (gamma T) of alpha. A traced algorithm with one step per time.
+ * (max(alpha_1, 1 - alpha_1) + gamma) / (gamma T) of alpha. This is {@link adaptiveConformalAlgorithm} run to the end,
+ * a traced algorithm with one step per time.
  *
  * @param predictions - Point forecasts yhat_t, in time order.
  * @param targets - The realised values y_t.
@@ -667,72 +930,13 @@ export function adaptiveConformalInference(
   targets: ArrayLike<number>,
   options: AciOptions = {},
 ): AciResult {
-  const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'adaptiveConformalInference')
-  const gamma = options.gamma ?? 0.005
-  if (!(gamma > 0)) throw new MdmlError('value', 'adaptiveConformalInference: gamma must be positive')
-  const T = predictions.length
-  if (targets.length !== T) throw new MdmlError('shape', 'adaptiveConformalInference: one target per prediction')
-  type State = {
-    readonly t: number
-    readonly alphaT: number
-    readonly scores: readonly number[]
-    readonly out: AciResult
-  }
-  const quantileAt = (scores: readonly number[], level: number): number => {
-    if (level <= 0) return Number.POSITIVE_INFINITY
-    if (level >= 1 || scores.length === 0) return level >= 1 ? 0 : Number.POSITIVE_INFINITY
-    const s = [...scores].sort((a, b) => a - b)
-    const kk = Math.ceil((1 - level) * (s.length + 1))
-    return kk > s.length ? Number.POSITIVE_INFINITY : (s[kk - 1] ?? 0)
-  }
-  const algorithm: Algorithm<State> = {
-    name: 'adaptive-conformal-inference',
-    config: { alpha, gamma, window: options.window ?? null, steps: T },
-    schema: channels({
-      metrics: {
-        alpha: { description: 'the working level alpha_t' },
-        coverage: { description: 'the running coverage', direction: 'higher' },
-      },
-    }),
-    init: () => ({
-      t: 0,
-      alphaT: alpha,
-      scores: Array.from(options.initialScores ?? []),
-      out: { lower: [], upper: [], alphas: [], errors: [], coverage: Number.NaN },
-    }),
-    step: (s) => {
-      const recent =
-        options.window === undefined ? s.scores : s.scores.slice(Math.max(0, s.scores.length - options.window))
-      const q = quantileAt(recent, s.alphaT)
-      const yhat = predictions[s.t] ?? 0
-      const y = targets[s.t] ?? 0
-      // A level at or above 1 asks for the empty set (always an error), at or below 0 for the whole line.
-      const err = s.alphaT >= 1 || Math.abs(y - yhat) > q ? 1 : 0
-      const errors = [...s.out.errors, err]
-      return {
-        t: s.t + 1,
-        alphaT: s.alphaT + gamma * (alpha - err),
-        scores: [...s.scores, Math.abs(y - yhat)],
-        out: {
-          lower: [...s.out.lower, yhat - q],
-          upper: [...s.out.upper, yhat + q],
-          alphas: [...s.out.alphas, s.alphaT],
-          errors,
-          coverage: 1 - errors.reduce((a, b) => a + b, 0) / errors.length,
-        },
-      }
-    },
-    done: (s) => (s.t >= T ? 'completed' : undefined),
-    observe: (s) => ({
-      metrics: { alpha: s.alphaT, ...(Number.isNaN(s.out.coverage) ? {} : { coverage: s.out.coverage }) },
-    }),
-  }
+  const algorithm = adaptiveConformalAlgorithm(predictions, targets, options)
   const run = {
     ...(options.parent === undefined ? {} : { parent: options.parent }),
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
     ...(options.policy === undefined ? {} : { policy: options.policy }),
   }
-  return runAlgorithm(algorithm, { ...run, maxSteps: T }).state.out
+  return aciResult(runAlgorithm(algorithm, { ...run, maxSteps: predictions.length }).state)
 }
 
 /**
