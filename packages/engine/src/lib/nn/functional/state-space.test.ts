@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { checkPrimitive } from '../../autodiff/index.ts'
 import { maxOf } from '../../base/index.ts'
 import { key, normal, uniform } from '../../random/index.ts'
-import { tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
+import { concat, sliceAxis, tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import {
   causalConvolution,
   deltaRule,
@@ -12,6 +12,9 @@ import {
   lru,
   lruEigenvalues,
   lruInit,
+  lruScan,
+  parallelScan,
+  parallelScanComplex,
   selectiveScan,
   ssmKernel,
   ssmRecurrence,
@@ -189,5 +192,80 @@ describe('delta rule and LRU', () => {
     const b = (toFlat(p.bRe)[0] ?? 0) * g
     const c = toFlat(p.cRe)[0] ?? 0
     close(lru(real, u), ssmRecurrence({ a: [lam], b: [b] }, [c], toFlat(u)), 12)
+  })
+})
+
+describe('parallel scans and resumed scans', () => {
+  it('the parallel scan equals the sequential recurrence, for any length and with an initial state', () => {
+    for (const len of [1, 2, 5, 8, 13]) {
+      const a = uniform(key(len), [len, 3], { low: -0.9, high: 0.9 })
+      const b = n(len + 100, [len, 3])
+      close(parallelScan(a, b), linearRecurrence(a, b), 12)
+      const h0 = n(7, [3])
+      close(parallelScan(a, b, 0, h0), linearRecurrence(a, b, h0), 12)
+    }
+  })
+
+  it('the complex parallel scan equals a sequential complex recurrence on the time axis 1', () => {
+    const [len, d] = [9, 2]
+    const ar = uniform(key(1), [2, len, d], { low: -0.6, high: 0.6 })
+    const ai = uniform(key(2), [2, len, d], { low: -0.6, high: 0.6 })
+    const br = n(3, [2, len, d])
+    const bi = n(4, [2, len, d])
+    const got = parallelScanComplex({ re: ar, im: ai }, { re: br, im: bi }, 1)
+    const A = [toFlat(ar), toFlat(ai)] as const
+    const Bv = [toFlat(br), toFlat(bi)] as const
+    const hr = new Float64Array(2 * d)
+    const hi = new Float64Array(2 * d)
+    for (let t = 0; t < len; t++)
+      for (let bt = 0; bt < 2; bt++)
+        for (let j = 0; j < d; j++) {
+          const i = (bt * len + t) * d + j
+          const pr = hr[bt * d + j] ?? 0
+          const pi = hi[bt * d + j] ?? 0
+          const nr = (A[0][i] ?? 0) * pr - (A[1][i] ?? 0) * pi + (Bv[0][i] ?? 0)
+          const ni = (A[0][i] ?? 0) * pi + (A[1][i] ?? 0) * pr + (Bv[1][i] ?? 0)
+          hr[bt * d + j] = nr
+          hi[bt * d + j] = ni
+          expect(toFlat(got.re)[i]).toBeCloseTo(nr, 12)
+          expect(toFlat(got.im)[i]).toBeCloseTo(ni, 12)
+        }
+    const h0 = { re: n(5, [2, d]), im: n(6, [2, d]) }
+    const resumed = parallelScanComplex({ re: ar, im: ai }, { re: br, im: bi }, 1, h0)
+    expect(toFlat(resumed.re)[0]).toBeCloseTo(
+      (toFlat(ar)[0] ?? 0) * (toFlat(h0.re)[0] ?? 0) -
+        (toFlat(ai)[0] ?? 0) * (toFlat(h0.im)[0] ?? 0) +
+        (toFlat(br)[0] ?? 0),
+      12,
+    )
+  })
+
+  it('a selective scan or an LRU resumed from its state equals one pass over the whole sequence', () => {
+    const x = n(10, [2, 6, 3])
+    const dt = uniform(key(11), [2, 6, 3], { low: 0.1, high: 0.5 })
+    const a = uniform(key(12), [3, 2], { low: -2, high: -0.5 })
+    const b = n(13, [2, 6, 2])
+    const c = n(14, [2, 6, 2])
+    const whole = selectiveScan({ x, dt, a, b, c })
+    const cut = (v: Value, lo: number, hi: number): Value => sliceAxis(v, 1, lo, hi)
+    const first = selectiveScan({ x: cut(x, 0, 4), dt: cut(dt, 0, 4), a, b: cut(b, 0, 4), c: cut(c, 0, 4) })
+    const rest = selectiveScan({
+      x: cut(x, 4, 6),
+      dt: cut(dt, 4, 6),
+      a,
+      b: cut(b, 4, 6),
+      c: cut(c, 4, 6),
+      h0: first.state,
+    })
+    close(concat([first.y, rest.y], 1), whole.y, 12)
+    close(rest.state, whole.state, 12)
+
+    const params = lruInit(key(15), 4, 3)
+    const u = n(16, [2, 7, 3])
+    const all = lruScan(params, u)
+    const head = lruScan(params, sliceAxis(u, 1, 0, 3))
+    const tail = lruScan(params, sliceAxis(u, 1, 3, 7), head.state)
+    close(concat([head.y, tail.y], 1), all.y, 12)
+    close(tail.state.re, all.state.re, 12)
   })
 })

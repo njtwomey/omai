@@ -3252,7 +3252,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `functional/state-space.ts`: SSM discretisation (`discretise` by zero-order hold or bilinear, `discretiseDiagonal`),
   S4 convolution kernels (`ssmKernel`, Vandermonde for diagonal models), `causalConvolution`, `ssmRecurrence`,
   `linearRecurrence`, selective scan (Mamba, with gating), delta rule (DeltaNet), LRU (`lruInit`, `lruEigenvalues`,
-  `lru`). TODO: complex-valued diagonal S4D (the LRU covers complex recurrences).
+  `lru`, `lruScan` with a resumable state), `parallelScan` and `parallelScanComplex` (associative scans of linear
+  recurrences), `channelCausalConvolution` (one kernel per channel). The complex diagonal S4D is a layer in
+  `blocks/state-space.ts`.
 - `functional/graph.ts`: `edgeList`, `aggregate` and `messagePassing` (sum, mean, max), edge softmax, `addSelfLoops`,
   `gcnNorm`, GCN, GAT, GraphSAGE and GIN convolutions, graph pooling (`globalPool` by batch, `topKPool`).
 - `functional/vision.ts`: `interpolate` (nearest, nearest-exact, linear, bilinear, bicubic, trilinear, area; size or
@@ -3340,6 +3342,11 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     `x' = A x + B u` that project the input's history onto Legendre or Laguerre bases), `nplrHippo` (the
     normal-plus-low-rank form `V diag(lambda) V^H - P P^T` with its eigenbasis forms) and `nplrReconstruct`,
     `s4dEigenvalues` (S4D-Lin, -Inv, -Real).
+  - `mixer.ts`: `SequenceMixer`, the interface of the interchangeable sequence layers (state in, state out; the
+    parallel form on a sequence and the recurrent form on one token agree), `ownKey`.
+  - `state-space.ts`: `S4D` (diagonal, convolution or recurrence), `S4` (HiPPO normal-plus-low-rank in its
+    eigenbasis, bilinear), `S5` (one MIMO complex state, parallel scan) and `LRUMixer` (over `lruScan`), all as
+    sequence mixers whose two forms give the same outputs and final state.
   - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
     `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
   - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),
