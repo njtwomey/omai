@@ -7,7 +7,17 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { key as makeKey } from '../random/index.ts'
 import { type AdfOptions, adfuller, mackinnoncrit, mackinnonp, type TrendTerms } from '../stats/tests/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { JOHANSEN_MAX_EIGENVALUE, JOHANSEN_TRACE } from './_johansen-tables.ts'
 import {
   choleskyLower,
@@ -264,8 +274,78 @@ export function johansen(
   }
 }
 
+/** The state of {@link cointegrationRankAlgorithm}: the statistics and critical values, and the ranks tested. */
+export interface RankState {
+  /** The next rank to test (ranks 0..r-1 failed to be accepted). */
+  readonly r: number
+  /** The test statistic and its critical value at every rank. */
+  readonly statistics: readonly number[]
+  readonly critical: readonly number[]
+  /** The accepted rank, `null` until one is. */
+  readonly rank: number | null
+}
+
+/** The paths {@link cointegrationRankAlgorithm} logs, as a type. */
+export type RankPath = 'select/rank' | 'select/statistic' | 'select/critical' | 'select/accepted'
+
+/** What {@link cointegrationRankAlgorithm} logs, by path: the rank tested, its statistic, its critical value, and 1 when accepted. */
+export const rankContract: Contract<RankState, RankPath> = defineContract({
+  'select/rank': scalar({ description: 'the rank tested at this step' }),
+  'select/statistic': scalar({ description: 'the Johansen statistic for that rank' }),
+  'select/critical': scalar({ description: 'its critical value at the significance level' }),
+  'select/accepted': scalar({ description: '1 when the statistic does not exceed the critical value, else 0' }),
+})
+
 /**
- * The cointegration rank chosen by a sequence of Johansen tests (statsmodels `select_coint_rank`): the smallest rank
+ * The sequence of Johansen tests that chooses a cointegration rank, as a steppable algorithm: the statistics are found
+ * once (at the start); each step tests one rank, from 0 upward, against its critical value and stops at the first it
+ * does not reject.
+ *
+ * @param y - The series as rows.
+ * @param detOrder - The deterministic order (default 0).
+ * @param kArDiff - The lagged differences (default 1).
+ * @param method - `'trace'` (default) or `'maxeig'`.
+ * @param signif - The significance level: 0.1, 0.05 (default) or 0.01.
+ * @returns The algorithm; it is done at the accepted rank, or after the last rank.
+ * @example
+ * ```ts
+ * import { cointegrationRankAlgorithm } from 'mdml-engine/timeseries'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const y = [[0, 0.1], [1, 0.9], [1.5, 1.6], [3, 2.8], [3.4, 3.5], [5, 4.7], [5.1, 5.2], [6.8, 6.4], [7.2, 7.1], [9, 8.5], [9.5, 9.6], [10.9, 10.4]]
+ * runAlgorithm(cointegrationRankAlgorithm(y), { maxSteps: 3 }).state.statistics.length // => 2
+ * ```
+ */
+export function cointegrationRankAlgorithm(
+  y: ArrayLike<ArrayLike<number>>,
+  detOrder: JohansenDeterministicOrder = 0,
+  kArDiff = 1,
+  method: 'trace' | 'maxeig' = 'trace',
+  signif: 0.1 | 0.05 | 0.01 = 0.05,
+): Algorithm<RankState, RankPath> {
+  const col = signif === 0.1 ? 0 : signif === 0.05 ? 1 : 2
+  const r = johansen(y, detOrder, kArDiff)
+  const statistics = method === 'trace' ? r.traceStatistics : r.maxEigenvalueStatistics
+  const critical = (method === 'trace' ? r.traceCritical : r.maxEigenvalueCritical).map((row) => row[col] ?? Number.NaN)
+  return {
+    name: 'cointegration-rank-selection',
+    config: { detOrder, kArDiff, method, signif, steps: statistics.length },
+    init: () => ({ r: 0, statistics: [...statistics], critical, rank: null }),
+    step: (s, ctx) => {
+      const accepted = (s.statistics[s.r] ?? 0) <= (s.critical[s.r] ?? 0)
+      if (ctx.wants('select/rank')) ctx.log('select/rank', s.r)
+      if (ctx.wants('select/statistic')) ctx.log('select/statistic', s.statistics[s.r] ?? 0)
+      if (ctx.wants('select/critical')) ctx.log('select/critical', s.critical[s.r] ?? 0)
+      if (ctx.wants('select/accepted')) ctx.log('select/accepted', accepted ? 1 : 0)
+      return { ...s, r: s.r + 1, rank: accepted ? s.r : null }
+    },
+    done: (s) => (s.rank !== null || s.r >= s.statistics.length ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as RankState,
+  }
+}
+
+/**
+ * The cointegration rank chosen by a sequence of Johansen tests (statsmodels `select_coint_rank`; {@link cointegrationRankAlgorithm} run to the end): the smallest rank
  * whose statistic does not exceed its critical value at the significance level.
  *
  * @param y - The series as rows.
@@ -288,15 +368,7 @@ export function selectCointegrationRank(
   method: 'trace' | 'maxeig' = 'trace',
   signif: 0.1 | 0.05 | 0.01 = 0.05,
 ): { readonly rank: number; readonly statistics: readonly number[]; readonly critical: readonly number[] } {
-  const col = signif === 0.1 ? 0 : signif === 0.05 ? 1 : 2
-  const r = johansen(y, detOrder, kArDiff)
-  const stats = method === 'trace' ? r.traceStatistics : r.maxEigenvalueStatistics
-  const crit = (method === 'trace' ? r.traceCritical : r.maxEigenvalueCritical).map((row) => row[col] ?? Number.NaN)
-  let rank = stats.length
-  for (let i = 0; i < stats.length; i++)
-    if ((stats[i] ?? 0) <= (crit[i] ?? 0)) {
-      rank = i
-      break
-    }
-  return { rank, statistics: stats, critical: crit }
+  const algorithm = cointegrationRankAlgorithm(y, detOrder, kArDiff, method, signif)
+  const state = runAlgorithm(algorithm, { maxSteps: algorithm.init(makeKey(0)).statistics.length + 1 }).state
+  return { rank: state.rank ?? state.statistics.length, statistics: state.statistics, critical: state.critical }
 }

@@ -4377,7 +4377,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   `arimaResiduals`, `arimaForecast` (exact means and variances on the original scale by augmenting the state with the
   last observations that the differencing operator integrates; intervals by level). `ArimaFit` is plain data with
   standard errors from the numerical Hessian.
-- `arma-fit.ts`: `fitAr` (Yule-Walker adjusted or biased, Burg, least squares), `selectArOrder` (AIC, BIC, HQIC),
+- `arma-fit.ts`: `fitAr` (Yule-Walker adjusted or biased, Burg, least squares), `selectArOrder` (AIC, BIC, HQIC; `arOrderAlgorithm` steps the sweep one order at a time, logging `select/order`,
+  `criterion`, `sigma2`, `best`),
   `fitMa` (innovations), `hannanRissanen` (with the bias-correction step), `fitArma` and `armaFitAlgorithm`.
 - `smoothing.ts`: ETS models (`EtsSpec`: error, trend, damped, seasonal, period; the presets `smoothingModels`
   (`simple`, `holt`, `damped`), `holtWintersAdditive`, `holtWintersMultiplicative`): `etsFilter` (fitted values,
@@ -4471,7 +4472,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `cointegration.ts`: `engleGranger` (the two-step test: the cointegrating regression with `n`/`c`/`ct`/`ctt`, the
   residual spread tested by ADF with MacKinnon's N-variable p-values and critical values), `johansen` (the trace and
   maximum-eigenvalue statistics from the reduced-rank eigenproblem with the MacKinnon-Haug-Michelis tables of
-  `_johansen-tables.ts`) and `selectCointegrationRank`.
+  `_johansen-tables.ts`) and `selectCointegrationRank` (`cointegrationRankAlgorithm` tests one rank per step, logging
+  `select/rank`, `statistic`, `critical`, `accepted`).
 - `vecm.ts`: the vector error-correction model. `vecmProblem` builds Johansen's matrices (deterministic terms `n`, `co`,
   `ci`, `lo`, `li` and the combinations), `vecmSmoothProblem` is the likelihood concentrated on beta = [I; B] as a
   smooth objective with its analytic gradient, `vecmSolvers` is the slot (`johansen` the closed-form eigen-solve as the

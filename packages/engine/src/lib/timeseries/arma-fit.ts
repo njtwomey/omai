@@ -8,6 +8,15 @@
 import { MdmlError, meanOf } from '../base/index.ts'
 import { burg, yuleWalker } from '../signal/index.ts'
 import { toFlat } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { leastSquares } from './_ml.ts'
 import { asSeries } from './_series.ts'
 import { autocovariance } from './acf.ts'
@@ -89,9 +98,111 @@ function fitArLeastSquares(x: Float64Array, p: number, constant: boolean): ArmaE
   return { ar, ma: [], sigma2: ssr / m, mean, method: 'ols' }
 }
 
+/** An information criterion for choosing an order: -2 loglik + penalty k, the penalty a function of the sample size. */
+export type OrderCriterion = 'aic' | 'bic' | 'hqic'
+
+/**
+ * The penalty per parameter of each information criterion, as a function of the sample size: 2 for the AIC, ln m for
+ * the BIC and 2 ln ln m for the Hannan-Quinn.
+ *
+ * @param criterion - `aic`, `bic` or `hqic`.
+ * @param m - The sample size.
+ * @returns The penalty.
+ * @example
+ * ```ts
+ * import { criterionPenalty } from 'mdml-engine/timeseries'
+ * criterionPenalty('aic', 100) // => 2
+ * ```
+ */
+export function criterionPenalty(criterion: OrderCriterion, m: number): number {
+  return criterion === 'aic' ? 2 : criterion === 'bic' ? Math.log(m) : 2 * Math.log(Math.log(m))
+}
+
+/** The state of {@link arOrderAlgorithm}: the orders tried and their criterion values. */
+export interface ArOrderState {
+  /** The next order to try (the orders 0..p-1 are done). */
+  readonly p: number
+  /** The criterion at orders 0..p-1. */
+  readonly scores: readonly number[]
+  /** The order with the smallest criterion so far (-1 before the first). */
+  readonly best: number
+}
+
+/** The paths {@link arOrderAlgorithm} logs, as a type. */
+export type ArOrderPath = 'select/order' | 'select/criterion' | 'select/sigma2' | 'select/best'
+
+/**
+ * What {@link arOrderAlgorithm} logs, by path: the order tried, its criterion, the residual variance of its fit and
+ * the best order so far.
+ */
+export const arOrderContract: Contract<ArOrderState, ArOrderPath> = defineContract({
+  'select/order': scalar({ description: 'the order tried at this step' }),
+  'select/criterion': scalar({ description: 'the information criterion at that order', direction: 'lower' }),
+  'select/sigma2': scalar({ description: 'the residual variance of the least-squares fit at that order' }),
+  'select/best': scalar({ description: 'the order with the smallest criterion so far' }),
+})
+
+/**
+ * The search for an AR order as a steppable algorithm: each step fits one order p by least squares on the common
+ * sample and scores it by an information criterion; the state holds the scores so far and the best order.
+ *
+ * @param y - The series.
+ * @param maxOrder - The largest order tried.
+ * @param criterion - `aic` (default), `bic` or `hqic`.
+ * @returns The algorithm; it is done after order `maxOrder`.
+ * @example
+ * ```ts
+ * import { arOrderAlgorithm } from 'mdml-engine/timeseries'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const y = [1, 1.3, 0.2, -0.6, 0.1, 0.7, 0.2, -0.3, -0.1, 0.2, 0.1, -0.1, 0, 0.1, 0.02, -0.04]
+ * runAlgorithm(arOrderAlgorithm(y, 3), { maxSteps: 4 }).state.scores.length // => 4
+ * ```
+ */
+export function arOrderAlgorithm(
+  y: ArrayLike<number>,
+  maxOrder: number,
+  criterion: OrderCriterion = 'aic',
+): Algorithm<ArOrderState, ArOrderPath> {
+  const x = asSeries(Float64Array.from(y), 'selectArOrder')
+  const m = x.length - maxOrder
+  return {
+    name: 'ar-order-selection',
+    config: { maxOrder, criterion, steps: maxOrder + 1 },
+    init: () => ({ p: 0, scores: [], best: -1 }),
+    step: (s, ctx) => {
+      const p = s.p
+      const columns: number[][] = [new Array<number>(m).fill(1)]
+      for (let j = 1; j <= p; j++) columns.push(Array.from({ length: m }, (_, t) => x[maxOrder + t - j] ?? 0))
+      const target = Array.from({ length: m }, (_, t) => x[maxOrder + t] ?? 0)
+      const beta = leastSquares(columns, target)
+      let ssr = 0
+      for (let t = 0; t < m; t++) {
+        let fit = 0
+        columns.forEach((c, k) => {
+          fit += (beta[k] ?? 0) * (c[t] ?? 0)
+        })
+        ssr += ((target[t] ?? 0) - fit) ** 2
+      }
+      const sigma2 = ssr / m
+      const k = p + 2
+      const score = m * (Math.log(2 * Math.PI * sigma2) + 1) + criterionPenalty(criterion, m) * k
+      const scores = [...s.scores, score]
+      const best = scores.indexOf(Math.min(...scores))
+      if (ctx.wants('select/order')) ctx.log('select/order', p)
+      if (ctx.wants('select/criterion')) ctx.log('select/criterion', score)
+      if (ctx.wants('select/sigma2')) ctx.log('select/sigma2', sigma2)
+      if (ctx.wants('select/best')) ctx.log('select/best', best)
+      return { p: p + 1, scores, best }
+    },
+    done: (s) => (s.p > maxOrder ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as ArOrderState,
+  }
+}
+
 /**
  * The AR order chosen by an information criterion over least-squares fits on a common sample (statsmodels'
- * `ar_select_order`): the criterion is -2 loglik + penalty k, with k the lags, the constant and the variance.
+ * `ar_select_order`; {@link arOrderAlgorithm} run to the end): the criterion is -2 loglik + penalty k, with k the lags, the constant and the variance.
  *
  * @param y - The series.
  * @param maxOrder - The largest order tried.
@@ -108,30 +219,10 @@ function fitArLeastSquares(x: Float64Array, p: number, constant: boolean): ArmaE
 export function selectArOrder(
   y: ArrayLike<number>,
   maxOrder: number,
-  criterion: 'aic' | 'bic' | 'hqic' = 'aic',
+  criterion: OrderCriterion = 'aic',
 ): { readonly order: number; readonly scores: readonly number[] } {
-  const x = asSeries(Float64Array.from(y), 'selectArOrder')
-  const m = x.length - maxOrder
-  const scores: number[] = []
-  for (let p = 0; p <= maxOrder; p++) {
-    const columns: number[][] = [new Array<number>(m).fill(1)]
-    for (let j = 1; j <= p; j++) columns.push(Array.from({ length: m }, (_, t) => x[maxOrder + t - j] ?? 0))
-    const target = Array.from({ length: m }, (_, t) => x[maxOrder + t] ?? 0)
-    const beta = leastSquares(columns, target)
-    let ssr = 0
-    for (let t = 0; t < m; t++) {
-      let fit = 0
-      columns.forEach((c, k) => {
-        fit += (beta[k] ?? 0) * (c[t] ?? 0)
-      })
-      ssr += ((target[t] ?? 0) - fit) ** 2
-    }
-    const sigma2 = ssr / m
-    const k = p + 2
-    const penalty = criterion === 'aic' ? 2 : criterion === 'bic' ? Math.log(m) : 2 * Math.log(Math.log(m))
-    scores.push(m * (Math.log(2 * Math.PI * sigma2) + 1) + penalty * k)
-  }
-  return { order: scores.indexOf(Math.min(...scores)), scores }
+  const state = runAlgorithm(arOrderAlgorithm(y, maxOrder, criterion), { maxSteps: maxOrder + 1 }).state
+  return { order: state.best, scores: state.scores }
 }
 
 /**
