@@ -97,9 +97,11 @@ import {
   copyTask,
   dyckTask,
   inContextRegression,
+  inductionHeads,
   modularArithmetic,
   parityTask,
   reverseTask,
+  selectiveCopying,
   sortTask,
 } from './sequence-tasks.ts'
 import { shapeletSeries } from './shapelet-series.ts'
@@ -147,6 +149,8 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   antiderivativeOperator,
   arma,
   associativeRecall,
+  inductionHeads,
+  selectiveCopying,
   barsAndStripes,
   biasedCredit,
   blobs,
@@ -409,6 +413,8 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
   ...g('sequence', [
     ['additionTask', 'Addition'],
     ['associativeRecall', 'Associative recall'],
+    ['inductionHeads', 'Induction heads'],
+    ['selectiveCopying', 'Selective copying'],
     ['copyTask', 'Copy'],
     ['dishonestCasino', 'The dishonest casino'],
     ['dyckTask', 'Dyck brackets'],

@@ -6280,7 +6280,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
   `modularArithmetic`), each with an exact solver in its truth, and in-context linear regression written as quantised
-  tokens (`inContextRegression`, with the least-squares and Bayes predictions).
+  tokens (`inContextRegression`, with the least-squares and Bayes predictions), and the tasks of the Mamba and H3
+  papers with per-position supervision masks: selective copying (`selectiveCopying`, vanilla copying with `fixed`)
+  and induction heads (`inductionHeads`).
 - `graphs.ts`: karate club (`karateClub`), Les Miserables (`lesMiserables`), contextual stochastic block models
   (`contextualSbm`), graph families (`familyGraph`, `graphFamilies`: Erdos-Renyi, Barabasi-Albert, Watts-Strogatz,
   grids, cycles, paths, stars, complete graphs, trees, geometric graphs), small molecules (`smallMolecules`, read from
