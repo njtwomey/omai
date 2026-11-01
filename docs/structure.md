@@ -4024,10 +4024,13 @@ the distance-based ones take a `metric` from `distances` (or `'precomputed'`, th
   the spectral relaxation as an initial labelling), each with an estimator (`elkanKMeans`, `bisectingKMeans`,
   `kernelKMeans`).
 - `density.ts`: `dbscanAlgorithm` (one cluster grown per step), `opticsAlgorithm` (one point of the reachability
-  ordering per step) with `opticsOrdering` and `opticsClustersAt`, `hdbscan` (core distances, the single-linkage tree of
-  the mutual reachability distance, `condenseTree`, `selectClusters` by excess of mass: labels, probabilities, the
-  condensed tree and the stabilities), `meanShiftAlgorithm` (every seed moves each step) with `estimateBandwidth` and
-  `meanShiftCentres`; estimators `dbscan`, `optics`, `hdbscanClustering`, `meanShift`.
+  ordering per step) with `opticsOrdering` and `opticsClustersAt`, `hdbscanAlgorithm` (one merge of the mutual
+  reachability single-linkage tree per step, then one tree node condensed per step, one cluster selected per step and a
+  labelling step; `hdbscanContract` paths `tree/*`, `condense/*`, `select/*`, `labels/*`; the state serialises) with
+  `hdbscan` as that run (`condenseTree`, `selectClusters` by excess of mass or leaves: labels, probabilities, the condensed
+  tree and the stabilities), `meanShiftAlgorithm` (every seed moves each step) with `estimateBandwidth` and
+  `meanShiftCentres`; estimators `dbscan`, `optics`, `hdbscanEstimator` (iterative; `hdbscanClustering(hyper)` is its
+  `with`), `meanShift`. `density-options.ts`: the `hdbscanSelections` table (`eom`, `leaf`).
 - `hierarchical.ts`: `agglomerativeAlgorithm` (one merge per step, every linkage by Lance-Williams, the partition and the
   linkage matrix on the tape), `linkageMatrix`, `singleLinkageTree`, `cutTree`, `copheneticDistances`,
   `copheneticCorrelation`, `dendrogram`; BIRCH as a CF-tree in an arena (`birchAlgorithm` inserts one row per step,
