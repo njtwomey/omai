@@ -2635,8 +2635,9 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `inference/gaussian-bp.ts`: Gaussian belief propagation in information form, walk-summability.
 - `inference/chain.ts`: forward-backward (scaled and log space, pairwise posteriors), Viterbi, posterior decoding,
   forward filtering and backward sampling.
-- `inference/sampling.ts`: forward (`ancestralSample` in models/bayes-net.ts), rejection and likelihood-weighted
-  sampling with effective sample sizes, Gibbs sampling on factor graphs, weighted marginals, approximate queries.
+- `inference/sampling.ts`: forward (`forwardSample`, `ancestralSample` in models/bayes-net.ts), rejection and
+  likelihood-weighted sampling with effective sample sizes (`rejectionSampleAlgorithm`, `likelihoodWeightingAlgorithm`,
+  one sample per step, `importanceContract`, the slot `importanceSamplers`), Gibbs sampling on factor graphs, weighted marginals, approximate queries.
 - `inference/variational.ts`: naive mean field, variational message passing (on discrete factor graphs, where it has
   the fixed points of mean field), tree-reweighted belief propagation and its upper bound with spanning-tree edge
   probabilities. TODO: VMP on conjugate-exponential (Dirichlet, Gaussian) nodes.
@@ -2692,7 +2693,8 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `learning/independence.ts`: chi-square and G tests (stratified), Fisher z and partial-correlation tests, oracles.
 - `learning/equivalence.ts`: PDAGs, skeletons, immoralities, Markov equivalence, Meek's rules, CPDAGs, consistent
   extensions, structural Hamming distance.
-- `learning/structure.ts`: Chow-Liu trees (and TAN), the PC algorithm (stable; first or union separating sets), hill
+- `learning/structure.ts`: Chow-Liu trees (and TAN; `chowLiuAlgorithm`, one edge per step, `chowLiuContract`, the slot
+  `mutualInformationEstimators`), the PC algorithm (stable; first or union separating sets), hill
   climbing with any score (BIC, BDeu, ...), tabu list and parent limit, mutual information.
 - `causal/scm.ts`: structural causal models (discrete and linear assignments plus noise), sampling, induced Bayes and
   linear-Gaussian networks, `scmStructure` (also through `toStructure`).
@@ -2702,7 +2704,8 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   the adjustment formulas, simple ID-algorithm cases (`identifyEffect`), instrumental-variable checks.
 - `causal/counterfactuals.ts`: abduction, action and prediction; twin networks; probabilities of necessity and
   sufficiency; linear-Gaussian counterfactuals.
-- `causal/discovery.ts`: PC (re-exported from `learning`), GES, DirectLiNGAM (least-squares effects; TODO:
+- `causal/discovery.ts`: PC (re-exported from `learning`), GES, DirectLiNGAM (`directLingamAlgorithm` places one variable per step, `lingamContract`, the slot
+  `exogeneityMeasures`; least-squares effects; TODO:
   causal-learn's adaptive-lasso pruning, which needs LARS) and NOTEARS (projected-gradient inner solves; switch to
   `optim`'s L-BFGS-B once it exists).
 - `causal/fci.ts`: FCI with Possible-D-Sep pruning and Zhang's rules R0-R10 (R4 from the separating sets), PAGs.

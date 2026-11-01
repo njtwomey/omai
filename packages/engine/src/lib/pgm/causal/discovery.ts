@@ -8,14 +8,19 @@
 import { argmaxOf, type Json, MdmlError } from '../../base/index.ts'
 import { expm, lstsq } from '../../numerics/linalg/index.ts'
 import { applyUpdates, type GradientTransformation } from '../../optim/index.ts'
+import { dict, type OptionTable, optionTable } from '../../space/index.ts'
 import { fromStorage, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
+  type Contract,
   channels,
+  defineContract,
   type RunStatus,
   runAlgorithm,
+  scalar,
   type TracePolicy,
   type Tracer,
+  tensor,
 } from '../../trace/index.ts'
 import { type Dag, dag } from '../graphs.ts'
 import { type DataRow, dataVariables, numericColumns } from '../learning/_data.ts'
@@ -305,15 +310,219 @@ export interface LingamResult {
   readonly dag: Dag
 }
 
+/** The paths DirectLiNGAM logs, as a type. */
+export type LingamPath = 'lingam/exogenous' | 'lingam/order' | 'lingam/scores'
+
+/**
+ * What DirectLiNGAM logs, by path: the variable placed next in the causal order (its column index), the order so far,
+ * and the exogeneity score of every variable still in play (larger is more exogenous; minus infinity for the ones
+ * already placed).
+ */
+export const lingamContract: Contract<unknown, LingamPath> = defineContract({
+  'lingam/exogenous': scalar({ description: 'the column index of the variable placed next in the causal order' }),
+  'lingam/order': tensor({
+    role: 'state',
+    shape: ['placed'],
+    description: 'the column indices placed so far, causes first',
+  }),
+  'lingam/scores': tensor({
+    role: 'state',
+    shape: ['variables'],
+    description: 'the exogeneity score of each variable still in play (-Infinity for placed ones)',
+  }),
+})
+
+/** Scores the variables in play: the larger, the more plausibly exogenous (a cause of the others). */
+export type ExogeneityMeasure = (columns: readonly Float64Array[], remaining: readonly number[]) => number[]
+
+/** What an exogeneity measure can do, for validity rules and selectors. */
+export interface ExogeneityProperties {
+  /** Whether it is the pairwise likelihood-ratio measure of causal-learn's `pwling`. */
+  readonly likelihoodRatio: boolean
+}
+
+const mean = (x: Float64Array): number => x.reduce((a, b) => a + b, 0) / x.length
+
+/** The correlation of two columns. */
+function correlation(a: Float64Array, b: Float64Array): number {
+  const ma = mean(a)
+  const mb = mean(b)
+  let sab = 0
+  let saa = 0
+  let sbb = 0
+  for (let i = 0; i < a.length; i++) {
+    const da = (a[i] ?? 0) - ma
+    const db = (b[i] ?? 0) - mb
+    sab += da * db
+    saa += da * da
+    sbb += db * db
+  }
+  return saa === 0 || sbb === 0 ? 0 : sab / Math.sqrt(saa * sbb)
+}
+
+/**
+ * The exogeneity measures of DirectLiNGAM as one slot: `pwling` (Hyvarinen and Smith's pairwise likelihood ratio, with
+ * entropies by maximum-entropy approximation, as in causal-learn) and `nonlinear-correlation` (how far the residuals of
+ * the others on a candidate stay uncorrelated with a nonlinear function of it, a cheap proxy for independence that
+ * needs non-Gaussian disturbances).
+ *
+ * @concept causal-discovery
+ * @example
+ * ```ts
+ * import { exogeneityMeasures } from 'mdml-engine/pgm/causal'
+ * exogeneityMeasures.where((p) => p.likelihoodRatio) // => ['pwling']
+ * ```
+ */
+export const exogeneityMeasures: OptionTable<ExogeneityMeasure, ExogeneityProperties> = optionTable(
+  {
+    pwling: {
+      description: 'the pairwise likelihood-ratio measure of Hyvarinen and Smith (2013)',
+      properties: { likelihoodRatio: true },
+      space: dict({}),
+      make: () => (work, remaining) =>
+        remaining.map((i) => {
+          let M = 0
+          for (const j of remaining) {
+            if (i === j) continue
+            const xi = standardise(work[i] as Float64Array)
+            const xj = standardise(work[j] as Float64Array)
+            const rij = residual(xi, xj)
+            const rji = residual(xj, xi)
+            const diff = entropy(xj) + entropy(scaled(rij)) - (entropy(xi) + entropy(scaled(rji)))
+            M += Math.min(0, diff) ** 2
+          }
+          return -M
+        }),
+    },
+    'nonlinear-correlation': {
+      description: 'residuals of the others stay uncorrelated with tanh of an exogenous variable',
+      properties: { likelihoodRatio: false },
+      space: dict({}),
+      make: () => (work, remaining) =>
+        remaining.map((i) => {
+          const xi = standardise(work[i] as Float64Array)
+          const gi = xi.map((v) => Math.tanh(v))
+          let total = 0
+          for (const j of remaining) {
+            if (i === j) continue
+            const r = residual(standardise(work[j] as Float64Array), xi)
+            total +=
+              Math.abs(correlation(gi, r)) +
+              Math.abs(
+                correlation(
+                  xi,
+                  r.map((v) => Math.tanh(v)),
+                ),
+              )
+          }
+          return -total
+        }),
+    },
+  },
+  {
+    default: 'pwling',
+    label: 'exogeneity measure',
+    description: 'How the most exogenous variable among those left is chosen.',
+  },
+)
+
+/** The state of {@link directLingamAlgorithm}. */
+export interface LingamState {
+  /** The columns with the already placed variables regressed out (the originals of the ones still in play, residualised). */
+  readonly work: readonly Float64Array[]
+  /** The columns still to place. */
+  readonly remaining: readonly number[]
+  /** The causal order so far, as column indices, causes first. */
+  readonly order: readonly number[]
+  /** The exogeneity scores at the last step, by column (-Infinity for placed ones). */
+  readonly scores: readonly number[]
+}
+
+/**
+ * The causal-ordering stage of DirectLiNGAM as a steppable algorithm: each step scores the variables still in play by
+ * the exogeneity measure, places the best next in the causal order and regresses it out of the others. The direct
+ * effects are then estimated by least squares along the order, as in {@link directLingam}.
+ *
+ * @param data - Rows of numbers.
+ * @param options - The exogeneity `measure` (default `'pwling'`, see {@link exogeneityMeasures}).
+ * @returns The algorithm; it is done when every variable is placed.
+ * @concept causal-discovery
+ * @example
+ * ```ts
+ * import { directLingamAlgorithm } from 'mdml-engine/pgm/causal'
+ * import { key, uniform } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const u = uniform(key(0), [400, 2]).data
+ * const rows = Array.from({ length: 400 }, (_, i) => { const x = (u[2 * i] ?? 0) - 0.5; return { y: 2 * x + ((u[2 * i + 1] ?? 0) - 0.5), x } })
+ * runAlgorithm(directLingamAlgorithm(rows), { maxSteps: 5 }).state.order // => [1, 0]
+ * ```
+ */
+export function directLingamAlgorithm(
+  data: readonly DataRow[],
+  options: { readonly measure?: 'pwling' | 'nonlinear-correlation' } = {},
+): Algorithm<LingamState, LingamPath> {
+  const names = dataVariables(data)
+  const X = numericColumns(data, names)
+  const measure = exogeneityMeasures.make({ kind: options.measure ?? 'pwling' })
+  return {
+    name: 'pgm/direct-lingam',
+    config: { variables: names.length, rows: data.length, measure: options.measure ?? 'pwling' },
+    init: () => ({
+      work: X.map((c) => Float64Array.from(c)),
+      remaining: names.map((_, i) => i),
+      order: [],
+      scores: names.map(() => 0),
+    }),
+    step: (s, ctx) => {
+      if (s.remaining.length === 0) return s
+      let m = s.remaining[0] ?? 0
+      const scores = names.map(() => Number.NEGATIVE_INFINITY)
+      if (s.remaining.length > 1) {
+        const found = measure(s.work, s.remaining)
+        for (const [q, i] of s.remaining.entries()) scores[i] = found[q] ?? Number.NEGATIVE_INFINITY
+        m = s.remaining[argmaxOf(found)] ?? m
+      } else scores[m] = 0
+      const work = s.work.slice()
+      for (const i of s.remaining) if (i !== m) work[i] = residual(s.work[i] as Float64Array, s.work[m] as Float64Array)
+      const next: LingamState = { work, remaining: s.remaining.filter((i) => i !== m), order: [...s.order, m], scores }
+      if (ctx.wants('lingam/exogenous')) ctx.log('lingam/exogenous', m)
+      if (ctx.wants('lingam/order')) ctx.log('lingam/order', Int32Array.from(next.order))
+      if (ctx.wants('lingam/scores')) ctx.log('lingam/scores', Float64Array.from(scores))
+      return next
+    },
+    done: (s) => (s.remaining.length === 0 ? 'converged' : undefined),
+    serialise: (s) => ({
+      work: s.work.map((c) => Array.from(c)),
+      remaining: [...s.remaining],
+      order: [...s.order],
+      scores: s.scores.map((x) => (Number.isFinite(x) ? x : String(x))),
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as {
+        readonly work: readonly (readonly number[])[]
+        readonly remaining: readonly number[]
+        readonly order: readonly number[]
+        readonly scores: readonly (number | string)[]
+      }
+      return {
+        work: o.work.map((c) => Float64Array.from(c)),
+        remaining: [...o.remaining],
+        order: [...o.order],
+        scores: o.scores.map(Number),
+      }
+    },
+  }
+}
+
 /**
  * DirectLiNGAM (Shimizu et al. 2011) for linear non-Gaussian acyclic models: repeatedly pick the most exogenous
  * remaining variable by the pairwise likelihood-ratio measure of Hyvarinen and Smith (2013, entropies by maximum-entropy
  * approximation), regress it out of the others, and finally estimate each variable's direct effects by least squares
  * on the variables before it in the order (causal-learn's DirectLiNGAM with `measure="pwling"`; its adaptive-lasso
- * pruning is replaced by an optional threshold on the effects).
+ * pruning is replaced by an optional threshold on the effects). The ordering is {@link directLingamAlgorithm}.
  *
  * @param data - Rows of numbers.
- * @param options - `threshold`: effects at most this in magnitude are set to zero (default 0).
+ * @param options - `threshold`: effects at most this in magnitude are set to zero (default 0); `measure`.
  * @returns The causal order, the effect matrix and the DAG.
  * @concept causal-discovery
  * @example
@@ -325,35 +534,19 @@ export interface LingamResult {
  * directLingam(rows).order // => ['x', 'y']
  * ```
  */
-export function directLingam(data: readonly DataRow[], options: { readonly threshold?: number } = {}): LingamResult {
+export function directLingam(
+  data: readonly DataRow[],
+  options: { readonly threshold?: number; readonly measure?: 'pwling' | 'nonlinear-correlation' } = {},
+): LingamResult {
   const names = dataVariables(data)
   const X = numericColumns(data, names)
   const d = names.length
-  const work: Float64Array[] = X.map((c) => Float64Array.from(c))
-  let remaining = names.map((_, i) => i)
-  const order: number[] = []
-  while (remaining.length > 0) {
-    let m = remaining[0] ?? 0
-    if (remaining.length > 1) {
-      const scores = remaining.map((i) => {
-        let M = 0
-        for (const j of remaining) {
-          if (i === j) continue
-          const xi = standardise(work[i] as Float64Array)
-          const xj = standardise(work[j] as Float64Array)
-          const rij = residual(xi, xj)
-          const rji = residual(xj, xi)
-          const diff = entropy(xj) + entropy(scaled(rij)) - (entropy(xi) + entropy(scaled(rji)))
-          M += Math.min(0, diff) ** 2
-        }
-        return -M
-      })
-      m = remaining[argmaxOf(scores)] ?? m
-    }
-    for (const i of remaining) if (i !== m) work[i] = residual(work[i] as Float64Array, work[m] as Float64Array)
-    order.push(m)
-    remaining = remaining.filter((i) => i !== m)
-  }
+  const { order } = runAlgorithm(
+    directLingamAlgorithm(data, options.measure === undefined ? {} : { measure: options.measure }),
+    {
+      maxSteps: d + 1,
+    },
+  ).state
   const threshold = options.threshold ?? 0
   const n = data.length
   const B = Array.from({ length: d }, () => new Array<number>(d).fill(0))
