@@ -2133,7 +2133,9 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
   gamma and Weibull renewal, Hawkes) with knobs per family, and `pointProcess(config, horizon)`.
 - `spatial-processes.ts` (split from `point-processes.ts` for size): spatial Poisson and cluster processes (Thomas,
   Matern), Ripley's K and L with the usual edge corrections.
-- `dpp.ts`: determinantal point processes: L-ensembles, exact and k-DPP sampling, greedy MAP, marginals, conditioning.
+- `dpp.ts`: determinantal point processes: L-ensembles, exact and k-DPP sampling (runs of `dppAlgorithm`: the first phase
+  keeps eigenvectors in `init`, each step draws one item and projects it out; `dppContract` paths `dpp/kept`, `dpp/item`,
+  `dpp/probability`, `dpp/basis`), greedy MAP, marginals, conditioning.
 - `random-measures.ts`: Dirichlet processes (stick-breaking, Chinese restaurant, Polya urn), Pitman-Yor, Indian buffet,
   beta and gamma processes (as random measures and as a subordinator in time).
 - `gaussian-processes.ts`: Gaussian processes as random functions: sampling paths from covariance functions (the
