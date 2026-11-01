@@ -206,33 +206,66 @@ const weightsOf = (h: KanHyper): { l1: number; entropy: number; coef: number } =
   coef: h.lambdaCoef,
 })
 
+/**
+ * The KAN verbs of a network and its state: curves, scales, sparsity, pruning and the symbolic reading, over a reference
+ * sample (the magnitudes, `curves`, `sparsity`) and the rows pruning and symbolic fitting use.
+ *
+ * @param kan - The network.
+ * @param state - Its parameters and buffers.
+ * @param rows - The reference sample and the rows pruning and symbolic fitting see.
+ * @param options - The points per curve and the negligible-magnitude threshold.
+ * @returns The verbs.
+ * @concept kolmogorov-arnold-networks
+ * @example
+ * ```ts
+ * import { kanVerbs } from 'mdml-engine/learn'
+ * import { KAN } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { asTensor } from 'mdml-engine/tensor'
+ * const net = new KAN([1, 1], { key: key(0) })
+ * const x = asTensor([[0.1], [0.5], [-0.3]])
+ * kanVerbs(net, net.state, { reference: x, training: x }, { curvePoints: 5, sparsityThreshold: 0.01 }).curves().edges.length // => 1
+ * ```
+ */
+export function kanVerbs(
+  kan: KAN,
+  state: KanState,
+  rows: { readonly reference: Value; readonly training: Value },
+  options: { readonly curvePoints: number; readonly sparsityThreshold: number },
+): KanVerbs {
+  const s = state
+  const points = options.curvePoints
+  return {
+    network: kan,
+    state: s,
+    edgeCurve: (layer, i, j, grid) => {
+      const [lo, hi] = kan.layers[layer]?.inputRange(s.buffers[String(layer)] as Params)[i] ?? [-1, 1]
+      const g = grid ?? Array.from({ length: points }, (_, k) => lo + ((hi - lo) * k) / Math.max(1, points - 1))
+      return kan.edgeCurve(layer, i, j, g, s)
+    },
+    curves: (n) => kanCurves(kan, s, rows.reference, n ?? points),
+    grids: () => kanGrids(kan, s),
+    edgeScales: () => kan.edgeScales(s.params, rows.reference, s.buffers) as Tensor[],
+    sparsity: (threshold) => edgeSparsity(kan, s, rows.reference, threshold ?? options.sparsityThreshold),
+    prune: (o) => pruneKan(kan, s, rows.training, o),
+    symbolic: (o) => fixSymbolic(kan, s, rows.training, o),
+    formula: (names, o) => symbolicFormula(fixSymbolic(kan, s, rows.training, o), names),
+  }
+}
+
 function verbsOf(
   model: Module,
   state: { readonly params: Params; readonly buffers: Params },
   data: LearnData,
   h: KanHyper,
 ): KanVerbs {
-  const kan = model as KAN
-  const s: KanState = { params: state.params, buffers: state.buffers }
   const x = asTensor(data.x) as Value
-  const reference = referenceRows(x, h.regRows)
-  return {
-    network: kan,
-    state: s,
-    edgeCurve: (layer, i, j, grid) => {
-      const [lo, hi] = kan.layers[layer]?.inputRange(s.buffers[String(layer)] as Params)[i] ?? [-1, 1]
-      const g =
-        grid ?? Array.from({ length: h.curvePoints }, (_, k) => lo + ((hi - lo) * k) / Math.max(1, h.curvePoints - 1))
-      return kan.edgeCurve(layer, i, j, g, s)
-    },
-    curves: (points) => kanCurves(kan, s, reference, points ?? h.curvePoints),
-    grids: () => kanGrids(kan, s),
-    edgeScales: () => kan.edgeScales(s.params, reference, s.buffers) as Tensor[],
-    sparsity: (threshold) => edgeSparsity(kan, s, reference, threshold ?? h.sparsityThreshold),
-    prune: (o) => pruneKan(kan, s, x, o),
-    symbolic: (o) => fixSymbolic(kan, s, x, o),
-    formula: (names, o) => symbolicFormula(fixSymbolic(kan, s, x, o), names),
-  }
+  return kanVerbs(
+    model as KAN,
+    { params: state.params, buffers: state.buffers },
+    { reference: referenceRows(x, h.regRows), training: x },
+    h,
+  )
 }
 
 const targetLike = (t: Value, shapeOf: Value): Value => reshape(t, shapeOf.shape)

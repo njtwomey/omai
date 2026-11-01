@@ -3118,6 +3118,12 @@ modAL for active learning, diffprivlib and opacus for privacy
   base's `penalty`; derived paths `kan/curves` (every edge on a grid with its magnitude), `kan/edge/<l>/<i>/<j>`,
   `kan/grids`, `kan/penalty`, `kan/l1`, `kan/entropy`, `kan/coef`, `kan/sparsity`, `kan/scales`; the fitted value adds
   `edgeCurve`, `curves`, `grids`, `edgeScales`, `sparsity`, `prune`, `symbolic` and `formula`.
+- `kan-progressive.ts`: `progressiveKan`, the paper's loop (train with the sparsification penalties, prune, refine the grid
+  by refitting every edge, train again, down a list of grid sizes) as a staged `Algorithm` on the iterative base; the state
+  (a `KanSpec`, the training state, the phase) serialises, a step is a minibatch or one structural change, the first
+  stage also moves the grid to the data (pykan's `update_grid_from_samples`); paths `kan/curves`, `kan/grids`, `kan/sparsity`,
+  `kan/stage` and the events `kan/prune`, `kan/refine`, `kan/grid-update`; `progressivePlan` gives the phases of a
+  hyperparameter set and `with({ plan })` replaces them. `kanVerbs` (in `kan.ts`) are the KAN verbs of any network and state.
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
@@ -6303,7 +6309,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `regression-curves.ts`: one-dimensional functions (`sineCurve`, `stepCurve`, `sincCurve`, `dopplerCurve`,
   `heteroscedastic` noise), additive (GAM) data (`additiveModel`, with its components) and additive data with a pairwise interaction
   (`additiveInteraction`, a GA2M with the interaction in `truth.extra.interactions`), curves with known quantiles
-  (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data.
+  (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data, and `kanFunctions` (the
+  Kolmogorov-Arnold paper's `exp(sin(pi x) + y^2)`, `x y` and four-input ring sums, with the smallest network and the
+  edges' symbolic names in `truth.extra`).
 - `regression-real.ts`: `diabetes`, `linnerud` (multi-output), Anscombe's quartet (`anscombe`), `mtcars` (and
   `mtcarsRegression`), a licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive
   by `parseCaliforniaHousing`), growth charts (CDC LMS tables: `growthChart`, `growthValue`, and `growthCurves` with
