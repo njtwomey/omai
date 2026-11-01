@@ -2175,7 +2175,12 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   `resample`), `nextTemperature` (adaptive tempering), `adaptiveRandomWalkMove`, `smcAlgorithm` and `smcSampler`
   (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling`.
 - `rejection.ts`: `rejectionSample` (with envelope-violation counts), `adaptiveRejectionSample` (Gilks and Wild, tangent
-  hull and chord squeeze), `ratioOfUniforms` (Kinderman and Monahan).
+  hull and chord squeeze), `ratioOfUniforms` (Kinderman and Monahan), each a run of its steppable Algorithm
+  (`rejectionAlgorithm`, `adaptiveRejectionAlgorithm`, `ratioOfUniformsAlgorithm`: one step is one proposal; the state
+  keeps the draws and the number of uniforms used, so a resume continues the same stream) with the `rejectionContract`
+  paths (`reject/proposal`, `reject/accepted`, `reject/rate`, `reject/log-ratio`, `reject/envelope`, ...).
+- `rejection-options.ts`: `rejectionSamplers`, the option table of the three exact samplers (knobs per method, what each
+  needs of the target), `rejectionSampler(config, problem)`.
 - `exact.ts`: `inverseTransformSample`, `inverseTransformFromCdf`, `discreteInverseTransform`, `boxMuller`,
   `marsagliaPolar`, `aliasMethod` (Vose), each with optional step records for teaching.
 - `diagnostics/`: `convergence.ts` (`rhat`: rank-normalised split, split, folded, z-scale and identity; `ess`: bulk, tail,
