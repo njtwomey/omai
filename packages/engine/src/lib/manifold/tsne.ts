@@ -460,6 +460,12 @@ export interface TsneOptions {
  * update and gains reset, momentum 0.8. The reported KL divergence is always of the unexaggerated P. With dense `p` the
  * gradient is exact; with sparse `p` it is Barnes-Hut. It observes the KL divergence and the `embedding`.
  *
+ * The optimiser is deliberately not a solver slot. It is sklearn's two-stage schedule (an exaggerated objective with
+ * momentum 0.5, then the true one with momentum 0.8, the update and gains reset between them) and its gains rule is
+ * part of what the embedding is compared to; a generic `smoothSolvers` mode would run on the true KL alone, drop the
+ * exaggeration that opens the clusters, and not reproduce the reference. The KL and the embedding are on the tape at
+ * every step.
+ *
  * @param p - Joint probabilities, dense `[n, n]` or sparse.
  * @param init - The initial embedding.
  * @param options - Learning rate, early exaggeration and its length, kernel degrees of freedom, angle and gradient tolerance.
