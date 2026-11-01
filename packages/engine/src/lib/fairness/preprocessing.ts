@@ -3,12 +3,21 @@
  * in the weighted data; disparate-impact repair, which moves each feature towards a distribution shared by all groups
  * while keeping ranks within each group; massaging and preferential sampling (Kamiran and Calders), which relabel or
  * resample the rows nearest a ranker's boundary; optimised pre-processing of the labels (after Calmon et al.), a
- * linear programme; and learning fair representations (Zemel et al.), prototypes the groups use alike.
+ * linear programme; and learning fair representations (Zemel et al.), prototypes the groups use alike, whose smooth loss
+ * is minimised by L-BFGS or by any other solver of the slot (`fairRepresentationAlgorithm`).
  */
 
-import { MdmlError } from '../base/index.ts'
-import { lbfgs, linprog } from '../optim/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
+import {
+  infNorm,
+  linprog,
+  type SlotState,
+  type SmoothProblem,
+  slotAlgorithm,
+  smoothSolverConfig,
+} from '../optim/index.ts'
 import { type Key, key as makeKey, permutation } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import {
   abs,
   add,
@@ -31,6 +40,7 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
+import { type Algorithm, runAlgorithm } from '../trace/index.ts'
 
 /** One cell of {@link reweighingWeights}: a group and a label, how many rows it has and expects, and its weight. */
 export interface ReweighingCell {
@@ -382,6 +392,8 @@ export interface FairRepresentationOptions {
   readonly weights?: { readonly reconstruction?: number; readonly prediction?: number; readonly parity?: number }
   readonly maxIterations?: number
   readonly key?: Key
+  /** How the loss is minimised: a value of `smoothSolvers.space` (default L-BFGS to a gradient tolerance of 1e-7). */
+  readonly solver?: SpaceValue
 }
 
 /** A learned fair representation: prototypes in feature space, each with a label probability. */
@@ -417,32 +429,45 @@ export function fairRepresentationMemberships(rep: FairRepresentation, x: readon
   })
 }
 
+/** A learned-fair-representation problem: the smooth objective over the prototypes and their label logits. */
+export interface FairRepresentationProblem extends SmoothProblem {
+  /** The number of prototypes K. */
+  readonly prototypes: number
+  /** The number of features d. */
+  readonly features: number
+  /** The three losses at a parameter vector (the prototypes row-major, then the K label logits). */
+  losses(p: ArrayLike<number>): {
+    readonly reconstruction: number
+    readonly prediction: number
+    readonly parity: number
+  }
+}
+
 /**
- * Learning fair representations (Zemel, Wu, Swersky, Pitassi and Dwork, 2013; AIF360's `LFR`): map each row to a
- * distribution over K prototypes (a softmax of minus its squared distances to them) so that the prototypes reconstruct
- * the features, predict the label (each prototype carries a label probability), and are used alike by both groups
- * (statistical parity of the memberships); the weighted sum of the three losses is minimised by L-BFGS. A classifier on
- * the memberships (or the prototypes' labels) is then fair by construction, as far as the parity weight demands.
+ * The learning-fair-representations objective as a smooth problem for the solver slot: the weighted sum of the
+ * reconstruction, prediction and parity losses over the prototypes (`K d` numbers) followed by their `K` label
+ * logits, started at `K` rows drawn by the key.
  *
- * @param x - Features `[n, d]` (standardise them first; without the protected attribute).
+ * @param x - Features `[n, d]`.
  * @param labels - Binary labels `[n]`.
- * @param groups - Group indices `[n]` (0 the privileged group; others pooled).
- * @param options - Prototypes, loss weights, iteration cap and key.
- * @returns The prototypes, their labels and the losses.
+ * @param groups - Group indices `[n]` (0 the privileged group).
+ * @param options - Prototypes, loss weights and key.
+ * @returns The problem: the objective, the start and the losses of a parameter vector.
+ * @throws MdmlError `shape` when labels or groups differ in length from the rows.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { learnFairRepresentation } from 'mdml-engine/fairness'
+ * import { fairRepresentationProblem } from 'mdml-engine/fairness'
  * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
- * learnFairRepresentation(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 }).prototypes.length // => 2
+ * fairRepresentationProblem(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 }).prototypes // => 2
  * ```
  */
-export function learnFairRepresentation(
+export function fairRepresentationProblem(
   x: readonly (readonly number[])[],
   labels: readonly number[],
   groups: readonly number[],
   options: FairRepresentationOptions = {},
-): FairRepresentation {
+): FairRepresentationProblem {
   const n = x.length
   const d = x[0]?.length ?? 0
   if (labels.length !== n || groups.length !== n)
@@ -499,16 +524,130 @@ export function learnFairRepresentation(
   order.forEach((row, j) => {
     for (let c = 0; c < d; c++) p0[j * d + c] = x[row]?.[c] ?? 0
   })
-  const r = lbfgs(objective, fromStorage(p0, [K * d + K], 'float64'), {
-    gradTol: 1e-7,
-    maxIterations: options.maxIterations ?? 300,
-  })
-  const flat = toFlat(r.x as Tensor)
-  const { recon, pred, parity } = parts(r.x as Tensor)
   const scalar = (v: Value): number => toFlat(v as Tensor)[0] ?? Number.NaN
+  return {
+    objective: (p) => objective(p as Value),
+    x0: fromStorage(p0, [K * d + K], 'float64'),
+    prototypes: K,
+    features: d,
+    losses: (p) => {
+      const { recon, pred, parity } = parts(fromStorage(Float64Array.from(p), [K * d + K], 'float64'))
+      return { reconstruction: scalar(recon), prediction: scalar(pred), parity: scalar(parity) }
+    },
+  }
+}
+
+/** The state of {@link fairRepresentationAlgorithm}: the parameters, the objective and the solver's state. */
+export interface FairRepresentationState extends SlotState {
+  /** The prototypes row-major, then the label logits. */
+  readonly x: number[]
+  readonly objective: number
+  /** The largest gradient entry. */
+  readonly gradient: number
+  readonly evaluations: number
+  readonly stalled: boolean
+}
+
+/** The solver of {@link learnFairRepresentation} unless another is given: L-BFGS to a gradient tolerance of 1e-7. */
+export const fairRepresentationSolver: SpaceValue = smoothSolverConfig({ kind: 'lbfgs', gradTol: 1e-7 })
+
+/**
+ * Learning fair representations as a traced algorithm over the solver slot: any solver of `smoothSolvers` (L-BFGS by
+ * default, as AIF360's) minimises the objective of {@link fairRepresentationProblem}. It logs `objective`,
+ * `gradient` (the largest gradient entry), `gradNorm`, `step` and the tensor `parameters`.
+ *
+ * @param x - Features `[n, d]`.
+ * @param labels - Binary labels `[n]`.
+ * @param groups - Group indices `[n]` (0 the privileged group).
+ * @param options - Prototypes, loss weights, key and `solver` (a value of `smoothSolvers.space`).
+ * @returns The algorithm.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { fairRepresentationAlgorithm } from 'mdml-engine/fairness'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
+ * const a = fairRepresentationAlgorithm(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 })
+ * runAlgorithm(a, { maxSteps: 3 }).state.x.length // => 4
+ * ```
+ */
+export function fairRepresentationAlgorithm(
+  x: readonly (readonly number[])[],
+  labels: readonly number[],
+  groups: readonly number[],
+  options: FairRepresentationOptions = {},
+): Algorithm<FairRepresentationState> {
+  const problem = fairRepresentationProblem(x, labels, groups, options)
+  const solver = options.solver ?? fairRepresentationSolver
+  const m = problem.prototypes * problem.features + problem.prototypes
+  return slotAlgorithm<FairRepresentationState>({
+    name: 'fair-representation',
+    config: { prototypes: problem.prototypes, weights: options.weights ?? null, solver } as Json,
+    schema: {
+      metrics: {
+        objective: {
+          description: 'the weighted sum of the reconstruction, prediction and parity losses',
+          direction: 'lower',
+        },
+        gradient: { description: 'the largest gradient entry', direction: 'lower' },
+      },
+      tensors: { parameters: { role: 'param', description: 'prototypes row-major, then label logits', shape: [m] } },
+    },
+    problem,
+    solver,
+    ...(options.key === undefined ? {} : { key: options.key }),
+    tol: 1e-7,
+    view: (r, evaluations, stalled) => ({
+      x: Array.from(r.x),
+      objective: r.value,
+      gradient: infNorm(r.grad),
+      evaluations,
+      stalled,
+    }),
+    observe: (s) => ({
+      metrics: { objective: s.objective, gradient: s.gradient },
+      tensors: { parameters: { role: 'param', value: s.x, shape: [m] } },
+    }),
+  })
+}
+
+/**
+ * Learning fair representations (Zemel, Wu, Swersky, Pitassi and Dwork, 2013; AIF360's `LFR`): map each row to a
+ * distribution over K prototypes (a softmax of minus its squared distances to them) so that the prototypes reconstruct
+ * the features, predict the label (each prototype carries a label probability), and are used alike by both groups
+ * (statistical parity of the memberships); the weighted sum of the three losses is minimised by L-BFGS, or by any
+ * other solver of the slot (`options.solver`, see {@link fairRepresentationAlgorithm}). A classifier on the
+ * memberships (or the prototypes' labels) is then fair by construction, as far as the parity weight demands.
+ *
+ * @param x - Features `[n, d]` (standardise them first; without the protected attribute).
+ * @param labels - Binary labels `[n]`.
+ * @param groups - Group indices `[n]` (0 the privileged group; others pooled).
+ * @param options - Prototypes, loss weights, iteration cap, key and solver.
+ * @returns The prototypes, their labels and the losses.
+ * @concept algorithmic-fairness
+ * @example
+ * ```ts
+ * import { learnFairRepresentation } from 'mdml-engine/fairness'
+ * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
+ * learnFairRepresentation(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 }).prototypes.length // => 2
+ * ```
+ */
+export function learnFairRepresentation(
+  x: readonly (readonly number[])[],
+  labels: readonly number[],
+  groups: readonly number[],
+  options: FairRepresentationOptions = {},
+): FairRepresentation {
+  const problem = fairRepresentationProblem(x, labels, groups, options)
+  const { prototypes: K, features: d } = problem
+  const r = runAlgorithm(fairRepresentationAlgorithm(x, labels, groups, options), {
+    maxSteps: options.maxIterations ?? 300,
+    ...(options.key === undefined ? {} : { key: options.key }),
+  })
+  const flat = r.state.x
   return {
     prototypes: Array.from({ length: K }, (_, j) => Array.from({ length: d }, (_, c) => flat[j * d + c] ?? 0)),
     labels: Array.from({ length: K }, (_, j) => 1 / (1 + Math.exp(-(flat[K * d + j] ?? 0)))),
-    losses: { reconstruction: scalar(recon), prediction: scalar(pred), parity: scalar(parity) },
+    losses: problem.losses(flat),
   }
 }

@@ -1,7 +1,11 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
+import { type Tensor, toFlat } from '../tensor/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
 import {
+  fairRepresentationAlgorithm,
   fairRepresentationMemberships,
+  fairRepresentationProblem,
   learnFairRepresentation,
   massageLabels,
   optimisedLabelMapping,
@@ -102,5 +106,52 @@ describe('massaging, preferential sampling, label mapping and fair representatio
     expect(fair.losses.parity).toBeLessThan(free.losses.parity)
     const m = fairRepresentationMemberships(fair, x)
     expect(m.every((r) => Math.abs(r.reduce((a, b) => a + b, 0) - 1) < 1e-9)).toBe(true)
+  })
+
+  describe('the solver slot of fair representations', () => {
+    const x = Array.from({ length: 40 }, (_, i) => [Math.sin(i), (i % 2) * 2 + Math.cos(i)])
+    const labels = x.map((r) => ((r[1] ?? 0) > 1 ? 1 : 0))
+    const groups = x.map((_, i) => i % 2)
+    const options = { prototypes: 3, weights: { parity: 1 } }
+
+    it('reproduces the L-BFGS fit of the default solver', () => {
+      const fit = learnFairRepresentation(x, labels, groups, options)
+      // The values the function returned before the solver became a slot (a direct L-BFGS call).
+      expect(fit.prototypes[0]?.[0]).toBeCloseTo(2.842811404, 5)
+      expect(fit.prototypes[0]?.[1]).toBeCloseTo(5.387308486, 5)
+      expect(fit.prototypes[2]?.[1]).toBeCloseTo(1.062942225, 5)
+      expect(fit.labels[0]).toBeCloseTo(0.54266024, 6)
+      expect(fit.losses.reconstruction).toBeCloseTo(1.48865967, 6)
+      expect(fit.losses.prediction).toBeCloseTo(0.69314749, 6)
+    })
+
+    it('reaches a loss within 0.02 of the default (the objective is not convex) with BFGS and with Newton', () => {
+      const problem = fairRepresentationProblem(x, labels, groups, options)
+      const total = (fit: ReturnType<typeof learnFairRepresentation>): number =>
+        0.01 * fit.losses.reconstruction + fit.losses.prediction + 1 * fit.losses.parity
+      const start = problem.losses(Array.from(toFlat(problem.x0 as Tensor)))
+      const reference = total(learnFairRepresentation(x, labels, groups, options))
+      expect(reference).toBeLessThan(0.01 * start.reconstruction + start.prediction + start.parity)
+      for (const solver of [
+        { kind: 'bfgs', gradTol: 1e-7 },
+        { kind: 'newton', gradTol: 1e-6 },
+      ]) {
+        const fit = learnFairRepresentation(x, labels, groups, { ...options, solver, maxIterations: 600 })
+        expect(total(fit), solver.kind).toBeLessThan(reference + 0.02)
+      }
+    }, 60_000)
+
+    it('is an algorithm whose state serialises and resumes', () => {
+      const algorithm = fairRepresentationAlgorithm(x, labels, groups, options)
+      const straight = runAlgorithm(algorithm, { maxSteps: 6 })
+      const head = runAlgorithm(algorithm, { maxSteps: 3 })
+      const json = algorithm.serialise?.(head.state)
+      const resumed = runAlgorithm(algorithm, {
+        maxSteps: 6 - head.steps,
+        start: { state: json, step: head.steps, serialised: true },
+      })
+      expect(resumed.state.x).toEqual(straight.state.x)
+      expect(straight.state.objective).toBeLessThan(runAlgorithm(algorithm, { maxSteps: 0 }).state.objective)
+    })
   })
 })
