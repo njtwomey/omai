@@ -4163,7 +4163,8 @@ Gaussian prior of precision `alpha`, known noise precision `beta`): the batch po
 posterior one observation per step as `bayesianLinearAlgorithm(design, prior, order)` (a rank-one update of precision and
 information; `observe` exposes the metrics `logEvidence` and `meanPredictiveStd` and the `param` tensors `mean` and
 `covariance`), `posteriorPredictive` (mean and variance per row), `maximiseEvidence` (MacKay's fixed point for `alpha`
-and `beta`) and `polynomialBasis` (features scaled to `[-1, 1]`, then the library's `polynomialFeatures`).
+and `beta`, = `maximiseEvidenceAlgorithm` run: one iteration per step, `evidence/*` paths, the update a slot in
+`bayesian-options.ts`: `evidenceUpdates`, MacKay or EM) and `polynomialBasis` (features scaled to `[-1, 1]`, then the library's `polynomialFeatures`).
 `bayesian-online.ts` is the same update as an estimator on the iterative base: `bayesianOnlineAlgorithm` (typed paths
 `blr/mean`, `blr/covariance`, `blr/log-evidence`, `blr/surprise`, `blr/predictive-std`, `blr/observation`; the state keeps the
 belief before the last point) and `bayesianOnlineLinear` with the derived paths `model/weights` (prior, likelihood of the

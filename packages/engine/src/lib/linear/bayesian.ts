@@ -11,8 +11,19 @@ import { MdmlError } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
 import { type MinMaxScalerParams, minMaxScaler, polynomialFeatures } from '../learn/preprocessing/index.ts'
 import { cholesky, choleskyLogdet, choSolve, ddot, dgemv, eigvalsh } from '../numerics/linalg/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import { eye, fromStorage, item, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
+import { evidenceUpdates } from './bayesian-options.ts'
 import type { Design } from './design.ts'
 
 /** The prior precision of the weights and the (known) precision of the observation noise. */
@@ -313,6 +324,121 @@ export function bayesianLinearAlgorithm(
   }
 }
 
+/** The paths {@link maximiseEvidenceAlgorithm} logs. */
+export type EvidencePath = 'evidence/alpha' | 'evidence/beta' | 'evidence/gamma' | 'evidence/logEvidence'
+
+/** What a stepped evidence maximisation logs: the precisions, the effective parameters and the log evidence. */
+export const evidenceContract: Contract<unknown, EvidencePath> = defineContract({
+  'evidence/alpha': scalar({ description: 'the prior precision alpha used in the iteration' }),
+  'evidence/beta': scalar({ description: 'the noise precision beta used in the iteration' }),
+  'evidence/gamma': scalar({ description: 'the effective number of well-determined weights at alpha and beta' }),
+  'evidence/logEvidence': scalar({ description: 'the log marginal likelihood at alpha and beta', direction: 'higher' }),
+})
+
+/**
+ * The state of {@link maximiseEvidenceAlgorithm}: the current precisions, the effective number of parameters and log
+ * evidence at the previous ones, the iterations done, and whether both precisions moved by less than the tolerance.
+ */
+export interface EvidenceState extends BayesianPrior {
+  readonly gamma: number
+  readonly logEvidence: number
+  readonly iterations: number
+  readonly converged: boolean
+}
+
+/** Settings of {@link maximiseEvidenceAlgorithm}. */
+export interface EvidenceSettings {
+  /** The most iterations the function runs (default 100). */
+  readonly maxIter?: number
+  /** The relative tolerance on both precisions (default 1e-8). */
+  readonly tol?: number
+  /** The update, a value of `evidenceUpdates.space` (default MacKay's fixed point). */
+  readonly update?: SpaceValue
+}
+
+/**
+ * Evidence maximisation as a stepped algorithm: each step fits the posterior at the current `alpha` and `beta`, finds
+ * the effective number of parameters `gamma = sum lambda_i / (alpha + lambda_i)` (with `lambda_i = beta e_i`, `e_i` the
+ * eigenvalues of `X^T X`) and the log evidence, and updates the precisions by the chosen update (MacKay's fixed point
+ * or EM). It is done when both precisions change by less than `tol` in relative terms. The state serialises.
+ *
+ * @param design - Features `[n, p]` and targets.
+ * @param start - The starting `alpha` and `beta`.
+ * @param settings - tol and the update (the step budget is the caller's).
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for a non-positive precision.
+ * @concept bayesian-linear-regression
+ * @example
+ * ```ts
+ * import { designOf, maximiseEvidenceAlgorithm } from 'mdml-engine/linear'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const design = designOf({ x: [[1], [1], [1], [1]], y: [1.9, 2.1, 2, 2.05] }, 'example')
+ * runAlgorithm(maximiseEvidenceAlgorithm(design, { alpha: 1, beta: 1 }), { maxSteps: 200 }).status // => 'converged'
+ * ```
+ */
+export function maximiseEvidenceAlgorithm(
+  design: BayesianDesign,
+  start: BayesianPrior,
+  settings: EvidenceSettings = {},
+): Algorithm<EvidenceState, EvidencePath> {
+  checkPrior(start, 'maximiseEvidence')
+  const { x } = design
+  const { n, d: p } = x
+  const gram = gramOf(x)
+  const eigenvalues = toFlat(eigvalsh(fromStorage(gram, [p, p], 'float64')))
+  const tol = settings.tol ?? 1e-8
+  const next = evidenceUpdates.make(settings.update)
+  return {
+    name: 'linear/maximise-evidence',
+    config: { alpha: start.alpha, beta: start.beta, tol, update: evidenceUpdates.optionOf(settings.update).name },
+    schema: channels({
+      metrics: { logEvidence: { description: 'the log marginal likelihood', direction: 'higher' } },
+    }),
+    init: () => ({
+      alpha: start.alpha,
+      beta: start.beta,
+      gamma: 0,
+      logEvidence: Number.NaN,
+      iterations: 0,
+      converged: false,
+    }),
+    step: (s, ctx) => {
+      const { alpha, beta } = s
+      const posterior = bayesianLinearFit(design, { alpha, beta })
+      const gamma = eigenvalues.reduce((a, e) => a + (beta * Math.max(e, 0)) / (alpha + beta * Math.max(e, 0)), 0)
+      const updated = next({
+        n,
+        p,
+        mean: posterior.mean,
+        covariance: posterior.covariance,
+        gram,
+        residual: residualSumOfSquares(design, posterior.mean),
+        gamma,
+      })
+      const converged = Math.abs(updated.alpha - alpha) <= tol * alpha && Math.abs(updated.beta - beta) <= tol * beta
+      ctx.log('evidence/alpha', alpha)
+      ctx.log('evidence/beta', beta)
+      ctx.log('evidence/gamma', gamma)
+      ctx.log('evidence/logEvidence', posterior.logEvidence)
+      return {
+        alpha: updated.alpha,
+        beta: updated.beta,
+        gamma,
+        logEvidence: posterior.logEvidence,
+        iterations: s.iterations + 1,
+        converged,
+      }
+    },
+    done: (s) => (s.converged ? 'converged' : undefined),
+    observe: (s) => ({ metrics: Number.isNaN(s.logEvidence) ? {} : { logEvidence: s.logEvidence } }),
+    serialise: (s) => stateToJson({ ...s, logEvidence: Number.isNaN(s.logEvidence) ? null : s.logEvidence }),
+    deserialise: (j) => {
+      const o = stateFromJson(j) as Omit<EvidenceState, 'logEvidence'> & { readonly logEvidence: number | null }
+      return { ...o, logEvidence: o.logEvidence ?? Number.NaN }
+    },
+  }
+}
+
 /** The outcome of {@link maximiseEvidence}. */
 export interface EvidenceFit extends BayesianPrior {
   /** The effective number of well-determined weights, `sum lambda_i / (alpha + lambda_i)`. */
@@ -327,11 +453,11 @@ export interface EvidenceFit extends BayesianPrior {
  * Evidence maximisation (MacKay's fixed point, Bishop 3.5.2): from the current `alpha` and `beta`, find the posterior
  * mean `m`, the eigenvalues `lambda_i = beta e_i` of `beta X^T X` and `gamma = sum lambda_i / (alpha + lambda_i)`, then
  * set `alpha = gamma / |m|^2` and `beta = (n - gamma) / |y - X m|^2`, until both change by less than `tol` in relative
- * terms.
+ * terms. This is {@link maximiseEvidenceAlgorithm} run to the end (or `maxIter` steps).
  *
  * @param design - Features `[n, p]` and targets.
  * @param start - The starting `alpha` and `beta`.
- * @param options - The most iterations (default 100) and the relative tolerance (default 1e-8).
+ * @param options - The most iterations (default 100), the relative tolerance (default 1e-8) and the update.
  * @returns The maximising precisions, `gamma`, and the posterior there.
  * @example
  * ```ts
@@ -343,29 +469,10 @@ export interface EvidenceFit extends BayesianPrior {
 export function maximiseEvidence(
   design: BayesianDesign,
   start: BayesianPrior,
-  options: { readonly maxIter?: number; readonly tol?: number } = {},
+  options: EvidenceSettings = {},
 ): EvidenceFit {
-  checkPrior(start, 'maximiseEvidence')
-  const { x } = design
-  const { n, d: p } = x
-  const eigenvalues = toFlat(eigvalsh(fromStorage(gramOf(x), [p, p], 'float64')))
-  const maxIter = options.maxIter ?? 100
-  const tol = options.tol ?? 1e-8
-  let { alpha, beta } = start
-  let gamma = 0
-  let iterations = 0
-  let converged = false
-  while (iterations < maxIter && !converged) {
-    const { mean } = bayesianLinearFit(design, { alpha, beta })
-    gamma = eigenvalues.reduce((a, e) => a + (beta * Math.max(e, 0)) / (alpha + beta * Math.max(e, 0)), 0)
-    const alphaNext = gamma / Math.max(ddot(mean, mean), Number.MIN_VALUE)
-    const betaNext =
-      Math.max(n - gamma, Number.MIN_VALUE) / Math.max(residualSumOfSquares(design, mean), Number.MIN_VALUE)
-    converged = Math.abs(alphaNext - alpha) <= tol * alpha && Math.abs(betaNext - beta) <= tol * beta
-    alpha = alphaNext
-    beta = betaNext
-    iterations++
-  }
+  const run = runAlgorithm(maximiseEvidenceAlgorithm(design, start, options), { maxSteps: options.maxIter ?? 100 })
+  const { alpha, beta, gamma, iterations, converged } = run.state
   return { alpha, beta, gamma, posterior: bayesianLinearFit(design, { alpha, beta }), iterations, converged }
 }
 
