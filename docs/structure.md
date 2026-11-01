@@ -6147,7 +6147,8 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 `rl/agents/` (each file exports agents implementing the `Agent` contract)
 - `random.ts`: random and constant agents.
 - `bandits.ts`: epsilon-greedy, UCB1, KL-UCB, Thompson sampling (Bernoulli and Gaussian), EXP3, LinUCB, linear Thompson
-  sampling, gradient bandits.
+  sampling, gradient bandits, and the run of an agent on a bandit: `banditAlgorithm` (one pull per step, regret against the
+  oracle, `banditContract`), `runBandit` (it run to the end), the slot `banditStrategies`.
 - `tabular.ts`: Q-learning, SARSA, expected SARSA, n-step SARSA, SARSA(lambda), Monte Carlo control, TD(0) and
   TD(lambda), double Q-learning, Dyna-Q (and Dyna-Q+), prioritised sweeping.
 - `planning.ts`: value and policy iteration agents (solving the model at once, or a sweep at a time between
