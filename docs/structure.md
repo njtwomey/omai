@@ -857,8 +857,9 @@ primitives; "custom" means a dedicated rule.
 `quadrature/` (scipy.integrate; differentiable in the integrand's parameters)
 - `newton-cotes.ts`: `trapezoid`, `simpson`, `cumulativeTrapezoid`, `romberg` (step records).
 - `gauss.ts`: `gaussLegendre`, `gaussHermite`, `gaussLaguerre`, `gaussJacobi`, `fixedQuad`, `normalExpectation`.
-- `adaptive.ts`: `quad` (Gauss-Kronrod G7-K15, globally adaptive, infinite limits, breakpoints, traced intervals),
-  `adaptiveSimpson`, `tanhSinh`.
+- `adaptive.ts`: `quad` (Gauss-Kronrod G7-K15, globally adaptive, infinite limits, breakpoints, traced intervals; a run
+  of `quadAlgorithm`, whose step bisects the worst interval, with the `quadContract` paths `quad/estimate`, `quad/error`,
+  `quad/intervals`, `quad/split`), `adaptiveSimpson`, `tanhSinh`.
 - `multidim.ts`: `dblquad`, `tplquad`, `nquad`, `productGaussRule`, `sparseGridRule` (Smolyak), `cubature`.
 - `monte-carlo.ts`: `monteCarlo`, `quasiMonteCarlo` (shifted Halton replicates) with standard errors,
   `importanceIntegral`.
