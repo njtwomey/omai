@@ -42,6 +42,12 @@ export interface FitOptions {
   readonly batchSize?: number
   /** Shuffling and dropout keys derive from this (default key(0)). */
   readonly key?: Key
+  /**
+   * A regulariser of the parameters added to the minibatch loss (and so to the gradients), for penalties that belong to
+   * the model rather than to the predictions: weight decay as a loss term, a smoothness penalty on spline coefficients.
+   * Validation reports the data loss alone.
+   */
+  readonly penalty?: (params: Params) => Value
   /** Clip the gradient's global norm before the optimiser. */
   readonly clipNorm?: number
   /** Sum gradients over this many minibatches per update (default 1); the epoch's last update takes what is left. */
@@ -195,6 +201,7 @@ export function fitAlgorithm(model: Module, data: TabularData, options: FitOptio
       const r = lossAndGrads(model, s.params, s.buffers, batch.x, (y) => options.loss(y, batch.y), {
         key: foldIn(foldIn(base, 1), s.step),
         ...(taps === undefined ? {} : { taps }),
+        ...(options.penalty === undefined ? {} : { penalty: options.penalty }),
       })
       call('onAfterBackward', { loss: r.loss, grads: r.grads }, s.params)
       const acc = accumulate(s.accumulated, r.grads)
@@ -326,6 +333,7 @@ export function fit(
     learningRate,
     callbacks,
     validation,
+    penalty,
     ...run
   } = options
   const fitOptions: FitOptions = {
@@ -339,6 +347,7 @@ export function fit(
     ...(learningRate === undefined ? {} : { learningRate }),
     ...(callbacks === undefined ? {} : { callbacks }),
     ...(validation === undefined ? {} : { validation }),
+    ...(penalty === undefined ? {} : { penalty }),
   }
   const alg = fitAlgorithm(model, data, fitOptions)
   const losses: number[] = []

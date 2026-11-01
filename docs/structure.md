@@ -3395,7 +3395,7 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `training/state.ts`: `TrainState` (params, optimiser state, buffers, step and update counts, key, update scale,
   accumulation window), `trainState`, `lossAndGrads`, `applyGradients` (masking frozen parameters), `trainStep` (the
   functional step), `accumulate`, `hasFrozen`.
-- `training/fit.ts`: `fitAlgorithm` and `fit` (minibatch epochs, buffers carried, gradient clipping and accumulation,
+- `training/fit.ts`: `fitAlgorithm` and `fit` (a `penalty` on the parameters added to the loss, minibatch epochs, buffers carried, gradient clipping and accumulation,
   frozen parameters, early stopping, validation metrics, divergence detection); records loss, metrics, learning rate
   and, by policy roles, per-layer gradient and parameter norms, gradients and tapped activations.
 - `training/callbacks.ts`: Lightning-style hooks without Lightning's machinery: a `Callback` implements any of
