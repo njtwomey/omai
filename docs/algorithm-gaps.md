@@ -9,10 +9,11 @@ How to read the rows. Locations are `file:line` under `packages/engine/src/lib/`
 ## Status
 
 Rows closed since the audit, by the agents that ported them (each is an exported `*Algorithm` with typed paths, a JSON state and a resume test; the old function runs it to completion). Locations in the rows below are those of the audit and have since moved.
-
 - **Done:** GR1; NN1; EX1 (Wachter and DiCE); PG1, PG2; NU1, NU2, NU3, NU4; SA1, SA2; SG1; SO1, SO2; ST1; DY1, DY2, DY3, DY5, DY6, DY7, DY8 (collocation), DY9; TS1; LE1, LE2, LE3, LE4; CL1; EX2, EX3, EX4; EN1; FA1; LI1; NN2, NN3; GR2-GR8; GA1, GA2, GA3; AG1; RL1; PG3, PG4, PG5. DY4 (BOCPD) was done by its own agent.
 - **Open slots in the done rows:** EX1 DiCE has Adam only (no optimiser slot); EN1 has no outer bags and a step is a full cycle over the features; LE2 has the ACI score memory as its only conformal slot; EX3 has no sampler table for anchors; the `nonlinear-correlation` exogeneity measure of PG4 is a heuristic checked only on one simulated chain.
-- **In flight:** numerics, signal, text, vision, logic, information (OP1, SA3, NU5-NU8, SG2, SG3, SK1, IN1, IN2, TX1-TX3, VI1-VI4, LO1-LO4, PP1, DY10, DY8 shooting); and the slot-rule and duplicate sections (b), (a).
+- **Slot rules (b):** B2 (GP hyperparameters, `boundedSolvers`), B3 (NCA, LMNN), B4 (fair representation), B6 (`mleSolvers`) done; B5 (t-SNE, UMAP) deliberately has no slot, with the reason in their TSDoc; B1 (SVM) done for `svc`/`nuSvc` (squared-hinge primal with `smoothSolvers`, hinge stays SMO-only) and open for `svr` and one-class; B0 is an observation.
+- **Near-duplicates (a):** D1 and D11 were already fixed; D4, D6, D7, D9, D10 (cliques), D13 consolidated; D2, D3, D5, D8, D10 (hulls), D12, D14 are different tools and are cross-referenced in their TSDoc. D9 changed the seeded mazes of `environments`.
+- **In flight:** numerics, signal, text, vision, logic, information (OP1, SA3, NU5-NU8, SG2, SG3, SK1, IN1, IN2, TX1-TX3, VI1-VI4, LO1-LO4, PP1, DY10, DY8 shooting); SVM `svr` and one-class (B1).
 
 ## Summary
 
