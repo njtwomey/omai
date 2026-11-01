@@ -1160,6 +1160,9 @@ in it (`checkPrimitive`).
   `lcaIndex` (binary lifting), `lowestCommonAncestor`.
 - `flows.ts`: `maxFlow` (Dinic, Edmonds-Karp), `minCut`, `minCostFlow` (negative costs saturated, then successive
   shortest paths with potentials), `maxFlowMinCost`, `bipartiteMatching` (Hopcroft-Karp).
+- `flow-algorithms.ts`: the steppable algorithms behind `flows.ts`: `maxFlowAlgorithm` (Edmonds-Karp or Dinic, one
+  augmentation per step), `minCostFlowAlgorithm` (successive shortest paths), `flowContract` (`flow/...` paths) and the
+  slot `maxFlowMethods`. `hopcroft-karp.ts`: `hopcroftKarpAlgorithm` (one phase per step) and `matchingContract`.
 - `centrality.ts`: `degreeCentrality`, `closenessCentrality` (Wasserman-Faust), `betweennessCentrality` (Brandes,
   weighted, endpoints), `edgeBetweennessCentrality`, `shortestPathCounts`, and traced power iterations
   `eigenvectorCentrality`, `katzCentrality`, `pagerank` (personalisation, dangling distribution), `hits`, each with

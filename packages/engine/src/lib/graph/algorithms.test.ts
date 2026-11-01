@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { defaults } from '../space/index.ts'
 import { type Algorithm, policies, recorder, runAlgorithm } from '../trace/index.ts'
+import { flowContract, maxFlowAlgorithm, maxFlowMethods, minCostFlowAlgorithm } from './flow-algorithms.ts'
+import { bipartiteMatching, maxFlow, minCostFlow, minCut } from './flows.ts'
 import { completeGraph, gridGraph } from './generators.ts'
-import { graph } from './graph.ts'
+import { digraph, graph } from './graph.ts'
+import { hopcroftKarpAlgorithm, matchingContract } from './hopcroft-karp.ts'
 import {
   boruvkaAlgorithm,
   kruskalAlgorithm,
@@ -109,5 +112,168 @@ describe('spanning-tree algorithms', () => {
     expect(() => kruskalAlgorithm(graph([[0, 1]], { directed: true }))).toThrow(/undirected/)
     expect(spanningTreeMethods.names).toEqual(['kruskal', 'prim', 'boruvka'])
     expect(spanningTreeMethods.make(defaults(spanningTreeMethods.space))(completeGraph(3)).name).toBe('graph/kruskal')
+  })
+})
+
+const network = digraph([
+  [0, 1, 3],
+  [0, 2, 2],
+  [1, 2, 1],
+  [1, 3, 2],
+  [2, 3, 3],
+])
+
+describe('maxFlowAlgorithm', () => {
+  const methods = ['dinic', 'edmonds-karp'] as const
+
+  it('one augmentation per step, the flow value rising to the old function value', () => {
+    for (const method of methods) {
+      const run = runAlgorithm(maxFlowAlgorithm(network, 0, 3, { method }), { maxSteps: 20 })
+      expect(run.status).toBe('converged')
+      expect(run.state.value).toBe(5)
+      expect(run.steps).toBe(run.state.augmentations)
+      expect(maxFlow(network, 0, 3, { method })).toMatchObject({ value: 5, augmentations: run.steps })
+      const l = logged(maxFlowAlgorithm(network, 0, 3, { method }))
+      const values = l.get('flow/value') as number[]
+      expect(values.at(-1)).toBe(5)
+      expect(values.every((v, i) => i === 0 || v > (values[i - 1] ?? 0))).toBe(true)
+      expect((l.get('flow/residual') ?? [])[0]).toHaveLength(2 * network.edges.length)
+      expect((l.get('flow/cut') ?? []).at(-1)).toEqual([1, 0, 0, 0])
+    }
+    expect(Object.keys(flowContract)).toContain('flow/potential')
+  })
+
+  it('ends with a cut whose capacity is the flow value, and conserved flow', () => {
+    const run = runAlgorithm(maxFlowAlgorithm(network, 0, 3), { maxSteps: 20 })
+    const c = minCut(network, 0, 3)
+    expect(c.value).toBe(run.state.value)
+    expect(
+      c.cutEdges.reduce(
+        (acc, [u, v]) => acc + (network.edges.find((e) => e.source === u && e.target === v)?.weight ?? 0),
+        0,
+      ),
+    ).toBe(5)
+    const f = maxFlow(network, 0, 3).flow
+    const net = [0, 0, 0, 0]
+    for (const [e, edge] of network.edges.entries()) {
+      net[edge.source] = (net[edge.source] ?? 0) - (f[e] ?? 0)
+      net[edge.target] = (net[edge.target] ?? 0) + (f[e] ?? 0)
+    }
+    expect(net).toEqual([-5, 0, 0, 5])
+  })
+
+  it('resumes from a JSON checkpoint, with infinite capacities', () => {
+    const big = digraph([
+      [0, 1, 1],
+      [0, 2, 1],
+      [1, 3, 1],
+      [2, 3, 1],
+      [1, 2, 1],
+      [3, 4, 5],
+    ])
+    for (const method of methods) {
+      const alg = maxFlowAlgorithm(big, 0, 4, { method, capacity: [1, 1, 1, 1, 1, Number.POSITIVE_INFINITY] })
+      const s = expectResumes(alg, 1, (x) => ({ v: x.value, r: Array.from(x.residual, String), p: x.pending }))
+      expect(s.value).toBe(2)
+    }
+  })
+
+  it('refuses source equal to sink, and the unbounded flow throws when stepping', () => {
+    expect(() => maxFlowAlgorithm(network, 1, 1)).toThrow(/same node/)
+    const unbounded = digraph([[0, 1]])
+    const alg = maxFlowAlgorithm(unbounded, 0, 1, { capacity: [Number.POSITIVE_INFINITY] })
+    expect(() => runAlgorithm(alg, { maxSteps: 5 })).toThrow(/unbounded/)
+  })
+
+  it('the option table builds each method', () => {
+    expect(maxFlowMethods.names).toEqual(['dinic', 'edmonds-karp'])
+    expect(maxFlowMethods.make({ kind: 'dinic' })(network, 0, 3).name).toBe('graph/max-flow-dinic')
+  })
+})
+
+describe('minCostFlowAlgorithm', () => {
+  const g = digraph([
+    [0, 1],
+    [0, 2],
+    [1, 3],
+    [2, 3],
+  ])
+  const options = { capacity: [4, 2, 3, 5], cost: [2, 1, 1, 3] }
+
+  it('routes supply path by path to the cost the function returns', () => {
+    const alg = minCostFlowAlgorithm(g, [-4, 0, 0, 4], options)
+    const run = runAlgorithm(alg, { maxSteps: 20 })
+    expect(run.status).toBe('converged')
+    expect(run.state.cost).toBeCloseTo(13, 9)
+    expect(Array.from(run.state.flow)).toEqual([3, 1, 3, 1])
+    expect(minCostFlow(g, [-4, 0, 0, 4], options).cost).toBeCloseTo(13, 9)
+    const l = logged(alg)
+    const routed = l.get('flow/value') as number[]
+    expect(routed.at(-1)).toBe(4)
+    // Successive shortest paths cost non-decreasing amounts per unit.
+    const costs = l.get('flow/cost') as number[]
+    const unit = costs.map((c, i) => (c - (costs[i - 1] ?? 0)) / ((l.get('flow/augment') as number[])[i] ?? 1))
+    expect(unit.every((u, i) => i === 0 || u >= (unit[i - 1] ?? 0) - 1e-9)).toBe(true)
+  })
+
+  it('saturates negative-cost edges in init and resumes from JSON', () => {
+    const neg = digraph([
+      [0, 1],
+      [1, 2],
+      [0, 2],
+    ])
+    const alg = minCostFlowAlgorithm(neg, [-2, 0, 2], { capacity: [2, 2, 3], cost: [-1, 1, 5] })
+    const s = expectResumes(alg, 1, (x) => ({ c: x.cost, f: Array.from(x.flow), p: Array.from(x.potential) }))
+    expect(s.cost).toBeCloseTo(0, 9)
+    expect(() => runAlgorithm(minCostFlowAlgorithm(g, [-9, 0, 0, 9], options), { maxSteps: 20 })).toThrow(/infeasible/)
+  })
+
+  it('rejects undirected graphs and unbalanced demands', () => {
+    expect(() => minCostFlowAlgorithm(graph([[0, 1]]), [-1, 1])).toThrow(/directed/)
+    expect(() => minCostFlowAlgorithm(g, [-1, 0, 0, 2])).toThrow(/sum to zero/)
+  })
+})
+
+describe('hopcroftKarpAlgorithm', () => {
+  const b = graph([
+    [0, 3],
+    [0, 4],
+    [1, 3],
+    [2, 5],
+    [2, 4],
+    [1, 5],
+  ])
+
+  it('one phase per step, the matching growing to the function size', () => {
+    const alg = hopcroftKarpAlgorithm(b)
+    const run = runAlgorithm(alg, { maxSteps: 10 })
+    expect(run.status).toBe('converged')
+    expect(run.state.size).toBe(3)
+    expect(bipartiteMatching(b).size).toBe(3)
+    const l = logged(alg)
+    const sizes = l.get('match/size') as number[]
+    expect(sizes.every((v, i) => i === 0 || v >= (sizes[i - 1] ?? 0))).toBe(true)
+    expect(sizes.at(-1)).toBe(3)
+    expect((l.get('match/phase') as number[])[0]).toBe(1)
+    expect((l.get('match/augmenting') as number[]).reduce((a, c) => a + c, 0)).toBe(3)
+    expect(Object.keys(matchingContract)).toContain('match/layers')
+  })
+
+  it('matches both ends of every pair and resumes from JSON with infinite layers', () => {
+    const s = expectResumes(hopcroftKarpAlgorithm(gridGraph(3, 4)), 1, (x) => ({
+      m: Array.from(x.mate),
+      n: x.size,
+      f: String(x.found),
+    }))
+    expect(s.size).toBe(6)
+    for (let u = 0; u < s.mate.length; u++) {
+      const v = s.mate[u] ?? -1
+      if (v !== -1) expect(s.mate[v]).toBe(u)
+    }
+  })
+
+  it('rejects an odd cycle and an edge inside one side', () => {
+    expect(() => hopcroftKarpAlgorithm(completeGraph(3))).toThrow(/not bipartite/)
+    expect(() => hopcroftKarpAlgorithm(graph([[0, 1]]), { left: [0, 1] })).toThrow(/within one side/)
   })
 })
