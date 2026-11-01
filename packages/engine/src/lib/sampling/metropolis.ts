@@ -9,9 +9,10 @@ import { type Json, MdmlError } from '../base/index.ts'
 import { dgemv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { lowerCholesky, squareMatrix, vectorOf } from './_linear.ts'
 import { acceptWith, initState, type Welford, welfordCovariance, welfordInit, welfordUpdate } from './_mcmc.ts'
+import { type AdaptPath, chainFromJson, chainToJson } from './adaptation-contract.ts'
 import type { Adaptation, MCMCKernel, MCMCState, Transition, TransitionInfo, Warmup } from './chains.ts'
 import type { LogDensity, Proposal } from './target.ts'
 
@@ -314,7 +315,11 @@ export interface RandomWalkAdaptationOptions {
   readonly initialScale?: number
 }
 
-interface RwmWarmupState {
+/**
+ * The state of {@link randomWalkAdaptationAlgorithm}: the chain, the log proposal scale, the running moments of the
+ * second half of warm-up and, once there are enough draws, the Cholesky factor of the learned shape.
+ */
+export interface RwmWarmupState {
   readonly chain: MCMCState
   readonly logScale: number
   readonly history: Welford
@@ -332,11 +337,134 @@ function scaledKernel(target: LogDensity, logScale: number, shape: Float64Array 
   )
 }
 
+/** Options of {@link randomWalkAdaptationAlgorithm}. */
+export interface RandomWalkAdaptationRunOptions extends RandomWalkAdaptationOptions {
+  /** The warm-up length; the shape is learned from the second half. */
+  readonly numWarmup: number
+  /** Called with every transition (`sampleChains` collects warm-up draws through it). */
+  readonly onTransition?: (state: MCMCState, info: TransitionInfo) => void
+}
+
+/**
+ * Random-walk Metropolis warm-up as a stepped algorithm with vanishing adaptation: each step is one transition, the log
+ * proposal scale follows a Robbins-Monro recursion (gain t^-0.6) towards the target acceptance rate, and, in the second
+ * half of warm-up, the proposal's shape becomes the Cholesky factor of the running covariance of that half (the scale
+ * restarting at the optimal 2.38 / sqrt(dim)). It logs the scale as `adapt/stepSize`, the acceptance, which half it is
+ * in as `adapt/window` (0 then 1) and the log density. The tuned kernel is read with
+ * {@link randomWalkAdaptationKernel}; the state serialises.
+ *
+ * @param target - The target.
+ * @param position - The starting position.
+ * @param options - Warm-up length, target acceptance, shape learning and starting scale.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` unless 0 < targetAcceptance < 1.
+ * @concept adaptive-metropolis
+ * @reference C. Andrieu and J. Thoms, A tutorial on adaptive MCMC (Statistics and Computing 2008).
+ * @example
+ * ```ts
+ * import { banana, randomWalkAdaptationAlgorithm } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = randomWalkAdaptationAlgorithm(banana(), Float64Array.of(0, 0), { numWarmup: 60 })
+ * runAlgorithm(alg, { key: key(0), maxSteps: 60 }).steps // => 60
+ * ```
+ */
+export function randomWalkAdaptationAlgorithm(
+  target: LogDensity,
+  position: Float64Array,
+  options: RandomWalkAdaptationRunOptions,
+): Algorithm<RwmWarmupState, AdaptPath> {
+  const dim = target.dim
+  const goal = options.targetAcceptance ?? 0.234
+  if (!(goal > 0 && goal < 1)) {
+    throw new MdmlError('value', 'randomWalkAdaptation: targetAcceptance must lie in (0, 1)')
+  }
+  const learnShape = options.adaptCovariance ?? true
+  const initialScale = options.initialScale ?? 2.38 / Math.sqrt(dim)
+  const half = Math.floor(options.numWarmup / 2)
+  return {
+    name: 'sampling/random-walk-adaptation',
+    config: { dim, targetAcceptance: goal, adaptCovariance: learnShape, numWarmup: options.numWarmup },
+    schema: channels({
+      metrics: {
+        acceptanceRate: { description: 'acceptance probability of the transition', direction: 'higher' },
+        scale: { description: 'proposal scale' },
+        logDensity: { description: 'log density at the current position' },
+      },
+    }),
+    init: () => ({
+      chain: initState(target, position, 'randomWalkAdaptation'),
+      logScale: Math.log(initialScale),
+      history: welfordInit(dim),
+      shape: undefined,
+    }),
+    step: (s, ctx) => {
+      const tr = scaledKernel(target, s.logScale, s.shape).step(ctx.key, s.chain)
+      options.onTransition?.(tr.state, tr.info)
+      const t = ctx.t + 1
+      let logScale = s.logScale + (tr.info.acceptanceRate - goal) / t ** 0.6
+      let { history, shape } = s
+      if (learnShape && t > half) {
+        history = welfordUpdate(history, tr.state.position)
+        if (history.count > 2 * dim + 2) {
+          const cov = welfordCovariance(history).map((v, k) => v + (k % (dim + 1) === 0 ? 1e-10 : 0))
+          if (shape === undefined) logScale = Math.log(2.38 / Math.sqrt(dim))
+          shape = lowerCholesky(cov, dim, 'randomWalkAdaptation')
+        }
+      }
+      ctx.log('adapt/stepSize', Math.exp(s.logScale))
+      ctx.log('adapt/accept', tr.info.acceptanceRate)
+      ctx.log('adapt/window', t > half ? 1 : 0)
+      ctx.log('adapt/logDensity', tr.state.logDensity)
+      return { chain: tr.state, logScale, history, shape }
+    },
+    observe: (s) => ({ metrics: { scale: Math.exp(s.logScale), logDensity: s.chain.logDensity } }),
+    done: (_, t) => (t >= options.numWarmup ? 'completed' : undefined),
+    serialise: (s) => ({
+      chain: chainToJson(s.chain),
+      logScale: s.logScale,
+      history: stateToJson(s.history),
+      ...(s.shape === undefined ? {} : { shape: stateToJson(s.shape) }),
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as Record<string, Json>
+      return {
+        chain: chainFromJson(o['chain'] as Json),
+        logScale: o['logScale'] as number,
+        history: stateFromJson(o['history'] as Json) as Welford,
+        shape: o['shape'] === undefined ? undefined : (stateFromJson(o['shape']) as Float64Array),
+      }
+    },
+  }
+}
+
+/**
+ * The tuned random-walk Metropolis kernel a warm-up state ends on: the learned scale and shape.
+ *
+ * @param target - The target.
+ * @param state - A state of {@link randomWalkAdaptationAlgorithm}.
+ * @returns A plain random-walk Metropolis kernel.
+ * @concept adaptive-metropolis
+ * @example
+ * ```ts
+ * import { banana, randomWalkAdaptationAlgorithm, randomWalkAdaptationKernel } from 'mdml-engine/sampling'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const t = banana()
+ * const run = runAlgorithm(randomWalkAdaptationAlgorithm(t, Float64Array.of(0, 0), { numWarmup: 20 }), { key: key(0), maxSteps: 20 })
+ * typeof randomWalkAdaptationKernel(t, run.state).step // => 'function'
+ * ```
+ */
+export function randomWalkAdaptationKernel(target: LogDensity, state: RwmWarmupState): MCMCKernel {
+  return scaledKernel(target, state.logScale, state.shape)
+}
+
 /**
  * Warm-up for random-walk Metropolis with vanishing adaptation: the log proposal scale follows a Robbins-Monro
  * recursion (gain t^-0.6) towards the target acceptance rate, and, in the second half of warm-up, the proposal's shape
  * becomes the Cholesky factor of the running covariance of that half (the scale restarting at the optimal
- * 2.38 / sqrt(dim)). The tuned kernel is a plain random-walk Metropolis kernel, so sampling is exactly Markov.
+ * 2.38 / sqrt(dim)). The tuned kernel is a plain random-walk Metropolis kernel, so sampling is exactly Markov. This is
+ * {@link randomWalkAdaptationAlgorithm} run for the warm-up.
  *
  * @param target - The target.
  * @param options - Target acceptance, shape learning and starting scale.
@@ -358,47 +486,15 @@ export function randomWalkAdaptation(target: LogDensity, options: RandomWalkAdap
   if (!(goal > 0 && goal < 1)) {
     throw new MdmlError('value', 'randomWalkAdaptation: targetAcceptance must lie in (0, 1)')
   }
-  const learnShape = options.adaptCovariance ?? true
-  const initialScale = options.initialScale ?? 2.38 / Math.sqrt(dim)
   return {
     name: 'randomWalkAdaptation',
     dim,
     run: (position, run) => {
-      const half = Math.floor(run.numWarmup / 2)
-      const algorithm: Algorithm<RwmWarmupState> = {
-        name: 'randomWalkAdaptation',
-        config: { dim, targetAcceptance: goal, adaptCovariance: learnShape },
-        schema: channels({
-          metrics: {
-            acceptanceRate: { description: 'acceptance probability of the transition', direction: 'higher' },
-            scale: { description: 'proposal scale' },
-            logDensity: { description: 'log density at the current position' },
-          },
-        }),
-        init: () => ({
-          chain: initState(target, position, 'randomWalkAdaptation'),
-          logScale: Math.log(initialScale),
-          history: welfordInit(dim),
-          shape: undefined,
-        }),
-        step: (s, ctx) => {
-          const tr = scaledKernel(target, s.logScale, s.shape).step(ctx.key, s.chain)
-          run.onTransition?.(tr.state, tr.info)
-          const t = ctx.t + 1
-          let logScale = s.logScale + (tr.info.acceptanceRate - goal) / t ** 0.6
-          let { history, shape } = s
-          if (learnShape && t > half) {
-            history = welfordUpdate(history, tr.state.position)
-            if (history.count > 2 * dim + 2) {
-              const cov = welfordCovariance(history).map((v, k) => v + (k % (dim + 1) === 0 ? 1e-10 : 0))
-              if (shape === undefined) logScale = Math.log(2.38 / Math.sqrt(dim))
-              shape = lowerCholesky(cov, dim, 'randomWalkAdaptation')
-            }
-          }
-          return { chain: tr.state, logScale, history, shape }
-        },
-        observe: (s) => ({ metrics: { scale: Math.exp(s.logScale), logDensity: s.chain.logDensity } }),
-      }
+      const algorithm = randomWalkAdaptationAlgorithm(target, position, {
+        ...options,
+        numWarmup: run.numWarmup,
+        ...(run.onTransition === undefined ? {} : { onTransition: run.onTransition }),
+      })
       const result = runAlgorithm(algorithm, {
         key: run.key,
         maxSteps: run.numWarmup,
@@ -408,7 +504,7 @@ export function randomWalkAdaptation(target: LogDensity, options: RandomWalkAdap
       })
       const s = result.state
       const warmup: Warmup = {
-        kernel: scaledKernel(target, s.logScale, s.shape),
+        kernel: randomWalkAdaptationKernel(target, s),
         state: s.chain,
         parameters: {
           scale: Math.exp(s.logScale),
