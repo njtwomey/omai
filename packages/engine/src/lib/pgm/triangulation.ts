@@ -7,6 +7,16 @@
 
 import { MdmlError } from '../base/index.ts'
 import { maximalCliques as cliques } from '../graph/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  message,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { copyGraph, indexedGraph, link } from './_graph.ts'
 import { connectedComponents, type UndirectedGraph, undirectedGraph } from './graphs.ts'
 
@@ -70,9 +80,163 @@ function eliminateVertex(g: Map<string, Set<string>>, v: string): { clique: stri
   return { clique: [v, ...ns], fill }
 }
 
+/** A greedy criterion as a function: the cost of eliminating a vertex from the current graph (smaller goes first). */
+export type EliminationCostFn = (
+  graph: UndirectedGraph,
+  v: string,
+  cardinality: Readonly<Record<string, number>>,
+) => number
+
+/** The four named criteria as cost functions, by name. */
+const costOf = (heuristic: EliminationHeuristic): EliminationCostFn => {
+  return (graph, v, cardinality) => eliminationCost(graph, v, heuristic, cardinality)
+}
+
+/** Options of {@link eliminationOrderAlgorithm}. */
+export interface EliminationOrderOptions {
+  /**
+   * The greedy criterion: a name (`minFill` by default, `minDegree`, `minWeight`, `weightedMinFill`) or a cost
+   * function, as the `eliminationHeuristics` table of `mdml-engine/pgm` makes. Ignored when an order is given.
+   */
+  readonly heuristic?: EliminationHeuristic | EliminationCostFn
+  /** Numbers of states for the weighted criteria (default 2 each). */
+  readonly cardinality?: Readonly<Record<string, number>>
+  /** A fixed order to follow instead of choosing greedily (it must list the variables, each once). */
+  readonly order?: readonly string[]
+}
+
+/**
+ * The state of {@link eliminationOrderAlgorithm}: the graph as it stands (every elimination connected the neighbours of
+ * the vertex it removed), what is left to eliminate, and what the eliminations so far produced. Plain data, so it
+ * serialises and a run resumes.
+ */
+export interface EliminationState {
+  /** Neighbours of each remaining vertex (those not yet eliminated), in insertion order. */
+  readonly adjacency: Readonly<Record<string, readonly string[]>>
+  /** The variables still to eliminate, sorted. */
+  readonly remaining: readonly string[]
+  /** The variables eliminated so far, in order. */
+  readonly order: readonly string[]
+  /** The fill-in edges added so far, each as a sorted pair. */
+  readonly fillIns: readonly (readonly [string, string])[]
+  /** The elimination clique of each step: the vertex and its neighbours at the time. */
+  readonly cliques: readonly (readonly string[])[]
+  /** The induced width so far: the largest elimination clique minus one. */
+  readonly width: number
+}
+
+/** The paths {@link eliminationOrderAlgorithm} logs, as a type. */
+export type EliminationPath = 'order/vertex' | 'order/cost' | 'order/fill' | 'order/width'
+
+/**
+ * What {@link eliminationOrderAlgorithm} logs, by path: the vertex chosen (a message with its cost, its elimination
+ * clique and the fill-in edges it adds), the cost of the choice, the number of fill-in edges the step adds, and the
+ * induced width so far.
+ */
+export const eliminationOrderContract: Contract<EliminationState, EliminationPath> = defineContract({
+  'order/vertex': message({
+    description: 'the vertex eliminated, with its cost, its elimination clique and the fill-in edges it adds',
+    payload: {
+      vertex: 'the variable',
+      cost: 'its cost by the criterion',
+      clique: 'the vertex and its neighbours',
+      fill: 'new edges',
+    },
+  }),
+  'order/cost': scalar({ description: 'the cost of the vertex chosen, by the criterion' }),
+  'order/fill': scalar({ description: 'fill-in edges added by this elimination' }),
+  'order/width': scalar({ description: 'the induced width so far (largest elimination clique minus one)' }),
+})
+
+/**
+ * Greedy elimination ordering as an {@link Algorithm}: each step picks the vertex of least cost (see
+ * {@link eliminationCost}; ties go to the first by name), connects its neighbours (the fill-in edges) and removes it,
+ * recording its elimination clique and the induced width so far. With `order` the algorithm follows a given order
+ * instead and records the same things, which is how {@link triangulate} reads the fill-ins and cliques of an order.
+ *
+ * @param graph - Neighbours of each variable (for example a moral or interaction graph).
+ * @param variables - The variables to order (others stay in the graph).
+ * @param options - The criterion (name or cost function), the cardinalities for the weighted criteria, or a fixed order.
+ * @returns The algorithm; it is done when every variable is eliminated.
+ * @throws MdmlError with code `value` for an order that is not a permutation of the variables.
+ * @concept elimination-orderings
+ * @example
+ * ```ts
+ * import { eliminationOrderAlgorithm, undirectedGraph } from 'mdml-engine/pgm'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const square = undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])
+ * const alg = eliminationOrderAlgorithm(square, ['a', 'b', 'c', 'd'], { order: ['a', 'b', 'c', 'd'] })
+ * const end = runAlgorithm(alg, { maxSteps: 4 }).state
+ * [end.fillIns, end.width] // => [[['b', 'd']], 2]
+ * ```
+ */
+export function eliminationOrderAlgorithm(
+  graph: UndirectedGraph,
+  variables: readonly string[],
+  options: EliminationOrderOptions = {},
+): Algorithm<EliminationState, EliminationPath> {
+  const cardinality = options.cardinality ?? {}
+  const heuristic = options.heuristic ?? 'minFill'
+  const cost = typeof heuristic === 'function' ? heuristic : costOf(heuristic)
+  const todo = [...new Set(variables)].sort()
+  const given = options.order
+  if (
+    given !== undefined &&
+    (given.length !== todo.length || new Set(given).size !== todo.length || given.some((v) => !todo.includes(v)))
+  )
+    throw new MdmlError('value', 'eliminationOrder: the order must list the variables, each once')
+  return {
+    name: 'elimination-order',
+    config: {
+      heuristic: given !== undefined ? 'given' : typeof heuristic === 'function' ? 'custom' : heuristic,
+      variables: todo.length,
+    },
+    init: () => {
+      const g = copyGraph(graph)
+      for (const v of todo) if (!g.has(v)) g.set(v, new Set())
+      return { adjacency: adjacencyOf(g), remaining: todo, order: [], fillIns: [], cliques: [], width: 0 }
+    },
+    step: (s, ctx) => {
+      const g = new Map(Object.entries(s.adjacency).map(([k, ns]) => [k, new Set(ns)]))
+      let best = given === undefined ? '' : (given[s.order.length] as string)
+      let bestCost = best === '' ? Number.POSITIVE_INFINITY : cost(g, best, cardinality)
+      if (given === undefined) {
+        for (const v of s.remaining) {
+          const c = cost(g, v, cardinality)
+          if (c < bestCost) {
+            best = v
+            bestCost = c
+          }
+        }
+      }
+      const { clique, fill } = eliminateVertex(g, best)
+      const width = Math.max(s.width, clique.length - 1)
+      ctx.emit('order/vertex', { vertex: best, cost: bestCost, clique, fill })
+      ctx.log('order/cost', bestCost)
+      ctx.log('order/fill', fill.length)
+      ctx.log('order/width', width)
+      return {
+        adjacency: adjacencyOf(g),
+        remaining: s.remaining.filter((v) => v !== best),
+        order: [...s.order, best],
+        fillIns: [...s.fillIns, ...fill],
+        cliques: [...s.cliques, clique],
+        width,
+      }
+    },
+    done: (s) => (s.remaining.length === 0 ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EliminationState,
+  }
+}
+
+function adjacencyOf(g: ReadonlyMap<string, ReadonlySet<string>>): Record<string, string[]> {
+  return Object.fromEntries([...g].map(([k, ns]) => [k, [...ns]]))
+}
+
 /**
  * A greedy elimination ordering: repeatedly eliminate the vertex of least cost (see {@link eliminationCost}), adding
- * its fill-in edges, ties broken by name.
+ * its fill-in edges, ties broken by name. This is {@link eliminationOrderAlgorithm} run to the end.
  *
  * @param graph - Neighbours of each variable (for example a moral or interaction graph).
  * @param variables - The variables to order (others stay in the graph).
@@ -92,25 +256,8 @@ export function eliminationOrder(
   heuristic: EliminationHeuristic = 'minFill',
   cardinality: Readonly<Record<string, number>> = {},
 ): string[] {
-  const g = copyGraph(graph)
-  for (const v of variables) if (!g.has(v)) g.set(v, new Set())
-  const remaining = new Set(variables)
-  const order: string[] = []
-  while (remaining.size > 0) {
-    let best = ''
-    let bestCost = Number.POSITIVE_INFINITY
-    for (const v of [...remaining].sort()) {
-      const c = eliminationCost(g, v, heuristic, cardinality)
-      if (c < bestCost) {
-        best = v
-        bestCost = c
-      }
-    }
-    eliminateVertex(g, best)
-    remaining.delete(best)
-    order.push(best)
-  }
-  return order
+  const alg = eliminationOrderAlgorithm(graph, variables, { heuristic, cardinality })
+  return [...runAlgorithm(alg, { maxSteps: new Set(variables).size }).state.order]
 }
 
 /** The result of {@link triangulate}. */
@@ -147,16 +294,11 @@ export function triangulate(graph: UndirectedGraph, order?: readonly string[]): 
   if (ord.length !== vertices.length || new Set(ord).size !== ord.length || ord.some((v) => !graph.has(v))) {
     throw new MdmlError('value', 'triangulate: the order must list every vertex once')
   }
-  const g = copyGraph(graph)
+  const run = runAlgorithm(eliminationOrderAlgorithm(graph, vertices, { order: ord }), { maxSteps: vertices.length })
   const chordal = copyGraph(graph)
-  const fillIns: [string, string][] = []
-  const all: string[][] = []
-  for (const v of ord) {
-    const { clique, fill } = eliminateVertex(g, v)
-    for (const [a, b] of fill) link(chordal, a, b)
-    fillIns.push(...fill)
-    all.push(clique)
-  }
+  for (const [a, b] of run.state.fillIns) link(chordal, a, b)
+  const fillIns = run.state.fillIns.map((e): [string, string] => [e[0], e[1]])
+  const all = run.state.cliques.map((c) => [...c])
   const cliques = all.filter(
     (c, i) =>
       !all.some(
@@ -166,9 +308,75 @@ export function triangulate(graph: UndirectedGraph, order?: readonly string[]): 
   return { graph: chordal, fillIns, cliques: cliques.map((c) => [...c].sort()), order: [...ord] }
 }
 
+/** The state of {@link maximumCardinalitySearchAlgorithm}: the vertices not yet visited with their weights, and the visit order. */
+export interface CardinalitySearchState {
+  /** Visited neighbours of each unvisited vertex. */
+  readonly weight: Readonly<Record<string, number>>
+  /** The vertices visited so far, in order. */
+  readonly order: readonly string[]
+}
+
+/** The paths {@link maximumCardinalitySearchAlgorithm} logs, as a type. */
+export type CardinalitySearchPath = 'mcs/vertex' | 'mcs/weight'
+
+/** What {@link maximumCardinalitySearchAlgorithm} logs: the vertex visited (with the weights it won against) and its weight. */
+export const cardinalitySearchContract: Contract<CardinalitySearchState, CardinalitySearchPath> = defineContract({
+  'mcs/vertex': message({
+    description: 'the vertex visited, with the weights of all unvisited vertices before it',
+    payload: { vertex: 'the vertex', weights: 'visited-neighbour counts of the unvisited vertices' },
+  }),
+  'mcs/weight': scalar({ description: 'the number of visited neighbours of the vertex chosen' }),
+})
+
+/**
+ * Maximum cardinality search (Tarjan and Yannakakis) as an {@link Algorithm}: each step visits the unvisited vertex with
+ * the most visited neighbours (ties by name) and raises the weight of its unvisited neighbours.
+ *
+ * @param graph - The graph.
+ * @returns The algorithm; it is done when every vertex is visited.
+ * @concept triangulation
+ * @example
+ * ```ts
+ * import { maximumCardinalitySearchAlgorithm, undirectedGraph } from 'mdml-engine/pgm'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const g = undirectedGraph([['a', 'b'], ['b', 'c']])
+ * runAlgorithm(maximumCardinalitySearchAlgorithm(g), { maxSteps: 3 }).state.order // => ['a', 'b', 'c']
+ * ```
+ */
+export function maximumCardinalitySearchAlgorithm(
+  graph: UndirectedGraph,
+): Algorithm<CardinalitySearchState, CardinalitySearchPath> {
+  return {
+    name: 'maximum-cardinality-search',
+    config: { vertices: graph.size },
+    init: () => ({ weight: Object.fromEntries([...graph.keys()].map((v) => [v, 0])), order: [] }),
+    step: (s, ctx) => {
+      let best = ''
+      let bw = -1
+      for (const v of Object.keys(s.weight).sort()) {
+        const w = s.weight[v] ?? 0
+        if (w > bw) {
+          best = v
+          bw = w
+        }
+      }
+      ctx.emit('mcs/vertex', { vertex: best, weights: s.weight })
+      ctx.log('mcs/weight', bw)
+      const weight = { ...s.weight }
+      delete weight[best]
+      for (const w of graph.get(best) ?? []) if (w in weight) weight[w] = (weight[w] ?? 0) + 1
+      return { weight, order: [...s.order, best] }
+    },
+    done: (s) => (Object.keys(s.weight).length === 0 ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as CardinalitySearchState,
+  }
+}
+
 /**
  * Maximum cardinality search (Tarjan and Yannakakis): visit next the vertex with the most visited neighbours, ties by
- * name. The reverse of the visit order is a perfect elimination order exactly when the graph is chordal.
+ * name ({@link maximumCardinalitySearchAlgorithm} run to the end). The reverse of the visit order is a perfect
+ * elimination order exactly when the graph is chordal.
  *
  * @param graph - The graph.
  * @returns The visit order.
@@ -179,23 +387,7 @@ export function triangulate(graph: UndirectedGraph, order?: readonly string[]): 
  * ```
  */
 export function maximumCardinalitySearch(graph: UndirectedGraph): string[] {
-  const weight = new Map([...graph.keys()].map((v) => [v, 0]))
-  const order: string[] = []
-  while (weight.size > 0) {
-    let best = ''
-    let bw = -1
-    for (const v of [...weight.keys()].sort()) {
-      const w = weight.get(v) ?? 0
-      if (w > bw) {
-        best = v
-        bw = w
-      }
-    }
-    order.push(best)
-    weight.delete(best)
-    for (const w of graph.get(best) ?? []) if (weight.has(w)) weight.set(w, (weight.get(w) ?? 0) + 1)
-  }
-  return order
+  return [...runAlgorithm(maximumCardinalitySearchAlgorithm(graph), { maxSteps: graph.size }).state.order]
 }
 
 /**

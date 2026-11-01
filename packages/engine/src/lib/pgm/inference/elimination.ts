@@ -4,17 +4,26 @@
  * max-product elimination, and MAP queries over a subset of variables.
  */
 
-import { MdmlError } from '../../base/index.ts'
-import { nullTracer, type RunHandle, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  message,
+  runAlgorithm,
+  scalar,
+  type TracePolicy,
+  type Tracer,
+} from '../../trace/index.ts'
 import {
   type Factor,
   factorArgmax,
+  factorFromJson,
   factorMarginal,
   factorProductAll,
+  factorToJson,
   logFactorAt,
   logTotal,
-  marginalise,
-  maxMarginalise,
   normaliseFactor,
   reduceFactor,
 } from '../factor.ts'
@@ -27,7 +36,8 @@ import {
   modelVariables,
   stateNames,
 } from '../models/factor-graph.ts'
-import { type EliminationHeuristic, eliminationOrder } from '../triangulation.ts'
+import { type EliminationCostFn, type EliminationHeuristic, eliminationOrderAlgorithm } from '../triangulation.ts'
+import { type EliminationSemiring, eliminationSemirings } from './elimination-options.ts'
 
 /** Options of {@link variableElimination} and the other elimination routines. */
 export interface EliminationOptions {
@@ -35,12 +45,18 @@ export interface EliminationOptions {
   readonly evidence?: Readonly<Record<string, string | number>>
   /** The elimination order of the hidden variables (default: greedy by `heuristic` on the interaction graph). */
   readonly order?: readonly string[]
-  /** The greedy ordering criterion when no order is given (default `minFill`). */
-  readonly heuristic?: EliminationHeuristic
+  /** The greedy ordering criterion when no order is given (default `minFill`): a name or a cost function. */
+  readonly heuristic?: EliminationHeuristic | EliminationCostFn
   /** Where to send one `message` event per eliminated variable. */
   readonly tracer?: Tracer
   /** What to record (messages are recorded when the policy selects them). */
   readonly policy?: TracePolicy
+}
+
+/** Options of {@link variableEliminationAlgorithm}: those of the routines, and the semiring. */
+export interface EliminationAlgorithmOptions extends Omit<EliminationOptions, 'tracer' | 'policy'> {
+  /** How a variable is removed: `sum` (default, marginals) or `max` (most probable explanation); see the table. */
+  readonly semiring?: 'sum' | 'max' | EliminationSemiring
 }
 
 /** Result of {@link variableElimination}. */
@@ -55,15 +71,56 @@ export interface EliminationResult {
   readonly largestFactor: number
 }
 
-interface Prepared {
-  readonly factors: Factor[]
-  readonly evidence: Record<string, number>
-  readonly order: string[]
-  readonly run: RunHandle
+/**
+ * The state of {@link variableEliminationAlgorithm}: the factors as they stand, the variables eliminated so far, and
+ * what the eliminations produced. The factors are tables of log values, so the state serialises (zero entries, which
+ * are minus infinity, as strings) and a run resumes.
+ */
+export interface EliminationRunState {
+  /** The order the hidden variables are eliminated in. */
+  readonly order: readonly string[]
+  /** The factors now: those not involving an eliminated variable, and the new factors formed. */
+  readonly factors: readonly Factor[]
+  /** The variables eliminated so far (also those in no factor, which cost nothing). */
+  readonly eliminated: readonly string[]
+  /** The product formed at each elimination, for the traceback of a maximisation (empty when summing). */
+  readonly products: readonly { readonly variable: string; readonly factor: Factor }[]
+  /** The size (entries) of the largest product formed so far. */
+  readonly largest: number
+  /** The induced width so far: the most variables in a product, minus one. */
+  readonly width: number
 }
 
-/** Reduce the factors by the evidence, choose the order of the hidden variables and start the traced run. */
-function prepare(model: DiscreteModel, keep: readonly string[], options: EliminationOptions, name: string): Prepared {
+/** The paths {@link variableEliminationAlgorithm} logs, as a type. */
+export type EliminationRunPath = 've/eliminated' | 've/factorSize' | 've/width' | 've/factors'
+
+/**
+ * What {@link variableEliminationAlgorithm} logs, by path: the variable eliminated (a message with the scope and size
+ * of the new factor and the number of factors multiplied), the size of the new factor, the induced width so far and the
+ * number of factors now.
+ */
+export const eliminationRunContract: Contract<EliminationRunState, EliminationRunPath> = defineContract({
+  've/eliminated': message({
+    description: 'the variable eliminated, the scope and size of the new factor and the factors multiplied',
+    payload: {
+      variable: 'the variable',
+      scope: 'the variables of the new factor',
+      size: 'entries of the new factor',
+      factors: 'factors multiplied',
+    },
+  }),
+  've/factorSize': scalar({ description: 'entries of the factor formed by this elimination' }),
+  've/width': scalar({ description: 'the induced width so far (the most variables in a product, minus one)' }),
+  've/factors': scalar({ description: 'factors alive after this elimination' }),
+})
+
+/** Reduce the factors by the evidence and choose the order of the hidden variables. */
+function prepare(
+  model: DiscreteModel,
+  keep: readonly string[],
+  options: EliminationAlgorithmOptions,
+  name: string,
+): { readonly factors: Factor[]; readonly order: string[] } {
   const evidence = evidenceIndices(model, options.evidence ?? {})
   for (const q of keep) {
     modelVariable(model, q)
@@ -75,46 +132,164 @@ function prepare(model: DiscreteModel, keep: readonly string[], options: Elimina
   const card = Object.fromEntries(modelVariables(model).map((v) => [v.name, v.states.length]))
   const order =
     options.order === undefined
-      ? eliminationOrder(interactionGraph(all, names), hidden, options.heuristic ?? 'minFill', card)
+      ? [
+          ...runAlgorithm(
+            eliminationOrderAlgorithm(interactionGraph(all, names), hidden, {
+              heuristic: options.heuristic ?? 'minFill',
+              cardinality: card,
+            }),
+            { maxSteps: hidden.length },
+          ).state.order,
+        ]
       : [...options.order]
   const missing = hidden.filter((v) => !order.includes(v))
   if (missing.length > 0) throw new MdmlError('value', `${name}: the order misses ${missing.join(', ')}`)
-  const run = startRun(options.tracer ?? nullTracer, {
-    name,
-    seed: null,
-    config: { query: [...keep], order: [...order] },
-    ...(options.policy === undefined ? {} : { policy: options.policy }),
-  })
-  return { factors: all.map((f) => reduceFactor(f, evidence)), evidence, order, run }
+  return { factors: all.map((f) => reduceFactor(f, evidence)), order }
 }
 
 /**
- * Eliminate variables one at a time, recording each step; returns the remaining factors and the product factor formed
- * at each step (for max-product traceback).
+ * Variable elimination as an {@link Algorithm}: reduce the factors by the evidence, then each step takes the next
+ * hidden variable of the order, multiplies the factors that mention it and removes it from the product by the
+ * semiring (sum, or max), leaving a new factor. The state holds the factors as they stand, so a page can show the
+ * network shrink one variable at a time with the size of every intermediate factor. The routines
+ * {@link variableElimination}, {@link logPartition} and {@link maxProductElimination} are this run to the end.
+ *
+ * @param model - The model.
+ * @param query - The query variables (kept, not eliminated).
+ * @param options - Evidence, elimination order or heuristic (a slot: see `eliminationHeuristics`), and the semiring.
+ * @returns The algorithm; it is done when every hidden variable is eliminated.
+ * @throws MdmlError with code `value` for unknown or observed query variables, or an incomplete order.
+ * @concept variable-elimination
+ * @example
+ * ```ts
+ * import { bayesNet, variableEliminationAlgorithm } from 'mdml-engine/pgm'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const bn = bayesNet([
+ *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
+ *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
+ * ])
+ * const chain = bayesNet([
+ *   ...bn.nodes,
+ *   { name: 'late', states: ['no', 'yes'], parents: ['wet'], cpt: [0.7, 0.3, 0.1, 0.9] },
+ * ])
+ * const alg = variableEliminationAlgorithm(chain, ['rain'], { evidence: { late: 'yes' } })
+ * const end = runAlgorithm(alg, { maxSteps: 5 }).state
+ * [end.eliminated, end.factors.length] // => [['wet'], 2]
+ * ```
  */
-function eliminateAll(
-  p: Prepared,
-  mode: 'sum' | 'max',
-): { factors: Factor[]; products: Map<string, Factor>; largest: number } {
-  let factors = p.factors
-  const products = new Map<string, Factor>()
-  let largest = 0
-  for (const [step, v] of p.order.entries()) {
-    const involved = factors.filter((f) => f.variables.includes(v))
-    if (involved.length === 0) continue
-    const product = factorProductAll(involved)
-    products.set(v, product)
-    largest = Math.max(largest, product.logValues.length)
-    const message = mode === 'sum' ? marginalise(product, [v]) : maxMarginalise(product, [v])
-    factors = [...factors.filter((f) => !f.variables.includes(v)), message]
-    p.run.message(
-      step,
-      mode === 'sum' ? 'eliminate' : 'maxEliminate',
-      { variable: v, scope: [...message.variables], size: message.logValues.length, factors: involved.length },
-      { from: v },
-    )
+export function variableEliminationAlgorithm(
+  model: DiscreteModel,
+  query: readonly string[],
+  options: EliminationAlgorithmOptions = {},
+): Algorithm<EliminationRunState, EliminationRunPath> {
+  return eliminationAlgorithm(model, query, options, undefined)
+}
+
+function eliminationAlgorithm(
+  model: DiscreteModel,
+  query: readonly string[],
+  options: EliminationAlgorithmOptions,
+  label: string | undefined,
+): Algorithm<EliminationRunState, EliminationRunPath> {
+  const sr =
+    typeof options.semiring === 'object'
+      ? options.semiring
+      : eliminationSemirings.make({ kind: options.semiring ?? 'sum' })
+  const p = prepare(
+    model,
+    query,
+    options,
+    label ?? (sr.name === 'sum' ? 'variableElimination' : 'maxProductElimination'),
+  )
+  return {
+    name: sr.name === 'sum' ? 'variable-elimination' : 'max-product-elimination',
+    config: { query: [...query], order: [...p.order], semiring: sr.name },
+    init: () => ({ order: p.order, factors: p.factors, eliminated: [], products: [], largest: 0, width: 0 }),
+    step: (s, ctx) => {
+      const v = s.order[s.eliminated.length] as string
+      const involved = s.factors.filter((f) => f.variables.includes(v))
+      if (involved.length === 0) {
+        ctx.emit('ve/eliminated', { variable: v, scope: [], size: 0, factors: 0 })
+        ctx.log('ve/factorSize', 0)
+        ctx.log('ve/width', s.width)
+        ctx.log('ve/factors', s.factors.length)
+        return { ...s, eliminated: [...s.eliminated, v] }
+      }
+      const product = factorProductAll(involved)
+      const out = sr.eliminate(product, [v])
+      const factors = [...s.factors.filter((f) => !f.variables.includes(v)), out]
+      const width = Math.max(s.width, product.variables.length - 1)
+      ctx.run.message(
+        s.eliminated.length,
+        sr.name === 'sum' ? 'eliminate' : 'maxEliminate',
+        { variable: v, scope: [...out.variables], size: out.logValues.length, factors: involved.length },
+        { from: v },
+      )
+      ctx.emit('ve/eliminated', {
+        variable: v,
+        scope: [...out.variables],
+        size: out.logValues.length,
+        factors: involved.length,
+      })
+      ctx.log('ve/factorSize', out.logValues.length)
+      ctx.log('ve/width', width)
+      ctx.log('ve/factors', factors.length)
+      return {
+        order: s.order,
+        factors,
+        eliminated: [...s.eliminated, v],
+        products: sr.traceback ? [...s.products, { variable: v, factor: product }] : s.products,
+        largest: Math.max(s.largest, product.logValues.length),
+        width,
+      }
+    },
+    done: (s) => (s.eliminated.length >= s.order.length ? 'converged' : undefined),
+    observe: (s) => ({ metrics: { largestFactor: s.largest } }),
+    serialise: (s): Json => ({
+      order: [...s.order],
+      factors: s.factors.map(factorToJson),
+      eliminated: [...s.eliminated],
+      products: s.products.map((q) => ({ variable: q.variable, factor: factorToJson(q.factor) })),
+      largest: s.largest,
+      width: s.width,
+    }),
+    deserialise: (j) => {
+      const o = j as {
+        order: string[]
+        factors: Json[]
+        eliminated: string[]
+        products: { variable: string; factor: Json }[]
+        largest: number
+        width: number
+      }
+      return {
+        order: o.order,
+        factors: o.factors.map(factorFromJson),
+        eliminated: o.eliminated,
+        products: o.products.map((q) => ({ variable: q.variable, factor: factorFromJson(q.factor) })),
+        largest: o.largest,
+        width: o.width,
+      }
+    },
   }
-  return { factors, products, largest }
+}
+
+/** Run the algorithm to the end under the caller's tracer and policy. */
+function runElimination(
+  model: DiscreteModel,
+  query: readonly string[],
+  options: EliminationOptions,
+  semiring: 'sum' | 'max',
+  label?: string,
+): EliminationRunState {
+  const { tracer, policy, ...rest } = options
+  const alg = eliminationAlgorithm(model, query, { ...rest, semiring }, label)
+  const order = (alg.config as { order: string[] }).order
+  return runAlgorithm(alg, {
+    maxSteps: order.length,
+    ...(tracer === undefined ? {} : { tracer }),
+    ...(policy === undefined ? {} : { policy }),
+  }).state
 }
 
 /**
@@ -144,16 +319,13 @@ export function variableElimination(
   query: readonly string[],
   options: EliminationOptions = {},
 ): EliminationResult {
-  const p = prepare(model, query, options, 'variableElimination')
-  const { factors, largest } = eliminateAll(p, 'sum')
-  const joint = factorProductAll(factors)
-  const restricted = factorMarginal(joint, [...query])
-  p.run.end('completed', p.order.length, { largestFactor: largest })
+  const st = runElimination(model, query, options, 'sum')
+  const restricted = factorMarginal(factorProductAll(st.factors), [...query])
   return {
     posterior: normaliseFactor(restricted),
     logEvidence: logTotal(restricted),
-    order: p.order,
-    largestFactor: largest,
+    order: st.order,
+    largestFactor: st.largest,
   }
 }
 
@@ -172,10 +344,7 @@ export function variableElimination(
  * ```
  */
 export function logPartition(model: DiscreteModel, options: EliminationOptions = {}): number {
-  const p = prepare(model, [], options, 'logPartition')
-  const { factors, largest } = eliminateAll(p, 'sum')
-  p.run.end('completed', p.order.length, { largestFactor: largest })
-  return logTotal(factorProductAll(factors))
+  return logTotal(factorProductAll(runElimination(model, [], options, 'sum', 'logPartition').factors))
 }
 
 /** Result of {@link maxProductElimination}. */
@@ -210,11 +379,11 @@ export interface MaxProductResult {
  * ```
  */
 export function maxProductElimination(model: DiscreteModel, options: EliminationOptions = {}): MaxProductResult {
-  const p = prepare(model, [], options, 'maxProductElimination')
-  const { factors, products, largest } = eliminateAll(p, 'max')
-  const logValue = factorProductAll(factors).logValues[0] ?? Number.NEGATIVE_INFINITY
+  const st = runElimination(model, [], options, 'max')
+  const logValue = factorProductAll(st.factors).logValues[0] ?? Number.NEGATIVE_INFINITY
+  const products = new Map(st.products.map((q) => [q.variable, q.factor]))
   const indices: Record<string, number> = {}
-  for (const v of [...p.order].reverse()) {
+  for (const v of [...st.order].reverse()) {
     const product = products.get(v)
     if (product === undefined) {
       indices[v] = 0
@@ -223,14 +392,13 @@ export function maxProductElimination(model: DiscreteModel, options: Elimination
     const fixed = Object.fromEntries(product.variables.filter((w) => w !== v).map((w) => [w, indices[w] ?? 0]))
     indices[v] = factorArgmax(reduceFactor(product, fixed))[v] ?? 0
   }
-  p.run.end('completed', p.order.length, { largestFactor: largest, logValue })
   const ordered = Object.fromEntries(
     modelVariables(model)
       .map((v) => v.name)
       .filter((v) => v in indices)
       .map((v) => [v, indices[v] ?? 0]),
   )
-  return { assignment: stateNames(model, ordered), indices: ordered, logValue, order: p.order }
+  return { assignment: stateNames(model, ordered), indices: ordered, logValue, order: st.order }
 }
 
 /**

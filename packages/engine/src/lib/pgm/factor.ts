@@ -5,7 +5,7 @@
  * argmax and entropy.
  */
 
-import { logSumExpOf, MdmlError } from '../base/index.ts'
+import { type Json, logSumExpOf, MdmlError } from '../base/index.ts'
 
 /**
  * A discrete variable: a name and the names of its states.
@@ -143,6 +143,48 @@ export function logFactor(
  */
 export function unitFactor(variables: readonly string[], cardinality: readonly number[]): Factor {
   return logFactor(variables, cardinality, new Float64Array(size(cardinality)))
+}
+
+/**
+ * A factor as JSON, for algorithm states that hold factors: the log values as a plain array in which a value that JSON
+ * cannot carry (minus infinity, which is every zero entry) is written as a string.
+ *
+ * @param f - The factor.
+ * @returns Its JSON.
+ * @concept factors
+ * @example
+ * ```ts
+ * import { factor, factorToJson } from 'mdml-engine/pgm'
+ * factorToJson(factor(['a'], [2], [0, 1])) // => { variables: ['a'], cardinality: [2], logValues: ['-Infinity', 0] }
+ * ```
+ */
+export function factorToJson(f: Factor): Json {
+  return {
+    variables: [...f.variables],
+    cardinality: [...f.cardinality],
+    logValues: Array.from(f.logValues, (v): Json => (Number.isFinite(v) ? v : String(v))),
+  }
+}
+
+/**
+ * The inverse of {@link factorToJson}.
+ *
+ * @param json - The JSON of a factor.
+ * @returns The factor.
+ * @concept factors
+ * @example
+ * ```ts
+ * import { factor, factorFromJson, factorToJson } from 'mdml-engine/pgm'
+ * factorFromJson(factorToJson(factor(['a'], [2], [0, 1]))).logValues[0] // => -Infinity
+ * ```
+ */
+export function factorFromJson(json: Json): Factor {
+  const o = json as { variables: string[]; cardinality: number[]; logValues: (number | string)[] }
+  return {
+    variables: [...o.variables],
+    cardinality: [...o.cardinality],
+    logValues: Float64Array.from(o.logValues, (v) => (typeof v === 'number' ? v : Number(v))),
+  }
 }
 
 /**
