@@ -2310,8 +2310,15 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `ode/convergence.ts`: order verification (error against step size, observed order), stability regions and
   A-stability checks, work-precision diagrams.
 - `pde/grids.ts`: 1-D and 2-D grids, boundary-condition types (Dirichlet, Neumann, Robin, periodic).
-- `pde/finite-difference.ts`: heat (explicit, implicit, Crank-Nicolson), wave (leapfrog), advection (upwind,
-  Lax-Friedrichs, Lax-Wendroff), Poisson (Jacobi, Gauss-Seidel, SOR, conjugate gradients, multigrid).
+- `pde/finite-difference.ts`: heat (explicit, implicit, Crank-Nicolson, theta), wave (leapfrog), advection (upwind,
+  Lax-Friedrichs, Lax-Wendroff) as steppable algorithms (`heatAlgorithm`, `heat1dAlgorithm`, `wave1dAlgorithm`,
+  `advection1dAlgorithm`: the state is the field, the time, the field one step back and the snapshots, so it
+  serialises and resumes; logs `pde/t`, `pde/u`, `pde/norm`, `pde/max`, `pde/failed`; an unstable step ends the run
+  `diverged`) and the solvers over a whole interval (`heat`, `heat1d`, `wave1d`, `advection1d`, the same numbers),
+  Poisson (Jacobi, Gauss-Seidel, SOR, conjugate gradients, multigrid).
+- `pde/finite-difference-options.ts`: the slots of the steppers as option tables: `heatSchemes` (`explicit`,
+  `implicit`, `crank-nicolson`, `theta` with its weight), `advectionSchemes` (`upwind`, `lax-friedrichs`,
+  `lax-wendroff`, as stencils) and `initialProfiles` (`sine`, `gaussian`, `pulse`, `triangle`).
 - `pde/finite-volume.ts`: conservation laws, Godunov and MUSCL schemes, flux limiters, Burgers shocks and rarefactions.
 - `pde/finite-element.ts`: 1-D linear and quadratic elements, 2-D linear triangles, assembly, Poisson and heat problems.
 - `pde/spectral.ts`: Fourier pseudo-spectral methods (dealiasing), Chebyshev collocation, ETDRK4 for KdV,

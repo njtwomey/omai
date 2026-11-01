@@ -9,8 +9,20 @@ import { MdmlError } from '../../base/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import { type CsrMatrix, cg, fromCoo, gmres } from '../../numerics/sparse/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { csrApply, rowOf, shiftedLu, sparseLuSolve } from './_linear.ts'
+import { advectionSchemes, heatSchemes } from './finite-difference-options.ts'
 import {
   applyDirichlet,
   type BoundaryCondition,
@@ -36,13 +48,35 @@ export interface PdeSolution {
 
 /** The state of the time-stepping PDE algorithms. */
 export interface TimeStepState {
+  /** Steps taken. */
+  readonly step: number
+  /** The time reached. */
   readonly t: number
+  /** The field `u(t)` at the nodes. */
   readonly u: Float64Array
+  /** The field one step back (the leapfrog scheme's second level), `undefined` before the first step. */
   readonly prev: Float64Array | undefined
-  readonly ts: number[]
-  readonly us: Float64Array[]
+  /** The snapshot times and fields kept (every n-th step, the last, and a failing one). */
+  readonly ts: readonly number[]
+  readonly us: readonly Float64Array[]
+  /** Whether the field became non-finite. */
   readonly failed: boolean
 }
+
+/** The paths the time-stepping PDE algorithms log, as a type. */
+export type PdePath = 'pde/t' | 'pde/u' | 'pde/norm' | 'pde/max' | 'pde/failed'
+
+/**
+ * What the time-stepping PDE algorithms log, by path: the time reached, the field at the nodes, its l2 norm and its
+ * largest absolute value, and whether it has become non-finite.
+ */
+export const pdeContract: Contract<TimeStepState, PdePath> = defineContract({
+  'pde/t': scalar({ description: 'the time reached' }),
+  'pde/u': tensor({ role: 'state', shape: ['node'], description: 'the field at the nodes' }),
+  'pde/norm': scalar({ description: 'the l2 norm of the field' }),
+  'pde/max': scalar({ description: 'the largest |u|' }),
+  'pde/failed': scalar({ description: '1 when the field has become non-finite, else 0' }),
+})
 
 const STEP_SCHEMA = channels({
   metrics: {
@@ -53,13 +87,17 @@ const STEP_SCHEMA = channels({
   tensors: { u: { role: 'state', description: 'the nodal values' } },
 })
 
+function maxAbs(u: Float64Array): number {
+  let m = 0
+  for (const v of u) m = Math.max(m, Math.abs(v))
+  return m
+}
+
 function observeState(s: TimeStepState): {
   metrics: Record<string, number>
   tensors: Record<string, { role: 'state'; value: Float64Array }>
 } {
-  let m = 0
-  for (const v of s.u) m = Math.max(m, Math.abs(v))
-  return { metrics: { t: s.t, norm: dnrm2(s.u), max: m }, tensors: { u: { role: 'state', value: s.u } } }
+  return { metrics: { t: s.t, norm: dnrm2(s.u), max: maxAbs(s.u) }, tensors: { u: { role: 'state', value: s.u } } }
 }
 
 function finite(u: Float64Array): boolean {
@@ -67,7 +105,14 @@ function finite(u: Float64Array): boolean {
   return true
 }
 
-function runSteps(
+/** The number of steps of size dt that reach tEnd (the last one shortened to land on it). */
+function stepCount(name: string, dt: number, tEnd: number): number {
+  if (!(dt > 0)) throw new MdmlError('value', `${name}: dt must be positive`)
+  if (!(tEnd >= 0)) throw new MdmlError('value', `${name}: tEnd must be non-negative`)
+  return Math.ceil(tEnd / dt - 1e-9)
+}
+
+function timeStepAlgorithm(
   name: string,
   config: Record<string, number | string>,
   u0: Float64Array,
@@ -75,39 +120,57 @@ function runSteps(
   tEnd: number,
   every: number,
   advance: (s: TimeStepState, t: number, h: number) => { u: Float64Array; prev: Float64Array | undefined },
-  options: PdeTraceOptions,
-): PdeSolution {
-  if (!(dt > 0)) throw new MdmlError('value', `${name}: dt must be positive`)
-  if (!(tEnd >= 0)) throw new MdmlError('value', `${name}: tEnd must be non-negative`)
-  const steps = Math.ceil(tEnd / dt - 1e-9)
-  const algorithm: Algorithm<TimeStepState> = {
+): Algorithm<TimeStepState, PdePath> {
+  const steps = stepCount(name, dt, tEnd)
+  return {
     name,
-    config,
+    config: { ...config, steps },
     schema: STEP_SCHEMA,
-    init: () => ({ t: 0, u: u0, prev: undefined, ts: [0], us: [u0], failed: false }),
+    init: () => ({ step: 0, t: 0, u: u0, prev: undefined, ts: [0], us: [u0], failed: false }),
     step: (s, ctx) => {
       const h = Math.min(dt, tEnd - s.t)
       const { u, prev } = advance(s, s.t, h)
       const t = ctx.t + 1 === steps ? tEnd : s.t + h
       const failed = !finite(u)
-      if ((ctx.t + 1) % every === 0 || ctx.t + 1 === steps || failed) {
-        s.ts.push(t)
-        s.us.push(u)
+      const keep = (ctx.t + 1) % every === 0 || ctx.t + 1 === steps || failed
+      if (ctx.wants('pde/t')) ctx.log('pde/t', t)
+      if (ctx.wants('pde/u')) ctx.log('pde/u', u)
+      if (ctx.wants('pde/norm')) ctx.log('pde/norm', dnrm2(u))
+      if (ctx.wants('pde/max')) ctx.log('pde/max', maxAbs(u))
+      if (ctx.wants('pde/failed')) ctx.log('pde/failed', failed ? 1 : 0)
+      return {
+        step: s.step + 1,
+        t,
+        u,
+        prev,
+        ts: keep ? [...s.ts, t] : s.ts,
+        us: keep ? [...s.us, u] : s.us,
+        failed,
       }
-      return { ...s, t, u, prev, failed }
     },
-    done: (s) => (s.failed ? 'diverged' : undefined),
+    done: (s) => (s.failed ? 'diverged' : s.step >= steps ? 'converged' : undefined),
     observe: observeState,
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as TimeStepState,
   }
-  const run = runAlgorithm(algorithm, { maxSteps: steps, ...options })
-  const st = run.state
-  const n = u0.length
+}
+
+/** A time-stepping algorithm run to its end and its snapshots as a {@link PdeSolution}. */
+function solveSteps(
+  algorithm: Algorithm<TimeStepState, PdePath>,
+  dt: number,
+  tEnd: number,
+  options: PdeTraceOptions,
+): PdeSolution {
+  const name = algorithm.name
+  const st = runAlgorithm(algorithm, { maxSteps: stepCount(name, dt, tEnd), ...options }).state
+  const n = st.u.length
   const flat = new Float64Array(st.us.length * n)
   st.us.forEach((u, i) => {
     flat.set(u, i * n)
   })
   return {
-    t: st.ts,
+    t: [...st.ts],
     u: fromStorage(flat, [st.us.length, n], 'float64'),
     status: st.failed ? 'failed' : 'success',
     message: st.failed ? `${name}: the solution became non-finite at t = ${st.t} (unstable step?)` : '',
@@ -122,14 +185,16 @@ function initial(u0: TensorLike | ((x: number) => number), grid: Grid1d): Float6
 }
 
 /** The time scheme of a parabolic solve. */
-export type HeatScheme = 'explicit' | 'implicit' | 'crank-nicolson'
+export type HeatScheme = 'explicit' | 'implicit' | 'crank-nicolson' | 'theta'
 
 /** Options of {@link heat}. */
 export interface HeatOptions extends PdeTraceOptions {
   readonly dt: number
   readonly tEnd: number
-  /** FTCS, BTCS or Crank-Nicolson (default). */
+  /** FTCS, BTCS, Crank-Nicolson (default) or a weighted `theta` (see {@link heatSchemes}). */
   readonly scheme?: HeatScheme
+  /** The weight of the new level for the `theta` scheme (default 0.75). */
+  readonly theta?: number
   /** A source term s(node index, t) added to the right-hand side. */
   readonly source?: (i: number, t: number) => number
   /** Keep every n-th step (default 1). */
@@ -137,31 +202,36 @@ export interface HeatOptions extends PdeTraceOptions {
 }
 
 /**
- * The parabolic problem u_t = L u + s on any discretised operator (1-D or 2-D, from {@link laplacian1d} or
- * {@link laplacian2d}) by the theta method: explicit (FTCS, theta = 0), implicit (BTCS, theta = 1) or Crank-Nicolson
- * (theta = 1/2). The implicit matrices are factorised once. A traced algorithm with the solution norm per step; an
- * unstable explicit step ends the run with a failed status.
+ * The parabolic problem u_t = L u + s on any discretised operator as a steppable algorithm: each step advances the
+ * field by the theta method (explicit FTCS, implicit BTCS, or Crank-Nicolson; see {@link heatSchemes}). The state is the
+ * field at the nodes, the time and the snapshots, so it serialises and a run resumes; every step logs the time, the
+ * field, its norm and its largest value, and an unstable step ends the run `diverged` (see {@link pdeContract}).
  *
  * @param op - The operator with its boundary conditions.
  * @param u0 - Initial nodal values.
  * @param options - Step, final time, scheme, source and thinning.
- * @returns Snapshots of the solution.
+ * @returns The algorithm; it is done after the last step.
+ * @throws MdmlError with code `value` for a non-positive step, or `shape` for an initial condition of the wrong size.
  * @concept heat-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, heat, laplacian1d } from 'mdml-engine/dynamics/pde'
- * const g = grid1d(0, 1, 21)
- * const u0 = Array.from(g.x, (x) => Math.sin(Math.PI * x))
- * const s = heat(laplacian1d(g, dirichlet(), dirichlet()), u0, { dt: 0.001, tEnd: 0.1 })
- * Math.abs((s.u.data[s.u.data.length - 11] ?? 0) - Math.exp(-(Math.PI ** 2) * 0.1)) < 1e-3 // => true
+ * import { dirichlet, grid1d, heatAlgorithm, laplacian1d } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const g = grid1d(0, 1, 11)
+ * const alg = heatAlgorithm(laplacian1d(g, dirichlet(), dirichlet()), Array.from(g.x, (x) => Math.sin(Math.PI * x)), { dt: 0.01, tEnd: 0.05 })
+ * runAlgorithm(alg, { maxSteps: 5 }).state.t // => 0.05
  * ```
  */
-export function heat(op: DiscreteOperator, u0: TensorLike, options: HeatOptions): PdeSolution {
+export function heatAlgorithm(
+  op: DiscreteOperator,
+  u0: TensorLike,
+  options: HeatOptions,
+): Algorithm<TimeStepState, PdePath> {
   const scheme = options.scheme ?? 'crank-nicolson'
-  const theta = scheme === 'explicit' ? 0 : scheme === 'implicit' ? 1 : 0.5
+  const theta = heatSchemes.make({ kind: scheme, ...(options.theta === undefined ? {} : { theta: options.theta }) })
   const n = op.size
   const start = applyDirichlet(Float64Array.from(toFlat(asTensor(u0))), op, 0)
-  if (start.length !== n) throw new MdmlError('shape', `heat: the initial condition needs ${n} values`)
+  if (start.length !== n) throw new MdmlError('shape', `heatAlgorithm: the initial condition needs ${n} values`)
   const fixedRows = new Set(op.fixed.map((f) => f.index))
   const factorCache = new Map<number, ReturnType<typeof shiftedLu>>()
   const rhsOf = (t: number): Float64Array => {
@@ -170,9 +240,9 @@ export function heat(op: DiscreteOperator, u0: TensorLike, options: HeatOptions)
       for (let i = 0; i < n; i++) if (!fixedRows.has(i)) b[i] = (b[i] ?? 0) + options.source(i, t)
     return b
   }
-  return runSteps(
+  return timeStepAlgorithm(
     `heat-${scheme}`,
-    { scheme, dt: options.dt, tEnd: options.tEnd },
+    { scheme, theta, dt: options.dt, tEnd: options.tEnd },
     start,
     options.dt,
     options.tEnd,
@@ -197,8 +267,69 @@ export function heat(op: DiscreteOperator, u0: TensorLike, options: HeatOptions)
       for (const f of op.fixed) rhs[f.index] = boundaryValue(f.bc, t + h, ...f.at)
       return { u: sparseLuSolve(lu, rhs), prev: s.u }
     },
-    options,
   )
+}
+
+/**
+ * The parabolic problem u_t = L u + s on any discretised operator (1-D or 2-D, from {@link laplacian1d} or
+ * {@link laplacian2d}) by the theta method: explicit (FTCS, theta = 0), implicit (BTCS, theta = 1) or Crank-Nicolson
+ * (theta = 1/2). The implicit matrices are factorised once. A traced algorithm with the solution norm per step; an
+ * unstable explicit step ends the run with a failed status.
+ *
+ * @param op - The operator with its boundary conditions.
+ * @param u0 - Initial nodal values.
+ * @param options - Step, final time, scheme, source and thinning.
+ * @returns Snapshots of the solution.
+ * @concept heat-equation
+ * @example
+ * ```ts
+ * import { dirichlet, grid1d, heat, laplacian1d } from 'mdml-engine/dynamics/pde'
+ * const g = grid1d(0, 1, 21)
+ * const u0 = Array.from(g.x, (x) => Math.sin(Math.PI * x))
+ * const s = heat(laplacian1d(g, dirichlet(), dirichlet()), u0, { dt: 0.001, tEnd: 0.1 })
+ * Math.abs((s.u.data[s.u.data.length - 11] ?? 0) - Math.exp(-(Math.PI ** 2) * 0.1)) < 1e-3 // => true
+ * ```
+ */
+export function heat(op: DiscreteOperator, u0: TensorLike, options: HeatOptions): PdeSolution {
+  return solveSteps(heatAlgorithm(op, u0, options), options.dt, options.tEnd, options)
+}
+
+/** Options of {@link heat1d}. */
+export type Heat1dOptions = HeatOptions & {
+  readonly alpha?: number
+  readonly left: BoundaryCondition
+  readonly right: BoundaryCondition
+  readonly sourceFn?: (x: number, t: number) => number
+}
+
+/**
+ * The 1-D heat equation u_t = alpha u_xx (plus a source) on a grid with boundary conditions, as a steppable algorithm
+ * (see {@link heatAlgorithm}).
+ *
+ * @param u0 - Initial values or a function of x.
+ * @param grid - The grid.
+ * @param options - Diffusivity, boundary conditions and the options of {@link heat}.
+ * @returns The algorithm; it is done after the last step.
+ * @concept heat-equation
+ * @example
+ * ```ts
+ * import { dirichlet, grid1d, heat1dAlgorithm } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = heat1dAlgorithm((x) => x * (1 - x), grid1d(0, 1, 11), { dt: 0.01, tEnd: 0.05, left: dirichlet(), right: dirichlet() })
+ * runAlgorithm(alg, { maxSteps: 5 }).state.us.length // => 6
+ * ```
+ */
+export function heat1dAlgorithm(
+  u0: TensorLike | ((x: number) => number),
+  grid: Grid1d,
+  options: Heat1dOptions,
+): Algorithm<TimeStepState, PdePath> {
+  const op = laplacian1d(grid, options.left, options.right, options.alpha ?? 1)
+  const source = options.sourceFn
+  return heatAlgorithm(op, initial(u0, grid), {
+    ...options,
+    ...(source === undefined ? {} : { source: (i: number, t: number) => source(grid.x[i] ?? 0, t) }),
+  })
 }
 
 /**
@@ -215,22 +346,8 @@ export function heat(op: DiscreteOperator, u0: TensorLike, options: HeatOptions)
  * heat1d((x) => x * (1 - x), grid1d(0, 1, 11), { dt: 0.01, tEnd: 0.05, left: dirichlet(), right: dirichlet() }).t.length // => 6
  * ```
  */
-export function heat1d(
-  u0: TensorLike | ((x: number) => number),
-  grid: Grid1d,
-  options: HeatOptions & {
-    readonly alpha?: number
-    readonly left: BoundaryCondition
-    readonly right: BoundaryCondition
-    readonly sourceFn?: (x: number, t: number) => number
-  },
-): PdeSolution {
-  const op = laplacian1d(grid, options.left, options.right, options.alpha ?? 1)
-  const source = options.sourceFn
-  return heat(op, initial(u0, grid), {
-    ...options,
-    ...(source === undefined ? {} : { source: (i: number, t: number) => source(grid.x[i] ?? 0, t) }),
-  })
+export function heat1d(u0: TensorLike | ((x: number) => number), grid: Grid1d, options: Heat1dOptions): PdeSolution {
+  return solveSteps(heat1dAlgorithm(u0, grid, options), options.dt, options.tEnd, options)
 }
 
 /** Options of {@link wave1d}. */
@@ -241,6 +358,53 @@ export interface WaveOptions extends PdeTraceOptions {
   readonly left: BoundaryCondition
   readonly right: BoundaryCondition
   readonly every?: number
+}
+
+/**
+ * The 1-D wave equation u_tt = c^2 u_xx by the leapfrog scheme as a steppable algorithm: the first step is a Taylor
+ * step from the initial velocity, the rest u^{n+1} = 2 u^n - u^{n-1} + dt^2 c^2 D2 u^n, so the state carries the field
+ * and the one before it. Stable for c dt / dx <= 1 (exact on the grid at c dt = dx). Logs the paths of {@link pdeContract}.
+ *
+ * @param u0 - Initial displacement (values or a function of x).
+ * @param v0 - Initial velocity (values or a function of x).
+ * @param grid - The grid.
+ * @param options - Speed, step, final time, boundary conditions and thinning.
+ * @returns The algorithm; it is done after the last step.
+ * @concept wave-equation
+ * @example
+ * ```ts
+ * import { dirichlet, grid1d, wave1dAlgorithm } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = wave1dAlgorithm((x) => Math.sin(Math.PI * x), () => 0, grid1d(0, 1, 21), { dt: 0.05, tEnd: 0.5, left: dirichlet(), right: dirichlet() })
+ * runAlgorithm(alg, { maxSteps: 10 }).state.prev?.length // => 21
+ * ```
+ */
+export function wave1dAlgorithm(
+  u0: TensorLike | ((x: number) => number),
+  v0: TensorLike | ((x: number) => number),
+  grid: Grid1d,
+  options: WaveOptions,
+): Algorithm<TimeStepState, PdePath> {
+  const c2 = (options.c ?? 1) ** 2
+  const op = laplacian1d(grid, options.left, options.right, c2)
+  const v = initial(v0, grid)
+  return timeStepAlgorithm(
+    'wave-leapfrog',
+    { dt: options.dt, tEnd: options.tEnd, c: options.c ?? 1 },
+    applyDirichlet(initial(u0, grid), op, 0),
+    options.dt,
+    options.tEnd,
+    Math.max(1, options.every ?? 1),
+    (s, t, h) => {
+      const au = csrApply(op.matrix, s.u)
+      const b = op.forcing(t)
+      const next =
+        s.prev === undefined
+          ? Float64Array.from(s.u, (u, i) => u + h * (v[i] ?? 0) + 0.5 * h * h * ((au[i] ?? 0) + (b[i] ?? 0)))
+          : Float64Array.from(s.u, (u, i) => 2 * u - (s.prev?.[i] ?? 0) + h * h * ((au[i] ?? 0) + (b[i] ?? 0)))
+      return { u: applyDirichlet(next, op, t + h), prev: s.u }
+    },
+  )
 }
 
 /**
@@ -267,27 +431,7 @@ export function wave1d(
   grid: Grid1d,
   options: WaveOptions,
 ): PdeSolution {
-  const c2 = (options.c ?? 1) ** 2
-  const op = laplacian1d(grid, options.left, options.right, c2)
-  const v = initial(v0, grid)
-  return runSteps(
-    'wave-leapfrog',
-    { dt: options.dt, tEnd: options.tEnd, c: options.c ?? 1 },
-    applyDirichlet(initial(u0, grid), op, 0),
-    options.dt,
-    options.tEnd,
-    Math.max(1, options.every ?? 1),
-    (s, t, h) => {
-      const au = csrApply(op.matrix, s.u)
-      const b = op.forcing(t)
-      const next =
-        s.prev === undefined
-          ? Float64Array.from(s.u, (u, i) => u + h * (v[i] ?? 0) + 0.5 * h * h * ((au[i] ?? 0) + (b[i] ?? 0)))
-          : Float64Array.from(s.u, (u, i) => 2 * u - (s.prev?.[i] ?? 0) + h * h * ((au[i] ?? 0) + (b[i] ?? 0)))
-      return { u: applyDirichlet(next, op, t + h), prev: s.u }
-    },
-    options,
-  )
+  return solveSteps(wave1dAlgorithm(u0, v0, grid, options), options.dt, options.tEnd, options)
 }
 
 /** The advection schemes. */
@@ -303,6 +447,62 @@ export interface AdvectionOptions extends PdeTraceOptions {
   /** `periodic` (default) or an inflow value at the upwind boundary. */
   readonly boundary?: 'periodic' | { readonly inflow: number }
   readonly every?: number
+}
+
+/**
+ * Linear advection u_t + a u_x = 0 as a steppable algorithm: each step applies a stencil (upwind, Lax-Friedrichs or
+ * Lax-Wendroff; see {@link advectionSchemes}) to the field, with periodic or inflow and outflow boundaries. Each is
+ * stable for |a| dt / dx <= 1. Logs the paths of {@link pdeContract}.
+ *
+ * @param u0 - Initial values or a function of x.
+ * @param grid - The grid.
+ * @param options - Velocity, step, final time, scheme and boundary.
+ * @returns The algorithm; it is done after the last step.
+ * @concept advection-equation
+ * @example
+ * ```ts
+ * import { advection1dAlgorithm, grid1d } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = advection1dAlgorithm((x) => Math.sin(2 * Math.PI * x), grid1d(0, 1, 101), { velocity: 1, dt: 0.01, tEnd: 0.5 })
+ * runAlgorithm(alg, { maxSteps: 50 }).state.step // => 50
+ * ```
+ */
+export function advection1dAlgorithm(
+  u0: TensorLike | ((x: number) => number),
+  grid: Grid1d,
+  options: AdvectionOptions,
+): Algorithm<TimeStepState, PdePath> {
+  const a = options.velocity
+  const scheme = options.scheme ?? 'upwind'
+  const stencil = advectionSchemes.make({ kind: scheme })
+  const bc = options.boundary ?? 'periodic'
+  const n = grid.n
+  const isPeriodic = bc === 'periodic'
+  const m = isPeriodic ? n - 1 : n
+  return timeStepAlgorithm(
+    `advection-${scheme}`,
+    { scheme, velocity: a, dt: options.dt, tEnd: options.tEnd },
+    initial(u0, grid),
+    options.dt,
+    options.tEnd,
+    Math.max(1, options.every ?? 1),
+    (s, _t, h) => {
+      const nu = (a * h) / grid.dx
+      const u = s.u
+      const at = (i: number): number => {
+        if (isPeriodic) return u[((i % m) + m) % m] ?? 0
+        if (i < 0) return a > 0 ? (bc as { inflow: number }).inflow : (u[0] ?? 0)
+        if (i >= n) return a < 0 ? (bc as { inflow: number }).inflow : (u[n - 1] ?? 0)
+        return u[i] ?? 0
+      }
+      const next = new Float64Array(n)
+      for (let i = 0; i < m; i++) next[i] = stencil(at(i - 1), at(i), at(i + 1), nu, a)
+      if (isPeriodic) next[n - 1] = next[0] ?? 0
+      else if (a > 0) next[0] = (bc as { inflow: number }).inflow
+      else if (a < 0) next[n - 1] = (bc as { inflow: number }).inflow
+      return { u: next, prev: u }
+    },
+  )
 }
 
 /**
@@ -327,42 +527,7 @@ export function advection1d(
   grid: Grid1d,
   options: AdvectionOptions,
 ): PdeSolution {
-  const a = options.velocity
-  const scheme = options.scheme ?? 'upwind'
-  const bc = options.boundary ?? 'periodic'
-  const n = grid.n
-  const isPeriodic = bc === 'periodic'
-  const m = isPeriodic ? n - 1 : n
-  return runSteps(
-    `advection-${scheme}`,
-    { scheme, velocity: a, dt: options.dt, tEnd: options.tEnd },
-    initial(u0, grid),
-    options.dt,
-    options.tEnd,
-    Math.max(1, options.every ?? 1),
-    (s, _t, h) => {
-      const nu = (a * h) / grid.dx
-      const u = s.u
-      const at = (i: number): number => {
-        if (isPeriodic) return u[((i % m) + m) % m] ?? 0
-        if (i < 0) return a > 0 ? (bc as { inflow: number }).inflow : (u[0] ?? 0)
-        if (i >= n) return a < 0 ? (bc as { inflow: number }).inflow : (u[n - 1] ?? 0)
-        return u[i] ?? 0
-      }
-      const next = new Float64Array(n)
-      for (let i = 0; i < m; i++) {
-        const [l, c, r] = [at(i - 1), at(i), at(i + 1)]
-        if (scheme === 'upwind') next[i] = a >= 0 ? c - nu * (c - l) : c - nu * (r - c)
-        else if (scheme === 'lax-friedrichs') next[i] = 0.5 * (l + r) - 0.5 * nu * (r - l)
-        else next[i] = c - 0.5 * nu * (r - l) + 0.5 * nu * nu * (r - 2 * c + l)
-      }
-      if (isPeriodic) next[n - 1] = next[0] ?? 0
-      else if (a > 0) next[0] = (bc as { inflow: number }).inflow
-      else if (a < 0) next[n - 1] = (bc as { inflow: number }).inflow
-      return { u: next, prev: u }
-    },
-    options,
-  )
+  return solveSteps(advection1dAlgorithm(u0, grid, options), options.dt, options.tEnd, options)
 }
 
 /** The Poisson iterations. */
