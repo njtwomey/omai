@@ -6,6 +6,14 @@ Audit of 2026-11-01 on branch `agent-c3d2e8-audit` (from `main` at `6638020e`). 
 
 How to read the rows. Locations are `file:line` under `packages/engine/src/lib/`. Log paths are suggestions in the `area/name` style of `lib/trace/contract.ts`. Priority: H = classic, widely taught, the step-by-step behaviour is the whole point; M = useful; L = minor. Effort: S = lift an existing loop (or export a private Algorithm) into an exported Algorithm; M = also a new estimator on a base, an exposition record or tests; L = needs new library pieces. The evidence column starts with `[lit]` when an `init`/`step` Algorithm literal already exists privately in the function (so the lift is an export plus a wrapper) or `[loop]` when only a plain loop exists, then says what was checked.
 
+## Status
+
+Rows closed since the audit, by the agents that ported them (each is an exported `*Algorithm` with typed paths, a JSON state and a resume test; the old function runs it to completion). Locations in the rows below are those of the audit and have since moved.
+
+- **Done:** GR1; NN1; EX1 (Wachter and DiCE); PG1, PG2; NU1, NU2, NU3, NU4; SA1, SA2; SG1; SO1, SO2; ST1; DY1, DY2, DY3, DY5, DY6, DY7, DY8 (collocation), DY9; TS1; LE1, LE2, LE3, LE4; CL1; EX2, EX3, EX4; EN1; FA1; LI1; NN2, NN3. DY4 (BOCPD) was done by its own agent.
+- **Open slots in the done rows:** EX1 DiCE has Adam only (no optimiser slot); EN1 has no outer bags and a step is a full cycle over the features; LE2 has the ACI score memory as its only conformal slot; EX3 has no sampler table for anchors.
+- **Not yet done:** see the rows not listed above. The batches in flight or queued are graph, games, RL and PGM (GR2-GR8, GA1-GA3, AG1, RL1, PG3-PG5); numerics, signal, text, vision, logic, information (OP1, SA3, NU5-NU8, SG2, SG3, SK1, IN1, IN2, TX1-TX3, VI1-VI4, LO1-LO4, PP1, DY10, DY8 shooting); and the slot-rule and duplicate sections (b), (a).
+
 ## Summary
 
 | domain         | files | exported Algorithm declarations | estimators on `iterative` |          gap rows | high-priority rows |
