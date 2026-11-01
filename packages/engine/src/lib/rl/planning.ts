@@ -8,7 +8,16 @@
 import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import type { Space } from '../space/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  tensor,
+} from '../trace/index.ts'
 import type { Policy } from './agent.ts'
 import type { Env } from './env.ts'
 import type { AecEnv } from './multi-agent.ts'
@@ -378,10 +387,131 @@ export function gameMcts<S, O>(
 
 // ---------------------------------------------------------------------------------------------- rollout planning
 
+/** The paths the rollout planner logs, as a type. */
+export type RolloutPath = 'plan/rollout' | 'plan/value' | 'plan/return'
+
+/**
+ * What the rollout planner logs, by path: the rollout batch just run, the mean discounted return of every first action
+ * over the batches so far, and the return each action got in the batch.
+ */
+export const rolloutContract: Contract<unknown, RolloutPath> = defineContract({
+  'plan/rollout': scalar({ description: 'the rollout batch just run, counting from 1' }),
+  'plan/value': tensor({
+    role: 'state',
+    shape: ['actions'],
+    description: 'the mean discounted return of each first action over the batches so far',
+  }),
+  'plan/return': tensor({
+    role: 'state',
+    shape: ['actions'],
+    description: 'the return of each first action in this batch',
+  }),
+})
+
+/** Options of {@link rolloutPlannerAlgorithm} and {@link rolloutPlanner}. */
+export interface RolloutPlannerOptions<O, A> {
+  /** The first actions to compare (default the discrete action space). */
+  readonly actions?: readonly A[]
+  /** The base policy after the first action (default uniformly random over the actions). */
+  readonly policy?: Policy<O, A>
+  /** Rollouts per action (default 16). */
+  readonly rollouts?: number
+  /** The steps of each rollout (default 100). */
+  readonly horizon?: number
+  /** The discount (default 1). */
+  readonly gamma?: number
+  /** The key (default `key(0)`). */
+  readonly key?: Key
+}
+
+/** The state of {@link rolloutPlannerAlgorithm}. */
+export interface RolloutPlannerState {
+  /** The total discounted return of each first action over the batches so far. */
+  readonly totals: readonly number[]
+  /** Batches run. */
+  readonly batches: number
+  /** The return of each action in the last batch. */
+  readonly last: readonly number[]
+}
+
+/**
+ * Monte Carlo rollout planning as an Algorithm: each step is a batch with one rollout per first action, all of them
+ * using the same random numbers (so differences between actions are not noise), after which the running means rank the
+ * actions. It is done after `rollouts` batches.
+ *
+ * @param env - The environment.
+ * @param state - The current state.
+ * @param options - Actions, base policy, rollouts, horizon, discount and key.
+ * @returns The algorithm; its state's `totals` divided by `batches` are the action values.
+ * @concept planning
+ * @example
+ * ```ts
+ * import { rolloutPlannerAlgorithm } from 'mdml-engine/rl'
+ * import { cartPole } from 'mdml-engine/environments'
+ * rolloutPlannerAlgorithm(cartPole.create(), [0, 0, 0.1, 0], { rollouts: 8 }).name // => 'rolloutPlanner'
+ * ```
+ */
+export function rolloutPlannerAlgorithm<S, O, A>(
+  env: Env<S, O, A>,
+  state: S,
+  options: RolloutPlannerOptions<O, A> = {},
+): Algorithm<RolloutPlannerState, RolloutPath> {
+  const actions = options.actions ?? (discreteActions(env.actionSpace, 'rolloutPlanner') as unknown as A[])
+  const n = options.rollouts ?? 16
+  const horizon = options.horizon ?? 100
+  const gamma = options.gamma ?? 1
+  const k = options.key ?? makeKey(0)
+  const observe = env.observe
+  return {
+    name: 'rolloutPlanner',
+    config: { actions: actions.length, rollouts: n, horizon, gamma } as Json,
+    init: () => ({ totals: actions.map(() => 0), batches: 0, last: actions.map(() => 0) }),
+    step: (s, ctx) => {
+      // Common random numbers: rollout j uses the same keys for every first action.
+      const kj = foldIn(k, s.batches)
+      const last = actions.map((first) => {
+        let cur = state
+        let discount = 1
+        let ret = 0
+        for (let t = 0; t < horizon; t++) {
+          const a =
+            t === 0
+              ? first
+              : options.policy !== undefined && observe !== undefined
+                ? options.policy(observe(cur), foldIn(kj, 2 * t))
+                : (actions[Math.min(actions.length - 1, Math.floor(u1(foldIn(kj, 2 * t)) * actions.length))] as A)
+          const r = env.step(cur, a, foldIn(kj, 2 * t + 1))
+          ret += discount * r.reward
+          discount *= gamma
+          cur = r.state
+          if (r.terminated || r.truncated) break
+        }
+        return ret
+      })
+      const totals = s.totals.map((total, i) => total + (last[i] ?? 0))
+      const batches = s.batches + 1
+      if (ctx.wants('plan/rollout')) ctx.log('plan/rollout', batches)
+      if (ctx.wants('plan/value'))
+        ctx.log(
+          'plan/value',
+          Float64Array.from(totals, (x) => x / batches),
+        )
+      if (ctx.wants('plan/return')) ctx.log('plan/return', Float64Array.from(last))
+      return { totals, batches, last }
+    },
+    done: (s) => (s.batches >= n ? 'converged' : undefined),
+    serialise: (s) => ({ totals: [...s.totals], batches: s.batches, last: [...s.last] }),
+    deserialise: (j) => {
+      const o = j as { readonly totals: readonly number[]; readonly batches: number; readonly last: readonly number[] }
+      return { totals: [...o.totals], batches: o.batches, last: [...o.last] }
+    },
+  }
+}
+
 /**
  * A Monte Carlo rollout planner (Tesauro and Galperin 1997): estimate each action by the mean discounted return of
  * `rollouts` simulated episodes that start with it and continue with a base policy, and pick the best. One step of
- * policy improvement over the base policy.
+ * policy improvement over the base policy ({@link rolloutPlannerAlgorithm} run to the end).
  *
  * @param env - The environment.
  * @param state - The current state.
@@ -399,46 +529,12 @@ export function gameMcts<S, O>(
 export function rolloutPlanner<S, O, A>(
   env: Env<S, O, A>,
   state: S,
-  options: {
-    readonly actions?: readonly A[]
-    readonly policy?: Policy<O, A>
-    readonly rollouts?: number
-    readonly horizon?: number
-    readonly gamma?: number
-    readonly key?: Key
-  } = {},
+  options: RolloutPlannerOptions<O, A> = {},
 ): { readonly action: A; readonly values: readonly number[] } {
   const actions = options.actions ?? (discreteActions(env.actionSpace, 'rolloutPlanner') as unknown as A[])
   const n = options.rollouts ?? 16
-  const horizon = options.horizon ?? 100
-  const gamma = options.gamma ?? 1
-  const k = options.key ?? makeKey(0)
-  const observe = env.observe
-  const values = actions.map((first) => {
-    let total = 0
-    for (let j = 0; j < n; j++) {
-      // Common random numbers: rollout j uses the same keys for every first action.
-      const kj = foldIn(k, j)
-      let cur = state
-      let discount = 1
-      let ret = 0
-      for (let t = 0; t < horizon; t++) {
-        const a =
-          t === 0
-            ? first
-            : options.policy !== undefined && observe !== undefined
-              ? options.policy(observe(cur), foldIn(kj, 2 * t))
-              : (actions[Math.min(actions.length - 1, Math.floor(u1(foldIn(kj, 2 * t)) * actions.length))] as A)
-        const r = env.step(cur, a, foldIn(kj, 2 * t + 1))
-        ret += discount * r.reward
-        discount *= gamma
-        cur = r.state
-        if (r.terminated || r.truncated) break
-      }
-      total += ret
-    }
-    return total / n
-  })
+  const { totals } = runAlgorithm(rolloutPlannerAlgorithm(env, state, options), { maxSteps: n }).state
+  const values = totals.map((total) => total / n)
   return { action: actions[argmaxOf(values)] as A, values }
 }
 

@@ -9,9 +9,18 @@ import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { uniform } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
-import { discrete } from '../space/index.ts'
+import { dict, discrete, type OptionTable, optionTable } from '../space/index.ts'
 import { fromStorage, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  tensor,
+} from '../trace/index.ts'
 import type { Env, EnvModel, Outcome } from './env.ts'
 
 /**
@@ -321,29 +330,8 @@ export function valueIteration(
   return { V, Q, policy: greedyPolicy(Q), iterations: result.state.iteration, converged: result.status === 'converged' }
 }
 
-/**
- * The values of a fixed policy: exactly, by solving `(I - gamma P_pi) V = R_pi` (the default), or iteratively by
- * repeated Bellman expectation backups.
- *
- * @param mdp - The MDP.
- * @param policy - One action per state, or action probabilities per state.
- * @param options - `method` (`'exact'` or `'iterative'`), tolerance, iteration cap and discount.
- * @returns The state values.
- * @throws MdmlError with code `value` when the exact system is singular (an improper policy with `gamma = 1`).
- * @concept policy-evaluation
- * @example
- * ```ts
- * import { policyEvaluation, tabularMdp } from 'mdml-engine/rl'
- * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.5 })
- * policyEvaluation(mdp, [0, 0]) // => [0, 0]
- * ```
- */
-export function policyEvaluation(
-  mdp: TabularMdp,
-  policy: TabularPolicy,
-  options: MdpSolveOptions & { readonly method?: 'exact' | 'iterative' } = {},
-): number[] {
-  const gamma = options.gamma ?? mdp.gamma
+/** The reward vector and transition matrix of the chain a policy induces: `V = Rpi + gamma Ppi V`. */
+function policyChain(mdp: TabularMdp, policy: TabularPolicy): { Rpi: Float64Array; Ppi: Float64Array } {
   const { nStates: nS, nActions: nA, transitions: P, rewards: R } = mdp
   const pi = probabilities(mdp, policy)
   const Rpi = new Float64Array(nS)
@@ -357,7 +345,159 @@ export function policyEvaluation(
       for (let s2 = 0; s2 < nS; s2++) Ppi[s * nS + s2] = (Ppi[s * nS + s2] ?? 0) + w * (P[base + s2] ?? 0)
     }
   }
+  return { Rpi, Ppi }
+}
+
+/** The paths policy evaluation logs, as a type. */
+export type PolicyEvaluationPath = 'eval/sweep' | 'eval/delta' | 'eval/V'
+
+/**
+ * What iterative policy evaluation logs, by path: the sweep just made, the largest change in a state value in it (the
+ * sup-norm residual) and the state values after it.
+ */
+export const policyEvaluationContract: Contract<unknown, PolicyEvaluationPath> = defineContract({
+  'eval/sweep': scalar({ description: 'the Bellman sweep just made, counting from 1' }),
+  'eval/delta': scalar({ description: 'the largest change in a state value in the sweep' }),
+  'eval/V': tensor({ role: 'state', shape: ['states'], description: 'the state values after the sweep' }),
+})
+
+/** The state of {@link policyEvaluationAlgorithm}. */
+export interface PolicyEvaluationState {
+  readonly V: Float64Array
+  readonly delta: number
+  readonly iteration: number
+}
+
+/** How a sweep updates the values: from the values of the last sweep, or in place as it goes. */
+export type SweepOrder = 'synchronous' | 'in-place'
+
+/** What a sweep order can do, for validity rules and selectors. */
+export interface SweepProperties {
+  /** Whether a sweep reads only the values of the previous sweep (Jacobi), not the ones it has just written. */
+  readonly usesPreviousSweep: boolean
+}
+
+/**
+ * The sweep orders of iterative policy evaluation as one slot: `synchronous` (every state backed up from the previous
+ * sweep's values, as a matrix-vector product) and `in-place` (Gauss-Seidel: states in index order, each using the
+ * newest values, which usually converges in fewer sweeps).
+ *
+ * @concept policy-evaluation
+ * @example
+ * ```ts
+ * import { sweepOrders } from 'mdml-engine/rl'
+ * sweepOrders.where((p) => p.usesPreviousSweep) // => ['synchronous']
+ * ```
+ */
+export const sweepOrders: OptionTable<SweepOrder, SweepProperties> = optionTable(
+  {
+    synchronous: {
+      description: 'every state is backed up from the values of the previous sweep',
+      properties: { usesPreviousSweep: true },
+      space: dict({}),
+      make: () => 'synchronous',
+    },
+    'in-place': {
+      description: 'states in index order, each backed up from the newest values (Gauss-Seidel)',
+      properties: { usesPreviousSweep: false },
+      space: dict({}),
+      make: () => 'in-place',
+    },
+  },
+  {
+    default: 'synchronous',
+    label: 'sweep order',
+    description: 'Whether a sweep of policy evaluation reads the old values or the ones it has just written.',
+  },
+)
+
+/**
+ * Iterative policy evaluation as an {@link Algorithm}: each step is one sweep of Bellman expectation backups
+ * `V(s) <- R_pi(s) + gamma sum_s' P_pi(s, s') V(s')` over every state, from `V = 0`. It is done when the largest
+ * change in a sweep falls below the tolerance.
+ *
+ * @param mdp - The MDP.
+ * @param policy - One action per state, or action probabilities per state.
+ * @param options - `tol` (default 1e-12), `gamma` (default the MDP's) and the `sweep` order (default synchronous).
+ * @returns The algorithm.
+ * @concept policy-evaluation
+ * @example
+ * ```ts
+ * import { policyEvaluationAlgorithm, tabularMdp } from 'mdml-engine/rl'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.5 })
+ * Array.from(runAlgorithm(policyEvaluationAlgorithm(mdp, [1, 0]), { maxSteps: 50 }).state.V) // => [1, 0]
+ * ```
+ */
+export function policyEvaluationAlgorithm(
+  mdp: TabularMdp,
+  policy: TabularPolicy,
+  options: MdpSolveOptions & { readonly sweep?: SweepOrder } = {},
+): Algorithm<PolicyEvaluationState, PolicyEvaluationPath> {
+  const gamma = options.gamma ?? mdp.gamma
+  const tol = options.tol ?? 1e-12
+  const order = sweepOrders.make({ kind: options.sweep ?? 'synchronous' })
+  const nS = mdp.nStates
+  const { Rpi, Ppi } = policyChain(mdp, policy)
+  return {
+    name: 'policyEvaluation',
+    config: { nStates: nS, nActions: mdp.nActions, gamma, tol, sweep: order } as Json,
+    init: () => ({ V: new Float64Array(nS), delta: Number.POSITIVE_INFINITY, iteration: 0 }),
+    step: (s, ctx) => {
+      const V = order === 'in-place' ? Float64Array.from(s.V) : new Float64Array(nS)
+      const read = order === 'in-place' ? V : s.V
+      let delta = 0
+      for (let i = 0; i < nS; i++) {
+        let v = Rpi[i] ?? 0
+        for (let j = 0; j < nS; j++) v += gamma * (Ppi[i * nS + j] ?? 0) * (read[j] ?? 0)
+        delta = Math.max(delta, Math.abs(v - (s.V[i] ?? 0)))
+        V[i] = v
+      }
+      const iteration = s.iteration + 1
+      if (ctx.wants('eval/sweep')) ctx.log('eval/sweep', iteration)
+      if (ctx.wants('eval/delta')) ctx.log('eval/delta', delta)
+      if (ctx.wants('eval/V')) ctx.log('eval/V', Float64Array.from(V))
+      return { V, delta, iteration }
+    },
+    done: (s) => (s.delta < tol ? 'converged' : undefined),
+    serialise: (s) => ({
+      V: Array.from(s.V),
+      delta: Number.isFinite(s.delta) ? s.delta : 'Infinity',
+      iteration: s.iteration,
+    }),
+    deserialise: (j) => {
+      const o = j as { readonly V: readonly number[]; readonly delta: number | string; readonly iteration: number }
+      return { V: Float64Array.from(o.V), delta: Number(o.delta), iteration: o.iteration }
+    },
+  }
+}
+
+/**
+ * The values of a fixed policy: exactly, by solving `(I - gamma P_pi) V = R_pi` (the default), or iteratively by
+ * repeated Bellman expectation backups ({@link policyEvaluationAlgorithm} run to the end).
+ *
+ * @param mdp - The MDP.
+ * @param policy - One action per state, or action probabilities per state.
+ * @param options - `method` (`'exact'` or `'iterative'`), tolerance, iteration cap, discount and the `sweep` order.
+ * @returns The state values.
+ * @throws MdmlError with code `value` when the exact system is singular (an improper policy with `gamma = 1`).
+ * @concept policy-evaluation
+ * @example
+ * ```ts
+ * import { policyEvaluation, tabularMdp } from 'mdml-engine/rl'
+ * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.5 })
+ * policyEvaluation(mdp, [0, 0]) // => [0, 0]
+ * ```
+ */
+export function policyEvaluation(
+  mdp: TabularMdp,
+  policy: TabularPolicy,
+  options: MdpSolveOptions & { readonly method?: 'exact' | 'iterative'; readonly sweep?: SweepOrder } = {},
+): number[] {
+  const gamma = options.gamma ?? mdp.gamma
+  const nS = mdp.nStates
   if ((options.method ?? 'exact') === 'exact') {
+    const { Rpi, Ppi } = policyChain(mdp, policy)
     const A = new Float64Array(nS * nS)
     for (let i = 0; i < nS; i++)
       for (let j = 0; j < nS; j++) A[i * nS + j] = (i === j ? 1 : 0) - gamma * (Ppi[i * nS + j] ?? 0)
@@ -367,22 +507,8 @@ export function policyEvaluation(
       throw new MdmlError('value', 'policyEvaluation: I - gamma P_pi is singular (the policy never terminates)')
     }
   }
-  const tol = options.tol ?? 1e-12
-  const maxIter = options.maxIter ?? 100_000
-  let V = new Float64Array(nS)
-  for (let it = 0; it < maxIter; it++) {
-    const next = new Float64Array(nS)
-    let delta = 0
-    for (let s = 0; s < nS; s++) {
-      let v = Rpi[s] ?? 0
-      for (let s2 = 0; s2 < nS; s2++) v += gamma * (Ppi[s * nS + s2] ?? 0) * (V[s2] ?? 0)
-      next[s] = v
-      delta = Math.max(delta, Math.abs(v - (V[s] ?? 0)))
-    }
-    V = next
-    if (delta < tol) break
-  }
-  return Array.from(V)
+  const run = runAlgorithm(policyEvaluationAlgorithm(mdp, policy, options), { maxSteps: options.maxIter ?? 100_000 })
+  return Array.from(run.state.V)
 }
 
 /** The state of {@link policyIterationAlgorithm}. */

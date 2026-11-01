@@ -2908,10 +2908,10 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
 - `policies.ts`: epsilon-greedy, Boltzmann, Gaussian (with tanh squashing), categorical and deterministic policies,
   Gaussian and Ornstein-Uhlenbeck exploration noise.
 - `mdp.ts`: tabular MDPs (from arrays or environment models), value iteration, policy iteration, policy evaluation (exact
-  and iterative), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
+  and iterative: `policyEvaluationAlgorithm`, one sweep per step, `policyEvaluationContract`, the slot `sweepOrders`), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
   linear-programming solutions, once `optim/linear-programming.ts` provides `linprog`.
 - `planning.ts`: planning with models (MCTS over environment models, UCT and PUCT with priors and values, and two-player
-  game search with negamax backups; rollout planners, CEM over action sequences, MPPI). `gameMcts` stays separate from
+  game search with negamax backups; rollout planners (`rolloutPlannerAlgorithm`, one batch per step, `rolloutContract`), CEM over action sequences, MPPI). `gameMcts` stays separate from
   `search.mcts`: it searches environments with rewards on any move, and its PUCT counts a node's visits as AlphaZero
   does (the sum of its children's), where `search.mcts` also counts the expansion visit, which changes AlphaZero's
   training; `search.mcts` also labels every path for its trace.
