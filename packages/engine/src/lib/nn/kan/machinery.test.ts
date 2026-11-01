@@ -10,6 +10,7 @@ import { grevilleAbscissae } from '../additive/bspline.ts'
 import type { SplineLayer } from '../additive/spline-layer.ts'
 import type { Params } from '../module/module.ts'
 import { fit as fitModule } from '../training/fit.ts'
+import { kanCurves, kanGrids } from './curves.ts'
 import { refineGrid, updateGrid } from './grid.ts'
 import { KAN, type KanState } from './kan.ts'
 import { pruneKan } from './prune.ts'
@@ -419,5 +420,40 @@ describe('symbolic regression on the edges', () => {
     expect(() => symbolicFormula(fixed)).toThrow(/not fixed/)
     expect(() => rankSymbolic([1, 2], [1, 2])).toThrow()
     expect(sum(asTensor([1])).shape).toEqual([])
+  })
+})
+
+describe('curves and grids as data', () => {
+  it('gives every edge on its input range with its magnitude and whether it is on', () => {
+    const net = new KAN([2, 2, 1], { grid: 5, range: [-1, 1], key: key(15) })
+    const planted = plant(net, { '0:0:0': (v) => v, '0:1:1': (v) => v * v, '1:0:0': (v) => v })
+    const mask = fromStorage(Float64Array.from([1, 1]), [1, 2], 'float64')
+    const state = {
+      params: planted.params,
+      buffers: { ...planted.buffers, '1': { ...(planted.buffers['1'] as Params), mask } },
+    }
+    const c = kanCurves(net, state, rows(40, 2), 9)
+    expect(c.widths).toEqual([2, 2, 1])
+    expect(c.edges).toHaveLength(4 + 2)
+    const e = c.edges.find((v) => v.layer === 0 && v.i === 0 && v.j === 0)
+    expect(e?.grid[0]).toBeCloseTo(-1, 12)
+    expect(e?.grid.at(-1)).toBeCloseTo(1, 12)
+    expect(maxAbs(e?.values ?? [], e?.grid ?? [])).toBeLessThan(1e-12)
+    expect(e?.scale).toBeGreaterThan(0.1)
+    expect(c.edges.find((v) => v.layer === 0 && v.i === 0 && v.j === 1)?.scale).toBeLessThan(1e-12)
+  })
+
+  it('reports the interior knots of spline edges, as trained, and none for the other families', () => {
+    const spline = new KAN([2, 1], { grid: 4, range: [0, 4], key: key(16) })
+    expect(kanGrids(spline, spline.state)[0]?.knots).toEqual([
+      [1, 2, 3],
+      [1, 2, 3],
+    ])
+    expect(kanGrids(spline, spline.state)[0]?.ranges).toEqual([
+      [0, 4],
+      [0, 4],
+    ])
+    const rbf = new KAN([2, 1], { basis: { kind: 'rbf' }, key: key(16) })
+    expect(kanGrids(rbf, rbf.state)[0]?.knots).toBeNull()
   })
 })

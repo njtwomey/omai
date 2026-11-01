@@ -3112,6 +3112,12 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `sequence-model.ts`: `sequenceModelTrainer`, token-sequence models on the trainer base: the layer is the `mixer` slot
   (`sequenceMixers` of `nn/blocks`), the optimiser the `optimiser` slot (`optimisers`); derived paths `mixer/spectrum`
   (eigenvalues of the state transitions), `mixer/step` (learned Delta) and `mixer/state-norm`; `tokenAccuracy`.
+- `kan.ts`: `kanRegressor` and `kanClassifier`, Kolmogorov-Arnold networks (`nn/kan`) on the trainer base: widths, grid,
+  degree, the edge family (`kanBases`), the base function (`kanBaseFunctions`), the knots (`splineKnots`), the optimiser
+  and schedule as slots, and the paper's sparsification penalties (`lambdaL1`, `lambdaEntropy`, `lambdaCoef`) through the
+  base's `penalty`; derived paths `kan/curves` (every edge on a grid with its magnitude), `kan/edge/<l>/<i>/<j>`,
+  `kan/grids`, `kan/penalty`, `kan/l1`, `kan/entropy`, `kan/coef`, `kan/sparsity`, `kan/scales`; the fitted value adds
+  `edgeCurve`, `curves`, `grids`, `edgeScales`, `sparsity`, `prune`, `symbolic` and `formula`.
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
@@ -3444,6 +3450,8 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `symbolic.ts`: `symbolicFunctions` (the table of `x`, `x^2`, `1/x`, `sqrt`, `exp`, `log`, `sin`, `tanh`, `abs`, ...),
     `rankSymbolic` and `suggestSymbolic` (the affine fit `a f(b x + c) + d` of each, ranked by R^2 less a complexity price),
     `fixSymbolic`, `evaluateSymbolic` and `symbolicFormula` (the closed form of a fixed network as a `symbolic` expression).
+  - `curves.ts`: `kanCurves` (every edge on a grid over its input range with its magnitude and whether it is on) and `kanGrids`
+    (each layer's input ranges and interior knots, as trained), the plain data a view of the edges plays.
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
