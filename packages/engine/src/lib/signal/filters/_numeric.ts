@@ -1,10 +1,13 @@
 // Scalar numerics for filter design that the domains below signal do not provide in the form scipy uses: the complete elliptic
 // integral with the complementary parameter (scipy.special.ellipkm1, by the arithmetic-geometric mean), the
 // inverse Jacobi functions of scipy's elliptic design by Landen transformations, the bounded scalar minimiser of
-// scipy.optimize.fminbound (written here rather than imported from optim) and the secant iteration of scipy.optimize.newton.
+// scipy.optimize.fminbound and the secant iteration of scipy.optimize.newton (both the library's, from `optim` and
+// `numerics/roots`, under scipy's argument names).
 import { MdmlError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
+import { newton } from '../../numerics/roots/index.ts'
 import { ellipk } from '../../numerics/special/index.ts'
+import { fminbound as fminboundLibrary } from '../../optim/index.ts'
 import { item } from '../../tensor/index.ts'
 
 function agm(a0: number, b0: number): number {
@@ -83,100 +86,14 @@ export function ellipDeg(n: number, m1: number): number {
   return 16 * q * (num / (1 + 2 * den)) ** 4
 }
 
-/** Bounded Brent minimisation, step for step scipy.optimize.fminbound (xatol 1e-5, 500 evaluations). */
+/** Bounded Brent minimisation, scipy.optimize.fminbound (xatol 1e-5, 500 evaluations): the library's, from `optim`. */
 export function fminbound(f: (x: number) => number, x1: number, x2: number, xatol = 1e-5, maxfun = 500): number {
-  const sqrtEps = Math.sqrt(2.2e-16)
-  const golden = 0.5 * (3 - Math.sqrt(5))
-  let a = x1
-  let b = x2
-  let fulc = a + golden * (b - a)
-  let nfc = fulc
-  let xf = fulc
-  let rat = 0
-  let e = 0
-  let x = xf
-  let fx = f(x)
-  let num = 1
-  let ffulc = fx
-  let fnfc = fx
-  let xm = 0.5 * (a + b)
-  let tol1 = sqrtEps * Math.abs(xf) + xatol / 3
-  let tol2 = 2 * tol1
-  const sign = (v: number): number => (v > 0 ? 1 : v < 0 ? -1 : 0)
-  while (Math.abs(xf - xm) > tol2 - 0.5 * (b - a)) {
-    let useGolden = true
-    if (Math.abs(e) > tol1) {
-      useGolden = false
-      let r = (xf - nfc) * (fx - ffulc)
-      let q = (xf - fulc) * (fx - fnfc)
-      let p = (xf - fulc) * q - (xf - nfc) * r
-      q = 2 * (q - r)
-      if (q > 0) p = -p
-      q = Math.abs(q)
-      r = e
-      e = rat
-      if (Math.abs(p) < Math.abs(0.5 * q * r) && p > q * (a - xf) && p < q * (b - xf)) {
-        rat = p / q
-        x = xf + rat
-        if (x - a < tol2 || b - x < tol2) rat = tol1 * (sign(xm - xf) + (xm - xf === 0 ? 1 : 0))
-      } else useGolden = true
-    }
-    if (useGolden) {
-      e = xf >= xm ? a - xf : b - xf
-      rat = golden * e
-    }
-    const si = sign(rat) + (rat === 0 ? 1 : 0)
-    x = xf + si * Math.max(Math.abs(rat), tol1)
-    const fu = f(x)
-    num++
-    if (fu <= fx) {
-      if (x >= xf) a = xf
-      else b = xf
-      fulc = nfc
-      ffulc = fnfc
-      nfc = xf
-      fnfc = fx
-      xf = x
-      fx = fu
-    } else {
-      if (x < xf) a = x
-      else b = x
-      if (fu <= fnfc || nfc === xf) {
-        fulc = nfc
-        ffulc = fnfc
-        nfc = x
-        fnfc = fu
-      } else if (fu <= ffulc || fulc === xf || fulc === nfc) {
-        fulc = x
-        ffulc = fu
-      }
-    }
-    xm = 0.5 * (a + b)
-    tol1 = sqrtEps * Math.abs(xf) + xatol / 3
-    tol2 = 2 * tol1
-    if (num >= maxfun) break
-  }
-  return xf
+  return fminboundLibrary(f, { bounds: [x1, x2], tol: xatol, maxIterations: maxfun }).x
 }
 
-/** The secant iteration of scipy.optimize.newton without a derivative (tol 1.48e-8, 50 iterations). */
+/** The secant iteration of scipy.optimize.newton without a derivative (tol 1.48e-8, 50 iterations): the library's. */
 export function secant(f: (x: number) => number, x0: number, tol = 1.48e-8, maxiter = 50): number {
-  let p0 = x0
-  let p1 = x0 * (1 + 1e-4) + (x0 >= 0 ? 1e-4 : -1e-4)
-  let q0 = f(p0)
-  let q1 = f(p1)
-  if (Math.abs(q1) < Math.abs(q0)) {
-    ;[p0, p1, q0, q1] = [p1, p0, q1, q0]
-  }
-  for (let i = 0; i < maxiter; i++) {
-    if (q1 === q0) return (p1 + p0) / 2
-    const p =
-      Math.abs(q1) > Math.abs(q0) ? ((-q0 / q1) * p1 + p0) / (1 - q0 / q1) : ((-q1 / q0) * p0 + p1) / (1 - q1 / q0)
-    if (Math.abs(p - p1) <= tol) return p
-    p0 = p1
-    q0 = q1
-    p1 = p
-    q1 = f(p1)
-  }
-  throw new MdmlError('convergence', 'secant: no convergence')
+  const r = newton(f, x0, { tol, maxIterations: maxiter })
+  if (r.flag === 'maximum iterations') throw new MdmlError('convergence', 'secant: no convergence')
+  return r.root
 }
