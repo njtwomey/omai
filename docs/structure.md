@@ -1856,7 +1856,11 @@ representations are in `optim/sparse.ts`.
 - `wigner.ts`: Wigner-Ville, pseudo and smoothed pseudo Wigner-Ville distributions.
 - `reassignment.ts`: reassigned spectrograms, synchrosqueezing and its inverse.
 - `constant-q.ts`: constant-Q frequencies, kernels and the transform (as librosa).
-- `decompositions.ts`: EMD, EEMD, CEEMDAN, VMD (a traced `Algorithm`), singular spectrum analysis.
+- `decompositions.ts`: EMD, EEMD, CEEMDAN, VMD (a traced `Algorithm`), singular spectrum analysis. EMD, EEMD and CEEMDAN
+  are runs of `emdAlgorithm` (one step is one sift), `eemdAlgorithm` (one ensemble member) and `ceemdanAlgorithm` (one
+  mode), with the `emdContract` paths (`emd/imf`, `emd/sift`, `emd/sd`, `emd/residue`, `emd/envelope`, ...) and the
+  stopping rules `sdStop`, `sNumberStop`, `fixedSiftStop`.
+- `emd-options.ts`: `siftStops`, the option table of the sifting stopping rules (SD threshold, S-number, fixed count).
 - `wavelets/` (inline): `families.ts` (Haar, Daubechies, Symlets, Coiflets, biorthogonal, reverse biorthogonal, discrete
   Meyer and the continuous families, generated from pywt), `dwt.ts` (DWT and inverse, multilevel, 2-D), `swt.ts`
   (stationary transform and inverse), `cwt.ts` (continuous transform, centre frequencies), `denoise.ts` (thresholds,
