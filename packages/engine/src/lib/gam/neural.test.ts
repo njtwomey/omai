@@ -10,7 +10,7 @@ import { additiveInteraction, additiveModel, heteroscedastic, moons, stepCurve }
 import { interactionTerm, netTerm, splineTerm } from '../nn/index.ts'
 import { key } from '../random/index.ts'
 import { type Tensor, toFlat, type Value } from '../tensor/index.ts'
-import { Log, metricSeries } from '../trace/index.ts'
+import { Log, metricSeries, session } from '../trace/index.ts'
 import { gam } from './estimators.ts'
 import { additiveClassifier, additiveDistribution, additiveRegressor } from './neural.ts'
 import { s } from './terms.ts'
@@ -285,4 +285,30 @@ describe('the session', () => {
     expect(maxAbs(predict(revived, data.x), predict(fit, data.x))).toBeLessThan(1e-12)
     expect(revived.termLabels).toEqual(fit.termLabels)
   })
+})
+
+describe('the weighted basis of a spline term', () => {
+  const x = Array.from({ length: 50 }, (_, i) => [i / 49])
+  const y = x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.05 * Math.cos(31 * i))
+  for (const degree of [0, 1, 2, 3]) {
+    it(`sums to the centred curve at every grid point, for degree ${degree}`, () => {
+      const model = additiveRegressor.with({ epochs: 25, interiorKnots: 5, degree, lambda: 0.5 })
+      const live = session(model.method({ x, y }), { mode: 'eager', steps: 25 })
+      const basis = live.probe(live.t, 'predictor/0/term/0/basis') as {
+        grid: number[]
+        functions: number[][]
+        basis: number[][]
+      }
+      const curve = live.probe(live.t, 'predictor/0/term/0/curve') as { grid: number[]; values: number[] }
+      expect(basis.grid).toEqual(curve.grid)
+      // Degree d with five interior knots has 5 + d + 1 functions (the basis of a clamped spline).
+      expect(basis.functions).toHaveLength(5 + degree + 1)
+      for (let g = 0; g < curve.grid.length; g++) {
+        const total = basis.functions.reduce((sum, f) => sum + (f[g] ?? 0), 0)
+        expect(total).toBeCloseTo(curve.values[g] ?? Number.NaN, 8)
+        // The bare basis is a partition of unity.
+        expect(basis.basis.reduce((sum, f) => sum + (f[g] ?? 0), 0)).toBeCloseTo(1, 10)
+      }
+    })
+  }
 })

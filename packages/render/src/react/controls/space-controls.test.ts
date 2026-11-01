@@ -99,6 +99,36 @@ describe('settling values', () => {
   })
 })
 
+describe('option descriptions', () => {
+  it('travel from the space to the control, and stay on the available options of a grey-out', () => {
+    const space = dict({
+      basis: choice(['ps', 'cr'], { descriptions: { ps: 'P-spline', cr: 'cubic regression spline' } }),
+    })
+    const [control] = spaceControls(space, { basis: 'ps' })
+    expect(control).toMatchObject({ kind: 'choice', descriptions: { ps: 'P-spline' } })
+    const options = greyOptions(
+      ['ps', 'cr'],
+      ['basis'],
+      undefined,
+      (control as { descriptions: Record<string, string> }).descriptions,
+    )
+    expect(options).toEqual([
+      { value: 'ps', description: 'P-spline' },
+      { value: 'cr', description: 'cubic regression spline' },
+    ])
+    const grey = greyOptions(
+      ['ps', 'cr'],
+      ['basis'],
+      { admissible: (_p, v) => v === 'ps', why: () => 'no' },
+      { ps: 'P-spline' },
+    )
+    expect(grey).toEqual([
+      { value: 'ps', description: 'P-spline' },
+      { value: 'cr', disabled: true, description: 'no' },
+    ])
+  })
+})
+
 describe('greyOptions', () => {
   it('leaves the options as they are without a rule', () => {
     expect(greyOptions(['a', 'b'], ['x'], undefined)).toEqual(['a', 'b'])

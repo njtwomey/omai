@@ -26,6 +26,7 @@ import {
   headFamily,
   type Module,
   type Params,
+  type SplineLayer,
   splineTerm,
   type TermSpec,
   type TrainState,
@@ -52,6 +53,7 @@ export type AdditiveNetPath =
   | 'additive/knots'
   | 'additive/shape-functions'
   | `predictor/${number}/term/${number}/curve`
+  | `predictor/${number}/term/${number}/basis`
   | `predictor/${number}/term/${number}/surface`
 
 /** The hyperparameters of the additive networks: the terms, the penalty and the training slots. */
@@ -216,6 +218,41 @@ const gridOf = (range: readonly [number, number], n: number): number[] =>
   Array.from({ length: n }, (_, i) => range[0] + ((range[1] - range[0]) * i) / Math.max(1, n - 1))
 
 /** One term's fitted curve or surface at a state, as plain data. */
+/**
+ * The weighted basis functions of a one-feature spline term on a grid: `functions[k][g]` is the k-th basis function
+ * times its coefficient less the term's centring offset, so the functions sum to the centred curve (the basis is a
+ * partition of unity), and `basis[k][g]` is the bare basis function.
+ */
+function termBasis(
+  structure: Heads,
+  data: LearnData,
+  h: AdditiveNetHyper,
+  state: TrainState,
+  k: number,
+  i: number,
+): Json {
+  const head = structure.heads[k] as AdditiveModel
+  const term = head.built[i]
+  if (term === undefined || term.features.length !== 1) return null
+  const params = structure.params(state.params, k)
+  const buffers = structure.buffers(state.buffers, k)
+  const part = (tree: Params): Params => (tree[`t${i}`] ?? {}) as Params
+  const layer = term.module as unknown as SplineLayer
+  const grid = gridOf(columnRange(data, term.features[0] as number), h.gridSize)
+  const { basis, coefficients } = layer.weightedBasis(part(params), grid, 0, 0, part(buffers))
+  const curve = toFlat(head.termCurve(params, i, grid, buffers))
+  const raw0 = coefficients.reduce((sum, c, j) => sum + (basis[0]?.[j] ?? 0) * c, 0)
+  const offset = raw0 - (curve[0] ?? 0)
+  return {
+    label: term.label,
+    grid,
+    offset,
+    coefficients,
+    basis: coefficients.map((_, j) => basis.map((row) => row[j] ?? 0)),
+    functions: coefficients.map((c, j) => basis.map((row) => (row[j] ?? 0) * (c - offset))),
+  } as unknown as Json
+}
+
 function termShape(
   structure: Heads,
   data: LearnData,
@@ -458,7 +495,12 @@ function additiveEstimator<H extends AdditiveNetHyper>(v: Variant<H>): AdditiveN
               description: `${t.label} on a grid`,
               compute: (st) => termShape(s, data, h, st, k, i),
             })
-          else if (t.features.length === 2)
+          if (t.features.length === 1 && t.kind === 'spline')
+            out[`predictor/${k}/term/${i}/basis`] = derived<TrainState>({
+              description: `${t.label}: its basis functions times their coefficients, shifted so they sum to the centred curve`,
+              compute: (st) => termBasis(s, data, h, st, k, i),
+            })
+          if (t.features.length === 2)
             out[`predictor/${k}/term/${i}/surface`] = derived<TrainState>({
               description: `${t.label} on a grid`,
               cost: 'dear',

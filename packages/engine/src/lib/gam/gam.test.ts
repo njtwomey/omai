@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { poisson } from '../dists/families/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { fromStorage, toFlat } from '../tensor/index.ts'
-import { runAlgorithm } from '../trace/index.ts'
+import { runAlgorithm, session } from '../trace/index.ts'
 import {
   assemblePenalty,
   backfittingAlgorithm,
@@ -322,5 +322,32 @@ describe('backfitting and the session', () => {
     })
     expect(buildDesign(x, [s(0, { k: 6 })]).p).toBe(evaluateDesign(buildDesign(x, [s(0, { k: 6 })]), x).X.length / n)
     expect(penaltyStructure(problem.design).blocks.length).toBe(2)
+  })
+})
+
+describe('the session of a GAM', () => {
+  it('probes the fitted mean with its credible band at any step, the last equal to the fitted value’s', () => {
+    const x = Array.from({ length: 60 }, (_, i) => [i / 59])
+    const y = x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.1 * Math.cos(37 * i))
+    const model = gam.with({ terms: [s(0, { k: 8 })] })
+    const live = session(model.method({ x, y }), { mode: 'eager', steps: 30 })
+    const last = live.t
+    const probed = live.probe(last, 'model/band') as { fit: number[]; lower: number[]; upper: number[] }
+    const band = model.fit({ x, y }).predictionBand(x)
+    expect(probed.fit).toHaveLength(60)
+    for (let i = 0; i < 60; i++) {
+      expect(probed.fit[i]).toBeCloseTo(band.fit[i] ?? Number.NaN, 8)
+      expect(probed.lower[i]).toBeCloseTo(band.lower[i] ?? Number.NaN, 8)
+      expect(probed.upper[i]).toBeCloseTo(band.upper[i] ?? Number.NaN, 8)
+      expect(probed.upper[i] ?? 0).toBeGreaterThan(probed.lower[i] ?? 0)
+    }
+    // At rows of the caller's choosing: a dense grid for drawing.
+    const grid = Array.from({ length: 301 }, (_, i) => [i / 300])
+    const dense = live.probe(last, 'model/band', { x: grid } as never) as { fit: number[] }
+    const direct = model.fit({ x, y }).predictionBand(grid)
+    expect(dense.fit).toHaveLength(301)
+    expect(dense.fit[150]).toBeCloseTo(direct.fit[150] ?? Number.NaN, 8)
+    // An earlier step is a different (earlier) model, probed without rerunning the fit.
+    expect(live.probe(0, 'model/band')).toBeDefined()
   })
 })

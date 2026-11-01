@@ -441,7 +441,7 @@ export function extendKnots(
  * layers read their constraints.
  *
  * @param knots - The knot vector `[m]` (or `[f, m]`).
- * @param degree - The degree (at least 1).
+ * @param degree - The degree (0, piecewise constant, takes the middle of each knot span).
  * @returns The abscissae `[m - degree - 1]` (or `[f, m - degree - 1]`).
  * @concept splines
  * @example
@@ -454,8 +454,9 @@ export function extendKnots(
 export function grevilleAbscissae(knots: TensorLike, degree: number): Value {
   const t = asTensor(knots)
   const m = checkKnots('grevilleAbscissae', t, degree)
-  if (degree < 1) throw new MdmlError('value', 'grevilleAbscissae: degree must be at least 1')
   const count = m - degree - 1
+  // A piecewise constant basis (degree 0) has one function per knot span: its abscissa is the middle of the span.
+  if (degree === 0) return div(add(knotsAt(t, 0, count), knotsAt(t, 1, 1 + count)), 2)
   let total: Value = knotsAt(t, 1, 1 + count)
   for (let j = 2; j <= degree; j++) total = add(total, knotsAt(t, j, j + count))
   return div(total, degree)

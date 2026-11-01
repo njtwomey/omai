@@ -17,7 +17,7 @@ import { glmSolvers } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, item, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, Log } from '../trace/index.ts'
+import { type Algorithm, defineContract, derived, Log } from '../trace/index.ts'
 import {
   type DerivativeOptions,
   predictTermsSe,
@@ -256,6 +256,29 @@ function verbsOf(p: GamParams, h: GamHyper, kind: 'regressor' | 'classifier'): G
   }
 }
 
+// The fitted parameters of a state: the penalised solution at its smoothing parameters, with the data they were fitted to.
+function paramsOf(kind: 'regressor' | 'classifier', s: GamState, data: LearnData, h: GamHyper): GamParams {
+  const { problem, classes } = prepare(data, h, kind)
+  const { solution, scale } = gamSolution(problem, s)
+  const cov = posteriorCovariance(solution, problem.design.p, scale)
+  const m = matrixView(data.x, WHO)
+  const p = problem.design.p
+  return {
+    coef: s.beta,
+    logLambda: s.logLambda,
+    scale,
+    deviance: s.deviance,
+    edf: s.edf,
+    edfTerms: s.edfTerms,
+    labels: problem.design.terms.map((t) => t.label),
+    covariance: Array.from({ length: p }, (_, i) => Array.from(cov.subarray(i * p, (i + 1) * p))),
+    xFit: Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d))),
+    yFit: Array.from(problem.y),
+    weights: Array.from(problem.prior),
+    classes,
+  }
+}
+
 function particular(kind: 'regressor' | 'classifier') {
   const defaults: GamHyper = kind === 'classifier' ? { ...GAM_DEFAULTS, family: binomial() } : GAM_DEFAULTS
   return {
@@ -277,27 +300,21 @@ function particular(kind: 'regressor' | 'classifier') {
       return h.iteration === 'outer' ? gamOuterAlgorithm(problem, h, key) : gamAlgorithm(problem, h, key)
     },
     maxSteps: (h: GamHyper) => h.maxIter,
-    params: (s: GamState, data: LearnData, h: GamHyper): GamParams => {
-      const { problem, classes } = prepare(data, h, kind)
-      const { solution, scale } = gamSolution(problem, s)
-      const cov = posteriorCovariance(solution, problem.design.p, scale)
-      const m = matrixView(data.x, WHO)
-      const p = problem.design.p
-      return {
-        coef: s.beta,
-        logLambda: s.logLambda,
-        scale,
-        deviance: s.deviance,
-        edf: s.edf,
-        edfTerms: s.edfTerms,
-        labels: problem.design.terms.map((t) => t.label),
-        covariance: Array.from({ length: p }, (_, i) => Array.from(cov.subarray(i * p, (i + 1) * p))),
-        xFit: Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d))),
-        yFit: Array.from(problem.y),
-        weights: Array.from(problem.prior),
-        classes,
-      }
-    },
+    contract: (data: LearnData, h: GamHyper) =>
+      defineContract({
+        'model/band': derived<GamState>({
+          description:
+            'the fitted mean with its credible band (link scale), at this step: `{ fit, lower, upper }`, at the training rows or at the rows `x` of the arguments (a grid, for a smooth drawing)',
+          cost: 'dear',
+          compute: (s, args) => {
+            const rows = (args as { readonly x?: number[][] } | null | undefined)?.x ?? data.x
+            const band = verbsOf(paramsOf(kind, s, data, h), h, kind).predictionBand(rows)
+            return { fit: Array.from(band.fit), lower: Array.from(band.lower), upper: Array.from(band.upper) }
+          },
+        }),
+      }),
+    params: (s: GamState, data: LearnData, h: GamHyper): GamParams => paramsOf(kind, s, data, h),
+    paramsPlaceholder: undefined,
     verbs: (p: GamParams, h: GamHyper): GamVerbs => verbsOf(p, h, kind),
     logs: { 'solver/deviance': Log(), 'solver/edf': Log() },
   }

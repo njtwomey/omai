@@ -87,7 +87,7 @@ function ControlFor(props: {
         <Component<OptionValue>
           label={spec.label}
           value={current as OptionValue}
-          options={greyOptions(spec.options, spec.path, rule)}
+          options={greyOptions(spec.options, spec.path, rule, spec.descriptions)}
           onChange={(v) => set(spec, v)}
           disabled={disabled}
         />

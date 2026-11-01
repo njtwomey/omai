@@ -141,8 +141,8 @@ export class SplineLayer extends Module {
     this.interiorKnots = options.interiorKnots ?? 8
     if (!(Number.isInteger(this.interiorKnots) && this.interiorKnots >= 1))
       throw new MdmlError('value', 'SplineLayer: interiorKnots must be an integer >= 1')
-    if (!(Number.isInteger(this.degree) && this.degree >= 1))
-      throw new MdmlError('value', 'SplineLayer: degree must be an integer >= 1')
+    if (!(Number.isInteger(this.degree) && this.degree >= 0))
+      throw new MdmlError('value', 'SplineLayer: degree must be an integer >= 0 (0 is piecewise constant, 1 linear)')
     this.basisSize = this.interiorKnots + this.degree + 1
     this.placement = splineKnots.make(options.knots)
     this.shapeTransform = splineShapes.make(options.shape)
@@ -316,6 +316,46 @@ export class SplineLayer extends Module {
       boundary: this.boundary,
     })
     return einsum('nik,oik->nio', d, this.coefficients(params, buffers))
+  }
+
+  /**
+   * The basis functions of one spline on a grid with their coefficients: row `g` of `basis` is the basis at `grid[g]`,
+   * and `basis[g][k] * coefficients[k]` summed over `k` is {@link curve}. The weighted functions are the pieces the
+   * curve is built from.
+   *
+   * @param params - The parameters.
+   * @param grid - The points.
+   * @param feature - The input (default 0).
+   * @param output - The output (default 0).
+   * @param buffers - The buffers (default the module's).
+   * @returns The basis `[grid.length][K]` and the coefficients `[K]`.
+   * @example
+   * ```ts
+   * import { SplineLayer } from 'mdml-engine/nn'
+   * const layer = new SplineLayer({ inFeatures: 1, outFeatures: 1, interiorKnots: 3 })
+   * const { basis, coefficients } = layer.weightedBasis(layer.params, [0.5])
+   * [basis.length, basis[0]?.length === coefficients.length] // => [1, true]
+   * ```
+   */
+  weightedBasis(
+    params: Params,
+    grid: ArrayLike<number>,
+    feature = 0,
+    output = 0,
+    buffers?: Params,
+  ): { readonly basis: number[][]; readonly coefficients: number[] } {
+    const knots = reshape(sliceAxis(this.knotVectors(params, buffers), 0, feature, feature + 1), [-1])
+    const coef = toFlat(
+      sliceAxis(sliceAxis(this.coefficients(params, buffers), 0, output, output + 1), 1, feature, feature + 1),
+    )
+    const b = toFlat(
+      bsplineBasis(Array.from(grid), knots, this.degree, { outside: this.outside, boundary: this.boundary }),
+    )
+    const k = this.basisSize
+    return {
+      basis: Array.from({ length: grid.length }, (_, g) => Array.from(b.slice(g * k, (g + 1) * k))),
+      coefficients: Array.from(coef),
+    }
   }
 
   /**

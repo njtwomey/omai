@@ -23,7 +23,12 @@ interface ControlBase {
 /** One control generated from a space: what to draw, at which path of the value. */
 export type ControlSpec =
   | (ControlBase & { readonly kind: 'number'; readonly spec: NumberSpec })
-  | (ControlBase & { readonly kind: 'choice' | 'select'; readonly options: readonly OptionValue[] })
+  | (ControlBase & {
+      readonly kind: 'choice' | 'select'
+      readonly options: readonly OptionValue[]
+      /** A line on each option, by its text (the option's tooltip). */
+      readonly descriptions?: Readonly<Record<string, string>>
+    })
   | (ControlBase & { readonly kind: 'toggle' })
   | (ControlBase & { readonly kind: 'group'; readonly children: readonly ControlSpec[] })
 
@@ -101,7 +106,12 @@ export function spaceControls(space: Space, value: SpaceValue, options: SpaceCon
         return { ...base, kind: 'number', spec: { min: start, max: start + s.n - 1, integer: true } }
       }
       case 'choice':
-        return { ...base, kind: isShort(s.options, upTo) ? 'choice' : 'select', options: s.options }
+        return {
+          ...base,
+          kind: isShort(s.options, upTo) ? 'choice' : 'select',
+          options: s.options,
+          ...(s.descriptions === undefined ? {} : { descriptions: s.descriptions }),
+        }
       case 'bool':
         return { ...base, kind: 'toggle' }
       case 'box': {
@@ -285,18 +295,24 @@ export interface Admissibility {
  * @param options - The choice's options.
  * @param path - The control's path in the space's value.
  * @param rule - The admissibility rule (none leaves the options as they are).
+ * @param descriptions - A line on each option, by its text, kept as its tooltip when the option is available.
  * @returns The options.
  */
 export function greyOptions(
   options: readonly OptionValue[],
   path: ControlPath,
   rule: Admissibility | undefined,
+  descriptions?: Readonly<Record<string, string>>,
 ): OptionInput<OptionValue>[] {
-  if (rule === undefined) return [...options]
+  const described = (value: OptionValue): OptionInput<OptionValue> => {
+    const description = descriptions?.[String(value)]
+    return description === undefined ? value : { value, description }
+  }
+  if (rule === undefined) return options.map(described)
   return options.map(
     (value): OptionInput<OptionValue> =>
       rule.admissible(path, value)
-        ? value
+        ? described(value)
         : {
             value,
             disabled: true,

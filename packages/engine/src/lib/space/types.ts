@@ -47,6 +47,8 @@ export interface ChoiceSpace<T extends string | number | boolean = string | numb
   readonly kind: 'choice'
   readonly options: readonly T[]
   readonly default?: T
+  /** A line on each option, by its text, shown as the option's tooltip (`{ ps: 'P-spline: ...' }`). */
+  readonly descriptions?: Readonly<Record<string, string>>
 }
 
 /** A boolean flag. */
