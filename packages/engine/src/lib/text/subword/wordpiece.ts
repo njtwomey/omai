@@ -5,8 +5,16 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import type { TracePolicy, Tracer } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  runAlgorithm,
+  stateFromJson,
+  stateToJson,
+  type TracePolicy,
+  type Tracer,
+} from '../../trace/index.ts'
 import { compareCodePoints } from '../_classes.ts'
+import type { TokenizerPath } from '../tokenizer-contract.ts'
 import { type BpeTrainingOptions, type SubwordToken, trainBpe } from './bpe.ts'
 
 /** A WordPiece model (HF tokenizers' `models.WordPiece`). */
@@ -56,10 +64,77 @@ export function wordPieceModel(
   }
 }
 
+/** The state of {@link wordPieceAlgorithm}: the pieces taken so far and where the next one starts. */
+export interface WordPieceState {
+  readonly pieces: SubwordToken[]
+  /** Where the next piece starts, in code units. */
+  start: number
+  /** True when the word became the unknown token (too long, or an unmatched remainder). */
+  unknown: boolean
+}
+
+/**
+ * Greedy longest-match-first WordPiece encoding of one word (Wu et al. 2016; HF's WordPiece.tokenize) as a stepped
+ * algorithm, one piece per step: take the longest vocabulary piece from the current position (with the prefix after the
+ * first piece). A word with an unmatched remainder, or longer than the limit, becomes a single unknown token. It logs the
+ * length of each piece, and is done (`converged`) when the word is consumed. The state serialises.
+ *
+ * @param model - The model.
+ * @param word - The pre-tokenised word.
+ * @returns The algorithm.
+ * @concept wordpiece
+ * @example
+ * ```ts
+ * import { wordPieceAlgorithm, wordPieceModel } from 'mdml-engine/text/subword'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const m = wordPieceModel(['[UNK]', 'un', '##aff', '##able'])
+ * const run = runAlgorithm(wordPieceAlgorithm(m, 'unaffable'), { maxSteps: 10 })
+ * run.state.pieces.map((t) => t.token) // => ['un', '##aff', '##able']
+ * ```
+ */
+export function wordPieceAlgorithm(model: WordPieceModel, word: string): Algorithm<WordPieceState, TokenizerPath> {
+  const unk: SubwordToken = {
+    token: model.unkToken,
+    id: model.vocab.get(model.unkToken) ?? 0,
+    start: 0,
+    end: word.length,
+  }
+  const tooLong = word.length > 0 && Array.from(word).length > model.maxInputCharsPerWord
+  return {
+    name: 'text/wordpiece',
+    config: { word, vocab: model.vocab.size },
+    init: () =>
+      tooLong ? { pieces: [unk], start: word.length, unknown: true } : { pieces: [], start: 0, unknown: false },
+    step: (s, ctx) => {
+      const start = s.start
+      let end = word.length
+      let found: SubwordToken | undefined
+      while (start < end) {
+        const piece = (start > 0 ? model.continuingSubwordPrefix : '') + word.slice(start, end)
+        const id = model.vocab.get(piece)
+        if (id !== undefined) {
+          found = { token: piece, id, start, end }
+          break
+        }
+        const last = word.codePointAt(end - 1) ?? 0
+        // Step back one code point (a low surrogate ends a pair).
+        end -= last >= 0xdc00 && last <= 0xdfff && end >= 2 ? 2 : 1
+      }
+      if (found === undefined) return { pieces: [unk], start: word.length, unknown: true }
+      ctx.log('tok/piece', found.end - found.start)
+      return { pieces: [...s.pieces, found], start: found.end, unknown: false }
+    },
+    done: (s) => (s.start >= word.length ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as WordPieceState,
+  }
+}
+
 /**
  * Greedy longest-match-first WordPiece encoding of one word (Wu et al. 2016; HF's WordPiece.tokenize): repeatedly
  * take the longest vocabulary piece from the current position (with the prefix after the first piece); a word with an
- * unmatched remainder, or longer than the limit, becomes a single unknown token.
+ * unmatched remainder, or longer than the limit, becomes a single unknown token. {@link wordPieceAlgorithm} run to the
+ * end.
  *
  * @param model - The model.
  * @param word - The pre-tokenised word.
@@ -74,29 +149,7 @@ export function wordPieceModel(
  */
 export function wordPieceTokenize(model: WordPieceModel, word: string): SubwordToken[] {
   if (word.length === 0) return []
-  const unk = { token: model.unkToken, id: model.vocab.get(model.unkToken) ?? 0, start: 0, end: word.length }
-  if (Array.from(word).length > model.maxInputCharsPerWord) return [unk]
-  const out: SubwordToken[] = []
-  let start = 0
-  while (start < word.length) {
-    let end = word.length
-    let found: SubwordToken | undefined
-    while (start < end) {
-      const piece = (start > 0 ? model.continuingSubwordPrefix : '') + word.slice(start, end)
-      const id = model.vocab.get(piece)
-      if (id !== undefined) {
-        found = { token: piece, id, start, end }
-        break
-      }
-      const last = word.codePointAt(end - 1) ?? 0
-      // Step back one code point (a low surrogate ends a pair).
-      end -= last >= 0xdc00 && last <= 0xdfff && end >= 2 ? 2 : 1
-    }
-    if (found === undefined) return [unk]
-    out.push(found)
-    start = found.end
-  }
-  return out
+  return runAlgorithm(wordPieceAlgorithm(model, word), { maxSteps: Number.MAX_SAFE_INTEGER }).state.pieces
 }
 
 /** Options of WordPiece training. */

@@ -24,6 +24,7 @@ import {
 } from '../trace/index.ts'
 import { imageTensor, type Raster, rasterOf, rasterTensor } from './_image.ts'
 import { rgbToLab } from './colour.ts'
+import type { GreedyPath } from './greedy-contract.ts'
 
 /** The state of {@link slicAlgorithm}: cluster centres (features then row, column) and pixel labels. */
 export interface SlicState {
@@ -246,9 +247,139 @@ export function slic(
 }
 
 /**
+ * The state of {@link regionGrowingAlgorithm}: the labels so far, each region's running colour sums and size, and the
+ * frontier of candidate pixels as sorted `[distance, pixel, region]`. Steps update them in place; keep a copy of a state
+ * you want to look at later.
+ */
+export interface RegionGrowingState {
+  readonly h: number
+  readonly w: number
+  /** The region of each pixel (1 .. seeds), 0 where none yet. */
+  readonly labels: Int32Array
+  /** Per region, the sum of the colour of its pixels. */
+  readonly sums: Float64Array[]
+  readonly counts: number[]
+  /** Candidates sorted by distance to the region mean when queued. */
+  readonly frontier: [number, number, number][]
+}
+
+/**
+ * Seeded region growing (Adams and Bischof 1994) as a stepped algorithm, one candidate pixel per step: the frontier is
+ * kept sorted by distance to the mean of the region that queued the pixel, and the closest candidate is absorbed if it is
+ * still free and still within the threshold of the region's current mean, its 4-neighbours then queued. It logs the pixel
+ * absorbed and its distance to the mean, and is done (`converged`) when the frontier is empty. The state serialises; read
+ * the labels with {@link regionLabels}.
+ *
+ * @param x - Image `[H, W]` or `[H, W, C]`.
+ * @param seeds - Seed pixels (x, y), one region each.
+ * @param options - The largest colour distance to the region mean (default 0.1).
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for a seed outside the image.
+ * @concept region-growing
+ * @example
+ * ```ts
+ * import { regionGrowingAlgorithm, regionLabels } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const alg = regionGrowingAlgorithm([[0.1, 0.12, 0.9], [0.11, 0.1, 0.92]], [[0, 0], [2, 0]])
+ * toArray(regionLabels(runAlgorithm(alg, { maxSteps: 50 }).state)) // => [[1, 1, 2], [1, 1, 2]]
+ * ```
+ */
+export function regionGrowingAlgorithm(
+  x: TensorLike,
+  seeds: readonly (readonly [number, number])[],
+  options: { readonly threshold?: number } = {},
+): Algorithm<RegionGrowingState, GreedyPath> {
+  const r = rasterOf(x, 'regionGrowing')
+  const { h, w, c } = r
+  const thr = options.threshold ?? 0.1
+  const dist = (st: RegionGrowingState, p: number, reg: number): number => {
+    let s = 0
+    for (let k = 0; k < c; k++) s += ((r.data[p * c + k] ?? 0) - (st.sums[reg]?.[k] ?? 0) / (st.counts[reg] ?? 1)) ** 2
+    return Math.sqrt(s)
+  }
+  const push = (st: RegionGrowingState, p: number, reg: number): void => {
+    const d = dist(st, p, reg)
+    if (d > thr) return
+    let lo = 0
+    let hi = st.frontier.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if ((st.frontier[mid]?.[0] ?? 0) <= d) lo = mid + 1
+      else hi = mid
+    }
+    st.frontier.splice(lo, 0, [d, p, reg])
+  }
+  const absorb = (st: RegionGrowingState, p: number, reg: number): void => {
+    st.labels[p] = reg + 1
+    for (let k = 0; k < c; k++) (st.sums[reg] as Float64Array)[k] = (st.sums[reg]?.[k] ?? 0) + (r.data[p * c + k] ?? 0)
+    st.counts[reg] = (st.counts[reg] ?? 0) + 1
+    const y = Math.floor(p / w)
+    const xx = p % w
+    for (const [yy, x2] of [
+      [y - 1, xx],
+      [y + 1, xx],
+      [y, xx - 1],
+      [y, xx + 1],
+    ] as const)
+      if (yy >= 0 && yy < h && x2 >= 0 && x2 < w && (st.labels[yy * w + x2] ?? 0) === 0) push(st, yy * w + x2, reg)
+  }
+  return {
+    name: 'vision/region-growing',
+    config: { seeds: seeds.length, threshold: thr, h, w },
+    init: () => {
+      const st: RegionGrowingState = {
+        h,
+        w,
+        labels: new Int32Array(h * w),
+        sums: seeds.map(() => new Float64Array(c)),
+        counts: seeds.map(() => 0),
+        frontier: [],
+      }
+      seeds.forEach(([sx, sy], reg) => {
+        if (!(sx >= 0 && sy >= 0 && sx < w && sy < h))
+          throw new MdmlError('value', 'regionGrowing: a seed lies outside')
+        absorb(st, Math.round(sy) * w + Math.round(sx), reg)
+      })
+      return st
+    },
+    step: (st, ctx) => {
+      const [, p, reg] = st.frontier.shift() as [number, number, number]
+      if ((st.labels[p] ?? 0) !== 0) return st
+      const d = dist(st, p, reg)
+      if (d > thr) return st
+      absorb(st, p, reg)
+      ctx.log('region/pixel', p)
+      ctx.log('region/mean', d)
+      return st
+    },
+    done: (st) => (st.frontier.length === 0 ? 'converged' : undefined),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as RegionGrowingState,
+  }
+}
+
+/**
+ * The labels of a region-growing state: 1 .. seeds for the regions, 0 for unreached pixels.
+ *
+ * @param state - A state of {@link regionGrowingAlgorithm}.
+ * @returns Labels `[H, W]`.
+ * @concept region-growing
+ * @example
+ * ```ts
+ * import { regionGrowingAlgorithm, regionLabels } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * regionLabels(runAlgorithm(regionGrowingAlgorithm([[0, 0.9]], [[0, 0]]), { maxSteps: 10 }).state).shape // => [1, 2]
+ * ```
+ */
+export function regionLabels(state: RegionGrowingState): Tensor {
+  return imageTensor(Float64Array.from(state.labels), state.h, state.w)
+}
+
+/**
  * Seeded region growing (Adams and Bischof 1994): from each seed, repeatedly absorb the 4-neighbour of the region
  * closest to the region's running mean, while that difference is below the threshold; regions grow in turn by
- * priority, each pixel joining at most one.
+ * priority, each pixel joining at most one. {@link regionGrowingAlgorithm} run to the end.
  *
  * @param x - Image `[H, W]` or `[H, W, C]`.
  * @param seeds - Seed pixels (x, y), one region each.
@@ -267,56 +398,9 @@ export function regionGrowing(
   seeds: readonly (readonly [number, number])[],
   options: { readonly threshold?: number } = {},
 ): Tensor {
-  const r = rasterOf(x, 'regionGrowing')
-  const { h, w, c } = r
-  const thr = options.threshold ?? 0.1
-  const labels = new Int32Array(h * w)
-  const sums = seeds.map(() => new Float64Array(c))
-  const counts = seeds.map(() => 0)
-  // A frontier of (distance, pixel, region) kept sorted by distance (small images: a sorted insert suffices).
-  const frontier: [number, number, number][] = []
-  const dist = (p: number, reg: number): number => {
-    let s = 0
-    for (let k = 0; k < c; k++) s += ((r.data[p * c + k] ?? 0) - (sums[reg]?.[k] ?? 0) / (counts[reg] ?? 1)) ** 2
-    return Math.sqrt(s)
-  }
-  const push = (p: number, reg: number): void => {
-    const d = dist(p, reg)
-    if (d > thr) return
-    let lo = 0
-    let hi = frontier.length
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1
-      if ((frontier[mid]?.[0] ?? 0) <= d) lo = mid + 1
-      else hi = mid
-    }
-    frontier.splice(lo, 0, [d, p, reg])
-  }
-  const absorb = (p: number, reg: number): void => {
-    labels[p] = reg + 1
-    for (let k = 0; k < c; k++) (sums[reg] as Float64Array)[k] = (sums[reg]?.[k] ?? 0) + (r.data[p * c + k] ?? 0)
-    counts[reg] = (counts[reg] ?? 0) + 1
-    const y = Math.floor(p / w)
-    const xx = p % w
-    for (const [yy, x2] of [
-      [y - 1, xx],
-      [y + 1, xx],
-      [y, xx - 1],
-      [y, xx + 1],
-    ] as const)
-      if (yy >= 0 && yy < h && x2 >= 0 && x2 < w && (labels[yy * w + x2] ?? 0) === 0) push(yy * w + x2, reg)
-  }
-  seeds.forEach(([sx, sy], reg) => {
-    if (!(sx >= 0 && sy >= 0 && sx < w && sy < h)) throw new MdmlError('value', 'regionGrowing: a seed lies outside')
-    absorb(Math.round(sy) * w + Math.round(sx), reg)
-  })
-  while (frontier.length > 0) {
-    const [, p, reg] = frontier.shift() as [number, number, number]
-    if ((labels[p] ?? 0) !== 0) continue
-    if (dist(p, reg) > thr) continue
-    absorb(p, reg)
-  }
-  return imageTensor(Float64Array.from(labels), h, w)
+  return regionLabels(
+    runAlgorithm(regionGrowingAlgorithm(x, seeds, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state,
+  )
 }
 
 /**

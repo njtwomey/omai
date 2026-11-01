@@ -738,7 +738,8 @@ oracle: jax and torch for derivative values; finite differences in property test
   projections; `K` inferred from the contract), `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`,
   `stepsOf`) and `session` with its modes (eager, live, eager to a point).
 - `serialise.ts`: `stateToJson` and `stateFromJson`, generic checkpoint serialisation of states made of tensors, typed
-  arrays, keys and plain trees.
+  arrays, keys and plain trees; `numberToJson`/`numbersToJson` and their inverses keep `NaN` and infinities through a
+  JSON round trip (as strings).
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
 - `query.ts`: `metricSeries`, `tensorSeries`, `messages`, `episodes`, `frames`, `runTree`, `summary`, `diffRuns`.
 
@@ -815,7 +816,7 @@ primitives; "custom" means a dedicated rule.
   `eigenIteration(config, problem)`.
 - `functions.ts`: `expm` (Pade, scaling and squaring, Frechet derivative), `logm`, `sqrtm`, `funm` (Schur-Parlett),
   `funmSymmetric`.
-- `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare`,
+- `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare` (and `solveDareAlgorithm`, one doubling per step),
   `signm` (the matrix sign function, for the Riccati solver and spectral projectors).
 - `structured.ts`: `solveTridiagonal`, `solveBanded`, `toeplitz`, `solveToeplitz`, `circulant`, `hankel`, `blockDiag`,
   `kroneckerSolve`.
@@ -837,7 +838,8 @@ primitives; "custom" means a dedicated rule.
   traced residuals; preconditioners (`jacobiPreconditioner`, `incompleteCholesky`); `sparseSolve` (custom rules by
   adjoint solves).
 - `eigen.ts`: `lanczos` (full reorthogonalisation, deflation), `arnoldi`, `eigsh` (top k, with locking for repeated
-  eigenvalues), `svds`.
+  eigenvalues), `svds`; each also an Algorithm (`arnoldiAlgorithm` one Krylov vector per step, `eigshAlgorithm` and
+  `svdsAlgorithm` one restart round per step) logging the `krylov/` paths; `eigen-options.ts`: `spectrumTargets`.
 - `lanczos-steps.ts`: `lanczosAlgorithm` (one Krylov vector per step, with the Ritz values and residuals, and a switch
   for reorthogonalisation to watch the basis lose orthogonality), `lanczosSteps`.
 - `stationary.ts`: `stationaryAlgorithm` (Jacobi with damping, Gauss-Seidel, SOR; one sweep per step), `stationarySolve`,
@@ -885,7 +887,8 @@ primitives; "custom" means a dedicated rule.
 - `splines.ts`: `cubicSpline` (natural, clamped, not-a-knot, periodic, explicit), `cubicHermiteSpline`, `bspline`,
   `bsplineBasisElement`, `makeInterpSpline`, `makeLsqSpline`, `notAKnot`.
 - `shape-preserving.ts`: `pchip`, `akima` (and makima).
-- `smoothing.ts`: `makeSmoothingSpline` (GCV), `univariateSpline`.
+- `smoothing.ts`: `makeSmoothingSpline` (GCV), `univariateSpline` and `univariateSplineAlgorithm` (one knot insertion per
+  step; `spline/` paths).
 - `polynomial.ts`: `barycentric`, `barycentricWeights`, `lagrange`, `chebyshevNodes`, `equispacedNodes`,
   `chebyshevInterpolant`, `lebesgueConstant`, `runge`.
 - `grid.ts`: `interp`, `interp1d`, `regularGridInterpolator`, `griddata` (nearest, linear, natural).
@@ -900,7 +903,10 @@ primitives; "custom" means a dedicated rule.
 - `chebyshev.ts`: `chebfun` (adaptive Chebyshev approximation: construct, evaluate, differentiate, `cumsum`, `sum`,
   roots by the colleague matrix with subdivision, extrema), `chebyshev`, `chebyshevCoefficients`, coefficient decay.
 - `best.ts`: `remez` (minimax approximation by the Remez exchange algorithm, polynomial and rational types),
-  equioscillation, `chebyshevSeries`.
+  equioscillation, `chebyshevSeries`; `remezAlgorithm` (one exchange per step) is what `remez` runs, and `chebfunAlgorithm`
+  (one sample doubling per step) what `chebfun` runs.
+- `approximation-contract.ts`, `approximation-options.ts`: the `remez/` and `chebfun/` paths; `minimaxTypes`
+  (polynomial or rational) and `chebyshevResolutions`.
 - `pade.ts`: `pade` (approximants from Taylor coefficients), `continuedFraction` (modified Lentz).
 - `acceleration.ts`: `richardson`, `aitken`, `shanks`, `wynnEpsilon`, `eulerTransform`.
 - `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon` (for float64, float32, float16, bfloat16), `FLOAT_FORMATS`, `toFloat32`, `toFloat16`, `toBfloat16`,
@@ -948,7 +954,8 @@ primitives; "custom" means a dedicated rule.
   trees), with query logs (visited, pruned, distance evaluations) and node descriptions for figures.
 - `hashing.ts`: LSH families (`randomHyperplanes`, `pStableHash`), `collisionProbability`, MinHash (`minHash`,
   `estimateJaccard`, `minHashBanding`, `bandingProbability`), `lshIndex` with multi-probe (`probeSequence`).
-- `graphs.ts`: `hnswIndex` (insertion, layered search with logs), `nnDescent` and `nnDescentAlgorithm` (traced).
+- `graphs.ts`: `hnswIndex` (insertion, layered search with logs), `hnswAlgorithm` (one insertion per step, `hnsw/` paths,
+  what `hnswIndex` runs to build), `nnDescent` and `nnDescentAlgorithm` (traced); `graphs-options.ts`: `hnswProfiles`.
 - `quantisation.ts`: `kmeansCodebook` (k-means++ and Lloyd; the vector-quantisation trainer that
   `methods/clustering/kmeans.ts` builds on), `productQuantiser` (encode, decode, asymmetric and symmetric distances),
   `ivfIndex` (IVF and IVF-PQ).
@@ -1391,7 +1398,9 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   `nmlCodeLength`, `dirichletCodeLength` (KT and Laplace), `parameterBits`, `gaussianDataBits`, `polynomialMdl` (total =
   BIC in bits), `histogramMdl`, `bestMdl`, and `mdlSelectionAlgorithm` (one candidate per step).
 - `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
-- `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
+- `dictionary-coding.ts`: LZ77 (and `lz77Algorithm`, one token per step; `lz/` paths, shared with
+  `lempelZivComplexityAlgorithm` in `complexity.ts`), LZ78, LZW, BWT with move-to-front; `dictionary-coding-options.ts`:
+  `lz77Windows` and `reedSolomonFields`.
 - `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
   an inflater with puff's checks), the zlib and gzip formats (compress and decompress), CRC-32 and Adler-32.
 - `channels.ts`: channel mutual information, capacity by Blahut-Arimoto (traced, with its bounds and an active-set Newton
@@ -1402,7 +1411,8 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
 - `error-correction.ts`: binary linear block codes (generator and parity-check matrices, syndromes, coset-leader
   decoding, minimum distance), parity, repetition and Hamming codes (extended too), bounds (Hamming, Singleton,
   Gilbert-Varshamov, Plotkin).
-- `reed-solomon.ts`: GF(2^m) arithmetic, Reed-Solomon encoding and decoding of errors and erasures (Berlekamp-Massey,
+- `reed-solomon.ts`: GF(2^m) arithmetic, Reed-Solomon encoding and decoding of errors and erasures (`rsDecodeAlgorithm`, one
+  Berlekamp-Massey step per step then the correction; `rs/` paths; Berlekamp-Massey,
   Chien, Forney), matching reedsolo.
 - `convolutional.ts`: feed-forward convolutional codes and Viterbi decoding (traced, hard and soft decisions).
 - `ldpc.ts`: Gallager's regular LDPC codes, encoding, channel LLRs, belief-propagation decoding (sum-product and
@@ -1644,6 +1654,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `line-search-interval.ts`: `moreThuente` (MINPACK-2 dcsrch, scipy's scalar_search_wolfe1), `hagerZhang` (CG_DESCENT:
   approximate Wolfe conditions, secant^2 with bisection safeguards), `wolfe12` (scipy's More-Thuente-then-zoom search
   with an extra acceptance condition).
+- `line-search-algorithms.ts`, `line-search-options.ts`: `backtrackingAlgorithm` and `hagerZhangAlgorithm` (a line
+  search as an Algorithm: one trial step per step, the state the list of trials, JSON; logs `ls/alpha`, `ls/phi`,
+  `ls/slope`, `ls/armijo`, `ls/curvature`, `ls/bracket`, `ls/interval`); `backtracking` and `hagerZhang` are these run to
+  the end; `lineSearchRules` (backtracking, halving, Hager-Zhang with their knobs). `scalar.ts` gains `bracketAlgorithm`
+  (one extrapolation per step; `bracket` runs it).
 - `minimize/objective.ts`: `flatObjective` (an objective of any parameter tree as a function of one flat vector, with
   gradients, Hessian-vector products and Hessians by autodiff), `flatResiduals` (residuals and their Jacobian),
   `MinimizeResult` (scipy's OptimizeResult), `MinimizeMethod`, `VectorMethodOptions`, `Bounds`, `boxOf`, `clipToBox`,
@@ -1897,7 +1912,8 @@ representations are in `optim/sparse.ts`.
 - `adaptive.ts`: LMS, NLMS, RLS, adaptive noise cancellation, traced tap weights.
 - `cepstrum.ts`: real and complex cepstra, liftering, cepstral pitch.
 - `peaks.ts`: `findPeaks` (height, prominence, distance, width), prominences, widths, zero crossings.
-- `similarity.ts`: dynamic time warping (with path and lower bounds), PAA, SAX, cross-correlation lag.
+- `similarity.ts`: dynamic time warping (with path and lower bounds) and `dtwAlgorithm` (one row of the cost matrix per
+  step, `dtw/` paths; `dtw` runs it), PAA, SAX, cross-correlation lag; `similarity-options.ts`: `dtwStepPatterns`.
 - `sliding.ts`: the sliding-window building blocks of matrix profiles (as STUMPY): rolling means and standard
   deviations by Welford updates with periodic exact recomputation, constancy (monotone deques) and finiteness of
   windows, subsequence statistics, sliding dot products (direct for small products, FFT or overlap-add otherwise) and
@@ -1939,7 +1955,7 @@ representations are in `optim/sparse.ts`.
   Zhang-Suen skeletonisation.
 - `image/geometry.ts`: `mapCoordinates`, affine transforms, shifts, zooms and rotations (orders 0 and 1, every ndimage
   mode), scikit-image resizing and projective warps, Gaussian pyramids, integral images. TODO: spline orders 2 to 5.
-- `image/segmentation.ts`: Otsu and Li thresholds, marker watershed, Felzenszwalb's graph-based segmentation, exact
+- `image/segmentation.ts`: Otsu and Li thresholds, marker watershed, Felzenszwalb's graph-based segmentation (`felzenszwalbAlgorithm`, one edge per step, `seg/` paths; `felzenszwalbCoarseness` in `segmentation-options.ts`), exact
   binary graph cuts (by `graph` minimum cut). TODO: SLIC superpixels.
 - `image/motion.ts`: template matching (normalised cross-correlation), phase correlation, block matching, dense
   Lucas-Kanade and traced Horn-Schunck optical flow. TODO: pyramidal iterative Lucas-Kanade and TV-L1.
@@ -1956,7 +1972,8 @@ jellyfish, Biopython, pyphen
 - `treebank.ts`: the Penn Treebank tokeniser, nltk's improved word tokeniser, Treebank spans and detokenisation.
 - `tweet.ts`: nltk's TweetTokenizer (URLs, phone numbers, emoticons, handles, hashtags, emoji sequences), HTML entity
   replacement, handle removal, lengthening reduction.
-- `sentences.ts`: sentence splitting: a rule-based splitter and Punkt (Kiss and Strunk 2006) training and tokenisation.
+- `sentences.ts`: sentence splitting: a rule-based splitter and Punkt (Kiss and Strunk 2006) training (`trainPunktAlgorithm`, one
+  abbreviation candidate scored per step, then the later passes; `trainPunkt` runs it) and tokenisation.
 - `stem.ts`: Porter (nltk's three modes, with a rule trace) and Snowball English stemmers.
 - `lemmatise.ts`: rule-based lemmatisation (WordNet's morphy detachment rules over a lexicon with exception lists, or
   longest-suffix rules with common irregular forms).
@@ -1965,7 +1982,8 @@ jellyfish, Biopython, pyphen
 - `vocabulary.ts`: `Vocabulary`, building (minimum count, maximum size, specials, ordering), encoding and decoding.
 - `subword/bpe.ts`: BPE training (character and byte level, traced merges), encoding with dropout, the GPT-2 byte
   alphabet.
-- `subword/wordpiece.ts`: WordPiece training and greedy longest-match encoding.
+- `subword/wordpiece.ts`: WordPiece training and greedy longest-match encoding (`wordPieceAlgorithm`, one piece per step);
+  `bpeTokenizeAlgorithm` in `subword/bpe.ts` applies one merge per step, dropout coins resumable.
 - `subword/unigram.ts`: Unigram language-model training (suffix-array seeds, EM with the digamma M step and pruning,
   as HF's trainer, traced), Viterbi encoding, n-best and sampling.
 - `tokenizer.ts`: an HF-tokenizers-style pipeline (added tokens with single-word, lstrip, rstrip and normalized
@@ -2005,7 +2023,13 @@ jellyfish, Biopython, pyphen
   lookup, Sellers' approximate substring matching, top-k fuzzy matches with traced candidate pruning.
 - `fingerprinting.ts`: Rabin-Karp rolling hashes and search, winnowing (MOSS), SimHash, MinHash signatures (datasketch's
   scheme), LSH banding with its optimal parameters, near-duplicate detection.
-- `parsing.ts`: context-free grammars (nltk's notation, probabilities), parse trees, CYK and Earley parsing, conversion
+- `tokenizer-contract.ts`, `algorithm-options.ts`, `dp-tables.ts`, `dp-options.ts`: the `tok/`, `punkt/`, `dp/` paths; the
+  tables `parsingStrategies`, `punktProfiles`, `bpeDropouts`, `dpKinds`; `dpAlgorithm`, the edit-distance tables as one stepped
+  algorithm (a row per step: weighted Levenshtein, LCS, error-rate counts, Sellers), which `editCounts`,
+  `longestCommonSubsequence` and `sellers` run (`levenshtein` stays a two-row loop for speed, equal by test); `_sequence.ts`
+  holds `Sequence`.
+- `parsing.ts`: `cykAlgorithm` (a span length per step) and `earleyAlgorithm` (an item per step) with `cykResult` and
+  `earleyResult`; context-free grammars (nltk's notation, probabilities), parse trees, CYK and Earley parsing, conversion
   to Chomsky normal form.
 - `pcfg.ts`: probabilistic CFGs: the Viterbi parse, sentence probabilities, inside-outside expected counts, EM
   training as a traced run.
@@ -2188,14 +2212,21 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   `discardWarmup`, `chainsFromDraws`, `constrainChains`.
 - `metropolis.ts`: `metropolisAcceptance`, `metropolisHastings` (any proposal, discrete targets too),
   `randomWalkMetropolis` (scales or a full covariance), `independenceMetropolis`, `adaptiveMetropolis` (Haario et al.),
-  `randomWalkAdaptation` (Robbins-Monro scale and learned shape during warm-up).
+  `randomWalkAdaptation` (Robbins-Monro scale and learned shape during warm-up), also `randomWalkAdaptationAlgorithm`
+  (one warm-up transition per step) and `randomWalkAdaptationKernel`.
 - `hamiltonian/`: `integrators.ts` (`euclideanMetric` with the generalised U-turn criterion, palindromic `integrator`s
   velocity Verlet, McLachlan, Yoshida and Omelyan, `leapfrog`, `integratorState`, `hamiltonian`,
   `hamiltonianTrajectory`); `hmc.ts` (`hmcKernel`, `hmcAdaptation`, `hmc`); `nuts.ts` (multinomial NUTS with biased
   progressive sampling, the U-turn checks across subtrees, divergences, `nutsKernel`, `nutsAdaptation`, `nuts`);
   `adaptation.ts` (dual averaging, `findReasonableStepSize`, Welford mass-matrix adaptation, diagonal or dense,
-  `windowSchedule`, `windowAdaptation`); `riemannian.ts` (`riemannianHmcKernel` with the generalised leapfrog and a
+  `windowSchedule`, `windowAdaptation`, and as Algorithms `findReasonableStepSizeAlgorithm` and
+  `windowAdaptationAlgorithm`, one try or one warm-up transition per step, read with `windowAdaptationResult`);
+  `riemannian.ts` (`riemannianHmcKernel` with the generalised leapfrog and a
   given or SoftAbs metric, `riemannianTrajectory`), for small problems.
+- `adaptation-contract.ts`, `adaptation-options.ts`: the `adapt/` paths of the warm-up algorithms (`adapt/stepSize`,
+  `window`, `accept`, `logDensity`, `divergent`, `treeDepth`, `massMatrix`, `windowEnd`, `direction`) with the chain codec;
+  `windowAdaptationForms` (diagonal or dense mass matrix and the schedule, shrinkage and dual-averaging knobs) and
+  `randomWalkAdaptations`.
 - `langevin.ts`: `malaKernel` (optionally preconditioned), `ulaKernel`, `sgldKernel` with `minibatchGradient` and
   `polynomialStepSize`, SVGD (`svgdDirection`, `medianBandwidth`, `svgdAlgorithm`, `svgd`).
 - `gibbs.ts`: `blockedGibbs` (systematic or random scan), `sliceSampler` (Neal's stepping-out and shrinkage, coordinate
@@ -2253,12 +2284,15 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   printing (operator-aware `writeq`, `write_canonical`) that reads back.
 - `parse.ts`: Prolog syntax for clauses and queries (operators and `op/3`, lists, curly terms, quoted atoms, character
   codes, comments), DCG translation.
-- `unify.ts`: unification (iterative, optional occurs check), substitutions, composition, renaming apart, matching,
+- `algorithm-options.ts`: the tables `coverMethods`, `sampleSatSchemes`, `versionSpaceLearners`, `unificationVariants`.
+- `unify.ts`: unification (iterative, optional occurs check; `unifyAlgorithm`, one equation per step with its rule on the tape,
+  `unify/` paths, while `unify` stays the fast loop the resolution engine shares), substitutions, composition, renaming apart, matching,
   variants, a trailing binding store, Martelli-Montanari step traces.
 - `resolution.ts`: SLD resolution with backtracking and depth limits (traced), built-ins, negation as failure, a small
   standard library, SLD trees as structures.
 - `datalog.ts`: naive and semi-naive bottom-up evaluation, least Herbrand models, stratified negation, derivation trees.
-- `propositional.ts`: formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification,
+- `propositional.ts`: `quineMcCluskeyAlgorithm` (a merging round per step, then a cover: exact or greedy; `qm/` paths; the prime
+  implicants and `minimalDnf` run it), formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification,
   prime implicants and exact minimal DNF and CNF.
 - `sat.ts`: DPLL, CDCL (clause learning, watched literals, traced decisions and conflicts), WalkSAT, DIMACS.
 - `maxsat.ts`: weighted partial MaxSAT (branch and bound, traced), model counting and enumeration, minimal
@@ -2266,7 +2300,8 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
 - `first-order.ts`: clausal form (Skolemisation), given-clause resolution proving, subsumption, proof checking.
 - `answer-sets.ts`: stable models of small normal programs (guess and check), for comparison with Datalog semantics.
 - `ilp/generalisation.ts`: theta-subsumption, least general generalisation and relative LGG, clause reduction.
-- `ilp/version-spaces.ts`: Find-S, candidate elimination, boundaries and voting.
+- `ilp/version-spaces.ts`: Find-S (`findSAlgorithm`, an example per step), candidate elimination (typed `vs/` paths, serialisable),
+  boundaries and voting.
 - `ilp/foil.ts`: FOIL (gain, refinement, coverage), traced.
 - `ilp/progol.ts`: mode declarations, bottom clauses, inverse entailment.
 - `ilp/meta-interpretive.ts`: Metagol-style learning with metarules; learning from failures (Popper-style).
@@ -2299,7 +2334,7 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   infinite weight), `mlnExact` (the exact distribution by enumeration: log partition, marginals, query probabilities,
   expected counts; the truth the samplers are tested against), `mlnSampleWorlds` (exact samples of complete worlds, the
   generator with its planted weights as truth), `mlnGibbsAlgorithm` (one sweep per step), `mlnMcSatAlgorithm` (slice
-  sampling; the slice by `sampleSat`, Wei-Erenrich-Selman's near-uniform SampleSAT, or exactly by enumeration) with
+  sampling; the slice by `sampleSat` (and `sampleSatAlgorithm`, one flip per step, `sat/` paths, a resumable coin stream), Wei-Erenrich-Selman's near-uniform SampleSAT, or exactly by enumeration) with
   marginals, query probabilities and energy on the tape (`MlnSamplerPath`, `mlnSamplerContract`), and `mlnMap` (MAP as
   weighted partial MaxSAT through `maxsat.ts`).
 - `mln-learning.ts`: weight learning: `mlnPseudoLikelihoodProblem` (a convex logistic regression on the changes in each
@@ -2361,7 +2396,8 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   termination), `odeint`, `diffeqsolve` (diffrax style: solver, step-size controller, saving policy).
 - `ode/adjoint.ts`: continuous adjoint sensitivities (backsolve, interpolated and checkpointed adjoints), forward
   sensitivities, gradient-method comparison helpers (memory and accuracy).
-- `ode/boundary.ts`: shooting and multiple shooting, collocation (`solveBvp`, that run to the end of
+- `ode/boundary.ts`: shooting and multiple shooting (`singleShootingAlgorithm`, `multipleShootingAlgorithm`: Newton on the
+  miss, one iteration per step, `shoot/` paths; `shootingOf` reads the state; `boundary-options.ts`: `shootingAccuracies`), collocation (`solveBvp`, that run to the end of
   `solveBvpAlgorithm`: one Newton solve and mesh refinement per step, the state the mesh, the solution values and the
   residuals, so it serialises and resumes; logs `bvp/residual`, `mesh-size`, `bc-residual`, `mesh`, `solution`;
   `bvpSolution` reads the spline off a finished state).
@@ -2441,7 +2477,8 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `nonlinear.ts`: Poincare sections, limit cycles by shooting, Floquet multipliers, Lyapunov spectra of flows,
   correlation dimension, recurrence quantification, bifurcation continuation (fold and Hopf detection).
 - `control/optimal.ts`: LQR, discrete LQR, LQE, LQG, finite-horizon Riccati recursions.
-- `control/placement.ts`: pole placement (Kautsky-Nichols-Van Dooren, Ackermann).
+- `control/placement.ts`: pole placement (Kautsky-Nichols-Van Dooren, Ackermann; `placeAlgorithm`, one eigenvector sweep per
+  step, `place/` paths, `placementOf` reads the gain; `placement-options.ts`: `placementSchemes`).
 - `control/compensators.ts`: lead and lag compensators from their defining numbers (`leadCompensator`: phase and centre
   to zero and pole; `lagCompensator`: zero and ratio), `leadLag`, and the textbook design rules from a plant's margins
   (`leadDesign`: centre where the plant's gain is 1/sqrt(alpha); `lagDesign`: zero a decade below the crossover).
@@ -3022,7 +3059,7 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
 - `handlers.ts`: `trace` (and `traceOf`), `seed`, `condition`, `substitute`, `replay`, `block`, `scale`, `mask`,
   `doIntervention`, `enumerate` (mark discrete sites for exact summation), `uncondition` (for predictives) and `handle`
   (custom handlers); the recorded site types.
-- `density.ts`: `logJoint` (enumerated sites summed out by plated sum-product contraction, `_contract.ts`, with
+- `density.ts`: `initialParamsAlgorithm` (`findInitialParams` stepped, a try per step, `init/` paths), `logJoint` (enumerated sites summed out by plated sum-product contraction, `_contract.ts`, with
   dimension recycling in markov loops), `traceLogJoint`, `siteLogProbs`, `potentialEnergy` (to an unconstrained
   `LogDensity` with Jacobian corrections, supports re-evaluated per run, discrete sites summed out), `latentLayout`,
   initialisation strategies (`initToSample`, `initToMedian`, `initToMean`, `initToUniform`, `initToFeasible`,
@@ -3056,7 +3093,9 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
 - `engines/gibbs.ts`: Gibbs sampling with discrete conditionals (enumeration), conjugate conditionals given the rest,
   mixture components group by group, slice steps otherwise, and collapsed Dirichlet and beta sites (topic models).
 - `engines/nuts.ts`: NUTS and HMC on the unconstrained density (`mcmc`), with enumerated discrete sites summed out and
-  recovered by `inferDiscrete`.
+  recovered by `inferDiscrete`; `mcmcAlgorithm` (the driver: a starting point per chain, one step that samples all chains, a
+  step per draw to recover enumerated sites; `mcmc/` paths; `mcmcPosterior` reads the state) and `inferDiscreteAlgorithm`
+  (a site per step); `engines/mcmc-options.ts`: `mcmcKernels`, `initStrategies`.
 - `engines/svi.ts`: stochastic variational inference (`sviAlgorithm`, `svi`): automatic or custom guides, any ELBO
   estimator, optimisers on unconstrained parameters, subsampling over plates.
 - `engines/laplace.ts`: Laplace approximation at the MAP estimate (`laplaceFit`), with the Laplace evidence.
@@ -4382,7 +4421,7 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `fitLine` (least squares and robust M-estimators). `components.ts`: `connectedComponentsWithStats`, `floodFill`.
 - `draw.ts`: functional drawing returning new images: OpenCV's line iterator, Wu's anti-aliased lines, rectangles,
   circles, ellipses, polylines, filled polygons, and contour, keypoint and match views.
-- `boxes.ts`: box formats, area, clipping, scaling, `nms`, `batchedNms`, `softNms` (as cv2.dnn), anchors, box
+- `boxes.ts`: box formats, area, clipping, scaling, `nms`, `batchedNms`, `softNms` (as cv2.dnn; `softNmsAlgorithm`, one box kept per step), anchors, box
   encoding and decoding, anchor matching (torchvision's Matcher), golden against torchvision.ops.
 - `fast.ts`: FAST-9 corners with OpenCV's score and suppression. `scale-space.ts`: Gaussian and difference-of-Gaussian
   scale spaces and SIFT-style keypoints (sub-pixel refinement, edge rejection, orientations). `descriptors.ts`:
@@ -4399,13 +4438,20 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
 - `stereo.ts`: block matching (SAD, SSD or NCC, sub-pixel, left-right check), semi-global matching (4 or 8 paths),
   `disparityToDepth`, `reprojectImageTo3D`.
 - `tracking.ts`: SORT (a Kalman filter per track from `dynamics/filtering`, Hungarian assignment on IoU from `optim`),
-  `meanShift` and `camShift` as OpenCV, pyramidal Lucas-Kanade (`calcOpticalFlowPyrLK`, `kltAlgorithm`).
+  `meanShift` and `camShift` as OpenCV (`meanShiftAlgorithm`, `camShiftAlgorithm`: one window update per step, `track/` paths),
+  pyramidal Lucas-Kanade (`calcOpticalFlowPyrLK`, `kltAlgorithm`).
   `background.ts`: `accumulateWeighted`, a running-average model and Stauffer-Grimson per-pixel mixtures.
 - `denoise.ts`: non-local means, `denoiseTvChambolle` (golden against scikit-image), Perona-Malik diffusion, the guided
   filter, harmonic inpainting (the adaptive Wiener filter stays `signal`'s `wiener`).
-- `segmentation.ts`: SLIC superpixels, seeded region growing, mean-shift segmentation, k-means colour quantisation
+- `greedy-contract.ts`, `algorithm-options.ts`: the `greedy/`, `region/`, `fill/` and `geom/` paths of the greedy algorithms below, and
+  the tables `softNmsMethods`, `seamMaskStrengths`, `meanShiftCriteria`, `floodFillModes`, `simplifications`. Also stepped:
+  `houghPeaksAlgorithm` (`edges.ts`, a peak per step), `floodFillAlgorithm` (`components.ts`, a span per step),
+  `minEnclosingCircleAlgorithm` (`fitting.ts`, a point per step) and `approxPolyDPAlgorithm` (`contours.ts`, a segment per step); each
+  old function runs its algorithm.
+- `segmentation.ts`: SLIC superpixels, seeded region growing (`regionGrowingAlgorithm`, a pixel per step), mean-shift segmentation, k-means colour quantisation
   (over `cluster`). `snakes.ts`: active contours. `grabcut.ts`: GrabCut with mixture colour models and min cuts.
-  `seams.ts`: seam energy, minimum seams, removal, content-aware resizing.
+  `seams.ts`: seam energy, minimum seams, removal, content-aware resizing (`seamCarveAlgorithm`, a seam per step, `seam/` paths, protect
+  and remove masks).
 - `pyramids.ts`: `pyrDown`, `pyrUp` (OpenCV's kernels, borders and odd sizes), `buildPyramid`, Laplacian pyramids and
   multiresolution blending.
 - `haar.ts`: Haar-like features (scikit-image's types and order), discrete AdaBoost on stumps, attentional cascades,
@@ -5048,7 +5094,9 @@ counting below `5m/2`) and Ertl's improved estimator (no bias tables), `hllMerge
 and false-negative areas of the S-curve integrated exactly). `reservoir.ts`: `reservoirSampler` (Algorithm R, Li's
 Algorithm L, weighted A-Res and A-ExpJ), `reservoirSample`, `reservoirAlgorithm`. `quantiles.ts`: `gkSummary`
 (Greenwald-Khanna, every rank within `epsilon n`), `tDigest` (merging, k1 scale; tails tighter than the middle),
-`kllSketch` (compactors; rank error about `1/k`, mergeable). `skiplist.ts`: `skipList` (Pugh; keyed heights, a comparator,
+`kllSketch` (compactors; rank error about `1/k`, mergeable), and as Algorithms `gkSummaryAlgorithm`,
+`kllSketchAlgorithm` and `p2Algorithm` (one stream value per step, `sketch/` paths; `p2Push` is in `stats/running.ts`);
+`quantile-options.ts`: `quantileSketches`. `skiplist.ts`: `skipList` (Pugh; keyed heights, a comparator,
 search traces), `skipListAlgorithm`.
 
 Each sketch states its guarantee and the property tests check it across many keys: the Bloom rate against the fill-based

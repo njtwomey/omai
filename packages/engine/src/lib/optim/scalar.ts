@@ -5,7 +5,15 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  numberFromJson,
+  numberToJson,
+  type RunOptions,
+  runAlgorithm,
+} from '../trace/index.ts'
+import type { LineSearchPath } from './line-search-algorithms.ts'
 
 /** A scalar function to minimise. */
 export type ScalarFunction = (x: number) => number
@@ -35,9 +43,173 @@ export interface BracketSearchOptions {
 
 const GOLD = 1.618034
 
+/** The state of {@link bracketAlgorithm}: the three points and values of the bracket so far and the work done. */
+export interface BracketState {
+  xa: number
+  xb: number
+  xc: number
+  fa: number
+  fb: number
+  fc: number
+  /** Function evaluations so far. */
+  nfev: number
+  /** Extrapolation iterations done. */
+  iterations: number
+  /** True once an iteration found the bracket (the exits of the loop that leave it before `f(xc) >= f(xb)`). */
+  found: boolean
+}
+
+/** Whether the three points of a bracket state are a valid bracket of a minimum. */
+function validBracket(s: BracketState): boolean {
+  const { xa, xb, xc, fa, fb, fc } = s
+  return (
+    ((fb < fc && fb <= fa) || (fb < fa && fb <= fc)) &&
+    ((xa < xb && xb < xc) || (xc < xb && xb < xa)) &&
+    Number.isFinite(xa) &&
+    Number.isFinite(xb) &&
+    Number.isFinite(xc)
+  )
+}
+
+/**
+ * Bracketing a minimum as a stepped algorithm (scipy.optimize.bracket, Numerical Recipes' mnbrak): start from two
+ * points, order them downhill, take a golden-ratio step, then each step extrapolates by a parabola through the three
+ * points (limited to `growLimit` times the last interval, with golden steps when the parabola misleads) until the
+ * middle point is below both ends. It logs the newest point and its value, the width of the bracket and its ends. It is
+ * done (`converged`) when `f(xc) >= f(xb)` and the three points are a valid bracket, and `failed` past the iteration cap
+ * or when the points are not a bracket. The state serialises.
+ *
+ * @param f - The function.
+ * @param options - Starting points, growth limit and iteration cap.
+ * @returns The algorithm.
+ * @concept scalar-minimisation
+ * @example
+ * ```ts
+ * import { bracketAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(bracketAlgorithm((x) => (x - 3) ** 2), { maxSteps: 50 })
+ * [run.status, run.state.fb < run.state.fa && run.state.fb < run.state.fc] // => ['converged', true]
+ * ```
+ */
+export function bracketAlgorithm(
+  f: ScalarFunction,
+  options: BracketSearchOptions = {},
+): Algorithm<BracketState, LineSearchPath> {
+  const growLimit = options.growLimit ?? 110
+  const maxiter = options.maxIterations ?? 1000
+  const exhausted = (s: BracketState): boolean => !s.found && s.fc < s.fb && s.iterations > maxiter
+  return {
+    name: 'optim/bracket',
+    config: { xa: options.xa ?? 0, xb: options.xb ?? 1, growLimit, maxIterations: maxiter },
+    init: () => {
+      let xa = options.xa ?? 0
+      let xb = options.xb ?? 1
+      let fa = f(xa)
+      let fb = f(xb)
+      if (fa < fb) {
+        ;[xa, xb] = [xb, xa]
+        ;[fa, fb] = [fb, fa]
+      }
+      const xc = xb + GOLD * (xb - xa)
+      return { xa, xb, xc, fa, fb, fc: f(xc), nfev: 3, iterations: 0, found: false }
+    },
+    step: (s, ctx) => {
+      let { xa, xb, xc, fa, fb, fc } = s
+      let nfev = s.nfev
+      const tmp1 = (xb - xa) * (fb - fc)
+      const tmp2 = (xb - xc) * (fb - fa)
+      const val = tmp2 - tmp1
+      const denom = Math.abs(val) < 1e-21 ? 2e-21 : 2 * val
+      let w = xb - ((xb - xc) * tmp2 - (xb - xa) * tmp1) / denom
+      const wlim = xb + growLimit * (xc - xb)
+      let fw: number
+      let found = false
+      if ((w - xc) * (xb - w) > 0) {
+        fw = f(w)
+        nfev += 1
+        if (fw < fc) {
+          xa = xb
+          xb = w
+          fa = fb
+          fb = fw
+          found = true
+        } else if (fw > fb) {
+          xc = w
+          fc = fw
+          found = true
+        } else {
+          w = xc + GOLD * (xc - xb)
+          fw = f(w)
+          nfev += 1
+        }
+      } else if ((w - wlim) * (wlim - xc) >= 0) {
+        w = wlim
+        fw = f(w)
+        nfev += 1
+      } else if ((w - wlim) * (xc - w) > 0) {
+        fw = f(w)
+        nfev += 1
+        if (fw < fc) {
+          xb = xc
+          xc = w
+          w = xc + GOLD * (xc - xb)
+          fb = fc
+          fc = fw
+          fw = f(w)
+          nfev += 1
+        }
+      } else {
+        w = xc + GOLD * (xc - xb)
+        fw = f(w)
+        nfev += 1
+      }
+      if (!found) {
+        xa = xb
+        xb = xc
+        xc = w
+        fa = fb
+        fb = fc
+        fc = fw
+      }
+      ctx.log('ls/alpha', found ? xb : xc)
+      ctx.log('ls/phi', found ? fb : fc)
+      ctx.log('ls/bracket', Math.abs(xc - xa))
+      if (ctx.wants('ls/interval')) ctx.log('ls/interval', [Math.min(xa, xc), Math.max(xa, xc)])
+      return { xa, xb, xc, fa, fb, fc, nfev, iterations: s.iterations + 1, found }
+    },
+    done: (s) =>
+      exhausted(s) ? 'failed' : s.found || !(s.fc < s.fb) ? (validBracket(s) ? 'converged' : 'failed') : undefined,
+    serialise: (s) => ({
+      xa: numberToJson(s.xa),
+      xb: numberToJson(s.xb),
+      xc: numberToJson(s.xc),
+      fa: numberToJson(s.fa),
+      fb: numberToJson(s.fb),
+      fc: numberToJson(s.fc),
+      nfev: s.nfev,
+      iterations: s.iterations,
+      found: s.found,
+    }),
+    deserialise: (j) => {
+      const o = j as Record<string, Json>
+      return {
+        xa: numberFromJson(o['xa']),
+        xb: numberFromJson(o['xb']),
+        xc: numberFromJson(o['xc']),
+        fa: numberFromJson(o['fa']),
+        fb: numberFromJson(o['fb']),
+        fc: numberFromJson(o['fc']),
+        nfev: o['nfev'] as number,
+        iterations: o['iterations'] as number,
+        found: o['found'] as boolean,
+      }
+    },
+  }
+}
+
 /**
  * Find a bracket of a minimum by moving downhill from two points with golden-ratio and parabolic extrapolation
- * (scipy.optimize.bracket, Numerical Recipes' mnbrak).
+ * (scipy.optimize.bracket, Numerical Recipes' mnbrak): {@link bracketAlgorithm} run to the end.
  *
  * @param f - The function.
  * @param options - Starting points, growth limit and iteration cap.
@@ -52,92 +224,20 @@ const GOLD = 1.618034
  * ```
  */
 export function bracket(f: ScalarFunction, options: BracketSearchOptions = {}): Bracket {
-  const growLimit = options.growLimit ?? 110
-  const maxiter = options.maxIterations ?? 1000
-  let xa = options.xa ?? 0
-  let xb = options.xb ?? 1
-  let fa = f(xa)
-  let fb = f(xb)
-  if (fa < fb) {
-    ;[xa, xb] = [xb, xa]
-    ;[fa, fb] = [fb, fa]
-  }
-  let xc = xb + GOLD * (xb - xa)
-  let fc = f(xc)
-  let nfev = 3
-  let iter = 0
-  while (fc < fb) {
-    const tmp1 = (xb - xa) * (fb - fc)
-    const tmp2 = (xb - xc) * (fb - fa)
-    const val = tmp2 - tmp1
-    const denom = Math.abs(val) < 1e-21 ? 2e-21 : 2 * val
-    let w = xb - ((xb - xc) * tmp2 - (xb - xa) * tmp1) / denom
-    const wlim = xb + growLimit * (xc - xb)
-    if (iter > maxiter) throw new MdmlError('convergence', 'bracket: no valid bracket within the iteration limit')
-    iter += 1
-    let fw: number
-    if ((w - xc) * (xb - w) > 0) {
-      fw = f(w)
-      nfev += 1
-      if (fw < fc) {
-        xa = xb
-        xb = w
-        fa = fb
-        fb = fw
-        break
-      }
-      if (fw > fb) {
-        xc = w
-        fc = fw
-        break
-      }
-      w = xc + GOLD * (xc - xb)
-      fw = f(w)
-      nfev += 1
-    } else if ((w - wlim) * (wlim - xc) >= 0) {
-      w = wlim
-      fw = f(w)
-      nfev += 1
-    } else if ((w - wlim) * (xc - w) > 0) {
-      fw = f(w)
-      nfev += 1
-      if (fw < fc) {
-        xb = xc
-        xc = w
-        w = xc + GOLD * (xc - xb)
-        fb = fc
-        fc = fw
-        fw = f(w)
-        nfev += 1
-      }
-    } else {
-      w = xc + GOLD * (xc - xb)
-      fw = f(w)
-      nfev += 1
-    }
-    xa = xb
-    xb = xc
-    xc = w
-    fa = fb
-    fb = fc
-    fc = fw
-  }
-  const valid =
-    ((fb < fc && fb <= fa) || (fb < fa && fb <= fc)) &&
-    ((xa < xb && xb < xc) || (xc < xb && xb < xa)) &&
-    Number.isFinite(xa) &&
-    Number.isFinite(xb) &&
-    Number.isFinite(xc)
-  if (!valid)
+  const run = runAlgorithm(bracketAlgorithm(f, options), { maxSteps: Number.MAX_SAFE_INTEGER })
+  const s = run.state
+  if (!s.found && s.fc < s.fb)
+    throw new MdmlError('convergence', 'bracket: no valid bracket within the iteration limit')
+  if (!validBracket(s))
     throw new MdmlError('convergence', 'bracket: the search ended without a valid bracket', {
-      xa,
-      xb,
-      xc,
-      fa,
-      fb,
-      fc,
+      xa: s.xa,
+      xb: s.xb,
+      xc: s.xc,
+      fa: s.fa,
+      fb: s.fb,
+      fc: s.fc,
     })
-  return { xa, xb, xc, fa, fb, fc, nfev }
+  return { xa: s.xa, xb: s.xb, xc: s.xc, fa: s.fa, fb: s.fb, fc: s.fc, nfev: s.nfev }
 }
 
 /** Result of a scalar minimisation (scipy's OptimizeResult for minimize_scalar). */

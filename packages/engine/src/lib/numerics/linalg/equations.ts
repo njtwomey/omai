@@ -4,7 +4,7 @@
  * control and Kalman filtering rest on.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -23,8 +23,21 @@ import {
   sub,
   sum,
   type TensorLike,
+  toFlat,
   type Value,
 } from '../../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  numberFromJson,
+  numberToJson,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { identity, mT, squareSize, sym } from './_matrix.ts'
 import { slogdet } from './basics.ts'
 import { inv, solve } from './lu.ts'
@@ -166,15 +179,124 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
   return sym(lstsq(lhs, rhs))
 }
 
+/** The paths the Riccati and spline algorithms log, as a type. */
+export type EquationPath = 'dare/residual' | 'dare/iterate' | 'dare/solution'
+
+/** What the doubling iteration for the discrete Riccati equation logs: the relative change, the iteration and the iterate. */
+export const dareContract: Contract<unknown, EquationPath> = defineContract({
+  'dare/residual': scalar({ description: 'the relative change of H in this doubling step', direction: 'lower' }),
+  'dare/iterate': scalar({ description: 'doubling steps taken' }),
+  'dare/solution': tensor({ role: 'state', shape: ['n', 'n'], description: 'the current H, flat (it converges to X)' }),
+})
+
+/**
+ * The state of {@link solveDareAlgorithm}: the doubling iterates A_k, G_k, H_k (H_k converges to the solution) and the
+ * relative change of the last step. Under `grad` the matrices carry the trace; they serialise when concrete.
+ */
+export interface DareState {
+  readonly ak: Value
+  readonly gk: Value
+  readonly hk: Value
+  /** The relative change of H in the last step (Infinity before the first). */
+  readonly change: number
+  readonly iterations: number
+}
+
+/** Options of {@link solveDareAlgorithm}. */
+export interface DareOptions {
+  /** Stop when H changes by less than this relative amount (default 1e-14). */
+  readonly tol?: number
+  /** Most doubling steps (default 100). */
+  readonly maxIterations?: number
+}
+
+/**
+ * The structure-preserving doubling algorithm for the discrete algebraic Riccati equation as a stepped algorithm: each
+ * step squares the pair (A_k, G_k, H_k) -> (A_k W^-1 A_k, G_k + A_k W^-1 G_k A_k^T, H_k + A_k^T H_k W^-1 A_k) with
+ * W = I + G_k H_k, so the horizon doubles and H_k reaches the stabilising solution quadratically. It logs the relative
+ * change, the iteration and the iterate, and is done (`converged`) when the change is below `tol`, `failed` after
+ * `maxIterations`. Differentiable like `solveDare`; the state serialises when its matrices are concrete.
+ *
+ * @param a - `[n, n]`.
+ * @param b - `[n, m]`.
+ * @param q - `[n, n]`.
+ * @param r - `[m, m]`.
+ * @param options - Tolerance and iteration cap.
+ * @returns The algorithm.
+ * @example
+ * ```ts
+ * import { solveDareAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(solveDareAlgorithm([[1]], [[1]], [[1]], [[1]]), { maxSteps: 100 }).status // => 'converged'
+ * ```
+ */
+export function solveDareAlgorithm(
+  a: TensorLike,
+  b: TensorLike,
+  q: TensorLike,
+  r: TensorLike,
+  options: DareOptions = {},
+): Algorithm<DareState, EquationPath> {
+  const [av, bv, qv, rv] = promoteFloat(a, b, q, r) as [Value, Value, Value, Value]
+  const n = squareSize(av.shape, 'solveDare')
+  const tol = options.tol ?? 1e-14
+  const maxIterations = options.maxIterations ?? 100
+  return {
+    name: 'numerics/dare',
+    config: { n, tol, maxIterations },
+    init: () => ({
+      ak: av,
+      gk: matmul(bv, solve(rv, mT(bv))),
+      hk: qv,
+      change: Number.POSITIVE_INFINITY,
+      iterations: 0,
+    }),
+    step: (s, ctx) => {
+      const eye = identity(n, av)
+      const { ak, gk, hk } = s
+      const w = add(eye, matmul(gk, hk))
+      const wa = solve(w, ak)
+      const nextA = matmul(ak, wa)
+      const nextG = add(gk, matmul(ak, solve(w, matmul(gk, mT(ak)))))
+      const nextH = add(hk, matmul(mT(ak), matmul(hk, wa)))
+      const change = norm1(sub(nextH, hk)) / Math.max(norm1(nextH), 1e-300)
+      ctx.log('dare/residual', change)
+      ctx.log('dare/iterate', s.iterations + 1)
+      if (ctx.wants('dare/solution')) ctx.log('dare/solution', toFlat(primalOf(nextH)))
+      return { ak: nextA, gk: nextG, hk: nextH, change, iterations: s.iterations + 1 }
+    },
+    done: (s) => (s.change <= tol ? 'converged' : s.iterations >= maxIterations ? 'failed' : undefined),
+    serialise: (s) => ({
+      ak: stateToJson(s.ak),
+      gk: stateToJson(s.gk),
+      hk: stateToJson(s.hk),
+      change: numberToJson(s.change),
+      iterations: s.iterations,
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as Record<string, Json>
+      return {
+        ak: stateFromJson(o['ak'] as Json) as Value,
+        gk: stateFromJson(o['gk'] as Json) as Value,
+        hk: stateFromJson(o['hk'] as Json) as Value,
+        change: numberFromJson(o['change']),
+        iterations: o['iterations'] as number,
+      }
+    },
+  }
+}
+
 /**
  * Solve the discrete algebraic Riccati equation X = A^T X A - A^T X B (R + B^T X B)^{-1} B^T X A + Q for the
- * stabilising X (scipy.linalg.solve_discrete_are), by the structure-preserving doubling algorithm; differentiable.
+ * stabilising X (scipy.linalg.solve_discrete_are), by the structure-preserving doubling algorithm
+ * ({@link solveDareAlgorithm} run to the end); differentiable.
  *
  * @param a - `[n, n]`.
  * @param b - `[n, m]`.
  * @param q - `[n, n]`.
  * @param r - `[m, m]`.
  * @returns X (symmetric).
+ * @throws MdmlError with code `convergence` when the doubling does not converge.
  * @example
  * ```ts
  * import { solveDare } from 'mdml-engine/numerics/linalg'
@@ -183,23 +305,8 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
  * ```
  */
 export function solveDare(a: TensorLike, b: TensorLike, q: TensorLike, r: TensorLike): Value {
-  const [av, bv, qv, rv] = promoteFloat(a, b, q, r) as [Value, Value, Value, Value]
-  const n = squareSize(av.shape, 'solveDare')
-  const eye = identity(n, av)
-  let ak = av
-  let gk = matmul(bv, solve(rv, mT(bv)))
-  let hk = qv
-  for (let i = 0; i < 100; i++) {
-    const w = add(eye, matmul(gk, hk))
-    const wa = solve(w, ak)
-    const nextA = matmul(ak, wa)
-    const nextG = add(gk, matmul(ak, solve(w, matmul(gk, mT(ak)))))
-    const nextH = add(hk, matmul(mT(ak), matmul(hk, wa)))
-    const change = norm1(sub(nextH, hk)) / Math.max(norm1(nextH), 1e-300)
-    ak = nextA
-    gk = nextG
-    hk = nextH
-    if (change <= 1e-14) return sym(hk)
-  }
-  throw new MdmlError('convergence', 'solveDare: the doubling iteration did not converge')
+  const run = runAlgorithm(solveDareAlgorithm(a, b, q, r), { maxSteps: 100 })
+  if (run.status !== 'converged')
+    throw new MdmlError('convergence', 'solveDare: the doubling iteration did not converge')
+  return sym(run.state.hk)
 }

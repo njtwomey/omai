@@ -7,21 +7,11 @@
 
 import { MdmlError } from '../base/index.ts'
 import { compareCodePoints, PY_SPACE } from './_classes.ts'
+import { elements, type Sequence } from './_sequence.ts'
+import { dpTable, type EditCounts, type EditWeights } from './dp-tables.ts'
 
-/** A sequence to compare: a string (compared by code point) or an array of tokens. */
-export type Sequence<T> = string | readonly T[]
-
-/** The elements of a sequence: code points of a string, or the array itself. */
-function elements<T>(s: Sequence<T>): readonly (T | string)[] {
-  return typeof s === 'string' ? Array.from(s) : s
-}
-
-/** Costs of the edit operations of {@link levenshtein} (rapidfuzz's `weights`). */
-export interface EditWeights {
-  readonly insertion?: number
-  readonly deletion?: number
-  readonly substitution?: number
-}
+export type { Sequence } from './_sequence.ts'
+export type { EditCounts, EditWeights } from './dp-tables.ts'
 
 /**
  * The Levenshtein (edit) distance: the least total cost of insertions, deletions and substitutions turning `a` into
@@ -77,14 +67,6 @@ export function levenshteinSimilarity<T>(a: Sequence<T>, b: Sequence<T>): number
   return n === 0 ? 1 : 1 - levenshtein(a, b) / n
 }
 
-/** Hits, substitutions, deletions and insertions of an alignment of a reference with a hypothesis. */
-export interface EditCounts {
-  readonly hits: number
-  readonly substitutions: number
-  readonly deletions: number
-  readonly insertions: number
-}
-
 /**
  * The counts of a minimal Levenshtein alignment of a reference with a hypothesis, with rapidfuzz's tie-breaking (as
  * jiwer reads its opcodes): the common prefix and suffix are hits, and the backtrace through the rest prefers a
@@ -101,52 +83,7 @@ export interface EditCounts {
  * ```
  */
 export function editCounts<T>(reference: Sequence<T>, hypothesis: Sequence<T>): EditCounts {
-  const r = elements(reference)
-  const h = elements(hypothesis)
-  let p = 0
-  while (p < r.length && p < h.length && r[p] === h[p]) p++
-  let s = 0
-  while (s < r.length - p && s < h.length - p && r[r.length - 1 - s] === h[h.length - 1 - s]) s++
-  const a = r.slice(p, r.length - s)
-  const b = h.slice(p, h.length - s)
-  const n = a.length
-  const m = b.length
-  const d = Array.from({ length: n + 1 }, (_, x) =>
-    Int32Array.from({ length: m + 1 }, (_, y) => (x === 0 ? y : y === 0 ? x : 0)),
-  )
-  const at = (x: number, y: number): number => d[x]?.[y] ?? 0
-  for (let x = 1; x <= n; x++) {
-    const row = d[x] as Int32Array
-    for (let y = 1; y <= m; y++) {
-      row[y] = Math.min(at(x - 1, y) + 1, at(x, y - 1) + 1, at(x - 1, y - 1) + (a[x - 1] === b[y - 1] ? 0 : 1))
-    }
-  }
-  let hits = p + s
-  let substitutions = 0
-  let deletions = 0
-  let insertions = 0
-  let x = n
-  let y = m
-  while (x > 0 || y > 0) {
-    const here = at(x, y)
-    const same = x > 0 && y > 0 && a[x - 1] === b[y - 1]
-    if (x > 0 && here === at(x - 1, y) + 1) {
-      deletions++
-      x--
-    } else if (x > 0 && y > 0 && !same && here === at(x - 1, y - 1) + 1) {
-      substitutions++
-      x--
-      y--
-    } else if (y > 0 && here === at(x, y - 1) + 1) {
-      insertions++
-      y--
-    } else {
-      hits++
-      x--
-      y--
-    }
-  }
-  return { hits, substitutions, deletions, insertions }
+  return dpTable(reference, hypothesis, { kind: 'edit-counts' }).counts as EditCounts
 }
 
 /**
@@ -390,20 +327,7 @@ export function lcsTable<T>(a: Sequence<T>, b: Sequence<T>): Int32Array[] {
  */
 export function longestCommonSubsequence<T>(a: Sequence<T>, b: Sequence<T>): (T | string)[] {
   const x = elements(a)
-  const y = elements(b)
-  const t = lcsTable(x, y)
-  const out: (T | string)[] = []
-  let i = x.length
-  let j = y.length
-  while (i > 0 && j > 0) {
-    if (x[i - 1] === y[j - 1]) {
-      out.push(x[i - 1] as T | string)
-      i--
-      j--
-    } else if ((t[i - 1]?.[j] ?? 0) >= (t[i]?.[j - 1] ?? 0)) i--
-    else j--
-  }
-  return out.reverse()
+  return dpTable(a, b, { kind: 'lcs' }).subsequence.map((i) => x[i] as T | string)
 }
 
 /**

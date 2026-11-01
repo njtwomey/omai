@@ -5,6 +5,15 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 
 /** A grammar symbol on a right-hand side: a nonterminal or a terminal word. */
 export type GrammarSymbol = { readonly nonterminal: string } | { readonly terminal: string }
@@ -143,9 +152,174 @@ function isCnf(g: Grammar): boolean {
   )
 }
 
+/** The paths the chart parsers log, as a type. */
+export type ParsePath =
+  | 'chart/span'
+  | 'chart/cell'
+  | 'chart/derivations'
+  | 'earley/predict'
+  | 'earley/scan'
+  | 'earley/complete'
+  | 'earley/column'
+
+/**
+ * What the chart parsers log. CYK logs, per span length, the span, the cells of that length that hold a nonterminal and
+ * the derivations found in them; Earley logs, per item processed, the column it is in, and the items its predict, scan or
+ * complete step added.
+ */
+export const parseContract: Contract<unknown, ParsePath> = defineContract({
+  'chart/span': scalar({ description: 'the span length filled at this step (CYK)' }),
+  'chart/cell': scalar({ description: 'the cells of this span length that hold at least one nonterminal (CYK)' }),
+  'chart/derivations': scalar({ description: 'the derivations summed over the cells of this span length (CYK)' }),
+  'earley/predict': scalar({ description: 'items added by predicting the nonterminal after the dot' }),
+  'earley/scan': scalar({ description: 'items added by scanning the next word' }),
+  'earley/complete': scalar({ description: 'items added by completing a finished item into its parents' }),
+  'earley/column': scalar({ description: 'the chart column of the item processed' }),
+})
+
+/** The options of the parsers: the most trees to enumerate. */
+export interface ParseOptions {
+  /** The most trees to enumerate (default 1000). */
+  readonly maxTrees?: number
+}
+
+/**
+ * The state of {@link cykAlgorithm}: the derivation counts of every span, as a nonterminal-to-count record per cell
+ * `cells[i][j]` (tokens `i` to `j`), and the next span length to fill. A step fills every cell of one length in place;
+ * keep a copy of a state you want to look at later.
+ */
+export interface CykState {
+  readonly n: number
+  readonly cells: Record<string, number>[][]
+  /** The next span length (1 fills the words from the lexical rules). */
+  span: number
+}
+
+/**
+ * CYK recognition (Cocke, Younger, Kasami) of a grammar in Chomsky normal form as a stepped algorithm, one span length
+ * per step: length 1 from the lexical rules, then each longer span from every split point and every binary rule, the
+ * derivations multiplying. It logs the span length, the cells that hold a nonterminal and the derivations in them, and
+ * is done (`converged`) after the whole sentence. The state serialises; the parses of the state are read with
+ * {@link cykResult}.
+ *
+ * @param g - The grammar (in CNF).
+ * @param tokens - The words.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for a grammar not in CNF.
+ * @concept parsing
+ * @example
+ * ```ts
+ * import { cykAlgorithm, grammar } from 'mdml-engine/text'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const g = grammar("S -> NP VP\nVP -> V NP\nNP -> 'she' | 'fish'\nV -> 'eats'")
+ * const run = runAlgorithm(cykAlgorithm(g, ['she', 'eats', 'fish']), { maxSteps: 10 })
+ * [run.steps, run.state.cells[0]?.[3]] // => [3, { S: 1 }]
+ * ```
+ */
+export function cykAlgorithm(g: Grammar, tokens: readonly string[]): Algorithm<CykState, ParsePath> {
+  if (!isCnf(g)) throw new MdmlError('value', 'cyk: the grammar must be in Chomsky normal form')
+  const n = tokens.length
+  return {
+    name: 'text/cyk',
+    config: { n, productions: g.productions.length },
+    init: () => ({
+      n,
+      cells: Array.from({ length: n + 1 }, () => Array.from({ length: n + 1 }, () => ({}))),
+      span: 1,
+    }),
+    step: (s, ctx) => {
+      const len = s.span
+      const cell = (i: number, j: number): Record<string, number> => (s.cells[i] as Record<string, number>[])[j] ?? {}
+      let filled = 0
+      let derivations = 0
+      for (let i = 0; i + len <= n; i++) {
+        const j = i + len
+        const here = cell(i, j)
+        if (len === 1) {
+          for (const p of g.productions)
+            if (p.rhs.length === 1 && (p.rhs[0] as { terminal: string }).terminal === tokens[i])
+              here[p.lhs] = (here[p.lhs] ?? 0) + 1
+        } else {
+          for (let k = i + 1; k < j; k++)
+            for (const p of g.productions) {
+              if (p.rhs.length !== 2) continue
+              const b = cell(i, k)[(p.rhs[0] as { nonterminal: string }).nonterminal] ?? 0
+              const c = cell(k, j)[(p.rhs[1] as { nonterminal: string }).nonterminal] ?? 0
+              if (b > 0 && c > 0) here[p.lhs] = (here[p.lhs] ?? 0) + b * c
+            }
+        }
+        const total = Object.values(here).reduce((acc, v) => acc + v, 0)
+        if (total > 0) filled += 1
+        derivations += total
+      }
+      s.span = len + 1
+      ctx.log('chart/span', len)
+      ctx.log('chart/cell', filled)
+      ctx.log('chart/derivations', derivations)
+      return s
+    },
+    done: (s) => (s.span > n ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as CykState,
+  }
+}
+
+/**
+ * The outcome of a finished CYK state: whether the sentence is in the language, the number of parses and the parse
+ * trees of the whole sentence from the start symbol (enumerated in production order, up to a cap).
+ *
+ * @param g - The grammar the state was run with.
+ * @param tokens - The words.
+ * @param state - A finished state of {@link cykAlgorithm}.
+ * @param options - The most trees to enumerate (default 1000).
+ * @returns Whether the sentence is recognised, the number of parses and the trees.
+ * @concept parsing
+ * @example
+ * ```ts
+ * import { cykAlgorithm, cykResult, grammar } from 'mdml-engine/text'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const g = grammar("S -> NP VP\nVP -> V NP\nNP -> 'she' | 'fish'\nV -> 'eats'")
+ * const tokens = ['she', 'eats', 'fish']
+ * cykResult(g, tokens, runAlgorithm(cykAlgorithm(g, tokens), { maxSteps: 10 }).state).count // => 1
+ * ```
+ */
+export function cykResult(
+  g: Grammar,
+  tokens: readonly string[],
+  state: CykState,
+  options: ParseOptions = {},
+): { readonly recognised: boolean; readonly count: number; readonly trees: ParseTree[] } {
+  const n = tokens.length
+  if (n === 0) return { recognised: false, count: 0, trees: [] }
+  const cell = (i: number, j: number): Record<string, number> => (state.cells[i] as Record<string, number>[])[j] ?? {}
+  const count = cell(0, n)[g.start] ?? 0
+  const limit = options.maxTrees ?? 1000
+  const build = (sym: string, i: number, j: number, cap: number): ParseTree[] => {
+    const out: ParseTree[] = []
+    for (const p of g.productions) {
+      if (p.lhs !== sym || out.length >= cap) continue
+      if (p.rhs.length === 1) {
+        if (j === i + 1 && (p.rhs[0] as { terminal: string }).terminal === tokens[i])
+          out.push({ label: sym, children: [tokens[i] ?? ''] })
+        continue
+      }
+      const [b, c] = p.rhs.map((x) => (x as { nonterminal: string }).nonterminal) as [string, string]
+      for (let k = i + 1; k < j && out.length < cap; k++) {
+        if (cell(i, k)[b] === undefined || cell(k, j)[c] === undefined) continue
+        for (const l of build(b, i, k, cap))
+          for (const r of build(c, k, j, cap - out.length))
+            if (out.length < cap) out.push({ label: sym, children: [l, r] })
+      }
+    }
+    return out
+  }
+  return { recognised: count > 0, count, trees: count > 0 ? build(g.start, 0, n, limit) : [] }
+}
+
 /**
  * CYK parsing (Cocke, Younger, Kasami) of a grammar in Chomsky normal form: the chart of nonterminals over every span,
  * and the parse trees of the whole sentence from the start symbol (enumerated in production order, up to a cap).
+ * {@link cykAlgorithm} run to the end.
  *
  * @param g - The grammar (in CNF).
  * @param tokens - The words.
@@ -163,84 +337,53 @@ function isCnf(g: Grammar): boolean {
 export function cyk(
   g: Grammar,
   tokens: readonly string[],
-  options: { readonly maxTrees?: number } = {},
+  options: ParseOptions = {},
 ): { readonly recognised: boolean; readonly count: number; readonly trees: ParseTree[] } {
-  if (!isCnf(g)) throw new MdmlError('value', 'cyk: the grammar must be in Chomsky normal form')
-  const n = tokens.length
-  if (n === 0) return { recognised: false, count: 0, trees: [] }
-  // count[i][j] maps a nonterminal to its number of derivations of tokens[i, j).
-  const counts: Map<string, number>[][] = Array.from({ length: n + 1 }, () =>
-    Array.from({ length: n + 1 }, () => new Map()),
-  )
-  const cell = (i: number, j: number): Map<string, number> => counts[i]?.[j] as Map<string, number>
-  for (let i = 0; i < n; i++)
-    for (const p of g.productions)
-      if (p.rhs.length === 1 && (p.rhs[0] as { terminal: string }).terminal === tokens[i])
-        cell(i, i + 1).set(p.lhs, (cell(i, i + 1).get(p.lhs) ?? 0) + 1)
-  for (let len = 2; len <= n; len++)
-    for (let i = 0; i + len <= n; i++) {
-      const j = i + len
-      for (let k = i + 1; k < j; k++)
-        for (const p of g.productions) {
-          if (p.rhs.length !== 2) continue
-          const b = cell(i, k).get((p.rhs[0] as { nonterminal: string }).nonterminal) ?? 0
-          const c = cell(k, j).get((p.rhs[1] as { nonterminal: string }).nonterminal) ?? 0
-          if (b > 0 && c > 0) cell(i, j).set(p.lhs, (cell(i, j).get(p.lhs) ?? 0) + b * c)
-        }
-    }
-  const count = cell(0, n).get(g.start) ?? 0
-  const limit = options.maxTrees ?? 1000
-  const build = (sym: string, i: number, j: number, cap: number): ParseTree[] => {
-    const out: ParseTree[] = []
-    for (const p of g.productions) {
-      if (p.lhs !== sym || out.length >= cap) continue
-      if (p.rhs.length === 1) {
-        if (j === i + 1 && (p.rhs[0] as { terminal: string }).terminal === tokens[i])
-          out.push({ label: sym, children: [tokens[i] ?? ''] })
-        continue
-      }
-      const [b, c] = p.rhs.map((s) => (s as { nonterminal: string }).nonterminal) as [string, string]
-      for (let k = i + 1; k < j && out.length < cap; k++) {
-        if (!cell(i, k).has(b) || !cell(k, j).has(c)) continue
-        for (const l of build(b, i, k, cap))
-          for (const r of build(c, k, j, cap - out.length))
-            if (out.length < cap) out.push({ label: sym, children: [l, r] })
-      }
-    }
-    return out
-  }
-  return { recognised: count > 0, count, trees: count > 0 ? build(g.start, 0, n, limit) : [] }
+  const run = runAlgorithm(cykAlgorithm(g, tokens), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return cykResult(g, tokens, run.state, options)
 }
 
 /** An Earley item: a production, a dot position and its origin. */
-interface EarleyItem {
+export interface EarleyItem {
   readonly p: number
   readonly dot: number
   readonly origin: number
 }
 
 /**
- * Earley parsing (Earley 1970) of any context-free grammar, with Aycock and Horspool's handling of nullable symbols:
- * predict, scan and complete over the chart, then enumerate the parse trees of the sentence (in production order,
- * up to a cap; cyclic grammars yield their acyclic derivations).
+ * The state of {@link earleyAlgorithm}: the chart (the items of each column), a record of the items already in each
+ * column (`p,dot,origin` keys), and the item to process next (column `k`, index `q`). A step adds items in place; keep a
+ * copy of a state you want to look at later.
+ */
+export interface EarleyState {
+  readonly chart: EarleyItem[][]
+  readonly seen: Record<string, number>[]
+  k: number
+  q: number
+}
+
+/**
+ * Earley parsing (Earley 1970) of any context-free grammar as a stepped algorithm, one item per step, with Aycock and
+ * Horspool's handling of nullable symbols: the item at the front of the queue is either completed (its finished
+ * constituent advances the dot of its origin column's items that were waiting for it), predicted (the rules of the
+ * nonterminal after the dot join the column, and the item skips a nullable one) or scanned (the next word matched). It
+ * logs the column and the items each operation added, and is done (`converged`) when the last column is exhausted. The
+ * state serialises; the parses are read with {@link earleyResult}.
  *
  * @param g - The grammar.
  * @param tokens - The words.
- * @param options - The most trees to enumerate (default 1000).
- * @returns Whether the sentence is in the language, the number of chart items and the trees.
+ * @returns The algorithm.
  * @concept parsing
  * @example
  * ```ts
- * import { grammar, earley, treeToString } from 'mdml-engine/text'
- * const g = grammar("S -> NP VP\nNP -> Det N | NP PP | 'I'\nVP -> V NP | VP PP\nPP -> P NP\nDet -> 'the'\nN -> 'man' | 'telescope'\nV -> 'saw'\nP -> 'with'")
- * earley(g, 'I saw the man with the telescope'.split(' ')).trees.length // => 2
+ * import { earleyAlgorithm, grammar } from 'mdml-engine/text'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const g = grammar("S -> 'a' S | 'a'")
+ * const run = runAlgorithm(earleyAlgorithm(g, ['a', 'a']), { maxSteps: 50 })
+ * [run.status, run.state.chart.map((c) => c.length)] // => ['converged', [2, 4, 5]]
  * ```
  */
-export function earley(
-  g: Grammar,
-  tokens: readonly string[],
-  options: { readonly maxTrees?: number } = {},
-): { readonly recognised: boolean; readonly items: number; readonly trees: ParseTree[] } {
+export function earleyAlgorithm(g: Grammar, tokens: readonly string[]): Algorithm<EarleyState, ParsePath> {
   const prods = g.productions
   const byLhs = new Map<string, number[]>()
   for (const [i, p] of prods.entries()) byLhs.set(p.lhs, [...(byLhs.get(p.lhs) ?? []), i])
@@ -255,39 +398,100 @@ export function earley(
       }
   }
   const n = tokens.length
-  const chart: EarleyItem[][] = Array.from({ length: n + 1 }, () => [])
-  const seen: Set<string>[] = Array.from({ length: n + 1 }, () => new Set())
-  const add = (k: number, it: EarleyItem): void => {
+  const add = (s: EarleyState, k: number, it: EarleyItem): boolean => {
     const key = `${it.p},${it.dot},${it.origin}`
-    if (seen[k]?.has(key) === true) return
-    seen[k]?.add(key)
-    chart[k]?.push(it)
+    const seen = s.seen[k] as Record<string, number>
+    if (seen[key] !== undefined) return false
+    seen[key] = 1
+    s.chart[k]?.push(it)
+    return true
   }
-  for (const p of byLhs.get(g.start) ?? []) add(0, { p, dot: 0, origin: 0 })
-  for (let k = 0; k <= n; k++) {
-    const items = chart[k] as EarleyItem[]
-    for (let q = 0; q < items.length; q++) {
-      const it = items[q] as EarleyItem
-      const prod = prods[it.p] as Production
-      const next = prod.rhs[it.dot]
-      if (next === undefined) {
-        for (const parent of chart[it.origin] ?? []) {
-          const pp = prods[parent.p] as Production
-          const s = pp.rhs[parent.dot]
-          if (s !== undefined && 'nonterminal' in s && s.nonterminal === prod.lhs)
-            add(k, { ...parent, dot: parent.dot + 1 })
-        }
-      } else if ('nonterminal' in next) {
-        for (const p of byLhs.get(next.nonterminal) ?? []) add(k, { p, dot: 0, origin: k })
-        if (nullable.has(next.nonterminal)) add(k, { ...it, dot: it.dot + 1 })
-      } else if (k < n && tokens[k] === next.terminal) add(k + 1, { ...it, dot: it.dot + 1 })
+  // Move to the next item to process: skip exhausted columns.
+  const settle = (s: EarleyState): void => {
+    while (s.q >= (s.chart[s.k]?.length ?? 0) && s.k < n) {
+      s.k += 1
+      s.q = 0
     }
   }
+  return {
+    name: 'text/earley',
+    config: { n, productions: prods.length },
+    init: () => {
+      const s: EarleyState = {
+        chart: Array.from({ length: n + 1 }, () => []),
+        seen: Array.from({ length: n + 1 }, () => ({})),
+        k: 0,
+        q: 0,
+      }
+      for (const p of byLhs.get(g.start) ?? []) add(s, 0, { p, dot: 0, origin: 0 })
+      settle(s)
+      return s
+    },
+    step: (s, ctx) => {
+      const k = s.k
+      const it = s.chart[k]?.[s.q] as EarleyItem
+      const prod = prods[it.p] as Production
+      const next = prod.rhs[it.dot]
+      let predicted = 0
+      let scanned = 0
+      let completed = 0
+      if (next === undefined) {
+        for (const parent of s.chart[it.origin] ?? []) {
+          const pp = prods[parent.p] as Production
+          const sym = pp.rhs[parent.dot]
+          if (sym !== undefined && 'nonterminal' in sym && sym.nonterminal === prod.lhs)
+            if (add(s, k, { ...parent, dot: parent.dot + 1 })) completed += 1
+        }
+      } else if ('nonterminal' in next) {
+        for (const p of byLhs.get(next.nonterminal) ?? []) if (add(s, k, { p, dot: 0, origin: k })) predicted += 1
+        if (nullable.has(next.nonterminal) && add(s, k, { ...it, dot: it.dot + 1 })) predicted += 1
+      } else if (k < n && tokens[k] === next.terminal && add(s, k + 1, { ...it, dot: it.dot + 1 })) scanned += 1
+      s.q += 1
+      settle(s)
+      ctx.log('earley/column', k)
+      ctx.log('earley/predict', predicted)
+      ctx.log('earley/scan', scanned)
+      ctx.log('earley/complete', completed)
+      return s
+    },
+    done: (s) => (s.k >= n && s.q >= (s.chart[n]?.length ?? 0) ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EarleyState,
+  }
+}
+
+/**
+ * The outcome of a finished Earley state: whether the sentence is in the language, the number of chart items and the
+ * parse trees (in production order, up to a cap; cyclic grammars yield their acyclic derivations).
+ *
+ * @param g - The grammar the state was run with.
+ * @param tokens - The words.
+ * @param state - A finished state of {@link earleyAlgorithm}.
+ * @param options - The most trees to enumerate (default 1000).
+ * @returns Whether the sentence is recognised, the number of chart items and the trees.
+ * @concept parsing
+ * @example
+ * ```ts
+ * import { earleyAlgorithm, earleyResult, grammar } from 'mdml-engine/text'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const g = grammar("S -> 'a' S | 'a'")
+ * earleyResult(g, ['a', 'a'], runAlgorithm(earleyAlgorithm(g, ['a', 'a']), { maxSteps: 50 }).state).trees.length // => 1
+ * ```
+ */
+export function earleyResult(
+  g: Grammar,
+  tokens: readonly string[],
+  state: EarleyState,
+  options: ParseOptions = {},
+): { readonly recognised: boolean; readonly items: number; readonly trees: ParseTree[] } {
+  const prods = g.productions
+  const n = tokens.length
+  const chart = state.chart
   const complete = (chart[n] ?? []).filter(
     (it) => it.origin === 0 && it.dot === (prods[it.p]?.rhs.length ?? 0) && prods[it.p]?.lhs === g.start,
   )
   const recognised = complete.length > 0
-  const items = chart.reduce((s, c) => s + c.length, 0)
+  const items = chart.reduce((sum, c) => sum + c.length, 0)
   if (!recognised) return { recognised, items, trees: [] }
   // Completed constituents by (symbol, start, end), for tree enumeration.
   const done = new Map<string, number[]>()
@@ -310,17 +514,17 @@ export function earley(
       const rhs = (prods[p] as Production).rhs
       const seqs = (d: number, at: number): (ParseTree | string)[][] => {
         if (d === rhs.length) return at === j ? [[]] : []
-        const s = rhs[d] as GrammarSymbol
+        const sy = rhs[d] as GrammarSymbol
         const res: (ParseTree | string)[][] = []
-        if ('terminal' in s) {
-          if (tokens[at] === s.terminal) for (const rest of seqs(d + 1, at + 1)) res.push([s.terminal, ...rest])
+        if ('terminal' in sy) {
+          if (tokens[at] === sy.terminal) for (const rest of seqs(d + 1, at + 1)) res.push([sy.terminal, ...rest])
           return res
         }
         for (let e = at; e <= j && res.length < cap; e++) {
-          if (!done.has(`${s.nonterminal}|${at}|${e}`)) continue
+          if (!done.has(`${sy.nonterminal}|${at}|${e}`)) continue
           const rests = seqs(d + 1, e)
           if (rests.length === 0) continue
-          for (const t of trees(s.nonterminal, at, e, inner))
+          for (const t of trees(sy.nonterminal, at, e, inner))
             for (const rest of rests) if (res.length < cap) res.push([t, ...rest])
         }
         return res
@@ -330,6 +534,32 @@ export function earley(
     return out
   }
   return { recognised, items, trees: trees(g.start, 0, n, new Set()) }
+}
+
+/**
+ * Earley parsing (Earley 1970) of any context-free grammar, with Aycock and Horspool's handling of nullable symbols:
+ * predict, scan and complete over the chart, then enumerate the parse trees of the sentence (in production order,
+ * up to a cap; cyclic grammars yield their acyclic derivations). {@link earleyAlgorithm} run to the end.
+ *
+ * @param g - The grammar.
+ * @param tokens - The words.
+ * @param options - The most trees to enumerate (default 1000).
+ * @returns Whether the sentence is in the language, the number of chart items and the trees.
+ * @concept parsing
+ * @example
+ * ```ts
+ * import { grammar, earley, treeToString } from 'mdml-engine/text'
+ * const g = grammar("S -> NP VP\nNP -> Det N | NP PP | 'I'\nVP -> V NP | VP PP\nPP -> P NP\nDet -> 'the'\nN -> 'man' | 'telescope'\nV -> 'saw'\nP -> 'with'")
+ * earley(g, 'I saw the man with the telescope'.split(' ')).trees.length // => 2
+ * ```
+ */
+export function earley(
+  g: Grammar,
+  tokens: readonly string[],
+  options: ParseOptions = {},
+): { readonly recognised: boolean; readonly items: number; readonly trees: ParseTree[] } {
+  const run = runAlgorithm(earleyAlgorithm(g, tokens), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return earleyResult(g, tokens, run.state, options)
 }
 
 /**

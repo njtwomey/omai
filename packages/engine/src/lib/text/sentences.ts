@@ -4,8 +4,11 @@
  * `splitSentences` front door that also accepts a fixed abbreviation list.
  */
 
+import { MdmlError } from '../base/index.ts'
+import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { PY_SPACE, UNI_SPACE, UNI_WORD } from './_classes.ts'
 import type { Span } from './tokenise.ts'
+import type { TokenizerPath } from './tokenizer-contract.ts'
 
 // Punkt (Kiss and Strunk 2006) as nltk implements it: an unsupervised sentence boundary detector that learns
 // abbreviations, collocations, sentence starters and orthographic context from raw text.
@@ -218,9 +221,212 @@ function colLogLikelihood(countA: number, countB: number, countAB: number, n: nu
 }
 
 /**
+ * The state of {@link trainPunktAlgorithm}: the abbreviation candidates scored so far (the types with the abbreviation
+ * decision made for them), then the parameters once the later passes have run.
+ */
+export interface PunktTrainingState {
+  /** The next candidate type to score. */
+  next: number
+  /** The abbreviation types so far, as a record of types. */
+  readonly abbrevTypes: Record<string, number>
+  /** The learned parameters, once the passes after scoring have run (as sorted lists and a record). */
+  result: {
+    readonly abbrevTypes: string[]
+    readonly collocations: string[]
+    readonly sentStarters: string[]
+    readonly orthoContext: Record<string, number>
+  } | null
+}
+
+/**
+ * Punkt training (nltk's PunktTrainer) as a stepped algorithm: each of the first steps scores one abbreviation candidate
+ * (a type with a final period, or a current abbreviation without one) by Dunning's log-likelihood with the length and
+ * period factors and keeps or drops it, logging the score; a last step annotates a first pass, gathers the orthographic
+ * context, finds rare abbreviations and keeps the sentence starters and collocations whose log-likelihoods pass their
+ * thresholds. It is done (`converged`) after that step. The state serialises; read the parameters with
+ * {@link punktParametersOf}.
+ *
+ * @param text - Training text (plain, with newlines; blank lines mark paragraphs).
+ * @param options - nltk's training constants.
+ * @returns The algorithm.
+ * @concept sentence-segmentation
+ * @example
+ * ```ts
+ * import { punktParametersOf, trainPunktAlgorithm } from 'mdml-engine/text'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const text = 'Mr. Smith arrived. He saw Mr. Jones. Mr. Brown left. Then Mr. Smith left too. '.repeat(3)
+ * const run = runAlgorithm(trainPunktAlgorithm(text), { maxSteps: 100 })
+ * punktParametersOf(run.state).abbrevTypes.has('mr') // => true
+ * ```
+ */
+export function trainPunktAlgorithm(
+  text: string,
+  options: PunktTrainingOptions = {},
+): Algorithm<PunktTrainingState, TokenizerPath> {
+  const ABBREV = options.abbrev ?? 0.3
+  const BACKOFF = options.abbrevBackoff ?? 5
+  const COLLOCATION = options.collocation ?? 7.88
+  const SENT_STARTER = options.sentStarter ?? 30
+  const MIN_COLLOC = options.minCollocFreq ?? 1
+  const typeCounts = new Map<string, number>()
+  const count = (t: string): number => typeCounts.get(t) ?? 0
+  const tokens = tokenizeWords(text)
+  let periodTokens = 0
+  for (const t of tokens) {
+    typeCounts.set(t.type, count(t.type) + 1)
+    if (t.periodFinal) periodTokens++
+  }
+  let total = 0
+  for (const c of typeCounts.values()) total += c
+  // Abbreviation candidates (types with a final period, and current abbreviations without one).
+  const candidates = [...new Set(tokens.map((t) => t.type))].filter((o) => NON_PUNCT.test(o) && o !== '##number##')
+  return {
+    name: 'text/punkt-training',
+    config: { candidates: candidates.length, abbrev: ABBREV },
+    init: () => ({ next: 0, abbrevTypes: {}, result: null }),
+    step: (st, ctx) => {
+      if (st.next < candidates.length) {
+        const original = candidates[st.next] as string
+        st.next += 1
+        let typ = original
+        let isAdd: boolean
+        if (typ.endsWith('.')) {
+          if (st.abbrevTypes[typ] !== undefined) return st
+          typ = typ.slice(0, -1)
+          isAdd = true
+        } else {
+          if (st.abbrevTypes[typ] === undefined) return st
+          isAdd = false
+        }
+        const periods = typ.split('.').length
+        const nonPeriods = Array.from(typ).length - periods + 1
+        const withPeriod = count(`${typ}.`)
+        const without = count(typ)
+        const ll = dunning(withPeriod + without, periodTokens, withPeriod, total)
+        const penalty = options.ignoreAbbrevPenalty === true ? 1 : nonPeriods ** -without
+        const score = ll * Math.exp(-nonPeriods) * periods * penalty
+        if (score >= ABBREV) {
+          if (isAdd) st.abbrevTypes[typ] = 1
+        } else if (!isAdd) delete st.abbrevTypes[typ]
+        ctx.log('punkt/score', score)
+        ctx.log('punkt/abbrev', st.abbrevTypes[typ] === undefined ? 0 : 1)
+        return st
+      }
+      const abbrevTypes = new Set(Object.keys(st.abbrevTypes))
+      const orthoContext = new Map<string, number>()
+      const params: PunktParameters = { abbrevTypes, collocations: new Set(), sentStarters: new Set(), orthoContext }
+      firstPass(tokens, params)
+      // Orthographic context.
+      let context: 'internal' | 'initial' | 'unknown' = 'internal'
+      for (const t of tokens) {
+        if (t.parastart && context !== 'unknown') context = 'initial'
+        if (t.linestart && context === 'internal') context = 'unknown'
+        const flag = ORTHO_MAP[`${context} ${firstCase(t)}`] ?? 0
+        if (flag !== 0) {
+          const typ = typeNoSentPeriod(t)
+          orthoContext.set(typ, (orthoContext.get(typ) ?? 0) | flag)
+        }
+        if (t.sentbreak) context = isNumber(t) || isInitial(t) ? 'unknown' : 'initial'
+        else context = t.ellipsis || t.abbr ? 'unknown' : 'internal'
+      }
+      let sentbreaks = 0
+      for (const t of tokens) if (t.sentbreak) sentbreaks++
+      const starterCounts = new Map<string, number>()
+      const collocCounts = new Map<string, number>()
+      for (let i = 0; i + 1 < tokens.length; i++) {
+        const a = tokens[i] as PToken
+        const b = tokens[i + 1] as PToken
+        if (!a.periodFinal) continue
+        // Rare abbreviations.
+        if (!a.abbr && a.sentbreak) {
+          const typ = typeNoSentPeriod(a)
+          const c = count(typ) + count(typ.slice(0, -1))
+          if (!abbrevTypes.has(typ) && c < BACKOFF) {
+            if (',:;'.includes(b.tok.slice(0, 1)) && b.tok.length > 0) abbrevTypes.add(typeNoPeriod(a))
+            else if (LOWER.test(b.tok)) {
+              const ctxFlags = orthoContext.get(typeNoSentPeriod(b)) ?? 0
+              if (ctxFlags & BEG_UC && !(ctxFlags & MID_UC)) abbrevTypes.add(typeNoPeriod(a))
+            }
+          }
+        }
+        if (a.sentbreak && !(isNumber(a) || isInitial(a)) && RE_ALPHA.test(b.tok))
+          starterCounts.set(b.type, (starterCounts.get(b.type) ?? 0) + 1)
+        const potential =
+          (options.includeAllCollocs === true ||
+            (options.includeAbbrevCollocs === true && a.abbr) ||
+            (a.sentbreak && (isNumber(a) || isInitial(a)))) &&
+          NON_PUNCT.test(a.type) &&
+          NON_PUNCT.test(b.type)
+        if (potential) {
+          const key = `${typeNoPeriod(a)} ${typeNoSentPeriod(b)}`
+          collocCounts.set(key, (collocCounts.get(key) ?? 0) + 1)
+        }
+      }
+      const sentStarters = new Set<string>()
+      for (const [typ, atBreak] of starterCounts) {
+        if (typ.length === 0) continue
+        const c = count(typ) + count(`${typ}.`)
+        if (c < atBreak) continue
+        const ll = colLogLikelihood(sentbreaks, c, atBreak, total)
+        if (ll >= SENT_STARTER && total / sentbreaks > c / atBreak) sentStarters.add(typ)
+      }
+      const collocations = new Set<string>()
+      for (const [key, c] of collocCounts) {
+        const sp = key.indexOf(' ')
+        const t1 = key.slice(0, sp)
+        const t2 = key.slice(sp + 1)
+        if (sentStarters.has(t2)) continue
+        const c1 = count(t1) + count(`${t1}.`)
+        const c2 = count(t2) + count(`${t2}.`)
+        if (c1 > 1 && c2 > 1 && MIN_COLLOC < c && c <= Math.min(c1, c2)) {
+          const ll = colLogLikelihood(c1, c2, c, total)
+          if (ll >= COLLOCATION && total / c1 > c2 / c) collocations.add(key)
+        }
+      }
+      st.result = {
+        abbrevTypes: [...abbrevTypes],
+        collocations: [...collocations],
+        sentStarters: [...sentStarters],
+        orthoContext: Object.fromEntries(orthoContext),
+      }
+      return st
+    },
+    done: (st) => (st.result === null ? undefined : 'converged'),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as PunktTrainingState,
+  }
+}
+
+/**
+ * The parameters of a finished Punkt training state.
+ *
+ * @param state - A finished state of {@link trainPunktAlgorithm}.
+ * @returns The learned parameters.
+ * @throws MdmlError with code `value` when training is not finished.
+ * @concept sentence-segmentation
+ * @example
+ * ```ts
+ * import { punktParametersOf, trainPunktAlgorithm } from 'mdml-engine/text'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(trainPunktAlgorithm('Dr. Who came. He left. '.repeat(4)), { maxSteps: 100 })
+ * punktParametersOf(run.state).sentStarters instanceof Set // => true
+ * ```
+ */
+export function punktParametersOf(state: PunktTrainingState): PunktParameters {
+  if (state.result === null) throw new MdmlError('value', 'punktParametersOf: training has not finished')
+  return {
+    abbrevTypes: new Set(state.result.abbrevTypes),
+    collocations: new Set(state.result.collocations),
+    sentStarters: new Set(state.result.sentStarters),
+    orthoContext: new Map(Object.entries(state.result.orthoContext)),
+  }
+}
+
+/**
  * Train Punkt on raw text (nltk's PunktTrainer): count types, score abbreviation candidates by Dunning's
  * log-likelihood with length and period factors, annotate a first pass, gather orthographic context, find rare
  * abbreviations, and keep sentence starters and collocations whose log-likelihoods pass their thresholds.
+ * {@link trainPunktAlgorithm} run to the end.
  *
  * @param text - Training text (plain, with newlines; blank lines mark paragraphs).
  * @param options - nltk's training constants.
@@ -234,117 +440,9 @@ function colLogLikelihood(countA: number, countB: number, countAB: number, n: nu
  * ```
  */
 export function trainPunkt(text: string, options: PunktTrainingOptions = {}): PunktParameters {
-  const ABBREV = options.abbrev ?? 0.3
-  const BACKOFF = options.abbrevBackoff ?? 5
-  const COLLOCATION = options.collocation ?? 7.88
-  const SENT_STARTER = options.sentStarter ?? 30
-  const MIN_COLLOC = options.minCollocFreq ?? 1
-  const abbrevTypes = new Set<string>()
-  const orthoContext = new Map<string, number>()
-  const typeCounts = new Map<string, number>()
-  const count = (t: string): number => typeCounts.get(t) ?? 0
-  const tokens = tokenizeWords(text)
-  let periodTokens = 0
-  for (const t of tokens) {
-    typeCounts.set(t.type, count(t.type) + 1)
-    if (t.periodFinal) periodTokens++
-  }
-  let total = 0
-  for (const c of typeCounts.values()) total += c
-  // Abbreviation candidates (types with a final period, and current abbreviations without one).
-  for (const original of new Set(tokens.map((t) => t.type))) {
-    if (!NON_PUNCT.test(original) || original === '##number##') continue
-    let typ = original
-    let isAdd: boolean
-    if (typ.endsWith('.')) {
-      if (abbrevTypes.has(typ)) continue
-      typ = typ.slice(0, -1)
-      isAdd = true
-    } else {
-      if (!abbrevTypes.has(typ)) continue
-      isAdd = false
-    }
-    const periods = typ.split('.').length
-    const nonPeriods = Array.from(typ).length - periods + 1
-    const withPeriod = count(`${typ}.`)
-    const without = count(typ)
-    const ll = dunning(withPeriod + without, periodTokens, withPeriod, total)
-    const penalty = options.ignoreAbbrevPenalty === true ? 1 : nonPeriods ** -without
-    const score = ll * Math.exp(-nonPeriods) * periods * penalty
-    if (score >= ABBREV) {
-      if (isAdd) abbrevTypes.add(typ)
-    } else if (!isAdd) abbrevTypes.delete(typ)
-  }
-  const params: PunktParameters = { abbrevTypes, collocations: new Set(), sentStarters: new Set(), orthoContext }
-  firstPass(tokens, params)
-  // Orthographic context.
-  let context: 'internal' | 'initial' | 'unknown' = 'internal'
-  for (const t of tokens) {
-    if (t.parastart && context !== 'unknown') context = 'initial'
-    if (t.linestart && context === 'internal') context = 'unknown'
-    const flag = ORTHO_MAP[`${context} ${firstCase(t)}`] ?? 0
-    if (flag !== 0) {
-      const typ = typeNoSentPeriod(t)
-      orthoContext.set(typ, (orthoContext.get(typ) ?? 0) | flag)
-    }
-    if (t.sentbreak) context = isNumber(t) || isInitial(t) ? 'unknown' : 'initial'
-    else context = t.ellipsis || t.abbr ? 'unknown' : 'internal'
-  }
-  let sentbreaks = 0
-  for (const t of tokens) if (t.sentbreak) sentbreaks++
-  const starterCounts = new Map<string, number>()
-  const collocCounts = new Map<string, number>()
-  for (let i = 0; i + 1 < tokens.length; i++) {
-    const a = tokens[i] as PToken
-    const b = tokens[i + 1] as PToken
-    if (!a.periodFinal) continue
-    // Rare abbreviations.
-    if (!a.abbr && a.sentbreak) {
-      const typ = typeNoSentPeriod(a)
-      const c = count(typ) + count(typ.slice(0, -1))
-      if (!abbrevTypes.has(typ) && c < BACKOFF) {
-        if (',:;'.includes(b.tok.slice(0, 1)) && b.tok.length > 0) abbrevTypes.add(typeNoPeriod(a))
-        else if (LOWER.test(b.tok)) {
-          const ctx = orthoContext.get(typeNoSentPeriod(b)) ?? 0
-          if (ctx & BEG_UC && !(ctx & MID_UC)) abbrevTypes.add(typeNoPeriod(a))
-        }
-      }
-    }
-    if (a.sentbreak && !(isNumber(a) || isInitial(a)) && RE_ALPHA.test(b.tok))
-      starterCounts.set(b.type, (starterCounts.get(b.type) ?? 0) + 1)
-    const potential =
-      (options.includeAllCollocs === true ||
-        (options.includeAbbrevCollocs === true && a.abbr) ||
-        (a.sentbreak && (isNumber(a) || isInitial(a)))) &&
-      NON_PUNCT.test(a.type) &&
-      NON_PUNCT.test(b.type)
-    if (potential) {
-      const key = `${typeNoPeriod(a)} ${typeNoSentPeriod(b)}`
-      collocCounts.set(key, (collocCounts.get(key) ?? 0) + 1)
-    }
-  }
-  const sentStarters = new Set<string>()
-  for (const [typ, atBreak] of starterCounts) {
-    if (typ.length === 0) continue
-    const c = count(typ) + count(`${typ}.`)
-    if (c < atBreak) continue
-    const ll = colLogLikelihood(sentbreaks, c, atBreak, total)
-    if (ll >= SENT_STARTER && total / sentbreaks > c / atBreak) sentStarters.add(typ)
-  }
-  const collocations = new Set<string>()
-  for (const [key, c] of collocCounts) {
-    const sp = key.indexOf(' ')
-    const t1 = key.slice(0, sp)
-    const t2 = key.slice(sp + 1)
-    if (sentStarters.has(t2)) continue
-    const c1 = count(t1) + count(`${t1}.`)
-    const c2 = count(t2) + count(`${t2}.`)
-    if (c1 > 1 && c2 > 1 && MIN_COLLOC < c && c <= Math.min(c1, c2)) {
-      const ll = colLogLikelihood(c1, c2, c, total)
-      if (ll >= COLLOCATION && total / c1 > c2 / c) collocations.add(key)
-    }
-  }
-  return { abbrevTypes, collocations, sentStarters, orthoContext }
+  return punktParametersOf(
+    runAlgorithm(trainPunktAlgorithm(text, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state,
+  )
 }
 
 /** Punkt parameters with only an abbreviation list (a rule-based splitter), or nothing learned. */

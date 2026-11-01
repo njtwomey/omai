@@ -5,6 +5,15 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { type Cnf, cdcl } from './sat.ts'
 
 /**
@@ -779,9 +788,264 @@ export function simplifyFormula(f: Formula): Formula {
   return cur
 }
 
+/** The paths the Quine-McCluskey algorithm logs, as a type. */
+export type QmPath = 'qm/round' | 'qm/cubes' | 'qm/primes' | 'qm/cover'
+
+/**
+ * What Quine-McCluskey logs: the merging round, the cubes it produced for the next round, the prime implicants found so
+ * far, and (cover phase) the implicants chosen so far.
+ */
+export const qmContract: Contract<unknown, QmPath> = defineContract({
+  'qm/round': scalar({ description: 'the merging round, counting from 1' }),
+  'qm/cubes': scalar({ description: 'the cubes this round merged into, for the next round' }),
+  'qm/primes': scalar({ description: 'prime implicants found so far' }),
+  'qm/cover': scalar({ description: 'prime implicants chosen to cover the models so far (cover phase)' }),
+})
+
+/** How the prime implicants are covered after merging. */
+export type CoverMethod = 'none' | 'exact' | 'greedy'
+
+/** Options of {@link quineMcCluskeyAlgorithm}. */
+export interface QuineMcCluskeyOptions {
+  /** The variables (default the formula's own; at most 16). */
+  readonly variables?: readonly string[]
+  /** `none` stops after the prime implicants; `exact` (branch and bound, fewest terms then literals) or `greedy` choose a cover. */
+  readonly cover?: CoverMethod
+}
+
+/**
+ * The state of {@link quineMcCluskeyAlgorithm}: the cubes of the current round (a string of `0`, `1` and `2` for absent per
+ * variable), the prime implicants found, and the cover once chosen.
+ */
+export interface QuineMcCluskeyState {
+  readonly cubes: string[]
+  readonly primes: string[]
+  readonly round: number
+  readonly phase: 'merge' | 'cover' | 'done'
+  /** Indices into {@link primesOf} of the chosen cover (null before the cover phase). */
+  readonly chosen: number[] | null
+}
+
+const countLits = (c: string): number => [...c].filter((x) => x !== '2').length
+
+/** The prime implicants of a state as valuations, fewest literals first, then positive literals and earlier variables. */
+function primeValuations(primes: readonly string[], variables: readonly string[]): Valuation[] {
+  const k = variables.length
+  const toValuation = (c: string): Valuation => {
+    const out: Record<string, boolean> = {}
+    for (let t = 0; t < k; t++) if (c[t] !== '2') out[variables[t] as string] = c[t] === '1'
+    return out
+  }
+  const rank = (c: string): string => c.replace(/[012]/g, (d) => (d === '1' ? 'a' : d === '0' ? 'b' : 'c'))
+  return [...primes]
+    .sort((a, b) => countLits(a) - countLits(b) || (rank(a) < rank(b) ? -1 : rank(a) > rank(b) ? 1 : 0))
+    .map(toValuation)
+}
+
+/**
+ * Quine-McCluskey as a stepped algorithm: start from the cubes of the models; each step is one merging round, combining
+ * cubes that differ in one variable into a cube with that variable absent and setting aside the cubes that merged with
+ * nothing as prime implicants; then, with a cover method, one step chooses a cover of the models from the primes (`exact`:
+ * branch and bound over the prime implicant chart, fewest terms then literals; `greedy`: the implicant covering most
+ * uncovered models each time). It logs the round, the cubes it made, the primes so far and the cover size, and is done
+ * (`converged`) after the last phase. The state serialises; read the result with {@link primesOf} and
+ * {@link minimalFormOf}.
+ *
+ * @param f - The formula.
+ * @param options - The variables (at most 16) and the cover method (default `none`).
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for more than 16 variables.
+ * @concept normal-forms
+ * @example
+ * ```ts
+ * import { parseFormula, primesOf, quineMcCluskeyAlgorithm } from 'mdml-engine/logic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const f = parseFormula('(p & q) | (p & ~q) | (~p & q)')
+ * const run = runAlgorithm(quineMcCluskeyAlgorithm(f), { maxSteps: 10 })
+ * [run.steps, primesOf(run.state, ['p', 'q'])] // => [2, [{ p: true }, { q: true }]]
+ * ```
+ */
+export function quineMcCluskeyAlgorithm(
+  f: Formula,
+  options: QuineMcCluskeyOptions = {},
+): Algorithm<QuineMcCluskeyState, QmPath> {
+  const variables = options.variables ?? formulaVariables(f)
+  if (variables.length > 16) throw new MdmlError('value', 'primeImplicants: more than 16 variables')
+  const cover = options.cover ?? 'none'
+  const k = variables.length
+  const rows = truthTable(f, variables).rows
+  const minterms = rows.flatMap((r, m) => (r.value ? [m] : []))
+  const after = (round: number, cubes: string[], primes: string[]): QuineMcCluskeyState => ({
+    cubes,
+    primes,
+    round,
+    phase:
+      cubes.length > 0
+        ? 'merge'
+        : cover === 'none' || minterms.length === 0 || minterms.length === 2 ** k
+          ? 'done'
+          : 'cover',
+    chosen: null,
+  })
+  return {
+    name: 'logic/quine-mccluskey',
+    config: { variables: [...variables], cover },
+    init: () =>
+      after(
+        0,
+        minterms.map((m) => Array.from({ length: k }, (_, i) => String((m >> (k - 1 - i)) & 1)).join('')),
+        [],
+      ),
+    step: (s, ctx) => {
+      if (s.phase === 'merge') {
+        const used = new Set<string>()
+        const next = new Set<string>()
+        const list = s.cubes
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            const a = list[i] as string
+            const b = list[j] as string
+            let diff = -1
+            let count = 0
+            for (let t = 0; t < k; t++) {
+              if (a[t] !== b[t]) {
+                count++
+                diff = t
+              }
+            }
+            if (count === 1 && a[diff] !== '2' && b[diff] !== '2') {
+              next.add(`${a.slice(0, diff)}2${a.slice(diff + 1)}`)
+              used.add(a)
+              used.add(b)
+            }
+          }
+        }
+        const primes = new Set(s.primes)
+        for (const c of list) if (!used.has(c)) primes.add(c)
+        ctx.log('qm/round', s.round + 1)
+        ctx.log('qm/cubes', next.size)
+        ctx.log('qm/primes', primes.size)
+        return after(s.round + 1, [...next], [...primes])
+      }
+      // The cover phase: choose implicants covering every model.
+      const primes = primeValuations(s.primes, variables)
+      const covers = primes.map((p) =>
+        minterms.filter((m) =>
+          variables.every((name, i) => p[name] === undefined || p[name] === (((m >> (k - 1 - i)) & 1) === 1)),
+        ),
+      )
+      const size = (p: Valuation): number => Object.keys(p).length
+      let chosen: number[] = []
+      if (cover === 'greedy') {
+        const covered = new Set<number>()
+        while (minterms.some((m) => !covered.has(m))) {
+          let best = -1
+          let gain = 0
+          for (let i = 0; i < primes.length; i++) {
+            const g = (covers[i] as number[]).filter((m) => !covered.has(m)).length
+            if (g > gain) {
+              gain = g
+              best = i
+            }
+          }
+          if (best < 0) break
+          chosen.push(best)
+          for (const m of covers[best] as number[]) covered.add(m)
+        }
+      } else {
+        const best: { chosen: number[]; cost: [number, number] } = {
+          chosen: [],
+          cost: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
+        }
+        const search = (picked: number[], covered: Set<number>): void => {
+          const cost: [number, number] = [
+            picked.length,
+            picked.reduce((acc, i) => acc + size(primes[i] as Valuation), 0),
+          ]
+          if (cost[0] > best.cost[0] || (cost[0] === best.cost[0] && cost[1] >= best.cost[1])) return
+          const missing = minterms.find((m) => !covered.has(m))
+          if (missing === undefined) {
+            best.chosen = [...picked]
+            best.cost = cost
+            return
+          }
+          // Branch on the implicants covering the first uncovered minterm (none of them is chosen yet).
+          for (let i = 0; i < primes.length; i++) {
+            if (!(covers[i] as number[]).includes(missing)) continue
+            const added = (covers[i] as number[]).filter((m) => !covered.has(m))
+            for (const m of added) covered.add(m)
+            picked.push(i)
+            search(picked, covered)
+            picked.pop()
+            for (const m of added) covered.delete(m)
+          }
+        }
+        search([], new Set())
+        chosen = best.chosen
+      }
+      ctx.log('qm/cover', chosen.length)
+      return { ...s, phase: 'done', chosen: [...chosen].sort((a, b) => a - b) }
+    },
+    done: (s) => (s.phase === 'done' ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as QuineMcCluskeyState,
+  }
+}
+
+/**
+ * The prime implicants of a Quine-McCluskey state as valuations, fewest literals first.
+ *
+ * @param state - A state of {@link quineMcCluskeyAlgorithm}.
+ * @param variables - The variables the algorithm ran with.
+ * @returns The prime implicants found so far.
+ * @concept normal-forms
+ * @example
+ * ```ts
+ * import { parseFormula, primesOf, quineMcCluskeyAlgorithm } from 'mdml-engine/logic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * primesOf(runAlgorithm(quineMcCluskeyAlgorithm(parseFormula('p')), { maxSteps: 5 }).state, ['p']) // => [{ p: true }]
+ * ```
+ */
+export function primesOf(state: QuineMcCluskeyState, variables: readonly string[]): Valuation[] {
+  return primeValuations(state.primes, variables)
+}
+
+/**
+ * The minimal disjunctive normal form a finished Quine-McCluskey state (with a cover) holds.
+ *
+ * @param state - A finished state of {@link quineMcCluskeyAlgorithm} run with `cover: 'exact'` or `'greedy'`.
+ * @param variables - The variables the algorithm ran with.
+ * @param f - The formula (a tautology or contradiction has no cover step).
+ * @returns The DNF of the chosen cover, `true` for a tautology and `false` for a contradiction.
+ * @concept normal-forms
+ * @example
+ * ```ts
+ * import { formulaToString, minimalFormOf, parseFormula, quineMcCluskeyAlgorithm } from 'mdml-engine/logic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const f = parseFormula('(p & q) | (p & ~q) | (~p & q)')
+ * const run = runAlgorithm(quineMcCluskeyAlgorithm(f, { cover: 'exact' }), { maxSteps: 10 })
+ * formulaToString(minimalFormOf(run.state, ['p', 'q'], f)) // => 'p | q'
+ * ```
+ */
+export function minimalFormOf(state: QuineMcCluskeyState, variables: readonly string[], f: Formula): Formula {
+  const k = variables.length
+  const models = truthTable(f, variables).rows.filter((r) => r.value).length
+  if (models === 2 ** k) return T
+  if (models === 0) return F
+  const primes = primeValuations(state.primes, variables)
+  const lit = (name: string, value: boolean): Formula => (value ? v(name) : not(v(name)))
+  return or(
+    (state.chosen ?? []).map((i) => {
+      const p = primes[i] as Valuation
+      return and(variables.filter((n) => p[n] !== undefined).map((n) => lit(n, p[n] as boolean)))
+    }),
+  )
+}
+
 /**
  * The prime implicants of a formula (Quine-McCluskey): the conjunctions of literals that imply it and from which no
- * literal can be removed. Each is a map from variable to its required value.
+ * literal can be removed. Each is a map from variable to its required value. {@link quineMcCluskeyAlgorithm} run to the
+ * end of the merging.
  *
  * @param f - The formula.
  * @param variables - The variables (default the formula's own; at most 16).
@@ -795,59 +1059,14 @@ export function simplifyFormula(f: Formula): Formula {
  * ```
  */
 export function primeImplicants(f: Formula, variables: readonly string[] = formulaVariables(f)): Valuation[] {
-  if (variables.length > 16) throw new MdmlError('value', 'primeImplicants: more than 16 variables')
-  const k = variables.length
-  // A cube: per variable 0 (false), 1 (true) or 2 (absent); as a string of digits.
-  let cubes = new Set(
-    truthTable(f, variables)
-      .rows.map((r, m) => ({ r, m }))
-      .filter((x) => x.r.value)
-      .map((x) => Array.from({ length: k }, (_, i) => String((x.m >> (k - 1 - i)) & 1)).join('')),
-  )
-  const primes = new Set<string>()
-  while (cubes.size > 0) {
-    const used = new Set<string>()
-    const next = new Set<string>()
-    const list = [...cubes]
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i] as string
-        const b = list[j] as string
-        let diff = -1
-        let count = 0
-        for (let t = 0; t < k; t++) {
-          if (a[t] !== b[t]) {
-            count++
-            diff = t
-          }
-        }
-        if (count === 1 && a[diff] !== '2' && b[diff] !== '2') {
-          next.add(`${a.slice(0, diff)}2${a.slice(diff + 1)}`)
-          used.add(a)
-          used.add(b)
-        }
-      }
-    }
-    for (const c of list) if (!used.has(c)) primes.add(c)
-    cubes = next
-  }
-  const toValuation = (c: string): Valuation => {
-    const out: Record<string, boolean> = {}
-    for (let t = 0; t < k; t++) if (c[t] !== '2') out[variables[t] as string] = c[t] === '1'
-    return out
-  }
-  // Fewest literals first; then positive literals and earlier variables first.
-  const rank = (c: string): string => c.replace(/[012]/g, (d) => (d === '1' ? 'a' : d === '0' ? 'b' : 'c'))
-  return [...primes]
-    .sort((a, b) => countLits(a) - countLits(b) || (rank(a) < rank(b) ? -1 : rank(a) > rank(b) ? 1 : 0))
-    .map(toValuation)
+  const run = runAlgorithm(quineMcCluskeyAlgorithm(f, { variables }), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return primesOf(run.state, variables)
 }
-
-const countLits = (c: string): number => [...c].filter((x) => x !== '2').length
 
 /**
  * A minimum disjunctive normal form: a smallest set of prime implicants covering every model (exact cover by
- * branch and bound over the prime implicant chart), ties broken by fewest literals.
+ * branch and bound over the prime implicant chart), ties broken by fewest literals. {@link quineMcCluskeyAlgorithm}
+ * run with the exact cover.
  *
  * @param f - The formula.
  * @param variables - The variables (default the formula's own; at most 16).
@@ -862,53 +1081,10 @@ const countLits = (c: string): number => [...c].filter((x) => x !== '2').length
  * ```
  */
 export function minimalDnf(f: Formula, variables: readonly string[] = formulaVariables(f)): Formula {
-  const k = variables.length
-  const primes = primeImplicants(f, variables)
-  const minterms = truthTable(f, variables)
-    .rows.map((r, m) => ({ r, m }))
-    .filter((x) => x.r.value)
-    .map((x) => x.m)
-  if (minterms.length === 2 ** k) return T
-  if (minterms.length === 0) return F
-  const covers = primes.map((p) =>
-    minterms.filter((m) =>
-      variables.every((name, i) => p[name] === undefined || p[name] === (((m >> (k - 1 - i)) & 1) === 1)),
-    ),
-  )
-  const size = (p: Valuation): number => Object.keys(p).length
-  const best: { chosen: number[]; cost: [number, number] } = {
-    chosen: [],
-    cost: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
-  }
-  const search = (chosen: number[], covered: Set<number>): void => {
-    const cost: [number, number] = [chosen.length, chosen.reduce((s, i) => s + size(primes[i] as Valuation), 0)]
-    if (cost[0] > best.cost[0] || (cost[0] === best.cost[0] && cost[1] >= best.cost[1])) return
-    const missing = minterms.find((m) => !covered.has(m))
-    if (missing === undefined) {
-      best.chosen = [...chosen]
-      best.cost = cost
-      return
-    }
-    // Branch on the implicants covering the first uncovered minterm (none of them is chosen yet).
-    for (let i = 0; i < primes.length; i++) {
-      if (!(covers[i] as number[]).includes(missing)) continue
-      const added = (covers[i] as number[]).filter((m) => !covered.has(m))
-      for (const m of added) covered.add(m)
-      chosen.push(i)
-      search(chosen, covered)
-      chosen.pop()
-      for (const m of added) covered.delete(m)
-    }
-  }
-  search([], new Set())
-  const chosen = [...best.chosen].sort((a, b) => a - b)
-  const lit = (name: string, value: boolean): Formula => (value ? v(name) : not(v(name)))
-  return or(
-    chosen.map((i) => {
-      const p = primes[i] as Valuation
-      return and(variables.filter((n) => p[n] !== undefined).map((n) => lit(n, p[n] as boolean)))
-    }),
-  )
+  const run = runAlgorithm(quineMcCluskeyAlgorithm(f, { variables, cover: 'exact' }), {
+    maxSteps: Number.MAX_SAFE_INTEGER,
+  })
+  return minimalFormOf(run.state, variables, f)
 }
 
 /**

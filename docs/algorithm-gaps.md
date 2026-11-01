@@ -13,7 +13,8 @@ Rows closed since the audit, by the agents that ported them (each is an exported
 - **Open slots in the done rows:** EX1 DiCE has Adam only (no optimiser slot); EN1 has no outer bags and a step is a full cycle over the features; LE2 has the ACI score memory as its only conformal slot; EX3 has no sampler table for anchors; the `nonlinear-correlation` exogeneity measure of PG4 is a heuristic checked only on one simulated chain.
 - **Slot rules (b):** B2 (GP hyperparameters, `boundedSolvers`), B3 (NCA, LMNN), B4 (fair representation), B6 (`mleSolvers`) done; B5 (t-SNE, UMAP) deliberately has no slot, with the reason in their TSDoc; B1 (SVM) done for `svc`/`nuSvc` (squared-hinge primal with `smoothSolvers`, hinge stays SMO-only), `svr` (squared epsilon-insensitive) and `svdd` (squared slack); `oneClassSvm` stays SMO-only, no standard smooth variant; B0 is an observation.
 - **Near-duplicates (a):** D1 and D11 were already fixed; D4, D6, D7, D9, D10 (cliques), D13 consolidated; D2, D3, D5, D8, D10 (hulls), D12, D14 are different tools and are cross-referenced in their TSDoc. D9 changed the seeded mazes of `environments`.
-- **In flight:** numerics, signal, text, vision, logic, information (OP1, SA3, NU5-NU8, SG2, SG3, SK1, IN1, IN2, TX1-TX3, VI1-VI4, LO1-LO4, PP1, DY10, DY8 shooting).
+- **Numerics, signal, text, vision, logic and the rest:** OP1, SA3, NU5-NU8, SG2, SG3, SK1, IN1, IN2, TX1-TX3, VI1-VI4, LO1-LO4, PP1, DY10 and the shooting half of DY8 done. `levenshtein`, `unify` and `mgu` were not turned into wrappers (hot loops); `dpAlgorithm` and `unifyAlgorithm` are tested equal to them. One step of `lempelZivComplexity` is a phrase, not a parse position.
+- **All rows of the catalogue are closed or recorded as deliberately not changed.** The section on absences (c) lists algorithms the library does not have; it is not part of these rows.
 
 ## Summary
 

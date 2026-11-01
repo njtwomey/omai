@@ -5,7 +5,17 @@
  */
 
 import { type Json, MdmlError } from '../../base/index.ts'
-import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  contractSchema,
+  defineContract,
+  message,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../../trace/index.ts'
 
 /**
  * A conjunctive hypothesis over attributes (Mitchell's representation): per attribute a required value, `'?'` (any
@@ -60,9 +70,79 @@ function checkExamples(examples: readonly LabelledExample[], n: number, where: s
   }
 }
 
+/** The paths the version-space learners log, as a type. */
+export type VersionSpacePath = 'vs/specific' | 'vs/general' | 'vs/example'
+
+/**
+ * What Find-S and candidate elimination log per example: the size of the specific boundary (always 1 for Find-S) and of
+ * the general boundary, and a message with the example and the boundaries after it.
+ */
+export const versionSpaceContract: Contract<unknown, VersionSpacePath> = defineContract({
+  'vs/specific': scalar({ description: 'hypotheses on the specific boundary S after the example' }),
+  'vs/general': scalar({ description: 'hypotheses on the general boundary G after the example (Find-S has none)' }),
+  'vs/example': message({
+    description: 'the example processed and the boundaries after it',
+    payload: { example: 'values', positive: 'label', S: 'specific boundary', G: 'general boundary' },
+  }),
+})
+
+/** The state of {@link findSAlgorithm}: the hypothesis and the examples seen. */
+export interface FindSState {
+  readonly hypothesis: (string | null)[]
+  readonly seen: number
+}
+
+/**
+ * Find-S as a stepped algorithm, one training example per step: negatives are ignored, a positive generalises the
+ * hypothesis minimally (an unset attribute takes the example's value, a differing one becomes `'?'`), starting from the
+ * hypothesis that matches nothing. It logs the boundary sizes and the example with the hypothesis after it, and is done
+ * (`converged`) after the last example. The state serialises.
+ *
+ * @param examples - The training examples.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for examples of different lengths.
+ * @concept version-spaces
+ * @example
+ * ```ts
+ * import { findSAlgorithm } from 'mdml-engine/logic/ilp'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const examples = [
+ *   { values: ['sunny', 'warm'], positive: true },
+ *   { values: ['sunny', 'cold'], positive: true },
+ * ]
+ * runAlgorithm(findSAlgorithm(examples), { maxSteps: 5 }).state.hypothesis // => ['sunny', '?']
+ * ```
+ */
+export function findSAlgorithm(examples: readonly LabelledExample[]): Algorithm<FindSState, VersionSpacePath> {
+  const n = examples[0]?.values.length ?? 0
+  checkExamples(examples, n, 'findS')
+  return {
+    name: 'find-s',
+    config: { attributes: n, examples: examples.length },
+    schema: contractSchema(versionSpaceContract),
+    init: () => ({ hypothesis: new Array<string | null>(n).fill(null), seen: 0 }),
+    step: (st, ctx) => {
+      const e = examples[st.seen] as LabelledExample
+      const h = [...st.hypothesis]
+      if (e.positive)
+        e.values.forEach((x, i) => {
+          if (h[i] === null) h[i] = x
+          else if (h[i] !== x) h[i] = '?'
+        })
+      ctx.log('vs/specific', 1)
+      ctx.emit('vs/example', { example: [...e.values], positive: e.positive, S: [h], G: [] })
+      return { hypothesis: h, seen: st.seen + 1 }
+    },
+    done: (st) => (st.seen >= examples.length ? 'converged' : undefined),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as FindSState,
+  }
+}
+
 /**
  * Find-S: the most specific conjunctive hypothesis covering every positive example (negatives are ignored, as in
- * Mitchell's algorithm), starting from the empty hypothesis and generalising minimally.
+ * Mitchell's algorithm), starting from the empty hypothesis and generalising minimally. {@link findSAlgorithm} run to the
+ * end.
  *
  * @param examples - The training examples.
  * @returns The hypothesis (all `null` when there are no positives).
@@ -80,17 +160,7 @@ function checkExamples(examples: readonly LabelledExample[], n: number, where: s
  * ```
  */
 export function findS(examples: readonly LabelledExample[]): (string | null)[] {
-  const n = examples[0]?.values.length ?? 0
-  checkExamples(examples, n, 'findS')
-  const h: (string | null)[] = new Array(n).fill(null)
-  for (const e of examples) {
-    if (!e.positive) continue
-    e.values.forEach((x, i) => {
-      if (h[i] === null) h[i] = x
-      else if (h[i] !== x) h[i] = '?'
-    })
-  }
-  return h
+  return runAlgorithm(findSAlgorithm(examples), { maxSteps: examples.length + 1 }).state.hypothesis
 }
 
 /** The state of candidate elimination: the specific and general boundaries after each example. */
@@ -101,19 +171,6 @@ export interface VersionSpaceState {
   /** Whether the version space collapsed (no consistent hypothesis remains). */
   readonly collapsed: boolean
 }
-
-const VS_SCHEMA: TraceSchema = channels({
-  metrics: {
-    specific: { description: 'hypotheses on the specific boundary S' },
-    general: { description: 'hypotheses on the general boundary G' },
-  },
-  messages: {
-    example: {
-      description: 'an example processed and the boundaries after it',
-      payload: { example: 'values', positive: 'label', S: 'specific boundary', G: 'general boundary' },
-    },
-  },
-})
 
 const key = (h: Hypothesis): string => JSON.stringify(h)
 
@@ -147,20 +204,20 @@ function dedupe(hs: readonly Hypothesis[]): Hypothesis[] {
 export function candidateEliminationAlgorithm(
   examples: readonly LabelledExample[],
   domains: readonly (readonly string[])[],
-): Algorithm<VersionSpaceState> {
+): Algorithm<VersionSpaceState, VersionSpacePath> {
   const n = domains.length
   checkExamples(examples, n, 'candidateElimination')
   return {
     name: 'candidate-elimination',
     config: { attributes: n, examples: examples.length },
-    schema: VS_SCHEMA,
+    schema: contractSchema(versionSpaceContract),
     init: () => ({
       specific: [new Array<string | null>(n).fill(null)],
       general: [new Array<string | null>(n).fill('?')],
       seen: 0,
       collapsed: false,
     }),
-    step: (s) => {
+    step: (s, ctx) => {
       const e = examples[s.seen]
       if (e === undefined) return s
       const x = e.values
@@ -199,29 +256,14 @@ export function candidateEliminationAlgorithm(
         const unique = dedupe(next)
         G = unique.filter((h) => !unique.some((o) => key(o) !== key(h) && moreGeneral(o, h)))
       }
+      ctx.log('vs/specific', S.length)
+      ctx.log('vs/general', G.length)
+      ctx.emit('vs/example', { example: [...e.values], positive: e.positive, S, G } as unknown as Json)
       return { specific: S, general: G, seen: s.seen + 1, collapsed: S.length === 0 || G.length === 0 }
     },
     done: (s) => (s.seen >= examples.length || s.collapsed ? 'converged' : undefined),
-    observe: (s) => {
-      const e = examples[s.seen - 1]
-      return {
-        metrics: { specific: s.specific.length, general: s.general.length },
-        messages:
-          e === undefined
-            ? []
-            : [
-                {
-                  kind: 'example',
-                  payload: {
-                    example: [...e.values],
-                    positive: e.positive,
-                    S: s.specific,
-                    G: s.general,
-                  } as unknown as Json,
-                },
-              ],
-      }
-    },
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as VersionSpaceState,
   }
 }
 

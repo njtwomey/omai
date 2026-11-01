@@ -89,3 +89,65 @@ export function stateFromJson(json: Json): unknown {
   for (const [k, v] of Object.entries(o)) out[k] = stateFromJson(v)
   return out
 }
+
+/**
+ * A number as JSON that survives a round trip through `JSON.stringify`: finite numbers stay numbers, `NaN` and the
+ * infinities become the strings `'NaN'`, `'Infinity'` and `'-Infinity'` (plain `JSON.stringify` turns all three into
+ * `null`). For the fields of an algorithm state that may be unset or unbounded.
+ *
+ * @param x - The number.
+ * @returns A number or one of the three strings.
+ * @example
+ * ```ts
+ * import { numberToJson } from 'mdml-engine/trace'
+ * [numberToJson(1.5), numberToJson(Number.NaN), numberToJson(-Infinity)] // => [1.5, 'NaN', '-Infinity']
+ * ```
+ */
+export function numberToJson(x: number): Json {
+  return Number.isFinite(x) ? x : Number.isNaN(x) ? 'NaN' : x > 0 ? 'Infinity' : '-Infinity'
+}
+
+/**
+ * The inverse of {@link numberToJson}; `null` (what a plain `JSON.stringify` makes of `NaN`) reads as `NaN`.
+ *
+ * @param j - A number, one of the three strings, or `null`.
+ * @returns The number.
+ * @example
+ * ```ts
+ * import { numberFromJson } from 'mdml-engine/trace'
+ * [numberFromJson('Infinity'), numberFromJson(2), Number.isNaN(numberFromJson(null))] // => [Infinity, 2, true]
+ * ```
+ */
+export function numberFromJson(j: Json | undefined): number {
+  return typeof j === 'number' ? j : j === null || j === undefined ? Number.NaN : Number(j)
+}
+
+/**
+ * A list of numbers as JSON with {@link numberToJson} applied to each.
+ *
+ * @param xs - The numbers.
+ * @returns The JSON array.
+ * @example
+ * ```ts
+ * import { numbersToJson } from 'mdml-engine/trace'
+ * numbersToJson([1, Infinity]) // => [1, 'Infinity']
+ * ```
+ */
+export function numbersToJson(xs: ArrayLike<number>): Json {
+  return Array.from(xs, numberToJson)
+}
+
+/**
+ * The inverse of {@link numbersToJson}.
+ *
+ * @param j - The JSON array.
+ * @returns The numbers.
+ * @example
+ * ```ts
+ * import { numbersFromJson } from 'mdml-engine/trace'
+ * numbersFromJson([1, 'Infinity']) // => [1, Infinity]
+ * ```
+ */
+export function numbersFromJson(j: Json | undefined): number[] {
+  return Array.isArray(j) ? j.map((v) => numberFromJson(v)) : []
+}

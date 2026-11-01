@@ -7,9 +7,17 @@
 
 import { heap, type Json, MdmlError } from '../../base/index.ts'
 import { type Key, randomBits, split } from '../../random/index.ts'
-import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  runAlgorithm,
+  stateFromJson,
+  stateToJson,
+  type TracePolicy,
+  type Tracer,
+} from '../../trace/index.ts'
 import { compareCodePoints } from '../_classes.ts'
 import { utf8Bytes } from '../hashing.ts'
+import type { TokenizerPath } from '../tokenizer-contract.ts'
 import { namesOf } from './_shared.ts'
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -500,10 +508,164 @@ function uniforms(key: Key, n: number): Float64Array {
   return Float64Array.from(bits, (b) => b / 4294967296)
 }
 
+/** The state of {@link bpeTokenizeAlgorithm}: the symbols of the word (id and code-unit span) and the dropout draws used. */
+export interface BpeTokenizeState {
+  readonly symbols: { id: number; start: number; end: number }[]
+  /** Dropout draws consumed (the draws are a counter-based stream of the key). */
+  draws: number
+  /** True when no candidate merge was applied at the last step: the word is fully merged. */
+  finished: boolean
+  /** The rank of the last merge applied (-1 before the first). */
+  lastRank: number
+}
+
+/**
+ * Encode one pre-tokenised word with a BPE model as a stepped algorithm (HF's BPE.tokenize): the word is split into
+ * characters (prefix inside, suffix on the last), unknown characters become the unknown token (or byte tokens with byte
+ * fallback), and each step applies the lowest-ranked merge among the adjacent pairs, leftmost first. With dropout and a
+ * key, each candidate merge is skipped with that probability (the draws are a counter-based stream, so a resumed run
+ * draws the same coins). It logs the rank of the merge applied and the symbols left, and is done (`converged`) when no
+ * pair can be merged. The state serialises; read the tokens with {@link bpeTokens}.
+ *
+ * @param model - The model.
+ * @param word - The word (already pre-tokenised and, for byte-level models, byte-mapped).
+ * @param options - Dropout probability (default the model's) and the key for it.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for an unknown character without an unknown token, and for dropout without a key.
+ * @concept byte-pair-encoding
+ * @example
+ * ```ts
+ * import { bpeModel, bpeTokenizeAlgorithm, bpeTokens } from 'mdml-engine/text/subword'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const m = bpeModel(new Map([['a', 0], ['b', 1], ['c', 2], ['ab', 3], ['abc', 4]]), [['a', 'b'], ['ab', 'c']])
+ * const run = runAlgorithm(bpeTokenizeAlgorithm(m, 'abc'), { maxSteps: 10 })
+ * [run.steps, bpeTokens(m, run.state).map((t) => t.token)] // => [3, ['abc']]
+ * ```
+ */
+export function bpeTokenizeAlgorithm(
+  model: BpeModel,
+  word: string,
+  options: { readonly dropout?: number; readonly key?: Key } = {},
+): Algorithm<BpeTokenizeState, TokenizerPath> {
+  const ranks = (model as Partial<Ranked>).ranks ?? ranksOf(model)
+  const prefix = model.continuingSubwordPrefix
+  const suffix = model.endOfWordSuffix
+  const unk = model.unkToken === undefined ? undefined : model.vocab.get(model.unkToken)
+  const dropout = options.dropout ?? model.dropout ?? 0
+  // The coins: block b of 64 draws comes from the key reached by b splits (as the chained draws of HF's dropout).
+  const blocks = new Map<number, Float64Array>()
+  const draw = (n: number): number => {
+    if (options.key === undefined) throw new MdmlError('value', 'bpeTokenize: dropout needs a key')
+    const b = Math.floor(n / 64)
+    let block = blocks.get(b)
+    if (block === undefined) {
+      let k = options.key
+      for (let i = 0; i < b; i++) k = (split(k) as [Key, Key])[1]
+      block = uniforms((split(k) as [Key, Key])[0], 64)
+      blocks.set(b, block)
+    }
+    return block[n - b * 64] ?? 1
+  }
+  return {
+    name: 'text/bpe-tokenize',
+    config: { word, dropout, merges: model.merges.length },
+    init: () => {
+      const symbols: { id: number; start: number; end: number }[] = []
+      if (word.length === 0) return { symbols, draws: 0, finished: true, lastRank: -1 }
+      const direct = model.vocab.get(word)
+      if (model.ignoreMerges === true && direct !== undefined)
+        return { symbols: [{ id: direct, start: 0, end: word.length }], draws: 0, finished: true, lastRank: -1 }
+      const chars = Array.from(word)
+      let at = 0
+      for (const [k, ch] of chars.entries()) {
+        let sym = ch
+        if (k > 0 && prefix !== undefined) sym = prefix + sym
+        if (k === chars.length - 1 && suffix !== undefined) sym += suffix
+        const id = model.vocab.get(sym)
+        const start = at
+        at += ch.length
+        if (id !== undefined) {
+          symbols.push({ id, start, end: at })
+          continue
+        }
+        if (model.byteFallback === true) {
+          const bytes = Array.from(utf8Bytes(ch), (b) =>
+            model.vocab.get(`<0x${b.toString(16).toUpperCase().padStart(2, '0')}>`),
+          )
+          if (bytes.every((b) => b !== undefined)) {
+            for (const b of bytes) symbols.push({ id: b ?? 0, start, end: at })
+            continue
+          }
+        }
+        if (unk === undefined)
+          throw new MdmlError('value', `bpeTokenize: ${ch} is not in the vocabulary and there is no unknown token`)
+        const last = symbols[symbols.length - 1]
+        if (model.fuseUnk === true && last !== undefined && last.id === unk) last.end = at
+        else symbols.push({ id: unk, start, end: at })
+      }
+      return { symbols, draws: 0, finished: false, lastRank: -1 }
+    },
+    step: (s, ctx) => {
+      // Merge the best-ranked adjacent pair (leftmost on ties); with dropout, skipped candidates are tried again after
+      // the next merge, as HF does.
+      const symbols = s.symbols
+      const candidates: { pos: number; rank: number; id: number }[] = []
+      for (let i = 0; i + 1 < symbols.length; i++) {
+        const r = ranks.get(pairKey(symbols[i]?.id ?? 0, symbols[i + 1]?.id ?? 0))
+        if (r !== undefined) candidates.push({ pos: i, rank: r[0], id: r[1] })
+      }
+      candidates.sort((x, y) => x.rank - y.rank || x.pos - y.pos)
+      const chosen = candidates.find(() => {
+        if (dropout <= 0) return true
+        const skipped = draw(s.draws) < dropout
+        s.draws += 1
+        return !skipped
+      })
+      if (chosen === undefined) return { ...s, finished: true }
+      const l = symbols[chosen.pos] as { id: number; start: number; end: number }
+      const r = symbols[chosen.pos + 1] as { id: number; start: number; end: number }
+      const next = [
+        ...symbols.slice(0, chosen.pos),
+        { id: chosen.id, start: l.start, end: r.end },
+        ...symbols.slice(chosen.pos + 2),
+      ]
+      ctx.log('tok/merge', chosen.rank)
+      ctx.log(
+        'tok/symbols',
+        next.map((x) => x.id),
+      )
+      return { symbols: next, draws: s.draws, finished: false, lastRank: chosen.rank }
+    },
+    done: (s) => (s.finished ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as BpeTokenizeState,
+  }
+}
+
+/**
+ * The tokens of a BPE state: each symbol's text, id and span in the word.
+ *
+ * @param model - The model the state was run with.
+ * @param state - A state of {@link bpeTokenizeAlgorithm}.
+ * @returns The tokens.
+ * @concept byte-pair-encoding
+ * @example
+ * ```ts
+ * import { bpeModel, bpeTokens } from 'mdml-engine/text/subword'
+ * const m = bpeModel(new Map([['a', 0], ['b', 1]]), [])
+ * bpeTokens(m, { symbols: [{ id: 1, start: 0, end: 1 }], draws: 0, finished: true, lastRank: -1 })[0]?.token // => 'b'
+ * ```
+ */
+export function bpeTokens(model: BpeModel, state: BpeTokenizeState): SubwordToken[] {
+  const names = namesOf(model)
+  return state.symbols.map((s) => ({ token: names.get(s.id) ?? '', id: s.id, start: s.start, end: s.end }))
+}
+
 /**
  * Encode one pre-tokenised word with a BPE model (HF's BPE.tokenize): split into characters (prefix inside, suffix
  * on the last), map unknown characters to the unknown token (or byte tokens with byte fallback), then apply merges
  * lowest rank first, leftmost first. With dropout and a key, each candidate merge is skipped with that probability.
+ * {@link bpeTokenizeAlgorithm} run to the end.
  *
  * @param model - The model.
  * @param word - The word (already pre-tokenised and, for byte-level models, byte-mapped).
@@ -523,78 +685,6 @@ export function bpeTokenize(
   word: string,
   options: { readonly dropout?: number; readonly key?: Key } = {},
 ): SubwordToken[] {
-  if (word.length === 0) return []
-  const direct = model.vocab.get(word)
-  if (model.ignoreMerges === true && direct !== undefined)
-    return [{ token: word, id: direct, start: 0, end: word.length }]
-  const ranks = (model as Partial<Ranked>).ranks ?? ranksOf(model)
-  const prefix = model.continuingSubwordPrefix
-  const suffix = model.endOfWordSuffix
-  const unk = model.unkToken === undefined ? undefined : model.vocab.get(model.unkToken)
-  // Symbols: id, start and end in the word.
-  let symbols: { id: number; start: number; end: number }[] = []
-  const chars = Array.from(word)
-  let at = 0
-  for (const [k, ch] of chars.entries()) {
-    let s = ch
-    if (k > 0 && prefix !== undefined) s = prefix + s
-    if (k === chars.length - 1 && suffix !== undefined) s += suffix
-    const id = model.vocab.get(s)
-    const start = at
-    at += ch.length
-    if (id !== undefined) {
-      symbols.push({ id, start, end: at })
-      continue
-    }
-    if (model.byteFallback === true) {
-      const bytes = Array.from(utf8Bytes(ch), (b) =>
-        model.vocab.get(`<0x${b.toString(16).toUpperCase().padStart(2, '0')}>`),
-      )
-      if (bytes.every((b) => b !== undefined)) {
-        for (const b of bytes) symbols.push({ id: b ?? 0, start, end: at })
-        continue
-      }
-    }
-    if (unk === undefined)
-      throw new MdmlError('value', `bpeTokenize: ${ch} is not in the vocabulary and there is no unknown token`)
-    const last = symbols[symbols.length - 1]
-    if (model.fuseUnk === true && last !== undefined && last.id === unk) last.end = at
-    else symbols.push({ id: unk, start, end: at })
-  }
-  const dropout = options.dropout ?? model.dropout ?? 0
-  let draws: Float64Array | undefined
-  let drawAt = 0
-  let key = options.key
-  const skip = (): boolean => {
-    if (dropout <= 0) return false
-    if (key === undefined) throw new MdmlError('value', 'bpeTokenize: dropout needs a key')
-    if (draws === undefined || drawAt >= draws.length) {
-      const [k1, k2] = split(key) as [Key, Key]
-      key = k2
-      draws = uniforms(k1, 64)
-      drawAt = 0
-    }
-    return (draws[drawAt++] ?? 1) < dropout
-  }
-  // Repeatedly merge the best-ranked adjacent pair (leftmost on ties); with dropout, skipped candidates are tried
-  // again after the next merge, as HF does.
-  for (;;) {
-    const candidates: { pos: number; rank: number; id: number }[] = []
-    for (let i = 0; i + 1 < symbols.length; i++) {
-      const r = ranks.get(pairKey(symbols[i]?.id ?? 0, symbols[i + 1]?.id ?? 0))
-      if (r !== undefined) candidates.push({ pos: i, rank: r[0], id: r[1] })
-    }
-    candidates.sort((x, y) => x.rank - y.rank || x.pos - y.pos)
-    const chosen = candidates.find(() => !skip())
-    if (chosen === undefined) break
-    const l = symbols[chosen.pos] as { id: number; start: number; end: number }
-    const r = symbols[chosen.pos + 1] as { id: number; start: number; end: number }
-    symbols = [
-      ...symbols.slice(0, chosen.pos),
-      { id: chosen.id, start: l.start, end: r.end },
-      ...symbols.slice(chosen.pos + 2),
-    ]
-  }
-  const names = namesOf(model)
-  return symbols.map((s) => ({ token: names.get(s.id) ?? '', id: s.id, start: s.start, end: s.end }))
+  const run = runAlgorithm(bpeTokenizeAlgorithm(model, word, options), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return bpeTokens(model, run.state)
 }

@@ -5,8 +5,20 @@
  * `cdf` and `rank`; the randomised one draws its coins from a `Key`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { type Key, uniformStream } from '../random/index.ts'
+import { type P2State, p2Estimate, p2Push, p2Quantile } from '../stats/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  numberFromJson,
+  numberToJson,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 
 /** What the quantile sketches share. */
 export interface QuantileSketch {
@@ -77,13 +89,26 @@ export interface GkSummary extends QuantileSketch {
 export function gkSummary(epsilon: number): GkSummary {
   if (!(epsilon > 0 && epsilon < 1))
     throw new MdmlError('value', `gkSummary: epsilon must lie in (0, 1), got ${epsilon}`)
-  const tuples: { value: number; g: number; delta: number }[] = []
-  let n = 0
-  let min = Number.NaN
-  let max = Number.NaN
+  return gkOver(epsilon, { tuples: [], count: 0, min: Number.NaN, max: Number.NaN })
+}
+
+/**
+ * The state of {@link gkSummaryAlgorithm}: the tuples of the summary, the number of values added and the extremes.
+ * Steps update the tuples in place; keep a copy of a state you want to look at later.
+ */
+export interface GkState {
+  readonly tuples: { value: number; g: number; delta: number }[]
+  count: number
+  min: number
+  max: number
+}
+
+/** A Greenwald-Khanna summary working on the given state (so a stepped run and its summary share one set of tuples). */
+function gkOver(epsilon: number, state: GkState): GkSummary {
+  const tuples = state.tuples
   const period = Math.max(1, Math.floor(1 / (2 * epsilon)))
   const compress = (): void => {
-    const cap = Math.floor(2 * epsilon * n)
+    const cap = Math.floor(2 * epsilon * state.count)
     for (let i = tuples.length - 2; i >= 1; i--) {
       const here = tuples[i]
       const next = tuples[i + 1]
@@ -106,19 +131,19 @@ export function gkSummary(epsilon: number): GkSummary {
     const r = ranks()
     const after = r.findIndex((t) => t.value > x)
     const lower = after === 0 ? 0 : (r[(after < 0 ? r.length : after) - 1]?.rmin ?? 0)
-    const upper = after < 0 ? n : (r[after]?.rmax ?? n) - 1
+    const upper = after < 0 ? state.count : (r[after]?.rmax ?? state.count) - 1
     return (lower + upper) / 2
   }
   return {
     epsilon,
     get count() {
-      return n
+      return state.count
     },
     get min() {
-      return min
+      return state.min
     },
     get max() {
-      return max
+      return state.max
     },
     tuples: () => tuples.map((t) => ({ ...t })),
     add: (value) => {
@@ -129,13 +154,14 @@ export function gkSummary(epsilon: number): GkSummary {
       const succ = tuples[at]
       const delta = at === 0 || succ === undefined ? 0 : succ.g + succ.delta - 1
       tuples.splice(at, 0, { value, g: 1, delta })
-      n += 1
-      if (Number.isNaN(min) || value < min) min = value
-      if (Number.isNaN(max) || value > max) max = value
-      if (n % period === 0) compress()
+      state.count += 1
+      if (Number.isNaN(state.min) || value < state.min) state.min = value
+      if (Number.isNaN(state.max) || value > state.max) state.max = value
+      if (state.count % period === 0) compress()
     },
     quantile: (q) => {
       checkQuantile(q, 'gkSummary.quantile')
+      const n = state.count
       if (n === 0) return Number.NaN
       const target = Math.max(1, Math.ceil(q * n))
       const slack = epsilon * n
@@ -152,7 +178,7 @@ export function gkSummary(epsilon: number): GkSummary {
       return best?.value ?? Number.NaN
     },
     rank,
-    cdf: (x) => (n === 0 ? Number.NaN : x < min ? 0 : x >= max ? 1 : rank(x) / n),
+    cdf: (x) => (state.count === 0 ? Number.NaN : x < state.min ? 0 : x >= state.max ? 1 : rank(x) / state.count),
   }
 }
 
@@ -370,20 +396,32 @@ export interface KllSketch extends QuantileSketch {
   merge(other: KllSketch): KllSketch
 }
 
-function makeKll(
-  k: number,
-  key: Key,
-  start: number[][],
-  startCount: number,
-  startMin: number,
-  startMax: number,
-): KllSketch {
-  const levels = start.map((l) => l.slice())
+/**
+ * The state of {@link kllSketchAlgorithm}: the compactors from the lowest level upward, the number of values added, the
+ * extremes, and how many coins have been flipped (the coin stream is counter-based, so this resumes it). Steps update
+ * the levels in place; keep a copy of a state you want to look at later.
+ */
+export interface KllState {
+  readonly levels: number[][]
+  count: number
+  min: number
+  max: number
+  /** Coins flipped so far. */
+  coins: number
+  /** Compactions done so far. */
+  compactions: number
+}
+
+/** A KLL sketch working on the given state (so a stepped run and its sketch share one set of compactors). */
+function makeKll(k: number, key: Key, state: KllState): KllSketch {
+  const levels = state.levels
   if (levels.length === 0) levels.push([])
-  const coin = uniformStream(key, 64)
-  let n = startCount
-  let min = startMin
-  let max = startMax
+  let stream: (() => number) | undefined
+  const coin = (): number => {
+    stream ??= uniformStream(key, 64, state.coins)
+    state.coins += 1
+    return stream()
+  }
   const capacity = (h: number): number => Math.max(2, Math.ceil(k * (2 / 3) ** (levels.length - 1 - h)))
   const totalCapacity = (): number => levels.reduce((s, _, h) => s + capacity(h), 0)
   const size = (): number => levels.reduce((s, l) => s + l.length, 0)
@@ -400,6 +438,7 @@ function makeKll(
       const offset = coin() < 0.5 ? 0 : 1
       for (let i = offset; i < buf.length; i += 2) up.push(buf[i] as number)
       levels[h] = odd === undefined ? [] : [odd]
+      state.compactions += 1
     }
   }
   const weighted = (): { value: number; weight: number }[] => {
@@ -418,28 +457,28 @@ function makeKll(
   return {
     k,
     get count() {
-      return n
+      return state.count
     },
     get size() {
       return size()
     },
     get min() {
-      return min
+      return state.min
     },
     get max() {
-      return max
+      return state.max
     },
     add: (value) => {
       checkFinite(value, 'kllSketch.add')
       levels[0]?.push(value)
-      n += 1
-      if (Number.isNaN(min) || value < min) min = value
-      if (Number.isNaN(max) || value > max) max = value
+      state.count += 1
+      if (Number.isNaN(state.min) || value < state.min) state.min = value
+      if (Number.isNaN(state.max) || value > state.max) state.max = value
       compress()
     },
     quantile: (q) => {
       checkQuantile(q, 'kllSketch.quantile')
-      if (n === 0) return Number.NaN
+      if (state.count === 0) return Number.NaN
       const items = weighted()
       const total = items.reduce((s, it) => s + it.weight, 0)
       const target = q * total
@@ -448,10 +487,10 @@ function makeKll(
         cum += it.weight
         if (cum >= target) return it.value
       }
-      return max
+      return state.max
     },
     cdf: (x) => {
-      if (n === 0) return Number.NaN
+      if (state.count === 0) return Number.NaN
       const items = weighted()
       const total = items.reduce((s, it) => s + it.weight, 0)
       return rank(x) / total
@@ -459,16 +498,31 @@ function makeKll(
     rank: (x) => {
       const items = weighted()
       const total = items.reduce((s, it) => s + it.weight, 0)
-      return (rank(x) / total) * n
+      return (rank(x) / total) * state.count
     },
     levels: () => levels.map((l) => l.slice()),
     merge: (other) => {
       const theirs = other.levels()
       const height = Math.max(levels.length, theirs.length)
       const combined = Array.from({ length: height }, (_, h) => [...(levels[h] ?? []), ...(theirs[h] ?? [])])
-      const lo = Number.isNaN(min) ? other.min : Number.isNaN(other.min) ? min : Math.min(min, other.min)
-      const hi = Number.isNaN(max) ? other.max : Number.isNaN(other.max) ? max : Math.max(max, other.max)
-      return makeKll(k, key, combined, n + other.count, lo, hi)
+      const lo = Number.isNaN(state.min)
+        ? other.min
+        : Number.isNaN(other.min)
+          ? state.min
+          : Math.min(state.min, other.min)
+      const hi = Number.isNaN(state.max)
+        ? other.max
+        : Number.isNaN(other.max)
+          ? state.max
+          : Math.max(state.max, other.max)
+      return makeKll(k, key, {
+        levels: combined,
+        count: state.count + other.count,
+        min: lo,
+        max: hi,
+        coins: 0,
+        compactions: 0,
+      })
     },
   }
 }
@@ -497,5 +551,214 @@ export function kllSketch(options: KllSketchOptions): KllSketch {
   const k = options.k ?? 200
   if (!(Number.isInteger(k) && k >= 8))
     throw new MdmlError('value', `kllSketch: k must be an integer of at least 8, got ${k}`)
-  return makeKll(k, options.key, [[]], 0, Number.NaN, Number.NaN)
+  return makeKll(k, options.key, { levels: [[]], count: 0, min: Number.NaN, max: Number.NaN, coins: 0, compactions: 0 })
+}
+
+/** The paths the quantile-sketch algorithms log, as a type. */
+export type QuantileSketchPath = 'sketch/size' | 'sketch/compress' | 'sketch/error' | 'sketch/quantile'
+
+/**
+ * What the quantile-sketch algorithms log per item: the values or markers stored, the compactions (or merges of
+ * tuples) the item caused, the sketch's rank-error bound, and the estimates at the requested quantiles.
+ */
+export const quantileSketchContract: Contract<unknown, QuantileSketchPath> = defineContract({
+  'sketch/size': scalar({ description: 'values, tuples or markers stored' }),
+  'sketch/compress': scalar({ description: 'compactions (KLL) or tuples merged away (Greenwald-Khanna) at this step' }),
+  'sketch/error': scalar({
+    description: 'the rank error bound, in ranks (GK: epsilon n; KLL: about 1.65 n / k; P2: marker drift)',
+    direction: 'lower',
+  }),
+  'sketch/quantile': tensor({
+    role: 'output',
+    shape: ['quantiles'],
+    description: 'the estimates at the requested quantiles',
+  }),
+})
+
+/** Input of the quantile-sketch algorithms. */
+export interface QuantileStreamOptions {
+  /** The stream, one value per step. */
+  readonly items: readonly number[]
+  /** The quantiles to log estimates of (default 0.25, 0.5 and 0.75). */
+  readonly quantiles?: readonly number[]
+}
+
+const DEFAULT_QUANTILES: readonly number[] = [0.25, 0.5, 0.75]
+
+/**
+ * Greenwald-Khanna as a stepped algorithm, one value of the stream per step: insert it with its rank slack, and every
+ * `1 / (2 epsilon)` values merge adjacent tuples while `g + g' + delta' <= 2 epsilon n`. It logs the tuples stored, the
+ * tuples merged away, the rank bound `epsilon n` and the estimated quantiles. The state serialises.
+ *
+ * @param options - epsilon, the stream and the quantiles to report.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for `epsilon` outside `(0, 1)`.
+ * @concept quantile-sketch
+ * @example
+ * ```ts
+ * import { gkSummaryAlgorithm } from 'mdml-engine/sketches'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const items = Array.from({ length: 200 }, (_, i) => (i * 37) % 200)
+ * const run = runAlgorithm(gkSummaryAlgorithm({ epsilon: 0.05, items }), { maxSteps: 300 })
+ * [run.status, run.state.count, run.state.tuples.length < 200] // => ['completed', 200, true]
+ * ```
+ */
+export function gkSummaryAlgorithm(
+  options: QuantileStreamOptions & { readonly epsilon: number },
+): Algorithm<GkState, QuantileSketchPath> {
+  const { epsilon, items } = options
+  if (!(epsilon > 0 && epsilon < 1))
+    throw new MdmlError('value', `gkSummary: epsilon must lie in (0, 1), got ${epsilon}`)
+  const quantiles = options.quantiles ?? DEFAULT_QUANTILES
+  return {
+    name: 'sketches/greenwald-khanna',
+    config: { epsilon, items: items.length },
+    init: () => ({ tuples: [], count: 0, min: Number.NaN, max: Number.NaN }),
+    step: (s, ctx) => {
+      const before = s.tuples.length
+      const sketch = gkOver(epsilon, s)
+      sketch.add(items[s.count] ?? Number.NaN)
+      ctx.log('sketch/size', s.tuples.length)
+      ctx.log('sketch/compress', before + 1 - s.tuples.length)
+      ctx.log('sketch/error', epsilon * s.count)
+      ctx.log(
+        'sketch/quantile',
+        quantiles.map((q) => sketch.quantile(q)),
+      )
+      return s
+    },
+    done: (s) => (s.count >= items.length ? 'completed' : undefined),
+    serialise: (s) => ({
+      tuples: s.tuples.map((t) => [t.value, t.g, t.delta]),
+      count: s.count,
+      min: numberToJson(s.min),
+      max: numberToJson(s.max),
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as { tuples: number[][]; count: number; min: Json; max: Json }
+      return {
+        tuples: o.tuples.map(([value = 0, g = 0, delta = 0]) => ({ value, g, delta })),
+        count: o.count,
+        min: numberFromJson(o.min),
+        max: numberFromJson(o.max),
+      }
+    },
+  }
+}
+
+/**
+ * A KLL sketch as a stepped algorithm, one value of the stream per step: append it to the lowest compactor and, when the
+ * sketch is full, compact the lowest full level (sort, promote every other value, the half chosen by a coin of the run's
+ * counter-based stream). It logs the values stored, the compactions at this step, the rank bound about `1.65 n / k` and
+ * the estimated quantiles. The state serialises and resumes the coin stream.
+ *
+ * @param options - k, the key for the coins, the stream and the quantiles to report.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for `k < 8`.
+ * @concept quantile-sketch
+ * @example
+ * ```ts
+ * import { kllSketchAlgorithm } from 'mdml-engine/sketches'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const items = Array.from({ length: 500 }, (_, i) => (i * 37) % 500)
+ * const run = runAlgorithm(kllSketchAlgorithm({ k: 16, key: key(0), items }), { maxSteps: 600 })
+ * [run.state.count, run.state.compactions > 0] // => [500, true]
+ * ```
+ */
+export function kllSketchAlgorithm(
+  options: QuantileStreamOptions & { readonly k?: number; readonly key: Key },
+): Algorithm<KllState, QuantileSketchPath> {
+  const k = options.k ?? 200
+  if (!(Number.isInteger(k) && k >= 8))
+    throw new MdmlError('value', `kllSketch: k must be an integer of at least 8, got ${k}`)
+  const { items } = options
+  const quantiles = options.quantiles ?? DEFAULT_QUANTILES
+  return {
+    name: 'sketches/kll',
+    config: { k, items: items.length },
+    init: () => ({ levels: [[]], count: 0, min: Number.NaN, max: Number.NaN, coins: 0, compactions: 0 }),
+    step: (s, ctx) => {
+      const before = s.compactions
+      const sketch = makeKll(k, options.key, s)
+      sketch.add(items[s.count] ?? Number.NaN)
+      ctx.log('sketch/size', sketch.size)
+      ctx.log('sketch/compress', s.compactions - before)
+      ctx.log('sketch/error', (1.65 * s.count) / k)
+      ctx.log(
+        'sketch/quantile',
+        quantiles.map((q) => sketch.quantile(q)),
+      )
+      return s
+    },
+    done: (s) => (s.count >= items.length ? 'completed' : undefined),
+    serialise: (s) => ({
+      levels: s.levels,
+      count: s.count,
+      min: numberToJson(s.min),
+      max: numberToJson(s.max),
+      coins: s.coins,
+      compactions: s.compactions,
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as {
+        levels: number[][]
+        count: number
+        min: Json
+        max: Json
+        coins: number
+        compactions: number
+      }
+      return {
+        levels: o.levels,
+        count: o.count,
+        min: numberFromJson(o.min),
+        max: numberFromJson(o.max),
+        coins: o.coins,
+        compactions: o.compactions,
+      }
+    },
+  }
+}
+
+/**
+ * The P-squared quantile estimator (Jain and Chlamtac 1985) as a stepped algorithm, one value of the stream per step: the
+ * five markers move by parabolic (or linear) interpolation towards their desired positions. It logs the five markers,
+ * no compactions, the largest drift of a marker from its desired position and the estimate. The state is `p2Push`'s
+ * and serialises.
+ *
+ * @param options - The level `p` in (0, 1) and the stream.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for `p` outside `(0, 1)`.
+ * @concept quantile-sketch
+ * @example
+ * ```ts
+ * import { p2Algorithm } from 'mdml-engine/sketches'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(p2Algorithm({ p: 0.5, items: [5, 1, 4, 2, 3] }), { maxSteps: 10 })
+ * run.state.heights // => [1, 2, 3, 4, 5]
+ * ```
+ */
+export function p2Algorithm(options: {
+  readonly p: number
+  readonly items: readonly number[]
+}): Algorithm<P2State, QuantileSketchPath> {
+  const { p, items } = options
+  p2Quantile(p)
+  return {
+    name: 'sketches/p2',
+    config: { p, items: items.length },
+    init: () => p2Quantile(p),
+    step: (s, ctx) => {
+      const next = p2Push(s, items[s.n] ?? Number.NaN)
+      ctx.log('sketch/size', next.heights.length)
+      ctx.log('sketch/compress', 0)
+      ctx.log('sketch/error', Math.max(...next.desired.map((d, i) => Math.abs(d - (next.positions[i] ?? 0)))))
+      ctx.log('sketch/quantile', [p2Estimate(next)])
+      return next
+    },
+    done: (s) => (s.n >= items.length ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as P2State,
+  }
 }

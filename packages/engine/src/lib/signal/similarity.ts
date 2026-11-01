@@ -4,10 +4,20 @@
  * approximation and the symbolic SAX representation with its MINDIST bound, and the lag of maximum cross-correlation.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { correlate, correlationLags } from '../numerics/convolution/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  numbersFromJson,
+  numbersToJson,
+  runAlgorithm,
+  scalar,
+  tensor,
+} from '../trace/index.ts'
 import { float, samples } from './_shared.ts'
 
 // Similarity of time series: dynamic time warping with dtw-python's step patterns, windows and path, its lower
@@ -42,25 +52,63 @@ function rows(x: TensorLike): { data: Float64Array; n: number; d: number } {
   return { data: Float64Array.from(primalOf(v).data), n: v.shape[0] ?? 0, d: v.shape[1] ?? 0 }
 }
 
+/** The paths {@link dtwAlgorithm} logs. */
+export type DtwPath = 'dtw/row' | 'dtw/cost' | 'dtw/path'
+
+/** What the DTW table fill logs: the accumulated costs of the row, the cheapest of them, and the warping path at the end. */
+export const dtwContract: Contract<unknown, DtwPath> = defineContract({
+  'dtw/row': tensor({
+    role: 'state',
+    shape: ['m'],
+    description: 'the accumulated cost of the row just filled (Infinity outside the window)',
+  }),
+  'dtw/cost': scalar({ description: 'the cheapest accumulated cost in the row', direction: 'lower' }),
+  'dtw/path': tensor({
+    role: 'output',
+    shape: ['pairs'],
+    description: 'the warping path as flat (i, j) pairs, at the last row',
+  }),
+})
+
 /**
- * Dynamic time warping (dtw-python's dtw): the alignment of two series minimising the cumulative Euclidean distance
- * under a step pattern (symmetric2 weights diagonal steps 2, symmetric1 counts every cell once, asymmetric steps
- * through the first series), optionally within a Sakoe-Chiba band, with the warping path. Ties go to the first step
- * of the pattern, as dtw-python.
+ * The state of {@link dtwAlgorithm}: the accumulated-cost matrix g (n by m, row-major, Infinity where unreachable), the
+ * step taken to reach each cell, and the next row to fill. Steps fill the next row in place; keep a copy of a state you
+ * want to look at later.
+ */
+export interface DtwState {
+  readonly n: number
+  readonly m: number
+  readonly pattern: StepPattern
+  /** The accumulated costs, row-major `n * m`. */
+  readonly g: Float64Array
+  /** The step into each cell: 0 diagonal, 1 along the second series, 2 along the first, 3 the (1, 2) step, -1 none. */
+  readonly dir: Int8Array
+  /** The next row of the first series to fill. */
+  row: number
+}
+
+/**
+ * Dynamic time warping as a stepped algorithm, one row of the cost matrix per step: each cell takes the cheapest of
+ * the pattern's steps from already-filled cells plus its local Euclidean distance (the diagonal doubled for
+ * symmetric2), within the Sakoe-Chiba band if given. It logs the row, its cheapest cost and, at the last row, the warping
+ * path. It is done (`converged`) when every row is filled, `failed` if the corner is unreachable. The state
+ * serialises; read the alignment with {@link dtwAlignment}.
  *
  * @param x - First series `[n]` or `[n, d]`.
  * @param y - Second series `[m]` or `[m, d]`.
  * @param options - Step pattern and window.
- * @returns The distance, normalised distance and path.
- * @throws MdmlError with code `value` when no alignment satisfies the window or pattern.
+ * @returns The algorithm.
+ * @throws MdmlError with code `shape` for series of different dimension.
  * @concept dynamic-time-warping
  * @example
  * ```ts
- * import { dtw } from 'mdml-engine/signal'
- * dtw([0, 1, 2], [0, 1, 1, 2]).distance // => 0
+ * import { dtwAlgorithm } from 'mdml-engine/signal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(dtwAlgorithm([0, 1, 2], [0, 1, 1, 2]), { maxSteps: 10 })
+ * [run.status, run.steps, run.state.g[11]] // => ['converged', 3, 0]
  * ```
  */
-export function dtw(x: TensorLike, y: TensorLike, options: DtwOptions = {}): DtwResult {
+export function dtwAlgorithm(x: TensorLike, y: TensorLike, options: DtwOptions = {}): Algorithm<DtwState, DtwPath> {
   const a = rows(x)
   const b = rows(y)
   if (a.d !== b.d) throw new MdmlError('shape', 'dtw: series must have the same dimension')
@@ -73,50 +121,113 @@ export function dtw(x: TensorLike, y: TensorLike, options: DtwOptions = {}): Dtw
     for (let k = 0; k < a.d; k++) s += ((a.data[i * a.d + k] ?? 0) - (b.data[j * b.d + k] ?? 0)) ** 2
     return Math.sqrt(s)
   }
-  const g = new Float64Array(n * m).fill(Number.POSITIVE_INFINITY)
-  const dir = new Int8Array(n * m).fill(-1)
-  const at = (i: number, j: number): number =>
-    i < 0 || j < 0 ? Number.POSITIVE_INFINITY : (g[i * m + j] ?? Number.POSITIVE_INFINITY)
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < m; j++) {
-      if (Math.abs(i - j) > w) continue
-      const d = local(i, j)
-      if (i === 0 && j === 0) {
-        g[0] = d
-        continue
-      }
-      // Candidate steps in dtw-python's pattern order: [cost, direction].
-      const steps: [number, number][] =
-        pattern === 'symmetric2'
-          ? [
-              [at(i - 1, j - 1) + 2 * d, 0],
-              [at(i, j - 1) + d, 1],
-              [at(i - 1, j) + d, 2],
-            ]
-          : pattern === 'symmetric1'
+  return {
+    name: 'signal/dtw',
+    config: { n, m, stepPattern: pattern, window: Number.isFinite(w) ? w : null },
+    init: () => ({
+      n,
+      m,
+      pattern,
+      g: new Float64Array(n * m).fill(Number.POSITIVE_INFINITY),
+      dir: new Int8Array(n * m).fill(-1),
+      row: 0,
+    }),
+    step: (s, ctx) => {
+      const { g, dir } = s
+      const i = s.row
+      const at = (r: number, c: number): number =>
+        r < 0 || c < 0 ? Number.POSITIVE_INFINITY : (g[r * m + c] ?? Number.POSITIVE_INFINITY)
+      for (let j = 0; j < m; j++) {
+        if (Math.abs(i - j) > w) continue
+        const d = local(i, j)
+        if (i === 0 && j === 0) {
+          g[0] = d
+          continue
+        }
+        // Candidate steps in dtw-python's pattern order: [cost, direction].
+        const steps: [number, number][] =
+          pattern === 'symmetric2'
             ? [
-                [at(i - 1, j - 1) + d, 0],
+                [at(i - 1, j - 1) + 2 * d, 0],
                 [at(i, j - 1) + d, 1],
                 [at(i - 1, j) + d, 2],
               ]
-            : [
-                [at(i - 1, j) + d, 2],
-                [at(i - 1, j - 1) + d, 0],
-                [at(i - 1, j - 2) + d, 3],
-              ]
-      let best = Number.POSITIVE_INFINITY
-      let choice = -1
-      for (const [c, s] of steps) {
-        if (c < best) {
-          best = c
-          choice = s
+            : pattern === 'symmetric1'
+              ? [
+                  [at(i - 1, j - 1) + d, 0],
+                  [at(i, j - 1) + d, 1],
+                  [at(i - 1, j) + d, 2],
+                ]
+              : [
+                  [at(i - 1, j) + d, 2],
+                  [at(i - 1, j - 1) + d, 0],
+                  [at(i - 1, j - 2) + d, 3],
+                ]
+        let best = Number.POSITIVE_INFINITY
+        let choice = -1
+        for (const [c, st] of steps) {
+          if (c < best) {
+            best = c
+            choice = st
+          }
         }
+        g[i * m + j] = best
+        dir[i * m + j] = choice
       }
-      g[i * m + j] = best
-      dir[i * m + j] = choice
-    }
+      s.row = i + 1
+      const row = g.slice(i * m, (i + 1) * m)
+      if (ctx.wants('dtw/row')) ctx.log('dtw/row', row)
+      ctx.log('dtw/cost', Math.min(...row))
+      if (s.row === n && Number.isFinite(g[n * m - 1] ?? Number.NaN)) {
+        const path = dtwAlignment(s)
+        ctx.log(
+          'dtw/path',
+          path.index1.flatMap((p, k) => [p, path.index2[k] ?? 0]),
+        )
+      }
+      return s
+    },
+    done: (s) => (s.row < n ? undefined : Number.isFinite(s.g[n * m - 1] ?? Number.NaN) ? 'converged' : 'failed'),
+    serialise: (s) => ({
+      n: s.n,
+      m: s.m,
+      pattern: s.pattern,
+      g: numbersToJson(s.g),
+      dir: Array.from(s.dir),
+      row: s.row,
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as Record<string, Json>
+      return {
+        n: o['n'] as number,
+        m: o['m'] as number,
+        pattern: o['pattern'] as StepPattern,
+        g: Float64Array.from(numbersFromJson(o['g'])),
+        dir: Int8Array.from(o['dir'] as number[]),
+        row: o['row'] as number,
+      }
+    },
   }
-  const distance = at(n - 1, m - 1)
+}
+
+/**
+ * The alignment a filled DTW state holds: the cumulative distance, the normalised distance and the warping path traced
+ * back from the corner.
+ *
+ * @param state - A finished state of {@link dtwAlgorithm}.
+ * @returns The distance, normalised distance and path.
+ * @throws MdmlError with code `value` when no alignment satisfies the window or pattern.
+ * @concept dynamic-time-warping
+ * @example
+ * ```ts
+ * import { dtwAlgorithm, dtwAlignment } from 'mdml-engine/signal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * dtwAlignment(runAlgorithm(dtwAlgorithm([0, 1], [0, 1]), { maxSteps: 5 }).state).index1 // => [0, 1]
+ * ```
+ */
+export function dtwAlignment(state: DtwState): DtwResult {
+  const { n, m, pattern, g, dir } = state
+  const distance = n === 0 || m === 0 ? Number.POSITIVE_INFINITY : (g[n * m - 1] ?? Number.POSITIVE_INFINITY)
   if (!Number.isFinite(distance))
     throw new MdmlError('value', 'dtw: no alignment satisfies the window and step pattern')
   const index1: number[] = []
@@ -144,6 +255,28 @@ export function dtw(x: TensorLike, y: TensorLike, options: DtwOptions = {}): Dtw
   const normalizedDistance =
     pattern === 'symmetric2' ? distance / (n + m) : pattern === 'asymmetric' ? distance / n : Number.NaN
   return { distance, normalizedDistance, index1, index2 }
+}
+
+/**
+ * Dynamic time warping (dtw-python's dtw): the alignment of two series minimising the cumulative Euclidean distance
+ * under a step pattern (symmetric2 weights diagonal steps 2, symmetric1 counts every cell once, asymmetric steps
+ * through the first series), optionally within a Sakoe-Chiba band, with the warping path. Ties go to the first step
+ * of the pattern, as dtw-python. {@link dtwAlgorithm} run to the end.
+ *
+ * @param x - First series `[n]` or `[n, d]`.
+ * @param y - Second series `[m]` or `[m, d]`.
+ * @param options - Step pattern and window.
+ * @returns The distance, normalised distance and path.
+ * @throws MdmlError with code `value` when no alignment satisfies the window or pattern.
+ * @concept dynamic-time-warping
+ * @example
+ * ```ts
+ * import { dtw } from 'mdml-engine/signal'
+ * dtw([0, 1, 2], [0, 1, 1, 2]).distance // => 0
+ * ```
+ */
+export function dtw(x: TensorLike, y: TensorLike, options: DtwOptions = {}): DtwResult {
+  return dtwAlignment(runAlgorithm(dtwAlgorithm(x, y, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state)
 }
 
 /**

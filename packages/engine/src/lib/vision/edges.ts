@@ -13,12 +13,14 @@ import {
   type Algorithm,
   type Contract,
   defineContract,
+  runAlgorithm,
   scalar,
   stateFromJson,
   stateToJson,
   tensor as tensorSource,
 } from '../trace/index.ts'
 import { greyOf } from './_image.ts'
+import type { GreedyPath } from './greedy-contract.ts'
 
 /** The stages of {@link cannyAlgorithm}, in order. */
 export const CANNY_STAGES = ['input', 'smoothed', 'gradient', 'suppressed', 'thresholded', 'hysteresis'] as const
@@ -253,9 +255,92 @@ export interface HoughPeakOptions {
   readonly numPeaks?: number
 }
 
+/** The state of {@link houghPeaksAlgorithm}: the accumulator being suppressed and the peaks taken. */
+export interface HoughPeaksState {
+  /** The accumulator `[distances, angles]`, flat; the cells around each peak are zeroed. */
+  readonly accumulator: Float64Array
+  readonly peaks: { rho: number; theta: number; votes: number }[]
+  finished: boolean
+}
+
+/**
+ * The lines of a Hough accumulator as a stepped algorithm, one peak per step: the largest cell at or above the threshold,
+ * then a window around it (`minDistance` cells in distance, `minAngle` in angle) suppressed, so one line is one peak. It
+ * logs the cell kept, its votes and the cells zeroed, and is done (`converged`) when no cell reaches the threshold,
+ * `completed` at `numPeaks`. The state serialises.
+ *
+ * @param accumulator - The accumulator `[distances, angles]`.
+ * @param geometry - Its angles and distances.
+ * @param options - Threshold, suppression window and the number of peaks.
+ * @returns The algorithm.
+ * @throws MdmlError with code `shape` when the accumulator does not match the geometry.
+ * @concept hough-transform
+ * @example
+ * ```ts
+ * import { houghLineAlgorithm, houghPeaksAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fromStorage } from 'mdml-engine/tensor'
+ * const edges = Array.from({ length: 20 }, () => Array.from({ length: 20 }, (_, j) => (j === 7 ? 1 : 0)))
+ * const { algorithm, geometry } = houghLineAlgorithm(edges)
+ * const acc = fromStorage(runAlgorithm(algorithm, { maxSteps: 100 }).state.accumulator, [...geometry.shape], 'float64')
+ * runAlgorithm(houghPeaksAlgorithm(acc, geometry), { maxSteps: 50 }).state.peaks[0]?.rho // => 7
+ * ```
+ */
+export function houghPeaksAlgorithm(
+  accumulator: Tensor,
+  geometry: HoughGeometry,
+  options: HoughPeakOptions = {},
+): Algorithm<HoughPeaksState, GreedyPath> {
+  const [nd, nt] = geometry.shape
+  if (accumulator.shape[0] !== nd || accumulator.shape[1] !== nt)
+    throw new MdmlError('shape', 'houghLinePeaks: the accumulator does not match the geometry')
+  const acc0 = Float64Array.from(toFlat(accumulator))
+  const maxVotes = acc0.reduce((a, b) => Math.max(a, b), 0)
+  const threshold = options.threshold ?? 0.5 * maxVotes
+  const dist = options.minDistance ?? 9
+  const ang = options.minAngle ?? 10
+  const limit = options.numPeaks ?? Number.POSITIVE_INFINITY
+  return {
+    name: 'vision/hough-peaks',
+    config: { threshold, minDistance: dist, minAngle: ang, numPeaks: Number.isFinite(limit) ? limit : null },
+    init: () => ({ accumulator: acc0, peaks: [], finished: false }),
+    step: (s, ctx) => {
+      const acc = s.accumulator
+      let best = -1
+      let arg = -1
+      for (let i = 0; i < acc.length; i++)
+        if ((acc[i] as number) > best) {
+          best = acc[i] as number
+          arg = i
+        }
+      if (arg < 0 || best < threshold || best <= 0) {
+        s.finished = true
+        return s
+      }
+      const di = Math.floor(arg / nt)
+      const tj = arg % nt
+      s.peaks.push({ rho: geometry.distances[di] as number, theta: geometry.thetas[tj] as number, votes: best })
+      let zeroed = 0
+      for (let a = Math.max(0, di - dist); a <= Math.min(nd - 1, di + dist); a++)
+        for (let b = Math.max(0, tj - ang); b <= Math.min(nt - 1, tj + ang); b++) {
+          if ((acc[a * nt + b] ?? 0) !== 0) zeroed++
+          acc[a * nt + b] = 0
+        }
+      ctx.log('greedy/pick', arg)
+      ctx.log('greedy/score', best)
+      ctx.log('greedy/suppress', zeroed)
+      return s
+    },
+    done: (s) => (s.finished ? 'converged' : s.peaks.length >= limit ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as HoughPeaksState,
+  }
+}
+
 /**
  * The lines of a Hough accumulator: repeatedly the largest cell at or above the threshold, then a window around it
  * (`minDistance` cells in distance, `minAngle` in angle) suppressed, so one line is one peak.
+ * {@link houghPeaksAlgorithm} run to the end.
  *
  * @param accumulator - The accumulator `[distances, angles]`.
  * @param geometry - Its angles and distances.
@@ -278,30 +363,6 @@ export function houghLinePeaks(
   geometry: HoughGeometry,
   options: HoughPeakOptions = {},
 ): HoughPeak[] {
-  const [nd, nt] = geometry.shape
-  if (accumulator.shape[0] !== nd || accumulator.shape[1] !== nt)
-    throw new MdmlError('shape', 'houghLinePeaks: the accumulator does not match the geometry')
-  const acc = Float64Array.from(toFlat(accumulator))
-  const maxVotes = acc.reduce((a, b) => Math.max(a, b), 0)
-  const threshold = options.threshold ?? 0.5 * maxVotes
-  const dist = options.minDistance ?? 9
-  const ang = options.minAngle ?? 10
-  const limit = options.numPeaks ?? Number.POSITIVE_INFINITY
-  const out: HoughPeak[] = []
-  while (out.length < limit) {
-    let best = -1
-    let arg = -1
-    for (let i = 0; i < acc.length; i++)
-      if ((acc[i] as number) > best) {
-        best = acc[i] as number
-        arg = i
-      }
-    if (arg < 0 || best < threshold || best <= 0) break
-    const di = Math.floor(arg / nt)
-    const tj = arg % nt
-    out.push({ rho: geometry.distances[di] as number, theta: geometry.thetas[tj] as number, votes: best })
-    for (let a = Math.max(0, di - dist); a <= Math.min(nd - 1, di + dist); a++)
-      for (let b = Math.max(0, tj - ang); b <= Math.min(nt - 1, tj + ang); b++) acc[a * nt + b] = 0
-  }
-  return out
+  return runAlgorithm(houghPeaksAlgorithm(accumulator, geometry, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state
+    .peaks
 }
