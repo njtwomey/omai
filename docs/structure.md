@@ -3863,10 +3863,19 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   and negatives), prototype-guided counterfactuals, growing spheres, MACE-style for tree ensembles; actionability,
   immutability and plausibility constraints; recourse (linear, cost, feasibility) and its robustness to model change.
   Built: `wachterCounterfactual` (= `wachterAlgorithm` run to the end: one proximal-gradient iteration per step, `cf/*` paths
-  of `counterfactualContract`; the lambda schedule is a slot, `lambdaSchedules` in `counterfactual-options.ts`), `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
+  of `counterfactualContract`; the lambda schedule is a slot, `lambdaSchedules` in `counterfactual-options.ts`),
+  `diverseCounterfactuals` (= `diverseCounterfactualsAlgorithm` run, one Adam iteration per step, `dice/*` paths),
+  `faceCounterfactual` (= `faceCounterfactualAlgorithm`: Dijkstra over the density graph, one node settled per step, `face/*`),
+  `growingSpheres` (= `growingSpheresAlgorithm`: shrink, grow and sparsify phases, `gs/*`),
   `pertinentNegative` and `pertinentPositive` (CEM by projected FISTA), `prototypeCounterfactual` (class prototypes
-  from nearest neighbours, no encoder), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
+  from nearest neighbours, no encoder; = `prototypeCounterfactualAlgorithm`, one FISTA iteration per step, `search/*` paths
+  shared with CEM), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
   monotone, bounded, integer), `recourseRobustness`. TODO: MACE for tree ensembles.
+- Stepped estimators of the domain: `anchorsAlgorithm` (`surrogates.ts`, one rule length per step, `anchor/*`),
+  `samplingShapleyAlgorithm` and `sageAlgorithm` (`shapley.ts`), `dataShapleyAlgorithm` (`valuation.ts`), all adding one
+  random order per step to the running estimate of `permutation-estimates.ts` (`ShapleyState`, `shapleyContract` with
+  `shapley/*` paths), and `permutationImportanceAlgorithm` (`inspection.ts`, one feature per step, `importance/*`). The
+  functions of the same names are those runs; every state serialises.
 - Concepts (`concepts.ts`): concept activation vectors and TCAV scores with significance, probing classifiers,
   concept bottleneck analysis.
   Built: `linearProbe` (IRLS logistic probe), `conceptActivationVector`, `directionalDerivatives`, `tcav` (runs

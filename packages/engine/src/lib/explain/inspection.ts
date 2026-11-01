@@ -19,7 +19,16 @@ import {
 } from '../learn/validation.ts'
 import { foldIn, permutation, subsample } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 
 /** Options of {@link permutationImportance}. */
 export interface PermutationImportanceOptions extends FitOptions {
@@ -44,11 +53,116 @@ export interface PermutationImportanceResult {
   readonly std: readonly number[]
 }
 
+/** The paths {@link permutationImportanceAlgorithm} logs. */
+export type PermutationImportancePath =
+  | 'importance/feature'
+  | 'importance/mean'
+  | 'importance/std'
+  | 'importance/baseline'
+
+/** What a stepped permutation importance logs: the feature (group) done, its mean drop in score and spread. */
+export const permutationImportanceContract: Contract<unknown, PermutationImportancePath> = defineContract({
+  'importance/feature': scalar({ description: 'the index of the feature (or column group) just permuted' }),
+  'importance/mean': scalar({ description: 'the mean drop in score over the repetitions', direction: 'higher' }),
+  'importance/std': scalar({ description: 'the standard deviation of the drop over the repetitions' }),
+  'importance/baseline': scalar({ description: 'the score on the unpermuted data' }),
+})
+
+/** The state of {@link permutationImportanceAlgorithm}: the drops in score so far, `drops[feature][repeat]`. */
+export interface PermutationImportanceState {
+  readonly drops: readonly (readonly number[])[]
+}
+
+function permutationImportanceRun(
+  fitted: Fitted,
+  data: LearnData,
+  options: PermutationImportanceOptions,
+): {
+  readonly algorithm: Algorithm<PermutationImportanceState, PermutationImportancePath>
+  readonly features: number
+  readonly baseline: number
+} {
+  const m = matrixView(data.x, 'permutationImportance', { allowNaN: true })
+  requireTargets(data, 'permutationImportance')
+  const scorer = Object.values(scorersOf(options.scoring))[0]
+  if (scorer === undefined) throw new MdmlError('value', 'permutationImportance: no scorer')
+  const key = keyFor(options, 'permutationImportance')
+  const nRepeats = options.permutations?.length ?? options.nRepeats ?? 5
+  const perms =
+    options.permutations ?? Array.from({ length: nRepeats }, (_, r) => toFlat(permutation(foldIn(key, r), m.n)))
+  for (const p of perms) {
+    if (p.length !== m.n)
+      throw new MdmlError('shape', `permutationImportance: a permutation of ${p.length} rows for ${m.n}`)
+  }
+  const groups = options.features ?? Array.from({ length: m.d }, (_, j) => [j])
+  const evalData = { ...data, x: fromView(m) }
+  const baseline = scorer.score(fitted, evalData)
+  const algorithm: Algorithm<PermutationImportanceState, PermutationImportancePath> = {
+    name: 'permutation-importance',
+    config: { estimator: fitted.estimator, features: groups.length, nRepeats },
+    schema: channels({
+      metrics: { importance: { description: 'the mean drop in score of the feature just permuted' } },
+    }),
+    init: () => ({ drops: [] }),
+    step: (s, ctx) => {
+      const cols = groups[s.drops.length] ?? []
+      const drops = perms.map((perm) => {
+        const shuffled = Float64Array.from(m.data)
+        for (let i = 0; i < m.n; i++) {
+          for (const j of cols) shuffled[i * m.d + j] = m.data[(perm[i] ?? i) * m.d + j] ?? 0
+        }
+        return baseline - scorer.score(fitted, { ...data, x: fromStorage(shuffled, [m.n, m.d], 'float64') })
+      })
+      ctx.log('importance/feature', s.drops.length)
+      ctx.log('importance/mean', meanOf(drops))
+      ctx.log('importance/std', Math.sqrt(varianceOf(drops, 0)))
+      ctx.log('importance/baseline', baseline)
+      return { drops: [...s.drops, drops] }
+    },
+    done: (s) => (s.drops.length >= groups.length ? 'completed' : undefined),
+    observe: (s) => ({
+      metrics: s.drops.length === 0 ? {} : { importance: meanOf(s.drops[s.drops.length - 1] ?? []) },
+    }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as PermutationImportanceState,
+  }
+  return { algorithm, features: groups.length, baseline }
+}
+
+/**
+ * Permutation feature importance (Breiman 2001) as a stepped algorithm: each step shuffles one feature (or group of
+ * columns) across rows, `nRepeats` times, and records the drop in the model's score. The baseline score and the shuffles
+ * are fixed when the algorithm is built; the state (the drops so far) serialises.
+ *
+ * @param fitted - A fitted estimator.
+ * @param data - Evaluation data (features and targets).
+ * @param options - scoring, nRepeats, permutations, features (column groups) and key.
+ * @returns The algorithm, one step per feature or group.
+ * @concept feature-importance
+ * @example
+ * ```ts
+ * import { permutationImportanceAlgorithm } from 'mdml-engine/explain'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const firstColumn = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * 2])) }
+ * const x = [[1, 9], [2, 8], [3, 7], [4, 6]]
+ * const alg = permutationImportanceAlgorithm(firstColumn, { x, y: [1, 2, 3, 4] }, { scoring: 'neg_mean_squared_error', permutations: [[3, 2, 1, 0]] })
+ * runAlgorithm(alg, { maxSteps: 5 }).state.drops // => [[5], [0]]
+ * ```
+ */
+export function permutationImportanceAlgorithm(
+  fitted: Fitted,
+  data: LearnData,
+  options: PermutationImportanceOptions = {},
+): Algorithm<PermutationImportanceState, PermutationImportancePath> {
+  return permutationImportanceRun(fitted, data, options).algorithm
+}
+
 /**
  * Permutation feature importance (Breiman 2001; sklearn.inspection.permutation_importance): the drop in a model's
  * score when one feature's values are shuffled across rows, breaking its link to the target while keeping its
- * distribution. Model-agnostic; computed on held-out data it measures what the model relies on. A traced algorithm
- * with one step per feature.
+ * distribution. Model-agnostic; computed on held-out data it measures what the model relies on. This is
+ * {@link permutationImportanceAlgorithm} run to the end, a traced algorithm with one step per feature.
  *
  * @param fitted - A fitted estimator.
  * @param data - Evaluation data (features and targets).
@@ -70,51 +184,16 @@ export function permutationImportance(
   data: LearnData,
   options: PermutationImportanceOptions = {},
 ): PermutationImportanceResult {
-  const m = matrixView(data.x, 'permutationImportance', { allowNaN: true })
-  requireTargets(data, 'permutationImportance')
-  const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'permutationImportance: no scorer')
-  const key = keyFor(options, 'permutationImportance')
-  const nRepeats = options.permutations?.length ?? options.nRepeats ?? 5
-  const perms =
-    options.permutations ?? Array.from({ length: nRepeats }, (_, r) => toFlat(permutation(foldIn(key, r), m.n)))
-  for (const p of perms) {
-    if (p.length !== m.n)
-      throw new MdmlError('shape', `permutationImportance: a permutation of ${p.length} rows for ${m.n}`)
-  }
-  const groups = options.features ?? Array.from({ length: m.d }, (_, j) => [j])
-  const evalData = { ...data, x: fromView(m) }
-  const baseline = scorer.score(fitted, evalData)
-  const algorithm: Algorithm<readonly (readonly number[])[]> = {
-    name: 'permutation-importance',
-    config: { estimator: fitted.estimator, features: groups.length, nRepeats },
-    schema: channels({
-      metrics: { importance: { description: 'the mean drop in score of the feature just permuted' } },
-    }),
-    init: () => [],
-    step: (done) => {
-      const cols = groups[done.length] ?? []
-      const drops = perms.map((perm) => {
-        const shuffled = Float64Array.from(m.data)
-        for (let i = 0; i < m.n; i++) {
-          for (const j of cols) shuffled[i * m.d + j] = m.data[(perm[i] ?? i) * m.d + j] ?? 0
-        }
-        return baseline - scorer.score(fitted, { ...data, x: fromStorage(shuffled, [m.n, m.d], 'float64') })
-      })
-      return [...done, drops]
-    },
-    done: (s) => (s.length >= groups.length ? 'completed' : undefined),
-    observe: (s) => ({ metrics: s.length === 0 ? {} : { importance: meanOf(s[s.length - 1] ?? []) } }),
-  }
+  const { algorithm, features, baseline } = permutationImportanceRun(fitted, data, options)
   const { state } = runAlgorithm(algorithm, {
     ...runOptionsFor(options, 'permutationImportance'),
-    maxSteps: groups.length,
+    maxSteps: features,
   })
   return {
     baseline,
-    importances: state,
-    mean: state.map((d) => meanOf(d)),
-    std: state.map((d) => Math.sqrt(varianceOf(d, 0))),
+    importances: state.drops,
+    mean: state.drops.map((d) => meanOf(d)),
+    std: state.drops.map((d) => Math.sqrt(varianceOf(d, 0))),
   }
 }
 

@@ -10,7 +10,17 @@ import { columnOf, type MatrixView, matrixView, takeColumns, targetVector } from
 import { pinv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, permutation, randint } from '../random/index.ts'
 import { asTensor, fromStorage, matmul, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { growTree, treeData } from '../trees/grow.ts'
 import { treeModel } from '../trees/tree.ts'
 import type { PredictFunction, TreeModel } from './shapley.ts'
@@ -346,33 +356,58 @@ function klBound(p: number, level: number, upper: boolean): number {
   return upper ? hi : lo
 }
 
+/** The paths {@link anchorsAlgorithm} logs. */
+export type AnchorPath =
+  | 'anchor/rule'
+  | 'anchor/precision'
+  | 'anchor/coverage'
+  | 'anchor/samples'
+  | 'anchor/beam'
+  | 'anchor/length'
+
+/** What a stepped anchor search logs: the leading rule, its precision and coverage, samples drawn and the beam. */
+export const anchorContract: Contract<unknown, AnchorPath> = defineContract({
+  'anchor/rule': tensor({
+    role: 'output',
+    shape: ['length'],
+    description: 'the features of the leading rule of the beam',
+  }),
+  'anchor/precision': scalar({ description: 'the estimated precision of the leading rule', direction: 'higher' }),
+  'anchor/coverage': scalar({ description: 'the share of training rows the leading rule covers' }),
+  'anchor/samples': scalar({ description: 'samples drawn so far' }),
+  'anchor/beam': scalar({ description: 'candidate rules kept after the round' }),
+  'anchor/length': scalar({ description: 'the rule length searched in this round' }),
+})
+
+/** A candidate rule in the beam: the features it fixes and the bandit's tally of agreements with the prediction. */
+export interface AnchorArm {
+  readonly rule: number[]
+  hits: number
+  pulls: number
+}
+
 /**
- * Anchors (Ribeiro, Singh and Guestrin 2018): a high-precision rule around a point, built by beam search over
- * conjunctions of quantile-bin predicates containing the point, with KL-LUCB bandit sampling to tell candidates'
- * precisions apart; among rules whose lower confidence bound reaches the threshold, the one with the widest coverage
- * of the training data wins. Samples come from training rows, with the anchored features redrawn from rows in the
- * same bins. A traced algorithm with one step per bandit round.
- *
- * @param predict - The model (labels or scores; outputs are compared for equality).
- * @param x - The point `[d]`.
- * @param training - Training rows `[n, d]`.
- * @param options - threshold, beamSize, delta, epsilon, batchSize, maxSamples, bins, maxLength, key and tracing.
- * @returns The anchor.
- * @example
- * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
- * const firstPositive = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[2 * i] > 0 ? 1 : 0)))
- * const train = Array.from({ length: 40 }, (_, i) => [((i * 7) % 20) - 10, (i * 3) % 5])
- * explain.anchors(firstPositive, [8, 1], train).predicates.map((p) => p.feature) // => [0]
- * ```
+ * The state of {@link anchorsAlgorithm}: the beam of candidate rules (with the samples tallied for each), the rule
+ * length reached, the best rule meeting the threshold so far, and the samples drawn. Plain data, so it serialises.
  */
-export function anchors(
+export interface AnchorState {
+  readonly beam: readonly AnchorArm[]
+  readonly length: number
+  readonly best?: AnchorArm
+  readonly samples: number
+  readonly done: boolean
+}
+
+function anchorsRun(
   predict: PredictFunction,
   x: TensorLike,
   training: TensorLike,
-  options: AnchorOptions = {},
-): Anchor {
+  options: AnchorOptions,
+): {
+  readonly algorithm: Algorithm<AnchorState, AnchorPath>
+  readonly finish: (state: AnchorState) => Anchor
+  readonly maxSteps: number
+} {
   const xv = toFlat(asTensor(x))
   const tr = matrixView(training, 'anchors', { nFeatures: xv.length })
   const d = xv.length
@@ -411,11 +446,7 @@ export function anchors(
     for (let i = 0; i < tr.n; i++) if (rule.every((j) => inBin(j, tr.data[i * d + j] ?? 0))) c++
     return c / tr.n
   }
-  interface Arm {
-    readonly rule: number[]
-    hits: number
-    pulls: number
-  }
+  type Arm = AnchorArm
   const pull = (arm: Arm, k: Key): void => {
     const rows = toFlat(randint(foldIn(k, 0), [batch], 0, tr.n))
     const data = new Float64Array(batch * d)
@@ -432,14 +463,7 @@ export function anchors(
     arm.pulls += batch
   }
   const level = (arm: Arm, t: number): number => Math.log((1.1 * d * t ** 1.1) / delta) / Math.max(arm.pulls, 1)
-  type State = {
-    readonly beam: readonly Arm[]
-    readonly length: number
-    readonly best?: Arm
-    readonly samples: number
-    readonly done: boolean
-  }
-  const algorithm: Algorithm<State> = {
+  const algorithm: Algorithm<AnchorState, AnchorPath> = {
     name: 'anchors',
     config: { features: d, threshold: tau, beamSize: beam },
     schema: channels({
@@ -509,6 +533,15 @@ export function anchors(
       const valid = ranked.filter((a) => klBound(a.hits / a.pulls, level(a, 1), false) >= tau)
       const best = valid.length === 0 ? s.best : valid.reduce((m, a) => (coverage(a.rule) > coverage(m.rule) ? a : m))
       const length = s.length + 1
+      const lead = ranked[0]
+      ctx.log('anchor/length', length)
+      ctx.log('anchor/beam', ranked.length)
+      ctx.log('anchor/samples', samples)
+      if (lead !== undefined) {
+        ctx.log('anchor/precision', lead.pulls === 0 ? 0 : lead.hits / lead.pulls)
+        ctx.log('anchor/coverage', coverage(lead.rule))
+        if (ctx.wants('anchor/rule')) ctx.log('anchor/rule', Int32Array.from(lead.rule))
+      }
       return {
         beam: ranked,
         length,
@@ -524,21 +557,88 @@ export function anchors(
         precision: s.beam[0] === undefined || s.beam[0].pulls === 0 ? 0 : s.beam[0].hits / s.beam[0].pulls,
       },
     }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as AnchorState,
   }
-  const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'anchors'), maxSteps: maxLength })
-  const chosen = state.best ?? state.beam[0] ?? { rule: [], hits: 0, pulls: 0 }
-  const precision = chosen.pulls === 0 ? 0 : chosen.hits / chosen.pulls
-  return {
-    predicates: chosen.rule.map((j) => ({
-      feature: j,
-      lower: bounds[j]?.lower ?? Number.NEGATIVE_INFINITY,
-      upper: bounds[j]?.upper ?? Number.POSITIVE_INFINITY,
-    })),
-    precision,
-    precisionLower: chosen.pulls === 0 ? 0 : klBound(precision, level(chosen, 1), false),
-    coverage: coverage(chosen.rule),
-    samples: state.samples,
+  const finish = (state: AnchorState): Anchor => {
+    const chosen = state.best ?? state.beam[0] ?? { rule: [], hits: 0, pulls: 0 }
+    const precision = chosen.pulls === 0 ? 0 : chosen.hits / chosen.pulls
+    return {
+      predicates: chosen.rule.map((j) => ({
+        feature: j,
+        lower: bounds[j]?.lower ?? Number.NEGATIVE_INFINITY,
+        upper: bounds[j]?.upper ?? Number.POSITIVE_INFINITY,
+      })),
+      precision,
+      precisionLower: chosen.pulls === 0 ? 0 : klBound(precision, level(chosen, 1), false),
+      coverage: coverage(chosen.rule),
+      samples: state.samples,
+    }
   }
+  return { algorithm, finish, maxSteps: maxLength }
+}
+
+/**
+ * Anchors (Ribeiro, Singh and Guestrin 2018) as a stepped algorithm: each step lengthens the beam's rules by one
+ * quantile-bin predicate, tells the candidates' precisions apart with KL-LUCB bandit sampling, and keeps the best
+ * `beamSize`; it stops when a rule's lower confidence bound reaches the threshold or the rule length is spent. Bins are
+ * fixed at the start from the training quantiles; the state (the beam and its tallies) serialises. {@link anchors}
+ * turns the end state into the anchor.
+ *
+ * @param predict - The model (labels or scores; outputs are compared for equality).
+ * @param x - The point `[d]`.
+ * @param training - Training rows `[n, d]`.
+ * @param options - threshold, beamSize, delta, epsilon, batchSize, maxSamples, bins, maxLength and key.
+ * @returns The algorithm, at most `maxLength` steps.
+ * @concept rule-explanations
+ * @example
+ * ```ts
+ * import { anchorsAlgorithm } from 'mdml-engine/explain'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const firstPositive = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[2 * i] > 0 ? 1 : 0)))
+ * const train = Array.from({ length: 40 }, (_, i) => [((i * 7) % 20) - 10, (i * 3) % 5])
+ * runAlgorithm(anchorsAlgorithm(firstPositive, [8, 1], train), { maxSteps: 5 }).state.best.rule // => [0]
+ * ```
+ */
+export function anchorsAlgorithm(
+  predict: PredictFunction,
+  x: TensorLike,
+  training: TensorLike,
+  options: AnchorOptions = {},
+): Algorithm<AnchorState, AnchorPath> {
+  return anchorsRun(predict, x, training, options).algorithm
+}
+
+/**
+ * Anchors (Ribeiro, Singh and Guestrin 2018): a high-precision rule around a point, built by beam search over
+ * conjunctions of quantile-bin predicates containing the point, with KL-LUCB bandit sampling to tell candidates'
+ * precisions apart; among rules whose lower confidence bound reaches the threshold, the one with the widest coverage
+ * of the training data wins. Samples come from training rows, with the anchored features redrawn from rows in the
+ * same bins. This is {@link anchorsAlgorithm} run to the end, a traced algorithm with one step per rule length.
+ *
+ * @param predict - The model (labels or scores; outputs are compared for equality).
+ * @param x - The point `[d]`.
+ * @param training - Training rows `[n, d]`.
+ * @param options - threshold, beamSize, delta, epsilon, batchSize, maxSamples, bins, maxLength, key and tracing.
+ * @returns The anchor.
+ * @example
+ * ```ts
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const firstPositive = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[2 * i] > 0 ? 1 : 0)))
+ * const train = Array.from({ length: 40 }, (_, i) => [((i * 7) % 20) - 10, (i * 3) % 5])
+ * explain.anchors(firstPositive, [8, 1], train).predicates.map((p) => p.feature) // => [0]
+ * ```
+ */
+export function anchors(
+  predict: PredictFunction,
+  x: TensorLike,
+  training: TensorLike,
+  options: AnchorOptions = {},
+): Anchor {
+  const { algorithm, finish, maxSteps } = anchorsRun(predict, x, training, options)
+  return finish(runAlgorithm(algorithm, { ...runOptionsFor(options, 'anchors'), maxSteps }).state)
 }
 
 /** Options of {@link surrogateTree}. */
