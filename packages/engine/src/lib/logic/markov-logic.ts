@@ -670,12 +670,258 @@ export interface SampleSatOptions {
   readonly maxFlips?: number
 }
 
+/** The paths {@link sampleSatAlgorithm} logs. */
+export type SampleSatPath = 'sat/flips' | 'sat/unsat' | 'sat/move' | 'sat/sample'
+
+/** What SampleSAT logs per flip: the flips so far, the clauses unsatisfied, the kind of move, and the model when it is read. */
+export const sampleSatContract: Contract<unknown, SampleSatPath> = defineContract({
+  'sat/flips': scalar({ description: 'flips made so far' }),
+  'sat/unsat': scalar({ description: 'clauses unsatisfied after the flip', direction: 'lower' }),
+  'sat/move': scalar({
+    description: 'the kind of move: 1 a simulated-annealing proposal, 2 a WalkSAT move, 0 no flip',
+  }),
+  'sat/sample': tensor({
+    role: 'output',
+    shape: ['variables'],
+    description: 'the model read (0 and 1 by variable), at the end',
+  }),
+})
+
+/**
+ * The state of {@link sampleSatAlgorithm}: the assignment, the satisfied-literal count of each clause and the unsatisfied
+ * clauses (kept incrementally), the flips made, the flip at which the first model was reached, the coins drawn, and the
+ * outcome once reached. Steps update the arrays in place; keep a copy of a state you want to look at later.
+ */
+export interface SampleSatState {
+  readonly value: Uint8Array
+  readonly trueCount: Int32Array
+  readonly unsat: number[]
+  readonly where: Int32Array
+  flips: number
+  foundAt: number
+  /** Coins drawn from the key's counter-based stream. */
+  coins: number
+  /** `running`, `sampled` (the model is `value`) or `failed` (none found). */
+  status: 'running' | 'sampled' | 'failed'
+}
+
+interface SampleSatMachine {
+  readonly start: (uniform: () => number) => SampleSatState
+  readonly flip: (s: SampleSatState, uniform: () => number) => number
+  readonly settle: (s: SampleSatState) => void
+}
+
+/** The moves of SampleSAT over a clause set, shared by the algorithm and the function. */
+function sampleSatMachine(
+  clauses: readonly (readonly number[])[],
+  numVars: number,
+  options: SampleSatOptions,
+): SampleSatMachine {
+  const pAnneal = options.annealing ?? 0.5
+  const temperature = options.temperature ?? 0.5
+  const noise = options.noise ?? 0.5
+  const mixing = options.mixing ?? 10
+  const maxFlips = options.maxFlips ?? 1_000_000
+  const m = clauses.length
+  const occ: { c: number; positive: boolean }[][] = Array.from({ length: numVars }, () => [])
+  clauses.forEach((c, ci) => {
+    for (const l of c) occ[Math.abs(l) - 1]?.push({ c: ci, positive: l > 0 })
+  })
+  const used: number[] = []
+  for (let v = 0; v < numVars; v++) if ((occ[v] as unknown[]).length > 0) used.push(v)
+  const addUnsat = (s: SampleSatState, c: number): void => {
+    s.where[c] = s.unsat.length
+    s.unsat.push(c)
+  }
+  const removeUnsat = (s: SampleSatState, c: number): void => {
+    const at = s.where[c] as number
+    const last = s.unsat.pop() as number
+    if (last !== c) {
+      s.unsat[at] = last
+      s.where[last] = at
+    }
+    s.where[c] = -1
+  }
+  const doFlip = (s: SampleSatState, v: number): void => {
+    const was = s.value[v] === 1
+    s.value[v] = was ? 0 : 1
+    for (const { c, positive } of occ[v] as { c: number; positive: boolean }[]) {
+      if (positive === was) {
+        // The literal was true and is now false.
+        s.trueCount[c] = (s.trueCount[c] as number) - 1
+        if (s.trueCount[c] === 0) addUnsat(s, c)
+      } else {
+        s.trueCount[c] = (s.trueCount[c] as number) + 1
+        if (s.trueCount[c] === 1) removeUnsat(s, c)
+      }
+    }
+  }
+  const delta = (s: SampleSatState, v: number): number => {
+    const was = s.value[v] === 1
+    let d = 0
+    for (const { c, positive } of occ[v] as { c: number; positive: boolean }[]) {
+      if (positive === was) {
+        if (s.trueCount[c] === 1) d++
+      } else if (s.trueCount[c] === 0) d--
+    }
+    return d
+  }
+  const breaks = (s: SampleSatState, v: number): number => {
+    const was = s.value[v] === 1
+    let b = 0
+    for (const { c, positive } of occ[v] as { c: number; positive: boolean }[])
+      if (positive === was && s.trueCount[c] === 1) b++
+    return b
+  }
+  // The check at the top of each iteration: the first model starts the mixing, and enough mixing reads the sample.
+  const settle = (s: SampleSatState): void => {
+    if (s.status !== 'running') return
+    if (s.unsat.length === 0) {
+      if (s.foundAt < 0) s.foundAt = s.flips
+      if (s.flips - s.foundAt >= mixing * used.length) s.status = 'sampled'
+    }
+    if (s.status === 'running' && s.flips >= maxFlips) s.status = s.unsat.length === 0 ? 'sampled' : 'failed'
+  }
+  return {
+    start: (uniform) => {
+      const s: SampleSatState = {
+        value: new Uint8Array(numVars),
+        trueCount: new Int32Array(m),
+        unsat: [],
+        where: new Int32Array(m).fill(-1),
+        flips: 0,
+        foundAt: -1,
+        coins: 0,
+        status: 'running',
+      }
+      for (let v = 0; v < numVars; v++) s.value[v] = uniform() < 0.5 ? 1 : 0
+      if (clauses.some((c) => c.length === 0)) {
+        s.status = 'failed'
+        return s
+      }
+      clauses.forEach((c, ci) => {
+        let t = 0
+        for (const l of c) if ((s.value[Math.abs(l) - 1] === 1) === l > 0) t++
+        s.trueCount[ci] = t
+        if (t === 0) addUnsat(s, ci)
+      })
+      if (used.length === 0) s.status = s.unsat.length === 0 ? 'sampled' : 'failed'
+      else settle(s)
+      return s
+    },
+    // One flip: returns the kind of move (1 annealing, 2 WalkSAT).
+    flip: (s, uniform) => {
+      let kind: number
+      if (s.unsat.length === 0 || uniform() < pAnneal) {
+        kind = 1
+        const v = used[Math.floor(uniform() * used.length)] as number
+        const d = delta(s, v)
+        if (d <= 0 || uniform() < Math.exp(-d / temperature)) doFlip(s, v)
+      } else {
+        kind = 2
+        const c = s.unsat[Math.floor(uniform() * s.unsat.length)] as number
+        const lits = clauses[c] as readonly number[]
+        let pick: number
+        if (uniform() < noise) pick = Math.abs(lits[Math.floor(uniform() * lits.length)] as number) - 1
+        else {
+          pick = Math.abs(lits[0] as number) - 1
+          let best = Number.POSITIVE_INFINITY
+          let ties = 0
+          for (const l of lits) {
+            const b = breaks(s, Math.abs(l) - 1)
+            if (b < best) {
+              best = b
+              ties = 1
+              pick = Math.abs(l) - 1
+            } else if (b === best && uniform() * ++ties < 1) pick = Math.abs(l) - 1
+          }
+        }
+        doFlip(s, pick)
+      }
+      s.flips += 1
+      settle(s)
+      return kind
+    },
+    settle,
+  }
+}
+
+/**
+ * SampleSAT (Wei, Erenrich and Selman 2004), a near-uniform sampler of the models of a CNF, as a stepped algorithm, one
+ * flip per step: from a random assignment it mixes WalkSAT moves with simulated-annealing moves at a fixed temperature, and
+ * once a model is found it keeps making annealing moves (which accept a move out of the solution cluster with Boltzmann
+ * probability and walk back) for a number of flips before the model is read, so the sample is spread over the solution
+ * space rather than the first solution reached. The coins are a counter-based stream of the key, so a stored state
+ * resumes. It logs the flips, the clauses unsatisfied, the move kind and, at the end, the sample, and is done
+ * (`converged`) when a model is read and `failed` when none was found in budget. The state serialises.
+ *
+ * @param clauses - The clauses over variables `1..numVars`.
+ * @param numVars - The number of variables.
+ * @param key - The key the coins come from.
+ * @param options - The annealing probability, temperature, noise, mixing flips and flip budget.
+ * @returns The algorithm.
+ * @example
+ * ```ts
+ * import { sampleSatAlgorithm } from 'mdml-engine/logic'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(sampleSatAlgorithm([[1, 2], [-1, -2]], 2, key(0)), { maxSteps: 1000 })
+ * [run.status, run.state.value[0] !== run.state.value[1]] // => ['converged', true]
+ * ```
+ */
+export function sampleSatAlgorithm(
+  clauses: readonly (readonly number[])[],
+  numVars: number,
+  key: Key,
+  options: SampleSatOptions = {},
+): Algorithm<SampleSatState, SampleSatPath> {
+  const machine = sampleSatMachine(clauses, numVars, options)
+  // A counter-based stream positioned at the coins drawn so far (kept across steps while the state is the same run).
+  let cursor: { stream: () => number; at: number } | undefined
+  const draw = (s: SampleSatState): (() => number) => {
+    if (cursor === undefined || cursor.at !== s.coins)
+      cursor = { stream: uniformStream(key, 256, s.coins), at: s.coins }
+    const c = cursor
+    return () => {
+      c.at += 1
+      s.coins += 1
+      return c.stream()
+    }
+  }
+  return {
+    name: 'logic/sample-sat',
+    config: { clauses: clauses.length, numVars, ...options } as Json,
+    init: () => {
+      let drawn = 0
+      const stream = uniformStream(key, 256, 0)
+      const s = machine.start(() => {
+        drawn += 1
+        return stream()
+      })
+      s.coins = drawn
+      cursor = { stream, at: drawn }
+      return s
+    },
+    step: (s, ctx) => {
+      const move = machine.flip(s, draw(s))
+      ctx.log('sat/flips', s.flips)
+      ctx.log('sat/unsat', s.unsat.length)
+      ctx.log('sat/move', move)
+      if (s.status === 'sampled') ctx.log('sat/sample', s.value)
+      return s
+    },
+    done: (s) => (s.status === 'running' ? undefined : s.status === 'sampled' ? 'converged' : 'failed'),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as SampleSatState,
+  }
+}
+
 /**
  * SampleSAT (Wei, Erenrich and Selman 2004), a near-uniform sampler of the models of a CNF: from a random assignment
  * it mixes WalkSAT moves with simulated-annealing moves at a fixed temperature, and once a model is found it keeps
  * making annealing moves (which accept a move out of the solution cluster with Boltzmann probability and walk back)
  * for a number of flips before the model is read, so the sample is spread over the solution space rather than the
- * first solution reached.
+ * first solution reached. The same moves as {@link sampleSatAlgorithm}, drawing from the given source of uniforms.
  *
  * @param clauses - The clauses over variables `1..numVars`.
  * @param numVars - The number of variables.
@@ -696,107 +942,10 @@ export function sampleSat(
   uniform: () => number,
   options: SampleSatOptions = {},
 ): Uint8Array | null {
-  const pAnneal = options.annealing ?? 0.5
-  const temperature = options.temperature ?? 0.5
-  const noise = options.noise ?? 0.5
-  const mixing = options.mixing ?? 10
-  const maxFlips = options.maxFlips ?? 1_000_000
-  const m = clauses.length
-  const value = new Uint8Array(numVars)
-  for (let v = 0; v < numVars; v++) value[v] = uniform() < 0.5 ? 1 : 0
-  if (clauses.some((c) => c.length === 0)) return null
-  const occ: { c: number; positive: boolean }[][] = Array.from({ length: numVars }, () => [])
-  clauses.forEach((c, ci) => {
-    for (const l of c) occ[Math.abs(l) - 1]?.push({ c: ci, positive: l > 0 })
-  })
-  const trueCount = new Int32Array(m)
-  const unsat: number[] = []
-  const where = new Int32Array(m).fill(-1)
-  const addUnsat = (c: number): void => {
-    where[c] = unsat.length
-    unsat.push(c)
-  }
-  const removeUnsat = (c: number): void => {
-    const at = where[c] as number
-    const last = unsat.pop() as number
-    if (last !== c) {
-      unsat[at] = last
-      where[last] = at
-    }
-    where[c] = -1
-  }
-  clauses.forEach((c, ci) => {
-    let t = 0
-    for (const l of c) if ((value[Math.abs(l) - 1] === 1) === l > 0) t++
-    trueCount[ci] = t
-    if (t === 0) addUnsat(ci)
-  })
-  const flip = (v: number): void => {
-    const was = value[v] === 1
-    value[v] = was ? 0 : 1
-    for (const { c, positive } of occ[v] as { c: number; positive: boolean }[]) {
-      if (positive === was) {
-        // The literal was true and is now false.
-        trueCount[c] = (trueCount[c] as number) - 1
-        if (trueCount[c] === 0) addUnsat(c)
-      } else {
-        trueCount[c] = (trueCount[c] as number) + 1
-        if (trueCount[c] === 1) removeUnsat(c)
-      }
-    }
-  }
-  const delta = (v: number): number => {
-    const was = value[v] === 1
-    let d = 0
-    for (const { c, positive } of occ[v] as { c: number; positive: boolean }[]) {
-      if (positive === was) {
-        if (trueCount[c] === 1) d++
-      } else if (trueCount[c] === 0) d--
-    }
-    return d
-  }
-  const breaks = (v: number): number => {
-    const was = value[v] === 1
-    let b = 0
-    for (const { c, positive } of occ[v] as { c: number; positive: boolean }[])
-      if (positive === was && trueCount[c] === 1) b++
-    return b
-  }
-  const used: number[] = []
-  for (let v = 0; v < numVars; v++) if ((occ[v] as unknown[]).length > 0) used.push(v)
-  if (used.length === 0) return unsat.length === 0 ? value : null
-  let foundAt = -1
-  for (let flips = 0; flips < maxFlips; flips++) {
-    if (unsat.length === 0) {
-      if (foundAt < 0) foundAt = flips
-      if (flips - foundAt >= mixing * used.length) return value
-    }
-    if (unsat.length === 0 || uniform() < pAnneal) {
-      const v = used[Math.floor(uniform() * used.length)] as number
-      const d = delta(v)
-      if (d <= 0 || uniform() < Math.exp(-d / temperature)) flip(v)
-    } else {
-      const c = unsat[Math.floor(uniform() * unsat.length)] as number
-      const lits = clauses[c] as readonly number[]
-      let pick: number
-      if (uniform() < noise) pick = Math.abs(lits[Math.floor(uniform() * lits.length)] as number) - 1
-      else {
-        pick = Math.abs(lits[0] as number) - 1
-        let best = Number.POSITIVE_INFINITY
-        let ties = 0
-        for (const l of lits) {
-          const b = breaks(Math.abs(l) - 1)
-          if (b < best) {
-            best = b
-            ties = 1
-            pick = Math.abs(l) - 1
-          } else if (b === best && uniform() * ++ties < 1) pick = Math.abs(l) - 1
-        }
-      }
-      flip(pick)
-    }
-  }
-  return unsat.length === 0 ? value : null
+  const machine = sampleSatMachine(clauses, numVars, options)
+  const s = machine.start(uniform)
+  while (s.status === 'running') machine.flip(s, uniform)
+  return s.status === 'sampled' ? s.value : null
 }
 
 /** Uniform sampling of the models of a small CNF by enumeration (the exact slice sampler). */

@@ -2267,12 +2267,15 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   printing (operator-aware `writeq`, `write_canonical`) that reads back.
 - `parse.ts`: Prolog syntax for clauses and queries (operators and `op/3`, lists, curly terms, quoted atoms, character
   codes, comments), DCG translation.
-- `unify.ts`: unification (iterative, optional occurs check), substitutions, composition, renaming apart, matching,
+- `algorithm-options.ts`: the tables `coverMethods`, `sampleSatSchemes`, `versionSpaceLearners`, `unificationVariants`.
+- `unify.ts`: unification (iterative, optional occurs check; `unifyAlgorithm`, one equation per step with its rule on the tape,
+  `unify/` paths, while `unify` stays the fast loop the resolution engine shares), substitutions, composition, renaming apart, matching,
   variants, a trailing binding store, Martelli-Montanari step traces.
 - `resolution.ts`: SLD resolution with backtracking and depth limits (traced), built-ins, negation as failure, a small
   standard library, SLD trees as structures.
 - `datalog.ts`: naive and semi-naive bottom-up evaluation, least Herbrand models, stratified negation, derivation trees.
-- `propositional.ts`: formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification,
+- `propositional.ts`: `quineMcCluskeyAlgorithm` (a merging round per step, then a cover: exact or greedy; `qm/` paths; the prime
+  implicants and `minimalDnf` run it), formulas, evaluation, truth tables, models, entailment, CNF (Tseitin) and DNF, simplification,
   prime implicants and exact minimal DNF and CNF.
 - `sat.ts`: DPLL, CDCL (clause learning, watched literals, traced decisions and conflicts), WalkSAT, DIMACS.
 - `maxsat.ts`: weighted partial MaxSAT (branch and bound, traced), model counting and enumeration, minimal
@@ -2280,7 +2283,8 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
 - `first-order.ts`: clausal form (Skolemisation), given-clause resolution proving, subsumption, proof checking.
 - `answer-sets.ts`: stable models of small normal programs (guess and check), for comparison with Datalog semantics.
 - `ilp/generalisation.ts`: theta-subsumption, least general generalisation and relative LGG, clause reduction.
-- `ilp/version-spaces.ts`: Find-S, candidate elimination, boundaries and voting.
+- `ilp/version-spaces.ts`: Find-S (`findSAlgorithm`, an example per step), candidate elimination (typed `vs/` paths, serialisable),
+  boundaries and voting.
 - `ilp/foil.ts`: FOIL (gain, refinement, coverage), traced.
 - `ilp/progol.ts`: mode declarations, bottom clauses, inverse entailment.
 - `ilp/meta-interpretive.ts`: Metagol-style learning with metarules; learning from failures (Popper-style).
@@ -2313,7 +2317,7 @@ size budgets and a clear status on unsatisfiable or infinite inputs.
   infinite weight), `mlnExact` (the exact distribution by enumeration: log partition, marginals, query probabilities,
   expected counts; the truth the samplers are tested against), `mlnSampleWorlds` (exact samples of complete worlds, the
   generator with its planted weights as truth), `mlnGibbsAlgorithm` (one sweep per step), `mlnMcSatAlgorithm` (slice
-  sampling; the slice by `sampleSat`, Wei-Erenrich-Selman's near-uniform SampleSAT, or exactly by enumeration) with
+  sampling; the slice by `sampleSat` (and `sampleSatAlgorithm`, one flip per step, `sat/` paths, a resumable coin stream), Wei-Erenrich-Selman's near-uniform SampleSAT, or exactly by enumeration) with
   marginals, query probabilities and energy on the tape (`MlnSamplerPath`, `mlnSamplerContract`), and `mlnMap` (MAP as
   weighted partial MaxSAT through `maxsat.ts`).
 - `mln-learning.ts`: weight learning: `mlnPseudoLikelihoodProblem` (a convex logistic regression on the changes in each

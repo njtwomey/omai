@@ -6,7 +6,18 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
-import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  message,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  type TraceSchema,
+} from '../trace/index.ts'
 import { type Clause, type Compound, type Term, termToString, termVariables, type Var } from './terms.ts'
 
 /**
@@ -286,6 +297,136 @@ export class Bindings implements BindingStore {
 export function mgu(a: Term, b: Term, options: UnifyOptions = {}): Substitution | null {
   const s = unify(a, b, EMPTY_SUBSTITUTION, { occursCheck: options.occursCheck ?? true })
   return s === null ? null : resolveSubstitution(s)
+}
+
+/** The paths {@link unifyAlgorithm} logs. */
+export type UnifyPath = 'unify/equations' | 'unify/substitution' | 'unify/rule'
+
+/** What unification logs per step: the equations left, the variables bound, and the rule applied (with the equation). */
+export const unifyContract: Contract<unknown, UnifyPath> = defineContract({
+  'unify/equations': scalar({ description: 'equations still to solve' }),
+  'unify/substitution': scalar({ description: 'variables bound so far' }),
+  'unify/rule': message({
+    description: 'the rule applied: delete, decompose, eliminate, or the clash or occurs check that failed',
+    payload: { rule: 'name', left: 'term', right: 'term' },
+  }),
+})
+
+/**
+ * The state of {@link unifyAlgorithm}: the equations still to solve (a stack, the next on top), the bindings made so far
+ * (triangular, as {@link unify} returns them), and whether unification failed.
+ */
+export interface UnifyState {
+  readonly equations: [Term, Term][]
+  readonly bindings: Record<string, Term>
+  readonly failed: boolean
+  /** The rule applied at the last step. */
+  readonly rule: 'start' | 'delete' | 'decompose' | 'eliminate' | 'clash' | 'occurs'
+}
+
+/**
+ * Robinson unification as a stepped algorithm, one equation per step: pop an equation and apply the rule that fits it,
+ * *delete* when the sides are identical, *eliminate* when one side is a variable (bind it, after the occurs check if
+ * asked), *decompose* a pair of compounds with the same functor and arity into equations on their arguments, and fail on a
+ * *clash* of different symbols (or an *occurs* failure). It logs the equations left, the variables bound and the rule
+ * applied, and is done (`converged`) when no equation remains, `failed` on a clash. The state serialises; read the
+ * substitution with {@link unifierOf}. The bindings equal those of {@link unify}.
+ *
+ * @param a - A term.
+ * @param b - Another term.
+ * @param options - Whether to perform the occurs check (default false, as in Prolog).
+ * @returns The algorithm.
+ * @concept unification
+ * @example
+ * ```ts
+ * import { parseTerm, unifierOf, unifyAlgorithm } from 'mdml-engine/logic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(unifyAlgorithm(parseTerm('f(X, g(Y))'), parseTerm('f(a, g(X))')), { maxSteps: 20 })
+ * [run.status, run.steps, unifierOf(run.state)?.size] // => ['converged', 4, 2]
+ * ```
+ */
+export function unifyAlgorithm(a: Term, b: Term, options: UnifyOptions = {}): Algorithm<UnifyState, UnifyPath> {
+  const occursCheck = options.occursCheck ?? false
+  const storeOf = (bindings: Record<string, Term>): BindingStore => ({
+    get: (n) => bindings[n],
+    bind: (n, t) => {
+      bindings[n] = t
+    },
+  })
+  return {
+    name: 'logic/unify',
+    config: { occursCheck },
+    init: () => ({ equations: [[a, b]], bindings: {}, failed: false, rule: 'start' }),
+    step: (s, ctx) => {
+      const store = storeOf(s.bindings)
+      const [left, right] = s.equations.pop() as [Term, Term]
+      // The same order as `unifyInto`: the pair was pushed (a, b), popped b first.
+      const y = walk(right, store)
+      const x = walk(left, store)
+      let rule: UnifyState['rule'] = 'delete'
+      let failed = false
+      if (x === y || (x.kind === 'var' && y.kind === 'var' && x.name === y.name)) rule = 'delete'
+      else if (x.kind === 'var') {
+        if (occursCheck && occursIn(x.name, y, store)) {
+          rule = 'occurs'
+          failed = true
+        } else {
+          store.bind(x.name, y)
+          rule = 'eliminate'
+        }
+      } else if (y.kind === 'var') {
+        if (occursCheck && occursIn(y.name, x, store)) {
+          rule = 'occurs'
+          failed = true
+        } else {
+          store.bind(y.name, x)
+          rule = 'eliminate'
+        }
+      } else if (x.kind === 'atom') {
+        if (y.kind !== 'atom' || x.name !== y.name) {
+          rule = 'clash'
+          failed = true
+        }
+      } else if (x.kind === 'num') {
+        if (y.kind !== 'num' || x.value !== y.value || x.float !== y.float) {
+          if (!(y.kind === 'num' && Number.isNaN(x.value) && Number.isNaN(y.value) && x.float === y.float)) {
+            rule = 'clash'
+            failed = true
+          }
+        }
+      } else if (y.kind !== 'compound' || x.functor !== y.functor || x.args.length !== y.args.length) {
+        rule = 'clash'
+        failed = true
+      } else {
+        rule = 'decompose'
+        for (let i = x.args.length - 1; i >= 0; i--) s.equations.push([x.args[i] as Term, y.args[i] as Term])
+      }
+      ctx.log('unify/equations', s.equations.length)
+      ctx.log('unify/substitution', Object.keys(s.bindings).length)
+      ctx.emit('unify/rule', { rule, left: termToString(x), right: termToString(y) })
+      return { equations: s.equations, bindings: s.bindings, failed, rule }
+    },
+    done: (s) => (s.failed ? 'failed' : s.equations.length === 0 ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as UnifyState,
+  }
+}
+
+/**
+ * The substitution of a finished unification state: triangular like {@link unify}'s, or null when it failed.
+ *
+ * @param state - A state of {@link unifyAlgorithm}.
+ * @returns The substitution, or null.
+ * @concept unification
+ * @example
+ * ```ts
+ * import { parseTerm, unifierOf, unifyAlgorithm } from 'mdml-engine/logic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * unifierOf(runAlgorithm(unifyAlgorithm(parseTerm('f(a)'), parseTerm('f(b)')), { maxSteps: 5 }).state) // => null
+ * ```
+ */
+export function unifierOf(state: UnifyState): Substitution | null {
+  return state.failed ? null : new Map(Object.entries(state.bindings))
 }
 
 /**
