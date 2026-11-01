@@ -27,11 +27,8 @@ describe('kanFunctions', () => {
 
   it('carries the structure as truth and is registered', () => {
     expect(at('multiplication').truth.extra?.['minimalWidths']).toEqual([2, 2, 1])
-    expect((at('exp-sin-square').truth.extra?.['edges'] as { name: string }[]).map((e) => e.name)).toEqual([
-      'sin',
-      'x^2',
-      'exp',
-    ])
+    const edges = (at('exp-sin-square').truth.extra?.['edges'] ?? []) as { name: string }[]
+    expect(edges.map((e) => e.name)).toEqual(['sin', 'x^2', 'exp'])
     expect(datasetRegistry.entries.some((e) => e.name === 'kanFunctions')).toBe(true)
   })
 })

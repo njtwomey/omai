@@ -77,11 +77,11 @@ import {
   dopplerCurve,
   heteroscedastic,
   kanFunctions,
+  lineData,
   piecewiseLinear,
   quantileCurves,
   sincCurve,
   sineCurve,
-  lineData,
   stepCurve,
 } from './regression-curves.ts'
 import {
