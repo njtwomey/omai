@@ -808,7 +808,11 @@ primitives; "custom" means a dedicated rule.
   `jacobiEigenSteps` (sweeps and rotations for figures).
 - `svd.ts`: `svd` (one-sided Jacobi by default, or Golub-Kahan-Reinsch), `svdvals`, `pinv`, `nullSpace`, `polar`, `lowRankApproximation`.
 - `eig.ts`: `hessenberg`, `schur`, `eig`, `eigvals` (complex results), `powerIteration`, `inverseIteration`,
-  `rayleighQuotientIteration`.
+  `rayleighQuotientIteration`, each a run of its steppable Algorithm (`powerIterationAlgorithm`,
+  `inverseIterationAlgorithm`, `rayleighQuotientIterationAlgorithm`; one step is one iterate; `eigenIterationContract`
+  paths `eig/vector`, `eig/value`, `eig/residual`, `eig/angle`, `eig/shift`).
+- `eig-options.ts`: `eigenIterations`, the option table of the three iterations (shift, tolerance, cap per option),
+  `eigenIteration(config, problem)`.
 - `functions.ts`: `expm` (Pade, scaling and squaring, Frechet derivative), `logm`, `sqrtm`, `funm` (Schur-Parlett),
   `funmSymmetric`.
 - `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare`,

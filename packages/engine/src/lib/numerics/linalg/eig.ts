@@ -1,12 +1,25 @@
 /**
  * Eigenvalues of general (non-symmetric) real matrices: Hessenberg reduction, the real Schur form by Francis
  * double-shift QR, `eig` and `eigvals` as in numpy.linalg (complex results as real and imaginary parts), and the
- * classic power, inverse and Rayleigh quotient iterations with their histories for convergence figures.
+ * classic power, inverse and Rayleigh quotient iterations with their histories for convergence figures, each also a
+ * steppable algorithm (`powerIterationAlgorithm`, `inverseIterationAlgorithm`, `rayleighQuotientIterationAlgorithm`).
  */
 
 import { MdmlError } from '../../base/index.ts'
 import { type Key, key as makeKey, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  type RunStatus,
+  runAlgorithm,
+  type StepContext,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { solveKernel } from './_kernels.ts'
 import { squareSize } from './_matrix.ts'
 import { eigenvectorKernel, hessenbergKernel, schurEigenvalues, schurKernel } from './_schur.ts'
@@ -159,6 +172,211 @@ function start(n: number, options: EigenIterationOptions): Float64Array {
   return normalise(Float64Array.from(normal(options.key ?? makeKey(0), [n]).data))
 }
 
+/** The state of the eigenvalue iterations: the unit vector, the eigenvalue estimate after each step and the history. */
+export interface EigenIterationState {
+  /** The current unit vector. */
+  readonly x: readonly number[]
+  /** The eigenvalue estimate (the Rayleigh quotient); `null` before the first step of power and inverse iteration. */
+  readonly value: number | null
+  readonly iteration: number
+  /** The estimate after each iteration (Rayleigh quotient iteration: starting with that of the start vector). */
+  readonly history: readonly number[]
+  readonly converged: boolean
+}
+
+/** The paths the eigenvalue iterations log, as a type. */
+export type EigenIterationPath = 'eig/vector' | 'eig/value' | 'eig/residual' | 'eig/angle' | 'eig/shift'
+
+/**
+ * What the eigenvalue iterations log, by path: the unit vector, the eigenvalue estimate, the residual |A x - value x|, the
+ * angle between this iterate and the last (in radians, ignoring the sign) and the shift in use.
+ */
+export const eigenIterationContract: Contract<EigenIterationState, EigenIterationPath> = defineContract({
+  'eig/vector': tensor({ role: 'state', shape: ['n'], description: 'the current unit vector' }),
+  'eig/value': scalar({ description: 'the eigenvalue estimate (the Rayleigh quotient of the vector)' }),
+  'eig/residual': scalar({ description: 'the norm of A x - value x', direction: 'lower' }),
+  'eig/angle': scalar({ description: 'the angle between this iterate and the last, in radians', direction: 'lower' }),
+  'eig/shift': scalar({ description: 'the shift of the shifted solve (inverse and Rayleigh quotient iteration)' }),
+})
+
+function logIterate(
+  ctx: StepContext<EigenIterationPath>,
+  data: Float64Array,
+  n: number,
+  before: readonly number[],
+  after: readonly number[],
+  value: number,
+  shift: number | undefined,
+): void {
+  if (ctx.wants('eig/vector')) ctx.log('eig/vector', Float64Array.from(after))
+  if (ctx.wants('eig/value')) ctx.log('eig/value', value)
+  if (ctx.wants('eig/residual')) {
+    const ax = matvec(data, n, Float64Array.from(after))
+    ctx.log('eig/residual', dnrm2(ax.map((v, i) => v - value * (after[i] ?? 0))))
+  }
+  if (ctx.wants('eig/angle'))
+    ctx.log('eig/angle', Math.acos(Math.min(1, Math.abs(dot(Float64Array.from(before), Float64Array.from(after))))))
+  if (shift !== undefined && ctx.wants('eig/shift')) ctx.log('eig/shift', shift)
+}
+
+const statusOfIteration = (s: EigenIterationState, max: number): RunStatus | undefined =>
+  s.converged ? 'converged' : s.iteration >= max ? 'stopped' : undefined
+
+function iterationResult(s: EigenIterationState, converged: boolean, iterations: number): EigenIterationResult {
+  return {
+    value: s.value ?? Number.NaN,
+    vector: fromStorage(Float64Array.from(s.x), [s.x.length], 'float64'),
+    iterations,
+    converged,
+    history: s.history,
+  }
+}
+
+/**
+ * Power iteration as a steppable algorithm: each step applies A to the unit vector, takes the Rayleigh quotient of the
+ * old vector against the product as the estimate and normalises the product. It converges to the eigenvector of the
+ * eigenvalue of largest magnitude, at the rate |lambda_2 / lambda_1|, and stops when the estimate changes by less than
+ * the tolerance.
+ *
+ * @param a - Square matrix.
+ * @param options - Iterations, tolerance on the change of the estimate, start vector or key.
+ * @returns The algorithm; its state is an {@link EigenIterationState}.
+ * @throws MdmlError with code `shape` for a matrix that is not square.
+ * @concept eigenvalues
+ * @example
+ * ```ts
+ * import { powerIterationAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const s = runAlgorithm(powerIterationAlgorithm([[2, 0], [0, 1]], { x0: [1, 1] }), { maxSteps: 100 }).state
+ * Math.round((s.value ?? 0) * 1e8) / 1e8 // => 2
+ * ```
+ */
+export function powerIterationAlgorithm(
+  a: TensorLike,
+  options: EigenIterationOptions = {},
+): Algorithm<EigenIterationState, EigenIterationPath> {
+  const { data, n } = concreteSquare(a, 'powerIteration')
+  const tol = options.tol ?? 1e-12
+  const max = options.maxIterations ?? 1000
+  return {
+    name: 'power-iteration',
+    config: { n, tol, maxIterations: max },
+    init: () => ({ x: Array.from(start(n, options)), value: null, iteration: 0, history: [], converged: false }),
+    step: (s, ctx) => {
+      const y = matvec(data, n, Float64Array.from(s.x))
+      const next = dot(Float64Array.from(s.x), y)
+      const x = Array.from(normalise(y))
+      const converged = s.value !== null && Math.abs(next - s.value) <= tol * Math.max(1, Math.abs(next))
+      logIterate(ctx, data, n, s.x, x, next, undefined)
+      return { x, value: next, iteration: s.iteration + 1, history: [...s.history, next], converged }
+    },
+    done: (s) => statusOfIteration(s, max),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EigenIterationState,
+  }
+}
+
+/**
+ * Inverse iteration with a fixed shift as a steppable algorithm: each step solves (A - shift I) y = x and normalises y,
+ * which converges to the eigenvector of the eigenvalue closest to the shift; the estimate is the Rayleigh quotient.
+ *
+ * @param a - Square matrix.
+ * @param shift - The shift.
+ * @param options - Iterations, tolerance, start vector or key.
+ * @returns The algorithm; its state is an {@link EigenIterationState}.
+ * @throws MdmlError with code `shape` for a matrix that is not square.
+ * @concept eigenvalues
+ * @example
+ * ```ts
+ * import { inverseIterationAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const s = runAlgorithm(inverseIterationAlgorithm([[2, 0], [0, 1]], 0.9, { x0: [1, 1] }), { maxSteps: 100 }).state
+ * Math.round((s.value ?? 0) * 1e8) / 1e8 // => 1
+ * ```
+ */
+export function inverseIterationAlgorithm(
+  a: TensorLike,
+  shift: number,
+  options: EigenIterationOptions = {},
+): Algorithm<EigenIterationState, EigenIterationPath> {
+  const { data, n } = concreteSquare(a, 'inverseIteration')
+  const shifted = Float64Array.from(data)
+  for (let i = 0; i < n; i++) shifted[i * n + i] = (shifted[i * n + i] ?? 0) - shift
+  const tol = options.tol ?? 1e-12
+  const max = options.maxIterations ?? 200
+  return {
+    name: 'inverse-iteration',
+    config: { n, shift, tol, maxIterations: max },
+    init: () => ({ x: Array.from(start(n, options)), value: null, iteration: 0, history: [], converged: false }),
+    step: (s, ctx) => {
+      const x = Array.from(normalise(solveKernel(shifted, Float64Array.from(s.x), n, 1)))
+      const next = dot(Float64Array.from(x), matvec(data, n, Float64Array.from(x)))
+      const converged = s.value !== null && Math.abs(next - s.value) <= tol * Math.max(1, Math.abs(next))
+      logIterate(ctx, data, n, s.x, x, next, shift)
+      return { x, value: next, iteration: s.iteration + 1, history: [...s.history, next], converged }
+    },
+    done: (s) => statusOfIteration(s, max),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EigenIterationState,
+  }
+}
+
+/**
+ * Rayleigh quotient iteration as a steppable algorithm: inverse iteration with the shift updated at every step to the
+ * current Rayleigh quotient, converging cubically for symmetric matrices. A shift that is an eigenvalue to working
+ * precision ends the run converged.
+ *
+ * @param a - Square (ideally symmetric) matrix.
+ * @param options - Iterations, tolerance, start vector or key.
+ * @returns The algorithm; its state is an {@link EigenIterationState}.
+ * @throws MdmlError with code `shape` for a matrix that is not square.
+ * @concept eigenvalues
+ * @example
+ * ```ts
+ * import { rayleighQuotientIterationAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(rayleighQuotientIterationAlgorithm([[2, 1], [1, 2]], { x0: [1, 0.9] }), { maxSteps: 50 }).state.converged // => true
+ * ```
+ */
+export function rayleighQuotientIterationAlgorithm(
+  a: TensorLike,
+  options: EigenIterationOptions = {},
+): Algorithm<EigenIterationState, EigenIterationPath> {
+  const { data, n } = concreteSquare(a, 'rayleighQuotientIteration')
+  const tol = options.tol ?? 1e-13
+  const max = options.maxIterations ?? 50
+  return {
+    name: 'rayleigh-quotient-iteration',
+    config: { n, tol, maxIterations: max },
+    init: () => {
+      const x = start(n, options)
+      const value = dot(x, matvec(data, n, x))
+      return { x: Array.from(x), value, iteration: 0, history: [value], converged: false }
+    },
+    step: (s, ctx) => {
+      const value = s.value ?? 0
+      const shifted = Float64Array.from(data)
+      for (let i = 0; i < n; i++) shifted[i * n + i] = (shifted[i * n + i] ?? 0) - value
+      let y: Float64Array
+      try {
+        y = solveKernel(shifted, Float64Array.from(s.x), n, 1)
+      } catch {
+        // The shift is an eigenvalue to working precision.
+        logIterate(ctx, data, n, s.x, s.x, value, value)
+        return { ...s, iteration: s.iteration + 1, converged: true }
+      }
+      const x = Array.from(normalise(y))
+      const next = dot(Float64Array.from(x), matvec(data, n, Float64Array.from(x)))
+      const converged = Math.abs(next - value) <= tol * Math.max(1, Math.abs(next))
+      logIterate(ctx, data, n, s.x, x, next, value)
+      return { x, value: next, iteration: s.iteration + 1, history: [...s.history, next], converged }
+    },
+    done: (s) => statusOfIteration(s, max),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EigenIterationState,
+  }
+}
+
 /**
  * Power iteration: x <- A x / |A x| converges to an eigenvector of the eigenvalue of largest magnitude, at the rate
  * |lambda_2 / lambda_1|; the estimate is the Rayleigh quotient.
@@ -174,22 +392,9 @@ function start(n: number, options: EigenIterationOptions): Float64Array {
  * ```
  */
 export function powerIteration(a: TensorLike, options: EigenIterationOptions = {}): EigenIterationResult {
-  const { data, n } = concreteSquare(a, 'powerIteration')
-  const tol = options.tol ?? 1e-12
-  let x = start(n, options)
-  let value = Number.NaN
-  const history: number[] = []
-  for (let it = 1; it <= (options.maxIterations ?? 1000); it++) {
-    const y = matvec(data, n, x)
-    const next = dot(x, y)
-    x = normalise(y)
-    history.push(next)
-    if (Math.abs(next - value) <= tol * Math.max(1, Math.abs(next))) {
-      return { value: next, vector: fromStorage(x, [n], 'float64'), iterations: it, converged: true, history }
-    }
-    value = next
-  }
-  return { value, vector: fromStorage(x, [n], 'float64'), iterations: history.length, converged: false, history }
+  const max = options.maxIterations ?? 1000
+  const st = runAlgorithm(powerIterationAlgorithm(a, options), { maxSteps: max }).state
+  return iterationResult(st, st.converged, st.history.length)
 }
 
 /**
@@ -211,23 +416,9 @@ export function inverseIteration(
   shift: number,
   options: EigenIterationOptions = {},
 ): EigenIterationResult {
-  const { data, n } = concreteSquare(a, 'inverseIteration')
-  const shifted = Float64Array.from(data)
-  for (let i = 0; i < n; i++) shifted[i * n + i] = (shifted[i * n + i] ?? 0) - shift
-  const tol = options.tol ?? 1e-12
-  let x = start(n, options)
-  let value = Number.NaN
-  const history: number[] = []
-  for (let it = 1; it <= (options.maxIterations ?? 200); it++) {
-    x = normalise(solveKernel(shifted, x, n, 1))
-    const next = dot(x, matvec(data, n, x))
-    history.push(next)
-    if (Math.abs(next - value) <= tol * Math.max(1, Math.abs(next))) {
-      return { value: next, vector: fromStorage(x, [n], 'float64'), iterations: it, converged: true, history }
-    }
-    value = next
-  }
-  return { value, vector: fromStorage(x, [n], 'float64'), iterations: history.length, converged: false, history }
+  const max = options.maxIterations ?? 200
+  const st = runAlgorithm(inverseIterationAlgorithm(a, shift, options), { maxSteps: max }).state
+  return iterationResult(st, st.converged, st.history.length)
 }
 
 /**
@@ -244,28 +435,7 @@ export function inverseIteration(
  * ```
  */
 export function rayleighQuotientIteration(a: TensorLike, options: EigenIterationOptions = {}): EigenIterationResult {
-  const { data, n } = concreteSquare(a, 'rayleighQuotientIteration')
-  const tol = options.tol ?? 1e-13
-  let x = start(n, options)
-  let value = dot(x, matvec(data, n, x))
-  const history: number[] = [value]
-  for (let it = 1; it <= (options.maxIterations ?? 50); it++) {
-    const shifted = Float64Array.from(data)
-    for (let i = 0; i < n; i++) shifted[i * n + i] = (shifted[i * n + i] ?? 0) - value
-    let y: Float64Array
-    try {
-      y = solveKernel(shifted, x, n, 1)
-    } catch {
-      // The shift is an eigenvalue to working precision.
-      return { value, vector: fromStorage(x, [n], 'float64'), iterations: it, converged: true, history }
-    }
-    x = normalise(y)
-    const next = dot(x, matvec(data, n, x))
-    history.push(next)
-    if (Math.abs(next - value) <= tol * Math.max(1, Math.abs(next))) {
-      return { value: next, vector: fromStorage(x, [n], 'float64'), iterations: it, converged: true, history }
-    }
-    value = next
-  }
-  return { value, vector: fromStorage(x, [n], 'float64'), iterations: history.length - 1, converged: false, history }
+  const max = options.maxIterations ?? 50
+  const st = runAlgorithm(rayleighQuotientIterationAlgorithm(a, options), { maxSteps: max }).state
+  return iterationResult(st, st.converged, st.converged ? st.iteration : st.history.length - 1)
 }
