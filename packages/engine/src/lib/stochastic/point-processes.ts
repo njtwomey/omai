@@ -2,7 +2,9 @@
  * Temporal point processes, random sequences of event times: homogeneous and inhomogeneous Poisson processes (by
  * thinning), renewal processes and the renewal function, the self-exciting Hawkes process with its intensity,
  * log-likelihood and fitting by EM, Cox and log-Gaussian Cox processes with random intensities, and marked Poisson
- * processes.
+ * processes. The simulators are steppable algorithms whose step is one candidate event (`poissonProcessAlgorithm`,
+ * `thinningAlgorithm`, `renewalProcessAlgorithm`, `hawkesProcessAlgorithm`, `coxProcessAlgorithm`) and the functions
+ * run them to the horizon.
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
@@ -31,7 +33,16 @@ import {
   where,
   zeros,
 } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import { positiveInteger, primalNumbers, traceOf } from './_shared.ts'
 import { type CovarianceFunction, sampleGaussianProcess } from './gaussian-processes.ts'
 import { type History, historyArray, type TraceOptions } from './paths.ts'
@@ -44,13 +55,35 @@ export interface EventState {
   /** Process-specific memory (the excitation of a Hawkes process). */
   readonly memory: number
   readonly finished: boolean
+  /** The last candidate event time proposed (the clock when it was beyond the horizon). */
+  readonly candidate: number
+  /** The intensity at the last candidate, for the processes that have one at the candidate (`null` otherwise). */
+  readonly intensity: number | null
+  /** Whether the last candidate was kept. */
+  readonly accepted: boolean
 }
+
+/** The paths the point-process simulators log, as a type. */
+export type PointProcessPath = 'pp/time' | 'pp/intensity' | 'pp/accepted' | 'pp/count'
+
+/**
+ * What the point-process simulators log, by path, one candidate event per step: the candidate time, the intensity
+ * there (the thinning probability is that over the bound), whether it was kept and the events so far.
+ */
+export const pointProcessContract: Contract<EventState, PointProcessPath> = defineContract({
+  'pp/time': scalar({ description: 'the candidate event time' }),
+  'pp/intensity': scalar({ description: 'the intensity at the candidate (processes that have one)' }),
+  'pp/accepted': scalar({ description: '1 when the candidate was kept as an event, 0 when thinned away' }),
+  'pp/count': scalar({ description: 'events so far', direction: 'higher' }),
+})
 
 /** One proposal of an event simulation: the candidate time, whether it is accepted, and the memory after it. */
 interface Proposal {
   readonly t: number
   readonly accept: boolean
   readonly memory: number
+  /** The intensity at the candidate, when the process has one. */
+  readonly intensity?: number
 }
 
 function eventAlgorithm(
@@ -58,7 +91,7 @@ function eventAlgorithm(
   config: Record<string, number>,
   horizon: number,
   propose: (s: EventState, key: Key) => Proposal,
-): Algorithm<EventState> {
+): Algorithm<EventState, PointProcessPath> {
   if (!(horizon > 0 && Number.isFinite(horizon))) throw new MdmlError('value', `${name}: the horizon must be > 0`)
   return {
     name,
@@ -66,16 +99,44 @@ function eventAlgorithm(
     schema: channels({
       metrics: { t: { description: 'the clock' }, count: { description: 'events so far' } },
     }),
-    init: () => ({ t: 0, events: undefined, count: 0, memory: 0, finished: false }),
+    init: () => ({
+      t: 0,
+      events: undefined,
+      count: 0,
+      memory: 0,
+      finished: false,
+      candidate: 0,
+      intensity: null,
+      accepted: false,
+    }),
     step: (s, ctx) => {
       const p = propose(s, ctx.key)
-      if (!(p.t > s.t) || p.t > horizon) return { ...s, finished: true }
+      const over = !(p.t > s.t) || p.t > horizon
+      const candidate = Number.isFinite(p.t) ? p.t : s.t
+      const intensity = p.intensity ?? null
+      const accepted = !over && p.accept
+      if (ctx.wants('pp/time')) ctx.log('pp/time', candidate)
+      if (intensity !== null && ctx.wants('pp/intensity')) ctx.log('pp/intensity', intensity)
+      if (ctx.wants('pp/accepted')) ctx.log('pp/accepted', accepted ? 1 : 0)
+      if (ctx.wants('pp/count')) ctx.log('pp/count', s.count + (accepted ? 1 : 0))
+      if (over) return { ...s, finished: true, candidate, intensity, accepted: false }
       return p.accept
-        ? { t: p.t, events: { item: p.t, previous: s.events }, count: s.count + 1, memory: p.memory, finished: false }
-        : { ...s, t: p.t, memory: p.memory }
+        ? {
+            t: p.t,
+            events: { item: p.t, previous: s.events },
+            count: s.count + 1,
+            memory: p.memory,
+            finished: false,
+            candidate,
+            intensity,
+            accepted,
+          }
+        : { ...s, t: p.t, memory: p.memory, candidate, intensity, accepted }
     },
     done: (s) => (s.finished ? 'completed' : undefined),
     observe: (s) => ({ metrics: { t: s.t, count: s.count } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EventState,
   }
 }
 
@@ -85,7 +146,7 @@ export interface EventOptions extends TraceOptions {
   readonly maxEvents?: number
 }
 
-function runEvents(key: Key, alg: Algorithm<EventState>, options: EventOptions): Float64Array {
+function runEvents(key: Key, alg: Algorithm<EventState, PointProcessPath>, options: EventOptions): Float64Array {
   const cap = options.maxEvents ?? 1e6
   const r = runAlgorithm(alg, { ...traceOf(options), key, maxSteps: cap + 1 })
   if (!r.state.finished) throw new MdmlError('convergence', `${alg.name}: more than ${cap} proposals`)
@@ -94,6 +155,34 @@ function runEvents(key: Key, alg: Algorithm<EventState>, options: EventOptions):
 
 function draw(key: Key, rate: number): number {
   return exponential(key, [1], rate).data[0] ?? Number.POSITIVE_INFINITY
+}
+
+/**
+ * A homogeneous Poisson process on [0, T] as a steppable algorithm: one step draws the next exponential gap and the
+ * event it leads to (every candidate is kept). The run ends when a candidate passes the horizon; its key at step `t` is
+ * derived from the run's key, so a resumed run draws the same gaps.
+ *
+ * @param rate - The intensity (> 0).
+ * @param horizon - T.
+ * @returns The algorithm; its state is an {@link EventState} (the events are a linked list, `historyArray` reads them).
+ * @throws MdmlError with code `value` for a rate that is not positive or a horizon that is not.
+ * @concept poisson-process
+ * @example
+ * ```ts
+ * import { key } from 'mdml-engine/random'
+ * import { poissonProcessAlgorithm } from 'mdml-engine/stochastic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(poissonProcessAlgorithm(5, 2), { key: key(0), maxSteps: 1000 }).state.finished // => true
+ * ```
+ */
+export function poissonProcessAlgorithm(rate: number, horizon: number): Algorithm<EventState, PointProcessPath> {
+  if (!(rate > 0)) throw new MdmlError('value', 'poissonProcessAlgorithm: the rate must be positive')
+  return eventAlgorithm('poisson-process', { rate }, horizon, (s, k) => ({
+    t: s.t + draw(k, rate),
+    accept: true,
+    memory: 0,
+    intensity: rate,
+  }))
 }
 
 /**
@@ -116,12 +205,47 @@ function draw(key: Key, rate: number): number {
 export function poissonProcess(key: Key, rate: number, horizon: number, options: EventOptions = {}): Float64Array {
   if (!(rate >= 0)) throw new MdmlError('value', 'poissonProcess: the rate must be >= 0')
   if (rate === 0) return new Float64Array(0)
-  const alg = eventAlgorithm('poisson-process', { rate }, horizon, (s, k) => ({
-    t: s.t + draw(k, rate),
-    accept: true,
-    memory: 0,
-  }))
-  return runEvents(key, alg, options)
+  return runEvents(key, poissonProcessAlgorithm(rate, horizon), options)
+}
+
+/**
+ * Lewis-Shedler thinning as a steppable algorithm: one step proposes the next point of a rate-`maxIntensity` process and
+ * keeps it with probability lambda(t) / maxIntensity; the logged intensity and acceptance show which candidates were
+ * thinned away.
+ *
+ * @param intensity - lambda(t).
+ * @param horizon - T.
+ * @param maxIntensity - A bound lambdaMax on lambda over [0, T].
+ * @returns The algorithm; its state is an {@link EventState}.
+ * @throws MdmlError with code `value` when the bound is not positive; stepping throws when the intensity exceeds it.
+ * @concept poisson-process
+ * @example
+ * ```ts
+ * import { key } from 'mdml-engine/random'
+ * import { thinningAlgorithm } from 'mdml-engine/stochastic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(thinningAlgorithm((t) => (t < 1 ? 0 : 3), 2, 3), { key: key(0), maxSteps: 1000 }).state.finished // => true
+ * ```
+ */
+export function thinningAlgorithm(
+  intensity: (t: number) => number,
+  horizon: number,
+  maxIntensity: number,
+): Algorithm<EventState, PointProcessPath> {
+  if (!(maxIntensity > 0)) throw new MdmlError('value', 'inhomogeneousPoisson: the bound must be positive')
+  return eventAlgorithm('thinning', { maxIntensity }, horizon, (s, k) => {
+    const t = s.t + draw(foldIn(k, 0), maxIntensity)
+    const lambda = t <= horizon ? intensity(t) : 0
+    if (!(lambda >= 0) || lambda > maxIntensity * (1 + 1e-12)) {
+      throw new MdmlError('value', `inhomogeneousPoisson: intensity ${lambda} at ${t} is outside [0, bound]`)
+    }
+    return {
+      t,
+      accept: (uniform(foldIn(k, 1), [1]).data[0] ?? 1) * maxIntensity < lambda,
+      memory: 0,
+      intensity: lambda,
+    }
+  })
 }
 
 /**
@@ -150,16 +274,7 @@ export function inhomogeneousPoisson(
   maxIntensity: number,
   options: EventOptions = {},
 ): Float64Array {
-  if (!(maxIntensity > 0)) throw new MdmlError('value', 'inhomogeneousPoisson: the bound must be positive')
-  const alg = eventAlgorithm('thinning', { maxIntensity }, horizon, (s, k) => {
-    const t = s.t + draw(foldIn(k, 0), maxIntensity)
-    const lambda = t <= horizon ? intensity(t) : 0
-    if (!(lambda >= 0) || lambda > maxIntensity * (1 + 1e-12)) {
-      throw new MdmlError('value', `inhomogeneousPoisson: intensity ${lambda} at ${t} is outside [0, bound]`)
-    }
-    return { t, accept: (uniform(foldIn(k, 1), [1]).data[0] ?? 1) * maxIntensity < lambda, memory: 0 }
-  })
-  return runEvents(key, alg, options)
+  return runEvents(key, thinningAlgorithm(intensity, horizon, maxIntensity), options)
 }
 
 /**
@@ -192,6 +307,35 @@ export function countingProcess(events: ArrayLike<number>, times: ArrayLike<numb
 }
 
 /**
+ * A renewal process as a steppable algorithm: one step draws the next gap from the interarrival law and the event it
+ * leads to.
+ *
+ * @param interarrival - The law of the gaps (non-negative).
+ * @param horizon - T.
+ * @returns The algorithm; its state is an {@link EventState}.
+ * @concept renewal-process
+ * @example
+ * ```ts
+ * import { gamma } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { renewalProcessAlgorithm } from 'mdml-engine/stochastic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(renewalProcessAlgorithm(gamma(2, 2), 10), { key: key(0), maxSteps: 1000 }).state.finished // => true
+ * ```
+ */
+export function renewalProcessAlgorithm(
+  interarrival: Distribution,
+  horizon: number,
+): Algorithm<EventState, PointProcessPath> {
+  return eventAlgorithm('renewal-process', {}, horizon, (s, k) => {
+    const gap = primalNumbers(interarrival.sample(k, [1]))[0] ?? Number.NaN
+    if (!(gap >= 0)) throw new MdmlError('value', 'renewalProcess: gaps must be non-negative')
+    // a zero gap would not advance the clock: nudge by the smallest step
+    return { t: s.t + Math.max(gap, Number.MIN_VALUE), accept: true, memory: 0 }
+  })
+}
+
+/**
  * A renewal process on [0, T]: independent identically distributed gaps from the interarrival law (a Poisson process for
  * exponential gaps), as a traced event simulation.
  *
@@ -215,13 +359,7 @@ export function renewalProcess(
   horizon: number,
   options: EventOptions = {},
 ): Float64Array {
-  const alg = eventAlgorithm('renewal-process', {}, horizon, (s, k) => {
-    const gap = primalNumbers(interarrival.sample(k, [1]))[0] ?? Number.NaN
-    if (!(gap >= 0)) throw new MdmlError('value', 'renewalProcess: gaps must be non-negative')
-    // a zero gap would not advance the clock: nudge by the smallest step
-    return { t: s.t + Math.max(gap, Number.MIN_VALUE), accept: true, memory: 0 }
-  })
-  return runEvents(key, alg, options)
+  return runEvents(key, renewalProcessAlgorithm(interarrival, horizon), options)
 }
 
 /**
@@ -287,6 +425,36 @@ function hawkesNumbers(p: HawkesParams): { mu: number; alpha: number; beta: numb
 }
 
 /**
+ * Ogata's thinning for a Hawkes process as a steppable algorithm: one step proposes a point at the current intensity
+ * bound and keeps it with probability lambda(t') / bound; the state's `memory` is the excitation sum, which jumps by alpha
+ * at each kept event and decays between them.
+ *
+ * @param params - mu, alpha and beta.
+ * @param horizon - T.
+ * @returns The algorithm; its state is an {@link EventState}.
+ * @throws MdmlError with code `value` unless mu > 0, alpha >= 0 and beta > 0.
+ * @concept hawkes-process
+ * @example
+ * ```ts
+ * import { key } from 'mdml-engine/random'
+ * import { hawkesProcessAlgorithm } from 'mdml-engine/stochastic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(hawkesProcessAlgorithm({ mu: 1, alpha: 0.5, beta: 1 }, 10), { key: key(0), maxSteps: 1000 }).state.finished // => true
+ * ```
+ */
+export function hawkesProcessAlgorithm(params: HawkesParams, horizon: number): Algorithm<EventState, PointProcessPath> {
+  const { mu, alpha, beta } = hawkesNumbers(params)
+  return eventAlgorithm('hawkes-ogata', { mu, alpha, beta }, horizon, (s, k) => {
+    // memory holds the excitation sum at the clock (right limit)
+    const bound = mu + s.memory
+    const t = s.t + draw(foldIn(k, 0), bound)
+    const decayed = s.memory * Math.exp(-beta * (t - s.t))
+    const accept = (uniform(foldIn(k, 1), [1]).data[0] ?? 1) * bound <= mu + decayed
+    return { t, accept, memory: accept ? decayed + alpha : decayed, intensity: mu + decayed }
+  })
+}
+
+/**
  * A self-exciting Hawkes process with intensity lambda(t) = mu + sum_{t_i < t} alpha e^{-beta (t - t_i)}, simulated by
  * Ogata's thinning: between events the intensity decreases, so its current value bounds it until the next proposal;
  * a proposal at t' is kept with probability lambda(t') / bound. Stationary when alpha < beta, with mean intensity
@@ -312,16 +480,7 @@ export function hawkesProcess(
   horizon: number,
   options: EventOptions = {},
 ): Float64Array {
-  const { mu, alpha, beta } = hawkesNumbers(params)
-  const alg = eventAlgorithm('hawkes-ogata', { mu, alpha, beta }, horizon, (s, k) => {
-    // memory holds the excitation sum at the clock (right limit)
-    const bound = mu + s.memory
-    const t = s.t + draw(foldIn(k, 0), bound)
-    const decayed = s.memory * Math.exp(-beta * (t - s.t))
-    const accept = (uniform(foldIn(k, 1), [1]).data[0] ?? 1) * bound <= mu + decayed
-    return { t, accept, memory: accept ? decayed + alpha : decayed }
-  })
-  return runEvents(key, alg, options)
+  return runEvents(key, hawkesProcessAlgorithm(params, horizon), options)
 }
 
 /**
@@ -582,6 +741,32 @@ export function fitHawkes(
 }
 
 /**
+ * A Cox process as a steppable algorithm: the random intensity is drawn from `foldIn(key, 0)` when the algorithm is
+ * built, and the events are the thinning of a bounded Poisson process with it. Run it with the key `foldIn(key, 1)`
+ * (as {@link coxProcess} does) to get the same events.
+ *
+ * @param key - The key of the whole process.
+ * @param randomIntensity - Draws an intensity function and a bound on it from a key.
+ * @param horizon - T.
+ * @returns The thinning algorithm for the drawn intensity, and the intensity.
+ * @concept cox-process
+ * @example
+ * ```ts
+ * import { key } from 'mdml-engine/random'
+ * import { coxProcessAlgorithm } from 'mdml-engine/stochastic'
+ * coxProcessAlgorithm(key(0), () => ({ intensity: () => 2, max: 2 }), 4).intensity(1) // => 2
+ * ```
+ */
+export function coxProcessAlgorithm(
+  key: Key,
+  randomIntensity: (key: Key) => { readonly intensity: (t: number) => number; readonly max: number },
+  horizon: number,
+): { readonly algorithm: Algorithm<EventState, PointProcessPath>; readonly intensity: (t: number) => number } {
+  const drawn = randomIntensity(foldIn(key, 0))
+  return { algorithm: thinningAlgorithm(drawn.intensity, horizon, drawn.max), intensity: drawn.intensity }
+}
+
+/**
  * A Cox (doubly stochastic Poisson) process: draw a random intensity function, then a Poisson process with that
  * intensity by thinning.
  *
@@ -606,11 +791,8 @@ export function coxProcess(
   horizon: number,
   options: EventOptions = {},
 ): { readonly events: Float64Array; readonly intensity: (t: number) => number } {
-  const drawn = randomIntensity(foldIn(key, 0))
-  return {
-    events: inhomogeneousPoisson(foldIn(key, 1), drawn.intensity, horizon, drawn.max, options),
-    intensity: drawn.intensity,
-  }
+  const { algorithm, intensity } = coxProcessAlgorithm(key, randomIntensity, horizon)
+  return { events: runEvents(foldIn(key, 1), algorithm, options), intensity }
 }
 
 /**

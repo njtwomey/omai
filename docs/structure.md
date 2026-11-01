@@ -2117,7 +2117,11 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
 - `queues.ts`: M/M/1, M/M/c (Erlang B and C) and M/G/1 queues (formulas and G/G/c simulation), Little's law.
 - `point-processes.ts`: homogeneous and inhomogeneous Poisson processes (thinning), renewal processes and renewal
   functions, Hawkes (Ogata thinning, maximum likelihood by EM and Newton), Cox (including log-Gaussian Cox) and marked
-  processes.
+  processes. The simulators are runs of exported Algorithms whose step is one candidate event
+  (`poissonProcessAlgorithm`, `thinningAlgorithm`, `renewalProcessAlgorithm`, `hawkesProcessAlgorithm`,
+  `coxProcessAlgorithm`; the `pointProcessContract` paths are `pp/time`, `pp/intensity`, `pp/accepted`, `pp/count`).
+- `point-process-options.ts`: `pointProcesses`, the option table of the families (Poisson, sinusoidal by thinning,
+  gamma and Weibull renewal, Hawkes) with knobs per family, and `pointProcess(config, horizon)`.
 - `spatial-processes.ts` (split from `point-processes.ts` for size): spatial Poisson and cluster processes (Thomas,
   Matern), Ripley's K and L with the usual edge corrections.
 - `dpp.ts`: determinantal point processes: L-ensembles, exact and k-DPP sampling, greedy MAP, marginals, conditioning.
