@@ -1,0 +1,46 @@
+# Tarballs: builds mdml-engine, mdml-render and mdml-meta and packs each as the npm tarball a release would publish.
+# A separate build from ci.yml, run after ci succeeds on main (and on demand, and for release tags), so a red ci never
+# yields tarballs. The tarballs are uploaded as a workflow artifact and their sizes are written to the job summary.
+name: pack
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  pack:
+    # Only after a green ci (a manual run or a tag has no ci run to wait for).
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: jdx/mise-action@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build and pack
+        run: make pack
+      - name: Sizes
+        run: |
+          {
+            echo "### Tarballs"
+            echo
+            echo '| package | compressed | files |'
+            echo '| --- | ---: | ---: |'
+            for f in tarballs/*.tgz; do
+              echo "| $(basename "$f") | $(du -h "$f" | cut -f1) | $(tar tzf "$f" | wc -l) |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tarballs-${{ github.event.workflow_run.head_sha || github.sha }}
+          path: tarballs/*.tgz
+          if-no-files-found: error
+          retention-days: 30

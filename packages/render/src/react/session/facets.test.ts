@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { facetCells, type MultiplesSpec, multiplesColumns, sharedLimits } from './multiples.ts'
+import { facetCells, type MultiplesSpec, multiplesColumns, sharedLimits } from './facets.ts'
 
 describe('the cells of small multiples', () => {
   it('makes a cell per variant, each titled and bound to its variant', () => {

@@ -6,8 +6,8 @@
 
 import type { Run } from 'mdml-engine/trace'
 import { type ReactNode, useMemo } from 'react'
-import type { Cell, MultiplesSpec } from './multiples.ts'
-import { facetCells, multiplesColumns, sharedLimits } from './multiples.ts'
+import type { Cell, MultiplesSpec } from './facets.ts'
+import { facetCells, multiplesColumns, sharedLimits } from './facets.ts'
 import type { LiveVariant } from './useSession.ts'
 
 /**

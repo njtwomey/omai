@@ -82,6 +82,12 @@ examples: ## Run every @example of the engine core and check its `// =>` lines (
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done
 
+.PHONY: pack
+pack: build ## Build every package and pack it into tarballs/ (what a release would publish), with their sizes
+	@rm -rf tarballs && mkdir -p tarballs
+	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p pack --pack-destination $(CURDIR)/tarballs || exit 1; done
+	@ls -l tarballs | awk 'NR>1 {printf "%10.2f MB  %s\n", $$5/1e6, $$9}'
+
 .PHONY: docs-catalogue
 docs-catalogue: ## Precompile the docs catalogue into apps/site/.generated/docs (skipped when newer than the sources)
 	$(NODE) apps/site/plugins/build-docs.ts --if-stale

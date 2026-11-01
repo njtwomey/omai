@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": false, "outDir": "dist", "types": [] },
+  "compilerOptions": { "noEmit": false, "outDir": "dist", "types": ["node"] },
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.test-d.ts"]
 }
