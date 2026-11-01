@@ -16,8 +16,9 @@ import {
 import { hyperparameters, type Kernel, rbfKernel, scaleKernel, theta as thetaOf, withTheta } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView, targetVector } from '../learn/index.ts'
 import { choleskyJitter, choSolve, solveTriangular } from '../numerics/linalg/index.ts'
+import { boundedSolvers } from '../optim/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
-import { dict, int, real } from '../space/index.ts'
+import { dict, int, real, type SpaceValue } from '../space/index.ts'
 import { samplePosterior } from '../stochastic/index.ts'
 import {
   add,
@@ -50,7 +51,7 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { currentOf, lbfgsbSearch, type SearchState } from './_search.ts'
+import { currentOf, defaultSearchSolver, gradNormOf, lbfgsbSearch, type SearchState } from './_search.ts'
 import { logMarginalLikelihood, negativeLogMarginalLikelihood } from './likelihood.ts'
 
 /** The hyperparameters of {@link gpRegression}. */
@@ -67,10 +68,16 @@ export interface GpHyper {
   readonly restarts: number
   /** The bounds of every positive hyperparameter, in natural units (default scikit-learn's 1e-5 to 1e5). */
   readonly bounds: readonly [number, number]
-  /** L-BFGS-B stops when the projected gradient falls below this (scipy's gtol). */
+  /** The solver stops when its gradient (the projected one, for L-BFGS-B) falls below this (scipy's gtol). */
   readonly gradTol: number
-  /** The most L-BFGS-B iterations of one run. */
+  /** The most solver iterations of one run. */
   readonly maxIter: number
+  /**
+   * How the likelihood is maximised over the bounded hyperparameters: a value of `boundedSolvers.space` (default
+   * L-BFGS-B, as scikit-learn's; SLSQP and every generic solver on a reparametrisation of the box are the others).
+   * `gradTol` is the gradient tolerance of whichever solver is chosen.
+   */
+  readonly solver?: SpaceValue
 }
 
 /** The state of {@link gpRegression}: a multi-start L-BFGS-B search over the hyperparameters. */
@@ -309,11 +316,13 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
     bounds: [1e-5, 1e5],
     gradTol: 1e-5,
     maxIter: 500,
+    solver: defaultSearchSolver,
   },
   hyperSpace: (h) =>
     dict({
       alpha: real(1e-10, 10, { log: true, default: Math.min(Math.max(h.alpha, 1e-10), 10), label: 'noise variance' }),
       restarts: int(0, 10, { default: Math.min(Math.max(h.restarts, 0), 10), label: 'restarts' }),
+      solver: boundedSolvers.space,
     }),
   algorithm: (data, h): Algorithm<GpState, GpPath> => {
     const p = prepare(data, h)
@@ -325,6 +334,7 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
       upper: box.upper,
       optimise: h.optimise,
       gradTol: h.gradTol,
+      ...(h.solver === undefined ? {} : { solver: h.solver }),
       maxIter: h.maxIter,
       starts: (k) => {
         const first = Array.from(toFlat(thetaOf(h.kernel)))
@@ -367,7 +377,7 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
       observe: (s) => ({
         metrics: {
           run: s.run,
-          ...(s.inner === null ? {} : { gradNorm: s.inner.projectedGradNorm }),
+          ...(s.inner === null ? {} : { gradNorm: gradNormOf(s.inner) }),
         },
       }),
       serialise: (s) => stateToJson(s),

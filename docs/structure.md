@@ -1618,6 +1618,10 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `solver/objective`, `solver/gradNorm`, `solver/step` and, for `gradient`, `solver/lr`; serialises the state),
   `solverContract`, `gradientContract`, `solverDefaults`, `gradientDefaults`; `loggedSolverOf` logs by the same
   convention for any table whose states carry `x`, `value`, `grad` and `step`.
+- `bounded-solvers.ts`: `boundedSolvers`, the solvers of a smooth objective on a box (`BoundedProblem`: an objective, a
+  start, `lower`, `upper`) as one slot: `lbfgsb` (default), `slsqp`, and each first-order solver of `smoothSolvers` on a
+  logistic/exponential reparametrisation of the box (`boxMap`), the state's `x` mapped back to the problem's own
+  coordinates. The solver slot of the Gaussian-process hyperparameter fit (`gp/_search.ts`).
 - `glm.ts`: the smooth penalised GLM as a problem and a slot. `GlmProblem` (design, family, link, prior weights,
   offset, intercept, `GlmPenalty`: none, ridge, or a general quadratic penalty matrix as an additive model needs) and
   `glmSolvers`, the table of its solvers: `irls` (Fisher scoring with step halving, the weighted problem solved by

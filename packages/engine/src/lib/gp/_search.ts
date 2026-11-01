@@ -1,18 +1,39 @@
-// The hyperparameter search shared by the Gaussian-process estimators: L-BFGS-B on a differentiable objective of a flat
-// parameter vector, one iteration per step, restarted from further points in turn, keeping the best run. Not exported
-// from the barrel.
+// The hyperparameter search shared by the Gaussian-process estimators: a solver of the `boundedSolvers` slot (L-BFGS-B
+// by default) on a differentiable objective of a flat parameter vector, one iteration per step, restarted from further
+// points in turn, keeping the best run. Not exported from the barrel.
 
 import { customVjp } from '../autodiff/index.ts'
-import { type LbfgsbState, lbfgsbAlgorithm } from '../optim/index.ts'
+import { type BoundedProblem, boundedSolvers, infNorm, solverConfigOf } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import { fromStorage, mul, toFlat, type Value } from '../tensor/index.ts'
 import type { Algorithm, StepContext } from '../trace/index.ts'
+
+/** What a search reads of the state of the solver in progress, whichever solver of the slot it is. */
+export interface SearchInner {
+  /** The iterate, in the objective's own coordinates. */
+  readonly x: Float64Array
+  readonly value: number
+  readonly grad: Float64Array
+  /** L-BFGS-B's infinity norm of the projected gradient. */
+  readonly projectedGradNorm?: number
+  /** L-BFGS-B's iteration count. */
+  readonly iterations?: number
+}
+
+/** The default solver of the Gaussian-process searches: L-BFGS-B at scipy's memory and tolerances. */
+export const defaultSearchSolver: SpaceValue = solverConfigOf(boundedSolvers, { kind: 'lbfgsb' })
+
+/** The norm of the gradient a search reports: the projected one where the solver has it, else the largest entry. */
+export const gradNormOf = (inner: SearchInner): number => inner.projectedGradNorm ?? infNorm(inner.grad)
 
 /** The state of a search: the run in progress, the starts of all runs, and the best finished run. */
 export interface SearchState {
   readonly run: number
   readonly starts: number[][]
-  readonly inner: LbfgsbState | null
+  readonly inner: SearchInner | null
+  /** Steps taken in the run in progress (for solvers that do not count iterations themselves). */
+  readonly steps?: number
   readonly best: { readonly x: number[]; readonly value: number } | null
   readonly finished: boolean
 }
@@ -27,8 +48,11 @@ export interface SearchSpec {
   readonly starts: (key: Key) => number[][]
   /** Whether to optimise at all (otherwise the first start stands). */
   readonly optimise: boolean
+  /** The gradient tolerance of the solver (it overrides the solver's own). */
   readonly gradTol: number
-  /** The most L-BFGS-B iterations of one run. */
+  /** The solver, a value of `boundedSolvers.space` (default L-BFGS-B). */
+  readonly solver?: SpaceValue
+  /** The most iterations of one run. */
   readonly maxIter: number
 }
 
@@ -48,16 +72,16 @@ export function currentOf(s: SearchState): { readonly x: number[]; readonly valu
   return running
 }
 
-/** A stepped multi-start L-BFGS-B search. */
+/** A stepped multi-start search with a solver of the bounded slot (L-BFGS-B unless `spec.solver` names another). */
 export function lbfgsbSearch(spec: SearchSpec): Search {
-  const algorithms = new Map<number, Algorithm<LbfgsbState>>()
-  const algorithmFor = (run: number, start: readonly number[]): Algorithm<LbfgsbState> => {
+  const named = (spec.solver ?? { kind: 'lbfgsb' }) as Readonly<Record<string, SpaceValue>>
+  const solver = solverConfigOf(boundedSolvers, { ...named, gradTol: spec.gradTol })
+  const algorithms = new Map<number, Algorithm<unknown>>()
+  const algorithmFor = (run: number, start: readonly number[], key: Key): Algorithm<unknown> => {
     let alg = algorithms.get(run)
     if (alg === undefined) {
-      alg = lbfgsbAlgorithm(spec.objective, start, {
-        bounds: { lower: spec.lower, upper: spec.upper },
-        gradTol: spec.gradTol,
-      })
+      const problem: BoundedProblem = { objective: spec.objective, x0: start, lower: spec.lower, upper: spec.upper }
+      alg = boundedSolvers.make(problem, solver, key)
       algorithms.set(run, alg)
     }
     return alg
@@ -71,21 +95,29 @@ export function lbfgsbSearch(spec: SearchSpec): Search {
       const first = starts[0] as number[]
       if (!spec.optimise || first.length === 0)
         return { run: 0, starts: [first], inner: null, best: { x: first, value: valueAt(first) }, finished: false }
-      return { run: 0, starts, inner: algorithmFor(0, first).init(key), best: null, finished: false }
+      return {
+        run: 0,
+        starts,
+        inner: algorithmFor(0, first, key).init(key) as SearchInner,
+        steps: 0,
+        best: null,
+        finished: false,
+      }
     },
     step: (s, ctx) => {
       if (s.inner === null) return { ...s, finished: true }
-      const alg = algorithmFor(s.run, s.starts[s.run] as number[])
-      const inner = alg.step(s.inner, ctx)
-      const stopped = alg.done?.(inner, 0) !== undefined || inner.iterations >= spec.maxIter
-      if (!stopped) return { ...s, inner }
+      const alg = algorithmFor(s.run, s.starts[s.run] as number[], ctx.key)
+      const inner = alg.step(s.inner, ctx) as SearchInner
+      const steps = (s.steps ?? 0) + 1
+      const stopped = alg.done?.(inner, 0) !== undefined || (inner.iterations ?? steps) >= spec.maxIter
+      if (!stopped) return { ...s, inner, steps }
       const ended = { x: Array.from(inner.x), value: inner.value }
       const best = s.best === null || ended.value < s.best.value ? ended : s.best
       if (s.run + 1 < s.starts.length) {
-        const next = algorithmFor(s.run + 1, s.starts[s.run + 1] as number[]).init(ctx.key)
-        return { ...s, run: s.run + 1, inner: next, best }
+        const next = algorithmFor(s.run + 1, s.starts[s.run + 1] as number[], ctx.key).init(ctx.key) as SearchInner
+        return { ...s, run: s.run + 1, inner: next, steps: 0, best }
       }
-      return { ...s, inner, best, finished: true }
+      return { ...s, inner, steps, best, finished: true }
     },
   }
 }
