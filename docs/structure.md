@@ -816,7 +816,7 @@ primitives; "custom" means a dedicated rule.
   `eigenIteration(config, problem)`.
 - `functions.ts`: `expm` (Pade, scaling and squaring, Frechet derivative), `logm`, `sqrtm`, `funm` (Schur-Parlett),
   `funmSymmetric`.
-- `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare`,
+- `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare` (and `solveDareAlgorithm`, one doubling per step),
   `signm` (the matrix sign function, for the Riccati solver and spectral projectors).
 - `structured.ts`: `solveTridiagonal`, `solveBanded`, `toeplitz`, `solveToeplitz`, `circulant`, `hankel`, `blockDiag`,
   `kroneckerSolve`.
@@ -887,7 +887,8 @@ primitives; "custom" means a dedicated rule.
 - `splines.ts`: `cubicSpline` (natural, clamped, not-a-knot, periodic, explicit), `cubicHermiteSpline`, `bspline`,
   `bsplineBasisElement`, `makeInterpSpline`, `makeLsqSpline`, `notAKnot`.
 - `shape-preserving.ts`: `pchip`, `akima` (and makima).
-- `smoothing.ts`: `makeSmoothingSpline` (GCV), `univariateSpline`.
+- `smoothing.ts`: `makeSmoothingSpline` (GCV), `univariateSpline` and `univariateSplineAlgorithm` (one knot insertion per
+  step; `spline/` paths).
 - `polynomial.ts`: `barycentric`, `barycentricWeights`, `lagrange`, `chebyshevNodes`, `equispacedNodes`,
   `chebyshevInterpolant`, `lebesgueConstant`, `runge`.
 - `grid.ts`: `interp`, `interp1d`, `regularGridInterpolator`, `griddata` (nearest, linear, natural).
@@ -953,7 +954,8 @@ primitives; "custom" means a dedicated rule.
   trees), with query logs (visited, pruned, distance evaluations) and node descriptions for figures.
 - `hashing.ts`: LSH families (`randomHyperplanes`, `pStableHash`), `collisionProbability`, MinHash (`minHash`,
   `estimateJaccard`, `minHashBanding`, `bandingProbability`), `lshIndex` with multi-probe (`probeSequence`).
-- `graphs.ts`: `hnswIndex` (insertion, layered search with logs), `nnDescent` and `nnDescentAlgorithm` (traced).
+- `graphs.ts`: `hnswIndex` (insertion, layered search with logs), `hnswAlgorithm` (one insertion per step, `hnsw/` paths,
+  what `hnswIndex` runs to build), `nnDescent` and `nnDescentAlgorithm` (traced); `graphs-options.ts`: `hnswProfiles`.
 - `quantisation.ts`: `kmeansCodebook` (k-means++ and Lloyd; the vector-quantisation trainer that
   `methods/clustering/kmeans.ts` builds on), `productQuantiser` (encode, decode, asymmetric and symmetric distances),
   `ivfIndex` (IVF and IVF-PQ).
