@@ -5,6 +5,10 @@ import { defineConfig } from 'vitest/config'
 const workers = process.env['MDML_TEST_WORKERS']
 const maxWorkers = workers === undefined ? '50%' : workers.endsWith('%') ? workers : Number(workers)
 
+// The CI runner is several times slower than a developer machine and runs the whole suite at once: a test that takes
+// a second or two locally can pass 5 s there. Locally the strict default stays, so a slow test still shows up.
+const testTimeout = process.env['CI'] === undefined ? 5_000 : 30_000
+
 // One Vitest run for the workspace. Packages resolve each other's source through the `source` export condition, so
 // tests never need a build.
 export default defineConfig({
@@ -12,6 +16,7 @@ export default defineConfig({
   ssr: { resolve: { conditions: ['source'], externalConditions: ['source'] } },
   test: {
     maxWorkers,
+    testTimeout,
     projects: [
       {
         extends: true,
