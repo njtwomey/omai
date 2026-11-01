@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { key as makeKey } from '../random/index.ts'
 import { defaults } from '../space/index.ts'
 import { type Algorithm, policies, recorder, runAlgorithm } from '../trace/index.ts'
+import {
+  betweennessAlgorithm,
+  betweennessCentrality,
+  betweennessContract,
+  edgeBetweennessAlgorithm,
+  edgeBetweennessCentrality,
+} from './centrality.ts'
 import { greedyColouring, isProperColouring, maximalCliques, maximalIndependentSet } from './colouring.ts'
 import {
   bronKerboschAlgorithm,
@@ -583,5 +590,55 @@ describe('bronKerboschAlgorithm', () => {
 
   it('rejects a directed graph', () => {
     expect(() => bronKerboschAlgorithm(digraph([[0, 1]]))).toThrow(/undirected/)
+  })
+})
+
+describe('betweenness algorithms', () => {
+  const g = graph([
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [1, 3],
+    [3, 4],
+    [4, 5],
+  ])
+
+  it('one source per step, the final score the function result', () => {
+    for (const normalized of [true, false]) {
+      const run = runAlgorithm(betweennessAlgorithm(g, { normalized }), { maxSteps: 20 })
+      expect(run.steps).toBe(g.n)
+      const want = betweennessCentrality(g, { normalized })
+      for (const [v, x] of want.entries()) expect(run.state.score[v]).toBeCloseTo(x, 12)
+      const edges = runAlgorithm(edgeBetweennessAlgorithm(g, { normalized }), { maxSteps: 20 })
+      const wantEdges = edgeBetweennessCentrality(g, { normalized })
+      for (const [e, x] of wantEdges.entries()) expect(edges.state.score[e]).toBeCloseTo(x, 12)
+    }
+  })
+
+  it('logs the source, the running scores and the dependencies', () => {
+    const l = logged(betweennessAlgorithm(g, { normalized: false }))
+    expect(l.get('between/source')).toEqual([0, 1, 2, 3, 4, 5])
+    expect(l.get('between/score')).toHaveLength(6)
+    expect((l.get('between/delta') ?? [])[0]).toHaveLength(6)
+    // The dependency of a source on a node is at most the number of other nodes behind it.
+    for (const d of l.get('between/delta') as number[][]) expect(Math.max(...d)).toBeLessThanOrEqual(g.n - 1)
+    expect(Object.keys(betweennessContract)).toHaveLength(3)
+  })
+
+  it('sampled sources extrapolate by n over their number, and all sources agree with the exact scores', () => {
+    const all = runAlgorithm(betweennessAlgorithm(g, { sources: [0, 1, 2, 3, 4, 5] }), { maxSteps: 20 })
+    const exact = betweennessCentrality(g)
+    for (const [v, x] of exact.entries()) expect(all.state.score[v]).toBeCloseTo(x, 12)
+    const sampled = runAlgorithm(betweennessAlgorithm(g, { samples: 3, key: makeKey(2) }), { maxSteps: 20 })
+    expect(sampled.steps).toBe(3)
+    expect(sampled.state.score.every((x) => x >= 0)).toBe(true)
+    expect(() => betweennessAlgorithm(g, { samples: 3 })).toThrow(/needs a key/)
+    expect(() => betweennessAlgorithm(g, { samples: 9, key: makeKey(1) })).toThrow(/cannot draw/)
+  })
+
+  it('resumes from a JSON checkpoint, for nodes and for edges', () => {
+    for (const build of [betweennessAlgorithm, edgeBetweennessAlgorithm]) {
+      expectResumes(build(g, { weighted: true }), 2, (s) => ({ r: Array.from(s.raw), c: s.cursor }))
+    }
   })
 })

@@ -1171,7 +1171,8 @@ in it (`checkPrimitive`).
   augmentation per step), `minCostFlowAlgorithm` (successive shortest paths), `flowContract` (`flow/...` paths) and the
   slot `maxFlowMethods`. `hopcroft-karp.ts`: `hopcroftKarpAlgorithm` (one phase per step) and `matchingContract`.
 - `centrality.ts`: `degreeCentrality`, `closenessCentrality` (Wasserman-Faust), `betweennessCentrality` (Brandes,
-  weighted, endpoints), `edgeBetweennessCentrality`, `shortestPathCounts`, and traced power iterations
+  weighted, endpoints), `edgeBetweennessCentrality`, their steppable `betweennessAlgorithm` and
+  `edgeBetweennessAlgorithm` (one source per step, sampled sources, `betweennessContract`), `shortestPathCounts`, and traced power iterations
   `eigenvectorCentrality`, `katzCentrality`, `pagerank` (personalisation, dangling distribution), `hits`, each with
   its `*Algorithm`.
 - `community.ts`: `partition`, `modularity` (resolution, directed), `louvain`/`louvainAlgorithm`, `leiden`/

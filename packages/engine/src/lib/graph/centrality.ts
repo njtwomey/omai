@@ -7,7 +7,17 @@
 
 import { type Json, kahanSum, MdmlError, maxOf } from '../base/index.ts'
 import { dasum, daxpy, dnrm2 } from '../numerics/linalg/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import { type Key, subsample } from '../random/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  tensor,
+} from '../trace/index.ts'
+import { codec } from './_run.ts'
 import { degree, type Graph, type GraphRunOptions, inDegree, type NodeId, nodeIndex, outDegree } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
 
@@ -138,6 +148,183 @@ export interface BetweennessOptions {
   readonly endpoints?: boolean
 }
 
+/** The paths the betweenness algorithms log, as a type. */
+export type BetweennessPath = 'between/source' | 'between/score' | 'between/delta'
+
+/**
+ * What the betweenness algorithms log, by path: the source searched at this step, the scores so far (each node's, or
+ * each edge's, scaled as the final result and extrapolated to all sources, so they approach the answer) and the
+ * dependencies the source's shortest paths put on each node.
+ */
+export const betweennessContract: Contract<unknown, BetweennessPath> = defineContract({
+  'between/source': scalar({ description: 'the source node whose shortest paths were searched at this step' }),
+  'between/score': tensor({
+    role: 'state',
+    shape: ['scores'],
+    description: 'the betweenness of each node (or edge) so far, extrapolated from the sources searched',
+  }),
+  'between/delta': tensor({
+    role: 'state',
+    shape: ['nodes'],
+    description: "the dependency of the step's source on each node: the share of its shortest paths through it",
+  }),
+})
+
+/** Options of {@link betweennessAlgorithm} and {@link edgeBetweennessAlgorithm}: sampling the sources. */
+export interface BetweennessSampling {
+  /** Search only from these nodes and extrapolate by n over their number (default: every node). */
+  readonly sources?: readonly NodeId[]
+  /** Search from this many nodes drawn at random with the `key` (instead of `sources`). */
+  readonly samples?: number
+  /** The key for `samples`. */
+  readonly key?: Key
+}
+
+/** The state of the betweenness algorithms. */
+export interface BetweennessState {
+  /** The unscaled sum of dependencies over the sources searched, per node (or per edge). */
+  readonly raw: Float64Array
+  /** The scores so far, scaled as the final result and extrapolated to all sources. */
+  readonly score: Float64Array
+  /** The dependencies of the last source on each node. */
+  readonly delta: Float64Array
+  /** The sources to search, in order. */
+  readonly sources: readonly number[]
+  /** How many have been searched. */
+  readonly cursor: number
+  /** The last source searched (-1 before the first). */
+  readonly source: number
+}
+
+function brandesSources(g: Graph, sampling: BetweennessSampling): number[] {
+  if (sampling.sources !== undefined) return [...new Set(sampling.sources.map((v) => nodeIndex(g, v)))]
+  if (sampling.samples === undefined) return Array.from({ length: g.n }, (_, v) => v)
+  if (sampling.key === undefined) throw new MdmlError('value', 'betweenness: sampling sources needs a key')
+  if (!(Number.isInteger(sampling.samples) && sampling.samples >= 1 && sampling.samples <= g.n))
+    throw new MdmlError('value', `betweenness: cannot draw ${sampling.samples} sources from ${g.n} nodes`)
+  return Array.from(subsample(sampling.key, g.n, sampling.samples).data).sort((a, b) => a - b)
+}
+
+/** The one-source stage of Brandes' algorithm for nodes (`edges` false) or edges, as a steppable algorithm. */
+function brandes(
+  name: string,
+  g: Graph,
+  edges: boolean,
+  options: BetweennessOptions & BetweennessSampling,
+): Algorithm<BetweennessState, BetweennessPath> {
+  const normalized = options.normalized ?? true
+  const endpoints = !edges && (options.endpoints ?? false)
+  const weighted = options.weighted ?? false
+  const sources = brandesSources(g, options)
+  const n = g.n
+  const size = edges ? g.edges.length : n
+  let scale: number | undefined
+  if (edges) scale = normalized ? (n <= 1 ? undefined : 1 / (n * (n - 1))) : g.directed ? undefined : 0.5
+  else if (normalized) {
+    if (endpoints) scale = n < 2 ? undefined : 1 / (n * (n - 1))
+    else scale = n <= 2 ? undefined : 1 / ((n - 1) * (n - 2))
+  } else scale = g.directed ? undefined : 0.5
+  /** Scale as the final result, extrapolating a partial or sampled run by n over the sources searched. */
+  const scaled = (raw: Float64Array, searched: number): Float64Array => {
+    const factor = searched === 0 || (searched === n && sources.length === n) ? 1 : n / searched
+    const total = (scale ?? 1) * factor
+    return scale === undefined && factor === 1 ? raw : Float64Array.from(raw, (x) => x * total)
+  }
+  return {
+    name,
+    config: { nodes: n, edges, normalized, weighted, endpoints, sources: sources.length },
+    init: () => ({
+      raw: new Float64Array(size),
+      score: new Float64Array(size),
+      delta: new Float64Array(n),
+      sources,
+      cursor: 0,
+      source: -1,
+    }),
+    step: (st, ctx) => {
+      const s = st.sources[st.cursor]
+      if (s === undefined) return st
+      const { order, sigma, preds, predEdges } = singleSource(g, s, weighted, false)
+      const raw = Float64Array.from(st.raw)
+      const delta = new Float64Array(n)
+      if (endpoints) raw[s] = (raw[s] ?? 0) + order.length - 1
+      for (let i = order.length - 1; i >= 0; i--) {
+        const w = order[i] ?? 0
+        const coeff = (1 + (delta[w] ?? 0)) / (sigma[w] ?? 1)
+        const ps = preds[w] ?? []
+        const es = predEdges[w] ?? []
+        for (let j = 0; j < ps.length; j++) {
+          const v = ps[j] ?? 0
+          const c = (sigma[v] ?? 0) * coeff
+          delta[v] = (delta[v] ?? 0) + c
+          if (edges) {
+            const e = es[j] ?? 0
+            raw[e] = (raw[e] ?? 0) + c
+          }
+        }
+        if (!edges && w !== s) raw[w] = (raw[w] ?? 0) + (delta[w] ?? 0) + (endpoints ? 1 : 0)
+      }
+      const cursor = st.cursor + 1
+      const score = scaled(raw, cursor)
+      if (ctx.wants('between/source')) ctx.log('between/source', s)
+      if (ctx.wants('between/score')) ctx.log('between/score', Float64Array.from(score))
+      if (ctx.wants('between/delta')) ctx.log('between/delta', Float64Array.from(delta))
+      return { raw, score, delta, sources: st.sources, cursor, source: s }
+    },
+    done: (st) => (st.cursor >= st.sources.length ? 'converged' : undefined),
+    ...codec<BetweennessState>(),
+  }
+}
+
+/**
+ * Brandes' betweenness centrality as a steppable algorithm: each step searches the shortest paths from one source
+ * (breadth-first, or Dijkstra when weighted), sweeps back accumulating each node's dependency, and adds it to the
+ * scores. Sources can be restricted or sampled; the scores are then extrapolated by n over the number searched.
+ *
+ * @param g - The graph.
+ * @param options - `normalized` (default true), `weighted`, `endpoints`, and `sources` or `samples` with a `key`.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for `samples` without a key or out of range.
+ * @concept centrality
+ * @reference U. Brandes, A faster algorithm for betweenness centrality, J. Math. Sociology 25 (2001).
+ * @example
+ * ```ts
+ * import { betweennessAlgorithm, pathGraph } from 'mdml-engine/graph'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(betweennessAlgorithm(pathGraph(3)), { maxSteps: 3 })
+ * [run.steps, Array.from(run.state.score)] // => [3, [0, 1, 0]]
+ * ```
+ */
+export function betweennessAlgorithm(
+  g: Graph,
+  options: BetweennessOptions & BetweennessSampling = {},
+): Algorithm<BetweennessState, BetweennessPath> {
+  return brandes('graph/betweenness', g, false, options)
+}
+
+/**
+ * Brandes' edge betweenness as a steppable algorithm: as {@link betweennessAlgorithm}, scoring each edge by the shortest
+ * paths through it (the quantity Girvan-Newman removes greedily).
+ *
+ * @param g - The graph.
+ * @param options - `normalized` (default true), `weighted`, and `sources` or `samples` with a `key`.
+ * @returns The algorithm; its scores are per edge, in edge order.
+ * @concept centrality
+ * @example
+ * ```ts
+ * import { edgeBetweennessAlgorithm, pathGraph } from 'mdml-engine/graph'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = edgeBetweennessAlgorithm(pathGraph(3), { normalized: false })
+ * Array.from(runAlgorithm(alg, { maxSteps: 3 }).state.score) // => [2, 2]
+ * ```
+ */
+export function edgeBetweennessAlgorithm(
+  g: Graph,
+  options: Omit<BetweennessOptions, 'endpoints'> & BetweennessSampling = {},
+): Algorithm<BetweennessState, BetweennessPath> {
+  return brandes('graph/edge-betweenness', g, true, options)
+}
+
 /**
  * Betweenness centrality by Brandes' algorithm (NetworkX betweenness_centrality): the number of shortest paths
  * between other pairs that pass through a node, each pair's paths sharing one unit. One breadth-first (or Dijkstra)
@@ -156,27 +343,7 @@ export interface BetweennessOptions {
  * ```
  */
 export function betweennessCentrality(g: Graph, options: BetweennessOptions = {}): Float64Array {
-  const normalized = options.normalized ?? true
-  const endpoints = options.endpoints ?? false
-  const bc = new Float64Array(g.n)
-  for (let s = 0; s < g.n; s++) {
-    const { order, sigma, preds } = singleSource(g, s, options.weighted ?? false, false)
-    const delta = new Float64Array(g.n)
-    if (endpoints) bc[s] = (bc[s] ?? 0) + order.length - 1
-    for (let i = order.length - 1; i >= 0; i--) {
-      const w = order[i] ?? 0
-      const coeff = (1 + (delta[w] ?? 0)) / (sigma[w] ?? 1)
-      for (const v of preds[w] ?? []) delta[v] = (delta[v] ?? 0) + (sigma[v] ?? 0) * coeff
-      if (w !== s) bc[w] = (bc[w] ?? 0) + (delta[w] ?? 0) + (endpoints ? 1 : 0)
-    }
-  }
-  const n = g.n
-  let scale: number | undefined
-  if (normalized) {
-    if (endpoints) scale = n < 2 ? undefined : 1 / (n * (n - 1))
-    else scale = n <= 2 ? undefined : 1 / ((n - 1) * (n - 2))
-  } else scale = g.directed ? undefined : 0.5
-  return scale === undefined ? bc : Float64Array.from(bc, (x) => x * (scale as number))
+  return runAlgorithm(betweennessAlgorithm(g, options), { maxSteps: g.n + 1 }).state.score
 }
 
 /**
@@ -197,27 +364,7 @@ export function edgeBetweennessCentrality(
   g: Graph,
   options: { readonly normalized?: boolean; readonly weighted?: boolean } = {},
 ): Float64Array {
-  const eb = new Float64Array(g.edges.length)
-  for (let s = 0; s < g.n; s++) {
-    const { order, sigma, preds, predEdges } = singleSource(g, s, options.weighted ?? false, false)
-    const delta = new Float64Array(g.n)
-    for (let i = order.length - 1; i >= 0; i--) {
-      const w = order[i] ?? 0
-      const coeff = (1 + (delta[w] ?? 0)) / (sigma[w] ?? 1)
-      const ps = preds[w] ?? []
-      const es = predEdges[w] ?? []
-      for (let j = 0; j < ps.length; j++) {
-        const v = ps[j] ?? 0
-        const c = (sigma[v] ?? 0) * coeff
-        const e = es[j] ?? 0
-        eb[e] = (eb[e] ?? 0) + c
-        delta[v] = (delta[v] ?? 0) + c
-      }
-    }
-  }
-  const n = g.n
-  const scale = (options.normalized ?? true) ? (n <= 1 ? undefined : 1 / (n * (n - 1))) : g.directed ? undefined : 0.5
-  return scale === undefined ? eb : Float64Array.from(eb, (x) => x * scale)
+  return runAlgorithm(edgeBetweennessAlgorithm(g, options), { maxSteps: g.n + 1 }).state.score
 }
 
 /** The state of a power iteration: the current vector and the l1 change of the last step. */
