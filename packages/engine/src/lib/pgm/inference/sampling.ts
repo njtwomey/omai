@@ -42,7 +42,7 @@ export const importanceContract: Contract<unknown, ImportancePath> = defineContr
   'is/estimate': scalar({ description: 'the running estimate of the probability of the evidence' }),
 })
 
-/** The state of the rejection and likelihood-weighting samplers. */
+/** The state of the rejection and likelihood-weighting samplers. The sample lists grow in place; copy to keep one. */
 export interface ImportanceState {
   /** The samples kept: accepted ones for rejection sampling, all for likelihood weighting. */
   readonly samples: readonly Sample[]
@@ -130,12 +130,11 @@ export function rejectionSampleAlgorithm(
       if (s.drawn >= n) return s
       const sample = forwardSample(bn, foldIn(key, s.drawn))
       const accepted = Object.entries(ev).every(([k, v]) => sample[k] === v)
-      const next: ImportanceState = {
-        samples: accepted ? [...s.samples, sample] : s.samples,
-        logWeights: accepted ? [...s.logWeights, 0] : s.logWeights,
-        drawn: s.drawn + 1,
-        last: sample,
+      if (accepted) {
+        ;(s.samples as Sample[]).push(sample)
+        ;(s.logWeights as number[]).push(0)
       }
+      const next: ImportanceState = { samples: s.samples, logWeights: s.logWeights, drawn: s.drawn + 1, last: sample }
       logImportance(ctx, next, accepted ? 0 : Number.NEGATIVE_INFINITY, accepted, next.samples.length / next.drawn)
       return next
     },
@@ -227,12 +226,9 @@ export function likelihoodWeightingAlgorithm(
         }
         s[node.name] = state
       }
-      const next: ImportanceState = {
-        samples: [...st.samples, s],
-        logWeights: [...st.logWeights, lw],
-        drawn: st.drawn + 1,
-        last: s,
-      }
+      ;(st.samples as Sample[]).push(s)
+      ;(st.logWeights as number[]).push(lw)
+      const next: ImportanceState = { samples: st.samples, logWeights: st.logWeights, drawn: st.drawn + 1, last: s }
       logImportance(
         ctx,
         next,

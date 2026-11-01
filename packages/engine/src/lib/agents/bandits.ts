@@ -789,7 +789,10 @@ export const banditContract: Contract<unknown, BanditPath> = defineContract({
   'bandit/counts': tensor({ role: 'state', shape: ['arms'], description: 'the pulls of each arm so far' }),
 })
 
-/** The state of {@link banditAlgorithm}: the agent, the environment and the pulls so far. */
+/**
+ * The state of {@link banditAlgorithm}: the agent, the environment and the pulls so far. The histories grow in place, so
+ * keep a copy of a state you want to look at later.
+ */
 export interface BanditAlgorithmState<G, S, O> {
   /** The agent's state. */
   readonly agent: G
@@ -896,15 +899,11 @@ export function banditAlgorithm<G, S, O>(
         ctx.log('bandit/estimate', Float64Array.from(stats.means))
       if (stats.counts !== undefined && ctx.wants('bandit/counts'))
         ctx.log('bandit/counts', Float64Array.from(stats.counts))
-      return {
-        agent: g,
-        envState,
-        observation,
-        t: s.t + 1,
-        actions: [...s.actions, action],
-        rewards: [...s.rewards, step.reward],
-        regret: [...s.regret, regret],
-      }
+        // The histories grow in place (copying them each step would make a run quadratic in the pulls).
+      ;(s.actions as number[]).push(action)
+      ;(s.rewards as number[]).push(step.reward)
+      ;(s.regret as number[]).push(regret)
+      return { agent: g, envState, observation, t: s.t + 1, actions: s.actions, rewards: s.rewards, regret: s.regret }
     },
     done: (s) => (options.pulls !== undefined && s.t >= options.pulls ? 'completed' : undefined),
     serialise: (s) => stateToJson(s),

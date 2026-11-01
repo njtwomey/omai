@@ -510,7 +510,7 @@ export interface CliqueFrame {
   readonly todo: readonly number[]
 }
 
-/** The state of {@link bronKerboschAlgorithm}. */
+/** The state of {@link bronKerboschAlgorithm}. The list of cliques grows in place; copy a state to keep it. */
 export interface CliqueState {
   /** The calls waiting, innermost last. */
   readonly stack: readonly CliqueFrame[]
@@ -654,7 +654,7 @@ export function bronKerboschAlgorithm(
       const node = v ?? 0
       const nv = nb[node] ?? new Set<number>()
       stack[stack.length - 1] = { r: top.r, p: top.p.filter((u) => u !== node), x: [...top.x, node], todo: rest }
-      const cliques = [...s.cliques]
+      const cliques = s.cliques as (readonly number[])[]
       const r = [...top.r, node]
       const p = top.p.filter((u) => nv.has(u))
       const x = top.x.filter((u) => nv.has(u))

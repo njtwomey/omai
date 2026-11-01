@@ -383,7 +383,7 @@ export const shapleyContract: Contract<unknown, ShapleyPath> = defineContract({
   }),
 })
 
-/** The state of {@link sampledShapleyAlgorithm}. */
+/** The state of {@link sampledShapleyAlgorithm}. The draws grow in place; copy a state to keep it. */
 export interface SampledShapleyState {
   /** The marginal contribution of each player in each sample so far: `draws[player][sample]`. */
   readonly draws: readonly (readonly number[])[]
@@ -443,7 +443,7 @@ export function sampledShapleyAlgorithm(
     step: (s, ctx) => {
       empty ??= worth([])
       const order = orderAt(s.t)
-      const draws = s.draws.map((d) => [...d])
+      const draws = s.draws as number[][]
       const members: number[] = []
       let previous = empty
       for (const i of order) {

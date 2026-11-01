@@ -397,12 +397,15 @@ export const readyRules: OptionTable<ReadyPriority, ReadyProperties> = optionTab
   },
 )
 
-/** The state of {@link topologicalSortAlgorithm}. */
+/**
+ * The state of {@link topologicalSortAlgorithm}. Steps update the arrays and the queue in place (so a run costs what
+ * Kahn's algorithm does); keep a copy of a state you want to look at later.
+ */
 export interface TopologicalState {
   /** Unordered predecessors of each node. */
   readonly indegree: Int32Array
-  /** The ready nodes with their priorities, in the order they will be taken. */
-  readonly ready: readonly (readonly [number, number])[]
+  /** The ready nodes, in a queue by priority. */
+  readonly ready: IndexedQueue
   /** The nodes placed so far. */
   readonly order: readonly number[]
   /** How many nodes have become ready (the arrival stamp of the next one). */
@@ -434,11 +437,7 @@ export function topologicalSortAlgorithm(
   if (!g.directed) throw new MdmlError('value', 'topologicalSort: the graph is undirected')
   const rule = options.rule ?? 'smallest'
   const priority = readyRules.make({ kind: rule })
-  const queueOf = (ready: readonly (readonly [number, number])[]): IndexedQueue => {
-    const q = new IndexedQueue(g.n)
-    for (const [v, p] of ready) q.push(v, p)
-    return q
-  }
+  /** The queued nodes with their priorities, in the order they will be taken. */
   const readyOf = (q: IndexedQueue): [number, number][] => {
     const nodes: [number, number][] = []
     for (let v = 0; v < g.n; v++) if (q.has(v)) nodes.push([v, q.priority(v) ?? 0])
@@ -449,34 +448,48 @@ export function topologicalSortAlgorithm(
     config: { nodes: g.n, rule },
     init: () => {
       const indegree = Int32Array.from({ length: g.n }, (_, v) => (g.in.indptr[v + 1] ?? 0) - (g.in.indptr[v] ?? 0))
-      const ready: [number, number][] = []
+      const ready = new IndexedQueue(g.n)
       let arrivals = 0
-      for (let v = 0; v < g.n; v++) if (indegree[v] === 0) ready.push([v, priority(v, arrivals++)])
-      return { indegree, ready: ready.sort((a, b) => a[1] - b[1] || a[0] - b[0]), order: [], arrivals }
+      for (let v = 0; v < g.n; v++) if (indegree[v] === 0) ready.push(v, priority(v, arrivals++))
+      return { indegree, ready, order: [], arrivals }
     },
     step: (s, ctx) => {
-      const q = queueOf(s.ready)
-      const u = q.pop()
+      const u = s.ready.pop()
       if (u === undefined) return s
-      const indegree = Int32Array.from(s.indegree)
       let arrivals = s.arrivals
       for (let k = g.out.indptr[u] ?? 0; k < (g.out.indptr[u + 1] ?? 0); k++) {
         const v = g.out.indices[k] ?? 0
-        indegree[v] = (indegree[v] ?? 0) - 1
-        if (indegree[v] === 0) q.push(v, priority(v, arrivals++))
+        s.indegree[v] = (s.indegree[v] ?? 0) - 1
+        if (s.indegree[v] === 0) s.ready.push(v, priority(v, arrivals++))
       }
-      const ready = readyOf(q)
+      ;(s.order as number[]).push(u)
       if (ctx.wants('order/node')) ctx.log('order/node', u)
       if (ctx.wants('order/ready'))
         ctx.log(
           'order/ready',
-          Int32Array.from(ready, (r) => r[0]),
+          Int32Array.from(readyOf(s.ready), (r) => r[0]),
         )
-      if (ctx.wants('order/indegree')) ctx.log('order/indegree', Int32Array.from(indegree))
-      return { indegree, ready, order: [...s.order, u], arrivals }
+      if (ctx.wants('order/indegree')) ctx.log('order/indegree', Int32Array.from(s.indegree))
+      return { ...s, arrivals }
     },
-    done: (s) => (s.ready.length > 0 ? undefined : s.order.length < g.n ? 'diverged' : 'converged'),
-    ...codec<TopologicalState>(),
+    done: (s) => (s.ready.size > 0 ? undefined : s.order.length < g.n ? 'diverged' : 'converged'),
+    serialise: (s) => ({
+      indegree: Array.from(s.indegree),
+      ready: readyOf(s.ready),
+      order: [...s.order],
+      arrivals: s.arrivals,
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as {
+        readonly indegree: readonly number[]
+        readonly ready: readonly (readonly [number, number])[]
+        readonly order: readonly number[]
+        readonly arrivals: number
+      }
+      const ready = new IndexedQueue(g.n)
+      for (const [v, p] of o.ready) ready.push(v, p)
+      return { indegree: Int32Array.from(o.indegree), ready, order: [...o.order], arrivals: o.arrivals }
+    },
   }
 }
 
