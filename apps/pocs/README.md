@@ -10,3 +10,6 @@ Inclusion only: a page exists because someone asked for it, not because the libr
 estimator's `.method(data)` run with `useSession`, its config as `SpaceControls`, panels from `SessionPanels`) so a
 page stays a composition; anything with substance belongs in `packages/engine/src/lib`. A page that proves its worth can
 be promoted to the site's gallery by moving its recipe there.
+
+A new page's styles arrive with a restart: Tailwind scans for classes when `make pocs` starts, so stop it and start it
+again after adding a page whose layout looks unstyled.
