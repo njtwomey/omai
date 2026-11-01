@@ -8,7 +8,17 @@ import { MdmlError, type TestResult } from '../../base/index.ts'
 import { gammaincc } from '../../numerics/special/index.ts'
 import { foldIn, key as makeKey, permutation } from '../../random/index.ts'
 import { item, type TensorLike } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../../trace/index.ts'
 import { type Rows, rowsOf } from '../_util.ts'
 import { median } from '../quantiles.ts'
 import { testResult } from './result.ts'
@@ -150,25 +160,64 @@ export interface KernelTestState {
   readonly nullDistribution: readonly number[]
 }
 
-function permutationAlgorithm(
+/** The paths the permutation-null algorithm logs, as a type. */
+export type NullPath = 'null/statistic' | 'null/pvalue' | 'null/count'
+
+/**
+ * What the permutation-null algorithm logs, by path, one batch of permutations per step: the last null statistic drawn,
+ * the p-value so far (the share of the null at or above the observed statistic, counting the observed one) and the
+ * number of permutations drawn.
+ */
+export const nullContract: Contract<KernelTestState, NullPath> = defineContract({
+  'null/statistic': scalar({ description: 'the last statistic drawn under the permutation null' }),
+  'null/pvalue': scalar({ description: 'the permutation p-value from the null drawn so far', direction: 'lower' }),
+  'null/count': scalar({ description: 'permutations drawn', direction: 'higher' }),
+})
+
+/**
+ * A permutation null as a steppable algorithm: a step draws `batch` permutations of `N` items (each from a key derived
+ * from the step's key and the permutation's index) and evaluates the statistic on each. The state holds the null drawn so
+ * far; with the observed statistic, each step also logs the permutation p-value so far.
+ *
+ * @param name - The algorithm's name.
+ * @param total - The number of permutations.
+ * @param N - The number of items permuted.
+ * @param statistic - The statistic under a permutation (a rearrangement of `0..N-1`).
+ * @param options - The observed statistic (for the running p-value) and the permutations per step (default 100).
+ * @returns The algorithm; its state is a {@link KernelTestState}.
+ * @example
+ * ```ts
+ * import { permutationNullAlgorithm } from 'mdml-engine/stats/tests'
+ * permutationNullAlgorithm('demo', 300, 10, (perm) => perm[0] ?? 0).name // => 'demo'
+ * ```
+ */
+export function permutationNullAlgorithm(
   name: string,
   total: number,
   N: number,
   statistic: (perm: ArrayLike<number>) => number,
-): Algorithm<KernelTestState> {
+  options: { readonly observed?: number; readonly batch?: number } = {},
+): Algorithm<KernelTestState, NullPath> {
+  const batch = options.batch ?? 100
   return {
     name,
-    config: { nResamples: total },
+    config: { nResamples: total, batch },
     schema: channels({ metrics: { resamples: { description: 'permutations drawn' } } }),
     init: () => ({ done: 0, nullDistribution: [] }),
     step: (s, ctx) => {
       const next = [...s.nullDistribution]
-      const end = Math.min(total, s.done + 100)
+      const end = Math.min(total, s.done + batch)
       for (let r = s.done; r < end; r++) next.push(statistic(permutation(foldIn(ctx.key, r), N).data))
+      if (ctx.wants('null/statistic')) ctx.log('null/statistic', next[next.length - 1] ?? 0)
+      if (ctx.wants('null/count')) ctx.log('null/count', end)
+      if (options.observed !== undefined && ctx.wants('null/pvalue'))
+        ctx.log('null/pvalue', permutationP(options.observed, next))
       return { done: end, nullDistribution: next }
     },
     done: (s) => (s.done >= total ? 'converged' : undefined),
     observe: (s) => ({ metrics: { resamples: s.done } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as KernelTestState,
   }
 }
 
@@ -235,7 +284,7 @@ export function mmdTest(x: TensorLike, y: TensorLike, options: KernelTestOptions
   const total = options.nResamples ?? 999
   const { kernel: _k, null: _n, nResamples: _r, ...run } = options
   const result = runAlgorithm(
-    permutationAlgorithm('mmdTest', total, N, (perm) => mmd2Of(K, N, perm, m, false)),
+    permutationNullAlgorithm('mmdTest', total, N, (perm) => mmd2Of(K, N, perm, m, false), { observed: stat }),
     {
       ...run,
       ...(run.key === undefined && run.seed === undefined ? { key: makeKey(0) } : {}),
@@ -367,7 +416,7 @@ export function hsicTest(x: TensorLike, y: TensorLike, options: HsicOptions = {}
     }
     return t / (n * n)
   }
-  const result = runAlgorithm(permutationAlgorithm('hsicTest', total, n, statistic), {
+  const result = runAlgorithm(permutationNullAlgorithm('hsicTest', total, n, statistic, { observed: stat }), {
     ...run,
     ...(run.key === undefined && run.seed === undefined ? { key: makeKey(0) } : {}),
     maxSteps: Number.MAX_SAFE_INTEGER,

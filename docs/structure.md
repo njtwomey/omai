@@ -1478,7 +1478,9 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 - `tests/two-sample.ts`: `ks2samp`, `cramervonmises2samp`, `andersonKsamp`, `energyDistance`, `wassersteinDistance`,
   `energyTest`, `wassersteinTest` (permutation), `eppsSingleton`, `classifierTwoSampleTest` (any classifier passed in).
 - `tests/kernel.ts`: `mmd2`, `mmdTest` (permutation and asymptotic nulls), `hsic`, `hsicTest`; they take any kernel and
-  default to `gaussianKernel` with `medianHeuristic`.
+  default to `gaussianKernel` with `medianHeuristic`. The permutation null is the exported steppable Algorithm
+  `permutationNullAlgorithm` (a batch of permutations per step; `nullContract` paths `null/statistic`, `null/pvalue`,
+  `null/count`).
 - `tests/independence.ts`: `distanceCovarianceTest`, `hoeffdingD`, `mutualInformation` and `mutualInformationTest`,
   conditional independence tests (`partialCorrelationTest`, `gTestConditional`, `kernelCITest`) used by causal
   discovery.
