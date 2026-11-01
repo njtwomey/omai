@@ -16,7 +16,6 @@ import {
   SessionPlayer,
   SpaceControls,
   useColourMode,
-  useProbe,
   useRun,
   useScrubClick,
   useSession,
@@ -24,12 +23,15 @@ import {
 } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { ComputeGate } from '../../shared/ComputeGate.tsx'
+import { type Baked, useBake } from '../../shared/useBake.ts'
 
 const LOSS = figure({ width: 420, height: 300 })
 const PANEL = figure({ width: 520, height: 320 })
 // Training rows within this distance of a cross-section are drawn with it.
 const BAND = 0.25
-const RESOLUTION = 32
+const RESOLUTION = 24
+// The most steps whose views are prepared for playing back.
+const FRAMES = 80
 
 const SPACE = dict({
   function: choice(['exp-sin-square', 'multiplication'], {
@@ -143,14 +145,31 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
   }, [data, controls])
   const live = useSession(
     method,
-    { config: defaults(method.config) as Config, mode: prefs.mode, steps: controls.epochs },
+    // A checkpoint at every step: the state at any step is read back, not rebuilt by re-running the training.
+    { config: defaults(method.config) as Config, mode: prefs.mode, steps: controls.epochs, checkpointEvery: 1 },
     [method],
     { hold: prefs.hold },
   )
+  // The views the page draws, computed once when the training has ended, so playing back is only a lookup.
+  const baked = useBake({ done: live.done, head: live.head, session: live.session }, FRAMES, (t) => ({
+    curves: live.session.probe(t, 'kan/curves') as unknown as { widths: number[]; edges: Edge[] },
+    sparsity: live.session.probe(t, 'kan/sparsity') as unknown as number,
+    surface: live.session.probe(t, 'model/decision-surface', { resolution: RESOLUTION }) as unknown as {
+      x: number[]
+      y: number[]
+      values: number[][]
+    },
+  }))
+  const ready = baked.progress.total > 0 && !baked.baking
+  const gated = live.head >= 1 && !ready
   return (
     <div className="flex flex-col gap-3">
-      <ComputeGate live={live} total={controls.epochs} label="Training the network">
-        <View live={live} at={at} onScrub={setAt} data={data} />
+      <ComputeGate
+        live={{ head: live.head + baked.progress.done, computing: gated, done: !gated }}
+        total={controls.epochs + Math.max(baked.progress.total, FRAMES + 1)}
+        label={live.done ? 'Preparing the playback' : 'Training the network'}
+      >
+        <View live={live} at={at} onScrub={setAt} data={data} baked={baked} />
       </ComputeGate>
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
       <p className="max-w-3xl text-xs text-muted">
@@ -160,6 +179,13 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
       </p>
     </div>
   )
+}
+
+/** What one baked step holds: the edge curves, the share of negligible edges, and the function over the plane. */
+interface Frame {
+  readonly curves: { widths: number[]; edges: Edge[] }
+  readonly sparsity: number
+  readonly surface: { x: number[]; y: number[]; values: number[][] }
 }
 
 interface Edge {
@@ -187,18 +213,17 @@ function View(props: {
     readonly y: number[]
     readonly truthAt: (rows: readonly (readonly number[])[]) => number[]
   }
+  readonly baked: Baked<Frame>
 }): ReactNode {
-  const { live, data } = props
+  const { live, data, baked } = props
   const mode = useColourMode()
   const run = useRun(live)
   const t = Math.max(0, Math.min(props.at ?? live.head, live.head))
-  const curves = useProbe(live, t, 'kan/curves')
-  const sparsity = useProbe(live, t, 'kan/sparsity')
-  const surface = useProbe(live, t, 'model/decision-surface', { resolution: RESOLUTION })
+  const frame = baked.at(t)
   const loss = useMemo(() => metricSeries(run, 'train/loss'), [run])
   const steps = useMemo(() => Array.from({ length: live.head + 1 }, (_, i) => i), [live.head])
   const seek = useScrubClick(steps, live.head, props.onScrub)
-  const value = curves.value as { widths: number[]; edges: Edge[] } | undefined
+  const value = frame?.curves
   const lossOption = useMemo(() => {
     const upto = loss.steps.map((st, i) => [st, loss.values[i] ?? Number.NaN] as const).filter(([st]) => st <= t)
     return cartesian(
@@ -225,7 +250,7 @@ function View(props: {
       },
     )
   }, [loss, t, mode, live.head])
-  const grid = surface.value as { x: number[]; y: number[]; values: number[][] } | undefined
+  const grid = frame?.surface
   // The truth on the same grid, computed once (the grid does not move).
   const gridX = grid?.x
   const gridY = grid?.y
@@ -274,12 +299,12 @@ function View(props: {
   }
   const sectionX0 = sectionOption(0)
   const sectionX1 = sectionOption(1)
-  const share = typeof sparsity.value === 'number' ? sparsity.value : undefined
+  const share = frame?.sparsity
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)]">
         {value === undefined ? (
-          <p className="text-sm text-muted">{curves.error ?? 'Press play to train.'}</p>
+          <p className="text-sm text-muted">Press play to train.</p>
         ) : (
           <Network widths={value.widths} edges={value.edges} />
         )}
