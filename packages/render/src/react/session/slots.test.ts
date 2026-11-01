@@ -1,5 +1,6 @@
 import { smoothSolvers } from 'mdml-engine/optim'
 import { choice, defaults, dict, union } from 'mdml-engine/space'
+import type { Value } from 'mdml-engine/tensor'
 import type { Config } from 'mdml-engine/trace'
 import { describe, expect, it } from 'vitest'
 import { variantsOfSlot } from './slots.ts'
@@ -61,25 +62,44 @@ describe('variantsOfSlot knobs', () => {
 
 describe('a comparison over the solver slot of a method', () => {
   it('runs one session per solver on one objective, and every deterministic one reaches the same minimum', async () => {
-    const { linearClassifier } = await import('mdml-engine/methods/linear')
-    const { metricSeries, session } = await import('mdml-engine/trace')
+    const { add, matmul, tensor } = await import('mdml-engine/tensor')
+    const { classificationLosses, penalties } = await import('mdml-engine/losses')
+    const { gradientContract, gradientDefaults, loggedSolver, solverContract, solverDefaults } = await import(
+      'mdml-engine/optim'
+    )
+    const { Log, defineMethod, metricSeries, session } = await import('mdml-engine/trace')
     const x = [
-      [-1.2, -0.8],
-      [-0.9, -1.1],
-      [-1.5, -0.3],
-      [0.9, 1.1],
-      [1.2, 0.7],
-      [0.6, 1.3],
+      [-1.2, -0.8, 1],
+      [-0.9, -1.1, 1],
+      [-1.5, -0.3, 1],
+      [0.9, 1.1, 1],
+      [1.2, 0.7, 1],
+      [0.6, 1.3, 1],
     ]
-    const method = linearClassifier({ x, y: [0, 0, 0, 1, 1, 1] })
-    const shared = { loss: { kind: 'logistic' }, penalty: { kind: 'l2', alpha: 0.1 } }
-    const variants = variantsOfSlot(method.config, 'solver', shared)
+    const design = tensor(x)
+    const signs = tensor([-1, -1, -1, 1, 1, 1])
+    const loss = classificationLosses.make({ kind: 'logistic' })
+    const penalty = penalties.make({ kind: 'l2', alpha: 0.1 })
+    // A logistic loss with a ridge penalty, minimised by whichever solver the slot holds.
+    const method = defineMethod({
+      name: 'test/ridge-logistic',
+      config: dict({ solver: smoothSolvers.space }),
+      make: (c, key) =>
+        loggedSolver(
+          { objective: (w: Value): Value => add(loss(matmul(design, w), signs), penalty.value(w)), x0: [0, 0, 0] },
+          c['solver'] as Config,
+          key,
+        ),
+      contract: { ...solverContract, ...gradientContract },
+      defaults: { ...solverDefaults, ...gradientDefaults, 'solver/objective': Log() },
+    })
+    const variants = variantsOfSlot(method.config, 'solver')
     expect(variants.map((v) => v.label)).toEqual([...smoothSolvers.names])
     // The stochastic mode at its default learning rate has not arrived in so few steps; the rest have.
     const finals = variants
       .filter((v) => v.label !== 'gradient')
       .map((v) => {
-        const s = session(method, { mode: 'eager', steps: 300, config: { ...shared, ...v.config } as never })
+        const s = session(method, { mode: 'eager', steps: 300, config: v.config as never })
         return metricSeries(s.run(), 'solver/objective').values.at(-1) as number
       })
     for (const f of finals) expect(f).toBeCloseTo(finals[0] as number, 2)

@@ -11,21 +11,20 @@ source (what the agents cost so far) and roughly a factor of two of uncertainty 
 
 **The chapter tables** (`packages/engine/src/methods/<area>/README.md`)
 
-| Count | What |
-| ----: | ---- |
-| 1,284 | method rows across all chapters |
-| 428 | rows with a TODO in their status |
-| 356 | of those 428: every library identifier the row names now exists in `lib/` |
-| 72 | of those 428: at least one named identifier not found by name (an upper bound on library gaps) |
-| 292 | rows whose name matches a `lib/` export directly (a lower bound on rows that are one wrapper) |
-| 34 | rows the status column says are built (the column is stale; no inventory pass has been run) |
+| Count | What                                                                                           |
+| ----: | ---------------------------------------------------------------------------------------------- |
+| 1,284 | method rows across all chapters                                                                |
+|   428 | rows with a TODO in their status                                                               |
+|   356 | of those 428: every library identifier the row names now exists in `lib/`                      |
+|    72 | of those 428: at least one named identifier not found by name (an upper bound on library gaps) |
+|   292 | rows whose name matches a `lib/` export directly (a lower bound on rows that are one wrapper)  |
+|    34 | rows the status column says are built (the column is stale; no inventory pass has been run)    |
 
 The 72 rows with unfound identifiers cluster in logic and rule learning (9), recommendation and retrieval (5), time
 series (5), generative models (4) and reinforcement learning (4). Some are naming mismatches rather than gaps; only
 reading each row settles which.
 
 **What the library already provides to a method**
-
 - 210 estimator definitions sit on the iterative, trainer, agent and sweep bases, so each already has `.method` and
   `.session` for free.
 - 531 exported `*Algorithm`s, each a stepped routine a session can run.
@@ -58,13 +57,13 @@ observation behind the proposal below; it is not yet shown on a second chapter.
 
 Reference point: the 35 library and render agents so far spent roughly 14M tokens, about 405k each.
 
-| Route | Per row | Total |
-| ----- | ------: | ----: |
-| Hand-written page per row | 10 to 15k | 13 to 19M for 1,284 rows |
-| Declarative spec on a generic `MethodPage` | 4 to 8k | 5 to 10M, plus 0.4 to 0.6M to build the component |
-| Library gaps behind the 72 rows | | 1 to 2M |
-| Rows that need a new idea (about a third) | | 2 to 3.5M of the above |
-| Main-session coordination | | about 0.5M |
+| Route                                      |   Per row |                                             Total |
+| ------------------------------------------ | --------: | ------------------------------------------------: |
+| Hand-written page per row                  | 10 to 15k |                          13 to 19M for 1,284 rows |
+| Declarative spec on a generic `MethodPage` |   4 to 8k | 5 to 10M, plus 0.4 to 0.6M to build the component |
+| Library gaps behind the 72 rows            |           |                                           1 to 2M |
+| Rows that need a new idea (about a third)  |           |                            2 to 3.5M of the above |
+| Main-session coordination                  |           |                                        about 0.5M |
 
 Not included: re-running the gates (they cost wall-clock time, not tokens: about 20 minutes for `make check`).
 

@@ -104,9 +104,9 @@ function exposure(index: string): Map<string, 'namespace' | 'flat'> {
   return out
 }
 
-function layerOf(pkg: string, path: string): ModuleLayer {
+function layerOf(pkg: string): ModuleLayer {
   if (pkg !== 'mdml-engine') return 'part'
-  return path.startsWith('methods/') ? 'methods' : 'core'
+  return 'core'
 }
 
 /**
@@ -138,7 +138,7 @@ export function readProject(root: string, packages: readonly string[]): Project 
         specifier,
         package: pkg.name,
         path,
-        layer: layerOf(pkg.name, path),
+        layer: layerOf(pkg.name),
         dir: entryDir,
         index: join(entryDir, 'index.ts'),
         files,
@@ -166,7 +166,7 @@ export function readProject(root: string, packages: readonly string[]): Project 
         if (existsSync(index)) add(specifier, path, dirname(index))
         continue
       }
-      // `./methods/*` -> `./src/methods/*/index.ts`: each folder directly under the base is an entry point.
+      // `./*` -> `./src/lib/*/index.ts`: each folder directly under the base is an entry point.
       const prefix = key.replace(/^\.\//, '').replace(/\*$/, '')
       const base = resolve(dir, source.slice(0, source.indexOf('*')))
       if (!existsSync(base)) continue

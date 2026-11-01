@@ -136,14 +136,14 @@ a method are the encyclopedia's, composed from the packages, and the site has no
 `mdml-engine/numerics/linalg`; its parent re-exports it as the namespace `linalg`. Index files are generated from
 folder contents, so adding a file never edits another file.
 
-**Core and applications.** `packages/engine/src/lib/` is the core: general machinery. `packages/engine/src/methods/` is
-applications: named models, algorithms, environments, datasets and studies, each built from the core. The core never
-imports methods.
+**The library.** `packages/engine/src/lib/` is all of the engine: general machinery, and the named models, algorithms,
+environments, datasets and studies built from it. There is no methods layer (retired 2026-11-01): wherever this
+document says `methods/<area>/...`, read it as an entry of the methods catalogue (`docs/methods-catalog/`) that a
+page of the site composes from library estimators; the code of the old layer is in `docs/methods-catalog/archive/`.
 
-**Layering.** Core domains import one another without cycles, and so do methods areas: if `stats` imports `dists`,
-nothing `dists` imports may lead back to `stats`. There is no declared order; the import graph is the order, and
-`make layers` (`scripts/layers.ts`) fails with the path of any cycle. The core never imports methods; the package rules
-of section 1 hold too.
+**Layering.** Core domains import one another without cycles: if `stats` imports `dists`, nothing `dists` imports may
+lead back to `stats`. There is no declared order; the import graph is the order, and `make layers`
+(`scripts/layers.ts`) fails with the path of any cycle; the package rules of section 1 hold too.
 
 **Summaries live in the code.** The source explains itself, with no metadata files beside it:
 - A folder's summary is the doc comment that opens its `index.ts`: a short paragraph on what the folder is and what

@@ -1,5 +1,4 @@
 import { classificationLosses, penalties } from 'mdml-engine/losses'
-import { linearClassifier } from 'mdml-engine/methods/linear'
 import { smoothSolverConfig, smoothSolvers } from 'mdml-engine/optim'
 import { type DictSpace, defaults, dict, type SpaceValue } from 'mdml-engine/space'
 import type { Tensor } from 'mdml-engine/tensor'
@@ -27,6 +26,7 @@ import {
 } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
+import { linearClassifier } from '../../toys/linearClassifier.ts'
 
 export const recipe: Recipe = {
   title: 'Linear classifier, every solver',

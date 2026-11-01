@@ -1,13 +1,12 @@
 /**
  * Run every `@example` of mdml-engine's exports and check each `// =>` line (docs/structure.md section 2).
  *
- *   node scripts/examples.ts [--only <prefix>[,<prefix>...]] [--methods] [--workers N] [--timeout ms] [--json file]
- *                            [--slowest N] [--quiet] [--coverage]
+ *   node scripts/examples.ts [--only <prefix>[,<prefix>...]] [--workers N] [--timeout ms] [--json file]
+ *                            [--slowest N] [--coverage]
  *
  * The catalogue comes from mdml-meta/extract and the examples run through mdml-meta's runner in worker
  * threads (default 2, or MDML_EXAMPLE_WORKERS), each importing the engine from source. An example that runs past
- * the time limit (default 20 s) has its worker stopped and replaced. The core (`lib/`) is strict: any failure exits 1.
- * `--methods` also runs the methods' examples, which are optional and reported without failing.
+ * the time limit (default 20 s) has its worker stopped and replaced. Any failure exits 1.
  * `--only` keeps examples whose module (`mdml-engine/numerics/linalg`) or file (`packages/engine/src/lib/stats`)
  * starts with one of the prefixes. `--coverage` also reports documentation coverage of the core and the
  * folders and files of every package without a summary (mdml-meta/extract).
@@ -22,7 +21,6 @@ interface Job {
   readonly index: number
   readonly symbol: string
   readonly module: string
-  readonly strict: boolean
   readonly file: string
   readonly line: number
   readonly code: string
@@ -104,11 +102,8 @@ async function main(): Promise<void> {
   const only = option(args, '--only')
     ?.split(',')
     .filter((p) => p !== '')
-  const withMethods = args.includes('--methods')
   const jobs: Job[] = []
   for (const s of catalogue.symbols) {
-    const strict = !s.module.startsWith('mdml-engine/methods/')
-    if (!strict && !withMethods) continue
     const examples = [
       ...s.examples.map((e) => ({ e, symbol: s.id })),
       ...s.members.flatMap((m) => m.examples.map((e) => ({ e, symbol: `${s.id}.${m.name}` }))),
@@ -116,7 +111,7 @@ async function main(): Promise<void> {
     for (const { e, symbol } of examples) {
       const file = e.source?.file ?? s.source.file
       if (only !== undefined && !only.some((p) => s.module.startsWith(p) || file.startsWith(p))) continue
-      jobs.push({ index: jobs.length, symbol, module: s.module, strict, file, line: e.source?.line ?? 0, code: e.code })
+      jobs.push({ index: jobs.length, symbol, module: s.module, file, line: e.source?.line ?? 0, code: e.code })
     }
   }
   const nWorkers = Math.max(
@@ -128,7 +123,6 @@ async function main(): Promise<void> {
     ),
   )
   const timeout = Number(option(args, '--timeout') ?? 20_000)
-  const quiet = args.includes('--quiet')
   process.stdout.write(
     `examples: ${jobs.length} from ${catalogue.symbols.length} symbols (catalogue in ${(tExtract / 1000).toFixed(1)} s), ${nWorkers} workers\n`,
   )
@@ -209,12 +203,9 @@ async function main(): Promise<void> {
   })
 
   const failed = jobs.filter((j) => results.get(j.index)?.ok !== true)
-  const strictFailed = failed.filter((j) => j.strict)
   for (const j of failed) {
-    if (quiet && !j.strict) continue
     const r = results.get(j.index)
-    const tag = j.strict ? 'FAIL' : 'warn'
-    process.stdout.write(`${tag}  ${j.file}:${j.line}  ${j.symbol}\n`)
+    process.stdout.write(`FAIL  ${j.file}:${j.line}  ${j.symbol}\n`)
     for (const p of r?.problems ?? ['no result']) process.stdout.write(`      ${p}\n`)
   }
   const slowest = Number(option(args, '--slowest') ?? 10)
@@ -240,10 +231,10 @@ async function main(): Promise<void> {
   }
   const seconds = ((performance.now() - t0) / 1000).toFixed(1)
   process.stdout.write(
-    `\nexamples: ${jobs.length} run · ${jobs.length - failed.length} passed · ${strictFailed.length} core failed · ` +
-      `${failed.length - strictFailed.length} methods failed · ${timeouts} timed out · ${seconds} s\n`,
+    `\nexamples: ${jobs.length} run · ${jobs.length - failed.length} passed · ${failed.length} failed · ` +
+      `${timeouts} timed out · ${seconds} s\n`,
   )
-  process.exit(strictFailed.length > 0 ? 1 : 0)
+  process.exit(failed.length > 0 ? 1 : 0)
 }
 
 if (isMainThread) await main()

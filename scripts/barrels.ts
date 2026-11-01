@@ -10,7 +10,7 @@
  *   what the folder is and what you will find in it. The generator keeps it and writes everything below it, so
  *   `--check` compares only the generated part. A folder without a summary is an error, as is a module file that does
  *   not open with its own paragraph (a doc comment followed by a blank line or the imports) saying what it is.
- * - mdml-engine: every folder under src/lib and src/methods gets an index.ts that re-exports its files
+ * - mdml-engine: every folder under src/lib gets an index.ts that re-exports its files
  *   (`export *`) and exposes each subfolder as a namespace (`export * as linalg`), except subfolders whose summary
  *   carries the `@inline` tag, which are re-exported flat (`tensor/ops` is part of `mdml-engine/tensor`).
  * - mdml-render and mdml-meta: each part folder re-exports its files; the package root re-exports every part
@@ -157,14 +157,8 @@ const MODULES_SUMMARY = `/**
  */`
 
 const entries: string[] = []
-for (const [kind, prefix] of [
-  ['lib', 'mdml-engine'],
-  ['methods', 'mdml-engine/methods'],
-] as const) {
-  const base = join(ROOT, 'packages/engine/src', kind)
-  if (!existsSync(base)) continue
-  for (const d of dirs(base)) nested(join(base, d), entries, `${prefix}/${d}`)
-}
+const lib = join(ROOT, 'packages/engine/src/lib')
+for (const d of dirs(lib)) nested(join(lib, d), entries, `mdml-engine/${d}`)
 flat('render', entries, 'mdml-render')
 flat('meta', [], 'mdml-meta')
 

@@ -89,7 +89,7 @@ export interface SummaryReport {
  */
 export function summaryCoverage(
   catalogue: Catalogue,
-  layers: readonly ModuleLayer[] = ['core', 'methods', 'part'],
+  layers: readonly ModuleLayer[] = ['core', 'part'],
 ): SummaryReport {
   const layerOf = new Map(catalogue.modules.map((m) => [m.id, m.layer]))
   const kept = (module: string): boolean => layers.includes(layerOf.get(module) ?? 'part')

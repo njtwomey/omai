@@ -66,7 +66,7 @@ export interface SymbolDoc {
 }
 
 /** Where a module sits: the engine core (`lib/`), the engine methods (`methods/`), or a part of another package. */
-export type ModuleLayer = 'core' | 'methods' | 'part'
+export type ModuleLayer = 'core' | 'part'
 
 /** One public entry point. */
 export interface ModuleDoc {

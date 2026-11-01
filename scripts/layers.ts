@@ -6,12 +6,8 @@
  * - The core domains (packages/engine/src/lib/<domain>) import one another without a cycle: if `stats` imports
  *   `dists`, nothing `dists` imports may lead back to `stats`. A cycle is reported as its path, with one import for
  *   each step.
- * - The core never imports methods.
- * - The methods areas (packages/engine/src/methods/<area>) import any core domain and one another, again without a
- *   cycle.
- * - mdml-engine never imports mdml-render or mdml-meta; mdml-render never imports mdml-meta or engine methods (it
- *   draws core contracts and exposition records, never algorithms);
- *   headless render code never imports React or render/react.
+ * - mdml-engine never imports mdml-render or mdml-meta; mdml-render never imports mdml-meta (it draws core contracts
+ *   and exposition records, never algorithms); headless render code never imports React or render/react.
  * Test files are exempt: tests may use higher layers to check lower ones.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
@@ -22,7 +18,7 @@ const IMPORT = /(?:^|\n)\s*(?:import|export)\s[^'"]*?from\s+['"]([^'"]+)['"]|imp
 
 interface Location {
   readonly package: string
-  readonly kind: 'lib' | 'methods' | 'other'
+  readonly kind: 'lib' | 'other'
   readonly unit: string
 }
 
@@ -46,11 +42,10 @@ function locate(path: string): Location {
   const rel = relative(join(ROOT, 'packages'), path).split('/')
   const pkg = rel[0] ?? ''
   if (pkg === 'engine' && rel[2] === 'lib') return { package: pkg, kind: 'lib', unit: rel[3] ?? '' }
-  if (pkg === 'engine' && rel[2] === 'methods') return { package: pkg, kind: 'methods', unit: rel[3] ?? '' }
   return { package: pkg, kind: 'other', unit: rel[2] ?? '' }
 }
 
-/** The import graph between units (core domains, or methods areas): one example import per edge. */
+/** The import graph between units (core domains): one example import per edge. */
 type Graph = Map<string, Map<string, string>>
 
 function addEdge(graph: Graph, from: string, to: string, where: string): void {
@@ -116,7 +111,6 @@ function shortestCycle(graph: Graph, start: string, component: ReadonlySet<strin
 }
 
 const domains: Graph = new Map()
-const areas: Graph = new Map()
 const errors: string[] = []
 const files = ['engine', 'render', 'meta'].flatMap((p) => walk(join(ROOT, 'packages', p, 'src')))
 for (const file of files) {
@@ -128,31 +122,21 @@ for (const file of files) {
     if (spec.startsWith('.')) {
       const to = locate(resolve(dirname(file), spec))
       if (from.package !== 'engine' || to.package !== 'engine') continue
-      if (from.kind === 'lib' && to.kind === 'methods') errors.push(`${where}: the core never imports methods`)
       if (from.kind === 'lib' && to.kind === 'lib' && from.unit !== to.unit) addEdge(domains, from.unit, to.unit, where)
-      if (from.kind === 'methods' && to.kind === 'methods' && from.unit !== to.unit)
-        addEdge(areas, from.unit, to.unit, where)
       continue
     }
     if (from.package === 'engine' && /^mdml-(render|meta)/.test(spec))
       errors.push(`${where}: engine is the base package`)
     if (from.package === 'render' && spec.startsWith('mdml-meta')) errors.push(`${where}: render may not import meta`)
-    if (from.package === 'render' && spec.startsWith('mdml-engine/methods'))
-      errors.push(`${where}: render draws contracts and exposition records, never methods`)
     if (from.package === 'render' && from.unit !== 'react' && /^(react|react-dom)(\/|$)/.test(spec)) {
       errors.push(`${where}: headless render code may not import React`)
     }
   }
 }
 
-for (const [graph, kind] of [
-  [domains, 'core domains'],
-  [areas, 'methods areas'],
-] as const) {
-  for (const cycle of cycles(graph)) {
-    const steps = cycle.slice(1).map((to, i) => `  ${graph.get(cycle[i] as string)?.get(to)}`)
-    errors.push(`import cycle between ${kind}: ${cycle.join(' -> ')}\n${steps.join('\n')}`)
-  }
+for (const cycle of cycles(domains)) {
+  const steps = cycle.slice(1).map((to, i) => `  ${domains.get(cycle[i] as string)?.get(to)}`)
+  errors.push(`import cycle between core domains: ${cycle.join(' -> ')}\n${steps.join('\n')}`)
 }
 
 if (errors.length > 0) {
@@ -161,6 +145,4 @@ if (errors.length > 0) {
   process.exit(1)
 }
 const units = (g: Graph): number => new Set([...g.keys(), ...[...g.values()].flatMap((m) => [...m.keys()])]).size
-console.log(
-  `layers: ${files.length} files checked; ${units(domains)} domains and ${units(areas)} areas import without cycles`,
-)
+console.log(`layers: ${files.length} files checked; ${units(domains)} domains import without cycles`)

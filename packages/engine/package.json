@@ -17,11 +17,6 @@
     "!src/**/*.test-d.ts"
   ],
   "exports": {
-    "./methods/*": {
-      "source": "./src/methods/*/index.ts",
-      "types": "./dist/methods/*/index.d.ts",
-      "import": "./dist/methods/*/index.js"
-    },
     "./*": {
       "source": "./src/lib/*/index.ts",
       "types": "./dist/lib/*/index.d.ts",

@@ -28,7 +28,7 @@ barrels-check: ## Fail if any barrel is stale
 	$(NODE) scripts/barrels.ts --check
 
 .PHONY: layers
-layers: ## Check layering: no import cycles between core domains or methods areas, and the package rules
+layers: ## Check layering: no import cycles between core domains, and the package rules
 	$(NODE) scripts/layers.ts
 
 .PHONY: lint
@@ -75,7 +75,7 @@ manifest: ## Rebuild fixtures/manifest.json from the fixture files (for merge co
 	$(UV) run --group oracle-core python -m mdml_oracle manifest
 
 .PHONY: examples
-examples: ## Run every @example of the engine core and check its `// =>` lines (ARGS="--only stats --methods" etc.)
+examples: ## Run every @example of the engine core and check its `// =>` lines (ARGS="--only stats" etc.)
 	$(NODE) scripts/examples.ts $(ARGS)
 
 .PHONY: build
