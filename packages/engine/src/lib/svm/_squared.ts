@@ -30,7 +30,7 @@ import {
 import type { Dual, DualOptions, Expansion } from './_dual.ts'
 
 /** An upper bound that never binds, finite so that the pair updates stay free of NaN. */
-const UNBOUNDED = 1e30
+export const UNBOUNDED = 1e30
 
 /** One pair's classification problem on its Gram matrix. */
 export interface SvcPairProblem extends SmoothProblem {
@@ -40,14 +40,14 @@ export interface SvcPairProblem extends SmoothProblem {
   readonly options: DualOptions
 }
 
-const sumOf = (v: ArrayLike<number>): number => {
+export const sumOf = (v: ArrayLike<number>): number => {
   let s = 0
   for (let i = 0; i < v.length; i++) s += v[i] ?? 0
   return s
 }
 
 /** `K v` for a symmetric `n x n` matrix. */
-function times(K: Float64Array, v: ArrayLike<number>, n: number): Float64Array {
+export function times(K: Float64Array, v: ArrayLike<number>, n: number): Float64Array {
   const out = new Float64Array(n)
   for (let i = 0; i < n; i++) {
     let s = 0
@@ -171,6 +171,30 @@ export type SmoothDualState = SmoState & {
 }
 
 /**
+ * A generic solver seen as an SMO-shaped algorithm: each state is the solver's own state with the dual quantities its
+ * iterate implies (`view`), and the run is finished once the solver says so.
+ */
+export function smoothAlgorithm(
+  inner: Algorithm<unknown>,
+  name: string,
+  view: (inner: unknown, iterations: number) => SmoothDualState,
+): Algorithm<SmoState> {
+  return {
+    name,
+    config: inner.config,
+    init: (key) => view(inner.init(key), 0),
+    step: (s, ctx) => {
+      const state = s as SmoothDualState
+      const next = inner.step(state.inner, ctx)
+      const out = view(next, state.iterations + 1)
+      return { ...out, finished: inner.done?.(next, out.iterations) !== undefined }
+    },
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as SmoState,
+  }
+}
+
+/**
  * The squared-hinge SVC primal solved by a generic solver of the slot, seen as a dual: the model of a state is the
  * solver's own iterate `(beta, c)`, and its dual variables are the ones the iterate implies (`alpha_i = 2 C_i
  * max(0, 1 - y_i f_i)`, which satisfy the equality only at the optimum), so `solver/dual` and `solver/gap` close at
@@ -206,19 +230,7 @@ export function smoothSvcDual(problem: SvcPairProblem, inner: Algorithm<unknown>
       inner,
     }
   }
-  const algorithm: Algorithm<SmoState> = {
-    name: q.name,
-    config: inner.config,
-    init: (key) => view(inner.init(key), 0),
-    step: (s, ctx) => {
-      const state = s as SmoothDualState
-      const next = inner.step(state.inner, ctx)
-      const out = view(next, state.iterations + 1)
-      return { ...out, finished: inner.done?.(next, out.iterations) !== undefined }
-    },
-    serialise: (s) => stateToJson(s),
-    deserialise: (j) => stateFromJson(j) as SmoState,
-  }
+  const algorithm = smoothAlgorithm(inner, q.name, view)
   const expansion = (s: SmoState): Expansion => {
     const z = (s as SmoothDualState).z
     return { coef: z.slice(0, n), rho: -(z[n] ?? 0) }

@@ -3,7 +3,11 @@
  * `OneClassSVM`, libsvm's ONE_CLASS), which separates the data from the origin in feature space with nu bounding the
  * fraction of outliers, and the support vector data description (Tax and Duin), the smallest enclosing ball in feature
  * space with a penalty C on points outside it. Both solve their duals with the library's SMO, one working pair per step;
- * with a kernel of constant diagonal (the RBF) they are the same machine.
+ * with a kernel of constant diagonal (the RBF) they are the same machine. The solver of the SVDD is a slot (`solver`,
+ * see `svddSolvers`): SMO by default; with `loss: 'squaredSlack'` (the L2-SVDD of the core vector machines) the primal
+ * is smooth and any solver of `smoothSolvers` minimises it. The one-class machine is SMO-only: its nu form has no
+ * standard smooth variant (a squared slack would trade nu, the bound on the outlier fraction, for a penalty C, which is
+ * the squared-slack SVDD).
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -18,8 +22,10 @@ import {
   resolveKernel,
 } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView } from '../learn/index.ts'
-import type { SmoState } from '../optim/index.ts'
-import { dict, real } from '../space/index.ts'
+import { type SmoState, solverConfigOf } from '../optim/index.ts'
+import type { Key } from '../random/index.ts'
+import { key as makeKey } from '../random/index.ts'
+import { choice, dict, real, type SpaceValue } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
   type Algorithm,
@@ -33,7 +39,16 @@ import {
   stateToJson,
 } from '../trace/index.ts'
 import { type Dual, oneClassDual, svddDual } from './_dual.ts'
+import {
+  checkSmoothSolver,
+  type SvddLoss,
+  squaredSvddDualFor,
+  squaredSvddPrimal,
+  svddSolvers,
+} from './_squared-slack.ts'
 import type { SvmPath } from './classifier.ts'
+
+export { type SvddLoss, svddSolvers } from './_squared-slack.ts'
 
 /** The hyperparameters shared by {@link oneClassSvm} and {@link svdd}. */
 export interface NoveltyHyper {
@@ -56,6 +71,14 @@ export interface OneClassHyper extends NoveltyHyper {
 export interface SvddHyper extends NoveltyHyper {
   /** The penalty on points outside the ball, at least 1 / n; 1 is the hard ball (every point inside). */
   readonly C: number
+  /** `slack` (Tax and Duin's linear slack) or `squaredSlack` (the L2-SVDD, whose primal is smooth; C need only be positive). */
+  readonly loss: SvddLoss
+  /**
+   * How the ball is fitted: a value of `svddSolvers.space`. `smo` (default) solves the dual and reaches either loss;
+   * with `loss: 'squaredSlack'` every solver of `smoothSolvers` minimises the primal over the centre's kernel expansion
+   * and the squared radius.
+   */
+  readonly solver: SpaceValue
 }
 
 /** The fitted parameters of a novelty detector: plain JSON. */
@@ -88,23 +111,42 @@ export interface NoveltyState {
   readonly scores: number[]
 }
 
-type Hyper = NoveltyHyper & { readonly nu?: number; readonly C?: number }
+type Hyper = NoveltyHyper & {
+  readonly nu?: number
+  readonly C?: number
+  readonly loss?: SvddLoss
+  readonly solver?: SpaceValue
+}
 
 const WHO = 'novelty'
 
-function prepare(data: LearnData, h: Hyper, svdd: boolean): { kernel: ResolvedKernel; dual: Dual; n: number } {
+function prepare(
+  data: LearnData,
+  h: Hyper,
+  svdd: boolean,
+): { kernel: ResolvedKernel; dualOf: (key?: Key) => Dual; n: number } {
   const m = matrixView(data.x, WHO)
   const kernel = resolveKernel(h as KernelChoice, data.x)
   const K = kernelMatrix(h, kernel, data.x)
   const options = { tol: h.tol, selection: h.selection }
   if (svdd) {
     const C = h.C ?? 1
-    if (!(C * m.n >= 1 - 1e-12)) throw new MdmlError('domain', `svdd: C must be at least 1/n = ${1 / m.n}, got ${C}`)
-    return { kernel, n: m.n, dual: svddDual(K, C, options) }
+    const squared = h.loss === 'squaredSlack'
+    if (squared ? !(C > 0) : !(C * m.n >= 1 - 1e-12))
+      throw new MdmlError('domain', `svdd: C must be at least ${squared ? '0' : `1/n = ${1 / m.n}`}, got ${C}`)
+    const solver = h.solver ?? solverConfigOf(svddSolvers, { kind: 'smo' })
+    checkSmoothSolver('svdd', { kind: svddSolvers.modeOf(solver).name }, squared, 'slack', 'squaredSlack')
+    let dual: Dual | undefined
+    const dualOf = (key: Key = makeKey(0)): Dual => {
+      dual ??= squared ? squaredSvddDualFor(squaredSvddPrimal(K, C, options), solver, key) : svddDual(K, C, options)
+      return dual
+    }
+    return { kernel, n: m.n, dualOf }
   }
   const nu = h.nu ?? 0.5
   if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `oneClassSvm: nu must be in (0, 1], got ${nu}`)
-  return { kernel, n: m.n, dual: oneClassDual(K, nu, options) }
+  const dual = oneClassDual(K, nu, options)
+  return { kernel, n: m.n, dualOf: () => dual }
 }
 
 const snapshot = (dual: Dual, smo: SmoState): NoveltyState => {
@@ -125,11 +167,11 @@ function noveltyEstimator<H extends Hyper>(
     defaults,
     hyperSpace: (h) => dict({ ...knob(h), ...kernelSpace(h) }),
     algorithm: (data, h): Algorithm<NoveltyState, SvmPath> => {
-      const { kernel, dual } = prepare(data, h, svdd)
+      const { kernel, dualOf } = prepare(data, h, svdd)
       return {
         name: svdd ? 'svdd' : 'one-class-svm',
         config: {
-          ...(svdd ? { C: h.C ?? 1 } : { nu: h.nu ?? 0.5 }),
+          ...(svdd ? { C: h.C ?? 1, loss: h.loss ?? 'slack', solver: h.solver ?? 'smo' } : { nu: h.nu ?? 0.5 }),
           kernel: kernel.kernel,
           gamma: kernel.gamma,
           tol: h.tol,
@@ -144,8 +186,9 @@ function noveltyEstimator<H extends Hyper>(
           tensors: { alphas: { role: 'param', description: 'the dual variables' } },
           messages: { pair: { description: 'the working pair (i, j) of the step, as training rows' } },
         }),
-        init: (key) => snapshot(dual, dual.algorithm.init(key)),
+        init: (key) => snapshot(dualOf(key), dualOf(key).algorithm.init(key)),
         step: (s, ctx) => {
+          const dual = dualOf(ctx.key)
           const smo = dual.algorithm.step(s.smo, ctx)
           if (smo.pair !== undefined) {
             const [i, j] = smo.pair
@@ -160,8 +203,8 @@ function noveltyEstimator<H extends Hyper>(
         done: (s) => (s.smo.finished ? 'converged' : undefined),
         observe: (s) => ({
           metrics: {
-            dual: dual.dual(s.smo),
-            gap: dual.gap(s.smo),
+            dual: dualOf().dual(s.smo),
+            gap: dualOf().gap(s.smo),
             ...(Number.isFinite(s.smo.violation) ? { violation: s.smo.violation } : {}),
             support: s.smo.alpha.reduce((c, v) => c + (v > 0 ? 1 : 0), 0),
           },
@@ -267,6 +310,10 @@ const base: NoveltyHyper = {
  * data, from the dual min 1/2 a^T K a with sum a = nu n and 0 <= a <= 1. `decisionFunction` is positive inside the
  * region; at most a fraction nu of the training points fall outside it.
  *
+ * It solves its dual by SMO only: the nu form has no standard smooth variant (a squared slack replaces nu, the bound on the
+ * outlier fraction, by a penalty C, which is the squared-slack {@link svdd}, the same machine for a kernel of constant
+ * diagonal), so there is no `solver` slot here.
+ *
  * @concept support-vector-machines
  * @reference B. Schoelkopf et al., Estimating the support of a high-dimensional distribution (2001).
  * @example
@@ -285,6 +332,8 @@ export const oneClassSvm: IterativeEstimator<OneClassHyper, NoveltyState, Novelt
 /**
  * The support vector data description (Tax and Duin): the smallest ball in feature space enclosing the data up to a
  * penalty C on points outside it. `decisionFunction` is R^2 minus the squared distance to the centre, positive inside.
+ * `loss: 'squaredSlack'` is the L2-SVDD, whose primal is smooth: every solver of `smoothSolvers` (the `solver`
+ * hyperparameter, from `svddSolvers`) minimises it, and `smo` (default) solves its dual; the linear slack admits `smo` only.
  *
  * @concept support-vector-machines
  * @reference D. Tax and R. Duin, Support vector data description (2004).
@@ -297,6 +346,13 @@ export const oneClassSvm: IterativeEstimator<OneClassHyper, NoveltyState, Novelt
  * ```
  */
 export const svdd: IterativeEstimator<SvddHyper, NoveltyState, NoveltyParams, NoveltyVerbs, SvmPath> =
-  noveltyEstimator<SvddHyper>('svm/svdd', true, { ...base, C: 1 } as SvddHyper, (h) => ({
-    C: real(0.01, 1, { log: true, default: Math.min(Math.max(h.C, 0.01), 1), label: 'C' }),
-  }))
+  noveltyEstimator<SvddHyper>(
+    'svm/svdd',
+    true,
+    { ...base, C: 1, loss: 'slack', solver: solverConfigOf(svddSolvers, { kind: 'smo' }) } as SvddHyper,
+    (h) => ({
+      loss: choice(['slack', 'squaredSlack'] as const, { default: h.loss, label: 'loss' }),
+      solver: svddSolvers.space,
+      C: real(0.01, 1, { log: true, default: Math.min(Math.max(h.C, 0.01), 1), label: 'C' }),
+    }),
+  )

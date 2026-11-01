@@ -4635,6 +4635,12 @@ resolved kernel), so `revive` rebuilds the verbs and `fittedAt(t)` gives the mod
   (`squaredHingePrimal`), so every solver of `smoothSolvers` minimises it; `smo` (the default, for both losses) solves its
   dual (the C-SVC dual with `1 / (2C)` on the diagonal, no upper bound). The generic solvers are seen as duals
   (`smoothSvcDual`) so the tape keeps `solver/dual` and `solver/gap`. The hinge is not smooth: it admits `smo` only.
+- `_squared-slack.ts` (private; `svrSolvers`/`SvrLoss` re-exported from `regressor.ts`, `svddSolvers`/`SvddLoss` from `one-class.ts`):
+  the same slot for `svr` and `svdd`. `loss: 'squaredEpsilonInsensitive'` (L2-loss SVR, epsilon form) and `loss:
+  'squaredSlack'` (L2-SVDD) have smooth primals (`squaredSvrPrimal`, `squaredSvddPrimal`) that every solver of
+  `smoothSolvers` minimises (seen as duals by `smoothSvrDual`, `smoothSvddDual`, via `smoothAlgorithm` of `_squared.ts`);
+  `smo` (default) solves the dual with `1 / (2C)` on the diagonal and no upper bound. The linear losses admit `smo` only.
+  `oneClassSvm` has no slot: its nu form has no standard smooth variant (a squared slack is the squared-slack SVDD).
 - `classifier.ts`: `svc` (C-SVC; `form: 'nu'` is NuSVC, also `nuSvc`): any `kernels` kernel (`rbf`, `linear`, `poly`,
   `sigmoid`, `laplacian` by scikit-learn's names with `gamma` of `'scale'`, `'auto'` or a number, or a `Kernel` object),
   one-versus-one for more than two classes (the pairs solved in turn, libsvm's class order and scikit-learn's
