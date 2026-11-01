@@ -6,6 +6,7 @@
  * grids and tuners, and builds the library's `ConjugateModel` or hazard function from a configuration.
  */
 
+import { MdmlError } from '../../base/index.ts'
 import {
   type DictSpace,
   defaults,
@@ -17,6 +18,7 @@ import {
   type RealSpace,
   real,
   type SpaceValue,
+  type UnionSpace,
 } from '../../space/index.ts'
 import { constantHazard } from './changepoint.ts'
 import { gammaHazard, minimumSegmentHazard, negativeBinomialHazard, weibullHazard } from './hazards.ts'
@@ -239,3 +241,74 @@ export const hazards: OptionTable<Hazard, HazardProperties> = optionTable(
     description: 'The prior on how long a segment lasts, as the hazard of a changepoint at each run length.',
   },
 )
+
+/**
+ * A complete value of the `segmentModels` slot: the option's name and its knobs, those not given at their defaults (the
+ * form the estimator's hyperparameter takes, and what a control for the union space produces).
+ *
+ * @param kind - The option: `mean`, `variance`, `mean-variance`, `rate`, `bernoulli`, `ar` or `trend`.
+ * @param knobs - Values for some of the option's own knobs.
+ * @returns The configuration, `{ kind, ...knobs }` with every knob of the option.
+ * @throws MdmlError with code `value` for an option the table lacks.
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * filtering.segmentModelValue('rate', { shape: 4 }) // => { kind: 'rate', shape: 4, rate: 0.4 }
+ * ```
+ */
+export function segmentModelValue(kind: string, knobs: Readonly<Record<string, number>> = {}): SpaceValue {
+  return optionValue(segmentModels.space, kind, knobs)
+}
+
+/**
+ * A complete value of the `hazards` slot: the option's name and its knobs, those not given at their defaults.
+ *
+ * @param kind - The option: `constant`, `minimum-segment`, `weibull`, `gamma` or `negative-binomial`.
+ * @param knobs - Values for some of the option's own knobs.
+ * @returns The configuration, `{ kind, ...knobs }` with every knob of the option.
+ * @throws MdmlError with code `value` for an option the table lacks.
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * filtering.hazardValue('minimum-segment', { minSegment: 8 }) // => { kind: 'minimum-segment', rate: 0.01, minSegment: 8 }
+ * ```
+ */
+export function hazardValue(kind: string, knobs: Readonly<Record<string, number>> = {}): SpaceValue {
+  return optionValue(hazards.space, kind, knobs)
+}
+
+function optionValue(space: UnionSpace, kind: string, knobs: Readonly<Record<string, number>>): SpaceValue {
+  const option = space.options[kind]
+  if (option === undefined)
+    throw new MdmlError('value', `'${kind}' is not one of ${Object.keys(space.options).join(', ')}`)
+  const tag = space.tag ?? 'kind'
+  for (const name of Object.keys(knobs))
+    if (!(name in option.spaces)) throw new MdmlError('value', `'${kind}' has no knob '${name}'`)
+  return { [tag]: kind, ...(defaults(option) as Readonly<Record<string, SpaceValue>>), ...knobs }
+}
+
+/**
+ * The `segmentModels` value of a conjugate model: the option that builds it and its prior as knobs (the inverse of
+ * `segmentModels.make`), to point the detector at the model that generated a series.
+ *
+ * @param model - The conjugate model.
+ * @returns The configuration.
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * filtering.segmentModelValueOf({ kind: 'bernoulli-beta', alpha: 2, beta: 3 }) // => { kind: 'bernoulli', alpha: 2, beta: 3 }
+ * ```
+ */
+export function segmentModelValueOf(model: ConjugateModel): SpaceValue {
+  const { kind, ...knobs } = model
+  const name = {
+    'normal-known-variance': 'mean',
+    'normal-known-mean': 'variance',
+    'normal-gamma': 'mean-variance',
+    'poisson-gamma': 'rate',
+    'bernoulli-beta': 'bernoulli',
+    'ar1-known-noise': 'ar',
+    'trend-known-noise': 'trend',
+  }[kind]
+  return { kind: name, ...knobs }
+}

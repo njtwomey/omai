@@ -73,6 +73,8 @@ export interface BocpdResult {
   readonly runLength: readonly Float64Array[]
   /** The most probable run length per step. */
   readonly mapRunLength: readonly number[]
+  /** The probability of that most probable run length per step. */
+  readonly mapProbability: readonly number[]
   /** p(a segment starts at y_t | y_1..y_t) = p(r_t = 1 | y_1..y_t). */
   readonly changeProbability: readonly number[]
   /** log p(y_1..y_T). */
@@ -106,6 +108,7 @@ export interface BocpdState {
 export type BocpdPath =
   | 'bocpd/change-probability'
   | 'bocpd/map-run-length'
+  | 'bocpd/map-probability'
   | 'bocpd/log-predictive'
   | 'bocpd/log-evidence'
   | 'bocpd/predictive-mean'
@@ -115,12 +118,14 @@ export type BocpdPath =
 
 /**
  * What {@link bocpdAlgorithm} logs, by path: the probability that a segment starts at this step, the most probable run
- * length, the log predictive of the observation, the evidence so far, the predictive mean and standard deviation, the
- * number of hypotheses kept, and the run-length posterior (a row per step: entry r is p(r_t = r | y_1..y_t)).
+ * length and its probability, the log predictive of the observation, the evidence so far, the predictive mean and
+ * standard deviation, the number of hypotheses kept, and the run-length posterior (a row per step: entry r is
+ * p(r_t = r | y_1..y_t)).
  */
 export const bocpdContract: Contract<BocpdState, BocpdPath> = defineContract({
   'bocpd/change-probability': scalar({ description: 'p(a segment starts at this step)' }),
   'bocpd/map-run-length': scalar({ description: 'the most probable run length' }),
+  'bocpd/map-probability': scalar({ description: 'the probability of the most probable run length' }),
   'bocpd/log-predictive': scalar({ description: 'log p(y_t | y_1..y_{t-1})' }),
   'bocpd/log-evidence': scalar({ description: 'log p(y_1..y_t), the evidence so far', direction: 'higher' }),
   'bocpd/predictive-mean': scalar({ description: 'E[y_t | y_1..y_{t-1}]' }),
@@ -150,6 +155,7 @@ const EMPTY_HISTORY: BocpdHistory = {
   predictiveStd: [],
   runLength: [],
   mapRunLength: [],
+  mapProbability: [],
   changeProbability: [],
 }
 
@@ -235,6 +241,7 @@ export function bocpdAlgorithm(
       hyps = hyps.map((p) => ({ ...p, logp: p.logp - z }))
       if (ctx.wants('bocpd/change-probability')) ctx.log('bocpd/change-probability', rl[1] ?? 0)
       if (ctx.wants('bocpd/map-run-length')) ctx.log('bocpd/map-run-length', best)
+      if (ctx.wants('bocpd/map-probability')) ctx.log('bocpd/map-probability', rl[best] ?? 0)
       if (ctx.wants('bocpd/log-predictive')) ctx.log('bocpd/log-predictive', lp)
       if (ctx.wants('bocpd/log-evidence')) ctx.log('bocpd/log-evidence', logEvidence)
       if (ctx.wants('bocpd/predictive-mean')) ctx.log('bocpd/predictive-mean', mean)
@@ -252,6 +259,7 @@ export function bocpdAlgorithm(
           predictiveStd: [...past.predictiveStd, std],
           runLength: rows ? [...past.runLength, rl] : past.runLength,
           mapRunLength: [...past.mapRunLength, best],
+          mapProbability: [...past.mapProbability, rl[best] ?? 0],
           changeProbability: [...past.changeProbability, rl[1] ?? 0],
         },
       }
@@ -292,6 +300,50 @@ export function bocpd(
   })
   const st = runAlgorithm(algorithm, { maxSteps: y.length, ...run }).state
   return { ...st.history, logEvidence: st.logEvidence }
+}
+
+/** A changepoint read off the run-length posterior by {@link mapChangepoints}. */
+export interface MapChangepoint {
+  /** The index of the first observation of the new segment. */
+  readonly index: number
+  /** The step at which the most probable run length first put the start there with enough probability. */
+  readonly detectedAt: number
+  /** That probability: the posterior mass of the most probable run length at the step of detection. */
+  readonly probability: number
+}
+
+/**
+ * Changepoints from the run-length posterior, thresholded: at every step the most probable run length r puts the start
+ * of the current segment at t - r + 1; when its probability reaches the threshold, that start is a changepoint (the
+ * first time it is, and never the start of the series). A segment that began long ago is reported once, and a change
+ * is reported a few observations after it happened, as soon as the posterior commits to it.
+ *
+ * @param result - The MAP run lengths and their probabilities (a {@link BocpdResult}, or the state's history).
+ * @param threshold - The probability the most probable run length must reach (default 0.5).
+ * @returns The changepoints in the order they were detected.
+ * @concept bayesian-changepoint-detection
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * const model = { kind: 'normal-known-variance', sigma: 0.5, priorMean: 0, priorStd: 5 } as const
+ * const r = filtering.bocpd([0, 0.1, -0.1, 0, 5, 5.2, 4.9, 5.1], model, 0.1)
+ * filtering.mapChangepoints(r, 0.5).map((c) => c.index) // => [4]
+ * ```
+ */
+export function mapChangepoints(
+  result: Pick<BocpdResult, 'mapRunLength' | 'mapProbability'>,
+  threshold = 0.5,
+): MapChangepoint[] {
+  const seen = new Set<number>()
+  const out: MapChangepoint[] = []
+  for (const [t, r] of result.mapRunLength.entries()) {
+    const probability = result.mapProbability[t] ?? 0
+    const index = t - r + 1
+    if (index < 1 || probability < threshold || seen.has(index)) continue
+    seen.add(index)
+    out.push({ index, detectedAt: t, probability })
+  }
+  return out
 }
 
 /** A segment cost for offline changepoint detection. */

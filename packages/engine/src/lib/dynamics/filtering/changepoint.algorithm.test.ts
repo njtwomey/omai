@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { policies, recorder, runAlgorithm, stateToJson } from '../../trace/index.ts'
-import { bocpd, bocpdAlgorithm, bocpdContract, constantHazard } from './changepoint.ts'
+import { bocpd, bocpdAlgorithm, bocpdContract, constantHazard, mapChangepoints } from './changepoint.ts'
 import type { ConjugateModel } from './segment-models.ts'
 
 const y = [0.1, -0.2, 0.05, 0.3, 4.1, 3.8, 4.4, 3.9, 4.2, 0.2, -0.1, 0.4]
@@ -116,5 +116,17 @@ describe('bocpdAlgorithm', () => {
     const exact = bocpd(y, mean, 0.1, { threshold: -200 })
     const pruned = bocpd(y, mean, 0.1, { threshold: -8 })
     expect(Math.abs(exact.logEvidence - pruned.logEvidence)).toBeLessThan(0.01)
+  })
+
+  it('reads changepoints off the MAP run length: each change once, none in stationary noise, stricter means fewer', () => {
+    const r = bocpd(y, mean, constantHazard(8))
+    const found = mapChangepoints(r, 0.5)
+    expect(found.map((c) => c.index)).toEqual([4, 9])
+    expect(found.every((c) => c.detectedAt >= c.index && c.probability >= 0.5)).toBe(true)
+    expect(mapChangepoints(r, 0.999).length).toBeLessThanOrEqual(found.length)
+    const quiet = Array.from({ length: 80 }, (_, t) => 0.3 * Math.sin(t * 2.3))
+    expect(mapChangepoints(bocpd(quiet, { ...mean, priorStd: 1 } as ConjugateModel, 0.01), 0.5)).toEqual([])
+    expect(r.mapProbability).toHaveLength(y.length)
+    expect(r.mapProbability.every((p) => p > 0 && p <= 1)).toBe(true)
   })
 })

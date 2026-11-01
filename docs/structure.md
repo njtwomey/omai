@@ -2390,8 +2390,22 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   consistency checks.
 - `filtering/nonlinear.ts`: extended, unscented and ensemble Kalman filters.
 - `filtering/particle.ts`: bootstrap and auxiliary particle filters, particle smoothing.
-- `filtering/changepoint.ts`: Bayesian online changepoint detection (conjugate predictives, run-length posteriors,
-  hazard functions), PELT, binary segmentation.
+- `filtering/changepoint.ts`: Bayesian online changepoint detection as a steppable algorithm (`bocpdAlgorithm`: the
+  state is plain numbers per run-length hypothesis, so it serialises and resumes; it logs the paths of `bocpdContract`
+  `bocpd/change-probability`, `map-run-length`, `map-probability`, `log-predictive`, `log-evidence`, `predictive-mean`,
+  `predictive-std`, `hypotheses` and the run-length row `run-length`) and `bocpd` (that algorithm over a whole series),
+  `mapChangepoints` (changepoints read off the MAP run length at a probability threshold), `constantHazard` and
+  `survivalHazard`, PELT, binary segmentation.
+- `filtering/segment-models.ts`: the `ConjugateModel` union, one per kind of shift (Gaussian mean with known noise,
+  Gaussian variance with known mean, normal-gamma, Poisson-gamma, Bernoulli-beta, AR(1) coefficient, linear trend)
+  as `segmentOps` over a run's sufficient statistics (`RunStats`, plain numbers) with predictive log density, mean and
+  variance; `priorRun` wraps them as a closure.
+- `filtering/hazards.ts`: hazards from priors on the segment length: `minimumSegmentHazard`, `weibullHazard`,
+  `gammaHazard`, `negativeBinomialHazard` (with `survivalHazard` and `constantHazard` of `changepoint.ts`).
+- `filtering/changepoint-options.ts`: the two slots as option tables with the knobs of their own priors: `segmentModels`
+  (`mean`, `variance`, `mean-variance`, `rate`, `bernoulli`, `ar`, `trend`, named after the generator's kinds of
+  change) and `hazards` (`constant`, `minimum-segment`, `weibull`, `gamma`, `negative-binomial`), each a `union` space
+  and a builder; `segmentModelValue`, `hazardValue` and `segmentModelValueOf` make complete configuration values.
 - `filtering/em.ts`: EM for linear-Gaussian state-space parameters (traced).
 - `identification.ts`: ARX, ARMAX, prediction-error methods, N4SID, dynamic mode decomposition, SINDy, extended DMD, and
   recursive least squares (`rlsAlgorithm`, one sample per step with a forgetting factor, Joseph-form covariance;
@@ -4250,6 +4264,11 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   warm-up-estimated target) and `pageHinkleyAlgorithm`/`pageHinkley` (cumulative deviation from the running mean above its
   minimum, with forgetting and direction), one observation per step, recording their statistics and alarms. Bayesian
   online changepoint detection stays in `dynamics/filtering/changepoint.ts` and is not repeated.
+- `bocpd-detector.ts`: `bocpdDetector`, BOCPD as an estimator on the iterative base (hyperparameters `model` and `hazard`
+  from the option tables of `dynamics/filtering`, `threshold` for pruning and `changeThreshold` for detection; `fit`
+  takes `changepointData` of a number array or a `TimeSeriesData`, with the true changepoints read from its segments or
+  events; the fitted value has the change probabilities, MAP run lengths, evidence and `changepoints()`; its exposition
+  is the run-length strip with the truth marked; `.session` steps live and `fittedAt(t)` is the detector at step t).
 - `volatility.ts`: GARCH(p, o, q) in the `arch` convention (`GarchSpec`; ARCH, GJR through `o`; constant or zero
   mean; Gaussian or standardised Student-t): `garchVariance` (the recursion with the `arch` backcast),
   `garchLogLikelihood`, `garchFilterAlgorithm` (the recursion one observation per step with the running likelihood),
@@ -5059,7 +5078,8 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
 - The records of the generic panels (wave R1 of `methods/RENDER.md`): `VectorField` (`vectorField`, `fields.ts`: a flow,
   a score or a phase portrait on a grid with nullclines and fixed points classified by stability; `sampleVectorField`),
   `Strip` (`strip`, `strips.ts`: tokens along x with a track of values per class, rows of tags, the chosen path and
-  marks), `MarkedTable` (`markedTable`, `tables.ts`: a small table whose cells, rows and columns carry a status and a
+  marks; `runLengthStrip` lays a changepoint detector's run-length posterior over time out as one, with the MAP run length
+  as the path and the true changepoints as marks), `MarkedTable` (`markedTable`, `tables.ts`: a small table whose cells, rows and columns carry a status and a
   note, and the decision outlined; named apart from the coefficient and likelihood tables), `StructureSteps`
   (`structureSteps`, `structure-steps.ts`: one `Structure` with the looks of its nodes and edges at recorded steps;
   `structureStepAt`), `PointsSteps` (`pointsSteps`, `points-steps.ts`: a two- or three-dimensional point set that
@@ -6205,8 +6225,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `changepoints.ts`: tunable changepoint series (`changepointSeries`: mean, variance and rate shifts, AR regime
   switches, trend breaks; hazard rate, minimum segment length and noise as knobs) with true changepoints, segment
   parameters and the exact BOCPD predictive (`exactBocpd` with conjugate `SegmentModel`s and constant or run-length
-  hazards: run-length posteriors, one-step predictives, evidence; the mean, variance and rate models run
-  `dynamics`' `filtering.bocpd`, and the AR and trend regressions, which `dynamics` lacks, run the recursion here).
+  hazards: run-length posteriors, one-step predictives, evidence; all five kinds run `dynamics`' `filtering.bocpd`, the
+  one implementation, checked against the oracle's brute-force enumeration; `conjugateModelOf` maps a generator's model
+  to the detector's).
 - `timeseries.ts`: AR and ARMA processes (`armaProcess`, `arma`, with autocovariances and spectral densities),
   sinusoids in noise (`sinusoids`), uneven sampling (`sinusoids` with uneven times, `subsampleSeries`), seasonal
   series with known components (`seasonalSeries`), airline passengers (`airPassengers`), `sunspots`, coal-mining

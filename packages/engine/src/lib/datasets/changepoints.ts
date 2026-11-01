@@ -32,8 +32,19 @@ export type SegmentModel =
       readonly slopeStd: number
     }
 
-/** The conjugate model of dynamics' `bocpd` for a segment model. */
-function conjugateOf(model: SegmentModel): ConjugateModel {
+/**
+ * The conjugate model of dynamics' `bocpd` for a segment model of the generator (`mean` is a Gaussian with known noise,
+ * `variance` a Gaussian with known mean, `rate` Poisson counts, `ar` an AR(1) coefficient, `trend` a line).
+ *
+ * @param model - The segment model.
+ * @returns The conjugate model BOCPD runs.
+ * @example
+ * ```ts
+ * import { conjugateModelOf } from 'mdml-engine/datasets'
+ * conjugateModelOf({ kind: 'rate', shape: 2, rate: 0.5 }) // => { kind: 'poisson-gamma', shape: 2, rate: 0.5 }
+ * ```
+ */
+export function conjugateModelOf(model: SegmentModel): ConjugateModel {
   switch (model.kind) {
     case 'mean':
       return { kind: 'normal-known-variance', sigma: model.sigma, priorMean: model.priorMean, priorStd: model.priorStd }
@@ -98,7 +109,7 @@ export function exactBocpd(
 ): BocpdResult {
   if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
     throw new MdmlError('value', 'exactBocpd: the hazard must be in (0, 1)')
-  const r = bocpd(y, conjugateOf(model), hazard)
+  const r = bocpd(y, conjugateModelOf(model), hazard)
   return {
     logPredictive: r.logPredictive,
     predictiveMean: r.predictiveMean,

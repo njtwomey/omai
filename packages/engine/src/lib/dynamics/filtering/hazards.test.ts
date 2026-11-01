@@ -3,7 +3,7 @@ import { key, normal } from '../../random/index.ts'
 import { defaults } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { bocpd, constantHazard } from './changepoint.ts'
-import { hazards, segmentModels } from './changepoint-options.ts'
+import { hazards, hazardValue, segmentModels, segmentModelValue, segmentModelValueOf } from './changepoint-options.ts'
 import { gammaHazard, minimumSegmentHazard, negativeBinomialHazard, weibullHazard } from './hazards.ts'
 
 /** The segment-length pmf P(T = r) implied by a hazard: h(r) times the chance of having survived to r. */
@@ -134,5 +134,16 @@ describe('the option tables', () => {
     expect(hazards.make({ kind: 'minimum-segment', rate: 0.1, minSegment: 4 })(3)).toBe(0)
     expect(hazards.where((p) => !p.allowsShort)).toEqual(['minimum-segment'])
     expect(hazards.where((p) => p.constant)).toEqual(['constant'])
+  })
+
+  it('make complete values, and a model gives its own configuration back', () => {
+    expect(segmentModelValue('rate', { shape: 4 })).toEqual({ kind: 'rate', shape: 4, rate: 0.4 })
+    expect(hazardValue('constant')).toEqual({ kind: 'constant', rate: 0.01 })
+    expect(() => segmentModelValue('nope')).toThrow(/not one of/)
+    expect(() => hazardValue('constant', { shape: 1 })).toThrow(/no knob/)
+    for (const name of segmentModels.names) {
+      const model = segmentModels.make(segmentModelValue(name))
+      expect(segmentModels.make(segmentModelValueOf(model))).toEqual(model)
+    }
   })
 })
