@@ -3,7 +3,9 @@
  * iterative base: the maximum-margin classifier in a kernel's feature space, found by the library's sequential minimal
  * optimisation with one working-pair update per step, one-versus-one for more than two classes (the pairs solved in
  * turn) and Platt-scaled probabilities with pairwise coupling as a last step. The fitted model is the kernel expansion
- * over the support vectors, so the model at any step of the dual is available.
+ * over the support vectors, so the model at any step of the dual is available. The solver is a slot (`solver`, see
+ * `svcSolvers`): SMO by default; with `loss: 'squaredHinge'` the primal is smooth and any solver of `smoothSolvers`
+ * minimises it.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -26,9 +28,9 @@ import {
   plattScaling,
   sampleWeightsOf,
 } from '../learn/index.ts'
-import { type SmoState, nuSvcDual as solveNuSvc, svcDual as solveSvc } from '../optim/index.ts'
-import { foldIn, type Key, permutation } from '../random/index.ts'
-import { dict, real } from '../space/index.ts'
+import { type SmoState, nuSvcDual as solveNuSvc, solverConfigOf, svcDual as solveSvc } from '../optim/index.ts'
+import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
+import { choice, dict, real, type SpaceValue } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import {
   type Algorithm,
@@ -42,7 +44,17 @@ import {
   stateToJson,
 } from '../trace/index.ts'
 import { cSvcDual, type Dual, nuSvcDual, submatrix } from './_dual.ts'
+import {
+  checkSolver,
+  type SvcLoss,
+  solveSquaredSvc,
+  squaredDualFor,
+  squaredHingePrimal,
+  svcSolvers,
+} from './_squared.ts'
 import { pairwiseCoupling } from './probability.ts'
+
+export { type SvcLoss, svcSolvers } from './_squared.ts'
 
 /** The hyperparameters of {@link svc}. */
 export interface SvcHyper {
@@ -69,6 +81,13 @@ export interface SvcHyper {
   readonly classWeight: 'balanced' | Readonly<Record<number, number>> | null
   /** The shape of `decisionFunction` for more than two classes: scikit-learn's `ovr` transform of the votes, or the raw `ovo` pairs. */
   readonly decisionShape: 'ovr' | 'ovo'
+  /** `hinge` (the C-SVC) or `squaredHinge` (the L2-loss SVM, whose primal is smooth; the C form only). */
+  readonly loss: SvcLoss
+  /**
+   * How a pair is fitted: a value of `svcSolvers.space`. `smo` (default) is libsvm's dual solver and reaches either
+   * loss; with `loss: 'squaredHinge'` every solver of `smoothSolvers` minimises the primal over the kernel expansion.
+   */
+  readonly solver: SpaceValue
 }
 
 /**
@@ -204,17 +223,25 @@ function crossValidated(
       for (const i of held) dec[i] = positives === 0 ? -1 : 1
       continue
     }
-    const sub = fromStorage(submatrix(Kp, m, train), [train.length, train.length], 'float64')
+    const raw = submatrix(Kp, m, train)
+    const sub = fromStorage(raw, [train.length, train.length], 'float64')
     const options = { tol: h.tol, selection: h.selection }
     const r =
-      h.form === 'nu'
-        ? solveNuSvc(sub, ys, Math.min(h.nu, (2 * Math.min(positives, ys.length - positives)) / ys.length), options)
-        : solveSvc(
-            sub,
+      h.loss === 'squaredHinge'
+        ? solveSquaredSvc(
+            raw,
             ys,
             Float64Array.from(train, (i) => C[i] ?? 0),
             options,
           )
+        : h.form === 'nu'
+          ? solveNuSvc(sub, ys, Math.min(h.nu, (2 * Math.min(positives, ys.length - positives)) / ys.length), options)
+          : solveSvc(
+              sub,
+              ys,
+              Float64Array.from(train, (i) => C[i] ?? 0),
+              options,
+            )
     const coef = toFlat(r.coef)
     for (const i of held) {
       let s = r.bias
@@ -381,30 +408,31 @@ function prepare(
   readonly layout: Layout
   readonly K: Float64Array
   readonly C: Float64Array
-  dualOf(k: number): Dual
+  dualOf(k: number, key?: Key): Dual
 } {
   const layout = layoutOf(data, h)
   if (h.form === 'nu' && data.weights !== undefined)
     throw new MdmlError('value', `${WHO}: sample weights are not supported by the nu form`)
+  if (h.loss === 'squaredHinge' && h.form === 'nu')
+    throw new MdmlError('value', `${WHO}: the squared hinge is a C form (the nu form has no squared-hinge dual)`)
+  checkSolver(WHO, { kind: svcSolvers.modeOf(h.solver).name }, h.loss)
   const K = kernelMatrix(h, layout.kernel, data.x)
   const C = penalties(data, h, layout)
   const options = { tol: h.tol, selection: h.selection }
   const duals = new Map<number, Dual>()
-  const dualOf = (k: number): Dual => {
+  const dualOf = (k: number, key: Key = makeKey(0)): Dual => {
     let dual = duals.get(k)
     if (dual === undefined) {
       const pair = layout.pairs[k] as Layout['pairs'][number]
       const Kp = submatrix(K, layout.n, pair.rows)
       const y = Float64Array.from(pair.rows, (i) => (layout.codes[i] === pair.positive ? 1 : -1))
+      const Cp = Float64Array.from(pair.rows, (i) => C[i] ?? 0)
       dual =
-        h.form === 'nu'
-          ? nuSvcDual(Kp, y, h.nu, options)
-          : cSvcDual(
-              Kp,
-              y,
-              Float64Array.from(pair.rows, (i) => C[i] ?? 0),
-              options,
-            )
+        h.loss === 'squaredHinge'
+          ? squaredDualFor(squaredHingePrimal(Kp, y, Cp, options), h.solver, key)
+          : h.form === 'nu'
+            ? nuSvcDual(Kp, y, h.nu, options)
+            : cSvcDual(Kp, y, Cp, options)
       duals.set(k, dual)
     }
     return dual
@@ -460,9 +488,13 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs, Sv
     folds: 5,
     classWeight: null,
     decisionShape: 'ovr',
+    loss: 'hinge',
+    solver: solverConfigOf(svcSolvers, { kind: 'smo' }),
   },
   hyperSpace: (h) =>
     dict({
+      loss: choice(['hinge', 'squaredHinge'] as const, { default: h.loss, label: 'loss' }),
+      solver: svcSolvers.space,
       ...(h.form === 'c'
         ? { C: real(1e-2, 1e3, { log: true, default: Math.min(Math.max(h.C, 1e-2), 1e3), label: 'C' }) }
         : { nu: real(0.01, 1, { default: Math.min(Math.max(h.nu, 0.01), 1), label: 'nu' }) }),
@@ -472,13 +504,22 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs, Sv
     const { layout, K, C, dualOf } = prepare(data, h)
     const pairCount = layout.pairs.length
     const start = (k: number, key: Key): Pick<SvcState, 'smo' | 'live' | 'margins'> => {
-      const dual = dualOf(k)
+      const dual = dualOf(k, key)
       const smo = dual.algorithm.init(key)
       return { smo, live: toLive(dual.expansion(smo)), margins: Array.from(dual.margins(smo)) }
     }
     return {
       name: 'svc',
-      config: { form: h.form, C: h.C, nu: h.nu, kernel: layout.kernel.kernel, gamma: layout.kernel.gamma, tol: h.tol },
+      config: {
+        form: h.form,
+        C: h.C,
+        nu: h.nu,
+        kernel: layout.kernel.kernel,
+        gamma: layout.kernel.gamma,
+        tol: h.tol,
+        loss: h.loss,
+        solver: h.solver,
+      },
       schema: channels({
         metrics: {
           dual: { description: 'the dual objective of the pair being solved (to be maximised)', direction: 'higher' },
@@ -523,7 +564,7 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs, Sv
           })
           return { ...s, phase: 'done', platt }
         }
-        const dual = dualOf(s.current)
+        const dual = dualOf(s.current, ctx.key)
         const before = s.smo
         const smo = dual.algorithm.step(before, ctx)
         if (smo.pair !== undefined) {

@@ -4630,6 +4630,11 @@ resolved kernel), so `revive` rebuilds the verbs and `fittedAt(t)` gives the mod
 - `_dual.ts` (private): the six duals behind one interface (`Dual`: the algorithm, the kernel expansion of a state, the
   dual, the gap, the margins, the tube): `cSvcDual`, `nuSvcDual`, `svrDual`, `nuSvrDual`, `oneClassDual`, `svddDual`. The
   gap of each is its primal at the best slack threshold (`hingeMinimum`) minus the dual.
+- `_squared.ts` (private, `svcSolvers` and `SvcLoss` re-exported from `classifier.ts`): the solver slot of `svc`. `loss:
+  'squaredHinge'` (the L2-loss SVM, C form) has a smooth primal over the kernel-expansion coefficients and the intercept
+  (`squaredHingePrimal`), so every solver of `smoothSolvers` minimises it; `smo` (the default, for both losses) solves its
+  dual (the C-SVC dual with `1 / (2C)` on the diagonal, no upper bound). The generic solvers are seen as duals
+  (`smoothSvcDual`) so the tape keeps `solver/dual` and `solver/gap`. The hinge is not smooth: it admits `smo` only.
 - `classifier.ts`: `svc` (C-SVC; `form: 'nu'` is NuSVC, also `nuSvc`): any `kernels` kernel (`rbf`, `linear`, `poly`,
   `sigmoid`, `laplacian` by scikit-learn's names with `gamma` of `'scale'`, `'auto'` or a number, or a `Kernel` object),
   one-versus-one for more than two classes (the pairs solved in turn, libsvm's class order and scikit-learn's
