@@ -2189,7 +2189,10 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   the mean, the single-sample variance and the standard error per parameter; `gradientError` against an exact gradient.
 - `smc.ts`: resampling schemes (`systematicResample`, `stratifiedResample`, `multinomialResample`, `residualResample`,
   `resample`), `nextTemperature` (adaptive tempering), `adaptiveRandomWalkMove`, `smcAlgorithm` and `smcSampler`
-  (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling`.
+  (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling` (a run of `aisAlgorithm`:
+  one step is one rung of the ladder; `aisContract` paths `ais/beta`, `ais/ess`, `ais/log-weight`, `ais/log-z`,
+  `ais/particles`).
+- `ais-options.ts`: `annealingLadders`, the option table of temperature ladders (power, linear, log-spaced).
 - `rejection.ts`: `rejectionSample` (with envelope-violation counts), `adaptiveRejectionSample` (Gilks and Wild, tangent
   hull and chord squeeze), `ratioOfUniforms` (Kinderman and Monahan), each a run of its steppable Algorithm
   (`rejectionAlgorithm`, `adaptiveRejectionAlgorithm`, `ratioOfUniformsAlgorithm`: one step is one proposal; the state
