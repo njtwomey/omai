@@ -5,6 +5,16 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 
 /** Arithmetic in the finite field GF(2^m), by exponent and logarithm tables of a primitive element. */
 export interface GaloisField {
@@ -207,9 +217,215 @@ export interface RsDecodeResult {
   readonly errata: number[]
 }
 
+/** The paths {@link rsDecodeAlgorithm} logs. */
+export type RsPath = 'rs/syndrome' | 'rs/locator' | 'rs/discrepancy' | 'rs/errors'
+
+/**
+ * What the Reed-Solomon decoder logs: the syndromes, the errata locator polynomial after each Berlekamp-Massey step, the
+ * discrepancy that step corrected, and the number of errors the locator implies (at the last step, the number found).
+ */
+export const rsContract: Contract<unknown, RsPath> = defineContract({
+  'rs/syndrome': tensor({ role: 'state', shape: ['nsym'], description: 'the syndromes of the received word' }),
+  'rs/locator': tensor({ role: 'state', shape: ['degree'], description: 'the errata locator, lowest degree first' }),
+  'rs/discrepancy': scalar({
+    description: 'the discrepancy of the Berlekamp-Massey step (0: the locator already fits)',
+  }),
+  'rs/errors': scalar({
+    description: 'the errors (beyond the erasures) the locator implies; at the end, the errata found',
+  }),
+})
+
+/**
+ * The state of {@link rsDecodeAlgorithm}: the syndromes, the errata locator being built by Berlekamp-Massey and the
+ * correction register, then the corrected word. Steps replace the arrays; they serialise as plain numbers.
+ */
+export interface RsDecodeState {
+  readonly received: readonly number[]
+  readonly erasures: readonly number[]
+  readonly syndromes: readonly number[]
+  /** The next Berlekamp-Massey step (from `erasures + 1` to `nsym`). */
+  readonly step: number
+  /** The errata locator, lowest degree first. */
+  readonly lambda: readonly number[]
+  /** The correction register of the algorithm. */
+  readonly b: readonly number[]
+  /** The current length of the locator. */
+  readonly l: number
+  /** The last discrepancy. */
+  readonly discrepancy: number
+  /** `bm` while stepping, `correct` once the locator is final and the errata remain to be found and fixed, `done` after. */
+  readonly phase: 'bm' | 'correct' | 'done'
+  /** The corrected word (the received word until `done`). */
+  readonly corrected: readonly number[]
+  /** The corrected positions, sorted. */
+  readonly errata: readonly number[]
+  /** Why decoding failed, if it did. */
+  readonly failure: string | null
+}
+
+const TOO_MANY = 'rsDecode: too many errors to correct'
+
+/**
+ * Reed-Solomon decoding with errors and erasures as a stepped algorithm: the syndromes and the erasure locator are the
+ * start, each step is one iteration of the Berlekamp-Massey algorithm (Blahut's errata form) computing the discrepancy and
+ * updating the errata locator, and a last step does the Chien search for the error positions, Forney's formula for the
+ * values and the check that the corrected word has zero syndromes. It logs the syndromes, the locator, the discrepancy
+ * and the errors implied, and is done (`converged`) when the word is corrected (or was clean) and `failed` when there
+ * are too many errors. The state serialises; read the result with {@link rsDecodeResult}.
+ *
+ * @param code - The code.
+ * @param received - The received codeword (message symbols then nsym parity symbols).
+ * @param options - Known erasure positions (indices into `received`).
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for symbols out of the field, a word of the wrong length, erasures out of range
+ * or more than nsym erasures.
+ * @concept reed-solomon
+ * @example
+ * ```ts
+ * import { reedSolomon, rsDecodeAlgorithm, rsDecodeResult, rsEncode } from 'mdml-engine/information'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const code = reedSolomon(4)
+ * const word = rsEncode(code, [1, 2, 3, 4])
+ * word[1] = 99
+ * const run = runAlgorithm(rsDecodeAlgorithm(code, word), { maxSteps: 20 })
+ * [run.status, rsDecodeResult(run.state, code).message] // => ['converged', [1, 2, 3, 4]]
+ * ```
+ */
+export function rsDecodeAlgorithm(
+  code: ReedSolomonCode,
+  received: ArrayLike<number>,
+  options: { readonly erasures?: readonly number[] } = {},
+): Algorithm<RsDecodeState, RsPath> {
+  const f = code.field
+  const r = symbols(code, received, 'rsDecode')
+  const n = r.length
+  const nsym = code.nsym
+  if (n <= nsym || n > f.size - 1)
+    throw new MdmlError('value', `rsDecode: expected ${nsym + 1} to ${f.size - 1} symbols`)
+  const erasures = [...new Set(options.erasures ?? [])]
+  if (erasures.some((e) => !Number.isInteger(e) || e < 0 || e >= n))
+    throw new MdmlError('value', 'rsDecode: erasure positions out of range')
+  if (erasures.length > nsym) throw new MdmlError('value', 'rsDecode: too many erasures')
+  const rho = erasures.length
+  const locatorOf = (i: number): number => f.pow(2, n - 1 - i)
+  const syndromesOf = (word: readonly number[]): number[] =>
+    Array.from({ length: nsym }, (_, j) => {
+      const x = f.pow(2, j + code.fcr)
+      let y = 0
+      for (const c of word) y = f.mul(y, x) ^ c
+      return y
+    })
+  return {
+    name: 'information/reed-solomon-decode',
+    config: { nsym, n, m: f.m, erasures },
+    init: () => {
+      const s = syndromesOf(r)
+      // Erasure locator Gamma(x) = product of (1 - X_e x), lowest degree first.
+      let gamma = [1]
+      for (const e of erasures) gamma = mulLow(f, gamma, [1, locatorOf(e)])
+      const clean = s.every((v) => v === 0) && rho === 0
+      return {
+        received: r,
+        erasures,
+        syndromes: s,
+        step: rho + 1,
+        lambda: gamma,
+        b: gamma,
+        l: rho,
+        discrepancy: 0,
+        phase: clean ? 'done' : rho + 1 > nsym ? 'correct' : 'bm',
+        corrected: r,
+        errata: [],
+        failure: null,
+      }
+    },
+    step: (st, ctx) => {
+      const s = st.syndromes
+      if (st.phase === 'bm') {
+        let lambda = [...st.lambda]
+        let b = [...st.b]
+        let l = st.l
+        const step = st.step
+        let delta = 0
+        for (let i = 0; i <= l && i < lambda.length; i++) delta ^= f.mul(lambda[i] ?? 0, s[step - 1 - i] ?? 0)
+        const shifted = [0, ...b]
+        if (delta === 0) b = shifted
+        else {
+          const t = new Array<number>(Math.max(lambda.length, shifted.length)).fill(0)
+          for (let i = 0; i < t.length; i++) t[i] = (lambda[i] ?? 0) ^ f.mul(delta, shifted[i] ?? 0)
+          if (2 * l <= step + rho - 1) {
+            b = lambda.map((c) => f.div(c, delta))
+            l = step + rho - l
+          } else b = shifted
+          lambda = t
+        }
+        ctx.log('rs/syndrome', s)
+        ctx.log('rs/locator', lambda)
+        ctx.log('rs/discrepancy', delta)
+        ctx.log('rs/errors', Math.max(0, l - rho))
+        return { ...st, step: step + 1, lambda, b, l, discrepancy: delta, phase: step + 1 > nsym ? 'correct' : 'bm' }
+      }
+      // The locator is final: find the errata and fix them.
+      const lambda = [...st.lambda]
+      while (lambda.length > 1 && lambda[lambda.length - 1] === 0) lambda.pop()
+      const fail = (failure: string): RsDecodeState => ({ ...st, lambda, phase: 'done', failure })
+      const degree = lambda.length - 1
+      if (2 * (degree - rho) + rho > nsym) return fail(TOO_MANY)
+      // Chien search over the positions of this (possibly shortened) word.
+      const positions: number[] = []
+      for (let i = 0; i < n; i++) if (evalLow(f, lambda, f.inverse(locatorOf(i))) === 0) positions.push(i)
+      if (positions.length !== degree) return fail(TOO_MANY)
+      // Forney: e = X^(1 - fcr) Omega(X^-1) / Lambda'(X^-1), with Omega = S Lambda mod x^nsym.
+      const omega = mulLow(f, [...s], lambda).slice(0, nsym)
+      const derivative = lambda.slice(1).map((c, i) => (i % 2 === 0 ? c : 0))
+      const corrected = [...r]
+      for (const i of positions) {
+        const x = locatorOf(i)
+        const xInv = f.inverse(x)
+        const denominator = evalLow(f, derivative, xInv)
+        if (denominator === 0) return fail(TOO_MANY)
+        const magnitude = f.mul(f.pow(x, 1 - code.fcr), f.div(evalLow(f, omega, xInv), denominator))
+        corrected[i] = (corrected[i] ?? 0) ^ magnitude
+      }
+      if (syndromesOf(corrected).some((v) => v !== 0)) return fail(TOO_MANY)
+      const errata = positions.filter((i) => corrected[i] !== r[i] || erasures.includes(i)).sort((a, c) => a - c)
+      ctx.log('rs/locator', lambda)
+      ctx.log('rs/errors', errata.length)
+      return { ...st, lambda, phase: 'done', corrected, errata }
+    },
+    done: (st) => (st.phase !== 'done' ? undefined : st.failure === null ? 'converged' : 'failed'),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as RsDecodeState,
+  }
+}
+
+/**
+ * The decoded word of a finished Reed-Solomon decoding state.
+ *
+ * @param state - A finished state of {@link rsDecodeAlgorithm}.
+ * @param code - The code (for the number of parity symbols).
+ * @returns The message, the corrected codeword and the corrected positions.
+ * @throws MdmlError with code `value` when the decoding failed (too many errors).
+ * @concept reed-solomon
+ * @example
+ * ```ts
+ * import { reedSolomon, rsDecodeAlgorithm, rsDecodeResult, rsEncode } from 'mdml-engine/information'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const code = reedSolomon(4)
+ * const run = runAlgorithm(rsDecodeAlgorithm(code, rsEncode(code, [1, 2, 3])), { maxSteps: 20 })
+ * rsDecodeResult(run.state, code).errata // => []
+ * ```
+ */
+export function rsDecodeResult(state: RsDecodeState, code: ReedSolomonCode): RsDecodeResult {
+  if (state.failure !== null) throw new MdmlError('value', state.failure)
+  const n = state.received.length
+  return { message: state.corrected.slice(0, n - code.nsym), codeword: [...state.corrected], errata: [...state.errata] }
+}
+
 /**
  * Decode a Reed-Solomon codeword with errors and erasures: syndromes, the Berlekamp-Massey algorithm started from the
  * erasure locator (Blahut's errata form), a Chien search for the error positions and Forney's formula for the values.
+ * {@link rsDecodeAlgorithm} run to the end.
  *
  * @param code - The code.
  * @param received - The received codeword (message symbols then nsym parity symbols).
@@ -232,77 +448,6 @@ export function rsDecode(
   received: ArrayLike<number>,
   options: { readonly erasures?: readonly number[] } = {},
 ): RsDecodeResult {
-  const f = code.field
-  const r = symbols(code, received, 'rsDecode')
-  const n = r.length
-  const nsym = code.nsym
-  if (n <= nsym || n > f.size - 1)
-    throw new MdmlError('value', `rsDecode: expected ${nsym + 1} to ${f.size - 1} symbols`)
-  const erasures = [...new Set(options.erasures ?? [])]
-  if (erasures.some((e) => !Number.isInteger(e) || e < 0 || e >= n))
-    throw new MdmlError('value', 'rsDecode: erasure positions out of range')
-  if (erasures.length > nsym) throw new MdmlError('value', 'rsDecode: too many erasures')
-  const locatorOf = (i: number): number => f.pow(2, n - 1 - i)
-  const syndromesOf = (word: readonly number[]): number[] =>
-    Array.from({ length: nsym }, (_, j) => {
-      const x = f.pow(2, j + code.fcr)
-      let y = 0
-      for (const c of word) y = f.mul(y, x) ^ c
-      return y
-    })
-  const s = syndromesOf(r)
-  const done = (codeword: number[], errata: number[]): RsDecodeResult => ({
-    message: codeword.slice(0, n - nsym),
-    codeword,
-    errata: [...errata].sort((a, b) => a - b),
-  })
-  if (s.every((v) => v === 0) && erasures.length === 0) return done(r, [])
-  // Erasure locator Gamma(x) = product of (1 - X_e x), lowest degree first.
-  let gamma = [1]
-  for (const e of erasures) gamma = mulLow(f, gamma, [1, locatorOf(e)])
-  // Berlekamp-Massey from Gamma (Blahut): Lambda becomes the errata locator.
-  let lambda = [...gamma]
-  let b = [...gamma]
-  const rho = erasures.length
-  let l = rho
-  for (let step = rho + 1; step <= nsym; step++) {
-    let delta = 0
-    for (let i = 0; i <= l && i < lambda.length; i++) delta ^= f.mul(lambda[i] ?? 0, s[step - 1 - i] ?? 0)
-    const shifted = [0, ...b]
-    if (delta === 0) {
-      b = shifted
-      continue
-    }
-    const t = new Array<number>(Math.max(lambda.length, shifted.length)).fill(0)
-    for (let i = 0; i < t.length; i++) t[i] = (lambda[i] ?? 0) ^ f.mul(delta, shifted[i] ?? 0)
-    if (2 * l <= step + rho - 1) {
-      b = lambda.map((c) => f.div(c, delta))
-      l = step + rho - l
-    } else b = shifted
-    lambda = t
-  }
-  while (lambda.length > 1 && lambda[lambda.length - 1] === 0) lambda.pop()
-  const degree = lambda.length - 1
-  if (2 * (degree - rho) + rho > nsym) throw new MdmlError('value', 'rsDecode: too many errors to correct')
-  // Chien search over the positions of this (possibly shortened) word.
-  const positions: number[] = []
-  for (let i = 0; i < n; i++) if (evalLow(f, lambda, f.inverse(locatorOf(i))) === 0) positions.push(i)
-  if (positions.length !== degree) throw new MdmlError('value', 'rsDecode: too many errors to correct')
-  // Forney: e = X^(1 - fcr) Omega(X^-1) / Lambda'(X^-1), with Omega = S Lambda mod x^nsym.
-  const omega = mulLow(f, s, lambda).slice(0, nsym)
-  const derivative = lambda.slice(1).map((c, i) => (i % 2 === 0 ? c : 0))
-  const corrected = [...r]
-  for (const i of positions) {
-    const x = locatorOf(i)
-    const xInv = f.inverse(x)
-    const denominator = evalLow(f, derivative, xInv)
-    if (denominator === 0) throw new MdmlError('value', 'rsDecode: too many errors to correct')
-    const magnitude = f.mul(f.pow(x, 1 - code.fcr), f.div(evalLow(f, omega, xInv), denominator))
-    corrected[i] = (corrected[i] ?? 0) ^ magnitude
-  }
-  if (syndromesOf(corrected).some((v) => v !== 0)) throw new MdmlError('value', 'rsDecode: too many errors to correct')
-  return done(
-    corrected,
-    positions.filter((i) => corrected[i] !== r[i] || erasures.includes(i)),
-  )
+  const run = runAlgorithm(rsDecodeAlgorithm(code, received, options), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return rsDecodeResult(run.state, code)
 }

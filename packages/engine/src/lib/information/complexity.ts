@@ -10,8 +10,10 @@ import { nextAfter } from '../numerics/approximation/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { kdTree } from '../numerics/spatial/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
+import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { countsOf, entropyOfCounts, float, type Labels, labelCodes, logOfBase } from './_shared.ts'
 import { asBytes, type ByteInput, deflate, gzipCompress, zlibCompress } from './deflate.ts'
+import type { LzPath } from './dictionary-coding.ts'
 
 /** A compressor for the compression distance: a named format, or any function giving the compressed length. */
 export type Compressor = 'zlib' | 'gzip' | 'deflate' | ((bytes: Uint8Array) => number)
@@ -94,10 +96,107 @@ export function compressionDistanceMatrix(items: readonly ByteInput[], options: 
 }
 
 /**
+ * The state of {@link lempelZivComplexityAlgorithm}: the variables of the Kaspar-Schuster scan and the ends of the
+ * phrases found so far. Steps update it in place; keep a copy of a state you want to look at later.
+ */
+export interface LzComplexityState {
+  /** The symbols, as integer codes. */
+  readonly codes: readonly number[]
+  /** The number of distinct symbols. */
+  readonly alphabet: number
+  complexity: number
+  /** The start of the phrase being matched. */
+  prefix: number
+  /** The length matched so far. */
+  length: number
+  /** The longest match tried for this phrase. */
+  longest: number
+  /** The start of the candidate earlier occurrence. */
+  pointer: number
+  /** The end of each phrase found, in order. */
+  readonly phrases: number[]
+  /** True once the scan has run out and the last, partial phrase was counted. */
+  finished: boolean
+}
+
+/**
+ * The Lempel-Ziv (1976) complexity of a sequence as a stepped algorithm (the Kaspar-Schuster scan), one phrase per
+ * step: the scan compares the current phrase with earlier starting points until a phrase is found that has not
+ * occurred before. It logs the position reached, the longest earlier match for the phrase, the phrases so far and their
+ * ratio to the symbols consumed, and is done (`converged`) when the sequence is consumed. The state serialises; the
+ * normalised complexity is read with {@link lempelZivComplexity}.
+ *
+ * @param sequence - The symbols (a string is taken character by character).
+ * @returns The algorithm.
+ * @concept lempel-ziv-complexity
+ * @example
+ * ```ts
+ * import { lempelZivComplexityAlgorithm } from 'mdml-engine/information'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(lempelZivComplexityAlgorithm('1001111011000010'), { maxSteps: 40 })
+ * [run.state.complexity, run.state.phrases] // => [6, [1, 2, 4, 8, 12, 16]]
+ * ```
+ */
+export function lempelZivComplexityAlgorithm(sequence: string | Labels): Algorithm<LzComplexityState, LzPath> {
+  const s0 = typeof sequence === 'string' ? Array.from(sequence, (c) => c.codePointAt(0) ?? 0) : sequence
+  const { codes, m } = labelCodes(s0 as Labels, 'lempelZivComplexity')
+  const n = codes.length
+  return {
+    name: 'information/lempel-ziv-complexity',
+    config: { n, alphabet: m },
+    init: () => ({
+      codes: Array.from(codes),
+      alphabet: m,
+      complexity: 1,
+      prefix: 1,
+      length: 1,
+      longest: 1,
+      pointer: 0,
+      phrases: [1],
+      finished: false,
+    }),
+    step: (s, ctx) => {
+      const before = s.complexity
+      while (s.prefix + s.length <= n && s.complexity === before) {
+        if (codes[s.pointer + s.length - 1] === codes[s.prefix + s.length - 1]) s.length++
+        else {
+          s.longest = Math.max(s.length, s.longest)
+          s.pointer++
+          if (s.pointer === s.prefix) {
+            s.complexity++
+            s.prefix += s.longest
+            s.pointer = 0
+            s.phrases.push(s.prefix)
+            ctx.log('lz/match', s.longest)
+            s.longest = 1
+          }
+          s.length = 1
+        }
+      }
+      if (s.complexity === before && !(s.prefix + s.length <= n)) {
+        if (s.length !== 1) {
+          s.complexity++
+          s.phrases.push(n)
+        }
+        s.finished = true
+      }
+      ctx.log('lz/position', Math.min(s.prefix, n))
+      ctx.log('lz/offset', s.pointer)
+      ctx.log('lz/phrase', s.complexity)
+      ctx.log('lz/ratio', s.complexity / Math.max(1, Math.min(s.prefix, n)))
+      return s
+    },
+    done: (s) => (s.finished ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as LzComplexityState,
+  }
+}
+
+/**
  * The Lempel-Ziv (1976) complexity of a sequence: the number of new phrases met when the sequence is parsed from left
  * to right, each phrase the shortest one that has not occurred before (the Kaspar-Schuster algorithm, as antropy's
  * `lziv_complexity`). Normalised, c / (n / log_b n) with b the number of distinct symbols, it estimates the entropy
- * rate in base-b units for ergodic sources.
+ * rate in base-b units for ergodic sources. {@link lempelZivComplexityAlgorithm} run to the end.
  *
  * @param sequence - The symbols (a string is taken character by character).
  * @param options - `normalise` (default false).
@@ -112,32 +211,11 @@ export function compressionDistanceMatrix(items: readonly ByteInput[], options: 
  * ```
  */
 export function lempelZivComplexity(sequence: string | Labels, options: { readonly normalise?: boolean } = {}): number {
-  const s = typeof sequence === 'string' ? Array.from(sequence, (c) => c.codePointAt(0) ?? 0) : sequence
-  const { codes, m } = labelCodes(s as Labels, 'lempelZivComplexity')
-  const n = codes.length
-  let complexity = 1
-  let prefix = 1
-  let length = 1
-  let longest = 1
-  let pointer = 0
-  while (prefix + length <= n) {
-    if (codes[pointer + length - 1] === codes[prefix + length - 1]) length++
-    else {
-      longest = Math.max(length, longest)
-      pointer++
-      if (pointer === prefix) {
-        complexity++
-        prefix += longest
-        pointer = 0
-        longest = 1
-      }
-      length = 1
-    }
-  }
-  if (length !== 1) complexity++
-  if (options.normalise !== true) return complexity
-  const base = Math.max(2, m)
-  return complexity / (n / (Math.log(n) / Math.log(base)))
+  const { state } = runAlgorithm(lempelZivComplexityAlgorithm(sequence), { maxSteps: Number.MAX_SAFE_INTEGER })
+  if (options.normalise !== true) return state.complexity
+  const n = state.codes.length
+  const base = Math.max(2, state.alphabet)
+  return state.complexity / (n / (Math.log(n) / Math.log(base)))
 }
 
 /**

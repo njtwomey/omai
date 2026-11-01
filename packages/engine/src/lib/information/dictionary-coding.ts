@@ -5,6 +5,15 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 
 /** A sequence of symbols: a string (its UTF-8 bytes) or integers. */
 export type SymbolInput = string | ArrayLike<number>
@@ -23,9 +32,103 @@ export interface Lz77Token {
   readonly next?: number
 }
 
+/** The paths the Lempel-Ziv parses log, as a type. */
+export type LzPath = 'lz/position' | 'lz/match' | 'lz/offset' | 'lz/phrase' | 'lz/ratio'
+
+/**
+ * What the Lempel-Ziv parses log per step: the position parsed up to, the length of the match (LZ77: the longest match
+ * in the window; complexity: the longest candidate in the phrase), the offset of the match, the number of phrases (tokens)
+ * so far, and the ratio of phrases to symbols consumed.
+ */
+export const lzContract: Contract<unknown, LzPath> = defineContract({
+  'lz/position': scalar({ description: 'the symbols consumed so far' }),
+  'lz/match': scalar({ description: 'the length of the match found at this step' }),
+  'lz/offset': scalar({ description: 'how far back the match starts (0 for none)' }),
+  'lz/phrase': scalar({ description: 'phrases (tokens) so far' }),
+  'lz/ratio': scalar({
+    description: 'phrases per symbol consumed: low means a compressible sequence',
+    direction: 'lower',
+  }),
+})
+
+/** Options of {@link lz77Algorithm} and {@link lz77Encode}. */
+export interface Lz77Options {
+  /** How far back a match may start (default 4096). */
+  readonly window?: number
+  /** The longest match (default 255). */
+  readonly maxLength?: number
+}
+
+/**
+ * The state of {@link lz77Algorithm}: the position reached and the tokens emitted. Steps push tokens in place; keep a
+ * copy of a state you want to look at later.
+ */
+export interface Lz77State {
+  /** The next symbol to parse. */
+  position: number
+  readonly tokens: { offset: number; length: number; next: number }[]
+}
+
+/**
+ * The LZ77 parse (Ziv and Lempel 1977) as a stepped algorithm, one token per step: at the current position find the
+ * longest match in the preceding window (overlapping the position if it likes, nearest first among equals), emit
+ * (offset, length, next symbol) and move past them. It logs the position, the match length and offset, the tokens so far
+ * and their ratio to the symbols consumed, and is done (`converged`) when the input is consumed. The state serialises.
+ *
+ * @param input - The symbols (a string is taken as its UTF-8 bytes).
+ * @param options - Window size (default 4096) and longest match (default 255).
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` unless window and maxLength are at least 1.
+ * @concept dictionary-coding
+ * @example
+ * ```ts
+ * import { lz77Algorithm } from 'mdml-engine/information'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(lz77Algorithm('abababc'), { maxSteps: 20 })
+ * [run.steps, run.state.tokens.map((t) => t.length)] // => [3, [0, 0, 4]]
+ * ```
+ */
+export function lz77Algorithm(input: SymbolInput, options: Lz77Options = {}): Algorithm<Lz77State, LzPath> {
+  const xs = symbolsOf(input, 'lz77Encode')
+  const window = options.window ?? 4096
+  const maxLength = options.maxLength ?? 255
+  if (!(window >= 1 && maxLength >= 1)) throw new MdmlError('value', 'lz77Encode: window and maxLength must be >= 1')
+  return {
+    name: 'information/lz77',
+    config: { window, maxLength, n: xs.length },
+    init: () => ({ position: 0, tokens: [] }),
+    step: (s, ctx) => {
+      const i = s.position
+      let bestLength = 0
+      let bestOffset = 0
+      for (let offset = 1; offset <= Math.min(window, i); offset++) {
+        let l = 0
+        while (l < maxLength && i + l < xs.length - 1 && xs[i + l - offset] === xs[i + l]) l++
+        if (l > bestLength) {
+          bestLength = l
+          bestOffset = offset
+        }
+      }
+      // Matches stop one short of the end, so every token carries its next symbol.
+      s.tokens.push({ offset: bestOffset, length: bestLength, next: xs[i + bestLength] as number })
+      s.position = i + bestLength + 1
+      ctx.log('lz/position', s.position)
+      ctx.log('lz/match', bestLength)
+      ctx.log('lz/offset', bestOffset)
+      ctx.log('lz/phrase', s.tokens.length)
+      ctx.log('lz/ratio', s.tokens.length / s.position)
+      return s
+    },
+    done: (s) => (s.position >= xs.length ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as Lz77State,
+  }
+}
+
 /**
  * The LZ77 parse (Ziv and Lempel 1977): at each position, the longest match in the preceding window (overlapping the
  * current position if it likes, nearest first among equals) becomes a token (offset, length, next symbol).
+ * {@link lz77Algorithm} run to the end.
  *
  * @param input - The symbols (a string is taken as its UTF-8 bytes).
  * @param options - Window size (default 4096) and longest match (default 255).
@@ -37,32 +140,8 @@ export interface Lz77Token {
  * lz77Encode('abababc').map((t) => [t.offset, t.length, t.next]) // => [[0, 0, 97], [0, 0, 98], [2, 4, 99]]
  * ```
  */
-export function lz77Encode(
-  input: SymbolInput,
-  options: { readonly window?: number; readonly maxLength?: number } = {},
-): Lz77Token[] {
-  const xs = symbolsOf(input, 'lz77Encode')
-  const window = options.window ?? 4096
-  const maxLength = options.maxLength ?? 255
-  if (!(window >= 1 && maxLength >= 1)) throw new MdmlError('value', 'lz77Encode: window and maxLength must be >= 1')
-  const tokens: Lz77Token[] = []
-  let i = 0
-  while (i < xs.length) {
-    let bestLength = 0
-    let bestOffset = 0
-    for (let offset = 1; offset <= Math.min(window, i); offset++) {
-      let l = 0
-      while (l < maxLength && i + l < xs.length - 1 && xs[i + l - offset] === xs[i + l]) l++
-      if (l > bestLength) {
-        bestLength = l
-        bestOffset = offset
-      }
-    }
-    // Matches stop one short of the end, so every token carries its next symbol.
-    tokens.push({ offset: bestOffset, length: bestLength, next: xs[i + bestLength] as number })
-    i += bestLength + 1
-  }
-  return tokens
+export function lz77Encode(input: SymbolInput, options: Lz77Options = {}): Lz77Token[] {
+  return runAlgorithm(lz77Algorithm(input, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state.tokens
 }
 
 /**

@@ -1385,7 +1385,9 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
   `nmlCodeLength`, `dirichletCodeLength` (KT and Laplace), `parameterBits`, `gaussianDataBits`, `polynomialMdl` (total =
   BIC in bits), `histogramMdl`, `bestMdl`, and `mdlSelectionAlgorithm` (one candidate per step).
 - `integer-coding.ts`: Elias gamma, delta and omega, Golomb-Rice (and the optimal parameter), run-length.
-- `dictionary-coding.ts`: LZ77, LZ78, LZW, BWT with move-to-front.
+- `dictionary-coding.ts`: LZ77 (and `lz77Algorithm`, one token per step; `lz/` paths, shared with
+  `lempelZivComplexityAlgorithm` in `complexity.ts`), LZ78, LZW, BWT with move-to-front; `dictionary-coding-options.ts`:
+  `lz77Windows` and `reedSolomonFields`.
 - `deflate.ts`: DEFLATE (a port of zlib's compressor, byte-identical to zlib at levels 0 to 9 and every strategy, and
   an inflater with puff's checks), the zlib and gzip formats (compress and decompress), CRC-32 and Adler-32.
 - `channels.ts`: channel mutual information, capacity by Blahut-Arimoto (traced, with its bounds and an active-set Newton
@@ -1396,7 +1398,8 @@ reedsolo (Reed-Solomon), scikit-commpy (convolutional encoding), antropy (Lempel
 - `error-correction.ts`: binary linear block codes (generator and parity-check matrices, syndromes, coset-leader
   decoding, minimum distance), parity, repetition and Hamming codes (extended too), bounds (Hamming, Singleton,
   Gilbert-Varshamov, Plotkin).
-- `reed-solomon.ts`: GF(2^m) arithmetic, Reed-Solomon encoding and decoding of errors and erasures (Berlekamp-Massey,
+- `reed-solomon.ts`: GF(2^m) arithmetic, Reed-Solomon encoding and decoding of errors and erasures (`rsDecodeAlgorithm`, one
+  Berlekamp-Massey step per step then the correction; `rs/` paths; Berlekamp-Massey,
   Chien, Forney), matching reedsolo.
 - `convolutional.ts`: feed-forward convolutional codes and Viterbi decoding (traced, hard and soft decisions).
 - `ldpc.ts`: Gallager's regular LDPC codes, encoding, channel LLRs, belief-propagation decoding (sum-product and
