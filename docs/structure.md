@@ -1136,6 +1136,11 @@ in it (`checkPrimitive`).
   Kosaraju), `isStronglyConnected`, `condensation`, `articulationPoints`, `bridges`, `biconnectedComponents`.
 - `paths.ts`: `dijkstra`, `bellmanFord`, `aStar` (with the expanded set), `floydWarshall`, `johnson`, `kShortestPaths`
   (Yen), `shortestPath`, `reconstructPath` (single-source and all-pairs predecessors).
+- `shortest-paths.ts`: the steppable algorithms behind `paths.ts`: `dijkstraAlgorithm`, `aStarAlgorithm` (one node
+  settled per step; frontier, distances and predecessors), `bellmanFordAlgorithm` (one round per step, negative cycles
+  flagged), `floydWarshallAlgorithm` (one pivot per step), their states and `shortestPathContract` (`sp/...` paths).
+- `paths-options.ts`: the slots of those algorithms as option tables: `pathHeuristics` (zero, hops, landmarks) and
+  `shortestPathMethods` (dijkstra, bellman-ford, a-star with heuristic and weight knobs).
 - `trees.ts`: `minimumSpanningTree` (Kruskal, Prim, Boruvka; minimum or maximum; forests), `isTree`, `isForest`,
   `rootTree` (parents, children, depths, distances), `subtreeSizes`, `treeOrder` (pre, post, level), `eulerTour`,
   `lcaIndex` (binary lifting), `lowestCommonAncestor`.

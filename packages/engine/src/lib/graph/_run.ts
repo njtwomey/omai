@@ -40,3 +40,19 @@ export function checkNumber(
 ): void {
   if (!(x >= lo && x <= hi)) throw new MdmlError('value', `${name}: ${what} must be in [${lo}, ${hi}], got ${x}`)
 }
+
+/** The weight of adjacency entry `k` of the out-edges: its weight, or 1 for every edge when `weighted` is false. */
+export function weightFunction(g: Graph, weighted: boolean | undefined): (k: number) => number {
+  const w = g.out.weights
+  return weighted === false ? () => 1 : (k) => w[k] ?? 0
+}
+
+/** A float array as JSON: the non-finite entries (an unreached node's infinite distance) as strings. */
+export function floatsToJson(x: ArrayLike<number>): Json {
+  return Array.from(x, (v) => (Number.isFinite(v) ? v : v > 0 ? 'Infinity' : v < 0 ? '-Infinity' : 'NaN'))
+}
+
+/** The inverse of {@link floatsToJson}. */
+export function floatsFromJson(j: Json): Float64Array {
+  return Float64Array.from(j as readonly (number | string)[], (v) => (typeof v === 'number' ? v : Number(v)))
+}
