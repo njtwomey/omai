@@ -1,0 +1,3 @@
+/* The site's stylesheet (Tailwind, the theme tokens, the code colours), plus this app's own sources. */
+@import "../../site/src/shell/styles.css";
+@source "../";

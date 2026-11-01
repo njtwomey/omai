@@ -60,7 +60,8 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
   (`mdml-render`, headless figures, views of exposition records, React bindings including the session layer: the hook,
   the player, the panels), `packages/meta` (`mdml-meta`, docs metadata and the example runner). One private app,
   `apps/site` (`make dev`, http://localhost:5300), with two sections on a shared shell: the gallery (render,
-  hand-written recipes) and the docs (generated from the TSDoc). There is no hub: pages that explain a method are the
+  hand-written recipes) and the docs (generated from the TSDoc). A second private app, `apps/pocs` (`make pocs`, http://localhost:5310), holds proofs of
+  concept: single live pages on the site's own shell, searchable, added only on request (see its README). There is no hub: pages that explain a method are the
   encyclopedia's, composed from the packages.
 - An estimator or algorithm is a configuration (a `Space`), slots filled from tables of library options
   (`lib/trace/modes.ts` for algorithms, `lib/space/tables.ts` for values; `union` spaces carry a mode and the knobs of

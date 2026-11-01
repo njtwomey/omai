@@ -44,6 +44,15 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: 'pocs',
+          root: 'apps/pocs',
+          include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: 'site',
           root: 'apps/site',
           include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],

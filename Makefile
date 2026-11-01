@@ -47,6 +47,7 @@ format: ## Format TypeScript and Python
 typecheck: ## Type-check every package (tsc) and the oracle (pyright)
 	@for p in $(PACKAGES); do echo "tsc $$p"; $(PNPM) --dir packages/$$p exec tsc -p tsconfig.json --noEmit || exit 1; done
 	@echo "tsc apps/site"; $(PNPM) --dir apps/site exec tsc -p tsconfig.json --noEmit
+	@echo "tsc apps/pocs"; $(PNPM) --dir apps/pocs exec tsc -p tsconfig.json --noEmit
 	@echo "tsc scripts and config"; $(PNPM) exec tsc -p tsconfig.json
 	$(UV) run --group dev --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl --group oracle-vision pyright oracle
 
@@ -87,6 +88,10 @@ pack: build ## Build every package and pack it into tarballs/ (what a release wo
 	@rm -rf tarballs && mkdir -p tarballs
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p pack --pack-destination $(CURDIR)/tarballs || exit 1; done
 	@ls -l tarballs | awk 'NR>1 {printf "%10.2f MB  %s\n", $$5/1e6, $$9}'
+
+.PHONY: pocs
+pocs: ## Serve the proofs of concept (live single-page demos kept out of the site) at http://localhost:5310
+	$(PNPM) --dir apps/pocs exec vite
 
 .PHONY: docs-catalogue
 docs-catalogue: ## Precompile the docs catalogue into apps/site/.generated/docs (skipped when newer than the sources)

@@ -13,7 +13,7 @@ export const SECTIONS = [
 const THEME_CSS = `${cssText('light', ':root')}\n${cssText('dark', '.dark')}`
 
 /**
- * The shared page chrome: the top bar with the sections (the current one highlighted) and the colour toggle;
+ * The shared page chrome (also the chrome of the proofs of concept app, apps/pocs): the top bar with the sections (the current one highlighted) and the colour toggle;
  * then the page, beside an optional `sidebar` (a section's {@link TocSidebar}) that stays in view and scrolls on its
  * own, the content on the right.
  */
@@ -21,8 +21,12 @@ export function Shell(props: {
   readonly path: string
   readonly children: ReactNode
   readonly sidebar?: ReactNode
+  /** The sections of the top bar (default: the site's own); the proofs of concept app passes its own. */
+  readonly sections?: readonly { readonly path: string; readonly title: string }[]
+  /** The name beside the logo (default `mdml`). */
+  readonly brand?: string
 }): ReactNode {
-  const { path, children, sidebar } = props
+  const { path, children, sidebar, sections = SECTIONS, brand = 'mdml' } = props
   // On narrow screens the sidebar is a drawer, closed again by navigating.
   const [drawer, setDrawer] = useState(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: close on every change of page
@@ -53,10 +57,10 @@ export function Shell(props: {
         )}
         <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="size-3 rounded-sm bg-gradient-to-br from-[#1f77b4] via-[#2ca02c] to-[#ff7f0e]" />
-          mdml
+          {brand}
         </Link>
         <nav className="flex gap-1 text-sm">
-          {SECTIONS.map((s) => (
+          {sections.map((s) => (
             <Link
               key={s.path}
               to={s.path}
