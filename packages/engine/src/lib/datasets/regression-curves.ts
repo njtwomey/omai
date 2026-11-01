@@ -155,6 +155,41 @@ export const sineCurve: DatasetGenerator<RegressionData> = {
 }
 
 /**
+ * A straight line on [-1, 1] with Gaussian noise: `f(x) = intercept + slope x`. The ground truth of a linear regression,
+ * with its coefficients in `truth.extra.coefficients` (`[intercept, slope]`), for fitting a line and watching the belief
+ * about its two weights.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { lineData } from 'mdml-engine/datasets'
+ * generate(lineData, { knobs: { intercept: 1, slope: 2 } }).truth.extra?.['coefficients'] // => [1, 2]
+ * ```
+ */
+export const lineData: DatasetGenerator<RegressionData> = {
+  name: 'lineData',
+  kind: 'regression',
+  description: 'A straight line on [-1, 1] with Gaussian noise: the ground truth of a linear regression.',
+  knobs: dict({
+    n: n1,
+    noise: noiseKnob,
+    intercept: real(-5, 5, { label: 'intercept', description: 'The value of the line at x = 0.', default: 0.5 }),
+    slope: real(-5, 5, { label: 'slope', description: 'The slope of the line.', default: 1.5 }),
+    design,
+  }),
+  generate: (k, knobs) => {
+    const a = knobs['intercept'] as number
+    const b = knobs['slope'] as number
+    const s = knobs['noise'] as number
+    const f = (x: Value): Value => add(mul(column(x, 0), b), a)
+    return curveData('lineData', lineData.description, knobs, k, f, constant(s), [-1, 1], 'gaussian', {
+      constantScale: s,
+      coefficients: [a, b],
+    })
+  },
+}
+
+/**
  * A staircase on [0, 1]: `f(x) = floor((steps + 1) x) / steps` (clipped), a function with jumps for testing
  * smoothers and trees.
  *

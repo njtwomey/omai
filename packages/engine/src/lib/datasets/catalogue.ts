@@ -81,6 +81,7 @@ import {
   quantileCurves,
   sincCurve,
   sineCurve,
+  lineData,
   stepCurve,
 } from './regression-curves.ts'
 import {
@@ -243,6 +244,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   shapes,
   sincCurve,
   sineCurve,
+  lineData,
   sinusoids,
   sortTask,
   sparseDictionary,
@@ -369,6 +371,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['severedSphere', 'Severed sphere'],
     ['sincCurve', 'Sinc curve'],
     ['sineCurve', 'Sine curve'],
+    ['lineData', 'Straight line'],
     ['sparseUncorrelated', 'Sparse uncorrelated'],
     ['spirals', 'Spirals'],
     ['stepCurve', 'Step'],

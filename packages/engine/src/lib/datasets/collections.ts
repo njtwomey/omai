@@ -167,6 +167,7 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
     title: 'Regression in one dimension',
     entries: [
       g('sineCurve', 'Sine curve'),
+      g('lineData', 'Straight line'),
       g('linearOutliers', 'Line with outliers'),
       g('sincCurve', 'Sinc curve'),
       g('stepCurve', 'Step'),
