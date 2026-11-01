@@ -6,7 +6,6 @@ import {
   applyMasks,
   constantSparsity,
   globalMagnitudeMasks,
-  iterativeMagnitudePruning,
   linearSparsity,
   magnitudeMask,
   nmMask,
@@ -16,6 +15,7 @@ import {
   sparsityReport,
   structuredMask,
 } from './pruning.ts'
+import { iterativeMagnitudePruning } from './pruning-iterative.ts'
 
 const n = (seed: number, shape: number[]): Value => normal(key(seed), shape)
 
