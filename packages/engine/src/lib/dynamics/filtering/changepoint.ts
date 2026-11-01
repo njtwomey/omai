@@ -18,6 +18,10 @@ import {
   stateToJson,
   tensor,
 } from '../../trace/index.ts'
+import { costOf, type SegmentCost } from './offline-costs.ts'
+
+export type { SegmentCost } from './offline-costs.ts'
+
 import { type ConjugateModel, type RunStats, segmentOps } from './segment-models.ts'
 
 /**
@@ -346,56 +350,6 @@ export function mapChangepoints(
   return out
 }
 
-/** A segment cost for offline changepoint detection. */
-export type SegmentCost = 'l2' | 'l1' | 'normal' | 'poisson'
-
-/** The cost of y[start..end) under a cost model, with prefix sums for the closed-form ones. */
-function costFunction(
-  y: readonly number[],
-  cost: SegmentCost,
-): { error: (a: number, b: number) => number; minSize: number } {
-  const n = y.length
-  const s1 = new Float64Array(n + 1)
-  const s2 = new Float64Array(n + 1)
-  for (let i = 0; i < n; i++) {
-    s1[i + 1] = (s1[i] ?? 0) + (y[i] ?? 0)
-    s2[i + 1] = (s2[i] ?? 0) + (y[i] ?? 0) ** 2
-  }
-  const sse = (a: number, b: number): number => {
-    const m = b - a
-    const sum = (s1[b] ?? 0) - (s1[a] ?? 0)
-    return Math.max(0, (s2[b] ?? 0) - (s2[a] ?? 0) - (sum * sum) / m)
-  }
-  switch (cost) {
-    case 'l2':
-      return { error: sse, minSize: 1 }
-    case 'normal':
-      // ruptures' CostNormal in one dimension: n log(var + 1e-6).
-      return { error: (a, b) => (b - a) * Math.log(sse(a, b) / (b - a) + 1e-6), minSize: 2 }
-    case 'l1':
-      return {
-        error: (a, b) => {
-          const seg = y.slice(a, b).sort((p, q) => p - q)
-          const k = seg.length
-          const med = k % 2 === 1 ? (seg[(k - 1) / 2] ?? 0) : 0.5 * ((seg[k / 2 - 1] ?? 0) + (seg[k / 2] ?? 0))
-          return seg.reduce((acc, v) => acc + Math.abs(v - med), 0)
-        },
-        minSize: 2,
-      }
-    case 'poisson':
-      // Twice the negative Poisson log-likelihood at the segment's rate, without the log y! terms.
-      return {
-        error: (a, b) => {
-          const m = b - a
-          const sum = (s1[b] ?? 0) - (s1[a] ?? 0)
-          const rate = sum / m
-          return rate === 0 ? 0 : 2 * (m * rate - sum * Math.log(rate))
-        },
-        minSize: 1,
-      }
-  }
-}
-
 /** Options of {@link pelt} and {@link binarySegmentation}. */
 export interface OfflineOptions {
   readonly cost?: SegmentCost
@@ -403,6 +357,147 @@ export interface OfflineOptions {
   readonly minSize?: number
   /** Candidate changepoints on a grid of this step (default 1). */
   readonly jump?: number
+}
+
+/** The state of {@link peltAlgorithm}: the dynamic program over the candidate ends and the candidates still alive. */
+export interface PeltState {
+  /** Candidate ends processed. */
+  readonly k: number
+  /** F[b]: the optimal cost of y[0..b) with a penalty per segment (`null` where b is not a candidate end yet). */
+  readonly F: readonly (number | null)[]
+  /** last[b]: the start of the last segment of that optimum. */
+  readonly last: readonly (number | null)[]
+  /** The step at which a candidate became prunable (`null`: not yet). */
+  readonly prunableAt: readonly (number | null)[]
+  /** The candidate starts still admissible. */
+  readonly admissible: readonly number[]
+  /** The end processed last. */
+  readonly end: number
+}
+
+/** The paths {@link peltAlgorithm} logs, as a type. */
+export type PeltPath = 'pelt/end' | 'pelt/F' | 'pelt/last' | 'pelt/admissible' | 'pelt/pruned'
+
+/**
+ * What {@link peltAlgorithm} logs, by path: the end b being solved, its optimal cost F(b), the start of the last
+ * segment of that optimum, the candidate starts still alive and the number the step pruned.
+ */
+export const peltContract: Contract<PeltState, PeltPath> = defineContract({
+  'pelt/end': scalar({ description: 'the end b of the prefix being solved' }),
+  'pelt/F': scalar({ description: 'F(b): the optimal penalised cost of y[0..b)', direction: 'lower' }),
+  'pelt/last': scalar({ description: 'the start of the last segment of that optimum' }),
+  'pelt/admissible': tensor({
+    role: 'state',
+    shape: ['candidate'],
+    description: 'the candidate starts still admissible',
+  }),
+  'pelt/pruned': scalar({ description: 'candidates dropped at this step' }),
+})
+
+/**
+ * PELT as a steppable algorithm: each step solves the optimal penalised cost F(b) of one more prefix y[0..b) over the
+ * admissible last-segment starts, then prunes the candidates that can never be optimal. The state is plain numbers, so
+ * it serialises and a run resumes; read the segmentation off the finished state with {@link peltSegments}.
+ *
+ * @param y - The series.
+ * @param penalty - The penalty per segment.
+ * @param options - Cost (default l2), minimum segment length and grid step.
+ * @returns The algorithm; it is done after the last candidate end.
+ * @throws MdmlError with code `value` when the series is shorter than one minimum segment.
+ * @concept changepoint-detection
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const y = [0, 0, 0, 0, 5, 5, 5, 5]
+ * const alg = filtering.peltAlgorithm(y, 1)
+ * filtering.peltSegments(runAlgorithm(alg, { maxSteps: 100 }).state, y.length) // => [4, 8]
+ * ```
+ */
+export function peltAlgorithm(
+  y: readonly number[],
+  penalty: number,
+  options: OfflineOptions = {},
+): Algorithm<PeltState, PeltPath> {
+  const n = y.length
+  const c = costOf(y, options.cost ?? 'l2')
+  const minSize = Math.max(options.minSize ?? 2, c.minSize)
+  const jump = options.jump ?? 1
+  if (n < minSize) throw new MdmlError('value', 'pelt: the series is shorter than the minimum segment')
+  const ends: number[] = []
+  for (let k = 0; k < n; k += jump) if (k >= minSize) ends.push(k)
+  ends.push(n)
+  return {
+    name: 'pelt',
+    config: { cost: options.cost ?? 'l2', penalty, minSize, jump, steps: ends.length },
+    init: () => ({
+      k: 0,
+      F: Array.from({ length: n + 1 }, (_, i) => (i === 0 ? 0 : null)),
+      last: new Array<number | null>(n + 1).fill(null),
+      prunableAt: new Array<number | null>(n + 1).fill(null),
+      admissible: [],
+      end: 0,
+    }),
+    step: (s, ctx) => {
+      const b = ends[s.k] as number
+      const F = [...s.F]
+      const last = [...s.last]
+      const prunableAt = [...s.prunableAt]
+      // PELT's pruning (drop t once F(t) + C(t, b) > F(b)) relies on F(b) + C(b, c) being a valid option for every later
+      // end c, which needs c - b >= minSize; so a candidate found prunable at b is only dropped from b + minSize on.
+      let admissible = [...s.admissible, Math.floor((b - minSize) / jump) * jump]
+      const scores: { t: number; v: number }[] = []
+      for (const t of admissible) {
+        const ft = F[t]
+        if (ft === null || ft === undefined) continue
+        scores.push({ t, v: ft + c.error(t, b) + penalty })
+      }
+      let best = scores[0]
+      for (const sc of scores) if (best === undefined || sc.v < best.v) best = sc
+      if (best === undefined) return { ...s, k: s.k + 1, admissible, end: b }
+      F[b] = best.v
+      last[b] = best.t
+      for (const sc of scores) if (sc.v > best.v + penalty && prunableAt[sc.t] === null) prunableAt[sc.t] = b
+      admissible = admissible.filter((t) => {
+        const at = prunableAt[t]
+        return at === null || at === undefined || b + jump < at + minSize
+      })
+      const dropped = s.admissible.length + 1 - admissible.length
+      if (ctx.wants('pelt/end')) ctx.log('pelt/end', b)
+      if (ctx.wants('pelt/F')) ctx.log('pelt/F', best.v)
+      if (ctx.wants('pelt/last')) ctx.log('pelt/last', best.t)
+      if (ctx.wants('pelt/admissible')) ctx.log('pelt/admissible', admissible)
+      if (ctx.wants('pelt/pruned')) ctx.log('pelt/pruned', dropped)
+      return { k: s.k + 1, F, last, prunableAt, admissible, end: b }
+    },
+    done: (s) => (s.k >= ends.length ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as PeltState,
+  }
+}
+
+/**
+ * The segment ends of a finished {@link peltAlgorithm} run: follow the last-segment starts back from the end of the
+ * series.
+ *
+ * @param state - The state of a run to its end.
+ * @param n - The length of the series.
+ * @returns The segment end indices (sorted, the last is n).
+ * @concept changepoint-detection
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * filtering.peltSegments({ k: 0, F: [0, null, 1], last: [null, null, 0], prunableAt: [], admissible: [], end: 2 }, 2) // => [2]
+ * ```
+ */
+export function peltSegments(state: Pick<PeltState, 'last'>, n: number): number[] {
+  const out: number[] = []
+  let b = n
+  while (b > 0) {
+    out.push(b)
+    b = state.last[b] ?? 0
+  }
+  return out.reverse()
 }
 
 /**
@@ -424,47 +519,129 @@ export interface OfflineOptions {
  * ```
  */
 export function pelt(y: readonly number[], penalty: number, options: OfflineOptions = {}): number[] {
+  const algorithm = peltAlgorithm(y, penalty, options)
   const n = y.length
-  const c = costFunction(y, options.cost ?? 'l2')
+  return peltSegments(runAlgorithm(algorithm, { maxSteps: n + 1 }).state, n)
+}
+
+/** A best single split of a segment. */
+export interface Split {
+  /** Where to split (`undefined`: the segment cannot be split). */
+  readonly bkp: number | undefined
+  /** The drop in cost the split buys. */
+  readonly gain: number
+}
+
+/** The state of {@link binarySegmentationAlgorithm}: the breakpoints so far and the split it would make next. */
+export interface BinsegState {
+  /** Splits made. */
+  readonly step: number
+  /** The segment ends so far (sorted, the last is n). */
+  readonly bkps: readonly number[]
+  /** The best split over all segments (`undefined` when none can be made). */
+  readonly next: Split
+  /** The split made last, and its gain. */
+  readonly split: number | null
+  readonly gain: number
+}
+
+/** The paths {@link binarySegmentationAlgorithm} logs, as a type. */
+export type BinsegPath = 'binseg/split' | 'binseg/gain' | 'binseg/segments' | 'binseg/next-gain'
+
+/**
+ * What {@link binarySegmentationAlgorithm} logs, by path: the breakpoint just added, the cost it saved, the number of
+ * segments, and the gain of the best split still on offer (what the stopping rule compares).
+ */
+export const binsegContract: Contract<BinsegState, BinsegPath> = defineContract({
+  'binseg/split': scalar({ description: 'the breakpoint added by this step' }),
+  'binseg/gain': scalar({ description: 'the cost this split saved', direction: 'higher' }),
+  'binseg/segments': scalar({ description: 'the number of segments after this step' }),
+  'binseg/next-gain': scalar({ description: 'the gain of the best split still on offer', direction: 'higher' }),
+})
+
+/**
+ * Binary segmentation as a steppable algorithm: each step adds the best single split over all segments, until a number
+ * of changepoints is reached or the best gain no longer exceeds a penalty. The state holds the breakpoints and the
+ * split on offer, so it serialises and the stopping rule is read from it.
+ *
+ * @param y - The series.
+ * @param stop - `{ changepoints }` or `{ penalty }`.
+ * @param options - Cost (default l2), minimum segment length and grid step.
+ * @returns The algorithm; its state's `bkps` are the segment ends.
+ * @throws MdmlError with code `value` without a stopping rule.
+ * @concept changepoint-detection
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = filtering.binarySegmentationAlgorithm([0, 0, 0, 5, 5, 5, 1, 1, 1], { changepoints: 2 })
+ * runAlgorithm(alg, { maxSteps: 10 }).state.bkps // => [3, 6, 9]
+ * ```
+ */
+export function binarySegmentationAlgorithm(
+  y: readonly number[],
+  stop: { readonly changepoints?: number; readonly penalty?: number },
+  options: OfflineOptions = {},
+): Algorithm<BinsegState, BinsegPath> {
+  if (stop.changepoints === undefined && stop.penalty === undefined) {
+    throw new MdmlError('value', 'binarySegmentation: give a number of changepoints or a penalty')
+  }
+  const n = y.length
+  const c = costOf(y, options.cost ?? 'l2')
   const minSize = Math.max(options.minSize ?? 2, c.minSize)
   const jump = options.jump ?? 1
-  if (n < minSize) throw new MdmlError('value', 'pelt: the series is shorter than the minimum segment')
-  // F[b]: optimal cost of y[0..b) including a penalty per segment; last[b]: the last changepoint before b.
-  const F = new Map<number, number>([[0, 0]])
-  const last = new Map<number, number>()
-  let admissible: number[] = []
-  // PELT's pruning (drop t once F(t) + C(t, b) > F(b)) relies on F(b) + C(b, c) being a valid option for every later
-  // end c, which needs c - b >= minSize; so a candidate found prunable at b is only dropped from b + minSize on.
-  const prunableAt = new Map<number, number>()
-  const ends: number[] = []
-  for (let k = 0; k < n; k += jump) if (k >= minSize) ends.push(k)
-  ends.push(n)
-  for (const b of ends) {
-    admissible.push(Math.floor((b - minSize) / jump) * jump)
-    const scores: { t: number; v: number }[] = []
-    for (const t of admissible) {
-      const ft = F.get(t)
-      if (ft === undefined) continue
-      scores.push({ t, v: ft + c.error(t, b) + penalty })
+  const single = (start: number, end: number): Split => {
+    const whole = c.error(start, end)
+    let best: Split = { bkp: undefined, gain: 0 }
+    let found = false
+    for (let k = start; k < end; k += jump) {
+      if (k - start >= minSize && end - k >= minSize) {
+        const gain = whole - c.error(start, k) - c.error(k, end)
+        // ruptures takes max over (gain, bkp): the larger breakpoint wins ties.
+        if (!found || gain > best.gain || (gain === best.gain && k > (best.bkp ?? -1))) best = { bkp: k, gain }
+        found = true
+      }
     }
-    let best = scores[0]
-    for (const sc of scores) if (best === undefined || sc.v < best.v) best = sc
-    if (best === undefined) continue
-    F.set(b, best.v)
-    last.set(b, best.t)
-    for (const sc of scores) if (sc.v > best.v + penalty && !prunableAt.has(sc.t)) prunableAt.set(sc.t, b)
-    admissible = admissible.filter((t) => {
-      const at = prunableAt.get(t)
-      return at === undefined || b + jump < at + minSize
+    return found ? best : { bkp: undefined, gain: 0 }
+  }
+  const bestSplit = (bkps: readonly number[]): Split => {
+    const starts = [0, ...bkps.slice(0, -1)]
+    let choice: Split = { bkp: undefined, gain: Number.NEGATIVE_INFINITY }
+    starts.forEach((s, i) => {
+      const r = single(s, bkps[i] ?? n)
+      if (r.gain > choice.gain) choice = r
     })
+    return choice
   }
-  const out: number[] = []
-  let b = n
-  while (b > 0) {
-    out.push(b)
-    b = last.get(b) ?? 0
+  const wanted = (s: BinsegState): boolean =>
+    s.next.bkp !== undefined &&
+    (stop.changepoints !== undefined
+      ? s.bkps.length - 1 < stop.changepoints
+      : s.next.gain > (stop.penalty ?? Number.POSITIVE_INFINITY))
+  return {
+    name: 'binary-segmentation',
+    config: {
+      cost: options.cost ?? 'l2',
+      minSize,
+      jump,
+      changepoints: stop.changepoints ?? null,
+      penalty: stop.penalty ?? null,
+    },
+    init: () => ({ step: 0, bkps: [n], next: bestSplit([n]), split: null, gain: 0 }),
+    step: (s, ctx) => {
+      const bkp = s.next.bkp as number
+      const bkps = [...s.bkps, bkp].sort((a, b) => a - b)
+      const next = bestSplit(bkps)
+      if (ctx.wants('binseg/split')) ctx.log('binseg/split', bkp)
+      if (ctx.wants('binseg/gain')) ctx.log('binseg/gain', s.next.gain)
+      if (ctx.wants('binseg/segments')) ctx.log('binseg/segments', bkps.length)
+      if (ctx.wants('binseg/next-gain')) ctx.log('binseg/next-gain', next.gain)
+      return { step: s.step + 1, bkps, next, split: bkp, gain: s.next.gain }
+    },
+    done: (s) => (wanted(s) ? undefined : 'converged'),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as BinsegState,
   }
-  return out.reverse()
 }
 
 /**
@@ -488,43 +665,6 @@ export function binarySegmentation(
   stop: { readonly changepoints?: number; readonly penalty?: number },
   options: OfflineOptions = {},
 ): number[] {
-  if (stop.changepoints === undefined && stop.penalty === undefined) {
-    throw new MdmlError('value', 'binarySegmentation: give a number of changepoints or a penalty')
-  }
-  const n = y.length
-  const c = costFunction(y, options.cost ?? 'l2')
-  const minSize = Math.max(options.minSize ?? 2, c.minSize)
-  const jump = options.jump ?? 1
-  const single = (start: number, end: number): { bkp: number | undefined; gain: number } => {
-    const whole = c.error(start, end)
-    let best: { bkp: number | undefined; gain: number } = { bkp: undefined, gain: 0 }
-    let found = false
-    for (let k = start; k < end; k += jump) {
-      if (k - start >= minSize && end - k >= minSize) {
-        const gain = whole - c.error(start, k) - c.error(k, end)
-        // ruptures takes max over (gain, bkp): the larger breakpoint wins ties.
-        if (!found || gain > best.gain || (gain === best.gain && k > (best.bkp ?? -1))) best = { bkp: k, gain }
-        found = true
-      }
-    }
-    return found ? best : { bkp: undefined, gain: 0 }
-  }
-  const bkps = [n]
-  for (;;) {
-    const starts = [0, ...bkps.slice(0, -1)]
-    let choice: { bkp: number | undefined; gain: number } = { bkp: undefined, gain: Number.NEGATIVE_INFINITY }
-    starts.forEach((s, i) => {
-      const r = single(s, bkps[i] ?? n)
-      if (r.gain > choice.gain) choice = r
-    })
-    if (choice.bkp === undefined) break
-    const more =
-      stop.changepoints !== undefined
-        ? bkps.length - 1 < stop.changepoints
-        : choice.gain > (stop.penalty ?? Number.POSITIVE_INFINITY)
-    if (!more) break
-    bkps.push(choice.bkp)
-    bkps.sort((a, b) => a - b)
-  }
-  return bkps
+  const algorithm = binarySegmentationAlgorithm(y, stop, options)
+  return [...runAlgorithm(algorithm, { maxSteps: y.length }).state.bkps]
 }

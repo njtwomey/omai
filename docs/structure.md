@@ -2434,7 +2434,12 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   `bocpd/change-probability`, `map-run-length`, `map-probability`, `log-predictive`, `log-evidence`, `predictive-mean`,
   `predictive-std`, `hypotheses` and the run-length row `run-length`) and `bocpd` (that algorithm over a whole series),
   `mapChangepoints` (changepoints read off the MAP run length at a probability threshold), `constantHazard` and
-  `survivalHazard`, PELT, binary segmentation.
+  `survivalHazard`; PELT and binary segmentation as steppable algorithms (`peltAlgorithm`: one candidate end per step,
+  F(b), the admissible set and the pruned count logged as `pelt/...`, `peltSegments` reads the segmentation off the state;
+  `binarySegmentationAlgorithm`: one split per step, logged as `binseg/...`) and `pelt`, `binarySegmentation` as those
+  runs.
+- `filtering/offline-costs.ts`: the segment costs of offline detection as an option table `segmentCosts` (`l2`, `l1`,
+  `normal`, `poisson`) and `costOf`, the cost function of a series with its shortest scorable segment.
 - `filtering/segment-models.ts`: the `ConjugateModel` union, one per kind of shift (Gaussian mean with known noise,
   Gaussian variance with known mean, normal-gamma, Poisson-gamma, Bernoulli-beta, AR(1) coefficient, linear trend)
   as `segmentOps` over a run's sufficient statistics (`RunStats`, plain numbers) with predictive log density, mean and
