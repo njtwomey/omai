@@ -3513,7 +3513,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `adversarial.ts`: attacks and adversarial training on any logits function: `fgsm`, `pgd` (random start inside an
   l-infinity or l2 ball, targeted or untargeted, cross-entropy, margin or TRADES-KL loss, data range), `pgdAlgorithm` (one
   gradient step per step, `attack/*` paths, serialisable), `marginLoss`, `carliniWagnerL2` (Adam on the penalised margin,
-  closest adversarial point kept), `deepFool`, `transferAttack`, `squareAttack` (black box: logits only, query counts),
+  closest adversarial point kept; optimiser a slot) / `carliniWagnerAlgorithm`, `deepFool` / `deepFoolAlgorithm`,
+  `transferAttack`, `squareAttack` / `squareAlgorithm` (black box: logits only, query counts); each function is its
+  Algorithm run to the end, with the `attack/*` paths of `carliniWagnerContract`, `deepFoolContract`, `squareContract`,
   `accuracyOf`, `robustAccuracy` (the sweep over radii) and `adversarialTrainStep` (PGD inner maximisation, or TRADES, as a
   step over `TrainState`).
 - `certify.ts`: certificates: randomised smoothing (`smoothedCounts`, `randomisedSmoothing` with the Clopper-Pearson
@@ -3760,7 +3762,8 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Contrastive and counterfactual (`counterfactuals.ts`): Wachter, diverse (DiCE-style), FACE, CEM (pertinent positives
   and negatives), prototype-guided counterfactuals, growing spheres, MACE-style for tree ensembles; actionability,
   immutability and plausibility constraints; recourse (linear, cost, feasibility) and its robustness to model change.
-  Built: `wachterCounterfactual`, `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
+  Built: `wachterCounterfactual` (= `wachterAlgorithm` run to the end: one proximal-gradient iteration per step, `cf/*` paths
+  of `counterfactualContract`; the lambda schedule is a slot, `lambdaSchedules` in `counterfactual-options.ts`), `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
   `pertinentNegative` and `pertinentPositive` (CEM by projected FISTA), `prototypeCounterfactual` (class prototypes
   from nearest neighbours, no encoder), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
   monotone, bounded, integer), `recourseRobustness`. TODO: MACE for tree ensembles.
