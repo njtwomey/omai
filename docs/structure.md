@@ -3112,6 +3112,12 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `sequence-model.ts`: `sequenceModelTrainer`, token-sequence models on the trainer base: the layer is the `mixer` slot
   (`sequenceMixers` of `nn/blocks`), the optimiser the `optimiser` slot (`optimisers`); derived paths `mixer/spectrum`
   (eigenvalues of the state transitions), `mixer/step` (learned Delta) and `mixer/state-norm`; `tokenAccuracy`.
+- `kan.ts`: `kanRegressor` and `kanClassifier`, Kolmogorov-Arnold networks (`nn/kan`) on the trainer base: widths, grid,
+  degree, the edge family (`kanBases`), the base function (`kanBaseFunctions`), the knots (`splineKnots`), the optimiser
+  and schedule as slots, and the paper's sparsification penalties (`lambdaL1`, `lambdaEntropy`, `lambdaCoef`) through the
+  base's `penalty`; derived paths `kan/curves` (every edge on a grid with its magnitude), `kan/edge/<l>/<i>/<j>`,
+  `kan/grids`, `kan/penalty`, `kan/l1`, `kan/entropy`, `kan/coef`, `kan/sparsity`, `kan/scales`; the fitted value adds
+  `edgeCurve`, `curves`, `grids`, `edgeScales`, `sparsity`, `prune`, `symbolic` and `formula`.
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
@@ -3422,6 +3428,30 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     through its tensor log-likelihood, an `ExtendedFamily` through its derivatives as a custom reverse rule, or a GAMLSS
     family by name; the same families and links as `gam/gamlss.ts`) and `DistributionalAdditive` (one `AdditiveModel`
     per parameter with its own terms and link, `nll`, `naturalParameters`, `distribution`, `penalty`).
+- `kan/` (inline): Kolmogorov-Arnold networks (Liu et al. 2024), on `additive/`'s `SplineLayer`: a learnable univariate
+  function on every edge, nodes that only sum.
+  - `edge-bases.ts`: the `kanBases` slot (the family an edge's function is drawn from: `bspline` (the paper, a
+    `SplineLayer`, so the `splineKnots` slot places or trains the knots), `rbf` (FastKAN), `chebyshev` (ChebyKAN) and
+    `fourier`), `ExpansionLayer` (the three cheaper families as one layer with `SplineLayer`'s interface) and the
+    `EdgeFunctions` interface they share.
+  - `kan-layer.ts`: `KanLayer` (`phi = w_b b(x) + w_s spline(x)` on each edge, the paper's initialisation, an edge mask
+    buffer, `activations`, `edgeCurve`, finite and differentiable outside the grid) and the `kanBaseFunctions` slot (`silu`,
+    `none`, `identity`, `relu`, `tanh`, `softplus`).
+  - `kan.ts`: `KAN` (a stack of layers by widths: `trace`, `edgeScales`, `edgeCurve`), `KanSpec` (the structure as plain
+    data: widths, grid, degree, families, base) and `kanSpec`.
+  - `grid.ts`: `refineGrid` (the paper's grid extension: the same network on a finer grid or higher degree, every edge's
+    coefficients refitted by least squares so the function is kept; exact when the new space contains the old) and
+    `updateGrid` (pykan's `update_grid_from_samples`: every layer's input range and quantile knots moved to the data).
+  - `sparsity.ts`: `kanPenalties` (the paper's L1 on the edges' mean magnitudes and per-layer entropy, plus pykan's
+    coefficient L1, measured on reference rows so it is a function of the parameters: the trainer base's `penalty`) and
+    `edgeSparsity` (the share of switched-on edges with negligible activation).
+  - `prune.ts`: `pruneKan` (incoming and outgoing node importance, edge threshold, a smaller `KAN` with the surviving
+    parameters, optionally without the unused inputs).
+  - `symbolic.ts`: `symbolicFunctions` (the table of `x`, `x^2`, `1/x`, `sqrt`, `exp`, `log`, `sin`, `tanh`, `abs`, ...),
+    `rankSymbolic` and `suggestSymbolic` (the affine fit `a f(b x + c) + d` of each, ranked by R^2 less a complexity price),
+    `fixSymbolic`, `evaluateSymbolic` and `symbolicFormula` (the closed form of a fixed network as a `symbolic` expression).
+  - `curves.ts`: `kanCurves` (every edge on a grid over its input range with its magnitude and whether it is on) and `kanGrids`
+    (each layer's input ranges and interior knots, as trained), the plain data a view of the edges plays.
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
