@@ -72,8 +72,10 @@ describe('shape descriptors', () => {
         if (hull.length < 3 || Math.abs(V.contourArea(hull)) < 1e-9) return
         expect(V.isContourConvex(hull)).toBe(true)
         for (const p of pts) expect(V.pointPolygonTest(hull, p)).toBeGreaterThanOrEqual(0)
-        const cw = V.convexHull(pts, { clockwise: true })
-        expect(new Set(cw)).toEqual(new Set(V.convexHull(pts)))
+        // The same vertices either way round; equal points are interchangeable, so compare coordinates, not indices.
+        const at = (idx: readonly number[]): Set<string> =>
+          new Set(idx.map((i) => (pts[i] as [number, number]).join(',')))
+        expect(at(V.convexHull(pts, { clockwise: true }))).toEqual(at(V.convexHull(pts)))
       }),
       { numRuns: RUNS },
     )
