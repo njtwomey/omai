@@ -27,6 +27,13 @@ export interface MixerOutput {
   readonly state: MixerState
 }
 
+/** The eigenvalues of a mixer's state transition: of `x' = A x` (continuous time) or of `x_t = A x_{t-1}` (discrete). */
+export interface TransitionSpectrum {
+  readonly domain: 'continuous' | 'discrete'
+  readonly re: readonly number[]
+  readonly im: readonly number[]
+}
+
 /**
  * The key a mixer draws its own parameters from, given the key of the module: constructors and `initParams` both use
  * it, so a re-initialised mixer has the weights a freshly built one has.
@@ -64,6 +71,15 @@ export abstract class SequenceMixer extends Composite<MixerInput | Value, MixerO
 
   /** The mixer's output and state for a sequence, from a state (or `undefined`: the start of a sequence). */
   protected abstract mix(params: Params, x: Value, state: MixerState | undefined, ctx: ApplyContext): MixerOutput
+
+  /**
+   * The eigenvalues of the mixer's state transition for given parameters, where it has a fixed one (state-space
+   * layers, retention): what a training run shows to explain how far back the layer remembers. `undefined` for a mixer
+   * whose transition depends on the input or that has no state transition.
+   */
+  transitionSpectrum(_params: Params = this.params): TransitionSpectrum | undefined {
+    return undefined
+  }
 
   /** The parameters the mixer owns beside its parts' (drawn from `key`, which is already {@link ownKey} of the module's). */
   protected ownParams(_key: Key): Params {

@@ -37,6 +37,7 @@ import {
   sum,
   swapaxes,
   type Tensor,
+  toFlat,
   type Value,
   zeros,
 } from '../../tensor/index.ts'
@@ -51,7 +52,7 @@ import {
 } from '../functional/state-space.ts'
 import { type ApplyContext, initKey, type Params } from '../module/module.ts'
 import { type DiagonalHippo, nplrHippo, s4dEigenvalues } from './hippo.ts'
-import { type MixerOutput, type MixerState, ownKey, SequenceMixer } from './mixer.ts'
+import { type MixerOutput, type MixerState, ownKey, SequenceMixer, type TransitionSpectrum } from './mixer.ts'
 
 /** How a state-space layer computes: as a convolution (or parallel scan) over the whole sequence, or step by step. */
 export type SsmMode = 'convolution' | 'recurrence'
@@ -179,6 +180,14 @@ export class S4D extends SequenceMixer {
     return s4dOwn(this.dim, this.options, key)
   }
 
+  override transitionSpectrum(params: Params = this.params): TransitionSpectrum {
+    return {
+      domain: 'continuous',
+      re: Array.from(toFlat(neg(exp(params['logNegRe'] as Value)))),
+      im: Array.from(toFlat(params['im'] as Value)),
+    }
+  }
+
   initialState(batch: number): MixerState {
     const shape = [batch, this.dim, this.stateSize / 2]
     return { re: zeros(shape), im: zeros(shape) }
@@ -294,6 +303,14 @@ export class S4 extends SequenceMixer {
 
   protected override ownParams(key: Key): Params {
     return s4Own(this.dim, this.options, key)
+  }
+
+  override transitionSpectrum(params: Params = this.params): TransitionSpectrum {
+    return {
+      domain: 'continuous',
+      re: Array.from(toFlat(minimum(params['lamRe'] as Value, 0))),
+      im: Array.from(toFlat(params['lamIm'] as Value)),
+    }
   }
 
   initialState(batch: number): MixerState {
@@ -498,6 +515,14 @@ export class S5 extends SequenceMixer {
     return s5Own(this.dim, this.options, key)
   }
 
+  override transitionSpectrum(params: Params = this.params): TransitionSpectrum {
+    return {
+      domain: 'continuous',
+      re: Array.from(toFlat(neg(exp(params['logNegRe'] as Value)))),
+      im: Array.from(toFlat(params['lamIm'] as Value)),
+    }
+  }
+
   initialState(batch: number): MixerState {
     return { re: zeros([batch, this.stateSize]), im: zeros([batch, this.stateSize]) }
   }
@@ -603,6 +628,15 @@ export class LRUMixer extends SequenceMixer {
 
   initialState(batch: number): MixerState {
     return { re: zeros([batch, this.stateSize]), im: zeros([batch, this.stateSize]) }
+  }
+
+  override transitionSpectrum(params: Params = this.params): TransitionSpectrum {
+    const e = this.eigenvalues(params)
+    return {
+      domain: 'discrete',
+      re: Array.from(toFlat(e.re)),
+      im: Array.from(toFlat(e.im)),
+    }
   }
 
   /** The eigenvalues of the recurrence (real and imaginary parts, modulus below one). */

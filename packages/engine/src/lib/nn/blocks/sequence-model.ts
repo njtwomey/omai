@@ -7,7 +7,17 @@
  */
 
 import { foldIn, type Key } from '../../random/index.ts'
-import { add, asTensor, isValue, mean, reshape, sliceAxis, type TensorLike, type Value } from '../../tensor/index.ts'
+import {
+  add,
+  asTensor,
+  isValue,
+  mean,
+  mul,
+  reshape,
+  sliceAxis,
+  type TensorLike,
+  type Value,
+} from '../../tensor/index.ts'
 import { linear } from '../functional/linear.ts'
 import { Composite, ModuleList } from '../module/containers.ts'
 import { Embedding, Linear } from '../module/layers.ts'
@@ -146,11 +156,15 @@ export class SequenceModel extends Composite<TensorLike, Value> {
     const pooling = options.pooling ?? 'none'
     const outputSize = options.outputSize ?? options.inputSize
     const tie = (options.tieEmbeddings ?? true) && inputKind === 'tokens' && outputSize === options.inputSize
+    const embed =
+      inputKind === 'tokens'
+        ? new Embedding(options.inputSize, dim, { key: foldIn(k, 0) })
+        : new Linear(options.inputSize, dim, { key: foldIn(k, 0) })
+    // A token table at unit variance makes the tied output logits large (the width times the table's variance);
+    // scaled by 1 / sqrt(dim) the model starts near the uniform distribution over the vocabulary.
+    if (inputKind === 'tokens') embed.setParams({ weight: mul(embed.params['weight'] as Value, dim ** -0.5) })
     super({
-      embed:
-        inputKind === 'tokens'
-          ? new Embedding(options.inputSize, dim, { key: foldIn(k, 0) })
-          : new Linear(options.inputSize, dim, { key: foldIn(k, 0) }),
+      embed,
       layers: new ModuleList(
         Array.from(
           { length: numLayers },
@@ -173,6 +187,13 @@ export class SequenceModel extends Composite<TensorLike, Value> {
     this.outputSize = outputSize
     this.pooling = pooling
     this.tieEmbeddings = tie
+  }
+
+  override initParams(key: Key): Params {
+    const p = super.initParams(key)
+    if (this.inputKind !== 'tokens') return p
+    const embed = p['embed'] as Params
+    return { ...p, embed: { ...embed, weight: mul(embed['weight'] as Value, this.dim ** -0.5) } }
   }
 
   protected override prepare(x: unknown): unknown {

@@ -136,7 +136,9 @@ export function networkVerbs(
     model.apply(state.params, asTensor(x), { train: false, buffers: state.buffers }) as Tensor
   const scored = (v: Verbs & FittedFacts): Verbs & FittedFacts => {
     const predict = v.predict
-    if (predict === undefined) return v
+    // Only a classifier or regressor has a default score; a network of another kind (a sequence model whose targets
+    // are token rows) scores through the metrics its particular declares.
+    if (predict === undefined || (kind !== 'classifier' && kind !== 'regressor')) return v
     const metric = kind === 'classifier' ? accuracyScore : r2Score
     return { ...v, score: (d) => metric(requireTargets(d, 'score'), predict(d.x)).estimate.value }
   }

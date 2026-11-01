@@ -32,7 +32,7 @@ import { layerNorm } from '../functional/normalisation.ts'
 import { deltaRule } from '../functional/state-space.ts'
 import { Linear } from '../module/layers.ts'
 import { type ApplyContext, initKey, type Params } from '../module/module.ts'
-import { type MixerOutput, type MixerState, SequenceMixer } from './mixer.ts'
+import { type MixerOutput, type MixerState, SequenceMixer, type TransitionSpectrum } from './mixer.ts'
 
 /** The positive feature maps of linear attention. */
 export type FeatureMap = 'elu' | 'relu' | 'exp' | 'softplus'
@@ -175,6 +175,10 @@ export class RetNetMixer extends SequenceMixer {
     this.form = options.form ?? 'parallel'
     this.chunk = options.chunk ?? 8
     this.gamma = Array.from({ length: this.heads }, (_, h) => 1 - 2 ** (-5 - h))
+  }
+
+  override transitionSpectrum(): TransitionSpectrum {
+    return { domain: 'discrete', re: this.gamma, im: this.gamma.map(() => 0) }
   }
 
   initialState(batch: number): MixerState {

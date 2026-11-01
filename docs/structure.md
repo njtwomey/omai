@@ -3095,6 +3095,9 @@ modAL for active learning, diffprivlib and opacus for privacy
   stated factor of the observed gap.
 - `representation.ts`: measures of learned representations: alignment and uniformity (Wang and Isola), the effective
   rank (Roy and Vetterli, RankMe) and centred kernel alignment (`cka`, linear and RBF; invariant to rotations).
+- `sequence-model.ts`: `sequenceModelTrainer`, token-sequence models on the trainer base: the layer is the `mixer` slot
+  (`sequenceMixers` of `nn/blocks`), the optimiser the `optimiser` slot (`optimisers`); derived paths `mixer/spectrum`
+  (eigenvalues of the state transitions), `mixer/step` (learned Delta) and `mixer/state-norm`; `tokenAccuracy`.
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
@@ -3364,6 +3367,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `mixers.ts`: `AttentionMixer` (softmax attention with a KV cache, the baseline) and `sequenceMixers`, the option
     table of every mixer (`mamba`, `mamba2`, `s4d`, `s4`, `s5`, `lru`, `linear-attention`, `retnet`, `gla`, `deltanet`,
     `rwkv`, `mingru`, `minlstm`, `hyena`, `attention`) with its knobs, for the `mixer` slot of a `SequenceModel`.
+  - `sequence-generation.ts`: `sequenceLanguageModel` (a `SequenceModel` as a `LanguageModel` whose cache is the
+    per-layer mixer state), `generationAlgorithm` (the decoding algorithm over it, with a serialisable state),
+    `idTokenizer`.
   - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
     `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
   - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),

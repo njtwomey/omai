@@ -23,6 +23,7 @@ import {
   swapaxes,
   type Tensor,
   type TensorLike,
+  toFlat,
   type Value,
   zeros,
 } from '../../tensor/index.ts'
@@ -31,9 +32,9 @@ import { conv1d } from '../functional/conv.ts'
 import { selectiveScan, ssd } from '../functional/state-space.ts'
 import { torchDefaultUniform } from '../init.ts'
 import { Linear } from '../module/layers.ts'
-import { type ApplyContext, initKey, type Params } from '../module/module.ts'
+import { type ApplyContext, initKey, type Params, tap } from '../module/module.ts'
 import { RMSNorm } from '../module/normalisation.ts'
-import { type MixerOutput, type MixerState, ownKey, SequenceMixer } from './mixer.ts'
+import { type MixerOutput, type MixerState, ownKey, SequenceMixer, type TransitionSpectrum } from './mixer.ts'
 import { SequenceModel, type SequenceModelOptions } from './sequence-model.ts'
 
 /**
@@ -204,6 +205,14 @@ export class MambaBlock extends SequenceMixer {
     }
   }
 
+  override transitionSpectrum(params: Params = this.params): TransitionSpectrum {
+    return {
+      domain: 'continuous',
+      re: Array.from(toFlat(this.stateMatrix(params))),
+      im: new Array<number>(this.inner * this.stateSize).fill(0),
+    }
+  }
+
   /** The state matrix `-exp(aLog)` `[inner, N]` (negative: the state decays). */
   stateMatrix(params: Params = this.params): Value {
     return neg(exp(params['aLog'] as Value))
@@ -223,7 +232,7 @@ export class MambaBlock extends SequenceMixer {
     )
     const xc = silu(swapaxes(conv.y, 1, 2))
     const proj = p.run<Value, Value>('x_proj', xc)
-    const dt = softplus(p.run<Value, Value>('dt_proj', sliceAxis(proj, 2, 0, rank)))
+    const dt = tap(ctx, 'dt', softplus(p.run<Value, Value>('dt_proj', sliceAxis(proj, 2, 0, rank))))
     const scan = selectiveScan({
       x: xc,
       dt,
@@ -362,6 +371,14 @@ export class Mamba2Block extends SequenceMixer {
     }
   }
 
+  override transitionSpectrum(params: Params = this.params): TransitionSpectrum {
+    return {
+      domain: 'continuous',
+      re: Array.from(toFlat(this.decayRates(params))),
+      im: new Array<number>(this.heads).fill(0),
+    }
+  }
+
   /** The decay rates `-exp(aLog)` of the heads `[H]` (negative: the state decays). */
   decayRates(params: Params = this.params): Value {
     return neg(exp(params['aLog'] as Value))
@@ -383,7 +400,7 @@ export class Mamba2Block extends SequenceMixer {
     )
     const act = silu(swapaxes(conv.y, 1, 2))
     const xs = sliceAxis(act, 2, 0, inner)
-    const dt = softplus(add(dtRaw, params['dtBias'] as Value))
+    const dt = tap(ctx, 'dt', softplus(add(dtRaw, params['dtBias'] as Value)))
     const heads4 = reshape(xs, [bs, l, heads, headDim])
     const r = ssd(
       {
