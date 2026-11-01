@@ -1955,7 +1955,8 @@ jellyfish, Biopython, pyphen
 - `treebank.ts`: the Penn Treebank tokeniser, nltk's improved word tokeniser, Treebank spans and detokenisation.
 - `tweet.ts`: nltk's TweetTokenizer (URLs, phone numbers, emoticons, handles, hashtags, emoji sequences), HTML entity
   replacement, handle removal, lengthening reduction.
-- `sentences.ts`: sentence splitting: a rule-based splitter and Punkt (Kiss and Strunk 2006) training and tokenisation.
+- `sentences.ts`: sentence splitting: a rule-based splitter and Punkt (Kiss and Strunk 2006) training (`trainPunktAlgorithm`, one
+  abbreviation candidate scored per step, then the later passes; `trainPunkt` runs it) and tokenisation.
 - `stem.ts`: Porter (nltk's three modes, with a rule trace) and Snowball English stemmers.
 - `lemmatise.ts`: rule-based lemmatisation (WordNet's morphy detachment rules over a lexicon with exception lists, or
   longest-suffix rules with common irregular forms).
@@ -1964,7 +1965,8 @@ jellyfish, Biopython, pyphen
 - `vocabulary.ts`: `Vocabulary`, building (minimum count, maximum size, specials, ordering), encoding and decoding.
 - `subword/bpe.ts`: BPE training (character and byte level, traced merges), encoding with dropout, the GPT-2 byte
   alphabet.
-- `subword/wordpiece.ts`: WordPiece training and greedy longest-match encoding.
+- `subword/wordpiece.ts`: WordPiece training and greedy longest-match encoding (`wordPieceAlgorithm`, one piece per step);
+  `bpeTokenizeAlgorithm` in `subword/bpe.ts` applies one merge per step, dropout coins resumable.
 - `subword/unigram.ts`: Unigram language-model training (suffix-array seeds, EM with the digamma M step and pruning,
   as HF's trainer, traced), Viterbi encoding, n-best and sampling.
 - `tokenizer.ts`: an HF-tokenizers-style pipeline (added tokens with single-word, lstrip, rstrip and normalized
@@ -2004,7 +2006,13 @@ jellyfish, Biopython, pyphen
   lookup, Sellers' approximate substring matching, top-k fuzzy matches with traced candidate pruning.
 - `fingerprinting.ts`: Rabin-Karp rolling hashes and search, winnowing (MOSS), SimHash, MinHash signatures (datasketch's
   scheme), LSH banding with its optimal parameters, near-duplicate detection.
-- `parsing.ts`: context-free grammars (nltk's notation, probabilities), parse trees, CYK and Earley parsing, conversion
+- `tokenizer-contract.ts`, `algorithm-options.ts`, `dp-tables.ts`, `dp-options.ts`: the `tok/`, `punkt/`, `dp/` paths; the
+  tables `parsingStrategies`, `punktProfiles`, `bpeDropouts`, `dpKinds`; `dpAlgorithm`, the edit-distance tables as one stepped
+  algorithm (a row per step: weighted Levenshtein, LCS, error-rate counts, Sellers), which `editCounts`,
+  `longestCommonSubsequence` and `sellers` run (`levenshtein` stays a two-row loop for speed, equal by test); `_sequence.ts`
+  holds `Sequence`.
+- `parsing.ts`: `cykAlgorithm` (a span length per step) and `earleyAlgorithm` (an item per step) with `cykResult` and
+  `earleyResult`; context-free grammars (nltk's notation, probabilities), parse trees, CYK and Earley parsing, conversion
   to Chomsky normal form.
 - `pcfg.ts`: probabilistic CFGs: the Viterbi parse, sentence probabilities, inside-outside expected counts, EM
   training as a traced run.

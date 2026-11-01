@@ -7,6 +7,7 @@
 
 import { heap, type Json, MdmlError } from '../base/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../trace/index.ts'
+import { type ApproximateOccurrence, dpTable } from './dp-tables.ts'
 import { levenshtein } from './similarity.ts'
 
 /** A string with its distance to a query. */
@@ -294,12 +295,7 @@ export function trieSearch(
 // ---------------------------------------------------------------------------------------------------------------
 // Approximate substring matching.
 
-/** An approximate occurrence of a pattern in a text: `[start, end)` in code points, and its edit distance. */
-export interface ApproximateOccurrence {
-  readonly start: number
-  readonly end: number
-  readonly distance: number
-}
+export type { ApproximateOccurrence } from './dp-tables.ts'
 
 /**
  * Approximate substring matching (Sellers 1980): the edit-distance DP with a free start anywhere in the text, so
@@ -320,37 +316,7 @@ export interface ApproximateOccurrence {
  */
 export function sellers(pattern: string, text: string, k: number): ApproximateOccurrence[] {
   checkK(k, 'sellers')
-  const p = Array.from(pattern)
-  const t = Array.from(text)
-  const m = p.length
-  const n = t.length
-  const w = n + 1
-  const D = new Int32Array((m + 1) * w)
-  for (let i = 1; i <= m; i++) D[i * w] = i
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      D[i * w + j] = Math.min(
-        (D[(i - 1) * w + j] ?? 0) + 1,
-        (D[i * w + j - 1] ?? 0) + 1,
-        (D[(i - 1) * w + j - 1] ?? 0) + (p[i - 1] === t[j - 1] ? 0 : 1),
-      )
-  const out: ApproximateOccurrence[] = []
-  for (let j = 0; j <= n; j++) {
-    const d = D[m * w + j] ?? 0
-    if (d > k) continue
-    let i = m
-    let c = j
-    while (i > 0) {
-      const here = D[i * w + c] ?? 0
-      if (c > 0 && here === (D[(i - 1) * w + c - 1] ?? 0) + (p[i - 1] === t[c - 1] ? 0 : 1)) {
-        i--
-        c--
-      } else if (here === (D[(i - 1) * w + c] ?? 0) + 1) i--
-      else c--
-    }
-    out.push({ start: c, end: j, distance: d })
-  }
-  return out
+  return dpTable(pattern, text, { kind: 'sellers', k }).occurrences
 }
 
 // ---------------------------------------------------------------------------------------------------------------
