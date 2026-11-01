@@ -4,7 +4,7 @@
  * finer grids until the coefficients fall below machine precision (as the chebfun constructor).
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../../base/index.ts'
 import {
   add,
   fromStorage,
@@ -15,9 +15,18 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
+import {
+  type Algorithm,
+  numberFromJson,
+  numbersFromJson,
+  numbersToJson,
+  numberToJson,
+  runAlgorithm,
+} from '../../trace/index.ts'
 import { dct } from '../fourier/index.ts'
 import { eigvals } from '../linalg/index.ts'
 import { orthoval } from '../polynomial/index.ts'
+import type { ApproximationPath } from './approximation-contract.ts'
 
 /** A Chebyshev expansion sum_k c_k T_k(t) of a function on [a, b], with t = (2x - a - b) / (b - a). */
 export interface Chebyshev {
@@ -199,15 +208,105 @@ export function chebyshevCoefficients(values: readonly number[]): number[] {
   return d
 }
 
+/** Options of {@link chebfunAlgorithm} and {@link chebfun}. */
+export interface ChebfunOptions {
+  /** Tolerance relative to the largest coefficient (default 2^-52 times 10). */
+  readonly tol?: number
+  /** The largest sample size (default 2^16 + 1). */
+  readonly maxPoints?: number
+}
+
+/** The state of {@link chebfunAlgorithm}: the next sample size, the coefficients of the last interpolant and whether they decayed. */
+export interface ChebfunState {
+  /** The sample size the next step takes (17, 33, 65, ...). */
+  readonly points: number
+  /** The Chebyshev coefficients of the last interpolant (empty before the first step). */
+  readonly coefficients: number[]
+  /** The largest of the last coefficients relative to the largest (Infinity before the first step). */
+  readonly tail: number
+  readonly converged: boolean
+}
+
+/**
+ * Adaptive Chebyshev approximation (chebfun's constructor) as a stepped algorithm: each step samples the function at 17,
+ * 33, 65, ... Chebyshev points (doubling), computes the coefficients and tests whether the last eighth of them (at
+ * least four) are negligible relative to the largest. It logs the degree, the tail and the coefficients, and is done
+ * (`converged`) when they are, and `failed` when the sample would pass `maxPoints`. The state serialises.
+ *
+ * @param f - The function, vectorised over a 1-D value.
+ * @param domain - The interval (default [-1, 1]).
+ * @param options - Tolerance and the largest sample size.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` (while stepping) when the function is not finite on the domain.
+ * @concept chebyshev-approximation
+ * @example
+ * ```ts
+ * import { chebfunAlgorithm } from 'mdml-engine/numerics/approximation'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { exp } from 'mdml-engine/tensor'
+ * const run = runAlgorithm(chebfunAlgorithm((x) => exp(x)), { maxSteps: 20 })
+ * [run.status, run.steps, run.state.coefficients.length] // => ['converged', 2, 33]
+ * ```
+ */
+export function chebfunAlgorithm(
+  f: (x: Value) => Value,
+  domain: readonly [number, number] = [-1, 1],
+  options: ChebfunOptions = {},
+): Algorithm<ChebfunState, ApproximationPath> {
+  const [a, b] = domain
+  const tol = options.tol ?? 10 * 2.220446049250313e-16
+  const maxPoints = options.maxPoints ?? 65537
+  return {
+    name: 'numerics/chebfun',
+    config: { domain: [a, b], tol, maxPoints },
+    init: () => ({ points: 17, coefficients: [], tail: Number.POSITIVE_INFINITY, converged: false }),
+    step: (s, ctx) => {
+      const n = s.points
+      const xs = Array.from({ length: n }, (_, j) => (a + b) / 2 + ((b - a) / 2) * Math.cos((j * Math.PI) / (n - 1)))
+      const values = toFlat(primalOf(f(fromStorage(Float64Array.from(xs), [n], 'float64'))))
+      if (values.some((v) => !Number.isFinite(v)))
+        throw new MdmlError('value', 'chebfun: the function is not finite on the domain')
+      const c = chebyshevCoefficients(values)
+      const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
+      // Converged when the last few coefficients (an eighth of them, at least 4) are all negligible.
+      const tailCount = Math.max(4, Math.floor(n / 8))
+      const tail = maxOf(c.slice(-tailCount).map((v) => Math.abs(v))) / scale
+      const converged = c.slice(-tailCount).every((v) => Math.abs(v) <= tol * scale)
+      ctx.log('chebfun/degree', n - 1)
+      ctx.log('chebfun/tail', tail)
+      if (ctx.wants('chebfun/coefficients')) ctx.log('chebfun/coefficients', c)
+      return { points: converged ? n : 2 * n - 1, coefficients: c, tail, converged }
+    },
+    done: (s) => (s.converged ? 'converged' : s.points > maxPoints ? 'failed' : undefined),
+    serialise: (s) => ({
+      points: s.points,
+      coefficients: numbersToJson(s.coefficients),
+      tail: numberToJson(s.tail),
+      converged: s.converged,
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as Record<string, Json>
+      return {
+        points: o['points'] as number,
+        coefficients: numbersFromJson(o['coefficients']),
+        tail: numberFromJson(o['tail']),
+        converged: o['converged'] as boolean,
+      }
+    },
+  }
+}
+
 /**
  * Adaptive Chebyshev approximation of a smooth function on an interval (chebfun's constructor): sample at 17, 33,
  * 65, ... Chebyshev points until the coefficients decay below tol relative to their largest, then chop the negligible
- * tail. Smooth functions need few terms (analytic functions converge geometrically).
+ * tail. Smooth functions need few terms (analytic functions converge geometrically). {@link chebfunAlgorithm} run to
+ * the end.
  *
  * @param f - The function, vectorised over a 1-D value.
  * @param domain - The interval (default [-1, 1]).
  * @param options - Tolerance (default 2^-52 times 10) and the largest sample size (default 2^16 + 1).
  * @returns The expansion; its coefficients show the decay.
+ * @throws MdmlError with code `convergence` when the coefficients do not decay within the largest sample size.
  * @concept chebyshev-approximation
  * @example
  * ```ts
@@ -220,26 +319,16 @@ export function chebyshevCoefficients(values: readonly number[]): number[] {
 export function chebfun(
   f: (x: Value) => Value,
   domain: readonly [number, number] = [-1, 1],
-  options: { readonly tol?: number; readonly maxPoints?: number } = {},
+  options: ChebfunOptions = {},
 ): Chebyshev {
-  const [a, b] = domain
   const tol = options.tol ?? 10 * 2.220446049250313e-16
   const maxPoints = options.maxPoints ?? 65537
-  for (let n = 17; n <= maxPoints; n = 2 * n - 1) {
-    const xs = Array.from({ length: n }, (_, j) => (a + b) / 2 + ((b - a) / 2) * Math.cos((j * Math.PI) / (n - 1)))
-    const values = toFlat(primalOf(f(fromStorage(Float64Array.from(xs), [n], 'float64'))))
-    if (values.some((v) => !Number.isFinite(v)))
-      throw new MdmlError('value', 'chebfun: the function is not finite on the domain')
-    const c = chebyshevCoefficients(values)
-    const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
-    // Converged when the last few coefficients (an eighth of them, at least 4) are all negligible.
-    const tail = Math.max(4, Math.floor(n / 8))
-    const negligible = c.slice(-tail).every((v) => Math.abs(v) <= tol * scale)
-    if (negligible) {
-      let last = c.length - 1
-      while (last > 0 && Math.abs(c[last] ?? 0) <= tol * scale) last--
-      return chebyshev(c.slice(0, last + 1), domain)
-    }
-  }
-  throw new MdmlError('convergence', `chebfun: no convergence with ${maxPoints} points (is the function smooth?)`)
+  const s = runAlgorithm(chebfunAlgorithm(f, domain, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state
+  if (!s.converged)
+    throw new MdmlError('convergence', `chebfun: no convergence with ${maxPoints} points (is the function smooth?)`)
+  const c = s.coefficients
+  const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
+  let last = c.length - 1
+  while (last > 0 && Math.abs(c[last] ?? 0) <= tol * scale) last--
+  return chebyshev(c.slice(0, last + 1), domain)
 }

@@ -838,7 +838,8 @@ primitives; "custom" means a dedicated rule.
   traced residuals; preconditioners (`jacobiPreconditioner`, `incompleteCholesky`); `sparseSolve` (custom rules by
   adjoint solves).
 - `eigen.ts`: `lanczos` (full reorthogonalisation, deflation), `arnoldi`, `eigsh` (top k, with locking for repeated
-  eigenvalues), `svds`.
+  eigenvalues), `svds`; each also an Algorithm (`arnoldiAlgorithm` one Krylov vector per step, `eigshAlgorithm` and
+  `svdsAlgorithm` one restart round per step) logging the `krylov/` paths; `eigen-options.ts`: `spectrumTargets`.
 - `lanczos-steps.ts`: `lanczosAlgorithm` (one Krylov vector per step, with the Ritz values and residuals, and a switch
   for reorthogonalisation to watch the basis lose orthogonality), `lanczosSteps`.
 - `stationary.ts`: `stationaryAlgorithm` (Jacobi with damping, Gauss-Seidel, SOR; one sweep per step), `stationarySolve`,
@@ -901,7 +902,10 @@ primitives; "custom" means a dedicated rule.
 - `chebyshev.ts`: `chebfun` (adaptive Chebyshev approximation: construct, evaluate, differentiate, `cumsum`, `sum`,
   roots by the colleague matrix with subdivision, extrema), `chebyshev`, `chebyshevCoefficients`, coefficient decay.
 - `best.ts`: `remez` (minimax approximation by the Remez exchange algorithm, polynomial and rational types),
-  equioscillation, `chebyshevSeries`.
+  equioscillation, `chebyshevSeries`; `remezAlgorithm` (one exchange per step) is what `remez` runs, and `chebfunAlgorithm`
+  (one sample doubling per step) what `chebfun` runs.
+- `approximation-contract.ts`, `approximation-options.ts`: the `remez/` and `chebfun/` paths; `minimaxTypes`
+  (polynomial or rational) and `chebyshevResolutions`.
 - `pade.ts`: `pade` (approximants from Taylor coefficients), `continuedFraction` (modified Lentz).
 - `acceleration.ts`: `richardson`, `aitken`, `shanks`, `wynnEpsilon`, `eulerTransform`.
 - `floating-point.ts`: `ulp`, `nextAfter`, `machineEpsilon` (for float64, float32, float16, bfloat16), `FLOAT_FORMATS`, `toFloat32`, `toFloat16`, `toBfloat16`,
@@ -2177,14 +2181,21 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   `discardWarmup`, `chainsFromDraws`, `constrainChains`.
 - `metropolis.ts`: `metropolisAcceptance`, `metropolisHastings` (any proposal, discrete targets too),
   `randomWalkMetropolis` (scales or a full covariance), `independenceMetropolis`, `adaptiveMetropolis` (Haario et al.),
-  `randomWalkAdaptation` (Robbins-Monro scale and learned shape during warm-up).
+  `randomWalkAdaptation` (Robbins-Monro scale and learned shape during warm-up), also `randomWalkAdaptationAlgorithm`
+  (one warm-up transition per step) and `randomWalkAdaptationKernel`.
 - `hamiltonian/`: `integrators.ts` (`euclideanMetric` with the generalised U-turn criterion, palindromic `integrator`s
   velocity Verlet, McLachlan, Yoshida and Omelyan, `leapfrog`, `integratorState`, `hamiltonian`,
   `hamiltonianTrajectory`); `hmc.ts` (`hmcKernel`, `hmcAdaptation`, `hmc`); `nuts.ts` (multinomial NUTS with biased
   progressive sampling, the U-turn checks across subtrees, divergences, `nutsKernel`, `nutsAdaptation`, `nuts`);
   `adaptation.ts` (dual averaging, `findReasonableStepSize`, Welford mass-matrix adaptation, diagonal or dense,
-  `windowSchedule`, `windowAdaptation`); `riemannian.ts` (`riemannianHmcKernel` with the generalised leapfrog and a
+  `windowSchedule`, `windowAdaptation`, and as Algorithms `findReasonableStepSizeAlgorithm` and
+  `windowAdaptationAlgorithm`, one try or one warm-up transition per step, read with `windowAdaptationResult`);
+  `riemannian.ts` (`riemannianHmcKernel` with the generalised leapfrog and a
   given or SoftAbs metric, `riemannianTrajectory`), for small problems.
+- `adaptation-contract.ts`, `adaptation-options.ts`: the `adapt/` paths of the warm-up algorithms (`adapt/stepSize`,
+  `window`, `accept`, `logDensity`, `divergent`, `treeDepth`, `massMatrix`, `windowEnd`, `direction`) with the chain codec;
+  `windowAdaptationForms` (diagonal or dense mass matrix and the schedule, shrinkage and dual-averaging knobs) and
+  `randomWalkAdaptations`.
 - `langevin.ts`: `malaKernel` (optionally preconditioned), `ulaKernel`, `sgldKernel` with `minibatchGradient` and
   `polynomialStepSize`, SVGD (`svgdDirection`, `medianBandwidth`, `svgdAlgorithm`, `svgd`).
 - `gibbs.ts`: `blockedGibbs` (systematic or random scan), `sliceSampler` (Neal's stepping-out and shrinkage, coordinate
