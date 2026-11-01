@@ -83,7 +83,8 @@ describe('zero-inflated and hurdle estimators', () => {
     // Poisson is the limit alpha -> 0 of the negative binomial, so the likelihood can only be matched or improved.
     expect(nb.params.logLikelihood).toBeGreaterThan(poisson.params.logLikelihood - 1e-3)
     expect(zi.params.logLikelihood).toBeGreaterThan(poisson.params.logLikelihood - 1e-9)
-  })
+    // Three fits of a mixture model: a few seconds alone, so the full suite, which runs many files at once, needs room.
+  }, 60_000)
 
   it('treats integer weights as repeated rows', () => {
     const w = x.map((_, i) => (i % 3 === 0 ? 2 : 1))

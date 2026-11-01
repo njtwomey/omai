@@ -115,7 +115,8 @@ describe('membership inference', () => {
     const reg = regularised(targetData.x, targetData.y, key(3))
     const b = likelihoodRatioAttack(reg, 40, isMember, { pool, trainer: regularised, shadows: 12, key: key(9) })
     expect(Math.abs(b.auc - 0.5)).toBeLessThan(0.2)
-  })
+    // Shadow models are trained for the attack: a few seconds alone, so the full suite needs room.
+  }, 60_000)
 
   it('the confidence logit is log p/(1-p)', () => {
     expect(confidenceLogit((x) => x, [[0, Math.log(3)]], [1])[0]).toBeCloseTo(Math.log(3), 12)
