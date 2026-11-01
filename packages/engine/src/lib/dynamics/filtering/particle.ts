@@ -16,7 +16,18 @@ import {
   take,
   type Value,
 } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { fromNumbers, numbersOf } from '../ode/_vec.ts'
 
 /** The resampling schemes. */
@@ -125,16 +136,58 @@ export interface ParticleFilterResult {
   readonly weights: readonly Float64Array[]
 }
 
-interface PfState {
+/**
+ * The state of the particle filters after `t` observations: the cloud (particles and normalised log-weights), the
+ * evidence so far, and what every step said.
+ */
+export interface PfState {
+  /** Observations consumed. */
+  readonly t: number
+  /** The particles `[N, d]` after the last step. */
   readonly particles: Value
+  /** Their normalised log-weights `[N]`. */
   readonly logW: Float64Array
+  /** The estimate of log p(z_1..t). */
   readonly logEvidence: number
-  readonly means: Float64Array[]
-  readonly ess: number[]
-  readonly resampled: boolean[]
-  readonly history: Tensor[]
-  readonly weights: Float64Array[]
+  /** For each particle after the last step, the index of the particle it descends from (the identity without resampling). */
+  readonly ancestors: readonly number[]
+  /** Weighted means per step. */
+  readonly means: readonly Float64Array[]
+  /** The effective sample size per step, and whether the step resampled. */
+  readonly ess: readonly number[]
+  readonly resampled: readonly boolean[]
+  /** Particles and normalised weights at every step (for smoothing). */
+  readonly history: readonly Tensor[]
+  readonly weights: readonly Float64Array[]
 }
+
+/** The paths the particle filters log, as a type. */
+export type PfPath =
+  | 'pf/ess'
+  | 'pf/log-evidence'
+  | 'pf/resampled'
+  | 'pf/mean'
+  | 'pf/weights'
+  | 'pf/particles'
+  | 'pf/ancestors'
+
+/**
+ * What the particle filters log, by path: the effective sample size before resampling, the evidence so far, whether
+ * the step resampled, the weighted mean, the normalised weights, the particles and the ancestry of each particle.
+ */
+export const pfContract: Contract<PfState, PfPath> = defineContract({
+  'pf/ess': scalar({ description: 'effective sample size before resampling' }),
+  'pf/log-evidence': scalar({ description: 'running estimate of log p(z_1..t)', direction: 'higher' }),
+  'pf/resampled': scalar({ description: '1 when this step resampled, else 0' }),
+  'pf/mean': tensor({ role: 'state', shape: ['state'], description: 'the weighted mean of the particles' }),
+  'pf/weights': tensor({ role: 'state', shape: ['particle'], description: 'the normalised weights after this step' }),
+  'pf/particles': tensor({ role: 'state', shape: ['particle', 'state'], description: 'the particles after this step' }),
+  'pf/ancestors': tensor({
+    role: 'state',
+    shape: ['particle'],
+    description: 'the index of the particle each one descends from at this step',
+  }),
+})
 
 function normalise(logW: Float64Array): { w: Float64Array; lse: number } {
   const lse = logSumExpOf(logW)
@@ -165,13 +218,23 @@ export interface ParticleOptions extends Partial<Omit<RunOptions, 'maxSteps' | '
   readonly key?: Key
 }
 
-function runPf(
+/** Options of the particle filter algorithms. */
+export interface ParticleAlgorithmOptions {
+  /** Number of particles (default 500). */
+  readonly particles?: number
+  readonly resampling?: Resampling
+  /** Resample when ESS / N falls below this (default 0.5; 1 resamples every step). */
+  readonly essThreshold?: number
+  readonly key?: Key
+}
+
+function pfAlgorithm(
   name: string,
   model: ParticleModel,
   observations: TensorLike,
-  options: ParticleOptions,
+  options: ParticleAlgorithmOptions,
   auxiliary: boolean,
-): ParticleFilterResult {
+): Algorithm<PfState, PfPath> {
   const Z = asTensor(observations)
   const T = Z.shape[0] ?? 0
   const N = options.particles ?? 500
@@ -181,9 +244,10 @@ function runPf(
   if (auxiliary && model.predict === undefined)
     throw new MdmlError('value', 'auxiliaryParticleFilter: the model needs predict')
   const zAt = (t: number): Value => reshape(sliceAxis(Z, 0, t, t + 1), Z.shape.slice(1))
-  const algorithm: Algorithm<PfState> = {
+  const identity = Array.from({ length: N }, (_, i) => i)
+  return {
     name,
-    config: { particles: N, resampling: scheme, threshold },
+    config: { particles: N, resampling: scheme, threshold, steps: T },
     schema: channels({
       metrics: {
         ess: { description: 'effective sample size before resampling' },
@@ -191,9 +255,11 @@ function runPf(
       },
     }),
     init: () => ({
+      t: 0,
       particles: model.initial(foldIn(root, 0), N),
       logW: new Float64Array(N).fill(-Math.log(N)),
       logEvidence: 0,
+      ancestors: identity,
       means: [],
       ess: [],
       resampled: [],
@@ -208,6 +274,7 @@ function runPf(
       let firstStage = new Float64Array(N)
       let increment = 0
       let resampledNow = false
+      let ancestors = identity
       const { w: wPrev } = normalise(logW)
       const essPrev = 1 / wPrev.reduce((acc, v) => acc + v * v, 0)
       if (auxiliary) {
@@ -221,32 +288,141 @@ function runPf(
         logW = new Float64Array(N).fill(-Math.log(N))
         increment = lse
         resampledNow = true
+        ancestors = idx
       } else if (essPrev / N < threshold) {
         const idx = resampleIndices(Array.from(wPrev), scheme, uniforms(foldIn(kt, 0), N))
         particles = take(particles, idx, 0)
         logW = new Float64Array(N).fill(-Math.log(N))
         resampledNow = true
+        ancestors = idx
       }
       particles = model.transition(foldIn(kt, 1), particles, t)
       const ll = numbersOf(model.logLikelihood(zAt(t), particles, t))
       // logW is normalised, so the log-sum of the updated weights estimates log p(z_t | z_1..t-1).
       const { w, lse } = normalise(Float64Array.from(logW, (v, i) => v + (ll[i] ?? 0) - (firstStage[i] ?? 0)))
       const ess = 1 / w.reduce((acc, v) => acc + v * v, 0)
-      s.means.push(weightedMean(particles, w))
-      s.ess.push(auxiliary ? ess : essPrev)
-      s.resampled.push(resampledNow)
-      s.history.push(primalOf(particles))
-      s.weights.push(w)
-      return {
-        ...s,
+      const mean = weightedMean(particles, w)
+      const shown = auxiliary ? ess : essPrev
+      const next: PfState = {
+        t: t + 1,
         particles,
         logW: Float64Array.from(w, (v) => Math.log(v)),
         logEvidence: s.logEvidence + increment + lse,
+        ancestors,
+        means: [...s.means, mean],
+        ess: [...s.ess, shown],
+        resampled: [...s.resampled, resampledNow],
+        history: [...s.history, primalOf(particles)],
+        weights: [...s.weights, w],
       }
+      if (ctx.wants('pf/ess')) ctx.log('pf/ess', shown)
+      if (ctx.wants('pf/log-evidence')) ctx.log('pf/log-evidence', next.logEvidence)
+      if (ctx.wants('pf/resampled')) ctx.log('pf/resampled', resampledNow ? 1 : 0)
+      if (ctx.wants('pf/mean')) ctx.log('pf/mean', mean)
+      if (ctx.wants('pf/weights')) ctx.log('pf/weights', w)
+      if (ctx.wants('pf/particles')) ctx.log('pf/particles', primalOf(particles))
+      if (ctx.wants('pf/ancestors')) ctx.log('pf/ancestors', ancestors)
+      return next
     },
+    done: (s) => (s.t >= T ? 'converged' : undefined),
     observe: (s) => ({ metrics: { ess: s.ess.at(-1) ?? 0, logEvidence: s.logEvidence } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as PfState,
   }
-  const st = runAlgorithm(algorithm, { maxSteps: T, ...options }).state
+}
+
+/**
+ * The bootstrap particle filter (Gordon, Salmond and Smith 1993) as a steppable algorithm: each step propagates the
+ * particles through the transition, weights them by the likelihood of one observation and resamples when the effective
+ * sample size falls below a threshold. The state is plain numbers and tensors and serialises; every step logs the ESS,
+ * the evidence so far, whether it resampled, the weighted mean, the weights, the particles and their ancestry (see
+ * {@link pfContract}).
+ *
+ * @param model - Initial distribution, transition and likelihood.
+ * @param observations - `[T, ...]`.
+ * @param options - Particle count, resampling scheme, ESS threshold and key.
+ * @returns The algorithm; it is done after the last observation.
+ * @concept particle-filter
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
+ * const model = {
+ *   initial: (k, n) => normal(k, [n, 1]),
+ *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
+ *   logLikelihood: (z, x) => mul(sum(square(sub(x, z)), -1), -0.5),
+ * }
+ * const alg = filtering.bootstrapParticleAlgorithm(model, [[0.5], [0.4]], { particles: 50, key: key(1) })
+ * runAlgorithm(alg, { maxSteps: 2 }).state.ess.length // => 2
+ * ```
+ */
+export function bootstrapParticleAlgorithm(
+  model: ParticleModel,
+  observations: TensorLike,
+  options: ParticleAlgorithmOptions = {},
+): Algorithm<PfState, PfPath> {
+  return pfAlgorithm('bootstrap-particle-filter', model, observations, options, false)
+}
+
+/**
+ * The auxiliary particle filter (Pitt and Shephard 1999) as a steppable algorithm: each step resamples first by the
+ * likelihood of each particle's point prediction, propagates, and corrects the weights by the ratio of the true to the
+ * predicted likelihood. Every step resamples; the paths and state are those of {@link bootstrapParticleAlgorithm}.
+ *
+ * @param model - The model, with `predict`.
+ * @param observations - `[T, ...]`.
+ * @param options - Particle count, resampling scheme and key.
+ * @returns The algorithm; it is done after the last observation.
+ * @throws MdmlError with code `value` when the model has no `predict`.
+ * @concept particle-filter
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { key, normal } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
+ * const model = {
+ *   initial: (k, n) => normal(k, [n, 1]),
+ *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
+ *   predict: (x) => x,
+ *   logLikelihood: (z, x) => mul(sum(square(sub(x, z)), -1), -0.5),
+ * }
+ * const alg = filtering.auxiliaryParticleAlgorithm(model, [[0.5]], { particles: 50, key: key(2) })
+ * runAlgorithm(alg, { maxSteps: 1 }).state.resampled // => [true]
+ * ```
+ */
+export function auxiliaryParticleAlgorithm(
+  model: ParticleModel,
+  observations: TensorLike,
+  options: Omit<ParticleAlgorithmOptions, 'essThreshold'> = {},
+): Algorithm<PfState, PfPath> {
+  return pfAlgorithm('auxiliary-particle-filter', model, observations, options, true)
+}
+
+function runPf(
+  name: string,
+  model: ParticleModel,
+  observations: TensorLike,
+  options: ParticleOptions,
+  auxiliary: boolean,
+): ParticleFilterResult {
+  const { particles, resampling, essThreshold, key, ...run } = options
+  const algorithm = pfAlgorithm(
+    name,
+    model,
+    observations,
+    {
+      ...(particles === undefined ? {} : { particles }),
+      ...(resampling === undefined ? {} : { resampling }),
+      ...(essThreshold === undefined ? {} : { essThreshold }),
+      ...(key === undefined ? {} : { key }),
+    },
+    auxiliary,
+  )
+  const T = asTensor(observations).shape[0] ?? 0
+  const st = runAlgorithm(algorithm, { maxSteps: T, ...run }).state
   const d = st.means[0]?.length ?? 0
   const flat = new Float64Array(T * d)
   st.means.forEach((m, t) => {
