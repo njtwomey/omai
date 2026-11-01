@@ -304,6 +304,8 @@ function independentRows(c: ConstraintBlock, candidates: readonly number[], p: n
     if (norm > 1e-8 * norm0) {
       basis.push(v.map((e) => e / norm))
       keep.push(r)
+      // No more than p rows can be independent; beyond that the survivors are rounding error of near-parallel grid rows.
+      if (keep.length === p) break
     }
   }
   return keep
@@ -330,10 +332,14 @@ function solveConstrained(g: Gram, S: Float64Array, A: Float64Array, c: Constrai
   const homogeneous = c.rhs.every((v) => v <= 0)
   // The active-set method is exact; many near-parallel grid rows can make it cycle, and then the interior-point method
   // (which does not mind) finds the optimum and the binding rows are read off the slacks.
-  let result = qpActiveSet(qp, homogeneous ? { x0: new Float64Array(p) } : {})
+  // Near-parallel grid rows make the working set change slowly: give the exact method room before giving up on it.
+  let result = qpActiveSet(qp, {
+    ...(homogeneous ? { x0: new Float64Array(p) } : {}),
+    maxIterations: 20 * (p + c.count),
+  })
   let viaInterior = false
   if (result.status !== 'optimal') {
-    result = qpInteriorPoint(qp, { tol: 1e-12 })
+    result = qpInteriorPoint(qp, { tol: 1e-10, maxIterations: 400 })
     viaInterior = true
   }
   if (result.status !== 'optimal') {

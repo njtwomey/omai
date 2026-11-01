@@ -1,5 +1,5 @@
 /**
- * The small inline SVG icons the controls and player use: chevrons, play, pause, step, skip to either end and rewind,
+ * The small inline SVG icons the controls and player use: chevrons, play, pause, step by a frame (double chevrons), skip to either end and rewind,
  * a bolt, a die, light and dark mode symbols, copy, check, menu, close, sliders and a settings gear, each sized by one prop.
  */
 
@@ -74,22 +74,22 @@ export function PauseIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Step back one frame. */
+/** Step back one frame: a double chevron pointing left. */
 export function StepBackIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
-      <path d="M18 5v14L8 12z" fill="currentColor" />
-      <path d="M6 5v14" />
+      <path d="m11 17-5-5 5-5" />
+      <path d="m18 17-5-5 5-5" />
     </Svg>
   )
 }
 
-/** Step forward one frame. */
+/** Step forward one frame: a double chevron pointing right. */
 export function StepForwardIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
-      <path d="M6 5v14l10-7z" fill="currentColor" />
-      <path d="M18 5v14" />
+      <path d="m6 17 5-5-5-5" />
+      <path d="m13 17 5-5-5-5" />
     </Svg>
   )
 }

@@ -12,6 +12,7 @@ import {
   fitGam,
   GAM_DEFAULTS,
   type GamHyper,
+  gam,
   gamAlgorithm,
   gamProblem,
   gamSolution,
@@ -209,4 +210,30 @@ describe('convex, concave and bounded smooths', () => {
     // The design carries the constraints as rows over the whole coefficient vector.
     expect(bounded.problem.design.constraints?.width).toBe(bounded.problem.design.p)
   })
+})
+
+describe('shape constraints on every basis, at the sizes a viewer can reach', () => {
+  const n = 80
+  const x = grid(n)
+  const z = noise(3, n)
+  const y = x.map((r, i) => Math.sin(6 * (r[0] ?? 0)) + 0.1 * (z[i] ?? 0))
+  const points = Array.from({ length: 200 }, (_, i) => [i / 199])
+  const cases = [
+    // The active constraints once outnumbered the coefficients (a negative null-space size, `Invalid typed array length`).
+    { basis: 'bs', shape: 'convex', k: 10 },
+    { basis: 'cr', shape: 'increasing', k: 20 },
+    // The active-set method ran out of iterations on near-parallel grid rows (and then the interior-point method too).
+    { basis: 'tp', shape: 'decreasing', k: 6 },
+  ] as const
+  for (const { basis, shape, k } of cases) {
+    it(`fits ${basis} with ${k} coefficients under ${shape} and the effect has the shape`, () => {
+      const fitted = gam.with({ terms: [s(0, { basis, k, shape })] }).fit({ x, y })
+      const effectOn = Array.from(fitted.predictTerms(points).data as Float64Array)
+      expect(effectOn.every(Number.isFinite)).toBe(true)
+      const d = diffs(effectOn)
+      if (shape === 'increasing') expect(Math.min(...d)).toBeGreaterThan(-2e-3)
+      if (shape === 'decreasing') expect(Math.max(...d)).toBeLessThan(2e-3)
+      if (shape === 'convex') expect(Math.min(...diffs(d))).toBeGreaterThan(-5e-3)
+    }, 60_000)
+  }
 })

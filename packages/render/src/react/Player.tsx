@@ -4,7 +4,7 @@
  * frame rates, step forward, seek to the end, a draggable scrubber and an optional time stamp.
  */
 
-import { type PointerEvent, type ReactNode, useCallback, useRef, useState } from 'react'
+import { type PointerEvent, type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { cx, iconButtonClass, menuItemClass } from './controls/classes.ts'
 import {
   ChevronDownIcon,
@@ -20,6 +20,12 @@ import {
 import { Popover } from './controls/Popover.tsx'
 import { FPS_CHOICES, timeStamp } from './playhead.ts'
 import type { PlaybackController } from './usePlayback.ts'
+
+/** How long after playback stops the arrow keys still step a frame from anywhere on the page, in milliseconds. */
+const RECENT_MS = 10_000
+
+/** The player that played last, so that with several on a page the arrow keys belong to one. */
+let lastPlayed: string | undefined
 
 /** Props of {@link Player}. */
 export interface PlayerProps {
@@ -41,7 +47,8 @@ export interface PlayerProps {
  * defaults (when the controller offers one), an eager toggle (when the controller offers one: the whole run computed
  * at once, its end shown), seek to the start, step back, play or pause with a
  * caret menu for the target frames per second, step forward, seek to the end, a scrubber to drag, and an optional
- * stamp. Space toggles play, the arrow keys step and Home and End seek while the player has focus.
+ * stamp. Space toggles play, the arrow keys step one frame and Home and End seek while the player has focus. The arrow
+ * keys also step while the player is playing and for ten seconds after, wherever the focus is except in a text field.
  *
  * @param props - The controller (from `usePlayback`, `useTimelinePlayback`, `useLiveRun` or a session player) and the
  *   stamp.
@@ -56,6 +63,36 @@ export function Player(props: PlayerProps): ReactNode {
     c.seek(0)
   }
   const toEnd = (): void => c.seek(c.count - 1)
+  const id = useId()
+  // Whether the player played within the last few seconds: the arrow keys then step, from anywhere on the page.
+  const recent = useRef(false)
+  useEffect(() => {
+    if (c.playing) {
+      recent.current = true
+      lastPlayed = id
+      return
+    }
+    const timer = setTimeout(() => {
+      recent.current = false
+    }, RECENT_MS)
+    return () => clearTimeout(timer)
+  }, [c.playing, id])
+  const step = useRef(c.step)
+  step.current = c.step
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      if (!recent.current || lastPlayed !== id) return
+      const target = e.target as HTMLElement | null
+      if (target !== null && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable))
+        return
+      e.preventDefault()
+      step.current(e.key === 'ArrowLeft' ? -1 : 1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [id])
   const eager = c.eager === true
   const hasReset = c.resetForm !== undefined
   const hasEager = c.setEager !== undefined
