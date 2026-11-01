@@ -1,133 +1,24 @@
 /**
  * Changepoint detection: locating the times where a series' statistical behaviour changes. Bayesian online changepoint
- * detection (Adams and MacKay), which tracks the posterior over the current run length with conjugate segment models
- * and a hazard, and the offline methods PELT (exact penalised optimal partitioning) and binary segmentation, as in
- * ruptures.
+ * detection (Adams and MacKay), which tracks the posterior over the current run length with a conjugate segment model
+ * (`segment-models.ts`) and a hazard, as a steppable algorithm whose state serialises (`bocpdAlgorithm`) and as a
+ * function over a whole series (`bocpd`); and the offline methods PELT (exact penalised optimal partitioning) and binary
+ * segmentation, as in ruptures.
  */
 
 import { logSumExpOf, MdmlError } from '../../base/index.ts'
-import { lgamma } from '../../numerics/special/index.ts'
-import { item } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
-
-/**
- * A conjugate model of the observations within a segment (with its prior), which gives an exact posterior predictive
- * for Bayesian online changepoint detection: Gaussian with known variance (normal prior on the mean), Gaussian with
- * known mean (inverse-gamma prior on the variance), Gaussian with both unknown (normal-gamma, Student-t predictive),
- * Poisson (gamma prior, negative binomial predictive) and Bernoulli (beta prior).
- */
-export type ConjugateModel =
-  | {
-      readonly kind: 'normal-known-variance'
-      readonly sigma: number
-      readonly priorMean: number
-      readonly priorStd: number
-    }
-  | { readonly kind: 'normal-known-mean'; readonly mean: number; readonly alpha: number; readonly beta: number }
-  | {
-      readonly kind: 'normal-gamma'
-      readonly mu0: number
-      readonly kappa0: number
-      readonly alpha0: number
-      readonly beta0: number
-    }
-  | { readonly kind: 'poisson-gamma'; readonly shape: number; readonly rate: number }
-  | { readonly kind: 'bernoulli-beta'; readonly alpha: number; readonly beta: number }
-
-const LOG_2PI = Math.log(2 * Math.PI)
-const lg = (x: number): number => item(lgamma(x))
-
-function studentLog(y: number, nu: number, loc: number, scale2: number): number {
-  return (
-    lg((nu + 1) / 2) -
-    lg(nu / 2) -
-    0.5 * Math.log(nu * Math.PI * scale2) -
-    ((nu + 1) / 2) * Math.log1p((y - loc) ** 2 / (nu * scale2))
-  )
-}
-
-/** The posterior of one run: the predictive log density and mean of the next value, and the update by one value. */
-export interface RunPosterior {
-  readonly length: number
-  logPredictive(y: number): number
-  predictiveMean(): number
-  update(y: number): RunPosterior
-}
-
-/**
- * The prior run of a conjugate model (no observations yet).
- *
- * @param model - The model.
- * @returns The run posterior before any observation.
- * @concept bayesian-changepoint-detection
- * @example
- * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * filtering.priorRun({ kind: 'bernoulli-beta', alpha: 1, beta: 1 }).predictiveMean() // => 0.5
- * ```
- */
-export function priorRun(model: ConjugateModel): RunPosterior {
-  switch (model.kind) {
-    case 'normal-known-variance': {
-      const s2 = model.sigma ** 2
-      const make = (length: number, precision: number, weighted: number): RunPosterior => {
-        const m = weighted / precision
-        const v = 1 / precision + s2
-        return {
-          length,
-          logPredictive: (y) => -0.5 * (LOG_2PI + Math.log(v) + (y - m) ** 2 / v),
-          predictiveMean: () => m,
-          update: (y) => make(length + 1, precision + 1 / s2, weighted + y / s2),
-        }
-      }
-      return make(0, 1 / model.priorStd ** 2, model.priorMean / model.priorStd ** 2)
-    }
-    case 'normal-known-mean': {
-      const mu = model.mean
-      const make = (length: number, a: number, b: number): RunPosterior => ({
-        length,
-        logPredictive: (y) => studentLog(y, 2 * a, mu, b / a),
-        predictiveMean: () => mu,
-        update: (y) => make(length + 1, a + 0.5, b + 0.5 * (y - mu) ** 2),
-      })
-      return make(0, model.alpha, model.beta)
-    }
-    case 'normal-gamma': {
-      const make = (length: number, mu: number, kappa: number, a: number, b: number): RunPosterior => ({
-        length,
-        logPredictive: (y) => studentLog(y, 2 * a, mu, (b * (kappa + 1)) / (a * kappa)),
-        predictiveMean: () => mu,
-        update: (y) =>
-          make(
-            length + 1,
-            (kappa * mu + y) / (kappa + 1),
-            kappa + 1,
-            a + 0.5,
-            b + (kappa * (y - mu) ** 2) / (2 * (kappa + 1)),
-          ),
-      })
-      return make(0, model.mu0, model.kappa0, model.alpha0, model.beta0)
-    }
-    case 'poisson-gamma': {
-      const make = (length: number, a: number, b: number): RunPosterior => ({
-        length,
-        logPredictive: (y) => lg(a + y) - lg(a) - lg(y + 1) + a * Math.log(b / (b + 1)) - y * Math.log(b + 1),
-        predictiveMean: () => a / b,
-        update: (y) => make(length + 1, a + y, b + 1),
-      })
-      return make(0, model.shape, model.rate)
-    }
-    case 'bernoulli-beta': {
-      const make = (length: number, a: number, b: number): RunPosterior => ({
-        length,
-        logPredictive: (y) => Math.log(y > 0.5 ? a / (a + b) : b / (a + b)),
-        predictiveMean: () => a / (a + b),
-        update: (y) => make(length + 1, a + (y > 0.5 ? 1 : 0), b + (y > 0.5 ? 0 : 1)),
-      })
-      return make(0, model.alpha, model.beta)
-    }
-  }
-}
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
+import { type ConjugateModel, type RunStats, segmentOps } from './segment-models.ts'
 
 /**
  * The constant hazard of a geometric prior on segment lengths with mean lambda: h(r) = 1 / lambda.
@@ -148,10 +39,12 @@ export function constantHazard(lambda: number): (runLength: number) => number {
 }
 
 /**
- * The hazard of a discretised Weibull or negative-binomial-like prior on segment lengths: h(r) = P(L = r + 1) /
- * P(L > r) for a length distribution given by its survival function.
+ * The hazard of a prior on segment lengths given by its survival function: h(r) = (S(r) - S(r + 1)) / S(r). With
+ * S(r) = P(T >= r) for the segment length T (the number of observations in a segment), this is P(T = r) / P(T >= r),
+ * the probability that a segment which has r observations ends there; Weibull, gamma or negative-binomial lengths are
+ * such priors (see `weibullHazard` and its siblings).
  *
- * @param survival - P(L > r) for r = 0, 1, 2, ...
+ * @param survival - S(r) for r = 0, 1, 2, ...
  * @returns The hazard function.
  * @concept hazard-function
  * @example
@@ -174,6 +67,8 @@ export interface BocpdResult {
   readonly logPredictive: readonly number[]
   /** E[y_t | y_1..y_{t-1}] per step. */
   readonly predictiveMean: readonly number[]
+  /** The standard deviation of the predictive of y_t given y_1..y_{t-1} (the mixture over the run lengths). */
+  readonly predictiveStd: readonly number[]
   /** p(r_t = r | y_1..y_t): r counts the observations of the current segment including y_t (entry 0 is 0). */
   readonly runLength: readonly Float64Array[]
   /** The most probable run length per step. */
@@ -184,28 +79,196 @@ export interface BocpdResult {
   readonly logEvidence: number
 }
 
-interface BocpdState {
-  readonly hyps: readonly { readonly logp: number; readonly run: RunPosterior }[]
-  readonly out: {
-    logPredictive: number[]
-    predictiveMean: number[]
-    runLength: Float64Array[]
-    mapRunLength: number[]
-    changeProbability: number[]
-  }
+/** One hypothesis of the run-length posterior: its log probability and the run's statistics (see {@link RunStats}). */
+export interface BocpdHypothesis extends RunStats {
+  readonly logp: number
+}
+
+/** What the state keeps of the steps so far (the same fields as {@link BocpdResult}, without the evidence). */
+export type BocpdHistory = Omit<BocpdResult, 'logEvidence'>
+
+/**
+ * The state of {@link bocpdAlgorithm}: the steps done, the posterior over the run length before the next observation as
+ * a list of hypotheses (plain numbers, so `stateToJson` serialises it and a run resumes from a checkpoint), the evidence
+ * so far and what every step said.
+ */
+export interface BocpdState {
+  /** Observations consumed. */
+  readonly t: number
+  /** p(run length) before observation `t`: the log probability and statistics of every hypothesis kept. */
+  readonly hyps: readonly BocpdHypothesis[]
+  /** log p(y_1..y_t). */
   readonly logEvidence: number
+  readonly history: BocpdHistory
+}
+
+/** The paths {@link bocpdAlgorithm} logs, as a type. */
+export type BocpdPath =
+  | 'bocpd/change-probability'
+  | 'bocpd/map-run-length'
+  | 'bocpd/log-predictive'
+  | 'bocpd/log-evidence'
+  | 'bocpd/predictive-mean'
+  | 'bocpd/predictive-std'
+  | 'bocpd/hypotheses'
+  | 'bocpd/run-length'
+
+/**
+ * What {@link bocpdAlgorithm} logs, by path: the probability that a segment starts at this step, the most probable run
+ * length, the log predictive of the observation, the evidence so far, the predictive mean and standard deviation, the
+ * number of hypotheses kept, and the run-length posterior (a row per step: entry r is p(r_t = r | y_1..y_t)).
+ */
+export const bocpdContract: Contract<BocpdState, BocpdPath> = defineContract({
+  'bocpd/change-probability': scalar({ description: 'p(a segment starts at this step)' }),
+  'bocpd/map-run-length': scalar({ description: 'the most probable run length' }),
+  'bocpd/log-predictive': scalar({ description: 'log p(y_t | y_1..y_{t-1})' }),
+  'bocpd/log-evidence': scalar({ description: 'log p(y_1..y_t), the evidence so far', direction: 'higher' }),
+  'bocpd/predictive-mean': scalar({ description: 'E[y_t | y_1..y_{t-1}]' }),
+  'bocpd/predictive-std': scalar({ description: 'the standard deviation of y_t given y_1..y_{t-1}' }),
+  'bocpd/hypotheses': scalar({ description: 'run lengths kept after pruning' }),
+  'bocpd/run-length': tensor({
+    role: 'output',
+    shape: ['run length'],
+    description: 'p(r_t = r | y_1..y_t) for r = 0, 1, ..., t + 1 (entry 0 is 0)',
+  }),
+})
+
+/** Options of {@link bocpdAlgorithm}. */
+export interface BocpdOptions {
+  /** Log probability below which a hypothesis is dropped (default -40, which changes nothing at double precision). */
+  readonly threshold?: number
+  /**
+   * Keep every step's run-length posterior in the state (default true). A long series makes the state quadratic in its
+   * length; without them `history.runLength` is empty and the paths still log the rows.
+   */
+  readonly rows?: boolean
+}
+
+const EMPTY_HISTORY: BocpdHistory = {
+  logPredictive: [],
+  predictiveMean: [],
+  predictiveStd: [],
+  runLength: [],
+  mapRunLength: [],
+  changeProbability: [],
 }
 
 /**
- * Bayesian online changepoint detection (Adams and MacKay 2007) as a traced algorithm: the run-length posterior is
- * propagated exactly with the conjugate predictive of every run and a hazard (constant or a function of the run
- * length); hypotheses below e^threshold of the total are dropped (default -40, which changes nothing at double
- * precision).
+ * Bayesian online changepoint detection (Adams and MacKay 2007) as a steppable algorithm: each step consumes one
+ * observation, propagates the run-length posterior exactly with the conjugate predictive of every run and a hazard
+ * (constant or a function of the run length), and drops hypotheses below e^threshold of the total (default -40, which
+ * changes nothing at double precision). The state is plain numbers and serialises, so a run resumes from a checkpoint;
+ * every step logs the change probability, the MAP run length, the log predictive, the evidence so far, the predictive
+ * mean and standard deviation, the number of hypotheses and the run-length row (see {@link bocpdContract}).
+ *
+ * @param y - The series.
+ * @param model - The conjugate segment model and its prior.
+ * @param hazard - A constant hazard in (0, 1) or a function of the run length.
+ * @param options - Pruning threshold and whether the state keeps the run-length rows.
+ * @returns The algorithm; it is done after the last observation.
+ * @throws MdmlError with code `value` for a constant hazard outside (0, 1) or a model with an invalid prior.
+ * @concept bayesian-changepoint-detection
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const model = { kind: 'normal-known-variance', sigma: 0.5, priorMean: 0, priorStd: 5 } as const
+ * const alg = filtering.bocpdAlgorithm([0, 0.1, 5, 5.2], model, 0.1)
+ * runAlgorithm(alg, { maxSteps: 4 }).state.history.mapRunLength // => [1, 2, 1, 2]
+ * ```
+ */
+export function bocpdAlgorithm(
+  y: readonly number[],
+  model: ConjugateModel,
+  hazard: number | ((runLength: number) => number),
+  options: BocpdOptions = {},
+): Algorithm<BocpdState, BocpdPath> {
+  if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
+    throw new MdmlError('value', 'bocpd: the hazard must be in (0, 1)')
+  const h = typeof hazard === 'number' ? () => hazard : hazard
+  const cut = options.threshold ?? -40
+  const rows = options.rows ?? true
+  const ops = segmentOps(model)
+  return {
+    name: 'bocpd',
+    config: { model: model.kind, steps: y.length, threshold: cut },
+    init: () => ({
+      t: 0,
+      hyps: [{ logp: 0, ...ops.fresh(0) }],
+      logEvidence: 0,
+      history: EMPTY_HISTORY,
+    }),
+    step: (s, ctx) => {
+      const t = s.t
+      const yt = y[t] ?? 0
+      const at = { t, prev: t > 0 ? (y[t - 1] ?? 0) : 0 }
+      // The mixture over the run lengths before y_t: its mean and, from the second moment, its spread.
+      let mean = 0
+      let second = 0
+      for (const p of s.hyps) {
+        const w = Math.exp(p.logp)
+        const m = ops.predictiveMean(p, at)
+        mean += w * m
+        second += w * (ops.predictiveVariance(p, at) + m * m)
+      }
+      const joint = s.hyps.map((p) => p.logp + ops.logPredictive(p, yt, at))
+      const lp = logSumExpOf(joint)
+      const posterior = s.hyps.map((p, i) => ({ logp: (joint[i] ?? 0) - lp, ...ops.update(p, yt, at) }))
+      const rl = new Float64Array(t + 2)
+      let best = 0
+      for (const p of posterior) {
+        rl[p.length] = Math.exp(p.logp)
+        if ((rl[p.length] ?? 0) > (rl[best] ?? 0)) best = p.length
+      }
+      const std = Math.sqrt(Math.max(0, second - mean * mean))
+      const logEvidence = s.logEvidence + lp
+      const kept = posterior.filter((p) => p.logp > cut)
+      // Before y_(t+1): a run of length r continues with probability 1 - h(r), or a new segment starts with h(r).
+      const change = logSumExpOf(kept.map((p) => p.logp + Math.log(h(p.length))))
+      const next = kept.flatMap((p) => {
+        const stay = 1 - h(p.length)
+        return stay > 0 ? [{ ...p, logp: p.logp + Math.log(stay) }] : []
+      })
+      let hyps: BocpdHypothesis[] =
+        change === Number.NEGATIVE_INFINITY ? next : [{ logp: change, ...ops.fresh(t + 1) }, ...next]
+      const z = logSumExpOf(hyps.map((p) => p.logp))
+      hyps = hyps.map((p) => ({ ...p, logp: p.logp - z }))
+      if (ctx.wants('bocpd/change-probability')) ctx.log('bocpd/change-probability', rl[1] ?? 0)
+      if (ctx.wants('bocpd/map-run-length')) ctx.log('bocpd/map-run-length', best)
+      if (ctx.wants('bocpd/log-predictive')) ctx.log('bocpd/log-predictive', lp)
+      if (ctx.wants('bocpd/log-evidence')) ctx.log('bocpd/log-evidence', logEvidence)
+      if (ctx.wants('bocpd/predictive-mean')) ctx.log('bocpd/predictive-mean', mean)
+      if (ctx.wants('bocpd/predictive-std')) ctx.log('bocpd/predictive-std', std)
+      if (ctx.wants('bocpd/hypotheses')) ctx.log('bocpd/hypotheses', hyps.length)
+      if (ctx.wants('bocpd/run-length')) ctx.log('bocpd/run-length', rl)
+      const past = s.history
+      return {
+        t: t + 1,
+        hyps,
+        logEvidence,
+        history: {
+          logPredictive: [...past.logPredictive, lp],
+          predictiveMean: [...past.predictiveMean, mean],
+          predictiveStd: [...past.predictiveStd, std],
+          runLength: rows ? [...past.runLength, rl] : past.runLength,
+          mapRunLength: [...past.mapRunLength, best],
+          changeProbability: [...past.changeProbability, rl[1] ?? 0],
+        },
+      }
+    },
+    done: (s) => (s.t >= y.length ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as BocpdState,
+  }
+}
+
+/**
+ * Bayesian online changepoint detection over a whole series: {@link bocpdAlgorithm} run to the end.
  *
  * @param y - The series.
  * @param model - The conjugate segment model.
  * @param hazard - A constant hazard in (0, 1) or a function of the run length.
- * @param options - Pruning threshold and tracing.
+ * @param options - Pruning threshold, whether to keep the run-length rows, and tracing.
  * @returns Run-length posteriors, MAP run lengths, change probabilities, predictives and the evidence.
  * @throws MdmlError with code `value` for a constant hazard outside (0, 1).
  * @concept bayesian-changepoint-detection
@@ -220,62 +283,15 @@ export function bocpd(
   y: readonly number[],
   model: ConjugateModel,
   hazard: number | ((runLength: number) => number),
-  options: { readonly threshold?: number } & Partial<Omit<RunOptions, 'maxSteps' | 'start'>> = {},
+  options: BocpdOptions & Partial<Omit<RunOptions, 'maxSteps' | 'start'>> = {},
 ): BocpdResult {
-  if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
-    throw new MdmlError('value', 'bocpd: the hazard must be in (0, 1)')
-  const h = typeof hazard === 'number' ? () => hazard : hazard
-  const cut = options.threshold ?? -40
-  const algorithm: Algorithm<BocpdState> = {
-    name: 'bocpd',
-    config: { model: model.kind, steps: y.length },
-    schema: channels({
-      metrics: {
-        changeProbability: { description: 'p(a segment starts at this step)' },
-        mapRunLength: { description: 'the most probable run length' },
-      },
-    }),
-    init: () => ({
-      hyps: [{ logp: 0, run: priorRun(model) }],
-      out: { logPredictive: [], predictiveMean: [], runLength: [], mapRunLength: [], changeProbability: [] },
-      logEvidence: 0,
-    }),
-    step: (s, ctx) => {
-      const t = ctx.t
-      const yt = y[t] ?? 0
-      let mean = 0
-      for (const p of s.hyps) mean += Math.exp(p.logp) * p.run.predictiveMean()
-      const joint = s.hyps.map((p) => p.logp + p.run.logPredictive(yt))
-      const lp = logSumExpOf(joint)
-      const posterior = s.hyps.map((p, i) => ({ logp: (joint[i] ?? 0) - lp, run: p.run.update(yt) }))
-      const rl = new Float64Array(t + 2)
-      let best = 0
-      for (const p of posterior) {
-        rl[p.run.length] = Math.exp(p.logp)
-        if ((rl[p.run.length] ?? 0) > (rl[best] ?? 0)) best = p.run.length
-      }
-      s.out.logPredictive.push(lp)
-      s.out.predictiveMean.push(mean)
-      s.out.runLength.push(rl)
-      s.out.mapRunLength.push(best)
-      s.out.changeProbability.push(rl[1] ?? 0)
-      const kept = posterior.filter((p) => p.logp > cut)
-      const change = logSumExpOf(kept.map((p) => p.logp + Math.log(h(p.run.length))))
-      const next = kept.flatMap((p) => {
-        const stay = 1 - h(p.run.length)
-        return stay > 0 ? [{ logp: p.logp + Math.log(stay), run: p.run }] : []
-      })
-      let hyps = change === Number.NEGATIVE_INFINITY ? next : [{ logp: change, run: priorRun(model) }, ...next]
-      const z = logSumExpOf(hyps.map((p) => p.logp))
-      hyps = hyps.map((p) => ({ logp: p.logp - z, run: p.run }))
-      return { hyps, out: s.out, logEvidence: s.logEvidence + lp }
-    },
-    observe: (s) => ({
-      metrics: { changeProbability: s.out.changeProbability.at(-1) ?? 0, mapRunLength: s.out.mapRunLength.at(-1) ?? 0 },
-    }),
-  }
-  const st = runAlgorithm(algorithm, { maxSteps: y.length, ...options }).state
-  return { ...st.out, logEvidence: st.logEvidence }
+  const { threshold, rows, ...run } = options
+  const algorithm = bocpdAlgorithm(y, model, hazard, {
+    ...(threshold === undefined ? {} : { threshold }),
+    ...(rows === undefined ? {} : { rows }),
+  })
+  const st = runAlgorithm(algorithm, { maxSteps: y.length, ...run }).state
+  return { ...st.history, logEvidence: st.logEvidence }
 }
 
 /** A segment cost for offline changepoint detection. */
