@@ -7,6 +7,7 @@
 export * from './centrality.ts'
 export * from './colouring.ts'
 export * from './community.ts'
+export * from './component-algorithms.ts'
 export * from './components.ts'
 export * from './flow-algorithms.ts'
 export * from './flows.ts'

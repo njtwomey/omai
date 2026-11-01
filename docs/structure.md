@@ -1148,6 +1148,9 @@ in it (`checkPrimitive`).
   `isDag`, `findCycle`, `bipartiteColouring`, `isBipartite`, `kHopNeighbourhood`.
 - `components.ts`: `connectedComponents` (weak or strong), `isConnected`, `stronglyConnectedComponents` (Tarjan,
   Kosaraju), `isStronglyConnected`, `condensation`, `articulationPoints`, `bridges`, `biconnectedComponents`.
+- `component-algorithms.ts`: the depth-first searches behind `components.ts`: `tarjanAlgorithm`, `kosarajuAlgorithm`
+  (strong components), `biconnectivityAlgorithm` (articulation points, bridges, blocks), one search action per step,
+  `dfsContract` (`dfs/...` paths) and the slot `componentMethods`.
 - `paths.ts`: `dijkstra`, `bellmanFord`, `aStar` (with the expanded set), `floydWarshall`, `johnson`, `kShortestPaths`
   (Yen), `shortestPath`, `reconstructPath` (single-source and all-pairs predecessors).
 - `shortest-paths.ts`: the steppable algorithms behind `paths.ts`: `dijkstraAlgorithm`, `aStarAlgorithm` (one node

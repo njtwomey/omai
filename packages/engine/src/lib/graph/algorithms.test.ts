@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { defaults } from '../space/index.ts'
 import { type Algorithm, policies, recorder, runAlgorithm } from '../trace/index.ts'
+import {
+  biconnectivityAlgorithm,
+  componentMethods,
+  kosarajuAlgorithm,
+  tarjanAlgorithm,
+} from './component-algorithms.ts'
+import { articulationPoints, biconnectedComponents, bridges, stronglyConnectedComponents } from './components.ts'
 import { flowContract, maxFlowAlgorithm, maxFlowMethods, minCostFlowAlgorithm } from './flow-algorithms.ts'
 import { bipartiteMatching, maxFlow, minCostFlow, minCut } from './flows.ts'
-import { completeGraph, gridGraph } from './generators.ts'
+import { barbellGraph, completeGraph, gridGraph } from './generators.ts'
 import { digraph, graph } from './graph.ts'
 import { hopcroftKarpAlgorithm, matchingContract } from './hopcroft-karp.ts'
 import {
@@ -275,5 +282,114 @@ describe('hopcroftKarpAlgorithm', () => {
   it('rejects an odd cycle and an edge inside one side', () => {
     expect(() => hopcroftKarpAlgorithm(completeGraph(3))).toThrow(/not bipartite/)
     expect(() => hopcroftKarpAlgorithm(graph([[0, 1]]), { left: [0, 1] })).toThrow(/within one side/)
+  })
+})
+
+describe('strong-component algorithms', () => {
+  const g = digraph([
+    [0, 1],
+    [1, 2],
+    [2, 0],
+    [2, 3],
+    [3, 4],
+    [4, 3],
+    [5, 4],
+  ])
+
+  it('Tarjan and Kosaraju find the components stronglyConnectedComponents gives', () => {
+    const want = stronglyConnectedComponents(g).components
+    expect(want).toEqual([[0, 1, 2], [3, 4], [5]])
+    for (const build of [tarjanAlgorithm, kosarajuAlgorithm]) {
+      const run = runAlgorithm(build(g), { maxSteps: 200 })
+      expect(run.status).toBe('converged')
+      expect(run.state.count).toBe(3)
+      const groups = new Map<number, number[]>()
+      for (const [v, c] of run.state.component.entries()) groups.set(c, [...(groups.get(c) ?? []), v])
+      expect([...groups.values()].sort((p, q) => (p[0] ?? 0) - (q[0] ?? 0))).toEqual(want)
+    }
+  })
+
+  it('Tarjan completes sink components first and the lowlink never exceeds the discovery time', () => {
+    const l = logged(tarjanAlgorithm(g))
+    const last = (l.get('dfs/component') ?? []).at(-1) as number[]
+    expect(last[3]).toBeLessThan(last[0] ?? 0)
+    const disc = (l.get('dfs/discover') ?? []).at(-1) as number[]
+    const low = (l.get('dfs/low') ?? []).at(-1) as number[]
+    expect(low.every((x, v) => x <= (disc[v] ?? 0))).toBe(true)
+    expect((l.get('dfs/count') ?? []).at(-1)).toBe(3)
+  })
+
+  it('Kosaraju logs two passes', () => {
+    const phases = logged(kosarajuAlgorithm(g)).get('dfs/phase') as number[]
+    expect(phases[0]).toBe(1)
+    expect(phases.at(-1)).toBe(2)
+    expect(phases.every((p, i) => i === 0 || p >= (phases[i - 1] ?? 0))).toBe(true)
+  })
+
+  it('resume from a JSON checkpoint', () => {
+    for (const build of [tarjanAlgorithm, kosarajuAlgorithm]) {
+      for (const cut of [1, 5, 12]) {
+        expectResumes(build(g), cut, (s) => ({ c: Array.from(s.component), n: s.count, f: s.finished }))
+      }
+    }
+  })
+
+  it('handles the empty graph and an undirected graph', () => {
+    for (const build of [tarjanAlgorithm, kosarajuAlgorithm]) {
+      expect(runAlgorithm(build(digraph([], { nodes: 0 })), { maxSteps: 5 }).steps).toBe(0)
+      expect(
+        runAlgorithm(
+          build(
+            graph([
+              [0, 1],
+              [2, 3],
+            ]),
+          ),
+          { maxSteps: 50 },
+        ).state.count,
+      ).toBe(2)
+    }
+    expect(componentMethods.names).toEqual(['tarjan', 'kosaraju'])
+  })
+})
+
+describe('biconnectivityAlgorithm', () => {
+  const barbell = barbellGraph(3, 1)
+
+  it('finds the articulation points, bridges and blocks the functions return', () => {
+    const run = runAlgorithm(biconnectivityAlgorithm(barbell), { maxSteps: 300 })
+    expect(run.status).toBe('converged')
+    expect(
+      Array.from(run.state.cut.entries())
+        .filter(([, c]) => c === 1)
+        .map(([v]) => v),
+    ).toEqual(articulationPoints(barbell))
+    expect(run.state.bridges.length).toBe(bridges(barbell).length)
+    expect(run.state.blocks).toHaveLength(biconnectedComponents(barbell).length)
+    expect(articulationPoints(barbell)).toEqual([2, 3, 4])
+  })
+
+  it('logs lowpoints no later than discovery and a growing block count', () => {
+    const l = logged(biconnectivityAlgorithm(barbell))
+    const counts = l.get('dfs/count') as number[]
+    expect(counts.every((c, i) => i === 0 || c >= (counts[i - 1] ?? 0))).toBe(true)
+    const disc = (l.get('dfs/discover') ?? []).at(-1) as number[]
+    const low = (l.get('dfs/low') ?? []).at(-1) as number[]
+    expect(low.every((x, v) => x <= (disc[v] ?? 0))).toBe(true)
+    expect((l.get('dfs/bridges') ?? []).at(-1)).toBe(2)
+  })
+
+  it('resumes from a JSON checkpoint at any step', () => {
+    for (const cut of [1, 4, 9, 20]) {
+      expectResumes(biconnectivityAlgorithm(barbell), cut, (s) => ({
+        c: Array.from(s.cut),
+        b: s.bridges,
+        k: s.blocks,
+      }))
+    }
+  })
+
+  it('rejects a directed graph', () => {
+    expect(() => biconnectivityAlgorithm(digraph([[0, 1]]))).toThrow(/undirected/)
   })
 })
