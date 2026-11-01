@@ -4,10 +4,10 @@ import { kanRegressor } from 'mdml-engine/learn'
 import { kanBases } from 'mdml-engine/nn'
 import { key } from 'mdml-engine/random'
 import { choice, defaults, dict, int, real } from 'mdml-engine/space'
-import { asTensor, toFlat } from 'mdml-engine/tensor'
+import { asTensor, fromStorage, toFlat } from 'mdml-engine/tensor'
 import type { Config } from 'mdml-engine/trace'
 import { metricSeries } from 'mdml-engine/trace'
-import { cartesian, lines } from 'mdml-render/charts'
+import { cartesian, lines, points } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import {
   Chart,
@@ -25,6 +25,10 @@ import {
 import { type ReactNode, useMemo, useState } from 'react'
 
 const LOSS = figure({ width: 420, height: 300 })
+const PANEL = figure({ width: 520, height: 320 })
+// Training rows within this distance of a cross-section are drawn with it.
+const BAND = 0.25
+const RESOLUTION = 32
 
 const SPACE = dict({
   function: choice(['exp-sin-square', 'multiplication'], {
@@ -106,9 +110,19 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
     const x = table.x
     const d = x.shape[1] ?? 2
     const flat = toFlat(asTensor(x))
+    const f = g.truth.regressionFunction
     return {
       x: Array.from({ length: ROWS }, (_, i) => Array.from(flat.slice(i * d, (i + 1) * d))),
       y: Array.from(toFlat(asTensor(table.y))),
+      // The true function at rows of points (the generator's own regression function).
+      truthAt: (rows: readonly (readonly number[])[]): number[] =>
+        f === undefined
+          ? []
+          : Array.from(
+              toFlat(
+                asTensor(f(fromStorage(Float64Array.from(rows.flat()), [rows.length, d], 'float64') as never) as never),
+              ),
+            ),
     }
   }, [controls.function, controls.noise])
   const method = useMemo(() => {
@@ -124,7 +138,7 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
       learningRate: controls.learningRate,
       curvePoints: 41,
     })
-    return model.method(data)
+    return model.method({ x: data.x, y: data.y })
   }, [data, controls])
   const live = useSession(
     method,
@@ -134,7 +148,7 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
   )
   return (
     <div className="flex flex-col gap-3">
-      <View live={live} at={at} onScrub={setAt} />
+      <View live={live} at={at} onScrub={setAt} data={data} />
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
       <p className="max-w-3xl text-xs text-muted">
         Each edge of the network carries its own curve; the picture shows every edge's curve over its input's range,
@@ -165,13 +179,19 @@ function View(props: {
   readonly live: LiveSession<any, any>
   readonly at: number | null
   readonly onScrub: (t: number | null) => void
+  readonly data: {
+    readonly x: number[][]
+    readonly y: number[]
+    readonly truthAt: (rows: readonly (readonly number[])[]) => number[]
+  }
 }): ReactNode {
-  const { live } = props
+  const { live, data } = props
   const mode = useColourMode()
   const run = useRun(live)
   const t = Math.max(0, Math.min(props.at ?? live.head, live.head))
   const curves = useProbe(live, t, 'kan/curves')
   const sparsity = useProbe(live, t, 'kan/sparsity')
+  const surface = useProbe(live, t, 'model/decision-surface', { resolution: RESOLUTION })
   const loss = useMemo(() => metricSeries(run, 'train/loss'), [run])
   const steps = useMemo(() => Array.from({ length: live.head + 1 }, (_, i) => i), [live.head])
   const seek = useScrubClick(steps, live.head, props.onScrub)
@@ -202,28 +222,83 @@ function View(props: {
       },
     )
   }, [loss, t, mode, live.head])
+  const grid = surface.value as { x: number[]; y: number[]; values: number[][] } | undefined
+  // The truth on the same grid, computed once (the grid does not move).
+  const gridX = grid?.x
+  const gridY = grid?.y
+  const truthGrid = useMemo(() => {
+    if (gridX === undefined || gridY === undefined) return undefined
+    const flat = data.truthAt(gridY.flatMap((b) => gridX.map((a) => [a, b])))
+    return gridY.map((_, i) => flat.slice(i * gridX.length, (i + 1) * gridX.length))
+  }, [gridX, gridY, data])
+  // Cross-sections through the origin: the function against one input with the other held at the grid point nearest zero,
+  // with the training rows that lie near that section (within a band of the held input).
+  const nearest = (axis: readonly number[]): number =>
+    axis.reduce((best, v, i) => (Math.abs(v) < Math.abs(axis[best] ?? Number.POSITIVE_INFINITY) ? i : best), 0)
+  const sectionOption = (input: 0 | 1): ReturnType<typeof cartesian> | undefined => {
+    if (grid === undefined || truthGrid === undefined) return undefined
+    const held = input === 0 ? 1 : 0
+    const axis = input === 0 ? grid.x : grid.y
+    const at = nearest(input === 0 ? grid.y : grid.x)
+    const learned = input === 0 ? (grid.values[at] ?? []) : grid.values.map((r) => r[at] ?? Number.NaN)
+    const target = input === 0 ? (truthGrid[at] ?? []) : truthGrid.map((r) => r[at] ?? Number.NaN)
+    const heldValue = (input === 0 ? grid.y : grid.x)[at] ?? 0
+    const near = data.x.map((r, i) => [r, i] as const).filter(([r]) => Math.abs((r[held] ?? 0) - heldValue) < BAND)
+    return cartesian(
+      [
+        points(
+          [
+            {
+              x: near.map(([r]) => r[input] ?? 0),
+              y: near.map(([, i]) => data.y[i] ?? 0),
+              name: 'training rows',
+              opacity: 0.6,
+            },
+          ],
+          { mode, colourOffset: 7 },
+        ),
+        lines([{ x: axis, y: target, name: 'target', dash: 'dashed', width: 2, colour: 'muted' }], { mode }),
+        lines([{ x: axis, y: learned, name: 'network', width: 3 }], { mode }),
+      ],
+      {
+        mode,
+        figure: PANEL,
+        title: `against x${input === 0 ? '₀' : '₁'}, with x${held === 0 ? '₀' : '₁'} near ${Number(heldValue.toFixed(2))}`,
+        x: { label: `x${input === 0 ? '₀' : '₁'}` },
+        y: { label: 'y' },
+      },
+    )
+  }
+  const sectionX0 = sectionOption(0)
+  const sectionX1 = sectionOption(1)
   const share = typeof sparsity.value === 'number' ? sparsity.value : undefined
   return (
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)]">
-      {value === undefined ? (
-        <p className="text-sm text-muted">{curves.error ?? 'Press play to train.'}</p>
-      ) : (
-        <Network widths={value.widths} edges={value.edges} />
-      )}
-      <div className="flex flex-col gap-2">
-        <Chart option={lossOption} figure={LOSS} onInit={seek} />
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-          <div>
-            <dt className="text-xs text-muted">step</dt>
-            <dd className="font-medium tabular-nums">
-              {t} of {live.head}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted">negligible edges</dt>
-            <dd className="font-medium tabular-nums">{share === undefined ? '' : `${Math.round(100 * share)}%`}</dd>
-          </div>
-        </dl>
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)]">
+        {value === undefined ? (
+          <p className="text-sm text-muted">{curves.error ?? 'Press play to train.'}</p>
+        ) : (
+          <Network widths={value.widths} edges={value.edges} />
+        )}
+        <div className="flex flex-col gap-2">
+          <Chart option={lossOption} figure={LOSS} onInit={seek} />
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <div>
+              <dt className="text-xs text-muted">step</dt>
+              <dd className="font-medium tabular-nums">
+                {t} of {live.head}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted">negligible edges</dt>
+              <dd className="font-medium tabular-nums">{share === undefined ? '' : `${Math.round(100 * share)}%`}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {sectionX0 === undefined ? null : <Chart option={sectionX0} figure={PANEL} />}
+        {sectionX1 === undefined ? null : <Chart option={sectionX1} figure={PANEL} />}
       </div>
     </div>
   )
@@ -253,9 +328,11 @@ function Network(props: { readonly widths: readonly number[]; readonly edges: re
         const [x0, y0] = [x(e.layer), y(e.layer, e.i)]
         const [x1, y1] = [x(e.layer + 1), y(e.layer + 1, e.j)]
         const strength = e.active ? Math.min(1, Math.sqrt(e.scale / biggest)) : 0
-        // The box sits a third of the way along the edge, so the boxes of the edges into one node do not collide.
-        const bx = x0 + (x1 - x0) * 0.4
-        const by = y0 + (y1 - y0) * 0.4
+        // The box sits partway along the edge, further along for each next source node, so the boxes of the edges into
+        // one node do not collide.
+        const along = 0.28 + 0.22 * (e.i % 3)
+        const bx = x0 + (x1 - x0) * along
+        const by = y0 + (y1 - y0) * along
         const p = peak(e.layer)
         const lo = e.grid[0] ?? 0
         const hi = e.grid[e.grid.length - 1] ?? 1
