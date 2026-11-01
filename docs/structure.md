@@ -808,7 +808,11 @@ primitives; "custom" means a dedicated rule.
   `jacobiEigenSteps` (sweeps and rotations for figures).
 - `svd.ts`: `svd` (one-sided Jacobi by default, or Golub-Kahan-Reinsch), `svdvals`, `pinv`, `nullSpace`, `polar`, `lowRankApproximation`.
 - `eig.ts`: `hessenberg`, `schur`, `eig`, `eigvals` (complex results), `powerIteration`, `inverseIteration`,
-  `rayleighQuotientIteration`.
+  `rayleighQuotientIteration`, each a run of its steppable Algorithm (`powerIterationAlgorithm`,
+  `inverseIterationAlgorithm`, `rayleighQuotientIterationAlgorithm`; one step is one iterate; `eigenIterationContract`
+  paths `eig/vector`, `eig/value`, `eig/residual`, `eig/angle`, `eig/shift`).
+- `eig-options.ts`: `eigenIterations`, the option table of the three iterations (shift, tolerance, cap per option),
+  `eigenIteration(config, problem)`.
 - `functions.ts`: `expm` (Pade, scaling and squaring, Frechet derivative), `logm`, `sqrtm`, `funm` (Schur-Parlett),
   `funmSymmetric`.
 - `equations.ts`: `solveSylvester`, `solveContinuousLyapunov`, `solveDiscreteLyapunov`, `solveCare`, `solveDare`,
@@ -853,17 +857,27 @@ primitives; "custom" means a dedicated rule.
 `quadrature/` (scipy.integrate; differentiable in the integrand's parameters)
 - `newton-cotes.ts`: `trapezoid`, `simpson`, `cumulativeTrapezoid`, `romberg` (step records).
 - `gauss.ts`: `gaussLegendre`, `gaussHermite`, `gaussLaguerre`, `gaussJacobi`, `fixedQuad`, `normalExpectation`.
-- `adaptive.ts`: `quad` (Gauss-Kronrod G7-K15, globally adaptive, infinite limits, breakpoints, traced intervals),
-  `adaptiveSimpson`, `tanhSinh`.
+- `adaptive.ts`: `quad` (Gauss-Kronrod G7-K15, globally adaptive, infinite limits, breakpoints, traced intervals; a run
+  of `quadAlgorithm`, whose step bisects the worst interval, with the `quadContract` paths `quad/estimate`, `quad/error`,
+  `quad/intervals`, `quad/split`), `adaptiveSimpson`, `tanhSinh`.
 - `multidim.ts`: `dblquad`, `tplquad`, `nquad`, `productGaussRule`, `sparseGridRule` (Smolyak), `cubature`.
 - `monte-carlo.ts`: `monteCarlo`, `quasiMonteCarlo` (shifted Halton replicates) with standard errors,
   `importanceIntegral`.
 
 `roots/` (scipy.optimize root finding; custom rules by the implicit function theorem)
-- `scalar.ts`: `bisect`, `brentq`, `ridder`, `newton`, `secant`, `halley`, `toms748`, with evaluation histories;
-  `scalarRootOf` (implicit-function-theorem derivatives).
+- `scalar.ts`: `bisect`, `brentq`, `ridder`, `newton`, `secant`, `halley`, `toms748`, with evaluation histories (each
+  is `solveRoot` over the Algorithm below); `scalarRootOf` (implicit-function-theorem derivatives).
+- `scalar-algorithms.ts`: the steppable Algorithms `bisectAlgorithm`, `brentqAlgorithm`, `ridderAlgorithm`,
+  `toms748Algorithm`, `newtonAlgorithm`, `secantAlgorithm`, `halleyAlgorithm` over one `RootState` (estimate, bracket,
+  step, rule, history; serialises) and the `rootContract` paths (`root/x`, `root/fx`, `root/step`, `root/bracket`,
+  `root/bracket-width`, `root/method`); `solveRoot`, `rootResultOf`.
+- `scalar-options.ts`: `rootFinders`, the option table of the seven finders (knobs per method; a bracket, a start or
+  derivatives as the method needs), `rootAlgorithm(config, problem)`, `rootFinderValue`.
 - `systems.ts`: `fsolve` (damped Newton with backtracking), `broyden`, `fixedPoint` (Steffensen and Anderson
-  acceleration), `root`, `rootOf` (implicit-function-theorem derivatives in both modes).
+  acceleration), `root`, `rootOf` (implicit-function-theorem derivatives in both modes). The three solvers are runs of
+  `fsolveAlgorithm`, `broydenAlgorithm` and `fixedPointAlgorithm` (one step is one iteration; the `systemContract`
+  paths `system/x`, `system/residual`, `system/step-length`, `system/backtracks`, `system/jacobian-age`, and
+  `fixedPointContract`).
 - `continuation.ts`: `homotopy`, `arcLengthContinuation`, fold and branch-point detection.
 
 `interpolate/` (scipy.interpolate; differentiable in data values and query points)
@@ -1469,7 +1483,9 @@ linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisatio
 - `tests/two-sample.ts`: `ks2samp`, `cramervonmises2samp`, `andersonKsamp`, `energyDistance`, `wassersteinDistance`,
   `energyTest`, `wassersteinTest` (permutation), `eppsSingleton`, `classifierTwoSampleTest` (any classifier passed in).
 - `tests/kernel.ts`: `mmd2`, `mmdTest` (permutation and asymptotic nulls), `hsic`, `hsicTest`; they take any kernel and
-  default to `gaussianKernel` with `medianHeuristic`.
+  default to `gaussianKernel` with `medianHeuristic`. The permutation null is the exported steppable Algorithm
+  `permutationNullAlgorithm` (a batch of permutations per step; `nullContract` paths `null/statistic`, `null/pvalue`,
+  `null/count`).
 - `tests/independence.ts`: `distanceCovarianceTest`, `hoeffdingD`, `mutualInformation` and `mutualInformationTest`,
   conditional independence tests (`partialCorrelationTest`, `gTestConditional`, `kernelCITest`) used by causal
   discovery.
@@ -1850,7 +1866,11 @@ representations are in `optim/sparse.ts`.
 - `wigner.ts`: Wigner-Ville, pseudo and smoothed pseudo Wigner-Ville distributions.
 - `reassignment.ts`: reassigned spectrograms, synchrosqueezing and its inverse.
 - `constant-q.ts`: constant-Q frequencies, kernels and the transform (as librosa).
-- `decompositions.ts`: EMD, EEMD, CEEMDAN, VMD (a traced `Algorithm`), singular spectrum analysis.
+- `decompositions.ts`: EMD, EEMD, CEEMDAN, VMD (a traced `Algorithm`), singular spectrum analysis. EMD, EEMD and CEEMDAN
+  are runs of `emdAlgorithm` (one step is one sift), `eemdAlgorithm` (one ensemble member) and `ceemdanAlgorithm` (one
+  mode), with the `emdContract` paths (`emd/imf`, `emd/sift`, `emd/sd`, `emd/residue`, `emd/envelope`, ...) and the
+  stopping rules `sdStop`, `sNumberStop`, `fixedSiftStop`.
+- `emd-options.ts`: `siftStops`, the option table of the sifting stopping rules (SD threshold, S-number, fixed count).
 - `wavelets/` (inline): `families.ts` (Haar, Daubechies, Symlets, Coiflets, biorthogonal, reverse biorthogonal, discrete
   Meyer and the continuous families, generated from pywt), `dwt.ts` (DWT and inverse, multilevel, 2-D), `swt.ts`
   (stationary transform and inverse), `cwt.ts` (continuous transform, centre frequencies), `denoise.ts` (thresholds,
@@ -2111,10 +2131,16 @@ reparameterisations, which finite differences cannot see, by the unbiasedness of
 - `queues.ts`: M/M/1, M/M/c (Erlang B and C) and M/G/1 queues (formulas and G/G/c simulation), Little's law.
 - `point-processes.ts`: homogeneous and inhomogeneous Poisson processes (thinning), renewal processes and renewal
   functions, Hawkes (Ogata thinning, maximum likelihood by EM and Newton), Cox (including log-Gaussian Cox) and marked
-  processes.
+  processes. The simulators are runs of exported Algorithms whose step is one candidate event
+  (`poissonProcessAlgorithm`, `thinningAlgorithm`, `renewalProcessAlgorithm`, `hawkesProcessAlgorithm`,
+  `coxProcessAlgorithm`; the `pointProcessContract` paths are `pp/time`, `pp/intensity`, `pp/accepted`, `pp/count`).
+- `point-process-options.ts`: `pointProcesses`, the option table of the families (Poisson, sinusoidal by thinning,
+  gamma and Weibull renewal, Hawkes) with knobs per family, and `pointProcess(config, horizon)`.
 - `spatial-processes.ts` (split from `point-processes.ts` for size): spatial Poisson and cluster processes (Thomas,
   Matern), Ripley's K and L with the usual edge corrections.
-- `dpp.ts`: determinantal point processes: L-ensembles, exact and k-DPP sampling, greedy MAP, marginals, conditioning.
+- `dpp.ts`: determinantal point processes: L-ensembles, exact and k-DPP sampling (runs of `dppAlgorithm`: the first phase
+  keeps eigenvectors in `init`, each step draws one item and projects it out; `dppContract` paths `dpp/kept`, `dpp/item`,
+  `dpp/probability`, `dpp/basis`), greedy MAP, marginals, conditioning.
 - `random-measures.ts`: Dirichlet processes (stick-breaking, Chinese restaurant, Polya urn), Pitman-Yor, Indian buffet,
   beta and gamma processes (as random measures and as a subordinator in time).
 - `gaussian-processes.ts`: Gaussian processes as random functions: sampling paths from covariance functions (the
@@ -2172,9 +2198,17 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   the mean, the single-sample variance and the standard error per parameter; `gradientError` against an exact gradient.
 - `smc.ts`: resampling schemes (`systematicResample`, `stratifiedResample`, `multinomialResample`, `residualResample`,
   `resample`), `nextTemperature` (adaptive tempering), `adaptiveRandomWalkMove`, `smcAlgorithm` and `smcSampler`
-  (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling`.
+  (adaptive-tempering SMC with MCMC rejuvenation and the evidence), `annealedImportanceSampling` (a run of `aisAlgorithm`:
+  one step is one rung of the ladder; `aisContract` paths `ais/beta`, `ais/ess`, `ais/log-weight`, `ais/log-z`,
+  `ais/particles`).
+- `ais-options.ts`: `annealingLadders`, the option table of temperature ladders (power, linear, log-spaced).
 - `rejection.ts`: `rejectionSample` (with envelope-violation counts), `adaptiveRejectionSample` (Gilks and Wild, tangent
-  hull and chord squeeze), `ratioOfUniforms` (Kinderman and Monahan).
+  hull and chord squeeze), `ratioOfUniforms` (Kinderman and Monahan), each a run of its steppable Algorithm
+  (`rejectionAlgorithm`, `adaptiveRejectionAlgorithm`, `ratioOfUniformsAlgorithm`: one step is one proposal; the state
+  keeps the draws and the number of uniforms used, so a resume continues the same stream) with the `rejectionContract`
+  paths (`reject/proposal`, `reject/accepted`, `reject/rate`, `reject/log-ratio`, `reject/envelope`, ...).
+- `rejection-options.ts`: `rejectionSamplers`, the option table of the three exact samplers (knobs per method, what each
+  needs of the target), `rejectionSampler(config, problem)`.
 - `exact.ts`: `inverseTransformSample`, `inverseTransformFromCdf`, `discreteInverseTransform`, `boxMuller`,
   `marsagliaPolar`, `aliasMethod` (Vose), each with optional step records for teaching.
 - `diagnostics/`: `convergence.ts` (`rhat`: rank-normalised split, split, folded, z-scale and identity; `ess`: bulk, tail,

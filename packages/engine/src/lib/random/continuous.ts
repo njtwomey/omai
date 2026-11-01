@@ -56,10 +56,13 @@ export function uniform(
 /**
  * An endless stream of uniform draws in `[0, 1)` from one key, for code that needs an unknown number of draws
  * (rejection samplers, random walks, procedural generators). The draws come in blocks: block `b` is
- * `uniform(foldIn(k, b), [block])`, so the stream is a pure function of the key and the block size.
+ * `uniform(foldIn(k, b), [block])`, so the stream is a pure function of the key and the block size. A stream can start
+ * at any draw (`from`), which is how a steppable sampler that keeps only the number of draws it has used resumes the
+ * same stream after a checkpoint.
  *
  * @param k - The random key.
  * @param block - Draws per block (default 256); the same key and block size give the same stream.
+ * @param from - The index of the first draw to return (default 0): the stream is the tail of the one from 0.
  * @returns A function returning the next draw on each call.
  * @concept counter-based-rng
  * @example
@@ -69,14 +72,18 @@ export function uniform(
  * const draws = [next(), next(), next(), next(), next()]
  * draws[4] === uniform(foldIn(key(0), 1), [4]).data[0] // => true
  * draws.every((u) => u >= 0 && u < 1) // => true
+ * draws.push(next())
+ * uniformStream(key(0), 4, 5)() === draws[5] // => true
  * ```
  */
-export function uniformStream(k: Key, block = 256): () => number {
+export function uniformStream(k: Key, block = 256, from = 0): () => number {
   if (!(Number.isInteger(block) && block >= 1))
     throw new MdmlError('value', 'uniformStream: block must be a positive integer')
-  let b = 0
+  if (!(Number.isInteger(from) && from >= 0))
+    throw new MdmlError('value', 'uniformStream: from must be a non-negative integer')
+  let b = Math.floor(from / block)
   let buf = unitDoubles(foldIn(k, b), block)
-  let i = 0
+  let i = from - b * block
   return () => {
     if (i >= buf.length) {
       b += 1

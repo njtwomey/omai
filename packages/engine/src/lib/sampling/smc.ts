@@ -8,7 +8,18 @@
 import { type Estimate, type Json, logSumExpOf, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { welfordCovariance, welfordInit, welfordUpdate } from './_mcmc.ts'
 import type { MCMCKernel, MCMCState } from './chains.ts'
 import { randomWalkMetropolis } from './metropolis.ts'
@@ -577,6 +588,117 @@ export interface AISResult {
   readonly ess: number
 }
 
+/** The state of {@link aisAlgorithm}: the rung of the ladder reached, the particles and their accumulated log weights. */
+export interface AISState {
+  /** Rungs done: the particles are at temperature `ladder[rung]`. */
+  readonly rung: number
+  /** The particles, `dim` numbers each. */
+  readonly particles: readonly number[]
+  /** The accumulated log weight of every particle. */
+  readonly logWeights: readonly number[]
+}
+
+/** The paths {@link aisAlgorithm} logs, as a type. */
+export type AISPath = 'ais/beta' | 'ais/ess' | 'ais/log-weight' | 'ais/log-z' | 'ais/particles'
+
+/**
+ * What {@link aisAlgorithm} logs, by path, one rung of the ladder per step: the temperature reached, the effective
+ * sample size of the weights, the mean log weight, the running log-evidence estimate and the particles.
+ */
+export const aisContract: Contract<AISState, AISPath> = defineContract({
+  'ais/beta': scalar({ description: 'the temperature reached', direction: 'higher' }),
+  'ais/ess': scalar({ description: 'the effective sample size of the weights', direction: 'higher' }),
+  'ais/log-weight': scalar({ description: 'the mean log weight' }),
+  'ais/log-z': scalar({ description: 'the log-evidence estimate so far: log of the mean weight' }),
+  'ais/particles': tensor({ role: 'state', shape: ['particles', 'dim'], description: 'the particles after the move' }),
+})
+
+function aisLadder(options: AISOptions): readonly number[] {
+  const ladder = options.temperatures ?? Array.from({ length: 51 }, (_, i) => (i / 50) ** 4)
+  if (
+    ladder[0] !== 0 ||
+    ladder[ladder.length - 1] !== 1 ||
+    ladder.some((v, i) => i > 0 && !(v > (ladder[i - 1] ?? 0)))
+  ) {
+    throw new MdmlError('value', 'annealedImportanceSampling: temperatures must increase from 0 to 1')
+  }
+  return ladder
+}
+
+const effectiveSize = (logW: readonly number[]): number => {
+  const z = logSumExpOf(logW)
+  let s2 = 0
+  for (const v of logW) s2 += Math.exp(2 * (v - z))
+  return 1 / s2
+}
+
+/**
+ * Annealed importance sampling (Neal 2001) as a steppable algorithm: `init` draws the particles from the prior; one
+ * step takes the next rung of the temperature ladder, adding (lambda_t - lambda_{t-1}) log L(x) to every log weight and
+ * moving the particles with MCMC transitions that leave the tempered target prior(x) L(x)^lambda_t invariant. The state
+ * is plain numbers; the step's randomness is derived from the options' key and the rung, so a resumed run moves the same
+ * way.
+ *
+ * @param prior - The prior.
+ * @param logLikelihood - log L(x).
+ * @param options - Key, particles, temperature ladder, MCMC steps and move.
+ * @returns The algorithm; its state is an {@link AISState}.
+ * @throws MdmlError with code `value` for a ladder that does not increase from 0 to 1 or a particle count below 1.
+ * @concept annealed-importance-sampling
+ * @example
+ * ```ts
+ * import { aisAlgorithm, proposalFromDistribution } from 'mdml-engine/sampling'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = aisAlgorithm(proposalFromDistribution(normal(0, 3)), (x) => -0.5 * (x[0] ?? 0) ** 2, { key: key(0), numParticles: 20, temperatures: [0, 0.5, 1] })
+ * runAlgorithm(alg, { maxSteps: 10 }).state.rung // => 2
+ * ```
+ */
+export function aisAlgorithm(
+  prior: Proposal,
+  logLikelihood: (x: Float64Array) => number,
+  options: AISOptions,
+): Algorithm<AISState, AISPath> {
+  const n = options.numParticles ?? 500
+  const steps = options.mcmcSteps ?? 2
+  const ladder = aisLadder(options)
+  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'annealedImportanceSampling: need particles')
+  const dim = prior.dim
+  const move = options.move ?? adaptiveRandomWalkMove
+  const ll = (x: Float64Array): number => {
+    const v = logLikelihood(x)
+    return Number.isNaN(v) ? Number.NEGATIVE_INFINITY : v
+  }
+  return {
+    name: 'annealed-importance-sampling',
+    config: { particles: n, mcmcSteps: steps, rungs: ladder.length - 1, dim },
+    init: () => ({
+      rung: 0,
+      particles: Array.from(prior.sampleMany(foldIn(options.key, 0), n)),
+      logWeights: new Array<number>(n).fill(0),
+    }),
+    step: (s, ctx) => {
+      const t = s.rung + 1
+      const delta = (ladder[t] ?? 1) - (ladder[t - 1] ?? 0)
+      const x = Float64Array.from(s.particles)
+      const logW = s.logWeights.map((w, i) => w + delta * ll(x.subarray(i * dim, (i + 1) * dim)))
+      const temperature = ladder[t] ?? 1
+      const kernel = move(temperedTarget(prior, ll, temperature), x, temperature)
+      const moved = moveParticles(kernel, x, dim, steps, foldIn(options.key, t)).particles
+      if (ctx.wants('ais/beta')) ctx.log('ais/beta', temperature)
+      if (ctx.wants('ais/ess')) ctx.log('ais/ess', effectiveSize(logW))
+      if (ctx.wants('ais/log-weight')) ctx.log('ais/log-weight', logW.reduce((a, b) => a + b, 0) / n)
+      if (ctx.wants('ais/log-z')) ctx.log('ais/log-z', logSumExpOf(logW) - Math.log(n))
+      if (ctx.wants('ais/particles')) ctx.log('ais/particles', moved)
+      return { rung: t, particles: Array.from(moved), logWeights: logW }
+    },
+    done: (s) => (s.rung >= ladder.length - 1 ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as AISState,
+  }
+}
+
 /**
  * Annealed importance sampling (Neal 2001): each particle starts at the prior and moves through the fixed ladder of
  * tempered targets prior(x) L(x)^lambda_t with MCMC transitions, accumulating the log weight
@@ -605,47 +727,22 @@ export function annealedImportanceSampling(
   options: AISOptions,
 ): AISResult {
   const n = options.numParticles ?? 500
-  const steps = options.mcmcSteps ?? 2
-  const ladder = options.temperatures ?? Array.from({ length: 51 }, (_, i) => (i / 50) ** 4)
-  if (
-    ladder[0] !== 0 ||
-    ladder[ladder.length - 1] !== 1 ||
-    ladder.some((v, i) => i > 0 && !(v > (ladder[i - 1] ?? 0)))
-  ) {
-    throw new MdmlError('value', 'annealedImportanceSampling: temperatures must increase from 0 to 1')
-  }
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'annealedImportanceSampling: need particles')
   const dim = prior.dim
-  const move = options.move ?? adaptiveRandomWalkMove
-  const ll = (x: Float64Array): number => {
-    const v = logLikelihood(x)
-    return Number.isNaN(v) ? Number.NEGATIVE_INFINITY : v
-  }
-  let particles = prior.sampleMany(foldIn(options.key, 0), n)
-  const logW = new Float64Array(n)
-  for (let t = 1; t < ladder.length; t++) {
-    const delta = (ladder[t] ?? 1) - (ladder[t - 1] ?? 0)
-    for (let i = 0; i < n; i++) {
-      logW[i] = (logW[i] ?? 0) + delta * ll(particles.subarray(i * dim, (i + 1) * dim))
-    }
-    const temperature = ladder[t] ?? 1
-    const kernel = move(temperedTarget(prior, ll, temperature), particles, temperature)
-    particles = moveParticles(kernel, particles, dim, steps, foldIn(options.key, t)).particles
-  }
+  const algorithm = aisAlgorithm(prior, logLikelihood, options)
+  const rungs = aisLadder(options).length - 1
+  const s = runAlgorithm(algorithm, { maxSteps: rungs }).state
+  const logW = Float64Array.from(s.logWeights)
   const value = logSumExpOf(logW) - Math.log(n)
-  let s = 0
-  for (const v of logW) s += (Math.exp(v - value) - 1) ** 2
-  const z = logSumExpOf(logW)
-  let s2 = 0
-  for (const v of logW) s2 += Math.exp(2 * (v - z))
+  let sq = 0
+  for (const v of logW) sq += (Math.exp(v - value) - 1) ** 2
   return {
-    particles: fromStorage(particles, [n, dim], 'float64'),
+    particles: fromStorage(Float64Array.from(s.particles), [n, dim], 'float64'),
     logWeights: fromStorage(logW, [n], 'float64'),
     logEvidence: {
       value,
-      standardError: n > 1 ? Math.sqrt(s / (n - 1) / n) : Number.NaN,
+      standardError: n > 1 ? Math.sqrt(sq / (n - 1) / n) : Number.NaN,
       method: 'annealed importance sampling',
     },
-    ess: 1 / s2,
+    ess: effectiveSize(s.logWeights),
   }
 }

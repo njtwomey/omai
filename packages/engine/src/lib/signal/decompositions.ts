@@ -12,7 +12,18 @@ import { ddot } from '../numerics/linalg/blas.ts'
 import { svd } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  type StepContext,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { constant, samples } from './_shared.ts'
 
 // Adaptive decompositions of a signal into oscillatory modes: empirical mode decomposition and its noise-assisted
@@ -27,6 +38,102 @@ export interface EmdOptions {
   readonly sdThreshold?: number
   /** Most sifting iterations per IMF (default 50). */
   readonly maxSifts?: number
+  /** The rule that ends the sifting of an IMF (default `sdStop(sdThreshold)`; see {@link SiftStopRule}). */
+  readonly stopping?: SiftStopRule
+}
+
+/** What a stopping rule says after a sift: whether to stop, the statistic it looked at, and its running count. */
+export interface SiftCheck {
+  readonly stop: boolean
+  /** The statistic the rule looked at (the SD, the S-number count, the sift index). */
+  readonly statistic: number
+  /** The consecutive sifts that satisfied the rule so far (carried in the state). */
+  readonly stable: number
+}
+
+/**
+ * A rule that ends the sifting of an intrinsic mode function: it sees the candidate before and after a sift and the
+ * count it carried, and says whether to stop. `sdStop`, `sNumberStop` and `fixedSiftStop` are the rules of the
+ * `siftStops` table.
+ */
+export interface SiftStopRule {
+  readonly name: string
+  check(before: Float64Array, after: Float64Array, stable: number, sifts: number): SiftCheck
+}
+
+/**
+ * Huang's standard-deviation criterion: stop when sum (h_old - h)^2 / sum h_old^2 falls below the threshold.
+ *
+ * @param threshold - The threshold (default 0.2).
+ * @returns The rule.
+ * @concept empirical-mode-decomposition
+ * @example
+ * ```ts
+ * import { sdStop } from 'mdml-engine/signal'
+ * sdStop(0.2).check(Float64Array.of(1, -1, 1), Float64Array.of(1, -1, 1), 0, 1).stop // => true
+ * ```
+ */
+export function sdStop(threshold = 0.2): SiftStopRule {
+  return {
+    name: 'sd',
+    check: (before, after) => {
+      let num = 0
+      let den = 0
+      for (let i = 0; i < before.length; i++) {
+        num += ((before[i] ?? 0) - (after[i] ?? 0)) ** 2
+        den += (before[i] ?? 0) ** 2
+      }
+      return { stop: den === 0 || num / den < threshold, statistic: den === 0 ? 0 : num / den, stable: 0 }
+    },
+  }
+}
+
+/** Sign changes of x. */
+function zeroCrossings(x: Float64Array): number {
+  let c = 0
+  for (let i = 1; i < x.length; i++) if ((x[i - 1] ?? 0) * (x[i] ?? 0) < 0) c += 1
+  return c
+}
+
+/**
+ * The S-number criterion (Huang, Wu et al. 2003): stop when the number of extrema and the number of zero crossings
+ * have differed by at most one for `s` consecutive sifts.
+ *
+ * @param s - The number of consecutive sifts (default 4).
+ * @returns The rule; its statistic is the count of consecutive sifts so far.
+ * @concept empirical-mode-decomposition
+ * @example
+ * ```ts
+ * import { sNumberStop } from 'mdml-engine/signal'
+ * const x = Float64Array.from({ length: 40 }, (_, i) => Math.sin(i))
+ * sNumberStop(1).check(x, x, 0, 1).stop // => true
+ * ```
+ */
+export function sNumberStop(s = 4): SiftStopRule {
+  return {
+    name: 's-number',
+    check: (_before, after, stable) => {
+      const extremaCount = extrema(after, 1).length + extrema(after, -1).length
+      const kept = Math.abs(extremaCount - zeroCrossings(after)) <= 1 ? stable + 1 : 0
+      return { stop: kept >= s, statistic: kept, stable: kept }
+    },
+  }
+}
+
+/**
+ * A fixed number of sifts per mode.
+ *
+ * @param count - The number of sifts.
+ * @returns The rule; its statistic is the sift index.
+ * @concept empirical-mode-decomposition
+ * @example
+ * ```ts
+ * import { fixedSiftStop } from 'mdml-engine/signal'
+ * fixedSiftStop(3).check(Float64Array.of(1), Float64Array.of(1), 0, 3).stop // => true
+ * ```
+ */
+export function fixedSiftStop(count: number): SiftStopRule {
+  return { name: 'fixed', check: (_b, _a, stable, sifts) => ({ stop: sifts >= count, statistic: sifts, stable }) }
 }
 
 /** Indices of strict local maxima (sign 1) or minima (sign -1), plateaus counted at their first sample. */
@@ -70,28 +177,6 @@ function isMonotone(x: Float64Array): boolean {
   return extrema(x, 1).length + extrema(x, -1).length < 3
 }
 
-/** One intrinsic mode function of x by sifting. */
-function sift(x: Float64Array, sdThreshold: number, maxSifts: number): Float64Array {
-  let h = Float64Array.from(x)
-  for (let it = 0; it < maxSifts; it++) {
-    const maxima = extrema(h, 1)
-    const minima = extrema(h, -1)
-    if (maxima.length < 2 || minima.length < 2) break
-    const upper = envelope(h, maxima)
-    const lower = envelope(h, minima)
-    const next = Float64Array.from(h, (v, i) => v - 0.5 * ((upper[i] ?? 0) + (lower[i] ?? 0)))
-    let num = 0
-    let den = 0
-    for (let i = 0; i < h.length; i++) {
-      num += ((h[i] ?? 0) - (next[i] ?? 0)) ** 2
-      den += (h[i] ?? 0) ** 2
-    }
-    h = next
-    if (den === 0 || num / den < sdThreshold) break
-  }
-  return h
-}
-
 /** Intrinsic mode functions and the residue of a decomposition. */
 export interface ModeDecomposition {
   /** IMFs `[k, n]`, highest frequency first. */
@@ -100,16 +185,163 @@ export interface ModeDecomposition {
   readonly residue: Tensor
 }
 
-function emdNumbers(x: Float64Array, options: EmdOptions): Float64Array[] {
-  const imfs: Float64Array[] = []
-  let r = Float64Array.from(x)
+/** The state of {@link emdAlgorithm}: the modes found, the residue, and the candidate being sifted. */
+export interface EmdState {
+  /** The IMFs extracted so far, highest frequency first. */
+  readonly imfs: readonly (readonly number[])[]
+  /** The signal minus the IMFs so far. */
+  readonly residue: readonly number[]
+  /** The candidate for the next IMF (the residue, sifted `sifts` times). */
+  readonly candidate: readonly number[]
+  readonly sifts: number
+  /** The stopping rule's statistic after the last sift. */
+  readonly statistic: number
+  /** The rule's running count (the S-number criterion's consecutive sifts). */
+  readonly stable: number
+  readonly finished: boolean
+}
+
+/** The paths the EMD algorithms log, as a type. */
+export type EmdPath =
+  | 'emd/imf'
+  | 'emd/sift'
+  | 'emd/sd'
+  | 'emd/residue'
+  | 'emd/envelope'
+  | 'emd/count'
+  | 'emd/trial'
+  | 'emd/modes'
+
+/**
+ * What the EMD algorithms log, by path: the candidate (or the finished) mode, the sifts spent on it, the stopping rule's
+ * statistic, the residue, the upper and lower envelopes of the sift, the modes so far; for the ensembles, the trials done
+ * and the running average of the modes.
+ */
+export const emdContract: Contract<EmdState, EmdPath> = defineContract({
+  'emd/imf': tensor({
+    role: 'output',
+    shape: ['n'],
+    description: 'the candidate IMF after this sift (the mode, once done)',
+  }),
+  'emd/sift': scalar({ description: 'sifts spent on the current mode' }),
+  'emd/sd': scalar({
+    description: 'the stopping rule’s statistic after this sift (Huang’s SD by default)',
+    direction: 'lower',
+  }),
+  'emd/residue': tensor({ role: 'state', shape: ['n'], description: 'the signal minus the modes extracted' }),
+  'emd/envelope': tensor({ role: 'state', shape: [2, 'n'], description: 'the upper and lower envelopes of this sift' }),
+  'emd/count': scalar({ description: 'modes extracted so far', direction: 'higher' }),
+  'emd/trial': scalar({ description: 'ensemble members done (EEMD)', direction: 'higher' }),
+  'emd/modes': tensor({
+    role: 'output',
+    shape: ['modes', 'n'],
+    description: 'the running average of the modes (EEMD)',
+  }),
+})
+
+function logEmd(
+  ctx: StepContext<EmdPath>,
+  imf: readonly number[],
+  sifts: number,
+  statistic: number,
+  residue: readonly number[],
+  count: number,
+  envelopes: readonly [Float64Array, Float64Array] | undefined,
+): void {
+  if (ctx.wants('emd/imf')) ctx.log('emd/imf', Float64Array.from(imf))
+  if (ctx.wants('emd/sift')) ctx.log('emd/sift', sifts)
+  if (ctx.wants('emd/sd')) ctx.log('emd/sd', statistic)
+  if (ctx.wants('emd/residue')) ctx.log('emd/residue', Float64Array.from(residue))
+  if (ctx.wants('emd/count')) ctx.log('emd/count', count)
+  if (envelopes !== undefined && ctx.wants('emd/envelope'))
+    ctx.log('emd/envelope', Float64Array.from([...envelopes[0], ...envelopes[1]]))
+}
+
+/**
+ * Empirical mode decomposition (Huang et al. 1998) as a steppable algorithm: one step is one sift, which subtracts the
+ * mean of the cubic-spline envelopes through the maxima and minima (mirrored at the ends) from the candidate; when the
+ * stopping rule holds (Huang's SD criterion by default), the sift limit is reached or no more sifting is possible, the
+ * candidate becomes the next IMF and is subtracted from the residue. The run ends when the residue is monotone or
+ * `maxImfs` modes are found. The IMFs and the residue sum to the signal exactly.
+ *
+ * @param x - Signal.
+ * @param options - IMF count, stopping rule (or SD threshold) and sift limit.
+ * @returns The algorithm; its state is an {@link EmdState}.
+ * @concept empirical-mode-decomposition
+ * @example
+ * ```ts
+ * import { emdAlgorithm } from 'mdml-engine/signal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = Array.from({ length: 200 }, (_, i) => Math.sin(i / 3) + 0.5 * Math.sin(i / 20) + i / 100)
+ * runAlgorithm(emdAlgorithm(x), { maxSteps: 1000 }).state.imfs.length // => 3
+ * ```
+ */
+export function emdAlgorithm(x: TensorLike, options: EmdOptions = {}): Algorithm<EmdState, EmdPath> {
+  const signal = samples(x, 'emd')
+  const rule = options.stopping ?? sdStop(options.sdThreshold ?? 0.2)
+  const maxSifts = options.maxSifts ?? 50
   const maxImfs = options.maxImfs ?? Number.POSITIVE_INFINITY
-  while (imfs.length < maxImfs && !isMonotone(r)) {
-    const imf = sift(r, options.sdThreshold ?? 0.2, options.maxSifts ?? 50)
-    imfs.push(imf)
-    r = Float64Array.from(r, (v, i) => v - (imf[i] ?? 0))
+  return {
+    name: 'emd',
+    config: { n: signal.length, stopping: rule.name, maxSifts, maxImfs: Number.isFinite(maxImfs) ? maxImfs : -1 },
+    init: () => ({
+      imfs: [],
+      residue: Array.from(signal),
+      candidate: Array.from(signal),
+      sifts: 0,
+      statistic: 0,
+      stable: 0,
+      finished: maxImfs <= 0 || isMonotone(signal),
+    }),
+    step: (s, ctx) => {
+      const h = Float64Array.from(s.candidate)
+      const maxima = extrema(h, 1)
+      const minima = extrema(h, -1)
+      let next = h
+      let statistic = s.statistic
+      let stable = s.stable
+      let sifts = s.sifts
+      let envelopes: [Float64Array, Float64Array] | undefined
+      let stop = true
+      if (sifts < maxSifts && maxima.length >= 2 && minima.length >= 2) {
+        const upper = envelope(h, maxima)
+        const lower = envelope(h, minima)
+        envelopes = [upper, lower]
+        next = Float64Array.from(h, (v, i) => v - 0.5 * ((upper[i] ?? 0) + (lower[i] ?? 0)))
+        sifts += 1
+        const c = rule.check(h, next, stable, sifts)
+        statistic = c.statistic
+        stable = c.stable
+        stop = c.stop || sifts >= maxSifts
+      }
+      if (!stop) {
+        logEmd(ctx, Array.from(next), sifts, statistic, s.residue, s.imfs.length, envelopes)
+        return { ...s, candidate: Array.from(next), sifts, statistic, stable }
+      }
+      const imf = Array.from(next)
+      const residue = s.residue.map((v, i) => v - (imf[i] ?? 0))
+      const imfs = [...s.imfs, imf]
+      logEmd(ctx, imf, sifts, statistic, residue, imfs.length, envelopes)
+      return {
+        imfs,
+        residue,
+        candidate: residue,
+        sifts: 0,
+        statistic,
+        stable: 0,
+        finished: imfs.length >= maxImfs || isMonotone(Float64Array.from(residue)),
+      }
+    },
+    done: (s) => (s.finished ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EmdState,
   }
-  return imfs
+}
+
+function emdNumbers(x: Float64Array, options: EmdOptions): Float64Array[] {
+  const alg = emdAlgorithm(x, options)
+  const s = runAlgorithm(alg, { maxSteps: Number.MAX_SAFE_INTEGER }).state
+  return s.imfs.map((m) => Float64Array.from(m))
 }
 
 function pack(imfs: readonly Float64Array[], x: Float64Array): ModeDecomposition {
@@ -162,9 +394,72 @@ function std(x: Float64Array): number {
   return Math.sqrt(s / x.length)
 }
 
+/** The state of {@link eemdAlgorithm}: the ensemble members done and the running sum of their modes. */
+export interface EemdState {
+  /** Ensemble members done. */
+  readonly trial: number
+  /** The number of modes kept (fixed by the first member unless `maxImfs` is given; -1 before it). */
+  readonly count: number
+  /** The modes averaged over the members done (each divided by the total number of trials already). */
+  readonly sum: readonly (readonly number[])[]
+}
+
+/**
+ * Ensemble EMD (Wu and Huang 2009) as a steppable algorithm: one step is one ensemble member, the EMD of the signal plus
+ * independent white noise; the state carries the running average of the modes, so the average after t members is the
+ * state at step t. The IMF count is fixed by the first member (or `maxImfs`).
+ *
+ * @param x - Signal.
+ * @param options - Key, ensemble size, noise width and the EMD options.
+ * @returns The algorithm; its state is an {@link EemdState}.
+ * @concept empirical-mode-decomposition
+ * @example
+ * ```ts
+ * import { eemdAlgorithm } from 'mdml-engine/signal'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = Array.from({ length: 128 }, (_, i) => Math.sin(i / 2) + Math.sin(i / 15))
+ * runAlgorithm(eemdAlgorithm(x, { key: key(1), trials: 4, maxImfs: 3 }), { maxSteps: 10 }).state.trial // => 4
+ * ```
+ */
+export function eemdAlgorithm(x: TensorLike, options: EnsembleEmdOptions): Algorithm<EemdState, EmdPath> {
+  const s = samples(x, 'eemd')
+  const n = s.length
+  const trials = options.trials ?? 50
+  const width = (options.noiseWidth ?? 0.2) * std(s)
+  return {
+    name: 'eemd',
+    config: { n, trials, noiseWidth: options.noiseWidth ?? 0.2, maxImfs: options.maxImfs ?? -1 },
+    init: () => ({ trial: 0, count: options.maxImfs ?? -1, sum: [] }),
+    step: (st, ctx) => {
+      const w = toFlat(normal(foldIn(options.key, st.trial), [n]))
+      const noisy = Float64Array.from(s, (v, i) => v + width * (w[i] ?? 0))
+      const imfs = emdNumbers(noisy, st.count < 0 ? options : { ...options, maxImfs: st.count })
+      const count = st.count < 0 ? imfs.length : st.count
+      const sum =
+        st.sum.length === 0
+          ? Array.from({ length: count }, () => new Array<number>(n).fill(0))
+          : st.sum.map((r) => [...r])
+      for (let k = 0; k < count; k++) {
+        const m = imfs[k]
+        const acc = sum[k] as number[]
+        if (m !== undefined) for (let i = 0; i < n; i++) acc[i] = (acc[i] ?? 0) + (m[i] ?? 0) / trials
+      }
+      if (ctx.wants('emd/trial')) ctx.log('emd/trial', st.trial + 1)
+      if (ctx.wants('emd/count')) ctx.log('emd/count', imfs.length)
+      if (ctx.wants('emd/modes')) ctx.log('emd/modes', Float64Array.from(sum.flat()))
+      return { trial: st.trial + 1, count, sum }
+    },
+    done: (st) => (st.trial >= trials ? 'converged' : undefined),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as EemdState,
+  }
+}
+
 /**
  * Ensemble EMD (Wu and Huang 2009): the average IMFs of the signal plus independent white noise realisations, which
  * reduces mode mixing; the IMF count is fixed (by the first realisation) and the residue is the remainder.
+ * {@link eemdAlgorithm} run over all the members.
  *
  * @param x - Signal.
  * @param options - Key, ensemble size, noise width and the EMD options.
@@ -180,30 +475,99 @@ function std(x: Float64Array): number {
  */
 export function eemd(x: TensorLike, options: EnsembleEmdOptions): ModeDecomposition {
   const s = samples(x, 'eemd')
+  const st = runAlgorithm(eemdAlgorithm(x, options), { maxSteps: options.trials ?? 50 }).state
+  return pack(
+    st.sum.map((r) => Float64Array.from(r)),
+    s,
+  )
+}
+
+/** The state of {@link ceemdanAlgorithm}: the modes found and the residue. */
+export interface CeemdanState {
+  readonly imfs: readonly (readonly number[])[]
+  readonly residue: readonly number[]
+  readonly finished: boolean
+}
+
+/**
+ * Complete ensemble EMD with adaptive noise (CEEMDAN, Torres et al. 2011) as a steppable algorithm: one step finds one
+ * mode, the ensemble average of the first EMD mode of the current residue plus the matching EMD mode of white noise
+ * scaled by beta_k = noiseWidth std(residue). The decomposition is complete (the modes and residue sum to the signal)
+ * with no residual noise. The noise realisations and their EMD modes are computed on the first step and kept in the
+ * algorithm (a cache, not state), so a resumed run recomputes them.
+ *
+ * @param x - Signal.
+ * @param options - Key, ensemble size, noise width and the EMD options.
+ * @returns The algorithm; its state is a {@link CeemdanState}.
+ * @concept empirical-mode-decomposition
+ * @example
+ * ```ts
+ * import { ceemdanAlgorithm } from 'mdml-engine/signal'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = Array.from({ length: 128 }, (_, i) => Math.sin(i / 2) + Math.sin(i / 15))
+ * runAlgorithm(ceemdanAlgorithm(x, { key: key(2), trials: 4, maxImfs: 2 }), { maxSteps: 10 }).state.imfs.length // => 2
+ * ```
+ */
+export function ceemdanAlgorithm(x: TensorLike, options: EnsembleEmdOptions): Algorithm<CeemdanState, EmdPath> {
+  const s = samples(x, 'ceemdan')
   const n = s.length
   const trials = options.trials ?? 50
-  const width = (options.noiseWidth ?? 0.2) * std(s)
-  let count = options.maxImfs ?? -1
-  let sum: Float64Array[] = []
-  for (let t = 0; t < trials; t++) {
-    const w = toFlat(normal(foldIn(options.key, t), [n]))
-    const noisy = Float64Array.from(s, (v, i) => v + width * (w[i] ?? 0))
-    const imfs = emdNumbers(noisy, count < 0 ? options : { ...options, maxImfs: count })
-    if (count < 0) count = imfs.length
-    if (sum.length === 0) sum = Array.from({ length: count }, () => new Float64Array(n))
-    for (let k = 0; k < count; k++) {
-      const m = imfs[k]
-      const acc = sum[k] as Float64Array
-      if (m !== undefined) for (let i = 0; i < n; i++) acc[i] = (acc[i] ?? 0) + (m[i] ?? 0) / trials
+  const eps = options.noiseWidth ?? 0.2
+  const maxImfs = options.maxImfs ?? Number.POSITIVE_INFINITY
+  let cache: { noise: Float64Array[]; noiseModes: Float64Array[][] } | undefined
+  const realisations = (): { noise: Float64Array[]; noiseModes: Float64Array[][] } => {
+    if (cache !== undefined) return cache
+    // Unit-variance white noise realisations and their EMD modes.
+    const noise: Float64Array[] = []
+    const noiseModes: Float64Array[][] = []
+    for (let t = 0; t < trials; t++) {
+      const w = Float64Array.from(toFlat(normal(foldIn(options.key, t), [n])))
+      const sd = std(w) || 1
+      const unit = Float64Array.from(w, (v) => v / sd)
+      noise.push(unit)
+      noiseModes.push(emdNumbers(unit, options))
     }
+    cache = { noise, noiseModes }
+    return cache
   }
-  return pack(sum, s)
+  const firstMode = (r: Float64Array): Float64Array =>
+    emdNumbers(r, { ...options, maxImfs: 1 })[0] ?? new Float64Array(n)
+  return {
+    name: 'ceemdan',
+    config: { n, trials, noiseWidth: eps, maxImfs: Number.isFinite(maxImfs) ? maxImfs : -1 },
+    init: () => ({ imfs: [], residue: Array.from(s), finished: maxImfs <= 0 || isMonotone(s) }),
+    step: (st, ctx) => {
+      const { noise, noiseModes } = realisations()
+      const residue = Float64Array.from(st.residue)
+      const k = st.imfs.length
+      const beta = eps * std(residue)
+      const mode = new Float64Array(n)
+      for (const [t, modes] of noiseModes.entries()) {
+        // IMF_1 from x + beta w; IMF_(k+1) from r_k + beta E_k(w), the k-th EMD mode of the noise.
+        const e = k === 0 ? noise[t] : modes[k - 1]
+        const perturbed = e === undefined ? residue : Float64Array.from(residue, (v, i) => v + beta * (e[i] ?? 0))
+        const local = firstMode(perturbed)
+        for (let i = 0; i < n; i++) mode[i] = (mode[i] ?? 0) + (local[i] ?? 0) / trials
+      }
+      const next = Float64Array.from(residue, (v, i) => v - (mode[i] ?? 0))
+      const imfs = [...st.imfs, Array.from(mode)]
+      if (ctx.wants('emd/imf')) ctx.log('emd/imf', mode)
+      if (ctx.wants('emd/residue')) ctx.log('emd/residue', next)
+      if (ctx.wants('emd/count')) ctx.log('emd/count', imfs.length)
+      return { imfs, residue: Array.from(next), finished: imfs.length >= maxImfs || isMonotone(next) }
+    },
+    done: (st) => (st.finished ? 'converged' : undefined),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as CeemdanState,
+  }
 }
 
 /**
  * Complete ensemble EMD with adaptive noise (CEEMDAN, Torres et al. 2011): each mode is the ensemble average of the
  * first EMD mode of the current residue plus the matching EMD mode of white noise scaled by beta_k = noiseWidth
  * std(residue), so the decomposition is complete (the modes and residue sum to the signal) with no residual noise.
+ * {@link ceemdanAlgorithm} run to the end.
  *
  * @param x - Signal.
  * @param options - Key, ensemble size, noise width and the EMD options.
@@ -219,39 +583,11 @@ export function eemd(x: TensorLike, options: EnsembleEmdOptions): ModeDecomposit
  */
 export function ceemdan(x: TensorLike, options: EnsembleEmdOptions): ModeDecomposition {
   const s = samples(x, 'ceemdan')
-  const n = s.length
-  const trials = options.trials ?? 50
-  const eps = options.noiseWidth ?? 0.2
-  const maxImfs = options.maxImfs ?? Number.POSITIVE_INFINITY
-  // Unit-variance white noise realisations and their EMD modes.
-  const noise: Float64Array[] = []
-  const noiseModes: Float64Array[][] = []
-  for (let t = 0; t < trials; t++) {
-    const w = Float64Array.from(toFlat(normal(foldIn(options.key, t), [n])))
-    const sd = std(w) || 1
-    const unit = Float64Array.from(w, (v) => v / sd)
-    noise.push(unit)
-    noiseModes.push(emdNumbers(unit, options))
-  }
-  const firstMode = (r: Float64Array): Float64Array =>
-    emdNumbers(r, { ...options, maxImfs: 1 })[0] ?? new Float64Array(n)
-  const imfs: Float64Array[] = []
-  let residue = Float64Array.from(s)
-  while (imfs.length < maxImfs && !isMonotone(residue)) {
-    const k = imfs.length
-    const beta = eps * std(residue)
-    const mode = new Float64Array(n)
-    for (const [t, modes] of noiseModes.entries()) {
-      // IMF_1 from x + beta w; IMF_(k+1) from r_k + beta E_k(w), the k-th EMD mode of the noise.
-      const e = k === 0 ? noise[t] : modes[k - 1]
-      const perturbed = e === undefined ? residue : Float64Array.from(residue, (v, i) => v + beta * (e[i] ?? 0))
-      const local = firstMode(perturbed)
-      for (let i = 0; i < n; i++) mode[i] = (mode[i] ?? 0) + (local[i] ?? 0) / trials
-    }
-    imfs.push(mode)
-    residue = Float64Array.from(residue, (v, i) => v - (mode[i] ?? 0))
-  }
-  return pack(imfs, s)
+  const st = runAlgorithm(ceemdanAlgorithm(x, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state
+  return pack(
+    st.imfs.map((m) => Float64Array.from(m)),
+    s,
+  )
 }
 
 /** Options for {@link vmd}. */

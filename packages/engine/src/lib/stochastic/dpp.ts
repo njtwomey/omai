@@ -22,6 +22,16 @@ import {
   toFlat,
   type Value,
 } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { primalNumbers } from './_shared.ts'
 
 function kernelOf(l: TensorLike, where: string): { l: Value; n: number } {
@@ -187,48 +197,160 @@ function spectral(l: Value): { values: number[]; vectors: number[][] } {
   return { values, vectors }
 }
 
-/** The projection-DPP sampler of Hough et al. on chosen orthonormal vectors (Kulesza and Taskar, Algorithm 1). */
-function projectionSample(key: Key, basis: number[][], n: number): number[] {
-  let v = basis.map((b) => [...b])
-  const out: number[] = []
-  for (let step = 0; v.length > 0; step++) {
-    // P(i) = sum_v v_i^2 / |V|
-    const weights = Array.from({ length: n }, (_, i) => v.reduce((s, b) => s + (b[i] ?? 0) ** 2, 0))
-    const total = weights.reduce((a, b) => a + b, 0)
-    let u = (uniform(foldIn(key, step), [1]).data[0] ?? 0) * total
-    let pick = n - 1
-    for (let i = 0; i < n; i++) {
-      u -= weights[i] ?? 0
-      if (u < 0 && !out.includes(i)) {
-        pick = i
-        break
-      }
+/** The state of {@link dppAlgorithm}: the orthonormal basis still to be used, and the items chosen in order. */
+export interface DppState {
+  /** The orthonormal vectors that remain (one is used up by each item chosen). */
+  readonly basis: readonly (readonly number[])[]
+  /** The items chosen so far, in the order they were drawn. */
+  readonly chosen: readonly number[]
+  /** The number of eigenvectors kept by the first phase (the sample size). */
+  readonly kept: number
+}
+
+/** The paths {@link dppAlgorithm} logs, as a type. */
+export type DppPath = 'dpp/kept' | 'dpp/item' | 'dpp/probability' | 'dpp/basis'
+
+/**
+ * What {@link dppAlgorithm} logs, by path, one item per step: the number of eigenvectors the first phase kept, the item
+ * drawn, the probability it had (its share of the squared norm of the basis) and the basis left after projecting that
+ * item out (a row per vector).
+ */
+export const dppContract: Contract<DppState, DppPath> = defineContract({
+  'dpp/kept': scalar({ description: 'eigenvectors kept by the first phase: the sample size' }),
+  'dpp/item': scalar({ description: 'the item drawn in this step' }),
+  'dpp/probability': scalar({ description: 'the probability the item had under the projection DPP of the basis' }),
+  'dpp/basis': tensor({
+    role: 'state',
+    shape: ['vectors', 'n'],
+    description: 'the orthonormal basis left after projecting out the item',
+  }),
+})
+
+/** One item of the projection-DPP sampler of Hough et al. (Kulesza and Taskar, Algorithm 1) and the basis after it. */
+function projectionStep(
+  key: Key,
+  v: readonly (readonly number[])[],
+  out: readonly number[],
+  n: number,
+): { readonly pick: number; readonly probability: number; readonly basis: number[][] } {
+  const step = out.length
+  // P(i) = sum_v v_i^2 / |V|
+  const weights = Array.from({ length: n }, (_, i) => v.reduce((s, b) => s + (b[i] ?? 0) ** 2, 0))
+  const total = weights.reduce((a, b) => a + b, 0)
+  let u = (uniform(foldIn(key, step), [1]).data[0] ?? 0) * total
+  let pick = n - 1
+  for (let i = 0; i < n; i++) {
+    u -= weights[i] ?? 0
+    if (u < 0 && !out.includes(i)) {
+      pick = i
+      break
     }
-    out.push(pick)
-    // remove the component along e_pick: subtract a vector with a non-zero pick coordinate, then re-orthonormalise
-    const j = v.reduce((best, b, idx) => (Math.abs(b[pick] ?? 0) > Math.abs(v[best]?.[pick] ?? 0) ? idx : best), 0)
-    const pivot = v[j] ?? []
-    const rest = v
-      .filter((_, idx) => idx !== j)
-      .map((b) => {
-        const f = (b[pick] ?? 0) / (pivot[pick] ?? 1)
-        return b.map((x, i) => x - f * (pivot[i] ?? 0))
-      })
-    // Gram-Schmidt
-    const ortho: number[][] = []
-    for (const b of rest) {
-      const w = [...b]
-      for (const q of ortho) {
-        let d = 0
-        for (let i = 0; i < n; i++) d += (w[i] ?? 0) * (q[i] ?? 0)
-        for (let i = 0; i < n; i++) w[i] = (w[i] ?? 0) - d * (q[i] ?? 0)
-      }
-      const norm = Math.sqrt(w.reduce((s, x) => s + x * x, 0))
-      if (norm > 1e-12) ortho.push(w.map((x) => x / norm))
-    }
-    v = ortho
   }
-  return out.sort((a, b) => a - b)
+  // remove the component along e_pick: subtract a vector with a non-zero pick coordinate, then re-orthonormalise
+  const j = v.reduce((best, b, idx) => (Math.abs(b[pick] ?? 0) > Math.abs(v[best]?.[pick] ?? 0) ? idx : best), 0)
+  const pivot = v[j] ?? []
+  const rest = v
+    .filter((_, idx) => idx !== j)
+    .map((b) => {
+      const f = (b[pick] ?? 0) / (pivot[pick] ?? 1)
+      return b.map((x, i) => x - f * (pivot[i] ?? 0))
+    })
+  // Gram-Schmidt
+  const ortho: number[][] = []
+  for (const b of rest) {
+    const w = [...b]
+    for (const q of ortho) {
+      let d = 0
+      for (let i = 0; i < n; i++) d += (w[i] ?? 0) * (q[i] ?? 0)
+      for (let i = 0; i < n; i++) w[i] = (w[i] ?? 0) - d * (q[i] ?? 0)
+    }
+    const norm = Math.sqrt(w.reduce((s, x) => s + x * x, 0))
+    if (norm > 1e-12) ortho.push(w.map((x) => x / norm))
+  }
+  return { pick, probability: total > 0 ? (weights[pick] ?? 0) / total : 0, basis: ortho }
+}
+
+function dppSteps(
+  name: string,
+  config: Record<string, number>,
+  key: Key,
+  n: number,
+  initialBasis: () => number[][],
+): Algorithm<DppState, DppPath> {
+  return {
+    name,
+    config: { ...config, n },
+    init: () => {
+      const basis = initialBasis()
+      return { basis, chosen: [], kept: basis.length }
+    },
+    step: (s, ctx) => {
+      const r = projectionStep(foldIn(key, 1), s.basis, s.chosen, n)
+      if (ctx.wants('dpp/kept')) ctx.log('dpp/kept', s.kept)
+      if (ctx.wants('dpp/item')) ctx.log('dpp/item', r.pick)
+      if (ctx.wants('dpp/probability')) ctx.log('dpp/probability', r.probability)
+      if (ctx.wants('dpp/basis')) ctx.log('dpp/basis', Float64Array.from(r.basis.flat()))
+      return { basis: r.basis, chosen: [...s.chosen, r.pick], kept: s.kept }
+    },
+    done: (s) => (s.basis.length === 0 ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as DppState,
+  }
+}
+
+/**
+ * Exact DPP sampling as a steppable algorithm. `init` is the first phase of the spectral algorithm of Hough et al.: keep
+ * eigenvector i of the L-ensemble with probability lambda_i / (1 + lambda_i), or, with `k`, choose k eigenvectors with
+ * probabilities from the elementary symmetric polynomials of the eigenvalues (Kulesza and Taskar, Algorithm 8). Each
+ * step is the second phase: draw one item from the projection DPP the basis spans and project it out of the basis. The
+ * sample is the chosen items sorted; the state keeps them in the order drawn.
+ *
+ * @param key - The key (the first phase uses `foldIn(key, 0)`, step t the key `foldIn(foldIn(key, 1), t)`).
+ * @param l - The likelihood kernel.
+ * @param k - The sample size for the k-DPP (omit it for the DPP).
+ * @returns The algorithm; its state is a {@link DppState}.
+ * @throws MdmlError with code `shape` for a kernel that is not square, and `value` when k is not in [1, n] or exceeds the rank of L.
+ * @concept determinantal-point-processes
+ * @example
+ * ```ts
+ * import { key } from 'mdml-engine/random'
+ * import { dppAlgorithm } from 'mdml-engine/stochastic'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(dppAlgorithm(key(0), [[1e9, 0], [0, 1e9]]), { maxSteps: 10 }).state.chosen.length // => 2
+ * ```
+ */
+export function dppAlgorithm(key: Key, l: TensorLike, k?: number): Algorithm<DppState, DppPath> {
+  const where = k === undefined ? 'sampleDpp' : 'sampleKDpp'
+  const { l: m, n } = kernelOf(l, where)
+  if (k !== undefined && !(Number.isInteger(k) && k >= 1 && k <= n))
+    throw new MdmlError('value', 'sampleKDpp: k must be in [1, n]')
+  return dppSteps(k === undefined ? 'dpp' : 'k-dpp', k === undefined ? {} : { k }, key, n, () => {
+    const { values, vectors } = spectral(m)
+    if (k === undefined) {
+      const u = uniform(foldIn(key, 0), [n]).data
+      return vectors.filter((_, i) => (u[i] ?? 1) < (values[i] ?? 0) / (1 + (values[i] ?? 0)))
+    }
+    const e = symmetricTable(values, k)
+    const top = values.reduce((mx, v) => Math.max(mx, v), 0)
+    if (!((e[k]?.[n] ?? 0) > 1e-10 * top ** k)) throw new MdmlError('value', 'sampleKDpp: k exceeds the rank of L')
+    const chosen: number[][] = []
+    let left = k
+    const u = uniform(foldIn(key, 0), [n]).data
+    for (let i = n; i >= 1 && left > 0; i--) {
+      const p = ((values[i - 1] ?? 0) * (e[left - 1]?.[i - 1] ?? 0)) / (e[left]?.[i] ?? 1)
+      if ((u[i - 1] ?? 1) < p) {
+        chosen.push(vectors[i - 1] ?? [])
+        left -= 1
+      }
+    }
+    return chosen
+  })
+}
+
+function runDpp(key: Key, l: TensorLike, k: number | undefined): number[] {
+  const { n } = kernelOf(l, k === undefined ? 'sampleDpp' : 'sampleKDpp')
+  const s = runAlgorithm(dppAlgorithm(key, l, k), { maxSteps: n + 1 }).state
+  return [...s.chosen].sort((a, b) => a - b)
 }
 
 /**
@@ -249,11 +371,7 @@ function projectionSample(key: Key, basis: number[][], n: number): number[] {
  * ```
  */
 export function sampleDpp(key: Key, l: TensorLike): number[] {
-  const { l: m, n } = kernelOf(l, 'sampleDpp')
-  const { values, vectors } = spectral(m)
-  const u = uniform(foldIn(key, 0), [n]).data
-  const kept = vectors.filter((_, i) => (u[i] ?? 1) < (values[i] ?? 0) / (1 + (values[i] ?? 0)))
-  return projectionSample(foldIn(key, 1), kept, n)
+  return runDpp(key, l, undefined)
 }
 
 /**
@@ -274,23 +392,7 @@ export function sampleDpp(key: Key, l: TensorLike): number[] {
  * ```
  */
 export function sampleKDpp(key: Key, l: TensorLike, k: number): number[] {
-  const { l: m, n } = kernelOf(l, 'sampleKDpp')
-  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new MdmlError('value', 'sampleKDpp: k must be in [1, n]')
-  const { values, vectors } = spectral(m)
-  const e = symmetricTable(values, k)
-  const top = values.reduce((m, v) => Math.max(m, v), 0)
-  if (!((e[k]?.[n] ?? 0) > 1e-10 * top ** k)) throw new MdmlError('value', 'sampleKDpp: k exceeds the rank of L')
-  const chosen: number[][] = []
-  let left = k
-  const u = uniform(foldIn(key, 0), [n]).data
-  for (let i = n; i >= 1 && left > 0; i--) {
-    const p = ((values[i - 1] ?? 0) * (e[left - 1]?.[i - 1] ?? 0)) / (e[left]?.[i] ?? 1)
-    if ((u[i - 1] ?? 1) < p) {
-      chosen.push(vectors[i - 1] ?? [])
-      left -= 1
-    }
-  }
-  return projectionSample(foldIn(key, 1), chosen, n)
+  return runDpp(key, l, k)
 }
 
 /**
