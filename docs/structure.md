@@ -3109,6 +3109,9 @@ modAL for active learning, diffprivlib and opacus for privacy
   stated factor of the observed gap.
 - `representation.ts`: measures of learned representations: alignment and uniformity (Wang and Isola), the effective
   rank (Roy and Vetterli, RankMe) and centred kernel alignment (`cka`, linear and RBF; invariant to rotations).
+- `sequence-model.ts`: `sequenceModelTrainer`, token-sequence models on the trainer base: the layer is the `mixer` slot
+  (`sequenceMixers` of `nn/blocks`), the optimiser the `optimiser` slot (`optimisers`); derived paths `mixer/spectrum`
+  (eigenvalues of the state transitions), `mixer/step` (learned Delta) and `mixer/state-norm`; `tokenAccuracy`.
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
@@ -3266,7 +3269,12 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `functional/state-space.ts`: SSM discretisation (`discretise` by zero-order hold or bilinear, `discretiseDiagonal`),
   S4 convolution kernels (`ssmKernel`, Vandermonde for diagonal models), `causalConvolution`, `ssmRecurrence`,
   `linearRecurrence`, selective scan (Mamba, with gating), delta rule (DeltaNet), LRU (`lruInit`, `lruEigenvalues`,
-  `lru`). TODO: complex-valued diagonal S4D (the LRU covers complex recurrences).
+  `lru`, `lruScan` with a resumable state), `parallelScan` and `parallelScanComplex` (associative scans of linear
+  recurrences), `ssd` (structured state-space duality: recurrent, quadratic and chunked forms of the scalar-decay
+  selective SSM), `channelCausalConvolution` (one kernel per channel).
+- `functional/linear-recurrent.ts`: `decayedLinearAttention` (state with no, per-head or per-key-dimension decay;
+  recurrent, parallel and chunked forms) and `wkv` (the RWKV recurrence, with a stable running shift). The complex diagonal S4D is a layer in
+  `blocks/state-space.ts`.
 - `functional/graph.ts`: `edgeList`, `aggregate` and `messagePassing` (sum, mean, max), edge softmax, `addSelfLoops`,
   `gcnNorm`, GCN, GAT, GraphSAGE and GIN convolutions, graph pooling (`globalPool` by batch, `topKPool`).
 - `functional/vision.ts`: `interpolate` (nearest, nearest-exact, linear, bilinear, bicubic, trilinear, area; size or
@@ -3350,6 +3358,32 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `operators.ts`: operator learning: `DeepONet` (branch over sensors, trunk over the query point), `SpectralConv1d`
     and `SpectralConv2d` (low Fourier modes times learned complex weights, through the differentiable FFT),
     `FourierLayer` and `FNO` (lift, Fourier layers, projection, in one or two dimensions).
+  - `hippo.ts`: the initialisations of state-space models: `hippoLegS`, `hippoLegT`, `hippoLagT` (the matrices of
+    `x' = A x + B u` that project the input's history onto Legendre or Laguerre bases), `nplrHippo` (the
+    normal-plus-low-rank form `V diag(lambda) V^H - P P^T` with its eigenbasis forms) and `nplrReconstruct`,
+    `s4dEigenvalues` (S4D-Lin, -Inv, -Real).
+  - `mixer.ts`: `SequenceMixer`, the interface of the interchangeable sequence layers (state in, state out; the
+    parallel form on a sequence and the recurrent form on one token agree), `ownKey`.
+  - `state-space.ts`: `S4D` (diagonal, convolution or recurrence), `S4` (HiPPO normal-plus-low-rank in its
+    eigenbasis, bilinear), `S5` (one MIMO complex state, parallel scan) and `LRUMixer` (over `lruScan`), all as
+    sequence mixers whose two forms give the same outputs and final state.
+  - `mamba.ts`: `causalDepthwiseConv` (with a carried window), `MambaBlock` (selective scan; the convolution window
+    and SSM state carry between calls), `Mamba2Block` (scalar decay per head, `ssd` in its recurrent, quadratic or
+    chunked form), `mambaModel` (a `SequenceModel` of Mamba blocks).
+  - `sequence-model.ts`: `MixerBlock` (pre-norm residual block around any `SequenceMixer`, optional gated
+    feed-forward) and `SequenceModel` (input layer, a stack of mixer blocks, norm, head; tokens or features in,
+    per-position logits or a pooled classification or regression out; `run` threads the per-layer states).
+  - `linear-attention.ts`: matrix-state mixers over `decayedLinearAttention`: `LinearAttentionMixer` (feature maps),
+    `RetNetMixer` (retention: parallel, recurrent and chunkwise forms), `GatedLinearAttentionMixer`, `DeltaNetMixer`
+    (the delta rule).
+  - `recurrent-mixers.ts`: `RWKVTimeMix`, `RWKVChannelMix` and `RWKVMixer`, `MinGRU`, `MinLSTM` (parallel scans),
+    `Hyena` (implicit long convolutions, history as state).
+  - `mixers.ts`: `AttentionMixer` (softmax attention with a KV cache, the baseline) and `sequenceMixers`, the option
+    table of every mixer (`mamba`, `mamba2`, `s4d`, `s4`, `s5`, `lru`, `linear-attention`, `retnet`, `gla`, `deltanet`,
+    `rwkv`, `mingru`, `minlstm`, `hyena`, `attention`) with its knobs, for the `mixer` slot of a `SequenceModel`.
+  - `sequence-generation.ts`: `sequenceLanguageModel` (a `SequenceModel` as a `LanguageModel` whose cache is the
+    per-layer mixer state), `generationAlgorithm` (the decoding algorithm over it, with a serialisable state),
+    `idTokenizer`.
   - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
     `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
   - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),
@@ -6337,7 +6371,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
   `modularArithmetic`), each with an exact solver in its truth, and in-context linear regression written as quantised
-  tokens (`inContextRegression`, with the least-squares and Bayes predictions).
+  tokens (`inContextRegression`, with the least-squares and Bayes predictions), and the tasks of the Mamba and H3
+  papers with per-position supervision masks: selective copying (`selectiveCopying`, vanilla copying with `fixed`)
+  and induction heads (`inductionHeads`).
 - `graphs.ts`: karate club (`karateClub`), Les Miserables (`lesMiserables`), contextual stochastic block models
   (`contextualSbm`), graph families (`familyGraph`, `graphFamilies`: Erdos-Renyi, Barabasi-Albert, Watts-Strogatz,
   grids, cycles, paths, stars, complete graphs, trees, geometric graphs), small molecules (`smallMolecules`, read from

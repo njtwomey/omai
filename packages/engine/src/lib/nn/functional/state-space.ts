@@ -10,9 +10,13 @@ import { expm, solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import {
   add,
+  broadcastTo,
+  type ComplexValue,
   concat,
   cos,
+  cumsum,
   div,
+  einsum,
   exp,
   expandDims,
   eye,
@@ -225,6 +229,44 @@ export function causalConvolution(u: TensorLike, kernel: TensorLike, d: TensorLi
 }
 
 /**
+ * Causal convolution of multichannel sequences with one kernel per channel: y[b, t, h] = sum_{s <= t} K[h, t - s]
+ * u[b, s, h] (the convolutional view of H independent state-space models, and the long convolution of Hyena). Built
+ * from the Toeplitz matrices of the kernels, so differentiable in u and K.
+ *
+ * @param u - Inputs `[B, L, H]`.
+ * @param kernel - Kernels `[H, K]` (K <= L taps; missing taps are zero).
+ * @returns `[B, L, H]`.
+ * @concept state-space-models
+ * @example
+ * ```ts
+ * import { channelCausalConvolution } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(channelCausalConvolution([[[1], [0], [0]]], [[1, 0.5, 0.25]])) // => [[[1], [0.5], [0.25]]]
+ * ```
+ */
+export function channelCausalConvolution(u: TensorLike, kernel: TensorLike): Value {
+  const uv = fl(u)
+  const k = fl(kernel)
+  const [, l = 0, h = 1] = uv.shape
+  const taps = k.shape[1] ?? 0
+  const idx = new Int32Array(l * l)
+  const valid = new Uint8Array(l * l)
+  for (let t = 0; t < l; t++)
+    for (let s = 0; s <= t; s++) {
+      if (t - s < taps) {
+        idx[t * l + s] = t - s
+        valid[t * l + s] = 1
+      }
+    }
+  const toeplitz = where(
+    fromStorage(valid, [l, l], 'bool'),
+    reshape(take(k, fromStorage(idx, [l * l], 'int32'), 1), [h, l, l]),
+    0,
+  )
+  return einsum('hts,bsh->bth', toeplitz, uv)
+}
+
+/**
  * Run a discrete single-input single-output SSM as a recurrence: x_t = Ab x_{t-1} + Bb u_t, y_t = C x_t + D u_t
  * (from x_{-1} = 0); equal to {@link causalConvolution} with {@link ssmKernel}.
  *
@@ -292,6 +334,135 @@ export function linearRecurrence(a: TensorLike, b: TensorLike, h0?: TensorLike):
   return stack(out, 0)
 }
 
+/** One doubling round of the Hillis-Steele scan of the affine maps h -> a h + b, along an axis. */
+function scanRounds<T extends { readonly shape: readonly number[] }>(
+  a: T,
+  b: T,
+  axis: number,
+  ops: {
+    readonly slice: (x: T, lo: number, hi: number) => T
+    readonly cat: (parts: readonly T[]) => T
+    readonly combine: (aTail: T, aPrev: T, bPrev: T, bTail: T) => { readonly a: T; readonly b: T }
+  },
+): T {
+  const n = a.shape[axis] ?? 0
+  let av = a
+  let bv = b
+  for (let d = 1; d < n; d *= 2) {
+    const next = ops.combine(ops.slice(av, d, n), ops.slice(av, 0, n - d), ops.slice(bv, 0, n - d), ops.slice(bv, d, n))
+    av = ops.cat([ops.slice(av, 0, d), next.a])
+    bv = ops.cat([ops.slice(bv, 0, d), next.b])
+  }
+  return bv
+}
+
+/**
+ * The linear recurrence h_t = a_t h_{t-1} + b_t as a parallel (associative) scan: ceil(log2 T) rounds in which every
+ * step composes with the one d steps earlier, instead of T sequential steps. The result equals
+ * {@link linearRecurrence} (the same sums in a different order); this is how S5 and Mamba's kernel run on parallel
+ * hardware.
+ *
+ * @param a - Decays, broadcast against b.
+ * @param b - Inputs.
+ * @param axis - The time axis (default 0).
+ * @param h0 - The initial state (the shape of b without the time axis; default zeros).
+ * @returns Every state, with the shape of b.
+ * @concept state-space-models
+ * @example
+ * ```ts
+ * import { parallelScan } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(parallelScan([0.5, 0.5, 0.5], [1, 1, 1])) // => [1, 1.5, 1.75]
+ * ```
+ */
+export function parallelScan(a: TensorLike, b: TensorLike, axis = 0, h0?: TensorLike): Value {
+  const bv0 = fl(b)
+  const ax = axis < 0 ? axis + bv0.shape.length : axis
+  const av = broadcastTo(fl(a), bv0.shape)
+  let bv = bv0
+  if (h0 !== undefined) {
+    // Fold the initial state into the first input: b_0 <- a_0 h0 + b_0.
+    const first = (v: Value): Value => sliceAxis(v, ax, 0, 1)
+    const start = add(mul(first(av), expandDims(fl(h0), ax)), first(bv))
+    bv = concat([start, sliceAxis(bv, ax, 1, bv.shape[ax] ?? 1)], ax)
+  }
+  return scanRounds<Value>(av, bv, ax, {
+    slice: (x, lo, hi) => sliceAxis(x, ax, lo, hi),
+    cat: (parts) => concat(parts, ax),
+    combine: (aTail, aPrev, bPrev, bTail) => ({ a: mul(aTail, aPrev), b: add(mul(aTail, bPrev), bTail) }),
+  })
+}
+
+/**
+ * {@link parallelScan} for a complex diagonal recurrence h_t = a_t h_{t-1} + b_t (S5, the LRU), with real and
+ * imaginary parts as separate tensors.
+ *
+ * @param a - Complex decays, broadcast against b.
+ * @param b - Complex inputs.
+ * @param axis - The time axis (default 0).
+ * @param h0 - The initial state (optional).
+ * @returns Every state.
+ * @concept state-space-models
+ * @example
+ * ```ts
+ * import { parallelScanComplex } from 'mdml-engine/nn'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(parallelScanComplex({ re: [0, 0], im: [1, 1] }, { re: [1, 0], im: [0, 0] }).re) // => [1, 0]
+ * ```
+ */
+export function parallelScanComplex(
+  a: { readonly re: TensorLike; readonly im: TensorLike },
+  b: { readonly re: TensorLike; readonly im: TensorLike },
+  axis = 0,
+  h0?: { readonly re: TensorLike; readonly im: TensorLike },
+): ComplexValue {
+  const br = fl(b.re)
+  const bi = fl(b.im)
+  const ax = axis < 0 ? axis + br.shape.length : axis
+  const ar = broadcastTo(fl(a.re), br.shape)
+  const ai = broadcastTo(fl(a.im), br.shape)
+  let cr = br
+  let ci = bi
+  if (h0 !== undefined) {
+    const first = (v: Value): Value => sliceAxis(v, ax, 0, 1)
+    const hr = expandDims(fl(h0.re), ax)
+    const hi = expandDims(fl(h0.im), ax)
+    const rest = (v: Value): Value => sliceAxis(v, ax, 1, v.shape[ax] ?? 1)
+    cr = concat([add(sub(mul(first(ar), hr), mul(first(ai), hi)), first(br)), rest(br)], ax)
+    ci = concat([add(add(mul(first(ar), hi), mul(first(ai), hr)), first(bi)), rest(bi)], ax)
+  }
+  // Pack the real and imaginary parts on a leading axis so that one scan carries both.
+  const pack = (re: Value, im: Value): Value => stack([re, im], 0)
+  const A = pack(ar, ai)
+  const Bp = pack(cr, ci)
+  const out = scanRounds<Value>(A, Bp, ax + 1, {
+    slice: (x, lo, hi) => sliceAxis(x, ax + 1, lo, hi),
+    cat: (parts) => concat(parts, ax + 1),
+    combine: (aTail, aPrev, bPrev, bTail) => {
+      const [tr, ti, pr, pi, qr, qi, sr, si] = [
+        part2(aTail, 0),
+        part2(aTail, 1),
+        part2(aPrev, 0),
+        part2(aPrev, 1),
+        part2(bPrev, 0),
+        part2(bPrev, 1),
+        part2(bTail, 0),
+        part2(bTail, 1),
+      ]
+      return {
+        a: pack(sub(mul(tr, pr), mul(ti, pi)), add(mul(tr, pi), mul(ti, pr))),
+        b: pack(add(sub(mul(tr, qr), mul(ti, qi)), sr), add(add(mul(tr, qi), mul(ti, qr)), si)),
+      }
+    },
+  })
+  return { re: part2(out, 0), im: part2(out, 1) }
+}
+
+/** Part k of a packed pair, keeping the other axes. */
+function part2(x: Value, k: number): Value {
+  return reshape(sliceAxis(x, 0, k, k + 1), x.shape.slice(1))
+}
+
 /** Inputs of {@link selectiveScan}. */
 export interface SelectiveScanInput {
   /** Inputs `[B, L, D]`. */
@@ -308,6 +479,8 @@ export interface SelectiveScanInput {
   readonly d?: TensorLike
   /** A gate `[B, L, D]`: the output is multiplied by silu(z) (optional). */
   readonly z?: TensorLike
+  /** The state before the first step `[B, D, N]` (default zeros): a scan resumed from an earlier one. */
+  readonly h0?: TensorLike
 }
 
 /**
@@ -335,7 +508,7 @@ export function selectiveScan(input: SelectiveScanInput): { readonly y: Value; r
   const c = fl(input.c)
   const [bs = 1, l = 0, dim = 1] = x.shape
   const n = a.shape[1] ?? 1
-  let h: Value = zeros([bs, dim, n])
+  let h: Value = input.h0 === undefined ? zeros([bs, dim, n]) : fl(input.h0)
   const ys: Value[] = []
   const step = (v: Value, t: number): Value => reshape(sliceAxis(v, 1, t, t + 1), [bs, -1])
   for (let t = 0; t < l; t++) {
@@ -350,6 +523,111 @@ export function selectiveScan(input: SelectiveScanInput): { readonly y: Value; r
   if (input.d !== undefined) y = add(y, mul(x, fl(input.d)))
   if (input.z !== undefined) y = mul(y, silu(input.z))
   return { y, state: h }
+}
+
+/** Inputs of {@link ssd}. */
+export interface SsdInput {
+  /** Inputs `[B, L, H, P]`: H heads of width P. */
+  readonly x: TensorLike
+  /** Positive steps `[B, L, H]`. */
+  readonly dt: TensorLike
+  /** The scalar (negative) state matrix of each head `[H]`: A = a I. */
+  readonly a: TensorLike
+  /** Input maps `[B, L, N]`, shared by the heads. */
+  readonly b: TensorLike
+  /** Output maps `[B, L, N]`, shared by the heads. */
+  readonly c: TensorLike
+  /** The state before the first step `[B, H, P, N]` (default zeros). */
+  readonly h0?: TensorLike
+}
+
+/** The three algorithms of structured state-space duality. */
+export type SsdForm = 'recurrent' | 'quadratic' | 'chunked'
+
+/**
+ * Structured state-space duality (Mamba-2; Dao and Gu 2024): the selective SSM whose state matrix is a scalar times the
+ * identity per head, `S_t = exp(dt_t a) S_{t-1} + dt_t x_t B_t^T` and `y_t = S_t C_t`, computed in one of three
+ * equivalent ways. The `recurrent` form steps through time; the `quadratic` form is masked attention,
+ * `y = (L . (C B^T)) (dt x)` with the decay mask `L[t, s] = exp(sum_{r in (s, t]} dt_r a)` (queries C, keys B, values
+ * dt x); the `chunked` form applies the quadratic form inside chunks of a given length and the recurrence between
+ * them. All three give the same outputs and final state.
+ *
+ * @param input - x, dt, a, b, c and optionally the initial state.
+ * @param form - The algorithm (default `chunked`).
+ * @param chunk - The chunk length of the chunked form (default 8).
+ * @returns The outputs `[B, L, H, P]` and the final state `[B, H, P, N]`.
+ * @concept state-space-models
+ * @reference Dao and Gu (2024), Transformers are SSMs: generalized models and efficient algorithms through structured
+ *   state space duality.
+ * @example
+ * ```ts
+ * import { ssd } from 'mdml-engine/nn'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const input = { x: [[[[1]], [[0]]]], dt: [[[1], [1]]], a: [-1], b: [[[1], [1]]], c: [[[1], [1]]] }
+ * toFlat(ssd(input, 'quadratic').y) // => [1, 0.36787944117144233]
+ * ```
+ */
+export function ssd(
+  input: SsdInput,
+  form: SsdForm = 'chunked',
+  chunk = 8,
+): { readonly y: Value; readonly state: Value } {
+  const x = fl(input.x)
+  const dt = fl(input.dt)
+  const a = fl(input.a)
+  const b = fl(input.b)
+  const c = fl(input.c)
+  const [bs = 1, l = 0, heads = 1, width = 1] = x.shape
+  const n = b.shape[2] ?? 1
+  const h0 = input.h0 === undefined ? zeros([bs, heads, width, n]) : fl(input.h0)
+  if (form === 'recurrent') {
+    let s = h0
+    const ys: Value[] = []
+    for (let t = 0; t < l; t++) {
+      const step = (v: Value, shape: number[]): Value => reshape(sliceAxis(v, 1, t, t + 1), shape)
+      const dtt = step(dt, [bs, heads]) // [B, H]
+      const decay = reshape(exp(mul(dtt, a)), [bs, heads, 1, 1])
+      const xt = step(x, [bs, heads, width]) // [B, H, P]
+      const write = mul(
+        mul(expandDims(xt, 3), reshape(dtt, [bs, heads, 1, 1])),
+        reshape(step(b, [bs, n]), [bs, 1, 1, n]),
+      )
+      s = add(mul(decay, s), write)
+      ys.push(sum(mul(s, reshape(step(c, [bs, n]), [bs, 1, 1, n])), 3)) // [B, H, P]
+    }
+    return { y: stack(ys, 1), state: s }
+  }
+  if (form === 'chunked' && l > chunk) {
+    let s = h0
+    const ys: Value[] = []
+    for (let lo = 0; lo < l; lo += chunk) {
+      const hi = Math.min(l, lo + chunk)
+      const cut = (v: Value): Value => sliceAxis(v, 1, lo, hi)
+      const r = ssd({ x: cut(x), dt: cut(dt), a, b: cut(b), c: cut(c), h0: s }, 'quadratic')
+      ys.push(r.y)
+      s = r.state
+    }
+    return { y: concat(ys, 1), state: s }
+  }
+  // Quadratic: the decay mask from the cumulative log-decay (<= 0), cum[t] = sum_{r <= t} dt_r a.
+  const logDecay = mul(dt, a) // [B, L, H]
+  const cum = cumsum(logDecay, 1)
+  const cumT = swapaxes(cum, 1, 2) // [B, H, L]
+  const lower = new Uint8Array(l * l)
+  for (let t = 0; t < l; t++) for (let s = 0; s <= t; s++) lower[t * l + s] = 1
+  const mask = fromStorage(lower, [l, l], 'bool')
+  const diff = sub(expandDims(cumT, 3), expandDims(cumT, 2)) // [B, H, T, S] = cum_t - cum_s
+  const decay = where(mask, exp(where(mask, diff, 0)), 0)
+  const scores = einsum('btn,bsn->bts', c, b) // C_t . B_s
+  const xdt = mul(x, expandDims(dt, 3)) // [B, L, H, P]
+  const mixed = einsum('bhts,bshp->bthp', mul(expandDims(scores, 1), decay), xdt)
+  // The initial state, decayed to each step, and the state after the last step.
+  const fromInitial = mul(einsum('bhpn,btn->bthp', h0, c), expandDims(exp(cum), 3))
+  const last = sliceAxis(cum, 1, l - 1, l) // [B, 1, H]
+  const weight = exp(sub(last, cum)) // [B, L, H]: decay from step s to the end
+  const written = einsum('bsh,bshp,bsn->bhpn', weight, xdt, b)
+  const carried = mul(reshape(exp(last), [bs, heads, 1, 1]), h0)
+  return { y: add(mixed, fromInitial), state: add(carried, written) }
 }
 
 /**
@@ -490,6 +768,12 @@ export function lruEigenvalues(params: { readonly nuLog: TensorLike; readonly th
   return { re: mul(mod, cos(phase)), im: mul(mod, sin(phase)) }
 }
 
+/** The state of a linear recurrent unit: real and imaginary parts `[B, N]`. */
+export interface LRUState {
+  readonly re: Value
+  readonly im: Value
+}
+
 /**
  * A linear recurrent unit (Orvieto et al. 2023): h_t = lambda h_{t-1} + gamma (B u_t) with complex diagonal lambda,
  * y_t = Re(C h_t) + D u_t, in real arithmetic on real and imaginary parts. Differentiable in the parameters and u.
@@ -509,7 +793,32 @@ export function lruEigenvalues(params: { readonly nuLog: TensorLike; readonly th
 export function lru(params: LRUParams, u: TensorLike): Value {
   const u0 = fl(u)
   const batched = u0.shape.length === 3
-  const uv = batched ? u0 : expandDims(u0, 0)
+  const y = lruScan(params, batched ? u0 : expandDims(u0, 0)).y
+  return batched ? y : reshape(y, [y.shape[1] ?? 0, -1])
+}
+
+/**
+ * {@link lru} from a given state, returning the final state too: the form that resumes a sequence (generation one
+ * token at a time gives the same outputs as one pass over the whole sequence).
+ *
+ * @param params - The parameters.
+ * @param u - Inputs `[B, L, H]`.
+ * @param state - The state before the first step (default zeros).
+ * @returns The outputs `[B, L, H]` and the state after the last step.
+ * @example
+ * ```ts
+ * import { lruInit, lruScan } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { zeros } from 'mdml-engine/tensor'
+ * lruScan(lruInit(key(0), 4, 2), zeros([1, 5, 2])).state.re.shape // => [1, 4]
+ * ```
+ */
+export function lruScan(
+  params: LRUParams,
+  u: TensorLike,
+  state?: LRUState,
+): { readonly y: Value; readonly state: LRUState } {
+  const uv = fl(u)
   const [bs = 1, l = 0] = uv.shape
   const n = params.nuLog.shape[0] ?? 0
   const { re, im } = lruEigenvalues(params)
@@ -518,8 +827,8 @@ export function lru(params: LRUParams, u: TensorLike): Value {
   const bu = (w: Value): Value => mul(matmul(uv, swapaxes(w, 0, 1)), gamma)
   const xr = bu(params.bRe)
   const xi = bu(params.bIm)
-  let hr: Value = zeros([bs, n])
-  let hi: Value = zeros([bs, n])
+  let hr: Value = state === undefined ? zeros([bs, n]) : state.re
+  let hi: Value = state === undefined ? zeros([bs, n]) : state.im
   const ys: Value[] = []
   const at = (v: Value, t: number): Value => reshape(sliceAxis(v, 1, t, t + 1), [bs, n])
   for (let t = 0; t < l; t++) {
@@ -530,6 +839,5 @@ export function lru(params: LRUParams, u: TensorLike): Value {
     // Re(C h) = C_re h_re - C_im h_im.
     ys.push(sub(matmul(hr, swapaxes(params.cRe, 0, 1)), matmul(hi, swapaxes(params.cIm, 0, 1))))
   }
-  const y = add(stack(ys, 1), mul(uv, params.d))
-  return batched ? y : reshape(y, [l, -1])
+  return { y: add(stack(ys, 1), mul(uv, params.d)), state: { re: hr, im: hi } }
 }

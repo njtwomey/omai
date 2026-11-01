@@ -584,3 +584,169 @@ export const inContextRegression: DatasetGenerator<SequenceData> = {
     }
   },
 }
+
+/** A task whose targets sit at fixed positions of the input: the rest of the target row is padding and unsupervised. */
+function alignedTask(
+  name: string,
+  description: string,
+  knobs: Knobs,
+  inputs: readonly (readonly number[])[],
+  targets: readonly (readonly number[])[],
+  supervised: readonly (readonly boolean[])[],
+  vocabulary: readonly string[],
+  solve: (input: readonly number[]) => number[],
+): Generated<SequenceData> {
+  return {
+    data: sequences(inputs, targets, vocabulary, {
+      padId: 0,
+      targetMask: supervised.map((row) => row.map((b) => (b ? 1 : 0))),
+      meta: stamp(name, description, knobs),
+    }),
+    truth: {
+      extra: {
+        solve,
+        supervised,
+        accuracy: (predicted: readonly (readonly number[])[]) => {
+          let right = 0
+          let total = 0
+          for (const [i, t] of targets.entries())
+            for (const [j, on] of (supervised[i] ?? []).entries()) {
+              if (!on) continue
+              total++
+              if (predicted[i]?.[j] === t[j]) right++
+            }
+          return right / Math.max(1, total)
+        },
+      },
+    },
+  }
+}
+
+/** `count` distinct positions out of `length`, in increasing order. */
+function scatter(k: Key, length: number, count: number): number[] {
+  return Array.from(uniform(k, [length]).data, (u, j) => [u, j] as const)
+    .sort((a, b) => a[0] - b[0])
+    .slice(0, count)
+    .map(([, j]) => j)
+    .sort((a, b) => a - b)
+}
+
+/**
+ * Selective copying (the task of the Mamba paper, Gu and Dao 2023, after the copying task of Arjovsky et al.): `tokens`
+ * content symbols sit at random positions among noise tokens in a sequence of `length`, followed by `tokens` blank
+ * slots (`<sep>`); at the slots the target is the content symbols in order. Recalling them needs the model to choose
+ * what to keep from the content of the input, which a time-invariant (fixed kernel) model cannot do. With `fixed` the
+ * content sits in the first positions (the vanilla copying task, solvable by a fixed lag).
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { selectiveCopying } from 'mdml-engine/datasets'
+ * generate(selectiveCopying, { knobs: { length: 12, tokens: 3 } }).data.inputs.shape[1] // => 15
+ * ```
+ */
+export const selectiveCopying: DatasetGenerator<SequenceData> = {
+  name: 'selectiveCopying',
+  kind: 'sequence',
+  description: 'Copy the content symbols scattered among noise, in order, at the end of the sequence.',
+  knobs: dict({
+    n: int(1, 1_000_000, { default: 1000, label: 'sequences', description: 'The number of sequences.' }),
+    length: int(2, 1000, { default: 16, label: 'length', description: 'Positions holding content and noise.' }),
+    tokens: int(1, 100, { default: 4, label: 'content symbols', description: 'Symbols to copy.' }),
+    symbols: int(2, 100, { default: 6, label: 'alphabet size', description: 'Distinct content symbols.' }),
+    fixed: bool({
+      default: false,
+      label: 'fixed positions',
+      description: 'Content in the first positions (vanilla copying).',
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const length = knobs['length'] as number
+    const tokens = Math.min(knobs['tokens'] as number, length)
+    const symbols = knobs['symbols'] as number
+    const fixed = knobs['fixed'] === true
+    // 0 padding, 1 blank slot, 2 noise, then the content symbols.
+    const vocab = [...SPECIAL, 'noise', ...Array.from({ length: symbols }, (_, i) => `s${i}`)]
+    const first = SPECIAL.length + 1
+    const inputs: number[][] = []
+    const targets: number[][] = []
+    const supervised: boolean[][] = []
+    for (let i = 0; i < n; i++) {
+      const ki = foldIn(k, i)
+      const where = fixed ? Array.from({ length: tokens }, (_, j) => j) : scatter(foldIn(ki, 0), length, tokens)
+      const content = Array.from(randint(foldIn(ki, 1), [tokens], first, first + symbols).data)
+      const seq = new Array<number>(length).fill(2)
+      where.forEach((pos, j) => {
+        seq[pos] = content[j] ?? first
+      })
+      inputs.push([...seq, ...new Array<number>(tokens).fill(1)])
+      targets.push([...new Array<number>(length).fill(0), ...content])
+      supervised.push([...new Array<boolean>(length).fill(false), ...new Array<boolean>(tokens).fill(true)])
+    }
+    const solve = (input: readonly number[]): number[] => {
+      const body = input.slice(0, length)
+      return [...new Array<number>(length).fill(0), ...body.filter((t) => t >= first)]
+    }
+    return alignedTask(
+      'selectiveCopying',
+      selectiveCopying.description,
+      knobs,
+      inputs,
+      targets,
+      supervised,
+      vocab,
+      solve,
+    )
+  },
+}
+
+/**
+ * Induction heads (the task of Olsson et al. 2022, used in the Mamba paper): a sequence of random tokens in which a
+ * marker token occurs once, followed by a token; the sequence ends with the marker again and the target (at the last
+ * position) is the token that followed the marker the first time. Solving it needs a mechanism that finds the earlier
+ * marker and copies what came after it.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { inductionHeads } from 'mdml-engine/datasets'
+ * generate(inductionHeads, { knobs: { length: 10 } }).data.inputs.shape[1] // => 10
+ * ```
+ */
+export const inductionHeads: DatasetGenerator<SequenceData> = {
+  name: 'inductionHeads',
+  kind: 'sequence',
+  description: 'After a marker seen once earlier, recall the token that followed it.',
+  knobs: dict({
+    n: int(1, 1_000_000, { default: 1000, label: 'sequences', description: 'The number of sequences.' }),
+    length: int(4, 1000, { default: 16, label: 'length', description: 'Sequence length, the final marker included.' }),
+    symbols: int(2, 100, { default: 6, label: 'alphabet size', description: 'Distinct ordinary tokens.' }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const length = knobs['length'] as number
+    const symbols = knobs['symbols'] as number
+    // 0 padding, 1 unused separator, 2 marker, then the ordinary tokens.
+    const vocab = [...SPECIAL, 'marker', ...Array.from({ length: symbols }, (_, i) => `s${i}`)]
+    const first = SPECIAL.length + 1
+    const inputs: number[][] = []
+    const targets: number[][] = []
+    const supervised: boolean[][] = []
+    for (let i = 0; i < n; i++) {
+      const ki = foldIn(k, i)
+      const seq = Array.from(randint(foldIn(ki, 0), [length], first, first + symbols).data)
+      const at = randint(foldIn(ki, 1), [1], 0, length - 2).data[0] ?? 0
+      seq[at] = 2
+      seq[length - 1] = 2
+      inputs.push(seq)
+      targets.push([...new Array<number>(length - 1).fill(0), seq[at + 1] ?? first])
+      supervised.push([...new Array<boolean>(length - 1).fill(false), true])
+    }
+    const solve = (input: readonly number[]): number[] => {
+      const at = input.indexOf(2)
+      return [...new Array<number>(input.length - 1).fill(0), input[at + 1] ?? 0]
+    }
+    return alignedTask('inductionHeads', inductionHeads.description, knobs, inputs, targets, supervised, vocab, solve)
+  },
+}

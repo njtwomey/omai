@@ -178,4 +178,32 @@ describe('the trainer base', () => {
     expect(shrunk.weightOf()).toBeLessThan(1)
     expect(shrunk.weightOf()).toBeGreaterThan(0.2)
   })
+
+  it('a network of another kind has predictions but no default score (its targets need not be one column)', () => {
+    // Token targets [n, L] against logits [n, L, V]: r2 would throw; a particular scores through its own metrics.
+    const tokens = defineTrainer({
+      name: 'tokens',
+      kind: 'other',
+      defaults: {},
+      model: (_d, _h, k) => new Linear(2, 3, { key: k }),
+      objective: () => (p, t) => crossEntropy(p, t),
+      optimiser: (lr) => sgd({ learningRate: lr }),
+      settings: () => ({ learningRate: 0.1, steps: 3, batchSize: 4 }),
+      metrics: () => ({ zero: () => 0 }),
+    })
+    const fitted = tokens.fit(
+      {
+        x: [
+          [0, 1],
+          [1, 0],
+          [1, 1],
+          [0, 0],
+        ],
+        y: [[0], [1], [2], [1]],
+      },
+      { key: key(1) },
+    )
+    expect(fitted.predict).toBeDefined()
+    expect(fitted.score).toBeUndefined()
+  })
 })

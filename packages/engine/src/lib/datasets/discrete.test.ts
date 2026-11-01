@@ -224,3 +224,40 @@ describe('sequence tasks', () => {
     expect(div([5, 9, 7, 10])).toEqual([4])
   })
 })
+
+describe('the sequence-model tasks (selective copying, induction heads)', () => {
+  it('selective copying: content among noise, copied at the end; the truth agrees with the targets', async () => {
+    const { generate } = await import('../data/index.ts')
+    const { selectiveCopying } = await import('./sequence-tasks.ts')
+    const { data, truth } = generate(selectiveCopying, { knobs: { n: 20, length: 12, tokens: 3, symbols: 5 } })
+    expect(data.inputs.shape).toEqual([20, 15])
+    const solve = truth.extra?.['solve'] as (s: number[]) => number[]
+    const L = 15
+    for (let i = 0; i < 20; i++) {
+      const input = Array.from(data.inputs.data.slice(i * L, (i + 1) * L))
+      const target = Array.from(data.targets.data.slice(i * L, (i + 1) * L))
+      expect(solve(input)).toEqual(target)
+      // The last three slots are blank, the first twelve hold exactly three content tokens.
+      expect(input.slice(12)).toEqual([1, 1, 1])
+      expect(input.slice(0, 12).filter((t) => t >= 3)).toEqual(target.slice(12))
+      expect(Array.from(data.targetMask.data.slice(i * L, (i + 1) * L))).toEqual([...new Array(12).fill(0), 1, 1, 1])
+    }
+    const fixed = generate(selectiveCopying, { knobs: { n: 5, length: 10, tokens: 3, fixed: true } }).data
+    expect(Array.from(fixed.inputs.data.slice(0, 3)).every((t) => t >= 3)).toBe(true)
+  })
+
+  it('induction heads: the target is the token after the first marker, read at the final marker', async () => {
+    const { generate } = await import('../data/index.ts')
+    const { inductionHeads } = await import('./sequence-tasks.ts')
+    const { data, truth } = generate(inductionHeads, { knobs: { n: 30, length: 12, symbols: 4 } })
+    const solve = truth.extra?.['solve'] as (s: number[]) => number[]
+    for (let i = 0; i < 30; i++) {
+      const input = Array.from(data.inputs.data.slice(i * 12, (i + 1) * 12))
+      const target = Array.from(data.targets.data.slice(i * 12, (i + 1) * 12))
+      expect(input.filter((t) => t === 2)).toHaveLength(2)
+      expect(input.at(-1)).toBe(2)
+      expect(solve(input)).toEqual(target)
+      expect(target.at(-1)).toBe(input[input.indexOf(2) + 1])
+    }
+  })
+})

@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { checkPrimitive } from '../../autodiff/index.ts'
 import { maxOf } from '../../base/index.ts'
 import { key, normal, uniform } from '../../random/index.ts'
-import { tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
+import { concat, mul, ones, sliceAxis, tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import {
   causalConvolution,
+  channelCausalConvolution,
   deltaRule,
   discretise,
   discretiseDiagonal,
@@ -12,7 +13,11 @@ import {
   lru,
   lruEigenvalues,
   lruInit,
+  lruScan,
+  parallelScan,
+  parallelScanComplex,
   selectiveScan,
+  ssd,
   ssmKernel,
   ssmRecurrence,
 } from './state-space.ts'
@@ -189,5 +194,231 @@ describe('delta rule and LRU', () => {
     const b = (toFlat(p.bRe)[0] ?? 0) * g
     const c = toFlat(p.cRe)[0] ?? 0
     close(lru(real, u), ssmRecurrence({ a: [lam], b: [b] }, [c], toFlat(u)), 12)
+  })
+})
+
+describe('parallel scans and resumed scans', () => {
+  it('the parallel scan equals the sequential recurrence, for any length and with an initial state', () => {
+    for (const len of [1, 2, 5, 8, 13]) {
+      const a = uniform(key(len), [len, 3], { low: -0.9, high: 0.9 })
+      const b = n(len + 100, [len, 3])
+      close(parallelScan(a, b), linearRecurrence(a, b), 12)
+      const h0 = n(7, [3])
+      close(parallelScan(a, b, 0, h0), linearRecurrence(a, b, h0), 12)
+    }
+  })
+
+  it('the complex parallel scan equals a sequential complex recurrence on the time axis 1', () => {
+    const [len, d] = [9, 2]
+    const ar = uniform(key(1), [2, len, d], { low: -0.6, high: 0.6 })
+    const ai = uniform(key(2), [2, len, d], { low: -0.6, high: 0.6 })
+    const br = n(3, [2, len, d])
+    const bi = n(4, [2, len, d])
+    const got = parallelScanComplex({ re: ar, im: ai }, { re: br, im: bi }, 1)
+    const A = [toFlat(ar), toFlat(ai)] as const
+    const Bv = [toFlat(br), toFlat(bi)] as const
+    const hr = new Float64Array(2 * d)
+    const hi = new Float64Array(2 * d)
+    for (let t = 0; t < len; t++)
+      for (let bt = 0; bt < 2; bt++)
+        for (let j = 0; j < d; j++) {
+          const i = (bt * len + t) * d + j
+          const pr = hr[bt * d + j] ?? 0
+          const pi = hi[bt * d + j] ?? 0
+          const nr = (A[0][i] ?? 0) * pr - (A[1][i] ?? 0) * pi + (Bv[0][i] ?? 0)
+          const ni = (A[0][i] ?? 0) * pi + (A[1][i] ?? 0) * pr + (Bv[1][i] ?? 0)
+          hr[bt * d + j] = nr
+          hi[bt * d + j] = ni
+          expect(toFlat(got.re)[i]).toBeCloseTo(nr, 12)
+          expect(toFlat(got.im)[i]).toBeCloseTo(ni, 12)
+        }
+    const h0 = { re: n(5, [2, d]), im: n(6, [2, d]) }
+    const resumed = parallelScanComplex({ re: ar, im: ai }, { re: br, im: bi }, 1, h0)
+    expect(toFlat(resumed.re)[0]).toBeCloseTo(
+      (toFlat(ar)[0] ?? 0) * (toFlat(h0.re)[0] ?? 0) -
+        (toFlat(ai)[0] ?? 0) * (toFlat(h0.im)[0] ?? 0) +
+        (toFlat(br)[0] ?? 0),
+      12,
+    )
+  })
+
+  it('a selective scan or an LRU resumed from its state equals one pass over the whole sequence', () => {
+    const x = n(10, [2, 6, 3])
+    const dt = uniform(key(11), [2, 6, 3], { low: 0.1, high: 0.5 })
+    const a = uniform(key(12), [3, 2], { low: -2, high: -0.5 })
+    const b = n(13, [2, 6, 2])
+    const c = n(14, [2, 6, 2])
+    const whole = selectiveScan({ x, dt, a, b, c })
+    const cut = (v: Value, lo: number, hi: number): Value => sliceAxis(v, 1, lo, hi)
+    const first = selectiveScan({ x: cut(x, 0, 4), dt: cut(dt, 0, 4), a, b: cut(b, 0, 4), c: cut(c, 0, 4) })
+    const rest = selectiveScan({
+      x: cut(x, 4, 6),
+      dt: cut(dt, 4, 6),
+      a,
+      b: cut(b, 4, 6),
+      c: cut(c, 4, 6),
+      h0: first.state,
+    })
+    close(concat([first.y, rest.y], 1), whole.y, 12)
+    close(rest.state, whole.state, 12)
+
+    const params = lruInit(key(15), 4, 3)
+    const u = n(16, [2, 7, 3])
+    const all = lruScan(params, u)
+    const head = lruScan(params, sliceAxis(u, 1, 0, 3))
+    const tail = lruScan(params, sliceAxis(u, 1, 3, 7), head.state)
+    close(concat([head.y, tail.y], 1), all.y, 12)
+    close(tail.state.re, all.state.re, 12)
+  })
+})
+
+describe('structured state-space duality', () => {
+  const [bs, len, heads, width, dim] = [2, 7, 3, 2, 4]
+  const input = {
+    x: n(41, [bs, len, heads, width]),
+    dt: uniform(key(42), [bs, len, heads], { low: 0.05, high: 0.6 }),
+    a: tensor([-0.5, -1.5, -0.1]),
+    b: n(43, [bs, len, dim]),
+    c: n(44, [bs, len, dim]),
+  }
+
+  it('the recurrent, quadratic (attention-like) and chunked forms agree to 1e-10', () => {
+    const rec = ssd(input, 'recurrent')
+    const quad = ssd(input, 'quadratic')
+    close(quad.y, rec.y, 10)
+    close(quad.state, rec.state, 10)
+    for (const chunk of [1, 3, 7, 16]) {
+      const ch = ssd(input, 'chunked', chunk)
+      close(ch.y, rec.y, 10)
+      close(ch.state, rec.state, 10)
+    }
+  })
+
+  it('agree from a non-zero initial state, and a split sequence resumes exactly', () => {
+    const h0 = n(45, [bs, heads, width, dim])
+    const rec = ssd({ ...input, h0 }, 'recurrent')
+    close(ssd({ ...input, h0 }, 'quadratic').y, rec.y, 10)
+    close(ssd({ ...input, h0 }, 'chunked', 3).state, rec.state, 10)
+    const cut = (v: Value, lo: number, hi: number): Value => sliceAxis(v, 1, lo, hi)
+    const part = (lo: number, hi: number, init?: Value): ReturnType<typeof ssd> =>
+      ssd(
+        {
+          x: cut(input.x, lo, hi),
+          dt: cut(input.dt, lo, hi),
+          a: input.a,
+          b: cut(input.b, lo, hi),
+          c: cut(input.c, lo, hi),
+          ...(init === undefined ? {} : { h0: init }),
+        },
+        'quadratic',
+      )
+    const head = part(0, 4)
+    const tail = part(4, 7, head.state)
+    close(concat([head.y, tail.y], 1), ssd(input, 'recurrent').y, 10)
+  })
+
+  it('limits: no decay (a = 0) is a causal linear-attention sum, large steps are memoryless', () => {
+    const flat = ssd({ ...input, a: tensor([0, 0, 0]) }, 'quadratic').y
+    const xs = toFlat(input.x)
+    const dts = toFlat(input.dt)
+    const bb = toFlat(input.b)
+    const cc = toFlat(input.c)
+    // y[b, t, h, p] = sum_{s <= t} (C_t . B_s) dt_s x_s.
+    const [b0, t0, h0i, p0] = [1, 5, 2, 1]
+    let want = 0
+    for (let s = 0; s <= t0; s++) {
+      let dot = 0
+      for (let j = 0; j < dim; j++) dot += (cc[(b0 * len + t0) * dim + j] ?? 0) * (bb[(b0 * len + s) * dim + j] ?? 0)
+      want += dot * (dts[(b0 * len + s) * heads + h0i] ?? 0) * (xs[((b0 * len + s) * heads + h0i) * width + p0] ?? 0)
+    }
+    expect(toFlat(flat)[((b0 * len + t0) * heads + h0i) * width + p0]).toBeCloseTo(want, 10)
+    // A very negative a forgets at once: y_t = dt_t (C_t . B_t) x_t.
+    const memoryless = toFlat(ssd({ ...input, a: tensor([-1e4, -1e4, -1e4]) }, 'quadratic').y)
+    let dot = 0
+    for (let j = 0; j < dim; j++) dot += (cc[(b0 * len + t0) * dim + j] ?? 0) * (bb[(b0 * len + t0) * dim + j] ?? 0)
+    expect(memoryless[((b0 * len + t0) * heads + h0i) * width + p0]).toBeCloseTo(
+      dot * (dts[(b0 * len + t0) * heads + h0i] ?? 0) * (xs[((b0 * len + t0) * heads + h0i) * width + p0] ?? 0),
+      10,
+    )
+  })
+
+  it('passes the gradient check in the quadratic and recurrent forms', () => {
+    const small = {
+      x: n(46, [1, 4, 2, 2]),
+      dt: uniform(key(47), [1, 4, 2], { low: 0.1, high: 0.5 }),
+      b: n(48, [1, 4, 3]),
+      c: n(49, [1, 4, 3]),
+    }
+    for (const form of ['quadratic', 'recurrent', 'chunked'] as const)
+      ok(
+        (x, dt, a, b, c) => ssd({ x, dt, a, b, c }, form, 2).y,
+        [small.x, small.dt, tensor([-0.4, -1]), small.b, small.c],
+      )
+  })
+})
+
+describe('limiting cases of the selective scan', () => {
+  const [bs, len, dim, st] = [1, 6, 2, 3]
+  const x = n(61, [bs, len, dim])
+  const dt = uniform(key(62), [bs, len, dim], { low: 0.1, high: 0.5 })
+  const b = n(63, [bs, len, st])
+  const c = n(64, [bs, len, st])
+
+  it('A = 0 is a causal linear map: y_t = sum_{s <= t} dt_s (C_t . B_s) x_s', () => {
+    const y = toFlat(selectiveScan({ x, dt, a: zerosA(dim, st), b, c }).y)
+    const [xs, ds, bb, cc] = [toFlat(x), toFlat(dt), toFlat(b), toFlat(c)]
+    for (let t = 0; t < len; t++)
+      for (let d = 0; d < dim; d++) {
+        let want = 0
+        for (let s = 0; s <= t; s++) {
+          let dot = 0
+          for (let j = 0; j < st; j++) dot += (cc[t * st + j] ?? 0) * (bb[s * st + j] ?? 0)
+          want += (ds[s * dim + d] ?? 0) * dot * (xs[s * dim + d] ?? 0)
+        }
+        expect(y[t * dim + d]).toBeCloseTo(want, 12)
+      }
+  })
+
+  it('a huge step is memoryless: y_t = dt_t (C_t . B_t) x_t', () => {
+    const big = mul(dt, 1e4)
+    const y = toFlat(selectiveScan({ x, dt: big, a: mul(ones([dim, st]), -1), b, c }).y)
+    const [xs, ds, bb, cc] = [toFlat(x), toFlat(big), toFlat(b), toFlat(c)]
+    for (let t = 0; t < len; t++)
+      for (let d = 0; d < dim; d++) {
+        let dot = 0
+        for (let j = 0; j < st; j++) dot += (cc[t * st + j] ?? 0) * (bb[t * st + j] ?? 0)
+        expect(y[t * dim + d]).toBeCloseTo((ds[t * dim + d] ?? 0) * dot * (xs[t * dim + d] ?? 0), 8)
+      }
+  })
+})
+
+function zerosA(d: number, s: number): Value {
+  return mul(ones([d, s]), 0)
+}
+
+describe('gradients of the scans and the per-channel convolution', () => {
+  it('pass the finite-difference check', () => {
+    const a = uniform(key(71), [4, 2], { low: -0.9, high: 0.9 })
+    ok((aa, bb, hh) => parallelScan(aa, bb, 0, hh), [a, n(72, [4, 2]), n(73, [2])])
+    ok(
+      (ar, ai, br, bi) => parallelScanComplex({ re: ar, im: ai }, { re: br, im: bi }, 0).re,
+      [a, uniform(key(74), [4, 2], { low: -0.5, high: 0.5 }), n(75, [4, 2]), n(76, [4, 2])],
+    )
+    ok((u, k) => channelCausalConvolution(u, k), [n(77, [2, 5, 3]), n(78, [3, 4])])
+    ok(
+      (x, h0) =>
+        selectiveScan({
+          x,
+          dt: uniform(key(79), [1, 3, 2], { low: 0.1, high: 0.4 }),
+          a: tensor([
+            [-1, -2],
+            [-0.5, -1.5],
+          ]),
+          b: n(80, [1, 3, 2]),
+          c: n(81, [1, 3, 2]),
+          h0,
+        }).y,
+      [n(82, [1, 3, 2]), n(83, [1, 2, 2])],
+    )
   })
 })
