@@ -3246,6 +3246,9 @@ modAL for active learning, diffprivlib and opacus for privacy
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
   cross-fitted calibrated classifiers; for regression, the probability integral transform (`pitValues`, `pitHistogram`)
   and Kuleshov's quantile recalibration (`quantileCalibration`, `quantileCalibrationCurve`, `recalibratedQuantiles`).
+- `pava.ts`, `pava-options.ts`: pool adjacent violators as `pavaAlgorithm` (a stack of blocks, one pool or push per step;
+  logs `pava/blocks`, `means`, `merge`, `violations`, `error`; the state serialises) with the direction of the fit as the
+  `isotonicDirections` table; `poolAdjacentViolators` and the isotonic calibrator are that run.
 - `neighbours.ts`: `neighbourIndex` (exact k-nearest and radius search under any metric of `distances`, brute force or a KD
   or ball tree), the k-nearest classifier and regressor and their radius twins (uniform or distance weights, an outlier
   label), and the nearest centroid with Tibshirani's shrinkage and `shrunkenCentroidPath`; estimators on the iterative
