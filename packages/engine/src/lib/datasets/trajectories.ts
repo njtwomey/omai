@@ -6,10 +6,9 @@
 
 import { softmaxOf } from '../base/index.ts'
 import { type DatasetGenerator, type TrajectoryData, trajectories } from '../data/index.ts'
-import { solve } from '../numerics/linalg/index.ts'
 import { categorical, dirichlet, foldIn, type Key, normal, uniform } from '../random/index.ts'
+import { policyEvaluation as rlPolicyEvaluation, tabularMdp } from '../rl/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
-import { tensor, toFlat } from '../tensor/index.ts'
 import { matrix, stamp } from './_util.ts'
 
 const logistic = (z: number): number => 1 / (1 + Math.exp(-z))
@@ -137,7 +136,8 @@ export interface TabularMdp {
 }
 
 /**
- * The exact value of a stochastic policy in a tabular MDP: solve `(I - gamma P_pi) V = R_pi`.
+ * The exact value of a stochastic policy in a tabular MDP: solve `(I - gamma P_pi) V = R_pi`. It is `policyEvaluation`
+ * of `rl` on this table, with the value under the start distribution added.
  *
  * @param mdp - The MDP.
  * @param policy - `policy[s][a]`, the probability of action `a` in state `s`.
@@ -153,20 +153,11 @@ export function policyEvaluation(
   mdp: TabularMdp,
   policy: readonly (readonly number[])[],
 ): { readonly values: readonly number[]; readonly value: number } {
-  const s = mdp.states
-  const a = Array.from({ length: s }, (_, i) =>
-    Array.from({ length: s }, (_, j) => {
-      let p = 0
-      for (let act = 0; act < mdp.actions; act++) p += (policy[i]?.[act] ?? 0) * (mdp.transitions[i]?.[act]?.[j] ?? 0)
-      return (i === j ? 1 : 0) - mdp.gamma * p
-    }),
+  // rl's exact policy evaluation on the same table (no terminal states: the rows already sum to one).
+  const values = rlPolicyEvaluation(
+    tabularMdp({ transitions: mdp.transitions, rewards: mdp.rewards, initial: mdp.start, gamma: mdp.gamma }),
+    policy,
   )
-  const r = Array.from({ length: s }, (_, i) => {
-    let v = 0
-    for (let act = 0; act < mdp.actions; act++) v += (policy[i]?.[act] ?? 0) * (mdp.rewards[i]?.[act] ?? 0)
-    return v
-  })
-  const values = toFlat(solve(tensor(a), tensor(r)))
   return { values, value: values.reduce((t, v, i) => t + v * (mdp.start[i] ?? 0), 0) }
 }
 
