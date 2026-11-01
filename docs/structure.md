@@ -4264,6 +4264,15 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   warm-up-estimated target) and `pageHinkleyAlgorithm`/`pageHinkley` (cumulative deviation from the running mean above its
   minimum, with forgetting and direction), one observation per step, recording their statistics and alarms. Bayesian
   online changepoint detection stays in `dynamics/filtering/changepoint.ts` and is not repeated.
+- `changepoint-scoring.ts`: scoring detected changepoints against true ones: `matchChangepoints` (a maximum one-to-one
+  matching within a margin), `changepointPrecisionRecall` (counts, precision, recall, F1), `changepointHausdorff` (with
+  the series ends added when the length is given) and `changepointCovering` (the covering of the true segmentation by
+  the detected one, van den Burg and Williams). No fixtures: ruptures' variants differ at the edges (its recall counts a
+  true changepoint once per detection nearby), so the tests are hand-worked cases and brute-force properties.
+- `changepoint-detectors.ts`: `changepointDetectors`, an option table of five detectors behind one function type (series
+  in, changepoint indices out): `bocpd` (with the segment-model and hazard tables), `pelt`, `binseg`, `cusum` and
+  `page-hinkley`, each with its own knobs as a `union` space and properties (online, locates the change or reports the
+  alarm time), for overlaying their answers with the truth.
 - `bocpd-detector.ts`: `bocpdDetector`, BOCPD as an estimator on the iterative base (hyperparameters `model` and `hazard`
   from the option tables of `dynamics/filtering`, `threshold` for pruning and `changeThreshold` for detection; `fit`
   takes `changepointData` of a number array or a `TimeSeriesData`, with the true changepoints read from its segments or
