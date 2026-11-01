@@ -1144,8 +1144,12 @@ in it (`checkPrimitive`).
 - `structures.ts`: `BinaryHeap` (a class over `base/heap.ts`), `UnionFind` (rank and path halving), `IndexedQueue`
   (indexed min-priority queue with decrease-key).
 - `traversal.ts`: `bfs`/`bfsAlgorithm` (layer per step, several sources, direction, depth limit), `dfs`/`dfsAlgorithm`
-  (tree, back, forward and cross edges, discovery and finish times), `topologicalSort` (lexicographic Kahn),
+  (tree, back, forward and cross edges, discovery and finish times), `topologicalSort`/`topologicalSortAlgorithm` (Kahn,
+  ready rules `readyRules`, `orderContract`),
   `isDag`, `findCycle`, `bipartiteColouring`, `isBipartite`, `kHopNeighbourhood`.
+- `colouring-algorithms.ts`: the steppable algorithms behind `colouring.ts`: `greedyColouringAlgorithm` (one node per
+  step, strategies `colouringStrategies`), `maximalIndependentSetAlgorithm` (`independentSetRules`), `bronKerboschAlgorithm`
+  (one call per step, `pivotRules`) and their contracts (`colour/...`, `mis/...`, `clique/...`).
 - `components.ts`: `connectedComponents` (weak or strong), `isConnected`, `stronglyConnectedComponents` (Tarjan,
   Kosaraju), `isStronglyConnected`, `condensation`, `articulationPoints`, `bridges`, `biconnectedComponents`.
 - `component-algorithms.ts`: the depth-first searches behind `components.ts`: `tarjanAlgorithm`, `kosarajuAlgorithm`

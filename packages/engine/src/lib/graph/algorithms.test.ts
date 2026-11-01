@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
+import { key as makeKey } from '../random/index.ts'
 import { defaults } from '../space/index.ts'
 import { type Algorithm, policies, recorder, runAlgorithm } from '../trace/index.ts'
+import { greedyColouring, isProperColouring, maximalCliques, maximalIndependentSet } from './colouring.ts'
+import {
+  bronKerboschAlgorithm,
+  type ColouringStrategy,
+  cliqueContract,
+  colouringContract,
+  colouringStrategies,
+  greedyColouringAlgorithm,
+  independentSetRules,
+  maximalIndependentSetAlgorithm,
+  pivotRules,
+} from './colouring-algorithms.ts'
 import {
   biconnectivityAlgorithm,
   componentMethods,
@@ -10,7 +23,7 @@ import {
 import { articulationPoints, biconnectedComponents, bridges, stronglyConnectedComponents } from './components.ts'
 import { flowContract, maxFlowAlgorithm, maxFlowMethods, minCostFlowAlgorithm } from './flow-algorithms.ts'
 import { bipartiteMatching, maxFlow, minCostFlow, minCut } from './flows.ts'
-import { barbellGraph, completeGraph, gridGraph } from './generators.ts'
+import { barbellGraph, completeGraph, cycleGraph, gridGraph, petersenGraph, starGraph } from './generators.ts'
 import { digraph, graph } from './graph.ts'
 import { hopcroftKarpAlgorithm, matchingContract } from './hopcroft-karp.ts'
 import {
@@ -20,6 +33,7 @@ import {
   spanningTreeContract,
   spanningTreeMethods,
 } from './spanning-trees.ts'
+import { readyRules, topologicalSort, topologicalSortAlgorithm } from './traversal.ts'
 import { minimumSpanningTree } from './trees.ts'
 
 const viaJson = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
@@ -391,5 +405,183 @@ describe('biconnectivityAlgorithm', () => {
 
   it('rejects a directed graph', () => {
     expect(() => biconnectivityAlgorithm(digraph([[0, 1]]))).toThrow(/undirected/)
+  })
+})
+
+describe('topologicalSortAlgorithm', () => {
+  const dag = digraph([
+    [5, 2],
+    [5, 0],
+    [4, 0],
+    [4, 1],
+    [2, 3],
+    [3, 1],
+  ])
+
+  it('places one ready node per step and gives the order topologicalSort gives', () => {
+    const run = runAlgorithm(topologicalSortAlgorithm(dag), { maxSteps: 20 })
+    expect(run.status).toBe('converged')
+    expect(run.steps).toBe(6)
+    expect(run.state.order).toEqual([4, 5, 0, 2, 3, 1])
+    expect(topologicalSort(dag)).toEqual([4, 5, 0, 2, 3, 1])
+  })
+
+  it('every rule gives a valid order, and the largest rule differs from the smallest', () => {
+    for (const rule of ['smallest', 'largest', 'fifo'] as const) {
+      const { order } = runAlgorithm(topologicalSortAlgorithm(dag, { rule }), { maxSteps: 20 }).state
+      const at = new Map(order.map((v, i) => [v, i]))
+      expect(order).toHaveLength(6)
+      for (const e of dag.edges) expect(at.get(e.source) ?? 99).toBeLessThan(at.get(e.target) ?? -1)
+    }
+    const largest = runAlgorithm(topologicalSortAlgorithm(dag, { rule: 'largest' }), { maxSteps: 20 }).state.order
+    expect(largest[0]).toBe(5)
+    expect(readyRules.names).toEqual(['smallest', 'largest', 'fifo'])
+  })
+
+  it('logs the ready set and the indegrees, and ends diverged on a cycle', () => {
+    const l = logged(topologicalSortAlgorithm(dag))
+    expect(l.get('order/node')).toEqual([4, 5, 0, 2, 3, 1])
+    expect(l.get('order/ready')?.[0]).toEqual([5])
+    expect((l.get('order/indegree') ?? []).at(-1)).toEqual([0, 0, 0, 0, 0, 0])
+    const cyc = digraph([
+      [0, 1],
+      [1, 2],
+      [2, 1],
+    ])
+    expect(runAlgorithm(topologicalSortAlgorithm(cyc), { maxSteps: 10 }).status).toBe('diverged')
+    expect(() => topologicalSort(cyc)).toThrow(/cycle/)
+  })
+
+  it('resumes from a JSON checkpoint', () => {
+    for (const rule of ['smallest', 'fifo'] as const) {
+      expectResumes(topologicalSortAlgorithm(dag, { rule }), 3, (s) => ({
+        o: s.order,
+        r: s.ready,
+        i: Array.from(s.indegree),
+      }))
+    }
+  })
+})
+
+describe('greedyColouringAlgorithm', () => {
+  const petersen = petersenGraph()
+
+  it('colours one node per step, properly, and matches greedyColouring for every strategy', () => {
+    for (const strategy of colouringStrategies.names as ColouringStrategy[]) {
+      const key = makeKey(3)
+      const alg = greedyColouringAlgorithm(petersen, { strategy, key })
+      const run = runAlgorithm(alg, { maxSteps: 20 })
+      expect(run.steps).toBe(10)
+      expect(isProperColouring(petersen, run.state.colours)).toBe(true)
+      expect(Array.from(run.state.colours)).toEqual(greedyColouring(petersen, { strategy, key }))
+    }
+  })
+
+  it('DSATUR picks the most saturated node and logs saturation', () => {
+    const l = logged(greedyColouringAlgorithm(cycleGraph(5), { strategy: 'dsatur' }))
+    expect(l.get('colour/assign')).toEqual([0, 1, 0, 1, 2])
+    const sat = l.get('colour/saturation') as number[][]
+    expect(sat[0]?.every((x) => x === 0 || x === 1)).toBe(true)
+    expect((l.get('colour/count') ?? []).at(-1)).toBe(3)
+    expect(Object.keys(colouringContract)).toContain('colour/colours')
+  })
+
+  it('resumes from a JSON checkpoint, for a fixed order and for DSATUR', () => {
+    for (const strategy of ['largest-first', 'dsatur', 'independent-set'] as const) {
+      expectResumes(greedyColouringAlgorithm(petersen, { strategy }), 4, (s) => ({
+        c: Array.from(s.colours),
+        p: s.position,
+        s: s.saturation,
+      }))
+    }
+  })
+
+  it('random-sequential needs a key', () => {
+    expect(() => greedyColouringAlgorithm(petersen, { strategy: 'random-sequential' })).toThrow(/needs a key/)
+  })
+})
+
+describe('maximalIndependentSetAlgorithm', () => {
+  it('adds one node per step to a set that is independent and maximal', () => {
+    const g = petersenGraph()
+    for (const key of [undefined, makeKey(5)]) {
+      const run = runAlgorithm(maximalIndependentSetAlgorithm(g, key === undefined ? {} : { key }), { maxSteps: 20 })
+      const set = new Set(run.state.chosen)
+      expect(run.steps).toBe(set.size)
+      for (const e of g.edges) expect(set.has(e.source) && set.has(e.target)).toBe(false)
+      for (let v = 0; v < g.n; v++) {
+        if (!set.has(v))
+          expect(
+            g.edges.some((e) => (e.source === v && set.has(e.target)) || (e.target === v && set.has(e.source))),
+          ).toBe(true)
+      }
+      expect([...run.state.chosen]).toEqual(maximalIndependentSet(g, key === undefined ? {} : { key }))
+    }
+  })
+
+  it('keeps forced nodes, logs the shrinking free set, and resumes', () => {
+    const g = starGraph(4)
+    const l = logged(maximalIndependentSetAlgorithm(g, { nodes: [0] }))
+    expect(l.get('mis/node') ?? []).toEqual([])
+    const l2 = logged(maximalIndependentSetAlgorithm(g))
+    expect(l2.get('mis/size')).toEqual([1, 2, 3, 4])
+    expect(l2.get('mis/free')?.[0]).toEqual([2, 3, 4])
+    expectResumes(maximalIndependentSetAlgorithm(petersenGraph(), { key: makeKey(1) }), 2, (s) => ({
+      c: s.chosen,
+      f: s.free,
+      k: s.cursor,
+    }))
+    expect(() => maximalIndependentSetAlgorithm(g, { nodes: [0, 1] })).toThrow(/not independent/)
+    expect(independentSetRules.names).toEqual(['min-degree', 'random'])
+  })
+})
+
+describe('bronKerboschAlgorithm', () => {
+  const g = graph([
+    [0, 1],
+    [1, 2],
+    [2, 0],
+    [2, 3],
+    [3, 4],
+    [4, 2],
+    [4, 5],
+  ])
+
+  it('finds the maximal cliques of maximalCliques with every pivot rule', () => {
+    const want = maximalCliques(g)
+    expect(want).toEqual([
+      [0, 1, 2],
+      [2, 3, 4],
+      [4, 5],
+    ])
+    for (const pivot of ['tomita', 'p-only', 'none'] as const) {
+      const run = runAlgorithm(bronKerboschAlgorithm(g, { pivot }), { maxSteps: 500 })
+      expect(run.status).toBe('converged')
+      expect(
+        run.state.cliques.map((c) => [...c]).sort((a, b) => (a[0] ?? 0) - (b[0] ?? 0) || a.length - b.length),
+      ).toEqual(want)
+    }
+  })
+
+  it('without a pivot makes at least as many calls, and logs R, P and X of each call', () => {
+    const calls = (pivot: 'tomita' | 'none'): number =>
+      runAlgorithm(bronKerboschAlgorithm(g, { pivot }), { maxSteps: 500 }).steps
+    expect(calls('none')).toBeGreaterThanOrEqual(calls('tomita'))
+    const l = logged(bronKerboschAlgorithm(g))
+    const r = l.get('clique/R') as number[][]
+    expect(r[0]).toHaveLength(1)
+    expect((l.get('clique/found') ?? []).at(-1)).toBe(3)
+    expect(l.get('clique/P')?.length).toBe(r.length)
+    expect(l.get('clique/X')?.length).toBe(r.length)
+    expect(Object.keys(cliqueContract)).toContain('clique/pivot')
+    expect(pivotRules.names).toEqual(['tomita', 'p-only', 'none'])
+  })
+
+  it('resumes from a JSON checkpoint at several cut points', () => {
+    for (const cut of [1, 3, 6]) expectResumes(bronKerboschAlgorithm(g), cut, (s) => ({ k: s.cliques, s: s.stack }))
+  })
+
+  it('rejects a directed graph', () => {
+    expect(() => bronKerboschAlgorithm(digraph([[0, 1]]))).toThrow(/undirected/)
   })
 })

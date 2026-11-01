@@ -5,7 +5,18 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import { dict, type OptionTable, optionTable } from '../space/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  tensor,
+} from '../trace/index.ts'
+import { knobOption } from './_options.ts'
+import { codec } from './_run.ts'
 import type { Adjacency, Graph, GraphRunOptions, NodeId } from './graph.ts'
 import { nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
@@ -316,6 +327,159 @@ export function dfs(g: Graph, source?: NodeId, options: GraphRunOptions = {}): D
   }
 }
 
+/** The paths topological sorting logs, as a type. */
+export type OrderPath = 'order/node' | 'order/ready' | 'order/indegree'
+
+/**
+ * What topological sorting logs, by path: the node ordered at this step, the nodes ready to be ordered (in the order
+ * they will be taken) and the number of unordered predecessors of every node.
+ */
+export const orderContract: Contract<unknown, OrderPath> = defineContract({
+  'order/node': scalar({ description: 'the node placed next in the order at this step' }),
+  'order/ready': tensor({
+    role: 'state',
+    shape: ['ready'],
+    description: 'the nodes with no unordered predecessor, in the order they will be taken',
+  }),
+  'order/indegree': tensor({
+    role: 'state',
+    shape: ['nodes'],
+    description: 'the number of unordered predecessors of each node',
+  }),
+})
+
+/** How a node waiting to be ordered is prioritised: the key by which the ready queue pops the least first. */
+export type ReadyPriority = (node: number, arrival: number) => number
+
+/** What a ready-queue rule can do, for validity rules and selectors. */
+export interface ReadyProperties {
+  /** Whether the order is unique for a graph (it depends only on node indices, not on arrival). */
+  readonly canonical: boolean
+}
+
+/**
+ * The ready-queue rules of topological sorting as one slot: `smallest` (the smallest ready node first, so the order is
+ * unique: NetworkX lexicographical_topological_sort), `largest` (the largest first) and `fifo` (in the order nodes
+ * became ready, which is Kahn's original queue).
+ *
+ * @concept topological-sort
+ * @example
+ * ```ts
+ * import { readyRules } from 'mdml-engine/graph'
+ * readyRules.names // => ['smallest', 'largest', 'fifo']
+ * ```
+ */
+export const readyRules: OptionTable<ReadyPriority, ReadyProperties> = optionTable(
+  {
+    smallest: knobOption<ReadyPriority, ReadyProperties>(
+      'the smallest ready node first (a unique order)',
+      { canonical: true },
+      dict({}),
+      () => (node) => node,
+    ),
+    largest: knobOption<ReadyPriority, ReadyProperties>(
+      'the largest ready node first (a unique order)',
+      { canonical: true },
+      dict({}),
+      () => (node) => -node,
+    ),
+    fifo: knobOption<ReadyPriority, ReadyProperties>(
+      'in the order the nodes became ready (Kahn)',
+      { canonical: false },
+      dict({}),
+      () => (_node, arrival) => arrival,
+    ),
+  },
+  {
+    default: 'smallest',
+    label: 'ready rule',
+    description: 'Which of the nodes with no unordered predecessor is placed next.',
+  },
+)
+
+/** The state of {@link topologicalSortAlgorithm}. */
+export interface TopologicalState {
+  /** Unordered predecessors of each node. */
+  readonly indegree: Int32Array
+  /** The ready nodes with their priorities, in the order they will be taken. */
+  readonly ready: readonly (readonly [number, number])[]
+  /** The nodes placed so far. */
+  readonly order: readonly number[]
+  /** How many nodes have become ready (the arrival stamp of the next one). */
+  readonly arrivals: number
+}
+
+/**
+ * Kahn's topological sort as a steppable algorithm: each step places one ready node (one with no unordered
+ * predecessor) and releases its successors. When nothing is ready while nodes remain, the graph has a cycle and the
+ * run ends `diverged`.
+ *
+ * @param g - A directed graph.
+ * @param options - The `rule` for choosing among ready nodes (default `'smallest'`, see {@link readyRules}).
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` when the graph is undirected.
+ * @concept topological-sort
+ * @example
+ * ```ts
+ * import { digraph, topologicalSortAlgorithm } from 'mdml-engine/graph'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(topologicalSortAlgorithm(digraph([[2, 0], [1, 0], [2, 1]])), { maxSteps: 10 })
+ * [run.status, run.state.order] // => ['converged', [2, 1, 0]]
+ * ```
+ */
+export function topologicalSortAlgorithm(
+  g: Graph,
+  options: { readonly rule?: 'smallest' | 'largest' | 'fifo' } = {},
+): Algorithm<TopologicalState, OrderPath> {
+  if (!g.directed) throw new MdmlError('value', 'topologicalSort: the graph is undirected')
+  const rule = options.rule ?? 'smallest'
+  const priority = readyRules.make({ kind: rule })
+  const queueOf = (ready: readonly (readonly [number, number])[]): IndexedQueue => {
+    const q = new IndexedQueue(g.n)
+    for (const [v, p] of ready) q.push(v, p)
+    return q
+  }
+  const readyOf = (q: IndexedQueue): [number, number][] => {
+    const nodes: [number, number][] = []
+    for (let v = 0; v < g.n; v++) if (q.has(v)) nodes.push([v, q.priority(v) ?? 0])
+    return nodes.sort((a, b) => a[1] - b[1] || a[0] - b[0])
+  }
+  return {
+    name: 'graph/topological-sort',
+    config: { nodes: g.n, rule },
+    init: () => {
+      const indegree = Int32Array.from({ length: g.n }, (_, v) => (g.in.indptr[v + 1] ?? 0) - (g.in.indptr[v] ?? 0))
+      const ready: [number, number][] = []
+      let arrivals = 0
+      for (let v = 0; v < g.n; v++) if (indegree[v] === 0) ready.push([v, priority(v, arrivals++)])
+      return { indegree, ready: ready.sort((a, b) => a[1] - b[1] || a[0] - b[0]), order: [], arrivals }
+    },
+    step: (s, ctx) => {
+      const q = queueOf(s.ready)
+      const u = q.pop()
+      if (u === undefined) return s
+      const indegree = Int32Array.from(s.indegree)
+      let arrivals = s.arrivals
+      for (let k = g.out.indptr[u] ?? 0; k < (g.out.indptr[u + 1] ?? 0); k++) {
+        const v = g.out.indices[k] ?? 0
+        indegree[v] = (indegree[v] ?? 0) - 1
+        if (indegree[v] === 0) q.push(v, priority(v, arrivals++))
+      }
+      const ready = readyOf(q)
+      if (ctx.wants('order/node')) ctx.log('order/node', u)
+      if (ctx.wants('order/ready'))
+        ctx.log(
+          'order/ready',
+          Int32Array.from(ready, (r) => r[0]),
+        )
+      if (ctx.wants('order/indegree')) ctx.log('order/indegree', Int32Array.from(indegree))
+      return { indegree, ready, order: [...s.order, u], arrivals }
+    },
+    done: (s) => (s.ready.length > 0 ? undefined : s.order.length < g.n ? 'diverged' : 'converged'),
+    ...codec<TopologicalState>(),
+  }
+}
+
 /**
  * A topological order of a directed acyclic graph (NetworkX lexicographical_topological_sort): Kahn's algorithm,
  * always taking the smallest available node, so the order is unique.
@@ -331,21 +495,9 @@ export function dfs(g: Graph, source?: NodeId, options: GraphRunOptions = {}): D
  * ```
  */
 export function topologicalSort(g: Graph): number[] {
-  if (!g.directed) throw new MdmlError('value', 'topologicalSort: the graph is undirected')
-  const indegree = Int32Array.from({ length: g.n }, (_, v) => (g.in.indptr[v + 1] ?? 0) - (g.in.indptr[v] ?? 0))
-  const ready = new IndexedQueue(g.n)
-  for (let v = 0; v < g.n; v++) if (indegree[v] === 0) ready.push(v, v)
-  const order: number[] = []
-  for (let u = ready.pop(); u !== undefined; u = ready.pop()) {
-    order.push(u)
-    for (let k = g.out.indptr[u] ?? 0; k < (g.out.indptr[u + 1] ?? 0); k++) {
-      const v = g.out.indices[k] ?? 0
-      indegree[v] = (indegree[v] ?? 0) - 1
-      if (indegree[v] === 0) ready.push(v, v)
-    }
-  }
+  const { order } = runAlgorithm(topologicalSortAlgorithm(g), { maxSteps: g.n + 1 }).state
   if (order.length < g.n) throw new MdmlError('value', 'topologicalSort: the graph has a cycle')
-  return order
+  return [...order]
 }
 
 /**
