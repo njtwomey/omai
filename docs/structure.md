@@ -3254,7 +3254,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   `linearRecurrence`, selective scan (Mamba, with gating), delta rule (DeltaNet), LRU (`lruInit`, `lruEigenvalues`,
   `lru`, `lruScan` with a resumable state), `parallelScan` and `parallelScanComplex` (associative scans of linear
   recurrences), `ssd` (structured state-space duality: recurrent, quadratic and chunked forms of the scalar-decay
-  selective SSM), `channelCausalConvolution` (one kernel per channel). The complex diagonal S4D is a layer in
+  selective SSM), `channelCausalConvolution` (one kernel per channel).
+- `functional/linear-recurrent.ts`: `decayedLinearAttention` (state with no, per-head or per-key-dimension decay;
+  recurrent, parallel and chunked forms) and `wkv` (the RWKV recurrence, with a stable running shift). The complex diagonal S4D is a layer in
   `blocks/state-space.ts`.
 - `functional/graph.ts`: `edgeList`, `aggregate` and `messagePassing` (sum, mean, max), edge softmax, `addSelfLoops`,
   `gcnNorm`, GCN, GAT, GraphSAGE and GIN convolutions, graph pooling (`globalPool` by batch, `topKPool`).
@@ -3354,6 +3356,14 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `sequence-model.ts`: `MixerBlock` (pre-norm residual block around any `SequenceMixer`, optional gated
     feed-forward) and `SequenceModel` (input layer, a stack of mixer blocks, norm, head; tokens or features in,
     per-position logits or a pooled classification or regression out; `run` threads the per-layer states).
+  - `linear-attention.ts`: matrix-state mixers over `decayedLinearAttention`: `LinearAttentionMixer` (feature maps),
+    `RetNetMixer` (retention: parallel, recurrent and chunkwise forms), `GatedLinearAttentionMixer`, `DeltaNetMixer`
+    (the delta rule).
+  - `recurrent-mixers.ts`: `RWKVTimeMix`, `RWKVChannelMix` and `RWKVMixer`, `MinGRU`, `MinLSTM` (parallel scans),
+    `Hyena` (implicit long convolutions, history as state).
+  - `mixers.ts`: `AttentionMixer` (softmax attention with a KV cache, the baseline) and `sequenceMixers`, the option
+    table of every mixer (`mamba`, `mamba2`, `s4d`, `s4`, `s5`, `lru`, `linear-attention`, `retnet`, `gla`, `deltanet`,
+    `rwkv`, `mingru`, `minlstm`, `hyena`, `attention`) with its knobs, for the `mixer` slot of a `SequenceModel`.
   - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
     `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
   - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),
