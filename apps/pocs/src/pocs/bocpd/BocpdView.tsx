@@ -1,7 +1,7 @@
 import { metricSeries, tensorSeries } from 'mdml-engine/trace'
 import { cartesian, heatmap, lines } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
-import { Chart, type LiveSession, useColourMode, useProbe, useRun } from 'mdml-render/react'
+import { Chart, type LiveSession, useColourMode, useProbe, useRun, useScrubClick } from 'mdml-render/react'
 import { type ReactNode, useMemo } from 'react'
 
 const LEFT = figure({ width: 900, height: 300 })
@@ -19,6 +19,8 @@ export interface BocpdViewProps {
   readonly at: number | null
   readonly y: readonly number[]
   readonly truth: readonly number[]
+  /** Moves the viewed step: a click on the series or on the run-length plot goes to that step. */
+  readonly onScrub: (t: number | null) => void
 }
 
 const gaussian = (v: number, mean: number, sd: number): number =>
@@ -30,11 +32,13 @@ const gaussian = (v: number, mean: number, sd: number): number =>
  * beside that. Everything is read from the session's tape at the viewed step, so scrubbing moves all four together.
  */
 export function BocpdView(props: BocpdViewProps): ReactNode {
-  const { live, y, truth } = props
+  const { live, y, truth, onScrub } = props
   const mode = useColourMode()
   const run = useRun(live)
   const n = y.length
   const t = Math.max(0, Math.min(props.at ?? live.head, live.head, n - 1))
+  const steps = useMemo(() => Array.from({ length: live.head + 1 }, (_, i) => i), [live.head])
+  const seek = useScrubClick(steps, live.head, onScrub)
   const detections = useProbe(live, t, 'model/changepoints')
   const rows = useMemo(() => tensorSeries(run, 'bocpd/run-length'), [run])
   const map = useMemo(() => metricSeries(run, 'bocpd/map-run-length'), [run])
@@ -107,7 +111,10 @@ export function BocpdView(props: BocpdViewProps): ReactNode {
       if (e.step > t || e.values === undefined) continue
       for (let r = 0; r < Math.min(runMax, e.values.length); r++) {
         const row = z[r]
-        if (row !== undefined) row[e.step] = Math.max(0, 1 + Math.log10(Math.max(e.values[r] ?? 0, 1e-12)) / 6)
+        const p = e.values[r] ?? 0
+        // Below the floor a cell is left empty (transparent), not painted the background colour, which would hide the
+        // grid and marks beneath it.
+        if (row !== undefined && p >= 1e-6) row[e.step] = 1 + Math.log10(p) / 6
       }
     }
     const x = y.map((_, i) => i)
@@ -172,9 +179,9 @@ export function BocpdView(props: BocpdViewProps): ReactNode {
 
   return (
     <div className="grid grid-cols-1 gap-x-4 gap-y-2 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-      <Chart option={series} figure={LEFT} />
+      <Chart option={series} figure={LEFT} onInit={seek} />
       <Chart option={predictive} figure={RIGHT} />
-      <Chart option={posterior} figure={LEFT} />
+      <Chart option={posterior} figure={LEFT} onInit={seek} />
       <Chart option={marginal} figure={RIGHT} />
     </div>
   )

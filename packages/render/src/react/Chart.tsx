@@ -3,9 +3,11 @@
  * disposes on unmount, forwards events, connects chart groups and answers colour-bar selections.
  */
 
+import type { SeriesOption } from 'echarts'
 import type { EChartsCoreOption, ECharts as EChartsInstance } from 'echarts/core'
 import type { Pixels } from 'mdml-engine/scene'
 import { type CSSProperties, type ReactElement, useEffect, useRef, useState } from 'react'
+import { reencodeImages } from '../charts/matrices.ts'
 import { colourSelection, type ImageEncoder } from '../charts/selection.ts'
 import type { Figure } from '../figure/figure.ts'
 import { pngDataUrl } from '../svg/png.ts'
@@ -18,16 +20,28 @@ import { useColourMode } from './theme.tsx'
 /** An ECharts event handler: the event's parameters and the chart instance. */
 export type ChartEventHandler = (params: unknown, chart: EChartsInstance) => void
 
-// A repainted image as a canvas (drawn at once, where a data URL would be decoded first and flicker while dragging).
+// An image as a canvas (drawn at once, where a data URL would be decoded first and flicker: while dragging a colour bar
+// handle, and at every step of a chart that updates live). One canvas per pixels object, so a replayed option reuses it.
+const canvases = new WeakMap<Pixels, unknown>()
 function canvasImage(pixels: Pixels): unknown {
   if (typeof document === 'undefined') return pngDataUrl(pixels)
+  const known = canvases.get(pixels)
+  if (known !== undefined) return known
   const canvas = document.createElement('canvas')
   canvas.width = pixels.width
   canvas.height = pixels.height
   const ctx = canvas.getContext('2d')
   if (ctx === null) return pngDataUrl(pixels)
   ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.rgba), pixels.width, pixels.height), 0, 0)
+  canvases.set(pixels, canvas)
   return canvas
+}
+
+// The option as the canvas renderer draws it: image series painted from canvases (see reencodeImages).
+function forRenderer(option: EChartsCoreOption, renderer: 'canvas' | 'svg'): EChartsCoreOption {
+  const series = (option as { series?: unknown }).series
+  if (renderer !== 'canvas' || !Array.isArray(series)) return option
+  return { ...option, series: reencodeImages(series as SeriesOption[], canvasImage) } as EChartsCoreOption
 }
 
 /** Props of {@link Chart}. */
@@ -89,7 +103,7 @@ export function Chart(props: ChartProps): ReactElement {
       renderer,
       ...(ratio === undefined ? {} : { devicePixelRatio: (globalThis.devicePixelRatio || 1) * ratio }),
     })
-    instance.setOption(optionRef.current, { notMerge: true })
+    instance.setOption(forRenderer(optionRef.current, renderer), { notMerge: true })
     onInitRef.current?.(instance)
     setChart(instance)
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => instance.resize())
@@ -102,8 +116,8 @@ export function Chart(props: ChartProps): ReactElement {
   }, [mode, renderer, ratio])
 
   useEffect(() => {
-    chart?.setOption(option, { notMerge: !merge, lazyUpdate: true })
-  }, [chart, option, merge])
+    chart?.setOption(forRenderer(option, renderer), { notMerge: !merge, lazyUpdate: true })
+  }, [chart, option, merge, renderer])
 
   // Colour bar selections: layers ECharts cannot recolour (images, baked cells) are repainted with the values outside
   // the selection dimmed, at most once per animation frame while a handle is dragged.

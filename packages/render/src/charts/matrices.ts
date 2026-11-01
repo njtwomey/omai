@@ -111,16 +111,55 @@ export function imageSeries(
   y: Range,
   options: { readonly name?: string; readonly opacity?: number; readonly z?: number } = {},
 ): SeriesOption {
+  const opacity = options.opacity ?? 1
   return {
     type: 'custom',
     name: options.name ?? '__image',
     data: [[x[0], y[0], x[1], y[1]]],
-    renderItem: imageRenderer(pngDataUrl(pixels), x, y, options.opacity ?? 1),
+    // A PNG data URL draws anywhere (SVG, export, server rendering) but a browser decodes it before it can paint, so a
+    // chart that updates often shows blank frames; `reencodeImages` swaps the pixels in for a canvas, which paints at once.
+    renderItem: imageRenderer(pngDataUrl(pixels), x, y, opacity),
+    mdmlImage: { pixels, x, y, opacity },
     clip: true,
     silent: true,
     z: options.z ?? 1,
     tooltip: { show: false },
   } as unknown as SeriesOption
+}
+
+/** What an image series keeps of its pixels, so its encoding can be chosen when the chart is drawn. */
+interface ImageSeriesSource {
+  readonly pixels: Pixels
+  readonly x: Range
+  readonly y: Range
+  readonly opacity: number
+}
+
+/**
+ * The series of a chart option with every image series (see {@link imageSeries}) drawn through `encode`: a browser's
+ * canvas element instead of a data URL, so an image that changes at every step of a live chart paints in the frame that
+ * asks for it rather than after its decode (which, at a step every few milliseconds, is never). The other series are
+ * returned as they are.
+ *
+ * @param series - The `series` of an ECharts option.
+ * @param encode - Turns pixels into what an image element draws.
+ * @returns The series, with the images re-encoded.
+ * @example
+ * ```ts
+ * import { heatmap, reencodeImages } from 'mdml-render/charts'
+ * const layer = heatmap([[0, 1], [1, 0]], { x: [0, 1], y: [0, 1] })
+ * reencodeImages(layer.series, () => 'canvas').length // => layer.series.length
+ * ```
+ */
+export function reencodeImages(series: readonly SeriesOption[], encode: ImageEncoder): SeriesOption[] {
+  return series.map((s) => {
+    const source = (s as { mdmlImage?: ImageSeriesSource }).mdmlImage
+    if (source === undefined) return s
+    return {
+      ...s,
+      renderItem: imageRenderer(encode(source.pixels), source.x, source.y, source.opacity),
+    } as unknown as SeriesOption
+  })
 }
 
 // The renderItem of an image series: the image (a data URL, or a canvas) stretched over a data rectangle.

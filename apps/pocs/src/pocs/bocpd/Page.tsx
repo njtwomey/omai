@@ -123,7 +123,7 @@ function Page(props: {
   )
   return (
     <div className="flex flex-col gap-4">
-      <BocpdView live={live} at={at} y={y} truth={truth} />
+      <BocpdView live={live} at={at} y={y} truth={truth} onScrub={setAt} />
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
       <Fold title="Configuration: the data, the kind of shift, the model and the hazard">{controls}</Fold>
       <Fold title="Compare with other detectors">

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { resample } from './_resample.ts'
-import { confusionMatrixChart, correlationChart, heatmap, heatmapChart, image, matrix, rampStops } from './matrices.ts'
+import {
+  confusionMatrixChart,
+  correlationChart,
+  heatmap,
+  heatmapChart,
+  image,
+  matrix,
+  rampStops,
+  reencodeImages,
+} from './matrices.ts'
 
 // biome-ignore lint/suspicious/noExplicitAny: tests inspect untyped ECharts option trees
 type Opt = any
@@ -119,5 +128,51 @@ describe('matrix', () => {
         ),
       ).visualMap[0].max,
     ).toBe(1)
+  })
+})
+
+describe('reencodeImages', () => {
+  it('draws image series through the encoder, with the same geometry, and leaves the other series alone', () => {
+    const layer = heatmap(
+      [
+        [0, 1],
+        [1, 0],
+      ],
+      { x: [0, 1], y: [0, 1], colourBar: false },
+    )
+    const plain = { type: 'line', data: [] } as never
+    const [first] = layer.series
+    const seen: unknown[] = []
+    const out = reencodeImages([first as never, plain], (pixels) => {
+      seen.push(pixels)
+      return 'the-encoded-image'
+    })
+    expect(out).toHaveLength(2)
+    expect(out[1]).toBe(plain)
+    expect(seen).toHaveLength(1)
+    const item = opt(out[0]).renderItem({}, api)
+    expect(item.style.image).toBe('the-encoded-image')
+    // The same rectangle as the data-URL version.
+    const original = opt(first).renderItem({}, api)
+    expect(item.style.width).toBe(original.style.width)
+    expect(item.style.height).toBe(original.style.height)
+    expect(original.style.image).toMatch(/^data:image\/png;base64,/)
+  })
+
+  it('survives the chart builders: the image series of a finished chart can still be re-encoded', () => {
+    const option = opt(
+      heatmapChart(
+        [
+          [0, 1],
+          [1, 0],
+        ],
+        { smooth: 'cells' },
+      ),
+    )
+    const series = option.series as unknown[]
+    const out = reencodeImages(series as never, () => 'canvas')
+    expect(
+      out.filter((s) => opt(s).type === 'custom' && opt(s).renderItem({}, api).style?.image === 'canvas'),
+    ).toHaveLength(1)
   })
 })
