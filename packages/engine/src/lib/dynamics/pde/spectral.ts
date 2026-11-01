@@ -9,7 +9,17 @@ import { MdmlError } from '../../base/index.ts'
 import { fft, ifft } from '../../numerics/fourier/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { asTensor, fromStorage, mul, primalOf, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import type { PdeTraceOptions } from './finite-difference.ts'
 
 /**
@@ -319,33 +329,55 @@ function ifftNumbers(re: Float64Array, im: Float64Array): Cvec {
   return { re: Float64Array.from(primalOf(out.re).data), im: Float64Array.from(primalOf(out.im).data) }
 }
 
+/** The state of {@link spectralEtdrk4Algorithm}. */
+export interface SpectralState {
+  /** Steps taken. */
+  readonly step: number
+  /** The solution in Fourier space (real and imaginary parts), and the time reached. */
+  readonly v: Cvec
+  readonly t: number
+  /** The physical-space snapshots kept (every n-th step, the last, and a failing one). */
+  readonly ts: readonly number[]
+  readonly us: readonly Float64Array[]
+  readonly failed: boolean
+}
+
+/** The paths {@link spectralEtdrk4Algorithm} logs, as a type. */
+export type SpectralPath = 'pde/t' | 'pde/u' | 'pde/norm'
+
+/** What {@link spectralEtdrk4Algorithm} logs, by path: the time, the field in physical space and its rms norm. */
+export const spectralContract: Contract<SpectralState, SpectralPath> = defineContract({
+  'pde/t': scalar({ description: 'the time reached' }),
+  'pde/u': tensor({ role: 'state', shape: ['point'], description: 'the field in physical space' }),
+  'pde/norm': scalar({ description: 'the root-mean-square of the field' }),
+})
+
 /**
  * ETDRK4 in Fourier space for a periodic problem with a diagonal (possibly complex) linear part (Cox and Matthews with
- * the Kassam-Trefethen contour coefficients), as a traced algorithm with the L2 norm per step.
+ * the Kassam-Trefethen contour coefficients), as a steppable algorithm: the state is the Fourier coefficients and the
+ * snapshots, so it serialises and resumes; it logs the paths of {@link spectralContract}.
  *
  * @param problem - The linear diagonal and the nonlinear term.
  * @param u0 - The initial condition in physical space `[n]`.
- * @param x - The grid (for the result).
  * @param options - Step, final time and thinning.
- * @returns Physical-space snapshots.
+ * @returns The algorithm; it is done after the last step.
  * @concept exponential-integrator
  * @example
  * ```ts
- * import { fourierWavenumbers, spectralEtdrk4 } from 'mdml-engine/dynamics/pde'
+ * import { fourierWavenumbers, spectralEtdrk4Algorithm } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const n = 8
  * const k = fourierWavenumbers(n, 2 * Math.PI)
- * const x = Float64Array.from({ length: n }, (_, j) => (2 * Math.PI * j) / n)
  * const heat = { linear: { re: Array.from(k, (q) => -q * q), im: new Array(n).fill(0) }, nonlinear: (v) => ({ re: v.re.map(() => 0), im: v.im.map(() => 0) }) }
- * const s = spectralEtdrk4(heat, Array.from(x, Math.sin), x, { dt: 0.1, tEnd: 1 })
- * Math.abs((s.u.data[s.u.data.length - 6] ?? 0) - Math.exp(-1)) < 1e-12 // => true
+ * const alg = spectralEtdrk4Algorithm(heat, Array.from({ length: n }, (_, j) => Math.sin((2 * Math.PI * j) / n)), { dt: 0.1, tEnd: 1 })
+ * runAlgorithm(alg, { maxSteps: 10 }).state.step // => 10
  * ```
  */
-export function spectralEtdrk4(
+export function spectralEtdrk4Algorithm(
   problem: SpectralProblem,
   u0: ArrayLike<number>,
-  x: Float64Array,
-  options: PdeTraceOptions & { readonly dt: number; readonly tEnd: number; readonly every?: number },
-): SpectralSolution {
+  options: { readonly dt: number; readonly tEnd: number; readonly every?: number },
+): Algorithm<SpectralState, SpectralPath> {
   const n = u0.length
   const h = options.dt
   if (!(h > 0)) throw new MdmlError('value', 'spectralEtdrk4: dt must be positive')
@@ -378,11 +410,11 @@ export function spectralEtdrk4(
   const N = problem.nonlinear
   const physical = (v: Cvec): Float64Array => ifftNumbers(v.re, v.im).re
   const v0 = fftNumbers(Float64Array.from(u0), new Float64Array(n))
-  const algorithm: Algorithm<{ v: Cvec; t: number; ts: number[]; us: Float64Array[]; failed: boolean }> = {
+  return {
     name: 'spectral-etdrk4',
-    config: { dt: h, tEnd: options.tEnd, n },
+    config: { dt: h, tEnd: options.tEnd, n, steps },
     schema: channels({ metrics: { t: { description: 'time' }, norm: { description: 'the L2 norm of u' } } }),
-    init: () => ({ v: v0, t: 0, ts: [0], us: [Float64Array.from(u0)], failed: false }),
+    init: () => ({ step: 0, v: v0, t: 0, ts: [0], us: [Float64Array.from(u0)], failed: false }),
     step: (s, ctx) => {
       const v = s.v
       const Nv = N(v)
@@ -400,27 +432,73 @@ export function spectralEtdrk4(
       )
       const t = (ctx.t + 1) * h
       const failed = !next.re.every((q) => Number.isFinite(q))
-      if ((ctx.t + 1) % every === 0 || ctx.t + 1 === steps || failed) {
-        s.ts.push(t)
-        s.us.push(physical(next))
+      const keep = (ctx.t + 1) % every === 0 || ctx.t + 1 === steps || failed
+      const u = keep || ctx.wants('pde/u') || ctx.wants('pde/norm') ? physical(next) : undefined
+      if (ctx.wants('pde/t')) ctx.log('pde/t', t)
+      if (u !== undefined && ctx.wants('pde/u')) ctx.log('pde/u', u)
+      if (u !== undefined && ctx.wants('pde/norm')) {
+        let q = 0
+        for (const w of u) q += w * w
+        ctx.log('pde/norm', Math.sqrt(q / n))
       }
-      return { ...s, v: next, t, failed }
+      return {
+        step: s.step + 1,
+        v: next,
+        t,
+        ts: keep ? [...s.ts, t] : s.ts,
+        us: keep && u !== undefined ? [...s.us, u] : s.us,
+        failed,
+      }
     },
-    done: (s) => (s.failed ? 'diverged' : undefined),
+    done: (s) => (s.failed ? 'diverged' : s.step >= steps ? 'converged' : undefined),
     observe: (s) => {
       const u = physical(s.v)
       let q = 0
       for (const w of u) q += w * w
       return { metrics: { t: s.t, norm: Math.sqrt(q / n) } }
     },
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as SpectralState,
   }
+}
+
+/**
+ * ETDRK4 in Fourier space for a periodic problem with a diagonal (possibly complex) linear part (Cox and Matthews with
+ * the Kassam-Trefethen contour coefficients), (see {@link spectralEtdrk4Algorithm}).
+ *
+ * @param problem - The linear diagonal and the nonlinear term.
+ * @param u0 - The initial condition in physical space `[n]`.
+ * @param x - The grid (for the result).
+ * @param options - Step, final time and thinning.
+ * @returns Physical-space snapshots.
+ * @concept exponential-integrator
+ * @example
+ * ```ts
+ * import { fourierWavenumbers, spectralEtdrk4 } from 'mdml-engine/dynamics/pde'
+ * const n = 8
+ * const k = fourierWavenumbers(n, 2 * Math.PI)
+ * const x = Float64Array.from({ length: n }, (_, j) => (2 * Math.PI * j) / n)
+ * const heat = { linear: { re: Array.from(k, (q) => -q * q), im: new Array(n).fill(0) }, nonlinear: (v) => ({ re: v.re.map(() => 0), im: v.im.map(() => 0) }) }
+ * const s = spectralEtdrk4(heat, Array.from(x, Math.sin), x, { dt: 0.1, tEnd: 1 })
+ * Math.abs((s.u.data[s.u.data.length - 6] ?? 0) - Math.exp(-1)) < 1e-12 // => true
+ * ```
+ */
+export function spectralEtdrk4(
+  problem: SpectralProblem,
+  u0: ArrayLike<number>,
+  x: Float64Array,
+  options: PdeTraceOptions & { readonly dt: number; readonly tEnd: number; readonly every?: number },
+): SpectralSolution {
+  const n = u0.length
+  const steps = Math.round(options.tEnd / options.dt)
+  const algorithm = spectralEtdrk4Algorithm(problem, u0, options)
   const run = runAlgorithm(algorithm, { maxSteps: steps, ...options })
   const flat = new Float64Array(run.state.us.length * n)
   run.state.us.forEach((u, i) => {
     flat.set(u, i * n)
   })
   return {
-    t: run.state.ts,
+    t: [...run.state.ts],
     x,
     u: fromStorage(flat, [run.state.us.length, n], 'float64'),
     status: run.state.failed ? 'failed' : 'success',

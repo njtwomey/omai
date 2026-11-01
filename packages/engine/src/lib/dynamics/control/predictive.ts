@@ -7,7 +7,19 @@
 import { MdmlError } from '../../base/index.ts'
 import { qpInteriorPoint, quadprog } from '../../optim/index.ts'
 import { asTensor, matmul, primalOf, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
+import { fromNumbers } from '../ode/_vec.ts'
 import { f64 } from './_model.ts'
 import { type DiscreteModel, ilqr } from './trajectory.ts'
 
@@ -189,19 +201,125 @@ export function linearMpc(options: LinearMpcOptions): LinearMpc {
   }
 }
 
-/** The state of {@link recedingHorizon}. */
+/** A planner for {@link recedingHorizonAlgorithm}: plans from a state; one with memory also plans from a given warm start. */
+export interface Planner {
+  /** Plan from a state. */
+  solve(x: readonly number[]): MpcPlan
+  /**
+   * Plan from a state warm-started by the previous plan's inputs shifted by one step (a planner that keeps no memory of
+   * its own, so the loop's state alone resumes the run).
+   */
+  solveWarm?(x: readonly number[], warm: readonly (readonly number[])[]): MpcPlan
+}
+
+/** The state of {@link recedingHorizonAlgorithm}. */
 export interface RecedingState {
-  readonly x: number[]
-  readonly states: number[][]
-  readonly inputs: number[][]
-  readonly costs: number[]
+  /** Steps taken. */
+  readonly step: number
+  /** The plant state. */
+  readonly x: readonly number[]
+  /** Every state visited (the first is the start). */
+  readonly states: readonly (readonly number[])[]
+  /** Every input applied and the cost of every plan. */
+  readonly inputs: readonly (readonly number[])[]
+  readonly costs: readonly number[]
+  /** The status of the last plan. */
   readonly status: string
+  /** The last plan's inputs shifted by one step, the next warm start (empty without a planner that takes one). */
+  readonly warm: readonly (readonly number[])[]
+}
+
+/** The paths {@link recedingHorizonAlgorithm} logs, as a type. */
+export type MpcPath = 'mpc/cost' | 'mpc/u' | 'mpc/plan' | 'mpc/predicted' | 'plant/x'
+
+/**
+ * What a receding-horizon loop logs, by path: the cost of the current plan, the input applied, the whole planned input
+ * sequence and the states it predicts, and the plant state after the step.
+ */
+export const mpcContract: Contract<RecedingState, MpcPath> = defineContract({
+  'mpc/cost': scalar({ description: 'the cost of the current plan', direction: 'lower' }),
+  'mpc/u': tensor({ role: 'output', shape: ['input'], description: 'the first planned input, applied now' }),
+  'mpc/plan': tensor({ role: 'output', shape: ['horizon', 'input'], description: 'all planned inputs' }),
+  'mpc/predicted': tensor({ role: 'output', shape: ['horizon', 'state'], description: 'the states the plan predicts' }),
+  'plant/x': tensor({ role: 'state', shape: ['state'], description: 'the plant state after this step' }),
+})
+
+/**
+ * Receding-horizon control as a steppable algorithm: at every step plan from the current state, apply the first input
+ * to the plant, and move on. Works with any planner: a {@link linearMpc} controller or {@link nonlinearMpc}. The state
+ * holds the plant state, the history and the warm start, so it serialises and a run resumes with the same plans; it
+ * logs the paths of {@link mpcContract}.
+ *
+ * @param planner - Plans from a state.
+ * @param plant - The true system x' = plant(x, u) (default: the planner's own prediction).
+ * @param x0 - The initial state.
+ * @param options - The number of steps.
+ * @returns The algorithm; it is done after `steps` periods.
+ * @throws MdmlError with code `value` for a negative step count.
+ * @concept model-predictive-control
+ * @example
+ * ```ts
+ * import { control } from 'mdml-engine/dynamics'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const mpc = control.linearMpc({ A: [[1, 1], [0, 1]], B: [[0.5], [1]], Q: [[1, 0], [0, 1]], R: [[0.1]], horizon: 5, uMin: -1, uMax: 1 })
+ * const alg = control.recedingHorizonAlgorithm(mpc, undefined, [5, 0], { steps: 3 })
+ * runAlgorithm(alg, { maxSteps: 3 }).state.inputs.length // => 3
+ * ```
+ */
+export function recedingHorizonAlgorithm(
+  planner: Planner,
+  plant: ((x: readonly number[], u: readonly number[]) => number[]) | undefined,
+  x0: readonly number[],
+  options: { readonly steps: number },
+): Algorithm<RecedingState, MpcPath> {
+  if (!(options.steps >= 0)) throw new MdmlError('value', 'recedingHorizon: steps >= 0')
+  return {
+    name: 'receding-horizon',
+    config: { steps: options.steps },
+    schema: channels({
+      metrics: {
+        cost: { description: 'the cost of the current plan', direction: 'lower' },
+        u0: { description: 'the first input' },
+      },
+      tensors: { x: { role: 'state', description: 'the plant state' } },
+    }),
+    init: () => ({ step: 0, x: [...x0], states: [[...x0]], inputs: [], costs: [], status: 'running', warm: [] }),
+    step: (s, ctx) => {
+      const plan = planner.solveWarm === undefined ? planner.solve(s.x) : planner.solveWarm(s.x, s.warm)
+      const next = plant === undefined ? (plan.states[0] ?? s.x) : plant(s.x, plan.u)
+      const warm =
+        planner.solveWarm === undefined ? [] : [...plan.controls.slice(1), plan.controls.at(-1) ?? plan.u.map(() => 0)]
+      if (ctx.wants('mpc/cost')) ctx.log('mpc/cost', plan.cost)
+      if (ctx.wants('mpc/u')) ctx.log('mpc/u', plan.u)
+      if (ctx.wants('mpc/plan'))
+        ctx.log('mpc/plan', fromNumbers(plan.controls.flat(), [plan.controls.length, plan.u.length]))
+      if (ctx.wants('mpc/predicted'))
+        ctx.log('mpc/predicted', fromNumbers(plan.states.flat(), [plan.states.length, next.length]))
+      if (ctx.wants('plant/x')) ctx.log('plant/x', [...next])
+      return {
+        step: s.step + 1,
+        x: [...next],
+        states: [...s.states, [...next]],
+        inputs: [...s.inputs, plan.u],
+        costs: [...s.costs, plan.cost],
+        status: plan.status,
+        warm,
+      }
+    },
+    done: (s) => (s.step >= options.steps ? 'converged' : undefined),
+    observe: (s) => ({
+      metrics: { cost: s.costs.at(-1) ?? 0, u0: s.inputs.at(-1)?.[0] ?? 0 },
+      tensors: { x: { role: 'state', value: [...s.x] } },
+    }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as RecedingState,
+  }
 }
 
 /**
  * Receding-horizon control as a traced algorithm: at every step plan from the current state, apply the first input
  * to the plant, and move on (the plan's cost and the applied input are recorded). Works with any planner: a
- * {@link linearMpc} controller or {@link nonlinearMpc}.
+ * {@link linearMpc} controller or {@link nonlinearMpc}. {@link recedingHorizonAlgorithm} run to the end.
  *
  * @param planner - Plans from a state.
  * @param plant - The true system x' = plant(x, u) (default: the planner's own prediction).
@@ -219,37 +337,14 @@ export interface RecedingState {
  * ```
  */
 export function recedingHorizon(
-  planner: { solve(x: readonly number[]): MpcPlan },
+  planner: Planner,
   plant: ((x: readonly number[], u: readonly number[]) => number[]) | undefined,
   x0: readonly number[],
   options: { readonly steps: number } & Partial<Omit<RunOptions, 'maxSteps' | 'start'>>,
 ): RecedingState {
-  if (!(options.steps >= 0)) throw new MdmlError('value', 'recedingHorizon: steps >= 0')
-  const algorithm: Algorithm<RecedingState> = {
-    name: 'receding-horizon',
-    config: { steps: options.steps },
-    schema: channels({
-      metrics: {
-        cost: { description: 'the cost of the current plan', direction: 'lower' },
-        u0: { description: 'the first input' },
-      },
-      tensors: { x: { role: 'state', description: 'the plant state' } },
-    }),
-    init: () => ({ x: [...x0], states: [[...x0]], inputs: [], costs: [], status: 'running' }),
-    step: (s) => {
-      const plan = planner.solve(s.x)
-      const next = plant === undefined ? (plan.states[0] ?? s.x) : plant(s.x, plan.u)
-      s.states.push([...next])
-      s.inputs.push(plan.u)
-      s.costs.push(plan.cost)
-      return { ...s, x: [...next], status: plan.status }
-    },
-    observe: (s) => ({
-      metrics: { cost: s.costs.at(-1) ?? 0, u0: s.inputs.at(-1)?.[0] ?? 0 },
-      tensors: { x: { role: 'state', value: s.x } },
-    }),
-  }
-  return runAlgorithm(algorithm, { maxSteps: options.steps, ...options }).state
+  const { steps, ...run } = options
+  const algorithm = recedingHorizonAlgorithm(planner, plant, x0, { steps })
+  return runAlgorithm(algorithm, { maxSteps: steps, ...run }).state
 }
 
 /**
@@ -271,24 +366,34 @@ export function recedingHorizon(
 export function nonlinearMpc(
   model: DiscreteModel,
   options: { readonly horizon: number; readonly iterations?: number; readonly terminalCost?: (x: Value) => Value },
-): { solve(x: readonly number[]): MpcPlan } {
+): Planner {
   let warm: number[][] | undefined
+  const plan = (x: readonly number[], start: readonly (readonly number[])[] | undefined): MpcPlan => {
+    const r = ilqr(model, x, {
+      horizon: options.horizon,
+      maxIterations: options.iterations ?? 20,
+      ...(start === undefined ? {} : { initial: start.map((u) => [...u]) }),
+      ...(options.terminalCost === undefined ? {} : { terminalCost: options.terminalCost }),
+    })
+    return {
+      u: r.controls[0] ?? [],
+      controls: r.controls,
+      states: r.states.slice(1),
+      cost: r.cost,
+      status: r.converged ? 'optimal' : 'iteration limit',
+    }
+  }
+  const shifted = (p: MpcPlan): number[][] => [
+    ...p.controls.slice(1),
+    p.controls.at(-1) ?? new Array<number>(model.actionSize).fill(0),
+  ]
   return {
     solve: (x) => {
-      const r = ilqr(model, x, {
-        horizon: options.horizon,
-        maxIterations: options.iterations ?? 20,
-        ...(warm === undefined ? {} : { initial: warm }),
-        ...(options.terminalCost === undefined ? {} : { terminalCost: options.terminalCost }),
-      })
-      warm = [...r.controls.slice(1), r.controls.at(-1) ?? new Array<number>(model.actionSize).fill(0)]
-      return {
-        u: r.controls[0] ?? [],
-        controls: r.controls,
-        states: r.states.slice(1),
-        cost: r.cost,
-        status: r.converged ? 'optimal' : 'iteration limit',
-      }
+      const p = plan(x, warm)
+      warm = shifted(p)
+      return p
     },
+    // The same plan from a warm start the caller holds (the loop's state), so a resumed run needs no memory here.
+    solveWarm: (x, start) => plan(x, start.length === 0 ? undefined : start),
   }
 }

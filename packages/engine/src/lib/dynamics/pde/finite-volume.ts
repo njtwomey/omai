@@ -6,7 +6,17 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import type { PdeTraceOptions } from './finite-difference.ts'
 
 /** A scalar flux function f(u) with its derivative (the characteristic speed). */
@@ -133,13 +143,27 @@ export interface ConservationSolution {
   readonly status: 'success' | 'failed'
 }
 
-interface FvState {
+/** The state of {@link conservationLawAlgorithm}. */
+export interface FvState {
+  /** The time reached and the cell averages there. */
   readonly t: number
   readonly u: Float64Array
-  readonly ts: number[]
-  readonly us: Float64Array[]
+  /** The snapshots kept (every n-th step, the last, and a failing one). */
+  readonly ts: readonly number[]
+  readonly us: readonly Float64Array[]
   readonly failed: boolean
 }
+
+/** The paths {@link conservationLawAlgorithm} logs, as a type. */
+export type FvPath = 'pde/t' | 'pde/u' | 'pde/mass' | 'pde/total-variation'
+
+/** What {@link conservationLawAlgorithm} logs, by path: the time, the cell averages, the total mass and the total variation. */
+export const fvContract: Contract<FvState, FvPath> = defineContract({
+  'pde/t': scalar({ description: 'the time reached' }),
+  'pde/u': tensor({ role: 'state', shape: ['cell'], description: 'the cell averages' }),
+  'pde/mass': scalar({ description: 'the total mass' }),
+  'pde/total-variation': scalar({ description: 'the total variation', direction: 'lower' }),
+})
 
 function totalVariation(u: Float64Array, periodic: boolean): number {
   let s = 0
@@ -149,7 +173,7 @@ function totalVariation(u: Float64Array, periodic: boolean): number {
 }
 
 /**
- * A scalar conservation law u_t + f(u)_x = 0 on [a, b] with N cells by finite volumes: Godunov's first-order scheme
+ * A scalar conservation law u_t + f(u)_x = 0 on [a, b] with N cells by finite volumes, as a steppable algorithm: Godunov's first-order scheme
  * or MUSCL-Hancock (limited linear reconstruction, half-step predictor, Riemann fluxes), periodic or outflow
  * boundaries, steps fixed or set by a CFL number. Conservative to rounding; TVD with a TVD limiter. A traced
  * algorithm with mass and total variation per step.
@@ -158,28 +182,30 @@ function totalVariation(u: Float64Array, periodic: boolean): number {
  * @param domain - [a, b].
  * @param cells - The number of cells.
  * @param options - Flux, final time, step or CFL, scheme, limiter, Riemann solver and boundary.
- * @returns Snapshots with mass and total variation.
+ * @returns The algorithm; it is done when t reaches `tEnd` (or `diverged`). It logs the paths of {@link fvContract}.
  * @throws MdmlError with code `value` for a non-positive cell count or a mismatched initial condition.
  * @concept finite-volume
  * @example
  * ```ts
- * import { BURGERS, conservationLaw } from 'mdml-engine/dynamics/pde'
- * const s = conservationLaw((x) => (x < 0.5 ? 1 : 0), [0, 1], 100, { flux: BURGERS, tEnd: 0.2, boundary: 'outflow' })
- * Math.abs((s.mass.at(-1) ?? 0) - (s.mass[0] ?? 0) - 0.2 * 0.5) < 1e-12 // => true
+ * import { BURGERS, conservationLawAlgorithm } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = conservationLawAlgorithm((x) => (x < 0.5 ? 1 : 0), [0, 1], 50, { flux: BURGERS, tEnd: 0.1, boundary: 'outflow' })
+ * runAlgorithm(alg, { maxSteps: 1000 }).state.t // => 0.1
  * ```
  */
-export function conservationLaw(
+export function conservationLawAlgorithm(
   u0: ((x: number) => number) | readonly number[],
   domain: readonly [number, number],
   cells: number,
   options: ConservationOptions,
-): ConservationSolution {
-  if (!Number.isInteger(cells) || cells < 2) throw new MdmlError('value', 'conservationLaw: at least two cells')
+): Algorithm<FvState, FvPath> {
+  if (!Number.isInteger(cells) || cells < 2)
+    throw new MdmlError('value', 'conservationLawAlgorithm: at least two cells')
   const [a, b] = domain
   const dx = (b - a) / cells
   const x = Array.from({ length: cells }, (_, i) => a + (i + 0.5) * dx)
   const init = typeof u0 === 'function' ? Float64Array.from(x, (xi) => u0(xi)) : Float64Array.from(u0)
-  if (init.length !== cells) throw new MdmlError('value', `conservationLaw: give ${cells} cell averages`)
+  if (init.length !== cells) throw new MdmlError('value', `conservationLawAlgorithm: give ${cells} cell averages`)
   const flux = options.flux
   const periodic = (options.boundary ?? 'periodic') === 'periodic'
   const limiter = typeof options.limiter === 'function' ? options.limiter : LIMITERS[options.limiter ?? 'minmod']
@@ -227,7 +253,7 @@ export function conservationLaw(
     }
     return Float64Array.from(u, (v, i) => v - (h / dx) * ((faces[i + 1] ?? 0) - (faces[i] ?? 0)))
   }
-  const algorithm: Algorithm<FvState> = {
+  return {
     name: muscl ? 'muscl-hancock' : 'godunov',
     config: { cells, tEnd: options.tEnd, periodic: periodic ? 1 : 0 },
     schema: channels({
@@ -245,18 +271,59 @@ export function conservationLaw(
       const t = s.t + h
       const done = t >= options.tEnd - 1e-14
       const failed = !u.every((v) => Number.isFinite(v))
-      if ((ctx.t + 1) % every === 0 || done || failed) {
-        s.ts.push(done ? options.tEnd : t)
-        s.us.push(u)
-      }
-      return { t: done ? options.tEnd : t, u, ts: s.ts, us: s.us, failed }
+      const keep = (ctx.t + 1) % every === 0 || done || failed
+      const now = done ? options.tEnd : t
+      if (ctx.wants('pde/t')) ctx.log('pde/t', now)
+      if (ctx.wants('pde/u')) ctx.log('pde/u', u)
+      if (ctx.wants('pde/mass'))
+        ctx.log(
+          'pde/mass',
+          u.reduce((acc, v) => acc + v * dx, 0),
+        )
+      if (ctx.wants('pde/total-variation')) ctx.log('pde/total-variation', totalVariation(u, periodic))
+      return { t: now, u, ts: keep ? [...s.ts, now] : s.ts, us: keep ? [...s.us, u] : s.us, failed }
     },
     done: (s) => (s.failed ? 'diverged' : s.t >= options.tEnd ? 'completed' : undefined),
     observe: (s) => ({
       metrics: { t: s.t, mass: s.u.reduce((acc, v) => acc + v * dx, 0), totalVariation: totalVariation(s.u, periodic) },
       tensors: { u: { role: 'state', value: s.u } },
     }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as FvState,
   }
+}
+
+/**
+ * A scalar conservation law u_t + f(u)_x = 0 on [a, b] with N cells by finite volumes: Godunov's first-order scheme
+ * or MUSCL-Hancock (limited linear reconstruction, half-step predictor, Riemann fluxes), periodic or outflow
+ * boundaries, steps fixed or set by a CFL number. Conservative to rounding; TVD with a TVD limiter. A traced
+ * algorithm with mass and total variation per step.
+ *
+ * @param u0 - The initial condition, as a function of x (sampled at cell centres) or cell averages.
+ * @param domain - [a, b].
+ * @param cells - The number of cells.
+ * @param options - Flux, final time, step or CFL, scheme, limiter, Riemann solver and boundary.
+ * @returns Snapshots with mass and total variation.
+ * @throws MdmlError with code `value` for a non-positive cell count or a mismatched initial condition.
+ * @concept finite-volume
+ * @example
+ * ```ts
+ * import { BURGERS, conservationLaw } from 'mdml-engine/dynamics/pde'
+ * const s = conservationLaw((x) => (x < 0.5 ? 1 : 0), [0, 1], 100, { flux: BURGERS, tEnd: 0.2, boundary: 'outflow' })
+ * Math.abs((s.mass.at(-1) ?? 0) - (s.mass[0] ?? 0) - 0.2 * 0.5) < 1e-12 // => true
+ * ```
+ */
+export function conservationLaw(
+  u0: ((x: number) => number) | readonly number[],
+  domain: readonly [number, number],
+  cells: number,
+  options: ConservationOptions,
+): ConservationSolution {
+  const [a, b] = domain
+  const dx = (b - a) / cells
+  const x = Array.from({ length: cells }, (_, i) => a + (i + 0.5) * dx)
+  const periodic = (options.boundary ?? 'periodic') === 'periodic'
+  const algorithm = conservationLawAlgorithm(u0, domain, cells, options)
   const run = runAlgorithm(algorithm, { maxSteps: options.maxSteps ?? 100000, ...options })
   const st = run.state
   const flat = new Float64Array(st.us.length * cells)

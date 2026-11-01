@@ -2344,22 +2344,41 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   termination), `odeint`, `diffeqsolve` (diffrax style: solver, step-size controller, saving policy).
 - `ode/adjoint.ts`: continuous adjoint sensitivities (backsolve, interpolated and checkpointed adjoints), forward
   sensitivities, gradient-method comparison helpers (memory and accuracy).
-- `ode/boundary.ts`: shooting and multiple shooting, collocation (`solveBvp`).
+- `ode/boundary.ts`: shooting and multiple shooting, collocation (`solveBvp`, that run to the end of
+  `solveBvpAlgorithm`: one Newton solve and mesh refinement per step, the state the mesh, the solution values and the
+  residuals, so it serialises and resumes; logs `bvp/residual`, `mesh-size`, `bc-residual`, `mesh`, `solution`;
+  `bvpSolution` reads the spline off a finished state).
 - `ode/dae.ts`: index-1 differential-algebraic equations by BDF and Radau.
 - `ode/convergence.ts`: order verification (error against step size, observed order), stability regions and
   A-stability checks, work-precision diagrams.
 - `pde/grids.ts`: 1-D and 2-D grids, boundary-condition types (Dirichlet, Neumann, Robin, periodic).
-- `pde/finite-difference.ts`: heat (explicit, implicit, Crank-Nicolson), wave (leapfrog), advection (upwind,
-  Lax-Friedrichs, Lax-Wendroff), Poisson (Jacobi, Gauss-Seidel, SOR, conjugate gradients, multigrid).
-- `pde/finite-volume.ts`: conservation laws, Godunov and MUSCL schemes, flux limiters, Burgers shocks and rarefactions.
-- `pde/finite-element.ts`: 1-D linear and quadratic elements, 2-D linear triangles, assembly, Poisson and heat problems.
+- `pde/finite-difference.ts`: heat (explicit, implicit, Crank-Nicolson, theta), wave (leapfrog), advection (upwind,
+  Lax-Friedrichs, Lax-Wendroff) as steppable algorithms (`heatAlgorithm`, `heat1dAlgorithm`, `wave1dAlgorithm`,
+  `advection1dAlgorithm`: the state is the field, the time, the field one step back and the snapshots, so it
+  serialises and resumes; logs `pde/t`, `pde/u`, `pde/norm`, `pde/max`, `pde/failed`; an unstable step ends the run
+  `diverged`) and the solvers over a whole interval (`heat`, `heat1d`, `wave1d`, `advection1d`, the same numbers),
+  Poisson (Jacobi, Gauss-Seidel, SOR, conjugate gradients, multigrid) with `poissonAlgorithm` stepping the sweeps and
+  the multigrid V-cycles (logs `poisson/residual`, `iterate`, `change`; multigrid takes its smoothing sweeps as
+  options), `poisson` that run (conjugate gradients stays on the Krylov solvers of `numerics/sparse`).
+- `pde/finite-difference-options.ts`: the slots of the steppers as option tables: `heatSchemes` (`explicit`,
+  `implicit`, `crank-nicolson`, `theta` with its weight), `advectionSchemes` (`upwind`, `lax-friedrichs`,
+  `lax-wendroff`, as stencils), `initialProfiles` (`sine`, `gaussian`, `pulse`, `triangle`) and `poissonMethods`
+  (`jacobi`, `gauss-seidel`, `sor` with its factor, `multigrid` with its sweeps).
+- `pde/finite-volume.ts`: conservation laws, Godunov and MUSCL schemes, flux limiters, Burgers shocks and
+  rarefactions; `conservationLawAlgorithm` steps them (logs `pde/t`, `u`, `mass`, `total-variation`; the state serialises
+  and resumes), `conservationLaw` is that run.
+- `pde/finite-element.ts`: 1-D linear and quadratic elements, 2-D linear triangles, assembly, Poisson and heat problems;
+  `heatFemAlgorithm` steps the heat problem (logs `pde/t`, `u`, `norm`), `heatFem` is that run.
 - `pde/spectral.ts`: Fourier pseudo-spectral methods (dealiasing), Chebyshev collocation, ETDRK4 for KdV,
-  Kuramoto-Sivashinsky and Allen-Cahn.
+  Kuramoto-Sivashinsky and Allen-Cahn; `spectralEtdrk4Algorithm` steps the integrator (state: the Fourier coefficients;
+  logs `pde/t`, `u`, `norm`), `spectralEtdrk4` is that run.
 - `pde/method-of-lines.ts`: semi-discretisation of PDEs into ODE systems for `solveIvp`.
 - `pde/operators.ts`: differential operators applied to functions by autodiff (gradient, divergence, Laplacian,
   time derivatives of networks): the residual machinery used by physics-informed networks.
 - `pde/stability.ts`: von Neumann analysis, CFL conditions, numerical dispersion and dissipation.
-- `pde/fokker-planck.ts`: density evolution for SDEs (Scharfetter-Gummel), stationary densities.
+- `pde/fokker-planck.ts`: density evolution for SDEs (Scharfetter-Gummel), stationary densities;
+  `fokkerPlanckAlgorithm` steps the density (logs `pde/t`, `density`, `mean`, `variance`, `mass`, `entropy`),
+  `fokkerPlanck` is that run.
 - `fields.ts`: Jacobians, divergence, curl, fixed points (seeded Newton), classification (node, spiral, saddle,
   centre), nullclines, streamlines, flow maps, invariant manifolds.
 - `named-systems.ts`: named systems as vector fields in tensor operations (so they integrate and differentiate):
@@ -2421,20 +2440,48 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `control/adaptive.ts`: model-reference adaptive control of a first-order plant (`mracAlgorithm`: the MIT rule and the
   Lyapunov law; logs output, model output, parameter, error, gain and the distance from the matching parameters,
   `matchingParameters`), and `gainSchedule`.
-- `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints, receding horizon as a traced algorithm).
-- `control/pid.ts`: PID control with anti-windup and derivative filtering, Ziegler-Nichols and Cohen-Coon tuning,
-  relay auto-tuning.
+- `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints) and the receding-horizon loop as a
+  steppable algorithm (`recedingHorizonAlgorithm`: plant state, history and the warm start are the state, so a run
+  resumes with the same plans; logs `mpc/cost`, `u`, `plan`, `predicted` and `plant/x`), `recedingHorizon` that run to
+  the end; a `Planner` may plan from a warm start it is handed (`nonlinearMpc` does).
+- `control/pid.ts`: PID control with anti-windup and derivative filtering, the closed loop around an LTI plant as a
+  steppable algorithm (`pidLoopAlgorithm`, one control period per step; logs `pid/setpoint`, `error`, `u`, `integral`,
+  `derivative`, `plant/y`, `plant/x`) with `simulatePid` as that run, Ziegler-Nichols and Cohen-Coon tuning, relay
+  auto-tuning (`relayAutotuneAlgorithm` the relay in feedback, `relayAnalysis` reading the limit cycle).
+- `control/control-options.ts`: the slots of the loops as option tables: `antiWindups` (`clamping`,
+  `back-calculation` with its gain, `none`), `qpMethods` (`active-set`, `interior-point`), and the setpoint and the
+  disturbance as functions of time (`setpoints`: step, square, ramp, sine; `disturbances`: none, step, pulse, sine).
 - `control/trajectory.ts`: trajectory optimisation: single and multiple shooting, direct collocation, iLQR and DDP.
 - `filtering/kalman.ts`: Kalman filter (Joseph form, missing data), RTS smoother, steady-state filter, log-likelihood,
   consistency checks.
-- `filtering/nonlinear.ts`: extended, unscented and ensemble Kalman filters.
-- `filtering/particle.ts`: bootstrap and auxiliary particle filters, particle smoothing.
+- `filtering/nonlinear.ts`: extended, unscented and ensemble Kalman filters as steppable algorithms
+  (`extendedKalmanAlgorithm`, `unscentedKalmanAlgorithm`, `ensembleKalmanAlgorithm`: tensor states that serialise and
+  resume, one observation per step, logging `filter/mean`, `cov`, `predicted-mean`, `innovation`, `log-likelihood` and
+  the sigma points or the ensemble; the ensemble filter takes a covariance inflation) and the functions over a whole
+  series (`extendedKalmanFilter` and its siblings, the same numbers), the sigma-point generators and the unscented
+  transform.
+- `filtering/nonlinear-options.ts`: the slots of nonlinear state estimation as option tables: `nonlinearFilters`
+  (`extended`, `unscented` with alpha, beta and kappa, `unscented-julier`, `ensemble` with size and inflation) and
+  `stateSpaceModels` (`random-walk`, `pendulum`, `range`, with the noise as knobs), plus `simulateStateSpace` (a draw
+  from a model with its true states).
+- `filtering/particle.ts`: bootstrap and auxiliary particle filters as steppable algorithms
+  (`bootstrapParticleAlgorithm`, `auxiliaryParticleAlgorithm`: the cloud, its log-weights, the evidence and the history
+  are the state; logs `pf/ess`, `log-evidence`, `resampled`, `mean`, `weights`, `particles`, `ancestors`), the functions
+  over a whole series (the same numbers), the resampling schemes and particle smoothing.
+- `filtering/particle-options.ts`: `resamplers` (multinomial, systematic, stratified, residual) and `particleProposals`
+  (bootstrap with its ESS threshold, auxiliary) as option tables, and `gaussianParticleModel`, the particle form of a
+  Gaussian nonlinear model so one model feeds both the Kalman and the particle filters.
 - `filtering/changepoint.ts`: Bayesian online changepoint detection as a steppable algorithm (`bocpdAlgorithm`: the
   state is plain numbers per run-length hypothesis, so it serialises and resumes; it logs the paths of `bocpdContract`
   `bocpd/change-probability`, `map-run-length`, `map-probability`, `log-predictive`, `log-evidence`, `predictive-mean`,
   `predictive-std`, `hypotheses` and the run-length row `run-length`) and `bocpd` (that algorithm over a whole series),
   `mapChangepoints` (changepoints read off the MAP run length at a probability threshold), `constantHazard` and
-  `survivalHazard`, PELT, binary segmentation.
+  `survivalHazard`; PELT and binary segmentation as steppable algorithms (`peltAlgorithm`: one candidate end per step,
+  F(b), the admissible set and the pruned count logged as `pelt/...`, `peltSegments` reads the segmentation off the state;
+  `binarySegmentationAlgorithm`: one split per step, logged as `binseg/...`) and `pelt`, `binarySegmentation` as those
+  runs.
+- `filtering/offline-costs.ts`: the segment costs of offline detection as an option table `segmentCosts` (`l2`, `l1`,
+  `normal`, `poisson`) and `costOf`, the cost function of a series with its shortest scorable segment.
 - `filtering/segment-models.ts`: the `ConjugateModel` union, one per kind of shift (Gaussian mean with known noise,
   Gaussian variance with known mean, normal-gamma, Poisson-gamma, Bernoulli-beta, AR(1) coefficient, linear trend)
   as `segmentOps` over a run's sufficient statistics (`RunStats`, plain numbers) with predictive log density, mean and
@@ -4387,7 +4434,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   `arimaResiduals`, `arimaForecast` (exact means and variances on the original scale by augmenting the state with the
   last observations that the differencing operator integrates; intervals by level). `ArimaFit` is plain data with
   standard errors from the numerical Hessian.
-- `arma-fit.ts`: `fitAr` (Yule-Walker adjusted or biased, Burg, least squares), `selectArOrder` (AIC, BIC, HQIC),
+- `arma-fit.ts`: `fitAr` (Yule-Walker adjusted or biased, Burg, least squares), `selectArOrder` (AIC, BIC, HQIC; `arOrderAlgorithm` steps the sweep one order at a time, logging `select/order`,
+  `criterion`, `sigma2`, `best`),
   `fitMa` (innovations), `hannanRissanen` (with the bias-correction step), `fitArma` and `armaFitAlgorithm`.
 - `smoothing.ts`: ETS models (`EtsSpec`: error, trend, damped, seasonal, period; the presets `smoothingModels`
   (`simple`, `holt`, `damped`), `holtWintersAdditive`, `holtWintersMultiplicative`): `etsFilter` (fitted values,
@@ -4429,6 +4477,11 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
   takes `changepointData` of a number array or a `TimeSeriesData`, with the true changepoints read from its segments or
   events; the fitted value has the change probabilities, MAP run lengths, evidence and `changepoints()`; its exposition
   is the run-length strip with the truth marked; `.session` steps live and `fittedAt(t)` is the detector at step t).
+- `state-filters.ts`: `nonlinearFilter` and `particleFilter`, filters of state-space models as estimators on the
+  iterative base (hyperparameters `model`, `filter` / `proposal` / `resampling` / `particles` from the option tables of
+  `dynamics/filtering`; `fit` takes `stateSpaceData` of observations, a model and the true states; the fitted values have
+  the filtered means, covariances or weighted means, ESS, resampling steps, evidence and the error against the truth;
+  `.session` steps live and `fittedAt(t)` is the filter at step t).
 - `volatility.ts`: GARCH(p, o, q) in the `arch` convention (`GarchSpec`; ARCH, GJR through `o`; constant or zero
   mean; Gaussian or standardised Student-t): `garchVariance` (the recursion with the `arch` backcast),
   `garchLogLikelihood`, `garchFilterAlgorithm` (the recursion one observation per step with the running likelihood),
@@ -4476,7 +4529,8 @@ throughout (as `signal/parametric.ts` and `datasets/timeseries.ts`).
 - `cointegration.ts`: `engleGranger` (the two-step test: the cointegrating regression with `n`/`c`/`ct`/`ctt`, the
   residual spread tested by ADF with MacKinnon's N-variable p-values and critical values), `johansen` (the trace and
   maximum-eigenvalue statistics from the reduced-rank eigenproblem with the MacKinnon-Haug-Michelis tables of
-  `_johansen-tables.ts`) and `selectCointegrationRank`.
+  `_johansen-tables.ts`) and `selectCointegrationRank` (`cointegrationRankAlgorithm` tests one rank per step, logging
+  `select/rank`, `statistic`, `critical`, `accepted`).
 - `vecm.ts`: the vector error-correction model. `vecmProblem` builds Johansen's matrices (deterministic terms `n`, `co`,
   `ci`, `lo`, `li` and the combinations), `vecmSmoothProblem` is the likelihood concentrated on beta = [I; B] as a
   smooth objective with its analytic gradient, `vecmSolvers` is the slot (`johansen` the closed-form eigen-solve as the
