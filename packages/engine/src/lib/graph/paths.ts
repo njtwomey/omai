@@ -6,8 +6,10 @@
 
 import { MdmlError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
+import { weightFunction } from './_run.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
-import { IndexedQueue } from './structures.ts'
+import { aStarAlgorithm, bellmanFordAlgorithm, dijkstraAlgorithm, floydWarshallAlgorithm } from './shortest-paths.ts'
 
 /** Single-source shortest paths: distances (Infinity when unreachable) and the predecessor of each node on a shortest
  * path (-1 for the source and unreachable nodes), as scipy.sparse.csgraph returns them. */
@@ -31,8 +33,7 @@ export interface PathOptions {
 }
 
 function weightOf(g: Graph, options: PathOptions): (k: number) => number {
-  const w = g.out.weights
-  return options.weighted === false ? () => 1 : (k) => w[k] ?? 0
+  return weightFunction(g, options.weighted)
 }
 
 /** Dijkstra from one source, skipping blocked edges and nodes; stops once `target` is settled. */
@@ -44,30 +45,13 @@ function dijkstraCore(
   blockedEdges?: ReadonlySet<number>,
   blockedNodes?: ReadonlySet<number>,
 ): ShortestPaths {
-  const a = g.out
-  const distance = new Float64Array(g.n).fill(Number.POSITIVE_INFINITY)
-  const predecessor = new Int32Array(g.n).fill(-1)
-  const done = new Uint8Array(g.n)
-  const queue = new IndexedQueue(g.n)
-  distance[s] = 0
-  queue.push(s, 0)
-  for (let u = queue.pop(); u !== undefined; u = queue.pop()) {
-    done[u] = 1
-    if (u === target) break
-    const du = distance[u] ?? 0
-    for (let k = a.indptr[u] ?? 0; k < (a.indptr[u + 1] ?? 0); k++) {
-      const v = a.indices[k] ?? 0
-      if (done[v] === 1 || blockedEdges?.has(a.edges[k] ?? -1) === true || blockedNodes?.has(v) === true) continue
-      const w = weight(k)
-      if (w < 0) throw new MdmlError('domain', 'dijkstra: negative edge weights need bellmanFord or johnson')
-      const alt = du + w
-      if (alt < (distance[v] ?? Number.POSITIVE_INFINITY)) {
-        distance[v] = alt
-        predecessor[v] = u
-        queue.push(v, alt)
-      }
-    }
-  }
+  const algorithm = dijkstraAlgorithm(g, s, {
+    ...(target >= 0 ? { target } : {}),
+    weights: weight,
+    ...(blockedEdges === undefined ? {} : { blockedEdges }),
+    ...(blockedNodes === undefined ? {} : { blockedNodes }),
+  })
+  const { distance, predecessor } = runAlgorithm(algorithm, { maxSteps: g.n + 1 }).state
   return { source: s, distance, predecessor }
 }
 
@@ -116,32 +100,9 @@ export function dijkstra(
  * ```
  */
 export function bellmanFord(g: Graph, source: NodeId, options: PathOptions = {}): ShortestPaths {
-  const s = nodeIndex(g, source)
-  const weight = weightOf(g, options)
-  const a = g.out
-  const distance = new Float64Array(g.n).fill(Number.POSITIVE_INFINITY)
-  const predecessor = new Int32Array(g.n).fill(-1)
-  distance[s] = 0
-  const relax = (): boolean => {
-    let changed = false
-    for (let u = 0; u < g.n; u++) {
-      const du = distance[u] ?? Number.POSITIVE_INFINITY
-      if (du === Number.POSITIVE_INFINITY) continue
-      for (let k = a.indptr[u] ?? 0; k < (a.indptr[u + 1] ?? 0); k++) {
-        const v = a.indices[k] ?? 0
-        const alt = du + weight(k)
-        if (alt < (distance[v] ?? Number.POSITIVE_INFINITY)) {
-          distance[v] = alt
-          predecessor[v] = u
-          changed = true
-        }
-      }
-    }
-    return changed
-  }
-  for (let round = 0; round < g.n - 1; round++) if (!relax()) return { source: s, distance, predecessor }
-  if (relax()) throw new MdmlError('value', 'bellmanFord: the graph has a negative cycle')
-  return { source: s, distance, predecessor }
+  const { state } = runAlgorithm(bellmanFordAlgorithm(g, source, options), { maxSteps: g.n + 1 })
+  if (state.negativeCycle) throw new MdmlError('value', 'bellmanFord: the graph has a negative cycle')
+  return { source: nodeIndex(g, source), distance: state.distance, predecessor: state.predecessor }
 }
 
 /** The result of {@link aStar}. */
@@ -181,35 +142,9 @@ export function aStar(
 ): AStarResult {
   const s = nodeIndex(g, source)
   const t = nodeIndex(g, target)
-  const h = options.heuristic ?? (() => 0)
-  const weight = weightOf(g, options)
-  const a = g.out
-  const cost = new Float64Array(g.n).fill(Number.POSITIVE_INFINITY)
-  const predecessor = new Int32Array(g.n).fill(-1)
-  const closed = new Uint8Array(g.n)
-  const open = new IndexedQueue(g.n)
-  const expanded: number[] = []
-  cost[s] = 0
-  open.push(s, h(s))
-  for (let u = open.pop(); u !== undefined; u = open.pop()) {
-    closed[u] = 1
-    expanded.push(u)
-    if (u === t) break
-    for (let k = a.indptr[u] ?? 0; k < (a.indptr[u + 1] ?? 0); k++) {
-      const v = a.indices[k] ?? 0
-      if (closed[v] === 1) continue
-      const w = weight(k)
-      if (w < 0) throw new MdmlError('domain', 'aStar: negative edge weights are not allowed')
-      const alt = (cost[u] ?? 0) + w
-      if (alt < (cost[v] ?? Number.POSITIVE_INFINITY)) {
-        cost[v] = alt
-        predecessor[v] = u
-        open.push(v, alt + h(v))
-      }
-    }
-  }
-  const distance = cost[t] ?? Number.POSITIVE_INFINITY
-  return { path: reconstructPath(predecessor, s, t), distance, expanded }
+  const { state } = runAlgorithm(aStarAlgorithm(g, s, t, options), { maxSteps: g.n + 1 })
+  const distance = state.distance[t] ?? Number.POSITIVE_INFINITY
+  return { path: reconstructPath(state.predecessor, s, t), distance, expanded: state.expanded }
 }
 
 /**
@@ -229,43 +164,13 @@ export function aStar(
  * ```
  */
 export function floydWarshall(g: Graph, options: PathOptions = {}): AllPairsShortestPaths {
+  const { state } = runAlgorithm(floydWarshallAlgorithm(g, options), { maxSteps: g.n + 1 })
+  if (state.negativeCycle) throw new MdmlError('value', 'floydWarshall: the graph has a negative cycle')
   const n = g.n
-  const weight = weightOf(g, options)
-  const d = new Float64Array(n * n).fill(Number.POSITIVE_INFINITY)
-  const p = new Int32Array(n * n).fill(-1)
-  for (let i = 0; i < n; i++) d[i * n + i] = 0
-  const a = g.out
-  for (let u = 0; u < n; u++) {
-    for (let k = a.indptr[u] ?? 0; k < (a.indptr[u + 1] ?? 0); k++) {
-      const v = a.indices[k] ?? 0
-      const w = weight(k)
-      if (u === v) {
-        if (w < 0) throw new MdmlError('value', 'floydWarshall: the graph has a negative cycle')
-        continue
-      }
-      if (w < (d[u * n + v] ?? Number.POSITIVE_INFINITY)) {
-        d[u * n + v] = w
-        p[u * n + v] = u
-      }
-    }
+  return {
+    distance: fromStorage(state.distance, [n, n], 'float64'),
+    predecessor: fromStorage(state.predecessor, [n, n], 'int32'),
   }
-  for (let k = 0; k < n; k++) {
-    for (let i = 0; i < n; i++) {
-      const dik = d[i * n + k] ?? Number.POSITIVE_INFINITY
-      if (dik === Number.POSITIVE_INFINITY) continue
-      for (let j = 0; j < n; j++) {
-        const alt = dik + (d[k * n + j] ?? Number.POSITIVE_INFINITY)
-        if (alt < (d[i * n + j] ?? Number.POSITIVE_INFINITY)) {
-          d[i * n + j] = alt
-          p[i * n + j] = p[k * n + j] ?? -1
-        }
-      }
-    }
-  }
-  for (let i = 0; i < n; i++) {
-    if ((d[i * n + i] ?? 0) < 0) throw new MdmlError('value', 'floydWarshall: the graph has a negative cycle')
-  }
-  return { distance: fromStorage(d, [n, n], 'float64'), predecessor: fromStorage(p, [n, n], 'int32') }
 }
 
 /**
