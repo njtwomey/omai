@@ -3336,6 +3336,10 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `operators.ts`: operator learning: `DeepONet` (branch over sensors, trunk over the query point), `SpectralConv1d`
     and `SpectralConv2d` (low Fourier modes times learned complex weights, through the differentiable FFT),
     `FourierLayer` and `FNO` (lift, Fourier layers, projection, in one or two dimensions).
+  - `hippo.ts`: the initialisations of state-space models: `hippoLegS`, `hippoLegT`, `hippoLagT` (the matrices of
+    `x' = A x + B u` that project the input's history onto Legendre or Laguerre bases), `nplrHippo` (the
+    normal-plus-low-rank form `V diag(lambda) V^H - P P^T` with its eigenbasis forms) and `nplrReconstruct`,
+    `s4dEigenvalues` (S4D-Lin, -Inv, -Real).
   - `forecasting.ts`: N-BEATS: `trendBasis`, `seasonalityBasis`, `NBeatsBlock` (generic, trend or seasonality basis),
     `NBeats` (doubly residual stacks returning the forecast, the final residual and each block's forecast and backcast).
   - `recommender.ts`: recommender blocks: `fmScore`, `FactorisationMachine` (with `interactions` field by field),
