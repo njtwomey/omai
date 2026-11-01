@@ -80,6 +80,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/metrics': () => import('mdml-engine/metrics'),
   'mdml-engine/mixture': () => import('mdml-engine/mixture'),
   'mdml-engine/nn': () => import('mdml-engine/nn'),
+  'mdml-engine/nn/additive': () => import('mdml-engine/nn/additive'),
   'mdml-engine/nn/blocks': () => import('mdml-engine/nn/blocks'),
   'mdml-engine/nn/decoding': () => import('mdml-engine/nn/decoding'),
   'mdml-engine/nn/functional': () => import('mdml-engine/nn/functional'),

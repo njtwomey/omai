@@ -3347,6 +3347,20 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     `standardNormalLogProb`.
   - `mechanics.ts`: `HamiltonianNet` (a network for H(q, p), the field its symplectic gradient, energy conserved
     along the flow) and `LagrangianNet` (a network for L(q, qdot), accelerations from the Euler-Lagrange equation).
+- `additive/` (inline): additive networks, the neural counterpart of `gam/` (GAMLSS): learnable splines whose knots
+  train with the weights, and additive models built from them.
+  - `bspline.ts`: `bsplineBasis` and `bsplineBasisDerivative` (the Cox-de Boor recurrence in tensor operations, any degree
+    and derivative order; differentiable in the points and in the knots; knots `[f, m]` with points `[n, f]` batch over
+    features; boundary `clamp` or `linear`), `extendKnots` (clamped knot vector), `grevilleAbscissae`, `knotsFromLogits`
+    and `knotLogits` (interior knots as a softmax of gaps: ordered for any logits, with a floor on the gaps).
+  - `knots.ts`: the two slots of a learnable spline as option tables: `splineKnots` (`uniform`, `quantile` and
+    `learnable` free knots, with `placeInterior` the first placement) and `splineShapes` (`none`, `increasing`,
+    `decreasing`, `convex`, `concave`, `bounded`: reparameterisations of the raw coefficients, so the constraint holds at
+    every step).
+  - `spline-layer.ts`: `SplineLayer` (`y_o = b_o + sum_i sum_k c_{o,i,k} B_k(x_i)`: `terms` for the edges, `curve` for
+    one spline on a grid, `termDerivatives`, `penalty` the P-spline difference penalty; the ranges and fixed knots are
+    buffers so a saved model keeps them) and `differenceRoughness`. With one output it is an additive model; with more
+    it is the layer of a Kolmogorov-Arnold network.
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
