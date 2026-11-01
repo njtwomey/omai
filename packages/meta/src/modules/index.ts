@@ -84,6 +84,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/nn/blocks': () => import('mdml-engine/nn/blocks'),
   'mdml-engine/nn/decoding': () => import('mdml-engine/nn/decoding'),
   'mdml-engine/nn/functional': () => import('mdml-engine/nn/functional'),
+  'mdml-engine/nn/kan': () => import('mdml-engine/nn/kan'),
   'mdml-engine/nn/module': () => import('mdml-engine/nn/module'),
   'mdml-engine/nn/training': () => import('mdml-engine/nn/training'),
   'mdml-engine/numerics': () => import('mdml-engine/numerics'),

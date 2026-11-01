@@ -3422,6 +3422,17 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     through its tensor log-likelihood, an `ExtendedFamily` through its derivatives as a custom reverse rule, or a GAMLSS
     family by name; the same families and links as `gam/gamlss.ts`) and `DistributionalAdditive` (one `AdditiveModel`
     per parameter with its own terms and link, `nll`, `naturalParameters`, `distribution`, `penalty`).
+- `kan/` (inline): Kolmogorov-Arnold networks (Liu et al. 2024), on `additive/`'s `SplineLayer`: a learnable univariate
+  function on every edge, nodes that only sum.
+  - `edge-bases.ts`: the `kanBases` slot (the family an edge's function is drawn from: `bspline` (the paper, a
+    `SplineLayer`, so the `splineKnots` slot places or trains the knots), `rbf` (FastKAN), `chebyshev` (ChebyKAN) and
+    `fourier`), `ExpansionLayer` (the three cheaper families as one layer with `SplineLayer`'s interface) and the
+    `EdgeFunctions` interface they share.
+  - `kan-layer.ts`: `KanLayer` (`phi = w_b b(x) + w_s spline(x)` on each edge, the paper's initialisation, an edge mask
+    buffer, `activations`, `edgeCurve`, finite and differentiable outside the grid) and the `kanBaseFunctions` slot (`silu`,
+    `none`, `identity`, `relu`, `tanh`, `softplus`).
+  - `kan.ts`: `KAN` (a stack of layers by widths: `trace`, `edgeScales`, `edgeCurve`), `KanSpec` (the structure as plain
+    data: widths, grid, degree, families, base) and `kanSpec`.
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
