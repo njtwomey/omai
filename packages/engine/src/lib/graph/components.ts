@@ -5,7 +5,9 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
 import { partitionFromLabels } from './_build.ts'
+import { biconnectivityAlgorithm, componentMethods } from './component-algorithms.ts'
 import { type Graph, graph } from './graph.ts'
 
 /**
@@ -75,100 +77,6 @@ export function isConnected(g: Graph): boolean {
   return g.n > 0 && connectedComponents(g).count === 1
 }
 
-function tarjan(g: Graph): Int32Array {
-  const index = new Int32Array(g.n).fill(-1)
-  const low = new Int32Array(g.n)
-  const onStack = new Uint8Array(g.n)
-  const stack: number[] = []
-  const comp = new Int32Array(g.n).fill(-1)
-  let counter = 0
-  let found = 0
-  const a = g.out
-  for (let root = 0; root < g.n; root++) {
-    if (index[root] !== -1) continue
-    const calls: [number, number][] = []
-    const enter = (v: number): void => {
-      index[v] = counter
-      low[v] = counter
-      counter++
-      stack.push(v)
-      onStack[v] = 1
-      calls.push([v, a.indptr[v] ?? 0])
-    }
-    enter(root)
-    while (calls.length > 0) {
-      const frame = calls[calls.length - 1] as [number, number]
-      const [v, k] = frame
-      if (k < (a.indptr[v + 1] ?? 0)) {
-        frame[1] = k + 1
-        const w = a.indices[k] ?? 0
-        if (index[w] === -1) enter(w)
-        else if (onStack[w] === 1) low[v] = Math.min(low[v] ?? 0, index[w] ?? 0)
-        continue
-      }
-      calls.pop()
-      const parent = calls[calls.length - 1]
-      if (parent !== undefined) low[parent[0]] = Math.min(low[parent[0]] ?? 0, low[v] ?? 0)
-      if (low[v] === index[v]) {
-        for (;;) {
-          const w = stack.pop() ?? v
-          onStack[w] = 0
-          comp[w] = found
-          if (w === v) break
-        }
-        found++
-      }
-    }
-  }
-  return comp
-}
-
-function kosaraju(g: Graph): Int32Array {
-  // First pass: finishing order on the graph; second: search the reversed graph in reverse finishing order.
-  const seen = new Uint8Array(g.n)
-  const finished: number[] = []
-  for (let root = 0; root < g.n; root++) {
-    if (seen[root] === 1) continue
-    seen[root] = 1
-    const calls: [number, number][] = [[root, g.out.indptr[root] ?? 0]]
-    while (calls.length > 0) {
-      const frame = calls[calls.length - 1] as [number, number]
-      const [v, k] = frame
-      if (k < (g.out.indptr[v + 1] ?? 0)) {
-        frame[1] = k + 1
-        const w = g.out.indices[k] ?? 0
-        if (seen[w] === 0) {
-          seen[w] = 1
-          calls.push([w, g.out.indptr[w] ?? 0])
-        }
-        continue
-      }
-      calls.pop()
-      finished.push(v)
-    }
-  }
-  const comp = new Int32Array(g.n).fill(-1)
-  let c = 0
-  for (let i = finished.length - 1; i >= 0; i--) {
-    const s = finished[i] ?? 0
-    if (comp[s] !== -1) continue
-    comp[s] = c
-    const stack = [s]
-    while (stack.length > 0) {
-      const u = stack.pop() ?? 0
-      for (let k = g.in.indptr[u] ?? 0; k < (g.in.indptr[u + 1] ?? 0); k++) {
-        const w = g.in.indices[k] ?? 0
-        if (comp[w] === -1) {
-          comp[w] = c
-          stack.push(w)
-        }
-      }
-    }
-    c++
-  }
-  return comp
-}
-
 /**
  * Strongly connected components (NetworkX strongly_connected_components, scipy's connected_components with
  * `connection='strong'`) by Tarjan's single-pass lowlink algorithm (default) or Kosaraju's two passes; both give the
@@ -192,7 +100,9 @@ export function stronglyConnectedComponents(
   options: { readonly method?: 'tarjan' | 'kosaraju' } = {},
 ): Components {
   if (!g.directed) return connectedComponents(g)
-  return partitionFromLabels(options.method === 'kosaraju' ? kosaraju(g) : tarjan(g))
+  const alg = componentMethods.make({ kind: options.method ?? 'tarjan' })(g)
+  const { state } = runAlgorithm(alg, { maxSteps: 4 * g.n + 2 * g.out.indices.length + 8 })
+  return partitionFromLabels(state.component)
 }
 
 /**
@@ -265,64 +175,8 @@ interface Biconnectivity {
 
 function biconnectivity(g: Graph, where: string): Biconnectivity {
   if (g.directed) throw new MdmlError('value', `${where}: the graph must be undirected`)
-  const a = g.out
-  const disc = new Int32Array(g.n).fill(-1)
-  const low = new Int32Array(g.n)
-  const cut = new Uint8Array(g.n)
-  const bridges: [number, number][] = []
-  const blocks: [number, number][][] = []
-  const edgeStack: [number, number][] = []
-  let time = 0
-  for (let root = 0; root < g.n; root++) {
-    if (disc[root] !== -1) continue
-    disc[root] = time
-    low[root] = time
-    time++
-    let rootChildren = 0
-    // Frames: node, the edge it was entered by, the next adjacency position.
-    const calls: [number, number, number][] = [[root, -1, a.indptr[root] ?? 0]]
-    while (calls.length > 0) {
-      const frame = calls[calls.length - 1] as [number, number, number]
-      const [v, via, k] = frame
-      if (k < (a.indptr[v + 1] ?? 0)) {
-        frame[2] = k + 1
-        const w = a.indices[k] ?? 0
-        const e = a.edges[k] ?? -1
-        if (w === v || e === via) continue
-        if (disc[w] === -1) {
-          edgeStack.push([v, w])
-          disc[w] = time
-          low[w] = time
-          time++
-          calls.push([w, e, a.indptr[w] ?? 0])
-        } else if ((disc[w] ?? 0) < (disc[v] ?? 0)) {
-          low[v] = Math.min(low[v] ?? 0, disc[w] ?? 0)
-          edgeStack.push([v, w])
-        }
-        continue
-      }
-      calls.pop()
-      const parent = calls[calls.length - 1]
-      if (parent === undefined) continue
-      const p = parent[0]
-      low[p] = Math.min(low[p] ?? 0, low[v] ?? 0)
-      if (p === root) rootChildren++
-      if ((low[v] ?? 0) >= (disc[p] ?? 0)) {
-        if (p !== root) cut[p] = 1
-        const block: [number, number][] = []
-        for (;;) {
-          const top = edgeStack.pop()
-          if (top === undefined) break
-          block.push(top)
-          if (top[0] === p && top[1] === v) break
-        }
-        blocks.push(block)
-      }
-      if ((low[v] ?? 0) > (disc[p] ?? 0)) bridges.push([Math.min(p, v), Math.max(p, v)])
-    }
-    if (rootChildren >= 2) cut[root] = 1
-  }
-  return { cut, bridges, blocks }
+  const { state } = runAlgorithm(biconnectivityAlgorithm(g), { maxSteps: 4 * g.n + 4 * g.out.indices.length + 8 })
+  return { cut: state.cut, bridges: state.bridges, blocks: state.blocks }
 }
 
 /**

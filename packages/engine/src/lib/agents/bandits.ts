@@ -13,14 +13,23 @@ import {
   type Agent,
   type BanditFamily,
   boltzmannProbabilities,
-  cumulativeRegret,
   type Env,
   isBandit,
   klUcbIndex,
   ucb1Index,
 } from '../rl/index.ts'
-import { flatDim, type Space } from '../space/index.ts'
+import { dict, flatDim, type OptionTable, optionTable, real, type Space } from '../space/index.ts'
 import { fromStorage, toFlat } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { argmaxRandom, type Rate, randomIndex, rateAt, unit } from './_tabular.ts'
 
 // ------------------------------------------------------------------------------------------------ shared machinery
@@ -760,6 +769,216 @@ export function linearThompson(
 
 // ------------------------------------------------------------------------------------------------------ running
 
+/** The paths the bandit run logs, as a type. */
+export type BanditPath = 'bandit/arm' | 'bandit/reward' | 'bandit/regret' | 'bandit/estimate' | 'bandit/counts'
+
+/**
+ * What the bandit run logs, by path: the arm pulled, the reward it paid, the cumulative pseudo-regret after the pull
+ * (from the environment's oracle), and, for agents that keep sample statistics, their estimate of each arm's mean and
+ * the pulls of each arm.
+ */
+export const banditContract: Contract<unknown, BanditPath> = defineContract({
+  'bandit/arm': scalar({ description: 'the arm pulled at this step' }),
+  'bandit/reward': scalar({ description: 'the reward the pull paid' }),
+  'bandit/regret': scalar({ description: 'the cumulative pseudo-regret after the pull' }),
+  'bandit/estimate': tensor({
+    role: 'state',
+    shape: ['arms'],
+    description: "the agent's estimated mean reward of each arm",
+  }),
+  'bandit/counts': tensor({ role: 'state', shape: ['arms'], description: 'the pulls of each arm so far' }),
+})
+
+/**
+ * The state of {@link banditAlgorithm}: the agent, the environment and the pulls so far. The histories grow in place, so
+ * keep a copy of a state you want to look at later.
+ */
+export interface BanditAlgorithmState<G, S, O> {
+  /** The agent's state. */
+  readonly agent: G
+  /** The environment's state before the next pull. */
+  readonly envState: S
+  /** The observation before the next pull. */
+  readonly observation: O
+  /** Pulls made. */
+  readonly t: number
+  /** The arms pulled, in order. */
+  readonly actions: readonly number[]
+  /** The rewards received. */
+  readonly rewards: readonly number[]
+  /** The cumulative pseudo-regret after each pull. */
+  readonly regret: readonly number[]
+}
+
+/** Options of {@link banditAlgorithm}. */
+export interface BanditAlgorithmOptions {
+  /** Stop after this many pulls (default: run until the step budget). */
+  readonly pulls?: number
+  /**
+   * A root key from which every key of the run derives (agent `fold(root, 0)`, reset `fold(root, 1)`, pull `t`
+   * `fold(fold(root, 2), t)`); without it the keys derive from the run's own.
+   */
+  readonly key?: Key
+}
+
+/**
+ * A learning agent pulling a bandit's arms as an Algorithm: each step lets the agent choose an arm, pulls it, lets the
+ * agent learn from the reward, and measures the pseudo-regret of the pull against the environment's oracle. The
+ * state serialises, so a run can be resumed or sought; the paths of {@link banditContract} give the arm, reward and
+ * regret of each pull and the agent's estimates.
+ *
+ * @param env - The bandit (with an oracle and discrete arms).
+ * @param agent - The agent (see {@link banditStrategies} for a table of them).
+ * @param options - The number of pulls and a root key.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` when the environment has no oracle.
+ * @concept regret
+ * @example
+ * ```ts
+ * import { banditAlgorithm, ucb1 } from 'mdml-engine/agents'
+ * import { bernoulliBandit } from 'mdml-engine/environments'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const env = bernoulliBandit.create({ probs: [0.25, 0.75] })
+ * runAlgorithm(banditAlgorithm(env, ucb1(env)), { maxSteps: 2 }).state.regret // => [0.5, 0.5]
+ * ```
+ */
+export function banditAlgorithm<G, S, O>(
+  env: Env<S, O, number>,
+  agent: Agent<G, O, number>,
+  options: BanditAlgorithmOptions = {},
+): Algorithm<BanditAlgorithmState<G, S, O>, BanditPath> {
+  if (!isBandit(env)) throw new MdmlError('value', `runBandit: ${env.spec.id} has no oracle or discrete arms`)
+  const oracle = env.oracle
+  const root = options.key
+  return {
+    name: `bandit:${agent.name}`,
+    config: { env: env.spec.id, agent: agent.config, pulls: options.pulls ?? null } as Json,
+    init: (k) => {
+      const r = env.reset(foldIn(root ?? k, 1))
+      return {
+        agent: agent.init(foldIn(root ?? k, 0)),
+        envState: r.state,
+        observation: r.observation,
+        t: 0,
+        actions: [],
+        rewards: [],
+        regret: [],
+      }
+    },
+    step: (s, ctx) => {
+      const k = root === undefined ? ctx.key : foldIn(foldIn(root, 2), ctx.t)
+      const action = agent.act(s.agent, s.observation, foldIn(k, 0))
+      const step = env.step(s.envState, action, foldIn(k, 1))
+      const regret =
+        (s.regret[s.t - 1] ?? 0) +
+        (oracle.optimalExpectedReward(s.envState) - oracle.expectedReward(s.envState, action))
+      const g = agent.learn(
+        s.agent,
+        {
+          observation: s.observation,
+          action,
+          reward: step.reward,
+          nextObservation: step.observation,
+          terminated: step.terminated,
+          truncated: step.truncated,
+        },
+        foldIn(k, 2),
+      )
+      let envState = step.state
+      let observation = step.observation
+      if (step.terminated || step.truncated) {
+        const r = env.reset(foldIn(k, 3))
+        envState = r.state
+        observation = r.observation
+      }
+      if (ctx.wants('bandit/arm')) ctx.log('bandit/arm', action)
+      if (ctx.wants('bandit/reward')) ctx.log('bandit/reward', step.reward)
+      if (ctx.wants('bandit/regret')) ctx.log('bandit/regret', regret)
+      const stats = (g ?? {}) as { readonly means?: Float64Array; readonly counts?: Float64Array }
+      if (stats.means !== undefined && ctx.wants('bandit/estimate'))
+        ctx.log('bandit/estimate', Float64Array.from(stats.means))
+      if (stats.counts !== undefined && ctx.wants('bandit/counts'))
+        ctx.log('bandit/counts', Float64Array.from(stats.counts))
+        // The histories grow in place (copying them each step would make a run quadratic in the pulls).
+      ;(s.actions as number[]).push(action)
+      ;(s.rewards as number[]).push(step.reward)
+      ;(s.regret as number[]).push(regret)
+      return { agent: g, envState, observation, t: s.t + 1, actions: s.actions, rewards: s.rewards, regret: s.regret }
+    },
+    done: (s) => (options.pulls !== undefined && s.t >= options.pulls ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as BanditAlgorithmState<G, S, O>,
+  }
+}
+
+/** What builds a bandit agent from the arms. */
+export type BanditStrategyBuilder = (env: BanditSpaces) => Agent<BanditState, unknown, number>
+
+/** What a bandit strategy can do, for validity rules and selectors. */
+export interface BanditStrategyProperties {
+  /** How it balances exploring and exploiting. */
+  readonly principle: 'random-exploration' | 'optimism' | 'posterior-sampling' | 'adversarial' | 'preference'
+  /** Whether its regret grows only logarithmically in the stochastic setting. */
+  readonly logarithmicRegret: boolean
+}
+
+/**
+ * The bandit strategies as one slot, each with its own knobs: `epsilon-greedy`, `ucb1` (optimism), `kl-ucb`,
+ * `thompson-bernoulli` (posterior sampling), `exp3` (adversarial) and the `gradient` bandit.
+ *
+ * @concept multi-armed-bandits
+ * @example
+ * ```ts
+ * import { banditStrategies } from 'mdml-engine/agents'
+ * banditStrategies.where((p) => p.logarithmicRegret) // => ['ucb1', 'kl-ucb', 'thompson-bernoulli']
+ * ```
+ */
+export const banditStrategies: OptionTable<BanditStrategyBuilder, BanditStrategyProperties> = optionTable(
+  {
+    'epsilon-greedy': {
+      description: 'the best arm so far, a random one with probability epsilon',
+      properties: { principle: 'random-exploration', logarithmicRegret: false },
+      space: dict({ epsilon: real(0, 1, { default: 0.1, label: 'epsilon' }) }),
+      make: (config) => (env) => epsilonGreedyBandit(env, { epsilon: Number(config['epsilon'] ?? 0.1) }),
+    },
+    ucb1: {
+      description: 'the arm with the largest upper confidence bound',
+      properties: { principle: 'optimism', logarithmicRegret: true },
+      space: dict({ c: real(0.1, 10, { default: 2, label: 'exploration constant c' }) }),
+      make: (config) => (env) => ucb1(env, { c: Number(config['c'] ?? 2) }),
+    },
+    'kl-ucb': {
+      description: 'the arm with the largest KL upper confidence bound (Bernoulli)',
+      properties: { principle: 'optimism', logarithmicRegret: true },
+      space: dict({ c: real(0, 5, { default: 0, label: 'c of the exploration budget' }) }),
+      make: (config) => (env) => klUcb(env, { c: Number(config['c'] ?? 0) }),
+    },
+    'thompson-bernoulli': {
+      description: 'pull the arm whose sampled success probability is largest',
+      properties: { principle: 'posterior-sampling', logarithmicRegret: true },
+      space: dict({}),
+      make: () => (env) => thompsonBernoulli(env),
+    },
+    exp3: {
+      description: 'exponential weights with uniform exploration, for adversarial rewards',
+      properties: { principle: 'adversarial', logarithmicRegret: false },
+      space: dict({ gamma: real(0.01, 1, { default: 0.1, label: 'exploration mixture gamma' }) }),
+      make: (config) => (env) => exp3(env, { gamma: Number(config['gamma'] ?? 0.1) }),
+    },
+    gradient: {
+      description: 'gradient ascent on arm preferences with a softmax policy',
+      properties: { principle: 'preference', logarithmicRegret: false },
+      space: dict({ alpha: real(0.001, 1, { default: 0.1, label: 'step size alpha' }) }),
+      make: (config) => (env) => gradientBandit(env, { alpha: Number(config['alpha'] ?? 0.1) }),
+    },
+  },
+  {
+    default: 'ucb1',
+    label: 'bandit strategy',
+    description: 'How an agent chooses which arm to pull.',
+  },
+)
+
 /** Result of {@link runBandit}. */
 export interface BanditRun<G> {
   readonly agent: G
@@ -772,7 +991,8 @@ export interface BanditRun<G> {
 /**
  * Run a learning agent on a bandit for a number of pulls and measure its cumulative pseudo-regret with the
  * environment's oracle (`cumulativeRegret` of `lib/rl`), which `trainAgent` cannot see because it needs the
- * environment state before every pull. Keys derive from the run key and the pull number.
+ * environment state before every pull. Keys derive from the run key and the pull number. This is
+ * {@link banditAlgorithm} run to the end.
  *
  * @param env - The bandit (with an oracle).
  * @param agent - The agent.
@@ -793,44 +1013,8 @@ export function runBandit<G, S, O>(
   agent: Agent<G, O, number>,
   options: { readonly pulls?: number; readonly seed?: number; readonly key?: Key } = {},
 ): BanditRun<G> {
-  if (!isBandit(env)) throw new MdmlError('value', `runBandit: ${env.spec.id} has no oracle or discrete arms`)
-  const oracle = env.oracle
   const pulls = options.pulls ?? env.spec.maxEpisodeSteps ?? 1000
   const root = options.key ?? makeKey(options.seed ?? 0)
-  let g = agent.init(foldIn(root, 0))
-  let r = env.reset(foldIn(root, 1))
-  let state = r.state
-  let observation = r.observation
-  const states: S[] = []
-  const actions: number[] = []
-  const rewards: number[] = []
-  for (let t = 0; t < pulls; t++) {
-    const k = foldIn(foldIn(root, 2), t)
-    const action = agent.act(g, observation, foldIn(k, 0))
-    const step = env.step(state, action, foldIn(k, 1))
-    states.push(state)
-    actions.push(action)
-    rewards.push(step.reward)
-    g = agent.learn(
-      g,
-      {
-        observation,
-        action,
-        reward: step.reward,
-        nextObservation: step.observation,
-        terminated: step.terminated,
-        truncated: step.truncated,
-      },
-      foldIn(k, 2),
-    )
-    if (step.terminated || step.truncated) {
-      r = env.reset(foldIn(k, 3))
-      state = r.state
-      observation = r.observation
-    } else {
-      state = step.state
-      observation = step.observation
-    }
-  }
-  return { agent: g, actions, rewards, regret: cumulativeRegret(oracle, states, actions) }
+  const { state } = runAlgorithm(banditAlgorithm(env, agent, { pulls, key: root }), { key: root, maxSteps: pulls })
+  return { agent: state.agent, actions: [...state.actions], rewards: [...state.rewards], regret: [...state.regret] }
 }

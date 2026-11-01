@@ -1144,12 +1144,20 @@ in it (`checkPrimitive`).
 - `structures.ts`: `BinaryHeap` (a class over `base/heap.ts`), `UnionFind` (rank and path halving), `IndexedQueue`
   (indexed min-priority queue with decrease-key).
 - `traversal.ts`: `bfs`/`bfsAlgorithm` (layer per step, several sources, direction, depth limit), `dfs`/`dfsAlgorithm`
-  (tree, back, forward and cross edges, discovery and finish times), `topologicalSort` (lexicographic Kahn),
+  (tree, back, forward and cross edges, discovery and finish times), `topologicalSort`/`topologicalSortAlgorithm` (Kahn,
+  ready rules `readyRules`, `orderContract`),
   `isDag`, `findCycle`, `bipartiteColouring`, `isBipartite`, `kHopNeighbourhood`.
+- `colouring-algorithms.ts`: the steppable algorithms behind `colouring.ts`: `greedyColouringAlgorithm` (one node per
+  step, strategies `colouringStrategies`), `maximalIndependentSetAlgorithm` (`independentSetRules`), `bronKerboschAlgorithm`
+  (one call per step, `pivotRules`) and their contracts (`colour/...`, `mis/...`, `clique/...`).
 - `components.ts`: `connectedComponents` (weak or strong), `isConnected`, `stronglyConnectedComponents` (Tarjan,
   Kosaraju), `isStronglyConnected`, `condensation`, `articulationPoints`, `bridges`, `biconnectedComponents`.
-- `paths.ts`: `dijkstra`, `bellmanFord`, `aStar` (with the expanded set), `floydWarshall`, `johnson`, `kShortestPaths`
-  (Yen), `shortestPath`, `reconstructPath` (single-source and all-pairs predecessors).
+- `component-algorithms.ts`: the depth-first searches behind `components.ts`: `tarjanAlgorithm`, `kosarajuAlgorithm`
+  (strong components), `biconnectivityAlgorithm` (articulation points, bridges, blocks), one search action per step,
+  `dfsContract` (`dfs/...` paths) and the slot `componentMethods`.
+- `paths.ts`: `dijkstra`, `bellmanFord`, `aStar` (with the expanded set), `floydWarshall`, `johnson`,
+  `shortestPath`, `reconstructPath` (single-source and all-pairs predecessors).
+- `k-shortest-paths.ts`: `kShortestPaths` and `yenAlgorithm` (one spur path per step, `yenContract`).
 - `shortest-paths.ts`: the steppable algorithms behind `paths.ts`: `dijkstraAlgorithm`, `aStarAlgorithm` (one node
   settled per step; frontier, distances and predecessors), `bellmanFordAlgorithm` (one round per step, negative cycles
   flagged), `floydWarshallAlgorithm` (one pivot per step), their states and `shortestPathContract` (`sp/...` paths).
@@ -1160,8 +1168,12 @@ in it (`checkPrimitive`).
   `lcaIndex` (binary lifting), `lowestCommonAncestor`.
 - `flows.ts`: `maxFlow` (Dinic, Edmonds-Karp), `minCut`, `minCostFlow` (negative costs saturated, then successive
   shortest paths with potentials), `maxFlowMinCost`, `bipartiteMatching` (Hopcroft-Karp).
+- `flow-algorithms.ts`: the steppable algorithms behind `flows.ts`: `maxFlowAlgorithm` (Edmonds-Karp or Dinic, one
+  augmentation per step), `minCostFlowAlgorithm` (successive shortest paths), `flowContract` (`flow/...` paths) and the
+  slot `maxFlowMethods`. `hopcroft-karp.ts`: `hopcroftKarpAlgorithm` (one phase per step) and `matchingContract`.
 - `centrality.ts`: `degreeCentrality`, `closenessCentrality` (Wasserman-Faust), `betweennessCentrality` (Brandes,
-  weighted, endpoints), `edgeBetweennessCentrality`, `shortestPathCounts`, and traced power iterations
+  weighted, endpoints), `edgeBetweennessCentrality`, their steppable `betweennessAlgorithm` and
+  `edgeBetweennessAlgorithm` (one source per step, sampled sources, `betweennessContract`), `shortestPathCounts`, and traced power iterations
   `eigenvectorCentrality`, `katzCentrality`, `pagerank` (personalisation, dangling distribution), `hits`, each with
   its `*Algorithm`.
 - `community.ts`: `partition`, `modularity` (resolution, directed), `louvain`/`louvainAlgorithm`, `leiden`/
@@ -1186,8 +1198,9 @@ in it (`checkPrimitive`).
   `karateClubGraph`) and random models from keys (`erdosRenyiGraph`, `gnmRandomGraph`, `wattsStrogatzGraph`,
   `barabasiAlbertGraph`, `stochasticBlockModel`, `randomDag`, `randomGeometricGraph`, `kNearestNeighbourGraph`,
   `randomKnnGraph`).
-- `isomorphism.ts`: `weisfeilerLehmanAlgorithm`/`weisfeilerLehman` (traced colour refinement), `wlHash`, `vf2`
-  (isomorphism, induced subgraph isomorphism and monomorphism, with node matching), `isIsomorphic`,
+- `isomorphism.ts`: `weisfeilerLehmanAlgorithm`/`weisfeilerLehman` (traced colour refinement), `wlHash`, `vf2`/`vf2Algorithm`
+  (isomorphism, induced subgraph isomorphism and monomorphism, with node matching; one pairing or backtrack per step,
+  `vf2Contract`, the slot `matchModes`), `isIsomorphic`,
   `subgraphIsomorphisms`, `isSubgraphIsomorphic`.
 - `colouring.ts`: `greedyColouring` (largest-first, smallest-last, random-sequential, independent-set,
   connected-sequential BFS/DFS, DSATUR), `isProperColouring`, `maximalIndependentSet`, `maximalCliques`
@@ -2622,8 +2635,9 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `inference/gaussian-bp.ts`: Gaussian belief propagation in information form, walk-summability.
 - `inference/chain.ts`: forward-backward (scaled and log space, pairwise posteriors), Viterbi, posterior decoding,
   forward filtering and backward sampling.
-- `inference/sampling.ts`: forward (`ancestralSample` in models/bayes-net.ts), rejection and likelihood-weighted
-  sampling with effective sample sizes, Gibbs sampling on factor graphs, weighted marginals, approximate queries.
+- `inference/sampling.ts`: forward (`forwardSample`, `ancestralSample` in models/bayes-net.ts), rejection and
+  likelihood-weighted sampling with effective sample sizes (`rejectionSampleAlgorithm`, `likelihoodWeightingAlgorithm`,
+  one sample per step, `importanceContract`, the slot `importanceSamplers`), Gibbs sampling on factor graphs, weighted marginals, approximate queries.
 - `inference/variational.ts`: naive mean field, variational message passing (on discrete factor graphs, where it has
   the fixed points of mean field), tree-reweighted belief propagation and its upper bound with spanning-tree edge
   probabilities. TODO: VMP on conjugate-exponential (Dirichlet, Gaussian) nodes.
@@ -2677,9 +2691,11 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
   BIC and AIC.
 - `learning/independence.ts`: chi-square and G tests (stratified), Fisher z and partial-correlation tests, oracles.
-- `learning/equivalence.ts`: PDAGs, skeletons, immoralities, Markov equivalence, Meek's rules, CPDAGs, consistent
-  extensions, structural Hamming distance.
-- `learning/structure.ts`: Chow-Liu trees (and TAN), the PC algorithm (stable; first or union separating sets), hill
+- `learning/equivalence.ts`: PDAGs, skeletons, immoralities, Markov equivalence, Meek's rules (`meekRulesAlgorithm`,
+  one rule sweep per step, `meekContract`), CPDAGs (`cpdagAlgorithm`), consistent extensions (`pdagToDagAlgorithm`, one
+  node per step), structural Hamming distance.
+- `learning/structure.ts`: Chow-Liu trees (and TAN; `chowLiuAlgorithm`, one edge per step, `chowLiuContract`, the slot
+  `mutualInformationEstimators`), the PC algorithm (stable; first or union separating sets), hill
   climbing with any score (BIC, BDeu, ...), tabu list and parent limit, mutual information.
 - `causal/scm.ts`: structural causal models (discrete and linear assignments plus noise), sampling, induced Bayes and
   linear-Gaussian networks, `scmStructure` (also through `toStructure`).
@@ -2689,10 +2705,13 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   the adjustment formulas, simple ID-algorithm cases (`identifyEffect`), instrumental-variable checks.
 - `causal/counterfactuals.ts`: abduction, action and prediction; twin networks; probabilities of necessity and
   sufficiency; linear-Gaussian counterfactuals.
-- `causal/discovery.ts`: PC (re-exported from `learning`), GES, DirectLiNGAM (least-squares effects; TODO:
+- `causal/discovery.ts`: PC (re-exported from `learning`), GES, DirectLiNGAM (`directLingamAlgorithm` places one variable per step, `lingamContract`, the slot
+  `exogeneityMeasures`; least-squares effects; TODO:
   causal-learn's adaptive-lasso pruning, which needs LARS) and NOTEARS (projected-gradient inner solves; switch to
   `optim`'s L-BFGS-B once it exists).
-- `causal/fci.ts`: FCI with Possible-D-Sep pruning and Zhang's rules R0-R10 (R4 from the separating sets), PAGs.
+- `causal/fci.ts`: FCI with Possible-D-Sep pruning and Zhang's rules R0-R10 (R4 from the separating sets), PAGs;
+  `fciAlgorithm` steps through the colliders, the pruning (one edge per step) and the rules (one sweep per step),
+  `fciContract`.
 
 ### 4.28 `metrics/`: evaluation metrics (scikit-learn, torchmetrics)
 
@@ -2895,10 +2914,10 @@ oracle: gymnasium step-for-step dynamics, stable-baselines3 for returns and adva
 - `policies.ts`: epsilon-greedy, Boltzmann, Gaussian (with tanh squashing), categorical and deterministic policies,
   Gaussian and Ornstein-Uhlenbeck exploration noise.
 - `mdp.ts`: tabular MDPs (from arrays or environment models), value iteration, policy iteration, policy evaluation (exact
-  and iterative), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
+  and iterative: `policyEvaluationAlgorithm`, one sweep per step, `policyEvaluationContract`, the slot `sweepOrders`), Q from V, greedy policies, occupancy measures, `tabularEnv` (environments from `P` tables). TODO:
   linear-programming solutions, once `optim/linear-programming.ts` provides `linprog`.
 - `planning.ts`: planning with models (MCTS over environment models, UCT and PUCT with priors and values, and two-player
-  game search with negamax backups; rollout planners, CEM over action sequences, MPPI). `gameMcts` stays separate from
+  game search with negamax backups; rollout planners (`rolloutPlannerAlgorithm`, one batch per step, `rolloutContract`), CEM over action sequences, MPPI). `gameMcts` stays separate from
   `search.mcts`: it searches environments with rewards on any move, and its PUCT counts a node's visits as AlphaZero
   does (the sum of its children's), where `search.mcts` also counts the expansion visit, which changes AlphaZero's
   training; `search.mcts` also labels every path for its trace.
@@ -2928,7 +2947,8 @@ its zero-sum stage games (minimax-Q), matrix-game payoffs and Kuhn/Leduc rules f
 - `classic.ts`: the textbook games: prisoner's dilemma, matching pennies, rock-paper-scissors, battle of the sexes,
   stag hunt, Aumann's chicken, hawk-dove, Shapley's game, n-player coordination, `randomGame`.
 - `dominance.ts`: strict and weak dominance by pure or mixed strategies (mixed by LP), `dominatedActions`,
-  `iteratedElimination`, `restrictGame`, `pureMaxmin`.
+  `iteratedElimination`/`iteratedEliminationAlgorithm` (one round per step, `eliminationContract`, the slot
+  `dominanceRules`), `restrictGame`, `pureMaxmin`.
 - `enumeration.ts`: `supportEnumeration`, `vertexEnumeration` (best-response polytopes, labels, degenerate games),
   `distinctEquilibria`.
 - `lemke-howson.ts`: Lemke-Howson with lexicographic pivoting as a traced algorithm (each pivot a step),
@@ -2944,7 +2964,8 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
 - `no-regret.ts`: regret matching (OpenSpiel's, with regret matching+ and linear averaging) and multiplicative weights
   (Hedge) in self-play; average strategies, average joint play, NashConv and external regret per iteration.
 - `evolutionary.ts`: the replicator(-mutator) field and dynamics, two-population replicator dynamics (Runge-Kutta to
-  given time points), projected replicator dynamics (OpenSpiel's, n players).
+  given time points) as `replicatorDynamicsAlgorithm`/`asymmetricReplicatorDynamicsAlgorithm` (`replicatorContract`,
+  the slot `replicatorIntegrators`), projected replicator dynamics (OpenSpiel's, n players).
 
 `extensive-form/` (inlined into `games`):
 - `tree.ts`: `ExtensiveGame` (OpenSpiel-style states: current player, `CHANCE` or `TERMINAL`, legal actions, chance
@@ -2964,7 +2985,8 @@ Learning in normal-form games (every routine is a traced algorithm with an itera
 Cooperative games and mechanisms:
 - `cooperative.ts`: coalitional games (characteristic functions over bitmasks, `coalitionValue`, `membersOf`),
   weighted voting, glove, bankruptcy and unanimity games, Shapley values (exact, and by permutation sampling with
-  standard errors for worths given as functions), the Shapley interaction index (`shapleyInteractionIndex`), Banzhaf
+  standard errors for worths given as functions: `sampledShapleyAlgorithm`, one order per step, `shapleyContract`, the
+  slot `orderSamplers`), the Shapley interaction index (`shapleyInteractionIndex`), Banzhaf
   indices (raw and normalised), superadditivity and convexity; `explain/shapley.ts` computes its exact Shapley
   and interaction values with them.
 - `core.ts`: excesses, core membership, a core point or emptiness, the least core, the nucleolus and prenucleolus
@@ -6172,7 +6194,8 @@ built from: `lib/rl`, `nn`, `optim`, `losses`, `search`, `games`, `dynamics`, `s
 `rl/agents/` (each file exports agents implementing the `Agent` contract)
 - `random.ts`: random and constant agents.
 - `bandits.ts`: epsilon-greedy, UCB1, KL-UCB, Thompson sampling (Bernoulli and Gaussian), EXP3, LinUCB, linear Thompson
-  sampling, gradient bandits.
+  sampling, gradient bandits, and the run of an agent on a bandit: `banditAlgorithm` (one pull per step, regret against the
+  oracle, `banditContract`), `runBandit` (it run to the end), the slot `banditStrategies`.
 - `tabular.ts`: Q-learning, SARSA, expected SARSA, n-step SARSA, SARSA(lambda), Monte Carlo control, TD(0) and
   TD(lambda), double Q-learning, Dyna-Q (and Dyna-Q+), prioritised sweeping.
 - `planning.ts`: value and policy iteration agents (solving the model at once, or a sweep at a time between

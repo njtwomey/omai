@@ -6,15 +6,142 @@
 
 import { type Json, logSumExpOf, MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
-import { type Algorithm, channels, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import { dict, type OptionTable, optionTable } from '../../space/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  type TracePolicy,
+  type Tracer,
+} from '../../trace/index.ts'
 import { type Factor, logFactor } from '../factor.ts'
-import { ancestralSample, type BayesNet, bayesNode, cptRow } from '../models/bayes-net.ts'
+import { type BayesNet, bayesNode, cptRow, forwardSample } from '../models/bayes-net.ts'
 import { type DiscreteModel, evidenceIndices, modelVariable, modelVariables } from '../models/factor-graph.ts'
 import { type Compiled, compile } from './_compiled.ts'
 import { maxProductElimination } from './elimination.ts'
 
 /** A sample: a state index for each variable. */
 export type Sample = Record<string, number>
+
+/** The paths the importance and rejection samplers log, as a type. */
+export type ImportancePath = 'is/weight' | 'is/ess' | 'is/accepted' | 'is/estimate'
+
+/**
+ * What the rejection and importance samplers log, by path: the log weight of the sample drawn (0 for a rejection
+ * sampler's accepted sample, minus infinity for a rejected one), the effective sample size so far, whether the sample
+ * was accepted (rejection: agrees with the evidence; likelihood weighting: positive weight) and the running estimate
+ * of the probability of the evidence (the acceptance rate, or the mean weight).
+ */
+export const importanceContract: Contract<unknown, ImportancePath> = defineContract({
+  'is/weight': scalar({ description: 'the log importance weight of the sample drawn at this step' }),
+  'is/ess': scalar({ description: 'the effective sample size of the weights so far' }),
+  'is/accepted': scalar({ description: '1 when the sample counts (agrees with the evidence, or has positive weight)' }),
+  'is/estimate': scalar({ description: 'the running estimate of the probability of the evidence' }),
+})
+
+/** The state of the rejection and likelihood-weighting samplers. The sample lists grow in place; copy to keep one. */
+export interface ImportanceState {
+  /** The samples kept: accepted ones for rejection sampling, all for likelihood weighting. */
+  readonly samples: readonly Sample[]
+  /** The log weights of the kept samples (all 0 for rejection sampling). */
+  readonly logWeights: readonly number[]
+  /** Samples drawn so far. */
+  readonly drawn: number
+  /** The sample drawn at the last step. */
+  readonly last: Sample
+}
+
+/** A log weight as JSON (infinite values as strings). */
+const weightsToJson = (w: readonly number[]): Json => w.map((x) => (Number.isFinite(x) ? x : String(x)))
+
+function importanceCodec(): Pick<Algorithm<ImportanceState>, 'serialise' | 'deserialise'> {
+  return {
+    serialise: (s) => ({
+      samples: s.samples.map((x) => ({ ...x })),
+      logWeights: weightsToJson(s.logWeights),
+      drawn: s.drawn,
+      last: { ...s.last },
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as {
+        readonly samples: readonly Sample[]
+        readonly logWeights: readonly (number | string)[]
+        readonly drawn: number
+        readonly last: Sample
+      }
+      return {
+        samples: o.samples.map((x) => ({ ...x })),
+        logWeights: o.logWeights.map(Number),
+        drawn: o.drawn,
+        last: { ...o.last },
+      }
+    },
+  }
+}
+
+function logImportance(
+  ctx: Parameters<Algorithm<ImportanceState, ImportancePath>['step']>[1],
+  s: ImportanceState,
+  weight: number,
+  accepted: boolean,
+  estimate: number,
+): void {
+  if (ctx.wants('is/weight')) ctx.log('is/weight', weight)
+  if (ctx.wants('is/ess')) ctx.log('is/ess', effectiveSampleSize(s.logWeights))
+  if (ctx.wants('is/accepted')) ctx.log('is/accepted', accepted ? 1 : 0)
+  if (ctx.wants('is/estimate')) ctx.log('is/estimate', estimate)
+}
+
+/**
+ * Rejection sampling as a steppable algorithm: each step draws one forward (ancestral) sample and keeps it when it
+ * agrees with the evidence; the kept samples are exact draws from the posterior, and the acceptance rate estimates
+ * the probability of the evidence.
+ *
+ * @param bn - The network.
+ * @param key - The random key.
+ * @param n - Number of forward samples to draw.
+ * @param evidence - Observed states (names or indices).
+ * @returns The algorithm; it is done after `n` draws.
+ * @concept sampling
+ * @example
+ * ```ts
+ * import { bayesNet, rejectionSampleAlgorithm } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
+ * runAlgorithm(rejectionSampleAlgorithm(bn, key(0), 20, { b: '1' }), { maxSteps: 20 }).state.drawn // => 20
+ * ```
+ */
+export function rejectionSampleAlgorithm(
+  bn: BayesNet,
+  key: Key,
+  n: number,
+  evidence: Readonly<Record<string, string | number>> = {},
+): Algorithm<ImportanceState, ImportancePath> {
+  const ev = evidenceIndices(bn, evidence)
+  return {
+    name: 'pgm/rejection-sampling',
+    config: { nodes: bn.nodes.length, samples: n },
+    init: () => ({ samples: [], logWeights: [], drawn: 0, last: {} }),
+    step: (s, ctx) => {
+      if (s.drawn >= n) return s
+      const sample = forwardSample(bn, foldIn(key, s.drawn))
+      const accepted = Object.entries(ev).every(([k, v]) => sample[k] === v)
+      if (accepted) {
+        ;(s.samples as Sample[]).push(sample)
+        ;(s.logWeights as number[]).push(0)
+      }
+      const next: ImportanceState = { samples: s.samples, logWeights: s.logWeights, drawn: s.drawn + 1, last: sample }
+      logImportance(ctx, next, accepted ? 0 : Number.NEGATIVE_INFINITY, accepted, next.samples.length / next.drawn)
+      return next
+    },
+    done: (s) => (s.drawn >= n ? 'converged' : undefined),
+    ...importanceCodec(),
+  }
+}
 
 /**
  * Rejection sampling: draw forward (ancestral) samples and keep those that agree with the evidence; the kept samples
@@ -40,11 +167,130 @@ export function rejectionSample(
   n: number,
   evidence: Readonly<Record<string, string | number>> = {},
 ): { readonly samples: Sample[]; readonly acceptance: number } {
-  const ev = evidenceIndices(bn, evidence)
-  const all = ancestralSample(bn, key, n)
-  const samples = all.filter((s) => Object.entries(ev).every(([k, v]) => s[k] === v))
-  return { samples, acceptance: n === 0 ? 0 : samples.length / n }
+  const { samples } = runAlgorithm(rejectionSampleAlgorithm(bn, key, n, evidence), { maxSteps: n }).state
+  return { samples: [...samples], acceptance: n === 0 ? 0 : samples.length / n }
 }
+
+/**
+ * Likelihood weighting as a steppable algorithm: each step samples the unobserved variables forward with the observed
+ * ones clamped and weights the sample by the probability of the evidence given its parents (importance sampling with
+ * the prior as proposal). The mean weight estimates the probability of the evidence.
+ *
+ * @param bn - The network.
+ * @param key - The random key.
+ * @param n - Number of samples.
+ * @param evidence - Observed states (names or indices).
+ * @returns The algorithm; it is done after `n` samples.
+ * @concept sampling
+ * @example
+ * ```ts
+ * import { bayesNet, likelihoodWeightingAlgorithm } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] }])
+ * runAlgorithm(likelihoodWeightingAlgorithm(bn, key(0), 5, { b: '1' }), { maxSteps: 5 }).state.samples.length // => 5
+ * ```
+ */
+export function likelihoodWeightingAlgorithm(
+  bn: BayesNet,
+  key: Key,
+  n: number,
+  evidence: Readonly<Record<string, string | number>> = {},
+): Algorithm<ImportanceState, ImportancePath> {
+  const ev = evidenceIndices(bn, evidence)
+  return {
+    name: 'pgm/likelihood-weighting',
+    config: { nodes: bn.nodes.length, samples: n },
+    init: () => ({ samples: [], logWeights: [], drawn: 0, last: {} }),
+    step: (st, ctx) => {
+      if (st.drawn >= n) return st
+      const u = uniform(foldIn(key, st.drawn), [bn.nodes.length]).data
+      const s: Sample = {}
+      let lw = 0
+      for (const [j, node] of bn.nodes.entries()) {
+        const row = cptRow(bn, node.name, s)
+        const observed = ev[node.name]
+        if (observed !== undefined) {
+          s[node.name] = observed
+          lw += Math.log(row[observed] ?? 0)
+          continue
+        }
+        let acc = 0
+        let state = row.length - 1
+        for (const [k, p] of row.entries()) {
+          acc += p
+          if ((u[j] ?? 0) < acc) {
+            state = k
+            break
+          }
+        }
+        s[node.name] = state
+      }
+      ;(st.samples as Sample[]).push(s)
+      ;(st.logWeights as number[]).push(lw)
+      const next: ImportanceState = { samples: st.samples, logWeights: st.logWeights, drawn: st.drawn + 1, last: s }
+      logImportance(
+        ctx,
+        next,
+        lw,
+        lw > Number.NEGATIVE_INFINITY,
+        Math.exp(logSumExpOf(next.logWeights) - Math.log(next.drawn)),
+      )
+      return next
+    },
+    done: (s) => (s.drawn >= n ? 'converged' : undefined),
+    ...importanceCodec(),
+  }
+}
+
+/** What builds an importance sampler: the network, the key, the sample count and the evidence. */
+export type ImportanceBuilder = (
+  bn: BayesNet,
+  key: Key,
+  n: number,
+  evidence?: Readonly<Record<string, string | number>>,
+) => Algorithm<ImportanceState, ImportancePath>
+
+/** What an importance sampler can do, for validity rules and selectors. */
+export interface ImportanceProperties {
+  /** Whether it wastes the samples that disagree with the evidence (rejection) rather than weighting them. */
+  readonly discards: boolean
+  /** Whether the kept samples are exact draws from the posterior (unweighted). */
+  readonly exact: boolean
+}
+
+/**
+ * The samplers of a Bayes-net posterior as one slot: `rejection` (forward samples that disagree with the evidence are
+ * discarded; the kept ones are exact) and `likelihood-weighting` (the evidence is clamped and each sample weighted).
+ *
+ * @concept sampling
+ * @example
+ * ```ts
+ * import { importanceSamplers } from 'mdml-engine/pgm'
+ * importanceSamplers.where((p) => p.discards) // => ['rejection']
+ * ```
+ */
+export const importanceSamplers: OptionTable<ImportanceBuilder, ImportanceProperties> = optionTable(
+  {
+    rejection: {
+      description: 'forward samples, discarding those that disagree with the evidence',
+      properties: { discards: true, exact: true },
+      space: dict({}),
+      make: () => (bn, key, n, evidence) => rejectionSampleAlgorithm(bn, key, n, evidence),
+    },
+    'likelihood-weighting': {
+      description: 'sample with the evidence clamped and weight by its likelihood',
+      properties: { discards: false, exact: false },
+      space: dict({}),
+      make: () => (bn, key, n, evidence) => likelihoodWeightingAlgorithm(bn, key, n, evidence),
+    },
+  },
+  {
+    default: 'likelihood-weighting',
+    label: 'importance sampler',
+    description: 'How samples of a Bayes net are made to respect the evidence.',
+  },
+)
 
 /**
  * Likelihood weighting: sample the unobserved variables forward with the observed ones clamped, and weight each sample
@@ -71,36 +317,10 @@ export function likelihoodWeighting(
   n: number,
   evidence: Readonly<Record<string, string | number>> = {},
 ): { readonly samples: Sample[]; readonly logWeights: number[]; readonly effectiveSampleSize: number } {
-  const ev = evidenceIndices(bn, evidence)
-  const samples: Sample[] = []
-  const logWeights: number[] = []
-  for (let i = 0; i < n; i++) {
-    const u = uniform(foldIn(key, i), [bn.nodes.length]).data
-    const s: Sample = {}
-    let lw = 0
-    for (const [j, node] of bn.nodes.entries()) {
-      const row = cptRow(bn, node.name, s)
-      const observed = ev[node.name]
-      if (observed !== undefined) {
-        s[node.name] = observed
-        lw += Math.log(row[observed] ?? 0)
-        continue
-      }
-      let acc = 0
-      let state = row.length - 1
-      for (const [k, p] of row.entries()) {
-        acc += p
-        if ((u[j] ?? 0) < acc) {
-          state = k
-          break
-        }
-      }
-      s[node.name] = state
-    }
-    samples.push(s)
-    logWeights.push(lw)
-  }
-  return { samples, logWeights, effectiveSampleSize: effectiveSampleSize(logWeights) }
+  const { samples, logWeights } = runAlgorithm(likelihoodWeightingAlgorithm(bn, key, n, evidence), {
+    maxSteps: n,
+  }).state
+  return { samples: [...samples], logWeights: [...logWeights], effectiveSampleSize: effectiveSampleSize(logWeights) }
 }
 
 /**

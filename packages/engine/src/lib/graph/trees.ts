@@ -5,9 +5,10 @@
  */
 
 import { kahanSum, MdmlError } from '../base/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
 import { connectedComponents } from './components.ts'
 import { type Edge, type Graph, graph, type NodeId, nodeIndex } from './graph.ts'
-import { IndexedQueue, UnionFind } from './structures.ts'
+import { type SpanningTreeAlgorithm, spanningTreeMethods } from './spanning-trees.ts'
 
 /** A minimum (or maximum) spanning forest: its edges, their total weight and the forest as a graph. */
 export interface SpanningTree {
@@ -15,79 +16,6 @@ export interface SpanningTree {
   readonly edges: readonly Edge[]
   readonly weight: number
   readonly graph: Graph
-}
-
-/** The algorithm behind {@link minimumSpanningTree}. */
-export type SpanningTreeAlgorithm = 'kruskal' | 'prim' | 'boruvka'
-
-/** Edge order: by weight (negated for a maximum tree), then by edge index, so every algorithm finds the same tree. */
-function edgeOrder(g: Graph, maximum: boolean): (p: number, q: number) => number {
-  const sign = maximum ? -1 : 1
-  return (p, q) => sign * ((g.edges[p]?.weight ?? 0) - (g.edges[q]?.weight ?? 0)) || p - q
-}
-
-function kruskal(g: Graph, before: (p: number, q: number) => number): number[] {
-  const uf = new UnionFind(g.n)
-  const chosen: number[] = []
-  for (const k of g.edges.map((_, i) => i).sort(before)) {
-    const e = g.edges[k] as Edge
-    if (uf.union(e.source, e.target)) chosen.push(k)
-  }
-  return chosen
-}
-
-function prim(g: Graph, before: (p: number, q: number) => number): number[] {
-  // Priorities are ranks in the total edge order, so Prim picks the same tree as Kruskal.
-  const rank = new Int32Array(g.edges.length)
-  for (const [r, k] of g.edges
-    .map((_, i) => i)
-    .sort(before)
-    .entries())
-    rank[k] = r
-  const a = g.out
-  const inTree = new Uint8Array(g.n)
-  const via = new Int32Array(g.n).fill(-1)
-  const chosen: number[] = []
-  const queue = new IndexedQueue(g.n)
-  for (let root = 0; root < g.n; root++) {
-    if (inTree[root] === 1) continue
-    queue.push(root, -1)
-    for (let u = queue.pop(); u !== undefined; u = queue.pop()) {
-      inTree[u] = 1
-      const e = via[u] ?? -1
-      if (e >= 0) chosen.push(e)
-      for (let k = a.indptr[u] ?? 0; k < (a.indptr[u + 1] ?? 0); k++) {
-        const v = a.indices[k] ?? 0
-        if (inTree[v] === 1) continue
-        const id = a.edges[k] ?? 0
-        if (queue.decrease(v, rank[id] ?? 0)) via[v] = id
-      }
-    }
-  }
-  return chosen
-}
-
-function boruvka(g: Graph, before: (p: number, q: number) => number): number[] {
-  const uf = new UnionFind(g.n)
-  const chosen: number[] = []
-  for (;;) {
-    // The cheapest edge leaving each component; the total edge order makes every choice consistent (no cycles).
-    const cheapest = new Map<number, number>()
-    for (const [k, e] of g.edges.entries()) {
-      const a = uf.find(e.source)
-      const b = uf.find(e.target)
-      if (a === b) continue
-      for (const c of [a, b]) {
-        const old = cheapest.get(c)
-        if (old === undefined || before(k, old) < 0) cheapest.set(c, k)
-      }
-    }
-    if (cheapest.size === 0) return chosen
-    for (const k of [...new Set(cheapest.values())].sort((p, q) => p - q)) {
-      const e = g.edges[k] as Edge
-      if (uf.union(e.source, e.target)) chosen.push(k)
-    }
-  }
 }
 
 /**
@@ -115,10 +43,10 @@ export function minimumSpanningTree(
 ): SpanningTree {
   if (g.directed) throw new MdmlError('value', 'minimumSpanningTree: the graph must be undirected')
   const maximum = options.maximum ?? false
-  const before = edgeOrder(g, maximum)
-  const algorithm = options.algorithm ?? 'kruskal'
-  const chosen =
-    algorithm === 'prim' ? prim(g, before) : algorithm === 'boruvka' ? boruvka(g, before) : kruskal(g, before)
+  const run = runAlgorithm(spanningTreeMethods.make({ kind: options.algorithm ?? 'kruskal' })(g, { maximum }), {
+    maxSteps: g.edges.length + 2 * g.n + 1,
+  })
+  const chosen = run.state.chosen
   const edges = chosen.map((k) => g.edges[k] as Edge).sort((p, q) => p.source - q.source || p.target - q.target)
   const weight = kahanSum(edges.map((e) => e.weight))
   return {

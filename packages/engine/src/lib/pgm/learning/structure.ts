@@ -5,13 +5,18 @@
  */
 
 import { type Json, MdmlError } from '../../base/index.ts'
+import { dict, type OptionTable, optionTable } from '../../space/index.ts'
 import {
   type Algorithm,
+  type Contract,
   channels,
+  defineContract,
   type RunStatus,
   runAlgorithm,
+  scalar,
   type TracePolicy,
   type Tracer,
+  tensor,
 } from '../../trace/index.ts'
 import { type Dag, type DirectedModel, dag } from '../graphs.ts'
 import { code, type DataRow, dataVariables } from './_data.ts'
@@ -26,8 +31,14 @@ import {
   structurePrior,
 } from './scores.ts'
 
-/** Mutual information (nats) of two discrete columns, optionally within the rows where `mask` holds. */
-function mutualInformation(x: Int32Array, y: Int32Array, kx: number, ky: number, rows: readonly number[]): number {
+/** The plug-in mutual information (nats) of two discrete columns within some rows, and the occupied cells. */
+function countedInformation(
+  x: Int32Array,
+  y: Int32Array,
+  kx: number,
+  ky: number,
+  rows: readonly number[],
+): { mi: number; n: number; occupied: readonly [number, number, number] } {
   const joint = new Float64Array(kx * ky)
   const px = new Float64Array(kx)
   const py = new Float64Array(ky)
@@ -42,14 +53,72 @@ function mutualInformation(x: Int32Array, y: Int32Array, kx: number, ky: number,
     n++
   }
   let mi = 0
+  let cells = 0
   for (let a = 0; a < kx; a++) {
     for (let b = 0; b < ky; b++) {
       const c = joint[a * ky + b] ?? 0
-      if (c > 0) mi += (c / n) * Math.log((c * n) / ((px[a] ?? 1) * (py[b] ?? 1)))
+      if (c > 0) {
+        cells++
+        mi += (c / n) * Math.log((c * n) / ((px[a] ?? 1) * (py[b] ?? 1)))
+      }
     }
   }
-  return mi
+  return { mi, n, occupied: [px.filter((c) => c > 0).length, py.filter((c) => c > 0).length, cells] }
 }
+
+/** Estimates the mutual information (nats) of two discrete columns within some rows. */
+export type MutualInformationEstimator = (
+  x: Int32Array,
+  y: Int32Array,
+  kx: number,
+  ky: number,
+  rows: readonly number[],
+) => number
+
+/** What a mutual-information estimator can do, for validity rules and selectors. */
+export interface MutualInformationProperties {
+  /** Whether it corrects the upward bias of the plug-in estimate on small samples. */
+  readonly biasCorrected: boolean
+}
+
+/**
+ * The mutual-information estimators of structure learning as one slot: `plug-in` (the empirical joint, biased upwards
+ * on small samples) and `miller-madow` (the plug-in entropies each corrected by (occupied cells - 1) / 2n).
+ *
+ * @concept structure-learning
+ * @example
+ * ```ts
+ * import { mutualInformationEstimators } from 'mdml-engine/pgm/learning'
+ * mutualInformationEstimators.where((p) => p.biasCorrected) // => ['miller-madow']
+ * ```
+ */
+export const mutualInformationEstimators: OptionTable<MutualInformationEstimator, MutualInformationProperties> =
+  optionTable(
+    {
+      'plug-in': {
+        description: 'the empirical joint distribution, unbiased only for large samples',
+        properties: { biasCorrected: false },
+        space: dict({}),
+        make: () => (x, y, kx, ky, rows) => countedInformation(x, y, kx, ky, rows).mi,
+      },
+      'miller-madow': {
+        description: 'the plug-in estimate with the Miller-Madow bias correction of each entropy',
+        properties: { biasCorrected: true },
+        space: dict({}),
+        make: () => (x, y, kx, ky, rows) => {
+          const { mi, n, occupied } = countedInformation(x, y, kx, ky, rows)
+          return n === 0 ? 0 : mi + (occupied[0] - 1 + (occupied[1] - 1) - (occupied[2] - 1)) / (2 * n)
+        },
+      },
+    },
+    {
+      default: 'plug-in',
+      label: 'mutual-information estimator',
+      description: 'How the mutual information of two discrete variables is estimated from counts.',
+    },
+  )
+
+const mutualInformation: MutualInformationEstimator = (x, y, kx, ky, rows) => countedInformation(x, y, kx, ky, rows).mi
 
 /** Options of {@link chowLiu}. */
 export interface ChowLiuOptions {
@@ -58,30 +127,161 @@ export interface ChowLiuOptions {
   /** Learn a tree-augmented naive Bayes model with this class variable instead (edges weighted by I(X; Y | class)). */
   readonly classVariable?: string
   readonly states?: Readonly<Record<string, readonly string[]>>
+  /** The mutual-information estimator (default `'plug-in'`, see {@link mutualInformationEstimators}). */
+  readonly estimator?: 'plug-in' | 'miller-madow'
+}
+
+/** The paths the Chow-Liu algorithm logs, as a type. */
+export type ChowLiuPath = 'cl/edge' | 'cl/mi' | 'cl/skipped' | 'cl/components'
+
+/**
+ * What the Chow-Liu algorithm logs, by path: the edge added to the tree as the indices of its two variables, its
+ * mutual information, the cycle-closing pairs skipped on the way to it and the number of components of the forest.
+ */
+export const chowLiuContract: Contract<unknown, ChowLiuPath> = defineContract({
+  'cl/edge': tensor({ role: 'state', shape: [2], description: 'the edge added, as the indices of its two variables' }),
+  'cl/mi': scalar({ description: 'the (conditional on the class, if any) mutual information of the edge added' }),
+  'cl/skipped': scalar({ description: 'pairs of higher mutual information skipped since they would close a cycle' }),
+  'cl/components': scalar({ description: 'components of the forest after the edge' }),
+})
+
+/** The state of {@link chowLiuAlgorithm}. */
+export interface ChowLiuState {
+  /** All the variables, the class variable (if any) included. */
+  readonly variables: readonly string[]
+  /** The root the tree is oriented from. */
+  readonly root: string
+  /** The class variable of a tree-augmented naive Bayes model, else null. */
+  readonly classVariable: string | null
+  /** The tree edges chosen so far, in the order they were added. */
+  readonly edges: readonly (readonly [string, string])[]
+  /** The mutual information of each. */
+  readonly weights: readonly number[]
+  /** Pairs considered so far, in decreasing mutual information (including skipped ones). */
+  readonly cursor: number
+  /** Union-find parents of the variables. */
+  readonly parent: Readonly<Record<string, string>>
+  /** Pairs skipped for closing a cycle before the last edge. */
+  readonly skipped: number
 }
 
 /**
- * The Chow-Liu tree (Chow and Liu 1968): the maximum-weight spanning tree of the pairwise mutual information,
- * oriented away from a root, which is the tree-structured distribution closest to the data in KL divergence (pgmpy's
- * TreeSearch). With a class variable it learns a tree-augmented naive Bayes model (Friedman et al. 1997).
+ * The Chow-Liu tree as a steppable algorithm: the maximum-weight spanning tree of the pairwise mutual information
+ * (Kruskal's, on decreasing weight), one edge added per step. The tree is oriented away from the root afterwards, as in
+ * {@link chowLiu}; the algorithm's state is the undirected edges in the order they were chosen.
  *
  * @param data - Discrete rows.
- * @param options - Root, class variable and states.
- * @returns The tree as a DAG.
+ * @param options - Root, class variable, states and the estimator.
+ * @returns The algorithm; it is done when the tree spans the variables.
+ * @throws MdmlError with code `value` for an unknown root.
  * @concept structure-learning
  * @example
  * ```ts
- * import { dagEdges } from 'mdml-engine/pgm'
- * import { chowLiu } from 'mdml-engine/pgm/learning'
+ * import { chowLiuAlgorithm } from 'mdml-engine/pgm/learning'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const data = Array.from({ length: 60 }, (_, i) => ({ a: i % 2, b: i % 2, c: (i % 2) ^ (i % 3 === 0 ? 1 : 0) }))
- * dagEdges(chowLiu(data, { root: 'a' })) // => [['a', 'b'], ['a', 'c']]
+ * runAlgorithm(chowLiuAlgorithm(data), { maxSteps: 10 }).state.edges.length // => 2
  * ```
  */
-export function chowLiu(data: readonly DataRow[], options: ChowLiuOptions = {}): Dag {
+export function chowLiuAlgorithm(
+  data: readonly DataRow[],
+  options: ChowLiuOptions = {},
+): Algorithm<ChowLiuState, ChowLiuPath> {
+  const { names, all, root, cls, pairs } = chowLiuSetup(data, options)
+  const tree = names.length - 1
+  const find = (parent: Record<string, string>, v: string): string => {
+    let r = v
+    while ((parent[r] ?? r) !== r) r = parent[r] ?? r
+    return r
+  }
+  return {
+    name: 'pgm/chow-liu',
+    config: { variables: names.length, estimator: options.estimator ?? 'plug-in' },
+    init: () => ({
+      variables: all,
+      root,
+      classVariable: cls ?? null,
+      edges: [],
+      weights: [],
+      cursor: 0,
+      parent: Object.fromEntries(names.map((v) => [v, v])),
+      skipped: 0,
+    }),
+    step: (s, ctx) => {
+      const parent = { ...s.parent }
+      let cursor = s.cursor
+      let skipped = 0
+      while (cursor < pairs.length) {
+        const p = pairs[cursor] as (typeof pairs)[number]
+        cursor++
+        const ra = find(parent, p.a)
+        const rb = find(parent, p.b)
+        if (ra === rb) {
+          skipped++
+          continue
+        }
+        parent[ra] = rb
+        const edges = [...s.edges, [p.a, p.b] as const]
+        if (ctx.wants('cl/edge')) ctx.log('cl/edge', Int32Array.of(names.indexOf(p.a), names.indexOf(p.b)))
+        if (ctx.wants('cl/mi')) ctx.log('cl/mi', p.w)
+        if (ctx.wants('cl/skipped')) ctx.log('cl/skipped', skipped)
+        if (ctx.wants('cl/components')) ctx.log('cl/components', names.length - edges.length)
+        return { ...s, edges, weights: [...s.weights, p.w], cursor, parent, skipped }
+      }
+      return { ...s, cursor, parent }
+    },
+    done: (s) => (s.edges.length >= tree || s.cursor >= pairs.length ? 'converged' : undefined),
+    serialise: (s) => ({
+      variables: [...s.variables],
+      root: s.root,
+      classVariable: s.classVariable,
+      edges: s.edges.map((e) => [...e]),
+      weights: [...s.weights],
+      cursor: s.cursor,
+      parent: { ...s.parent },
+      skipped: s.skipped,
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as {
+        readonly variables: readonly string[]
+        readonly root: string
+        readonly classVariable: string | null
+        readonly edges: readonly (readonly [string, string])[]
+        readonly weights: readonly number[]
+        readonly cursor: number
+        readonly parent: Record<string, string>
+        readonly skipped: number
+      }
+      return {
+        variables: [...o.variables],
+        root: o.root,
+        classVariable: o.classVariable,
+        edges: o.edges.map((e) => [e[0], e[1]] as const),
+        weights: [...o.weights],
+        cursor: o.cursor,
+        parent: { ...o.parent },
+        skipped: o.skipped,
+      }
+    },
+  }
+}
+
+/** The variables, root, class and candidate edges (in decreasing weight) of a Chow-Liu run. */
+function chowLiuSetup(
+  data: readonly DataRow[],
+  options: ChowLiuOptions,
+): {
+  names: string[]
+  all: string[]
+  root: string
+  cls: string | undefined
+  pairs: { a: string; b: string; w: number }[]
+} {
   const all = dataVariables(data)
   const cls = options.classVariable
   const names = all.filter((v) => v !== cls)
   const d = code(data, all, options.states)
+  const estimate = mutualInformationEstimators.make({ kind: options.estimator ?? 'plug-in' })
   const rows = Array.from({ length: d.n }, (_, i) => i)
   const groups =
     cls === undefined
@@ -92,7 +292,7 @@ export function chowLiu(data: readonly DataRow[], options: ChowLiuOptions = {}):
       (s, g) =>
         s +
         (g.length / d.n) *
-          mutualInformation(
+          estimate(
             d.codes[a] ?? new Int32Array(0),
             d.codes[b] ?? new Int32Array(0),
             d.states[a]?.length ?? 1,
@@ -108,21 +308,35 @@ export function chowLiu(data: readonly DataRow[], options: ChowLiuOptions = {}):
   const total = new Map(names.map((v) => [v, pairs.reduce((s, p) => s + (p.a === v || p.b === v ? p.w : 0), 0)]))
   const root = options.root ?? [...names].sort((x, y) => (total.get(y) ?? 0) - (total.get(x) ?? 0))[0] ?? ''
   if (!names.includes(root)) throw new MdmlError('value', `chowLiu: unknown root ${root}`)
-  // Kruskal on decreasing weight.
-  const parentOf = new Map(names.map((v) => [v, v]))
-  const find = (v: string): string => {
-    let r = v
-    while ((parentOf.get(r) ?? r) !== r) r = parentOf.get(r) ?? r
-    return r
-  }
+  return { names, all, root, cls, pairs: [...pairs].sort((x, y) => y.w - x.w) }
+}
+
+/**
+ * The Chow-Liu tree (Chow and Liu 1968): the maximum-weight spanning tree of the pairwise mutual information,
+ * oriented away from a root, which is the tree-structured distribution closest to the data in KL divergence (pgmpy's
+ * TreeSearch). With a class variable it learns a tree-augmented naive Bayes model (Friedman et al. 1997). This is
+ * {@link chowLiuAlgorithm} run to the end and oriented.
+ *
+ * @param data - Discrete rows.
+ * @param options - Root, class variable, states and the mutual-information estimator.
+ * @returns The tree as a DAG.
+ * @concept structure-learning
+ * @example
+ * ```ts
+ * import { dagEdges } from 'mdml-engine/pgm'
+ * import { chowLiu } from 'mdml-engine/pgm/learning'
+ * const data = Array.from({ length: 60 }, (_, i) => ({ a: i % 2, b: i % 2, c: (i % 2) ^ (i % 3 === 0 ? 1 : 0) }))
+ * dagEdges(chowLiu(data, { root: 'a' })) // => [['a', 'b'], ['a', 'c']]
+ * ```
+ */
+export function chowLiu(data: readonly DataRow[], options: ChowLiuOptions = {}): Dag {
+  const { state } = runAlgorithm(chowLiuAlgorithm(data, options), { maxSteps: dataVariables(data).length + 1 })
+  const { variables: all, root, classVariable: cls } = state
+  const names = all.filter((v) => v !== cls)
   const tree = new Map(names.map((v) => [v, [] as string[]]))
-  for (const p of [...pairs].sort((x, y) => y.w - x.w)) {
-    const ra = find(p.a)
-    const rb = find(p.b)
-    if (ra === rb) continue
-    parentOf.set(ra, rb)
-    tree.get(p.a)?.push(p.b)
-    tree.get(p.b)?.push(p.a)
+  for (const [a, b] of state.edges) {
+    tree.get(a)?.push(b)
+    tree.get(b)?.push(a)
   }
   const edges: [string, string][] = []
   const seen = new Set([root])
@@ -136,7 +350,7 @@ export function chowLiu(data: readonly DataRow[], options: ChowLiuOptions = {}):
       queue.push(w)
     }
   }
-  if (cls !== undefined) for (const v of names) edges.push([cls, v])
+  if (cls !== null) for (const v of names) edges.push([cls, v])
   return dag(edges, all)
 }
 

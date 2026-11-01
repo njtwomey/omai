@@ -177,6 +177,31 @@ function drawRow(row: ArrayLike<number>, u: number): number {
 }
 
 /**
+ * One ancestral (forward) draw: each node from its CPT given its sampled parents, in topological order, with the
+ * uniform numbers for the nodes drawn from `key`.
+ *
+ * @param bn - The network.
+ * @param key - The random key of this draw.
+ * @returns The sample, as state indices by variable.
+ * @concept sampling
+ * @example
+ * ```ts
+ * import { bayesNet, forwardSample } from 'mdml-engine/pgm'
+ * import { key } from 'mdml-engine/random'
+ * forwardSample(bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0, 1] }]), key(0)) // => { a: 1 }
+ * ```
+ */
+export function forwardSample(bn: BayesNet, key: Key): Record<string, number> {
+  const u = uniform(key, [bn.nodes.length]).data
+  const s: Record<string, number> = {}
+  for (const [j, node] of bn.nodes.entries()) {
+    const base = rowOf(bn, node, s) * node.states.length
+    s[node.name] = drawRow(node.cpt.slice(base, base + node.states.length), u[j] ?? 0)
+  }
+  return s
+}
+
+/**
  * Ancestral (forward) sampling: draw each node from its CPT given its sampled parents, in topological order.
  *
  * @param bn - The network.
@@ -192,15 +217,7 @@ function drawRow(row: ArrayLike<number>, u: number): number {
  * ```
  */
 export function ancestralSample(bn: BayesNet, key: Key, n: number): Record<string, number>[] {
-  return Array.from({ length: n }, (_, i) => {
-    const u = uniform(foldIn(key, i), [bn.nodes.length]).data
-    const s: Record<string, number> = {}
-    for (const [j, node] of bn.nodes.entries()) {
-      const base = rowOf(bn, node, s) * node.states.length
-      s[node.name] = drawRow(node.cpt.slice(base, base + node.states.length), u[j] ?? 0)
-    }
-    return s
-  })
+  return Array.from({ length: n }, (_, i) => forwardSample(bn, foldIn(key, i)))
 }
 
 function dagNode(g: DirectedModel, name: string): DagNode {
