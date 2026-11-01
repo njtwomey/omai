@@ -860,8 +860,14 @@ primitives; "custom" means a dedicated rule.
   `importanceIntegral`.
 
 `roots/` (scipy.optimize root finding; custom rules by the implicit function theorem)
-- `scalar.ts`: `bisect`, `brentq`, `ridder`, `newton`, `secant`, `halley`, `toms748`, with evaluation histories;
-  `scalarRootOf` (implicit-function-theorem derivatives).
+- `scalar.ts`: `bisect`, `brentq`, `ridder`, `newton`, `secant`, `halley`, `toms748`, with evaluation histories (each
+  is `solveRoot` over the Algorithm below); `scalarRootOf` (implicit-function-theorem derivatives).
+- `scalar-algorithms.ts`: the steppable Algorithms `bisectAlgorithm`, `brentqAlgorithm`, `ridderAlgorithm`,
+  `toms748Algorithm`, `newtonAlgorithm`, `secantAlgorithm`, `halleyAlgorithm` over one `RootState` (estimate, bracket,
+  step, rule, history; serialises) and the `rootContract` paths (`root/x`, `root/fx`, `root/step`, `root/bracket`,
+  `root/bracket-width`, `root/method`); `solveRoot`, `rootResultOf`.
+- `scalar-options.ts`: `rootFinders`, the option table of the seven finders (knobs per method; a bracket, a start or
+  derivatives as the method needs), `rootAlgorithm(config, problem)`, `rootFinderValue`.
 - `systems.ts`: `fsolve` (damped Newton with backtracking), `broyden`, `fixedPoint` (Steffensen and Anderson
   acceleration), `root`, `rootOf` (implicit-function-theorem derivatives in both modes).
 - `continuation.ts`: `homotopy`, `arcLengthContinuation`, fold and branch-point detection.
