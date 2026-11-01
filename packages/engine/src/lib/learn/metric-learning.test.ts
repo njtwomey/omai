@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { smoothSolvers, solverConfigOf } from '../optim/index.ts'
 import { key, normal } from '../random/index.ts'
 import { toArray, toFlat } from '../tensor/index.ts'
 import { metricSeries } from '../trace/index.ts'
-import { largeMarginNearestNeighbour, ncaValueAndGradient, neighbourhoodComponentsAnalysis } from './metric-learning.ts'
+import {
+  largeMarginNearestNeighbour,
+  lmnnSolvers,
+  ncaValueAndGradient,
+  neighbourhoodComponentsAnalysis,
+} from './metric-learning.ts'
 import { kNeighboursClassifier } from './neighbours.ts'
 import { matrixView } from './validation.ts'
 
@@ -94,4 +100,55 @@ describe('large margin nearest neighbour', () => {
     const fitted = s.fittedAt(s.t)
     expect(toArray(fitted.transform(x.slice(0, 2)))).toHaveLength(2)
   })
+})
+
+describe('the solver slot of metric learning', () => {
+  it('NCA with the default solver reproduces the L-BFGS fit it had before the slot', () => {
+    const { x, y } = data()
+    const f = neighbourhoodComponentsAnalysis({ nComponents: 2, init: 'pca', maxIter: 30 }).fit({ x, y })
+    // The values of the direct L-BFGS fit, before the solver became a slot.
+    expect(f.params.objective).toBeCloseTo(37.99999990618548, 5)
+    expect(f.params.components[0]?.[0]).toBeCloseTo(-4.3901388701, 5)
+    expect(f.params.components[1]?.[1]).toBeCloseTo(2.471370887, 5)
+  })
+
+  it('NCA reaches about the same objective with BFGS and with conjugate gradient', () => {
+    const { x, y } = data()
+    const hyper = { nComponents: 1, init: 'identity' as const, maxIter: 200, gradTol: 1e-7 }
+    const reference = neighbourhoodComponentsAnalysis(hyper).fit({ x, y }).params.objective
+    for (const solver of [
+      { kind: 'bfgs', gradTol: 1e-7 },
+      { kind: 'conjugateGradient', gradTol: 1e-7 },
+    ]) {
+      const f = neighbourhoodComponentsAnalysis({ ...hyper, solver: solverConfigOf(smoothSolvers, solver) }).fit({
+        x,
+        y,
+      })
+      expect(f.params.objective, solver.kind).toBeGreaterThan(reference - 0.5)
+    }
+  }, 60_000)
+
+  it('LMNN with the default solver reproduces the adaptive descent it had before the slot', () => {
+    const { x, y } = data()
+    const f = largeMarginNearestNeighbour({ nNeighbors: 2, maxIter: 80, learningRate: 1e-4 }).fit({ x, y })
+    // The values of the hand-rolled descent, before the solver became a slot.
+    expect(f.params.objective).toBeCloseTo(2.110746465429699, 6)
+    expect(f.params.components[0]?.[0]).toBeCloseTo(1.1433612424, 6)
+    expect(f.params.components[2]?.[2]).toBeCloseTo(0.0172372152, 6)
+  })
+
+  it('LMNN lowers its loss from the start with L-BFGS and with the stochastic gradient mode', () => {
+    const { x, y } = data()
+    const hyper = { nNeighbors: 2, maxIter: 60, learningRate: 1e-4 }
+    const start = largeMarginNearestNeighbour({ ...hyper, maxIter: 0 }).fit({ x, y }).params.objective
+    const adaptive = largeMarginNearestNeighbour(hyper).fit({ x, y }).params.objective
+    for (const solver of [
+      { kind: 'lbfgs', gradTol: 1e-7 },
+      { kind: 'gradient', optimiser: { kind: 'adam' }, learningRate: 1e-3, gradTol: 1e-9 },
+    ]) {
+      const f = largeMarginNearestNeighbour({ ...hyper, solver: solverConfigOf(lmnnSolvers, solver) }).fit({ x, y })
+      expect(f.params.objective, solver.kind).toBeLessThan(start)
+    }
+    expect(adaptive).toBeLessThan(start)
+  }, 60_000)
 })
