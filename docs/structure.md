@@ -5031,7 +5031,9 @@ counting below `5m/2`) and Ertl's improved estimator (no bias tables), `hllMerge
 and false-negative areas of the S-curve integrated exactly). `reservoir.ts`: `reservoirSampler` (Algorithm R, Li's
 Algorithm L, weighted A-Res and A-ExpJ), `reservoirSample`, `reservoirAlgorithm`. `quantiles.ts`: `gkSummary`
 (Greenwald-Khanna, every rank within `epsilon n`), `tDigest` (merging, k1 scale; tails tighter than the middle),
-`kllSketch` (compactors; rank error about `1/k`, mergeable). `skiplist.ts`: `skipList` (Pugh; keyed heights, a comparator,
+`kllSketch` (compactors; rank error about `1/k`, mergeable), and as Algorithms `gkSummaryAlgorithm`,
+`kllSketchAlgorithm` and `p2Algorithm` (one stream value per step, `sketch/` paths; `p2Push` is in `stats/running.ts`);
+`quantile-options.ts`: `quantileSketches`. `skiplist.ts`: `skipList` (Pugh; keyed heights, a comparator,
 search traces), `skipListAlgorithm`.
 
 Each sketch states its guarantee and the property tests check it across many keys: the Bloom rate against the fill-based
