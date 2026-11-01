@@ -11,7 +11,18 @@ import { boxIou } from '../metrics/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
 import { image } from '../signal/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { greyOf, roundHalfEven } from './_image.ts'
 import { type Box, type BoxesLike, boxesOf } from './boxes.ts'
 import type { RotatedRect } from './fitting.ts'
@@ -233,9 +244,110 @@ function windowMoments(p: { h: number; w: number; data: Float64Array }, r: Rect)
   return imageMoments(rows)
 }
 
+/** The paths the window trackers log, as a type. */
+export type TrackPath = 'track/window' | 'track/moment' | 'track/shift' | 'track/box'
+
+/**
+ * What the mean-shift trackers log: the window after each update, the mass under it (the zeroth moment), the squared
+ * distance it moved, and, for CamShift's last step, the rotated box.
+ */
+export const trackContract: Contract<unknown, TrackPath> = defineContract({
+  'track/window': tensor({ role: 'state', shape: [4], description: 'the window [x, y, width, height]' }),
+  'track/moment': scalar({ description: 'the probability mass under the window (the zeroth moment)' }),
+  'track/shift': scalar({ description: 'the squared distance the window moved', direction: 'lower' }),
+  'track/box': tensor({
+    role: 'output',
+    shape: [5],
+    description: 'the CamShift box: centre x, y, width, height, angle',
+  }),
+})
+
+/** Options of the mean-shift trackers. */
+export interface MeanShiftOptions {
+  /** The most window updates (default 100). */
+  readonly maxIter?: number
+  /** Stop when the window moves less than this distance (default 1). */
+  readonly eps?: number
+}
+
+/**
+ * The state of {@link meanShiftAlgorithm} and {@link camShiftAlgorithm}: the window, the updates made, whether the window
+ * stopped moving, and (CamShift) the box once found.
+ */
+export interface MeanShiftState {
+  readonly window: Rect
+  readonly iterations: number
+  readonly converged: boolean
+  /** CamShift only: `shift` while updating the window, `box` before the last step, `done` after. */
+  readonly phase: 'shift' | 'box' | 'done'
+  readonly box: RotatedRect | null
+}
+
+/**
+ * Mean shift on a probability image (cv2.meanShift) as a stepped algorithm, one window update per step: the integer
+ * window moves to the centroid of the probability mass under it until it moves less than eps or `maxIter` updates pass; the
+ * window stays inside the image. It logs the window, the mass under it and the squared shift, and is done (`converged`)
+ * when the window stops, `completed` after `maxIter` updates. The state serialises.
+ *
+ * @param prob - Probability (back-projection) image `[H, W]`.
+ * @param window - The starting window [x, y, width, height].
+ * @param options - maxIter (default 100) and eps (default 1).
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for a window with non-positive sizes.
+ * @concept mean-shift
+ * @example
+ * ```ts
+ * import { meanShiftAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const prob = Array.from({ length: 20 }, (_, i) => Array.from({ length: 20 }, (_, j) => (i >= 12 && i < 16 && j >= 10 && j < 14 ? 1 : 0)))
+ * runAlgorithm(meanShiftAlgorithm(prob, [6, 8, 6, 6]), { maxSteps: 50 }).state.window // => [8, 10, 6, 6]
+ * ```
+ */
+export function meanShiftAlgorithm(
+  prob: TensorLike,
+  window: Rect,
+  options: MeanShiftOptions = {},
+): Algorithm<MeanShiftState, TrackPath> {
+  const p = greyOf(prob, 'meanShift')
+  if (window[2] <= 0 || window[3] <= 0) throw new MdmlError('value', 'meanShift: the window has non-positive sizes')
+  const eps = roundHalfEven((options.eps ?? 1) ** 2)
+  const niters = Math.max(options.maxIter ?? 100, 1)
+  const ww = window[2]
+  const wh = window[3]
+  return {
+    name: 'vision/mean-shift',
+    config: { window, maxIter: niters, eps: options.eps ?? 1 },
+    init: () => ({ window: [...window], iterations: 0, converged: false, phase: 'shift', box: null }),
+    step: (s, ctx) => {
+      let cur = intersect(s.window, p.w, p.h)
+      if (cur[2] === 0 && cur[3] === 0) cur = [Math.floor(p.w / 2), Math.floor(p.h / 2), 0, 0]
+      cur = [cur[0], cur[1], Math.max(cur[2], 1), Math.max(cur[3], 1)]
+      const m = windowMoments(p, cur)
+      ctx.log('track/moment', m.m00)
+      if (Math.abs(m.m00) < Number.EPSILON) return { ...s, window: cur, converged: true }
+      let dx = roundHalfEven(m.m10 / m.m00 - ww * 0.5)
+      let dy = roundHalfEven(m.m01 / m.m00 - wh * 0.5)
+      const nx = Math.min(Math.max(cur[0] + dx, 0), p.w - cur[2])
+      const ny = Math.min(Math.max(cur[1] + dy, 0), p.h - cur[3])
+      dx = nx - cur[0]
+      dy = ny - cur[1]
+      cur = [nx, ny, cur[2], cur[3]]
+      ctx.log('track/shift', dx * dx + dy * dy)
+      ctx.log('track/window', cur)
+      return dx * dx + dy * dy < eps
+        ? { ...s, window: cur, converged: true }
+        : { ...s, window: cur, iterations: s.iterations + 1 }
+    },
+    done: (s) => (s.converged ? 'converged' : s.iterations >= niters ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as MeanShiftState,
+  }
+}
+
 /**
  * Mean shift on a probability image (cv2.meanShift): the integer window moves to the centroid of the probability mass
  * under it until it moves less than eps or maxIter iterations pass; the window stays inside the image.
+ * {@link meanShiftAlgorithm} run to the end.
  *
  * @param prob - Probability (back-projection) image `[H, W]`.
  * @param window - The starting window [x, y, width, height].
@@ -252,38 +364,107 @@ function windowMoments(p: { h: number; w: number; data: Float64Array }, r: Rect)
 export function meanShift(
   prob: TensorLike,
   window: Rect,
-  options: { readonly maxIter?: number; readonly eps?: number } = {},
+  options: MeanShiftOptions = {},
 ): { readonly window: Rect; readonly iterations: number } {
-  const p = greyOf(prob, 'meanShift')
-  if (window[2] <= 0 || window[3] <= 0) throw new MdmlError('value', 'meanShift: the window has non-positive sizes')
-  const eps = roundHalfEven((options.eps ?? 1) ** 2)
+  const run = runAlgorithm(meanShiftAlgorithm(prob, window, options), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return { window: run.state.window, iterations: run.state.iterations }
+}
+
+/**
+ * Continuously adaptive mean shift (Bradski 1998; cv2.CamShift) as a stepped algorithm: the window updates of mean shift,
+ * one per step, then one last step that grows the window by 10 pixels each way, takes the second moments of the
+ * probability under it for the object's oriented size, and sets the next window to the box around that ellipse. It logs the
+ * window, mass and shift of each update and the box at the end, and is done (`converged`) after the box. The state
+ * serialises.
+ *
+ * @param prob - Probability image `[H, W]`.
+ * @param window - The starting window.
+ * @param options - Mean shift's maxIter and eps.
+ * @returns The algorithm.
+ * @concept mean-shift
+ * @example
+ * ```ts
+ * import { camShiftAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const prob = Array.from({ length: 30 }, (_, i) => Array.from({ length: 30 }, (_, j) => (Math.abs(i - 15) < 3 && Math.abs(j - 12) < 7 ? 1 : 0)))
+ * runAlgorithm(camShiftAlgorithm(prob, [8, 10, 8, 8]), { maxSteps: 50 }).state.box?.size.map((v) => Math.round(v)) // => [6, 15]
+ * ```
+ */
+export function camShiftAlgorithm(
+  prob: TensorLike,
+  window: Rect,
+  options: MeanShiftOptions = {},
+): Algorithm<MeanShiftState, TrackPath> {
+  const p = greyOf(prob, 'camShift')
+  const inner = meanShiftAlgorithm(prob, window, options)
   const niters = Math.max(options.maxIter ?? 100, 1)
-  let cur: Rect = [...window]
-  const ww = window[2]
-  const wh = window[3]
-  let i = 0
-  for (; i < niters; i++) {
-    cur = intersect(cur, p.w, p.h)
-    if (cur[2] === 0 && cur[3] === 0) cur = [Math.floor(p.w / 2), Math.floor(p.h / 2), 0, 0]
-    cur = [cur[0], cur[1], Math.max(cur[2], 1), Math.max(cur[3], 1)]
-    const m = windowMoments(p, cur)
-    if (Math.abs(m.m00) < Number.EPSILON) break
-    let dx = roundHalfEven(m.m10 / m.m00 - ww * 0.5)
-    let dy = roundHalfEven(m.m01 / m.m00 - wh * 0.5)
-    const nx = Math.min(Math.max(cur[0] + dx, 0), p.w - cur[2])
-    const ny = Math.min(Math.max(cur[1] + dy, 0), p.h - cur[3])
-    dx = nx - cur[0]
-    dy = ny - cur[1]
-    cur = [nx, ny, cur[2], cur[3]]
-    if (dx * dx + dy * dy < eps) break
+  return {
+    ...inner,
+    name: 'vision/cam-shift',
+    step: (s, ctx) => {
+      if (s.phase === 'shift') {
+        const next = inner.step(s, ctx)
+        return next.converged || next.iterations >= niters ? { ...next, phase: 'box' } : next
+      }
+      const TOL = 10
+      let [x, y, w, h] = s.window
+      x = Math.max(0, x - TOL)
+      y = Math.max(0, y - TOL)
+      w += 2 * TOL
+      if (x + w > p.w) w = p.w - x
+      h += 2 * TOL
+      if (y + h > p.h) h = p.h - y
+      const m = windowMoments(p, [x, y, w, h])
+      if (Math.abs(m.m00) < Number.EPSILON)
+        return { ...s, window: [x, y, w, h], phase: 'done', box: { center: [0, 0], size: [0, 0], angle: 0 } }
+      const inv = 1 / m.m00
+      const xc = roundHalfEven(m.m10 * inv + x)
+      const yc = roundHalfEven(m.m01 * inv + y)
+      const a = m.mu20 * inv
+      const b = m.mu11 * inv
+      const c = m.mu02 * inv
+      const square = Math.sqrt(4 * b * b + (a - c) * (a - c))
+      let theta = Math.atan2(2 * b, a - c + square)
+      let cs = Math.cos(theta)
+      let sn = Math.sin(theta)
+      const ra = Math.max(0, cs * cs * m.mu20 + 2 * cs * sn * m.mu11 + sn * sn * m.mu02)
+      const rc = Math.max(0, sn * sn * m.mu20 - 2 * cs * sn * m.mu11 + cs * cs * m.mu02)
+      let length = Math.sqrt(ra * inv) * 4
+      let width = Math.sqrt(rc * inv) * 4
+      if (length < width) {
+        ;[length, width] = [width, length]
+        ;[cs, sn] = [sn, cs]
+        theta = Math.PI / 2 - theta
+      }
+      let t0 = Math.max(roundHalfEven(Math.abs(length * cs)), roundHalfEven(Math.abs(width * sn))) + 2
+      w = Math.min(t0, (p.w - xc) * 2)
+      t0 = Math.max(roundHalfEven(Math.abs(length * sn)), roundHalfEven(Math.abs(width * cs))) + 2
+      h = Math.min(t0, (p.h - yc) * 2)
+      x = Math.max(0, xc - Math.trunc(w / 2))
+      y = Math.max(0, yc - Math.trunc(h / 2))
+      w = Math.min(p.w - x, w)
+      h = Math.min(p.h - y, h)
+      let angle = Math.fround(((Math.PI * 0.5 + theta) * 180) / Math.PI)
+      while (angle < 0) angle += 360
+      while (angle >= 360) angle -= 360
+      if (angle >= 180) angle -= 180
+      const box: RotatedRect = {
+        center: [Math.fround(x + w * 0.5), Math.fround(y + h * 0.5)],
+        size: [Math.fround(width), Math.fround(length)],
+        angle,
+      }
+      ctx.log('track/box', [box.center[0], box.center[1], box.size[0], box.size[1], box.angle])
+      ctx.log('track/window', [x, y, w, h])
+      return { ...s, window: [x, y, w, h], phase: 'done', box }
+    },
+    done: (s) => (s.phase === 'done' ? 'converged' : undefined),
   }
-  return { window: cur, iterations: i }
 }
 
 /**
  * Continuously adaptive mean shift (Bradski 1998; cv2.CamShift): mean shift, then the window grown by 10 pixels each
  * way, and the second moments of the probability under it give the object's oriented size; the next window is the
- * box around that ellipse.
+ * box around that ellipse. {@link camShiftAlgorithm} run to the end.
  *
  * @param prob - Probability image `[H, W]`.
  * @param window - The starting window.
@@ -300,58 +481,10 @@ export function meanShift(
 export function camShift(
   prob: TensorLike,
   window: Rect,
-  options: { readonly maxIter?: number; readonly eps?: number } = {},
+  options: MeanShiftOptions = {},
 ): { readonly box: RotatedRect; readonly window: Rect } {
-  const p = greyOf(prob, 'camShift')
-  const TOL = 10
-  let [x, y, w, h] = meanShift(prob, window, options).window
-  x = Math.max(0, x - TOL)
-  y = Math.max(0, y - TOL)
-  w += 2 * TOL
-  if (x + w > p.w) w = p.w - x
-  h += 2 * TOL
-  if (y + h > p.h) h = p.h - y
-  const m = windowMoments(p, [x, y, w, h])
-  if (Math.abs(m.m00) < Number.EPSILON) return { box: { center: [0, 0], size: [0, 0], angle: 0 }, window: [x, y, w, h] }
-  const inv = 1 / m.m00
-  const xc = roundHalfEven(m.m10 * inv + x)
-  const yc = roundHalfEven(m.m01 * inv + y)
-  const a = m.mu20 * inv
-  const b = m.mu11 * inv
-  const c = m.mu02 * inv
-  const square = Math.sqrt(4 * b * b + (a - c) * (a - c))
-  let theta = Math.atan2(2 * b, a - c + square)
-  let cs = Math.cos(theta)
-  let sn = Math.sin(theta)
-  const ra = Math.max(0, cs * cs * m.mu20 + 2 * cs * sn * m.mu11 + sn * sn * m.mu02)
-  const rc = Math.max(0, sn * sn * m.mu20 - 2 * cs * sn * m.mu11 + cs * cs * m.mu02)
-  let length = Math.sqrt(ra * inv) * 4
-  let width = Math.sqrt(rc * inv) * 4
-  if (length < width) {
-    ;[length, width] = [width, length]
-    ;[cs, sn] = [sn, cs]
-    theta = Math.PI / 2 - theta
-  }
-  let t0 = Math.max(roundHalfEven(Math.abs(length * cs)), roundHalfEven(Math.abs(width * sn))) + 2
-  w = Math.min(t0, (p.w - xc) * 2)
-  t0 = Math.max(roundHalfEven(Math.abs(length * sn)), roundHalfEven(Math.abs(width * cs))) + 2
-  h = Math.min(t0, (p.h - yc) * 2)
-  x = Math.max(0, xc - Math.trunc(w / 2))
-  y = Math.max(0, yc - Math.trunc(h / 2))
-  w = Math.min(p.w - x, w)
-  h = Math.min(p.h - y, h)
-  let angle = Math.fround(((Math.PI * 0.5 + theta) * 180) / Math.PI)
-  while (angle < 0) angle += 360
-  while (angle >= 360) angle -= 360
-  if (angle >= 180) angle -= 180
-  return {
-    box: {
-      center: [Math.fround(x + w * 0.5), Math.fround(y + h * 0.5)],
-      size: [Math.fround(width), Math.fround(length)],
-      angle,
-    },
-    window: [x, y, w, h],
-  }
+  const run = runAlgorithm(camShiftAlgorithm(prob, window, options), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return { box: run.state.box as RotatedRect, window: run.state.window }
 }
 
 /** Options of {@link calcOpticalFlowPyrLK}. */

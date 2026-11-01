@@ -4387,7 +4387,7 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `fitLine` (least squares and robust M-estimators). `components.ts`: `connectedComponentsWithStats`, `floodFill`.
 - `draw.ts`: functional drawing returning new images: OpenCV's line iterator, Wu's anti-aliased lines, rectangles,
   circles, ellipses, polylines, filled polygons, and contour, keypoint and match views.
-- `boxes.ts`: box formats, area, clipping, scaling, `nms`, `batchedNms`, `softNms` (as cv2.dnn), anchors, box
+- `boxes.ts`: box formats, area, clipping, scaling, `nms`, `batchedNms`, `softNms` (as cv2.dnn; `softNmsAlgorithm`, one box kept per step), anchors, box
   encoding and decoding, anchor matching (torchvision's Matcher), golden against torchvision.ops.
 - `fast.ts`: FAST-9 corners with OpenCV's score and suppression. `scale-space.ts`: Gaussian and difference-of-Gaussian
   scale spaces and SIFT-style keypoints (sub-pixel refinement, edge rejection, orientations). `descriptors.ts`:
@@ -4404,13 +4404,20 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
 - `stereo.ts`: block matching (SAD, SSD or NCC, sub-pixel, left-right check), semi-global matching (4 or 8 paths),
   `disparityToDepth`, `reprojectImageTo3D`.
 - `tracking.ts`: SORT (a Kalman filter per track from `dynamics/filtering`, Hungarian assignment on IoU from `optim`),
-  `meanShift` and `camShift` as OpenCV, pyramidal Lucas-Kanade (`calcOpticalFlowPyrLK`, `kltAlgorithm`).
+  `meanShift` and `camShift` as OpenCV (`meanShiftAlgorithm`, `camShiftAlgorithm`: one window update per step, `track/` paths),
+  pyramidal Lucas-Kanade (`calcOpticalFlowPyrLK`, `kltAlgorithm`).
   `background.ts`: `accumulateWeighted`, a running-average model and Stauffer-Grimson per-pixel mixtures.
 - `denoise.ts`: non-local means, `denoiseTvChambolle` (golden against scikit-image), Perona-Malik diffusion, the guided
   filter, harmonic inpainting (the adaptive Wiener filter stays `signal`'s `wiener`).
-- `segmentation.ts`: SLIC superpixels, seeded region growing, mean-shift segmentation, k-means colour quantisation
+- `greedy-contract.ts`, `algorithm-options.ts`: the `greedy/`, `region/`, `fill/` and `geom/` paths of the greedy algorithms below, and
+  the tables `softNmsMethods`, `seamMaskStrengths`, `meanShiftCriteria`, `floodFillModes`, `simplifications`. Also stepped:
+  `houghPeaksAlgorithm` (`edges.ts`, a peak per step), `floodFillAlgorithm` (`components.ts`, a span per step),
+  `minEnclosingCircleAlgorithm` (`fitting.ts`, a point per step) and `approxPolyDPAlgorithm` (`contours.ts`, a segment per step); each
+  old function runs its algorithm.
+- `segmentation.ts`: SLIC superpixels, seeded region growing (`regionGrowingAlgorithm`, a pixel per step), mean-shift segmentation, k-means colour quantisation
   (over `cluster`). `snakes.ts`: active contours. `grabcut.ts`: GrabCut with mixture colour models and min cuts.
-  `seams.ts`: seam energy, minimum seams, removal, content-aware resizing.
+  `seams.ts`: seam energy, minimum seams, removal, content-aware resizing (`seamCarveAlgorithm`, a seam per step, `seam/` paths, protect
+  and remove masks).
 - `pyramids.ts`: `pyrDown`, `pyrUp` (OpenCV's kernels, borders and odd sizes), `buildPyramid`, Laplacian pyramids and
   multiresolution blending.
 - `haar.ts`: Haar-like features (scikit-image's types and order), discrete AdaBoost on stumps, attentional cascades,

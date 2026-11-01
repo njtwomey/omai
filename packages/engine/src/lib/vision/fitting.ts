@@ -9,7 +9,9 @@
 
 import { MdmlError } from '../base/index.ts'
 import { dgesvd } from '../numerics/linalg/index.ts'
+import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { f32, type PointsLike, pointsOf } from './_image.ts'
+import type { GeomPath } from './greedy-contract.ts'
 import { convexHull } from './hull.ts'
 
 /** A rotated rectangle (cv::RotatedRect): centre, size [width, height] and angle in degrees. */
@@ -210,10 +212,104 @@ function circle3(a: P, b: P, c: P): { c: [number, number]; r: number } | undefin
   return { c: [cx, cy], r: Math.hypot(cx - a[0], cy - a[1]) }
 }
 
+/** The state of {@link minEnclosingCircleAlgorithm}: the circle so far (without the final inflation) and the next point. */
+export interface EnclosingCircleState {
+  readonly center: [number, number]
+  readonly radius: number
+  /** The next point to test against the circle. */
+  readonly next: number
+  readonly count: number
+}
+
+/**
+ * The smallest enclosing circle (cv2.minEnclosingCircle) as a stepped algorithm, one point per step: Welzl's incremental
+ * construction starts from the circle on the first two points and, for each further point outside the circle, rebuilds it
+ * on that point and the earlier ones (a circle on two points, then three), in double precision. It logs the circle and the
+ * points tested, and is done (`converged`) when every point lies inside. The state serialises; the radius is inflated by
+ * 1e-4, as OpenCV's is, by {@link enclosingCircleOf}.
+ *
+ * @param points - Points `[n, 2]`.
+ * @returns The algorithm.
+ * @concept minimum-enclosing-circle
+ * @example
+ * ```ts
+ * import { enclosingCircleOf, minEnclosingCircleAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * enclosingCircleOf(runAlgorithm(minEnclosingCircleAlgorithm([[0, 0], [4, 0], [2, 1]]), { maxSteps: 10 }).state).center // => [2, 0]
+ * ```
+ */
+export function minEnclosingCircleAlgorithm(points: PointsLike): Algorithm<EnclosingCircleState, GeomPath> {
+  const pts = pointsOf(points, 'minEnclosingCircle')
+  const n = pts.length
+  const inside = (c: [number, number], r: number, p: P): boolean =>
+    Math.hypot(p[0] - c[0], p[1] - c[1]) <= r + 1e-12 * Math.max(1, r)
+  const two = (a: P, b: P): { c: [number, number]; r: number } => ({
+    c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+    r: Math.hypot(a[0] - b[0], a[1] - b[1]) / 2,
+  })
+  return {
+    name: 'vision/min-enclosing-circle',
+    config: { points: n },
+    init: () => {
+      if (n === 0) return { center: [0, 0], radius: 0, next: 0, count: 0 }
+      if (n === 1) return { center: [(pts[0] as P)[0], (pts[0] as P)[1]], radius: 0, next: 1, count: 1 }
+      const { c, r } = two(pts[0] as P, pts[1] as P)
+      return { center: c, radius: r, next: 2, count: 2 }
+    },
+    step: (s, ctx) => {
+      const i = s.next
+      const pi = pts[i] as P
+      let c = s.center
+      let r = s.radius
+      if (!inside(c, r, pi)) {
+        ;({ c, r } = two(pts[0] as P, pi))
+        for (let j = 1; j < i; j++) {
+          const pj = pts[j] as P
+          if (inside(c, r, pj)) continue
+          ;({ c, r } = two(pi, pj))
+          for (let k = 0; k < j; k++) {
+            const pk = pts[k] as P
+            if (inside(c, r, pk)) continue
+            const t = circle3(pi, pj, pk)
+            if (t !== undefined) ({ c, r } = t)
+          }
+        }
+      }
+      ctx.log('geom/circle', [c[0], c[1], r])
+      ctx.log('geom/points', i + 1)
+      return { center: c, radius: r, next: i + 1, count: i + 1 }
+    },
+    done: (s) => (s.next >= n ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as EnclosingCircleState,
+  }
+}
+
+/**
+ * The circle of a finished enclosing-circle state, with OpenCV's inflation of the radius by 1e-4 (so every point lies
+ * strictly inside; an empty point set gives radius 0).
+ *
+ * @param state - A state of {@link minEnclosingCircleAlgorithm}.
+ * @returns The centre and radius.
+ * @concept minimum-enclosing-circle
+ * @example
+ * ```ts
+ * import { enclosingCircleOf, minEnclosingCircleAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * enclosingCircleOf(runAlgorithm(minEnclosingCircleAlgorithm([[1, 1]]), { maxSteps: 5 }).state).radius // => 0.0001
+ * ```
+ */
+export function enclosingCircleOf(state: EnclosingCircleState): {
+  readonly center: [number, number]
+  readonly radius: number
+} {
+  return { center: state.center, radius: state.count === 0 ? 0 : state.radius + 1e-4 }
+}
+
 /**
  * The smallest circle enclosing points (cv2.minEnclosingCircle): Welzl's incremental construction (a circle on two
  * points, then three) computed in double precision; the radius is inflated by 1e-4 as OpenCV's is, so every point
- * lies strictly inside.
+ * lies strictly inside. {@link minEnclosingCircleAlgorithm} run to the end.
  *
  * @param points - Points `[n, 2]`.
  * @returns The centre and radius.
@@ -226,35 +322,9 @@ function circle3(a: P, b: P, c: P): { c: [number, number]; r: number } | undefin
  * ```
  */
 export function minEnclosingCircle(points: PointsLike): { readonly center: [number, number]; readonly radius: number } {
-  const pts = pointsOf(points, 'minEnclosingCircle')
-  const EPS = 1e-4
-  const n = pts.length
-  if (n === 0) return { center: [0, 0], radius: 0 }
-  if (n === 1) return { center: [(pts[0] as P)[0], (pts[0] as P)[1]], radius: EPS }
-  const inside = (c: [number, number], r: number, p: P): boolean =>
-    Math.hypot(p[0] - c[0], p[1] - c[1]) <= r + 1e-12 * Math.max(1, r)
-  const two = (a: P, b: P): { c: [number, number]; r: number } => ({
-    c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
-    r: Math.hypot(a[0] - b[0], a[1] - b[1]) / 2,
-  })
-  let { c, r } = two(pts[0] as P, pts[1] as P)
-  for (let i = 2; i < n; i++) {
-    const pi = pts[i] as P
-    if (inside(c, r, pi)) continue
-    ;({ c, r } = two(pts[0] as P, pi))
-    for (let j = 1; j < i; j++) {
-      const pj = pts[j] as P
-      if (inside(c, r, pj)) continue
-      ;({ c, r } = two(pi, pj))
-      for (let k = 0; k < j; k++) {
-        const pk = pts[k] as P
-        if (inside(c, r, pk)) continue
-        const t = circle3(pi, pj, pk)
-        if (t !== undefined) ({ c, r } = t)
-      }
-    }
-  }
-  return { center: c, radius: r + EPS }
+  return enclosingCircleOf(
+    runAlgorithm(minEnclosingCircleAlgorithm(points), { maxSteps: Number.MAX_SAFE_INTEGER }).state,
+  )
 }
 
 /** Least squares by the SVD (OpenCV's SVBackSubst / solve with DECOMP_SVD): argmin |A x - b|, A m x n row-major. */

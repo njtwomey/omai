@@ -9,7 +9,9 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
+import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { f32, greyOf, type PointsLike, pointsOf } from './_image.ts'
+import type { GeomPath } from './greedy-contract.ts'
 
 /** A contour or polygon: its vertices as (x, y) pairs. */
 export type Contour = [number, number][]
@@ -360,9 +362,210 @@ export function findContours(
 }
 
 /**
+ * The state of {@link approxPolyDPAlgorithm}: the segments still to split (pairs of indices into the curve), the vertices
+ * kept so far, and the simplified curve once the final pass has run.
+ */
+export interface PolyDpState {
+  readonly stack: [number, number][]
+  readonly kept: [number, number][]
+  /** The simplified curve after the final pass that drops straight-line vertices (null before). */
+  result: [number, number][] | null
+}
+
+/**
+ * Polygon simplification by the Ramer-Douglas-Peucker algorithm as OpenCV runs it (cv2.approxPolyDP), one segment per
+ * step: for a closed curve the recursion starts from two roughly farthest points; each step pops a segment and either
+ * keeps its start vertex (every point within epsilon of the chord) or splits it at the point farthest from the chord
+ * and pushes both halves; a last step drops vertices that sit on a straight line. It logs the split point and the vertices
+ * kept, and is done (`converged`) after the last step. The state serialises.
+ *
+ * @param curve - Points `[n, 2]`.
+ * @param epsilon - The largest allowed distance from the simplified curve.
+ * @param closed - Whether the curve is closed.
+ * @returns The algorithm.
+ * @concept polygon-simplification
+ * @example
+ * ```ts
+ * import { approxPolyDPAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(approxPolyDPAlgorithm([[0, 0], [1, 0.1], [2, 0], [2, 2], [0, 2]], 0.5, true), { maxSteps: 30 }).state.result // => [[0, 0], [2, 0], [2, 2], [0, 2]]
+ * ```
+ */
+export function approxPolyDPAlgorithm(
+  curve: PointsLike,
+  epsilon: number,
+  closed: boolean,
+): Algorithm<PolyDpState, GeomPath> {
+  const src = pointsOf(curve, 'approxPolyDP')
+  const count0 = src.length
+  const eps2 = epsilon * epsilon
+  return {
+    name: 'vision/approx-poly-dp',
+    config: { points: count0, epsilon, closed },
+    init: () => {
+      const dst: Contour = []
+      const stack: [number, number][] = []
+      if (count0 === 0) return { stack, kept: dst, result: [] }
+      const count = count0
+      let isClosed = closed
+      let initIters = 3
+      let startPt: readonly [number, number] = [-1e6, -1e6]
+      let pos = 0
+      const read = (): readonly [number, number] => {
+        const p = src[pos] as readonly [number, number]
+        pos++
+        if (pos >= count) pos = 0
+        return p
+      }
+      let rightStart = 0
+      if (!isClosed) {
+        rightStart = count
+        const end = src[0] as readonly [number, number]
+        startPt = src[count - 1] as readonly [number, number]
+        if (startPt[0] !== end[0] || startPt[1] !== end[1]) stack.push([0, count - 1])
+        else {
+          isClosed = true
+          initIters = 1
+        }
+      }
+      if (isClosed) {
+        rightStart = 0
+        let leEps = false
+        for (let i = 0; i < initIters; i++) {
+          let maxDist = 0
+          pos = (pos + rightStart) % count
+          startPt = read()
+          for (let j = 1; j < count; j++) {
+            const p = read()
+            const d = (p[0] - startPt[0]) ** 2 + (p[1] - startPt[1]) ** 2
+            if (d > maxDist) {
+              maxDist = d
+              rightStart = j
+            }
+          }
+          leEps = maxDist <= eps2
+        }
+        if (!leEps) {
+          const sliceStart = pos % count
+          const sliceEnd = (rightStart + sliceStart) % count
+          stack.push([sliceEnd, sliceStart], [sliceStart, sliceEnd])
+        } else dst.push([startPt[0], startPt[1]])
+      }
+      // `closed` as given decides the final pass; an open curve whose ends coincide was treated as closed above.
+      return { stack, kept: dst, result: null }
+    },
+    step: (st, ctx) => {
+      const count = count0
+      if (st.stack.length > 0) {
+        let pos = 0
+        const read = (): readonly [number, number] => {
+          const p = src[pos] as readonly [number, number]
+          pos++
+          if (pos >= count) pos = 0
+          return p
+        }
+        const [s0, s1] = st.stack.pop() as [number, number]
+        const endPt = src[s1] as readonly [number, number]
+        pos = s0
+        let startPt = read()
+        let leEps: boolean
+        let split = 0
+        if (pos !== s1) {
+          const dx = endPt[0] - startPt[0]
+          const dy = endPt[1] - startPt[1]
+          const len2 = dx * dx + dy * dy
+          let maxD = 0
+          while (pos !== s1) {
+            const p = read()
+            const proj = (p[0] - startPt[0]) * dx + (p[1] - startPt[1]) * dy
+            let d: number
+            if (proj < 0) d = ((p[0] - startPt[0]) ** 2 + (p[1] - startPt[1]) ** 2) * len2
+            else if (proj > len2) d = ((p[0] - endPt[0]) ** 2 + (p[1] - endPt[1]) ** 2) * len2
+            else {
+              const c = (p[1] - startPt[1]) * dx - (p[0] - startPt[0]) * dy
+              d = c * c
+            }
+            if (d > maxD) {
+              maxD = d
+              split = (pos + count - 1) % count
+            }
+          }
+          leEps = maxD <= eps2 * len2
+        } else {
+          leEps = true
+          startPt = src[s0] as readonly [number, number]
+        }
+        if (leEps) st.kept.push([startPt[0], startPt[1]])
+        else st.stack.push([split, s1], [s0, split])
+        ctx.log('geom/split', leEps ? -1 : split)
+        ctx.log('geom/points', st.kept.length)
+        return st
+      }
+      // The final pass: remove points on (almost) straight lines.
+      const dst = st.kept
+      if (!closedAtStart(src, closed)) {
+        const last = src[count - 1] as readonly [number, number]
+        dst.push([last[0], last[1]])
+      }
+      const isClosed = closed
+      const total = dst.length
+      let newCount = total
+      let pos = isClosed ? total - 1 : 0
+      const readDst = (): [number, number] => {
+        const p = dst[pos] as [number, number]
+        pos++
+        if (pos >= total) pos = 0
+        return p
+      }
+      let start = readDst()
+      let wpos = pos
+      let pt = readDst()
+      for (let i = isClosed ? 0 : 1; i < total - (isClosed ? 0 : 1) && newCount > 2; i++) {
+        const end = readDst()
+        const dx = end[0] - start[0]
+        const dy = end[1] - start[1]
+        const dist = Math.abs((pt[0] - start[0]) * dy - (pt[1] - start[1]) * dx)
+        const inner = (pt[0] - start[0]) * (end[0] - pt[0]) + (pt[1] - start[1]) * (end[1] - pt[1])
+        if (dist * dist <= 0.5 * eps2 * (dx * dx + dy * dy) && dx !== 0 && dy !== 0 && inner >= 0) {
+          newCount--
+          dst[wpos] = end
+          start = end
+          wpos++
+          if (wpos >= total) wpos = 0
+          pt = readDst()
+          i++
+          continue
+        }
+        dst[wpos] = pt
+        start = pt
+        wpos++
+        if (wpos >= total) wpos = 0
+        pt = end
+      }
+      if (!isClosed) dst[wpos] = pt
+      st.result = dst.slice(0, newCount)
+      ctx.log('geom/points', newCount)
+      return st
+    },
+    done: (st) => (st.result === null ? undefined : 'converged'),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as PolyDpState,
+  }
+}
+
+/** Whether an open curve is treated as closed because its first and last points coincide (decided by `approxPolyDP`'s setup). */
+const closedAtStart = (src: Contour | readonly (readonly [number, number])[], closed: boolean): boolean => {
+  if (closed) return true
+  const first = src[0] as readonly [number, number]
+  const last = src[src.length - 1] as readonly [number, number]
+  return first[0] === last[0] && first[1] === last[1]
+}
+
+/**
  * Simplify a curve by the Ramer-Douglas-Peucker algorithm as OpenCV runs it (cv2.approxPolyDP): for a closed curve
  * the recursion starts from two roughly farthest points, segments are split at the point farthest from their chord
  * until every point lies within epsilon, and a final pass drops vertices that sit on a straight line.
+ * {@link approxPolyDPAlgorithm} run to the end.
  *
  * @param curve - Points `[n, 2]`.
  * @param epsilon - The largest allowed distance from the simplified curve.
@@ -376,134 +579,10 @@ export function findContours(
  * ```
  */
 export function approxPolyDP(curve: PointsLike, epsilon: number, closed: boolean): Contour {
-  const src = pointsOf(curve, 'approxPolyDP')
-  const count0 = src.length
-  if (count0 === 0) return []
-  const eps2 = epsilon * epsilon
-  const dst: Contour = []
-  const stack: [number, number][] = []
-  let count = count0
-  let isClosed = closed
-  let initIters = 3
-  let startPt: readonly [number, number] = [-1e6, -1e6]
-  let pos = 0
-  const read = (): readonly [number, number] => {
-    const p = src[pos] as readonly [number, number]
-    pos++
-    if (pos >= count) pos = 0
-    return p
-  }
-  let rightStart = 0
-  if (!isClosed) {
-    rightStart = count
-    const end = src[0] as readonly [number, number]
-    startPt = src[count - 1] as readonly [number, number]
-    if (startPt[0] !== end[0] || startPt[1] !== end[1]) stack.push([0, count - 1])
-    else {
-      isClosed = true
-      initIters = 1
-    }
-  }
-  if (isClosed) {
-    rightStart = 0
-    let leEps = false
-    for (let i = 0; i < initIters; i++) {
-      let maxDist = 0
-      pos = (pos + rightStart) % count
-      startPt = read()
-      for (let j = 1; j < count; j++) {
-        const p = read()
-        const d = (p[0] - startPt[0]) ** 2 + (p[1] - startPt[1]) ** 2
-        if (d > maxDist) {
-          maxDist = d
-          rightStart = j
-        }
-      }
-      leEps = maxDist <= eps2
-    }
-    if (!leEps) {
-      const sliceStart = pos % count
-      const sliceEnd = (rightStart + sliceStart) % count
-      stack.push([sliceEnd, sliceStart], [sliceStart, sliceEnd])
-    } else dst.push([startPt[0], startPt[1]])
-  }
-  while (stack.length > 0) {
-    const [s0, s1] = stack.pop() as [number, number]
-    const endPt = src[s1] as readonly [number, number]
-    pos = s0
-    startPt = read()
-    let leEps: boolean
-    let split = 0
-    if (pos !== s1) {
-      const dx = endPt[0] - startPt[0]
-      const dy = endPt[1] - startPt[1]
-      const len2 = dx * dx + dy * dy
-      let maxD = 0
-      while (pos !== s1) {
-        const p = read()
-        const proj = (p[0] - startPt[0]) * dx + (p[1] - startPt[1]) * dy
-        let d: number
-        if (proj < 0) d = ((p[0] - startPt[0]) ** 2 + (p[1] - startPt[1]) ** 2) * len2
-        else if (proj > len2) d = ((p[0] - endPt[0]) ** 2 + (p[1] - endPt[1]) ** 2) * len2
-        else {
-          const c = (p[1] - startPt[1]) * dx - (p[0] - startPt[0]) * dy
-          d = c * c
-        }
-        if (d > maxD) {
-          maxD = d
-          split = (pos + count - 1) % count
-        }
-      }
-      leEps = maxD <= eps2 * len2
-    } else {
-      leEps = true
-      startPt = src[s0] as readonly [number, number]
-    }
-    if (leEps) dst.push([startPt[0], startPt[1]])
-    else stack.push([split, s1], [s0, split])
-  }
-  if (!isClosed) {
-    const last = src[count - 1] as readonly [number, number]
-    dst.push([last[0], last[1]])
-  }
-  // Final pass: remove points on (almost) straight lines.
-  isClosed = closed
-  count = dst.length
-  let newCount = count
-  pos = isClosed ? count - 1 : 0
-  const readDst = (): [number, number] => {
-    const p = dst[pos] as [number, number]
-    pos++
-    if (pos >= count) pos = 0
-    return p
-  }
-  let start = readDst()
-  let wpos = pos
-  let pt = readDst()
-  for (let i = isClosed ? 0 : 1; i < count - (isClosed ? 0 : 1) && newCount > 2; i++) {
-    const end = readDst()
-    const dx = end[0] - start[0]
-    const dy = end[1] - start[1]
-    const dist = Math.abs((pt[0] - start[0]) * dy - (pt[1] - start[1]) * dx)
-    const inner = (pt[0] - start[0]) * (end[0] - pt[0]) + (pt[1] - start[1]) * (end[1] - pt[1])
-    if (dist * dist <= 0.5 * eps2 * (dx * dx + dy * dy) && dx !== 0 && dy !== 0 && inner >= 0) {
-      newCount--
-      dst[wpos] = end
-      start = end
-      wpos++
-      if (wpos >= count) wpos = 0
-      pt = readDst()
-      i++
-      continue
-    }
-    dst[wpos] = pt
-    start = pt
-    wpos++
-    if (wpos >= count) wpos = 0
-    pt = end
-  }
-  if (!isClosed) dst[wpos] = pt
-  return dst.slice(0, newCount)
+  return (
+    runAlgorithm(approxPolyDPAlgorithm(curve, epsilon, closed), { maxSteps: Number.MAX_SAFE_INTEGER }).state.result ??
+    []
+  )
 }
 
 /**

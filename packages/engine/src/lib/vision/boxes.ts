@@ -9,7 +9,9 @@
 import { MdmlError } from '../base/index.ts'
 import { boxIou } from '../metrics/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
+import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { f32, roundHalfEven, valuesOf } from './_image.ts'
+import type { GreedyPath } from './greedy-contract.ts'
 
 /** A box as [a, b, c, d] in some {@link BoxFormat}. */
 export type Box = [number, number, number, number]
@@ -245,9 +247,115 @@ export interface SoftNmsOptions {
 }
 
 /**
+ * The state of {@link softNmsAlgorithm}: the candidates with their (decayed) scores, the boxes kept so far and their scores
+ * at the time. Steps reorder and decay the candidates in place; keep a copy of a state you want to look at later.
+ */
+export interface SoftNmsState {
+  /** `[score, index]` of every candidate, the kept ones first. */
+  readonly order: [number, number][]
+  /** The next position in `order` to fill with the best remaining candidate. */
+  start: number
+  readonly indices: number[]
+  readonly kept: number[]
+  finished: boolean
+}
+
+/**
+ * Soft non-maximum suppression (Bodla et al. 2017; cv2.dnn.softNMSBoxes) as a stepped algorithm, one box kept per step:
+ * keep the highest-scoring remaining box and decay the scores of the others by their overlap with it (a Gaussian, or
+ * linear above the IoU threshold), rather than discarding them. Scores are decayed in single precision, as OpenCV does. It
+ * logs the box kept, its score and how many candidates it decayed, and is done (`converged`) when every score is below
+ * the threshold, `completed` at topK. The state serialises.
+ *
+ * @param boxes - Boxes `[n, 4]` as xyxy.
+ * @param scores - Scores `[n]`.
+ * @param options - Method, sigma, thresholds and topK.
+ * @returns The algorithm.
+ * @throws MdmlError with code `shape` for a number of scores other than the boxes.
+ * @concept non-maximum-suppression
+ * @example
+ * ```ts
+ * import { softNmsAlgorithm } from 'mdml-engine/vision'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(softNmsAlgorithm([[0, 0, 10, 10], [0, 0, 10, 5]], [0.9, 0.8], { method: 'linear' }), { maxSteps: 5 })
+ * run.state.indices // => [0, 1]
+ * ```
+ */
+export function softNmsAlgorithm(
+  boxes: BoxesLike,
+  scores: TensorLike,
+  options: SoftNmsOptions = {},
+): Algorithm<SoftNmsState, GreedyPath> {
+  const b = boxesOf(boxes, 'softNms')
+  const s0 = Array.from(valuesOf(scores).data, f32)
+  if (s0.length !== b.length) throw new MdmlError('shape', 'softNms: one score per box')
+  const method = options.method ?? 'gaussian'
+  const sigma = f32(options.sigma ?? 0.5)
+  const thr = f32(options.iouThreshold ?? 0.3)
+  const scoreThr = f32(options.scoreThreshold ?? 0.001)
+  const topK = options.topK === undefined || options.topK === 0 ? b.length : Math.min(options.topK, b.length)
+  const iou = boxIou(b, b)
+  return {
+    name: 'vision/soft-nms',
+    config: { method, sigma, iouThreshold: thr, scoreThreshold: scoreThr, topK },
+    init: () => ({
+      order: s0.map((v, i): [number, number] => [v, i]),
+      start: 0,
+      indices: [],
+      kept: [],
+      finished: false,
+    }),
+    step: (st, ctx) => {
+      const order = st.order
+      let best = st.start
+      for (let i = st.start + 1; i < order.length; i++) {
+        const [v, k] = order[i] as [number, number]
+        const [bv, bk] = order[best] as [number, number]
+        if (v > bv || (v === bv && k < bk)) best = i
+      }
+      const [bscore, bidx] = order[best] as [number, number]
+      if (bscore < scoreThr) {
+        st.finished = true
+        return st
+      }
+      st.indices.push(bidx)
+      st.kept.push(bscore)
+      ;[order[st.start], order[best]] = [order[best] as [number, number], order[st.start] as [number, number]]
+      let decayed = 0
+      for (let i = st.start + 1; i < order.length; i++) {
+        const e = order[i] as [number, number]
+        if (e[0] < scoreThr) continue
+        // OpenCV's overlap: 1 - (float)(1 - IoU), the Jaccard distance taken through single precision.
+        const overlap = f32(1 - f32(1 - (iou[bidx]?.[e[1]] ?? 0)))
+        if (method === 'linear') {
+          if (overlap > thr) {
+            e[0] = f32(e[0] * f32(1 - overlap))
+            decayed++
+          }
+        } else {
+          e[0] = f32(e[0] * f32(Math.exp(f32(-f32(overlap * overlap) / sigma))))
+          decayed++
+        }
+      }
+      st.start++
+      ctx.log('greedy/pick', bidx)
+      ctx.log('greedy/score', bscore)
+      ctx.log('greedy/suppress', decayed)
+      return st
+    },
+    done: (st) =>
+      st.finished || st.start >= order0(st) ? 'converged' : st.indices.length >= topK ? 'completed' : undefined,
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as SoftNmsState,
+  }
+}
+
+const order0 = (st: SoftNmsState): number => st.order.length
+
+/**
  * Soft non-maximum suppression (Bodla et al. 2017; cv2.dnn.softNMSBoxes): repeatedly keep the highest-scoring box and
  * decay the scores of the others by their overlap with it, rather than discarding them, until every score is below
- * the threshold. Scores are decayed in single precision, as OpenCV does.
+ * the threshold. Scores are decayed in single precision, as OpenCV does. {@link softNmsAlgorithm} run to the end.
  *
  * @param boxes - Boxes `[n, 4]` as xyxy.
  * @param scores - Scores `[n]`.
@@ -265,42 +373,9 @@ export function softNms(
   scores: TensorLike,
   options: SoftNmsOptions = {},
 ): { readonly indices: number[]; readonly scores: number[] } {
-  const b = boxesOf(boxes, 'softNms')
-  const s = Array.from(valuesOf(scores).data, f32)
-  if (s.length !== b.length) throw new MdmlError('shape', 'softNms: one score per box')
-  const method = options.method ?? 'gaussian'
-  const sigma = f32(options.sigma ?? 0.5)
-  const thr = f32(options.iouThreshold ?? 0.3)
-  const scoreThr = f32(options.scoreThreshold ?? 0.001)
-  const topK = options.topK === undefined || options.topK === 0 ? b.length : Math.min(options.topK, b.length)
-  const iou = boxIou(b, b)
-  const order = s.map((v, i): [number, number] => [v, i])
-  const indices: number[] = []
-  const kept: number[] = []
-  let start = 0
-  while (indices.length < topK && start < order.length) {
-    let best = start
-    for (let i = start + 1; i < order.length; i++) {
-      const [v, k] = order[i] as [number, number]
-      const [bv, bk] = order[best] as [number, number]
-      if (v > bv || (v === bv && k < bk)) best = i
-    }
-    const [bscore, bidx] = order[best] as [number, number]
-    if (bscore < scoreThr) break
-    indices.push(bidx)
-    kept.push(bscore)
-    ;[order[start], order[best]] = [order[best] as [number, number], order[start] as [number, number]]
-    for (let i = start + 1; i < order.length; i++) {
-      const e = order[i] as [number, number]
-      if (e[0] < scoreThr) continue
-      // OpenCV's overlap: 1 - (float)(1 - IoU), the Jaccard distance taken through single precision.
-      const overlap = f32(1 - f32(1 - (iou[bidx]?.[e[1]] ?? 0)))
-      if (method === 'linear') {
-        if (overlap > thr) e[0] = f32(e[0] * f32(1 - overlap))
-      } else e[0] = f32(e[0] * f32(Math.exp(f32(-f32(overlap * overlap) / sigma))))
-    }
-    start++
-  }
+  const { indices, kept } = runAlgorithm(softNmsAlgorithm(boxes, scores, options), {
+    maxSteps: Number.MAX_SAFE_INTEGER,
+  }).state
   return { indices, scores: kept }
 }
 
