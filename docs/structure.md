@@ -3369,6 +3369,10 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   - `additive-model.ts`: `AdditiveModel` (intercept plus the sum of terms through a link; terms centred over reference
     rows kept as a buffer, the sum-to-zero constraint; heredity `none`, `weak` or `strong` for interactions; `contributions`,
     `mean`, `penalties` and `penalty`, `termCurve`, `termSurface`, `termEdf`).
+  - `heads.ts`: distributional heads (GAMLSS in a network): `headFamily` (a `DistributionalFamily` of `dists/families`
+    through its tensor log-likelihood, an `ExtendedFamily` through its derivatives as a custom reverse rule, or a GAMLSS
+    family by name; the same families and links as `gam/gamlss.ts`) and `DistributionalAdditive` (one `AdditiveModel`
+    per parameter with its own terms and link, `nll`, `naturalParameters`, `distribution`, `penalty`).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
