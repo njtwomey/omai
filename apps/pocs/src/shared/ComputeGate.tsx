@@ -28,9 +28,13 @@ export function ComputeGate(props: {
   readonly live: Computing
   readonly total: number
   readonly label?: string
+  /** What the left of the second line says (default the step reached of the total). */
+  readonly detail?: string
+  /** Stop where it is and keep what has been computed: given, the gate shows a Cancel button. */
+  readonly onCancel?: () => void
   readonly children: ReactNode
 }): ReactNode {
-  const { live, total, label = 'Training', children } = props
+  const { live, total, label = 'Training', detail, onCancel, children } = props
   const wrapper = useRef<HTMLDivElement>(null)
   const height = useRef(0)
   const started = useRef({ at: 0, head: 0 })
@@ -67,11 +71,19 @@ export function ComputeGate(props: {
           <div className="h-full rounded-full bg-(--wb-accent)" style={{ width: `${100 * share}%` }} />
         </div>
         <div className="flex justify-between text-xs text-muted">
-          <span className="tabular-nums">
-            step {live.head} of {total}
-          </span>
+          <span className="tabular-nums">{detail ?? `step ${live.head} of ${total}`}</span>
           <span>{text}</span>
         </div>
+        {onCancel === undefined ? null : (
+          <button
+            type="button"
+            onClick={onCancel}
+            title="Stop here and keep what has been computed so far"
+            className="mt-1 w-fit cursor-pointer self-end rounded-md border border-line bg-bg px-3 py-1.5 text-xs text-fg hover:bg-surface"
+          >
+            Cancel
+          </button>
+        )}
       </div>
     </div>
   )

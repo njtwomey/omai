@@ -16,6 +16,8 @@ export interface Baked<T> {
   readonly baking: boolean
   /** Views computed and views to compute (0 before the run has ended). */
   readonly progress: { readonly done: number; readonly total: number }
+  /** Stop baking now and keep the views computed so far. */
+  readonly stop: () => void
 }
 
 const SLICE_MS = 14
@@ -36,6 +38,7 @@ export function useBake<T>(live: Bakeable, frames: number, view: (t: number) => 
   const steps = useRef<number[]>([])
   const latest = useRef(view)
   latest.current = view
+  const stopped = useRef(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [baking, setBaking] = useState(false)
   const [, setVersion] = useState(0)
@@ -43,6 +46,7 @@ export function useBake<T>(live: Bakeable, frames: number, view: (t: number) => 
   useEffect(() => {
     store.current = new Map()
     steps.current = []
+    stopped.current = false
     setProgress({ done: 0, total: 0 })
     setBaking(false)
     if (!live.done || live.head < 1) return
@@ -56,6 +60,11 @@ export function useBake<T>(live: Bakeable, frames: number, view: (t: number) => 
     setProgress({ done: 0, total: list.length })
     const slice = (): void => {
       if (cancelled) return
+      if (stopped.current) {
+        setBaking(false)
+        setVersion((v) => v + 1)
+        return
+      }
       const started = performance.now()
       while (next < list.length && performance.now() - started < SLICE_MS) {
         const t = list[next] as number
@@ -84,5 +93,12 @@ export function useBake<T>(live: Bakeable, frames: number, view: (t: number) => 
     }
     return best === undefined ? undefined : store.current.get(best)
   }
-  return { at, baking, progress }
+  return {
+    at,
+    baking,
+    progress,
+    stop: () => {
+      stopped.current = true
+    },
+  }
 }

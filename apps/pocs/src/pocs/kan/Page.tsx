@@ -21,7 +21,7 @@ import {
   useSession,
   useSessionPreferences,
 } from 'mdml-render/react'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { ComputeGate } from '../../shared/ComputeGate.tsx'
 import { type Baked, useBake } from '../../shared/useBake.ts'
 
@@ -151,7 +151,15 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
     { hold: prefs.hold },
   )
   // The views the page draws, computed once when the training has ended, so playing back is only a lookup.
-  const baked = useBake({ done: live.done, head: live.head, session: live.session }, FRAMES, (t) => ({
+  // Cancelling the training ends the run where it stands, and its views are prepared as they are.
+  const [cancelled, setCancelled] = useState(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new run starts uncancelled
+  useEffect(() => setCancelled(false), [live.session])
+  useEffect(() => {
+    if (live.computing) setCancelled(false)
+  }, [live.computing])
+  const ended = live.done || cancelled
+  const baked = useBake({ done: ended, head: live.head, session: live.session }, FRAMES, (t) => ({
     curves: live.session.probe(t, 'kan/curves') as unknown as { widths: number[]; edges: Edge[] },
     sparsity: live.session.probe(t, 'kan/sparsity') as unknown as number,
     surface: live.session.probe(t, 'model/decision-surface', { resolution: RESOLUTION }) as unknown as {
@@ -167,7 +175,19 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
       <ComputeGate
         live={{ head: live.head + baked.progress.done, computing: gated, done: !gated }}
         total={controls.epochs + Math.max(baked.progress.total, FRAMES + 1)}
-        label={live.done ? 'Preparing the playback' : 'Training the network'}
+        label={ended ? 'Preparing the playback' : 'Training the network'}
+        detail={
+          ended
+            ? `view ${baked.progress.done} of ${Math.max(baked.progress.total, 1)}`
+            : `step ${live.head} of ${controls.epochs}`
+        }
+        onCancel={() => {
+          if (ended) baked.stop()
+          else {
+            live.halt()
+            setCancelled(true)
+          }
+        }}
       >
         <View live={live} at={at} onScrub={setAt} data={data} baked={baked} />
       </ComputeGate>
