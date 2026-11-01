@@ -29,6 +29,7 @@ import {
 import { initKey, Module, type Params } from '../module/module.ts'
 import {
   type BasisOptions,
+  type Boundary,
   bsplineBasis,
   bsplineBasisDerivative,
   extendKnots,
@@ -61,6 +62,11 @@ export interface SplineLayerOptions {
   readonly bias?: boolean
   /** Beyond the range: hold the boundary value (default) or continue with the boundary tangent. */
   readonly outside?: Outside
+  /**
+   * How the knot vector ends: `clamped` (default, boundary knots repeated) or `extended` (P-splines: equally spaced knots
+   * beyond the range, the basis of `gam`'s `ps` smooth when the interior knots are even).
+   */
+  readonly boundary?: Boundary
   /** The standard deviation of the raw coefficients at initialisation (default 0.1). */
   readonly initScale?: number
   readonly key?: Key
@@ -121,6 +127,7 @@ export class SplineLayer extends Module {
   readonly shapeTransform: ShapeTransform
   readonly hasBias: boolean
   readonly outside: Outside
+  readonly boundary: Boundary
   readonly initScale: number
   private readonly lo: number[]
   private readonly hi: number[]
@@ -141,6 +148,7 @@ export class SplineLayer extends Module {
     this.shapeTransform = splineShapes.make(options.shape)
     this.hasBias = options.bias ?? true
     this.outside = options.outside ?? 'clamp'
+    this.boundary = options.boundary ?? 'clamped'
     this.initScale = options.initScale ?? 0.1
     const d = this.inFeatures
     const sample = options.sample === undefined ? undefined : asTensor(options.sample)
@@ -246,7 +254,7 @@ export class SplineLayer extends Module {
    */
   knotVectors(params: Params, buffers?: Params): Value {
     const { lo, hi } = this.bounds(buffers)
-    return extendKnots(this.interior(params, buffers), lo, hi, this.degree)
+    return extendKnots(this.interior(params, buffers), lo, hi, this.degree, this.boundary)
   }
 
   /**
@@ -271,7 +279,7 @@ export class SplineLayer extends Module {
    * @returns The basis.
    */
   basis(params: Params, x: Value, buffers?: Params): Value {
-    const options: BasisOptions = { outside: this.outside }
+    const options: BasisOptions = { outside: this.outside, boundary: this.boundary }
     return bsplineBasis(this.inputs(x), this.knotVectors(params, buffers), this.degree, options)
   }
 
@@ -305,6 +313,7 @@ export class SplineLayer extends Module {
   termDerivatives(params: Params, x: Value, order = 1, buffers?: Params): Value {
     const d = bsplineBasisDerivative(this.inputs(x), this.knotVectors(params, buffers), this.degree, order, {
       outside: this.outside,
+      boundary: this.boundary,
     })
     return einsum('nik,oik->nio', d, this.coefficients(params, buffers))
   }
@@ -326,7 +335,11 @@ export class SplineLayer extends Module {
       [this.basisSize, 1],
     )
     const values = reshape(
-      einsum('nk,kj->nj', bsplineBasis(Array.from(grid), knots, this.degree, { outside: this.outside }), coef),
+      einsum(
+        'nk,kj->nj',
+        bsplineBasis(Array.from(grid), knots, this.degree, { outside: this.outside, boundary: this.boundary }),
+        coef,
+      ),
       [grid.length],
     )
     return asTensor(toFlat(values)) as Tensor

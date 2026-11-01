@@ -181,6 +181,7 @@ export class TensorSpline2d extends Module {
     const rows = (j: number, grid: ArrayLike<number>): Value =>
       bsplineBasis(Array.from(grid), reshape(sliceAxis(knots, 0, j, j + 1), [-1]), this.margins.degree, {
         outside: this.margins.outside,
+        boundary: this.margins.boundary,
       })
     return einsum('ga,ab,hb->gh', rows(0, gridX), params['coef'] as Value, rows(1, gridZ))
   }
@@ -352,6 +353,7 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
       degree: int(1, 5, { default: 3, label: 'degree' }),
       knots: splineKnots.space,
       shape: splineShapes.space,
+      boundary: choice(['clamped', 'extended'], { default: 'clamped', label: 'boundary knots' }),
       lambda: real(0, 1e8, { default: 0, label: 'smoothness λ' }),
       order: int(0, 4, { default: 2, label: 'difference order' }),
     }),
@@ -367,6 +369,7 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
         key: ctx.key,
         ...(k['knots'] === undefined ? {} : { knots: k['knots'] }),
         ...(k['shape'] === undefined ? {} : { shape: k['shape'] }),
+        ...(k['boundary'] === 'extended' ? { boundary: 'extended' as const } : {}),
         ...(sample === undefined ? {} : { sample }),
       })
       const lambda = num(k, 'lambda', ctx.lambda)
@@ -515,6 +518,8 @@ export interface SplineTermOptions {
   readonly knots?: SpaceValue
   /** The `splineShapes` option (`{ kind: 'increasing' }`). */
   readonly shape?: SpaceValue
+  /** `clamped` (default) or `extended` (P-spline knots beyond the range, the basis of `gam`'s `ps`). */
+  readonly boundary?: 'clamped' | 'extended'
   /** The smoothness `lambda` (in the `n * loss` convention of `gam`); default the model's. */
   readonly lambda?: number
   /** The difference order of the penalty (default 2). */

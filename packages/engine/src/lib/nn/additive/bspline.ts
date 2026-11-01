@@ -8,6 +8,7 @@
  * a leading feature axis: knots `[f, m]` with points `[n, f]` give a basis `[n, f, K]`, one knot vector per feature.
  */
 
+import { customVjp } from '../../autodiff/index.ts'
 import { MdmlError } from '../../base/index.ts'
 import {
   add,
@@ -18,6 +19,7 @@ import {
   cumsum,
   div,
   equal,
+  fromStorage,
   full,
   greater,
   greaterEqual,
@@ -39,11 +41,25 @@ import {
 /** What a basis does for points outside the knot range: hold the boundary value, or continue linearly. */
 export type Outside = 'clamp' | 'linear'
 
+/** How a knot vector ends: boundary knots repeated (`clamped`), or equally spaced knots beyond the range (`extended`, as P-splines). */
+export type Boundary = 'clamped' | 'extended'
+
 /** Options of {@link bsplineBasis} and {@link bsplineBasisDerivative}. */
 export interface BasisOptions {
+  /**
+   * Where the knot vector's valid range lies: `clamped` (default) is the whole vector (boundary knots repeated), `extended`
+   * is the range between the `degree`th and the `degree`th-from-last knot, with extra knots beyond it (P-splines).
+   */
+  readonly boundary?: Boundary
   /** Points beyond the boundary knots: `clamp` evaluates at the nearest boundary (default), `linear` continues with the boundary tangent. */
   readonly outside?: Outside
 }
+
+/** Clip points to the valid range of a knot vector. */
+const clipToRange = (xs: Value, t: Value, m: number, degree: number, boundary: Boundary = 'clamped'): Value =>
+  boundary === 'extended'
+    ? clip(xs, knotsAt(t, degree, degree + 1), knotsAt(t, m - 1 - degree, m - degree))
+    : clip(xs, knotsAt(t, 0, 1), knotsAt(t, m - 1, m))
 
 const lastAxis = (v: Value): number => v.shape.length - 1
 
@@ -110,15 +126,188 @@ function indicator(x: Value, t: Value, m: number): Value {
  * ```
  */
 export function bsplineBasis(x: TensorLike, knots: TensorLike, degree: number, options: BasisOptions = {}): Value {
+  return evaluateBasis(x, knots, degree, options, false)
+}
+
+/**
+ * The same basis as {@link bsplineBasis} written entirely in tensor operations (the Cox-de Boor recurrence op by op),
+ * which is slower but is differentiated by the library's own rules to any order: the reference the kernel version is
+ * checked against, and the way to differentiate the basis twice.
+ *
+ * @param x - The points `[n]` (or `[n, 1]`), or `[n, f]` for batched knots.
+ * @param knots - The knot vector `[m]` (or `[f, m]`).
+ * @param degree - The degree.
+ * @param options - How to continue outside the knot range.
+ * @returns The basis `[n, m - degree - 1]` (or `[n, f, m - degree - 1]`).
+ * @concept splines
+ * @example
+ * ```ts
+ * import { bsplineBasisByOps } from 'mdml-engine/nn'
+ * bsplineBasisByOps([0.3], [0, 0, 0, 0, 0.5, 1, 1, 1, 1], 3).shape // => [1, 5]
+ * ```
+ */
+export function bsplineBasisByOps(x: TensorLike, knots: TensorLike, degree: number, options: BasisOptions = {}): Value {
+  return evaluateBasis(x, knots, degree, options, true)
+}
+
+function evaluateBasis(x: TensorLike, knots: TensorLike, degree: number, options: BasisOptions, byOps: boolean): Value {
   const t = asTensor(knots)
   const m = checkKnots('bsplineBasis', t, degree)
-  const xs = column(x, t.shape.length === 2)
-  const lo = knotsAt(t, 0, 1)
-  const hi = knotsAt(t, m - 1, m)
-  const xc = clip(xs, lo, hi)
-  const at = rawBasis(xc, t, m, degree)
+  const batched = t.shape.length === 2
+  const xs = column(x, batched)
+  const xc = clipToRange(xs, t, m, degree, options.boundary)
+  const at = byOps ? rawBasis(xc, t, m, degree) : kernelBasis(xc, t, m, degree, batched)
   if (options.outside !== 'linear' || degree === 0) return at
   return add(at, mul(sub(xs, xc), rawDerivative(xc, t, m, degree, 1)))
+}
+
+/** The basis kernels by degree: forward values in plain loops, and a reverse rule with exact derivatives in x and knots. */
+const kernels = new Map<number, (...inputs: Value[]) => Value>()
+
+function kernelBasis(xc: Value, t: Value, m: number, degree: number, batched: boolean): Value {
+  const n = xc.shape[0] ?? 0
+  const f = batched ? (xc.shape[1] ?? 0) : 1
+  let kernel = kernels.get(degree)
+  if (kernel === undefined) {
+    kernel = customVjp({
+      name: `bsplineBasis${degree}`,
+      forward: (x, knots) => {
+        const { basis } = basisKernel(
+          toFlat(x),
+          toFlat(knots),
+          x.shape[0] ?? 0,
+          knots.shape[0] ?? 0,
+          knots.shape[1] ?? 0,
+          degree,
+          false,
+        )
+        return fromStorage(basis, [x.shape[0] ?? 0, knots.shape[0] ?? 0, (knots.shape[1] ?? 0) - degree - 1], 'float64')
+      },
+      vjp: (g, [x, knots]) => {
+        const nn = (x as Value).shape[0] ?? 0
+        const ff = (knots as Value).shape[0] ?? 0
+        const mm = (knots as Value).shape[1] ?? 0
+        const { dx, dt } = basisKernel(toFlat(x as Value), toFlat(knots as Value), nn, ff, mm, degree, true)
+        const K = mm - degree - 1
+        const gf = toFlat(g)
+        const gx = new Float64Array(nn * ff)
+        const gt = new Float64Array(ff * mm)
+        for (let r = 0; r < nn; r++)
+          for (let q = 0; q < ff; q++)
+            for (let k = 0; k < K; k++) {
+              const gk = gf[(r * ff + q) * K + k] as number
+              if (gk === 0) continue
+              gx[r * ff + q] = (gx[r * ff + q] as number) + gk * ((dx as Float64Array)[(r * ff + q) * K + k] as number)
+              const base = ((r * ff + q) * K + k) * mm
+              for (let j = k; j <= k + degree + 1; j++)
+                gt[q * mm + j] = (gt[q * mm + j] as number) + gk * ((dt as Float64Array)[base + j] as number)
+            }
+        return [fromStorage(gx, [nn, ff], 'float64'), fromStorage(gt, [ff, mm], 'float64')]
+      },
+      jvp: ([x, knots], [tx, tk]) => {
+        const nn = (x as Value).shape[0] ?? 0
+        const ff = (knots as Value).shape[0] ?? 0
+        const mm = (knots as Value).shape[1] ?? 0
+        const { dx, dt } = basisKernel(toFlat(x as Value), toFlat(knots as Value), nn, ff, mm, degree, true)
+        const K = mm - degree - 1
+        const dtx = tx === null || tx === undefined ? undefined : toFlat(tx as Value)
+        const dtk = tk === null || tk === undefined ? undefined : toFlat(tk as Value)
+        const out = new Float64Array(nn * ff * K)
+        for (let r = 0; r < nn; r++)
+          for (let q = 0; q < ff; q++)
+            for (let k = 0; k < K; k++) {
+              const at = (r * ff + q) * K + k
+              let v = dtx === undefined ? 0 : ((dx as Float64Array)[at] as number) * (dtx[r * ff + q] as number)
+              if (dtk !== undefined)
+                for (let j = k; j <= k + degree + 1; j++)
+                  v += ((dt as Float64Array)[at * mm + j] as number) * (dtk[q * mm + j] as number)
+              out[at] = v
+            }
+        return fromStorage(out, [nn, ff, K], 'float64')
+      },
+    })
+    kernels.set(degree, kernel)
+  }
+  const x2 = reshape(xc, [n, f])
+  const t2 = batched ? t : reshape(t, [1, m])
+  const out = kernel(x2, t2)
+  return batched ? out : reshape(out, [n, m - degree - 1])
+}
+
+/**
+ * The Cox-de Boor recurrence in plain loops for `f` features: the basis `[n, f, K]`, and with `jacobians` the derivative
+ * in the point `[n, f, K]` and in every knot `[n, f, K, m]` (flat), carried through the recurrence by the product rule.
+ */
+function basisKernel(
+  x: ArrayLike<number>,
+  t: ArrayLike<number>,
+  n: number,
+  f: number,
+  m: number,
+  degree: number,
+  jacobians: boolean,
+): { basis: Float64Array; dx?: Float64Array; dt?: Float64Array } {
+  const K = m - degree - 1
+  const basis = new Float64Array(n * f * K)
+  const dx = jacobians ? new Float64Array(n * f * K) : undefined
+  const dt = jacobians ? new Float64Array(n * f * K * m) : undefined
+  const L0 = m - 1
+  for (let q = 0; q < f; q++) {
+    const tk = (j: number): number => t[q * m + j] as number
+    const last = tk(m - 1)
+    for (let r = 0; r < n; r++) {
+      const xv = x[r * f + q] as number
+      let B = new Float64Array(L0)
+      for (let j = 0; j < L0; j++) {
+        const right = tk(j + 1)
+        B[j] = (tk(j) <= xv && xv < right) || (right === last && tk(j) < right && xv === last) ? 1 : 0
+      }
+      let DX = jacobians ? new Float64Array(L0) : undefined
+      let DT = jacobians ? new Float64Array(L0 * m) : undefined
+      for (let level = 1; level <= degree; level++) {
+        const L = m - 1 - level
+        const nB = new Float64Array(L)
+        const nDX = jacobians ? new Float64Array(L) : undefined
+        const nDT = jacobians ? new Float64Array(L * m) : undefined
+        for (let i = 0; i < L; i++) {
+          const d1 = tk(i + level) - tk(i)
+          const d2 = tk(i + level + 1) - tk(i + 1)
+          const a = d1 > 0 ? (xv - tk(i)) / d1 : 0
+          const b = d2 > 0 ? (tk(i + level + 1) - xv) / d2 : 0
+          nB[i] = a * (B[i] as number) + b * (B[i + 1] as number)
+          if (nDX !== undefined && DX !== undefined && nDT !== undefined && DT !== undefined) {
+            nDX[i] =
+              a * (DX[i] as number) +
+              b * (DX[i + 1] as number) +
+              (d1 > 0 ? (B[i] as number) / d1 : 0) -
+              (d2 > 0 ? (B[i + 1] as number) / d2 : 0)
+            for (let j = i; j <= i + level + 1; j++)
+              nDT[i * m + j] = a * (DT[i * m + j] as number) + b * (DT[(i + 1) * m + j] as number)
+            if (d1 > 0) {
+              const ua = (xv - tk(i)) / (d1 * d1)
+              nDT[i * m + i] = (nDT[i * m + i] as number) + (-1 / d1 + ua) * (B[i] as number)
+              nDT[i * m + i + level] = (nDT[i * m + i + level] as number) - ua * (B[i] as number)
+            }
+            if (d2 > 0) {
+              const ub = (tk(i + level + 1) - xv) / (d2 * d2)
+              nDT[i * m + i + level + 1] = (nDT[i * m + i + level + 1] as number) + (1 / d2 - ub) * (B[i + 1] as number)
+              nDT[i * m + i + 1] = (nDT[i * m + i + 1] as number) + ub * (B[i + 1] as number)
+            }
+          }
+        }
+        B = nB
+        DX = nDX
+        DT = nDT
+      }
+      for (let k = 0; k < K; k++) {
+        const at = (r * f + q) * K + k
+        basis[at] = B[k] as number
+        if (dx !== undefined && DX !== undefined) dx[at] = DX[k] as number
+        if (dt !== undefined && DT !== undefined) for (let j = 0; j < m; j++) dt[at * m + j] = DT[k * m + j] as number
+      }
+    }
+  }
+  return { basis, ...(dx === undefined ? {} : { dx }), ...(dt === undefined ? {} : { dt }) }
 }
 
 function rawBasis(x: Value, t: Value, m: number, degree: number): Value {
@@ -187,7 +376,7 @@ export function bsplineBasisDerivative(
     throw new MdmlError('value', 'bsplineBasisDerivative: order must be an integer >= 0')
   if (order === 0) return bsplineBasis(x, knots, degree, options)
   const xs = column(x, t.shape.length === 2)
-  const xc = clip(xs, knotsAt(t, 0, 1), knotsAt(t, m - 1, m))
+  const xc = clipToRange(xs, t, m, degree, options.boundary)
   const d = rawDerivative(xc, t, m, degree, order)
   // Beyond the boundary the clamped basis is constant (derivative 0); the linear continuation keeps the boundary
   // tangent, whose own derivatives of higher order vanish.
@@ -206,6 +395,7 @@ const bounds = (v: number | ArrayLike<number>): Value =>
  * @param lo - The lower boundary (one per feature for batched knots).
  * @param hi - The upper boundary.
  * @param degree - The degree.
+ * @param boundary - `clamped` (default) repeats the boundary knots; `extended` continues the end gaps `degree` knots beyond them.
  * @returns The knot vector `[k + 2 (degree + 1)]` (or `[f, k + 2 (degree + 1)]`).
  * @concept splines
  * @example
@@ -220,13 +410,28 @@ export function extendKnots(
   lo: number | ArrayLike<number>,
   hi: number | ArrayLike<number>,
   degree: number,
+  boundary: Boundary = 'clamped',
 ): Value {
   const inner = asTensor(interior)
-  const edge = (v: number | ArrayLike<number>): Value =>
-    inner.shape.length === 1
-      ? full([degree + 1], typeof v === 'number' ? v : (v[0] ?? 0))
-      : broadcastTo(bounds(v), [inner.shape[0] ?? 0, degree + 1])
-  return concat([edge(lo), inner, edge(hi)], lastAxis(inner))
+  const ax = lastAxis(inner)
+  const k = inner.shape[ax] ?? 0
+  const batched = inner.shape.length === 2
+  const edge = (v: number | ArrayLike<number>, count: number): Value =>
+    batched
+      ? broadcastTo(bounds(v), [inner.shape[0] ?? 0, count])
+      : full([count], typeof v === 'number' ? v : (v[0] ?? 0))
+  if (boundary === 'clamped') return concat([edge(lo, degree + 1), inner, edge(hi, degree + 1)], ax)
+  // Equally spaced beyond the range, by the end gaps (the P-spline knots when the interior knots are even).
+  const low = bounds(lo)
+  const high = bounds(hi)
+  const first = sub(sliceAxis(inner, ax, 0, 1), low)
+  const last = sub(high, sliceAxis(inner, ax, k - 1, k))
+  const before = Array.from({ length: degree }, (_, j) => degree - j)
+  const after = Array.from({ length: degree }, (_, j) => j + 1)
+  return concat(
+    [sub(low, mul(first, asTensor(before))), edge(lo, 1), inner, edge(hi, 1), add(high, mul(last, asTensor(after)))],
+    ax,
+  )
 }
 
 /**

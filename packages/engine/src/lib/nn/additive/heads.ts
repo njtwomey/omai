@@ -21,9 +21,11 @@ import {
   gamlssNegativeBinomial,
   gamlssNormal,
   gamlssStudentT,
+  identity as identityLink,
   type Link,
 } from '../../dists/families/index.ts'
 import type { Distribution } from '../../dists/index.ts'
+import { crossEntropy } from '../../losses/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -35,6 +37,7 @@ import {
   neg,
   reshape,
   sliceAxis,
+  stack,
   type Tensor,
   type TensorLike,
   toFlat,
@@ -180,6 +183,34 @@ function extended(family: ExtendedFamily, y: ArrayLike<number> | undefined): Hea
   }
 }
 
+/**
+ * The categorical family as a head family: one logit predictor per class and the cross-entropy loss. With a smoothness
+ * penalty on each class's terms this is the multinomial additive model; two classes are the binary logistic case.
+ *
+ * @param classes - The number of classes (at least 2).
+ * @returns The head family, predictors `class0 .. class(K-1)`, identity links; targets are class indices.
+ * @throws MdmlError `value` for fewer than two classes.
+ * @concept distributional-regression
+ * @example
+ * ```ts
+ * import { classLogitFamily } from 'mdml-engine/nn'
+ * import { item, tensor } from 'mdml-engine/tensor'
+ * Math.abs(item(classLogitFamily(2).nll([0, 1], [tensor([0, 0]), tensor([0, 0])])) - Math.LN2) < 1e-12 // => true
+ * ```
+ */
+export function classLogitFamily(classes: number): HeadFamily {
+  if (!(Number.isInteger(classes) && classes >= 2))
+    throw new MdmlError('value', 'classLogitFamily: needs at least two classes')
+  return {
+    name: `categorical(${classes})`,
+    predictors: Array.from({ length: classes }, (_, k) => `class${k}`),
+    links: Array.from({ length: classes }, () => identityLink()),
+    start: () => new Array<number>(classes).fill(0),
+    nll: (y, predictors) => crossEntropy(stack(predictors, 1), y),
+    distribution: () => undefined,
+  }
+}
+
 /** Options of {@link DistributionalAdditive}. */
 export interface DistributionalAdditiveOptions {
   readonly inFeatures: number
@@ -193,6 +224,7 @@ export interface DistributionalAdditiveOptions {
   /** The training response: the intercepts start at the family's starting predictors. */
   readonly y?: ArrayLike<number>
   readonly centre?: boolean
+  readonly centreRows?: number
   readonly heredity?: Heredity
   readonly lambda?: number
   readonly featureNames?: readonly string[]
@@ -234,6 +266,7 @@ export class DistributionalAdditive extends Composite {
         key: foldIn(base, k),
         ...(options.sample === undefined ? {} : { sample: options.sample }),
         ...(options.centre === undefined ? {} : { centre: options.centre }),
+        ...(options.centreRows === undefined ? {} : { centreRows: options.centreRows }),
         ...(options.heredity === undefined ? {} : { heredity: options.heredity }),
         ...(options.lambda === undefined ? {} : { lambda: options.lambda }),
         ...(options.featureNames === undefined ? {} : { featureNames: options.featureNames }),

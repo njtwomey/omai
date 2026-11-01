@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { grad, gradCheck, numericalGradient } from '../../autodiff/index.ts'
-import { bs } from '../../stats/smoothing/index.ts'
+import { bs, ps } from '../../stats/smoothing/index.ts'
 import { asTensor, matmul, mul, reshape, sum, toFlat, type Value } from '../../tensor/index.ts'
 import {
   bsplineBasis,
+  bsplineBasisByOps,
   bsplineBasisDerivative,
   extendKnots,
   grevilleAbscissae,
@@ -114,6 +115,25 @@ describe('bsplineBasis', () => {
   })
 })
 
+describe('extended (P-spline) boundary knots', () => {
+  it('give the basis of lib/stats/smoothing ps() to 1e-10, with unit sums on the range', () => {
+    const x = grid(37, 0.1, 2.6)
+    for (const [k, degree] of [
+      [8, 3],
+      [7, 2],
+    ] as const) {
+      const reference = ps(x, { k, degree })
+      const m = k - degree - 1
+      const interior = Array.from({ length: m }, (_, j) => 0.1 + ((2.6 - 0.1) * (j + 1)) / (m + 1))
+      const t = extendKnots(interior, 0.1, 2.6, degree, 'extended')
+      expect(maxAbs(toFlat(t), toFlat(reference.knots))).toBeLessThan(1e-12)
+      const ours = bsplineBasis(x, t, degree, { boundary: 'extended' })
+      expect(maxAbs(toFlat(ours), toFlat(reference.X))).toBeLessThan(1e-10)
+      for (const total of toFlat(sum(ours, 1))) expect(total).toBeCloseTo(1, 12)
+    }
+  })
+})
+
 describe('knot helpers', () => {
   it('maps logits to strictly increasing interior knots and back', () => {
     const knots = [0.1, 0.35, 0.4, 0.9]
@@ -133,6 +153,51 @@ describe('knot helpers', () => {
     expect(g[0]).toBeCloseTo(0, 12)
     expect(g[5]).toBeCloseTo(1, 12)
     expect(g[2]).toBeCloseTo((0 + 0.2 + 0.6) / 3, 12)
+  })
+})
+
+describe('the kernel basis and the tensor-operation reference', () => {
+  const interior = [0.2, 0.45, 0.5, 0.8]
+  const points = asTensor([0, 0.05, 0.2, 0.33, 0.5, 0.71, 0.8, 0.99, 1])
+  const weights = asTensor([1, -2, 0.5, 3, -1, 0.7, 2, -0.4])
+
+  it('agree on values, and on the gradients in the points and in the knots', () => {
+    for (const degree of [1, 2, 3]) {
+      const t = extendKnots(interior, 0, 1, degree)
+      expect(
+        maxAbs(toFlat(bsplineBasis(points, t, degree)), toFlat(bsplineBasisByOps(points, t, degree))),
+      ).toBeLessThan(1e-14)
+      const w = asTensor(Array.from({ length: interior.length + degree + 1 }, (_, j) => Math.sin(1 + 2 * j)))
+      for (const make of [bsplineBasis, bsplineBasisByOps]) void make
+      const inX =
+        (basis: typeof bsplineBasis) =>
+        (v: Value): Value =>
+          weighted(basis(v, t, degree), w)
+      const inT =
+        (basis: typeof bsplineBasis) =>
+        (v: Value): Value =>
+          weighted(basis(points, extendKnots(v, 0, 1, degree), degree), w)
+      const at = asTensor(interior)
+      expect(
+        maxAbs(toFlat(grad(inX(bsplineBasis))(points) as Value), toFlat(grad(inX(bsplineBasisByOps))(points) as Value)),
+      ).toBeLessThan(1e-10)
+      expect(
+        maxAbs(toFlat(grad(inT(bsplineBasis))(at) as Value), toFlat(grad(inT(bsplineBasisByOps))(at) as Value)),
+      ).toBeLessThan(1e-10)
+    }
+    expect(weights.shape).toEqual([8])
+  })
+
+  it('agree with batched knots, one vector per feature', () => {
+    const t = asTensor([extendKnots([0.3, 0.6], 0, 1, 3), extendKnots([0.1, 0.9], 0, 1, 3)].map((k) => toFlat(k)))
+    const x = asTensor([
+      [0.2, 0.95],
+      [0.7, 0.05],
+      [1, 0],
+    ])
+    const fast = bsplineBasis(x, t, 3)
+    expect(fast.shape).toEqual([3, 2, 6])
+    expect(maxAbs(toFlat(fast), toFlat(bsplineBasisByOps(x, t, 3)))).toBeLessThan(1e-14)
   })
 })
 
