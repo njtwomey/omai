@@ -2,7 +2,8 @@
  * Maximum-likelihood estimation: Newton's method on any log-likelihood with the score and Hessian from automatic
  * differentiation (`newtonMle`, also as a traced algorithm), the observed information whose inverse gives standard
  * errors, and `fitDistribution`, which fits a named distribution family to data in closed form where one exists and
- * numerically otherwise, as scipy.stats' fit.
+ * numerically otherwise, as scipy.stats' fit. The minimiser is a slot (`mleSolvers`): the damped Newton by default, any
+ * generic solver of `smoothSolvers` as another mode.
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
@@ -28,10 +29,14 @@ import {
   weibull,
 } from '../dists/index.ts'
 import { dpotrf, dpotrs } from '../numerics/linalg/index.ts'
+import { familySolvers, type SmoothProblem, solverConfigOf, type VectorParams } from '../optim/index.ts'
+import { key as makeKey } from '../random/index.ts'
+import { dict, real, type SpaceValue } from '../space/index.ts'
 import {
   asTensor,
   exp,
   item,
+  neg,
   sigmoid,
   sum,
   type Tensor,
@@ -40,7 +45,14 @@ import {
   toFlat,
   type Value,
 } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  type ModeSpec,
+  type ModeTable,
+  type RunOptions,
+  runAlgorithm,
+} from '../trace/index.ts'
 import { invSpd } from './_linear.ts'
 import { mat, sample } from './_util.ts'
 import { median } from './quantiles.ts'
@@ -63,6 +75,12 @@ export interface NewtonMleOptions extends Partial<Omit<RunOptions, 'maxSteps' | 
   readonly maxIterations?: number
   /** Stop when every score component is below tol (1 + |loglik|) (default 1e-10). */
   readonly tol?: number
+  /**
+   * How the negative log-likelihood is minimised: a value of `mleSolvers.space` (default the Levenberg-damped Newton
+   * of {@link newtonMleAlgorithm}, which reproduces today's fits; any generic solver of `smoothSolvers` is another).
+   * With a generic solver `tol` is not used (the solver's `gradTol` is).
+   */
+  readonly solver?: SpaceValue
 }
 
 /**
@@ -166,6 +184,52 @@ export function newtonMleAlgorithm(
   }
 }
 
+/** A maximum-likelihood problem: a log-likelihood of unconstrained parameters and where to start. */
+export interface MleProblem {
+  readonly logLikelihood: (eta: Value) => Value
+  readonly eta0: readonly number[]
+}
+
+/**
+ * The negative log-likelihood of an {@link MleProblem} as a smooth problem for the solver slot.
+ *
+ * @param problem - The log-likelihood and the start.
+ * @returns The smooth problem: minimise the negative log-likelihood from the start.
+ * @example
+ * ```ts
+ * import { mleSmoothProblem } from 'mdml-engine/stats'
+ * import { neg, square, sum, type Value } from 'mdml-engine/tensor'
+ * mleSmoothProblem({ logLikelihood: (t: Value): Value => neg(sum(square(t))), eta0: [1, 2] }).x0.length // => 2
+ * ```
+ */
+export function mleSmoothProblem(problem: MleProblem): SmoothProblem {
+  return {
+    objective: (eta) => neg(problem.logLikelihood(eta as Value)),
+    x0: Float64Array.from(problem.eta0),
+  }
+}
+
+const levenbergNewton: ModeSpec<MleProblem, NewtonMleState, VectorParams> = {
+  description: 'Newton with a Levenberg-regularised Hessian and a halving search, the default of maximum likelihood',
+  space: dict({ tol: real(1e-14, 1e-4, { log: true, default: 1e-10, label: 'score tolerance' }) }),
+  make: (p, k) => newtonMleAlgorithm(p.logLikelihood, p.eta0, { tol: k['tol'] as number }),
+  params: (s) => ({ x: Array.from(s.eta) }),
+}
+
+/**
+ * The solvers of the maximum-likelihood slot: `levenbergNewton` (default; the library's own damped Newton, which
+ * reproduces the fits of {@link newtonMle}) beside every generic solver of `smoothSolvers` applied to the negative
+ * log-likelihood. All of them reach the same maximiser; they differ in the path.
+ */
+export const mleSolvers: ModeTable<MleProblem, VectorParams> = familySolvers<MleProblem>(
+  { levenbergNewton },
+  mleSmoothProblem,
+  {
+    default: 'levenbergNewton',
+    description: 'how the negative log-likelihood is minimised',
+  },
+)
+
 /** The result of {@link newtonMle}. */
 export interface NewtonMleResult {
   readonly eta: Float64Array
@@ -179,7 +243,8 @@ export interface NewtonMleResult {
  *
  * @param logLikelihood - The log-likelihood of an unconstrained parameter vector.
  * @param eta0 - The starting point.
- * @param options - maxIterations, tol, tracer, policy.
+ * @param options - maxIterations, tol, tracer, policy, and `solver` (a value of `mleSolvers.space`: the default
+ *   Levenberg Newton or any generic solver of `smoothSolvers`).
  * @returns The maximiser and its log-likelihood.
  * @example
  * ```ts
@@ -193,7 +258,21 @@ export function newtonMle(
   eta0: readonly number[],
   options: NewtonMleOptions = {},
 ): NewtonMleResult {
-  const { maxIterations, tol, ...run } = options
+  const { maxIterations, tol, solver, ...run } = options
+  const config = solver === undefined ? undefined : solverConfigOf(mleSolvers, solver)
+  if (config !== undefined && mleSolvers.modeOf(config).name !== 'levenbergNewton') {
+    const generic = runAlgorithm(mleSolvers.make({ logLikelihood, eta0 }, config, run.key ?? makeKey(0)), {
+      ...run,
+      maxSteps: maxIterations ?? 200,
+    })
+    const eta = Float64Array.from(mleSolvers.params(config, generic.state).x)
+    return {
+      eta,
+      logLikelihood: item(logLikelihood(asTensor(eta)) as Tensor),
+      iterations: generic.steps,
+      converged: generic.status === 'converged',
+    }
+  }
   const r = runAlgorithm(newtonMleAlgorithm(logLikelihood, eta0, tol === undefined ? {} : { tol }), {
     ...run,
     maxSteps: maxIterations ?? 200,
