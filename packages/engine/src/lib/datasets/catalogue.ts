@@ -111,6 +111,7 @@ import {
   coupledSeries,
   electrocardiogram,
   garchReturns,
+  nile,
   plantedSeries,
   seasonalSeries,
   sinusoids,
@@ -631,6 +632,15 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     size: 112,
     licence: COAL,
     source: 'boot::coal via Rdatasets',
+  }),
+  vendoredEntry('nile', nile, {
+    title: 'Nile annual flow',
+    description: 'Annual flow of the river Nile at Aswan, 1871 to 1970, with an apparent level shift near 1898.',
+    kind: 'timeseries',
+    modality: 'timeSeries',
+    size: 100,
+    licence: 'Historical measurements; series as distributed with R (GPL-2 | GPL-3)',
+    source: 'R datasets::Nile via Rdatasets',
   }),
   vendoredEntry('karateClub', karateClub, {
     title: "Zachary's karate club",

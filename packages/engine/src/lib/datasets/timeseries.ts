@@ -21,6 +21,7 @@ import { bool, choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 import { AIR_PASSENGERS_COLUMNS, AIR_PASSENGERS_SHA256 } from './_data/air-passengers.data.ts'
 import { COAL_COLUMNS, COAL_SHA256 } from './_data/coal.data.ts'
+import { NILE_COLUMNS, NILE_SHA256 } from './_data/nile.data.ts'
 import { SUNSPOT_SHA256, SUNSPOT_VALUES, SUNSPOT_YEARS } from './_data/sunspots.data.ts'
 import { stamp, vector } from './_util.ts'
 
@@ -490,6 +491,38 @@ export function coalMiningCounts(): TimeSeriesData {
     samplingRate: 1,
     channelNames: ['disasters'],
     meta: { name: 'coalMiningCounts', ...COAL_META },
+  })
+}
+
+/**
+ * The annual flow of the river Nile at Aswan, 1871 to 1970, in 10^8 cubic metres: a classic changepoint series, with an
+ * apparent drop in level near 1898 (Cobb, 1978; Balke, 1993; the dam at Aswan was begun later, so the cause is
+ * debated). The series as distributed with R (`datasets::Nile`, from Durbin and Koopman, 2001); the 1898 break is the
+ * literature's estimate, not a truth.
+ *
+ * @returns The series of 100 yearly flows.
+ * @concept datasets
+ * @example
+ * ```ts
+ * import { nile } from 'mdml-engine/datasets'
+ * nile().values.shape // => [100, 1]
+ * ```
+ */
+export function nile(): TimeSeriesData {
+  return timeSeries(NILE_COLUMNS['value'] as readonly number[] as number[], {
+    times: NILE_COLUMNS['time'] as readonly number[] as number[],
+    samplingRate: 1,
+    channelNames: ['flow'],
+    meta: {
+      name: 'nile',
+      description: 'Annual flow of the river Nile at Aswan, 1871 to 1970, with an apparent level shift near 1898.',
+      source: 'R datasets::Nile via Rdatasets',
+      url: 'https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Nile.html',
+      citation:
+        'Cobb (1978), The problem of the Nile: conditional solution to a change-point problem, Biometrika 65(2); Durbin and Koopman (2001), Time Series Analysis by State Space Methods.',
+      licence: 'Historical measurements; series as distributed with R (GPL-2 | GPL-3)',
+      sha256: NILE_SHA256,
+    },
   })
 }
 

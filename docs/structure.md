@@ -5211,7 +5211,7 @@ exposition of the mathematics lives).
 
 **Dataset collections.** `lib/datasets/collections.ts` groups the generators and real datasets into themed lists
 for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
-`timeSeries`, `comparisons` (games and tournaments for rating systems), `textCorpora`, the real-data lists `mixedTables` (UCI tables with categorical features and missing values) and `clusteringTabular`, and `environments` (the rl
+`timeSeries`, `changepoints` (the changepoint generator and the real coal-mining and Nile series), `comparisons` (games and tournaments for rating systems), `textCorpora`, the real-data lists `mixedTables` (UCI tables with categorical features and missing values) and `clusteringTabular`, and `environments` (the rl
 environments by family), each entry with its name, its generator, the `Space` of its knobs with demo defaults, and
 the methods it suits. mdml-render turns a collection
 and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
@@ -6223,7 +6223,8 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `timeseries.ts`: AR and ARMA processes (`armaProcess`, `arma`, with autocovariances and spectral densities),
   sinusoids in noise (`sinusoids`), uneven sampling (`sinusoids` with uneven times, `subsampleSeries`), seasonal
   series with known components (`seasonalSeries`), airline passengers (`airPassengers`), `sunspots`, coal-mining
-  disasters (`coalMiningDisasters` as events, `coalMiningCounts`), an ECG record (`electrocardiogram`, remote).
+  disasters (`coalMiningDisasters` as events, `coalMiningCounts`), the annual flow of the Nile (`nile`, with its apparent
+  level shift near 1898), an ECG record (`electrocardiogram`, remote).
 - `events.ts`: Poisson and Hawkes event data with true intensities: `poissonProcess`, `inhomogeneousPoisson`
   (sinusoidal, piecewise and ramp intensities), `hawkesProcess` and `multivariateHawkes` (with each event's parent
   and the exact log-likelihood), `spatialPoisson`.

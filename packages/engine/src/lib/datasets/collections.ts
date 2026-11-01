@@ -53,6 +53,7 @@ import {
   ticTacToe,
   zoo,
 } from './tables-uci.ts'
+import { coalMiningCounts, nile } from './timeseries.ts'
 
 /** One dataset in a collection: a generator with demo knobs, or a vendored real dataset. */
 export type CollectionEntry =
@@ -285,6 +286,16 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       g('seasonalSeries', 'Seasonal series'),
       g('arma', 'ARMA process'),
       g('changepointSeries', 'Changepoints'),
+    ],
+  },
+  changepoints: {
+    id: 'changepoints',
+    title: 'Changepoints',
+    entries: [
+      g('changepointSeries', 'Changepoints in the mean'),
+      g('rateChanges', 'Changepoints in a Poisson rate', 'changepointSeries', { kind: 'rate' }),
+      { name: 'coalMiningCounts', title: 'Coal-mining disasters (yearly counts)', load: coalMiningCounts },
+      { name: 'nile', title: 'Nile annual flow', load: nile },
     ],
   },
   sequences: {
