@@ -2305,7 +2305,10 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   termination), `odeint`, `diffeqsolve` (diffrax style: solver, step-size controller, saving policy).
 - `ode/adjoint.ts`: continuous adjoint sensitivities (backsolve, interpolated and checkpointed adjoints), forward
   sensitivities, gradient-method comparison helpers (memory and accuracy).
-- `ode/boundary.ts`: shooting and multiple shooting, collocation (`solveBvp`).
+- `ode/boundary.ts`: shooting and multiple shooting, collocation (`solveBvp`, that run to the end of
+  `solveBvpAlgorithm`: one Newton solve and mesh refinement per step, the state the mesh, the solution values and the
+  residuals, so it serialises and resumes; logs `bvp/residual`, `mesh-size`, `bc-residual`, `mesh`, `solution`;
+  `bvpSolution` reads the spline off a finished state).
 - `ode/dae.ts`: index-1 differential-algebraic equations by BDF and Radau.
 - `ode/convergence.ts`: order verification (error against step size, observed order), stability regions and
   A-stability checks, work-precision diagrams.

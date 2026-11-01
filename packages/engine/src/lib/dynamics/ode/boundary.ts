@@ -9,6 +9,16 @@ import { pinv } from '../../numerics/linalg/index.ts'
 import { fsolve } from '../../numerics/roots/index.ts'
 import { concat, reshape, sliceAxis, sub, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
 import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
+import {
   collocation,
   column,
   createSpline,
@@ -69,9 +79,42 @@ const MESSAGES = [
   'The solver was unable to satisfy boundary conditions tolerance on iteration 10.',
 ] as const
 
+/** The state of {@link solveBvpAlgorithm}: one collocation solve and mesh refinement per iteration. */
+export interface BvpState {
+  /** Mesh iterations done. */
+  readonly iteration: number
+  /** Why it stopped (the status of {@link BvpSolution}), `null` while it runs. */
+  readonly status: 0 | 1 | 2 | 3 | null
+  /** The mesh (refined for the next iteration while running) and the solution values on it, row-major `[n, m]`. */
+  readonly x: readonly number[]
+  readonly y: readonly number[]
+  /** The unknown parameters. */
+  readonly p: readonly number[]
+  /** The derivative at the mesh of the last solve and its relative residuals per interval. */
+  readonly f: readonly number[]
+  readonly rms: readonly number[]
+  /** The largest boundary-condition residual of the last solve. */
+  readonly maxBc: number
+}
+
+/** The paths {@link solveBvpAlgorithm} logs, as a type. */
+export type BvpPath = 'bvp/residual' | 'bvp/mesh-size' | 'bvp/bc-residual' | 'bvp/mesh' | 'bvp/solution'
+
 /**
- * Solve a boundary value problem y' = f(x, y, p), bc(y(a), y(b), p) = 0 by collocation: a port of scipy's
- * `solve_bvp` (Kierzenka and Shampine's fourth-order Lobatto IIIA collocation with a damped Newton method on the
+ * What {@link solveBvpAlgorithm} logs, by path: the largest relative collocation residual of the iteration, the mesh
+ * size and the mesh itself, the largest boundary residual, and the solution on the mesh.
+ */
+export const bvpContract: Contract<BvpState, BvpPath> = defineContract({
+  'bvp/residual': scalar({ description: 'the largest relative collocation residual', direction: 'lower' }),
+  'bvp/mesh-size': scalar({ description: 'the number of mesh nodes' }),
+  'bvp/bc-residual': scalar({ description: 'the largest boundary-condition residual', direction: 'lower' }),
+  'bvp/mesh': tensor({ role: 'state', shape: ['node'], description: 'the mesh' }),
+  'bvp/solution': tensor({ role: 'state', shape: ['component', 'node'], description: 'the solution on the mesh' }),
+})
+
+/**
+ * Solve a boundary value problem y' = f(x, y, p), bc(y(a), y(b), p) = 0 by collocation as a steppable algorithm, one
+ * mesh iteration per step: a port of scipy's `solve_bvp` (Kierzenka and Shampine's fourth-order Lobatto IIIA collocation with a damped Newton method on the
  * global sparse system, residuals estimated by Lobatto quadrature and the mesh refined where they exceed `tol`).
  * Unknown parameters and a singular term S/(x - a) are supported. Never throws on hard problems: the status says why
  * it stopped.
@@ -81,43 +124,45 @@ const MESSAGES = [
  * @param x - The initial mesh (increasing).
  * @param y - The initial guess `[n, m]`.
  * @param options - Parameters, singular term, tolerances and node budget.
- * @returns The solution with its mesh, spline, residuals and status.
+ * @returns The algorithm; it is done when the residuals meet the tolerance (`converged`), the node budget is exceeded
+ * (`failed`), the Jacobian is singular (`diverged`) or the boundary conditions are not met after ten iterations
+ * (`failed`). Read the solution off the final state with {@link bvpSolution}.
  * @throws MdmlError with code `shape` or `value` for bad inputs.
  * @concept boundary-value-problem
  * @example
  * ```ts
- * import { solveBvp } from 'mdml-engine/dynamics/ode'
+ * import { solveBvpAlgorithm } from 'mdml-engine/dynamics/ode'
  * import { concat, neg, sliceAxis, sub, tensor } from 'mdml-engine/tensor'
- * // y'' = -y on [0, pi/2], y(0) = 0, y(pi/2) = 1: y = sin x.
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const fun = (_x, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
- * const r = solveBvp(fun, bc, [0, 0.5, 1, Math.PI / 2], tensor([[0, 0, 0, 0], [1, 1, 1, 1]]), { tol: 1e-6 })
- * Math.abs((r.sol(Math.PI / 6).data[0] ?? 0) - 0.5) < 1e-5 // => true
+ * const alg = solveBvpAlgorithm(fun, bc, [0, 0.5, 1, Math.PI / 2], tensor([[0, 0, 0, 0], [1, 1, 1, 1]]), { tol: 1e-6 })
+ * runAlgorithm(alg, { maxSteps: 20 }).state.status // => 0
  * ```
  */
-export function solveBvp(
+export function solveBvpAlgorithm(
   fun: BvpField,
   bc: BvpConditions,
   x: TensorLike,
   y: TensorLike,
   options: SolveBvpOptions = {},
-): BvpSolution {
-  let xs: Float64Array = numbersOf(floatState(x))
+): Algorithm<BvpState, BvpPath> {
+  const xs0: Float64Array = numbersOf(floatState(x))
   const yv = floatState(y)
   if (yv.shape.length !== 2) throw new MdmlError('shape', 'solveBvp: y must be [n, m]')
   const n = yv.shape[0] ?? 0
   const m0 = yv.shape[1] ?? 0
-  if (m0 !== xs.length) throw new MdmlError('shape', `solveBvp: y needs ${xs.length} columns`)
-  let h: Float64Array = Float64Array.from({ length: xs.length - 1 }, (_, j) => (xs[j + 1] ?? 0) - (xs[j] ?? 0))
-  if (h.some((v) => !(v > 0))) throw new MdmlError('value', 'solveBvp: x must be strictly increasing')
-  let yN: Float64Array = Float64Array.from(numbersOf(yv))
-  let p: Float64Array =
+  if (m0 !== xs0.length) throw new MdmlError('shape', `solveBvp: y needs ${xs0.length} columns`)
+  const h0: Float64Array = Float64Array.from({ length: xs0.length - 1 }, (_, j) => (xs0[j + 1] ?? 0) - (xs0[j] ?? 0))
+  if (h0.some((v) => !(v > 0))) throw new MdmlError('value', 'solveBvp: x must be strictly increasing')
+  const yN0: Float64Array = Float64Array.from(numbersOf(yv))
+  const p0: Float64Array =
     options.p === undefined ? new Float64Array(0) : Float64Array.from(numbersOf(floatState(options.p)))
-  const k = p.length
+  const k = p0.length
   const tol = Math.max(options.tol ?? 1e-3, 100 * Number.EPSILON)
   const bcTol = options.bcTol ?? tol
   const maxNodes = options.maxNodes ?? 1000
-  const a = xs[0] ?? 0
+  const a = xs0[0] ?? 0
   let B: Float64Array | undefined
   let D: Float64Array | undefined
   let S: Float64Array | undefined
@@ -136,11 +181,11 @@ export function solveBvp(
     }
     const ims = Float64Array.from(S, (v, idx) => (Math.floor(idx / n) === idx % n ? 1 : 0) - v)
     D = Float64Array.from(numbersOf(pinv(fromNumbers(ims, [n, n]))))
-    const y0 = column(yN, n, m0, 0)
+    const y0 = column(yN0, n, m0, 0)
     for (let i = 0; i < n; i++) {
       let s = 0
       for (let c = 0; c < n; c++) s += (B[i * n + c] ?? 0) * (y0[c] ?? 0)
-      yN[i * m0] = s
+      yN0[i * m0] = s
     }
   }
   const raw: NumField = (xv, yy, pp) => {
@@ -181,28 +226,41 @@ export function solveBvp(
     if (out.length !== n + k) throw new MdmlError('shape', `solveBvp: bc must return ${n + k} residuals`)
     return Float64Array.from(out)
   }
-  let status: 0 | 1 | 2 | 3 = 0
-  let iteration = 0
-  let sol = createSpline(yN, field(xs, yN, p), xs, h, n)
-  let rms: Float64Array = new Float64Array(0)
-  let f: Float64Array = new Float64Array(0)
-  for (;;) {
+  const stateOf = (
+    iteration: number,
+    status: 0 | 1 | 2 | 3 | null,
+    xs: Float64Array,
+    yN: Float64Array,
+    p: Float64Array,
+    f: Float64Array,
+    rms: Float64Array,
+    maxBc: number,
+  ): BvpState => ({
+    iteration,
+    status,
+    x: Array.from(xs),
+    y: Array.from(yN),
+    p: Array.from(p),
+    f: Array.from(f),
+    rms: Array.from(rms),
+    maxBc,
+  })
+  const bvpStep = (s: BvpState): BvpState => {
+    let xs = Float64Array.from(s.x)
+    const h = Float64Array.from({ length: xs.length - 1 }, (_, j) => (xs[j + 1] ?? 0) - (xs[j] ?? 0))
     const m = xs.length
-    const r = solveNewton(field, bcN, xs, h, yN, p, B, tol, bcTol, n)
-    yN = r.y
-    p = r.p
-    iteration += 1
+    const r = solveNewton(field, bcN, xs, h, Float64Array.from(s.y), Float64Array.from(s.p), B, tol, bcTol, n)
+    let yN = r.y
+    const p = r.p
+    const iteration = s.iteration + 1
     const col = collocation(field, yN, p, xs, h, n)
-    f = col.f
+    const f = col.f
     const bcRes = bcN(column(yN, n, m, 0), column(yN, n, m, m - 1), p)
     const maxBc = maxOf(Array.from(bcRes, Math.abs))
     const rMid = Float64Array.from(col.colRes, (v, idx) => (1.5 * v) / (h[idx % (m - 1)] ?? 1))
-    sol = createSpline(yN, f, xs, h, n)
-    rms = rmsResiduals(field, sol, xs, h, p, rMid, col.fMid, n)
-    if (r.singular) {
-      status = 2
-      break
-    }
+    const sol = createSpline(yN, f, xs, h, n)
+    const rms = rmsResiduals(field, sol, xs, h, p, rMid, col.fMid, n)
+    if (r.singular) return stateOf(iteration, 2, xs, yN, p, f, rms, maxBc)
     const one: number[] = []
     const two: number[] = []
     rms.forEach((v, j) => {
@@ -210,41 +268,123 @@ export function solveBvp(
       else if (v >= 100 * tol) two.push(j)
     })
     const added = one.length + 2 * two.length
-    if (m + added > maxNodes) {
-      status = 1
-      break
-    }
+    if (m + added > maxNodes) return stateOf(iteration, 1, xs, yN, p, f, rms, maxBc)
     if (added > 0) {
-      xs = modifyMesh(xs, one, two)
-      h = Float64Array.from({ length: xs.length - 1 }, (_, j) => (xs[j + 1] ?? 0) - (xs[j] ?? 0))
+      const solved = stateOf(iteration, null, xs, yN, p, f, rms, maxBc)
+      xs = Float64Array.from(modifyMesh(xs, one, two))
       const next = new Float64Array(n * xs.length)
       xs.forEach((xv, j) => {
         const v = sol.at(xv)
         for (let i = 0; i < n; i++) next[i * xs.length + j] = v[i] ?? 0
       })
       yN = next
-    } else if (maxBc <= bcTol) {
-      status = 0
-      break
-    } else if (iteration >= 10) {
-      status = 3
-      break
+      // The mesh is refined for the next iteration; the residuals shown are those of the mesh just solved.
+      return { ...solved, x: Array.from(xs), y: Array.from(yN) }
     }
+    if (maxBc <= bcTol) return stateOf(iteration, 0, xs, yN, p, f, rms, maxBc)
+    if (iteration >= 10) return stateOf(iteration, 3, xs, yN, p, f, rms, maxBc)
+    return stateOf(iteration, null, xs, yN, p, f, rms, maxBc)
   }
-  const m = xs.length
-  const finalSol = sol
   return {
-    x: Array.from(xs),
-    y: fromNumbers(yN, [n, m]),
-    yp: fromNumbers(f, [n, m]),
-    p: k === 0 ? undefined : fromNumbers(p, [k]),
-    sol: (xv, nu = 0) => fromNumbers(finalSol.at(xv, nu), [n]),
-    rmsResiduals: Array.from(rms),
-    niter: iteration,
+    name: 'solve-bvp',
+    config: { tol, bcTol, maxNodes, n, parameters: k },
+    init: () => ({
+      iteration: 0,
+      status: null,
+      x: Array.from(xs0),
+      y: Array.from(yN0),
+      p: Array.from(p0),
+      f: [],
+      rms: [],
+      maxBc: Number.NaN,
+    }),
+    step: (s, ctx) => {
+      const next = bvpStep(s)
+      if (ctx.wants('bvp/residual')) ctx.log('bvp/residual', maxOf(next.rms))
+      if (ctx.wants('bvp/mesh-size')) ctx.log('bvp/mesh-size', next.x.length)
+      if (ctx.wants('bvp/bc-residual')) ctx.log('bvp/bc-residual', next.maxBc)
+      if (ctx.wants('bvp/mesh')) ctx.log('bvp/mesh', next.x)
+      if (ctx.wants('bvp/solution')) ctx.log('bvp/solution', fromNumbers(next.y, [n, next.x.length]))
+      return next
+    },
+    done: (s) =>
+      s.status === null ? undefined : s.status === 0 ? 'converged' : s.status === 2 ? 'diverged' : 'failed',
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as BvpState,
+  }
+}
+
+/**
+ * The solution of a finished {@link solveBvpAlgorithm} run: the mesh, the values and derivatives on it, the C1 cubic
+ * spline, the residuals and the status, as {@link solveBvp} returns them.
+ *
+ * @param state - The state of a run to its end.
+ * @param n - The number of components of y.
+ * @returns The solution.
+ * @example
+ * ```ts
+ * import { bvpSolution } from 'mdml-engine/dynamics/ode'
+ * bvpSolution({ iteration: 1, status: 0, x: [0, 1], y: [0, 1], p: [], f: [1, 1], rms: [0], maxBc: 0 }, 1).success // => true
+ * ```
+ */
+export function bvpSolution(state: BvpState, n: number): BvpSolution {
+  const xs = Float64Array.from(state.x)
+  const h = Float64Array.from({ length: xs.length - 1 }, (_, j) => (xs[j + 1] ?? 0) - (xs[j] ?? 0))
+  const sol = createSpline(Float64Array.from(state.y), Float64Array.from(state.f), xs, h, n)
+  const status = (state.status ?? 3) as 0 | 1 | 2 | 3
+  const k = state.p.length
+  return {
+    x: [...state.x],
+    y: fromNumbers(state.y, [n, xs.length]),
+    yp: fromNumbers(state.f, [n, xs.length]),
+    p: k === 0 ? undefined : fromNumbers(state.p, [k]),
+    sol: (xv, nu = 0) => fromNumbers(sol.at(xv, nu), [n]),
+    rmsResiduals: [...state.rms],
+    niter: state.iteration,
     status,
     message: MESSAGES[status],
     success: status === 0,
   }
+}
+
+/**
+ * Solve a boundary value problem y' = f(x, y, p), bc(y(a), y(b), p) = 0 by collocation ({@link solveBvpAlgorithm} run to
+ * the end): a port of scipy's `solve_bvp` (Kierzenka and Shampine's fourth-order Lobatto IIIA collocation with a damped Newton method on the
+ * global sparse system, residuals estimated by Lobatto quadrature and the mesh refined where they exceed `tol`).
+ * Unknown parameters and a singular term S/(x - a) are supported. Never throws on hard problems: the status says why
+ * it stopped.
+ *
+ * @param fun - The vectorised field (x `[m]`, y `[n, m]`, p `[k]`).
+ * @param bc - The boundary residuals (`[n + k]`).
+ * @param x - The initial mesh (increasing).
+ * @param y - The initial guess `[n, m]`.
+ * @param options - Parameters, singular term, tolerances and node budget.
+ * @returns The solution with its mesh, spline, residuals and status.
+ * @throws MdmlError with code `shape` or `value` for bad inputs.
+ * @concept boundary-value-problem
+ * @example
+ * ```ts
+ * import { solveBvp } from 'mdml-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub, tensor } from 'mdml-engine/tensor'
+ * // y'' = -y on [0, pi/2], y(0) = 0, y(pi/2) = 1: y = sin x.
+ * const fun = (_x, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
+ * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
+ * const r = solveBvp(fun, bc, [0, 0.5, 1, Math.PI / 2], tensor([[0, 0, 0, 0], [1, 1, 1, 1]]), { tol: 1e-6 })
+ * Math.abs((r.sol(Math.PI / 6).data[0] ?? 0) - 0.5) < 1e-5 // => true
+ * ```
+ */
+export function solveBvp(
+  fun: BvpField,
+  bc: BvpConditions,
+  x: TensorLike,
+  y: TensorLike,
+  options: SolveBvpOptions = {},
+): BvpSolution {
+  const yv = floatState(y)
+  const algorithm = solveBvpAlgorithm(fun, bc, x, y, options)
+  // Each iteration either settles, refines the mesh or repeats on the same mesh (at most ten of those).
+  const state = runAlgorithm(algorithm, { maxSteps: 1_000_000 }).state
+  return bvpSolution(state, yv.shape[0] ?? 0)
 }
 
 /** Options of the shooting methods. */
