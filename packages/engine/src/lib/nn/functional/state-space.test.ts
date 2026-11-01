@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { checkPrimitive } from '../../autodiff/index.ts'
 import { maxOf } from '../../base/index.ts'
 import { key, normal, uniform } from '../../random/index.ts'
-import { concat, sliceAxis, tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
+import { concat, mul, ones, sliceAxis, tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import {
   causalConvolution,
   deltaRule,
@@ -16,6 +16,7 @@ import {
   parallelScan,
   parallelScanComplex,
   selectiveScan,
+  ssd,
   ssmKernel,
   ssmRecurrence,
 } from './state-space.ts'
@@ -269,3 +270,127 @@ describe('parallel scans and resumed scans', () => {
     close(tail.state.re, all.state.re, 12)
   })
 })
+
+describe('structured state-space duality', () => {
+  const [bs, len, heads, width, dim] = [2, 7, 3, 2, 4]
+  const input = {
+    x: n(41, [bs, len, heads, width]),
+    dt: uniform(key(42), [bs, len, heads], { low: 0.05, high: 0.6 }),
+    a: tensor([-0.5, -1.5, -0.1]),
+    b: n(43, [bs, len, dim]),
+    c: n(44, [bs, len, dim]),
+  }
+
+  it('the recurrent, quadratic (attention-like) and chunked forms agree to 1e-10', () => {
+    const rec = ssd(input, 'recurrent')
+    const quad = ssd(input, 'quadratic')
+    close(quad.y, rec.y, 10)
+    close(quad.state, rec.state, 10)
+    for (const chunk of [1, 3, 7, 16]) {
+      const ch = ssd(input, 'chunked', chunk)
+      close(ch.y, rec.y, 10)
+      close(ch.state, rec.state, 10)
+    }
+  })
+
+  it('agree from a non-zero initial state, and a split sequence resumes exactly', () => {
+    const h0 = n(45, [bs, heads, width, dim])
+    const rec = ssd({ ...input, h0 }, 'recurrent')
+    close(ssd({ ...input, h0 }, 'quadratic').y, rec.y, 10)
+    close(ssd({ ...input, h0 }, 'chunked', 3).state, rec.state, 10)
+    const cut = (v: Value, lo: number, hi: number): Value => sliceAxis(v, 1, lo, hi)
+    const part = (lo: number, hi: number, init?: Value): ReturnType<typeof ssd> =>
+      ssd(
+        {
+          x: cut(input.x, lo, hi),
+          dt: cut(input.dt, lo, hi),
+          a: input.a,
+          b: cut(input.b, lo, hi),
+          c: cut(input.c, lo, hi),
+          ...(init === undefined ? {} : { h0: init }),
+        },
+        'quadratic',
+      )
+    const head = part(0, 4)
+    const tail = part(4, 7, head.state)
+    close(concat([head.y, tail.y], 1), ssd(input, 'recurrent').y, 10)
+  })
+
+  it('limits: no decay (a = 0) is a causal linear-attention sum, large steps are memoryless', () => {
+    const flat = ssd({ ...input, a: tensor([0, 0, 0]) }, 'quadratic').y
+    const xs = toFlat(input.x)
+    const dts = toFlat(input.dt)
+    const bb = toFlat(input.b)
+    const cc = toFlat(input.c)
+    // y[b, t, h, p] = sum_{s <= t} (C_t . B_s) dt_s x_s.
+    const [b0, t0, h0i, p0] = [1, 5, 2, 1]
+    let want = 0
+    for (let s = 0; s <= t0; s++) {
+      let dot = 0
+      for (let j = 0; j < dim; j++) dot += (cc[(b0 * len + t0) * dim + j] ?? 0) * (bb[(b0 * len + s) * dim + j] ?? 0)
+      want += dot * (dts[(b0 * len + s) * heads + h0i] ?? 0) * (xs[((b0 * len + s) * heads + h0i) * width + p0] ?? 0)
+    }
+    expect(toFlat(flat)[((b0 * len + t0) * heads + h0i) * width + p0]).toBeCloseTo(want, 10)
+    // A very negative a forgets at once: y_t = dt_t (C_t . B_t) x_t.
+    const memoryless = toFlat(ssd({ ...input, a: tensor([-1e4, -1e4, -1e4]) }, 'quadratic').y)
+    let dot = 0
+    for (let j = 0; j < dim; j++) dot += (cc[(b0 * len + t0) * dim + j] ?? 0) * (bb[(b0 * len + t0) * dim + j] ?? 0)
+    expect(memoryless[((b0 * len + t0) * heads + h0i) * width + p0]).toBeCloseTo(
+      dot * (dts[(b0 * len + t0) * heads + h0i] ?? 0) * (xs[((b0 * len + t0) * heads + h0i) * width + p0] ?? 0),
+      10,
+    )
+  })
+
+  it('passes the gradient check in the quadratic and recurrent forms', () => {
+    const small = {
+      x: n(46, [1, 4, 2, 2]),
+      dt: uniform(key(47), [1, 4, 2], { low: 0.1, high: 0.5 }),
+      b: n(48, [1, 4, 3]),
+      c: n(49, [1, 4, 3]),
+    }
+    for (const form of ['quadratic', 'recurrent', 'chunked'] as const)
+      ok(
+        (x, dt, a, b, c) => ssd({ x, dt, a, b, c }, form, 2).y,
+        [small.x, small.dt, tensor([-0.4, -1]), small.b, small.c],
+      )
+  })
+})
+
+describe('limiting cases of the selective scan', () => {
+  const [bs, len, dim, st] = [1, 6, 2, 3]
+  const x = n(61, [bs, len, dim])
+  const dt = uniform(key(62), [bs, len, dim], { low: 0.1, high: 0.5 })
+  const b = n(63, [bs, len, st])
+  const c = n(64, [bs, len, st])
+
+  it('A = 0 is a causal linear map: y_t = sum_{s <= t} dt_s (C_t . B_s) x_s', () => {
+    const y = toFlat(selectiveScan({ x, dt, a: zerosA(dim, st), b, c }).y)
+    const [xs, ds, bb, cc] = [toFlat(x), toFlat(dt), toFlat(b), toFlat(c)]
+    for (let t = 0; t < len; t++)
+      for (let d = 0; d < dim; d++) {
+        let want = 0
+        for (let s = 0; s <= t; s++) {
+          let dot = 0
+          for (let j = 0; j < st; j++) dot += (cc[t * st + j] ?? 0) * (bb[s * st + j] ?? 0)
+          want += (ds[s * dim + d] ?? 0) * dot * (xs[s * dim + d] ?? 0)
+        }
+        expect(y[t * dim + d]).toBeCloseTo(want, 12)
+      }
+  })
+
+  it('a huge step is memoryless: y_t = dt_t (C_t . B_t) x_t', () => {
+    const big = mul(dt, 1e4)
+    const y = toFlat(selectiveScan({ x, dt: big, a: mul(ones([dim, st]), -1), b, c }).y)
+    const [xs, ds, bb, cc] = [toFlat(x), toFlat(big), toFlat(b), toFlat(c)]
+    for (let t = 0; t < len; t++)
+      for (let d = 0; d < dim; d++) {
+        let dot = 0
+        for (let j = 0; j < st; j++) dot += (cc[t * st + j] ?? 0) * (bb[t * st + j] ?? 0)
+        expect(y[t * dim + d]).toBeCloseTo((ds[t * dim + d] ?? 0) * dot * (xs[t * dim + d] ?? 0), 8)
+      }
+  })
+})
+
+function zerosA(d: number, s: number): Value {
+  return mul(ones([d, s]), 0)
+}

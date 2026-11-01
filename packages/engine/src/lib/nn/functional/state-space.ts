@@ -14,6 +14,7 @@ import {
   type ComplexValue,
   concat,
   cos,
+  cumsum,
   div,
   einsum,
   exp,
@@ -522,6 +523,111 @@ export function selectiveScan(input: SelectiveScanInput): { readonly y: Value; r
   if (input.d !== undefined) y = add(y, mul(x, fl(input.d)))
   if (input.z !== undefined) y = mul(y, silu(input.z))
   return { y, state: h }
+}
+
+/** Inputs of {@link ssd}. */
+export interface SsdInput {
+  /** Inputs `[B, L, H, P]`: H heads of width P. */
+  readonly x: TensorLike
+  /** Positive steps `[B, L, H]`. */
+  readonly dt: TensorLike
+  /** The scalar (negative) state matrix of each head `[H]`: A = a I. */
+  readonly a: TensorLike
+  /** Input maps `[B, L, N]`, shared by the heads. */
+  readonly b: TensorLike
+  /** Output maps `[B, L, N]`, shared by the heads. */
+  readonly c: TensorLike
+  /** The state before the first step `[B, H, P, N]` (default zeros). */
+  readonly h0?: TensorLike
+}
+
+/** The three algorithms of structured state-space duality. */
+export type SsdForm = 'recurrent' | 'quadratic' | 'chunked'
+
+/**
+ * Structured state-space duality (Mamba-2; Dao and Gu 2024): the selective SSM whose state matrix is a scalar times the
+ * identity per head, `S_t = exp(dt_t a) S_{t-1} + dt_t x_t B_t^T` and `y_t = S_t C_t`, computed in one of three
+ * equivalent ways. The `recurrent` form steps through time; the `quadratic` form is masked attention,
+ * `y = (L . (C B^T)) (dt x)` with the decay mask `L[t, s] = exp(sum_{r in (s, t]} dt_r a)` (queries C, keys B, values
+ * dt x); the `chunked` form applies the quadratic form inside chunks of a given length and the recurrence between
+ * them. All three give the same outputs and final state.
+ *
+ * @param input - x, dt, a, b, c and optionally the initial state.
+ * @param form - The algorithm (default `chunked`).
+ * @param chunk - The chunk length of the chunked form (default 8).
+ * @returns The outputs `[B, L, H, P]` and the final state `[B, H, P, N]`.
+ * @concept state-space-models
+ * @reference Dao and Gu (2024), Transformers are SSMs: generalized models and efficient algorithms through structured
+ *   state space duality.
+ * @example
+ * ```ts
+ * import { ssd } from 'mdml-engine/nn'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const input = { x: [[[[1]], [[0]]]], dt: [[[1], [1]]], a: [-1], b: [[[1], [1]]], c: [[[1], [1]]] }
+ * toFlat(ssd(input, 'quadratic').y) // => [1, 0.36787944117144233]
+ * ```
+ */
+export function ssd(
+  input: SsdInput,
+  form: SsdForm = 'chunked',
+  chunk = 8,
+): { readonly y: Value; readonly state: Value } {
+  const x = fl(input.x)
+  const dt = fl(input.dt)
+  const a = fl(input.a)
+  const b = fl(input.b)
+  const c = fl(input.c)
+  const [bs = 1, l = 0, heads = 1, width = 1] = x.shape
+  const n = b.shape[2] ?? 1
+  const h0 = input.h0 === undefined ? zeros([bs, heads, width, n]) : fl(input.h0)
+  if (form === 'recurrent') {
+    let s = h0
+    const ys: Value[] = []
+    for (let t = 0; t < l; t++) {
+      const step = (v: Value, shape: number[]): Value => reshape(sliceAxis(v, 1, t, t + 1), shape)
+      const dtt = step(dt, [bs, heads]) // [B, H]
+      const decay = reshape(exp(mul(dtt, a)), [bs, heads, 1, 1])
+      const xt = step(x, [bs, heads, width]) // [B, H, P]
+      const write = mul(
+        mul(expandDims(xt, 3), reshape(dtt, [bs, heads, 1, 1])),
+        reshape(step(b, [bs, n]), [bs, 1, 1, n]),
+      )
+      s = add(mul(decay, s), write)
+      ys.push(sum(mul(s, reshape(step(c, [bs, n]), [bs, 1, 1, n])), 3)) // [B, H, P]
+    }
+    return { y: stack(ys, 1), state: s }
+  }
+  if (form === 'chunked' && l > chunk) {
+    let s = h0
+    const ys: Value[] = []
+    for (let lo = 0; lo < l; lo += chunk) {
+      const hi = Math.min(l, lo + chunk)
+      const cut = (v: Value): Value => sliceAxis(v, 1, lo, hi)
+      const r = ssd({ x: cut(x), dt: cut(dt), a, b: cut(b), c: cut(c), h0: s }, 'quadratic')
+      ys.push(r.y)
+      s = r.state
+    }
+    return { y: concat(ys, 1), state: s }
+  }
+  // Quadratic: the decay mask from the cumulative log-decay (<= 0), cum[t] = sum_{r <= t} dt_r a.
+  const logDecay = mul(dt, a) // [B, L, H]
+  const cum = cumsum(logDecay, 1)
+  const cumT = swapaxes(cum, 1, 2) // [B, H, L]
+  const lower = new Uint8Array(l * l)
+  for (let t = 0; t < l; t++) for (let s = 0; s <= t; s++) lower[t * l + s] = 1
+  const mask = fromStorage(lower, [l, l], 'bool')
+  const diff = sub(expandDims(cumT, 3), expandDims(cumT, 2)) // [B, H, T, S] = cum_t - cum_s
+  const decay = where(mask, exp(where(mask, diff, 0)), 0)
+  const scores = einsum('btn,bsn->bts', c, b) // C_t . B_s
+  const xdt = mul(x, expandDims(dt, 3)) // [B, L, H, P]
+  const mixed = einsum('bhts,bshp->bthp', mul(expandDims(scores, 1), decay), xdt)
+  // The initial state, decayed to each step, and the state after the last step.
+  const fromInitial = mul(einsum('bhpn,btn->bthp', h0, c), expandDims(exp(cum), 3))
+  const last = sliceAxis(cum, 1, l - 1, l) // [B, 1, H]
+  const weight = exp(sub(last, cum)) // [B, L, H]: decay from step s to the end
+  const written = einsum('bsh,bshp,bsn->bhpn', weight, xdt, b)
+  const carried = mul(reshape(exp(last), [bs, heads, 1, 1]), h0)
+  return { y: add(mixed, fromInitial), state: add(carried, written) }
 }
 
 /**
