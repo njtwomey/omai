@@ -140,8 +140,9 @@ describe('AdditiveModel', () => {
         }).params,
         dense,
       )[0] as number
-    expect(edfFor(0)).toBeCloseTo(12, 3)
-    expect(edfFor(1e8)).toBeCloseTo(2, 1)
+    // Centred: the constant direction is the intercept's, so a full-rank term has K - 1 and the limit is a straight line.
+    expect(edfFor(0)).toBeCloseTo(11, 3)
+    expect(edfFor(1e8)).toBeCloseTo(1, 1)
     expect(edfFor(1)).toBeGreaterThan(edfFor(100))
   })
 })

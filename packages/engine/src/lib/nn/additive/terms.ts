@@ -9,7 +9,6 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { dgesv } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   choice,
@@ -220,8 +219,15 @@ export interface BuiltTerm {
   smoothness(params: Params, buffers: Params): Value | undefined
   /** Penalties in the mean-loss convention (output penalty, weight decay) on a reference sample `[r, k]`. */
   regularisation(params: Params, buffers: Params, rows: Value): Value | undefined
-  /** The effective degrees of freedom of a penalised term for unit weights, on rows `[n, k]`, or undefined. */
-  edf(params: Params, buffers: Params, rows: Value): number | undefined
+  /**
+   * The term as a penalised linear model on rows `[n, k]` at the current knots (for effective degrees of freedom): its
+   * design columns `X` (`n x p`, row-major) and penalty `S` (`p x p`, with the term's lambda), or undefined for a net.
+   */
+  design(
+    params: Params,
+    buffers: Params,
+    rows: Value,
+  ): { readonly X: Float64Array; readonly p: number; readonly S: Float64Array } | undefined
 }
 
 /** What the model hands a builder: the data's sample, the term's key and the penalty to use where a term gives none. */
@@ -272,31 +278,9 @@ const num = (knobs: Readonly<Record<string, SpaceValue>>, name: string, fallback
   return typeof v === 'number' ? v : fallback
 }
 
-/** Penalised least squares degrees of freedom `tr((B'B + lambda S)^-1 B'B)` of a basis `[n, K]` and a penalty `[K, K]`. */
-function penalisedEdf(basis: Float64Array, n: number, k: number, penalty: Float64Array, lambda: number): number {
-  const gram = new Float64Array(k * k)
-  for (let r = 0; r < n; r++)
-    for (let a = 0; a < k; a++) {
-      const ba = basis[r * k + a] as number
-      if (ba !== 0)
-        for (let b = 0; b < k; b++) gram[a * k + b] = (gram[a * k + b] as number) + ba * (basis[r * k + b] as number)
-    }
-  const system = Float64Array.from(gram, (v, i) => v + lambda * (penalty[i] as number) + (i % (k + 1) === 0 ? 1e-9 : 0))
-  let total = 0
-  for (let c = 0; c < k; c++) {
-    const col = dgesv(
-      system,
-      Float64Array.from({ length: k }, (_, r) => gram[r * k + c] as number),
-      k,
-    )
-    total += col[c] as number
-  }
-  return total
-}
-
 const NONE_SMOOTHNESS: BuiltTerm['smoothness'] = () => undefined
 const NONE_REGULARISATION: BuiltTerm['regularisation'] = () => undefined
-const NONE_EDF: BuiltTerm['edf'] = () => undefined
+const NONE_DESIGN: BuiltTerm['design'] = () => undefined
 
 const kind = (
   properties: TermProperties,
@@ -382,17 +366,15 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
         featureDropout: 0,
         smoothness: (params, buffers) => (lambda > 0 ? mul(layer.penalty(params, order, buffers), lambda) : undefined),
         regularisation: NONE_REGULARISATION,
-        edf: (params, buffers, rows) => {
+        design: (params, buffers, rows) => {
           if (layer.shapeTransform.name !== 'none') return undefined
-          const b = layer.basis(params, rows, buffers)
           const kk = layer.basisSize
-          return penalisedEdf(
-            Float64Array.from(toFlat(b)),
-            rows.shape[0] ?? 0,
-            kk,
-            Float64Array.from(toFlat(differencePenalty(kk, order))),
-            lambda,
-          )
+          const D = toFlat(differencePenalty(kk, order))
+          return {
+            X: Float64Array.from(toFlat(layer.basis(params, rows, buffers))),
+            p: kk,
+            S: Float64Array.from(D, (v) => lambda * v),
+          }
         },
       }
     },
@@ -447,7 +429,7 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
                 }
                 return total
               },
-        edf: NONE_EDF,
+        design: NONE_DESIGN,
       }
     },
   ),
@@ -463,7 +445,11 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
       featureDropout: 0,
       smoothness: NONE_SMOOTHNESS,
       regularisation: NONE_REGULARISATION,
-      edf: () => features.length,
+      design: (_p, _b, rows) => ({
+        X: Float64Array.from(toFlat(rows)),
+        p: features.length,
+        S: new Float64Array(features.length * features.length),
+      }),
     }),
   ),
   tensorSpline: kind(
@@ -496,7 +482,7 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
         featureDropout: 0,
         smoothness: (params) => (lambda > 0 ? mul(surface.penalty(params, order), lambda) : undefined),
         regularisation: NONE_REGULARISATION,
-        edf: NONE_EDF,
+        design: NONE_DESIGN,
       }
     },
   ),
@@ -565,6 +551,8 @@ export interface NetTermOptions {
   /** The weight of the output penalty, the mean squared contribution (NAM). */
   readonly outputPenalty?: number
   readonly weightDecay?: number
+  /** The mean of the ExU weights at initialisation (default 3; a smaller value starts with gentler units). */
+  readonly initMean?: number
   readonly label?: string
 }
 

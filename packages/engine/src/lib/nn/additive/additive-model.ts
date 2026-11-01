@@ -9,6 +9,7 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { type Link, type LinkName, linkByName } from '../../dists/families/index.ts'
+import { dgesv } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import type { SpaceValue } from '../../space/index.ts'
 import {
@@ -326,8 +327,10 @@ export class AdditiveModel extends Composite {
   }
 
   /**
-   * The effective degrees of freedom of the penalised terms at the current parameters, on rows (unit weights, so the
-   * Gaussian least-squares value; `undefined` for terms without a definition, such as networks).
+   * The effective degrees of freedom of every term with a linear-model form (splines and linear terms; `undefined` for
+   * networks) at the current knots: the joint penalised least-squares fit of those terms on `rows` with unit weights, each
+   * column centred (the sum-to-zero constraint), so the per-term edf are those of `gam`'s Gaussian fit with the same
+   * penalties: `tr((X'X + S)^-1 X'X)` summed over the term's block.
    *
    * @param params - The parameters.
    * @param rows - The inputs `[n, inFeatures]`.
@@ -335,8 +338,46 @@ export class AdditiveModel extends Composite {
    * @returns The edf of each term, in order.
    */
   termEdf(params: Params, rows: Value, buffers: Params = this.buffers): (number | undefined)[] {
-    return this.built.map((t, i) =>
-      t.edf(this.partParams(params, i), this.partBuffers(buffers, i), this.columns(rows, t.features)),
+    const n = rows.shape[0] ?? 0
+    const blocks = this.built.map((t, i) =>
+      t.design(this.partParams(params, i), this.partBuffers(buffers, i), this.columns(rows, t.features)),
+    )
+    const widths = blocks.map((b) => b?.p ?? 0)
+    const P = widths.reduce((a, b) => a + b, 0)
+    if (P === 0 || n === 0) return blocks.map(() => undefined)
+    const offsets = widths.map((_, i) => widths.slice(0, i).reduce((a, b) => a + b, 0))
+    const X = new Float64Array(n * P)
+    const S = new Float64Array(P * P)
+    blocks.forEach((b, i) => {
+      if (b === undefined) return
+      for (let c = 0; c < b.p; c++) {
+        let mean = 0
+        for (let r = 0; r < n; r++) mean += b.X[r * b.p + c] as number
+        mean /= n
+        for (let r = 0; r < n; r++) X[r * P + (offsets[i] as number) + c] = (b.X[r * b.p + c] as number) - mean
+        for (let c2 = 0; c2 < b.p; c2++)
+          S[((offsets[i] as number) + c) * P + (offsets[i] as number) + c2] = b.S[c * b.p + c2] as number
+      }
+    })
+    const gram = new Float64Array(P * P)
+    for (let r = 0; r < n; r++)
+      for (let a = 0; a < P; a++) {
+        const xa = X[r * P + a] as number
+        if (xa !== 0)
+          for (let b = 0; b < P; b++) gram[a * P + b] = (gram[a * P + b] as number) + xa * (X[r * P + b] as number)
+      }
+    const system = Float64Array.from(gram, (v, i) => v + (S[i] as number) + (i % (P + 1) === 0 ? 1e-9 : 0))
+    const diag = new Float64Array(P)
+    for (let c = 0; c < P; c++) {
+      const col = dgesv(
+        system,
+        Float64Array.from({ length: P }, (_, r) => gram[r * P + c] as number),
+        P,
+      )
+      diag[c] = col[c] as number
+    }
+    return blocks.map((b, i) =>
+      b === undefined ? undefined : diag.slice(offsets[i], (offsets[i] as number) + b.p).reduce((a, v) => a + v, 0),
     )
   }
 

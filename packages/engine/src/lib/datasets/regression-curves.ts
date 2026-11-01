@@ -459,3 +459,80 @@ export const additiveModel: DatasetGenerator<RegressionData> = {
     return { data: xy(x, y, stamp('additiveModel', additiveModel.description, knobs)), truth }
   },
 }
+
+/**
+ * Additive data with one pairwise interaction: `y = f_0(x_0) + f_1(x_1) + f_2(x_2) + strength * 4 (x_0 - 1/2)
+ * (x_1 - 1/2) + noise` on uniform features, with the main effects of {@link additiveModel} and a centred product
+ * for the interaction (zero mean and uncorrelated with every main effect). The truth has the regression function, the
+ * components (`truth.extra.components`) and the interaction (`truth.extra.interactions`: its features and function),
+ * the targets of a GA2M or GAMI-Net fit.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { additiveInteraction } from 'mdml-engine/datasets'
+ * generate(additiveInteraction, { knobs: { n: 20 } }).data.x.shape // => [20, 3]
+ * ```
+ */
+export const additiveInteraction: DatasetGenerator<RegressionData> = {
+  name: 'additiveInteraction',
+  kind: 'regression',
+  description:
+    'Three smooth main effects plus the interaction of the first two features, with Gaussian noise (a GA2M).',
+  knobs: dict({
+    n: n1,
+    strength: real(0, 20, {
+      label: 'interaction strength',
+      description: 'The multiplier of the centred product of the first two features.',
+      default: 2,
+    }),
+    noise: real(0, 10, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the Gaussian noise.',
+      default: 0.2,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const strength = knobs['strength'] as number
+    const s = knobs['noise'] as number
+    const x = uniform(foldIn(k, 0), [n, 3])
+    const component =
+      (j: number) =>
+      (v: Value): Value =>
+        (COMPONENTS[j] as (typeof COMPONENTS)[number]).f(column(v, j))
+    const interaction = (v: Value): Value => mul(mul(sub(column(v, 0), 0.5), sub(column(v, 1), 0.5)), 4 * strength)
+    const f = (v: Value): Value =>
+      add(
+        sum(
+          stack(
+            [0, 1, 2].map((j) => component(j)(v)),
+            1,
+          ),
+          1,
+        ),
+        interaction(v),
+      )
+    const y = add(f(x), mul(normal(foldIn(k, 1), [n]), s))
+    const truth: Truth = {
+      regressionFunction: f,
+      noiseScale: s,
+      bayesError: s * s,
+      relevantFeatures: [0, 1, 2],
+      logProb: (v, t) => {
+        if (t === undefined) return full([v.shape[0] ?? 0], 0)
+        const r = div(sub(t, f(v)), s)
+        return mul(add(square(r), Math.log(2 * Math.PI) + 2 * Math.log(s)), -0.5)
+      },
+      extra: {
+        components: [0, 1, 2].map((j) => ({
+          feature: j,
+          name: (COMPONENTS[j] as (typeof COMPONENTS)[number]).name,
+          f: component(j),
+        })),
+        interactions: [{ features: [0, 1], name: `${4 * strength} (x0 - 1/2)(x1 - 1/2)`, f: interaction }],
+      },
+    }
+    return { data: xy(x, y, stamp('additiveInteraction', additiveInteraction.description, knobs)), truth }
+  },
+}

@@ -4,6 +4,7 @@ import { svdvals } from '../numerics/linalg/index.ts'
 import { key } from '../random/index.ts'
 import { sub, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
 import {
+  additiveInteraction,
   additiveModel,
   dopplerCurve,
   heteroscedastic,
@@ -118,5 +119,21 @@ describe('curves', () => {
     for (const p of parts) expect(Math.abs(mean(toFlat(p.f(grid))))).toBeLessThan(5e-3)
     expect(truth.relevantFeatures).toEqual([0, 1, 2, 3, 4])
     void (data.x as Tensor)
+  })
+  it('additive interaction data: components plus the centred product sum to the regression function', () => {
+    const { data, truth } = generate(additiveInteraction, { key: key(8), knobs: { n: 200, strength: 3 } })
+    const parts = truth.extra?.['components'] as { f: (x: Value) => Value }[]
+    const pairs = truth.extra?.['interactions'] as { features: number[]; f: (x: Value) => Value }[]
+    expect(pairs[0]?.features).toEqual([0, 1])
+    const total = [...parts, ...pairs]
+      .map((p) => toFlat(p.f(data.x)))
+      .reduce((a, b) => a.map((v, i) => v + (b[i] ?? 0)))
+    const f = toFlat(truth.regressionFunction?.(data.x) as Value)
+    total.forEach((v, i) => {
+      expect(v).toBeCloseTo(f[i] ?? 0, 12)
+    })
+    // The product of centred features has mean zero on the unit square, so it does not shift the main effects.
+    const grid = tensor(Array.from({ length: 41 * 41 }, (_, i) => [Math.floor(i / 41) / 40, (i % 41) / 40, 0.5]))
+    expect(Math.abs(mean(toFlat((pairs[0] as { f: (x: Value) => Value }).f(grid))))).toBeLessThan(1e-12)
   })
 })
