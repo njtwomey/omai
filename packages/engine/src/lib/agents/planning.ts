@@ -390,7 +390,7 @@ interface TableEntry {
  * move ordering (the table's best move first, then `order`) and an optional depth limit with an evaluation function.
  * It searches an environment (`AecEnv`: rewards on every move, the transposition table above); `alphaBeta` of
  * `search` searches a `Game` with utilities at the terminal states and traces the pruning, and `alphaBetaAlgorithm`
- * steps it. Their node counts differ because the environment's search also keeps a transposition table.
+ * steps it. Their node counts need not agree.
  *
  * @param env - The game (deterministic steps).
  * @param state - The position.
