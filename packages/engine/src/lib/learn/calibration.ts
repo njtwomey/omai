@@ -27,10 +27,12 @@ import {
   toFlat,
   type Value,
 } from '../tensor/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
 import { innerFitOptions, keyFor } from './_shared.ts'
 import { type Estimator, type FitOptions, type Fitted, type LearnData, requireTargets } from './estimator.ts'
 import { type CvOption, checkCv, crossValPredict, splitInputOf } from './model-selection/cross-validation.ts'
 import { splitIndices } from './model-selection/splitters.ts'
+import { pavaAlgorithm, pavaFitted } from './pava.ts'
 import { encodeLabels, matrixView, sampleWeightsOf, takeData, targetVector } from './validation.ts'
 
 /** A fitted calibration map from scores to probabilities: its method, its parameters as data, and the map. */
@@ -62,7 +64,8 @@ function binaryTargets(y: TensorLike, n: number, who: string): Float64Array {
 /**
  * The weighted pool-adjacent-violators algorithm (Ayer et al. 1955; sklearn's contiguous isotonic regression): the
  * non-decreasing sequence closest to y in weighted least squares, by merging adjacent violating blocks into their
- * weighted means. Exact, O(n).
+ * weighted means. Exact, O(n). This is {@link pavaAlgorithm} (one pool or push per step, the stack of blocks on the
+ * tape) run to the end.
  *
  * @param y - The values, in order.
  * @param weights - Their weights (default ones).
@@ -76,41 +79,9 @@ function binaryTargets(y: TensorLike, n: number, who: string): Float64Array {
  */
 export function poolAdjacentViolators(y: ArrayLike<number>, weights?: ArrayLike<number>): number[] {
   const n = y.length
-  const v = Float64Array.from(y)
-  const w = weights === undefined ? new Float64Array(n).fill(1) : Float64Array.from(weights)
-  const target = Int32Array.from({ length: n }, (_, i) => i)
-  let i = 0
-  while (i < n) {
-    let k = (target[i] ?? i) + 1
-    if (k === n) break
-    if ((v[i] ?? 0) < (v[k] ?? 0)) {
-      i = k
-      continue
-    }
-    let sumWy = (w[i] ?? 0) * (v[i] ?? 0)
-    let sumW = w[i] ?? 0
-    for (;;) {
-      const prev = v[k] ?? 0
-      sumWy += (w[k] ?? 0) * (v[k] ?? 0)
-      sumW += w[k] ?? 0
-      k = (target[k] ?? k) + 1
-      if (k === n || prev < (v[k] ?? 0)) {
-        v[i] = sumWy / sumW
-        w[i] = sumW
-        target[i] = k - 1
-        target[k - 1] = i
-        if (i > 0) i = target[i - 1] ?? 0
-        break
-      }
-    }
-  }
-  i = 0
-  while (i < n) {
-    const k = (target[i] ?? i) + 1
-    for (let j = i + 1; j < k; j++) v[j] = v[i] ?? 0
-    i = k
-  }
-  return Array.from(v)
+  if (n === 0) return []
+  const alg = pavaAlgorithm(y, weights === undefined ? {} : { weights })
+  return pavaFitted(runAlgorithm(alg, { maxSteps: 2 * n + 1 }).state, n)
 }
 
 /** A fitted isotonic map: thresholds and values, interpolated linearly and clipped at the ends. */

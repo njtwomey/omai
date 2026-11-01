@@ -14,7 +14,15 @@ import { solve } from '../numerics/linalg/index.ts'
 import { lgamma as logGamma } from '../numerics/special/_kernels.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { add, asTensor, fromStorage, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  logShapley,
+  type ShapleyPath,
+  type ShapleyState,
+  shapleyAccumulate,
+  shapleyEstimates,
+  shapleyStart,
+} from './permutation-estimates.ts'
 
 /** A per-example loss of flat parameters `[p]`, one input row `[d]` and its target. */
 export type ExampleLoss = (params: Value, x: Value, y: number) => Value
@@ -171,10 +179,111 @@ export interface DataShapleyResult {
   readonly fullUtility: number
 }
 
+function dataShapleyRun(
+  estimator: Estimator,
+  train: LearnData,
+  test: LearnData,
+  options: DataShapleyOptions,
+): {
+  readonly algorithm: Algorithm<ShapleyState, ShapleyPath>
+  readonly nPerm: number
+  readonly fullUtility: number
+} {
+  const n = rowsOf(train.x)
+  const scorer: Scorer | undefined = Object.values(scorersOf(options.scoring))[0]
+  if (scorer === undefined) throw new MdmlError('value', 'dataShapley: no scorer')
+  const nPerm = options.nPermutations ?? 100
+  if (!(Number.isInteger(nPerm) && nPerm >= 1)) throw new MdmlError('value', 'dataShapley: nPermutations must be >= 1')
+  const empty = options.emptyUtility ?? 0
+  const key = keyFor(options, 'dataShapley')
+  const utility = (idx: readonly number[], opts: FitOptions): number => {
+    if (idx.length === 0) return empty
+    try {
+      return scorer.score(estimator.fit(takeData(train, idx), opts), test)
+    } catch {
+      return empty
+    }
+  }
+  const fullUtility = utility(
+    Array.from({ length: n }, (_, i) => i),
+    innerFitOptions(options, foldIn(key, 0), options.parent),
+  )
+  const tol = options.truncationTolerance ?? 0.01
+  const algorithm: Algorithm<ShapleyState, ShapleyPath> = {
+    name: 'data-shapley',
+    config: { estimator: estimator.name, n, nPermutations: nPerm, truncationTolerance: tol },
+    schema: channels({ metrics: { permutations: { description: 'orders sampled' } } }),
+    init: () => shapleyStart(n),
+    step: (s, ctx) => {
+      const order = toFlat(permutation(foldIn(key, 1 + s.count), n))
+      const marginal = new Float64Array(n)
+      let prev = empty
+      let truncated = false
+      for (let t = 0; t < n; t++) {
+        const i = order[t] ?? 0
+        let contribution = 0
+        if (!truncated) {
+          const v = utility(order.slice(0, t + 1), innerFitOptions(options, foldIn(ctx.key, t), ctx.run))
+          contribution = v - prev
+          prev = v
+          if (Math.abs(fullUtility - v) <= tol * Math.abs(fullUtility)) truncated = true
+        }
+        marginal[i] = contribution
+      }
+      const next = shapleyAccumulate(s, marginal)
+      logShapley(ctx, next, marginal)
+      return next
+    },
+    done: (s) => (s.count >= nPerm ? 'completed' : undefined),
+    observe: (s) => ({ metrics: { permutations: s.count } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as ShapleyState,
+  }
+  return { algorithm, nPerm, fullUtility }
+}
+
+/**
+ * Data Shapley by truncated Monte Carlo (Ghorbani and Zou 2019) as a stepped algorithm: each step draws a random order
+ * of the training data, refits the model on growing prefixes and adds each point's marginal gain in test utility to a
+ * running mean and standard error, truncating the order once a prefix is almost as good as the full data. Each fit
+ * nests as a child run. The state serialises. The utility of the full data is computed when the algorithm is built.
+ *
+ * @param estimator - The estimator to refit.
+ * @param train - Training data.
+ * @param test - The data the utility is measured on.
+ * @param options - scoring, nPermutations, truncationTolerance, emptyUtility and key.
+ * @returns The algorithm, `nPermutations` steps; read the estimates with `shapleyEstimates`.
+ * @throws MdmlError with code `value` for no scorer or fewer than one permutation.
+ * @concept data-valuation
+ * @example
+ * ```ts
+ * import { dataShapleyAlgorithm, shapleyEstimates } from 'mdml-engine/explain'
+ * import { defineEstimator, rowsOf } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { full, item, mean } from 'mdml-engine/tensor'
+ * const meanModel = defineEstimator(
+ *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
+ *   {},
+ * )
+ * const alg = dataShapleyAlgorithm(meanModel, { x: [[0], [0], [0]], y: [1, 1, 9] }, { x: [[0]], y: [1] }, { scoring: 'neg_mean_absolute_error', nPermutations: 30, emptyUtility: -5 })
+ * const v = shapleyEstimates(runAlgorithm(alg, { maxSteps: 30 }).state).values
+ * v[2] < v[0] // => true
+ * ```
+ */
+export function dataShapleyAlgorithm(
+  estimator: Estimator,
+  train: LearnData,
+  test: LearnData,
+  options: DataShapleyOptions = {},
+): Algorithm<ShapleyState, ShapleyPath> {
+  return dataShapleyRun(estimator, train, test, options).algorithm
+}
+
 /**
  * Data Shapley by truncated Monte Carlo (Ghorbani and Zou 2019): each training point's value is its mean marginal
  * contribution to the test utility over random orders of the data, refitting the model on growing prefixes and
- * truncating an order once its prefix is almost as good as the full data. A traced algorithm with one step per order.
+ * truncating an order once its prefix is almost as good as the full data. This is {@link dataShapleyAlgorithm} run to
+ * the end, a traced algorithm with one step per order.
  *
  * @param estimator - The estimator to refit.
  * @param train - Training data.
@@ -200,61 +309,9 @@ export function dataShapley(
   test: LearnData,
   options: DataShapleyOptions = {},
 ): DataShapleyResult {
-  const n = rowsOf(train.x)
-  const scorer: Scorer | undefined = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'dataShapley: no scorer')
-  const nPerm = options.nPermutations ?? 100
-  if (!(Number.isInteger(nPerm) && nPerm >= 1)) throw new MdmlError('value', 'dataShapley: nPermutations must be >= 1')
-  const empty = options.emptyUtility ?? 0
-  const key = keyFor(options, 'dataShapley')
-  const utility = (idx: readonly number[], opts: FitOptions): number => {
-    if (idx.length === 0) return empty
-    try {
-      return scorer.score(estimator.fit(takeData(train, idx), opts), test)
-    } catch {
-      return empty
-    }
-  }
-  const fullUtility = utility(
-    Array.from({ length: n }, (_, i) => i),
-    innerFitOptions(options, foldIn(key, 0), options.parent),
-  )
-  const tol = options.truncationTolerance ?? 0.01
-  type State = { readonly sum: Float64Array; readonly sumSq: Float64Array; readonly count: number }
-  const algorithm: Algorithm<State> = {
-    name: 'data-shapley',
-    config: { estimator: estimator.name, n, nPermutations: nPerm, truncationTolerance: tol },
-    schema: channels({ metrics: { permutations: { description: 'orders sampled' } } }),
-    init: () => ({ sum: new Float64Array(n), sumSq: new Float64Array(n), count: 0 }),
-    step: (s, ctx) => {
-      const order = toFlat(permutation(foldIn(key, 1 + s.count), n))
-      const sum = Float64Array.from(s.sum)
-      const sumSq = Float64Array.from(s.sumSq)
-      let prev = empty
-      let truncated = false
-      for (let t = 0; t < n; t++) {
-        const i = order[t] ?? 0
-        let contribution = 0
-        if (!truncated) {
-          const v = utility(order.slice(0, t + 1), innerFitOptions(options, foldIn(ctx.key, t), ctx.run))
-          contribution = v - prev
-          prev = v
-          if (Math.abs(fullUtility - v) <= tol * Math.abs(fullUtility)) truncated = true
-        }
-        sum[i] = (sum[i] ?? 0) + contribution
-        sumSq[i] = (sumSq[i] ?? 0) + contribution * contribution
-      }
-      return { sum, sumSq, count: s.count + 1 }
-    },
-    done: (s) => (s.count >= nPerm ? 'completed' : undefined),
-    observe: (s) => ({ metrics: { permutations: s.count } }),
-  }
+  const { algorithm, nPerm, fullUtility } = dataShapleyRun(estimator, train, test, options)
   const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'dataShapley'), maxSteps: nPerm })
-  const values = Array.from(state.sum, (v) => v / state.count)
-  const standardErrors = Array.from(state.sumSq, (v, i) => {
-    const m = values[i] ?? 0
-    return state.count < 2 ? Number.NaN : Math.sqrt(Math.max(0, v / state.count - m * m) / (state.count - 1))
-  })
+  const { values, standardErrors } = shapleyEstimates(state)
   return { values, standardErrors, fullUtility }
 }
 

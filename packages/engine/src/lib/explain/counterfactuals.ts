@@ -7,8 +7,8 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { argmaxOf, MdmlError } from '../base/index.ts'
-import { dijkstra, graph } from '../graph/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { dijkstraAlgorithm, graph, type PathSearchState, type ShortestPathPath } from '../graph/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
 import { columnOf, matrixView } from '../learn/validation.ts'
@@ -41,6 +41,7 @@ import {
   channels,
   defineContract,
   runAlgorithm,
+  type StepContext,
   scalar,
   stateFromJson,
   stateToJson,
@@ -369,11 +370,160 @@ export interface DiverseCounterfactuals {
   readonly diversity: number
 }
 
+/** The paths {@link diverseCounterfactualsAlgorithm} logs. */
+export type DicePath = 'dice/x' | 'dice/loss' | 'dice/validity' | 'dice/proximity' | 'dice/diversity' | 'dice/iteration'
+
+/** What a stepped DiCE search logs: the points, the objective, how many are valid, their proximity and diversity. */
+export const diceContract: Contract<unknown, DicePath> = defineContract({
+  'dice/x': tensorSource({
+    role: 'state',
+    shape: ['count', 'features'],
+    description: 'the counterfactual points after the iteration',
+  }),
+  'dice/loss': scalar({ description: 'the DiCE objective: hinge + proximity - diversity', direction: 'lower' }),
+  'dice/validity': scalar({ description: 'how many of the points reach the desired class', direction: 'higher' }),
+  'dice/proximity': scalar({
+    description: 'the mean scaled-L1 distance of the points from the original',
+    direction: 'lower',
+  }),
+  'dice/diversity': scalar({ description: 'det(K) of the diversity kernel of the points', direction: 'higher' }),
+  'dice/iteration': scalar({ description: 'Adam iterations done' }),
+})
+
+/** The state of {@link diverseCounterfactualsAlgorithm}: the points `[k, d]` row-major, Adam's moments and its step count. */
+export interface DiceState {
+  readonly c: Float64Array
+  readonly m: Float64Array
+  readonly v: Float64Array
+  readonly t: number
+}
+
+interface DiceRun {
+  readonly algorithm: Algorithm<DiceState, DicePath>
+  readonly k: number
+  readonly d: number
+  readonly finish: (state: DiceState) => DiverseCounterfactuals
+}
+
+function diceRun(model: DifferentiableModel, x: TensorLike, options: DiverseOptions): DiceRun {
+  const x0 = rowOf(x, 'diverseCounterfactuals')
+  const d = x0.length
+  const k = options.count ?? 4
+  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'diverseCounterfactuals: count must be >= 1')
+  const scales = fromStorage(Float64Array.from(options.scales ?? new Array<number>(d).fill(1)), [1, d], 'float64')
+  const xt = fromStorage(
+    Float64Array.from({ length: k * d }, (_, i) => x0[i % d] ?? 0),
+    [k, d],
+    'float64',
+  )
+  const desired = options.desired ?? 1
+  const wProx = options.proximityWeight ?? 0.5
+  const wDiv = options.diversityWeight ?? 1
+  const eps = 1e-6
+  const proximity = (c: Value): Value => sum(div(sqrt(add(square(sub(c, xt)), 1e-9)), scales))
+  const loss = (c: Value): Value => {
+    const p = model(c)
+    // Hinge on the logit: max(0, 1 - s z) with z = logit(p), s = +1 for class 1.
+    const z = sub(log(add(p, eps)), log(add(sub(1, p), eps)))
+    const margin = sub(1, mul(desired === 1 ? 1 : -1, z))
+    const hinge = sum(relu(margin))
+    let diversity: Value = fromStorage(new Float64Array([0]), [], 'float64')
+    if (k > 1) diversity = logDetKernel(c, scales, k)
+    return sub(add(mul(hinge, 1 / k), mul(proximity(c), wProx / k)), mul(diversity, wDiv))
+  }
+  const dl = grad(loss)
+  const key = keyFor(options, 'diverseCounterfactuals')
+  const lr = options.learningRate ?? 0.05
+  const asTensorK = (c: Float64Array): Tensor => fromStorage(Float64Array.from(c), [k, d], 'float64')
+  const predictionsOf = (c: Float64Array): number[] => {
+    const out = model(asTensorK(c)) as Tensor
+    const width = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
+    return toFlat(out).filter((_, i) => i % width === 0)
+  }
+  const diversityOf = (c: Float64Array): number =>
+    k > 1 ? Math.exp(toFlat(logDetKernel(asTensorK(c), scales, k))[0] ?? 0) : 1
+  const algorithm: Algorithm<DiceState, DicePath> = {
+    name: 'diverse-counterfactuals',
+    config: { count: k, features: d },
+    schema: channels({ metrics: { loss: { description: 'the DiCE objective', direction: 'lower' } } }),
+    init: () => {
+      const z = toFlat(normal(foldIn(key, 0), [k, d]))
+      return {
+        c: Float64Array.from({ length: k * d }, (_, i) => (x0[i % d] ?? 0) + (options.spread ?? 0.5) * (z[i] ?? 0)),
+        m: new Float64Array(k * d),
+        v: new Float64Array(k * d),
+        t: 0,
+      }
+    },
+    step: (s, ctx) => {
+      const g = toFlat(dl(asTensorK(s.c)) as Tensor)
+      const t = s.t + 1
+      const m = Float64Array.from(s.m, (mv, i) => 0.9 * mv + 0.1 * (g[i] ?? 0))
+      const v = Float64Array.from(s.v, (vv, i) => 0.999 * vv + 0.001 * (g[i] ?? 0) ** 2)
+      const c = Float64Array.from(
+        s.c,
+        (cv, i) => cv - (lr * ((m[i] ?? 0) / (1 - 0.9 ** t))) / (Math.sqrt((v[i] ?? 0) / (1 - 0.999 ** t)) + 1e-8),
+      )
+      ctx.log('dice/iteration', t)
+      if (ctx.wants('dice/x')) ctx.log('dice/x', fromStorage(Float64Array.from(c), [k, d], 'float64'))
+      if (ctx.wants('dice/loss')) ctx.log('dice/loss', toFlat(loss(asTensorK(c)))[0] ?? 0)
+      if (ctx.wants('dice/validity'))
+        ctx.log('dice/validity', predictionsOf(c).filter((p) => (desired === 1 ? p > 0.5 : p < 0.5)).length)
+      if (ctx.wants('dice/proximity')) ctx.log('dice/proximity', (toFlat(proximity(asTensorK(c)))[0] ?? 0) / k)
+      if (ctx.wants('dice/diversity')) ctx.log('dice/diversity', diversityOf(c))
+      return { c, m, v, t }
+    },
+    observe: (s) => ({ metrics: { loss: toFlat(loss(asTensorK(s.c)))[0] ?? 0 } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as DiceState,
+  }
+  const finish = (state: DiceState): DiverseCounterfactuals => {
+    const predictions = predictionsOf(state.c)
+    return {
+      points: Array.from({ length: k }, (_, i) => Array.from(state.c.subarray(i * d, (i + 1) * d))),
+      predictions,
+      valid: predictions.map((p) => (desired === 1 ? p > 0.5 : p < 0.5)),
+      diversity: diversityOf(state.c),
+    }
+  }
+  return { algorithm, k, d, finish }
+}
+
+/**
+ * Diverse counterfactuals (Mothilal, Sharma and Tan 2020, DiCE) as a stepped algorithm: k points moved jointly by Adam
+ * on the hinge loss of reaching the desired class, plus their mean scaled-L1 distance to x, minus the log-determinant of
+ * the kernel K_ij = 1 / (1 + dist(c_i, c_j)) (a determinantal point process that spreads them out). One Adam iteration per
+ * step; the state (points and moments) serialises.
+ *
+ * @param model - The differentiable model returning a probability per row.
+ * @param x - The original point `[d]`.
+ * @param options - count, desired, weights, scales, learningRate, spread and key (`maxIterations` is the caller's step budget).
+ * @returns The algorithm.
+ * @throws MdmlError with code `shape` for an empty point and `value` for a count below 1.
+ * @concept counterfactual-explanations
+ * @example
+ * ```ts
+ * import { diverseCounterfactualsAlgorithm } from 'mdml-engine/explain'
+ * import { matmul, sigmoid } from 'mdml-engine/tensor'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const proba = (v) => sigmoid(matmul(v, [[2], [2]]))
+ * const run = runAlgorithm(diverseCounterfactualsAlgorithm(proba, [-1, -1], { count: 3 }), { maxSteps: 30 })
+ * run.state.c.length // => 6
+ * ```
+ */
+export function diverseCounterfactualsAlgorithm(
+  model: DifferentiableModel,
+  x: TensorLike,
+  options: DiverseOptions = {},
+): Algorithm<DiceState, DicePath> {
+  return diceRun(model, x, options).algorithm
+}
+
 /**
  * Diverse counterfactuals (Mothilal, Sharma and Tan 2020, DiCE): k points found jointly by gradient descent (Adam) on
  * the hinge loss of reaching the desired class, plus their mean scaled-L1 distance to x, minus the log-determinant of
- * the kernel K_ij = 1 / (1 + dist(c_i, c_j)) (a determinantal point process that spreads them out). A traced algorithm
- * with one step per iteration.
+ * the kernel K_ij = 1 / (1 + dist(c_i, c_j)) (a determinantal point process that spreads them out). This is
+ * {@link diverseCounterfactualsAlgorithm} run to the end, a traced algorithm with one step per iteration.
  *
  * @param model - The differentiable model returning a probability per row.
  * @param x - The original point `[d]`.
@@ -393,77 +543,12 @@ export function diverseCounterfactuals(
   x: TensorLike,
   options: DiverseOptions = {},
 ): DiverseCounterfactuals {
-  const x0 = rowOf(x, 'diverseCounterfactuals')
-  const d = x0.length
-  const k = options.count ?? 4
-  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'diverseCounterfactuals: count must be >= 1')
-  const scales = fromStorage(Float64Array.from(options.scales ?? new Array<number>(d).fill(1)), [1, d], 'float64')
-  const xt = fromStorage(
-    Float64Array.from({ length: k * d }, (_, i) => x0[i % d] ?? 0),
-    [k, d],
-    'float64',
-  )
-  const desired = options.desired ?? 1
-  const wProx = options.proximityWeight ?? 0.5
-  const wDiv = options.diversityWeight ?? 1
-  const eps = 1e-6
-  const loss = (c: Value): Value => {
-    const p = model(c)
-    // Hinge on the logit: max(0, 1 - s z) with z = logit(p), s = +1 for class 1.
-    const z = sub(log(add(p, eps)), log(add(sub(1, p), eps)))
-    const margin = sub(1, mul(desired === 1 ? 1 : -1, z))
-    const hinge = sum(relu(margin))
-    const prox = sum(div(sqrt(add(square(sub(c, xt)), 1e-9)), scales))
-    let diversity: Value = fromStorage(new Float64Array([0]), [], 'float64')
-    if (k > 1) diversity = logDetKernel(c, scales, k)
-    return sub(add(mul(hinge, 1 / k), mul(prox, wProx / k)), mul(diversity, wDiv))
-  }
-  const dl = grad(loss)
-  const key = keyFor(options, 'diverseCounterfactuals')
-  type State = { readonly c: Float64Array; readonly m: Float64Array; readonly v: Float64Array; readonly t: number }
-  const lr = options.learningRate ?? 0.05
-  const algorithm: Algorithm<State> = {
-    name: 'diverse-counterfactuals',
-    config: { count: k, features: d },
-    schema: channels({ metrics: { loss: { description: 'the DiCE objective', direction: 'lower' } } }),
-    init: () => {
-      const z = toFlat(normal(foldIn(key, 0), [k, d]))
-      return {
-        c: Float64Array.from({ length: k * d }, (_, i) => (x0[i % d] ?? 0) + (options.spread ?? 0.5) * (z[i] ?? 0)),
-        m: new Float64Array(k * d),
-        v: new Float64Array(k * d),
-        t: 0,
-      }
-    },
-    step: (s) => {
-      const g = toFlat(dl(fromStorage(Float64Array.from(s.c), [k, d], 'float64')) as Tensor)
-      const t = s.t + 1
-      const m = Float64Array.from(s.m, (mv, i) => 0.9 * mv + 0.1 * (g[i] ?? 0))
-      const v = Float64Array.from(s.v, (vv, i) => 0.999 * vv + 0.001 * (g[i] ?? 0) ** 2)
-      const c = Float64Array.from(
-        s.c,
-        (cv, i) => cv - (lr * ((m[i] ?? 0) / (1 - 0.9 ** t))) / (Math.sqrt((v[i] ?? 0) / (1 - 0.999 ** t)) + 1e-8),
-      )
-      return { c, m, v, t }
-    },
-    observe: (s) => ({
-      metrics: { loss: toFlat(loss(fromStorage(Float64Array.from(s.c), [k, d], 'float64')))[0] ?? 0 },
-    }),
-  }
+  const { algorithm, finish } = diceRun(model, x, options)
   const { state } = runAlgorithm(algorithm, {
     ...runOptionsFor(options, 'diverseCounterfactuals'),
     maxSteps: options.maxIterations ?? 500,
   })
-  const final = fromStorage(Float64Array.from(state.c), [k, d], 'float64')
-  const out = model(final) as Tensor
-  const width = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
-  const predictions = toFlat(out).filter((_, i) => i % width === 0)
-  return {
-    points: Array.from({ length: k }, (_, i) => Array.from(state.c.subarray(i * d, (i + 1) * d))),
-    predictions,
-    valid: predictions.map((p) => (desired === 1 ? p > 0.5 : p < 0.5)),
-    diversity: k > 1 ? Math.exp(toFlat(logDetKernel(final, scales, k))[0] ?? 0) : 1,
-  }
+  return finish(state)
 }
 
 /** log det of K_ij = 1 / (1 + dist(c_i, c_j)) by a Cholesky-free Gaussian elimination on values. */
@@ -508,31 +593,38 @@ export interface FacePath {
   readonly cost: number
 }
 
+/** The paths {@link faceCounterfactualAlgorithm} logs. */
+export type FacePathName = 'face/settled' | 'face/cost' | 'face/accepted' | 'face/best' | 'face/frontier'
+
+/** What a stepped FACE search logs: the point settled, its path cost, whether it qualifies, and the best so far. */
+export const faceContract: Contract<unknown, FacePathName> = defineContract({
+  'face/settled': scalar({ description: 'the node settled at this step (0 is x itself, i + 1 is row i of the data)' }),
+  'face/cost': scalar({ description: 'the density-weighted path cost to the settled node', direction: 'lower' }),
+  'face/accepted': scalar({ description: '1 when the settled point has the wanted outcome and enough density' }),
+  'face/best': scalar({ description: 'the node of the cheapest qualifying point so far (-1 before one is found)' }),
+  'face/frontier': scalar({ description: 'nodes waiting to be settled' }),
+})
+
 /**
- * FACE: feasible and actionable counterfactual explanations (Poyiadzi et al. 2020): build a k-nearest-neighbour graph
- * of the data whose edge costs are distances divided by the density at their midpoint, so cheap paths stay in
- * populated regions, and return the cheapest path from x to a dense point the model labels as wanted.
- *
- * @param predict - The model's output for rows `[m, d]` (`[m]`).
- * @param x - The original point `[d]`.
- * @param data - Candidate points `[n, d]` (the training data).
- * @param options - accept, kNeighbors, densityQuantile and scales.
- * @returns The path, or undefined when no acceptable point is reachable.
- * @example
- * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
- * const sign = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[i] > 2 ? 1 : 0)))
- * const data = [[0], [0.5], [1], [1.5], [2], [2.5], [3]]
- * explain.faceCounterfactual(sign, [0.1], data, { accept: (p) => p === 1, kNeighbors: 2 }).counterfactual // => [2.5]
- * ```
+ * The state of {@link faceCounterfactualAlgorithm}: the Dijkstra search over the density graph (settled in place, so
+ * keep a copy of a state you want to look at later) and the cheapest qualifying node found so far.
  */
-export function faceCounterfactual(
+export interface FaceState {
+  readonly search: PathSearchState
+  /** The cheapest qualifying node settled so far (-1: none yet). */
+  readonly best: number
+}
+
+function faceRun(
   predict: (x: Tensor) => Tensor,
   x: TensorLike,
   data: TensorLike,
   options: FaceOptions,
-): FacePath | undefined {
+): {
+  readonly algorithm: Algorithm<FaceState, FacePathName>
+  readonly finish: (s: FaceState) => FacePath | undefined
+  readonly nodes: number
+} {
   const x0 = rowOf(x, 'faceCounterfactual')
   const m = matrixView(data, 'faceCounterfactual', { nFeatures: x0.length })
   const d = m.d
@@ -565,22 +657,124 @@ export function faceCounterfactual(
     }
   })
   const g = graph(edges, { nodes: n, duplicates: 'min' })
-  const r = dijkstra(g, 0)
+  const inner = dijkstraAlgorithm(g, 0)
   const preds = toFlat(predict(fromStorage(m.data, [m.n, d], 'float64')))
   const dens = pts.slice(1).map(density)
   const sorted = [...dens].sort((a, b) => a - b)
   const cut = sorted[Math.floor((options.densityQuantile ?? 0.1) * (sorted.length - 1))] ?? 0
-  let best = -1
-  for (let i = 1; i < n; i++) {
-    if (!options.accept(preds[i - 1] ?? Number.NaN) || (dens[i - 1] ?? 0) < cut) continue
-    const c = r.distance[i] ?? Number.POSITIVE_INFINITY
-    if (Number.isFinite(c) && (best < 0 || c < (r.distance[best] ?? Number.POSITIVE_INFINITY))) best = i
+  const qualifies = (i: number): boolean => options.accept(preds[i - 1] ?? Number.NaN) && (dens[i - 1] ?? 0) >= cut
+  const algorithm: Algorithm<FaceState, FacePathName> = {
+    name: 'face-counterfactual',
+    config: { nodes: n, kNeighbors: kk },
+    schema: channels({ metrics: { best: { description: 'the cheapest qualifying node so far' } } }),
+    init: () => ({ search: inner.init(key0), best: -1 }),
+    step: (s, ctx) => {
+      // The search settles nodes in order of cost, so the first qualifying node is the cheapest; settling goes on while
+      // costs tie, so that the lowest index among equals wins.
+      const search = inner.step(s.search, ctx as unknown as StepContext<ShortestPathPath>)
+      const u = search.current
+      const cost = search.distance[u] ?? Number.POSITIVE_INFINITY
+      const ok = u >= 1 && qualifies(u)
+      let best = s.best
+      if (ok && Number.isFinite(cost)) {
+        const bestCost = best < 0 ? Number.POSITIVE_INFINITY : (search.distance[best] ?? Number.POSITIVE_INFINITY)
+        if (cost < bestCost || (cost === bestCost && u < best)) best = u
+      }
+      ctx.log('face/settled', u)
+      ctx.log('face/cost', cost)
+      ctx.log('face/accepted', ok ? 1 : 0)
+      ctx.log('face/best', best)
+      ctx.log('face/frontier', search.queue.size)
+      return { search, best }
+    },
+    done: (s) => {
+      if (inner.done?.(s.search, 0) !== undefined) return 'converged'
+      const u = s.search.current
+      if (
+        s.best >= 0 &&
+        u >= 0 &&
+        (s.search.distance[u] ?? 0) > (s.search.distance[s.best] ?? Number.POSITIVE_INFINITY)
+      )
+        return 'converged'
+      return undefined
+    },
+    observe: (s) => ({ metrics: { best: s.best } }),
+    serialise: (s) => ({ search: inner.serialise?.(s.search) ?? null, best: s.best }),
+    deserialise: (j) => {
+      const o = j as unknown as { readonly search: Json; readonly best: number }
+      return { search: inner.deserialise?.(o.search) as PathSearchState, best: o.best }
+    },
   }
-  if (best < 0) return undefined
-  const path: number[] = []
-  for (let v = best, guard = 0; v > 0 && guard <= n; v = r.predecessor[v] ?? -1, guard++) path.push(v - 1)
-  path.reverse()
-  return { path, counterfactual: pts[best] ?? [], cost: r.distance[best] ?? Number.NaN }
+  const finish = (s: FaceState): FacePath | undefined => {
+    if (s.best < 0) return undefined
+    const path: number[] = []
+    for (let v = s.best, guard = 0; v > 0 && guard <= n; v = s.search.predecessor[v] ?? -1, guard++) path.push(v - 1)
+    path.reverse()
+    return { path, counterfactual: pts[s.best] ?? [], cost: s.search.distance[s.best] ?? Number.NaN }
+  }
+  return { algorithm, finish, nodes: n }
+}
+
+const key0: Key = keyFor({}, 'faceCounterfactual')
+
+/**
+ * FACE (Poyiadzi et al. 2020) as a stepped algorithm: Dijkstra over the density-weighted k-nearest-neighbour graph of x
+ * and the data, one node settled per step, stopping once the cheapest dense point the model labels as wanted is
+ * known. The state (the search and the best node so far) serialises.
+ *
+ * @param predict - The model's output for rows `[m, d]` (`[m]`).
+ * @param x - The original point `[d]`.
+ * @param data - Candidate points `[n, d]` (the training data).
+ * @param options - accept, kNeighbors, densityQuantile and scales.
+ * @returns The algorithm; it ends `converged` when the search is over (the path is in {@link faceCounterfactual}).
+ * @concept counterfactual-explanations
+ * @example
+ * ```ts
+ * import { faceCounterfactualAlgorithm } from 'mdml-engine/explain'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const sign = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[i] > 2 ? 1 : 0)))
+ * const data = [[0], [0.5], [1], [1.5], [2], [2.5], [3]]
+ * runAlgorithm(faceCounterfactualAlgorithm(sign, [0.1], data, { accept: (p) => p === 1, kNeighbors: 2 }), { maxSteps: 20 }).state.best // => 6
+ * ```
+ */
+export function faceCounterfactualAlgorithm(
+  predict: (x: Tensor) => Tensor,
+  x: TensorLike,
+  data: TensorLike,
+  options: FaceOptions,
+): Algorithm<FaceState, FacePathName> {
+  return faceRun(predict, x, data, options).algorithm
+}
+
+/**
+ * FACE: feasible and actionable counterfactual explanations (Poyiadzi et al. 2020): build a k-nearest-neighbour graph
+ * of the data whose edge costs are distances divided by the density at their midpoint, so cheap paths stay in
+ * populated regions, and return the cheapest path from x to a dense point the model labels as wanted. This is
+ * {@link faceCounterfactualAlgorithm} run to the end.
+ *
+ * @param predict - The model's output for rows `[m, d]` (`[m]`).
+ * @param x - The original point `[d]`.
+ * @param data - Candidate points `[n, d]` (the training data).
+ * @param options - accept, kNeighbors, densityQuantile and scales.
+ * @returns The path, or undefined when no acceptable point is reachable.
+ * @example
+ * ```ts
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const sign = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => (x.data[i] > 2 ? 1 : 0)))
+ * const data = [[0], [0.5], [1], [1.5], [2], [2.5], [3]]
+ * explain.faceCounterfactual(sign, [0.1], data, { accept: (p) => p === 1, kNeighbors: 2 }).counterfactual // => [2.5]
+ * ```
+ */
+export function faceCounterfactual(
+  predict: (x: Tensor) => Tensor,
+  x: TensorLike,
+  data: TensorLike,
+  options: FaceOptions,
+): FacePath | undefined {
+  const { algorithm, finish, nodes } = faceRun(predict, x, data, options)
+  return finish(runAlgorithm(algorithm, { maxSteps: nodes + 1 }).state)
 }
 
 /** Options of {@link linearRecourse}. */
@@ -764,12 +958,214 @@ export interface GrowingSpheresOptions {
   readonly key?: Key
 }
 
+/** The paths {@link growingSpheresAlgorithm} logs. */
+export type GrowingSpheresPath = 'gs/radius' | 'gs/layer' | 'gs/enemies' | 'gs/distance' | 'gs/restored'
+
+/** What a stepped growing-spheres search logs: the radius, the layer, enemies found, the closest one and features restored. */
+export const growingSpheresContract: Contract<unknown, GrowingSpheresPath> = defineContract({
+  'gs/radius': scalar({ description: 'the radius of the ball (shrinking) or the width of the layers (growing)' }),
+  'gs/layer': scalar({ description: 'the layer sampled at this step (0 while the ball still shrinks)' }),
+  'gs/enemies': scalar({ description: 'samples in this ball or layer with the desired outcome' }),
+  'gs/distance': scalar({
+    description: 'the scaled distance of the closest enemy found so far (-1 before one is found)',
+    direction: 'lower',
+  }),
+  'gs/restored': scalar({ description: 'features moved back to the original value while sparsifying' }),
+})
+
+/** The phases of {@link growingSpheresAlgorithm}. */
+export type GrowingSpheresPhase = 'shrink' | 'grow' | 'sparsify' | 'done'
+
+/**
+ * The state of {@link growingSpheresAlgorithm}: the phase, the sampling counter `t` (which fixes the key of each
+ * layer), the radius and inner edge `lo` of the current layer, layers tried, the closest enemy found, and the
+ * sparsification (the point being thinned, its prediction, the features still to try and how many were restored).
+ */
+export interface GrowingSpheresState {
+  readonly phase: GrowingSpheresPhase
+  readonly t: number
+  readonly radius: number
+  readonly lo: number
+  readonly layers: number
+  readonly found: { readonly p: readonly number[]; readonly f: number } | null
+  readonly point: readonly number[]
+  readonly value: number
+  readonly order: readonly number[]
+  readonly next: number
+  readonly restored: number
+}
+
+function growingSpheresRun(
+  predict: (x: Tensor) => Tensor,
+  x: TensorLike,
+  options: GrowingSpheresOptions,
+): {
+  readonly algorithm: Algorithm<GrowingSpheresState, GrowingSpheresPath>
+  readonly finish: (s: GrowingSpheresState) => Counterfactual | undefined
+  readonly maxSteps: number
+} {
+  const x0 = rowOf(x, 'growingSpheres')
+  const d = x0.length
+  const scales = options.scales ?? new Array<number>(d).fill(1)
+  const ns = options.nSamples ?? 200
+  const key = options.key ?? keyFor({}, 'growingSpheres')
+  const constraints = options.constraints ?? {}
+  const maxLayers = options.maxLayers ?? 50
+  const evalRows = (rows: readonly (readonly number[])[]): number[] =>
+    rows.length === 0 ? [] : toFlat(predict(fromStorage(Float64Array.from(rows.flat()), [rows.length, d], 'float64')))
+  const dist = (p: readonly number[]): number =>
+    Math.sqrt(p.reduce((s, v, j) => s + ((v - (x0[j] ?? 0)) / (scales[j] ?? 1)) ** 2, 0))
+  // Uniform samples in the shell lo <= |z| < hi (scaled), constrained.
+  const layer = (lo: number, hi: number, t: number): number[][] => {
+    const z = toFlat(normal(foldIn(key, 2 * t), [ns, d]))
+    const u = toFlat(uniform(foldIn(key, 2 * t + 1), [ns]))
+    return Array.from({ length: ns }, (_, i) => {
+      const dir = Array.from({ length: d }, (_, j) => z[i * d + j] ?? 0)
+      const norm = Math.sqrt(dir.reduce((s, v) => s + v * v, 0)) || 1
+      const r = (lo ** d + (u[i] ?? 0) * (hi ** d - lo ** d)) ** (1 / d)
+      const p = dir.map((v, j) => (x0[j] ?? 0) + (v / norm) * r * (scales[j] ?? 1))
+      return projectActions(x0, p, constraints)
+    })
+  }
+  const empty: GrowingSpheresState = {
+    phase: 'shrink',
+    t: 0,
+    radius: options.radius ?? 0.1,
+    lo: 0,
+    layers: 0,
+    found: null,
+    point: [],
+    value: Number.NaN,
+    order: [],
+    next: 0,
+    restored: 0,
+  }
+  const algorithm: Algorithm<GrowingSpheresState, GrowingSpheresPath> = {
+    name: 'growing-spheres',
+    config: { features: d, nSamples: ns, maxLayers },
+    schema: channels({ metrics: { radius: { description: 'the radius' } } }),
+    init: () => empty,
+    step: (s, ctx) => {
+      if (s.phase === 'shrink') {
+        // Shrink the first ball until it holds no enemy (at most 30 halvings).
+        const pts = layer(0, s.radius, s.t)
+        const enemies = evalRows(pts).filter(options.accept).length
+        ctx.log('gs/radius', s.radius)
+        ctx.log('gs/layer', 0)
+        ctx.log('gs/enemies', enemies)
+        if (enemies === 0) return { ...s, phase: 'grow', lo: s.radius }
+        const radius = s.radius / 2
+        const t = s.t + 1
+        return t >= 30 ? { ...s, phase: 'grow', t, radius, lo: radius } : { ...s, t, radius }
+      }
+      if (s.phase === 'grow') {
+        const hi = s.lo + s.radius
+        const t = s.t + s.layers
+        const pts = layer(s.lo, hi, 100 + t)
+        const f = evalRows(pts)
+        let best = Number.POSITIVE_INFINITY
+        let found: GrowingSpheresState['found'] = null
+        let enemies = 0
+        for (const [i, p] of pts.entries()) {
+          if (!options.accept(f[i] ?? Number.NaN)) continue
+          enemies += 1
+          const dd = dist(p)
+          if (dd < best) {
+            best = dd
+            found = { p, f: f[i] ?? 0 }
+          }
+        }
+        ctx.log('gs/radius', s.radius)
+        ctx.log('gs/layer', s.layers + 1)
+        ctx.log('gs/enemies', enemies)
+        ctx.log('gs/distance', found === null ? -1 : best)
+        const layers = s.layers + 1
+        if (found === null) return { ...s, lo: hi, layers, phase: layers >= maxLayers ? 'done' : 'grow' }
+        // Sparsify: move features back to x's, smallest change first, while the point stays an enemy.
+        const order = found.p
+          .map((v, j) => ({ j, c: Math.abs(v - (x0[j] ?? 0)) / (scales[j] ?? 1) }))
+          .filter((e) => e.c > 0)
+          .sort((a, b) => a.c - b.c || a.j - b.j)
+          .map((e) => e.j)
+        return {
+          ...s,
+          lo: hi,
+          layers,
+          found,
+          point: [...found.p],
+          value: found.f,
+          order,
+          next: 0,
+          phase: order.length === 0 ? 'done' : 'sparsify',
+        }
+      }
+      // sparsify: one feature per step
+      const j = s.order[s.next] ?? 0
+      const trial = [...s.point]
+      trial[j] = x0[j] ?? 0
+      const f = evalRows([trial])[0] ?? Number.NaN
+      const keep = options.accept(f)
+      const restored = s.restored + (keep ? 1 : 0)
+      ctx.log('gs/restored', restored)
+      ctx.log('gs/distance', dist(keep ? trial : s.point))
+      const next = s.next + 1
+      return {
+        ...s,
+        point: keep ? trial : s.point,
+        value: keep ? f : s.value,
+        next,
+        restored,
+        phase: next >= s.order.length ? 'done' : 'sparsify',
+      }
+    },
+    done: (s) => (s.phase === 'done' ? (s.found === null ? 'completed' : 'converged') : undefined),
+    observe: (s) => ({ metrics: { radius: s.radius } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as GrowingSpheresState,
+  }
+  const finish = (s: GrowingSpheresState): Counterfactual | undefined => {
+    if (s.found === null) return undefined
+    const l1 = s.point.reduce((a, v, j) => a + Math.abs(v - (x0[j] ?? 0)) / (scales[j] ?? 1), 0)
+    return { x: [...s.point], prediction: s.value, distance: l1, valid: options.accept(s.value) }
+  }
+  return { algorithm, finish, maxSteps: 30 + maxLayers + d + 2 }
+}
+
+/**
+ * Growing spheres (Laugel et al. 2018) as a stepped algorithm. While the first ball still holds an enemy (a sample
+ * with the desired outcome) each step samples a ball of half the radius; then each step samples one spherical layer of
+ * growing outer radius until one holds an enemy, and takes the closest; then each step moves one feature back to the
+ * original value, smallest change first, if the point stays an enemy. The state serialises; every layer's samples come
+ * from a key derived from the options' key and the layer, so a resumed run draws the same points.
+ *
+ * @param predict - The model.
+ * @param x - The original point `[d]`.
+ * @param options - accept, radius, nSamples, maxLayers, scales, constraints and key.
+ * @returns The algorithm; it ends `converged` with a counterfactual in its state and `completed` without one.
+ * @concept counterfactual-explanations
+ * @example
+ * ```ts
+ * import { growingSpheresAlgorithm } from 'mdml-engine/explain'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const f = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
+ * runAlgorithm(growingSpheresAlgorithm(f, [0, 0], { accept: (p) => p > 1 }), { maxSteps: 200 }).status // => 'converged'
+ * ```
+ */
+export function growingSpheresAlgorithm(
+  predict: (x: Tensor) => Tensor,
+  x: TensorLike,
+  options: GrowingSpheresOptions,
+): Algorithm<GrowingSpheresState, GrowingSpheresPath> {
+  return growingSpheresRun(predict, x, options).algorithm
+}
+
 /**
  * Growing spheres (Laugel et al. 2018): a model-agnostic counterfactual search. Sample uniformly in a ball of
  * decreasing radius around x until no sample is an "enemy" (has the desired outcome), then in spherical layers of
  * growing radius until one is; take the closest enemy, and make it sparse by moving its features back to x's, smallest
  * change first, while it stays an enemy. Distances are Euclidean in units of the scales; actionability constraints
- * are applied to every sample.
+ * are applied to every sample. This is {@link growingSpheresAlgorithm} run to the end.
  *
  * @param predict - The model.
  * @param x - The original point `[d]`.
@@ -789,72 +1185,8 @@ export function growingSpheres(
   x: TensorLike,
   options: GrowingSpheresOptions,
 ): Counterfactual | undefined {
-  const x0 = rowOf(x, 'growingSpheres')
-  const d = x0.length
-  const scales = options.scales ?? new Array<number>(d).fill(1)
-  const ns = options.nSamples ?? 200
-  const key = options.key ?? keyFor({}, 'growingSpheres')
-  const constraints = options.constraints ?? {}
-  const evalRows = (rows: readonly (readonly number[])[]): number[] =>
-    rows.length === 0 ? [] : toFlat(predict(fromStorage(Float64Array.from(rows.flat()), [rows.length, d], 'float64')))
-  const dist = (p: readonly number[]): number =>
-    Math.sqrt(p.reduce((s, v, j) => s + ((v - (x0[j] ?? 0)) / (scales[j] ?? 1)) ** 2, 0))
-  // Uniform samples in the shell lo <= |z| < hi (scaled), constrained.
-  const layer = (lo: number, hi: number, t: number): number[][] => {
-    const z = toFlat(normal(foldIn(key, 2 * t), [ns, d]))
-    const u = toFlat(uniform(foldIn(key, 2 * t + 1), [ns]))
-    return Array.from({ length: ns }, (_, i) => {
-      const dir = Array.from({ length: d }, (_, j) => z[i * d + j] ?? 0)
-      const norm = Math.sqrt(dir.reduce((s, v) => s + v * v, 0)) || 1
-      const r = (lo ** d + (u[i] ?? 0) * (hi ** d - lo ** d)) ** (1 / d)
-      const p = dir.map((v, j) => (x0[j] ?? 0) + (v / norm) * r * (scales[j] ?? 1))
-      return projectActions(x0, p, constraints)
-    })
-  }
-  let radius = options.radius ?? 0.1
-  let t = 0
-  // Shrink the first ball until it holds no enemy.
-  for (; t < 30; t++) {
-    const pts = layer(0, radius, t)
-    if (!evalRows(pts).some(options.accept)) break
-    radius /= 2
-  }
-  let lo = radius
-  let found: { p: number[]; f: number } | undefined
-  for (let s = 0; s < (options.maxLayers ?? 50) && found === undefined; s++, t++) {
-    const hi = lo + radius
-    const pts = layer(lo, hi, 100 + t)
-    const f = evalRows(pts)
-    let best = Number.POSITIVE_INFINITY
-    pts.forEach((p, i) => {
-      if (!options.accept(f[i] ?? Number.NaN)) return
-      const dd = dist(p)
-      if (dd < best) {
-        best = dd
-        found = { p, f: f[i] ?? 0 }
-      }
-    })
-    lo = hi
-  }
-  if (found === undefined) return undefined
-  // Sparsify: move features back to x's, smallest change first, while the point stays an enemy.
-  const point = [...found.p]
-  let value = found.f
-  const order = point
-    .map((v, j) => ({ j, c: Math.abs(v - (x0[j] ?? 0)) / (scales[j] ?? 1) }))
-    .filter((e) => e.c > 0)
-    .sort((a, b) => a.c - b.c || a.j - b.j)
-  for (const { j } of order) {
-    const trial = [...point]
-    trial[j] = x0[j] ?? 0
-    const f = evalRows([trial])[0] ?? Number.NaN
-    if (options.accept(f)) {
-      point[j] = x0[j] ?? 0
-      value = f
-    }
-  }
-  const l1 = point.reduce((s, v, j) => s + Math.abs(v - (x0[j] ?? 0)) / (scales[j] ?? 1), 0)
-  return { x: point, prediction: value, distance: l1, valid: options.accept(value) }
+  const { algorithm, finish, maxSteps } = growingSpheresRun(predict, x, options)
+  return finish(runAlgorithm(algorithm, { maxSteps }).state)
 }
 
 /** Options shared by the contrastive explanations (CEM) and prototype-guided counterfactuals. */
@@ -894,59 +1226,159 @@ function classScores(model: DifferentiableModel, v: readonly number[]): number[]
   return toFlat(model(fromStorage(Float64Array.from(v), [1, v.length], 'float64')) as Tensor)
 }
 
+/** The paths of the elastic-net search shared by CEM and prototype-guided counterfactuals. */
+export type ElasticSearchPath =
+  | 'search/delta'
+  | 'search/distance'
+  | 'search/c'
+  | 'search/round'
+  | 'search/valid'
+  | 'search/best'
+
+/** What a stepped elastic-net search logs: the perturbation, its size, the class-loss weight and the best valid size. */
+export const elasticSearchContract: Contract<unknown, ElasticSearchPath> = defineContract({
+  'search/delta': tensorSource({
+    role: 'state',
+    shape: ['features'],
+    description: 'the perturbation after the FISTA iteration',
+  }),
+  'search/distance': scalar({ description: 'the L2 norm of the perturbation', direction: 'lower' }),
+  'search/c': scalar({ description: 'the weight of the class loss in this round' }),
+  'search/round': scalar({ description: 'the round of c (from 0)' }),
+  'search/valid': scalar({ description: '1 when the perturbation changes the class as wanted' }),
+  'search/best': scalar({
+    description: 'the elastic-net size of the best valid perturbation so far (-1 before one)',
+    direction: 'lower',
+  }),
+})
+
 /**
- * The elastic-net FISTA search shared by CEM and prototype-guided counterfactuals: minimise
- * c loss(point(delta)) + beta |delta|_1 + |delta|_2^2 (+ an extra smooth term) over a box, by projected FISTA with
- * soft thresholding, doubling c until a valid point is found and keeping the best valid one by elastic-net size.
+ * The state of the elastic-net search: the round (a weight `c` of the class loss), the FISTA iteration within it, the
+ * iterate `delta`, the momentum point `y` and sequence `tk`, whether the round has found a valid point, and the best
+ * valid perturbation by elastic-net size.
  */
+export interface ElasticSearchState {
+  readonly round: number
+  readonly iteration: number
+  readonly c: number
+  readonly delta: readonly number[]
+  readonly y: readonly number[]
+  readonly tk: number
+  readonly found: boolean
+  readonly best: readonly number[] | null
+  /** The elastic-net size of `best` (-1 when there is none). */
+  readonly bestSize: number
+}
+
+/**
+ * The elastic-net FISTA search shared by CEM and prototype-guided counterfactuals as a stepped algorithm: minimise
+ * c loss(point(delta)) + beta |delta|_1 + |delta|_2^2 (+ an extra smooth term) over a box, by projected FISTA with
+ * soft thresholding, one iteration per step; after a round of iterations c doubles when no valid point was found and
+ * halves otherwise, and the best valid point by elastic-net size is kept.
+ */
+function elasticSearchAlgorithm(
+  name: string,
+  objective: (delta: Value, c: number) => Value,
+  valid: (delta: readonly number[]) => boolean,
+  d: number,
+  box: (j: number) => [number, number],
+  options: ContrastiveOptions,
+): Algorithm<ElasticSearchState, ElasticSearchPath> {
+  const beta = options.beta ?? 0.1
+  const lr = options.learningRate ?? 0.01
+  const rounds = options.rounds ?? 6
+  const iterations = options.iterations ?? 300
+  const gradients = new Map<number, (v: Value) => Value | Tensor>()
+  const gradAt = (c: number): ((v: Value) => Value | Tensor) => {
+    let g = gradients.get(c)
+    if (g === undefined) {
+      g = grad((v: Value) => objective(v, c)) as (v: Value) => Value | Tensor
+      gradients.set(c, g)
+    }
+    return g
+  }
+  const fresh = (round: number, c: number, s?: ElasticSearchState): ElasticSearchState => ({
+    round,
+    iteration: 0,
+    c,
+    delta: new Array<number>(d).fill(0),
+    y: new Array<number>(d).fill(0),
+    tk: 1,
+    found: false,
+    best: s?.best ?? null,
+    bestSize: s?.bestSize ?? -1,
+  })
+  return {
+    name,
+    config: { features: d, beta, learningRate: lr, rounds, iterations },
+    schema: channels({ metrics: { distance: { description: 'the size of the perturbation', direction: 'lower' } } }),
+    init: () => fresh(0, options.c ?? 10),
+    step: (s, ctx) => {
+      const gv = toFlat(gradAt(s.c)(fromStorage(Float64Array.from(s.y), [d], 'float64')) as Tensor)
+      const next = Float64Array.from(s.y, (v, j) => {
+        const z = v - lr * (gv[j] ?? 0)
+        const shrunk = Math.sign(z) * Math.max(0, Math.abs(z) - lr * beta)
+        const [lo, hi] = box(j)
+        return Math.min(hi, Math.max(lo, shrunk))
+      })
+      const t1 = (1 + Math.sqrt(1 + 4 * s.tk * s.tk)) / 2
+      const y = Float64Array.from(next, (v, j) => v + ((s.tk - 1) / t1) * (v - (s.delta[j] ?? 0)))
+      for (let j = 0; j < d; j++) {
+        const [lo, hi] = box(j)
+        y[j] = Math.min(hi, Math.max(lo, y[j] ?? 0))
+      }
+      const dv = Array.from(next)
+      const ok = valid(dv)
+      let best = s.best
+      let bestSize = s.bestSize
+      if (ok) {
+        const size = dv.reduce((a, v) => a + beta * Math.abs(v) + v * v, 0)
+        if (best === null || size < bestSize) {
+          best = dv
+          bestSize = size
+        }
+      }
+      ctx.log('search/delta', fromStorage(Float64Array.from(next), [d], 'float64'))
+      ctx.log('search/distance', Math.sqrt(dv.reduce((a, v) => a + v * v, 0)))
+      ctx.log('search/c', s.c)
+      ctx.log('search/round', s.round)
+      ctx.log('search/valid', ok ? 1 : 0)
+      ctx.log('search/best', bestSize)
+      const found = s.found || ok
+      const advanced: ElasticSearchState = {
+        round: s.round,
+        iteration: s.iteration + 1,
+        c: s.c,
+        delta: dv,
+        y: Array.from(y),
+        tk: t1,
+        found,
+        best,
+        bestSize,
+      }
+      // Doubling c pushes harder towards validity; once valid, halving searches for a smaller perturbation.
+      return advanced.iteration >= iterations ? fresh(s.round + 1, found ? s.c / 2 : s.c * 2, advanced) : advanced
+    },
+    done: (s) => (s.round >= rounds ? 'completed' : undefined),
+    observe: (s) => ({ metrics: { distance: Math.sqrt(s.delta.reduce((a, v) => a + v * v, 0)) } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as ElasticSearchState,
+  }
+}
+
 function elasticSearch(
+  name: string,
   objective: (delta: Value, c: number) => Value,
   valid: (delta: readonly number[]) => boolean,
   d: number,
   box: (j: number) => [number, number],
   options: ContrastiveOptions,
 ): number[] | undefined {
-  const beta = options.beta ?? 0.1
-  const lr = options.learningRate ?? 0.01
-  let c = options.c ?? 10
-  let best: number[] | undefined
-  let bestSize = Number.POSITIVE_INFINITY
-  for (let round = 0; round < (options.rounds ?? 6); round++) {
-    const g = grad((v: Value) => objective(v, c))
-    let delta = new Float64Array(d)
-    let y = Float64Array.from(delta)
-    let tk = 1
-    let foundThisRound = false
-    for (let it = 0; it < (options.iterations ?? 300); it++) {
-      const gv = toFlat(g(fromStorage(Float64Array.from(y), [d], 'float64')) as Tensor)
-      const next = Float64Array.from(y, (v, j) => {
-        const z = v - lr * (gv[j] ?? 0)
-        const shrunk = Math.sign(z) * Math.max(0, Math.abs(z) - lr * beta)
-        const [lo, hi] = box(j)
-        return Math.min(hi, Math.max(lo, shrunk))
-      })
-      const t1 = (1 + Math.sqrt(1 + 4 * tk * tk)) / 2
-      y = Float64Array.from(next, (v, j) => v + ((tk - 1) / t1) * (v - (delta[j] ?? 0)))
-      for (let j = 0; j < d; j++) {
-        const [lo, hi] = box(j)
-        y[j] = Math.min(hi, Math.max(lo, y[j] ?? 0))
-      }
-      delta = next
-      tk = t1
-      const dv = Array.from(delta)
-      if (valid(dv)) {
-        const size = dv.reduce((s, v) => s + beta * Math.abs(v) + v * v, 0)
-        if (size < bestSize) {
-          bestSize = size
-          best = dv
-        }
-        foundThisRound = true
-      }
-    }
-    // Doubling c pushes harder towards validity; once valid, halving searches for a smaller perturbation.
-    c = foundThisRound ? c / 2 : c * 2
-  }
-  return best
+  const rounds = options.rounds ?? 6
+  const iterations = options.iterations ?? 300
+  const alg = elasticSearchAlgorithm(name, objective, valid, d, box, options)
+  const end = runAlgorithm(alg, { maxSteps: rounds * iterations }).state
+  return end.best === null ? undefined : [...end.best]
 }
 
 function classGapLoss(scores: Value, target: number, k: number, sign: 1 | -1, kappa: number): Value {
@@ -1010,7 +1442,7 @@ export function pertinentNegative(
         delta.map((v, j) => (x0[j] ?? 0) + v),
       ),
     ) !== t
-  const delta = elasticSearch(objective, valid, d, box, options)
+  const delta = elasticSearch('pertinent-negative', objective, valid, d, box, options)
   if (delta === undefined) return undefined
   const point = delta.map((v, j) => (x0[j] ?? 0) + v)
   const scores = classScores(model, point)
@@ -1056,7 +1488,7 @@ export function pertinentPositive(
     return add(mul(classGapLoss(scores, t, k, -1, kappa), c), sum(square(delta)))
   }
   const valid = (delta: readonly number[]): boolean => argmaxOf(classScores(model, delta)) === t
-  const delta = elasticSearch(objective, valid, d, box, options)
+  const delta = elasticSearch('pertinent-positive', objective, valid, d, box, options)
   if (delta === undefined) return undefined
   const scores = classScores(model, delta)
   return { x: delta, delta, predictedClass: argmaxOf(scores), classIndex: t, valid: true, scores }
@@ -1072,35 +1504,17 @@ export interface PrototypeOptions extends ContrastiveOptions {
   readonly targetClass?: number
 }
 
-/**
- * Prototype-guided counterfactuals (Van Looveren and Klaise 2021; alibi's CounterfactualProto without an encoder):
- * each class's prototype is the mean of the kPrototype training rows of that class nearest x; the target is the
- * nearest prototype of another class, and the search adds theta |x + delta - proto|^2 to the elastic-net objective, so
- * the counterfactual moves towards a typical member of the new class and stays plausible.
- *
- * @param model - A differentiable model returning class scores `[n, k]`.
- * @param x - The original point `[d]`.
- * @param train - Training rows `[n, d]`.
- * @param labels - Their class indices (0..k-1).
- * @param options - theta, kPrototype, targetClass and the {@link ContrastiveOptions}.
- * @returns The counterfactual with its prototype and target class, or undefined when none is found.
- * @example
- * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul } from 'mdml-engine/tensor'
- * const scores = (v) => matmul(v, [[1, -1], [-1, 1]])
- * const train = [[2, 0], [3, 1], [0, 2], [1, 3]]
- * const r = explain.prototypeCounterfactual(scores, [2, 1], train, [0, 0, 1, 1], { kPrototype: 2 })
- * [r.targetClass, r.predictedClass] // => [1, 1]
- * ```
- */
-export function prototypeCounterfactual(
+function prototypeRun(
   model: DifferentiableModel,
   x: TensorLike,
   train: TensorLike,
   labels: readonly number[],
-  options: PrototypeOptions = {},
-): (ContrastiveResult & { readonly prototype: readonly number[]; readonly targetClass: number }) | undefined {
+  options: PrototypeOptions,
+): {
+  readonly algorithm: Algorithm<ElasticSearchState, ElasticSearchPath>
+  readonly finish: (s: ElasticSearchState) => PrototypeResult | undefined
+  readonly maxSteps: number
+} {
   const x0 = rowOf(x, 'prototypeCounterfactual')
   const d = x0.length
   const m = matrixView(train, 'prototypeCounterfactual', { nFeatures: d })
@@ -1162,20 +1576,96 @@ export function prototypeCounterfactual(
         delta.map((v, j) => (x0[j] ?? 0) + v),
       ),
     ) === goal
-  const delta = elasticSearch(objective, valid, d, box, options)
-  if (delta === undefined) return undefined
-  const point = delta.map((v, j) => (x0[j] ?? 0) + v)
-  const scores = classScores(model, point)
-  return {
-    x: point,
-    delta,
-    predictedClass: argmaxOf(scores),
-    classIndex: t,
-    valid: true,
-    scores,
-    prototype: proto,
-    targetClass: goal,
+  const algorithm = elasticSearchAlgorithm('prototype-counterfactual', objective, valid, d, box, options)
+  const finish = (s: ElasticSearchState): PrototypeResult | undefined => {
+    const delta = s.best === null ? undefined : [...s.best]
+    if (delta === undefined) return undefined
+    const point = delta.map((v, j) => (x0[j] ?? 0) + v)
+    const scores = classScores(model, point)
+    return {
+      x: point,
+      delta,
+      predictedClass: argmaxOf(scores),
+      classIndex: t,
+      valid: true,
+      scores,
+      prototype: proto,
+      targetClass: goal,
+    }
   }
+  return { algorithm, finish, maxSteps: (options.rounds ?? 6) * (options.iterations ?? 300) }
+}
+
+/** A prototype-guided counterfactual with the prototype it was pulled towards and the class it aims for. */
+export type PrototypeResult = ContrastiveResult & {
+  readonly prototype: readonly number[]
+  readonly targetClass: number
+}
+
+/**
+ * Prototype-guided counterfactuals as a stepped algorithm (the elastic-net FISTA search of {@link prototypeCounterfactual}),
+ * one projected FISTA iteration per step. The class prototypes and the target class are fixed when the algorithm is built;
+ * the state (round, iterate, momentum and the best valid perturbation so far) serialises. The counterfactual is
+ * `x + state.best`.
+ *
+ * @param model - A differentiable model returning class scores `[n, k]`.
+ * @param x - The original point `[d]`.
+ * @param train - Training rows `[n, d]`.
+ * @param labels - Their class indices (0..k-1).
+ * @param options - theta, kPrototype, targetClass and the {@link ContrastiveOptions}.
+ * @returns The algorithm, `rounds * iterations` steps.
+ * @throws MdmlError with code `shape` for labels of the wrong length and `value` when there is no other class.
+ * @concept counterfactual-explanations
+ * @example
+ * ```ts
+ * import { prototypeCounterfactualAlgorithm } from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const scores = (v) => matmul(v, [[1, -1], [-1, 1]])
+ * const train = [[2, 0], [3, 1], [0, 2], [1, 3]]
+ * const alg = prototypeCounterfactualAlgorithm(scores, [2, 1], train, [0, 0, 1, 1], { kPrototype: 2, rounds: 2, iterations: 50 })
+ * runAlgorithm(alg, { maxSteps: 100 }).steps // => 100
+ * ```
+ */
+export function prototypeCounterfactualAlgorithm(
+  model: DifferentiableModel,
+  x: TensorLike,
+  train: TensorLike,
+  labels: readonly number[],
+  options: PrototypeOptions = {},
+): Algorithm<ElasticSearchState, ElasticSearchPath> {
+  return prototypeRun(model, x, train, labels, options).algorithm
+}
+
+/**
+ * Prototype-guided counterfactuals (Van Looveren and Klaise 2021; alibi's CounterfactualProto without an encoder):
+ * the {@link prototypeCounterfactualAlgorithm} run to the end.
+ *
+ * @param model - A differentiable model returning class scores `[n, k]`.
+ * @param x - The original point `[d]`.
+ * @param train - Training rows `[n, d]`.
+ * @param labels - Their class indices (0..k-1).
+ * @param options - theta, kPrototype, targetClass and the {@link ContrastiveOptions}.
+ * @returns The counterfactual with its prototype and target class, or undefined when none is found.
+ * @example
+ * ```ts
+ * import * as explain from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
+ * const scores = (v) => matmul(v, [[1, -1], [-1, 1]])
+ * const train = [[2, 0], [3, 1], [0, 2], [1, 3]]
+ * const r = explain.prototypeCounterfactual(scores, [2, 1], train, [0, 0, 1, 1], { kPrototype: 2 })
+ * [r.targetClass, r.predictedClass] // => [1, 1]
+ * ```
+ */
+export function prototypeCounterfactual(
+  model: DifferentiableModel,
+  x: TensorLike,
+  train: TensorLike,
+  labels: readonly number[],
+  options: PrototypeOptions = {},
+): PrototypeResult | undefined {
+  const { algorithm, finish, maxSteps } = prototypeRun(model, x, train, labels, options)
+  return finish(runAlgorithm(algorithm, { maxSteps }).state)
 }
 
 /**

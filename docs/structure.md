@@ -3167,7 +3167,10 @@ modAL for active learning, diffprivlib and opacus for privacy
   NearMiss (resamplers apply only in fit, also inside pipelines).
 - `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
   selection (k best, percentile, FPR/FDR/FWE), selection from model importances.
-- `feature-selection-wrappers.ts`: RFE and RFECV, sequential selection, stability selection (traced).
+- `feature-selection-wrappers.ts`: `rfeAlgorithm` (one elimination round per step; `rfe/*` paths; the state serialises) and
+  `rfecvAlgorithm` (one fold per step, then the final elimination; `rfecv/*` paths), with `rfe` and `rfecv` as estimators on
+  the iterative base; sequential selection, stability selection (traced). `feature-selection-options.ts`: the
+  `eliminationSchedules` table (`fixed`, `fraction`).
 - `knockoffs.ts`: Gaussian model-X knockoffs (`gaussianKnockoffs`) with the equicorrelated scale and a coordinate-ascent
   scale (`knockoffScaleAlgorithm`, an SDP-free approximation), the knockoff statistics (lasso coefficient difference at a
   cross-validated penalty, lasso signed maximum along the path, marginal correlation difference) and the knockoff and
@@ -3238,14 +3241,30 @@ modAL for active learning, diffprivlib and opacus for privacy
   `criticalDifference`, cliques, Bonferroni-Dunn and Holm against a control). McNemar, Wilcoxon, Friedman and the
   Nemenyi p-values are in `stats/tests`. goldens: the published Nemenyi q table (Demsar 2006, table 5); the type I
   error of each test is checked in simulation against the plain resampled t-test.
+- `model-selection/cross-validation.ts`, `search.ts`, `criteria.ts`: `crossValidateAlgorithm`, `crossValPredictAlgorithm`,
+  `learningCurveAlgorithm` and `permutationTestAlgorithm` (cross-validation.ts), `evaluateCandidatesAlgorithm` and
+  `nestedCrossValidationAlgorithm` (search.ts) and `bootstrap632Algorithm` (criteria.ts): one fold, size, permutation,
+  candidate, outer fold or replicate per step, with typed paths (`cv/*`, `curve/*`, `perm/*`, `search/*`, `nested/*`,
+  `bootstrap/*`) and a state of scores that serialises; the functions of the same names are those runs.
+  `splitter-options.ts` (`splitterSchemes`: k-fold, stratified, repeated, shuffle, leave-one-out) and `search-options.ts`
+  (`searchDesigns`: grid or random candidates) are the slots.
 - `model-selection/adaptive.ts`: adaptive data analysis: Thresholdout (`thresholdoutAlgorithm`, one step per query,
   with an adaptive analyst), the Ladder leaderboard (`ladderAlgorithm`), and the planted problems that show them
   against naive reuse of a holdout (`adaptiveOverfittingDemo`, `leaderboardAttack`: noise labels, an analyst who
   combines whatever looks good).
+- `stream-active-learning.ts`, `active-learning-options.ts`: `streamActiveLearningAlgorithm` (one arriving row per step;
+  logs `stream/row`, `uncertainty`, `queried`, `labeled`, `score`; the state is the labelled data, the model is refitted from
+  it) with the uncertainty measure as the `streamUncertainties` table; `streamActiveLearning` is that run.
+- `conformal.ts`, `conformal-options.ts`: also `adaptiveConformalAlgorithm` (one time step; `aci/*` paths; the residual
+  memory is the `scoreMemories` table) and `crossConformalAlgorithm` (one fold per step; `cross/*` paths); the functions
+  `adaptiveConformalInference` and `crossConformalRegressor` are those runs.
 - `calibration.ts`: Platt scaling, isotonic calibration (pool adjacent violators, the home that
   `methods/linear/isotonic.ts` reuses), temperature and vector scaling, beta calibration, histogram binning,
   cross-fitted calibrated classifiers; for regression, the probability integral transform (`pitValues`, `pitHistogram`)
   and Kuleshov's quantile recalibration (`quantileCalibration`, `quantileCalibrationCurve`, `recalibratedQuantiles`).
+- `pava.ts`, `pava-options.ts`: pool adjacent violators as `pavaAlgorithm` (a stack of blocks, one pool or push per step;
+  logs `pava/blocks`, `means`, `merge`, `violations`, `error`; the state serialises) with the direction of the fit as the
+  `isotonicDirections` table; `poolAdjacentViolators` and the isotonic calibrator are that run.
 - `neighbours.ts`: `neighbourIndex` (exact k-nearest and radius search under any metric of `distances`, brute force or a KD
   or ball tree), the k-nearest classifier and regressor and their radius twins (uniform or distance weights, an outlier
   label), and the nearest centroid with Tibshirani's shrinkage and `shrunkenCentroidPath`; estimators on the iterative
@@ -3616,9 +3635,14 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   GNMT's length penalty), `speculative.ts` (speculative decoding with exact acceptance and residual resampling).
 - `quantise.ts`: quantisation (symmetric, affine, per-tensor and per-channel), dequantisation, fake quantisation with a
   straight-through gradient, GPTQ, AWQ, error reports (MSE, max error, SQNR, output error), `quantiseModule`.
+  `gptqAlgorithm` (one column per step, `quant/column`, `error`, `weights`) and `awqAlgorithm` (one exponent per step) are the
+  algorithms `gptq` and `awq` run; `quantise-options.ts` has the `gptqOrders` table (natural, activation).
 - `pruning.ts`: magnitude (per tensor and global), structured (row and channel norms) and N:M pruning, masks,
-  lottery-ticket rewinding and iterative magnitude pruning, sparsity schedules (constant, linear, polynomial),
-  sparsity reports.
+  lottery-ticket rewinding, sparsity schedules (constant, linear, polynomial), sparsity reports.
+  `pruning-iterative.ts`: `iterativeMagnitudePruningAlgorithm` (one train-prune-rewind round per step, `prune/round`,
+  `sparsity`, `loss`, `mask`; the state with its parameter trees serialises) and `iterativeMagnitudePruning` as that run;
+  `pruning-options.ts` has the `pruneScopes` (global, layerwise) and `pruneRoundSchedules` (geometric, linear,
+  polynomial) tables.
 - `equivariant.ts`: p4 lifting and group convolutions (functions and modules), orientation pooling, `rotate90`,
   equivariance and invariance errors.
 
@@ -3844,10 +3868,19 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
   and negatives), prototype-guided counterfactuals, growing spheres, MACE-style for tree ensembles; actionability,
   immutability and plausibility constraints; recourse (linear, cost, feasibility) and its robustness to model change.
   Built: `wachterCounterfactual` (= `wachterAlgorithm` run to the end: one proximal-gradient iteration per step, `cf/*` paths
-  of `counterfactualContract`; the lambda schedule is a slot, `lambdaSchedules` in `counterfactual-options.ts`), `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
+  of `counterfactualContract`; the lambda schedule is a slot, `lambdaSchedules` in `counterfactual-options.ts`),
+  `diverseCounterfactuals` (= `diverseCounterfactualsAlgorithm` run, one Adam iteration per step, `dice/*` paths),
+  `faceCounterfactual` (= `faceCounterfactualAlgorithm`: Dijkstra over the density graph, one node settled per step, `face/*`),
+  `growingSpheres` (= `growingSpheresAlgorithm`: shrink, grow and sparsify phases, `gs/*`),
   `pertinentNegative` and `pertinentPositive` (CEM by projected FISTA), `prototypeCounterfactual` (class prototypes
-  from nearest neighbours, no encoder), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
+  from nearest neighbours, no encoder; = `prototypeCounterfactualAlgorithm`, one FISTA iteration per step, `search/*` paths
+  shared with CEM), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
   monotone, bounded, integer), `recourseRobustness`. TODO: MACE for tree ensembles.
+- Stepped estimators of the domain: `anchorsAlgorithm` (`surrogates.ts`, one rule length per step, `anchor/*`),
+  `samplingShapleyAlgorithm` and `sageAlgorithm` (`shapley.ts`), `dataShapleyAlgorithm` (`valuation.ts`), all adding one
+  random order per step to the running estimate of `permutation-estimates.ts` (`ShapleyState`, `shapleyContract` with
+  `shapley/*` paths), and `permutationImportanceAlgorithm` (`inspection.ts`, one feature per step, `importance/*`). The
+  functions of the same names are those runs; every state serialises.
 - Concepts (`concepts.ts`): concept activation vectors and TCAV scores with significance, probing classifiers,
   concept bottleneck analysis.
   Built: `linearProbe` (IRLS logistic probe), `conceptActivationVector`, `directionalDerivatives`, `tcav` (runs
@@ -3979,7 +4012,9 @@ Aequitas (group bias); goldens where cheap
   demographic parity and equalised odds, with a deterministic weighted least-squares learner in both) and GridSearch
   (fairlearn's grid generator and tradeoff rule; golden against its errors, violations and choice). Moments:
   demographic parity, equalised odds, true- and false-positive rate parity (all four golden). TODO: error-rate parity
-  and bounded group loss (the regression reduction).
+  and bounded group loss (the regression reduction). Both reductions are stepped algorithms: `exponentiatedGradientAlgorithm`
+  (one round of the game per step, `eg/*` paths) and `gridReductionAlgorithm` (one grid point per step, `grid/*`); the functions
+  are those runs, and `reduction-options.ts` has the `reductionConstraints` table.
   `fair-classifiers.ts`: the prejudice remover (`prejudiceRemover`), adversarial debiasing (`adversarialDebiasing`,
   Zhang et al.'s projected update), fairness-constrained logistic regression (`fairConstrainedLogistic`, Zafar et al.,
   by SLSQP), the meta fair classifier for the statistical rate (`metaFairClassifier`, Celis et al.), GerryFair
@@ -4021,10 +4056,13 @@ the distance-based ones take a `metric` from `distances` (or `'precomputed'`, th
   the spectral relaxation as an initial labelling), each with an estimator (`elkanKMeans`, `bisectingKMeans`,
   `kernelKMeans`).
 - `density.ts`: `dbscanAlgorithm` (one cluster grown per step), `opticsAlgorithm` (one point of the reachability
-  ordering per step) with `opticsOrdering` and `opticsClustersAt`, `hdbscan` (core distances, the single-linkage tree of
-  the mutual reachability distance, `condenseTree`, `selectClusters` by excess of mass: labels, probabilities, the
-  condensed tree and the stabilities), `meanShiftAlgorithm` (every seed moves each step) with `estimateBandwidth` and
-  `meanShiftCentres`; estimators `dbscan`, `optics`, `hdbscanClustering`, `meanShift`.
+  ordering per step) with `opticsOrdering` and `opticsClustersAt`, `hdbscanAlgorithm` (one merge of the mutual
+  reachability single-linkage tree per step, then one tree node condensed per step, one cluster selected per step and a
+  labelling step; `hdbscanContract` paths `tree/*`, `condense/*`, `select/*`, `labels/*`; the state serialises) with
+  `hdbscan` as that run (`condenseTree`, `selectClusters` by excess of mass or leaves: labels, probabilities, the condensed
+  tree and the stabilities), `meanShiftAlgorithm` (every seed moves each step) with `estimateBandwidth` and
+  `meanShiftCentres`; estimators `dbscan`, `optics`, `hdbscanEstimator` (iterative; `hdbscanClustering(hyper)` is its
+  `with`), `meanShift`. `density-options.ts`: the `hdbscanSelections` table (`eom`, `leaf`).
 - `hierarchical.ts`: `agglomerativeAlgorithm` (one merge per step, every linkage by Lance-Williams, the partition and the
   linkage matrix on the tape), `linkageMatrix`, `singleLinkageTree`, `cutTree`, `copheneticDistances`,
   `copheneticCorrelation`, `dendrogram`; BIRCH as a CF-tree in an arena (`birchAlgorithm` inserts one row per step,
@@ -4130,7 +4168,8 @@ Gaussian prior of precision `alpha`, known noise precision `beta`): the batch po
 posterior one observation per step as `bayesianLinearAlgorithm(design, prior, order)` (a rank-one update of precision and
 information; `observe` exposes the metrics `logEvidence` and `meanPredictiveStd` and the `param` tensors `mean` and
 `covariance`), `posteriorPredictive` (mean and variance per row), `maximiseEvidence` (MacKay's fixed point for `alpha`
-and `beta`) and `polynomialBasis` (features scaled to `[-1, 1]`, then the library's `polynomialFeatures`).
+and `beta`, = `maximiseEvidenceAlgorithm` run: one iteration per step, `evidence/*` paths, the update a slot in
+`bayesian-options.ts`: `evidenceUpdates`, MacKay or EM) and `polynomialBasis` (features scaled to `[-1, 1]`, then the library's `polynomialFeatures`).
 `bayesian-online.ts` is the same update as an estimator on the iterative base: `bayesianOnlineAlgorithm` (typed paths
 `blr/mean`, `blr/covariance`, `blr/log-evidence`, `blr/surprise`, `blr/predictive-std`, `blr/observation`; the state keeps the
 belief before the last point) and `bayesianOnlineLinear` with the derived paths `model/weights` (prior, likelihood of the
@@ -4662,7 +4701,9 @@ leaves with an L2 penalty, subsampling and early stopping on a held-out loss (ev
 leaf-wise growth, the subtraction trick, missing values to the better side (`boost/bins`). `cyclic.ts` is the cyclic
 booster of explainable boosting machines (moved from `explain/glassbox.ts`, which re-exports it): `cyclicBoosting` is an
 algorithm with one cycle over the features per step, `explainableBoosting` runs it, and the estimators
-`explainableBoostingRegressor` and `explainableBoostingClassifier` have the probe `model/shapeFunctions`.
+`explainableBoostingRegressor` and `explainableBoostingClassifier` have the probe `model/shapeFunctions`; a cycle also logs
+`boost/feature` and `boost/shapeChange` (which shape moved most). `cyclic-binning.ts` has `quantileEdges`, `uniformEdges`,
+`binIndex` and the slots `boostingBinnings` (quantile, uniform) and `boostingLosses` (squared, logistic).
 `stacking.ts` has voting (hard, soft, weighted) and stacking (the final estimator on out-of-fold predictions), one base
 estimator per step, logging `ensemble/baseScores`, `ensemble/weights`, `ensemble/diversity`. The fit of each records the
 stages (`ensemble/stages`, an `EnsembleStages` projection of the tape).

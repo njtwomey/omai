@@ -21,10 +21,10 @@ import {
   expectedModelChangeScores,
   predictiveEntropy,
   randomSampling,
-  streamActiveLearning,
   uncertaintySampling,
   voteEntropySampling,
 } from './active-learning.ts'
+import { streamActiveLearning } from './stream-active-learning.ts'
 
 const pool = Array.from({ length: 30 }, (_, i) => [Math.sin(i) * 3, Math.cos(1.7 * i) * 3])
 const truth = (r: readonly number[]) => ((r[0] ?? 0) + (r[1] ?? 0) > 0 ? 1 : 0)

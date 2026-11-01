@@ -13,8 +13,16 @@ import { type MatrixView, matrixView } from '../learn/validation.ts'
 import { choleskyJitter, pinv, solve } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, permutation, randint } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toArray, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import type { TreeModel } from '../trees/tree.ts'
+import {
+  logShapley,
+  type ShapleyPath,
+  type ShapleyState,
+  shapleyAccumulate,
+  shapleyEstimates,
+  shapleyStart,
+} from './permutation-estimates.ts'
 
 /** A cooperative game: the value of each coalition (a membership mask over the players). */
 export type CoalitionValue = (coalition: readonly boolean[]) => number
@@ -282,10 +290,92 @@ export interface SamplingShapleyOptions extends FitOptions {
   readonly nPermutations?: number
 }
 
+/** The state of {@link samplingShapleyAlgorithm}: the running sums of marginal contributions (it serialises). */
+export type SamplingShapleyState = ShapleyState
+
+function samplingShapleyRun(
+  predict: PredictFunction,
+  x: TensorLike,
+  background: TensorLike,
+  options: SamplingShapleyOptions,
+): { readonly algorithm: Algorithm<ShapleyState, ShapleyPath>; readonly nPerm: number } {
+  const xv = rowValues(x)
+  const bg = matrixView(background, 'samplingShapley', { nFeatures: xv.length })
+  const d = xv.length
+  const nPerm = options.nPermutations ?? 200
+  if (!(Number.isInteger(nPerm) && nPerm >= 1))
+    throw new MdmlError('value', 'samplingShapley: nPermutations must be >= 1')
+  const key = keyFor(options, 'samplingShapley')
+  const algorithm: Algorithm<ShapleyState, ShapleyPath> = {
+    name: 'sampling-shapley',
+    config: { features: d, nPermutations: nPerm },
+    schema: channels({ metrics: { count: { description: 'permutations so far' } } }),
+    init: () => shapleyStart(d),
+    step: (s, ctx) => {
+      const k = foldIn(key, s.count)
+      const order = toFlat(permutation(foldIn(k, 0), d))
+      const b = toFlat(randint(foldIn(k, 1), [1], 0, bg.n))[0] ?? 0
+      // Evaluate the d + 1 points along the order in one batch.
+      const pts = new Float64Array((d + 1) * d)
+      const cur = Float64Array.from(bg.data.subarray(b * d, (b + 1) * d))
+      pts.set(cur, 0)
+      order.forEach((j, t) => {
+        cur[j] = xv[j] ?? 0
+        pts.set(cur, (t + 1) * d)
+      })
+      const f = evalRows(predict, pts, d + 1, d)
+      const marginal = new Float64Array(d)
+      order.forEach((j, t) => {
+        marginal[j] = (f[t + 1] ?? 0) - (f[t] ?? 0)
+      })
+      const next = shapleyAccumulate(s, marginal)
+      logShapley(ctx, next, marginal)
+      return next
+    },
+    done: (s) => (s.count >= nPerm ? 'completed' : undefined),
+    observe: (s) => ({ metrics: { count: s.count } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as ShapleyState,
+  }
+  return { algorithm, nPerm }
+}
+
+/**
+ * Permutation-sampling Shapley values as a stepped algorithm (Strumbelj and Kononenko 2014; shap.SamplingExplainer):
+ * each step draws a random feature order and a random background row, walks the order switching features from the
+ * background to the row, and adds each feature's marginal contribution to a running mean and standard error. The state
+ * serialises, and a resumed run draws the same orders.
+ *
+ * @param predict - The model.
+ * @param x - The row to explain `[d]`.
+ * @param background - Background rows `[m, d]`.
+ * @param options - nPermutations (the step budget to run it for) and key.
+ * @returns The algorithm, `nPermutations` steps; read the estimates with `shapleyEstimates`.
+ * @throws MdmlError with code `value` for fewer than one permutation.
+ * @concept shapley-values
+ * @example
+ * ```ts
+ * import { samplingShapleyAlgorithm, shapleyEstimates } from 'mdml-engine/explain'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const linear = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[2 * i] + x.data[2 * i + 1]))
+ * const run = runAlgorithm(samplingShapleyAlgorithm(linear, [1, 1], [[0, 0]], { nPermutations: 10 }), { maxSteps: 10 })
+ * shapleyEstimates(run.state).values // => [2, 1]
+ * ```
+ */
+export function samplingShapleyAlgorithm(
+  predict: PredictFunction,
+  x: TensorLike,
+  background: TensorLike,
+  options: SamplingShapleyOptions = {},
+): Algorithm<ShapleyState, ShapleyPath> {
+  return samplingShapleyRun(predict, x, background, options).algorithm
+}
+
 /**
  * Permutation-sampling Shapley values (Strumbelj and Kononenko 2014; shap.SamplingExplainer): average each feature's
- * marginal contribution over random feature orders, each order paired with a random background row. Unbiased; a
- * traced algorithm with one step per permutation.
+ * marginal contribution over random feature orders, each order paired with a random background row. Unbiased. This is
+ * {@link samplingShapleyAlgorithm} run to the end, a traced algorithm with one step per permutation.
  *
  * @param predict - The model.
  * @param x - The row to explain `[d]`.
@@ -306,51 +396,9 @@ export function samplingShapley(
   background: TensorLike,
   options: SamplingShapleyOptions = {},
 ): { readonly values: readonly number[]; readonly standardErrors: readonly number[] } {
-  const xv = rowValues(x)
-  const bg = matrixView(background, 'samplingShapley', { nFeatures: xv.length })
-  const d = xv.length
-  const nPerm = options.nPermutations ?? 200
-  if (!(Number.isInteger(nPerm) && nPerm >= 1))
-    throw new MdmlError('value', 'samplingShapley: nPermutations must be >= 1')
-  const key = keyFor(options, 'samplingShapley')
-  type State = { readonly sum: Float64Array; readonly sumSq: Float64Array; readonly count: number }
-  const algorithm: Algorithm<State> = {
-    name: 'sampling-shapley',
-    config: { features: d, nPermutations: nPerm },
-    schema: channels({ metrics: { count: { description: 'permutations so far' } } }),
-    init: () => ({ sum: new Float64Array(d), sumSq: new Float64Array(d), count: 0 }),
-    step: (s) => {
-      const k = foldIn(key, s.count)
-      const order = toFlat(permutation(foldIn(k, 0), d))
-      const b = toFlat(randint(foldIn(k, 1), [1], 0, bg.n))[0] ?? 0
-      // Evaluate the d + 1 points along the order in one batch.
-      const pts = new Float64Array((d + 1) * d)
-      const cur = Float64Array.from(bg.data.subarray(b * d, (b + 1) * d))
-      pts.set(cur, 0)
-      order.forEach((j, t) => {
-        cur[j] = xv[j] ?? 0
-        pts.set(cur, (t + 1) * d)
-      })
-      const f = evalRows(predict, pts, d + 1, d)
-      const sum = Float64Array.from(s.sum)
-      const sumSq = Float64Array.from(s.sumSq)
-      order.forEach((j, t) => {
-        const c = (f[t + 1] ?? 0) - (f[t] ?? 0)
-        sum[j] = (sum[j] ?? 0) + c
-        sumSq[j] = (sumSq[j] ?? 0) + c * c
-      })
-      return { sum, sumSq, count: s.count + 1 }
-    },
-    done: (s) => (s.count >= nPerm ? 'completed' : undefined),
-    observe: (s) => ({ metrics: { count: s.count } }),
-  }
+  const { algorithm, nPerm } = samplingShapleyRun(predict, x, background, options)
   const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'samplingShapley'), maxSteps: nPerm })
-  const values = Array.from(state.sum, (v) => v / state.count)
-  const standardErrors = Array.from(state.sumSq, (v, j) => {
-    const m = values[j] ?? 0
-    return state.count < 2 ? Number.NaN : Math.sqrt(Math.max(0, v / state.count - m * m) / (state.count - 1))
-  })
-  return { values, standardErrors }
+  return shapleyEstimates(state)
 }
 
 export { type TreeModel, treePredict } from '../trees/tree.ts'
@@ -991,33 +1039,19 @@ export interface SageResult {
   readonly lossFull: number
 }
 
-/**
- * SAGE (Covert, Lundberg and Lee 2020): global feature importance as Shapley values of the game v(S) = -E[loss(y,
- * f_S(x))], where f_S averages the model over background values of the features outside S (marginal imputation).
- * The values sum to the loss without features minus the loss with all of them, and a feature the model ignores gets
- * 0. Estimated by permutation sampling (each step a data row and a feature order), or exactly for few features.
- *
- * @param predict - The model.
- * @param data - Evaluation rows with targets.
- * @param background - Background rows `[m, d]` for imputation.
- * @param options - loss, nPermutations, exact, key and tracing.
- * @returns The values, their errors and the two end losses.
- * @example
- * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
- * const first = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
- * const x = [[0, 5], [2, -5]]
- * // Only the first feature matters: it removes all of the loss (1 at the mean prediction).
- * explain.sage(first, { x, y: [0, 2] }, x, { exact: true }).values // => [1, 0]
- * ```
- */
-export function sage(
+function sageRun(
   predict: PredictFunction,
   data: LearnData,
   background: TensorLike,
-  options: SageOptions = {},
-): SageResult {
+  options: SageOptions,
+):
+  | { readonly exact: SageResult }
+  | {
+      readonly algorithm: Algorithm<ShapleyState, ShapleyPath>
+      readonly nPerm: number
+      readonly lossEmpty: number
+      readonly lossFull: number
+    } {
   const m = matrixView(data.x, 'sage')
   requireTargets(data, 'sage')
   const y = toFlat(asTensor(data.y as TensorLike))
@@ -1058,42 +1092,108 @@ export function sage(
       for (let i = 0; i < m.n; i++) l += lossOf(i, imputed(i, s)) / m.n
       return -l
     }
-    return { values: shapleyValues(game, d), standardErrors: new Array<number>(d).fill(0), lossEmpty, lossFull }
+    return {
+      exact: { values: shapleyValues(game, d), standardErrors: new Array<number>(d).fill(0), lossEmpty, lossFull },
+    }
   }
   const nPerm = options.nPermutations ?? 256
   const key = keyFor(options, 'sage')
-  type State = { readonly sum: Float64Array; readonly sumSq: Float64Array; readonly count: number }
-  const algorithm: Algorithm<State> = {
+  const algorithm: Algorithm<ShapleyState, ShapleyPath> = {
     name: 'sage',
     config: { features: d, nPermutations: nPerm },
     schema: channels({ metrics: { count: { description: 'permutations so far' } } }),
-    init: () => ({ sum: new Float64Array(d), sumSq: new Float64Array(d), count: 0 }),
-    step: (st) => {
+    init: () => shapleyStart(d),
+    step: (st, ctx) => {
       const k = foldIn(key, st.count)
       const i = toFlat(randint(foldIn(k, 0), [1], 0, m.n))[0] ?? 0
       const order = toFlat(permutation(foldIn(k, 1), d))
       const s = new Array<boolean>(d).fill(false)
       let prev = lossOf(i, imputed(i, s))
-      const sum = Float64Array.from(st.sum)
-      const sumSq = Float64Array.from(st.sumSq)
+      const marginal = new Float64Array(d)
       for (const j of order) {
         s[j] = true
         const cur = lossOf(i, imputed(i, s))
-        const c = prev - cur
-        sum[j] = (sum[j] ?? 0) + c
-        sumSq[j] = (sumSq[j] ?? 0) + c * c
+        marginal[j] = prev - cur
         prev = cur
       }
-      return { sum, sumSq, count: st.count + 1 }
+      const next = shapleyAccumulate(st, marginal)
+      logShapley(ctx, next, marginal)
+      return next
     },
     done: (st) => (st.count >= nPerm ? 'completed' : undefined),
     observe: (st) => ({ metrics: { count: st.count } }),
+    serialise: (st) => stateToJson(st),
+    deserialise: (j) => stateFromJson(j) as ShapleyState,
   }
-  const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'sage'), maxSteps: nPerm })
-  const values = Array.from(state.sum, (v) => v / state.count)
-  const standardErrors = Array.from(state.sumSq, (v, j) => {
-    const mean = values[j] ?? 0
-    return state.count < 2 ? Number.NaN : Math.sqrt(Math.max(0, v / state.count - mean * mean) / (state.count - 1))
-  })
-  return { values, standardErrors, lossEmpty, lossFull }
+  return { algorithm, nPerm, lossEmpty, lossFull }
+}
+
+/**
+ * SAGE (Covert, Lundberg and Lee 2020) as a stepped algorithm: each step draws a data row and a feature order and adds
+ * each feature's reduction in loss, as it joins the coalition, to a running mean and standard error. The state
+ * serialises. Only the sampled estimator is stepped; `exact: true` enumerates every coalition (see {@link sage}).
+ *
+ * @param predict - The model.
+ * @param data - Evaluation rows with targets.
+ * @param background - Background rows `[m, d]` for imputation.
+ * @param options - loss, nPermutations and key.
+ * @returns The algorithm, `nPermutations` steps; read the estimates with `shapleyEstimates`.
+ * @throws MdmlError with code `value` when `exact` is asked for.
+ * @concept shapley-values
+ * @example
+ * ```ts
+ * import { sageAlgorithm, shapleyEstimates } from 'mdml-engine/explain'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const first = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
+ * const x = [[0, 5], [2, -5]]
+ * const run = runAlgorithm(sageAlgorithm(first, { x, y: [0, 2] }, x, { nPermutations: 20 }), { maxSteps: 20 })
+ * shapleyEstimates(run.state).values[1] // => 0
+ * ```
+ */
+export function sageAlgorithm(
+  predict: PredictFunction,
+  data: LearnData,
+  background: TensorLike,
+  options: SageOptions = {},
+): Algorithm<ShapleyState, ShapleyPath> {
+  if (options.exact === true)
+    throw new MdmlError('value', 'sageAlgorithm: exact SAGE is not a stepped algorithm; use sage')
+  const run = sageRun(predict, data, background, options)
+  if ('exact' in run) throw new MdmlError('value', 'sageAlgorithm: exact SAGE is not a stepped algorithm; use sage')
+  return run.algorithm
+}
+
+/**
+ * SAGE (Covert, Lundberg and Lee 2020): global feature importance as Shapley values of the game v(S) = -E[loss(y,
+ * f_S(x))], where f_S averages the model over background values of the features outside S (marginal imputation).
+ * The values sum to the loss without features minus the loss with all of them, and a feature the model ignores gets
+ * 0. Estimated by permutation sampling (each step a data row and a feature order; {@link sageAlgorithm} run to the end), or exactly for few features.
+ *
+ * @param predict - The model.
+ * @param data - Evaluation rows with targets.
+ * @param background - Background rows `[m, d]` for imputation.
+ * @param options - loss, nPermutations, exact, key and tracing.
+ * @returns The values, their errors and the two end losses.
+ * @example
+ * ```ts
+ * import * as explain from 'mdml-engine/explain'
+ * import { tensor } from 'mdml-engine/tensor'
+ * const first = (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i]))
+ * const x = [[0, 5], [2, -5]]
+ * // Only the first feature matters: it removes all of the loss (1 at the mean prediction).
+ * explain.sage(first, { x, y: [0, 2] }, x, { exact: true }).values // => [1, 0]
+ * ```
+ */
+export function sage(
+  predict: PredictFunction,
+  data: LearnData,
+  background: TensorLike,
+  options: SageOptions = {},
+): SageResult {
+  const run = sageRun(predict, data, background, options)
+  if ('exact' in run) return run.exact
+  const { state } = runAlgorithm(run.algorithm, { ...runOptionsFor(options, 'sage'), maxSteps: run.nPerm })
+  const { values, standardErrors } = shapleyEstimates(state)
+  return { values, standardErrors, lossEmpty: run.lossEmpty, lossFull: run.lossFull }
 }

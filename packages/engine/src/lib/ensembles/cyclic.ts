@@ -12,7 +12,7 @@ import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import type { FittedFacts, LearnData, Verbs } from '../learn/estimator.ts'
 import { withDefaultScore } from '../learn/estimator.ts'
 import { columnOf, encodeLabels, matrixView, targetVector } from '../learn/validation.ts'
-import { dict, int, real } from '../space/index.ts'
+import { dict, int, real, type SpaceValue } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
   type Algorithm,
@@ -24,7 +24,9 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
+  tensor,
 } from '../trace/index.ts'
+import { binIndex, boostingBinnings, boostingLosses } from './cyclic-binning.ts'
 
 /** A term of a glass-box model: a shape function of one feature, or a surface over a pair, piecewise constant. */
 export type GlassBoxTerm =
@@ -59,64 +61,14 @@ export interface ExplainableBoostingOptions {
   /** Boosting rounds over all features (default 200) and the learning rate (default 0.05). */
   readonly rounds?: number
   readonly learningRate?: number
+  /** The loss and link, a value of `boostingLosses.space` (takes precedence over `task`). */
+  readonly loss?: SpaceValue
+  /** How features are cut into bins, a value of `boostingBinnings.space` (default quantiles). */
+  readonly binning?: SpaceValue
   /** Pairwise terms added after the main effects, the strongest by residual gain (default 0). */
   readonly interactions?: number
   /** Rounds for the pairwise terms (default 100). */
   readonly pairRounds?: number
-}
-
-/**
- * Quantile cut points of a column: between consecutive values when there are few, else at evenly spaced quantiles.
- *
- * @param col - The column.
- * @param bins - The most bins.
- * @returns The ascending cut points (one fewer than the bins).
- * @example
- * ```ts
- * import { quantileEdges } from 'mdml-engine/ensembles'
- * quantileEdges([1, 2, 3, 4], 2) // => [2.5]
- * quantileEdges([1, 2, 3], 8) // => [1.5, 2.5]
- * ```
- */
-export function quantileEdges(col: ArrayLike<number>, bins: number): number[] {
-  const sorted = Float64Array.from(col).sort()
-  const n = sorted.length
-  const distinct = Array.from(new Set(sorted))
-  // Few values: cut between each pair of consecutive values, so no bin is empty.
-  if (distinct.length <= bins) return distinct.slice(1).map((v, i) => ((distinct[i] ?? 0) + v) / 2)
-  const cuts: number[] = []
-  for (let b = 1; b < bins; b++) {
-    const h = (b / bins) * (n - 1)
-    const lo = Math.floor(h)
-    const v = (sorted[lo] ?? 0) + (h - lo) * ((sorted[Math.min(lo + 1, n - 1)] ?? 0) - (sorted[lo] ?? 0))
-    if (v > (sorted[0] ?? 0) && v <= (sorted[n - 1] ?? 0) && (cuts.length === 0 || v > (cuts[cuts.length - 1] ?? 0)))
-      cuts.push(v)
-  }
-  return cuts
-}
-
-/**
- * The bin of a value among ascending cut points: the number of cut points at or below it.
- *
- * @param edges - The cut points.
- * @param v - The value.
- * @returns The bin index.
- * @example
- * ```ts
- * import { binIndex } from 'mdml-engine/ensembles'
- * binIndex([1, 2], 1.5) // => 1
- * binIndex([1, 2], 5) // => 2
- * ```
- */
-export function binIndex(edges: readonly number[], v: number): number {
-  let lo = 0
-  let hi = edges.length
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1
-    if (v < (edges[mid] ?? 0)) hi = mid
-    else lo = mid + 1
-  }
-  return lo
 }
 
 /**
@@ -129,7 +81,12 @@ export function binIndex(edges: readonly number[], v: number): number {
  * path // => 'boost/round'
  * ```
  */
-export type CyclicPath = 'boost/round' | 'boost/trainLoss' | 'model/shapeFunctions'
+export type CyclicPath =
+  | 'boost/round'
+  | 'boost/trainLoss'
+  | 'boost/feature'
+  | 'boost/shapeChange'
+  | 'model/shapeFunctions'
 
 /** The state of the cyclic booster. */
 export interface CyclicState {
@@ -176,19 +133,20 @@ export function cyclicBoosting(data: LearnData, options: ExplainableBoostingOpti
   const m = matrixView(data.x, 'explainableBoosting')
   if (data.y === undefined) throw new MdmlError('value', 'explainableBoosting: needs targets')
   const y = targetVector(data.y, 'explainableBoosting', m.n)
-  const task = options.task ?? 'regression'
+  const task = options.loss === undefined ? (options.task ?? 'regression') : boostingLosses.make(options.loss)
   const classification = task === 'classification'
   const lr = options.learningRate ?? 0.05
   const rounds = options.rounds ?? 200
   const nPairs = options.interactions ?? 0
   const pairRounds = nPairs > 0 && m.d >= 2 ? (options.pairRounds ?? 100) : 0
   const cols = Array.from({ length: m.d }, (_, j) => columnOf(m, j))
-  const edges = cols.map((c) => quantileEdges(c, options.bins ?? 32))
+  const binning = boostingBinnings.make(options.binning)
+  const edges = cols.map((c) => binning(c, options.bins ?? 32))
   const bins = cols.map((c, j) => Array.from(c, (v) => binIndex(edges[j] ?? [], v)))
   const mean = y.reduce((a, b) => a + b, 0) / m.n
   const intercept0 = classification ? Math.log(Math.max(1e-6, mean) / Math.max(1e-6, 1 - mean)) : mean
   const pb = options.pairBins ?? 8
-  const pEdges = cols.map((c) => quantileEdges(c, pb))
+  const pEdges = cols.map((c) => binning(c, pb))
   const pBins = cols.map((c, j) => Array.from(c, (v) => binIndex(pEdges[j] ?? [], v)))
   const residual = (f: Float64Array): Float64Array =>
     Float64Array.from(f, (v, i) => (y[i] ?? 0) - (classification ? 1 / (1 + Math.exp(-v)) : v))
@@ -238,6 +196,7 @@ export function cyclicBoosting(data: LearnData, options: ExplainableBoostingOpti
       const f = Float64Array.from(s.f)
       if (s.round < rounds) {
         const shapes = s.shapes.map((sh) => [...sh])
+        const change = new Float64Array(m.d)
         for (let j = 0; j < m.d; j++) {
           const r = residual(f)
           const nb = (edges[j]?.length ?? 0) + 1
@@ -259,8 +218,14 @@ export function cyclicBoosting(data: LearnData, options: ExplainableBoostingOpti
           })
           const shape = shapes[j] as number[]
           for (let b = 0; b < nb; b++) shape[b] = (shape[b] ?? 0) + (step[b] ?? 0)
-          for (let i = 0; i < m.n; i++) f[i] = (f[i] ?? 0) + (step[bins[j]?.[i] ?? 0] ?? 0)
+          for (let i = 0; i < m.n; i++) {
+            const move = step[bins[j]?.[i] ?? 0] ?? 0
+            f[i] = (f[i] ?? 0) + move
+            change[j] = (change[j] ?? 0) + Math.abs(move) / m.n
+          }
         }
+        if (ctx.wants('boost/shapeChange')) ctx.log('boost/shapeChange', change)
+        if (ctx.wants('boost/feature')) ctx.log('boost/feature', change.indexOf(Math.max(...change)))
         if (ctx.wants('boost/round')) ctx.log('boost/round', s.round + 1)
         if (ctx.wants('boost/trainLoss')) ctx.log('boost/trainLoss', lossOf(f))
         return { ...s, f, shapes, round: s.round + 1 }
@@ -500,6 +465,14 @@ function ebmEstimator(name: string, classifier: boolean, options: ExplainableBoo
       defineContract({
         'boost/round': scalar({ description: 'cycles over the features (then the pairs) so far' }),
         'boost/trainLoss': scalar({ description: 'the training loss (squared error or log loss)', direction: 'lower' }),
+        'boost/feature': scalar({
+          description: 'the feature whose shape function moved most in the cycle (main effects only)',
+        }),
+        'boost/shapeChange': tensor({
+          role: 'output',
+          shape: ['features'],
+          description: 'the mean absolute move of each feature’s shape function in the cycle (main effects only)',
+        }),
         'model/shapeFunctions': derived<CyclicState>({
           description: 'the terms of the model at this cycle: a shape function per feature, tables for the pairs',
           compute: (state) => cyclicBoosting(dataOf(data), { ...h, task }).model(state) as never,

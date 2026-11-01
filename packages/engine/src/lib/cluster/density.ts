@@ -15,19 +15,23 @@ import {
   type MetricSlot,
   pairwiseDistances,
 } from '../distances/index.ts'
-import {
-  defineEstimator,
-  type Estimator,
-  type Fitted,
-  type IterativeEstimator,
-  iterative,
-  matrixView,
-} from '../learn/index.ts'
-import { dict, int, real } from '../space/index.ts'
+import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
+import { choice, dict, int, real, type SpaceValue } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../trace/index.ts'
 import { kthInRow, labelledPredict, rowsAt, toRows } from './_support.ts'
-import { type Merge, singleLinkageTree } from './hierarchical.ts'
+import { type ClusterSelectionRule, hdbscanSelections } from './density-options.ts'
+import type { Merge } from './hierarchical.ts'
 
 /** A point's role in a density clustering. */
 export type DensityRole = 'core' | 'border' | 'noise'
@@ -457,11 +461,72 @@ export const optics: IterativeEstimator<OpticsHyper, OpticsState, OpticsParams, 
 /** One row of HDBSCAN's condensed tree: a parent cluster, a child (a point below n, a cluster above), lambda, size. */
 export type CondensedRow = [number, number, number, number]
 
+/** The edges of the complete graph on n points weighted by mutual reachability, in the order Kruskal takes them. */
+interface MutualReachabilityEdges {
+  readonly a: Int32Array
+  readonly b: Int32Array
+  readonly weight: Float64Array
+  /** Edge indices by weight, ties in input order. */
+  readonly order: Int32Array
+}
+
+function mutualReachabilityEdges(
+  dist: ArrayLike<number>,
+  core: readonly number[],
+  alpha: number,
+): MutualReachabilityEdges {
+  const n = core.length
+  const m = (n * (n - 1)) / 2
+  const a = new Int32Array(m)
+  const b = new Int32Array(m)
+  const weight = new Float64Array(m)
+  let k = 0
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      a[k] = i
+      b[k] = j
+      weight[k] = Math.max(core[i] ?? 0, core[j] ?? 0, (dist[i * n + j] ?? 0) / alpha)
+      k++
+    }
+  }
+  const order = Int32Array.from({ length: m }, (_, i) => i).sort((p, q) => (weight[p] ?? 0) - (weight[q] ?? 0) || p - q)
+  return { a, b, weight, order }
+}
+
+/** What the single-linkage phase carries: the edge cursor, the tree node each point is in now, and the merges so far. */
+interface LinkageProgress {
+  readonly cursor: number
+  readonly component: readonly number[]
+  readonly merges: readonly Merge[]
+}
+
+/** Take edges in order until one joins two components; that merge is the next row of the linkage. */
+function linkageNext(p: LinkageProgress, e: MutualReachabilityEdges, n: number): LinkageProgress {
+  const sizeOf = (id: number): number => (id < n ? 1 : (p.merges[id - n]?.[3] ?? 1))
+  let cursor = p.cursor
+  while (cursor < e.order.length) {
+    const k = e.order[cursor] as number
+    cursor++
+    const ia = p.component[e.a[k] as number] ?? 0
+    const ib = p.component[e.b[k] as number] ?? 0
+    if (ia === ib) continue
+    const id = n + p.merges.length
+    return {
+      cursor,
+      component: p.component.map((c) => (c === ia || c === ib ? id : c)),
+      merges: [...p.merges, [Math.min(ia, ib), Math.max(ia, ib), e.weight[k] ?? 0, sizeOf(ia) + sizeOf(ib)]],
+    }
+  }
+  return { ...p, cursor }
+}
+
 /**
- * The single-linkage tree of the mutual reachability distance max(core(a), core(b), d(a, b)), as scipy linkage rows.
+ * The single-linkage tree of the mutual reachability distance max(core(a), core(b), d(a, b) / alpha), as scipy linkage
+ * rows.
  *
  * @param dist - Pairwise distances `[n, n]`, flat row-major.
  * @param core - Core distances.
+ * @param alpha - The distance scaling (default 1).
  * @returns The n - 1 merges.
  * @example
  * ```ts
@@ -469,12 +534,86 @@ export type CondensedRow = [number, number, number, number]
  * mutualReachabilityTree([0, 1, 1, 0], [0, 2]) // => [[0, 1, 2, 2]]
  * ```
  */
-export function mutualReachabilityTree(dist: ArrayLike<number>, core: readonly number[]): Merge[] {
+export function mutualReachabilityTree(dist: ArrayLike<number>, core: readonly number[], alpha = 1): Merge[] {
   const n = core.length
-  const edges: [number, number, number][] = []
-  for (let i = 0; i < n; i++)
-    for (let j = i + 1; j < n; j++) edges.push([i, j, Math.max(core[i] ?? 0, core[j] ?? 0, dist[i * n + j] ?? 0)])
-  return singleLinkageTree(n, edges)
+  const edges = mutualReachabilityEdges(dist, core, alpha)
+  let p: LinkageProgress = { cursor: 0, component: Array.from({ length: n }, (_, i) => i), merges: [] }
+  while (p.merges.length < n - 1 && p.cursor < edges.order.length) p = linkageNext(p, edges, n)
+  return [...p.merges]
+}
+
+/** What the condensing phase carries: the queue of tree nodes to visit, the cluster id of each, and the rows so far. */
+interface CondenseProgress {
+  readonly queue: readonly number[]
+  readonly head: number
+  /** The condensed cluster id of a tree node (-1: none). */
+  readonly relabel: readonly number[]
+  readonly nextId: number
+  readonly rows: readonly CondensedRow[]
+}
+
+function condenseStart(n: number): CondenseProgress {
+  const relabel = new Array<number>(Math.max(2 * n - 1, 1)).fill(-1)
+  const root = 2 * n - 2
+  relabel[root] = n
+  return { queue: [root], head: 0, relabel, nextId: n + 1, rows: [] }
+}
+
+/** The index in the queue of the next internal node to visit (past the leaves), or the queue's length when none is left. */
+function condenseHead(p: CondenseProgress, n: number): number {
+  let h = p.head
+  while (h < p.queue.length && (p.queue[h] as number) < n) h++
+  return h
+}
+
+/** Visit one internal node: the walk down from the root, one split or one shrinking per step. */
+function condenseNode(
+  p: CondenseProgress,
+  merges: readonly Merge[],
+  n: number,
+  minClusterSize: number,
+): { readonly progress: CondenseProgress; readonly split: boolean; readonly lambda: number } {
+  const node = p.queue[condenseHead(p, n)] as number
+  const head = condenseHead(p, n) + 1
+  const sizeOf = (id: number): number => (id < n ? 1 : (merges[id - n]?.[3] ?? 1))
+  const leaves = (id: number): number[] => {
+    const out: number[] = []
+    const stack = [id]
+    while (stack.length > 0) {
+      const v = stack.pop() as number
+      if (v < n) out.push(v)
+      else {
+        const m = merges[v - n] as Merge
+        stack.push(m[1], m[0])
+      }
+    }
+    return out
+  }
+  const [left, right, d] = merges[node - n] as Merge
+  const lambda = d > 0 ? 1 / d : Number.POSITIVE_INFINITY
+  const parent = p.relabel[node] as number
+  const big = (c: number): boolean => sizeOf(c) >= minClusterSize
+  const relabel = [...p.relabel]
+  const queue = [...p.queue]
+  const rows = [...p.rows]
+  let nextId = p.nextId
+  const split = big(left) && big(right)
+  if (split) {
+    for (const c of [left, right]) {
+      relabel[c] = nextId
+      rows.push([parent, nextId, lambda, sizeOf(c)])
+      nextId++
+      queue.push(c)
+    }
+  } else {
+    for (const c of [left, right]) {
+      if (big(c)) {
+        relabel[c] = parent
+        queue.push(c)
+      } else for (const q of leaves(c)) rows.push([parent, q, lambda, 1])
+    }
+  }
+  return { progress: { queue, head, relabel, nextId, rows }, split, lambda }
 }
 
 /**
@@ -493,49 +632,9 @@ export function mutualReachabilityTree(dist: ArrayLike<number>, core: readonly n
  */
 export function condenseTree(merges: readonly Merge[], minClusterSize: number): CondensedRow[] {
   const n = merges.length + 1
-  const root = 2 * n - 2
-  const sizeOf = (id: number): number => (id < n ? 1 : (merges[id - n]?.[3] ?? 1))
-  const leaves = (id: number): number[] => {
-    const out: number[] = []
-    const stack = [id]
-    while (stack.length > 0) {
-      const v = stack.pop() as number
-      if (v < n) out.push(v)
-      else {
-        const m = merges[v - n] as Merge
-        stack.push(m[1], m[0])
-      }
-    }
-    return out
-  }
-  const relabel = new Map<number, number>([[root, n]])
-  let next = n + 1
-  const rows: CondensedRow[] = []
-  const queue = [root]
-  for (let head = 0; head < queue.length; head++) {
-    const node = queue[head] as number
-    if (node < n) continue
-    const [left, right, d] = merges[node - n] as Merge
-    const lambda = d > 0 ? 1 / d : Number.POSITIVE_INFINITY
-    const parent = relabel.get(node) as number
-    const big = (c: number): boolean => sizeOf(c) >= minClusterSize
-    if (big(left) && big(right)) {
-      for (const c of [left, right]) {
-        relabel.set(c, next)
-        rows.push([parent, next, lambda, sizeOf(c)])
-        next++
-        queue.push(c)
-      }
-    } else {
-      for (const c of [left, right]) {
-        if (big(c)) {
-          relabel.set(c, parent)
-          queue.push(c)
-        } else for (const p of leaves(c)) rows.push([parent, p, lambda, 1])
-      }
-    }
-  }
-  return rows
+  let p = condenseStart(n)
+  while (condenseHead(p, n) < p.queue.length) p = condenseNode(p, merges, n, minClusterSize).progress
+  return [...p.rows]
 }
 
 /** What the excess-of-mass selection of clusters from a condensed tree gives. */
@@ -550,62 +649,86 @@ export interface ClusterSelection {
   readonly stability: Map<number, number>
 }
 
-/**
- * The excess-of-mass selection of flat clusters from a condensed tree, with the labels, membership strengths and
- * stabilities it gives.
- *
- * @param rows - The condensed tree.
- * @param n - The number of points.
- * @param allowSingleCluster - Whether the root may be selected (default false).
- * @returns Labels (-1 for noise), probabilities, the selected cluster ids and the stability of each cluster.
- * @example
- * ```ts
- * import { condenseTree, selectClusters } from 'mdml-engine/cluster'
- * const rows = condenseTree([[0, 1, 1, 2], [2, 3, 1, 2], [4, 5, 9, 4]], 2)
- * selectClusters(rows, 4).labels // => [0, 0, 1, 1]
- * ```
- */
-export function selectClusters(rows: readonly CondensedRow[], n: number, allowSingleCluster = false): ClusterSelection {
-  const birth = new Map<number, number>([[n, 0]])
-  const children = new Map<number, number[]>()
-  for (const [p, c, l] of rows)
+/** What the selection phase carries: per cluster (index = id - n) its stability, children, running total and flag. */
+interface SelectProgress {
+  readonly stability: readonly number[]
+  readonly children: readonly (readonly number[])[]
+  readonly total: readonly number[]
+  /** 1 for a cluster currently selected. */
+  readonly chosen: readonly number[]
+  /** How many clusters have been visited (they are taken from the largest id down). */
+  readonly visited: number
+}
+
+function selectStart(rows: readonly CondensedRow[], n: number): SelectProgress {
+  const count = 1 + rows.reduce((k, r) => k + (r[1] >= n ? 1 : 0), 0)
+  const birth = new Array<number>(count).fill(0)
+  const children: number[][] = Array.from({ length: count }, () => [])
+  for (const [p, c, l] of rows) {
     if (c >= n) {
-      birth.set(c, l)
-      children.set(p, [...(children.get(p) ?? []), c])
+      birth[c - n] = l
+      children[p - n]?.push(c)
     }
-  const stability = new Map<number, number>()
-  for (const [p, , l, s] of rows) {
-    const b = birth.get(p) ?? 0
-    const lam = Number.isFinite(l) ? l : b
-    stability.set(p, (stability.get(p) ?? 0) + (lam - b) * s)
   }
-  const clusters = [...birth.keys()].sort((a, b) => b - a)
-  const selected = new Set<number>()
-  const total = new Map<number, number>()
-  for (const c of clusters) {
-    const kids = children.get(c) ?? []
-    const own = stability.get(c) ?? 0
-    const sub = kids.reduce((a, k) => a + (total.get(k) ?? 0), 0)
-    if (kids.length > 0 && sub > own) total.set(c, sub)
-    else if (c === n && !allowSingleCluster) total.set(c, sub)
+  const stability = new Array<number>(count).fill(0)
+  for (const [p, , l, s] of rows) {
+    const b = birth[p - n] ?? 0
+    const lam = Number.isFinite(l) ? l : b
+    stability[p - n] = (stability[p - n] ?? 0) + (lam - b) * s
+  }
+  return {
+    stability,
+    children,
+    total: new Array<number>(count).fill(0),
+    chosen: new Array<number>(count).fill(0),
+    visited: 0,
+  }
+}
+
+/** Visit the next cluster from the largest id down: keep it or its descendants (excess of mass), or keep leaves. */
+function selectNode(
+  p: SelectProgress,
+  n: number,
+  rule: ClusterSelectionRule,
+  allowSingleCluster: boolean,
+): { readonly progress: SelectProgress; readonly cluster: number } {
+  const idx = p.stability.length - 1 - p.visited
+  const c = n + idx
+  const kids = p.children[idx] ?? []
+  const own = p.stability[idx] ?? 0
+  const total = [...p.total]
+  const chosen = [...p.chosen]
+  if (rule === 'leaf') {
+    if (kids.length === 0 && (c !== n || allowSingleCluster)) chosen[idx] = 1
+  } else {
+    const sub = kids.reduce((a, k) => a + (total[k - n] ?? 0), 0)
+    if (kids.length > 0 && sub > own) total[idx] = sub
+    else if (c === n && !allowSingleCluster) total[idx] = sub
     else {
-      total.set(c, own)
-      selected.add(c)
+      total[idx] = own
+      chosen[idx] = 1
       const stack = [...kids]
       while (stack.length > 0) {
         const k = stack.pop() as number
-        selected.delete(k)
-        stack.push(...(children.get(k) ?? []))
+        chosen[k - n] = 0
+        stack.push(...(p.children[k - n] ?? []))
       }
     }
   }
+  return { progress: { ...p, total, chosen, visited: p.visited + 1 }, cluster: c }
+}
+
+/** The labels, strengths and stabilities of a selection: points take the selected cluster above them, if any. */
+function selectFinal(rows: readonly CondensedRow[], n: number, p: SelectProgress): ClusterSelection {
+  const stability = new Map<number, number>()
+  for (const [parent] of rows) if (!stability.has(parent)) stability.set(parent, p.stability[parent - n] ?? 0)
   const parentOf = new Map<number, number>()
   const lambdaOf = new Map<number, number>()
-  for (const [p, c, l] of rows) {
-    parentOf.set(c, p)
+  for (const [parent, c, l] of rows) {
+    parentOf.set(c, parent)
     lambdaOf.set(c, l)
   }
-  const chosen = [...selected].sort((a, b) => a - b)
+  const chosen = p.chosen.flatMap((flag, i) => (flag === 1 ? [n + i] : []))
   const index = new Map(chosen.map((c, i) => [c, i]))
   const clusterOf = (i: number): number => {
     let c = parentOf.get(i)
@@ -633,6 +756,33 @@ export function selectClusters(rows: readonly CondensedRow[], n: number, allowSi
   return { labels, probabilities, selected: chosen, stability }
 }
 
+/**
+ * The selection of flat clusters from a condensed tree, with the labels, membership strengths and stabilities it gives:
+ * by excess of mass (the default) or as the leaves of the tree.
+ *
+ * @param rows - The condensed tree.
+ * @param n - The number of points.
+ * @param allowSingleCluster - Whether the root may be selected (default false).
+ * @param rule - `'eom'` (default) or `'leaf'`.
+ * @returns Labels (-1 for noise), probabilities, the selected cluster ids and the stability of each cluster.
+ * @example
+ * ```ts
+ * import { condenseTree, selectClusters } from 'mdml-engine/cluster'
+ * const rows = condenseTree([[0, 1, 1, 2], [2, 3, 1, 2], [4, 5, 9, 4]], 2)
+ * selectClusters(rows, 4).labels // => [0, 0, 1, 1]
+ * ```
+ */
+export function selectClusters(
+  rows: readonly CondensedRow[],
+  n: number,
+  allowSingleCluster = false,
+  rule: ClusterSelectionRule = 'eom',
+): ClusterSelection {
+  let p = selectStart(rows, n)
+  while (p.visited < p.stability.length) p = selectNode(p, n, rule, allowSingleCluster).progress
+  return selectFinal(rows, n, p)
+}
+
 /** Options of {@link hdbscan}. */
 export interface HdbscanOptions {
   /** The smallest cluster (default 5). */
@@ -642,6 +792,10 @@ export interface HdbscanOptions {
   readonly allowSingleCluster?: boolean
   readonly metric?: MetricSlot
   readonly distanceOptions?: DistanceOptions
+  /** How clusters are chosen from the condensed tree, a value of `hdbscanSelections.space` (default excess of mass). */
+  readonly selection?: SpaceValue
+  /** Distances are divided by this before mutual reachability (default 1; sklearn's `alpha`). */
+  readonly alpha?: number
 }
 
 /** The result of {@link hdbscan}: the clusters, and the hierarchy they were cut from. */
@@ -659,12 +813,228 @@ export interface HdbscanResult {
   readonly stability: [number, number][]
 }
 
+/** The phases of {@link hdbscanAlgorithm}, in order. */
+export type HdbscanPhase = 'tree' | 'condense' | 'select' | 'label' | 'done'
+
 /**
- * HDBSCAN (Campello, Moulavi and Sander 2013; sklearn.cluster.HDBSCAN): core distances, the single-linkage tree of the
- * mutual reachability distance, its condensed tree and the excess-of-mass selection of clusters.
+ * The state of {@link hdbscanAlgorithm}: the phase and what each phase has built so far. The single-linkage tree grows
+ * one merge per step; the condensed tree one visited tree node per step; the selection one cluster per step; a last
+ * step labels the points. A state is never changed in place.
+ */
+export interface HdbscanState {
+  readonly phase: HdbscanPhase
+  /** The core distance of every point. */
+  readonly core: readonly number[]
+  /** The edges of the mutual reachability graph taken so far (the cursor into the sorted edge list). */
+  readonly cursor: number
+  /** The tree node each point is in now. */
+  readonly component: readonly number[]
+  /** The linkage rows so far. */
+  readonly merges: readonly Merge[]
+  readonly queue: readonly number[]
+  readonly head: number
+  readonly relabel: readonly number[]
+  readonly nextId: number
+  /** The condensed tree so far. */
+  readonly rows: readonly CondensedRow[]
+  /** Per condensed cluster (index = id - n): its stability, once the selection has started (else empty). */
+  readonly stability: readonly number[]
+  readonly children: readonly (readonly number[])[]
+  readonly total: readonly number[]
+  readonly chosen: readonly number[]
+  readonly visited: number
+  /** The cluster of each point (-1: noise) and its membership strength, once labelled (else empty). */
+  readonly labels: readonly number[]
+  readonly probabilities: readonly number[]
+  /** The step's own bookkeeping for the log: the last merge's height, whether the last node split, its lambda. */
+  readonly lastHeight: number
+  readonly lastSplit: boolean
+  readonly lastLambda: number
+}
+
+/** The paths {@link hdbscanAlgorithm} logs. */
+export type HdbscanPath =
+  | 'hdbscan/phase'
+  | 'tree/merge'
+  | 'tree/height'
+  | 'tree/size'
+  | 'condense/split'
+  | 'condense/lambda'
+  | 'condense/clusters'
+  | 'select/cluster'
+  | 'select/stability'
+  | 'select/selected'
+  | 'labels/labels'
+  | 'labels/strength'
+  | 'labels/clusters'
+  | 'labels/noise'
+
+/** What a stepped HDBSCAN logs, by phase: the tree growing, the condensing, the selection and the labels. */
+export const hdbscanContract: Contract<unknown, HdbscanPath> = defineContract({
+  'hdbscan/phase': scalar({ description: 'the phase: 0 tree, 1 condense, 2 select, 3 label, 4 done' }),
+  'tree/merge': scalar({ description: 'merges of the single-linkage tree so far' }),
+  'tree/height': scalar({ description: 'the mutual reachability distance of the merge just made' }),
+  'tree/size': scalar({ description: 'the size of the cluster the merge just made' }),
+  'condense/split': scalar({ description: '1 when the tree node just visited split into two clusters, else 0' }),
+  'condense/lambda': scalar({ description: '1 / distance at the tree node just visited (-1 when the distance is 0)' }),
+  'condense/clusters': scalar({ description: 'clusters of the condensed tree so far' }),
+  'select/cluster': scalar({ description: 'the id of the condensed cluster just visited' }),
+  'select/stability': scalar({ description: 'the stability of that cluster' }),
+  'select/selected': scalar({ description: 'clusters selected so far' }),
+  'labels/labels': tensor({ role: 'output', shape: ['n'], description: 'the cluster of each point (-1: noise)' }),
+  'labels/strength': tensor({ role: 'output', shape: ['n'], description: 'the membership strength of each point' }),
+  'labels/clusters': scalar({ description: 'the number of clusters' }),
+  'labels/noise': scalar({ description: 'the number of noise points' }),
+})
+
+const PHASE_INDEX: Readonly<Record<HdbscanPhase, number>> = { tree: 0, condense: 1, select: 2, label: 3, done: 4 }
+
+const encodeLambda = (l: number): number | string => (Number.isFinite(l) ? l : 'Infinity')
+
+/**
+ * HDBSCAN (Campello, Moulavi and Sander 2013; sklearn.cluster.HDBSCAN) as a stepped algorithm. First the
+ * single-linkage tree of the mutual reachability distance grows one merge per step; then the tree is condensed one
+ * visited node per step; then the clusters are chosen one per step (from the largest id down) by the selection rule;
+ * a last step labels the points with their membership strengths. The state serialises, and `hdbscan` is this run to
+ * the end.
  *
  * @param x - Points `[n, d]`, or the distances with `metric: 'precomputed'`.
- * @param options - The smallest cluster, the core neighbour count, whether one cluster may be returned, the metric.
+ * @param options - Smallest cluster, core neighbour count, metric, selection rule, single-cluster flag and alpha.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for a smallest cluster below 2 or a non-positive alpha.
+ * @concept density-clustering
+ * @example
+ * ```ts
+ * import { hdbscanAlgorithm } from 'mdml-engine/cluster'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2]]
+ * const run = runAlgorithm(hdbscanAlgorithm(x, { minClusterSize: 3 }), { maxSteps: 40 })
+ * [run.status, run.state.labels] // => ['converged', [0, 0, 0, 1, 1, 1]]
+ * ```
+ */
+export function hdbscanAlgorithm(x: TensorLike, options: HdbscanOptions = {}): Algorithm<HdbscanState, HdbscanPath> {
+  const { n, data } = distanceMatrix(x, options.metric ?? 'euclidean', options.distanceOptions)
+  const mcs = options.minClusterSize ?? 5
+  if (!(Number.isInteger(mcs) && mcs >= 2))
+    throw new MdmlError('value', `hdbscan: minClusterSize must be >= 2, got ${mcs}`)
+  const alpha = options.alpha ?? 1
+  if (!(alpha > 0)) throw new MdmlError('value', `hdbscan: alpha must be positive, got ${alpha}`)
+  const k = Math.min(options.minSamples ?? mcs, n)
+  const rule = hdbscanSelections.make(options.selection)
+  const single = options.allowSingleCluster ?? false
+  const core = Array.from({ length: n }, (_, i) => kthInRow(data, n, i, k))
+  const edges = mutualReachabilityEdges(data, core, alpha)
+  const base: HdbscanState = {
+    phase: n > 1 ? 'tree' : 'condense',
+    core,
+    cursor: 0,
+    component: Array.from({ length: n }, (_, i) => i),
+    merges: [],
+    ...condenseStart(n),
+    stability: [],
+    children: [],
+    total: [],
+    chosen: [],
+    visited: 0,
+    labels: [],
+    probabilities: [],
+    lastHeight: 0,
+    lastSplit: false,
+    lastLambda: 0,
+  }
+  /** Move to the next phase for as long as the current one has nothing left to do. */
+  const settle = (s: HdbscanState): HdbscanState => {
+    let t = s
+    for (;;) {
+      if (t.phase === 'tree' && t.merges.length >= n - 1) t = { ...t, phase: 'condense' }
+      else if (t.phase === 'condense' && condenseHead(t, n) >= t.queue.length) {
+        const sel = selectStart(t.rows, n)
+        t = { ...t, ...sel, phase: 'select' }
+      } else if (t.phase === 'select' && t.visited >= t.stability.length) t = { ...t, phase: 'label' }
+      else return t
+    }
+  }
+  const labelled = (s: HdbscanState): ClusterSelection =>
+    selectFinal(s.rows, n, {
+      stability: s.stability,
+      children: s.children,
+      total: s.total,
+      chosen: s.chosen,
+      visited: s.visited,
+    })
+  return {
+    name: 'cluster/hdbscan',
+    config: { n, minClusterSize: mcs, minSamples: k, alpha, selection: rule, allowSingleCluster: single },
+    schema: channels({
+      metrics: {
+        merges: { description: 'merges of the single-linkage tree' },
+        clusters: { description: 'clusters of the condensed tree' },
+        selected: { description: 'clusters selected so far' },
+      },
+    }),
+    init: () => settle(base),
+    step: (s, ctx) => {
+      let t: HdbscanState = s
+      if (s.phase === 'tree') {
+        const next = linkageNext({ cursor: s.cursor, component: s.component, merges: s.merges }, edges, n)
+        const last = next.merges.at(-1)
+        t = { ...s, cursor: next.cursor, component: next.component, merges: next.merges, lastHeight: last?.[2] ?? 0 }
+        ctx.log('tree/merge', next.merges.length)
+        ctx.log('tree/height', last?.[2] ?? 0)
+        ctx.log('tree/size', last?.[3] ?? 0)
+      } else if (s.phase === 'condense') {
+        const r = condenseNode(s, s.merges, n, mcs)
+        t = { ...s, ...r.progress, lastSplit: r.split, lastLambda: r.lambda }
+        ctx.log('condense/split', r.split ? 1 : 0)
+        ctx.log('condense/lambda', Number.isFinite(r.lambda) ? r.lambda : -1)
+        ctx.log('condense/clusters', r.progress.nextId - n)
+      } else if (s.phase === 'select') {
+        const r = selectNode(s, n, rule, single)
+        t = { ...s, ...r.progress }
+        ctx.log('select/cluster', r.cluster)
+        ctx.log('select/stability', s.stability[r.cluster - n] ?? 0)
+        ctx.log(
+          'select/selected',
+          r.progress.chosen.reduce((a, f) => a + f, 0),
+        )
+      } else if (s.phase === 'label') {
+        const sel = labelled(s)
+        t = { ...s, labels: sel.labels, probabilities: sel.probabilities, phase: 'done' }
+        const noise = sel.labels.filter((l) => l < 0).length
+        if (ctx.wants('labels/labels')) ctx.log('labels/labels', Int32Array.from(sel.labels))
+        if (ctx.wants('labels/strength')) ctx.log('labels/strength', Float64Array.from(sel.probabilities))
+        ctx.log('labels/clusters', sel.selected.length)
+        ctx.log('labels/noise', noise)
+      }
+      ctx.log('hdbscan/phase', PHASE_INDEX[t.phase])
+      return settle(t)
+    },
+    done: (s) => (s.phase === 'done' ? 'converged' : undefined),
+    observe: (s) => ({
+      metrics: {
+        merges: s.merges.length,
+        clusters: s.nextId - n,
+        selected: s.chosen.reduce((a, f) => a + f, 0),
+      },
+    }),
+    serialise: (s) => stateToJson({ ...s, rows: s.rows.map((r) => [r[0], r[1], encodeLambda(r[2]), r[3]]) }),
+    deserialise: (j) => {
+      const s = stateFromJson(j) as Omit<HdbscanState, 'rows'> & {
+        readonly rows: readonly [number, number, number | string, number][]
+      }
+      return { ...s, rows: s.rows.map((r): CondensedRow => [r[0], r[1], Number(r[2]), r[3]]) }
+    },
+  }
+}
+
+/**
+ * HDBSCAN (Campello, Moulavi and Sander 2013; sklearn.cluster.HDBSCAN): core distances, the single-linkage tree of the
+ * mutual reachability distance, its condensed tree and the selection of clusters (excess of mass by default). This is
+ * {@link hdbscanAlgorithm} run to the end.
+ *
+ * @param x - Points `[n, d]`, or the distances with `metric: 'precomputed'`.
+ * @param options - The smallest cluster, the core neighbour count, whether one cluster may be returned, the metric,
+ *   the selection rule and alpha.
  * @returns The labels (-1: noise), membership strengths, the tree, the condensed tree and the stabilities.
  * @example
  * ```ts
@@ -674,21 +1044,22 @@ export interface HdbscanResult {
  * ```
  */
 export function hdbscan(x: TensorLike, options: HdbscanOptions = {}): HdbscanResult {
-  const { n, data } = distanceMatrix(x, options.metric ?? 'euclidean', options.distanceOptions)
-  const mcs = options.minClusterSize ?? 5
-  if (!(Number.isInteger(mcs) && mcs >= 2))
-    throw new MdmlError('value', `hdbscan: minClusterSize must be >= 2, got ${mcs}`)
-  const k = Math.min(options.minSamples ?? mcs, n)
-  const core = Array.from({ length: n }, (_, i) => kthInRow(data, n, i, k))
-  const linkage = mutualReachabilityTree(data, core)
-  const condensedTree = condenseTree(linkage, mcs)
-  const sel = selectClusters(condensedTree, n, options.allowSingleCluster ?? false)
+  const alg = hdbscanAlgorithm(x, options)
+  const n = (alg.config as { readonly n: number }).n
+  const s = runAlgorithm(alg, { maxSteps: 3 * n + 5 }).state
+  const sel = selectFinal(s.rows, n, {
+    stability: s.stability,
+    children: s.children,
+    total: s.total,
+    chosen: s.chosen,
+    visited: s.visited,
+  })
   return {
-    labels: sel.labels,
-    probabilities: sel.probabilities,
-    coreDistances: core,
-    linkage,
-    condensedTree: condensedTree.map(([p, c, l, s]) => [p, c, Number.isFinite(l) ? l : -1, s]),
+    labels: [...s.labels],
+    probabilities: [...s.probabilities],
+    coreDistances: [...s.core],
+    linkage: s.merges.map((m): Merge => [...m]),
+    condensedTree: s.rows.map(([p, c, l, size]): CondensedRow => [p, c, Number.isFinite(l) ? l : -1, size]),
     selected: sel.selected,
     stability: [...sel.stability.entries()],
   }
@@ -701,6 +1072,10 @@ export interface HdbscanHyper {
   readonly minSamples: number | null
   readonly allowSingleCluster: boolean
   readonly metric: DistanceName | DistanceAlias
+  /** How clusters are chosen from the condensed tree: `'eom'` or `'leaf'`. */
+  readonly selection: ClusterSelectionRule
+  /** Distances are divided by this before mutual reachability. */
+  readonly alpha: number
 }
 
 /** The fitted parameters of {@link hdbscanClustering}. */
@@ -717,8 +1092,81 @@ export type HdbscanParams = {
 }
 
 /**
- * HDBSCAN as an estimator: the clusters of {@link hdbscan}, with new rows joining the cluster of the nearest member
+ * HDBSCAN on the iterative base: the phases of {@link hdbscanAlgorithm} are the steps, so the fitted value at step `t`
+ * is the clustering with a partial tree (no labels until the last step). New rows join the cluster of the nearest member
  * within the largest core distance of the clustered rows (else noise).
+ *
+ * @example
+ * ```ts
+ * import { hdbscanEstimator } from 'mdml-engine/cluster'
+ * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2]]
+ * hdbscanEstimator.with({ minClusterSize: 3 }).fit({ x }).params.labels // => [0, 0, 0, 1, 1, 1]
+ * ```
+ */
+export const hdbscanEstimator: IterativeEstimator<
+  HdbscanHyper,
+  HdbscanState,
+  HdbscanParams,
+  DensityVerbs,
+  HdbscanPath
+> = iterative<HdbscanHyper, HdbscanState, HdbscanParams, DensityVerbs, HdbscanPath>({
+  name: 'cluster/hdbscan',
+  kind: 'clusterer',
+  defaults: {
+    minClusterSize: 5,
+    minSamples: null,
+    allowSingleCluster: false,
+    metric: 'euclidean',
+    selection: 'eom',
+    alpha: 1,
+  },
+  hyperSpace: (h) =>
+    dict({
+      minClusterSize: int(2, 100, { default: h.minClusterSize, label: 'smallest cluster' }),
+      ...(h.minSamples === null
+        ? {}
+        : { minSamples: int(1, 100, { default: h.minSamples, label: 'core neighbours' }) }),
+      selection: choice(hdbscanSelections.names as ClusterSelectionRule[], {
+        default: h.selection,
+        label: 'cluster selection',
+      }),
+      alpha: real(0.1, 5, { log: true, default: h.alpha, label: 'distance scaling' }),
+    }),
+  algorithm: (data, h) =>
+    hdbscanAlgorithm(data.x, {
+      minClusterSize: h.minClusterSize,
+      ...(h.minSamples === null ? {} : { minSamples: h.minSamples }),
+      allowSingleCluster: h.allowSingleCluster,
+      metric: h.metric,
+      selection: { kind: h.selection },
+      alpha: h.alpha,
+    }),
+  maxSteps: (_, data) => 3 * matrixView(data.x, 'hdbscan').n + 5,
+  params: (s, data, h) => {
+    const m = matrixView(data.x, 'hdbscan', { minSamples: 2 })
+    const labels = s.labels.length === m.n ? [...s.labels] : new Array<number>(m.n).fill(-1)
+    const probabilities = s.labels.length === m.n ? [...s.probabilities] : new Array<number>(m.n).fill(0)
+    const members = labels.flatMap((l, i) => (l >= 0 ? [i] : []))
+    return {
+      labels,
+      probabilities,
+      coreDistances: [...s.core],
+      linkage: s.merges.map((r): Merge => [...r]),
+      condensedTree: s.rows.map(([p, c, l, size]): CondensedRow => [p, c, Number.isFinite(l) ? l : -1, size]),
+      components: rowsAt(m.data, m.d, members),
+      componentLabels: members.map((i) => labels[i] ?? -1),
+      reach: Math.max(0, ...members.map((i) => s.core[i] ?? 0)),
+      metric: h.metric,
+    }
+  },
+  verbs: (p) => ({
+    predict: labelledPredict(p.components, p.componentLabels, p.reach, p.metric, p.components[0]?.length ?? 0),
+  }),
+  contract: () => hdbscanContract as Contract<HdbscanState, HdbscanPath>,
+})
+
+/**
+ * HDBSCAN as an estimator: {@link hdbscanEstimator} with the given hyperparameters.
  *
  * @param hyper - The hyperparameters.
  * @returns The estimator.
@@ -731,43 +1179,8 @@ export type HdbscanParams = {
  */
 export function hdbscanClustering(
   hyper: Partial<HdbscanHyper> = {},
-): Estimator<HdbscanHyper, Fitted<HdbscanParams> & DensityVerbs> {
-  return defineEstimator<HdbscanHyper, HdbscanParams, DensityVerbs>(
-    {
-      name: 'cluster/hdbscan',
-      kind: 'clusterer',
-      hyperSpace: (h) =>
-        dict({
-          minClusterSize: int(2, 100, { default: h.minClusterSize, label: 'smallest cluster' }),
-          minSamples: int(1, 100, { default: h.minSamples ?? h.minClusterSize, label: 'core neighbours' }),
-        }),
-      fit: (data, h) => {
-        const m = matrixView(data.x, 'hdbscan', { minSamples: 2 })
-        const r = hdbscan(data.x, {
-          minClusterSize: h.minClusterSize,
-          ...(h.minSamples === null ? {} : { minSamples: h.minSamples }),
-          allowSingleCluster: h.allowSingleCluster,
-          metric: h.metric,
-        })
-        const members = r.labels.flatMap((l, i) => (l >= 0 ? [i] : []))
-        return {
-          labels: r.labels,
-          probabilities: r.probabilities,
-          coreDistances: r.coreDistances,
-          linkage: r.linkage,
-          condensedTree: r.condensedTree,
-          components: rowsAt(m.data, m.d, members),
-          componentLabels: members.map((i) => r.labels[i] ?? -1),
-          reach: Math.max(0, ...members.map((i) => r.coreDistances[i] ?? 0)),
-          metric: h.metric,
-        }
-      },
-      methods: (p) => ({
-        predict: labelledPredict(p.components, p.componentLabels, p.reach, p.metric, p.components[0]?.length ?? 0),
-      }),
-    },
-    { minClusterSize: 5, minSamples: null, allowSingleCluster: false, metric: 'euclidean', ...hyper },
-  )
+): IterativeEstimator<HdbscanHyper, HdbscanState, HdbscanParams, DensityVerbs, HdbscanPath> {
+  return hdbscanEstimator.with(hyper)
 }
 
 // ---------------------------------------------------------------------------------------------------------------

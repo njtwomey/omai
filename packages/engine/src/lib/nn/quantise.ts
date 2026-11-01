@@ -8,6 +8,7 @@
 import { customVjp } from '../autodiff/index.ts'
 import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { cholesky, inv } from '../numerics/linalg/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import {
   add,
   asTensor,
@@ -33,7 +34,18 @@ import {
   treeUnflatten,
   type Value,
 } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor as tensorSource,
+} from '../trace/index.ts'
 import type { Params } from './module/module.ts'
+import { gptqOrders } from './quantise-options.ts'
 
 /** How a tensor maps to b-bit integers: a scale and zero point per tensor or per channel along an axis. */
 export interface QuantParams {
@@ -271,6 +283,8 @@ export interface GptqOptions {
   readonly percDamp?: number
   /** Quantise columns in order of decreasing Hessian diagonal (GPTQ's act-order; default false). */
   readonly actOrder?: boolean
+  /** The column order, a value of `gptqOrders.space` (takes precedence over `actOrder`). */
+  readonly order?: SpaceValue
 }
 
 /** Result of {@link gptq} and {@link awq}. */
@@ -283,24 +297,43 @@ export interface QuantisedWeight {
   readonly params: QuantParams
 }
 
+/** The paths {@link gptqAlgorithm} logs. */
+export type GptqPath = 'quant/column' | 'quant/error' | 'quant/weights'
+
+/** What a stepped GPTQ logs: the column quantised, its rounding error, and the weight as it stands. */
+export const gptqContract: Contract<unknown, GptqPath> = defineContract({
+  'quant/column': scalar({ description: 'the column quantised at this step (a column of the original weight)' }),
+  'quant/error': scalar({
+    description: 'the squared rounding error of the column, summed over rows, before compensation',
+    direction: 'lower',
+  }),
+  'quant/weights': tensorSource({
+    role: 'state',
+    shape: ['out', 'in'],
+    description: 'the weight as it stands: quantised columns done, the rest with the error spread onto them',
+  }),
+})
+
 /**
- * GPTQ (Frantar et al. 2022): quantise a linear layer's weight column by column on a per-row grid, spreading each
- * column's rounding error over the remaining columns through the Cholesky factor of the inverse Hessian
- * H = 2 X^T X / n + damping of the calibration inputs, so the layer's output on those inputs changes least.
- *
- * @param weight - `[out, in]`.
- * @param inputs - Calibration inputs `[n, in]`.
- * @param options - Bits (4), symmetric (false), dampening and act-order.
- * @returns The quantised weight, codes and parameters.
- * @reference Frantar, Ashkboos, Hoefler and Alistarh (2022), GPTQ: accurate post-training quantization for generative
- *   pre-trained transformers (Algorithm 1).
- * @example
- * ```ts
- * import { gptq } from 'mdml-engine/nn'
- * gptq([[0.5, -1], [2, 0.1]], [[1, 0], [0, 1], [1, 1]], { bits: 4 }).weight.shape // => [2, 2]
- * ```
+ * The state of {@link gptqAlgorithm}, in the order columns are quantised: the next position `j`, the working weight
+ * (the remaining columns carry the compensation so far), and the dequantised values and codes of the columns done.
  */
-export function gptq(weight: TensorLike, inputs: TensorLike, options: GptqOptions = {}): QuantisedWeight {
+export interface GptqState {
+  readonly j: number
+  readonly work: Float64Array
+  readonly quantised: Float64Array
+  readonly codes: Int32Array
+}
+
+function gptqRun(
+  weight: TensorLike,
+  inputs: TensorLike,
+  options: GptqOptions,
+): {
+  readonly algorithm: Algorithm<GptqState, GptqPath>
+  readonly finish: (s: GptqState) => QuantisedWeight
+  readonly cols: number
+} {
   const w0 = primalOf(asTensor(weight))
   const x = primalOf(asTensor(inputs))
   const [rows = 0, cols = 0] = w0.shape
@@ -319,8 +352,9 @@ export function gptq(weight: TensorLike, inputs: TensorLike, options: GptqOption
   for (let j = 0; j < cols; j++) mean += (h[j * cols + j] ?? 0) / cols
   const damp = (options.percDamp ?? 0.01) * mean
   for (let j = 0; j < cols; j++) h[j * cols + j] = (h[j * cols + j] ?? 0) + damp
-  const order = Array.from({ length: cols }, (_, j) => j)
-  if (options.actOrder === true) order.sort((a, b) => (h[b * cols + b] ?? 0) - (h[a * cols + a] ?? 0))
+  const diagonal = Array.from({ length: cols }, (_, j) => h[j * cols + j] ?? 0)
+  const orderOf = gptqOrders.make(options.order ?? (options.actOrder === true ? { kind: 'activation' } : undefined))
+  const order = orderOf(diagonal)
   // Permute H and W to the quantisation order.
   const hp = new Float64Array(cols * cols)
   for (const [i, a] of order.entries()) for (const [j, b] of order.entries()) hp[i * cols + j] = h[a * cols + b] ?? 0
@@ -334,40 +368,129 @@ export function gptq(weight: TensorLike, inputs: TensorLike, options: GptqOption
     symmetric: options.symmetric ?? false,
     axis: 0,
   })
-  const qcols = new Float64Array(rows * cols)
-  const codes = new Int32Array(rows * cols)
-  for (let j = 0; j < cols; j++) {
-    const col = fromStorage(
-      Float64Array.from({ length: rows }, (_, r) => wp[r * cols + j] ?? 0),
-      [rows],
+  const colParams: QuantParams = { ...qp, axis: 0 }
+  /** A matrix in quantisation order, back in the original column order. */
+  const unpermute = <T extends Float64Array | Int32Array>(a: T, make: (n: number) => T): T => {
+    const out = make(rows * cols)
+    for (let r = 0; r < rows; r++) for (const [j, b] of order.entries()) out[r * cols + b] = a[r * cols + j] ?? 0
+    return out
+  }
+  const algorithm: Algorithm<GptqState, GptqPath> = {
+    name: 'gptq',
+    config: { rows, cols, bits: qp.bits, symmetric: qp.symmetric, order: gptqOrders.optionOf(options.order).name },
+    init: () => ({
+      j: 0,
+      work: Float64Array.from(wp),
+      quantised: new Float64Array(rows * cols),
+      codes: new Int32Array(rows * cols),
+    }),
+    step: (s, ctx) => {
+      const { j } = s
+      const work = Float64Array.from(s.work)
+      const quantised = Float64Array.from(s.quantised)
+      const codes = Int32Array.from(s.codes)
+      const col = fromStorage(
+        Float64Array.from({ length: rows }, (_, r) => work[r * cols + j] ?? 0),
+        [rows],
+        'float64',
+      )
+      const q = quantise(col, colParams)
+      const dq = toFlat(dequantise(q, colParams))
+      const d = u[j * cols + j] ?? 1
+      const qv = toFlat(q)
+      let squared = 0
+      for (let r = 0; r < rows; r++) {
+        const diff = (work[r * cols + j] ?? 0) - (dq[r] ?? 0)
+        squared += diff * diff
+        const err = diff / d
+        quantised[r * cols + j] = dq[r] ?? 0
+        codes[r * cols + j] = qv[r] ?? 0
+        for (let k = j + 1; k < cols; k++) work[r * cols + k] = (work[r * cols + k] ?? 0) - err * (u[j * cols + k] ?? 0)
+      }
+      ctx.log('quant/column', order[j] ?? j)
+      ctx.log('quant/error', squared)
+      if (ctx.wants('quant/weights')) {
+        const shown = Float64Array.from(work, (v, i) => (i % cols <= j ? (quantised[i] ?? 0) : v))
+        ctx.log(
+          'quant/weights',
+          fromStorage(
+            unpermute(shown, (m) => new Float64Array(m)),
+            [rows, cols],
+            'float64',
+          ),
+        )
+      }
+      return { j: j + 1, work, quantised, codes }
+    },
+    done: (s) => (s.j >= cols ? 'completed' : undefined),
+    observe: (s) => ({ metrics: { columns: s.j } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as GptqState,
+  }
+  const finish = (s: GptqState): QuantisedWeight => ({
+    weight: fromStorage(
+      unpermute(s.quantised, (m) => new Float64Array(m)),
+      [rows, cols],
       'float64',
-    )
-    const colParams: QuantParams = { ...qp, axis: 0 }
-    const q = quantise(col, colParams)
-    const dq = toFlat(dequantise(q, colParams))
-    const d = u[j * cols + j] ?? 1
-    const qv = toFlat(q)
-    for (let r = 0; r < rows; r++) {
-      const err = ((wp[r * cols + j] ?? 0) - (dq[r] ?? 0)) / d
-      qcols[r * cols + j] = dq[r] ?? 0
-      codes[r * cols + j] = qv[r] ?? 0
-      for (let k = j + 1; k < cols; k++) wp[r * cols + k] = (wp[r * cols + k] ?? 0) - err * (u[j * cols + k] ?? 0)
-    }
-  }
-  // Undo the permutation.
-  const out = new Float64Array(rows * cols)
-  const outCodes = new Int32Array(rows * cols)
-  for (let r = 0; r < rows; r++) {
-    for (const [j, b] of order.entries()) {
-      out[r * cols + b] = qcols[r * cols + j] ?? 0
-      outCodes[r * cols + b] = codes[r * cols + j] ?? 0
-    }
-  }
-  return {
-    weight: fromStorage(out, [rows, cols], 'float64'),
-    codes: fromStorage(outCodes, [rows, cols], 'int32'),
+    ),
+    codes: fromStorage(
+      unpermute(s.codes, (m) => new Int32Array(m)),
+      [rows, cols],
+      'int32',
+    ),
     params: qp,
-  }
+  })
+  return { algorithm, finish, cols }
+}
+
+/**
+ * GPTQ (Frantar et al. 2022) as a stepped algorithm: each step quantises one column of a linear layer's weight on a
+ * per-row grid and spreads its rounding error over the columns still to do through the Cholesky factor of the inverse
+ * Hessian H = 2 X^T X / n + damping of the calibration inputs. The column order is a slot (`gptqOrders`). The state
+ * serialises; {@link gptq} is this run to the end.
+ *
+ * @param weight - `[out, in]`.
+ * @param inputs - Calibration inputs `[n, in]`.
+ * @param options - Bits (4), symmetric (false), dampening, order or act-order.
+ * @returns The algorithm, one step per column.
+ * @throws MdmlError with code `shape` when the inputs are not as wide as the weight.
+ * @concept quantisation
+ * @example
+ * ```ts
+ * import { gptqAlgorithm } from 'mdml-engine/nn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(gptqAlgorithm([[0.5, -1], [2, 0.1]], [[1, 0], [0, 1], [1, 1]], { bits: 4 }), { maxSteps: 5 }).state.j // => 2
+ * ```
+ */
+export function gptqAlgorithm(
+  weight: TensorLike,
+  inputs: TensorLike,
+  options: GptqOptions = {},
+): Algorithm<GptqState, GptqPath> {
+  return gptqRun(weight, inputs, options).algorithm
+}
+
+/**
+ * GPTQ (Frantar et al. 2022): quantise a linear layer's weight column by column on a per-row grid, spreading each
+ * column's rounding error over the remaining columns through the Cholesky factor of the inverse Hessian
+ * H = 2 X^T X / n + damping of the calibration inputs, so the layer's output on those inputs changes least. This is
+ * {@link gptqAlgorithm} run to the end.
+ *
+ * @param weight - `[out, in]`.
+ * @param inputs - Calibration inputs `[n, in]`.
+ * @param options - Bits (4), symmetric (false), dampening and act-order.
+ * @returns The quantised weight, codes and parameters.
+ * @reference Frantar, Ashkboos, Hoefler and Alistarh (2022), GPTQ: accurate post-training quantization for generative
+ *   pre-trained transformers (Algorithm 1).
+ * @example
+ * ```ts
+ * import { gptq } from 'mdml-engine/nn'
+ * gptq([[0.5, -1], [2, 0.1]], [[1, 0], [0, 1], [1, 1]], { bits: 4 }).weight.shape // => [2, 2]
+ * ```
+ */
+export function gptq(weight: TensorLike, inputs: TensorLike, options: GptqOptions = {}): QuantisedWeight {
+  const { algorithm, finish, cols } = gptqRun(weight, inputs, options)
+  return finish(runAlgorithm(algorithm, { maxSteps: cols }).state)
 }
 
 /** Options of {@link awq}. */
@@ -397,11 +520,110 @@ function scaledRtn(w: Tensor, s: readonly number[], bits: number, symmetric: boo
   return { weight: primalOf(div(dequantise(codes, qp), sv)), codes, params: qp }
 }
 
+/** The paths {@link awqAlgorithm} logs. */
+export type AwqPath = 'quant/alpha' | 'quant/error' | 'quant/best'
+
+/** What a stepped AWQ search logs: the exponent tried, the output error it gave, and the best exponent so far. */
+export const awqContract: Contract<unknown, AwqPath> = defineContract({
+  'quant/alpha': scalar({ description: 'the exponent alpha tried at this step' }),
+  'quant/error': scalar({
+    description: 'the output error on the calibration inputs at this alpha',
+    direction: 'lower',
+  }),
+  'quant/best': scalar({ description: 'the best exponent so far' }),
+})
+
+/** The state of {@link awqAlgorithm}: grid points tried, and the best exponent and its error so far (-1: none yet). */
+export interface AwqState {
+  readonly g: number
+  readonly bestAlpha: number
+  readonly bestError: number
+}
+
+function awqRun(
+  weight: TensorLike,
+  inputs: TensorLike,
+  options: AwqOptions,
+): {
+  readonly algorithm: Algorithm<AwqState, AwqPath>
+  readonly finish: (s: AwqState) => AwqResult
+  readonly points: number
+} {
+  const w = primalOf(asTensor(weight))
+  const x = primalOf(asTensor(inputs))
+  const cols = w.shape[1] ?? 0
+  const bits = options.bits ?? 4
+  const symmetric = options.symmetric ?? false
+  const grid = options.gridSize ?? 20
+  const xv = toFlat(x)
+  const n = x.shape[0] ?? 1
+  const meanAbs = Array.from({ length: cols }, (_, j) => {
+    let s = 0
+    for (let i = 0; i < n; i++) s += Math.abs(xv[i * cols + j] ?? 0)
+    return s / n
+  })
+  const at = (alpha: number): AwqResult => {
+    const raw = meanAbs.map((m) => Math.max(m, 1e-8) ** alpha)
+    // Normalise as the reference implementation: s / sqrt(max s min s).
+    const norm = Math.sqrt(maxOf(raw) * minOf(raw))
+    const scales = raw.map((v) => v / norm)
+    const q = scaledRtn(w, scales, bits, symmetric)
+    return { ...q, alpha, scales, error: outputError(w, q.weight, x) }
+  }
+  const algorithm: Algorithm<AwqState, AwqPath> = {
+    name: 'awq',
+    config: { bits, symmetric, gridSize: grid },
+    init: () => ({ g: 0, bestAlpha: -1, bestError: -1 }),
+    step: (s, ctx) => {
+      const tried = at(s.g / grid)
+      const better = s.bestAlpha < 0 || tried.error < s.bestError
+      const next: AwqState = better
+        ? { g: s.g + 1, bestAlpha: tried.alpha, bestError: tried.error }
+        : { ...s, g: s.g + 1 }
+      ctx.log('quant/alpha', tried.alpha)
+      ctx.log('quant/error', tried.error)
+      ctx.log('quant/best', next.bestAlpha)
+      return next
+    },
+    done: (s) => (s.g > grid ? 'completed' : undefined),
+    observe: (s) => (s.bestAlpha < 0 ? {} : { metrics: { error: s.bestError } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as AwqState,
+  }
+  return { algorithm, finish: (s) => at(s.bestAlpha), points: grid + 1 }
+}
+
+/**
+ * AWQ (Lin et al. 2023) as a stepped algorithm: each step tries one exponent alpha on the grid in [0, 1], scaling the
+ * weight's columns by s_j = mean|x_j|^alpha before round-to-nearest quantisation and dividing back, and keeps the
+ * alpha with the smallest output error on the calibration inputs. The state (grid points tried, the best alpha and its
+ * error) serialises; {@link awq} is this run to the end.
+ *
+ * @param weight - `[out, in]`.
+ * @param inputs - Calibration inputs `[n, in]`.
+ * @param options - Bits (4), symmetric (false), grid size (20).
+ * @returns The algorithm, one step per grid point.
+ * @concept quantisation
+ * @example
+ * ```ts
+ * import { awqAlgorithm } from 'mdml-engine/nn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * runAlgorithm(awqAlgorithm([[0.5, -1], [2, 0.1]], [[1, 0], [0, 3]], { bits: 3, gridSize: 4 }), { maxSteps: 10 }).steps // => 5
+ * ```
+ */
+export function awqAlgorithm(
+  weight: TensorLike,
+  inputs: TensorLike,
+  options: AwqOptions = {},
+): Algorithm<AwqState, AwqPath> {
+  return awqRun(weight, inputs, options).algorithm
+}
+
 /**
  * AWQ (Lin et al. 2023): activation-aware weight quantisation. Input channels with large activations matter more, so
  * the weight's columns are scaled by s_j = mean|x_j|^alpha before round-to-nearest quantisation and divided back
  * after; alpha is chosen on a grid in [0, 1] to minimise the layer's output error on calibration inputs (alpha = 0 is
- * plain round-to-nearest, so AWQ is never worse on the calibration data).
+ * plain round-to-nearest, so AWQ is never worse on the calibration data). This is {@link awqAlgorithm} run to the end.
  *
  * @param weight - `[out, in]`.
  * @param inputs - Calibration inputs `[n, in]`.
@@ -416,31 +638,8 @@ function scaledRtn(w: Tensor, s: readonly number[], bits: number, symmetric: boo
  * ```
  */
 export function awq(weight: TensorLike, inputs: TensorLike, options: AwqOptions = {}): AwqResult {
-  const w = primalOf(asTensor(weight))
-  const x = primalOf(asTensor(inputs))
-  const cols = w.shape[1] ?? 0
-  const bits = options.bits ?? 4
-  const symmetric = options.symmetric ?? false
-  const grid = options.gridSize ?? 20
-  const xv = toFlat(x)
-  const n = x.shape[0] ?? 1
-  const meanAbs = Array.from({ length: cols }, (_, j) => {
-    let s = 0
-    for (let i = 0; i < n; i++) s += Math.abs(xv[i * cols + j] ?? 0)
-    return s / n
-  })
-  let best: AwqResult | undefined
-  for (let g = 0; g <= grid; g++) {
-    const alpha = g / grid
-    const raw = meanAbs.map((m) => Math.max(m, 1e-8) ** alpha)
-    // Normalise as the reference implementation: s / sqrt(max s min s).
-    const norm = Math.sqrt(maxOf(raw) * minOf(raw))
-    const scales = raw.map((v) => v / norm)
-    const q = scaledRtn(w, scales, bits, symmetric)
-    const error = outputError(w, q.weight, x)
-    if (best === undefined || error < best.error) best = { ...q, alpha, scales, error }
-  }
-  return best as AwqResult
+  const { algorithm, finish, points } = awqRun(weight, inputs, options)
+  return finish(runAlgorithm(algorithm, { maxSteps: points }).state)
 }
 
 /** Options of {@link quantiseModule}. */

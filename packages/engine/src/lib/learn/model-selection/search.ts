@@ -9,11 +9,21 @@ import { crossValidationCurve, type Explained, type Exposition, searchTrials } f
 import { foldIn, permutation } from '../../random/index.ts'
 import { type Space, type SpaceValue, sample } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../../trace/index.ts'
 import { innerFitOptions, keyFor, runOptionsFor } from '../_shared.ts'
 import type { Estimator, FitOptions, Fitted, LearnData } from '../estimator.ts'
 import { type Scoring, scorersOf } from '../scoring.ts'
 import { takeData } from '../validation.ts'
+import { scoreRecordFromJson, scoreRecordToJson, scoresFromJson, scoresToJson } from './_state.ts'
 import { type CvOption, checkCv, crossValidate, splitInputOf } from './cross-validation.ts'
 import { type Fold, type Splitter, splitIndices } from './splitters.ts'
 
@@ -142,9 +152,158 @@ function rankMin(values: readonly number[]): number[] {
   return values.map((v) => (Number.isNaN(v) ? values.length : 1 + values.filter((u) => u > v).length))
 }
 
+/** The paths {@link evaluateCandidatesAlgorithm} logs. */
+export type SearchPath = 'search/candidate' | 'search/score' | 'search/best' | 'search/bestIndex'
+
+/** What a stepped search logs, by path: the candidate evaluated, its mean score, and the best so far. */
+export const searchContract: Contract<unknown, SearchPath> = defineContract({
+  'search/candidate': scalar({ description: 'the index of the candidate just cross-validated' }),
+  'search/score': scalar({
+    description: 'its mean test score under the scorer the search ranks by',
+    direction: 'higher',
+  }),
+  'search/best': scalar({ description: 'the best mean test score so far', direction: 'higher' }),
+  'search/bestIndex': scalar({ description: 'the index of the best candidate so far' }),
+})
+
+/** One evaluated candidate: its scores per scorer and fold (training scores when asked). */
+export interface CandidateScores {
+  readonly test: Readonly<Record<string, readonly number[]>>
+  readonly train?: Readonly<Record<string, readonly number[]>>
+}
+
+/** The state of {@link evaluateCandidatesAlgorithm}: the candidates evaluated so far, in order. It serialises. */
+export interface SearchState {
+  readonly rows: readonly CandidateScores[]
+}
+
+function evaluateRun(
+  estimator: Estimator,
+  candidates: readonly Candidate[],
+  data: LearnData,
+  options: SearchOptions,
+): {
+  readonly algorithm: Algorithm<SearchState, SearchPath>
+  readonly folds: Fold[]
+  readonly scorerNames: string[]
+  readonly refitBy: string
+  readonly key: ReturnType<typeof keyFor>
+} {
+  if (candidates.length === 0) throw new MdmlError('value', 'search: no candidates')
+  const key = keyFor(options, 'search')
+  const splitter = checkCv(options.cv, estimator)
+  const folds = splitIndices(splitter, splitInputOf(data, options.groups), foldIn(key, 0))
+  // Every candidate sees the same folds.
+  const cv: Splitter = {
+    name: splitter.name,
+    randomised: false,
+    partition: splitter.partition,
+    nSplits: () => folds.length,
+    split: () => folds,
+  }
+  const scorerNames = Object.keys(scorersOf(options.scoring))
+  const refitBy = typeof options.refit === 'string' ? options.refit : scorerNames[0]
+  if (refitBy === undefined || !scorerNames.includes(refitBy))
+    throw new MdmlError('value', `search: refit by unknown scorer ${String(refitBy)}`)
+  const algorithm: Algorithm<SearchState, SearchPath> = {
+    name: 'search',
+    config: { estimator: estimator.name, candidates: candidates.length, folds: folds.length },
+    schema: channels({
+      metrics: {
+        mean: { description: `the mean test ${refitBy} of the candidate`, direction: 'higher' },
+        best: { description: 'the best mean so far', direction: 'higher' },
+      },
+      messages: { candidate: { description: 'a candidate was evaluated', payload: { index: 'number' } } },
+    }),
+    init: () => ({ rows: [] }),
+    step: (s, ctx) => {
+      const index = s.rows.length
+      const c = candidates[index] as Candidate
+      const r = crossValidate(estimator.with(c), data, {
+        ...innerFitOptions(options, foldIn(ctx.key, 0), ctx.run),
+        cv,
+        ...(options.scoring === undefined ? {} : { scoring: options.scoring }),
+        ...(options.returnTrainScore === true ? { returnTrainScore: true } : {}),
+        ...(options.errorScore === undefined ? {} : { errorScore: options.errorScore }),
+      })
+      const rows = [...s.rows, { test: r.testScores, ...(r.trainScores === undefined ? {} : { train: r.trainScores }) }]
+      const means = rows.map((row) => meanOf(row.test[refitBy] ?? []))
+      const best = means.reduce((a, b) => (b > a || Number.isNaN(a) ? b : a))
+      ctx.log('search/candidate', index)
+      ctx.log('search/score', means[index] ?? Number.NaN)
+      ctx.log('search/best', best)
+      ctx.log('search/bestIndex', means.indexOf(best))
+      return { rows }
+    },
+    done: (s) => (s.rows.length >= candidates.length ? 'completed' : undefined),
+    observe: (s) => {
+      const means = s.rows.map((r) => meanOf(r.test[refitBy] ?? []))
+      return {
+        metrics:
+          s.rows.length === 0
+            ? {}
+            : { mean: means[means.length - 1] ?? 0, best: means.reduce((a, b) => Math.max(a, b)) },
+        messages: s.rows.length === 0 ? [] : [{ kind: 'candidate', payload: { index: s.rows.length - 1 } }],
+      }
+    },
+    serialise: (s) =>
+      stateToJson({
+        rows: s.rows.map((r) => ({
+          test: scoreRecordToJson(r.test),
+          ...(r.train === undefined ? {} : { train: scoreRecordToJson(r.train) }),
+        })),
+      }),
+    deserialise: (j) => {
+      const o = stateFromJson(j) as {
+        readonly rows: readonly { readonly test: never; readonly train?: never }[]
+      }
+      return {
+        rows: o.rows.map((r) => ({
+          test: scoreRecordFromJson(r.test),
+          ...(r.train === undefined ? {} : { train: scoreRecordFromJson(r.train) }),
+        })),
+      }
+    },
+  }
+  return { algorithm, folds, scorerNames, refitBy, key }
+}
+
+/**
+ * The evaluation of a list of candidates as a stepped algorithm: each step cross-validates one candidate on folds
+ * shared by all of them, the candidate's cross-validation a child run, and logs its mean score and the best so far.
+ * The state (the scores of the candidates so far) serialises.
+ *
+ * @param estimator - The estimator.
+ * @param candidates - Hyperparameter settings (see {@link parameterGrid}, {@link parameterSampler}, `searchDesigns`).
+ * @param data - The data.
+ * @param options - cv, scoring, refit (which scorer ranks), returnTrainScore, groups, errorScore and key.
+ * @returns The algorithm, one step per candidate.
+ * @throws MdmlError with code `value` for no candidates or a refit by an unknown scorer.
+ * @concept hyperparameter-search
+ * @example
+ * ```ts
+ * import { evaluateCandidatesAlgorithm } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { full } from 'mdml-engine/tensor'
+ * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
+ * const alg = evaluateCandidatesAlgorithm(constant, [{ c: 0 }, { c: 2 }], { x: [[0], [1]], y: [2, 2] }, { cv: 2, scoring: 'neg_mean_absolute_error' })
+ * runAlgorithm(alg, { maxSteps: 5 }).state.rows.length // => 2
+ * ```
+ */
+export function evaluateCandidatesAlgorithm(
+  estimator: Estimator,
+  candidates: readonly Candidate[],
+  data: LearnData,
+  options: SearchOptions = {},
+): Algorithm<SearchState, SearchPath> {
+  return evaluateRun(estimator, candidates, data, options).algorithm
+}
+
 /**
  * Cross-validate a list of candidates (the engine of the searches): one step per candidate, each candidate's cross-
- * validation a child run; all candidates use the same folds.
+ * validation a child run; all candidates use the same folds. This is {@link evaluateCandidatesAlgorithm} run to the
+ * end, then ranked and refitted.
  *
  * @param estimator - The estimator.
  * @param candidates - Hyperparameter settings.
@@ -167,61 +326,11 @@ export function evaluateCandidates(
   data: LearnData,
   options: SearchOptions = {},
 ): SearchResult {
-  if (candidates.length === 0) throw new MdmlError('value', 'search: no candidates')
-  const key = keyFor(options, 'search')
-  const splitter = checkCv(options.cv, estimator)
-  const folds = splitIndices(splitter, splitInputOf(data, options.groups), foldIn(key, 0))
-  // Every candidate sees the same folds.
-  const cv: Splitter = {
-    name: splitter.name,
-    randomised: false,
-    partition: splitter.partition,
-    nSplits: () => folds.length,
-    split: () => folds,
-  }
-  const scorerNames = Object.keys(scorersOf(options.scoring))
-  const refitBy = typeof options.refit === 'string' ? options.refit : scorerNames[0]
-  if (refitBy === undefined || !scorerNames.includes(refitBy))
-    throw new MdmlError('value', `search: refit by unknown scorer ${String(refitBy)}`)
-  type Row = {
-    readonly test: Readonly<Record<string, readonly number[]>>
-    readonly train?: Readonly<Record<string, readonly number[]>>
-  }
-  const algorithm: Algorithm<readonly Row[]> = {
-    name: 'search',
-    config: { estimator: estimator.name, candidates: candidates.length, folds: folds.length },
-    schema: channels({
-      metrics: {
-        mean: { description: `the mean test ${refitBy} of the candidate`, direction: 'higher' },
-        best: { description: 'the best mean so far', direction: 'higher' },
-      },
-      messages: { candidate: { description: 'a candidate was evaluated', payload: { index: 'number' } } },
-    }),
-    init: () => [],
-    step: (rows, ctx) => {
-      const c = candidates[rows.length] as Candidate
-      const r = crossValidate(estimator.with(c), data, {
-        ...innerFitOptions(options, foldIn(ctx.key, 0), ctx.run),
-        cv,
-        ...(options.scoring === undefined ? {} : { scoring: options.scoring }),
-        ...(options.returnTrainScore === true ? { returnTrainScore: true } : {}),
-        ...(options.errorScore === undefined ? {} : { errorScore: options.errorScore }),
-      })
-      return [...rows, { test: r.testScores, ...(r.trainScores === undefined ? {} : { train: r.trainScores }) }]
-    },
-    done: (rows) => (rows.length >= candidates.length ? 'completed' : undefined),
-    observe: (rows) => {
-      const means = rows.map((r) => meanOf(r.test[refitBy] ?? []))
-      return {
-        metrics:
-          rows.length === 0 ? {} : { mean: means[means.length - 1] ?? 0, best: means.reduce((a, b) => Math.max(a, b)) },
-        messages: rows.length === 0 ? [] : [{ kind: 'candidate', payload: { index: rows.length - 1 } }],
-      }
-    },
-  }
-  const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'search'), maxSteps: candidates.length })
+  const { algorithm, folds, scorerNames, refitBy, key } = evaluateRun(estimator, candidates, data, options)
+  const { state: end } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'search'), maxSteps: candidates.length })
+  const state = end.rows
   const by = (
-    pick: (r: Row) => Readonly<Record<string, readonly number[]>> | undefined,
+    pick: (r: CandidateScores) => Readonly<Record<string, readonly number[]>> | undefined,
     f: (xs: readonly number[]) => number,
   ) => Object.fromEntries(scorerNames.map((n) => [n, state.map((r) => f(pick(r)?.[n] ?? []))]))
   const meanTestScore = by((r) => r.test, meanOf)
@@ -387,10 +496,107 @@ export interface NestedResult {
   readonly std: number
 }
 
+/** The paths {@link nestedCrossValidationAlgorithm} logs. */
+export type NestedPath = 'nested/outer' | 'nested/score' | 'nested/mean' | 'nested/chosen'
+
+/** What a stepped nested cross-validation logs, by path. */
+export const nestedContract: Contract<unknown, NestedPath> = defineContract({
+  'nested/outer': scalar({ description: 'the outer fold just done (from 0)' }),
+  'nested/score': scalar({
+    description: 'the outer test score of the model the inner search chose',
+    direction: 'higher',
+  }),
+  'nested/mean': scalar({ description: 'the mean outer score so far', direction: 'higher' }),
+  'nested/chosen': scalar({ description: 'the index in the grid of the candidate the inner search chose' }),
+})
+
+/** The state of {@link nestedCrossValidationAlgorithm}: the outer scores and the chosen candidates so far. */
+export interface NestedState {
+  readonly scores: readonly number[]
+  readonly chosen: readonly Candidate[]
+}
+
+function nestedRun(
+  estimator: Estimator,
+  grid: ParamGrid,
+  data: LearnData,
+  options: NestedOptions,
+): { readonly algorithm: Algorithm<NestedState, NestedPath>; readonly folds: number } {
+  const key = keyFor(options, 'nestedCrossValidation')
+  const outer = splitIndices(checkCv(options.outerCv ?? 5, estimator), splitInputOf(data), foldIn(key, 0))
+  const candidates = parameterGrid(grid)
+  const scorer = Object.values(scorersOf(options.scoring))[0]
+  if (scorer === undefined) throw new MdmlError('value', 'nestedCrossValidation: no scorer')
+  const algorithm: Algorithm<NestedState, NestedPath> = {
+    name: 'nested-cross-validation',
+    config: { estimator: estimator.name, outer: outer.length, candidates: candidates.length },
+    schema: channels({ metrics: { score: { description: 'the outer test score', direction: 'higher' } } }),
+    init: () => ({ scores: [], chosen: [] }),
+    step: (s, ctx) => {
+      const fold = outer[s.scores.length] as Fold
+      const train = takeData(data, fold.train)
+      const inner = evaluateCandidates(estimator, candidates, train, {
+        ...innerFitOptions(options, foldIn(ctx.key, 0), ctx.run),
+        cv: options.innerCv ?? 3,
+        ...(options.scoring === undefined ? {} : { scoring: options.scoring }),
+      })
+      const best = inner.bestEstimator
+      if (best === undefined) throw new MdmlError('value', 'nestedCrossValidation: the inner search did not refit')
+      const score = scorer.score(best, takeData(data, fold.test))
+      const scores = [...s.scores, score]
+      ctx.log('nested/outer', s.scores.length)
+      ctx.log('nested/score', score)
+      ctx.log('nested/mean', meanOf(scores))
+      ctx.log('nested/chosen', inner.bestIndex)
+      return { scores, chosen: [...s.chosen, inner.bestParams] }
+    },
+    done: (s) => (s.scores.length >= outer.length ? 'completed' : undefined),
+    observe: (s) => ({ metrics: s.scores.length === 0 ? {} : { score: s.scores[s.scores.length - 1] ?? 0 } }),
+    serialise: (s) => stateToJson({ scores: scoresToJson(s.scores), chosen: s.chosen as unknown as Json }),
+    deserialise: (j) => {
+      const o = stateFromJson(j) as { readonly scores: never; readonly chosen: readonly Candidate[] }
+      return { scores: scoresFromJson(o.scores), chosen: o.chosen }
+    },
+  }
+  return { algorithm, folds: outer.length }
+}
+
+/**
+ * Nested cross-validation as a stepped algorithm: each step takes one outer fold, runs the inner search on its training
+ * rows (a child run), refits the winner and scores it on the outer test rows. The state (outer scores and the chosen
+ * candidates) serialises, so the choices must be JSON values.
+ *
+ * @param estimator - The estimator.
+ * @param grid - The grid searched inside each outer fold.
+ * @param data - The data.
+ * @param options - outerCv, innerCv, scoring and key.
+ * @returns The algorithm, one step per outer fold.
+ * @example
+ * ```ts
+ * import { nestedCrossValidationAlgorithm } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { full } from 'mdml-engine/tensor'
+ * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
+ * const x = [[0], [1], [2], [3], [4], [5]]
+ * const alg = nestedCrossValidationAlgorithm(constant, { c: [0, 1] }, { x, y: [1, 1, 1, 1, 1, 1] }, { outerCv: 2, innerCv: 3, scoring: 'neg_mean_absolute_error' })
+ * runAlgorithm(alg, { maxSteps: 5 }).state.chosen // => [{ c: 1 }, { c: 1 }]
+ * ```
+ */
+export function nestedCrossValidationAlgorithm(
+  estimator: Estimator,
+  grid: ParamGrid,
+  data: LearnData,
+  options: NestedOptions = {},
+): Algorithm<NestedState, NestedPath> {
+  return nestedRun(estimator, grid, data, options).algorithm
+}
+
 /**
  * Nested cross-validation (Varma and Simon 2006; Cawley and Talbot 2010): an inner grid search selects the
  * hyperparameters on each outer training set, and the outer test fold scores the refitted choice, an almost unbiased
- * estimate of the whole selection procedure's performance. One step per outer fold, each inner search a child run.
+ * estimate of the whole selection procedure's performance. This is {@link nestedCrossValidationAlgorithm} run to the
+ * end: one step per outer fold, each inner search a child run.
  *
  * @param estimator - The estimator.
  * @param grid - The grid searched inside each outer fold.
@@ -414,36 +620,12 @@ export function nestedCrossValidation(
   data: LearnData,
   options: NestedOptions = {},
 ): NestedResult {
-  const key = keyFor(options, 'nestedCrossValidation')
-  const outer = splitIndices(checkCv(options.outerCv ?? 5, estimator), splitInputOf(data), foldIn(key, 0))
-  const candidates = parameterGrid(grid)
-  const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'nestedCrossValidation: no scorer')
-  type State = readonly { readonly score: number; readonly chosen: Candidate }[]
-  const algorithm: Algorithm<State> = {
-    name: 'nested-cross-validation',
-    config: { estimator: estimator.name, outer: outer.length, candidates: candidates.length },
-    schema: channels({ metrics: { score: { description: 'the outer test score', direction: 'higher' } } }),
-    init: () => [],
-    step: (s, ctx) => {
-      const fold = outer[s.length] as Fold
-      const train = takeData(data, fold.train)
-      const inner = evaluateCandidates(estimator, candidates, train, {
-        ...innerFitOptions(options, foldIn(ctx.key, 0), ctx.run),
-        cv: options.innerCv ?? 3,
-        ...(options.scoring === undefined ? {} : { scoring: options.scoring }),
-      })
-      const best = inner.bestEstimator
-      if (best === undefined) throw new MdmlError('value', 'nestedCrossValidation: the inner search did not refit')
-      return [...s, { score: scorer.score(best, takeData(data, fold.test)), chosen: inner.bestParams }]
-    },
-    done: (s) => (s.length >= outer.length ? 'completed' : undefined),
-    observe: (s) => ({ metrics: s.length === 0 ? {} : { score: s[s.length - 1]?.score ?? 0 } }),
+  const { algorithm, folds } = nestedRun(estimator, grid, data, options)
+  const { state } = runAlgorithm(algorithm, { ...runOptionsFor(options, 'nestedCrossValidation'), maxSteps: folds })
+  return {
+    scores: [...state.scores],
+    chosen: [...state.chosen],
+    mean: meanOf(state.scores),
+    std: Math.sqrt(varianceOf(state.scores, 0)),
   }
-  const { state } = runAlgorithm(algorithm, {
-    ...runOptionsFor(options, 'nestedCrossValidation'),
-    maxSteps: outer.length,
-  })
-  const scores = state.map((r) => r.score)
-  return { scores, chosen: state.map((r) => r.chosen), mean: meanOf(scores), std: Math.sqrt(varianceOf(scores, 0)) }
 }
