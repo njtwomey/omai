@@ -832,6 +832,11 @@ function isPowerOfTwoPlusOne(n: number): boolean {
   return m >= 2 && (m & (m - 1)) === 0
 }
 
+// The geometric multigrid behind `method: 'multigrid'`: matrix-free, on the five-point stencil itself (red-black
+// Gauss-Seidel smoothing, full-weighting restriction, bilinear prolongation, grids of 2^k + 1 nodes). It is not
+// numerics/sparse's `multigridAlgorithm` on purpose: that one builds Galerkin coarse operators from any CSR matrix with
+// Jacobi or SOR smoothers; here the structured grid gives the stencil's own transfer operators and a smoother that
+// needs no matrix, which is what the Poisson solvers of this module compare against Jacobi, Gauss-Seidel and SOR.
 function multigridPoisson(
   grid: Grid1d | Grid2d,
   f: Float64Array,

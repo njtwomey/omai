@@ -88,7 +88,9 @@ function sklansky(
  * The convex hull of planar points as OpenCV computes it (cv2.convexHull with returnPoints false): Sklansky's scan of
  * the upper and lower chains of the x-sorted points, as indices into the points, counter-clockwise on the screen by
  * default (clockwise in OpenCV's y-down sense is the option), rotated so the indices run monotonically when they can.
- * Collinear points on the boundary are dropped.
+ * Collinear points on the boundary are dropped. The same set of vertices as `convexHull` of `numerics/geometry`
+ * (scipy's), which orders them from the lowest-leftmost point; this one keeps OpenCV's order and orientation, which
+ * the contour functions of this module (`convexityDefects`) depend on.
  *
  * @param points - Points `[n, 2]`.
  * @param options - clockwise (default false).

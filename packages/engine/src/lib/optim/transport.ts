@@ -459,7 +459,9 @@ function entropicObjective(plan: Vec, m: Vec, reg: number, logRef?: Vec): number
 
 /**
  * Entropic optimal transport (POT's ot.sinkhorn with `method='sinkhorn_log'` by default): the plan minimising
- * sum P M + reg sum P (log P - 1) with marginals a and b.
+ * sum P M + reg sum P (log P - 1) with marginals a and b. This solves one problem on plain numbers and returns the
+ * plan; the `sinkhorn` of `losses` is the same iteration unrolled on tensors for a point cloud, so that the loss is
+ * differentiable in the points (use it to train; use this to inspect the plan).
  *
  * @param a - Source histogram `[n]`.
  * @param b - Target histogram `[k]` with the same mass.
