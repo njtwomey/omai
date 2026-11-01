@@ -4034,7 +4034,12 @@ Gaussian prior of precision `alpha`, known noise precision `beta`): the batch po
 posterior one observation per step as `bayesianLinearAlgorithm(design, prior, order)` (a rank-one update of precision and
 information; `observe` exposes the metrics `logEvidence` and `meanPredictiveStd` and the `param` tensors `mean` and
 `covariance`), `posteriorPredictive` (mean and variance per row), `maximiseEvidence` (MacKay's fixed point for `alpha`
-and `beta`) and `polynomialBasis` (features scaled to `[-1, 1]`, then the library's `polynomialFeatures`). The estimator
+and `beta`) and `polynomialBasis` (features scaled to `[-1, 1]`, then the library's `polynomialFeatures`).
+`bayesian-online.ts` is the same update as an estimator on the iterative base: `bayesianOnlineAlgorithm` (typed paths
+`blr/mean`, `blr/covariance`, `blr/log-evidence`, `blr/surprise`, `blr/predictive-std`, `blr/observation`; the state keeps the
+belief before the last point) and `bayesianOnlineLinear` with the derived paths `model/weights` (prior, likelihood of the
+last point and posterior over two weights on a grid) and `model/lines` (predictive mean and band, and lines drawn from the
+posterior). The estimator
 factories (lasso, ridge, logistic, GLM, robust, online, LARS, isotonic) stay parked until the new methods base; the
 sequential Bayesian regression is the method `methods/linear/bayesianRegression`. Goldens of the parked factories keep
 their fixtures under `methods/linear/`.
