@@ -159,7 +159,9 @@ export interface ArmaFilterResult {
  * The Kalman filter of the Harvey form of an ARMA, specialised to scalar observations and no measurement noise: O(r^2)
  * per step. Returns the innovations and their relative variances, from which the exact Gaussian likelihood follows
  * with the innovation variance concentrated out, and the predicted state after the last observation for forecasting.
- * Missing observations (NaN) are skipped.
+ * Missing observations (NaN) are skipped. It is the general `filtering.kalmanFilter` of `dynamics` specialised on purpose
+ * (one observation row, no measurement noise, the shift structure of the companion matrix), so a fit's likelihood costs
+ * O(r^2) per step instead of O(r^3); `armaStateSpace` gives the same model for the general filter.
  *
  * @param y - The series (a zero-mean ARMA).
  * @param ar - The autoregressive coefficients.

@@ -8,6 +8,7 @@
 import { jacobian } from '../../autodiff/index.ts'
 import { MdmlError } from '../../base/index.ts'
 import { type Distribution, multivariateNormal, normal } from '../../dists/index.ts'
+import { kalmanUpdate, rtsStep } from '../../dynamics/filtering/index.ts'
 import { cholesky, slogdet, solve } from '../../numerics/linalg/index.ts'
 import { gaussianBeliefPropagation, type LinearGaussianNode, linearGaussianBayesNet } from '../../pgm/index.ts'
 import { foldIn, type Key, normal as normalDraws } from '../../random/index.ts'
@@ -270,7 +271,9 @@ export interface KalmanResult {
 /**
  * Kalman filtering and Rauch-Tung-Striebel smoothing of a linear-Gaussian chain program: the stacked system is split
  * by markov step into transitions x_t = F_t x_{t-1} + c_t + w_t and observations y_t = H_t x_t + d_t + v_t (within-step
- * dependencies solved out), then filtered forwards (with the log evidence) and smoothed backwards.
+ * dependencies solved out), then filtered forwards (with the log evidence) and smoothed backwards. The step
+ * arithmetic is `dynamics`' own: `filtering.kalmanUpdate` for each observation and `filtering.rtsStep` for each backward
+ * step, here with the transitions that differ from step to step.
  *
  * @param form - The linear system of a chain program (every latent site in one markov loop).
  * @returns The filtered and smoothed moments and log p(y).
@@ -361,13 +364,11 @@ export function kalmanSmoother(form: LinearGaussianForm): KalmanResult {
           0,
         ),
       )
-      const innov = primalOf(sub(y, add(matmul(H, m), dOff)))
-      const Sinn = primalOf(symmetric(add(matmul(matmul(H, P), transpose(H)), R)))
-      const K = primalOf(transpose(solve(Sinn, matmul(H, P))))
-      m = primalOf(add(m, matmul(K, innov)))
-      P = primalOf(symmetric(sub(P, matmul(matmul(K, H), P))))
-      const { logabsdet } = slogdet(Sinn)
-      logEvidence += -0.5 * (yi.length * LOG_2PI + item(logabsdet) + item(matmul(innov, solve(Sinn, innov))))
+      // The library's Kalman update (short form, as the chain's stacked solve gives it) on the offset-free observation.
+      const u = kalmanUpdate(m, P, sub(y, dOff), H, R, { joseph: false })
+      m = primalOf(u.x) as Tensor
+      P = primalOf(u.P) as Tensor
+      logEvidence += item(u.logLikelihood)
     }
     filteredMeans.push(m)
     filteredCovariances.push(P)
@@ -375,16 +376,14 @@ export function kalmanSmoother(form: LinearGaussianForm): KalmanResult {
   const means = [...filteredMeans]
   const covariances = [...filteredCovariances]
   for (let t = T - 2; t >= 0; t--) {
-    const Pf = filteredCovariances[t] as Tensor
-    const F = transitions[t + 1] as Tensor
-    const Pp = predictedCovariances[t + 1] as Tensor
-    const G = primalOf(transpose(solve(Pp, matmul(F, Pf))))
-    means[t] = primalOf(
-      add(filteredMeans[t] as Tensor, matmul(G, sub(means[t + 1] as Tensor, predictedMeans[t + 1] as Tensor))),
+    const back = rtsStep(
+      { x: filteredMeans[t] as Tensor, P: filteredCovariances[t] as Tensor },
+      { x: predictedMeans[t + 1] as Tensor, P: predictedCovariances[t + 1] as Tensor },
+      { x: means[t + 1] as Tensor, P: covariances[t + 1] as Tensor },
+      transitions[t + 1] as Tensor,
     )
-    covariances[t] = primalOf(
-      symmetric(add(Pf, matmul(matmul(G, sub(covariances[t + 1] as Tensor, Pp)), transpose(G)))),
-    )
+    means[t] = primalOf(back.x) as Tensor
+    covariances[t] = primalOf(back.P) as Tensor
   }
   return {
     means,
