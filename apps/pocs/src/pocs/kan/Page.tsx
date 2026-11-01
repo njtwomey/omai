@@ -23,6 +23,7 @@ import {
   useSessionPreferences,
 } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { ComputeGate } from '../../shared/ComputeGate.tsx'
 
 const LOSS = figure({ width: 420, height: 300 })
 const PANEL = figure({ width: 520, height: 320 })
@@ -148,7 +149,9 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
   )
   return (
     <div className="flex flex-col gap-3">
-      <View live={live} at={at} onScrub={setAt} data={data} />
+      <ComputeGate live={live} total={controls.epochs} label="Training the network">
+        <View live={live} at={at} onScrub={setAt} data={data} />
+      </ComputeGate>
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
       <p className="max-w-3xl text-xs text-muted">
         Each edge of the network carries its own curve; the picture shows every edge's curve over its input's range,
