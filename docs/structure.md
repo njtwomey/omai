@@ -5211,7 +5211,7 @@ exposition of the mathematics lives).
 
 **Dataset collections.** `lib/datasets/collections.ts` groups the generators and real datasets into themed lists
 for pickers: `classification2d`, `regression1d`, `clustering2d`, `density2d`, `anomaly2d`, `manifold3d`,
-`timeSeries`, `comparisons` (games and tournaments for rating systems), `textCorpora` and `environments` (the rl
+`timeSeries`, `comparisons` (games and tournaments for rating systems), `textCorpora`, the real-data lists `mixedTables` (UCI tables with categorical features and missing values) and `clusteringTabular`, and `environments` (the rl
 environments by family), each entry with its name, its generator, the `Space` of its knobs with demo defaults, and
 the methods it suits. mdml-render turns a collection
 and a method's `hyperSpace` into a dataset picker and parameter controls (see `react/controls/`).
@@ -6182,6 +6182,19 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   `makeMultilabelClassification`.
 - `classification-real.ts`: `iris`, `wine`, `breastCancer`, 8 by 8 digits (`digits`, `digitImages`), Titanic
   (`titanic`, R's survival table expanded to rows), penguins (`penguins` as a table, `penguinsClassification`).
+- `classification-uci.ts`, `regression-uci.ts`, `tables-uci.ts`: 34 classics of the UCI Machine Learning Repository
+  (all CC BY 4.0, each with its DOI citation), vendored from the published files by `oracle/datasets/<name>.py`
+  (payloads in `_data/`, about 2.1 MB together; missing values are `null`/NaN, never imputed; `spambase`, `mushroom` and
+  `adultIncome` are documented stratified subsamples picked by a hash of the row index). Numeric classification:
+  `banknoteAuthentication`, `ionosphere`, `sonar`, `glassIdentification`, `seeds`, `ecoli`, `yeast`, `haberman`,
+  `balanceScale`, `vehicleSilhouettes`, `wholesaleCustomers`, `lenses`, `spambase`. Numeric regression: `concreteStrength`,
+  `energyEfficiency` (two targets), `yachtHydrodynamics`, `airfoilSelfNoise`, `wineQualityRed`, `wineQualityWhite`.
+  Tables with categorical and text columns and missing values (a target column, `tableToXy` turns one into features):
+  `autoMpg`, `abalone`, `heartDisease` (Cleveland), `hepatitis`, `zoo`, `ticTacToe`, `carEvaluation`,
+  `congressionalVoting`, `mushroom`, `adultIncome`, `dermatology`, `forestFires`, `studentMath`, `servo`,
+  `bikeSharingDaily`. `_uci.ts` holds their provenance table (`UCI_INFO`) and the three builders; `uci.ts` makes the
+  registry entries (`uciEntries`), which `catalogue.ts` lists beside the other real datasets. Not vendored: Pima
+  Indians diabetes (no longer on the repository), the full spambase, mushroom and adult files (size).
 - `fairness.ts`: data with protected attributes (named with their coded values in `meta.sensitive`): `biasedCredit`
   (a group with knobs for representation, a real base-rate gap, label bias, noisier measurements and a proxy feature;
   exact posterior, Bayes error, clean labels and base rates), the vendored Statlog German credit data

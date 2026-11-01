@@ -118,6 +118,7 @@ import {
 } from './timeseries.ts'
 import { loggedBandit, offlineMdp } from './trajectories.ts'
 import { plantedTransactions } from './transactions.ts'
+import { uciEntries } from './uci.ts'
 import {
   clusterAssumption,
   crowdLabels,
@@ -537,6 +538,8 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     licence: 'CC BY 4.0 (UCI Machine Learning Repository)',
     source: 'UCI Statlog (German credit), german.data',
   }),
+  // The UCI repository classics (classification, regression and mixed-type tables), CC BY 4.0.
+  ...uciEntries(),
   vendoredEntry('diabetes', () => diabetes(), {
     title: 'Diabetes',
     description: 'Disease progression one year after baseline for 442 diabetes patients (Efron et al., 2004).',
