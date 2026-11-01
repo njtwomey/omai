@@ -13,6 +13,7 @@ import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import type { FitOptions } from '../learn/estimator.ts'
 import { columnOf, matrixView } from '../learn/validation.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
+import type { SpaceValue } from '../space/index.ts'
 import {
   add,
   asTensor,
@@ -34,7 +35,18 @@ import {
   toFlat,
   type Value,
 } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor as tensorSource,
+} from '../trace/index.ts'
+import { lambdaSchedules } from './counterfactual-options.ts'
 import type { DifferentiableModel } from './gradients.ts'
 
 function rowOf(x: TensorLike, who: string): Float64Array {
@@ -69,22 +81,31 @@ export function medianAbsoluteDeviations(training: TensorLike): number[] {
   })
 }
 
-/** Options of {@link wachterCounterfactual}. */
-export interface WachterOptions extends FitOptions {
+function scalarModel(model: DifferentiableModel, d: number): (v: Float64Array) => number {
+  return (v) => toFlat(model(fromStorage(Float64Array.from(v), [1, d], 'float64')))[0] ?? 0
+}
+
+/** What {@link wachterAlgorithm} searches for and how; {@link WachterOptions} adds the tracing options of the function. */
+export interface WachterSettings {
   /** The desired model output (for a probability, e.g. 0.5 + margin). */
   readonly target: number
   /** Accept when |f(x') - target| is at most this (default 0.05). */
   readonly tolerance?: number
   /** Feature scales for the weighted L1 distance (default ones; see {@link medianAbsoluteDeviations}). */
   readonly scales?: readonly number[]
-  /** The starting weight of the prediction loss (default 0.1), multiplied by 2 each outer round. */
+  /** The starting weight of the prediction loss (default 0.1), grown each outer round by the `lambdaSchedule`. */
   readonly lambda?: number
+  /** The schedule of the weight, a value of `lambdaSchedules.space` (default doubling). */
+  readonly lambdaSchedule?: SpaceValue
   /** Outer rounds (default 20) and proximal-gradient iterations per round (default 200). */
   readonly maxRounds?: number
   readonly maxIterations?: number
   /** Features that may not change. */
   readonly immutable?: readonly number[]
 }
+
+/** Options of {@link wachterCounterfactual}. */
+export interface WachterOptions extends FitOptions, WachterSettings {}
 
 /** A counterfactual explanation. */
 export interface Counterfactual {
@@ -98,20 +119,196 @@ export interface Counterfactual {
   readonly valid: boolean
 }
 
-function scalarModel(model: DifferentiableModel, d: number): (v: Float64Array) => number {
-  return (v) => toFlat(model(fromStorage(Float64Array.from(v), [1, d], 'float64')))[0] ?? 0
+/** The paths of {@link wachterAlgorithm}. */
+export type CounterfactualPath =
+  | 'cf/x'
+  | 'cf/prediction'
+  | 'cf/loss'
+  | 'cf/distance'
+  | 'cf/validity'
+  | 'cf/lambda'
+  | 'cf/round'
+
+/**
+ * The state of {@link wachterAlgorithm}: the current point, the weight of the prediction loss, where the search is in
+ * its round (the proximal-gradient iteration and its backtracked step size) and the model's output at the point.
+ */
+export interface WachterState {
+  /** Lambda rounds finished. */
+  readonly round: number
+  /** Proximal-gradient iterations done in the current round. */
+  readonly iteration: number
+  readonly point: Float64Array
+  /** The weight of the prediction loss in the current round. */
+  readonly lambda: number
+  /** The step size of the proximal gradient, adapted by backtracking within the round (restarts at 1). */
+  readonly stepSize: number
+  /** The model's output at the point. */
+  readonly value: number
+  /** Whether the state is at the start of a round (the target is tested only there). */
+  readonly roundEnd: boolean
+  /** The objective lambda (f(x') - target)^2 + distance at the point. */
+  readonly loss: number
+  /** The weighted L1 distance from the original point. */
+  readonly distance: number
+}
+
+/** What a stepped Wachter search logs: the point, the model's output, the objective, the distance, validity and lambda. */
+export const counterfactualContract: Contract<WachterState, CounterfactualPath> = defineContract({
+  'cf/x': tensorSource({ role: 'state', description: 'the counterfactual point after the iteration' }),
+  'cf/prediction': scalar({ description: "the model's output at the point" }),
+  'cf/loss': scalar({ description: 'lambda (f(x) - target)^2 + the weighted L1 distance', direction: 'lower' }),
+  'cf/distance': scalar({ description: 'the weighted L1 distance from the original point', direction: 'lower' }),
+  'cf/validity': scalar({ description: '1 when the output is within tolerance of the target, else 0' }),
+  'cf/lambda': scalar({ description: 'the weight of the prediction loss in this round' }),
+  'cf/round': scalar({ description: 'lambda rounds finished' }),
+})
+
+/**
+ * Wachter counterfactuals (Wachter, Mittelstadt and Russell 2017) as a stepped algorithm: the closest point, in the
+ * MAD-weighted L1 distance, at which the model's output reaches a target, from argmin lambda (f(x') - y')^2 +
+ * sum_j |x'_j - x_j| / MAD_j. Each subproblem is solved by proximal gradient descent (the L1 term's proximal map is soft
+ * thresholding towards x, which also keeps sparse changes) with a backtracked step; a step is one proximal-gradient
+ * iteration, and when the round's subproblem has converged (or its iterations are spent) lambda grows by the
+ * `lambdaSchedule` (doubling by default) and the next round starts. The search stops at the end of a round in which the
+ * target is met. Immutable features are fixed. The state serialises.
+ *
+ * @param model - The differentiable model (one output per row; the first column is used).
+ * @param x - The original point `[d]`.
+ * @param settings - target, tolerance, scales, lambda and its schedule, maxRounds, maxIterations, immutable.
+ * @returns The algorithm.
+ * @throws MdmlError with code `shape` for an empty point or the wrong number of scales.
+ * @concept counterfactual-explanations
+ * @example
+ * ```ts
+ * import { wachterAlgorithm } from 'mdml-engine/explain'
+ * import { matmul } from 'mdml-engine/tensor'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const score = (v) => matmul(v, [[1], [2]])
+ * const alg = wachterAlgorithm(score, [0, 0], { target: 2, tolerance: 0.01 })
+ * Math.abs(runAlgorithm(alg, { maxSteps: 4000 }).state.value - 2) <= 0.01 // => true
+ * ```
+ */
+export function wachterAlgorithm(
+  model: DifferentiableModel,
+  x: TensorLike,
+  settings: WachterSettings,
+): Algorithm<WachterState, CounterfactualPath> {
+  const x0 = rowOf(x, 'wachterCounterfactual')
+  const d = x0.length
+  const scales = settings.scales ?? new Array<number>(d).fill(1)
+  if (scales.length !== d) throw new MdmlError('shape', 'wachterCounterfactual: one scale per feature')
+  const fixed = new Set(settings.immutable ?? [])
+  const tol = settings.tolerance ?? 0.05
+  const maxIterations = settings.maxIterations ?? 200
+  const maxRounds = settings.maxRounds ?? 20
+  const grow = lambdaSchedules.make(settings.lambdaSchedule)
+  const f = scalarModel(model, d)
+  const gradF = grad((v: Value) => sum(model(v)))
+  const distance = (v: Float64Array): number =>
+    v.reduce((s, t, j) => s + Math.abs(t - (x0[j] ?? 0)) / (scales[j] ?? 1), 0)
+  const lossAt = (v: Float64Array, lambda: number, fv: number): number =>
+    lambda * (fv - settings.target) ** 2 + distance(v)
+  const measure = (
+    round: number,
+    iteration: number,
+    point: Float64Array,
+    lambda: number,
+    stepSize: number,
+    roundEnd: boolean,
+  ): WachterState => {
+    const value = f(point)
+    return {
+      round,
+      iteration,
+      point,
+      lambda,
+      stepSize,
+      value,
+      roundEnd,
+      loss: lossAt(point, lambda, value),
+      distance: distance(point),
+    }
+  }
+  return {
+    name: 'wachter-counterfactual',
+    config: {
+      features: d,
+      target: settings.target,
+      tolerance: tol,
+      schedule: lambdaSchedules.optionOf(settings.lambdaSchedule).name,
+    },
+    schema: channels({
+      metrics: {
+        lambda: { description: 'the weight of the prediction loss' },
+        gap: { description: "|f(x') - target|", direction: 'lower' },
+      },
+    }),
+    init: () => measure(0, 0, Float64Array.from(x0), settings.lambda ?? 0.1, 1, true),
+    step: (s, ctx) => {
+      const lambda = s.lambda
+      const objective = (v: Float64Array): number => lossAt(v, lambda, f(v))
+      let p = s.point
+      let step = s.stepSize
+      let moved = 0
+      if (s.iteration < maxIterations) {
+        const fv = f(p)
+        const g = toFlat(gradF(fromStorage(Float64Array.from(p), [1, d], 'float64')) as Tensor).map(
+          (t) => 2 * lambda * (fv - settings.target) * t,
+        )
+        const current = objective(p)
+        let next = p
+        for (let bt = 0; bt < 30; bt++) {
+          next = Float64Array.from(p, (v, j) => {
+            if (fixed.has(j)) return x0[j] ?? 0
+            const z = v - step * (g[j] ?? 0)
+            const shrink = step / (scales[j] ?? 1)
+            const delta = z - (x0[j] ?? 0)
+            return (x0[j] ?? 0) + Math.sign(delta) * Math.max(Math.abs(delta) - shrink, 0)
+          })
+          if (objective(next) <= current + 1e-15) break
+          step /= 2
+        }
+        moved = next.reduce((m, v, j) => Math.max(m, Math.abs(v - (p[j] ?? 0))), 0)
+        p = next
+        step *= 1.5
+      }
+      const iteration = s.iteration + 1
+      const out =
+        moved < 1e-10 || iteration >= maxIterations
+          ? measure(s.round + 1, 0, p, grow(lambda, s.round), 1, true)
+          : measure(s.round, iteration, p, lambda, step, false)
+      ctx.log('cf/x', fromStorage(Float64Array.from(out.point), [d], 'float64'))
+      ctx.log('cf/prediction', out.value)
+      ctx.log('cf/loss', out.loss)
+      ctx.log('cf/distance', out.distance)
+      ctx.log('cf/validity', Math.abs(out.value - settings.target) <= tol ? 1 : 0)
+      ctx.log('cf/lambda', lambda)
+      ctx.log('cf/round', out.round)
+      return out
+    },
+    done: (s) =>
+      s.roundEnd && Math.abs(s.value - settings.target) <= tol
+        ? 'converged'
+        : s.round >= maxRounds
+          ? 'completed'
+          : undefined,
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as WachterState,
+    observe: (s) => ({ metrics: { lambda: s.lambda, gap: Math.abs(s.value - settings.target) } }),
+  }
 }
 
 /**
  * Wachter counterfactuals (Wachter, Mittelstadt and Russell 2017): the closest point, in the MAD-weighted L1
  * distance, at which the model's output reaches a target, from argmin lambda (f(x') - y')^2 + sum_j |x'_j - x_j| / MAD_j
  * with lambda doubled until the target is met. Each subproblem is solved by proximal gradient descent (the L1 term's
- * proximal map is soft thresholding towards x, which also keeps sparse changes); immutable features are fixed. A
- * traced algorithm with one step per lambda.
+ * proximal map is soft thresholding towards x, which also keeps sparse changes); immutable features are fixed. This is
+ * {@link wachterAlgorithm} run to the end, a traced algorithm with one step per proximal-gradient iteration.
  *
  * @param model - The differentiable model (one output per row; the first column is used).
  * @param x - The original point `[d]`.
- * @param options - target, tolerance, scales, lambda, maxRounds, maxIterations, immutable and tracing.
+ * @param options - target, tolerance, scales, lambda and its schedule, maxRounds, maxIterations, immutable and tracing.
  * @returns The counterfactual.
  * @concept counterfactual-explanations
  * @example
@@ -129,72 +326,18 @@ export function wachterCounterfactual(
   x: TensorLike,
   options: WachterOptions,
 ): Counterfactual {
-  const x0 = rowOf(x, 'wachterCounterfactual')
-  const d = x0.length
-  const scales = options.scales ?? new Array<number>(d).fill(1)
-  if (scales.length !== d) throw new MdmlError('shape', 'wachterCounterfactual: one scale per feature')
-  const fixed = new Set(options.immutable ?? [])
-  const tol = options.tolerance ?? 0.05
-  const f = scalarModel(model, d)
-  const gradF = grad((v: Value) => sum(model(v)))
-  const distance = (v: Float64Array): number =>
-    v.reduce((s, t, j) => s + Math.abs(t - (x0[j] ?? 0)) / (scales[j] ?? 1), 0)
-  type State = { readonly point: Float64Array; readonly lambda: number; readonly value: number }
-  const inner = (start: Float64Array, lambda: number): Float64Array => {
-    let p = Float64Array.from(start)
-    let step = 1
-    const objective = (v: Float64Array): number => lambda * (f(v) - options.target) ** 2 + distance(v)
-    for (let it = 0; it < (options.maxIterations ?? 200); it++) {
-      const fv = f(p)
-      const g = toFlat(gradF(fromStorage(Float64Array.from(p), [1, d], 'float64')) as Tensor).map(
-        (t) => 2 * lambda * (fv - options.target) * t,
-      )
-      const current = objective(p)
-      let next = p
-      for (let bt = 0; bt < 30; bt++) {
-        next = Float64Array.from(p, (v, j) => {
-          if (fixed.has(j)) return x0[j] ?? 0
-          const z = v - step * (g[j] ?? 0)
-          const shrink = step / (scales[j] ?? 1)
-          const delta = z - (x0[j] ?? 0)
-          return (x0[j] ?? 0) + Math.sign(delta) * Math.max(Math.abs(delta) - shrink, 0)
-        })
-        if (objective(next) <= current + 1e-15) break
-        step /= 2
-      }
-      const moved = next.reduce((s, v, j) => Math.max(s, Math.abs(v - (p[j] ?? 0))), 0)
-      p = next
-      step *= 1.5
-      if (moved < 1e-10) break
-    }
-    return p
-  }
-  const algorithm: Algorithm<State> = {
-    name: 'wachter-counterfactual',
-    config: { features: d, target: options.target },
-    schema: channels({
-      metrics: {
-        lambda: { description: 'the weight of the prediction loss' },
-        gap: { description: "|f(x') - target|", direction: 'lower' },
-      },
-    }),
-    init: () => ({ point: Float64Array.from(x0), lambda: options.lambda ?? 0.1, value: f(x0) }),
-    step: (s) => {
-      const point = inner(s.point, s.lambda)
-      return { point, lambda: s.lambda * 2, value: f(point) }
-    },
-    done: (s) => (Math.abs(s.value - options.target) <= tol ? 'converged' : undefined),
-    observe: (s) => ({ metrics: { lambda: s.lambda, gap: Math.abs(s.value - options.target) } }),
-  }
+  const settings = options
+  const algorithm = wachterAlgorithm(model, x, settings)
   const { state } = runAlgorithm(algorithm, {
     ...runOptionsFor(options, 'wachterCounterfactual'),
-    maxSteps: options.maxRounds ?? 20,
+    maxSteps: (settings.maxRounds ?? 20) * Math.max(1, settings.maxIterations ?? 200),
   })
+  const tol = settings.tolerance ?? 0.05
   return {
     x: Array.from(state.point),
     prediction: state.value,
-    distance: distance(state.point),
-    valid: Math.abs(state.value - options.target) <= tol,
+    distance: state.distance,
+    valid: Math.abs(state.value - settings.target) <= tol,
   }
 }
 

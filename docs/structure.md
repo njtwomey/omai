@@ -3750,7 +3750,8 @@ methods), alibi (anchors, CEM, counterfactuals, ALE, trust scores), lime, interp
 - Contrastive and counterfactual (`counterfactuals.ts`): Wachter, diverse (DiCE-style), FACE, CEM (pertinent positives
   and negatives), prototype-guided counterfactuals, growing spheres, MACE-style for tree ensembles; actionability,
   immutability and plausibility constraints; recourse (linear, cost, feasibility) and its robustness to model change.
-  Built: `wachterCounterfactual`, `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
+  Built: `wachterCounterfactual` (= `wachterAlgorithm` run to the end: one proximal-gradient iteration per step, `cf/*` paths
+  of `counterfactualContract`; the lambda schedule is a slot, `lambdaSchedules` in `counterfactual-options.ts`), `diverseCounterfactuals`, `faceCounterfactual`, `growingSpheres`,
   `pertinentNegative` and `pertinentPositive` (CEM by projected FISTA), `prototypeCounterfactual` (class prototypes
   from nearest neighbours, no encoder), `linearRecourse`, `actionViolations` and `projectActions` (immutable,
   monotone, bounded, integer), `recourseRobustness`. TODO: MACE for tree ensembles.
