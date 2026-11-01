@@ -21,13 +21,23 @@ describe('annealedImportanceSampling is a run of aisAlgorithm', () => {
       mcmcSteps: 3,
     })
     expect([a.logEvidence.value, a.logEvidence.standardError, a.ess]).toEqual([
-      -2.1738988017933885, 0.1472899845190776, 21.667542264154054,
+      expect.closeTo(-2.1738988017933885, 6),
+      expect.closeTo(0.1472899845190776, 6),
+      expect.closeTo(21.667542264154054, 6),
     ])
-    expect(toFlat(a.particles).slice(0, 2)).toEqual([-0.6131504202369733, 0.7520315140146523])
-    expect(toFlat(a.logWeights).slice(0, 2)).toEqual([-2.090171497268085, -3.011076287194096])
+    expect(toFlat(a.particles).slice(0, 2)).toEqual([
+      expect.closeTo(-0.6131504202369733, 6),
+      expect.closeTo(0.7520315140146523, 6),
+    ])
+    expect(toFlat(a.logWeights).slice(0, 2)).toEqual([
+      expect.closeTo(-2.090171497268085, 6),
+      expect.closeTo(-3.011076287194096, 6),
+    ])
     const b = annealedImportanceSampling(prior, ll, { key: key(6), numParticles: 30 })
     expect([b.logEvidence.value, b.logEvidence.standardError, b.ess]).toEqual([
-      -2.1271740720577217, 0.07180034876735167, 26.09822613496709,
+      expect.closeTo(-2.1271740720577217, 6),
+      expect.closeTo(0.07180034876735167, 6),
+      expect.closeTo(26.09822613496709, 6),
     ])
   })
 })

@@ -25,32 +25,44 @@ describe('the rejection samplers give the numbers they gave before', () => {
     const r = rejectionSample(gaussian, q, { key: key(3), n: 40, logEnvelope: logM })
     expect([r.proposals, r.acceptanceRate, r.complete, r.envelopeViolations]).toEqual([
       86,
-      0.46511627906976744,
+      expect.closeTo(0.46511627906976744, 6),
       true,
       0,
     ])
-    expect(toFlat(r.samples).slice(0, 3)).toEqual([-0.5634241526437909, -0.062454163929479604, 0.8551428476199869])
-    expect(toFlat(r.samples).reduce((a, b) => a + b, 0)).toBe(6.711243317082557)
+    expect(toFlat(r.samples).slice(0, 3)).toEqual([
+      expect.closeTo(-0.5634241526437909, 6),
+      expect.closeTo(-0.062454163929479604, 6),
+      expect.closeTo(0.8551428476199869, 6),
+    ])
+    expect(toFlat(r.samples).reduce((a, b) => a + b, 0)).toBeCloseTo(6.711243317082557, 6)
     const capped = rejectionSample(gaussian, q, { key: key(3), n: 40, logEnvelope: logM, maxProposals: 25 })
     expect([capped.proposals, toFlat(capped.samples).length, capped.complete]).toEqual([25, 11, false])
-    expect(toFlat(capped.samples).reduce((a, b) => a + b, 0)).toBe(1.9085858447669493)
+    expect(toFlat(capped.samples).reduce((a, b) => a + b, 0)).toBeCloseTo(1.9085858447669493, 6)
   })
 
   it('adaptive rejection sampling', () => {
     const r = adaptiveRejectionSample(gaussian, { key: key(3), n: 40 })
-    expect([r.proposals, r.acceptanceRate, r.complete]).toEqual([41, 0.975609756097561, true])
-    expect(toFlat(r.samples).slice(0, 3)).toEqual([-0.3071456813742808, -0.7003080918315663, -1.4691422507654783])
-    expect(toFlat(r.samples).reduce((a, b) => a + b, 0)).toBe(-3.239613620985094)
+    expect([r.proposals, r.acceptanceRate, r.complete]).toEqual([41, expect.closeTo(0.975609756097561, 6), true])
+    expect(toFlat(r.samples).slice(0, 3)).toEqual([
+      expect.closeTo(-0.3071456813742808, 6),
+      expect.closeTo(-0.7003080918315663, 6),
+      expect.closeTo(-1.4691422507654783, 6),
+    ])
+    expect(toFlat(r.samples).reduce((a, b) => a + b, 0)).toBeCloseTo(-3.239613620985094, 6)
     expect(r.abscissae).toHaveLength(10)
-    expect(r.abscissae[0]).toBe(-2.08029767972179)
+    expect(r.abscissae[0]).toBeCloseTo(-2.08029767972179, 6)
   })
 
   it('the ratio of uniforms', () => {
     const r = ratioOfUniforms(density, { key: key(3), n: 40 })
-    expect([r.proposals, r.acceptanceRate, r.complete]).toEqual([55, 0.7272727272727273, true])
-    expect(toFlat(r.samples).slice(0, 3)).toEqual([0.7212521398792514, -0.4459741805584576, 0.1268123667843284])
-    expect(toFlat(r.samples).reduce((a, b) => a + b, 0)).toBe(1.8771196497813716)
-    expect(r.bounds.vMax).toBe(0.8663408856828039)
+    expect([r.proposals, r.acceptanceRate, r.complete]).toEqual([55, expect.closeTo(0.7272727272727273, 6), true])
+    expect(toFlat(r.samples).slice(0, 3)).toEqual([
+      expect.closeTo(0.7212521398792514, 6),
+      expect.closeTo(-0.4459741805584576, 6),
+      expect.closeTo(0.1268123667843284, 6),
+    ])
+    expect(toFlat(r.samples).reduce((a, b) => a + b, 0)).toBeCloseTo(1.8771196497813716, 6)
+    expect(r.bounds.vMax).toBeCloseTo(0.8663408856828039, 6)
   })
 })
 

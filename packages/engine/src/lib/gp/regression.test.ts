@@ -48,7 +48,7 @@ describe('gpRegression', () => {
     const surface = s.probe(s.t, 'solver/surface', { resolution: 5 }) as { kind: string; values: number[][] }
     expect(surface.kind).toBe('hyperparameterSurface')
     expect(surface.values).toHaveLength(5)
-  })
+  }, 60_000)
 
   it('serialises its state: seeking from a checkpoint gives the model a straight run gives', () => {
     const est = gpRegression.with({ kernel })

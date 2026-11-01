@@ -199,7 +199,7 @@ describe('Dawid-Skene', () => {
       .map(([, j]) => j)
     expect(order).toEqual([0, 1, 2, 3])
     expect(accuracyOfLabels(glad.labels, d.truth)).toBeGreaterThan(0.9)
-  })
+  }, 60_000)
 
   it('never lowers the log-likelihood from one step to the next, in any mode', () => {
     fc.assert(

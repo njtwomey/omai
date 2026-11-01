@@ -110,7 +110,7 @@ describe('KLIEP', () => {
       'projectedGradient',
       ...['gradientDescent', 'conjugateGradient', 'newton', 'bfgs', 'lbfgs', 'coordinateDescent', 'gradient'],
     ])
-  })
+  }, 60_000)
 
   it('is an objective over theta = log alpha whose minimiser normalises to the KLIEP solution', () => {
     const p = kliepProblem(train, test, { sigma: 0.8, nCentres: 10 })

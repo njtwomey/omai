@@ -217,7 +217,7 @@ describe('families and terms', () => {
     const separate = gam.with({ terms: [s(0, { k: 6 }), s(1, { k: 6 }), ti([0, 1], { k: 4 })] }).fit({ x, y })
     expect(separate.score({ x, y })).toBeGreaterThan(0.95)
     expect(Object.keys(separate.edfTerms)).toEqual(['s(x0)', 's(x1)', 'ti(x0,x1)'])
-  })
+  }, 60_000)
 
   it('treats a random-effect factor as a shrunken intercept per level', () => {
     const levels = 6

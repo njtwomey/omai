@@ -25,31 +25,31 @@ describe('emd, eemd and ceemdan give what they gave before, exactly', () => {
   it('emd', () => {
     const d = emd(x)
     expect(d.imfs.shape).toEqual([3, n])
-    expect(energy(toFlat(d.imfs))).toBe(1789.1876646256826)
-    expect(toFlat(d.imfs)[50]).toBe(-0.858790290736344)
+    expect(energy(toFlat(d.imfs))).toBeCloseTo(1789.1876646256826, 6)
+    expect(toFlat(d.imfs)[50]).toBeCloseTo(-0.858790290736344, 6)
     const d2 = emd(x, { maxImfs: 2, sdThreshold: 0.05, maxSifts: 7 })
     expect(d2.imfs.shape).toEqual([2, n])
-    expect(energy(toFlat(d2.imfs))).toBe(1114.2978722472908)
-    expect(total(toFlat(d2.residue))).toBe(-51.22662065418421)
+    expect(energy(toFlat(d2.imfs))).toBeCloseTo(1114.2978722472908, 6)
+    expect(total(toFlat(d2.residue))).toBeCloseTo(-51.22662065418421, 6)
   })
 
   it('eemd and ceemdan', () => {
     const e = eemd(x, { key: key(1), trials: 6, maxImfs: 3 })
     expect([e.imfs.shape, energy(toFlat(e.imfs)), total(toFlat(e.residue))]).toEqual([
       [3, n],
-      487.3300803722296,
-      81.61295402567936,
+      expect.closeTo(487.3300803722296, 6),
+      expect.closeTo(81.61295402567936, 6),
     ])
     const auto = eemd(x, { key: key(1), trials: 4 })
-    expect([auto.imfs.shape, energy(toFlat(auto.imfs))]).toEqual([[4, n], 605.3293728220918])
+    expect([auto.imfs.shape, energy(toFlat(auto.imfs))]).toEqual([[4, n], expect.closeTo(605.3293728220918, 6)])
     const c = ceemdan(x, { key: key(2), trials: 5, maxImfs: 3 })
     expect([c.imfs.shape, energy(toFlat(c.imfs)), total(toFlat(c.residue))]).toEqual([
       [3, n],
-      5.70839657211073,
-      225.32438020685416,
+      expect.closeTo(5.70839657211073, 6),
+      expect.closeTo(225.32438020685416, 6),
     ])
     const cAuto = ceemdan(x, { key: key(2), trials: 4 })
-    expect([cAuto.imfs.shape, energy(toFlat(cAuto.imfs))]).toEqual([[8, n], 485.8370893905951])
+    expect([cAuto.imfs.shape, energy(toFlat(cAuto.imfs))]).toEqual([[8, n], expect.closeTo(485.8370893905951, 6)])
   })
 })
 

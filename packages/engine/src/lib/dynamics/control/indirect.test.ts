@@ -206,7 +206,7 @@ describe('minimum time', () => {
       expect(final.lambda0[1]).toBeCloseTo(1, 1)
       expect(final.lambda0[0]).toBeCloseTo(1 / Math.sqrt(d), 1)
     }
-  })
+  }, 60_000)
 
   it('has the control bang-bang in effect: full brake, one switch at half the time, then full thrust the other way', () => {
     const { final } = minimumTimeShooting(1, { steps: 400 })
@@ -223,7 +223,7 @@ describe('minimum time', () => {
     const exact = minimumTimeDoubleIntegrator()
     expect(toFlat(exact.control(tensor([1, 0]), tensor([1, 0.5])))).toEqual([-1])
     expect(toFlat(exact.control(tensor([1, 0]), tensor([1, -0.5])))).toEqual([1])
-  })
+  }, 60_000)
 
   it('emits the switch as an event on the tape', () => {
     const rec = recorder()

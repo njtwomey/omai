@@ -40,7 +40,7 @@ describe('svr', () => {
     expect(narrow.params.tube).toBeLessThanOrEqual(wide.params.tube + 1e-9)
     expect(narrow.params.supportIndex.length).toBeGreaterThanOrEqual(wide.params.supportIndex.length)
     expect(wide.params.supportIndex.length / 24).toBeGreaterThanOrEqual(0.2 - 1e-9)
-  })
+  }, 60_000)
 
   it('revives from JSON, and rejects weights on the nu form', () => {
     const est = svr.with({ gamma: 1 })

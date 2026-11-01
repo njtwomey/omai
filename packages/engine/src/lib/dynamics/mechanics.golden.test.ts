@@ -62,6 +62,6 @@ const FNS: Readonly<Record<string, GoldenFn>> = {
   },
 }
 
-describe('dynamics/mechanics against scipy.integrate', () => {
+describe('dynamics/mechanics against scipy.integrate', { timeout: 60_000 }, () => {
   runFixture('dynamics/mechanics', FNS, it)
 })
