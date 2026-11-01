@@ -6,7 +6,9 @@
 
 import { MdmlError } from '../base/index.ts'
 import { daxpy, ddot } from '../numerics/linalg/index.ts'
+import { runAlgorithm } from '../trace/index.ts'
 import { checkConstants, firstStep, probe } from './_line-search.ts'
+import { backtrackingSearch } from './line-search-algorithms.ts'
 import { type FlatObjective, flatObjective, type Objective, type Parameters } from './minimize/objective.ts'
 
 /** The line function at one step: phi(alpha) = f(x + alpha p), its slope phi'(alpha) = grad f . p, and the gradient. */
@@ -108,52 +110,9 @@ export interface BacktrackingOptions {
  * ```
  */
 export function backtracking(options: BacktrackingOptions = {}): LineSearch {
-  const c1 = options.c1 ?? 1e-4
-  const amin = options.alphaMin ?? 0
   return (phi, start) => {
-    const p = probe(phi)
-    const phi0 = start.value
-    const d0 = start.slope
-    if (!(d0 < 0)) return p.finish(undefined, phi0, Number.NaN, 'not a descent direction')
-    const ok = (a: number, v: number): boolean => v <= phi0 + c1 * a * d0
-    if (options.interpolation === 'halving') {
-      const rho = options.rho ?? 0.5
-      let a = start.alpha ?? 1
-      for (let i = 0; i < (options.maxEvaluations ?? 50) && a > amin; i++) {
-        const v = p.valueAt(a)
-        if (ok(a, v)) return p.finish(a, v, p.point(a)?.slope ?? Number.NaN, 'Armijo condition satisfied')
-        a *= rho
-      }
-      return p.finish(undefined, phi0, Number.NaN, 'step became too small')
-    }
-    let a0 = start.alpha ?? 1
-    let f0 = p.valueAt(a0)
-    if (ok(a0, f0)) return p.finish(a0, f0, p.point(a0)?.slope ?? Number.NaN, 'Armijo condition satisfied')
-    const guard = options.safeguard
-    const clip = (a: number, prev: number): number =>
-      guard === undefined || !Number.isFinite(a)
-        ? guard === undefined
-          ? a
-          : guard[1] * prev
-        : Math.min(Math.max(a, guard[0] * prev), guard[1] * prev)
-    let a1 = clip((-d0 * a0 * a0) / 2 / (f0 - phi0 - d0 * a0), a0)
-    let f1 = p.valueAt(a1)
-    if (ok(a1, f1)) return p.finish(a1, f1, p.point(a1)?.slope ?? Number.NaN, 'Armijo condition satisfied')
-    while (a1 > amin) {
-      const factor = a0 * a0 * a1 * a1 * (a1 - a0)
-      const a = (a0 * a0 * (f1 - phi0 - d0 * a1) - a1 * a1 * (f0 - phi0 - d0 * a0)) / factor
-      const b = (-(a0 ** 3) * (f1 - phi0 - d0 * a1) + a1 ** 3 * (f0 - phi0 - d0 * a0)) / factor
-      let a2 = clip((-b + Math.sqrt(Math.abs(b * b - 3 * a * d0))) / (3 * a), a1)
-      const f2 = p.valueAt(a2)
-      if (ok(a2, f2)) return p.finish(a2, f2, p.point(a2)?.slope ?? Number.NaN, 'Armijo condition satisfied')
-      if (guard === undefined && (a1 - a2 > a1 / 2 || 1 - a2 / a1 < 0.96)) a2 = a1 / 2
-      a0 = a1
-      a1 = a2
-      f0 = f1
-      f1 = f2
-      if (!Number.isFinite(a1)) break
-    }
-    return p.finish(undefined, f1, Number.NaN, 'step became too small')
+    const search = backtrackingSearch(phi, start, options)
+    return search.result(runAlgorithm(search.algorithm, { maxSteps: Number.MAX_SAFE_INTEGER }).state)
   }
 }
 

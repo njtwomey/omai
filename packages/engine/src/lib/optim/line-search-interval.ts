@@ -4,8 +4,10 @@
  * Wolfe zoom as fallback.
  */
 
+import { runAlgorithm } from '../trace/index.ts'
 import { checkConstants, firstStep, probe } from './_line-search.ts'
-import { type ExtraCondition, type LineSearch, type LineSearchResult, strongWolfe } from './line-search.ts'
+import { type ExtraCondition, type LineSearch, strongWolfe } from './line-search.ts'
+import { hagerZhangSearch } from './line-search-algorithms.ts'
 
 /** Options of {@link moreThuente}. */
 export interface MoreThuenteOptions {
@@ -264,136 +266,10 @@ export interface HagerZhangOptions {
  * ```
  */
 export function hagerZhang(options: HagerZhangOptions = {}): LineSearch {
-  const delta = options.delta ?? 0.1
-  const sigma = options.sigma ?? 0.9
-  const epsilon = options.epsilon ?? 1e-6
-  const gamma = options.gamma ?? 0.66
-  const rho = options.rho ?? 5
-  const maxEval = options.maxEvaluations ?? 50
-  checkConstants(delta, sigma)
+  checkConstants(options.delta ?? 0.1, options.sigma ?? 0.9)
   return (phi, start) => {
-    const p = probe(phi)
-    const phi0 = start.value
-    const d0 = start.slope
-    if (!(d0 < 0)) return p.finish(undefined, phi0, Number.NaN, 'not a descent direction')
-    let alphaMax = options.alphaMax ?? Infinity
-    const phiLim = phi0 + epsilon * Math.abs(phi0)
-    const alphas: number[] = [0]
-    const values: number[] = [phi0]
-    const slopes: number[] = [d0]
-    const wolfe = (c: number, v: number, d: number): boolean =>
-      (delta * d0 >= (v - phi0) / c && d >= sigma * d0) || ((2 * delta - 1) * d0 >= d && d >= sigma * d0 && v <= phiLim)
-    const evaluate = (c: number): number => {
-      const pt = p.at(c)
-      alphas.push(c)
-      values.push(pt.value)
-      slopes.push(pt.slope)
-      return alphas.length - 1
-    }
-    const done = (i: number, message: string): LineSearchResult =>
-      p.finish(alphas[i], values[i] ?? Number.NaN, slopes[i] ?? Number.NaN, message)
-    const at = (i: number): number => alphas[i] ?? Number.NaN
-    const bisect = (ia0: number, ib0: number): [number, number] => {
-      let ia = ia0
-      let ib = ib0
-      while (at(ib) - at(ia) > Number.EPSILON * at(ib) && p.trials.length < maxEval) {
-        const id = evaluate((at(ia) + at(ib)) / 2)
-        if ((slopes[id] ?? 0) >= 0) return [ia, id]
-        if ((values[id] ?? Infinity) <= phiLim) ia = id
-        else ib = id
-      }
-      return [ia, ib]
-    }
-    const update = (ia: number, ib: number, ic: number): [number, number] => {
-      const c = at(ic)
-      if (c < at(ia) || c > at(ib)) return [ia, ib]
-      if ((slopes[ic] ?? 0) >= 0) return [ia, ic]
-      if ((values[ic] ?? Infinity) <= phiLim) return [ic, ib]
-      return bisect(ia, ic)
-    }
-    const secant = (a: number, b: number, da: number, db: number): number => (a * db - b * da) / (db - da)
-    // Initial step, shrunk until finite.
-    let c = Math.min(firstStep(start), alphaMax)
-    let ic = evaluate(c)
-    for (let k = 0; k < 20 && !(Number.isFinite(values[ic]) && Number.isFinite(slopes[ic])); k++) {
-      c *= 0.1
-      ic = evaluate(c)
-    }
-    if (!(Number.isFinite(values[ic]) && Number.isFinite(slopes[ic])))
-      return p.finish(undefined, phi0, d0, 'no finite step')
-    // Bracketing (HZ stages B0-B3).
-    let ia = 0
-    let ib = ic
-    let bracketed = false
-    while (!bracketed && p.trials.length < maxEval) {
-      const last = alphas.length - 1
-      if ((slopes[last] ?? 0) >= 0) {
-        ib = last
-        ia = 0
-        for (let i = last - 1; i >= 0; i--) {
-          if ((values[i] ?? Infinity) <= phiLim) {
-            ia = i
-            break
-          }
-        }
-        bracketed = true
-      } else if ((values[last] ?? Infinity) > phiLim) {
-        ;[ia, ib] = bisect(0, last)
-        bracketed = true
-      } else {
-        const cold = c
-        c = Math.min(c * rho, alphaMax)
-        if (c === cold) return done(last, 'step at alphaMax')
-        let k = evaluate(c)
-        for (let j = 0; j < 20 && !(Number.isFinite(values[k]) && Number.isFinite(slopes[k])) && c > cold; j++) {
-          alphaMax = c
-          c = (cold + c) / 2
-          k = evaluate(c)
-        }
-        if (!(Number.isFinite(values[k]) && Number.isFinite(slopes[k]))) return done(last, 'no finite larger step')
-      }
-    }
-    // Secant^2 with bisection safeguards.
-    while (p.trials.length < maxEval) {
-      const a = at(ia)
-      const b = at(ib)
-      if (b - a <= Number.EPSILON * b) return done(ia, 'bracket collapsed')
-      // secant2
-      let iA: number
-      let iB: number
-      {
-        const cs = secant(a, b, slopes[ia] ?? 0, slopes[ib] ?? 0)
-        const icx = evaluate(cs)
-        if (wolfe(cs, values[icx] ?? Infinity, slopes[icx] ?? Number.NaN))
-          return done(icx, 'Wolfe conditions satisfied')
-        ;[iA, iB] = update(ia, ib, icx)
-        let c2: number | undefined
-        if (iB === icx) c2 = secant(b, at(iB), slopes[ib] ?? 0, slopes[iB] ?? 0)
-        else if (iA === icx) c2 = secant(a, at(iA), slopes[ia] ?? 0, slopes[iA] ?? 0)
-        if (c2 !== undefined && (iA === icx || iB === icx) && at(iA) <= c2 && c2 <= at(iB)) {
-          const id = evaluate(c2)
-          if (wolfe(c2, values[id] ?? Infinity, slopes[id] ?? Number.NaN)) return done(id, 'Wolfe conditions satisfied')
-          ;[iA, iB] = update(iA, iB, id)
-        }
-      }
-      if (at(iB) - at(iA) < gamma * (b - a)) {
-        // So flat that function differences are rounding noise: the secant steps cannot do better.
-        const flat = (i: number, j: number): boolean => {
-          const u = values[i] ?? 0
-          const v = values[j] ?? 0
-          return Math.abs(u - v) <= 4 * Number.EPSILON * Math.max(Math.abs(u), Math.abs(v))
-        }
-        if (flat(ia, ib) && flat(iA, iB)) {
-          return done(iA, 'flat: secant made no progress')
-        }
-        ia = iA
-        ib = iB
-      } else {
-        const id = evaluate((at(iA) + at(iB)) / 2)
-        ;[ia, ib] = update(iA, iB, id)
-      }
-    }
-    return { ...done(ia, 'evaluation cap reached'), success: false }
+    const search = hagerZhangSearch(phi, start, options)
+    return search.result(runAlgorithm(search.algorithm, { maxSteps: Number.MAX_SAFE_INTEGER }).state)
   }
 }
 

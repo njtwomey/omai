@@ -738,7 +738,8 @@ oracle: jax and torch for derivative values; finite differences in property test
   projections; `K` inferred from the contract), `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`,
   `stepsOf`) and `session` with its modes (eager, live, eager to a point).
 - `serialise.ts`: `stateToJson` and `stateFromJson`, generic checkpoint serialisation of states made of tensors, typed
-  arrays, keys and plain trees.
+  arrays, keys and plain trees; `numberToJson`/`numbersToJson` and their inverses keep `NaN` and infinities through a
+  JSON round trip (as strings).
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
 - `query.ts`: `metricSeries`, `tensorSeries`, `messages`, `episodes`, `frames`, `runTree`, `summary`, `diffRuns`.
 
@@ -1627,6 +1628,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `line-search-interval.ts`: `moreThuente` (MINPACK-2 dcsrch, scipy's scalar_search_wolfe1), `hagerZhang` (CG_DESCENT:
   approximate Wolfe conditions, secant^2 with bisection safeguards), `wolfe12` (scipy's More-Thuente-then-zoom search
   with an extra acceptance condition).
+- `line-search-algorithms.ts`, `line-search-options.ts`: `backtrackingAlgorithm` and `hagerZhangAlgorithm` (a line
+  search as an Algorithm: one trial step per step, the state the list of trials, JSON; logs `ls/alpha`, `ls/phi`,
+  `ls/slope`, `ls/armijo`, `ls/curvature`, `ls/bracket`, `ls/interval`); `backtracking` and `hagerZhang` are these run to
+  the end; `lineSearchRules` (backtracking, halving, Hager-Zhang with their knobs). `scalar.ts` gains `bracketAlgorithm`
+  (one extrapolation per step; `bracket` runs it).
 - `minimize/objective.ts`: `flatObjective` (an objective of any parameter tree as a function of one flat vector, with
   gradients, Hessian-vector products and Hessians by autodiff), `flatResiduals` (residuals and their Jacobian),
   `MinimizeResult` (scipy's OptimizeResult), `MinimizeMethod`, `VectorMethodOptions`, `Bounds`, `boxOf`, `clipToBox`,
