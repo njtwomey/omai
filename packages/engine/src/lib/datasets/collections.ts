@@ -10,8 +10,50 @@ import { type Generated, generate, type Knobs } from '../data/index.ts'
 import type { Key } from '../random/index.ts'
 import { datasetGenerators } from './catalogue.ts'
 import { breastCancer, digits, iris, penguinsClassification, wine } from './classification-real.ts'
+import {
+  balanceScale,
+  banknoteAuthentication,
+  ecoli,
+  glassIdentification,
+  haberman,
+  ionosphere,
+  lenses,
+  seeds,
+  sonar,
+  spambase,
+  vehicleSilhouettes,
+  wholesaleCustomers,
+  yeast,
+} from './classification-uci.ts'
+import { oldFaithful } from './clustering.ts'
 import { germanCredit, titanicSurvival } from './fairness.ts'
 import { diabetes, linnerud, mtcarsRegression } from './regression-real.ts'
+import {
+  airfoilSelfNoise,
+  concreteStrength,
+  energyEfficiency,
+  wineQualityRed,
+  wineQualityWhite,
+  yachtHydrodynamics,
+} from './regression-uci.ts'
+import {
+  abalone,
+  adultIncome,
+  autoMpg,
+  bikeSharingDaily,
+  carEvaluation,
+  congressionalVoting,
+  dermatology,
+  forestFires,
+  heartDisease,
+  hepatitis,
+  mushroom,
+  servo,
+  studentMath,
+  ticTacToe,
+  zoo,
+} from './tables-uci.ts'
+import { coalMiningCounts, nile } from './timeseries.ts'
 
 /** One dataset in a collection: a generator with demo knobs, or a vendored real dataset. */
 export type CollectionEntry =
@@ -74,6 +116,19 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       { name: 'breastCancer', title: 'Breast cancer (Wisconsin)', load: breastCancer },
       { name: 'penguins', title: 'Palmer penguins', load: penguinsClassification },
       { name: 'digits', title: 'Digits (8 by 8)', load: digits },
+      { name: 'banknoteAuthentication', title: 'Banknote authentication', load: banknoteAuthentication },
+      { name: 'ionosphere', title: 'Ionosphere', load: ionosphere },
+      { name: 'sonar', title: 'Sonar (mines versus rocks)', load: sonar },
+      { name: 'glassIdentification', title: 'Glass identification', load: glassIdentification },
+      { name: 'seeds', title: 'Seeds', load: seeds },
+      { name: 'ecoli', title: 'E. coli protein localisation', load: ecoli },
+      { name: 'yeast', title: 'Yeast protein localisation', load: yeast },
+      { name: 'haberman', title: "Haberman's survival", load: haberman },
+      { name: 'balanceScale', title: 'Balance scale', load: balanceScale },
+      { name: 'vehicleSilhouettes', title: 'Vehicle silhouettes', load: vehicleSilhouettes },
+      { name: 'wholesaleCustomers', title: 'Wholesale customers', load: wholesaleCustomers },
+      { name: 'lenses', title: 'Contact lenses', load: lenses },
+      { name: 'spambase', title: 'Spambase (subsample)', load: spambase },
       g('makeClassification', 'Synthetic (make_classification)'),
     ],
   },
@@ -142,9 +197,48 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       { name: 'diabetes', title: 'Diabetes', load: () => diabetes() },
       { name: 'mtcars', title: 'Motor Trend cars', load: mtcarsRegression },
       { name: 'linnerud', title: 'Linnerud', load: linnerud },
+      { name: 'concreteStrength', title: 'Concrete compressive strength', load: concreteStrength },
+      { name: 'energyEfficiency', title: 'Energy efficiency', load: energyEfficiency },
+      { name: 'yachtHydrodynamics', title: 'Yacht hydrodynamics', load: yachtHydrodynamics },
+      { name: 'airfoilSelfNoise', title: 'Airfoil self-noise', load: airfoilSelfNoise },
+      { name: 'wineQualityRed', title: 'Wine quality (red)', load: wineQualityRed },
+      { name: 'wineQualityWhite', title: 'Wine quality (white)', load: wineQualityWhite },
       g('friedman1', 'Friedman 1'),
       g('makeRegression', 'Synthetic (make_regression)'),
       g('sparseUncorrelated', 'Sparse uncorrelated'),
+    ],
+  },
+  mixedTables: {
+    id: 'mixedTables',
+    title: 'Tables with categorical features and missing values',
+    entries: [
+      { name: 'autoMpg', title: 'Auto MPG', load: autoMpg },
+      { name: 'abalone', title: 'Abalone', load: abalone },
+      { name: 'heartDisease', title: 'Heart disease (Cleveland)', load: heartDisease },
+      { name: 'hepatitis', title: 'Hepatitis', load: hepatitis },
+      { name: 'zoo', title: 'Zoo', load: zoo },
+      { name: 'ticTacToe', title: 'Tic-tac-toe endgame', load: ticTacToe },
+      { name: 'carEvaluation', title: 'Car evaluation', load: carEvaluation },
+      { name: 'congressionalVoting', title: 'Congressional voting records', load: congressionalVoting },
+      { name: 'mushroom', title: 'Mushroom (subsample)', load: mushroom },
+      { name: 'adultIncome', title: 'Adult census income (subsample)', load: adultIncome },
+      { name: 'dermatology', title: 'Dermatology', load: dermatology },
+      { name: 'forestFires', title: 'Forest fires', load: forestFires },
+      { name: 'studentMath', title: 'Student performance (mathematics)', load: studentMath },
+      { name: 'servo', title: 'Servo', load: servo },
+      { name: 'bikeSharingDaily', title: 'Bike sharing (daily)', load: bikeSharingDaily },
+    ],
+  },
+  clusteringTabular: {
+    id: 'clusteringTabular',
+    title: 'Clustering real tabular data',
+    entries: [
+      { name: 'oldFaithful', title: 'Old Faithful', load: () => oldFaithful().data },
+      { name: 'seeds', title: 'Seeds', load: seeds },
+      { name: 'wholesaleCustomers', title: 'Wholesale customers', load: wholesaleCustomers },
+      { name: 'glassIdentification', title: 'Glass identification', load: glassIdentification },
+      { name: 'ecoli', title: 'E. coli protein localisation', load: ecoli },
+      { name: 'yeast', title: 'Yeast protein localisation', load: yeast },
     ],
   },
   clustering2d: {
@@ -192,6 +286,16 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
       g('seasonalSeries', 'Seasonal series'),
       g('arma', 'ARMA process'),
       g('changepointSeries', 'Changepoints'),
+    ],
+  },
+  changepoints: {
+    id: 'changepoints',
+    title: 'Changepoints',
+    entries: [
+      g('changepointSeries', 'Changepoints in the mean'),
+      g('rateChanges', 'Changepoints in a Poisson rate', 'changepointSeries', { kind: 'rate' }),
+      { name: 'coalMiningCounts', title: 'Coal-mining disasters (yearly counts)', load: coalMiningCounts },
+      { name: 'nile', title: 'Nile annual flow', load: nile },
     ],
   },
   sequences: {

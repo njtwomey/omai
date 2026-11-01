@@ -62,7 +62,7 @@ describe('the dataset registry', () => {
     for (const e of tabularReal) expect(e.form).not.toBe('generator')
     expect(
       whereDatasets(datasetRegistry, { kind: ['timeseries', 'events'], form: 'vendored' }).map((e) => e.name),
-    ).toEqual(['airPassengers', 'sunspots', 'coalMiningDisasters', 'coalMiningCounts'])
+    ).toEqual(['airPassengers', 'sunspots', 'coalMiningDisasters', 'coalMiningCounts', 'nile'])
     expect(whereDatasets(datasetRegistry, { text: 'two MOONS' }).map((e) => e.name)).toEqual([
       'moons',
       'moonsWithOutliers',
