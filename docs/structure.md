@@ -4007,7 +4007,9 @@ Aequitas (group bias); goldens where cheap
   demographic parity and equalised odds, with a deterministic weighted least-squares learner in both) and GridSearch
   (fairlearn's grid generator and tradeoff rule; golden against its errors, violations and choice). Moments:
   demographic parity, equalised odds, true- and false-positive rate parity (all four golden). TODO: error-rate parity
-  and bounded group loss (the regression reduction).
+  and bounded group loss (the regression reduction). Both reductions are stepped algorithms: `exponentiatedGradientAlgorithm`
+  (one round of the game per step, `eg/*` paths) and `gridReductionAlgorithm` (one grid point per step, `grid/*`); the functions
+  are those runs, and `reduction-options.ts` has the `reductionConstraints` table.
   `fair-classifiers.ts`: the prejudice remover (`prejudiceRemover`), adversarial debiasing (`adversarialDebiasing`,
   Zhang et al.'s projected update), fairness-constrained logistic regression (`fairConstrainedLogistic`, Zafar et al.,
   by SLSQP), the meta fair classifier for the statistical rate (`metaFairClassifier`, Celis et al.), GerryFair
