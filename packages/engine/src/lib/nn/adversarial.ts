@@ -46,6 +46,7 @@ import {
   type Contract,
   defineContract,
   event,
+  runAlgorithm,
   scalar,
   stateFromJson,
   stateToJson,
@@ -372,29 +373,185 @@ export interface AttackResult {
   readonly distance: readonly number[]
 }
 
-/** Options of {@link carliniWagnerL2}. */
+/** Options of {@link carliniWagnerL2} and {@link carliniWagnerAlgorithm}. */
 export interface CarliniWagnerOptions {
   /** The weight c of the margin term against the squared l2 distance (default 1). */
   readonly c?: number
   /** The confidence kappa: the margin by which the wrong class must win (default 0). */
   readonly kappa?: number
   readonly steps?: number
-  /** The Adam learning rate on the perturbation (default 0.05). */
+  /** The Adam learning rate on the perturbation (default 0.05); ignored when `optimiser` is given. */
   readonly learningRate?: number
+  /** The optimiser of the perturbation, a gradient transformation (default Adam at `learningRate`); build one from `optimisers`. */
+  readonly optimiser?: GradientTransformation
   readonly targeted?: boolean
   readonly range?: readonly [number, number]
+}
+
+/** The paths of {@link carliniWagnerAlgorithm}. */
+export type CarliniWagnerPath =
+  | 'attack/step'
+  | 'attack/delta'
+  | 'attack/loss'
+  | 'attack/margin'
+  | 'attack/norm'
+  | 'attack/success'
+
+/**
+ * The state of {@link carliniWagnerAlgorithm}: the perturbation and the optimiser's state, the closest adversarial
+ * point found so far for each input and the distance of each.
+ */
+export interface CarliniWagnerState {
+  readonly step: number
+  readonly delta: Tensor
+  /** The optimiser's state (a tree of tensors and numbers). */
+  readonly optimiser: unknown
+  /** The closest adversarial inputs found so far (the original where none yet), flattened per input. */
+  readonly best: Float64Array
+  /** The l2 distance of the closest adversarial point per input (meaningless where `won` is false). */
+  readonly bestDistance: readonly number[]
+  readonly won: readonly boolean[]
+  readonly loss: number
+  readonly margin: number
+  readonly norm: number
+  readonly successRate: number
+}
+
+/** What a stepped Carlini-Wagner attack logs: the perturbation, the objective, the mean margin, the distance and the share fooled. */
+export const carliniWagnerContract: Contract<CarliniWagnerState, CarliniWagnerPath> = defineContract({
+  'attack/step': scalar({ description: 'the optimiser step' }),
+  'attack/delta': tensorSource({ role: 'state', description: 'the perturbation after the step' }),
+  'attack/loss': scalar({
+    description: 'the mean of ||delta||^2 + c f(x + delta) before the step, the objective minimised',
+  }),
+  'attack/margin': scalar({
+    description: 'the mean margin (largest wrong logit minus the label logit) after the step',
+  }),
+  'attack/norm': scalar({ description: 'the mean l2 norm of the perturbation after the step' }),
+  'attack/success': scalar({ description: 'the share of inputs fooled after the step' }),
+})
+
+/**
+ * The Carlini-Wagner l2 attack (2017) as a stepped algorithm, one optimiser step on the perturbation per step:
+ * minimise ||delta||^2 + c max(z_y - max_{j != y} z_j, -kappa) over delta, with the box constraint enforced by
+ * clipping, keeping for each input the closest adversarial point found along the way. It logs the perturbation, the
+ * objective, the mean margin, the mean distance and the share of inputs fooled. The optimiser is a slot (default
+ * Adam); the state, including the optimiser's, serialises.
+ *
+ * @param model - Inputs to logits.
+ * @param x - The inputs `[N, ...]`.
+ * @param labels - True labels (the targets when targeted).
+ * @param options - The constant c, the confidence kappa, steps, optimiser or learning rate.
+ * @returns The algorithm; it is done after `steps` steps.
+ * @concept adversarial-examples
+ * @example
+ * ```ts
+ * import { carliniWagnerAlgorithm } from 'mdml-engine/nn'
+ * import { matmul } from 'mdml-engine/tensor'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const model = (x) => matmul(x, [[1, -1], [0, 0]])
+ * runAlgorithm(carliniWagnerAlgorithm(model, [[1, 0]], [0], { steps: 200, c: 10 }), { maxSteps: 200 }).state.won // => [true]
+ * ```
+ */
+export function carliniWagnerAlgorithm(
+  model: LogitsFunction,
+  x: TensorLike,
+  labels: TensorLike,
+  options: CarliniWagnerOptions = {},
+): Algorithm<CarliniWagnerState, CarliniWagnerPath> {
+  const x0 = asTensor(x)
+  const y = asTensor(labels)
+  const targeted = options.targeted === true
+  const c = options.c ?? 1
+  const kappa = options.kappa ?? 0
+  const steps = options.steps ?? 100
+  const optimiser = options.optimiser ?? adam({ learningRate: options.learningRate ?? 0.05 })
+  const n = x0.shape[0] ?? 1
+  const advOf = (delta: Value): Value =>
+    options.range === undefined ? add(x0, delta) : clip(add(x0, delta), options.range[0], options.range[1])
+  const objective = (delta: Value): Value => {
+    const z = model(advOf(delta))
+    // Untargeted: z_y - max other (pushed below -kappa); targeted: max other - z_t.
+    const m = marginLoss(z, y)
+    const f = maximum(targeted ? m : neg(m), -kappa)
+    const d2 = sum(square(perExample(delta)), 1)
+    return sum(add(d2, mul(f, c)))
+  }
+  const flat0 = toFlat(x0)
+  const d = flat0.length / n
+  const zero = (): Value => mul(x0, 0)
+  return {
+    name: 'carlini-wagner',
+    config: { c, kappa, steps, targeted, optimiser: optimiser.name },
+    init: () => ({
+      step: 0,
+      delta: toTensor(zero()),
+      optimiser: optimiser.init(zero()),
+      best: Float64Array.from(flat0),
+      bestDistance: new Array<number>(n).fill(0),
+      won: new Array<boolean>(n).fill(false),
+      loss: 0,
+      margin: 0,
+      norm: 0,
+      successRate: 0,
+    }),
+    step: (s, ctx) => {
+      const { value, grad: g } = valueAndGrad(objective)(s.delta as Value)
+      const r = optimiser.update(g, s.optimiser, s.delta)
+      const delta = toTensor(applyUpdates(s.delta, r.updates) as Value)
+      const adv = advOf(delta)
+      const z = model(adv)
+      const f = fooled(z, y, targeted)
+      const advFlat = toFlat(adv)
+      const dist = toFlat(rowNorm(sub(adv, x0), 'l2'))
+      const best = Float64Array.from(s.best)
+      const bestDistance = s.bestDistance.slice()
+      const won = s.won.slice()
+      f.forEach((ok, i) => {
+        if (ok && (!won[i] || (dist[i] ?? 0) < (bestDistance[i] ?? 0))) {
+          bestDistance[i] = dist[i] ?? 0
+          won[i] = true
+          for (let j = 0; j < d; j++) best[i * d + j] = advFlat[i * d + j] ?? 0
+        }
+      })
+      const mean_ = (v: readonly number[]): number => v.reduce((a, b) => a + b, 0) / Math.max(1, n)
+      const next: CarliniWagnerState = {
+        step: s.step + 1,
+        delta,
+        optimiser: r.state,
+        best,
+        bestDistance,
+        won,
+        loss: item(value) / Math.max(1, n),
+        margin: mean_(toFlat(marginLoss(z, y))),
+        norm: mean_(dist),
+        successRate: f.filter(Boolean).length / Math.max(1, f.length),
+      }
+      ctx.log('attack/step', next.step)
+      ctx.log('attack/delta', next.delta)
+      ctx.log('attack/loss', next.loss)
+      ctx.log('attack/margin', next.margin)
+      ctx.log('attack/norm', next.norm)
+      ctx.log('attack/success', next.successRate)
+      return next
+    },
+    done: (s) => (s.step >= steps ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as CarliniWagnerState,
+    observe: (s) => ({ metrics: { loss: s.loss, margin: s.margin, norm: s.norm, successRate: s.successRate } }),
+  }
 }
 
 /**
  * The Carlini-Wagner l2 attack (2017): minimise ||delta||^2 + c max(z_y - max_{j != y} z_j, -kappa) over the
  * perturbation delta by Adam, with the box constraint enforced by clipping, and keep for each input the closest
  * adversarial point found along the way. It looks for the smallest perturbation rather than the strongest one in a
- * ball.
+ * ball. This is {@link carliniWagnerAlgorithm} run to the end.
  *
  * @param model - Inputs to logits.
  * @param x - The inputs `[N, ...]`.
  * @param labels - True labels (the targets when targeted).
- * @param options - The constant c, the confidence kappa, steps and learning rate.
+ * @param options - The constant c, the confidence kappa, steps, optimiser or learning rate.
  * @returns The closest adversarial inputs found, which inputs were fooled, and their l2 distances.
  * @concept adversarial-examples
  * @example
@@ -412,47 +569,11 @@ export function carliniWagnerL2(
   options: CarliniWagnerOptions = {},
 ): AttackResult {
   const x0 = asTensor(x)
-  const y = asTensor(labels)
-  const targeted = options.targeted === true
-  const c = options.c ?? 1
-  const kappa = options.kappa ?? 0
-  const steps = options.steps ?? 100
-  const lr = options.learningRate ?? 0.05
-  const n = x0.shape[0] ?? 1
-  const objective = (delta: Value): Value => {
-    const adv = options.range === undefined ? add(x0, delta) : clip(add(x0, delta), options.range[0], options.range[1])
-    const z = model(adv)
-    // Untargeted: z_y - max other (pushed below -kappa); targeted: max other - z_t.
-    const m = marginLoss(z, y)
-    const f = maximum(targeted ? m : neg(m), -kappa)
-    const d2 = sum(square(perExample(delta)), 1)
-    return sum(add(d2, mul(f, c)))
-  }
-  const optimiser = adam({ learningRate: lr })
-  let delta: Value = mul(x0, 0)
-  let optState = optimiser.init(delta)
-  const best = toFlat(x0).slice()
-  const bestDistance = new Array<number>(n).fill(Number.POSITIVE_INFINITY)
-  const won = new Array<boolean>(n).fill(false)
-  const d = best.length / n
-  for (let t = 1; t <= steps; t++) {
-    const r = optimiser.update(grad(objective)(delta), optState, delta)
-    optState = r.state
-    delta = applyUpdates(delta, r.updates) as Value
-    const adv = options.range === undefined ? add(x0, delta) : clip(add(x0, delta), options.range[0], options.range[1])
-    const f = fooled(model(adv), y, targeted)
-    const advFlat = toFlat(adv)
-    const dist = toFlat(rowNorm(sub(adv, x0), 'l2'))
-    f.forEach((ok, i) => {
-      if (ok && (dist[i] ?? 0) < (bestDistance[i] ?? 0)) {
-        bestDistance[i] = dist[i] ?? 0
-        won[i] = true
-        for (let j = 0; j < d; j++) best[i * d + j] = advFlat[i * d + j] ?? 0
-      }
-    })
-  }
-  const distance = best.length === 0 ? [] : bestDistance.map((v, i) => (won[i] ? v : 0))
-  return { x: fromStorage(Float64Array.from(best), [...x0.shape], 'float64'), success: won, distance }
+  const s = runAlgorithm(carliniWagnerAlgorithm(model, x0, labels, options), {
+    maxSteps: options.steps ?? 100,
+  }).state
+  const distance = s.best.length === 0 ? [] : s.bestDistance.map((v, i) => (s.won[i] ? v : 0))
+  return { x: fromStorage(Float64Array.from(s.best), [...x0.shape], 'float64'), success: [...s.won], distance }
 }
 
 /** The rows of a batch as `[1, ...]` tensors. */
@@ -480,10 +601,159 @@ export interface DeepFoolOptions {
   readonly range?: readonly [number, number]
 }
 
+/** The paths of {@link deepFoolAlgorithm}. */
+export type DeepFoolPath = 'attack/step' | 'attack/point' | 'attack/margin' | 'attack/norm' | 'attack/success'
+
+/**
+ * The state of {@link deepFoolAlgorithm}: the current adversarial inputs, the accumulated perturbation, each input's
+ * original class, and which inputs are still being pushed.
+ */
+export interface DeepFoolState {
+  readonly step: number
+  readonly x: Tensor
+  /** The accumulated (un-overshot) perturbation. */
+  readonly total: Tensor
+  /** The class the model gave each input before the attack. */
+  readonly original: readonly number[]
+  /** Inputs still on their original class (the others are done). */
+  readonly active: readonly boolean[]
+  readonly margin: number
+  readonly norm: number
+  readonly successRate: number
+}
+
+/** What a stepped DeepFool attack logs: the adversarial inputs, the mean margin to the original class, the mean l2 distance and the share fooled. */
+export const deepFoolContract: Contract<DeepFoolState, DeepFoolPath> = defineContract({
+  'attack/step': scalar({ description: 'the linearisation step' }),
+  'attack/point': tensorSource({ role: 'state', description: 'the adversarial inputs after the step' }),
+  'attack/margin': scalar({ description: 'the mean margin (largest other logit minus the original class logit)' }),
+  'attack/norm': scalar({ description: 'the mean l2 distance from the original inputs' }),
+  'attack/success': scalar({ description: 'the share of inputs that left their original class' }),
+})
+
+/**
+ * DeepFool (Moosavi-Dezfooli, Fawzi and Frossard 2016) as a stepped algorithm: each step linearises the logits at the
+ * current point of every input still on its original class, moves it to the closest boundary of the linearised model
+ * and pushes a little past it (the overshoot). It logs the adversarial inputs, the mean margin, the mean distance and
+ * the share fooled. The state serialises.
+ *
+ * @param model - Inputs to logits.
+ * @param x - The inputs `[N, ...]`.
+ * @param options - Iteration cap, overshoot and the data range.
+ * @returns The algorithm; it is done when every input is fooled or after `steps` steps.
+ * @concept adversarial-examples
+ * @example
+ * ```ts
+ * import { deepFoolAlgorithm } from 'mdml-engine/nn'
+ * import { matmul } from 'mdml-engine/tensor'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const model = (x) => matmul(x, [[1, 0], [0, 1]])
+ * runAlgorithm(deepFoolAlgorithm(model, [[1, 0]]), { maxSteps: 50 }).state.successRate // => 1
+ * ```
+ */
+export function deepFoolAlgorithm(
+  model: LogitsFunction,
+  x: TensorLike,
+  options: DeepFoolOptions = {},
+): Algorithm<DeepFoolState, DeepFoolPath> {
+  const x0 = toTensor(asTensor(x))
+  const steps = options.steps ?? 50
+  const overshoot = options.overshoot ?? 0.02
+  const rows = batchRows(x0)
+  const n = rows.length
+  const classes = n === 0 ? 0 : (model(rows[0] as Value).shape.at(-1) ?? 0)
+  const predicted = (v: Value): number => item(argmax(model(v), -1))
+  const measure = (s: Omit<DeepFoolState, 'margin' | 'norm' | 'successRate'>): DeepFoolState => {
+    const adv = batchRows(s.x)
+    const margins = adv.map((r, i) => item(marginLoss(model(r), [s.original[i] ?? 0])))
+    const norms = adv.map((r, i) => item(norm(reshape(sub(r, rows[i] as Value), [-1]), 2)))
+    const fooledCount = adv.filter((_, i) => !s.active[i]).length
+    return {
+      ...s,
+      margin: margins.reduce((a, b) => a + b, 0) / Math.max(1, n),
+      norm: norms.reduce((a, b) => a + b, 0) / Math.max(1, n),
+      successRate: fooledCount / Math.max(1, n),
+    }
+  }
+  const advance = (row: Tensor, adv0: Tensor, total0: Tensor, original: number): { adv: Tensor; total: Tensor } => {
+    let bestRatio = Number.POSITIVE_INFINITY
+    let bestStep: Value = total0
+    const gOriginal = grad((v: Value) => sum(mul(model(v), oneHot([original], classes))))(adv0)
+    const zOriginal = item(sum(mul(model(adv0), oneHot([original], classes))))
+    for (let k = 0; k < classes; k++) {
+      if (k === original) continue
+      const gk = grad((v: Value) => sum(mul(model(v), oneHot([k], classes))))(adv0)
+      const w = sub(gk, gOriginal)
+      const f = item(sum(mul(model(adv0), oneHot([k], classes)))) - zOriginal
+      const wn = item(norm(reshape(w, [-1]), 2))
+      const ratio = Math.abs(f) / Math.max(wn, 1e-30)
+      if (ratio < bestRatio) {
+        bestRatio = ratio
+        bestStep = mul(w, (Math.abs(f) + 1e-4) / Math.max(wn * wn, 1e-30))
+      }
+    }
+    const total = add(total0, bestStep)
+    let adv: Value = add(row, mul(total, 1 + overshoot))
+    if (options.range !== undefined) adv = clip(adv, options.range[0], options.range[1])
+    return { adv: toTensor(adv), total: toTensor(total) }
+  }
+  return {
+    name: 'deepfool',
+    config: { steps, overshoot },
+    init: () =>
+      measure({
+        step: 0,
+        x: x0,
+        total: toTensor(mul(x0, 0)),
+        original: rows.map(predicted),
+        active: rows.map(() => true),
+      }),
+    step: (s, ctx) => {
+      const adv = batchRows(s.x)
+      const total = batchRows(s.total)
+      const active = s.active.slice()
+      const nextAdv: Tensor[] = []
+      const nextTotal: Tensor[] = []
+      rows.forEach((row, i) => {
+        const a = adv[i] as Tensor
+        const t = total[i] as Tensor
+        if (!active[i] || predicted(a) !== s.original[i]) {
+          active[i] = false
+          nextAdv.push(a)
+          nextTotal.push(t)
+          return
+        }
+        const r = advance(row, a, t, s.original[i] ?? 0)
+        nextAdv.push(r.adv)
+        nextTotal.push(r.total)
+        active[i] = predicted(r.adv) === s.original[i]
+      })
+      const next = measure({
+        step: s.step + 1,
+        x: n === 0 ? x0 : stackRows(nextAdv),
+        total: n === 0 ? s.total : stackRows(nextTotal),
+        original: s.original,
+        active,
+      })
+      ctx.log('attack/step', next.step)
+      ctx.log('attack/point', next.x)
+      ctx.log('attack/margin', next.margin)
+      ctx.log('attack/norm', next.norm)
+      ctx.log('attack/success', next.successRate)
+      return next
+    },
+    done: (s) => (s.step >= steps || s.active.every((a) => !a) ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as DeepFoolState,
+    observe: (s) => ({ metrics: { margin: s.margin, norm: s.norm, successRate: s.successRate } }),
+  }
+}
+
 /**
  * DeepFool (Moosavi-Dezfooli, Fawzi and Frossard 2016): the minimal l2 perturbation to the nearest linearised decision
  * boundary, found by repeatedly linearising the logits at the current point, stepping to the closest boundary of the
  * linearised model, and finishing with a small overshoot. A cheap estimate of an input's distance to the boundary.
+ * This is {@link deepFoolAlgorithm} run to the end.
  *
  * @param model - Inputs to logits.
  * @param x - The inputs `[N, ...]`.
@@ -501,46 +771,12 @@ export interface DeepFoolOptions {
  */
 export function deepFool(model: LogitsFunction, x: TensorLike, options: DeepFoolOptions = {}): AttackResult {
   const x0 = asTensor(x)
-  const steps = options.steps ?? 50
-  const overshoot = options.overshoot ?? 0.02
+  const s = runAlgorithm(deepFoolAlgorithm(model, x0, options), { maxSteps: options.steps ?? 50 }).state
   const rows = batchRows(x0)
-  const out: Tensor[] = []
-  const success: boolean[] = []
-  const distance: number[] = []
-  for (const row of rows) {
-    const z0 = model(row)
-    const classes = z0.shape[z0.shape.length - 1] ?? 0
-    const original = item(argmax(z0, -1))
-    let total: Value = mul(row, 0)
-    let adv: Value = row
-    for (let it = 0; it < steps; it++) {
-      if (item(argmax(model(adv), -1)) !== original) break
-      let bestRatio = Number.POSITIVE_INFINITY
-      let bestStep: Value = total
-      const gOriginal = grad((v: Value) => sum(mul(model(v), oneHot([original], classes))))(adv)
-      const zOriginal = item(sum(mul(model(adv), oneHot([original], classes))))
-      for (let k = 0; k < classes; k++) {
-        if (k === original) continue
-        const gk = grad((v: Value) => sum(mul(model(v), oneHot([k], classes))))(adv)
-        const w = sub(gk, gOriginal)
-        const f = item(sum(mul(model(adv), oneHot([k], classes)))) - zOriginal
-        const wn = item(norm(reshape(w, [-1]), 2))
-        const ratio = Math.abs(f) / Math.max(wn, 1e-30)
-        if (ratio < bestRatio) {
-          bestRatio = ratio
-          bestStep = mul(w, (Math.abs(f) + 1e-4) / Math.max(wn * wn, 1e-30))
-        }
-      }
-      total = add(total, bestStep)
-      adv = add(row, mul(total, 1 + overshoot))
-      if (options.range !== undefined) adv = clip(adv, options.range[0], options.range[1])
-    }
-    const ok = item(argmax(model(adv), -1)) !== original
-    out.push(toTensor(adv))
-    success.push(ok)
-    distance.push(ok ? item(norm(reshape(sub(adv, row), [-1]), 2)) : 0)
-  }
-  return { x: stackRows(out), success, distance }
+  const adv = batchRows(s.x)
+  const success = adv.map((r, i) => item(argmax(model(r), -1)) !== s.original[i])
+  const distance = adv.map((r, i) => (success[i] ? item(norm(reshape(sub(r, rows[i] as Value), [-1]), 2)) : 0))
+  return { x: s.x, success, distance }
 }
 
 /** The result of {@link transferAttack}. */
@@ -606,7 +842,7 @@ export interface SquareResult extends AttackResult {
   readonly queries: readonly number[]
 }
 
-/** Options of {@link squareAttack}. */
+/** Options of {@link squareAttack} and {@link squareAlgorithm}. */
 export interface SquareOptions {
   readonly epsilon: number
   /** The query budget per input (default 200). */
@@ -617,12 +853,171 @@ export interface SquareOptions {
   readonly key: Key
 }
 
+/** The paths of {@link squareAlgorithm}. */
+export type SquarePath =
+  | 'attack/step'
+  | 'attack/point'
+  | 'attack/margin'
+  | 'attack/norm'
+  | 'attack/success'
+  | 'attack/queries'
+
+/** The state of {@link squareAlgorithm}: the current adversarial inputs, their margins and the queries spent. */
+export interface SquareState {
+  /** Queries issued to the batch so far (the initial corner counts for the first). */
+  readonly step: number
+  /** The current adversarial inputs, flattened per input. */
+  readonly current: Float64Array
+  readonly margins: readonly number[]
+  readonly queries: readonly number[]
+  /** Inputs already fooled (they are left alone). */
+  readonly done: readonly boolean[]
+  readonly norm: number
+  readonly successRate: number
+}
+
+/** What a stepped Square attack logs: the adversarial inputs, the mean margin and l-infinity distance, the share fooled and the queries used. */
+export const squareContract: Contract<SquareState, SquarePath> = defineContract({
+  'attack/step': scalar({ description: 'the query round' }),
+  'attack/point': tensorSource({ role: 'state', description: 'the adversarial inputs after the round' }),
+  'attack/margin': scalar({ description: 'the mean margin (largest wrong logit minus the label logit)' }),
+  'attack/norm': scalar({ description: 'the mean l-infinity distance from the original inputs' }),
+  'attack/success': scalar({ description: 'the share of inputs fooled' }),
+  'attack/queries': scalar({ description: 'the queries used so far, summed over inputs' }),
+})
+
+/**
+ * A Square-style black-box attack (Andriushchenko et al. 2020, l-infinity, untargeted) as a stepped algorithm: only the
+ * model's logits are read. The input starts at a random corner of the ball (every coordinate moved by +-epsilon); each
+ * step re-draws the perturbation on a random subset of coordinates (a share that shrinks as the budget is spent) and
+ * keeps the change if the margin loss grows. For images the paper changes a square of pixels, here the subset is of
+ * coordinates, which is the same move for any input. The state serialises; the randomness comes from `options.key`.
+ *
+ * @param model - Inputs to logits (queried, never differentiated).
+ * @param x - The inputs `[N, ...]`.
+ * @param labels - True labels.
+ * @param options - Radius, query budget, range and key.
+ * @returns The algorithm; it is done when every input is fooled or the budget is spent.
+ * @concept adversarial-examples
+ * @example
+ * ```ts
+ * import { squareAlgorithm } from 'mdml-engine/nn'
+ * import { key } from 'mdml-engine/random'
+ * import { matmul } from 'mdml-engine/tensor'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const model = (x) => matmul(x, [[1, -1], [0, 0], [0, 0]])
+ * runAlgorithm(squareAlgorithm(model, [[0.3, 0, 0]], [0], { epsilon: 0.5, key: key(0) }), { maxSteps: 200 }).state.done // => [true]
+ * ```
+ */
+export function squareAlgorithm(
+  model: LogitsFunction,
+  x: TensorLike,
+  labels: TensorLike,
+  options: SquareOptions,
+): Algorithm<SquareState, SquarePath> {
+  const x0 = asTensor(x)
+  const y = asTensor(labels)
+  const n = x0.shape[0] ?? 0
+  const flat0 = toFlat(x0)
+  const d = n === 0 ? 0 : flat0.length / n
+  const budget = options.queries ?? 200
+  const eps = options.epsilon
+  const clipTo = (v: number): number =>
+    options.range === undefined ? v : Math.min(options.range[1], Math.max(options.range[0], v))
+  const asBatch = (data: Float64Array): Tensor => fromStorage(data, [...x0.shape], 'float64')
+  const measure = (
+    step: number,
+    current: Float64Array,
+    margins: readonly number[],
+    queries: readonly number[],
+    done: readonly boolean[],
+  ): SquareState => {
+    let dist = 0
+    for (let i = 0; i < n; i++) {
+      let m = 0
+      for (let j = 0; j < d; j++) m = Math.max(m, Math.abs((current[i * d + j] ?? 0) - (flat0[i * d + j] ?? 0)))
+      dist += m
+    }
+    return {
+      step,
+      current,
+      margins,
+      queries,
+      done,
+      norm: dist / Math.max(1, n),
+      successRate: margins.filter((m) => m > 0).length / Math.max(1, n),
+    }
+  }
+  return {
+    name: 'square-attack',
+    config: { epsilon: eps, queries: budget, pInit: options.pInit ?? 0.1 },
+    init: () => {
+      const current = Float64Array.from(flat0)
+      const signs = toFlat(uniform(foldIn(options.key, 0), [n, d]))
+      for (let i = 0; i < n * d; i++) current[i] = clipTo((flat0[i] ?? 0) + ((signs[i] ?? 0) < 0.5 ? -eps : eps))
+      const margins = toFlat(marginLoss(model(asBatch(current)), y))
+      return measure(
+        0,
+        current,
+        Array.from(margins),
+        new Array<number>(n).fill(1),
+        Array.from(margins, (m) => m > 0),
+      )
+    },
+    step: (s, ctx) => {
+      const q = s.step + 1
+      const share = Math.max(1 / d, (options.pInit ?? 0.1) * 0.5 ** Math.floor((4 * q) / budget))
+      const m = Math.max(1, Math.round(share * d))
+      const rank = toFlat(uniform(foldIn(options.key, 2 * q), [n, d]))
+      const sgn = toFlat(uniform(foldIn(options.key, 2 * q + 1), [n, d]))
+      const candidate = Float64Array.from(s.current)
+      for (let i = 0; i < n; i++) {
+        if (s.done[i]) continue
+        const order = Array.from({ length: d }, (_, j) => j).sort(
+          (a, b) => (rank[i * d + a] ?? 0) - (rank[i * d + b] ?? 0),
+        )
+        for (const j of order.slice(0, m))
+          candidate[i * d + j] = clipTo((flat0[i * d + j] ?? 0) + ((sgn[i * d + j] ?? 0) < 0.5 ? -eps : eps))
+      }
+      const next = toFlat(marginLoss(model(asBatch(candidate)), y))
+      const current = Float64Array.from(s.current)
+      const margins = s.margins.slice()
+      const queries = s.queries.slice()
+      const done = s.done.slice()
+      for (let i = 0; i < n; i++) {
+        if (done[i]) continue
+        queries[i] = (queries[i] ?? 0) + 1
+        if ((next[i] ?? Number.NEGATIVE_INFINITY) > (margins[i] ?? 0)) {
+          for (let j = 0; j < d; j++) current[i * d + j] = candidate[i * d + j] ?? 0
+          margins[i] = next[i] as number
+        }
+        if ((margins[i] ?? 0) > 0) done[i] = true
+      }
+      const out = measure(q, current, margins, queries, done)
+      ctx.log('attack/step', out.step)
+      ctx.log('attack/point', asBatch(current))
+      ctx.log('attack/margin', margins.reduce((a, b) => a + b, 0) / Math.max(1, n))
+      ctx.log('attack/norm', out.norm)
+      ctx.log('attack/success', out.successRate)
+      ctx.log(
+        'attack/queries',
+        queries.reduce((a, b) => a + b, 0),
+      )
+      return out
+    },
+    done: (s) => (s.step >= budget || s.done.every(Boolean) ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as SquareState,
+    observe: (s) => ({ metrics: { norm: s.norm, successRate: s.successRate } }),
+  }
+}
+
 /**
  * A Square-style black-box attack (Andriushchenko et al. 2020, l-infinity, untargeted): only the model's logits are
  * read. The input starts at a random corner of the ball (every coordinate moved by +-epsilon); each query re-draws the
  * perturbation on a random subset of coordinates (a share that shrinks as the budget is spent) and keeps the change if
  * the margin loss grows. For images the paper changes a square of pixels, here the subset is of coordinates, which is
- * the same move for any input.
+ * the same move for any input. This is {@link squareAlgorithm} run to the end.
  *
  * @param model - Inputs to logits (queried, never differentiated).
  * @param x - The inputs `[N, ...]`.
@@ -646,55 +1041,21 @@ export function squareAttack(
   options: SquareOptions,
 ): SquareResult {
   const x0 = asTensor(x)
-  const y = asTensor(labels)
   const n = x0.shape[0] ?? 0
+  const d = n === 0 ? 0 : toFlat(x0).length / n
+  const s = runAlgorithm(squareAlgorithm(model, x0, labels, options), { maxSteps: options.queries ?? 200 }).state
   const flat0 = toFlat(x0)
-  const d = n === 0 ? 0 : flat0.length / n
-  const budget = options.queries ?? 200
-  const eps = options.epsilon
-  const clipTo = (v: number): number =>
-    options.range === undefined ? v : Math.min(options.range[1], Math.max(options.range[0], v))
-  const current = Float64Array.from(flat0)
-  const signs = toFlat(uniform(foldIn(options.key, 0), [n, d]))
-  for (let i = 0; i < n * d; i++) current[i] = clipTo((flat0[i] ?? 0) + ((signs[i] ?? 0) < 0.5 ? -eps : eps))
-  const asBatch = (data: Float64Array): Tensor => fromStorage(data, [...x0.shape], 'float64')
-  let margins = toFlat(marginLoss(model(asBatch(current)), y))
-  const queries = new Array<number>(n).fill(1)
-  const done = margins.map((m) => m > 0)
-  for (let q = 1; q <= budget; q++) {
-    if (done.every(Boolean)) break
-    const share = Math.max(1 / d, (options.pInit ?? 0.1) * 0.5 ** Math.floor((4 * q) / budget))
-    const m = Math.max(1, Math.round(share * d))
-    const rank = toFlat(uniform(foldIn(options.key, 2 * q), [n, d]))
-    const sgn = toFlat(uniform(foldIn(options.key, 2 * q + 1), [n, d]))
-    const candidate = Float64Array.from(current)
-    for (let i = 0; i < n; i++) {
-      if (done[i]) continue
-      const order = Array.from({ length: d }, (_, j) => j).sort(
-        (a, b) => (rank[i * d + a] ?? 0) - (rank[i * d + b] ?? 0),
-      )
-      for (const j of order.slice(0, m))
-        candidate[i * d + j] = clipTo((flat0[i * d + j] ?? 0) + ((sgn[i * d + j] ?? 0) < 0.5 ? -eps : eps))
-    }
-    const next = toFlat(marginLoss(model(asBatch(candidate)), y))
-    const updated = margins.slice()
-    for (let i = 0; i < n; i++) {
-      if (done[i]) continue
-      queries[i] = (queries[i] ?? 0) + 1
-      if ((next[i] ?? Number.NEGATIVE_INFINITY) > (margins[i] ?? 0)) {
-        for (let j = 0; j < d; j++) current[i * d + j] = candidate[i * d + j] ?? 0
-        updated[i] = next[i] as number
-      }
-      if ((updated[i] ?? 0) > 0) done[i] = true
-    }
-    margins = updated
-  }
   const distance = Array.from({ length: n }, (_, i) => {
     let m = 0
-    for (let j = 0; j < d; j++) m = Math.max(m, Math.abs((current[i * d + j] ?? 0) - (flat0[i * d + j] ?? 0)))
+    for (let j = 0; j < d; j++) m = Math.max(m, Math.abs((s.current[i * d + j] ?? 0) - (flat0[i * d + j] ?? 0)))
     return m
   })
-  return { x: asBatch(current), success: margins.map((m) => m > 0), distance, queries }
+  return {
+    x: fromStorage(Float64Array.from(s.current), [...x0.shape], 'float64'),
+    success: s.margins.map((m) => m > 0),
+    distance,
+    queries: [...s.queries],
+  }
 }
 
 /**

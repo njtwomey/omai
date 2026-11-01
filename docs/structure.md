@@ -3501,7 +3501,9 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `adversarial.ts`: attacks and adversarial training on any logits function: `fgsm`, `pgd` (random start inside an
   l-infinity or l2 ball, targeted or untargeted, cross-entropy, margin or TRADES-KL loss, data range), `pgdAlgorithm` (one
   gradient step per step, `attack/*` paths, serialisable), `marginLoss`, `carliniWagnerL2` (Adam on the penalised margin,
-  closest adversarial point kept), `deepFool`, `transferAttack`, `squareAttack` (black box: logits only, query counts),
+  closest adversarial point kept; optimiser a slot) / `carliniWagnerAlgorithm`, `deepFool` / `deepFoolAlgorithm`,
+  `transferAttack`, `squareAttack` / `squareAlgorithm` (black box: logits only, query counts); each function is its
+  Algorithm run to the end, with the `attack/*` paths of `carliniWagnerContract`, `deepFoolContract`, `squareContract`,
   `accuracyOf`, `robustAccuracy` (the sweep over radii) and `adversarialTrainStep` (PGD inner maximisation, or TRADES, as a
   step over `TrainState`).
 - `certify.ts`: certificates: randomised smoothing (`smoothedCounts`, `randomisedSmoothing` with the Clopper-Pearson
