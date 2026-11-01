@@ -254,8 +254,9 @@ function View(props: {
   ]
   return (
     <div className="flex flex-col items-start gap-6 xl:flex-row">
-      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(3, ${CELL}px)` }}>
-        <div className="col-span-3">
+      {/* The layout is in inline styles, so it does not depend on which Tailwind classes the dev server has seen. */}
+      <div style={{ display: 'grid', gap: GAP, gridTemplateColumns: `repeat(3, ${CELL}px)`, flex: 'none' }}>
+        <div style={{ gridColumn: '1 / span 3' }}>
           <Chart option={main} figure={MAIN} />
         </div>
         {prior === undefined ? null : <Chart option={prior} figure={SQUARE} />}
