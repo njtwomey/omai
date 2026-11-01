@@ -6,7 +6,7 @@ import { Linear, mlp } from '../../nn/index.ts'
 import { adam, sgd } from '../../optim/index.ts'
 import { key } from '../../random/index.ts'
 import { dict, real } from '../../space/index.ts'
-import { type Tensor, toFlat } from '../../tensor/index.ts'
+import { mul, square, sum, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { Log, messages, metricSeries, tensorSeries } from '../../trace/index.ts'
 import type { LearnData } from '../estimator.ts'
 import { defineTrainer } from './trainer.ts'
@@ -145,5 +145,37 @@ describe('the trainer base', () => {
     const fitted = line.fit({ x: [[0]], y: [[0]] }, { key: key(1) })
     expect(flat(fitted.predict?.([[0.5]]))[0]).toBeCloseTo(2.5, 2)
     expect(metricSeries(fitted.run, 'eval/loss').values).toEqual([])
+  })
+
+  it('adds a penalty on the parameters to the loss, and merges a particular’s own verbs over the kind’s', () => {
+    const make = (decay: number) =>
+      defineTrainer({
+        name: 'ridge-line',
+        kind: 'regressor',
+        defaults: {},
+        model: (_d, _h, k) => new Linear(1, 1, { key: k }),
+        objective: () => (p, t) => mse(p, t),
+        penalty: () => (params) => mul(sum(square(params['weight'] as Value)), decay),
+        verbs: (model, state) => ({
+          weightOf: () => toFlat(state.params['weight'] as Value)[0] ?? 0,
+          width: model.parameterCount(),
+        }),
+        optimiser: (lr) => sgd({ learningRate: lr }),
+        settings: () => ({ learningRate: 0.1, steps: 300, batchSize: 16 }),
+        source: () => ({
+          draw: (n) => ({
+            x: Array.from({ length: n }, (_, i) => [(i % 17) / 8 - 1]),
+            y: Array.from({ length: n }, (_, i) => [3 * ((i % 17) / 8 - 1)]),
+          }),
+        }),
+      })
+    const data = { x: [[0]], y: [[0]] }
+    const free = make(0).fit(data, { key: key(1) }) as unknown as { weightOf(): number; width: number }
+    const shrunk = make(2).fit(data, { key: key(1) }) as unknown as { weightOf(): number }
+    expect(free.width).toBe(2)
+    expect(free.weightOf()).toBeCloseTo(3, 1)
+    // Ridge on the weight with mean squared x about 0.33: the slope is shrunk to 3 * 0.33 / (0.33 + 2).
+    expect(shrunk.weightOf()).toBeLessThan(1)
+    expect(shrunk.weightOf()).toBeGreaterThan(0.2)
   })
 })

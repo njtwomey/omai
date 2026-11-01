@@ -72,6 +72,7 @@ import {
 } from './registry.ts'
 import { friedman1, friedman2, friedman3, makeRegression, sparseUncorrelated } from './regression.ts'
 import {
+  additiveInteraction,
   additiveModel,
   dopplerCurve,
   heteroscedastic,
@@ -143,6 +144,7 @@ import {
 export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   abTest,
   additionTask,
+  additiveInteraction,
   additiveModel,
   analogyCorpus,
   anisotropicBlobs,
@@ -315,6 +317,7 @@ const NETWORKX = 'Public domain data (NetworkX, BSD-3-Clause)'
 export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
   ...g('tabular', [
     ['abTest', 'A/B test with known effects'],
+    ['additiveInteraction', 'Additive model with an interaction (GA2M)'],
     ['additiveModel', 'Additive model (GAM)'],
     ['anisotropicBlobs', 'Anisotropic blobs'],
     ['antiderivativeOperator', 'Antiderivative operator'],

@@ -117,6 +117,11 @@ export interface TrainerParticular<H extends object, K extends string = string> 
   model(data: LearnData, hyper: H, key: Key): Module
   /** The training objective of predictions and targets. */
   objective(hyper: H, data: LearnData): (prediction: Value, target: Value) => Value
+  /**
+   * A regulariser of the model's parameters, added to every minibatch loss (weight decay, a smoothness penalty on
+   * spline coefficients). `train/loss` then includes it; `eval/loss` is the objective alone.
+   */
+  penalty?(hyper: H, data: LearnData, model: Module): (params: Params) => Value
   /** The optimiser, given the learning rate (a number, or the schedule the settings asked for). */
   optimiser(learningRate: LearningRate, hyper: H): GradientTransformation
   settings(hyper: H, data: LearnData): TrainerSettings
@@ -126,6 +131,16 @@ export interface TrainerParticular<H extends object, K extends string = string> 
   validation?(data: LearnData, hyper: H, key: Key): LearnData | undefined
   /** Metrics of predictions and targets logged as `eval/<name>` (default accuracy for a classifier, rmse otherwise). */
   metrics?(hyper: H): Readonly<Record<string, (prediction: Value, target: Value) => number>>
+  /**
+   * Verbs and facts beyond those of the kind (predicted distributions, per-term effects), over the model and the
+   * parameters and buffers of a state; they are merged over the standard ones.
+   */
+  verbs?(
+    model: Module,
+    state: { readonly params: Params; readonly buffers: Params },
+    data: LearnData,
+    hyper: H,
+  ): Verbs & FittedFacts & Readonly<Record<string, unknown>>
   /** What the state can tell beyond the standard paths. */
   contract?(data: LearnData, hyper: H): Contract<TrainState, K>
   records?(state: TrainState, data: LearnData, hyper: H): readonly Exposition[]
@@ -272,6 +287,7 @@ export function defineTrainer<H extends object, K extends string = string>(
       epochs: Math.ceil(plan.total / plan.perEpoch),
       batchSize: plan.batch,
       key: foldIn(key, 1),
+      ...(p.penalty === undefined ? {} : { penalty: p.penalty(h, data, model) }),
       ...(settings.clipNorm === undefined ? {} : { clipNorm: settings.clipNorm }),
       ...(settings.accumulateGradients === undefined ? {} : { accumulateGradients: settings.accumulateGradients }),
       ...(settings.callbacks === undefined ? {} : { callbacks: settings.callbacks }),
@@ -324,6 +340,7 @@ export function defineTrainer<H extends object, K extends string = string>(
     const y = data.y === undefined ? undefined : asTensor(data.y)
     return {
       ...networkVerbs(p.kind, b.model, state, classes),
+      ...(p.verbs?.(b.model, state, data, hyper) ?? {}),
       estimator: p.name,
       kind: p.kind,
       nFeaturesIn: asTensor(data.x).shape[1] ?? 1,
@@ -452,6 +469,7 @@ export function defineTrainer<H extends object, K extends string = string>(
       const state = { params: stateFromJson(j.params) as Params, buffers: stateFromJson(j.buffers) as Params }
       return {
         ...networkVerbs(p.kind, model, state, j.classes ?? undefined),
+        ...(p.verbs?.(model, state, data, hyper) ?? {}),
         estimator: p.name,
         kind: p.kind,
         params: j,

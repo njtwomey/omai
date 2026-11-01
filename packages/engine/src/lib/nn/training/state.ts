@@ -136,7 +136,8 @@ export interface LossAndGrads {
  * @param buffers - The buffers to read.
  * @param x - The minibatch input.
  * @param loss - The objective of the output.
- * @param options - The dropout key, the training flag (default true) and a tap context for activations.
+ * @param options - The dropout key, the training flag (default true), a tap context for activations and a penalty on
+ *   the parameters added to the loss.
  * @returns The loss, gradients and buffers.
  * @example
  * ```ts
@@ -152,11 +153,17 @@ export function lossAndGrads<I>(
   buffers: Params,
   x: I,
   loss: (output: Value) => Value,
-  options: { readonly key?: Key; readonly train?: boolean; readonly taps?: TapContext } = {},
+  options: {
+    readonly key?: Key
+    readonly train?: boolean
+    readonly taps?: TapContext
+    /** A regulariser of the parameters, added to the loss (weight decay, a smoothness penalty). */
+    readonly penalty?: (params: Params) => Value
+  } = {},
 ): LossAndGrads {
   let next = buffers
-  const objective = (p: Params): Value =>
-    loss(
+  const objective = (p: Params): Value => {
+    const data = loss(
       model.apply(p, x, {
         train: options.train ?? true,
         buffers,
@@ -167,6 +174,8 @@ export function lossAndGrads<I>(
         ...(options.taps === undefined ? {} : { taps: options.taps }),
       }),
     )
+    return options.penalty === undefined ? data : add(data, options.penalty(p))
+  }
   const { value, grad } = valueAndGrad(objective)(params)
   return { loss: item(value), grads: grad, buffers: concreteTree(next) }
 }

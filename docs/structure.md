@@ -3361,6 +3361,33 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     `standardNormalLogProb`.
   - `mechanics.ts`: `HamiltonianNet` (a network for H(q, p), the field its symplectic gradient, energy conserved
     along the flow) and `LagrangianNet` (a network for L(q, qdot), accelerations from the Euler-Lagrange equation).
+- `additive/` (inline): additive networks, the neural counterpart of `gam/` (GAMLSS): learnable splines whose knots
+  train with the weights, and additive models built from them.
+  - `bspline.ts`: `bsplineBasis` and `bsplineBasisDerivative` (the Cox-de Boor recurrence as a kernel with exact reverse and forward
+    rules in the points and the knots, any degree; `bsplineBasisByOps` the same in tensor operations, the reference, and the
+    way to higher derivatives; derivatives of any order; knots `[f, m]` with points `[n, f]` batch over
+    features; outside `clamp` or `linear`; boundary knots `clamped` or `extended`, the P-spline knots of `gam`'s `ps`), `extendKnots`, `grevilleAbscissae`, `knotsFromLogits`
+    and `knotLogits` (interior knots as a softmax of gaps: ordered for any logits, with a floor on the gaps).
+  - `knots.ts`: the two slots of a learnable spline as option tables: `splineKnots` (`uniform`, `quantile` and
+    `learnable` free knots, with `placeInterior` the first placement) and `splineShapes` (`none`, `increasing`,
+    `decreasing`, `convex`, `concave`, `bounded`: reparameterisations of the raw coefficients, so the constraint holds at
+    every step).
+  - `spline-layer.ts`: `SplineLayer` (`y_o = b_o + sum_i sum_k c_{o,i,k} B_k(x_i)`: `terms` for the edges, `curve` for
+    one spline on a grid, `termDerivatives`, `penalty` the P-spline difference penalty; the ranges and fixed knots are
+    buffers so a saved model keeps them) and `differenceRoughness`. With one output it is an additive model; with more
+    it is the layer of a Kolmogorov-Arnold network.
+  - `terms.ts`: the term list, as `gam/terms.ts` does for GAMs: `TermSpec` and the constructors `splineTerm`, `netTerm`
+    (a neural additive model's feature net, ReLU or ExU units, dropout, feature dropout, output penalty), `linearTerm`,
+    `interactionTerm` (tensor-product spline or pair net, GA2M and GAMI-Net style), `subnetTerm` (a net over any subset),
+    `termLabel`; the `additiveTerms` table (`spline`, `net`, `linear`, `tensorSpline`) that builds them into modules with
+    their penalties and degrees of freedom; `ExULayer` and `TensorSpline2d`.
+  - `additive-model.ts`: `AdditiveModel` (intercept plus the sum of terms through a link; terms centred over reference
+    rows kept as a buffer, the sum-to-zero constraint; heredity `none`, `weak` or `strong` for interactions; `contributions`,
+    `mean`, `penalties` and `penalty`, `termCurve`, `termSurface`, `termEdf`).
+  - `heads.ts`: distributional heads (GAMLSS in a network): `headFamily` (a `DistributionalFamily` of `dists/families`
+    through its tensor log-likelihood, an `ExtendedFamily` through its derivatives as a custom reverse rule, or a GAMLSS
+    family by name; the same families and links as `gam/gamlss.ts`) and `DistributionalAdditive` (one `AdditiveModel`
+    per parameter with its own terms and link, `nll`, `naturalParameters`, `distribution`, `penalty`).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
@@ -3383,7 +3410,7 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `training/state.ts`: `TrainState` (params, optimiser state, buffers, step and update counts, key, update scale,
   accumulation window), `trainState`, `lossAndGrads`, `applyGradients` (masking frozen parameters), `trainStep` (the
   functional step), `accumulate`, `hasFrozen`.
-- `training/fit.ts`: `fitAlgorithm` and `fit` (minibatch epochs, buffers carried, gradient clipping and accumulation,
+- `training/fit.ts`: `fitAlgorithm` and `fit` (a `penalty` on the parameters added to the loss, minibatch epochs, buffers carried, gradient clipping and accumulation,
   frozen parameters, early stopping, validation metrics, divergence detection); records loss, metrics, learning rate
   and, by policy roles, per-layer gradient and parameter norms, gradients and tapped activations.
 - `training/callbacks.ts`: Lightning-style hooks without Lightning's machinery: a `Callback` implements any of
@@ -4649,6 +4676,19 @@ Stasinopoulos: the parameters updated in turn, each by a penalised Newton step o
 ignored); all three reach the same penalised maximum at fixed smoothing parameters. `fitGamlss` reports the global deviance,
 effective degrees of freedom and smoothing parameters per parameter and term; `quantileResiduals` (randomised for discrete
 responses) and `wormPlot` give the diagnostics.
+
+`neural.ts` is the neural counterpart of `gamlss.ts`, on the trainer base of `learn/bases` (it lives here because `nn` cannot
+import `learn`; the layers, terms and heads are `nn/additive`): `additiveRegressor` (Gaussian GAM), `additiveClassifier` (a
+logit predictor per class) and `additiveDistribution` (GAMLSS: every parameter of a `dists` family its own additive
+predictor and link, negative log-likelihood), each with the optimiser, schedule and batch size as slots, the P-spline
+smoothness penalty inside the loss (`lambda`, in `gam`'s `n * loss` convention, so a fixed-knot model trained to convergence
+is `gam`'s penalised fit), terms from the `nn` table (learnable or quantile knots, shape constraints, feature nets with ReLU
+or ExU units, tensor-product and net interactions with heredity, sub-networks), and a contract with `additive/penalty`,
+`additive/edf`, `additive/knots`, `additive/shape-functions` (a `dependence` record of every curve and surface per
+predictor) and `predictor/<k>/term/<i>/curve` or `.../surface` on a grid, all probeable at any step. The fitted value has
+`predictTerms`, `linearPredictor`, `termCurve`, `edfTerms`, `shapeFunctions` and, for the distribution, `predictDistribution`
+and `predictParameters`. Terms are centred over a reference sample; an unpenalised interaction can absorb a main effect
+(no purification yet), so compare terms jointly.
 
 `posterior.ts` samples the coefficient posterior `exp(l(beta) - beta' S beta / (2 scale))` in place of the Gaussian
 approximation: `gamPosteriorTarget` (exponential families, by autodiff) and `extendedPosteriorTarget` are `LogDensity`
@@ -6197,7 +6237,8 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `regression.ts`: `makeRegression` (several targets, low-rank designs with an effective rank, column shuffling),
   Friedman 1 to 3, `sparseUncorrelated`, with regression functions and joint log densities.
 - `regression-curves.ts`: one-dimensional functions (`sineCurve`, `stepCurve`, `sincCurve`, `dopplerCurve`,
-  `heteroscedastic` noise), additive (GAM) data (`additiveModel`, with its components), curves with known quantiles
+  `heteroscedastic` noise), additive (GAM) data (`additiveModel`, with its components) and additive data with a pairwise interaction
+  (`additiveInteraction`, a GA2M with the interaction in `truth.extra.interactions`), curves with known quantiles
   (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data.
 - `regression-real.ts`: `diabetes`, `linnerud` (multi-output), Anscombe's quartet (`anscombe`), `mtcars` (and
   `mtcarsRegression`), a licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive
