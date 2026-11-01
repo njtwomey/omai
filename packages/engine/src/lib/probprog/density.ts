@@ -5,7 +5,7 @@
  * strategies (`initToMedian`, `initToSample` and others) for finding a valid starting point.
  */
 
-import { MdmlError, quantileOf } from '../base/index.ts'
+import { type Json, MdmlError, quantileOf } from '../base/index.ts'
 import { bijectors, type Support } from '../dists/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'
 import { type LogDensity, target } from '../sampling/index.ts'
@@ -29,6 +29,17 @@ import {
   toFlat,
   type Value,
 } from '../tensor/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  numberFromJson,
+  numberToJson,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
 import {
   contractFactors,
   enumerationHandler,
@@ -599,9 +610,152 @@ export interface InitialParams {
   readonly tries: number
 }
 
+/** The paths {@link initialParamsAlgorithm} logs. */
+export type InitPath = 'init/tries' | 'init/potential' | 'init/valid'
+
+/** What the search for a starting point logs per try: the tries so far, the potential energy there and whether it is valid. */
+export const initContract: Contract<unknown, InitPath> = defineContract({
+  'init/tries': scalar({ description: 'tries made so far' }),
+  'init/potential': scalar({
+    description: 'the potential energy at the point tried (Infinity when not finite)',
+    direction: 'lower',
+  }),
+  'init/valid': scalar({ description: '1 when the potential and its gradient are finite there, else 0' }),
+})
+
+/** The state of {@link initialParamsAlgorithm}: the tries made and the last point tried. */
+export interface InitialParamsState {
+  readonly tries: number
+  readonly last: InitialParams | null
+}
+
+/**
+ * The search for a starting point with a finite potential energy and gradient (NumPyro's `find_valid_initial_params`) as a
+ * stepped algorithm, one try per step: apply the strategy site by site in a run of the program with the try's key, and
+ * keep the point if its potential and gradient are finite. It logs the tries, the potential and validity, and is done
+ * (`converged`) at the first valid point and `failed` after `maxTries`. The state serialises.
+ *
+ * @param um - The unconstrained model.
+ * @param model - The program.
+ * @param data - Its data.
+ * @param options - Key, strategy (default {@link initToUniform}) and the number of tries (default 100).
+ * @returns The algorithm; the point is the final state's `last`.
+ * @throws MdmlError (while stepping) when the program fails on the last try.
+ * @concept log-density
+ * @example
+ * ```ts
+ * import { initialParamsAlgorithm, potentialEnergy, sample } from 'mdml-engine/probprog'
+ * import { normal } from 'mdml-engine/dists'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const model = () => { sample('x', normal(0, 1)) }
+ * runAlgorithm(initialParamsAlgorithm(potentialEnergy(model, undefined), model, undefined, { key: key(0) }), { maxSteps: 5 }).status // => 'converged'
+ * ```
+ */
+export function initialParamsAlgorithm<D = void>(
+  um: UnconstrainedModel,
+  model: Model<D>,
+  data: D,
+  options: { readonly key: Key; readonly strategy?: InitStrategy; readonly maxTries?: number },
+): Algorithm<InitialParamsState, InitPath> {
+  const strategy = options.strategy ?? initToUniform()
+  const maxTries = options.maxTries ?? 100
+  const names = new Set(um.layout.map((l) => l.name))
+  return {
+    name: 'probprog/initial-params',
+    config: { maxTries },
+    init: () => ({ tries: 0, last: null }),
+    step: (st, ctx) => {
+      const i = st.tries
+      const k = foldIn(options.key, i)
+      let count = 0
+      const values: Record<string, Value> = {}
+      const placed = handle(seed(enumerate(model), foldIn(k, 1 << 20)), () => ({
+        process: (msg: Message) => {
+          if (msg.type !== 'sample' || msg.isObserved || msg.value !== undefined || msg.fn === undefined) return
+          if (!names.has(msg.name)) return
+          const proto: SampleSite = {
+            type: 'sample',
+            name: msg.name,
+            fn: msg.fn,
+            value: msg.fn.sample(foldIn(k, 1 << 21), msg.sampleShape),
+            isObserved: false,
+            scale: msg.scale,
+            mask: msg.mask,
+            plates: [...msg.plates],
+            markov: [...msg.markov],
+            infer: msg.infer,
+            isFactor: false,
+            enumDim: undefined,
+          }
+          const v = strategy(proto, foldIn(k, count))
+          count += 1
+          if (v !== undefined) {
+            msg.value = v
+            values[msg.name] = v
+          }
+        },
+      }))
+      let u: Float64Array
+      try {
+        const t = traceOf(placed, data)
+        for (const site of t.sites.values())
+          if (site.type === 'sample' && names.has(site.name) && values[site.name] === undefined)
+            values[site.name] = site.value
+        u = um.unconstrain(values)
+      } catch (e) {
+        if (i === maxTries - 1) throw e
+        return { tries: i + 1, last: st.last }
+      }
+      let ok = toFlat(fromStorage(u, [u.length], 'float64')).every(Number.isFinite)
+      let potential = Number.POSITIVE_INFINITY
+      if (ok) {
+        const r = um.logDensity.valueAndGrad(u)
+        potential = -r.value
+        ok = Number.isFinite(r.value) && r.grad.every(Number.isFinite)
+      }
+      ctx.log('init/tries', i + 1)
+      ctx.log('init/potential', potential)
+      ctx.log('init/valid', ok ? 1 : 0)
+      return { tries: i + 1, last: { unconstrained: u, constrained: values, potential, valid: ok, tries: i + 1 } }
+    },
+    done: (st) => (st.last?.valid === true ? 'converged' : st.tries >= maxTries ? 'failed' : undefined),
+    serialise: (st) => ({
+      tries: st.tries,
+      last:
+        st.last === null
+          ? null
+          : {
+              unconstrained: stateToJson(st.last.unconstrained),
+              constrained: stateToJson(st.last.constrained),
+              potential: numberToJson(st.last.potential),
+              valid: st.last.valid,
+              tries: st.last.tries,
+            },
+    }),
+    deserialise: (j) => {
+      const o = j as unknown as { tries: number; last: Record<string, Json> | null }
+      return {
+        tries: o.tries,
+        last:
+          o.last === null
+            ? null
+            : {
+                unconstrained: stateFromJson(o.last['unconstrained'] as Json) as Float64Array,
+                constrained: stateFromJson(o.last['constrained'] as Json) as Record<string, Value>,
+                potential: numberFromJson(o.last['potential']),
+                valid: o.last['valid'] as boolean,
+                tries: o.last['tries'] as number,
+              },
+      }
+    },
+  }
+}
+
 /**
  * Find a starting point with a finite potential energy and gradient (NumPyro's `find_valid_initial_params`): apply the
  * strategy site by site in a run of the program, and retry with new keys up to `maxTries` times.
+ * {@link initialParamsAlgorithm} run to the end.
  *
  * @param um - The unconstrained model.
  * @param model - The program.
@@ -624,61 +778,8 @@ export function findInitialParams<D = void>(
   data: D,
   options: { readonly key: Key; readonly strategy?: InitStrategy; readonly maxTries?: number },
 ): InitialParams {
-  const strategy = options.strategy ?? initToUniform()
   const maxTries = options.maxTries ?? 100
-  const names = new Set(um.layout.map((l) => l.name))
-  let last: InitialParams | undefined
-  for (let i = 0; i < maxTries; i++) {
-    const k = foldIn(options.key, i)
-    let count = 0
-    const values: Record<string, Value> = {}
-    const placed = handle(seed(enumerate(model), foldIn(k, 1 << 20)), () => ({
-      process: (msg: Message) => {
-        if (msg.type !== 'sample' || msg.isObserved || msg.value !== undefined || msg.fn === undefined) return
-        if (!names.has(msg.name)) return
-        const proto: SampleSite = {
-          type: 'sample',
-          name: msg.name,
-          fn: msg.fn,
-          value: msg.fn.sample(foldIn(k, 1 << 21), msg.sampleShape),
-          isObserved: false,
-          scale: msg.scale,
-          mask: msg.mask,
-          plates: [...msg.plates],
-          markov: [...msg.markov],
-          infer: msg.infer,
-          isFactor: false,
-          enumDim: undefined,
-        }
-        const v = strategy(proto, foldIn(k, count))
-        count += 1
-        if (v !== undefined) {
-          msg.value = v
-          values[msg.name] = v
-        }
-      },
-    }))
-    let u: Float64Array
-    try {
-      const t = traceOf(placed, data)
-      for (const site of t.sites.values())
-        if (site.type === 'sample' && names.has(site.name) && values[site.name] === undefined)
-          values[site.name] = site.value
-      u = um.unconstrain(values)
-    } catch (e) {
-      if (i === maxTries - 1) throw e
-      continue
-    }
-    let ok = toFlat(fromStorage(u, [u.length], 'float64')).every(Number.isFinite)
-    let potential = Number.POSITIVE_INFINITY
-    if (ok) {
-      const r = um.logDensity.valueAndGrad(u)
-      potential = -r.value
-      ok = Number.isFinite(r.value) && r.grad.every(Number.isFinite)
-    }
-    last = { unconstrained: u, constrained: values, potential, valid: ok, tries: i + 1 }
-    if (ok) return last
-  }
+  const { last } = runAlgorithm(initialParamsAlgorithm(um, model, data, options), { maxSteps: maxTries }).state
   return (
     last ?? {
       unconstrained: new Float64Array(um.dim),

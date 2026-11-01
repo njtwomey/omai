@@ -3031,7 +3031,7 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
 - `handlers.ts`: `trace` (and `traceOf`), `seed`, `condition`, `substitute`, `replay`, `block`, `scale`, `mask`,
   `doIntervention`, `enumerate` (mark discrete sites for exact summation), `uncondition` (for predictives) and `handle`
   (custom handlers); the recorded site types.
-- `density.ts`: `logJoint` (enumerated sites summed out by plated sum-product contraction, `_contract.ts`, with
+- `density.ts`: `initialParamsAlgorithm` (`findInitialParams` stepped, a try per step, `init/` paths), `logJoint` (enumerated sites summed out by plated sum-product contraction, `_contract.ts`, with
   dimension recycling in markov loops), `traceLogJoint`, `siteLogProbs`, `potentialEnergy` (to an unconstrained
   `LogDensity` with Jacobian corrections, supports re-evaluated per run, discrete sites summed out), `latentLayout`,
   initialisation strategies (`initToSample`, `initToMedian`, `initToMean`, `initToUniform`, `initToFeasible`,
@@ -3065,7 +3065,9 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
 - `engines/gibbs.ts`: Gibbs sampling with discrete conditionals (enumeration), conjugate conditionals given the rest,
   mixture components group by group, slice steps otherwise, and collapsed Dirichlet and beta sites (topic models).
 - `engines/nuts.ts`: NUTS and HMC on the unconstrained density (`mcmc`), with enumerated discrete sites summed out and
-  recovered by `inferDiscrete`.
+  recovered by `inferDiscrete`; `mcmcAlgorithm` (the driver: a starting point per chain, one step that samples all chains, a
+  step per draw to recover enumerated sites; `mcmc/` paths; `mcmcPosterior` reads the state) and `inferDiscreteAlgorithm`
+  (a site per step); `engines/mcmc-options.ts`: `mcmcKernels`, `initStrategies`.
 - `engines/svi.ts`: stochastic variational inference (`sviAlgorithm`, `svi`): automatic or custom guides, any ELBO
   estimator, optimisers on unconstrained parameters, subsampling over plates.
 - `engines/laplace.ts`: Laplace approximation at the MAP estimate (`laplaceFit`), with the Laplace evidence.
