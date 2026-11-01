@@ -2691,8 +2691,9 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `learning/scores.ts`: log-likelihood, BIC, AIC, K2, BDeu and BDs local and structure scores, Gaussian log-likelihood,
   BIC and AIC.
 - `learning/independence.ts`: chi-square and G tests (stratified), Fisher z and partial-correlation tests, oracles.
-- `learning/equivalence.ts`: PDAGs, skeletons, immoralities, Markov equivalence, Meek's rules, CPDAGs, consistent
-  extensions, structural Hamming distance.
+- `learning/equivalence.ts`: PDAGs, skeletons, immoralities, Markov equivalence, Meek's rules (`meekRulesAlgorithm`,
+  one rule sweep per step, `meekContract`), CPDAGs (`cpdagAlgorithm`), consistent extensions (`pdagToDagAlgorithm`, one
+  node per step), structural Hamming distance.
 - `learning/structure.ts`: Chow-Liu trees (and TAN; `chowLiuAlgorithm`, one edge per step, `chowLiuContract`, the slot
   `mutualInformationEstimators`), the PC algorithm (stable; first or union separating sets), hill
   climbing with any score (BIC, BDeu, ...), tabu list and parent limit, mutual information.
@@ -2708,7 +2709,9 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
   `exogeneityMeasures`; least-squares effects; TODO:
   causal-learn's adaptive-lasso pruning, which needs LARS) and NOTEARS (projected-gradient inner solves; switch to
   `optim`'s L-BFGS-B once it exists).
-- `causal/fci.ts`: FCI with Possible-D-Sep pruning and Zhang's rules R0-R10 (R4 from the separating sets), PAGs.
+- `causal/fci.ts`: FCI with Possible-D-Sep pruning and Zhang's rules R0-R10 (R4 from the separating sets), PAGs;
+  `fciAlgorithm` steps through the colliders, the pruning (one edge per step) and the rules (one sweep per step),
+  `fciContract`.
 
 ### 4.28 `metrics/`: evaluation metrics (scikit-learn, torchmetrics)
 

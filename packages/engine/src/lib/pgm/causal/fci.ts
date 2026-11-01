@@ -4,7 +4,18 @@
  * edge marks say which causal directions every compatible model shares.
  */
 
-import { runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  type TracePolicy,
+  type Tracer,
+  tensor,
+} from '../../trace/index.ts'
 import { type DataRow, dataVariables } from '../learning/_data.ts'
 import { type CiTest, type IndependenceOptions, independenceOracle } from '../learning/independence.ts'
 import { pcAlgorithm } from '../learning/structure.ts'
@@ -178,13 +189,17 @@ const potentiallyDirected =
   (u: string, v: string): boolean =>
     g.get(v, u) !== 'arrow' && g.get(u, v) !== 'tail'
 
-function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): void {
-  const N = g.nodes
-  let changed = true
-  while (changed) {
-    changed = false
-    // R1: a *-> b o-* c, a and c not adjacent: b -> c.
-    for (const b of N)
+type FciRule = (g: Marks, sepsets: ReadonlyMap<string, readonly string[]>) => boolean
+
+/** The number logged for each sweep of {@link fciRules}: R6 and R7 are one sweep, logged as 6. */
+const FCI_RULE_NUMBERS: readonly number[] = [1, 2, 3, 4, 5, 6, 8, 9, 10]
+
+/** Zhang's orientation rules R1 to R10, each one sweep over the graph that reports whether it changed a mark. */
+const fciRules: readonly FciRule[] = [
+  // R1: a *-> b o-* c, a and c not adjacent: b -> c.
+  (g) => {
+    let changed = false
+    for (const b of g.nodes)
       for (const a of g.neighbours(b))
         if (g.get(a, b) === 'arrow')
           for (const c of g.neighbours(b))
@@ -192,8 +207,12 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
               changed = g.set(c, b, 'tail') || changed
               changed = g.set(b, c, 'arrow') || changed
             }
-    // R2: a -> b *-> c or a *-> b -> c, and a *-o c: a *-> c.
-    for (const a of N)
+    return changed
+  },
+  // R2: a -> b *-> c or a *-> b -> c, and a *-o c: a *-> c.
+  (g) => {
+    let changed = false
+    for (const a of g.nodes)
       for (const c of g.neighbours(a))
         if (g.get(a, c) === 'circle')
           for (const b of g.neighbours(a))
@@ -202,8 +221,12 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
               const second = g.get(a, b) === 'arrow' && directed(g, b, c)
               if (first || second) changed = g.set(a, c, 'arrow') || changed
             }
-    // R3: a *-> b <-* c, a *-o d o-* c, a and c not adjacent, d *-o b: d *-> b.
-    for (const b of N) {
+    return changed
+  },
+  // R3: a *-> b <-* c, a *-o d o-* c, a and c not adjacent, d *-o b: d *-> b.
+  (g) => {
+    let changed = false
+    for (const b of g.nodes) {
       const into = g.neighbours(b).filter((v) => g.get(v, b) === 'arrow')
       for (let i = 0; i < into.length; i++)
         for (let j = i + 1; j < into.length; j++) {
@@ -223,8 +246,12 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
               changed = g.set(d, b, 'arrow') || changed
         }
     }
-    // R4: discriminating paths <theta, ..., a, b, c> for b with b o-* c.
-    for (const b of N)
+    return changed
+  },
+  // R4: discriminating paths <theta, ..., a, b, c> for b with b o-* c.
+  (g, sepsets) => {
+    let changed = false
+    for (const b of g.nodes)
       for (const c of g.neighbours(b)) {
         if (g.get(c, b) !== 'circle') continue
         for (const a of g.neighbours(b)) {
@@ -242,8 +269,12 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
           }
         }
       }
-    // R5: a o-o b with an uncovered circle path <a, c, ..., d, b>, a and d, b and c not adjacent: all tails.
-    for (const a of N)
+    return changed
+  },
+  // R5: a o-o b with an uncovered circle path <a, c, ..., d, b>, a and d, b and c not adjacent: all tails.
+  (g) => {
+    let changed = false
+    for (const a of g.nodes)
       for (const b of g.neighbours(a)) {
         if (!(a < b && g.get(a, b) === 'circle' && g.get(b, a) === 'circle')) continue
         const circlePath = (u: string, v: string): boolean => g.get(u, v) === 'circle' && g.get(v, u) === 'circle'
@@ -260,8 +291,12 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
           break
         }
       }
-    // R6: a - b and b o-* c: b -* c.  R7: a -o b, b o-* c, a and c not adjacent: b -* c.
-    for (const b of N)
+    return changed
+  },
+  // R6: a - b and b o-* c: b -* c.  R7: a -o b, b o-* c, a and c not adjacent: b -* c.
+  (g) => {
+    let changed = false
+    for (const b of g.nodes)
       for (const a of g.neighbours(b))
         for (const c of g.neighbours(b)) {
           if (c === a || g.get(c, b) !== 'circle') continue
@@ -269,8 +304,12 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
           else if (g.get(b, a) === 'tail' && g.get(a, b) === 'circle' && !g.adj(a, c))
             changed = g.set(c, b, 'tail') || changed
         }
-    // R8: a -> b -> c or a -o b -> c, and a o-> c: a -> c.
-    for (const a of N)
+    return changed
+  },
+  // R8: a -> b -> c or a -o b -> c, and a o-> c: a -> c.
+  (g) => {
+    let changed = false
+    for (const a of g.nodes)
       for (const c of g.neighbours(a)) {
         if (!(g.get(a, c) === 'arrow' && g.get(c, a) === 'circle')) continue
         for (const b of g.neighbours(a))
@@ -282,16 +321,24 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
           )
             changed = g.set(c, a, 'tail') || changed
       }
-    // R9: a o-> c with an uncovered potentially directed path <a, b, ..., c>, b and c not adjacent: a -> c.
-    for (const a of N)
+    return changed
+  },
+  // R9: a o-> c with an uncovered potentially directed path <a, b, ..., c>, b and c not adjacent: a -> c.
+  (g) => {
+    let changed = false
+    for (const a of g.nodes)
       for (const c of g.neighbours(a)) {
         if (!(g.get(a, c) === 'arrow' && g.get(c, a) === 'circle')) continue
         const paths = uncoveredPaths(g, a, c, potentiallyDirected(g), 4)
         if (paths.some((p) => !g.adj(p[1] as string, c))) changed = g.set(c, a, 'tail') || changed
       }
-    // R10: a o-> c, b -> c <- t, uncovered p.d. paths from a to b and to t whose second nodes differ and are not
-    // adjacent: a -> c.
-    for (const a of N)
+    return changed
+  },
+  // R10: a o-> c, b -> c <- t, uncovered p.d. paths from a to b and to t whose second nodes differ and are not
+  // adjacent: a -> c.
+  (g) => {
+    let changed = false
+    for (const a of g.nodes)
       for (const c of g.neighbours(a)) {
         if (!(g.get(a, c) === 'arrow' && g.get(c, a) === 'circle')) continue
         const parents = g.neighbours(c).filter((v) => v !== a && directed(g, v, c))
@@ -311,8 +358,9 @@ function applyRules(g: Marks, sepsets: ReadonlyMap<string, readonly string[]>): 
             }
           }
       }
-  }
-}
+    return changed
+  },
+]
 
 /** The start theta of a discriminating path <theta, ..., a, b, c> for b, if any. */
 function discriminate(g: Marks, a: string, b: string, c: string): string | undefined {
@@ -329,12 +377,221 @@ function discriminate(g: Marks, a: string, b: string, c: string): string | undef
   return undefined
 }
 
+/** The paths FCI logs, as a type. */
+export type FciPath = 'fci/phase' | 'fci/rule' | 'fci/oriented' | 'fci/removed' | 'fci/sepset' | 'fci/circles'
+
+/**
+ * What FCI logs, by path: the phase of the step (0 colliders from the skeleton, 1 Possible-D-Sep pruning, 2 colliders
+ * again then, 3 Zhang's rules), the rule swept (0 for colliders, 1 to 10 with R6 and R7 swept together as 6, -1 while pruning), the number of edge marks the
+ * step changed, the edge a pruning step removed and its separating set (as node indices, in the order of the data's
+ * variables) and the circle marks left.
+ */
+export const fciContract: Contract<unknown, FciPath> = defineContract({
+  'fci/phase': scalar({ description: '0 colliders, 1 Possible-D-Sep pruning, 2 colliders again, 3 orientation rules' }),
+  'fci/rule': scalar({
+    description:
+      'the rule swept: 0 for the collider rule, 1 to 10 for Zhang (R6 and R7 together as 6), -1 while pruning',
+  }),
+  'fci/oriented': scalar({ description: 'edge marks the step changed' }),
+  'fci/removed': tensor({
+    role: 'state',
+    shape: [2],
+    description: 'the edge a pruning step removed, as node indices (empty: none)',
+  }),
+  'fci/sepset': tensor({ role: 'state', shape: ['sepset'], description: 'its separating set, as node indices' }),
+  'fci/circles': scalar({ description: 'circle marks left in the graph' }),
+})
+
+/** Options of {@link fciAlgorithm}. */
+export interface FciAlgorithmOptions extends FciOptions {
+  /** A precomputed adjacency search (the PC skeleton and its separating sets); default: run it. */
+  readonly skeleton?: {
+    readonly adjacency: ReadonlyMap<string, Iterable<string>>
+    readonly sepsets: ReadonlyMap<string, readonly string[]>
+  }
+}
+
+/** The state of {@link fciAlgorithm}. */
+export interface FciState {
+  /** Where the run is: 0 colliders, 1 pruning, 3 rules, 4 finished (2 happens inside the step that ends pruning). */
+  readonly phase: 0 | 1 | 3 | 4
+  /** The marks: `[a + NUL + b, mark]`, the mark at b of the edge between a and b. */
+  readonly marks: readonly (readonly [string, Mark])[]
+  /** Separating sets by sorted pair key. */
+  readonly sepsets: readonly (readonly [string, readonly string[]])[]
+  /** The position among the node pairs in the pruning phase. */
+  readonly cursor: number
+  /** The next sweep, 0 to 8 (R1 to R5, R6 with R7, R8, R9, R10). */
+  readonly rule: number
+  /** Whether a rule changed a mark in the current cycle. */
+  readonly changed: boolean
+  /** Sweeps and steps made. */
+  readonly steps: number
+}
+
+const marksToState = (g: Marks): [string, Mark][] => [...g.m.entries()]
+const marksFromState = (names: readonly string[], marks: readonly (readonly [string, Mark])[]): Marks => {
+  const g = new Marks(names)
+  for (const [k, v] of marks) g.m.set(k, v)
+  return g
+}
+
+/**
+ * Fast Causal Inference as a steppable algorithm: the PC adjacency search gives a skeleton and separating sets; then one
+ * step orients the unshielded colliders, each following step tests one remaining edge against subsets of its
+ * Possible-D-Sep (removing it and recording the separating set when they separate), one step re-orients the colliders
+ * from scratch, and then each step sweeps one of Zhang's rules R1 to R10 (R6 and R7 together) until a whole cycle changes nothing.
+ *
+ * @param data - The rows (continuous for Fisher z; discrete for chi-square or G tests).
+ * @param options - Test, significance, largest conditioning set and optionally a precomputed `skeleton`.
+ * @returns The algorithm; its final state's marks are the PAG (see {@link fci}).
+ * @concept causal-discovery
+ * @example
+ * ```ts
+ * import { fciAlgorithm } from 'mdml-engine/pgm/causal'
+ * fciAlgorithm([{ a: 0, b: 1 }, { a: 1, b: 0 }, { a: 2, b: 3 }, { a: 3, b: 2 }]).name // => 'pgm/fci'
+ * ```
+ */
+export function fciAlgorithm(
+  data: readonly DataRow[],
+  options: FciAlgorithmOptions = {},
+): Algorithm<FciState, FciPath> {
+  const names = dataVariables(data)
+  const test = options.test ?? 'fisherZ'
+  const maxCond = options.maxConditioning ?? names.length
+  const index = new Map(names.map((v, i) => [v, i]))
+  const idx = (vs: readonly string[]): Int32Array => Int32Array.from(vs, (v) => index.get(v) ?? -1)
+  const pairs: [string, string][] = []
+  for (const x of names) for (const y of names) if (x < y) pairs.push([x, y])
+  const oracle = independenceOracle(data, test, options)
+  const circles = (g: Marks): number => {
+    let c = 0
+    for (const v of g.m.values()) if (v === 'circle') c++
+    return c
+  }
+  return {
+    name: 'pgm/fci',
+    config: { variables: names.length, test: typeof test === 'string' ? test : 'custom', maxConditioning: maxCond },
+    init: () => {
+      const skeleton =
+        options.skeleton ??
+        runAlgorithm(pcAlgorithm(data, { ...options, test, maxConditioning: maxCond, sepsetRule: 'first' }), {
+          maxSteps: maxCond + 2,
+        }).state
+      const g = new Marks(names)
+      for (const [v, ns] of skeleton.adjacency) for (const w of ns) if (v < w) g.add(v, w)
+      return {
+        phase: 0,
+        marks: marksToState(g),
+        sepsets: [...skeleton.sepsets].map(([k, v]) => [k, [...v]] as const),
+        cursor: 0,
+        rule: 0,
+        changed: false,
+        steps: 0,
+      }
+    },
+    step: (s, ctx) => {
+      if (s.phase === 4) return s
+      const g = marksFromState(names, s.marks)
+      const before = new Map(g.m)
+      const sepsets = new Map(s.sepsets.map(([k, v]) => [k, v] as const))
+      let phase: FciState['phase'] = s.phase
+      let cursor = s.cursor
+      let rule = s.rule
+      let changed = s.changed
+      let ruleNumber = -1
+      let removed: [string, string] | undefined
+      let separating: readonly string[] = []
+      if (phase === 0) {
+        rule0(g, sepsets)
+        ruleNumber = 0
+        phase = 1
+      } else if (phase === 1) {
+        // Possible-D-Sep pruning: the next remaining edge, or, once there is none, the re-orientation of the colliders.
+        while (cursor < pairs.length && !g.adj(...(pairs[cursor] as [string, string]))) cursor++
+        const pair = pairs[cursor]
+        if (pair === undefined) {
+          g.reset()
+          rule0(g, sepsets)
+          ruleNumber = 0
+          phase = 3
+          rule = 0
+          changed = false
+        } else {
+          cursor++
+          const [x, y] = pair
+          let gone = false
+          for (const [from, to] of [
+            [x, y],
+            [y, x],
+          ] as const) {
+            if (gone) break
+            for (const sub of subsetsBySize(possibleDsep(g, from, to), 1)) {
+              if (oracle(x, y, sub)) {
+                g.remove(x, y)
+                sepsets.set(sepKey(x, y), sub)
+                removed = [x, y]
+                separating = sub
+                gone = true
+                break
+              }
+            }
+          }
+        }
+      } else {
+        ruleNumber = FCI_RULE_NUMBERS[rule] ?? -1
+        changed = (fciRules[rule] as FciRule)(g, sepsets) || changed
+        rule++
+        if (rule === fciRules.length) {
+          if (!changed) phase = 4
+          rule = 0
+          changed = false
+        }
+      }
+      let marksChanged = 0
+      for (const [k, v] of g.m) if (before.get(k) !== v) marksChanged++
+      for (const k of before.keys()) if (!g.m.has(k)) marksChanged++
+      if (ctx.wants('fci/phase')) ctx.log('fci/phase', s.phase)
+      if (ctx.wants('fci/rule')) ctx.log('fci/rule', ruleNumber)
+      if (ctx.wants('fci/oriented')) ctx.log('fci/oriented', marksChanged)
+      if (ctx.wants('fci/removed')) ctx.log('fci/removed', removed === undefined ? new Int32Array(0) : idx(removed))
+      if (ctx.wants('fci/sepset')) ctx.log('fci/sepset', idx(separating))
+      if (ctx.wants('fci/circles')) ctx.log('fci/circles', circles(g))
+      return {
+        phase,
+        marks: marksToState(g),
+        sepsets: [...sepsets].map(([k, v]) => [k, [...v]] as const),
+        cursor,
+        rule,
+        changed,
+        steps: s.steps + 1,
+      }
+    },
+    done: (s) => (s.phase === 4 ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as FciState,
+  }
+}
+
+/** The PAG and the separating sets a finished {@link fciAlgorithm} state holds. */
+function pagOf(
+  names: readonly string[],
+  s: FciState,
+): { readonly pag: Pag; readonly separatingSets: Readonly<Record<string, readonly string[]>> } {
+  const g = marksFromState(names, s.marks)
+  const edges: PagEdge[] = []
+  for (const a of names)
+    for (const b of names)
+      if (a < b && g.adj(a, b)) edges.push({ a, b, markA: g.get(b, a) ?? 'circle', markB: g.get(a, b) ?? 'circle' })
+  return { pag: { kind: 'pag', nodes: names, edges }, separatingSets: Object.fromEntries(s.sepsets) }
+}
+
 /**
  * Fast Causal Inference (Spirtes, Meek and Richardson 1995; Zhang 2008): causal discovery that allows latent
  * confounders and selection. The PC adjacency search gives a skeleton and separating sets; unshielded colliders are
  * oriented; edges are pruned by testing subsets of Possible-D-Sep; the colliders are re-oriented and Zhang's complete
  * rules R1-R10 (R4 on discriminating paths with the separating sets) are applied until nothing changes (causal-learn's
- * `fci`).
+ * `fci`). This is {@link fciAlgorithm} run to the end.
  *
  * @param data - The rows (continuous for Fisher z; discrete for chi-square or G tests).
  * @param options - Test, significance, largest conditioning set and tracer (for the adjacency search).
@@ -365,37 +622,8 @@ export function fci(
       ...(options.policy === undefined ? {} : { policy: options.policy }),
     },
   ).state
-  const g = new Marks(names)
-  for (const [v, ns] of skeleton.adjacency) for (const w of ns) if (v < w) g.add(v, w)
-  const sepsets = new Map(skeleton.sepsets)
-  rule0(g, sepsets)
-  // Possible-D-Sep pruning.
-  const oracle = independenceOracle(data, test, options)
-  for (const x of names)
-    for (const y of names) {
-      if (!(x < y) || !g.adj(x, y)) continue
-      let removed = false
-      for (const [from, to] of [
-        [x, y],
-        [y, x],
-      ] as const) {
-        if (removed) break
-        for (const s of subsetsBySize(possibleDsep(g, from, to), 1)) {
-          if (oracle(x, y, s)) {
-            g.remove(x, y)
-            sepsets.set(sepKey(x, y), s)
-            removed = true
-            break
-          }
-        }
-      }
-    }
-  g.reset()
-  rule0(g, sepsets)
-  applyRules(g, sepsets)
-  const edges: PagEdge[] = []
-  for (const a of names)
-    for (const b of names)
-      if (a < b && g.adj(a, b)) edges.push({ a, b, markA: g.get(b, a) ?? 'circle', markB: g.get(a, b) ?? 'circle' })
-  return { pag: { kind: 'pag', nodes: names, edges }, separatingSets: Object.fromEntries(sepsets) }
+  const { state } = runAlgorithm(fciAlgorithm(data, { ...options, skeleton }), {
+    maxSteps: Number.MAX_SAFE_INTEGER,
+  })
+  return pagOf(names, state)
 }

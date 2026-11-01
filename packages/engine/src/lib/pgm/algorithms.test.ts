@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { foldIn, key, uniform } from '../random/index.ts'
+import { foldIn, key, normal, uniform } from '../random/index.ts'
 import { type Algorithm, policies, recorder, runAlgorithm } from '../trace/index.ts'
 import { directLingam, directLingamAlgorithm, exogeneityMeasures, lingamContract } from './causal/discovery.ts'
-import { dagEdges } from './graphs.ts'
+import { fci, fciAlgorithm, fciContract } from './causal/fci.ts'
+import { dag, dagEdges } from './graphs.ts'
 import {
   effectiveSampleSize,
   importanceContract,
@@ -12,6 +13,18 @@ import {
   rejectionSample,
   rejectionSampleAlgorithm,
 } from './inference/sampling.ts'
+import {
+  cpdag,
+  cpdagAlgorithm,
+  immoralities,
+  isMarkovEquivalent,
+  meekContract,
+  meekRules,
+  meekRulesAlgorithm,
+  pdag,
+  pdagToDag,
+  pdagToDagAlgorithm,
+} from './learning/equivalence.ts'
 import { chowLiu, chowLiuAlgorithm, chowLiuContract, mutualInformationEstimators } from './learning/structure.ts'
 import { ancestralSample, bayesNet, forwardSample } from './models/bayes-net.ts'
 
@@ -207,4 +220,194 @@ describe('directLingamAlgorithm', () => {
     expect(other.state.order[0]).toBe(2)
     expect(exogeneityMeasures.names).toEqual(['pwling', 'nonlinear-correlation'])
   })
+})
+
+describe('Meek rules, DAG extension and CPDAG algorithms', () => {
+  // a -> b - c - d, with b - d: R1 orients b -> c, then the rest follow.
+  const start = pdag(
+    [],
+    [['a', 'b']],
+    [
+      ['b', 'c'],
+      ['c', 'd'],
+    ],
+  )
+
+  it('one rule sweep per step, to the pdag meekRules returns', () => {
+    const run = runAlgorithm(meekRulesAlgorithm(start), { maxSteps: 50 })
+    expect(run.status).toBe('converged')
+    expect(run.state.finished).toBe(true)
+    expect(run.state.directed).toEqual([
+      ['a', 'b'],
+      ['b', 'c'],
+      ['c', 'd'],
+    ])
+    expect(run.state.undirected).toEqual([])
+    const old = meekRules(start)
+    expect(old.directed).toEqual([
+      ['a', 'b'],
+      ['b', 'c'],
+      ['c', 'd'],
+    ])
+    // The last cycle of three rules orients nothing.
+    expect(run.steps % 3).toBe(0)
+    expect(run.state.sweeps).toBe(run.steps)
+  })
+
+  it('logs the rule swept and the edges it oriented; the undirected count never grows', () => {
+    const l = logged(meekRulesAlgorithm(start))
+    const rules = l.get('meek/rule') as number[]
+    expect(rules.slice(0, 3)).toEqual([1, 2, 3])
+    const undirected = l.get('meek/undirected') as number[]
+    expect(undirected.every((u, i) => i === 0 || u <= (undirected[i - 1] ?? 0))).toBe(true)
+    expect(undirected.at(-1)).toBe(0)
+    const oriented = l.get('meek/oriented') as number[][]
+    // The first sweep of R1 orients b -> c and, seeing it, c -> d.
+    expect(oriented[0]).toEqual([1, 2, 2, 3])
+    expect(Object.keys(meekContract)).toHaveLength(4)
+  })
+
+  it('rule 4 is swept only when asked for', () => {
+    expect(runAlgorithm(meekRulesAlgorithm(start, { r4: true }), { maxSteps: 50 }).steps % 4).toBe(0)
+  })
+
+  it('resumes from a JSON checkpoint at every cut', () => {
+    for (const cut of [1, 2, 4]) expectResumes(meekRulesAlgorithm(start), cut, (s) => s)
+  })
+
+  it('cpdagAlgorithm reaches the cpdag of a DAG: v-structures oriented, a chain left undirected', () => {
+    const collider = dag([
+      ['a', 'c'],
+      ['b', 'c'],
+      ['c', 'd'],
+    ])
+    const run = runAlgorithm(cpdagAlgorithm(collider), { maxSteps: 50 })
+    const old = cpdag(collider)
+    expect(run.state.directed).toEqual(old.directed)
+    expect(old.directed).toEqual([
+      ['a', 'c'],
+      ['b', 'c'],
+      ['c', 'd'],
+    ])
+    const chain = runAlgorithm(
+      cpdagAlgorithm(
+        dag([
+          ['a', 'b'],
+          ['b', 'c'],
+        ]),
+      ),
+      { maxSteps: 50 },
+    )
+    expect(chain.state.directed).toEqual([])
+    expect(chain.state.undirected).toEqual([
+      ['a', 'b'],
+      ['b', 'c'],
+    ])
+  })
+
+  it('the extension removes one node per step and keeps the skeleton, orientations and no new immoralities', () => {
+    const p = pdag(
+      [],
+      [['a', 'b']],
+      [
+        ['b', 'c'],
+        ['c', 'd'],
+        ['b', 'd'],
+      ],
+    )
+    const run = runAlgorithm(pdagToDagAlgorithm(p), { maxSteps: 10 })
+    expect(run.steps).toBe(4)
+    expect(run.state.undirected).toEqual([])
+    const extension = pdagToDag(p)
+    expect(dagEdges(extension)).toHaveLength(4)
+    expect(isMarkovEquivalent(extension, extension)).toBe(true)
+    // It keeps the directed edge and creates no immorality, which the PDAG's skeleton has none of.
+    expect(dagEdges(extension)).toContainEqual(['a', 'b'])
+    expect(immoralities(extension)).toEqual([])
+    const l = logged(pdagToDagAlgorithm(p))
+    expect(l.get('meek/node')).toHaveLength(4)
+    expect(() =>
+      runAlgorithm(
+        pdagToDagAlgorithm(
+          pdag(
+            [],
+            [],
+            [
+              ['a', 'b'],
+              ['b', 'c'],
+              ['c', 'd'],
+              ['d', 'a'],
+            ],
+          ),
+        ),
+        { maxSteps: 10 },
+      ),
+    ).toThrow(/consistent extension/)
+    expectResumes(pdagToDagAlgorithm(p), 2, (s) => s)
+  })
+})
+
+describe('fciAlgorithm', () => {
+  const z = normal(key(7), [400, 4]).data
+  const rows = Array.from({ length: 400 }, (_, i) => {
+    const x = z[4 * i] ?? 0
+    const w = z[4 * i + 1] ?? 0
+    const y = x + 0.5 * (z[4 * i + 2] ?? 0)
+    return { x, y, w, t: y + w + 0.5 * (z[4 * i + 3] ?? 0) }
+  })
+
+  it('goes through the collider, pruning, collider and rule phases, to the PAG fci returns', () => {
+    const alg = fciAlgorithm(rows)
+    const run = runAlgorithm(alg, { maxSteps: 1000 })
+    expect(run.status).toBe('converged')
+    const old = fci(rows)
+    expect(old.pag.edges).toHaveLength(3)
+    const final = run.state.marks.map(([k, v]) => `${k.replace('\u0000', '>')}:${v}`).sort()
+    const fromOld = old.pag.edges.flatMap((e) => [`${e.a}>${e.b}:${e.markB}`, `${e.b}>${e.a}:${e.markA}`]).sort()
+    expect(final).toEqual(fromOld)
+    expect(Object.keys(old.separatingSets).length).toBeGreaterThan(0)
+    const l = logged(alg)
+    const phase = l.get('fci/phase') as number[]
+    expect(phase.every((p, i) => i === 0 || p >= (phase[i - 1] ?? 0))).toBe(true)
+    expect(phase[0]).toBe(0)
+    expect(phase.at(-1)).toBe(3)
+    const rules = l.get('fci/rule') as number[]
+    expect(rules.slice(-9)).toEqual([1, 2, 3, 4, 5, 6, 8, 9, 10])
+    expect(Object.keys(fciContract)).toHaveLength(6)
+  })
+
+  it('orients the collider of a -> c <- b and leaves the other marks circles', () => {
+    const w = normal(key(3), [500, 3]).data
+    const collider = Array.from({ length: 500 }, (_, i) => {
+      const a = w[3 * i] ?? 0
+      const b = w[3 * i + 1] ?? 0
+      return { a, b, c: a + b + 0.5 * (w[3 * i + 2] ?? 0) }
+    })
+    expect(fci(collider).pag.edges.map((e) => `${e.a} ${e.markA}-${e.markB} ${e.b}`)).toEqual([
+      'a circle-arrow c',
+      'b circle-arrow c',
+    ])
+  })
+
+  it('never adds circles once oriented, and the last cycle of rules changes nothing', () => {
+    const l = logged(fciAlgorithm(rows))
+    const phase = l.get('fci/phase') as number[]
+    const circles = l.get('fci/circles') as number[]
+    const from = phase.indexOf(3)
+    for (let i = from + 1; i < circles.length; i++) expect(circles[i] ?? 0).toBeLessThanOrEqual(circles[i - 1] ?? 0)
+    const oriented = l.get('fci/oriented') as number[]
+    expect(oriented.slice(-9).every((n) => n === 0)).toBe(true)
+  })
+
+  it('logs the removed edge and its separating set in the pruning phase', () => {
+    const l = logged(fciAlgorithm(rows))
+    const removed = (l.get('fci/removed') as number[][]).filter((r) => r.length === 2)
+    expect(Array.isArray(removed)).toBe(true)
+    for (const r of removed) expect(r[0]).not.toBe(r[1])
+  })
+
+  it('resumes from a JSON checkpoint at several cuts', () => {
+    for (const cut of [1, 3, 12])
+      expectResumes(fciAlgorithm(rows), cut, (s) => ({ m: s.marks, s: s.sepsets, p: s.phase }))
+  }, 60_000)
 })
