@@ -10,6 +10,7 @@ import {
   type DictSpace,
   defaults,
   dict,
+  int,
   type Option,
   type OptionTable,
   optionTable,
@@ -191,4 +192,88 @@ export const initialProfiles: OptionTable<(x: number) => number, ProfileProperti
     ),
   },
   { default: 'sine', label: 'initial profile', description: 'The field at time zero, as a function of position.' },
+)
+
+/** What a Poisson iteration does, for validity rules and selectors. */
+export interface PoissonMethodProperties {
+  /** Whether it needs a grid of 2^k + 1 nodes per side with Dirichlet conditions. */
+  readonly needsNestedGrids: boolean
+  /** Whether it updates nodes in place with the newest values (Gauss-Seidel, SOR). */
+  readonly inPlace: boolean
+  /** The rough number of sweeps it needs to gain a digit as the grid is refined: grows like n^2, n or stays constant. */
+  readonly iterationsGrow: 'n squared' | 'n' | 'constant'
+}
+
+/** A Poisson iteration and its knobs: the fields of the solver's options that choose and tune it. */
+export interface PoissonIteration {
+  readonly method: 'jacobi' | 'gauss-seidel' | 'sor' | 'multigrid'
+  readonly omega?: number
+  readonly sweeps?: number
+  readonly coarseSweeps?: number
+}
+
+function iteration(
+  description: string,
+  properties: PoissonMethodProperties,
+  space: DictSpace,
+  make: (k: (name: string) => number) => PoissonIteration,
+): Option<PoissonIteration, PoissonMethodProperties> {
+  return {
+    description,
+    properties,
+    space,
+    make: (config) => {
+      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      return make((name) => Number(full[name]))
+    },
+  }
+}
+
+/**
+ * The Poisson iterations as one slot: `jacobi` (simultaneous updates), `gauss-seidel` (in-place updates), `sor`
+ * (over-relaxed Gauss-Seidel with a relaxation factor) and `multigrid` (V-cycles with red-black smoothing; the number
+ * of sweeps are knobs). The value spreads into the options of `poisson` and `poissonAlgorithm`.
+ *
+ * @concept poisson-equation
+ * @example
+ * ```ts
+ * import { poissonMethods } from 'mdml-engine/dynamics/pde'
+ * poissonMethods.make({ kind: 'sor', omega: 1.5 }) // => { method: 'sor', omega: 1.5 }
+ * ```
+ */
+export const poissonMethods: OptionTable<PoissonIteration, PoissonMethodProperties> = optionTable(
+  {
+    jacobi: iteration(
+      'replace every node by the average of its neighbours, all at once',
+      { needsNestedGrids: false, inPlace: false, iterationsGrow: 'n squared' },
+      dict({}),
+      () => ({ method: 'jacobi' }),
+    ),
+    'gauss-seidel': iteration(
+      'update the nodes one after another, each seeing the newest neighbours',
+      { needsNestedGrids: false, inPlace: true, iterationsGrow: 'n squared' },
+      dict({}),
+      () => ({ method: 'gauss-seidel' }),
+    ),
+    sor: iteration(
+      'Gauss-Seidel over-relaxed by a factor between 1 and 2',
+      { needsNestedGrids: false, inPlace: true, iterationsGrow: 'n' },
+      dict({ omega: real(0.5, 1.99, { default: 1.5, label: 'relaxation factor ω' }) }),
+      (k) => ({ method: 'sor', omega: k('omega') }),
+    ),
+    multigrid: iteration(
+      'V-cycles that smooth on each grid and correct on the next coarser one',
+      { needsNestedGrids: true, inPlace: true, iterationsGrow: 'constant' },
+      dict({
+        sweeps: int(1, 20, { default: 2, label: 'smoothing sweeps per level' }),
+        coarseSweeps: int(1, 500, { log: true, default: 50, label: 'sweeps on the coarsest grid' }),
+      }),
+      (k) => ({ method: 'multigrid', sweeps: k('sweeps'), coarseSweeps: k('coarseSweeps') }),
+    ),
+  },
+  {
+    default: 'gauss-seidel',
+    label: 'iteration',
+    description: 'How the Poisson system is relaxed towards its solution.',
+  },
 )

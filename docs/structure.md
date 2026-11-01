@@ -2315,10 +2315,13 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
   `advection1dAlgorithm`: the state is the field, the time, the field one step back and the snapshots, so it
   serialises and resumes; logs `pde/t`, `pde/u`, `pde/norm`, `pde/max`, `pde/failed`; an unstable step ends the run
   `diverged`) and the solvers over a whole interval (`heat`, `heat1d`, `wave1d`, `advection1d`, the same numbers),
-  Poisson (Jacobi, Gauss-Seidel, SOR, conjugate gradients, multigrid).
+  Poisson (Jacobi, Gauss-Seidel, SOR, conjugate gradients, multigrid) with `poissonAlgorithm` stepping the sweeps and
+  the multigrid V-cycles (logs `poisson/residual`, `iterate`, `change`; multigrid takes its smoothing sweeps as
+  options), `poisson` that run (conjugate gradients stays on the Krylov solvers of `numerics/sparse`).
 - `pde/finite-difference-options.ts`: the slots of the steppers as option tables: `heatSchemes` (`explicit`,
   `implicit`, `crank-nicolson`, `theta` with its weight), `advectionSchemes` (`upwind`, `lax-friedrichs`,
-  `lax-wendroff`, as stencils) and `initialProfiles` (`sine`, `gaussian`, `pulse`, `triangle`).
+  `lax-wendroff`, as stencils), `initialProfiles` (`sine`, `gaussian`, `pulse`, `triangle`) and `poissonMethods`
+  (`jacobi`, `gauss-seidel`, `sor` with its factor, `multigrid` with its sweeps).
 - `pde/finite-volume.ts`: conservation laws, Godunov and MUSCL schemes, flux limiters, Burgers shocks and
   rarefactions; `conservationLawAlgorithm` steps them (logs `pde/t`, `u`, `mass`, `total-variation`; the state serialises
   and resumes), `conservationLaw` is that run.

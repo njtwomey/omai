@@ -16,6 +16,7 @@ import {
   defineContract,
   type RunOptions,
   runAlgorithm,
+  type StepContext,
   scalar,
   stateFromJson,
   stateToJson,
@@ -541,6 +542,10 @@ export interface PoissonOptions extends PdeTraceOptions {
   /** Relative residual tolerance (default 1e-10). */
   readonly tol?: number
   readonly maxIterations?: number
+  /** Multigrid: smoothing sweeps before and after the coarse-grid correction (default 2). */
+  readonly sweeps?: number
+  /** Multigrid: sweeps that solve the coarsest grid (default 50). */
+  readonly coarseSweeps?: number
 }
 
 /** The result of {@link poisson}. */
@@ -551,33 +556,45 @@ export interface PoissonResult {
   readonly residualHistory: readonly number[]
 }
 
-/**
- * Solve the Poisson problem Delta u = f with boundary conditions on a 1-D or 2-D grid, by Jacobi, Gauss-Seidel or SOR
- * sweeps, conjugate gradients (GMRES when Neumann or Robin rows make the system unsymmetric) or geometric multigrid
- * V-cycles (Dirichlet conditions, 2^k + 1 nodes per side). Each sweep or cycle is one traced step with the relative
- * residual as a metric.
- *
- * @param f - The right-hand side at the nodes (values, or a function of the node's coordinates).
- * @param grid - A 1-D or 2-D grid.
- * @param bcs - The conditions: [left, right] in 1-D, the four sides in 2-D.
- * @param options - Method, relaxation, tolerance and iteration cap.
- * @returns The solution, iterations and residual history.
- * @throws MdmlError with code `value` when multigrid does not fit the grid.
- * @concept poisson-equation
- * @example
- * ```ts
- * import { dirichlet, grid1d, poisson } from 'mdml-engine/dynamics/pde'
- * // u'' = 2, u(0) = u(1) = 0: u = x^2 - x.
- * const r = poisson(() => 2, grid1d(0, 1, 9), [dirichlet(), dirichlet()], { method: 'cg' })
- * Math.abs((r.u.data[4] ?? 0) + 0.25) < 1e-10 // => true
- * ```
- */
-export function poisson(
+/** The state of {@link poissonAlgorithm}: the iterate, its relative residual and the residuals so far. */
+export interface PoissonState {
+  /** The iterate at the nodes (fixed nodes hold their boundary values). */
+  readonly u: Float64Array
+  /** ||f - A u|| / ||f|| over the free nodes. */
+  readonly residual: number
+  /** The residual at the start and after every sweep or cycle. */
+  readonly history: readonly number[]
+}
+
+/** The paths {@link poissonAlgorithm} logs, as a type. */
+export type PoissonPath = 'poisson/residual' | 'poisson/iterate' | 'poisson/change'
+
+/** What {@link poissonAlgorithm} logs, by path: the relative residual, the iterate and the size of the last update. */
+export const poissonContract: Contract<PoissonState, PoissonPath> = defineContract({
+  'poisson/residual': scalar({ description: 'the relative residual after this sweep or cycle', direction: 'lower' }),
+  'poisson/iterate': tensor({ role: 'state', shape: ['node'], description: 'the iterate at the nodes' }),
+  'poisson/change': scalar({ description: 'the l2 norm of the update this sweep or cycle made', direction: 'lower' }),
+})
+
+interface PoissonProblem {
+  readonly op: DiscreteOperator
+  readonly n: number
+  readonly fv: Float64Array
+  readonly rhs: Float64Array
+  readonly u: Float64Array
+  readonly fixed: ReadonlySet<number>
+  readonly method: PoissonMethod
+  readonly tol: number
+  readonly maxIterations: number
+  readonly residualOf: (x: Float64Array) => number
+}
+
+function poissonProblem(
   f: TensorLike | ((...x: number[]) => number),
   grid: Grid1d | Grid2d,
   bcs: readonly [BoundaryCondition, BoundaryCondition] | RectangleConditions,
-  options: PoissonOptions = {},
-): PoissonResult {
+  options: PoissonOptions,
+): PoissonProblem {
   const op =
     'a' in grid
       ? laplacian1d(
@@ -609,21 +626,63 @@ export function poisson(
     for (let i = 0; i < n; i++) if (!fixed.has(i)) s += ((rhs[i] ?? 0) - (ax[i] ?? 0)) ** 2
     return Math.sqrt(s) / bnorm
   }
-  if (method === 'cg') {
-    const r = krylovPoisson(op, rhs, u, fixed, tol, maxIterations, options)
-    return { ...r, u: shaped(Float64Array.from(r.u.data), grid) }
-  }
-  if (method === 'multigrid') return multigridPoisson(grid, fv, u, fixed, tol, maxIterations, options, residualOf)
+  return { op, n, fv, rhs, u, fixed, method, tol, maxIterations, residualOf }
+}
+
+/**
+ * The Poisson problem Delta u = f with boundary conditions on a 1-D or 2-D grid as a steppable algorithm: each step is
+ * one Jacobi, Gauss-Seidel or SOR sweep, or one geometric multigrid V-cycle (Dirichlet conditions, 2^k + 1 nodes per
+ * side); see {@link poissonMethods}. The state is the iterate and the residual history, so it serialises and a run
+ * resumes; it logs the paths of {@link poissonContract} and is done when the relative residual reaches the tolerance
+ * (`diverged` when it stops being finite).
+ *
+ * @param f - The right-hand side at the nodes (values, or a function of the node's coordinates).
+ * @param grid - A 1-D or 2-D grid.
+ * @param bcs - The conditions: [left, right] in 1-D, the four sides in 2-D.
+ * @param options - Method, relaxation, tolerance and, for multigrid, the sweeps.
+ * @returns The algorithm.
+ * @throws MdmlError with code `value` for conjugate gradients (a Krylov solver, see `cgAlgorithm`) or when multigrid does not fit the grid.
+ * @concept poisson-equation
+ * @example
+ * ```ts
+ * import { dirichlet, grid1d, poissonAlgorithm } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = poissonAlgorithm(() => 2, grid1d(0, 1, 9), [dirichlet(), dirichlet()], { method: 'gauss-seidel', tol: 1e-8 })
+ * runAlgorithm(alg, { maxSteps: 1000 }).state.residual < 1e-8 // => true
+ * ```
+ */
+export function poissonAlgorithm(
+  f: TensorLike | ((...x: number[]) => number),
+  grid: Grid1d | Grid2d,
+  bcs: readonly [BoundaryCondition, BoundaryCondition] | RectangleConditions,
+  options: PoissonOptions = {},
+): Algorithm<PoissonState, PoissonPath> {
+  const problem = poissonProblem(f, grid, bcs, options)
+  if (problem.method === 'cg')
+    throw new MdmlError(
+      'value',
+      'poissonAlgorithm: conjugate gradients is a Krylov solver (see cgAlgorithm in numerics/sparse)',
+    )
+  return sweepAlgorithm(problem, grid, options)
+}
+
+function sweepAlgorithm(
+  problem: PoissonProblem,
+  grid: Grid1d | Grid2d,
+  options: PoissonOptions,
+): Algorithm<PoissonState, PoissonPath> {
+  const { op, n, fv, rhs, u, fixed, method, tol, residualOf } = problem
+  if (method === 'multigrid') return multigridPoisson(grid, fv, u, fixed, tol, residualOf, options)
   const rows = Array.from({ length: n }, (_, r) => rowOf(op.matrix, r))
   const h = 'a' in grid ? grid.dx : Math.max(grid.x.dx, grid.y.dx)
   const omega = method === 'sor' ? (options.omega ?? 2 / (1 + Math.sin(Math.PI * h))) : 1
-  const algorithm: Algorithm<{ u: Float64Array; residual: number; history: number[] }> = {
+  return {
     name: `poisson-${method}`,
     config: { method, omega, tol },
     schema: channels({ metrics: { residual: { description: 'relative residual', direction: 'lower' } } }),
     init: () => ({ u, residual: residualOf(u), history: [residualOf(u)] }),
-    step: (s) => {
-      const next = method === 'jacobi' ? Float64Array.from(s.u) : s.u
+    step: (s, ctx) => {
+      const next = Float64Array.from(s.u)
       const src = s.u
       for (let r = 0; r < n; r++) {
         if (fixed.has(r)) continue
@@ -633,19 +692,75 @@ export function poisson(
         const gs = acc / diag
         next[r] = (1 - omega) * (src[r] ?? 0) + omega * gs
       }
-      const residual = residualOf(next)
-      s.history.push(residual)
-      return { u: method === 'jacobi' ? next : Float64Array.from(next), residual, history: s.history }
+      return advancePoisson(s, next, residualOf, ctx)
     },
     done: (s) => (s.residual <= tol ? 'converged' : Number.isFinite(s.residual) ? undefined : 'diverged'),
     observe: (s) => ({ metrics: { residual: s.residual } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as PoissonState,
   }
-  const run = runAlgorithm(algorithm, { maxSteps: maxIterations, ...options })
+}
+
+function advancePoisson(
+  s: PoissonState,
+  next: Float64Array,
+  residualOf: (x: Float64Array) => number,
+  ctx: StepContext<PoissonPath>,
+): PoissonState {
+  const residual = residualOf(next)
+  if (ctx.wants('poisson/residual')) ctx.log('poisson/residual', residual)
+  if (ctx.wants('poisson/iterate')) ctx.log('poisson/iterate', next)
+  if (ctx.wants('poisson/change'))
+    ctx.log('poisson/change', dnrm2(Float64Array.from(next, (v, i) => v - (s.u[i] ?? 0))))
+  return { u: next, residual, history: [...s.history, residual] }
+}
+
+/**
+ * Solve the Poisson problem Delta u = f with boundary conditions on a 1-D or 2-D grid, by Jacobi, Gauss-Seidel or SOR
+ * sweeps, conjugate gradients (GMRES when Neumann or Robin rows make the system unsymmetric) or geometric multigrid
+ * V-cycles (Dirichlet conditions, 2^k + 1 nodes per side). Each sweep or cycle is one traced step with the relative
+ * residual as a metric ({@link poissonAlgorithm} run to the end).
+ *
+ * @param f - The right-hand side at the nodes (values, or a function of the node's coordinates).
+ * @param grid - A 1-D or 2-D grid.
+ * @param bcs - The conditions: [left, right] in 1-D, the four sides in 2-D.
+ * @param options - Method, relaxation, tolerance and iteration cap.
+ * @returns The solution, iterations and residual history.
+ * @throws MdmlError with code `value` when multigrid does not fit the grid.
+ * @concept poisson-equation
+ * @example
+ * ```ts
+ * import { dirichlet, grid1d, poisson } from 'mdml-engine/dynamics/pde'
+ * // u'' = 2, u(0) = u(1) = 0: u = x^2 - x.
+ * const r = poisson(() => 2, grid1d(0, 1, 9), [dirichlet(), dirichlet()], { method: 'cg' })
+ * Math.abs((r.u.data[4] ?? 0) + 0.25) < 1e-10 // => true
+ * ```
+ */
+export function poisson(
+  f: TensorLike | ((...x: number[]) => number),
+  grid: Grid1d | Grid2d,
+  bcs: readonly [BoundaryCondition, BoundaryCondition] | RectangleConditions,
+  options: PoissonOptions = {},
+): PoissonResult {
+  const problem = poissonProblem(f, grid, bcs, options)
+  if (problem.method === 'cg') {
+    const r = krylovPoisson(
+      problem.op,
+      problem.rhs,
+      problem.u,
+      problem.fixed,
+      problem.tol,
+      problem.maxIterations,
+      options,
+    )
+    return { ...r, u: shaped(Float64Array.from(r.u.data), grid) }
+  }
+  const run = runAlgorithm(sweepAlgorithm(problem, grid, options), { maxSteps: problem.maxIterations, ...options })
   return {
     u: shaped(run.state.u, grid),
     iterations: run.steps,
-    converged: run.state.residual <= tol,
-    residualHistory: run.state.history,
+    converged: run.state.residual <= problem.tol,
+    residualHistory: [...run.state.history],
   }
 }
 
@@ -723,10 +838,11 @@ function multigridPoisson(
   u0: Float64Array,
   fixed: ReadonlySet<number>,
   tol: number,
-  maxIterations: number,
-  options: PdeTraceOptions,
   residualOf: (x: Float64Array) => number,
-): PoissonResult {
+  options: PoissonOptions,
+): Algorithm<PoissonState, PoissonPath> {
+  const sweeps = options.sweeps ?? 2
+  const coarseSweeps = options.coarseSweeps ?? 50
   const twoD = !('a' in grid)
   const nx = twoD ? grid.nx : grid.n
   const ny = twoD ? grid.ny : 1
@@ -843,38 +959,31 @@ function multigridPoisson(
   }
   const vcycle = (u: Float64Array, rhs: Float64Array, m: number, hh: number): void => {
     if (m <= 3) {
-      smooth(u, rhs, m, hh, 50)
+      smooth(u, rhs, m, hh, coarseSweeps)
       return
     }
-    smooth(u, rhs, m, hh, 2)
+    smooth(u, rhs, m, hh, sweeps)
     const rc = restrict(residual(u, rhs, m, hh), m)
     const mc = (m - 1) / 2 + 1
     const ec = new Float64Array(rc.length)
     vcycle(ec, rc, mc, 2 * hh)
     const e = prolong(ec, mc)
     for (let k = 0; k < u.length; k++) u[k] = (u[k] ?? 0) + (e[k] ?? 0)
-    smooth(u, rhs, m, hh, 2)
+    smooth(u, rhs, m, hh, sweeps)
   }
-  const algorithm: Algorithm<{ u: Float64Array; residual: number; history: number[] }> = {
+  return {
     name: 'poisson-multigrid',
-    config: { method: 'multigrid', tol },
+    config: { method: 'multigrid', tol, sweeps, coarseSweeps },
     schema: channels({ metrics: { residual: { description: 'relative residual', direction: 'lower' } } }),
     init: () => ({ u: u0, residual: residualOf(u0), history: [residualOf(u0)] }),
-    step: (s) => {
+    step: (s, ctx) => {
       const u = Float64Array.from(s.u)
       vcycle(u, f, nx, h)
-      const r = residualOf(u)
-      s.history.push(r)
-      return { u, residual: r, history: s.history }
+      return advancePoisson(s, u, residualOf, ctx)
     },
     done: (s) => (s.residual <= tol ? 'converged' : Number.isFinite(s.residual) ? undefined : 'diverged'),
     observe: (s) => ({ metrics: { residual: s.residual } }),
-  }
-  const run = runAlgorithm(algorithm, { maxSteps: maxIterations, ...options })
-  return {
-    u: shaped(run.state.u, grid),
-    iterations: run.steps,
-    converged: run.state.residual <= tol,
-    residualHistory: run.state.history,
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as PoissonState,
   }
 }
