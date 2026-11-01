@@ -3167,7 +3167,10 @@ modAL for active learning, diffprivlib and opacus for privacy
   NearMiss (resamplers apply only in fit, also inside pipelines).
 - `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
   selection (k best, percentile, FPR/FDR/FWE), selection from model importances.
-- `feature-selection-wrappers.ts`: RFE and RFECV, sequential selection, stability selection (traced).
+- `feature-selection-wrappers.ts`: `rfeAlgorithm` (one elimination round per step; `rfe/*` paths; the state serialises) and
+  `rfecvAlgorithm` (one fold per step, then the final elimination; `rfecv/*` paths), with `rfe` and `rfecv` as estimators on
+  the iterative base; sequential selection, stability selection (traced). `feature-selection-options.ts`: the
+  `eliminationSchedules` table (`fixed`, `fraction`).
 - `knockoffs.ts`: Gaussian model-X knockoffs (`gaussianKnockoffs`) with the equicorrelated scale and a coordinate-ascent
   scale (`knockoffScaleAlgorithm`, an SDP-free approximation), the knockoff statistics (lasso coefficient difference at a
   cross-validated penalty, lasso signed maximum along the path, marginal correlation difference) and the knockoff and
