@@ -9,6 +9,7 @@
 export * from './adaboost.ts'
 export * from './averaging.ts'
 export * from './bagging.ts'
+export * from './cyclic-binning.ts'
 export * from './cyclic.ts'
 export * from './forest.ts'
 export * from './gradient-boosting.ts'

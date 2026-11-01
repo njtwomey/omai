@@ -4,7 +4,7 @@
  * and the model's predictions, contributions and term importances live in `ensembles/cyclic.ts` and are re-exported
  * here) and points scorecards from logistic models.
  */
-import { binIndex, quantileEdges } from '../ensembles/cyclic.ts'
+import { binIndex, quantileEdges } from '../ensembles/cyclic-binning.ts'
 import { columnOf, matrixView } from '../learn/validation.ts'
 import type { TensorLike } from '../tensor/index.ts'
 

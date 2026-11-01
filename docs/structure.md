@@ -4693,7 +4693,9 @@ leaves with an L2 penalty, subsampling and early stopping on a held-out loss (ev
 leaf-wise growth, the subtraction trick, missing values to the better side (`boost/bins`). `cyclic.ts` is the cyclic
 booster of explainable boosting machines (moved from `explain/glassbox.ts`, which re-exports it): `cyclicBoosting` is an
 algorithm with one cycle over the features per step, `explainableBoosting` runs it, and the estimators
-`explainableBoostingRegressor` and `explainableBoostingClassifier` have the probe `model/shapeFunctions`.
+`explainableBoostingRegressor` and `explainableBoostingClassifier` have the probe `model/shapeFunctions`; a cycle also logs
+`boost/feature` and `boost/shapeChange` (which shape moved most). `cyclic-binning.ts` has `quantileEdges`, `uniformEdges`,
+`binIndex` and the slots `boostingBinnings` (quantile, uniform) and `boostingLosses` (squared, logistic).
 `stacking.ts` has voting (hard, soft, weighted) and stacking (the final estimator on out-of-fold predictions), one base
 estimator per step, logging `ensemble/baseScores`, `ensemble/weights`, `ensemble/diversity`. The fit of each records the
 stages (`ensemble/stages`, an `EnsembleStages` projection of the tape).
