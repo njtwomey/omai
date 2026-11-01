@@ -48,6 +48,17 @@ export interface KanOptions extends Partial<Omit<KanSpec, 'widths'>> {
   readonly range?: readonly [number, number] | readonly (readonly [number, number])[]
   /** A sample of the network's inputs `[n, n_in]`: sets the range of the first layer (and quantile knots). */
   readonly sample?: TensorLike
+  /**
+   * Per layer, the range of its inputs and/or a sample of them (the quantile knots, and the range when none is given):
+   * what a rebuilt network takes from the one it replaces. Takes precedence over `range` and `sample`.
+   */
+  readonly layers?: readonly (
+    | {
+        readonly range?: readonly [number, number] | readonly (readonly [number, number])[]
+        readonly sample?: TensorLike
+      }
+    | undefined
+  )[]
   readonly key?: Key
 }
 
@@ -123,9 +134,21 @@ export class KAN extends Module {
 
   constructor(widths: readonly number[], options: KanOptions = {}) {
     super()
-    const { range, sample, key, ...structure } = options
+    const { range, sample, layers, key, ...structure } = options
     this.spec = kanSpec(widths, structure)
     const root = initKey('KAN', key)
+    const placement = (
+      l: number,
+    ): { range?: readonly [number, number] | readonly (readonly [number, number])[]; sample?: TensorLike } => {
+      const given = layers?.[l]
+      if (given !== undefined && (given.range !== undefined || given.sample !== undefined))
+        return {
+          ...(given.range === undefined ? {} : { range: given.range }),
+          ...(given.sample === undefined ? {} : { sample: given.sample }),
+        }
+      if (range !== undefined) return { range }
+      return l === 0 && sample !== undefined ? { sample } : {}
+    }
     this.layers = this.spec.widths.slice(0, -1).map(
       (w, l) =>
         new KanLayer({
@@ -142,7 +165,7 @@ export class KAN extends Module {
           scaleBaseMu: this.spec.scaleBaseMu,
           scaleBaseSigma: this.spec.scaleBaseSigma,
           scaleSpline: this.spec.scaleSpline,
-          ...(range !== undefined ? { range } : l === 0 && sample !== undefined ? { sample } : {}),
+          ...placement(l),
           key: foldIn(root, l),
         }),
     )

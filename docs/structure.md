@@ -3433,6 +3433,17 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     `none`, `identity`, `relu`, `tanh`, `softplus`).
   - `kan.ts`: `KAN` (a stack of layers by widths: `trace`, `edgeScales`, `edgeCurve`), `KanSpec` (the structure as plain
     data: widths, grid, degree, families, base) and `kanSpec`.
+  - `grid.ts`: `refineGrid` (the paper's grid extension: the same network on a finer grid or higher degree, every edge's
+    coefficients refitted by least squares so the function is kept; exact when the new space contains the old) and
+    `updateGrid` (pykan's `update_grid_from_samples`: every layer's input range and quantile knots moved to the data).
+  - `sparsity.ts`: `kanPenalties` (the paper's L1 on the edges' mean magnitudes and per-layer entropy, plus pykan's
+    coefficient L1, measured on reference rows so it is a function of the parameters: the trainer base's `penalty`) and
+    `edgeSparsity` (the share of switched-on edges with negligible activation).
+  - `prune.ts`: `pruneKan` (incoming and outgoing node importance, edge threshold, a smaller `KAN` with the surviving
+    parameters, optionally without the unused inputs).
+  - `symbolic.ts`: `symbolicFunctions` (the table of `x`, `x^2`, `1/x`, `sqrt`, `exp`, `log`, `sin`, `tanh`, `abs`, ...),
+    `rankSymbolic` and `suggestSymbolic` (the affine fit `a f(b x + c) + d` of each, ranked by R^2 less a complexity price),
+    `fixSymbolic`, `evaluateSymbolic` and `symbolicFormula` (the closed form of a fixed network as a `symbolic` expression).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
