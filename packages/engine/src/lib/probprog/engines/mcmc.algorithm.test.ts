@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bernoulli, normal, uniform } from '../../dists/index.ts'
+import { bernoulli, normal } from '../../dists/index.ts'
 import { key } from '../../random/index.ts'
 import { add, asTensor, mul, tensor, toFlat } from '../../tensor/index.ts'
 import { policies, recorder, runAlgorithm, stateToJson } from '../../trace/index.ts'
