@@ -536,3 +536,119 @@ export const additiveInteraction: DatasetGenerator<RegressionData> = {
     return { data: xy(x, y, stamp('additiveInteraction', additiveInteraction.description, knobs)), truth }
   },
 }
+
+/** The functions of {@link kanFunctions}: each with its input dimension, formula, smallest network and symbolic structure. */
+const KAN_FUNCTIONS: Readonly<
+  Record<
+    string,
+    {
+      readonly d: number
+      readonly formula: string
+      readonly minimalWidths: readonly number[]
+      readonly edges: readonly {
+        readonly layer: number
+        readonly from: number
+        readonly to: number
+        readonly name: string
+      }[]
+      readonly f: (x: Value) => Value
+    }
+  >
+> = {
+  'exp-sin-square': {
+    d: 2,
+    formula: 'exp(sin(pi x0) + x1^2)',
+    minimalWidths: [2, 1, 1],
+    edges: [
+      { layer: 0, from: 0, to: 0, name: 'sin' },
+      { layer: 0, from: 1, to: 0, name: 'x^2' },
+      { layer: 1, from: 0, to: 0, name: 'exp' },
+    ],
+    f: (x) => exp(add(sin(mul(column(x, 0), Math.PI)), square(column(x, 1)))),
+  },
+  multiplication: {
+    d: 2,
+    formula: 'x0 x1 = ((x0 + x1)^2 - (x0 - x1)^2) / 4',
+    minimalWidths: [2, 2, 1],
+    edges: [
+      { layer: 1, from: 0, to: 0, name: 'x^2' },
+      { layer: 1, from: 1, to: 0, name: 'x^2' },
+    ],
+    f: (x) => mul(column(x, 0), column(x, 1)),
+  },
+  'ring-sums': {
+    d: 4,
+    formula: 'exp((sin(pi (x0^2 + x1^2)) + sin(pi (x2^2 + x3^2))) / 2)',
+    minimalWidths: [4, 4, 2, 1],
+    edges: [],
+    f: (x) =>
+      exp(
+        mul(
+          add(
+            sin(mul(add(square(column(x, 0)), square(column(x, 1))), Math.PI)),
+            sin(mul(add(square(column(x, 2)), square(column(x, 3))), Math.PI)),
+          ),
+          0.5,
+        ),
+      ),
+  },
+}
+
+/**
+ * The regression problems of the Kolmogorov-Arnold paper, with their structure as truth: `exp-sin-square`,
+ * `exp(sin(pi x0) + x1^2)` (a [2, 1, 1] network suffices: a sine and a square into one node, then an exponential),
+ * `multiplication`, `x0 x1` (needs [2, 2, 1]), and `ring-sums`, `exp((sin(pi (x0^2 + x1^2)) + sin(pi (x2^2 + x3^2))) / 2)`
+ * on four inputs ([4, 4, 2, 1]). Inputs are uniform on `[-1, 1]`; `truth.extra` has the formula, the smallest network that
+ * represents it (`minimalWidths`) and the edges' symbolic names where they are determined (`edges`: layer, source, target
+ * and function, up to the affine freedom `a f(b x + c) + d`).
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'mdml-engine/data'
+ * import { kanFunctions } from 'mdml-engine/datasets'
+ * generate(kanFunctions, { knobs: { function: 'multiplication', n: 8 } }).truth.extra?.['minimalWidths'] // => [2, 2, 1]
+ * ```
+ */
+export const kanFunctions: DatasetGenerator<RegressionData> = {
+  name: 'kanFunctions',
+  kind: 'regression',
+  description:
+    'The regression functions of the Kolmogorov-Arnold paper on uniform inputs, with their structure as truth.',
+  knobs: dict({
+    n: n1,
+    function: choice(Object.keys(KAN_FUNCTIONS), {
+      label: 'function',
+      description: 'Which function of the paper: exp-sin-square, multiplication or ring-sums.',
+      default: 'exp-sin-square',
+    }),
+    noise: real(0, 10, {
+      label: 'noise standard deviation',
+      description: 'The standard deviation of the Gaussian noise.',
+      default: 0,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const s = knobs['noise'] as number
+    const spec = KAN_FUNCTIONS[knobs['function'] as string] as (typeof KAN_FUNCTIONS)[string]
+    const x = uniform(foldIn(k, 0), [n, spec.d], { low: -1, high: 1 })
+    const y = add(spec.f(x), mul(normal(foldIn(k, 1), [n]), s))
+    const truth: Truth = {
+      regressionFunction: spec.f,
+      noiseScale: s,
+      bayesError: s * s,
+      relevantFeatures: Array.from({ length: spec.d }, (_, j) => j),
+      logProb: (v, t) => {
+        if (t === undefined || s === 0) return full([v.shape[0] ?? 0], 0)
+        const r = div(sub(t, spec.f(v)), s)
+        return mul(add(square(r), Math.log(2 * Math.PI) + 2 * Math.log(s)), -0.5)
+      },
+      extra: {
+        formula: spec.formula,
+        minimalWidths: [...spec.minimalWidths],
+        edges: spec.edges.map((e) => ({ ...e })),
+      },
+    }
+    return { data: xy(x, y, stamp('kanFunctions', kanFunctions.description, knobs)), truth }
+  },
+}
