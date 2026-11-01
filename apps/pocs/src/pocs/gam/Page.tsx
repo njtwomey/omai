@@ -23,6 +23,7 @@ import {
 } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { type CurveData, curveData, gridOf } from '../../shared/curve-data.ts'
+import { StaleVeil } from '../../shared/StaleVeil.tsx'
 
 const DATA = 'regression1d'
 const FIGURE = figure({ width: 960, height: 420 })
@@ -174,7 +175,9 @@ function Fit(props: { readonly curve: CurveData; readonly controls: Controls; re
   )
   return (
     <div className="flex flex-col gap-3">
-      <View live={live} at={at} onScrub={setAt} curve={curve} />
+      <StaleVeil stale={live.stale}>
+        <View live={live} at={at} onScrub={setAt} curve={curve} />
+      </StaleVeil>
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
       <p className="max-w-3xl text-xs text-muted">
         Each step is one iteration of the fit: the smoothing parameter is re-chosen (or kept, when fixed) and the curve

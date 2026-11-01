@@ -23,6 +23,7 @@ import {
   useSessionPreferences,
 } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { StaleVeil } from '../../shared/StaleVeil.tsx'
 import { BocpdView } from './BocpdView.tsx'
 
 const DATA = 'changepoints'
@@ -123,7 +124,9 @@ function Page(props: {
   )
   return (
     <div className="flex flex-col gap-4">
-      <BocpdView live={live} at={at} y={y} truth={truth} onScrub={setAt} />
+      <StaleVeil stale={live.stale}>
+        <BocpdView live={live} at={at} y={y} truth={truth} onScrub={setAt} />
+      </StaleVeil>
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
       <Fold title="Configuration: the data, the kind of shift, the model and the hazard">{controls}</Fold>
       <Fold title="Compare with other detectors">

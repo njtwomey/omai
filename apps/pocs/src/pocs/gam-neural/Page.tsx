@@ -24,6 +24,7 @@ import {
 } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { type CurveData, curveData, gridOf } from '../../shared/curve-data.ts'
+import { StaleVeil } from '../../shared/StaleVeil.tsx'
 
 const DATA = 'regression1d'
 // Points at which every curve is evaluated: enough that steps and kinks are drawn as such.
@@ -170,7 +171,9 @@ function Training(props: {
   }, [curve, controls.interiorKnots])
   return (
     <div className="flex flex-col gap-3">
-      <View live={live} at={at} onScrub={setAt} curve={curve} classic={classic} />
+      <StaleVeil stale={live.stale}>
+        <View live={live} at={at} onScrub={setAt} curve={curve} classic={classic} />
+      </StaleVeil>
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
     </div>
   )

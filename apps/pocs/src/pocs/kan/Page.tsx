@@ -23,6 +23,7 @@ import {
 } from 'mdml-render/react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { ComputeGate } from '../../shared/ComputeGate.tsx'
+import { StaleVeil } from '../../shared/StaleVeil.tsx'
 import { type Baked, useBake } from '../../shared/useBake.ts'
 
 const LOSS = figure({ width: 420, height: 300 })
@@ -172,25 +173,27 @@ function Training(props: { readonly controls: Controls; readonly reset: () => vo
   const gated = live.head >= 1 && !ready
   return (
     <div className="flex flex-col gap-3">
-      <ComputeGate
-        live={{ head: live.head + baked.progress.done, computing: gated, done: !gated }}
-        total={controls.epochs + Math.max(baked.progress.total, FRAMES + 1)}
-        label={ended ? 'Preparing the playback' : 'Training the network'}
-        detail={
-          ended
-            ? `view ${baked.progress.done} of ${Math.max(baked.progress.total, 1)}`
-            : `step ${live.head} of ${controls.epochs}`
-        }
-        onCancel={() => {
-          if (ended) baked.stop()
-          else {
-            live.halt()
-            setCancelled(true)
+      <StaleVeil stale={live.stale && !gated}>
+        <ComputeGate
+          live={{ head: live.head + baked.progress.done, computing: gated, done: !gated }}
+          total={controls.epochs + Math.max(baked.progress.total, FRAMES + 1)}
+          label={ended ? 'Preparing the playback' : 'Training the network'}
+          detail={
+            ended
+              ? `view ${baked.progress.done} of ${Math.max(baked.progress.total, 1)}`
+              : `step ${live.head} of ${controls.epochs}`
           }
-        }}
-      >
-        <View live={live} at={at} onScrub={setAt} data={data} baked={baked} />
-      </ComputeGate>
+          onCancel={() => {
+            if (ended) baked.stop()
+            else {
+              live.halt()
+              setCancelled(true)
+            }
+          }}
+        >
+          <View live={live} at={at} onScrub={setAt} data={data} baked={baked} />
+        </ComputeGate>
+      </StaleVeil>
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
       <p className="max-w-3xl text-xs text-muted">
         Each edge of the network carries its own curve; the picture shows every edge's curve over its input's range,
