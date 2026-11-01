@@ -8,7 +8,18 @@
 import { heap, type Json, MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { type Metric, metricFunction } from '../geometry/index.ts'
 
 type Scored = readonly [number, number] // [distance, node]
@@ -52,40 +63,44 @@ export interface HnswIndex {
   ) => { readonly indices: number[]; readonly distances: number[]; readonly log?: GraphSearchLog }
 }
 
+/** The paths {@link hnswAlgorithm} logs. */
+export type HnswPath = 'hnsw/insert' | 'hnsw/layer' | 'hnsw/neighbours' | 'hnsw/entry' | 'hnsw/evaluations'
+
+/** What the HNSW build logs: the node inserted, its top layer, its neighbours on layer 0, the entry point and the work. */
+export const hnswContract: Contract<unknown, HnswPath> = defineContract({
+  'hnsw/insert': scalar({ description: 'the node inserted at this step' }),
+  'hnsw/layer': scalar({ description: "the new node's top layer" }),
+  'hnsw/neighbours': tensor({ role: 'state', shape: ['links'], description: "the new node's links on layer 0" }),
+  'hnsw/entry': scalar({ description: 'the entry point of the graph (the node on the highest layer)' }),
+  'hnsw/evaluations': scalar({ description: 'distance evaluations so far' }),
+})
+
 /**
- * A hierarchical navigable small-world index (Malkov and Yashunin 2018): every point lives on layer 0 and on each
- * higher layer with geometrically falling probability; searches descend greedily from the sparse top layer and finish
- * with a beam search on layer 0. Links are chosen by the paper's neighbour-selection heuristic (keep a candidate only
- * if it is closer to the new point than to every link already kept, then fill with the pruned ones).
- *
- * @param data - Points `[n, d]` to insert (more can be added later).
- * @param options - M, efConstruction, level multiplier, metric and key.
- * @returns The index.
- * @concept approximate-nearest-neighbours
- * @example
- * ```ts
- * import { hnswIndex } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
- * const index = hnswIndex([[0, 0], [1, 0], [0, 1], [5, 5]], { m: 2, key: key(0) })
- * index.search([4.8, 5.1], 1).indices // => [3]
- * ```
+ * The state of {@link hnswAlgorithm} (and the index behind {@link hnswIndex}): the points inserted, each node's top layer
+ * and neighbour lists, the entry point, and the distance evaluations. Steps append to the arrays in place; keep a copy
+ * of a state you want to look at later.
  */
-export function hnswIndex(data: TensorLike, options: HnswOptions): HnswIndex {
-  const first = concreteOrThrow(promoteFloat(data)[0] as Tensor, 'hnswIndex')
-  const d = first.shape[1] ?? 0
+export interface HnswState {
+  /** The inserted points, flat (n by d). */
+  readonly points: number[]
+  readonly levels: number[]
+  /** links[node][layer]: the neighbour lists. */
+  readonly links: number[][][]
+  entry: number
+  inserted: number
+  evaluations: number
+}
+
+/** The machinery of one HNSW graph over a state: distance, layer search, neighbour selection and insertion. */
+function hnswKernel(d: number, options: HnswOptions, s: HnswState) {
   const m = options.m ?? 16
   const mMax0 = 2 * m
   const ef0 = options.efConstruction ?? 200
   const mL = options.levelMultiplier ?? 1 / Math.log(Math.max(2, m))
   const dist = metricFunction(options.metric ?? 'euclidean', d)
-  const points: number[] = []
-  const levels: number[] = []
-  const links: number[][][] = []
-  let entry = -1
-  let inserted = 0
-  let evaluations = 0
+  const { points, levels, links } = s
   const pd = (q: ArrayLike<number>, i: number): number => {
-    evaluations++
+    s.evaluations++
     return dist(q, 0, points, i * d)
   }
   const pointOf = (i: number): number[] => points.slice(i * d, i * d + d)
@@ -139,19 +154,20 @@ export function hnswIndex(data: TensorLike, options: HnswOptions): HnswIndex {
     return kept.map((c) => c[1])
   }
 
-  const insert = (q: number[]): void => {
-    const id = inserted++
+  /** Insert one point; returns its id and top layer. */
+  const insert = (q: number[]): { readonly id: number; readonly level: number } => {
+    const id = s.inserted++
     points.push(...q)
     const u = uniform(foldIn(options.key, id), [1]).data[0] ?? 0.5
     const level = Math.floor(-Math.log(Math.max(u, Number.MIN_VALUE)) * mL)
     levels.push(level)
     links.push(Array.from({ length: level + 1 }, () => []))
-    if (entry < 0) {
-      entry = id
-      return
+    if (s.entry < 0) {
+      s.entry = id
+      return { id, level }
     }
-    const top = levels[entry] ?? 0
-    let eps: Scored[] = [[pd(q, entry), entry]]
+    const top = levels[s.entry] ?? 0
+    let eps: Scored[] = [[pd(q, s.entry), s.entry]]
     for (let layer = top; layer > level; layer--) eps = searchLayer(q, eps, 1, layer).slice(0, 1)
     for (let layer = Math.min(top, level); layer >= 0; layer--) {
       const found = searchLayer(q, eps, ef0, layer)
@@ -169,8 +185,83 @@ export function hnswIndex(data: TensorLike, options: HnswOptions): HnswIndex {
       }
       eps = found
     }
-    if (level > top) entry = id
+    if (level > top) s.entry = id
+    return { id, level }
   }
+  return { insert, searchLayer, pd }
+}
+
+const emptyHnsw = (): HnswState => ({ points: [], levels: [], links: [], entry: -1, inserted: 0, evaluations: 0 })
+
+/**
+ * HNSW construction as a stepped algorithm, one insertion per step: draw the new node's top layer, descend greedily
+ * from the entry point to that layer, then on each layer at or below it search for candidates with beam width
+ * efConstruction, link to M of them by the neighbour-selection heuristic and prune the neighbours' lists. It logs the
+ * node, its layer, its layer-0 links, the entry point and the distance evaluations, and is done (`converged`) when
+ * every point is in. The state serialises.
+ *
+ * @param data - Points `[n, d]` to insert.
+ * @param options - M, efConstruction, level multiplier, metric and key.
+ * @returns The algorithm.
+ * @concept approximate-nearest-neighbours
+ * @example
+ * ```ts
+ * import { hnswAlgorithm } from 'mdml-engine/numerics/spatial'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const run = runAlgorithm(hnswAlgorithm([[0, 0], [1, 0], [0, 1], [5, 5]], { m: 2, key: key(0) }), { maxSteps: 10 })
+ * [run.status, run.state.inserted] // => ['converged', 4]
+ * ```
+ */
+export function hnswAlgorithm(data: TensorLike, options: HnswOptions): Algorithm<HnswState, HnswPath> {
+  const first = concreteOrThrow(promoteFloat(data)[0] as Tensor, 'hnswIndex')
+  const n = first.shape[0] ?? 0
+  const d = first.shape[1] ?? 0
+  const flat = toFlat(first)
+  return {
+    name: 'numerics/hnsw',
+    config: { n, d, m: options.m ?? 16, efConstruction: options.efConstruction ?? 200 },
+    init: () => emptyHnsw(),
+    step: (s, ctx) => {
+      const { id, level } = hnswKernel(d, options, s).insert(flat.slice(s.inserted * d, s.inserted * d + d))
+      ctx.log('hnsw/insert', id)
+      ctx.log('hnsw/layer', level)
+      ctx.log('hnsw/neighbours', s.links[id]?.[0] ?? [])
+      ctx.log('hnsw/entry', s.entry)
+      ctx.log('hnsw/evaluations', s.evaluations)
+      return s
+    },
+    done: (s) => (s.inserted >= n ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as HnswState,
+  }
+}
+
+/**
+ * A hierarchical navigable small-world index (Malkov and Yashunin 2018): every point lives on layer 0 and on each
+ * higher layer with geometrically falling probability; searches descend greedily from the sparse top layer and finish
+ * with a beam search on layer 0. Links are chosen by the paper's neighbour-selection heuristic (keep a candidate only
+ * if it is closer to the new point than to every link already kept, then fill with the pruned ones). The first points
+ * are inserted by {@link hnswAlgorithm} run to the end.
+ *
+ * @param data - Points `[n, d]` to insert (more can be added later).
+ * @param options - M, efConstruction, level multiplier, metric and key.
+ * @returns The index.
+ * @concept approximate-nearest-neighbours
+ * @example
+ * ```ts
+ * import { hnswIndex } from 'mdml-engine/numerics/spatial'
+ * import { key } from 'mdml-engine/random'
+ * const index = hnswIndex([[0, 0], [1, 0], [0, 1], [5, 5]], { m: 2, key: key(0) })
+ * index.search([4.8, 5.1], 1).indices // => [3]
+ * ```
+ */
+export function hnswIndex(data: TensorLike, options: HnswOptions): HnswIndex {
+  const first = concreteOrThrow(promoteFloat(data)[0] as Tensor, 'hnswIndex')
+  const d = first.shape[1] ?? 0
+  const state = runAlgorithm(hnswAlgorithm(first, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state
+  const { searchLayer, pd, insert } = hnswKernel(d, options, state)
+  const { levels, links } = state
 
   const add = (input: TensorLike): void => {
     const t = concreteOrThrow(promoteFloat(input)[0] as Tensor, 'hnswIndex add')
@@ -178,22 +269,22 @@ export function hnswIndex(data: TensorLike, options: HnswOptions): HnswIndex {
     const f = toFlat(t)
     for (let i = 0; i < (t.shape[0] ?? 0); i++) insert(f.slice(i * d, i * d + d))
   }
-  add(first)
 
   const self: HnswIndex = {
     get size() {
-      return inserted
+      return state.inserted
     },
     levels,
     links,
     get entryPoint() {
-      return entry
+      return state.entry
     },
     add,
     search: (q, k, searchOptions = {}) => {
+      const entry = state.entry
       if (entry < 0) return { indices: [], distances: [] }
       const ef = Math.max(k, searchOptions.ef ?? 50)
-      const before = evaluations
+      const before = state.evaluations
       const path: number[] = []
       const visited: number[][] = []
       let eps: Scored[] = [[pd(q, entry), entry]]
@@ -210,7 +301,9 @@ export function hnswIndex(data: TensorLike, options: HnswOptions): HnswIndex {
       return {
         indices: found.map((f) => f[1]),
         distances: found.map((f) => f[0]),
-        ...(searchOptions.log === true ? { log: { path, visited, distanceEvaluations: evaluations - before } } : {}),
+        ...(searchOptions.log === true
+          ? { log: { path, visited, distanceEvaluations: state.evaluations - before } }
+          : {}),
       }
     },
   }
