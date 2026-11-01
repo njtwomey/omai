@@ -186,7 +186,9 @@ export function poissonProcessAlgorithm(rate: number, horizon: number): Algorith
 }
 
 /**
- * A homogeneous Poisson process on [0, T] as a traced event simulation: exponential gaps with the given rate.
+ * A homogeneous Poisson process on [0, T] as a traced event simulation: exponential gaps with the given rate. The
+ * `poissonProcess` generator of `datasets` draws a whole realisation at once (a Poisson count of uniform times) with its
+ * truth; this is the stepped process.
  *
  * @param key - The key.
  * @param rate - The intensity (>= 0).
@@ -250,7 +252,9 @@ export function thinningAlgorithm(
 
 /**
  * An inhomogeneous Poisson process on [0, T] with intensity lambda(t) <= lambdaMax, by Lewis-Shedler thinning: propose
- * the points of a rate-lambdaMax process and keep each with probability lambda(t) / lambdaMax.
+ * the points of a rate-lambdaMax process and keep each with probability lambda(t) / lambdaMax. The
+ * `inhomogeneousPoisson` generator of `datasets` is this thinning for three fixed intensity shapes, returned with the
+ * exact compensator and likelihood.
  *
  * @param key - The key.
  * @param intensity - lambda(t).
@@ -458,7 +462,8 @@ export function hawkesProcessAlgorithm(params: HawkesParams, horizon: number): A
  * A self-exciting Hawkes process with intensity lambda(t) = mu + sum_{t_i < t} alpha e^{-beta (t - t_i)}, simulated by
  * Ogata's thinning: between events the intensity decreases, so its current value bounds it until the next proposal;
  * a proposal at t' is kept with probability lambda(t') / bound. Stationary when alpha < beta, with mean intensity
- * mu / (1 - alpha / beta).
+ * mu / (1 - alpha / beta). The `hawkesProcess` generator of `datasets` simulates by the branching representation
+ * instead, keeps each event's parent, and takes the branching ratio `alpha / beta` as its `alpha`.
  *
  * @param key - The key.
  * @param params - mu, alpha and beta.

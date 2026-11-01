@@ -117,7 +117,9 @@ export interface AStarResult {
 
 /**
  * The shortest path between two nodes by A* search (NetworkX astar_path): best-first on g + h with an admissible,
- * consistent heuristic h (a lower bound on the remaining distance); h = 0 gives Dijkstra.
+ * consistent heuristic h (a lower bound on the remaining distance); h = 0 gives Dijkstra. It runs on a stored graph;
+ * `aStarSearch` of `search` runs the same best-first rule on an implicit problem whose states are generated as the
+ * search goes.
  *
  * @param g - The graph (non-negative weights).
  * @param source - The source.

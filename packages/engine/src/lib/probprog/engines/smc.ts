@@ -90,7 +90,8 @@ function normalise(lw: Float64Array): Float64Array {
  * particle runs the loop body from its own carry with prior draws, the observed sites of the step weight it, the
  * evidence accumulates, and particles are resampled when the ESS falls below the threshold. Latent sites must all be
  * inside the loop (the filter carries nothing else). A step where every particle has zero weight ends the run with
- * status `failed`.
+ * status `failed`. For a state-space model written as functions over tensors rather than as a program, see
+ * `bootstrapParticleAlgorithm` of `dynamics/filtering`; the two share the idea, not the model.
  *
  * @param model - The program.
  * @param data - Its data.

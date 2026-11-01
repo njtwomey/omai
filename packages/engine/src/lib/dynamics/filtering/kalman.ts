@@ -365,13 +365,57 @@ export function rtsSmoother(model: LinearGaussianModel, filtered: KalmanResult):
   for (let t = T - 2; t >= 0; t--) {
     const P = at(filtered.covariances, t)
     const Pp = add(matmul(m.F, matmul(P, transpose(m.F))), m.Q)
-    const J = transpose(solve(Pp, matmul(m.F, P)))
     const xp = mv(m.F, at(filtered.means, t))
-    xs[t] = add(at(filtered.means, t), mv(J, sub(xs[t + 1] as Value, xp)))
-    Ps[t] = symmetricPart(add(P, matmul(J, matmul(sub(Ps[t + 1] as Value, Pp), transpose(J)))))
-    Js.unshift(J)
+    const step = rtsStep(
+      { x: at(filtered.means, t), P },
+      { x: xp, P: Pp },
+      { x: xs[t + 1] as Value, P: Ps[t + 1] as Value },
+      m.F,
+    )
+    xs[t] = step.x
+    Ps[t] = step.P
+    Js.unshift(step.J)
   }
   return { means: stack(xs), covariances: stack(Ps), gains: Js.length === 0 ? undefined : stack(Js) }
+}
+
+/**
+ * One backward step of the Rauch-Tung-Striebel smoother, for a transition `F` that may differ from step to step: from
+ * the filtered moments at t, the one-step prediction of t + 1 from them and the smoothed moments at t + 1,
+ * `J = P_t F^T (P_{t+1|t})^-1`, `x_t|T = x_t + J (x_{t+1|T} - x_{t+1|t})`,
+ * `P_t|T = P_t + J (P_{t+1|T} - P_{t+1|t}) J^T`. {@link rtsSmoother} is this over a whole run of a fixed model.
+ *
+ * @param filtered - The filtered mean `[n]` and covariance `[n, n]` at t.
+ * @param predicted - The prediction of t + 1 made from them: mean and covariance.
+ * @param smoothed - The smoothed mean and covariance at t + 1.
+ * @param F - The transition from t to t + 1.
+ * @returns The smoothed mean and covariance at t and the gain J.
+ * @concept rts-smoother
+ * @example
+ * ```ts
+ * import { filtering } from 'mdml-engine/dynamics'
+ * import { item } from 'mdml-engine/tensor'
+ * // A random walk observed once: the smoothed past follows the smoothed future by the gain.
+ * const s = filtering.rtsStep({ x: [0], P: [[1]] }, { x: [0], P: [[2]] }, { x: [1], P: [[1]] }, [[1]])
+ * item(s.x) // => 0.5
+ * ```
+ */
+export function rtsStep(
+  filtered: { readonly x: TensorLike; readonly P: TensorLike },
+  predicted: { readonly x: TensorLike; readonly P: TensorLike },
+  smoothed: { readonly x: TensorLike; readonly P: TensorLike },
+  F: TensorLike,
+): { readonly x: Value; readonly P: Value; readonly J: Value } {
+  const Fv = asTensor(F)
+  const P = asTensor(filtered.P)
+  const Pp = asTensor(predicted.P)
+  const J = transpose(solve(Pp, matmul(Fv, P)))
+  const x = add(asTensor(filtered.x), mv(J, sub(asTensor(smoothed.x), asTensor(predicted.x))))
+  return {
+    x,
+    P: symmetricPart(add(P, matmul(J, matmul(sub(asTensor(smoothed.P), Pp), transpose(J))))),
+    J,
+  }
 }
 
 /**

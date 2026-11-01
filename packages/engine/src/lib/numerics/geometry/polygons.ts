@@ -30,7 +30,8 @@ export type Point3 = readonly [number, number, number]
 
 /**
  * The convex hull of planar points by Andrew's monotone chain (scipy.spatial.ConvexHull in 2-D): vertex indices in
- * counter-clockwise order, starting from the lowest-leftmost point; collinear boundary points are dropped.
+ * counter-clockwise order, starting from the lowest-leftmost point; collinear boundary points are dropped. The
+ * `convexHull` of `vision` has the same vertices in OpenCV's order and orientation.
  *
  * @param points - Points `[n, 2]`.
  * @returns Hull vertex indices.

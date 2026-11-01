@@ -20,8 +20,9 @@ import {
 } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView, targetVector } from '../learn/index.ts'
 import { cholesky, solveTriangular } from '../numerics/linalg/index.ts'
+import { boundedSolvers } from '../optim/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
-import { dict, int, real } from '../space/index.ts'
+import { dict, int, real, type SpaceValue } from '../space/index.ts'
 import {
   add,
   diagonal,
@@ -61,7 +62,7 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { currentOf, lbfgsbSearch, type SearchState } from './_search.ts'
+import { currentOf, defaultSearchSolver, gradNormOf, lbfgsbSearch, type SearchState } from './_search.ts'
 
 /** The approximations: they differ in the diagonal correction of the training covariance and in the predictive variance. */
 export type SparseApproximation = 'sor' | 'dtc' | 'fitc' | 'vfe'
@@ -84,8 +85,11 @@ export interface SparseGpHyper {
   /** Extra runs from other random subsets of inducing points (when `inducing` is a count). */
   readonly restarts: number
   readonly bounds: readonly [number, number]
+  /** The solver stops when its gradient (the projected one, for L-BFGS-B) falls below this. */
   readonly gradTol: number
   readonly maxIter: number
+  /** How the bound is maximised: a value of `boundedSolvers.space` (default L-BFGS-B); `gradTol` is its tolerance. */
+  readonly solver?: SpaceValue
 }
 
 /** The state of {@link sparseGp}: a multi-start L-BFGS-B search over (kernel theta, log noise, inducing inputs). */
@@ -409,6 +413,7 @@ export const sparseGp: IterativeEstimator<SparseGpHyper, SparseState, SparsePara
       bounds: [1e-5, 1e5],
       gradTol: 1e-5,
       maxIter: 300,
+      solver: defaultSearchSolver,
     },
     hyperSpace: (h) =>
       dict({
@@ -416,6 +421,7 @@ export const sparseGp: IterativeEstimator<SparseGpHyper, SparseState, SparsePara
           ? { inducing: int(2, 200, { default: Math.min(Math.max(h.inducing, 2), 200), label: 'inducing points' }) }
           : {}),
         noise: real(1e-6, 10, { log: true, default: Math.min(Math.max(h.noise, 1e-6), 10), label: 'noise variance' }),
+        solver: boundedSolvers.space,
       }),
     algorithm: (data, h): Algorithm<SparseState, SparseGpPath> => {
       const p = prepare(data, h)
@@ -437,6 +443,7 @@ export const sparseGp: IterativeEstimator<SparseGpHyper, SparseState, SparsePara
         upper: box.upper,
         optimise: h.optimise,
         gradTol: h.gradTol,
+        ...(h.solver === undefined ? {} : { solver: h.solver }),
         maxIter: h.maxIter,
         starts: (k) => {
           const starts = startsFor(h, p, k, p0)
@@ -483,7 +490,7 @@ export const sparseGp: IterativeEstimator<SparseGpHyper, SparseState, SparsePara
         },
         done: (s) => (s.finished ? 'converged' : undefined),
         observe: (s) => ({
-          metrics: { run: s.run, ...(s.inner === null ? {} : { gradNorm: s.inner.projectedGradNorm }) },
+          metrics: { run: s.run, ...(s.inner === null ? {} : { gradNorm: gradNormOf(s.inner) }) },
         }),
         serialise: (s) => stateToJson(s),
         deserialise: (j) => stateFromJson(j) as SparseState,

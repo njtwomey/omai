@@ -9,11 +9,20 @@
  */
 
 import { customVjp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { type Json, MdmlError } from '../base/index.ts'
 import { dgemm, eigh } from '../numerics/linalg/index.ts'
-import { type LbfgsState, lbfgsAlgorithm } from '../optim/index.ts'
+import {
+  familySolvers,
+  type SlotState,
+  type SmoothProblem,
+  slotAlgorithm,
+  smoothSolverConfig,
+  smoothSolvers,
+  solverConfigOf,
+  type VectorParams,
+} from '../optim/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
-import { choice, dict, int, real } from '../space/index.ts'
+import { choice, dict, int, real, type SpaceValue } from '../space/index.ts'
 import {
   fromStorage,
   mul,
@@ -24,7 +33,7 @@ import {
   toFlat,
   type Value,
 } from '../tensor/index.ts'
-import { type Algorithm, channels, Log, stateFromJson, stateToJson } from '../trace/index.ts'
+import { type Algorithm, Log, type ModeSpec, type ModeTable, stateFromJson, stateToJson } from '../trace/index.ts'
 import { type IterativeEstimator, iterative } from './bases/index.ts'
 import { fitDiscriminant } from './discriminant.ts'
 import type { LearnData } from './estimator.ts'
@@ -182,10 +191,15 @@ export interface NcaHyper {
   /** The output dimension (default the number of features). */
   readonly nComponents?: number
   readonly init: MetricInit
-  /** The L-BFGS iteration cap. */
+  /** The iteration cap. */
   readonly maxIter: number
-  /** Stop when the gradient's largest entry falls to this. */
+  /** Stop when the gradient's largest entry falls to this; also the tolerance of the default L-BFGS solver. */
   readonly gradTol: number
+  /**
+   * How the objective is minimised: a value of `smoothSolvers.space` (default L-BFGS at `gradTol`, as scikit-learn's).
+   * A solver given here supplies its own tolerance; `gradTol` still stops the run early.
+   */
+  readonly solver?: SpaceValue
 }
 
 /** The fitted parameters of a learnt linear map. */
@@ -227,26 +241,37 @@ function trainingOf(
   return { x, classes, codes }
 }
 
+/** The state of the NCA algorithm: the map, the minimised value (minus the expected correct count) and the solver's. */
+export interface NcaState extends SlotState {
+  /** The map `[nComponents][nFeatures]`, row-major. */
+  readonly x: number[]
+  /** The negative objective, which the solver minimises. */
+  readonly value: number
+  readonly evaluations: number
+  readonly stalled: boolean
+}
+
 /**
- * The NCA fit as an algorithm: L-BFGS on the negative objective, one iteration per step, from a starting map. It logs
- * the metrics `objective` (the expected number of correct points, rising) and `gradNorm`, and the tensor `transform`
- * (the map, `[nComponents, nFeatures]`).
+ * The NCA objective as a smooth problem for the solver slot: minus the expected number of correct points over the
+ * map `[nComponents, nFeatures]` (exact gradient from {@link ncaValueAndGradient}), started at the configured map.
  *
  * @param data - Features and class labels.
- * @param hyper - `nComponents`, `init`, `maxIter`, `gradTol`.
+ * @param hyper - `nComponents` and `init`.
  * @param key - Draws the `random` start.
- * @returns The algorithm.
+ * @returns The problem.
  * @example
  * ```ts
- * import { ncaAlgorithm } from 'mdml-engine/learn'
+ * import { ncaProblem } from 'mdml-engine/learn'
  * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
- * const alg = ncaAlgorithm({ x, y: [0, 0, 0, 1, 1, 1] }, { init: 'identity', maxIter: 20, gradTol: 1e-6, nComponents: 1 }, key(0))
- * runAlgorithm(alg, { maxSteps: 30 }).state.value < -4 // => true
+ * ncaProblem({ x, y: [0, 0, 0, 1, 1, 1] }, { init: 'identity', nComponents: 1 }, key(0)).x0.shape // => [1, 2]
  * ```
  */
-export function ncaAlgorithm(data: LearnData, hyper: NcaHyper, key: Key): Algorithm<LbfgsState> {
+export function ncaProblem(
+  data: LearnData,
+  hyper: Pick<NcaHyper, 'init' | 'nComponents'>,
+  key: Key,
+): SmoothProblem & { readonly x0: Tensor } {
   const { x, classes, codes } = trainingOf(data, 'nca')
   const dp = hyper.nComponents ?? x.d
   const start = initialMap(hyper.init, x, codes, classes, dp, foldIn(key, 7))
@@ -270,33 +295,64 @@ export function ncaAlgorithm(data: LearnData, hyper: NcaHyper, key: Key): Algori
       ]
     },
   })
-  const inner = lbfgsAlgorithm((a) => loss(a as Value), fromStorage(start, [dp, x.d], 'float64'), {
-    gradTol: hyper.gradTol,
-  })
-  return {
-    ...inner,
+  return { objective: (a) => loss(a as Value), x0: fromStorage(start, [dp, x.d], 'float64') }
+}
+
+/**
+ * The NCA fit as an algorithm over the solver slot: any solver of `smoothSolvers` (L-BFGS at `gradTol` by default, as
+ * scikit-learn's) minimises the negative objective, one iteration per step, from a starting map. It logs the metrics
+ * `objective` (the expected number of correct points, rising), `gradNorm` and `step`, and the tensor `transform` (the
+ * map, `[nComponents, nFeatures]`).
+ *
+ * @param data - Features and class labels.
+ * @param hyper - `nComponents`, `init`, `maxIter`, `gradTol`, `solver`.
+ * @param key - Draws the `random` start.
+ * @returns The algorithm.
+ * @example
+ * ```ts
+ * import { ncaAlgorithm } from 'mdml-engine/learn'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
+ * const alg = ncaAlgorithm({ x, y: [0, 0, 0, 1, 1, 1] }, { init: 'identity', maxIter: 20, gradTol: 1e-6, nComponents: 1 }, key(0))
+ * runAlgorithm(alg, { maxSteps: 30 }).state.value < -4 // => true
+ * ```
+ */
+export function ncaAlgorithm(data: LearnData, hyper: NcaHyper, key: Key): Algorithm<NcaState> {
+  const problem = ncaProblem(data, hyper, key)
+  const shape = problem.x0.shape
+  const solver = hyper.solver ?? smoothSolverConfig({ kind: 'lbfgs', gradTol: hyper.gradTol })
+  return slotAlgorithm<NcaState>({
     name: 'nca',
-    config: { nComponents: dp, maxIter: hyper.maxIter, gradTol: hyper.gradTol },
-    schema: channels({
+    config: { nComponents: shape[0] ?? 0, maxIter: hyper.maxIter, gradTol: hyper.gradTol, solver } as Json,
+    schema: {
       metrics: {
         objective: {
           description: 'expected number of points classified right by the soft neighbour rule',
           direction: 'higher',
         },
-        gradNorm: { description: 'largest entry of the objective’s gradient', direction: 'lower' },
       },
-      tensors: { transform: { role: 'param', description: 'the linear map', shape: [dp, x.d] } },
-    }),
+      tensors: { transform: { role: 'param', description: 'the linear map', shape: [...shape] } },
+    },
+    problem,
+    solver,
+    key,
+    tol: hyper.gradTol,
+    view: (r, evaluations, stalled) => ({ x: Array.from(r.x), value: r.value, evaluations, stalled }),
     observe: (s) => ({
-      metrics: { objective: -s.value, gradNorm: s.grad.reduce((m, v) => Math.max(m, Math.abs(v)), 0) },
-      tensors: { transform: { role: 'param', value: s.x, shape: [dp, x.d] } },
+      metrics: { objective: -s.value },
+      tensors: { transform: { role: 'param', value: s.x, shape: [...shape] } },
     }),
-    serialise: (s) => stateToJson(s),
-    deserialise: (j) => stateFromJson(j) as LbfgsState,
-  }
+  })
 }
 
 const NCA_DEFAULTS: NcaHyper = { init: 'auto', maxIter: 50, gradTol: 1e-5 }
+
+/** The hyperparameters with the default solver (L-BFGS at `gradTol`) filled in where none is given. */
+const ncaHyper = (hyper: Partial<NcaHyper>): NcaHyper => {
+  const h = { ...NCA_DEFAULTS, ...hyper }
+  return { ...h, solver: h.solver ?? smoothSolverConfig({ kind: 'lbfgs', gradTol: h.gradTol }) }
+}
 
 /**
  * Neighbourhood components analysis (`sklearn.neighbors.NeighborhoodComponentsAnalysis`): a linear map learnt by
@@ -317,8 +373,8 @@ const NCA_DEFAULTS: NcaHyper = { init: 'auto', maxIter: 50, gradTol: 1e-5 }
  */
 export function neighbourhoodComponentsAnalysis(
   hyper: Partial<NcaHyper> = {},
-): IterativeEstimator<NcaHyper, LbfgsState, LinearMapParams, LinearMapVerbs> {
-  return iterative<NcaHyper, LbfgsState, LinearMapParams, LinearMapVerbs>(
+): IterativeEstimator<NcaHyper, NcaState, LinearMapParams, LinearMapVerbs> {
+  return iterative<NcaHyper, NcaState, LinearMapParams, LinearMapVerbs>(
     {
       name: 'nca',
       kind: 'transformer',
@@ -326,6 +382,7 @@ export function neighbourhoodComponentsAnalysis(
       hyperSpace: (h) =>
         dict({
           gradTol: real(Math.min(1e-9, h.gradTol), Math.max(1e-2, h.gradTol), { default: h.gradTol, log: true }),
+          solver: smoothSolvers.space,
           ...(typeof h.init === 'string'
             ? { init: choice(['auto', 'identity', 'pca', 'lda', 'random'] as const, { default: h.init }) }
             : {}),
@@ -340,7 +397,7 @@ export function neighbourhoodComponentsAnalysis(
       verbs: mapVerbs,
       logs: { 'solver/objective': Log(), 'solver/gradNorm': Log(), 'solver/transform': Log({ detail: 'full' }) },
     },
-    { ...NCA_DEFAULTS, ...hyper },
+    ncaHyper(hyper),
   )
 }
 
@@ -353,24 +410,27 @@ export interface LmnnHyper {
   readonly nComponents?: number
   readonly init: Exclude<MetricInit, 'auto'> | 'auto'
   readonly maxIter: number
-  /** The initial step. */
+  /** The initial step of the default solver. */
   readonly learningRate: number
-  /** Stop when the loss changes by less than this, relatively, in a step. */
+  /** Stop when the loss changes by less than this, relatively, in a step (the default solver). */
   readonly tol: number
+  /**
+   * How the loss is minimised: a value of `lmnnSolvers.space` (default the adaptive gradient descent below at
+   * `learningRate` and `tol`, which reproduces the published fit; any solver of `smoothSolvers` is another mode).
+   */
+  readonly solver?: SpaceValue
 }
 
-/** The state of the LMNN algorithm. */
-export type LmnnState = {
+/** The state of the LMNN algorithm: the map, the loss it minimises and the solver's state. */
+export interface LmnnState extends SlotState {
   /** The map `[nComponents][nFeatures]`, row-major. */
-  readonly a: number[]
-  readonly loss: number
-  readonly gradient: number[]
+  readonly x: number[]
+  /** The loss. */
+  readonly value: number
   /** Triplets `(i, j, l)` whose impostor `l` is within the margin of target neighbour `j` of `i`. */
   readonly impostors: number
-  readonly step: number
-  /** Whether the last step was accepted. */
-  readonly accepted: boolean
-  readonly change: number
+  readonly evaluations: number
+  readonly stalled: boolean
 }
 
 /** The pull-and-push loss of LMNN and its gradient at a map, with the number of active impostors. */
@@ -425,32 +485,37 @@ function lmnnEvaluate(
   return { loss: (1 - mu) * pull + mu * push, gradient: Array.from(dgemm(a, t, dp, d, d), (v) => 2 * v), impostors }
 }
 
+/** The LMNN loss as a smooth problem: its objective, start, and the loss, gradient and impostor count at a map. */
+export interface LmnnProblem extends SmoothProblem {
+  readonly x0: Tensor
+  /** The loss, its gradient and the number of active impostors at a map (the last map evaluated is remembered). */
+  evaluate(a: ArrayLike<number>): { readonly loss: number; readonly gradient: number[]; readonly impostors: number }
+}
+
 /**
- * Large margin nearest neighbour as an algorithm (Weinberger and Saul): each point's `k` nearest same-class points
- * (in the starting metric) are its target neighbours; the loss pulls them close (`(1 - mu)` times the sum of squared
- * distances after the map) and pushes impostors, points of other classes that intrude within a unit margin of a
- * target neighbour, away (`mu` times the hinge `[1 + d_ij - d_il]_+`). Gradient descent on the map with an adaptive
- * step (grown by 1% on a decrease of the loss, halved and the step rejected otherwise). It logs the metrics
- * `objective` (the loss), `impostors` and `step`, and the tensor `transform`.
+ * The LMNN loss as a smooth problem for the solver slot: each point's `k` nearest same-class points (in the starting
+ * metric) are its target neighbours; the loss pulls them close (`(1 - mu)` times the sum of squared distances after
+ * the map) and pushes impostors, points of other classes that intrude within a unit margin of a target neighbour,
+ * away (`mu` times the hinge `[1 + d_ij - d_il]_+`). The gradient is exact and the hinge makes the loss piecewise
+ * quadratic.
  *
  * @param data - Features and class labels.
- * @param hyper - `nNeighbors`, `mu`, `nComponents`, `init`, `maxIter`, `learningRate`, `tol`.
+ * @param hyper - `nNeighbors`, `mu`, `nComponents`, `init`.
  * @param key - Draws a `random` start.
- * @returns The algorithm.
- * @reference K. Weinberger and L. Saul, Distance metric learning for large margin nearest neighbor classification,
- * JMLR 10 (2009).
+ * @returns The problem.
  * @example
  * ```ts
- * import { lmnnAlgorithm } from 'mdml-engine/learn'
+ * import { lmnnProblem } from 'mdml-engine/learn'
  * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
- * const alg = lmnnAlgorithm({ x, y: [0, 0, 0, 1, 1, 1] }, { nNeighbors: 1, mu: 0.5, init: 'identity', maxIter: 50, learningRate: 1e-3, tol: 1e-9 }, key(0))
- * const end = runAlgorithm(alg, { maxSteps: 60 }).state
- * end.loss < alg.init(key(0)).loss // => true
+ * lmnnProblem({ x, y: [0, 0, 0, 1, 1, 1] }, { nNeighbors: 1, mu: 0.5, init: 'identity' }, key(0)).x0.shape // => [2, 2]
  * ```
  */
-export function lmnnAlgorithm(data: LearnData, hyper: LmnnHyper, key: Key): Algorithm<LmnnState> {
+export function lmnnProblem(
+  data: LearnData,
+  hyper: Pick<LmnnHyper, 'nNeighbors' | 'mu' | 'nComponents' | 'init'>,
+  key: Key,
+): LmnnProblem {
   const { x, classes, codes } = trainingOf(data, 'lmnn')
   const dp = hyper.nComponents ?? x.d
   const k = Math.min(hyper.nNeighbors, x.n - 1)
@@ -466,39 +531,153 @@ export function lmnnAlgorithm(data: LearnData, hyper: LmnnHyper, key: Key): Algo
     }
     return same.sort((p, q) => dist(p) - dist(q) || p - q).slice(0, k)
   })
-  const at = (a: ArrayLike<number>, step: number, accepted: boolean, change: number): LmnnState => {
-    const e = lmnnEvaluate(a, dp, x, codes, targets, hyper.mu)
-    return { a: Array.from(a), loss: e.loss, gradient: e.gradient, impostors: e.impostors, step, accepted, change }
+  let last: { readonly at: Float64Array; readonly value: ReturnType<LmnnProblem['evaluate']> } | undefined
+  const evaluate: LmnnProblem['evaluate'] = (a) => {
+    if (last !== undefined && last.at.length === a.length && last.at.every((v, i) => v === a[i])) return last.value
+    const value = lmnnEvaluate(a, dp, x, codes, targets, hyper.mu)
+    last = { at: Float64Array.from(a), value }
+    return value
   }
-  return {
+  const loss = customVjp({
     name: 'lmnn',
-    config: { nNeighbors: k, mu: hyper.mu, nComponents: dp, learningRate: hyper.learningRate },
-    schema: channels({
+    forward: (a) => tensor(evaluate(toFlat(primalOf(a as Value))).loss),
+    vjp: (g, [a]) => [
+      mul(g, fromStorage(Float64Array.from(evaluate(toFlat(primalOf(a as Value))).gradient), [dp, x.d], 'float64')),
+    ],
+  })
+  return { objective: (a) => loss(a as Value), x0: fromStorage(start, [dp, x.d], 'float64'), evaluate }
+}
+
+/** The state of the adaptive gradient descent of LMNN: the iterate, its loss and gradient, and the step rule's. */
+interface AdaptiveState {
+  readonly x: Float64Array
+  readonly value: number
+  readonly grad: Float64Array
+  readonly step: number
+  readonly nfev: number
+  /** Whether the last step was accepted. */
+  readonly accepted: boolean
+  readonly change: number
+}
+
+const adaptiveDescent: ModeSpec<LmnnProblem, AdaptiveState, VectorParams> = {
+  description:
+    'gradient descent on the map with an adaptive step (grown by 1% on a decrease of the loss, halved and the step rejected otherwise), as the published LMNN',
+  space: dict({
+    learningRate: real(1e-8, 1, { log: true, default: 1e-3, label: 'initial step' }),
+    tol: real(1e-14, 1e-2, { log: true, default: 1e-7, label: 'relative loss change to stop at' }),
+  }),
+  make: (p, knobs) => {
+    const tol = knobs['tol'] as number
+    const learningRate = knobs['learningRate'] as number
+    const at = (a: ArrayLike<number>, step: number, nfev: number, change: number): AdaptiveState => {
+      const e = p.evaluate(a)
+      return {
+        x: Float64Array.from(a),
+        value: e.loss,
+        grad: Float64Array.from(e.gradient),
+        step,
+        nfev,
+        accepted: true,
+        change,
+      }
+    }
+    return {
+      name: 'lmnn-adaptive',
+      config: { learningRate, tol },
+      init: () => at(toFlat(p.x0 as Tensor), learningRate, 1, Number.POSITIVE_INFINITY),
+      step: (s) => {
+        const proposal = s.x.map((v, i) => v - s.step * (s.grad[i] ?? 0))
+        const next = at(proposal, s.step * 1.01, s.nfev + 1, 0)
+        if (next.value < s.value)
+          return { ...next, change: (s.value - next.value) / Math.max(Math.abs(s.value), 1e-300) }
+        return { ...s, step: s.step * 0.5, nfev: s.nfev + 1, accepted: false, change: Number.POSITIVE_INFINITY }
+      },
+      done: (s) => (s.accepted && s.change < tol ? 'converged' : s.step < 1e-14 ? 'converged' : undefined),
+      serialise: (s) => stateToJson(s),
+      deserialise: (j) => stateFromJson(j) as AdaptiveState,
+    }
+  },
+  params: (s) => ({ x: Array.from(s.x) }),
+}
+
+/**
+ * The solvers of the LMNN loss: `adaptive` (default; the adaptive gradient descent of the published method) beside every
+ * generic solver of `smoothSolvers` applied to the loss.
+ */
+export const lmnnSolvers: ModeTable<LmnnProblem, VectorParams> = familySolvers<LmnnProblem>(
+  { adaptive: adaptiveDescent },
+  (p) => p,
+  { default: 'adaptive', description: 'how the LMNN loss is minimised' },
+)
+
+/** The default solver of LMNN: the adaptive descent at an initial step and a relative-change tolerance. */
+const lmnnDefaultSolver = (learningRate: number, tol: number): SpaceValue => ({ kind: 'adaptive', learningRate, tol })
+
+/**
+ * Large margin nearest neighbour as an algorithm over the solver slot (Weinberger and Saul): the loss of
+ * {@link lmnnProblem}, minimised by the adaptive gradient descent of the published method by default (the step grown
+ * by 1% on a decrease of the loss, halved and the step rejected otherwise) or by any solver of `smoothSolvers`. It logs
+ * the metrics `objective` (the loss), `impostors`, `gradNorm` and `step`, and the tensor `transform`.
+ *
+ * @param data - Features and class labels.
+ * @param hyper - `nNeighbors`, `mu`, `nComponents`, `init`, `maxIter`, `learningRate`, `tol`, `solver`.
+ * @param key - Draws a `random` start.
+ * @returns The algorithm.
+ * @reference K. Weinberger and L. Saul, Distance metric learning for large margin nearest neighbor classification,
+ * JMLR 10 (2009).
+ * @example
+ * ```ts
+ * import { lmnnAlgorithm } from 'mdml-engine/learn'
+ * import { key } from 'mdml-engine/random'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
+ * const alg = lmnnAlgorithm({ x, y: [0, 0, 0, 1, 1, 1] }, { nNeighbors: 1, mu: 0.5, init: 'identity', maxIter: 50, learningRate: 1e-3, tol: 1e-9 }, key(0))
+ * const end = runAlgorithm(alg, { maxSteps: 60 }).state
+ * end.value < alg.init(key(0)).value // => true
+ * ```
+ */
+export function lmnnAlgorithm(data: LearnData, hyper: LmnnHyper, key: Key): Algorithm<LmnnState> {
+  const problem = lmnnProblem(data, hyper, key)
+  const shape = problem.x0.shape
+  const solver = solverConfigOf(lmnnSolvers, hyper.solver ?? lmnnDefaultSolver(hyper.learningRate, hyper.tol))
+  return slotAlgorithm<LmnnState, LmnnProblem>({
+    name: 'lmnn',
+    config: {
+      nNeighbors: Math.min(hyper.nNeighbors, trainingOf(data, 'lmnn').x.n - 1),
+      mu: hyper.mu,
+      nComponents: shape[0] ?? 0,
+      learningRate: hyper.learningRate,
+      solver,
+    } as Json,
+    schema: {
       metrics: {
         objective: {
           description: 'the LMNN loss: weighted pull of target neighbours plus hinge of impostors',
           direction: 'lower',
         },
         impostors: { description: 'impostor triplets inside the margin', direction: 'lower' },
-        step: { description: 'the gradient step size', direction: 'higher' },
       },
-      tensors: { transform: { role: 'param', description: 'the linear map', shape: [dp, x.d] } },
-    }),
-    init: () => at(start, hyper.learningRate, true, Number.POSITIVE_INFINITY),
-    step: (s) => {
-      const proposal = s.a.map((v, i) => v - s.step * (s.gradient[i] ?? 0))
-      const next = at(proposal, s.step * 1.01, true, 0)
-      if (next.loss < s.loss) return { ...next, change: (s.loss - next.loss) / Math.max(Math.abs(s.loss), 1e-300) }
-      return { ...s, step: s.step * 0.5, accepted: false, change: Number.POSITIVE_INFINITY }
+      tensors: { transform: { role: 'param', description: 'the linear map', shape: [...shape] } },
     },
-    done: (s) => (s.accepted && s.change < hyper.tol ? 'converged' : s.step < 1e-14 ? 'converged' : undefined),
-    observe: (s) => ({
-      metrics: { objective: s.loss, impostors: s.impostors, step: s.step },
-      tensors: { transform: { role: 'param', value: s.a, shape: [dp, x.d] } },
+    problem,
+    table: lmnnSolvers,
+    solver,
+    key,
+    // The adaptive default has its own stopping rule; a gradient that is exactly zero is the only extra stop.
+    tol: 0,
+    view: (r, evaluations, stalled) => ({
+      x: Array.from(r.x),
+      value: r.value,
+      impostors: problem.evaluate(r.x).impostors,
+      evaluations,
+      stalled,
     }),
-    serialise: (s) => stateToJson(s),
-    deserialise: (j) => stateFromJson(j) as LmnnState,
-  }
+    observe: (s) => ({
+      metrics: { objective: s.value, impostors: s.impostors },
+      tensors: { transform: { role: 'param', value: s.x, shape: [...shape] } },
+    }),
+  })
 }
 
 const LMNN_DEFAULTS: LmnnHyper = {
@@ -508,6 +687,12 @@ const LMNN_DEFAULTS: LmnnHyper = {
   maxIter: 200,
   learningRate: 1e-3,
   tol: 1e-7,
+}
+
+/** The hyperparameters with the default solver filled in from `learningRate` and `tol` where none is given. */
+const lmnnHyper = (hyper: Partial<LmnnHyper>): LmnnHyper => {
+  const h = { ...LMNN_DEFAULTS, ...hyper }
+  return { ...h, solver: solverConfigOf(lmnnSolvers, h.solver ?? lmnnDefaultSolver(h.learningRate, h.tol)) }
 }
 
 /**
@@ -541,17 +726,18 @@ export function largeMarginNearestNeighbour(
             default: h.learningRate,
             log: true,
           }),
+          solver: lmnnSolvers.space,
         }),
       algorithm: (data, h, key) => lmnnAlgorithm(data, h, key),
       maxSteps: (h) => h.maxIter,
       params: (s, data, h) => {
         const d = matrixView(data.x, 'lmnn').d
         const dp = h.nComponents ?? d
-        return { components: unflatten(s.a, dp, d), objective: s.loss }
+        return { components: unflatten(s.x, dp, d), objective: s.value }
       },
       verbs: mapVerbs,
       logs: { 'solver/objective': Log(), 'solver/impostors': Log(), 'solver/transform': Log({ detail: 'full' }) },
     },
-    { ...LMNN_DEFAULTS, ...hyper },
+    lmnnHyper(hyper),
   )
 }

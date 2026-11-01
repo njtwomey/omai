@@ -188,6 +188,12 @@ export interface UmapOptions {
  * const out = runAlgorithm(umapAlgorithm(w, [[0, 0], [5, 5], [9, 0]], { nEpochs: 20, a: 1.9, b: 0.8 }), { maxSteps: 20, key: key(0) })
  * out.state.y.length // => 3
  * ```
+ *
+ * The optimiser is deliberately not a solver slot. umap-learn's SGD is not a gradient step on one objective: each epoch
+ * samples edges by membership and draws fresh negative samples, with per-term clipped gradients and a linearly decaying
+ * rate, so the iterate follows a random walk whose stationary layout is what the reference produces. The full
+ * cross-entropy is available as `fuzzyCrossEntropy`, but a deterministic `smoothSolvers` mode would minimise a
+ * different (all-pairs) objective than the one this samples.
  */
 export function umapAlgorithm(
   weights: readonly (readonly number[])[],

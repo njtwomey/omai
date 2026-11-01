@@ -420,7 +420,8 @@ export function alphaBetaAlgorithm<S, A>(
 }
 
 /**
- * Alpha-beta search: the minimax value and move, visiting fewer nodes.
+ * Alpha-beta search: the minimax value and move, visiting fewer nodes. It searches a `Game` (utilities at the terminal
+ * states); `alphaBeta` of `agents` searches an `AecEnv` with rewards on every move and a transposition table.
  *
  * @param game - The game.
  * @param state - The root position.

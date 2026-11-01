@@ -162,7 +162,8 @@ const MERSENNE = 2147483647
 /**
  * MinHash signatures of sets of non-negative integer tokens (Broder 1997): for each of n universal hash functions
  * h(x) = (a x + b) mod p, the minimum over the set. The fraction of agreeing positions estimates the Jaccard
- * similarity.
+ * similarity. `minHash` of `sketches` is the streaming sketch of the same idea (hashable items of any kind, `add` and
+ * `merge`); this one signs whole integer token sets as plain arrays for `minHashBanding` and the spatial indexes.
  *
  * @param sets - Token sets.
  * @param key - Random key.
@@ -313,7 +314,8 @@ export function probeSequence(
 }
 
 /**
- * A locality-sensitive hashing index (E2LSH style): L tables of k concatenated hash functions; a query gathers the
+ * A locality-sensitive hashing index for nearest-neighbour search over points (E2LSH style; `lshIndex` of `sketches`
+ * indexes MinHash signatures of sets by Jaccard similarity instead): L tables of k concatenated hash functions; a query gathers the
  * points sharing its bucket in any table (and, with multi-probe, in nearby buckets), then re-ranks them exactly.
  *
  * @param data - Points `[n, d]`.

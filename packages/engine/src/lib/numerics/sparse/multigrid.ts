@@ -367,7 +367,9 @@ const SCHEMA = channels({
  * A multigrid method as a traced algorithm, one cycle per step: smooth, restrict the residual, correct on the coarser
  * grids (a direct solve at the coarsest), prolong and add, smooth again. The coarse operators are Galerkin products
  * P^T A P and the restriction is P^T, so the coarse correction is the A-orthogonal projection of the error onto the
- * range of P. Two grids is `levels: 2` (the default), a V-cycle more, a W-cycle with `cycle: 'w'`.
+ * range of P. Two grids is `levels: 2` (the default), a V-cycle more, a W-cycle with `cycle: 'w'`. This is the
+ * algebraic form, for any matrix with a grid hierarchy; `poissonAlgorithm` of `dynamics/pde` with `method: 'multigrid'` is
+ * the matrix-free geometric V-cycle on the five-point stencil (red-black Gauss-Seidel, full weighting).
  *
  * @param a - The matrix of the finest grid (for example {@link poisson1d}).
  * @param b - The right-hand side.

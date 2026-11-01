@@ -441,7 +441,11 @@ function runPf(
 /**
  * The bootstrap particle filter (Gordon, Salmond and Smith 1993): propagate particles through the transition, weight
  * them by the likelihood, and resample when the effective sample size falls below a threshold. The incremental
- * normalisers give an unbiased estimate of the evidence p(z_1..T). A traced algorithm with the ESS per step.
+ * normalisers give an unbiased estimate of the evidence p(z_1..T). A traced algorithm with the ESS per step. It filters
+ * a numeric state-space model (`initial`, `transition`, `logLikelihood` over tensors); `particleFilterAlgorithm` of
+ * `probprog` filters a probabilistic program's markov loop instead, with the weights from its observed sites. The
+ * resamplers differ on purpose: this one's (`resampleIndices`) follows filterpy and draws unsorted multinomial indices,
+ * `sampling`'s (`resample`) follows BlackJAX and returns them sorted.
  *
  * @param model - Initial distribution, transition and likelihood.
  * @param observations - `[T, ...]`.

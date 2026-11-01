@@ -241,7 +241,10 @@ export interface RemezOptions {
 
 /**
  * The equiripple minimax FIR filter by the Parks-McClellan (Remez exchange) algorithm (scipy.signal.remez): the
- * linear-phase filter minimising the maximum weighted deviation from the desired gain in each band.
+ * linear-phase filter minimising the maximum weighted deviation from the desired gain in each band. It is the exchange
+ * of Janovetz's remez.c on the filter-design grid (cosine-basis types I to IV, band weights); `remez` of
+ * `numerics/approximation` is the same equioscillation idea for a general function, polynomial or rational, on an
+ * interval, and the two do not share code.
  *
  * @param numtaps - Number of taps.
  * @param bands - Band edges, pairs from 0 to fs / 2.

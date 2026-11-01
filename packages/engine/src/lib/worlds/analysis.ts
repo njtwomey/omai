@@ -5,6 +5,7 @@
  */
 
 import { heap, MdmlError } from '../base/index.ts'
+import { articulationPoints, type Graph, graph, bridges as graphBridges } from '../graph/index.ts'
 import { axial } from './_topology.ts'
 import {
   cellCentre,
@@ -232,51 +233,18 @@ export function deadEnds(w: World, options: MoveOptions = {}): number[] {
   return out
 }
 
-/** Articulation points and bridges of the undirected cell graph, by Tarjan's low-link algorithm (iteratively). */
-function lowLinks(w: World, options: MoveOptions): { readonly cuts: number[]; readonly bridges: [number, number][] } {
+/** The undirected cell graph as a library graph, over all `n` cells (the impassable ones isolated). */
+function cellGraph(w: World, options: MoveOptions): Graph {
   const adj = undirected(w, options)
-  const disc = new Int32Array(w.n).fill(-1)
-  const low = new Int32Array(w.n)
-  const cut = new Uint8Array(w.n)
-  const bridges: [number, number][] = []
-  let time = 0
-  for (let root = 0; root < w.n; root++) {
-    if (disc[root] !== -1 || !passable(w, root)) continue
-    disc[root] = time
-    low[root] = time
-    time++
-    let rootChildren = 0
-    const stack: [number, number, number][] = [[root, -1, 0]]
-    while (stack.length > 0) {
-      const frame = stack[stack.length - 1] as [number, number, number]
-      const [u, parent, i] = frame
-      const list = adj[u] ?? []
-      if (i < list.length) {
-        frame[2] = i + 1
-        const v = list[i] ?? 0
-        if (v === parent) continue
-        if (disc[v] === -1) {
-          disc[v] = time
-          low[v] = time
-          time++
-          if (u === root) rootChildren++
-          stack.push([v, u, 0])
-        } else low[u] = Math.min(low[u] ?? 0, disc[v] ?? 0)
-        continue
-      }
-      stack.pop()
-      if (parent >= 0) {
-        low[parent] = Math.min(low[parent] ?? 0, low[u] ?? 0)
-        if ((low[u] ?? 0) > (disc[parent] ?? 0)) bridges.push(parent < u ? [parent, u] : [u, parent])
-        if (parent !== root && (low[u] ?? 0) >= (disc[parent] ?? 0)) cut[parent] = 1
-      }
-    }
-    if (rootChildren > 1) cut[root] = 1
-  }
-  const cuts: number[] = []
-  for (let c = 0; c < w.n; c++) if (cut[c] === 1) cuts.push(c)
-  bridges.sort((a, b) => a[0] - b[0] || a[1] - b[1])
-  return { cuts, bridges }
+  const edges: [number, number][] = []
+  for (let u = 0; u < w.n; u++) for (const v of adj[u] ?? []) if (u < v) edges.push([u, v])
+  return graph(edges, { nodes: w.n })
+}
+
+/** Articulation points and bridges of the undirected cell graph: the graph domain's (Tarjan's low-link algorithm). */
+function lowLinks(w: World, options: MoveOptions): { readonly cuts: number[]; readonly bridges: [number, number][] } {
+  const g = cellGraph(w, options)
+  return { cuts: articulationPoints(g), bridges: graphBridges(g) }
 }
 
 /**

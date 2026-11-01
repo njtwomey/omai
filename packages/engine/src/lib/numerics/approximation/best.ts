@@ -39,6 +39,7 @@ const series = (c: readonly number[], t: number): number => c.reduce((s, ck, k) 
  * by the Remez exchange algorithm: on a reference of m + n + 2 points, solve for the approximation whose error
  * alternates in sign with equal magnitude E, move the reference to the alternating extrema of the error, and repeat
  * until the largest error equals |E| (the equioscillation theorem's characterisation of the best approximation).
+ * For FIR filter design (weighted bands, linear-phase types) see `remez` of `signal`, which is scipy's Parks-McClellan.
  *
  * @param f - The function on numbers.
  * @param m - Numerator degree.

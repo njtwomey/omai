@@ -10,7 +10,16 @@ import { foldIn, Generator, type Key, key as makeKey } from '../random/index.ts'
 import type { Env, EnvDefinition, EnvModel, Outcome } from '../rl/index.ts'
 import { circle, type Paint, rect, type Scene, scene } from '../scene/index.ts'
 import { box, choice, dict, discrete, int, real, type Space } from '../space/index.ts'
-import { distanceField, fromAscii, toScene, type World, deadEnds as worldDeadEnds } from '../worlds/index.ts'
+import {
+  distanceField,
+  fromAscii,
+  toAscii,
+  toScene,
+  type World,
+  braid as worldBraid,
+  deadEnds as worldDeadEnds,
+  generateMaze as worldGenerateMaze,
+} from '../worlds/index.ts'
 
 // ------------------------------------------------------------------------------------------------- Maze generation
 
@@ -46,120 +55,6 @@ const NEIGHBOURS: readonly (readonly [number, number])[] = [
   [0, -1],
 ]
 
-function cellNeighbours(rows: number, cols: number, i: number): number[] {
-  const r = Math.floor(i / cols)
-  const c = i % cols
-  const out: number[] = []
-  for (const [dr, dc] of NEIGHBOURS) {
-    const r2 = r + dr
-    const c2 = c + dc
-    if (r2 >= 0 && r2 < rows && c2 >= 0 && c2 < cols) out.push(r2 * cols + c2)
-  }
-  return out
-}
-
-/** A mutable character grid with carving between cells. */
-class Carver {
-  readonly chars: string[][]
-  readonly rows: number
-  readonly cols: number
-  constructor(rows: number, cols: number, grid?: readonly string[]) {
-    this.rows = rows
-    this.cols = cols
-    this.chars =
-      grid?.map((row) => row.split('')) ??
-      Array.from({ length: 2 * rows + 1 }, (_, y) =>
-        Array.from({ length: 2 * cols + 1 }, (_, x) => (y % 2 === 1 && x % 2 === 1 ? '.' : '#')),
-      )
-  }
-  wall(a: number, b: number): [number, number] {
-    const ra = Math.floor(a / this.cols)
-    const ca = a % this.cols
-    const rb = Math.floor(b / this.cols)
-    const cb = b % this.cols
-    return [ra + rb + 1, ca + cb + 1]
-  }
-  isOpen(a: number, b: number): boolean {
-    const [y, x] = this.wall(a, b)
-    return this.chars[y]?.[x] !== '#'
-  }
-  carve(a: number, b: number): void {
-    const [y, x] = this.wall(a, b)
-    const row = this.chars[y]
-    if (row !== undefined) row[x] = '.'
-  }
-  degree(a: number): number {
-    return cellNeighbours(this.rows, this.cols, a).filter((b) => this.isOpen(a, b)).length
-  }
-  maze(): Maze {
-    return { rows: this.rows, cols: this.cols, grid: this.chars.map((row) => row.join('')) }
-  }
-}
-
-function backtracker(m: Carver, pick: (n: number) => number): void {
-  const n = m.rows * m.cols
-  const visited = new Uint8Array(n)
-  const start = pick(n)
-  visited[start] = 1
-  const stack = [start]
-  while (stack.length > 0) {
-    const cur = stack[stack.length - 1] ?? 0
-    const fresh = cellNeighbours(m.rows, m.cols, cur).filter((b) => visited[b] === 0)
-    if (fresh.length === 0) {
-      stack.pop()
-      continue
-    }
-    const next = fresh[pick(fresh.length)] ?? 0
-    m.carve(cur, next)
-    visited[next] = 1
-    stack.push(next)
-  }
-}
-
-function prim(m: Carver, pick: (n: number) => number): void {
-  const n = m.rows * m.cols
-  const inMaze = new Uint8Array(n)
-  const start = pick(n)
-  inMaze[start] = 1
-  const frontier: [number, number][] = cellNeighbours(m.rows, m.cols, start).map((b) => [start, b])
-  while (frontier.length > 0) {
-    const i = pick(frontier.length)
-    const [a, b] = frontier[i] ?? [0, 0]
-    frontier.splice(i, 1)
-    if (inMaze[b] === 1) continue
-    m.carve(a, b)
-    inMaze[b] = 1
-    for (const c of cellNeighbours(m.rows, m.cols, b)) if (inMaze[c] === 0) frontier.push([b, c])
-  }
-}
-
-function kruskal(m: Carver, rng: Generator): void {
-  const n = m.rows * m.cols
-  const edges: [number, number][] = []
-  for (let a = 0; a < n; a++) for (const b of cellNeighbours(m.rows, m.cols, a)) if (b > a) edges.push([a, b])
-  const parent = Int32Array.from({ length: n }, (_, i) => i)
-  const find = (x: number): number => {
-    let r = x
-    while (parent[r] !== r) r = parent[r] ?? r
-    let y = x
-    while (parent[y] !== r) {
-      const next = parent[y] ?? r
-      parent[y] = r
-      y = next
-    }
-    return r
-  }
-  for (const i of rng.permutation(edges.length).data) {
-    const [a, b] = edges[i] ?? [0, 0]
-    const ra = find(a)
-    const rb = find(b)
-    if (ra !== rb) {
-      parent[ra] = rb
-      m.carve(a, b)
-    }
-  }
-}
-
 /**
  * Remove dead ends with probability `p` each (Buck's braiding): a dead end, visited in random order, opens a wall to
  * a random closed neighbour (preferring neighbours that are dead ends too), which creates loops. A predicate can veto
@@ -184,18 +79,20 @@ export function braidMaze(
   p: number,
   allowed: (a: number, b: number) => boolean = () => true,
 ): Maze {
-  const m = new Carver(maze.rows, maze.cols, maze.grid)
-  const rng = new Generator(key)
-  const n = maze.rows * maze.cols
-  for (const a of rng.permutation(n).data) {
-    if (m.degree(a) !== 1 || (rng.uniform([]).data[0] ?? 1) >= p) continue
-    const closed = cellNeighbours(m.rows, m.cols, a).filter((b) => !m.isOpen(a, b) && allowed(a, b))
-    if (closed.length === 0) continue
-    const ends = closed.filter((b) => m.degree(b) === 1)
-    const pool = ends.length > 0 ? ends : closed
-    m.carve(a, pool[Math.floor((rng.uniform([]).data[0] ?? 0) * pool.length)] ?? a)
-  }
-  return m.maze()
+  // The maze as a world (walls between cells), braided by worlds' braid and drawn back as the character grid.
+  const world = fromAscii(maze.grid, { format: 'walls' })
+  return gridMaze(maze.rows, maze.cols, worldBraid(world, key, p, { allowed }))
+}
+
+/** A world's wall drawing as a {@link Maze}: only `#` and `.`, whatever the cells were marked with. */
+function gridMaze(rows: number, cols: number, w: World): Maze {
+  const grid = toAscii(w, { format: 'walls' }).map((row, y) =>
+    row
+      .split('')
+      .map((ch, x) => (y % 2 === 1 && x % 2 === 1 ? '.' : ch))
+      .join(''),
+  )
+  return { rows, cols, grid }
 }
 
 /**
@@ -245,14 +142,10 @@ export function generateMaze(key: Key, options: MazeOptions = {}): Maze {
   if (!(Number.isInteger(rows) && Number.isInteger(cols) && rows >= 1 && cols >= 1)) {
     throw new MdmlError('value', 'generateMaze: rows and cols must be positive integers')
   }
-  const m = new Carver(rows, cols)
-  const rng = new Generator(foldIn(key, 0))
-  const pick = (n: number): number => Math.floor((rng.uniform([]).data[0] ?? 0) * n)
-  const algorithm = options.algorithm ?? 'backtracker'
-  if (algorithm === 'prim') prim(m, pick)
-  else if (algorithm === 'kruskal') kruskal(m, rng)
-  else backtracker(m, pick)
-  const maze = m.maze()
+  // Worlds' maze generators on a blank grid, drawn as the character grid; braiding by worlds' braid.
+  const base = fromAscii(Array.from({ length: rows }, () => '.'.repeat(cols)))
+  const carved = worldGenerateMaze(foldIn(key, 0), { rows, cols, base, algorithm: options.algorithm ?? 'backtracker' })
+  const maze = gridMaze(rows, cols, carved)
   return (options.braid ?? 0) > 0 ? braidMaze(maze, foldIn(key, 1), options.braid ?? 0) : maze
 }
 

@@ -21,8 +21,9 @@ import {
 import { cholesky, choSolve, solveTriangular } from '../numerics/linalg/index.ts'
 import { gaussHermite } from '../numerics/quadrature/index.ts'
 import { erf, ndtr } from '../numerics/special/index.ts'
+import { boundedSolvers } from '../optim/index.ts'
 import { foldIn, uniform } from '../random/index.ts'
-import { dict, int } from '../space/index.ts'
+import { dict, int, type SpaceValue } from '../space/index.ts'
 import {
   add,
   expandDims,
@@ -53,7 +54,14 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { currentOf, lbfgsbSearch, negatedObjective, type SearchState } from './_search.ts'
+import {
+  currentOf,
+  defaultSearchSolver,
+  gradNormOf,
+  lbfgsbSearch,
+  negatedObjective,
+  type SearchState,
+} from './_search.ts'
 import {
   type ClassLikelihood,
   type EpState,
@@ -78,9 +86,12 @@ export interface GpClassifierHyper {
   readonly restarts: number
   /** The bounds of every positive hyperparameter, in natural units. */
   readonly bounds: readonly [number, number]
+  /** The solver stops when its gradient (the projected one, for L-BFGS-B) falls below this. */
   readonly gradTol: number
-  /** The most L-BFGS-B iterations of one run. */
+  /** The most solver iterations of one run. */
   readonly maxIter: number
+  /** How the approximate likelihood is maximised: a value of `boundedSolvers.space` (default L-BFGS-B); `gradTol` is its tolerance. */
+  readonly solver?: SpaceValue
   /** The most Newton iterations (Laplace) or sweeps over the sites (EP) of one posterior. */
   readonly maxInner: number
   /** The tolerance of the posterior: the log marginal likelihood's gain (Laplace) or the largest change of a site (EP). */
@@ -368,6 +379,7 @@ export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcPa
     restarts: 0,
     bounds: [1e-5, 1e5],
     gradTol: 1e-5,
+    solver: defaultSearchSolver,
     maxIter: 200,
     maxInner: 100,
     tol: 1e-10,
@@ -376,6 +388,7 @@ export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcPa
   hyperSpace: (h) =>
     dict({
       restarts: int(0, 10, { default: Math.min(Math.max(h.restarts, 0), 10), label: 'restarts' }),
+      solver: boundedSolvers.space,
     }),
   algorithm: (data, h): Algorithm<GpcState, GpcPath> => {
     const p = prepare(data, h)
@@ -398,6 +411,7 @@ export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcPa
       upper: box.upper,
       optimise: h.optimise,
       gradTol: h.gradTol,
+      ...(h.solver === undefined ? {} : { solver: h.solver }),
       maxIter: h.maxIter,
       starts: (k) => {
         const first = Array.from(toFlat(thetaOf(h.kernel)))
@@ -479,7 +493,7 @@ export const gpClassifier: IterativeEstimator<GpClassifierHyper, GpcState, GpcPa
       observe: (s) => ({
         metrics: {
           run: s.search.run,
-          ...(s.search.inner === null || s.phase !== 'hyper' ? {} : { gradNorm: s.search.inner.projectedGradNorm }),
+          ...(s.search.inner === null || s.phase !== 'hyper' ? {} : { gradNorm: gradNormOf(s.search.inner) }),
         },
       }),
       serialise: (s) => stateToJson(s),

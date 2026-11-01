@@ -21,7 +21,9 @@ function uniformTimes(k: Key, n: number, horizon: number): number[] {
 
 /**
  * A homogeneous Poisson process on `[0, horizon]`: the count is Poisson with mean `rate × horizon` and the times are
- * uniform. The truth gives the intensity, the compensator and the exact log-likelihood of the realisation.
+ * uniform. The truth gives the intensity, the compensator and the exact log-likelihood of the realisation. This is the
+ * dataset generator (one draw of a whole realisation with its truth); `poissonProcess` of `stochastic` is the process
+ * itself, stepped event by event as a traced algorithm.
  *
  * @example
  * ```ts
@@ -67,6 +69,9 @@ export type IntensityShape = 'sinusoidal' | 'piecewise' | 'ramp'
  * An inhomogeneous Poisson process on `[0, horizon]` drawn by Lewis-Shedler thinning, with a sinusoidal intensity
  * `base (1 + amplitude sin(2π t / period))`, a piecewise-constant intensity (rate changes at known times, also
  * `truth.changepoints`) or a linear ramp. The truth gives the intensity, its integral and the log-likelihood.
+ *
+ * The dataset generator (the realisation and its exact intensity, compensator and likelihood); `inhomogeneousPoisson` of
+ * `stochastic` runs the same Lewis-Shedler thinning step by step for an intensity function of your own.
  *
  * @example
  * ```ts
@@ -226,6 +231,10 @@ function hawkesTruth(
  * triggers on average `α` (the branching ratio, below 1 for stationarity) further events after Exp(β) delays.
  * Simulated by its branching representation, so the truth knows each event's parent (`-1` for immigrants), and gives
  * the conditional intensity of the realisation and its exact log-likelihood.
+ *
+ * The dataset generator (branching representation, with the parent of every event in the truth); `hawkesProcess` of
+ * `stochastic` simulates the process by Ogata's thinning as a steppable algorithm, with the jump `alpha` and the decay
+ * `beta` as its own parameters (here `alpha` is the branching ratio, the jump per unit of `beta`).
  *
  * @example
  * ```ts

@@ -306,7 +306,9 @@ function sinkhornCost(cost: Value, logA: Value, logB: Value, eps: number, maxIte
  * Entropic optimal-transport loss between two weighted point clouds (Cuturi, 2013): the transport cost <P, C> of the
  * Sinkhorn plan for the squared Euclidean cost, computed in the log domain (as POT's `sinkhorn2` with
  * `method='sinkhorn_log'`), optionally debiased into the Sinkhorn divergence (POT's
- * `empirical_sinkhorn_divergence`). The iterations are unrolled, so the loss is differentiable in the points.
+ * `empirical_sinkhorn_divergence`). The iterations are unrolled, so the loss is differentiable in the points. That is
+ * the difference from `sinkhorn` of `optim`, which solves one transport problem on a given cost matrix over plain
+ * numbers (the plan, potentials and convergence flag, as a steppable `sinkhornAlgorithm`) and carries no gradient.
  *
  * @param x - Points `[N, D]`.
  * @param y - Points `[M, D]`.

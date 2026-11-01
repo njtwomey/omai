@@ -388,6 +388,9 @@ interface TableEntry {
  * position for the player to move is the best over moves of the move's reward plus the next position's value
  * (negated when the opponent moves next), searched with alpha-beta pruning, a transposition table with bound flags,
  * move ordering (the table's best move first, then `order`) and an optional depth limit with an evaluation function.
+ * It searches an environment (`AecEnv`: rewards on every move, the transposition table above); `alphaBeta` of
+ * `search` searches a `Game` with utilities at the terminal states and traces the pruning, and `alphaBetaAlgorithm`
+ * steps it. Their node counts need not agree.
  *
  * @param env - The game (deterministic steps).
  * @param state - The position.

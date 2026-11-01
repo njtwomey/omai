@@ -5,6 +5,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
+import { bandingProbability } from '../numerics/spatial/index.ts'
 import { fmix32, hash32, type SketchItem, type SketchSeed, seedOf } from './hashing.ts'
 
 /** Options for computing a {@link MinHashSignature}. */
@@ -65,7 +66,10 @@ export interface LshIndex {
 }
 
 /**
- * Compute a MinHash signature over an iterable of set elements.
+ * Compute a MinHash signature over an iterable of set elements: the streaming sketch (any hashable item, `add` and
+ * `merge`, 32-bit hashes). `minHash` of `numerics/spatial` is a different tool with the same name: signatures of whole
+ * integer token sets as plain arrays, by universal hash functions, for banding and spatial indexes. They do not share
+ * code, because `sketches` sits above `numerics`.
  *
  * @param items - Initial elements of the set (optional)
  * @param options - Number of hash functions `numHashes` (default `128`) and `seed`
@@ -179,7 +183,7 @@ export function minHashJaccard(sigA: MinHashSignature, sigB: MinHashSignature): 
 export function lshCollisionProbability(jaccardSimilarity: number, bands: number, rows: number): number {
   if (jaccardSimilarity <= 0) return 0
   if (jaccardSimilarity >= 1) return 1
-  return 1 - (1 - jaccardSimilarity ** rows) ** bands
+  return bandingProbability(jaccardSimilarity, rows, bands)
 }
 
 function bandBucketKey(values: Uint32Array, band: number, rows: number): number {
@@ -193,7 +197,9 @@ function bandBucketKey(values: Uint32Array, band: number, rows: number): number 
 }
 
 /**
- * Create a banded Locality-Sensitive Hashing (LSH) index over MinHash signatures.
+ * Create a banded Locality-Sensitive Hashing (LSH) index over MinHash signatures (sets, by Jaccard similarity). The
+ * `lshIndex` of `numerics/spatial` is a different index: nearest neighbours of points under a cosine or Lp distance,
+ * from random hyperplanes or p-stable projections, re-ranked exactly.
  *
  * @param options - Number of `bands` (`b`) and `rows` per band (`r`)
  * @returns Mutable {@link LshIndex}
