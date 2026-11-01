@@ -3635,9 +3635,14 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   GNMT's length penalty), `speculative.ts` (speculative decoding with exact acceptance and residual resampling).
 - `quantise.ts`: quantisation (symmetric, affine, per-tensor and per-channel), dequantisation, fake quantisation with a
   straight-through gradient, GPTQ, AWQ, error reports (MSE, max error, SQNR, output error), `quantiseModule`.
+  `gptqAlgorithm` (one column per step, `quant/column`, `error`, `weights`) and `awqAlgorithm` (one exponent per step) are the
+  algorithms `gptq` and `awq` run; `quantise-options.ts` has the `gptqOrders` table (natural, activation).
 - `pruning.ts`: magnitude (per tensor and global), structured (row and channel norms) and N:M pruning, masks,
-  lottery-ticket rewinding and iterative magnitude pruning, sparsity schedules (constant, linear, polynomial),
-  sparsity reports.
+  lottery-ticket rewinding, sparsity schedules (constant, linear, polynomial), sparsity reports.
+  `pruning-iterative.ts`: `iterativeMagnitudePruningAlgorithm` (one train-prune-rewind round per step, `prune/round`,
+  `sparsity`, `loss`, `mask`; the state with its parameter trees serialises) and `iterativeMagnitudePruning` as that run;
+  `pruning-options.ts` has the `pruneScopes` (global, layerwise) and `pruneRoundSchedules` (geometric, linear,
+  polynomial) tables.
 - `equivariant.ts`: p4 lifting and group convolutions (functions and modules), orientation pooling, `rotate90`,
   equivariance and invariance errors.
 

@@ -6,7 +6,13 @@ import { iterativeMagnitudePruning, iterativeMagnitudePruningAlgorithm } from '.
 import { pruneRoundSchedules, pruneScopes } from './pruning-options.ts'
 
 const viaJson = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
-const policy = { ...policies.minimal, metrics: true, tensors: true, roles: ['output' as const, 'state' as const], detail: 'full' as const }
+const policy = {
+  ...policies.minimal,
+  metrics: true,
+  tensors: true,
+  roles: ['output' as const, 'state' as const],
+  detail: 'full' as const,
+}
 const metricsOf = (rec: ReturnType<typeof recorder>, name: string): number[] =>
   rec.events.flatMap((e) => (e.type === 'metric' && e.name === name ? [e.value] : []))
 
