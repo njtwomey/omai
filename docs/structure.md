@@ -2485,7 +2485,11 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `triangulation.ts`: elimination costs and greedy orderings (min-degree, min-fill, min-weight, weighted min-fill),
   `triangulate` (fill-ins and cliques), maximum cardinality search, `isChordal`, maximal cliques (Bron-Kerbosch),
   induced width, `treewidth` (exact by subset DP up to about 20 vertices, or heuristic), `junctionTree` (maximum
-  spanning tree on separators), `hasRunningIntersection`.
+  spanning tree on separators), `hasRunningIntersection`. Greedy ordering is a steppable algorithm
+  (`eliminationOrderAlgorithm`, one vertex per step with its cost, clique, fill-in edges and the width so far; paths
+  `order/vertex`, `order/cost`, `order/fill`, `order/width`; a given order runs the same algorithm, which is how
+  `triangulate` reads fill-ins and cliques) and so is `maximumCardinalitySearchAlgorithm` (`mcs/vertex`, `mcs/weight`).
+- `triangulation-options.ts`: `eliminationHeuristics`, the greedy criteria as an option table (the ordering slot).
 - `structure.ts`: `toStructure` for every model type (Bayes networks, DAGs, Markov networks, factor graphs,
   linear-Gaussian networks, GMRFs, DBNs, HMMs, LDSs, linear-chain and general CRFs, plate models, influence diagrams,
   SCMs, PDAGs and PAGs).
@@ -2521,8 +2525,11 @@ into `mdml-engine/pgm`; `learning` and `causal` are namespaces.
 - `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
   networks, expected utility, optimal policies by backward induction, value of information.
 - `inference/enumerate.ts`: brute-force enumeration.
-- `inference/elimination.ts`: variable elimination (sum-product and max-product with traceback) with intermediate factor
-  events, `logPartition`, `mapQuery`.
+- `inference/elimination.ts`: variable elimination (sum-product and max-product with traceback) as a steppable
+  algorithm (`variableEliminationAlgorithm`: one variable per step, the factors in a serialisable state; paths
+  `ve/eliminated`, `ve/factorSize`, `ve/width`, `ve/factors`), with `variableElimination`, `logPartition`,
+  `maxProductElimination` and `mapQuery` over it.
+- `inference/elimination-options.ts`: `eliminationSemirings`, the sum and max semirings as an option table.
 - `inference/junction-tree.ts`: Shafer-Shenoy and HUGIN propagation (sum and max), cross-clique queries, marginals, MAP.
 - `inference/belief-propagation.ts`: sum- and max-product belief propagation (tree, flooding, sequential and residual
   schedules, damping, loopy convergence), Bethe free energy.

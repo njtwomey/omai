@@ -9,6 +9,7 @@
 export * from './belief-propagation.ts'
 export * from './chain.ts'
 export * from './cluster-updates.ts'
+export * from './elimination-options.ts'
 export * from './elimination.ts'
 export * from './enumerate.ts'
 export * from './ep.ts'
