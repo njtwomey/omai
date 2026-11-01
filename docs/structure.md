@@ -874,7 +874,10 @@ primitives; "custom" means a dedicated rule.
 - `scalar-options.ts`: `rootFinders`, the option table of the seven finders (knobs per method; a bracket, a start or
   derivatives as the method needs), `rootAlgorithm(config, problem)`, `rootFinderValue`.
 - `systems.ts`: `fsolve` (damped Newton with backtracking), `broyden`, `fixedPoint` (Steffensen and Anderson
-  acceleration), `root`, `rootOf` (implicit-function-theorem derivatives in both modes).
+  acceleration), `root`, `rootOf` (implicit-function-theorem derivatives in both modes). The three solvers are runs of
+  `fsolveAlgorithm`, `broydenAlgorithm` and `fixedPointAlgorithm` (one step is one iteration; the `systemContract`
+  paths `system/x`, `system/residual`, `system/step-length`, `system/backtracks`, `system/jacobian-age`, and
+  `fixedPointContract`).
 - `continuation.ts`: `homotopy`, `arcLengthContinuation`, fold and branch-point detection.
 
 `interpolate/` (scipy.interpolate; differentiable in data values and query points)
