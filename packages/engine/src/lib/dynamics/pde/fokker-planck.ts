@@ -6,7 +6,17 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { sparseLu, sparseLuSolve } from '../ode/_sparse-lu.ts'
 import type { PdeTraceOptions } from './finite-difference.ts'
 
@@ -138,6 +148,128 @@ function moments(x: Float64Array, p: Float64Array, dx: number): { mean: number; 
   return { mean, variance: m2 / m0 - mean * mean }
 }
 
+/** The state of {@link fokkerPlanckAlgorithm}. */
+export interface FokkerPlanckState {
+  /** Steps taken. */
+  readonly step: number
+  /** The time reached and the density on the cells there. */
+  readonly t: number
+  readonly p: Float64Array
+  /** The snapshots kept (every n-th step and the last). */
+  readonly ts: readonly number[]
+  readonly ps: readonly Float64Array[]
+}
+
+/** The paths {@link fokkerPlanckAlgorithm} logs, as a type. */
+export type FokkerPlanckPath = 'pde/t' | 'pde/density' | 'pde/mean' | 'pde/variance' | 'pde/mass' | 'pde/entropy'
+
+/**
+ * What {@link fokkerPlanckAlgorithm} logs, by path: the time, the density on the cells, its mean and variance, its total
+ * probability (conserved) and its differential entropy -int p ln p.
+ */
+export const fokkerPlanckContract: Contract<FokkerPlanckState, FokkerPlanckPath> = defineContract({
+  'pde/t': scalar({ description: 'the time reached' }),
+  'pde/density': tensor({ role: 'state', shape: ['cell'], description: 'the density on the cells' }),
+  'pde/mean': scalar({ description: 'the mean of the density' }),
+  'pde/variance': scalar({ description: 'the variance of the density' }),
+  'pde/mass': scalar({ description: 'the total probability' }),
+  'pde/entropy': scalar({ description: 'the differential entropy -int p ln p' }),
+})
+
+function entropy(p: Float64Array, dx: number): number {
+  let h = 0
+  for (const v of p) if (v > 0) h -= v * Math.log(v) * dx
+  return h
+}
+
+/**
+ * Evolve a probability density under the Fokker-Planck equation of a 1-D diffusion as a steppable algorithm, with the
+ * Scharfetter-Gummel discretisation and the theta method (backward Euler by default: positive and mass conserving). A traced algorithm
+ * with the mean, variance and mass per step.
+ *
+ * @param process - Drift and sigma.
+ * @param p0 - The initial density on the cell centres (or a function of x).
+ * @param domain - [a, b] (wide enough that the density vanishes at the walls).
+ * @param cells - Number of cells.
+ * @param options - Step, final time, theta and thinning.
+ * @returns The algorithm; it is done after the last step. It logs the paths of {@link fokkerPlanckContract}.
+ * @concept fokker-planck
+ * @example
+ * ```ts
+ * import { fokkerPlanckAlgorithm } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = fokkerPlanckAlgorithm({ drift: (x) => -x, sigma: () => 1 }, (x) => Math.exp(-((x - 1) ** 2) / 0.02), [-4, 4], 100, { dt: 0.05, tEnd: 0.5 })
+ * runAlgorithm(alg, { maxSteps: 10 }).state.step // => 10
+ * ```
+ */
+export function fokkerPlanckAlgorithm(
+  process: DiffusionProcess,
+  p0: ArrayLike<number> | ((x: number) => number),
+  domain: readonly [number, number],
+  cells: number,
+  options: FokkerPlanckOptions,
+): Algorithm<FokkerPlanckState, FokkerPlanckPath> {
+  const grid = scharfetterGummel(process, domain, cells)
+  const x = grid.centres
+  const start = typeof p0 === 'function' ? Float64Array.from(x, (v) => p0(v)) : Float64Array.from(p0)
+  if (start.length !== cells) throw new MdmlError('value', `fokkerPlanck: give ${cells} initial densities`)
+  // Normalise to a probability density.
+  const mass0 = start.reduce((s, v) => s + v * grid.dx, 0)
+  if (!(mass0 > 0)) throw new MdmlError('value', 'fokkerPlanck: the initial density has no mass')
+  for (let i = 0; i < cells; i++) start[i] = (start[i] ?? 0) / mass0
+  const theta = options.theta ?? 1
+  const dt = options.dt
+  if (!(dt > 0)) throw new MdmlError('value', 'fokkerPlanck: dt must be positive')
+  const lu = assemble(grid, 1, -theta * dt)
+  const steps = Math.ceil(options.tEnd / dt - 1e-9)
+  const every = Math.max(1, options.every ?? 1)
+  return {
+    name: 'fokker-planck',
+    config: { cells, dt, theta, tEnd: options.tEnd, steps },
+    schema: channels({
+      metrics: {
+        t: { description: 'time' },
+        mean: { description: 'mean' },
+        variance: { description: 'variance' },
+        mass: { description: 'total probability' },
+      },
+      tensors: { p: { role: 'state', description: 'the density on the cells' } },
+    }),
+    init: () => ({ step: 0, p: start, t: 0, ts: [0], ps: [start] }),
+    step: (s, ctx) => {
+      const gp = applyGenerator(grid, s.p)
+      const rhs = Float64Array.from(s.p, (v, i) => v + (1 - theta) * dt * (gp[i] ?? 0))
+      const p = sparseLuSolve(lu, rhs)
+      const t = ctx.t + 1 === steps ? options.tEnd : s.t + dt
+      const keep = (ctx.t + 1) % every === 0 || ctx.t + 1 === steps
+      if (ctx.wants('pde/t')) ctx.log('pde/t', t)
+      if (ctx.wants('pde/density')) ctx.log('pde/density', p)
+      if (ctx.wants('pde/mean') || ctx.wants('pde/variance')) {
+        const m = moments(x, p, grid.dx)
+        if (ctx.wants('pde/mean')) ctx.log('pde/mean', m.mean)
+        if (ctx.wants('pde/variance')) ctx.log('pde/variance', m.variance)
+      }
+      if (ctx.wants('pde/mass'))
+        ctx.log(
+          'pde/mass',
+          p.reduce((acc, v) => acc + v * grid.dx, 0),
+        )
+      if (ctx.wants('pde/entropy')) ctx.log('pde/entropy', entropy(p, grid.dx))
+      return { step: s.step + 1, p, t, ts: keep ? [...s.ts, t] : s.ts, ps: keep ? [...s.ps, p] : s.ps }
+    },
+    done: (s) => (s.step >= steps ? 'converged' : undefined),
+    observe: (s) => {
+      const m = moments(x, s.p, grid.dx)
+      return {
+        metrics: { t: s.t, mean: m.mean, variance: m.variance, mass: s.p.reduce((a, v) => a + v * grid.dx, 0) },
+        tensors: { p: { role: 'state', value: s.p } },
+      }
+    },
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as FokkerPlanckState,
+  }
+}
+
 /**
  * Evolve a probability density under the Fokker-Planck equation of a 1-D diffusion with the Scharfetter-Gummel
  * discretisation and the theta method (backward Euler by default: positive and mass conserving). A traced algorithm
@@ -165,60 +297,17 @@ export function fokkerPlanck(
   cells: number,
   options: FokkerPlanckOptions,
 ): DensityEvolution {
-  const grid = scharfetterGummel(process, domain, cells)
-  const x = grid.centres
-  const start = typeof p0 === 'function' ? Float64Array.from(x, (v) => p0(v)) : Float64Array.from(p0)
-  if (start.length !== cells) throw new MdmlError('value', `fokkerPlanck: give ${cells} initial densities`)
-  // Normalise to a probability density.
-  const mass0 = start.reduce((s, v) => s + v * grid.dx, 0)
-  if (!(mass0 > 0)) throw new MdmlError('value', 'fokkerPlanck: the initial density has no mass')
-  for (let i = 0; i < cells; i++) start[i] = (start[i] ?? 0) / mass0
-  const theta = options.theta ?? 1
-  const dt = options.dt
-  if (!(dt > 0)) throw new MdmlError('value', 'fokkerPlanck: dt must be positive')
-  const lu = assemble(grid, 1, -theta * dt)
-  const steps = Math.ceil(options.tEnd / dt - 1e-9)
-  const every = Math.max(1, options.every ?? 1)
-  const algorithm: Algorithm<{ p: Float64Array; t: number; ts: number[]; ps: Float64Array[] }> = {
-    name: 'fokker-planck',
-    config: { cells, dt, theta, tEnd: options.tEnd },
-    schema: channels({
-      metrics: {
-        t: { description: 'time' },
-        mean: { description: 'mean' },
-        variance: { description: 'variance' },
-        mass: { description: 'total probability' },
-      },
-      tensors: { p: { role: 'state', description: 'the density on the cells' } },
-    }),
-    init: () => ({ p: start, t: 0, ts: [0], ps: [start] }),
-    step: (s, ctx) => {
-      const gp = applyGenerator(grid, s.p)
-      const rhs = Float64Array.from(s.p, (v, i) => v + (1 - theta) * dt * (gp[i] ?? 0))
-      const p = sparseLuSolve(lu, rhs)
-      const t = ctx.t + 1 === steps ? options.tEnd : s.t + dt
-      if ((ctx.t + 1) % every === 0 || ctx.t + 1 === steps) {
-        s.ts.push(t)
-        s.ps.push(p)
-      }
-      return { ...s, p, t }
-    },
-    observe: (s) => {
-      const m = moments(x, s.p, grid.dx)
-      return {
-        metrics: { t: s.t, mean: m.mean, variance: m.variance, mass: s.p.reduce((a, v) => a + v * grid.dx, 0) },
-        tensors: { p: { role: 'state', value: s.p } },
-      }
-    },
-  }
+  const { centres: x, dx } = scharfetterGummel(process, domain, cells)
+  const steps = Math.ceil(options.tEnd / options.dt - 1e-9)
+  const algorithm = fokkerPlanckAlgorithm(process, p0, domain, cells, options)
   const run = runAlgorithm(algorithm, { maxSteps: steps, ...options })
   const flat = new Float64Array(run.state.ps.length * cells)
   run.state.ps.forEach((p, i) => {
     flat.set(p, i * cells)
   })
-  const ms = run.state.ps.map((p) => moments(x, p, grid.dx))
+  const ms = run.state.ps.map((p) => moments(x, p, dx))
   return {
-    t: run.state.ts,
+    t: [...run.state.ts],
     x,
     p: fromStorage(flat, [run.state.ps.length, cells], 'float64'),
     mean: ms.map((m) => m.mean),

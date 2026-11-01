@@ -2319,15 +2319,21 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `pde/finite-difference-options.ts`: the slots of the steppers as option tables: `heatSchemes` (`explicit`,
   `implicit`, `crank-nicolson`, `theta` with its weight), `advectionSchemes` (`upwind`, `lax-friedrichs`,
   `lax-wendroff`, as stencils) and `initialProfiles` (`sine`, `gaussian`, `pulse`, `triangle`).
-- `pde/finite-volume.ts`: conservation laws, Godunov and MUSCL schemes, flux limiters, Burgers shocks and rarefactions.
-- `pde/finite-element.ts`: 1-D linear and quadratic elements, 2-D linear triangles, assembly, Poisson and heat problems.
+- `pde/finite-volume.ts`: conservation laws, Godunov and MUSCL schemes, flux limiters, Burgers shocks and
+  rarefactions; `conservationLawAlgorithm` steps them (logs `pde/t`, `u`, `mass`, `total-variation`; the state serialises
+  and resumes), `conservationLaw` is that run.
+- `pde/finite-element.ts`: 1-D linear and quadratic elements, 2-D linear triangles, assembly, Poisson and heat problems;
+  `heatFemAlgorithm` steps the heat problem (logs `pde/t`, `u`, `norm`), `heatFem` is that run.
 - `pde/spectral.ts`: Fourier pseudo-spectral methods (dealiasing), Chebyshev collocation, ETDRK4 for KdV,
-  Kuramoto-Sivashinsky and Allen-Cahn.
+  Kuramoto-Sivashinsky and Allen-Cahn; `spectralEtdrk4Algorithm` steps the integrator (state: the Fourier coefficients;
+  logs `pde/t`, `u`, `norm`), `spectralEtdrk4` is that run.
 - `pde/method-of-lines.ts`: semi-discretisation of PDEs into ODE systems for `solveIvp`.
 - `pde/operators.ts`: differential operators applied to functions by autodiff (gradient, divergence, Laplacian,
   time derivatives of networks): the residual machinery used by physics-informed networks.
 - `pde/stability.ts`: von Neumann analysis, CFL conditions, numerical dispersion and dissipation.
-- `pde/fokker-planck.ts`: density evolution for SDEs (Scharfetter-Gummel), stationary densities.
+- `pde/fokker-planck.ts`: density evolution for SDEs (Scharfetter-Gummel), stationary densities;
+  `fokkerPlanckAlgorithm` steps the density (logs `pde/t`, `density`, `mean`, `variance`, `mass`, `entropy`),
+  `fokkerPlanck` is that run.
 - `fields.ts`: Jacobians, divergence, curl, fixed points (seeded Newton), classification (node, spiral, saddle,
   centre), nullclines, streamlines, flow maps, invariant manifolds.
 - `named-systems.ts`: named systems as vector fields in tensor operations (so they integrate and differentiate):

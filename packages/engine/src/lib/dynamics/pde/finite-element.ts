@@ -7,7 +7,17 @@
 import { MdmlError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo } from '../../numerics/sparse/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 import { sparseLu, sparseLuSolve } from '../ode/_sparse-lu.ts'
 import { csrApply } from './_linear.ts'
 import type { PdeTraceOptions } from './finite-difference.ts'
@@ -334,28 +344,50 @@ export interface HeatFemOptions extends PdeTraceOptions {
   readonly every?: number
 }
 
+/** The state of {@link heatFemAlgorithm}. */
+export interface HeatFemState {
+  /** Steps taken. */
+  readonly step: number
+  /** The time reached and the nodal values there. */
+  readonly t: number
+  readonly u: Float64Array
+  /** The snapshots kept (every n-th step and the last). */
+  readonly ts: readonly number[]
+  readonly us: readonly Float64Array[]
+}
+
+/** The paths {@link heatFemAlgorithm} logs, as a type. */
+export type HeatFemPath = 'pde/t' | 'pde/u' | 'pde/norm'
+
+/** What {@link heatFemAlgorithm} logs, by path: the time, the nodal values and their l2 norm. */
+export const heatFemContract: Contract<HeatFemState, HeatFemPath> = defineContract({
+  'pde/t': scalar({ description: 'the time reached' }),
+  'pde/u': tensor({ role: 'state', shape: ['node'], description: 'the nodal values' }),
+  'pde/norm': scalar({ description: 'the l2 norm of the nodal values' }),
+})
+
 /**
- * The finite-element heat problem M u_t + K u = F by the theta method: (M + theta dt K) u^{n+1} =
+ * The finite-element heat problem M u_t + K u = F as a steppable algorithm, by the theta method: (M + theta dt K) u^{n+1} =
  * (M - (1 - theta) dt K) u^n + dt F, with Dirichlet boundary values; the matrix is factorised once.
  *
  * @param system - The assembled system.
  * @param u0 - Initial nodal values (or a function of the coordinates).
  * @param options - Step, final time, theta, boundary values and thinning.
- * @returns Snapshot times and nodal values `[nt, n]`.
+ * @returns The algorithm; it is done after the last step. It logs the paths of {@link heatFemContract}.
  * @concept finite-element
  * @example
  * ```ts
- * import { assemble1d, heatFem } from 'mdml-engine/dynamics/pde'
- * const mesh = Array.from({ length: 21 }, (_, i) => i / 20)
- * const s = heatFem(assemble1d(mesh), (x) => Math.sin(Math.PI * x), { dt: 0.005, tEnd: 0.1 })
- * Math.abs((s.u.data[s.u.data.length - 11] ?? 0) - Math.exp(-(Math.PI ** 2) * 0.1)) < 2e-3 // => true
+ * import { assemble1d, heatFemAlgorithm } from 'mdml-engine/dynamics/pde'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const mesh = Array.from({ length: 11 }, (_, i) => i / 10)
+ * runAlgorithm(heatFemAlgorithm(assemble1d(mesh), (x) => Math.sin(Math.PI * x), { dt: 0.01, tEnd: 0.05 }), { maxSteps: 5 }).state.t // => 0.05
  * ```
  */
-export function heatFem(
+export function heatFemAlgorithm(
   system: FemSystem,
   u0: readonly number[] | ((...x: number[]) => number),
   options: HeatFemOptions,
-): { readonly t: readonly number[]; readonly u: Tensor } {
+): Algorithm<HeatFemState, HeatFemPath> {
   const n = system.size
   const theta = options.theta ?? 0.5
   const dt = options.dt
@@ -390,14 +422,14 @@ export function heatFem(
   const lu = dirichletRows(system, lhs, new Float64Array(n), g)
   const steps = Math.ceil(options.tEnd / dt - 1e-9)
   const every = Math.max(1, options.every ?? 1)
-  const algorithm: Algorithm<{ u: Float64Array; t: number; ts: number[]; us: Float64Array[] }> = {
+  return {
     name: 'heat-fem',
-    config: { dt, theta, tEnd: options.tEnd },
+    config: { dt, theta, tEnd: options.tEnd, steps },
     schema: channels({
       metrics: { t: { description: 'time' } },
       tensors: { u: { role: 'state', description: 'nodal values' } },
     }),
-    init: () => ({ u: start, t: 0, ts: [0], us: [start] }),
+    init: () => ({ step: 0, u: start, t: 0, ts: [0], us: [start] }),
     step: (s, ctx) => {
       const rhs = csrApply(explicitPart, s.u)
       for (let k = 0; k < n; k++) rhs[k] = (rhs[k] ?? 0) + dt * (system.load[k] ?? 0)
@@ -410,20 +442,49 @@ export function heatFem(
       for (let k = 0; k < n; k++) lifted[k] = fixed.has(k) ? (gv[k] ?? 0) : (rhs[k] ?? 0) - (lg[k] ?? 0)
       const u = sparseLuSolve(lu, lifted)
       const t = ctx.t + 1 === steps ? options.tEnd : s.t + dt
-      if ((ctx.t + 1) % every === 0 || ctx.t + 1 === steps) {
-        s.ts.push(t)
-        s.us.push(u)
-      }
-      return { ...s, u, t }
+      const keep = (ctx.t + 1) % every === 0 || ctx.t + 1 === steps
+      if (ctx.wants('pde/t')) ctx.log('pde/t', t)
+      if (ctx.wants('pde/u')) ctx.log('pde/u', u)
+      if (ctx.wants('pde/norm')) ctx.log('pde/norm', Math.hypot(...u))
+      return { step: s.step + 1, u, t, ts: keep ? [...s.ts, t] : s.ts, us: keep ? [...s.us, u] : s.us }
     },
+    done: (s) => (s.step >= steps ? 'converged' : undefined),
     observe: (s) => ({ metrics: { t: s.t }, tensors: { u: { role: 'state', value: s.u } } }),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as HeatFemState,
   }
-  const run = runAlgorithm(algorithm, { maxSteps: steps, ...options })
+}
+
+/**
+ * The finite-element heat problem M u_t + K u = F by the theta method (see {@link heatFemAlgorithm}): (M + theta dt K) u^{n+1} =
+ * (M - (1 - theta) dt K) u^n + dt F, with Dirichlet boundary values; the matrix is factorised once.
+ *
+ * @param system - The assembled system.
+ * @param u0 - Initial nodal values (or a function of the coordinates).
+ * @param options - Step, final time, theta, boundary values and thinning.
+ * @returns Snapshot times and nodal values `[nt, n]`.
+ * @concept finite-element
+ * @example
+ * ```ts
+ * import { assemble1d, heatFem } from 'mdml-engine/dynamics/pde'
+ * const mesh = Array.from({ length: 21 }, (_, i) => i / 20)
+ * const s = heatFem(assemble1d(mesh), (x) => Math.sin(Math.PI * x), { dt: 0.005, tEnd: 0.1 })
+ * Math.abs((s.u.data[s.u.data.length - 11] ?? 0) - Math.exp(-(Math.PI ** 2) * 0.1)) < 2e-3 // => true
+ * ```
+ */
+export function heatFem(
+  system: FemSystem,
+  u0: readonly number[] | ((...x: number[]) => number),
+  options: HeatFemOptions,
+): { readonly t: readonly number[]; readonly u: Tensor } {
+  const steps = Math.ceil(options.tEnd / options.dt - 1e-9)
+  const run = runAlgorithm(heatFemAlgorithm(system, u0, options), { maxSteps: steps, ...options })
+  const n = system.size
   const flat = new Float64Array(run.state.us.length * n)
   run.state.us.forEach((u, i) => {
     flat.set(u, i * n)
   })
-  return { t: run.state.ts, u: fromStorage(flat, [run.state.us.length, n], 'float64') }
+  return { t: [...run.state.ts], u: fromStorage(flat, [run.state.us.length, n], 'float64') }
 }
 
 /**
