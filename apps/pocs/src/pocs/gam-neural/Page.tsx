@@ -23,7 +23,6 @@ import {
   useSessionPreferences,
 } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
-import { ComputeGate } from '../../shared/ComputeGate.tsx'
 import { type CurveData, curveData, gridOf } from '../../shared/curve-data.ts'
 
 const DATA = 'regression1d'
@@ -171,9 +170,7 @@ function Training(props: {
   }, [curve, controls.interiorKnots])
   return (
     <div className="flex flex-col gap-3">
-      <ComputeGate live={live} total={controls.epochs} label="Training the network">
-        <View live={live} at={at} onScrub={setAt} curve={curve} classic={classic} />
-      </ComputeGate>
+      <View live={live} at={at} onScrub={setAt} curve={curve} classic={classic} />
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={reset} />
     </div>
   )
