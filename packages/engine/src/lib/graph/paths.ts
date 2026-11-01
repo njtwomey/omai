@@ -1,7 +1,8 @@
 /**
  * Shortest paths in weighted graphs, following scipy.sparse.csgraph and NetworkX: Dijkstra, Bellman-Ford (negative
  * weights) and A* search from one source, Floyd-Warshall and Johnson for all pairs, path reconstruction from
- * predecessors, Yen's k shortest loopless paths, and a `shortestPath` front door that picks a method from the weights.
+ * predecessors, and a `shortestPath` front door that picks a method from the weights. Yen's k shortest loopless paths are in
+ * `k-shortest-paths.ts`.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -280,87 +281,6 @@ export function reconstructPath(
 export interface WeightedPath {
   readonly path: readonly number[]
   readonly cost: number
-}
-
-/**
- * The k shortest loopless paths from a source to a target by Yen's algorithm (NetworkX shortest_simple_paths, which
- * lists them lazily in the same order): each new path deviates from a previous one at a spur node, with the edges
- * that previous paths take from the same root and the root's nodes removed. Ties are broken by the node sequence.
- *
- * @param g - The graph (non-negative weights).
- * @param source - The source.
- * @param target - The target.
- * @param k - How many paths.
- * @param options - `weighted` (default true).
- * @returns Up to k paths with their costs, in non-decreasing cost.
- * @concept shortest-paths
- * @reference J. Y. Yen, Finding the k shortest loopless paths in a network, Management Science 17 (1971).
- * @example
- * ```ts
- * import { cycleGraph, kShortestPaths } from 'mdml-engine/graph'
- * kShortestPaths(cycleGraph(5), 0, 2, 2).map((p) => p.path) // => [[0, 1, 2], [0, 4, 3, 2]]
- * ```
- */
-export function kShortestPaths(
-  g: Graph,
-  source: NodeId,
-  target: NodeId,
-  k: number,
-  options: PathOptions = {},
-): WeightedPath[] {
-  const s = nodeIndex(g, source)
-  const t = nodeIndex(g, target)
-  const weight = weightOf(g, options)
-  const a = g.out
-  const edgeBetween = (u: number, v: number): number => {
-    for (let q = a.indptr[u] ?? 0; q < (a.indptr[u + 1] ?? 0); q++) if (a.indices[q] === v) return q
-    return -1
-  }
-  const costOf = (path: readonly number[]): number => {
-    let c = 0
-    for (let i = 0; i + 1 < path.length; i++) c += weight(edgeBetween(path[i] ?? 0, path[i + 1] ?? 0))
-    return c
-  }
-  const first = dijkstraCore(g, s, weight, t)
-  const p0 = reconstructPath(first.predecessor, s, t)
-  if (p0 === null || k <= 0) return []
-  const found: WeightedPath[] = [{ path: p0, cost: first.distance[t] ?? 0 }]
-  const candidates = new Map<string, WeightedPath>()
-  const order = (x: WeightedPath, y: WeightedPath): number => {
-    if (x.cost !== y.cost) return x.cost - y.cost
-    for (let i = 0; i < Math.min(x.path.length, y.path.length); i++) {
-      if (x.path[i] !== y.path[i]) return (x.path[i] ?? 0) - (y.path[i] ?? 0)
-    }
-    return x.path.length - y.path.length
-  }
-  while (found.length < k) {
-    const last = (found[found.length - 1] as WeightedPath).path
-    for (let i = 0; i + 1 < last.length; i++) {
-      const spur = last[i] ?? 0
-      const root = last.slice(0, i + 1)
-      const blockedEdges = new Set<number>()
-      for (const { path } of found) {
-        if (path.length > i + 1 && root.every((v, j) => path[j] === v)) {
-          const q = edgeBetween(path[i] ?? 0, path[i + 1] ?? 0)
-          if (q >= 0) blockedEdges.add(a.edges[q] ?? -1)
-        }
-      }
-      const blockedNodes = new Set(root.slice(0, -1))
-      const r = dijkstraCore(g, spur, weight, t, blockedEdges, blockedNodes)
-      const tail = reconstructPath(r.predecessor, spur, t)
-      if (tail === null) continue
-      const path = [...root.slice(0, -1), ...tail]
-      const key = path.join(',')
-      if (!candidates.has(key) && !found.some((f) => f.path.join(',') === key)) {
-        candidates.set(key, { path, cost: costOf(path) })
-      }
-    }
-    if (candidates.size === 0) break
-    const best = [...candidates.values()].sort(order)[0] as WeightedPath
-    candidates.delete(best.path.join(','))
-    found.push(best)
-  }
-  return found
 }
 
 /**

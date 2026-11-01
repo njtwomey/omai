@@ -30,9 +30,19 @@ import {
 import { articulationPoints, biconnectedComponents, bridges, stronglyConnectedComponents } from './components.ts'
 import { flowContract, maxFlowAlgorithm, maxFlowMethods, minCostFlowAlgorithm } from './flow-algorithms.ts'
 import { bipartiteMatching, maxFlow, minCostFlow, minCut } from './flows.ts'
-import { barbellGraph, completeGraph, cycleGraph, gridGraph, petersenGraph, starGraph } from './generators.ts'
-import { digraph, graph } from './graph.ts'
+import {
+  barbellGraph,
+  completeGraph,
+  cycleGraph,
+  gridGraph,
+  pathGraph,
+  petersenGraph,
+  starGraph,
+} from './generators.ts'
+import { digraph, type Graph, graph } from './graph.ts'
 import { hopcroftKarpAlgorithm, matchingContract } from './hopcroft-karp.ts'
+import { type MatchMode, matchModes, vf2, vf2Algorithm, vf2Contract } from './isomorphism.ts'
+import { kShortestPaths, yenAlgorithm, yenContract } from './k-shortest-paths.ts'
 import {
   boruvkaAlgorithm,
   kruskalAlgorithm,
@@ -640,5 +650,112 @@ describe('betweenness algorithms', () => {
     for (const build of [betweennessAlgorithm, edgeBetweennessAlgorithm]) {
       expectResumes(build(g, { weighted: true }), 2, (s) => ({ r: Array.from(s.raw), c: s.cursor }))
     }
+  })
+})
+
+describe('yenAlgorithm', () => {
+  const ladder = graph([
+    [0, 1, 1],
+    [1, 2, 1],
+    [0, 3, 1],
+    [3, 4, 1],
+    [4, 2, 1],
+    [1, 4, 2],
+    [0, 4, 5],
+  ])
+
+  it('accepts paths in non-decreasing cost and matches kShortestPaths', () => {
+    const run = runAlgorithm(yenAlgorithm(ladder, 0, 2, 5), { maxSteps: 200 })
+    const want = kShortestPaths(ladder, 0, 2, 5)
+    expect(run.state.found.map((p) => p.path)).toEqual(want.map((p) => p.path))
+    const costs = run.state.found.map((p) => p.cost)
+    expect(costs.every((c, i) => i === 0 || c >= (costs[i - 1] ?? 0))).toBe(true)
+    expect(new Set(run.state.found.map((p) => p.path.join(','))).size).toBe(run.state.found.length)
+    for (const { path } of run.state.found) expect(new Set(path).size).toBe(path.length)
+    expect(kShortestPaths(cycleGraph(5), 0, 2, 2).map((p) => p.path)).toEqual([
+      [0, 1, 2],
+      [0, 4, 3, 2],
+    ])
+  })
+
+  it('one spur per step, logged with the candidate pool', () => {
+    const l = logged(yenAlgorithm(ladder, 0, 2, 3))
+    expect((l.get('yen/found') ?? []).at(-1)).toBe(3)
+    expect((l.get('yen/spur') as number[]).every((x) => x >= -1)).toBe(true)
+    expect(l.get('yen/candidates')).toHaveLength((l.get('yen/spur') ?? []).length)
+    expect(Object.keys(yenContract)).toContain('yen/cost')
+  })
+
+  it('stops early when there are fewer than k paths, and handles k = 1 and no path', () => {
+    expect(runAlgorithm(yenAlgorithm(pathGraph(3), 0, 2, 4), { maxSteps: 50 }).state.found).toHaveLength(1)
+    expect(runAlgorithm(yenAlgorithm(pathGraph(3), 0, 2, 1), { maxSteps: 50 }).steps).toBe(0)
+    expect(kShortestPaths(graph([[0, 1]], { nodes: 3 }), 0, 2, 2)).toEqual([])
+    expect(kShortestPaths(pathGraph(3), 0, 2, 0)).toEqual([])
+  })
+
+  it('resumes from a JSON checkpoint at several cuts', () => {
+    for (const cut of [1, 3, 7])
+      expectResumes(yenAlgorithm(ladder, 0, 2, 5), cut, (s) => ({ f: s.found, c: s.candidates, i: s.spur }))
+  })
+})
+
+describe('vf2Algorithm', () => {
+  it('collects the mappings vf2 yields, for each mode', () => {
+    const cases: [Graph, Graph, MatchMode][] = [
+      [cycleGraph(4), cycleGraph(4), 'isomorphism'],
+      [petersenGraph(), cycleGraph(5), 'subgraph'],
+      [completeGraph(4), pathGraph(3), 'monomorphism'],
+      [completeGraph(4), pathGraph(3), 'subgraph'],
+    ]
+    for (const [host, pattern, mode] of cases) {
+      const run = runAlgorithm(vf2Algorithm(host, pattern, mode), { maxSteps: 100_000 })
+      expect(run.status).toBe('converged')
+      expect(run.state.mappings).toEqual(Array.from(vf2(host, pattern, mode)))
+    }
+    expect(Array.from(vf2(completeGraph(4), pathGraph(3), 'monomorphism'))).toHaveLength(24)
+    expect(Array.from(vf2(completeGraph(4), pathGraph(3), 'subgraph'))).toHaveLength(0)
+  })
+
+  it('every mapping is injective and preserves the pattern edges, and backtracks balance extensions', () => {
+    const host = petersenGraph()
+    const pattern = cycleGraph(5)
+    const l = logged(vf2Algorithm(host, pattern, 'subgraph', { limit: 3 }))
+    const run = runAlgorithm(vf2Algorithm(host, pattern, 'subgraph', { limit: 3 }), { maxSteps: 100_000 })
+    expect(run.state.mappings).toHaveLength(3)
+    for (const m of run.state.mappings) {
+      expect(new Set(m).size).toBe(5)
+      for (const e of pattern.edges)
+        expect(
+          host.edges.some(
+            (f) =>
+              (f.source === m[e.source] && f.target === m[e.target]) ||
+              (f.target === m[e.source] && f.source === m[e.target]),
+          ),
+        ).toBe(true)
+    }
+    const back = l.get('vf2/backtrack') as number[]
+    expect(back.every((b) => b === 0 || b === 1)).toBe(true)
+    expect((l.get('vf2/matches') ?? []).at(-1)).toBe(3)
+    expect((l.get('vf2/mapping') ?? [])[0]).toEqual([expect.any(Number), -1, -1, -1, -1])
+    expect(Object.keys(vf2Contract)).toContain('vf2/tried')
+  })
+
+  it('resumes from a JSON checkpoint at several cuts', () => {
+    for (const cut of [1, 6, 30]) {
+      expectResumes(vf2Algorithm(petersenGraph(), cycleGraph(5), 'subgraph'), cut, (s) => ({
+        m: s.mappings,
+        c: Array.from(s.core2),
+        t: s.tried,
+        k: s.stack,
+      }))
+    }
+  }, 60_000)
+
+  it('handles an empty pattern, a size mismatch and mixed directedness', () => {
+    expect(Array.from(vf2(cycleGraph(3), graph([], { nodes: 0 }), 'subgraph'))).toEqual([[]])
+    expect(Array.from(vf2(cycleGraph(4), cycleGraph(3)))).toEqual([])
+    expect(() => vf2Algorithm(cycleGraph(3), digraph([[0, 1]]))).toThrow(/directed/)
+    expect(matchModes.names).toEqual(['isomorphism', 'subgraph', 'monomorphism'])
+    expect(matchModes.make({ kind: 'subgraph' })(cycleGraph(4), pathGraph(2)).name).toBe('graph/vf2')
   })
 })

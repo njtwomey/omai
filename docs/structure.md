@@ -1155,8 +1155,9 @@ in it (`checkPrimitive`).
 - `component-algorithms.ts`: the depth-first searches behind `components.ts`: `tarjanAlgorithm`, `kosarajuAlgorithm`
   (strong components), `biconnectivityAlgorithm` (articulation points, bridges, blocks), one search action per step,
   `dfsContract` (`dfs/...` paths) and the slot `componentMethods`.
-- `paths.ts`: `dijkstra`, `bellmanFord`, `aStar` (with the expanded set), `floydWarshall`, `johnson`, `kShortestPaths`
-  (Yen), `shortestPath`, `reconstructPath` (single-source and all-pairs predecessors).
+- `paths.ts`: `dijkstra`, `bellmanFord`, `aStar` (with the expanded set), `floydWarshall`, `johnson`,
+  `shortestPath`, `reconstructPath` (single-source and all-pairs predecessors).
+- `k-shortest-paths.ts`: `kShortestPaths` and `yenAlgorithm` (one spur path per step, `yenContract`).
 - `shortest-paths.ts`: the steppable algorithms behind `paths.ts`: `dijkstraAlgorithm`, `aStarAlgorithm` (one node
   settled per step; frontier, distances and predecessors), `bellmanFordAlgorithm` (one round per step, negative cycles
   flagged), `floydWarshallAlgorithm` (one pivot per step), their states and `shortestPathContract` (`sp/...` paths).
@@ -1197,8 +1198,9 @@ in it (`checkPrimitive`).
   `karateClubGraph`) and random models from keys (`erdosRenyiGraph`, `gnmRandomGraph`, `wattsStrogatzGraph`,
   `barabasiAlbertGraph`, `stochasticBlockModel`, `randomDag`, `randomGeometricGraph`, `kNearestNeighbourGraph`,
   `randomKnnGraph`).
-- `isomorphism.ts`: `weisfeilerLehmanAlgorithm`/`weisfeilerLehman` (traced colour refinement), `wlHash`, `vf2`
-  (isomorphism, induced subgraph isomorphism and monomorphism, with node matching), `isIsomorphic`,
+- `isomorphism.ts`: `weisfeilerLehmanAlgorithm`/`weisfeilerLehman` (traced colour refinement), `wlHash`, `vf2`/`vf2Algorithm`
+  (isomorphism, induced subgraph isomorphism and monomorphism, with node matching; one pairing or backtrack per step,
+  `vf2Contract`, the slot `matchModes`), `isIsomorphic`,
   `subgraphIsomorphisms`, `isSubgraphIsomorphic`.
 - `colouring.ts`: `greedyColouring` (largest-first, smallest-last, random-sequential, independent-set,
   connected-sequential BFS/DFS, DSATUR), `isProperColouring`, `maximalIndependentSet`, `maximalCliques`
