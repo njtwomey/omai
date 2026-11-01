@@ -104,6 +104,9 @@ export function SessionPlayer<S, C extends Config>(props: {
       return
     }
     if (live.done && viewed >= head) onScrub(0)
+    // A cursor that follows the head stands wherever the head gets to, and a cheap method computes ahead within a frame:
+    // play from the step being looked at (the start of a fresh run), not from wherever the first tick finds the head.
+    else if (at === null) onScrub(viewed)
     live.compute()
     setTicking(true)
   }
