@@ -3361,6 +3361,14 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
     one spline on a grid, `termDerivatives`, `penalty` the P-spline difference penalty; the ranges and fixed knots are
     buffers so a saved model keeps them) and `differenceRoughness`. With one output it is an additive model; with more
     it is the layer of a Kolmogorov-Arnold network.
+  - `terms.ts`: the term list, as `gam/terms.ts` does for GAMs: `TermSpec` and the constructors `splineTerm`, `netTerm`
+    (a neural additive model's feature net, ReLU or ExU units, dropout, feature dropout, output penalty), `linearTerm`,
+    `interactionTerm` (tensor-product spline or pair net, GA2M and GAMI-Net style), `subnetTerm` (a net over any subset),
+    `termLabel`; the `additiveTerms` table (`spline`, `net`, `linear`, `tensorSpline`) that builds them into modules with
+    their penalties and degrees of freedom; `ExULayer` and `TensorSpline2d`.
+  - `additive-model.ts`: `AdditiveModel` (intercept plus the sum of terms through a link; terms centred over reference
+    rows kept as a buffer, the sum-to-zero constraint; heredity `none`, `weak` or `strong` for interactions; `contributions`,
+    `mean`, `penalties` and `penalty`, `termCurve`, `termSurface`, `termEdf`).
 - `receptive-field.ts`: `receptiveField` (size, jump and start per level from kernels, strides, dilations and paddings),
   `receptiveFieldSize`, `layerSpecs` and `receptiveFieldOf` (read from convolution and pooling modules, through
   containers), `effectiveReceptiveField` (the normalised absolute gradient of one output unit).
