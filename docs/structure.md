@@ -3238,6 +3238,13 @@ modAL for active learning, diffprivlib and opacus for privacy
   `criticalDifference`, cliques, Bonferroni-Dunn and Holm against a control). McNemar, Wilcoxon, Friedman and the
   Nemenyi p-values are in `stats/tests`. goldens: the published Nemenyi q table (Demsar 2006, table 5); the type I
   error of each test is checked in simulation against the plain resampled t-test.
+- `model-selection/cross-validation.ts`, `search.ts`, `criteria.ts`: `crossValidateAlgorithm`, `crossValPredictAlgorithm`,
+  `learningCurveAlgorithm` and `permutationTestAlgorithm` (cross-validation.ts), `evaluateCandidatesAlgorithm` and
+  `nestedCrossValidationAlgorithm` (search.ts) and `bootstrap632Algorithm` (criteria.ts): one fold, size, permutation,
+  candidate, outer fold or replicate per step, with typed paths (`cv/*`, `curve/*`, `perm/*`, `search/*`, `nested/*`,
+  `bootstrap/*`) and a state of scores that serialises; the functions of the same names are those runs.
+  `splitter-options.ts` (`splitterSchemes`: k-fold, stratified, repeated, shuffle, leave-one-out) and `search-options.ts`
+  (`searchDesigns`: grid or random candidates) are the slots.
 - `model-selection/adaptive.ts`: adaptive data analysis: Thresholdout (`thresholdoutAlgorithm`, one step per query,
   with an adaptive analyst), the Ladder leaderboard (`ladderAlgorithm`), and the planted problems that show them
   against naive reuse of a holdout (`adaptiveOverfittingDemo`, `leaderboardAttack`: noise labels, an analyst who

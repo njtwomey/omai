@@ -7,10 +7,20 @@
 import { MdmlError, meanOf } from '../../base/index.ts'
 import { bootstrapIndices, foldIn } from '../../random/index.ts'
 import { asTensor, isTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+} from '../../trace/index.ts'
 import { innerFitOptions, keyFor, runOptionsFor } from '../_shared.ts'
 import { type Estimator, type FitOptions, type LearnData, requireVerb } from '../estimator.ts'
 import { rowsOf, takeData, targetVector } from '../validation.ts'
+import { scoresFromJson, scoresToJson } from './_state.ts'
 
 /**
  * Akaike's information criterion, 2k - 2 log L.
@@ -235,10 +245,134 @@ export interface Bootstrap632Result {
   readonly weight: number
 }
 
+/** The paths {@link bootstrap632Algorithm} logs. */
+export type BootstrapPath = 'bootstrap/replicate' | 'bootstrap/outOfBag' | 'bootstrap/seen' | 'bootstrap/inBag'
+
+/** What a stepped bootstrap estimate logs, by path. */
+export const bootstrapContract: Contract<unknown, BootstrapPath> = defineContract({
+  'bootstrap/replicate': scalar({ description: 'the replicate just fitted (from 0)' }),
+  'bootstrap/outOfBag': scalar({ description: 'the running leave-one-out bootstrap error', direction: 'lower' }),
+  'bootstrap/seen': scalar({ description: 'samples that have been out of bag at least once' }),
+  'bootstrap/inBag': scalar({ description: 'distinct samples in this replicate' }),
+})
+
+/**
+ * The state of {@link bootstrap632Algorithm}: replicates done, and for each sample the loss summed over the replicates
+ * it was out of bag in and how many there were.
+ */
+export interface BootstrapState {
+  readonly done: number
+  readonly sum: readonly number[]
+  readonly count: readonly number[]
+}
+
+const outOfBagOf = (s: BootstrapState): { readonly seen: number; readonly error: number } => {
+  const seen = s.count.flatMap((c, i) => (c > 0 ? [(s.sum[i] ?? 0) / c] : []))
+  return { seen: seen.length, error: seen.length === 0 ? Number.NaN : meanOf(seen) }
+}
+
+interface BootstrapRun {
+  readonly algorithm: Algorithm<BootstrapState, BootstrapPath>
+  readonly nBoot: number
+  readonly y: Float64Array
+  readonly loss: (yTrue: number, yPred: number) => number
+  readonly fullPred: ArrayLike<number>
+  readonly trainingError: number
+}
+
+function bootstrapRun(estimator: Estimator, data: LearnData, options: Bootstrap632Options): BootstrapRun {
+  const n = rowsOf(data.x)
+  const y = targetVector(data.y ?? [], 'bootstrap632', n)
+  const nBoot = options.nBootstraps ?? 200
+  if (!(Number.isInteger(nBoot) && nBoot >= 1)) throw new MdmlError('value', 'bootstrap632: nBootstraps must be >= 1')
+  const loss =
+    options.loss ??
+    (estimator.kind === 'classifier'
+      ? (a: number, b: number) => (a === b ? 0 : 1)
+      : (a: number, b: number) => (a - b) ** 2)
+  const key = keyFor(options, 'bootstrap632')
+  const full = estimator.fit(data, innerFitOptions(options, foldIn(key, 0), options.parent, true))
+  const fullPred = toFlat(requireVerb(full, 'predict', 'bootstrap632')(data.x))
+  const trainingError = meanOf(Array.from(y, (v, i) => loss(v, fullPred[i] ?? 0)))
+  const algorithm: Algorithm<BootstrapState, BootstrapPath> = {
+    name: 'bootstrap-632',
+    config: { estimator: estimator.name, nBootstraps: nBoot, plus: options.plus === true },
+    schema: channels({
+      metrics: { outOfBag: { description: 'the running leave-one-out bootstrap error', direction: 'lower' } },
+    }),
+    init: () => ({ done: 0, sum: new Array<number>(n).fill(0), count: new Array<number>(n).fill(0) }),
+    step: (s, ctx) => {
+      const rows = toFlat(bootstrapIndices(foldIn(key, 1 + s.done), n))
+      const inBag = new Uint8Array(n)
+      for (const r of rows) inBag[r] = 1
+      const oob = Array.from({ length: n }, (_, i) => i).filter((i) => inBag[i] === 0)
+      const sum = [...s.sum]
+      const count = [...s.count]
+      if (oob.length > 0) {
+        const fitted = estimator.fit(takeData(data, rows), innerFitOptions(options, foldIn(ctx.key, 0), ctx.run))
+        const pred = toFlat(requireVerb(fitted, 'predict', 'bootstrap632')(takeData(data, oob).x))
+        for (const [r, i] of oob.entries()) {
+          sum[i] = (sum[i] ?? 0) + loss(y[i] ?? 0, pred[r] ?? 0)
+          count[i] = (count[i] ?? 0) + 1
+        }
+      }
+      const next = { done: s.done + 1, sum, count }
+      const bag = outOfBagOf(next)
+      ctx.log('bootstrap/replicate', s.done)
+      ctx.log('bootstrap/inBag', n - oob.length)
+      ctx.log('bootstrap/seen', bag.seen)
+      if (bag.seen > 0) ctx.log('bootstrap/outOfBag', bag.error)
+      return next
+    },
+    done: (s) => (s.done >= nBoot ? 'completed' : undefined),
+    observe: (s) => {
+      const bag = outOfBagOf(s)
+      return { metrics: bag.seen === 0 ? {} : { outOfBag: bag.error } }
+    },
+    serialise: (s) => stateToJson({ done: s.done, sum: scoresToJson(s.sum), count: scoresToJson(s.count) }),
+    deserialise: (j) => {
+      const o = stateFromJson(j) as { readonly done: number; readonly sum: never; readonly count: never }
+      return { done: o.done, sum: scoresFromJson(o.sum), count: scoresFromJson(o.count) }
+    },
+  }
+  return { algorithm, nBoot, y, loss, fullPred, trainingError }
+}
+
+/**
+ * The .632 bootstrap as a stepped algorithm: each step fits the estimator on one bootstrap resample and scores the
+ * samples left out of it, keeping for each sample the mean loss over the replicates that left it out. The state
+ * serialises; the full-data fit that gives the training error is made when the algorithm is built.
+ *
+ * @param estimator - The estimator (it must predict).
+ * @param data - The data.
+ * @param options - nBootstraps, loss and key (`plus` only matters to {@link bootstrap632}).
+ * @returns The algorithm, one step per replicate.
+ * @throws MdmlError with code `value` for fewer than one replicate.
+ * @concept bootstrap
+ * @example
+ * ```ts
+ * import { bootstrap632Algorithm } from 'mdml-engine/learn/model-selection'
+ * import { defineEstimator, rowsOf } from 'mdml-engine/learn'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { full } from 'mdml-engine/tensor'
+ * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([rowsOf(x)], 0) }) }, {})
+ * const alg = bootstrap632Algorithm(zero, { x: [[0], [1], [2], [3]], y: [1, 1, 1, 1] }, { nBootstraps: 10 })
+ * runAlgorithm(alg, { maxSteps: 20 }).state.done // => 10
+ * ```
+ */
+export function bootstrap632Algorithm(
+  estimator: Estimator,
+  data: LearnData,
+  options: Bootstrap632Options = {},
+): Algorithm<BootstrapState, BootstrapPath> {
+  return bootstrapRun(estimator, data, options).algorithm
+}
+
 /**
  * The .632 and .632+ bootstrap estimates of prediction error (Efron 1983; Efron and Tibshirani 1997): a weighted mix
  * of the optimistic training error and the pessimistic leave-one-out bootstrap error, with .632+ shifting weight to
- * the latter as the model overfits. A traced algorithm with one step per replicate.
+ * the latter as the model overfits. This is {@link bootstrap632Algorithm} run to the end, a traced algorithm with one
+ * step per replicate.
  *
  * @param estimator - The estimator (it must predict).
  * @param data - The data.
@@ -259,56 +393,12 @@ export function bootstrap632(
   data: LearnData,
   options: Bootstrap632Options = {},
 ): Bootstrap632Result {
-  const n = rowsOf(data.x)
-  const y = targetVector(data.y ?? [], 'bootstrap632', n)
-  const nBoot = options.nBootstraps ?? 200
-  if (!(Number.isInteger(nBoot) && nBoot >= 1)) throw new MdmlError('value', 'bootstrap632: nBootstraps must be >= 1')
-  const loss =
-    options.loss ??
-    (estimator.kind === 'classifier'
-      ? (a: number, b: number) => (a === b ? 0 : 1)
-      : (a: number, b: number) => (a - b) ** 2)
-  const key = keyFor(options, 'bootstrap632')
-  const full = estimator.fit(data, innerFitOptions(options, foldIn(key, 0), options.parent, true))
-  const fullPred = toFlat(requireVerb(full, 'predict', 'bootstrap632')(data.x))
-  const trainingError = meanOf(Array.from(y, (v, i) => loss(v, fullPred[i] ?? 0)))
-  const sum = new Float64Array(n)
-  const count = new Float64Array(n)
-  const algorithm: Algorithm<number> = {
-    name: 'bootstrap-632',
-    config: { estimator: estimator.name, nBootstraps: nBoot, plus: options.plus === true },
-    schema: channels({
-      metrics: { outOfBag: { description: 'the running leave-one-out bootstrap error', direction: 'lower' } },
-    }),
-    init: () => 0,
-    step: (b, ctx) => {
-      const rows = toFlat(bootstrapIndices(foldIn(key, 1 + b), n))
-      const inBag = new Uint8Array(n)
-      for (const r of rows) inBag[r] = 1
-      const oob = Array.from({ length: n }, (_, i) => i).filter((i) => inBag[i] === 0)
-      if (oob.length > 0) {
-        const fitted = estimator.fit(takeData(data, rows), innerFitOptions(options, foldIn(ctx.key, 0), ctx.run))
-        const pred = toFlat(requireVerb(fitted, 'predict', 'bootstrap632')(takeData(data, oob).x))
-        oob.forEach((i, r) => {
-          sum[i] = (sum[i] ?? 0) + loss(y[i] ?? 0, pred[r] ?? 0)
-          count[i] = (count[i] ?? 0) + 1
-        })
-      }
-      return b + 1
-    },
-    done: (b) => (b >= nBoot ? 'completed' : undefined),
-    observe: () => {
-      const seen = Array.from(count.keys()).filter((i) => (count[i] ?? 0) > 0)
-      return {
-        metrics: seen.length === 0 ? {} : { outOfBag: meanOf(seen.map((i) => (sum[i] ?? 0) / (count[i] ?? 1))) },
-      }
-    },
-  }
-  runAlgorithm(algorithm, { ...runOptionsFor(options, 'bootstrap632'), maxSteps: nBoot })
-  const seen = Array.from(count.keys()).filter((i) => (count[i] ?? 0) > 0)
-  if (seen.length === 0)
-    throw new MdmlError('value', 'bootstrap632: no sample was ever out of bag; use more replicates')
-  const outOfBagError = meanOf(seen.map((i) => (sum[i] ?? 0) / (count[i] ?? 1)))
+  const { algorithm, nBoot, y, loss, fullPred, trainingError } = bootstrapRun(estimator, data, options)
+  const n = y.length
+  const end = runAlgorithm(algorithm, { ...runOptionsFor(options, 'bootstrap632'), maxSteps: nBoot }).state
+  const bag = outOfBagOf(end)
+  if (bag.seen === 0) throw new MdmlError('value', 'bootstrap632: no sample was ever out of bag; use more replicates')
+  const outOfBagError = bag.error
   let gamma = 0
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) gamma += loss(y[i] ?? 0, fullPred[j] ?? 0)
   gamma /= n * n
