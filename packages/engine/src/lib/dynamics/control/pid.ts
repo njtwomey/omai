@@ -8,7 +8,18 @@
 import { clamp, MdmlError } from '../../base/index.ts'
 import { c2dMatrices, isDiscrete, type Lti, toSs } from '../../systems/index.ts'
 import { primalOf, toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  type Contract,
+  channels,
+  defineContract,
+  type RunOptions,
+  runAlgorithm,
+  scalar,
+  stateFromJson,
+  stateToJson,
+  tensor,
+} from '../../trace/index.ts'
 
 /** Gains and implementation details of a PID controller. */
 export interface PidOptions {
@@ -106,9 +117,142 @@ export interface PidResponse {
   readonly overshoot: number
 }
 
+/** One sample of a closed loop: the time, the measurement, the input applied and the setpoint. */
+export interface PidSample {
+  readonly t: number
+  readonly y: number
+  readonly u: number
+  readonly r: number
+}
+
+/** The state of {@link pidLoopAlgorithm}: the plant's state, the controller's memory and every sample so far. */
+export interface PidLoopState {
+  /** Samples taken. */
+  readonly step: number
+  /** The plant state (discretised exactly with a zero-order hold). */
+  readonly x: readonly number[]
+  /** The controller's memory between samples. */
+  readonly ctrl: PidState
+  readonly samples: readonly PidSample[]
+}
+
+/** The paths {@link pidLoopAlgorithm} logs, as a type. */
+export type PidLoopPath =
+  | 'pid/setpoint'
+  | 'pid/error'
+  | 'pid/u'
+  | 'pid/integral'
+  | 'pid/derivative'
+  | 'plant/y'
+  | 'plant/x'
+
+/**
+ * What a closed PID loop logs, by path: the setpoint, the error, the input, the controller's integral and filtered
+ * derivative, and the plant's measured output and state.
+ */
+export const pidLoopContract: Contract<PidLoopState, PidLoopPath> = defineContract({
+  'pid/setpoint': scalar({ description: 'the setpoint' }),
+  'pid/error': scalar({ description: 'setpoint minus the measured output' }),
+  'pid/u': scalar({ description: 'the control input applied' }),
+  'pid/integral': scalar({ description: 'the integral term (for a relay: its output)' }),
+  'pid/derivative': scalar({ description: 'the filtered derivative term' }),
+  'plant/y': scalar({ description: 'the measured output (with the disturbance)' }),
+  'plant/x': tensor({ role: 'state', shape: ['state'], description: 'the plant state after this period' }),
+})
+
+/** Options of {@link pidLoopAlgorithm}. */
+export interface PidLoopOptions {
+  readonly duration: number
+  readonly setpoint?: number | ((t: number) => number)
+  readonly disturbance?: (t: number) => number
+}
+
+/**
+ * A PID loop around a single-input single-output plant (exactly discretised with a zero-order hold at the controller's
+ * sample time) as a steppable algorithm: each step is one control period, the controller reading the setpoint and the
+ * measurement, the plant advancing under the input. The state is the plant's state, the controller's memory and the
+ * samples, so it serialises and resumes (the setpoint and disturbance are functions of time, supplied again on
+ * resuming); it logs the paths of {@link pidLoopContract}.
+ *
+ * @param plant - The plant (any LTI representation; continuous or discrete with the same sample time).
+ * @param controller - The controller.
+ * @param options - Duration, setpoint (constant or a function of time) and output disturbance.
+ * @returns The algorithm; it is done after `duration / dt` periods.
+ * @throws MdmlError with code `value` when a discrete plant's sample time differs from the controller's.
+ * @concept pid-control
+ * @example
+ * ```ts
+ * import { control } from 'mdml-engine/dynamics'
+ * import { tf } from 'mdml-engine/systems'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = control.pidLoopAlgorithm(tf([1], [1, 1]), control.pid({ kp: 2, ki: 2, dt: 0.01 }), { duration: 1 })
+ * runAlgorithm(alg, { maxSteps: 100 }).state.samples.length // => 100
+ * ```
+ */
+export function pidLoopAlgorithm(
+  plant: Lti,
+  controller: PidController,
+  options: PidLoopOptions,
+  name = 'pid-loop',
+): Algorithm<PidLoopState, PidLoopPath> {
+  const dt = controller.options.dt
+  const sys = toSs(plant)
+  const discrete = isDiscrete(sys)
+  if (discrete && Math.abs(sys.dt - dt) > 1e-12) throw new MdmlError('value', 'simulatePid: sample times differ')
+  const m = discrete ? { a: sys.a, b: sys.b, c: sys.c, d: sys.d } : c2dMatrices(sys.a, sys.b, sys.c, sys.d, dt)
+  const A = toFlat(primalOf(m.a))
+  const B = toFlat(primalOf(m.b))
+  const C = toFlat(primalOf(m.c))
+  const D = toFlat(primalOf(m.d))[0] ?? 0
+  const n = Math.round(Math.sqrt(A.length))
+  const steps = Math.round(options.duration / dt)
+  const sp = (t: number): number =>
+    options.setpoint === undefined ? 1 : typeof options.setpoint === 'number' ? options.setpoint : options.setpoint(t)
+  const output = (x: readonly number[], u: number): number =>
+    C.reduce((acc, ci, i) => acc + ci * (x[i] ?? 0), 0) + D * u
+  return {
+    name,
+    config: { kp: controller.options.kp, ki: controller.options.ki ?? 0, kd: controller.options.kd ?? 0, dt, steps },
+    schema: channels({
+      metrics: {
+        y: { description: 'plant output' },
+        u: { description: 'control input' },
+        error: { description: 'setpoint minus output' },
+      },
+    }),
+    init: () => ({ step: 0, x: new Array<number>(n).fill(0), ctrl: controller.init(), samples: [] }),
+    step: (s, ctx) => {
+      const t = ctx.t * dt
+      const r = sp(t)
+      const yMeas = output(s.x, 0) + (options.disturbance?.(t) ?? 0)
+      const { u, state } = controller.step(s.ctrl, r, yMeas)
+      const x = Array.from({ length: n }, (_, i) => {
+        let v = (B[i] ?? 0) * u
+        for (let j = 0; j < n; j++) v += (A[i * n + j] ?? 0) * (s.x[j] ?? 0)
+        return v
+      })
+      if (ctx.wants('pid/setpoint')) ctx.log('pid/setpoint', r)
+      if (ctx.wants('pid/error')) ctx.log('pid/error', r - yMeas)
+      if (ctx.wants('pid/u')) ctx.log('pid/u', u)
+      if (ctx.wants('pid/integral')) ctx.log('pid/integral', state.integral)
+      if (ctx.wants('pid/derivative')) ctx.log('pid/derivative', state.derivative)
+      if (ctx.wants('plant/y')) ctx.log('plant/y', yMeas)
+      if (ctx.wants('plant/x')) ctx.log('plant/x', x)
+      return { step: s.step + 1, x, ctrl: state, samples: [...s.samples, { t, y: yMeas, u, r }] }
+    },
+    done: (s) => (s.step >= steps ? 'converged' : undefined),
+    observe: (s) => {
+      const last = s.samples.at(-1)
+      return { metrics: { y: last?.y ?? 0, u: last?.u ?? 0, error: (last?.r ?? 0) - (last?.y ?? 0) } }
+    },
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as PidLoopState,
+  }
+}
+
 /**
  * Simulate a PID loop around a single-input single-output plant (exactly discretised with a zero-order hold at the
- * controller's sample time) as a traced algorithm with the output, input and error as metrics.
+ * controller's sample time): {@link pidLoopAlgorithm} run to the end, with the output, input and error as metrics.
  *
  * @param plant - The plant (any LTI representation; continuous or discrete with the same sample time).
  * @param controller - The controller.
@@ -126,76 +270,31 @@ export interface PidResponse {
 export function simulatePid(
   plant: Lti,
   controller: PidController,
-  options: {
-    readonly duration: number
-    readonly setpoint?: number | ((t: number) => number)
-    readonly disturbance?: (t: number) => number
-  } & Partial<Omit<RunOptions, 'maxSteps' | 'start'>>,
+  options: PidLoopOptions & Partial<Omit<RunOptions, 'maxSteps' | 'start'>>,
 ): PidResponse {
   const dt = controller.options.dt
-  const sys = toSs(plant)
-  const discrete = isDiscrete(sys)
-  if (discrete && Math.abs(sys.dt - dt) > 1e-12) throw new MdmlError('value', 'simulatePid: sample times differ')
-  const m = discrete ? { a: sys.a, b: sys.b, c: sys.c, d: sys.d } : c2dMatrices(sys.a, sys.b, sys.c, sys.d, dt)
-  const A = toFlat(primalOf(m.a))
-  const B = toFlat(primalOf(m.b))
-  const C = toFlat(primalOf(m.c))
-  const D = toFlat(primalOf(m.d))[0] ?? 0
-  const n = Math.round(Math.sqrt(A.length))
-  const steps = Math.round(options.duration / dt)
-  const sp = (t: number): number =>
-    options.setpoint === undefined ? 1 : typeof options.setpoint === 'number' ? options.setpoint : options.setpoint(t)
-  interface S {
-    readonly x: number[]
-    readonly ctrl: PidState
-    readonly t: number[]
-    readonly y: number[]
-    readonly u: number[]
-    readonly r: number[]
-  }
-  const output = (x: readonly number[], u: number): number =>
-    C.reduce((acc, ci, i) => acc + ci * (x[i] ?? 0), 0) + D * u
-  const algorithm: Algorithm<S> = {
-    name: 'pid-loop',
-    config: { kp: controller.options.kp, ki: controller.options.ki ?? 0, kd: controller.options.kd ?? 0, dt },
-    schema: channels({
-      metrics: {
-        y: { description: 'plant output' },
-        u: { description: 'control input' },
-        error: { description: 'setpoint minus output' },
-      },
-    }),
-    init: () => ({ x: new Array<number>(n).fill(0), ctrl: controller.init(), t: [], y: [], u: [], r: [] }),
-    step: (s, ctx) => {
-      const t = ctx.t * dt
-      const r = sp(t)
-      const yMeas = output(s.x, 0) + (options.disturbance?.(t) ?? 0)
-      const { u, state } = controller.step(s.ctrl, r, yMeas)
-      const x = Array.from({ length: n }, (_, i) => {
-        let v = (B[i] ?? 0) * u
-        for (let j = 0; j < n; j++) v += (A[i * n + j] ?? 0) * (s.x[j] ?? 0)
-        return v
-      })
-      s.t.push(t)
-      s.y.push(yMeas)
-      s.u.push(u)
-      s.r.push(r)
-      return { ...s, x, ctrl: state }
-    },
-    observe: (s) => ({
-      metrics: { y: s.y.at(-1) ?? 0, u: s.u.at(-1) ?? 0, error: (s.r.at(-1) ?? 0) - (s.y.at(-1) ?? 0) },
-    }),
-  }
-  const st = runAlgorithm(algorithm, { maxSteps: steps, ...options }).state
-  const final = st.r.at(-1) ?? 1
+  const { duration, setpoint, disturbance, ...run } = options
+  const algorithm = pidLoopAlgorithm(plant, controller, {
+    duration,
+    ...(setpoint === undefined ? {} : { setpoint }),
+    ...(disturbance === undefined ? {} : { disturbance }),
+  })
+  const samples = runAlgorithm(algorithm, { maxSteps: Math.round(duration / dt), ...run }).state.samples
+  return responseOf(samples, dt)
+}
+
+function responseOf(samples: readonly PidSample[], dt: number): PidResponse {
+  const y = samples.map((q) => q.y)
+  const r = samples.map((q) => q.r)
+  const final = r.at(-1) ?? 1
   let peak = Number.NEGATIVE_INFINITY
-  for (const v of st.y) peak = Math.max(peak, v)
-  const iae = st.y.reduce((acc, v, i) => acc + Math.abs((st.r[i] ?? 0) - v) * dt, 0)
+  for (const v of y) peak = Math.max(peak, v)
+  const iae = y.reduce((acc, v, i) => acc + Math.abs((r[i] ?? 0) - v) * dt, 0)
   return {
-    t: st.t,
-    y: st.y,
-    u: st.u,
-    setpoint: st.r,
+    t: samples.map((q) => q.t),
+    y,
+    u: samples.map((q) => q.u),
+    setpoint: r,
     iae,
     overshoot: final === 0 ? 0 : Math.max(0, (peak - final) / Math.abs(final)),
   }
@@ -276,6 +375,101 @@ export interface RelayAutotuneResult {
   readonly oscillating: boolean
 }
 
+/** Options of {@link relayAutotune} and {@link relayAutotuneAlgorithm}. */
+export interface RelayOptions {
+  readonly amplitude?: number
+  readonly hysteresis?: number
+  readonly dt?: number
+  readonly duration?: number
+  readonly type?: 'P' | 'PI' | 'PID'
+}
+
+/**
+ * Relay auto-tuning (Astrom and Hagglund 1984) as a steppable algorithm: a relay of amplitude d (with optional
+ * hysteresis) in feedback with the plant, one control period per step, the relay's output held in the controller's
+ * `integral` memory (logged as `pid/integral`). Run it until the loop settles into its limit cycle, then read the
+ * amplitude and period with {@link relayAnalysis}. Paths and state are those of {@link pidLoopAlgorithm}.
+ *
+ * @param plant - The plant.
+ * @param options - Relay amplitude (default 1), hysteresis (default 0), sample time (default 0.01) and duration (default 100).
+ * @returns The algorithm; it is done after `duration / dt` periods.
+ * @concept relay-autotuning
+ * @example
+ * ```ts
+ * import { control } from 'mdml-engine/dynamics'
+ * import { tf } from 'mdml-engine/systems'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const alg = control.relayAutotuneAlgorithm(tf([1], [1, 3, 3, 1]), { dt: 0.01, duration: 1 })
+ * Math.abs(runAlgorithm(alg, { maxSteps: 100 }).state.samples[0]?.u ?? 0) // => 1
+ * ```
+ */
+export function relayAutotuneAlgorithm(plant: Lti, options: RelayOptions = {}): Algorithm<PidLoopState, PidLoopPath> {
+  const d = options.amplitude ?? 1
+  const eps = options.hysteresis ?? 0
+  const dt = options.dt ?? 0.01
+  const relay: PidController = {
+    options: { kp: 1, dt },
+    init: () => ({ integral: d, derivative: 0, previousError: 0, started: false }),
+    step: (s, setpoint, y) => {
+      const e = setpoint - y
+      // integral holds the relay's output (its memory for the hysteresis).
+      const u = e > eps ? d : e < -eps ? -d : s.integral
+      return { u, state: { ...s, integral: u } }
+    },
+  }
+  return pidLoopAlgorithm(
+    plant,
+    relay,
+    { duration: options.duration ?? 100, setpoint: 0, disturbance: () => 0 },
+    'relay-autotune',
+  )
+}
+
+/**
+ * Read the limit cycle of a relay experiment: the second half of the response is the established cycle, its upward zero
+ * crossings give the period Tu, its half range the amplitude a, and the describing function the ultimate gain
+ * Ku = 4 d / (pi a); the gains are Ziegler-Nichols.
+ *
+ * @param samples - The loop's samples (time and output).
+ * @param options - Relay amplitude d (default 1), sample time (default 0.01) and the tuning type.
+ * @returns Ku, Tu, the amplitude and the gains (NaN and `oscillating: false` when there is no cycle).
+ * @concept relay-autotuning
+ * @example
+ * ```ts
+ * import { control } from 'mdml-engine/dynamics'
+ * const wave = Array.from({ length: 800 }, (_, i) => ({ t: i * 0.01, y: 0.5 * Math.sin(Math.PI * (i * 0.01 - 0.3)), u: 0, r: 0 }))
+ * Math.round(control.relayAnalysis(wave, { amplitude: 1 }).tu * 100) / 100 // => 2
+ * ```
+ */
+export function relayAnalysis(
+  samples: readonly { readonly t: number; readonly y: number }[],
+  options: { readonly amplitude?: number; readonly dt?: number; readonly type?: 'P' | 'PI' | 'PID' } = {},
+): RelayAutotuneResult {
+  const d = options.amplitude ?? 1
+  const dt = options.dt ?? 0.01
+  // Use the second half (the established limit cycle): zero crossings of the output give the period.
+  const start = Math.floor(samples.length / 2)
+  const ys = samples.slice(start).map((q) => q.y)
+  const ts = samples.slice(start).map((q) => q.t)
+  const ups: number[] = []
+  for (let i = 1; i < ys.length; i++) {
+    const a = ys[i - 1] ?? 0
+    const b = ys[i] ?? 0
+    if (a < 0 && b >= 0) ups.push((ts[i - 1] ?? 0) + (dt * -a) / (b - a))
+  }
+  let top = Number.NEGATIVE_INFINITY
+  let bottom = Number.POSITIVE_INFINITY
+  for (const v of ys) {
+    top = Math.max(top, v)
+    bottom = Math.min(bottom, v)
+  }
+  const amplitude = (top - bottom) / 2
+  const oscillating = ups.length >= 2 && amplitude > 0
+  const tu = oscillating ? ((ups.at(-1) ?? 0) - (ups[0] ?? 0)) / (ups.length - 1) : Number.NaN
+  const ku = oscillating ? (4 * d) / (Math.PI * amplitude) : Number.NaN
+  return { ku, tu, amplitude, gains: zieglerNichols(ku, tu, options.type ?? 'PID'), oscillating }
+}
+
 /**
  * Relay auto-tuning (Astrom and Hagglund 1984): put a relay of amplitude d (with optional hysteresis) in feedback with
  * the plant, wait for the limit cycle, read its amplitude a and period Tu, estimate the ultimate gain by describing
@@ -295,49 +489,13 @@ export interface RelayAutotuneResult {
  * Math.abs(r.tu - 3.628) < 0.1 && Math.abs(r.ku - 8) < 0.8 // => true
  * ```
  */
-export function relayAutotune(
-  plant: Lti,
-  options: {
-    readonly amplitude?: number
-    readonly hysteresis?: number
-    readonly dt?: number
-    readonly duration?: number
-    readonly type?: 'P' | 'PI' | 'PID'
-  } = {},
-): RelayAutotuneResult {
-  const d = options.amplitude ?? 1
-  const eps = options.hysteresis ?? 0
+export function relayAutotune(plant: Lti, options: RelayOptions = {}): RelayAutotuneResult {
   const dt = options.dt ?? 0.01
-  const relay: PidController = {
-    options: { kp: 1, dt },
-    init: () => ({ integral: d, derivative: 0, previousError: 0, started: false }),
-    step: (s, setpoint, y) => {
-      const e = setpoint - y
-      // integral holds the relay's output (its memory for the hysteresis).
-      const u = e > eps ? d : e < -eps ? -d : s.integral
-      return { u, state: { ...s, integral: u } }
-    },
-  }
-  const r = simulatePid(plant, relay, { duration: options.duration ?? 100, setpoint: 0, disturbance: () => 0 })
-  // Use the second half (the established limit cycle): zero crossings of the output give the period.
-  const start = Math.floor(r.y.length / 2)
-  const ys = r.y.slice(start)
-  const ts = r.t.slice(start)
-  const ups: number[] = []
-  for (let i = 1; i < ys.length; i++) {
-    const a = ys[i - 1] ?? 0
-    const b = ys[i] ?? 0
-    if (a < 0 && b >= 0) ups.push((ts[i - 1] ?? 0) + (dt * -a) / (b - a))
-  }
-  let top = Number.NEGATIVE_INFINITY
-  let bottom = Number.POSITIVE_INFINITY
-  for (const v of ys) {
-    top = Math.max(top, v)
-    bottom = Math.min(bottom, v)
-  }
-  const amplitude = (top - bottom) / 2
-  const oscillating = ups.length >= 2 && amplitude > 0
-  const tu = oscillating ? ((ups.at(-1) ?? 0) - (ups[0] ?? 0)) / (ups.length - 1) : Number.NaN
-  const ku = oscillating ? (4 * d) / (Math.PI * amplitude) : Number.NaN
-  return { ku, tu, amplitude, gains: zieglerNichols(ku, tu, options.type ?? 'PID'), oscillating }
+  const alg = relayAutotuneAlgorithm(plant, options)
+  const samples = runAlgorithm(alg, { maxSteps: Math.round((options.duration ?? 100) / dt) }).state.samples
+  return relayAnalysis(samples, {
+    amplitude: options.amplitude ?? 1,
+    dt,
+    ...(options.type === undefined ? {} : { type: options.type }),
+  })
 }

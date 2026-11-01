@@ -2389,9 +2389,17 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `control/adaptive.ts`: model-reference adaptive control of a first-order plant (`mracAlgorithm`: the MIT rule and the
   Lyapunov law; logs output, model output, parameter, error, gain and the distance from the matching parameters,
   `matchingParameters`), and `gainSchedule`.
-- `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints, receding horizon as a traced algorithm).
-- `control/pid.ts`: PID control with anti-windup and derivative filtering, Ziegler-Nichols and Cohen-Coon tuning,
-  relay auto-tuning.
+- `control/predictive.ts`: linear and nonlinear MPC (condensed QP, constraints) and the receding-horizon loop as a
+  steppable algorithm (`recedingHorizonAlgorithm`: plant state, history and the warm start are the state, so a run
+  resumes with the same plans; logs `mpc/cost`, `u`, `plan`, `predicted` and `plant/x`), `recedingHorizon` that run to
+  the end; a `Planner` may plan from a warm start it is handed (`nonlinearMpc` does).
+- `control/pid.ts`: PID control with anti-windup and derivative filtering, the closed loop around an LTI plant as a
+  steppable algorithm (`pidLoopAlgorithm`, one control period per step; logs `pid/setpoint`, `error`, `u`, `integral`,
+  `derivative`, `plant/y`, `plant/x`) with `simulatePid` as that run, Ziegler-Nichols and Cohen-Coon tuning, relay
+  auto-tuning (`relayAutotuneAlgorithm` the relay in feedback, `relayAnalysis` reading the limit cycle).
+- `control/control-options.ts`: the slots of the loops as option tables: `antiWindups` (`clamping`,
+  `back-calculation` with its gain, `none`), `qpMethods` (`active-set`, `interior-point`), and the setpoint and the
+  disturbance as functions of time (`setpoints`: step, square, ramp, sine; `disturbances`: none, step, pulse, sine).
 - `control/trajectory.ts`: trajectory optimisation: single and multiple shooting, direct collocation, iLQR and DDP.
 - `filtering/kalman.ts`: Kalman filter (Joseph form, missing data), RTS smoother, steady-state filter, log-likelihood,
   consistency checks.
