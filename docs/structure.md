@@ -1892,7 +1892,8 @@ representations are in `optim/sparse.ts`.
 - `adaptive.ts`: LMS, NLMS, RLS, adaptive noise cancellation, traced tap weights.
 - `cepstrum.ts`: real and complex cepstra, liftering, cepstral pitch.
 - `peaks.ts`: `findPeaks` (height, prominence, distance, width), prominences, widths, zero crossings.
-- `similarity.ts`: dynamic time warping (with path and lower bounds), PAA, SAX, cross-correlation lag.
+- `similarity.ts`: dynamic time warping (with path and lower bounds) and `dtwAlgorithm` (one row of the cost matrix per
+  step, `dtw/` paths; `dtw` runs it), PAA, SAX, cross-correlation lag; `similarity-options.ts`: `dtwStepPatterns`.
 - `sliding.ts`: the sliding-window building blocks of matrix profiles (as STUMPY): rolling means and standard
   deviations by Welford updates with periodic exact recomputation, constancy (monotone deques) and finiteness of
   windows, subsequence statistics, sliding dot products (direct for small products, FFT or overlap-add otherwise) and
@@ -1934,7 +1935,7 @@ representations are in `optim/sparse.ts`.
   Zhang-Suen skeletonisation.
 - `image/geometry.ts`: `mapCoordinates`, affine transforms, shifts, zooms and rotations (orders 0 and 1, every ndimage
   mode), scikit-image resizing and projective warps, Gaussian pyramids, integral images. TODO: spline orders 2 to 5.
-- `image/segmentation.ts`: Otsu and Li thresholds, marker watershed, Felzenszwalb's graph-based segmentation, exact
+- `image/segmentation.ts`: Otsu and Li thresholds, marker watershed, Felzenszwalb's graph-based segmentation (`felzenszwalbAlgorithm`, one edge per step, `seg/` paths; `felzenszwalbCoarseness` in `segmentation-options.ts`), exact
   binary graph cuts (by `graph` minimum cut). TODO: SLIC superpixels.
 - `image/motion.ts`: template matching (normalised cross-correlation), phase correlation, block matching, dense
   Lucas-Kanade and traced Horn-Schunck optical flow. TODO: pyramidal iterative Lucas-Kanade and TV-L1.

@@ -11,6 +11,7 @@ import {
   type Algorithm,
   type Contract,
   defineContract,
+  runAlgorithm,
   scalar,
   stateFromJson,
   stateToJson,
@@ -422,27 +423,82 @@ export function watershedAlgorithm(
   }
 }
 
+/** The paths {@link felzenszwalbAlgorithm} logs. */
+export type FelzenszwalbPath = 'seg/merge' | 'seg/components' | 'seg/threshold' | 'seg/labels'
+
 /**
- * Felzenszwalb and Huttenlocher's graph-based segmentation (skimage.segmentation.felzenszwalb): Gaussian smoothing,
- * 8-connected edges weighted by colour distance taken in increasing order, two components merged when the edge is
- * lighter than both internal differences plus scale / size, then components below minSize merged away.
+ * What Felzenszwalb segmentation logs per edge: whether it merged two components, the components left, the threshold
+ * the edge was compared with (merge phase: the smaller internal difference plus scale / size; size phase: the minimum
+ * size), and, on request, the labels so far.
+ */
+export const felzenszwalbContract: Contract<unknown, FelzenszwalbPath> = defineContract({
+  'seg/merge': scalar({ description: '1 when the edge merged two components, else 0' }),
+  'seg/components': scalar({ description: 'components left' }),
+  'seg/threshold': scalar({ description: 'the threshold the edge was compared with' }),
+  'seg/labels': tensorSource({
+    role: 'state',
+    shape: ['H', 'W'],
+    description: 'the component of each pixel so far (the root pixel)',
+  }),
+})
+
+/** The options of {@link felzenszwalbAlgorithm}. */
+export interface FelzenszwalbOptions {
+  /** The scale of observation: larger means larger components (default 1). */
+  readonly scale?: number
+  /** The Gaussian smoothing sigma (default 0.8). */
+  readonly sigma?: number
+  /** The minimum component size; smaller ones are merged away (default 20). */
+  readonly minSize?: number
+}
+
+/**
+ * The state of {@link felzenszwalbAlgorithm}: a union-find over the pixels with each component's size and internal
+ * difference, and how far through the sorted edges each of the two passes is. Steps update the arrays in place; keep a
+ * copy of a state you want to look at later.
+ */
+export interface FelzenszwalbState {
+  readonly h: number
+  readonly w: number
+  /** The union-find parent of each pixel (a root is its own parent; the smaller index is the root). */
+  readonly parent: Int32Array
+  /** The size of the component rooted at each pixel. */
+  readonly size: Float64Array
+  /** The internal difference (the weight of the last merging edge) of the component rooted at each pixel. */
+  readonly inner: Float64Array
+  /** 0 while merging by the scale criterion, 1 while merging components below the minimum size. */
+  phase: 0 | 1
+  /** The next edge, in weight order, of the current pass. */
+  edge: number
+  components: number
+}
+
+/**
+ * Felzenszwalb and Huttenlocher's graph-based segmentation as a stepped algorithm, one edge per step: Gaussian smoothing,
+ * 8-connected edges weighted by colour distance taken in increasing order; in the first pass an edge merges its two
+ * components when it is lighter than both internal differences plus scale / size, and in the second pass components
+ * below the minimum size are merged along the edges in the same order. It logs whether the edge merged, the components
+ * left and the threshold compared with, and is done (`converged`) after the second pass. The state serialises; read the
+ * labels with {@link felzenszwalbLabels}.
  *
  * @param x - Image `[H, W]` or `[H, W, C]`.
- * @param options - Scale (default 1), smoothing sigma (0.8) and minimum size (20).
- * @returns Labels 0 .. k - 1, numbered by first pixel.
+ * @param options - Scale, smoothing sigma and minimum size.
+ * @returns The algorithm.
+ * @throws MdmlError with code `shape` unless the image is `[H, W]` or `[H, W, C]`.
  * @concept graph-segmentation
  * @example
  * ```ts
  * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { runAlgorithm } from 'mdml-engine/trace'
  * const x = Array.from({ length: 10 }, () => Array.from({ length: 10 }, (_, j) => (j < 5 ? 0 : 1)))
- * new Set(toFlat(image.felzenszwalb(x, { minSize: 20 }))).size // => 2
+ * const run = runAlgorithm(image.felzenszwalbAlgorithm(x, { minSize: 20 }), { maxSteps: 800 })
+ * [run.status, run.state.components] // => ['converged', 2]
  * ```
  */
-export function felzenszwalb(
+export function felzenszwalbAlgorithm(
   x: TensorLike,
-  options: { readonly scale?: number; readonly sigma?: number; readonly minSize?: number } = {},
-): Tensor {
+  options: FelzenszwalbOptions = {},
+): Algorithm<FelzenszwalbState, FelzenszwalbPath> {
   const v = valuesOf(x)
   const [h = 0, w = 0, c = 1] = v.shape
   if (v.shape.length < 2 || v.shape.length > 3)
@@ -471,8 +527,10 @@ export function felzenszwalb(
   for (let r = 0; r < h - 1; r++) for (let col = 1; col < w; col++) add(r * w + col, (r + 1) * w + col - 1)
   const order = ew.map((_, i) => i).sort((p, q) => (ew[p] ?? 0) - (ew[q] ?? 0) || p - q)
   const n = h * w
-  const parent = Int32Array.from({ length: n }, (_, i) => i)
-  const find = (i: number): number => {
+  // As scikit-image (after the reference implementation, whose intensities are 0..255): scale / 255.
+  const scale = (options.scale ?? 1) / 255
+  const minSize = options.minSize ?? 20
+  const find = (parent: Int32Array, i: number): number => {
     let r = i
     while ((parent[r] ?? r) !== r) r = parent[r] ?? r
     let k = i
@@ -483,38 +541,84 @@ export function felzenszwalb(
     }
     return r
   }
-  const join = (a: number, b: number): number => {
-    const ra = find(a)
-    const rb = find(b)
-    const root = Math.min(ra, rb)
-    parent[ra] = root
-    parent[rb] = root
-    return root
+  return {
+    name: 'signal/felzenszwalb',
+    config: { h, w, scale: options.scale ?? 1, sigma, minSize },
+    init: () => ({
+      h,
+      w,
+      parent: Int32Array.from({ length: n }, (_, i) => i),
+      size: new Float64Array(n).fill(1),
+      inner: new Float64Array(n),
+      phase: 0,
+      edge: 0,
+      components: n,
+    }),
+    step: (s, ctx) => {
+      const { parent, size, inner } = s
+      const e = order[s.edge] ?? 0
+      const s0 = find(parent, ea[e] ?? 0)
+      const s1 = find(parent, eb[e] ?? 0)
+      let merged = false
+      let threshold = s.phase === 0 ? Number.POSITIVE_INFINITY : minSize
+      if (s0 !== s1) {
+        const wt = ew[e] ?? 0
+        if (s.phase === 0)
+          threshold = Math.min((inner[s0] ?? 0) + scale / (size[s0] ?? 1), (inner[s1] ?? 0) + scale / (size[s1] ?? 1))
+        const ok = s.phase === 0 ? wt < threshold : (size[s0] ?? 0) < minSize || (size[s1] ?? 0) < minSize
+        if (ok) {
+          const root = Math.min(s0, s1)
+          parent[s0] = root
+          parent[s1] = root
+          size[root] = (size[s0] ?? 0) + (size[s1] ?? 0)
+          if (s.phase === 0) inner[root] = wt
+          s.components -= 1
+          merged = true
+        }
+      }
+      s.edge += 1
+      if (s.edge >= order.length && s.phase === 0) {
+        s.phase = 1
+        s.edge = 0
+      }
+      ctx.log('seg/merge', merged ? 1 : 0)
+      ctx.log('seg/components', s.components)
+      ctx.log('seg/threshold', threshold)
+      if (ctx.wants('seg/labels'))
+        ctx.log(
+          'seg/labels',
+          Array.from({ length: n }, (_, i) => find(parent, i)),
+        )
+      return s
+    },
+    done: (s) => (s.phase === 1 && s.edge >= order.length ? 'converged' : order.length === 0 ? 'converged' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as FelzenszwalbState,
   }
-  const size = new Float64Array(n).fill(1)
-  const inner = new Float64Array(n)
-  // As scikit-image (after the reference implementation, whose intensities are 0..255): scale / 255.
-  const scale = (options.scale ?? 1) / 255
-  for (const e of order) {
-    const s0 = find(ea[e] ?? 0)
-    const s1 = find(eb[e] ?? 0)
-    if (s0 === s1) continue
-    const wt = ew[e] ?? 0
-    if (wt < Math.min((inner[s0] ?? 0) + scale / (size[s0] ?? 1), (inner[s1] ?? 0) + scale / (size[s1] ?? 1))) {
-      const root = join(s0, s1)
-      size[root] = (size[s0] ?? 0) + (size[s1] ?? 0)
-      inner[root] = wt
-    }
-  }
-  const minSize = options.minSize ?? 20
-  for (const e of order) {
-    const s0 = find(ea[e] ?? 0)
-    const s1 = find(eb[e] ?? 0)
-    if (s0 === s1) continue
-    if ((size[s0] ?? 0) < minSize || (size[s1] ?? 0) < minSize) {
-      const root = join(s0, s1)
-      size[root] = (size[s0] ?? 0) + (size[s1] ?? 0)
-    }
+}
+
+/**
+ * The labels of a Felzenszwalb state: components numbered 0 .. k - 1 by their first pixel.
+ *
+ * @param state - A state of {@link felzenszwalbAlgorithm}.
+ * @returns Labels `[H, W]`.
+ * @concept graph-segmentation
+ * @example
+ * ```ts
+ * import { image } from 'mdml-engine/signal'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const run = runAlgorithm(image.felzenszwalbAlgorithm([[0, 0, 9, 9]], { minSize: 2 }), { maxSteps: 20 })
+ * toFlat(image.felzenszwalbLabels(run.state)) // => [0, 0, 1, 1]
+ * ```
+ */
+export function felzenszwalbLabels(state: FelzenszwalbState): Tensor {
+  const { h, w, parent } = state
+  const n = h * w
+  const find = (i: number): number => {
+    let r = i
+    while ((parent[r] ?? r) !== r) r = parent[r] ?? r
+    return r
   }
   const roots = Array.from({ length: n }, (_, i) => find(i))
   const ids = Array.from(new Set(roots)).sort((p, q) => p - q)
@@ -524,6 +628,29 @@ export function felzenszwalb(
     [h, w],
     'float64',
   )
+}
+
+/**
+ * Felzenszwalb and Huttenlocher's graph-based segmentation (skimage.segmentation.felzenszwalb): Gaussian smoothing,
+ * 8-connected edges weighted by colour distance taken in increasing order, two components merged when the edge is
+ * lighter than both internal differences plus scale / size, then components below minSize merged away.
+ * {@link felzenszwalbAlgorithm} run to the end.
+ *
+ * @param x - Image `[H, W]` or `[H, W, C]`.
+ * @param options - Scale (default 1), smoothing sigma (0.8) and minimum size (20).
+ * @returns Labels 0 .. k - 1, numbered by first pixel.
+ * @concept graph-segmentation
+ * @example
+ * ```ts
+ * import { image } from 'mdml-engine/signal'
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const x = Array.from({ length: 10 }, () => Array.from({ length: 10 }, (_, j) => (j < 5 ? 0 : 1)))
+ * new Set(toFlat(image.felzenszwalb(x, { minSize: 20 }))).size // => 2
+ * ```
+ */
+export function felzenszwalb(x: TensorLike, options: FelzenszwalbOptions = {}): Tensor {
+  const run = runAlgorithm(felzenszwalbAlgorithm(x, options), { maxSteps: Number.MAX_SAFE_INTEGER })
+  return felzenszwalbLabels(run.state)
 }
 
 /** Options of {@link graphCut}. */
