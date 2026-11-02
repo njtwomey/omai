@@ -57,6 +57,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'mdml-engine/explain': () => import('mdml-engine/explain'),
   'mdml-engine/exposition': () => import('mdml-engine/exposition'),
   'mdml-engine/fairness': () => import('mdml-engine/fairness'),
+  'mdml-engine/fields': () => import('mdml-engine/fields'),
   'mdml-engine/foundations': () => import('mdml-engine/foundations'),
   'mdml-engine/gam': () => import('mdml-engine/gam'),
   'mdml-engine/games': () => import('mdml-engine/games'),

@@ -1,7 +1,8 @@
 /**
  * PyTorch-shaped modules, part of `mdml-engine/nn`: the `Module` base class over a functional core, containers, and
  * the standard layers (linear, convolution, pooling, normalisation, attention, recurrent, transformer, graph, set,
- * vision, regularisation and position encodings) with PyTorch's names and layouts, so state dicts carry over.
+ * vision, regularisation, position encodings, coordinate encodings and SIREN layers) with PyTorch's names and layouts,
+ * so state dicts carry over.
  *
  * @inline
  */
@@ -11,6 +12,7 @@ export * from './adapters.ts'
 export * from './attention.ts'
 export * from './containers.ts'
 export * from './conv.ts'
+export * from './coordinate-encodings.ts'
 export * from './graph.ts'
 export * from './layers.ts'
 export * from './module.ts'
@@ -21,5 +23,6 @@ export * from './positional.ts'
 export * from './recurrent.ts'
 export * from './regularisation.ts'
 export * from './sets.ts'
+export * from './siren.ts'
 export * from './transformer.ts'
 export * from './vision.ts'
