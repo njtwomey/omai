@@ -4,6 +4,10 @@
 > an `Algorithm` that records a trace. This index lists the main things in `src/lib`; it is short on purpose and grows
 > as things are indexed. The source is the reference.
 
+Rendering of its records, traces and sessions (figures, views, players, React bindings) lives in mdml-render: see the
+`llms.txt` of mdml-render (`packages/render/llms.txt` in the repository, `node_modules/mdml-render/llms.txt` once
+installed).
+
 ## How to use this index
 
 Look here first, then open the file an entry points to, then follow its imports. Each entry is one line: kind, name,

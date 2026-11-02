@@ -40,8 +40,8 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - `make docs-catalogue`: precompile the docs catalogue into `apps/site/.generated/docs/` (static files the docs pages
   fetch); `make dev` and `make site` run it first, and it skips itself when the output is newer than the sources. The
   dev server regenerates it in the background after engine edits.
-- `make agent-index`: regenerate the agent index (`packages/engine/llms.txt`, `packages/engine/index/`) from the
-  `@index` tags; `make agent-index-check` (part of `make verify` and `make check`) fails on a stale file or an invalid
+- `make agent-index`: regenerate the agent index (`llms.txt` at the root, `packages/{engine,render}/llms.txt` and
+  `index/`) from the `@index` tags; `make agent-index-check` (part of `make verify` and `make check`) fails on a stale file or an invalid
   tag. See "The agent index" below.
 - `make test`: all Vitest projects.
 - `make barrels`: regenerate `index.ts` files after adding or removing a file or folder (never edit them by hand).
@@ -96,15 +96,20 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 
 ## The agent index
 
-Agents that consume the library start from `packages/engine/llms.txt`, then the domain file in
-`packages/engine/index/`, then the source: the index lists the main things, not all of them. The durable place for an
-entry is the TSDoc of the thing itself: `@index <kind> <description>`, at most about 12 words, no signature. Kinds
-(closed): `function` (also metrics, losses, tests, transforms), `estimator`, `algorithm`, `structure`, `table`
-(option tables, registries), `module` (nn layers), `dataset`, `distribution`, `kernel`, `agent`. An estimator is
-indexed instead of the `Algorithm` it wraps; a factory takes the kind of what it returns. A file entry is `@index` as
-the last paragraph of the file's opening comment (a hub to open first); a symbol entry sits in the declaration's TSDoc
-before its `@example`. When asked to "index this function", add the tag and run `make agent-index`. Never edit the
-generated files by hand. Details: `docs/structure.md` section 2.
+Agents that consume the libraries start from the repository `llms.txt` (a map of the packages), then the package's own
+`packages/engine/llms.txt` (mdml-engine, domains = the folders of `src/lib`) or `packages/render/llms.txt`
+(mdml-render, domains = the folders of `src`, `react` nested by its subfolders), then the domain file in that package's
+`index/`, then the source: the index lists the main things, not all of them. The durable place for an entry is the
+TSDoc of the thing itself: `@index <kind> <description>`, at most about 12 words, no signature. Kinds (closed, the same
+for both packages): `function` (also metrics, losses, tests, transforms; a React component or hook is a `function`
+whose description starts "React component:" or "React hook:"), `estimator`, `algorithm`, `structure` (a type, record
+or class), `table` (option tables, registries), `module` (nn layers), `dataset`, `distribution`, `kernel`, `agent`.
+An estimator is indexed instead of the `Algorithm` it wraps; a factory takes the kind of what it returns. A file entry
+is `@index` as the last paragraph of the file's opening comment (a hub to open first); a symbol entry sits in the
+declaration's TSDoc before its `@example`. When asked to "index this function", add the tag and run
+`make agent-index` as the last step, after the final edit to the source: a line added above a tagged declaration
+moves its `path:line`, and a stale index fails CI. Never edit the generated files by hand (`llms.txt`, `index/`; only
+`packages/<package>/llms.header.md` is hand-written). Details: `docs/structure.md` section 2.
 
 ## Conventions
 

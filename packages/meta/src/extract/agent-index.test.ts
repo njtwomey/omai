@@ -4,10 +4,13 @@ import { dirname, join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import type { IndexEntry } from '../schema/agent-index.ts'
 import {
+  AGENT_INDEX_PACKAGES,
   buildAgentIndex,
+  buildRepositoryIndex,
   collectAgentIndex,
   openingSentences,
   renderAgentIndex,
+  renderRootIndex,
   staleAgentIndex,
 } from './agent-index.ts'
 import { extractCatalogue } from './catalogue.ts'
@@ -306,7 +309,13 @@ describe('renderAgentIndex', () => {
     beta: 'Beta domain.',
     gamma: 'Gamma has no entries.',
   }
-  const out = renderAgentIndex({ packageName: 'mdml-engine', entries, summaries, header: '# mdml-engine\n\nNote.\n' })
+  const out = renderAgentIndex({
+    packageName: 'mdml-engine',
+    source: 'packages/engine/src/lib',
+    entries,
+    summaries,
+    header: '# mdml-engine\n\nNote.\n',
+  })
 
   it('writes llms.txt, one file per domain with entries, and the JSON', () => {
     expect([...out.keys()]).toEqual(['index/alpha.md', 'index/beta.md', 'index/index.json', 'llms.txt'])
@@ -358,6 +367,7 @@ describe('renderAgentIndex', () => {
   it('is deterministic: the same output for any input order and on every run', () => {
     const again = renderAgentIndex({
       packageName: 'mdml-engine',
+      source: 'packages/engine/src/lib',
       entries: [...entries].reverse(),
       summaries,
       header: '# mdml-engine\n\nNote.\n',
@@ -369,6 +379,7 @@ describe('renderAgentIndex', () => {
   it('keeps two entries with the same name apart by their import path', () => {
     const both = renderAgentIndex({
       packageName: 'mdml-engine',
+      source: 'packages/engine/src/lib',
       entries: [
         entry({
           name: 'normal',
@@ -448,5 +459,207 @@ describe('the catalogue keeps the tag out of the prose', () => {
     expect(file?.index).toEqual({ kind: 'function', description: 'Solvers hub: open this file first.' })
     expect(file?.summary).toBe('Solvers, the hub of alpha.')
     expect(catalogue.files.find((f) => f.path.endsWith('beta/bare.ts'))?.index).toBeUndefined()
+  })
+})
+
+// A tiny repository with two indexed packages (the engine under src/lib, render directly under src, with a tsx
+// component and a nested react folder) and one that is not indexed (meta).
+describe('several packages', () => {
+  const repo = mkdtempSync(join(tmpdir(), 'mdml-agent-index-multi-'))
+  const tree: Record<string, string> = {
+    ...files,
+    'packages/render/package.json': JSON.stringify({
+      name: 'mdml-render',
+      description: 'Figures.',
+      exports: { './*': { source: './src/*/index.ts' } },
+    }),
+    'packages/render/llms.header.md': '# mini-render\n\nRender note.\n',
+    'packages/render/src/index.ts': "/**\n * mini-render.\n */\nexport * from './figure/index.ts'\n",
+    'packages/render/src/figure/index.ts': "/**\n * The figure model.\n */\nexport * from './figure.ts'\n",
+    'packages/render/src/figure/figure.ts': `/**
+ * The figure model, a hub.
+ *
+ * @index structure Figure model hub.
+ */
+
+/**
+ * A figure.
+ *
+ * @index function Make a figure.
+ */
+export function figure(): number {
+  return 1
+}
+`,
+    'packages/render/src/react/index.ts':
+      "/**\n * React bindings.\n */\nexport * from './Chart.tsx'\nexport * from './session/index.ts'\n",
+    'packages/render/src/react/Chart.tsx': `/**
+ * The chart component.
+ */
+
+/**
+ * A chart.
+ *
+ * @index function React component: a live chart.
+ */
+export function Chart(): number {
+  return 2
+}
+`,
+    'packages/render/src/react/session/index.ts': "/**\n * Sessions.\n */\nexport * from './useSession.ts'\n",
+    'packages/render/src/react/session/useSession.ts': `/**
+ * The session hook.
+ */
+
+/**
+ * A session.
+ *
+ * @index function React hook: run a method live.
+ */
+export function useSession(): number {
+  return 3
+}
+`,
+    'packages/render/src/theme/index.ts': "/**\n * Theme: tokens.\n */\nexport * from './tokens.ts'\n",
+    'packages/render/src/theme/tokens.ts':
+      '/**\n * Tokens, untagged.\n */\n\n/** Tokens. */\nexport const tokens = {}\n',
+    'packages/meta/package.json': JSON.stringify({ name: 'mdml-meta', description: 'Docs tooling.' }),
+  }
+  for (const [path, text] of Object.entries(tree)) {
+    mkdirSync(dirname(join(repo, path)), { recursive: true })
+    writeFileSync(join(repo, path), text)
+  }
+  afterAll(() => rmSync(repo, { recursive: true, force: true }))
+  const render = AGENT_INDEX_PACKAGES.find((p) => p.package === 'render')
+  if (render === undefined) throw new Error('render is not an indexed package')
+
+  it('indexes render with its source directly under src, and the nested react folders under mdml-render/react', () => {
+    const { entries, packageName, summaries } = collectAgentIndex(repo, render)
+    expect(packageName).toBe('mdml-render')
+    expect(entries.map((e) => `${e.domain}|${e.folder}|${e.level}|${e.name}|${e.importPath}`)).toEqual([
+      'figure|figure|file|figure.ts|mdml-render/figure',
+      'figure|figure|symbol|figure|mdml-render/figure',
+      'react|react|symbol|Chart|mdml-render/react',
+      'react|react/session|symbol|useSession|mdml-render/react',
+    ])
+    expect(entries[2]?.path).toBe('src/react/Chart.tsx')
+    expect(summaries['react/session']).toBe('Sessions.')
+  })
+
+  it('does not mix packages: the engine collects only its own tags', () => {
+    const engine = collectAgentIndex(repo)
+    expect(engine.entries.every((e) => e.path.startsWith('src/lib/'))).toBe(true)
+    expect(engine.entries.some((e) => e.name === 'figure')).toBe(false)
+  })
+
+  it('writes per-package files with that package header, source and nested sections', () => {
+    const { files: out } = buildAgentIndex(repo, render)
+    expect([...out.keys()]).toEqual(['index/figure.md', 'index/index.json', 'index/react.md', 'llms.txt'])
+    const llms = out.get('llms.txt') as string
+    expect(llms.startsWith('# mini-render\n\nRender note.\n\n## Domains\n')).toBe(true)
+    expect(llms).toContain('- [react](index/react.md): React bindings. (2 entries)')
+    expect(llms).toContain('- theme: Theme: tokens. (no entries yet)')
+    const react = out.get('index/react.md') as string
+    expect(react).toContain('from the @index tags in packages/render/src/react. Do not edit.')
+    expect(react.split('\n').filter((l) => l.startsWith('#'))).toEqual(['# react', '## react/session'])
+    expect(react).toContain('- function `useSession`: React hook: run a method live. `src/react/session/useSession.ts:')
+    expect(JSON.parse(out.get('index/index.json') as string)).toHaveProperty('package', 'mdml-render')
+  })
+
+  it('handles a package with no entries: the header and every domain from the folder summaries', () => {
+    const empty = mkdtempSync(join(tmpdir(), 'mdml-agent-index-empty-'))
+    try {
+      for (const [path, text] of Object.entries(tree).filter(([p]) => p.startsWith('packages/render/'))) {
+        mkdirSync(dirname(join(empty, path)), { recursive: true })
+        writeFileSync(join(empty, path), text.replace(/ \* @index .*\n/g, ''))
+      }
+      const built = buildAgentIndex(empty, render)
+      expect(built.collected.entries).toEqual([])
+      expect([...built.files.keys()]).toEqual(['index/index.json', 'llms.txt'])
+      const llms = built.files.get('llms.txt') as string
+      expect(llms).toContain('- figure: The figure model. (no entries yet)')
+      expect(llms).toContain('- theme: Theme: tokens. (no entries yet)')
+      expect(llms).not.toContain('](index/figure.md)')
+      expect(built.files.get('index/index.json')).toContain('"entries": []')
+    } finally {
+      rmSync(empty, { recursive: true, force: true })
+    }
+  })
+
+  it('maps the packages in a repository-level llms.txt, two lines each, and lists the others in one', () => {
+    const built = buildRepositoryIndex(repo)
+    expect(built.packages.map((p) => p.package.package)).toEqual(['engine', 'render'])
+    const lines = built.root.split('\n')
+    expect(lines).toContain('- [mdml-render](packages/render/llms.txt): Figures.')
+    const at = lines.indexOf('- [mdml-render](packages/render/llms.txt): Figures.')
+    expect(lines[at + 1]).toBe(
+      '  Imports as `mdml-render/<domain>`; 4 entries in 3 domains; the index files are in `packages/render/index/`.',
+    )
+    expect(lines.some((l) => l.startsWith('- [mdml-engine](packages/engine/llms.txt)'))).toBe(true)
+    expect(lines).toContain('- mdml-meta: Docs tooling. Not indexed.')
+  })
+
+  it('is deterministic and a pure function of the source', () => {
+    const a = buildRepositoryIndex(repo)
+    const b = buildRepositoryIndex(repo)
+    expect(b.root).toBe(a.root)
+    for (const [i, pkg] of a.packages.entries()) expect([...(b.packages[i]?.files ?? [])]).toEqual([...pkg.files])
+    expect(a.root).not.toMatch(/20\d\d-\d\d-\d\d/)
+  })
+
+  it('finds stale files per package: a changed tag changes only its own package', () => {
+    const before = buildRepositoryIndex(repo)
+    const onDisk = new Map(before.packages.map((p) => [p.package.package, new Map(p.files)]))
+    expect(staleAgentIndex(before.packages[1]?.files ?? new Map(), onDisk.get('render') ?? new Map())).toEqual([])
+    const edited = tree['packages/render/src/react/Chart.tsx'] as string
+    writeFileSync(join(repo, 'packages/render/src/react/Chart.tsx'), edited.replace('a live chart', 'a chart'))
+    try {
+      const after = buildRepositoryIndex(repo)
+      const stale = (i: number, name: string): string[] =>
+        staleAgentIndex(after.packages[i]?.files ?? new Map(), onDisk.get(name) ?? new Map())
+      expect(stale(0, 'engine')).toEqual([])
+      expect(stale(1, 'render')).toEqual(['index/index.json', 'index/react.md'])
+      expect(after.root).toBe(before.root)
+    } finally {
+      writeFileSync(join(repo, 'packages/render/src/react/Chart.tsx'), edited)
+    }
+  })
+
+  it('validates tags per package: an unknown kind in render is an error in render only', () => {
+    writeFileSync(
+      join(repo, 'packages/render/src/theme/tokens.ts'),
+      '/**\n * Tokens.\n */\n\n/**\n * Tokens.\n *\n * @index component A kind that is not in the vocabulary.\n */\nexport const tokens = {}\n',
+    )
+    try {
+      const r = collectAgentIndex(repo, render)
+      expect(r.problems.map((p) => [p.severity, p.file, p.line])).toEqual([
+        ['error', 'packages/render/src/theme/tokens.ts', 8],
+      ])
+      expect(r.problems[0]?.message).toContain("unknown @index kind 'component'")
+      expect(collectAgentIndex(repo).problems.filter((p) => p.file.includes('render'))).toEqual([])
+    } finally {
+      writeFileSync(
+        join(repo, 'packages/render/src/theme/tokens.ts'),
+        tree['packages/render/src/theme/tokens.ts'] as string,
+      )
+    }
+  })
+})
+
+describe('renderRootIndex', () => {
+  it('lists an unindexed package on one line and an empty package as having no entries yet', () => {
+    const text = renderRootIndex(
+      [
+        {
+          package: 'x',
+          collected: { packageName: 'mdml-x', description: 'X.', entries: [], summaries: { a: 'A.' }, problems: [] },
+        },
+      ],
+      [{ name: 'mdml-y', description: 'Y.' }],
+    )
+    expect(text).toContain(
+      '- [mdml-x](packages/x/llms.txt): X.\n  Imports as `mdml-x/<domain>`; no entries yet in 1 domain;',
+    )
+    expect(text).toContain('- mdml-y: Y. Not indexed.')
   })
 })

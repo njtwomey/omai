@@ -1,0 +1,12 @@
+# mdml-js
+
+> A traced, self-documenting ML library in TypeScript, in packages. Each indexed package has an `llms.txt` that
+> lists its main things, one line each with `path:line` and the import path: start there, then open the source.
+
+## Packages
+
+- [mdml-engine](packages/engine/llms.txt): mdml-js compute: tensors, autodiff, numerics, probability, learning, neural networks, RL and datasets, all traced.
+  Imports as `mdml-engine/<domain>`; 502 entries in 67 domains; the index files are in `packages/engine/index/`.
+- [mdml-render](packages/render/llms.txt): mdml-js figures: ECharts options, layouts, scene and structure drawing, SVG and animation export; React bindings.
+  Imports as `mdml-render/<domain>`; no entries yet in 13 domains; the index files are in `packages/render/index/`.
+- mdml-meta: mdml-js documentation metadata: schema, docstring extractor, example runner, worker and concepts. Not indexed.
