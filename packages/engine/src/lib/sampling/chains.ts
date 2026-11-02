@@ -167,6 +167,7 @@ function infoMetrics(info: TransitionInfo | undefined, logDensity: number): Reco
  * @param options - A run name (default the kernel's name).
  * @returns The algorithm (run it with `runAlgorithm`).
  * @concept markov-chain-monte-carlo
+ * @index algorithm Run any MCMC kernel as a steppable Algorithm.
  * @example
  * ```ts
  * import { randomWalkMetropolis, samplerAlgorithm, numericTarget } from 'mdml-engine/sampling'
@@ -409,6 +410,7 @@ function stackDraws(per: readonly ChainDraws[], numDraws: number, dim: number): 
  * @returns The chains.
  * @throws MdmlError with code `value` for invalid counts, and `shape` for starting points of the wrong length.
  * @concept markov-chain-monte-carlo
+ * @index function Run several chains of any MCMC kernel.
  * @example
  * ```ts
  * import { randomWalkMetropolis, sampleChains, numericTarget } from 'mdml-engine/sampling'

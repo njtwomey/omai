@@ -62,6 +62,7 @@ function lookup(id: string, registry: readonly EnvDefinition[] | undefined): Env
  * @returns The environment.
  * @throws MdmlError with code `value` for an id missing from the registry.
  * @concept environments
+ * @index function Make an environment by name with wrappers, like gymnasium.make.
  * @example
  * ```ts
  * import { make, listEnvironments } from 'mdml-engine/rl'

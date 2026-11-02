@@ -300,6 +300,7 @@ function baseFolds(
  * @param options - The metric or scoring (default the estimator's score), folds, groups, refit and grid points.
  * @returns The search, an estimator.
  * @concept grid-search
+ * @index estimator Grid search over hyperparameters with cross-validation.
  * @example
  * ```ts
  * import { gridSearchCv } from 'mdml-engine/tune'

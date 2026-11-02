@@ -134,6 +134,7 @@ export class BatchNormNd extends StatNorm {
  * `forward` updates in training mode and uses in evaluation mode.
  *
  * @concept batch-normalisation
+ * @index module Batch normalisation with running statistics.
  * @example
  * ```ts
  * import { BatchNorm1d } from 'mdml-engine/nn'
@@ -249,6 +250,7 @@ const shapeOf = (s: number | readonly number[]): number[] => (typeof s === 'numb
  * Layer normalisation over the trailing axes (torch.nn.LayerNorm): elementwise weight (ones) and bias (zeros).
  *
  * @concept layer-normalisation
+ * @index module Layer normalisation.
  * @example
  * ```ts
  * import { LayerNorm } from 'mdml-engine/nn'

@@ -118,6 +118,7 @@ export interface KanTrace {
  * the buffers are the layers' ranges, fixed knots and edge masks.
  *
  * @concept splines
+ * @index module Kolmogorov-Arnold network of learnable spline edges.
  * @example
  * ```ts
  * import { KAN } from 'mdml-engine/nn'

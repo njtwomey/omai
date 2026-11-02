@@ -337,6 +337,7 @@ export interface RasterResult {
  * @param options - Size, culling, background, texture, shading and interpolation.
  * @returns The image, depth buffer, triangle ids and records.
  * @concept rasterisation
+ * @index function Triangle rasterisation with depth buffer.
  * @example
  * ```ts
  * import { mesh, pinholeCamera, rasteriseMesh } from 'mdml-engine/graphics'

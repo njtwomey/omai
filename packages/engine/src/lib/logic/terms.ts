@@ -2,6 +2,8 @@
  * First-order terms, the data of logic programming: atoms, variables, numbers, compounds and lists, with clauses built
  * from them. Constructors, groundness and variable collection, structural equality and Prolog's standard order of
  * terms, conjunction helpers, the operator table, and printing terms and clauses as Prolog text.
+ *
+ * @index structure First-order terms and clauses, the data of logic programming.
  */
 
 import { MdmlError } from '../base/index.ts'

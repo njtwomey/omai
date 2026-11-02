@@ -508,6 +508,7 @@ function etsFilterQuick(x: Float64Array, r: Resolved, params: EtsParameters): nu
  * @param spec - The structure (see {@link smoothingModels} for the classical presets).
  * @param options - The iteration cap and gradient tolerance.
  * @returns The fitted model.
+ * @index function Fit exponential smoothing (ETS) models.
  * @example
  * ```ts
  * import { etsFit, smoothingModels } from 'mdml-engine/timeseries'

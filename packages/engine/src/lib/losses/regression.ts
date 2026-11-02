@@ -36,6 +36,7 @@ const pair = (input: TensorLike, target: TensorLike): [Value, Value] => promoteF
  * @param options - Reduction and weights.
  * @returns The loss, differentiable.
  * @concept losses
+ * @index function Mean squared error, torch.nn.functional style.
  * @example
  * ```ts
  * import { mse } from 'mdml-engine/losses'

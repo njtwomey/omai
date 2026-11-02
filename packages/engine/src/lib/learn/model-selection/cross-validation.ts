@@ -305,6 +305,7 @@ export function crossValidateAlgorithm(
  * @param options - cv, scoring, returnTrainScore, returnEstimator, groups, errorScore, key and tracing.
  * @returns Scores per scorer and fold, their means and deviations, the folds and optionally the fitted estimators.
  * @concept cross-validation
+ * @index function Cross-validate an estimator with several scorers.
  * @example
  * ```ts
  * import { crossValidate } from 'mdml-engine/learn/model-selection'

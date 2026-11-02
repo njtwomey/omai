@@ -3,6 +3,8 @@
  * normalised, with edit counts for error rates), Damerau-Levenshtein, Hamming, Jaro and Jaro-Winkler, longest common
  * subsequence and substring, Indel, set measures (Jaccard, containment, clipped overlap) and the fuzzy ratios (ratio,
  * token-sort, token-set).
+ *
+ * @index function String similarity: Levenshtein, Jaro-Winkler, Jaccard.
  */
 
 import { MdmlError } from '../base/index.ts'

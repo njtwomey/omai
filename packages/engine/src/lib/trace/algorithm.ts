@@ -3,6 +3,8 @@
  * passing, solvers, searches, agents): an `init` and a `step` over an explicit state. `runAlgorithm` runs one to
  * completion while recording a traced run, `iterate` steps through it lazily, and `runFor` advances it in time-budgeted
  * slices for interactive pages.
+ *
+ * @index structure The Algorithm protocol (init and step) every iterative method implements.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
@@ -150,6 +152,7 @@ function checkpoint<S>(algorithm: Algorithm<S>, run: RunHandle, state: S, t: num
  * @param options - Step budget, seed or key, tracer and policy (or a parent run), and a start state.
  * @returns The final state, steps taken, status and run id.
  * @concept algorithm-protocol
+ * @index function Run an Algorithm and record a traced run.
  * @example
  * ```ts
  * import { runAlgorithm, recorder } from 'mdml-engine/trace'

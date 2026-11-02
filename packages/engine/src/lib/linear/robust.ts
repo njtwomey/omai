@@ -490,6 +490,7 @@ const HUBER_DEFAULTS: HuberHyper = { epsilon: 1.35, alpha: 1e-4, fitIntercept: t
  *
  * @param hyper - `epsilon`, `alpha`, `fitIntercept`, `tol`, `maxIter`.
  * @returns The estimator.
+ * @index estimator Huber regression, robust to outliers.
  * @example
  * ```ts
  * import { huber } from 'mdml-engine/linear'

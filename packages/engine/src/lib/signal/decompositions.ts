@@ -268,6 +268,7 @@ function logEmd(
  * @param options - IMF count, stopping rule (or SD threshold) and sift limit.
  * @returns The algorithm; its state is an {@link EmdState}.
  * @concept empirical-mode-decomposition
+ * @index algorithm Empirical mode decomposition, one sifting step at a time.
  * @example
  * ```ts
  * import { emdAlgorithm } from 'mdml-engine/signal'

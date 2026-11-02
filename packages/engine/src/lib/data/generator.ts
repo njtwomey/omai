@@ -3,6 +3,8 @@
  * data together with the truth of how it was made. `generate` runs one with defaults and a reproducible key,
  * `describeGenerator` flattens its knobs for documentation and controls, and `asGenerated` wraps a real dataset so
  * modifiers apply to it too.
+ *
+ * @index structure Dataset generator contract: knobs as a Space, key to data with truth.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -54,6 +56,7 @@ export interface GenerateOptions {
  * @returns The data and its truth.
  * @throws MdmlError with code `value` when a knob is unknown or outside its space.
  * @concept datasets
+ * @index function Run a generator with a key and knob values.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

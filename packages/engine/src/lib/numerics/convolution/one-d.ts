@@ -56,6 +56,7 @@ function cropRange(n1: number, n2: number, mode: ConvolutionMode): [number, numb
  * @param mode - full (default), same or valid.
  * @returns The convolution.
  * @concept convolution
+ * @index function Discrete 1-D linear convolution, like numpy.convolve.
  * @example
  * ```ts
  * import { convolve } from 'mdml-engine/numerics/convolution'

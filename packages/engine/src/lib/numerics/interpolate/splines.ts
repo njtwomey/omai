@@ -113,6 +113,7 @@ export type SplineBoundary =
  * @param extrapolate - Extend the end pieces (default true; 'periodic' for periodic splines, as scipy).
  * @returns The piecewise cubic.
  * @concept splines
+ * @index function Cubic spline with not-a-knot, natural, clamped or periodic ends.
  * @example
  * ```ts
  * import { cubicSpline } from 'mdml-engine/numerics/interpolate'

@@ -34,6 +34,7 @@ export interface BatchOptions {
  * @param options - Batch size, shuffling key or sampler, and whether to drop the last partial batch.
  * @returns The batches.
  * @concept datasets
+ * @index function Minibatches of a dataset, in order or shuffled by a key.
  * @example
  * ```ts
  * import { batches, xy } from 'mdml-engine/data'

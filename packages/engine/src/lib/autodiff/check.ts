@@ -209,6 +209,7 @@ export function dotProductTest(f: (x: Value) => Value, x: TensorLike, options: C
  * @param options - Step, tolerances, key for the random directions, which inputs to check, and whether to check vmap.
  * @returns A report with the largest errors and any failures.
  * @concept gradient-check
+ * @index function Conformance test every primitive's jvp and vjp must pass.
  * @example
  * ```ts
  * import { checkPrimitive } from 'mdml-engine/autodiff'

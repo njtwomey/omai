@@ -2,6 +2,8 @@
  * Tensor constructors, numpy style: filled arrays (`zeros`, `ones`, `full` and their `Like` forms), ranges and spacings
  * (`arange`, `linspace`, `logspace`, `geomspace`), identity, diagonal and triangular matrices, `meshgrid` and index
  * grids.
+ *
+ * @index function Tensor constructors: zeros, ones, full, arange, linspace, eye.
  */
 
 import { MdmlError } from '../base/index.ts'

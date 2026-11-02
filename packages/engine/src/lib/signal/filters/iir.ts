@@ -173,6 +173,7 @@ export interface DesignOptions<O extends FilterOutput = 'ba'> extends IirOptions
  * @param options - Band, analog, sampling rate and output.
  * @returns The design.
  * @concept iir-design
+ * @index function Butterworth IIR filter design.
  * @example
  * ```ts
  * import { butter } from 'mdml-engine/signal'

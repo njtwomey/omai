@@ -54,6 +54,7 @@ function plugIn(codes: { codes: Int32Array; m: number }, correction: PlugInOptio
  * @param options - Base and correction.
  * @returns The estimated entropy.
  * @concept entropy-estimation
+ * @index function Entropy and mutual information estimated from samples.
  * @example
  * ```ts
  * import { plugInEntropy } from 'mdml-engine/information'

@@ -28,6 +28,7 @@ export type ThresholdChoice = number | 'otsu' | 'li' | 'triangle'
  * @param options - maxValue (default 1) and the rule (default 'binary').
  * @returns The threshold used and the thresholded image.
  * @concept thresholding
+ * @index function Global thresholding: binary, truncate, to-zero and inverse variants.
  * @example
  * ```ts
  * import { threshold } from 'mdml-engine/vision'

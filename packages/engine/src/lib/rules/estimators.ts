@@ -232,6 +232,7 @@ function coveringDefaults(mode: CoveringOptions['mode'], hyper: Partial<Covering
  * @param hyper - Ordered or unordered (`mode`), heuristic, beam width, rule length, significance level, limits and the
  *   nominal features.
  * @returns The estimator, with `method(data)` and `session(data)` beside `fit`.
+ * @index estimator CN2 ordered rule-list classifier.
  * @example
  * ```ts
  * import { cn2Classifier } from 'mdml-engine/rules'
@@ -298,6 +299,7 @@ export type RipperPath = 'rule/descriptionLength' | 'pass/revision' | 'ruleset/s
  *
  * @param hyper - Mode, optimisation passes, grow fraction, rule length, slack bits and the nominal features.
  * @returns The estimator.
+ * @index estimator RIPPER rule-list classifier.
  * @example
  * ```ts
  * import { ripperClassifier } from 'mdml-engine/rules'

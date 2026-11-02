@@ -246,6 +246,14 @@ export const smoothSolverConfig = (config: SpaceValue): SpaceValue => solverConf
 /**
  * The solvers of a smooth objective as one slot: gradient descent (default), conjugate gradient, Newton, BFGS, L-BFGS,
  * coordinate descent and the stochastic `gradient` mode, each with its own knobs, all yielding the vector reached.
+ *
+ * @index table Smooth-objective solvers as one slot: gradient descent to L-BFGS.
+ * @example
+ * ```ts
+ * import { smoothSolvers } from 'mdml-engine/optim'
+ * smoothSolvers.names // => ['gradientDescent', 'conjugateGradient', 'newton', 'bfgs', 'lbfgs', 'coordinateDescent', 'gradient']
+ * smoothSolvers.modeOf({ kind: 'lbfgs' }).name // => 'lbfgs'
+ * ```
  */
 export const smoothSolvers: ModeTable<SmoothProblem, VectorParams> = modes(
   { gradientDescent, conjugateGradient, newton, bfgs, lbfgs, coordinateDescent, gradient },

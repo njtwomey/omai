@@ -3,6 +3,8 @@
  * Probability's Bijector and torch.distributions.Transform, which turns one distribution into another by a change of
  * variables. `defineBijector` builds one from its forward and inverse maps, and `chain` and `invert` compose and
  * reverse them.
+ *
+ * @index structure The Bijector contract: invertible maps with log-Jacobian, for flows.
  */
 
 import { MdmlError } from '../../base/index.ts'

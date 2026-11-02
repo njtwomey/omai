@@ -455,6 +455,7 @@ const toLive = (e: { readonly coef: Float64Array; readonly rho: number }): SvcSt
  *
  * @concept support-vector-machines
  * @reference C.-C. Chang and C.-J. Lin, LIBSVM: a library for support vector machines (2011).
+ * @index estimator Support vector classifier by SMO over any kernel.
  * @example
  * ```ts
  * import { svc } from 'mdml-engine/svm'

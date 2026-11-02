@@ -65,6 +65,7 @@ export interface Primitive<P> {
  * @param spec - The primitive's definition.
  * @returns The primitive, to be applied with {@link bind}.
  * @concept primitives
+ * @index function Declare a new operation with its kernel and derivative rules.
  * @example
  * ```ts
  * import { definePrimitive, bind1, tensor, mul, toArray } from 'mdml-engine/tensor'

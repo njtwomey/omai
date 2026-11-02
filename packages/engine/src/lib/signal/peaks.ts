@@ -201,6 +201,7 @@ export function peakWidths(
  * @param options - Conditions (a minimum or a [min, max] interval) and the prominence and width parameters.
  * @returns Peak indices and their properties.
  * @concept peak-finding
+ * @index function Peaks of a signal with prominence and width filters.
  * @example
  * ```ts
  * import { findPeaks } from 'mdml-engine/signal'

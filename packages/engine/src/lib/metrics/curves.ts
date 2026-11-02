@@ -195,6 +195,7 @@ export interface RocAucOptions extends MetricOptions {
  * @param options - average, multiClass, maxFpr, labels and sample weights.
  * @returns The metric result (per-class AUCs in the breakdown).
  * @concept roc-curve
+ * @index function Area under the ROC curve; rocCurve gives the curve.
  * @example
  * ```ts
  * import { rocAucScore } from 'mdml-engine/metrics'

@@ -3,6 +3,8 @@
  * (its contract), and a `Session` is a method running or run: the tape plus the verbs to advance it eagerly or live,
  * seek any recorded step, fork from one, probe a derived path at any step and export the tape. Eager against live is
  * the session's business: the same tape and the same numbers either way.
+ *
+ * @index structure Methods and sessions: drive, seek and fork a run step by step.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
@@ -63,6 +65,7 @@ export interface Method<S, C extends Config = Config, K extends string = string>
  * @param method - The method.
  * @returns The method.
  * @throws MdmlError with code `value` for an empty or malformed path, or defaults the contract cannot satisfy.
+ * @index function Declare how to build a run from its configuration and contract.
  * @example
  * ```ts
  * import { defineMethod, scalar } from 'mdml-engine/trace'
@@ -175,6 +178,7 @@ function configOf<C extends Config>(space: DictSpace, given: Partial<C> | undefi
  * @throws MdmlError with code `value` for a configuration outside the method's space or a subscription the contract
  *   cannot satisfy.
  * @concept log-contract
+ * @index function Open a session on a method to step, seek and fork.
  * @example
  * ```ts
  * import { defineMethod, Log, metricSeries, scalar, session } from 'mdml-engine/trace'

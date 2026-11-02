@@ -54,6 +54,7 @@ export interface SgdOptions {
  * @param options - Learning rate, momentum, dampening, Nesterov and weight decay.
  * @returns The optimiser.
  * @concept optimisers
+ * @index function SGD with momentum, Nesterov and weight decay.
  * @example
  * ```ts
  * import { sgd, applyUpdates } from 'mdml-engine/optim'

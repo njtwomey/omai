@@ -2,6 +2,8 @@
  * Distribution shift and partial labelling: covariate shift by biased selection along a direction, concept drift at
  * known points of a time-ordered dataset, a domain-shift train-test split for extrapolation and adaptation studies, and
  * a semi-supervised split that hides most labels (as `-1` for classes, sklearn's convention, or NaN for regression).
+ *
+ * @index function Covariate shift, concept drift and partial labels.
  */
 
 import { MdmlError } from '../../base/index.ts'

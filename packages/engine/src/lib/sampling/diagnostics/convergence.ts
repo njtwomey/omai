@@ -66,6 +66,7 @@ export type RhatMethod = 'rank' | 'split' | 'folded' | 'zScale' | 'identity'
  * @concept r-hat
  * @reference A. Vehtari, A. Gelman, D. Simpson, B. Carpenter and P.-C. Burkner, Rank-normalization, folding, and
  *   localization: an improved R-hat for assessing convergence of MCMC (Bayesian Analysis 2021).
+ * @index function Split R-hat convergence diagnostic; ess gives effective sample size.
  * @example
  * ```ts
  * import { rhat } from 'mdml-engine/sampling'

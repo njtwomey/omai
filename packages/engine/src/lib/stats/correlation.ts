@@ -3,6 +3,8 @@
  * correlations (scipy.stats), the covariance and correlation matrices of numpy, partial correlation given covariates
  * and the point-biserial correlation (as pingouin), and the distance correlation of Szekely, Rizzo and Bakirov, which
  * is zero exactly when the variables are independent.
+ *
+ * @index function Pearson, Spearman and Kendall correlations with tests.
  */
 
 import { type Estimate, MdmlError, meanOf, type TestResult } from '../base/index.ts'

@@ -470,6 +470,7 @@ function entropicObjective(plan: Vec, m: Vec, reg: number, logRef?: Vec): number
  * @param options - Method, tolerance, iteration cap (default 10000) and run options.
  * @returns The plan, costs, potentials and convergence.
  * @concept optimal-transport
+ * @index function Entropic optimal transport by Sinkhorn iterations.
  * @example
  * ```ts
  * import { sinkhorn } from 'mdml-engine/optim'

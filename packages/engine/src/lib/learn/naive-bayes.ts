@@ -418,6 +418,7 @@ const NB_DEFAULTS: NaiveBayesHyper = {
  *
  * @param hyper - `family`, `alpha`, `varSmoothing`, `binarize`, `norm`, `fitPrior`, `classPrior`, `minCategories`.
  * @returns The estimator.
+ * @index estimator Naive Bayes classifier with Gaussian, categorical or other likelihoods.
  * @example
  * ```ts
  * import { naiveBayes } from 'mdml-engine/learn'

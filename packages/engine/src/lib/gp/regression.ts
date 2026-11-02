@@ -289,6 +289,7 @@ export type GpPath = 'gp/logMarginalLikelihood' | 'gp/hyper' | 'model/posterior'
  *
  * @concept gaussian-process-regression
  * @reference C. E. Rasmussen and C. K. I. Williams, Gaussian Processes for Machine Learning (2006), chapter 2 and 5.
+ * @index estimator Gaussian process regression with exact marginal likelihood.
  * @example
  * ```ts
  * import { gpRegression } from 'mdml-engine/gp'

@@ -154,6 +154,7 @@ function framesOf(rows: Value, f: Framing, options: StftOptions): { spec: Comple
  *   scaling and axis.
  * @returns Frequencies, frame times and the complex STFT `[..., bins, frames]`.
  * @concept short-time-fourier-transform
+ * @index function Short-time Fourier transform; spectrogram sits beside it.
  * @example
  * ```ts
  * import { stft } from 'mdml-engine/signal'

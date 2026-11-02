@@ -124,6 +124,7 @@ export function greedyBestFirstSearch<S, A>(
  * @param options - Graph or tree search, tie-breaking, the expansion budget and tree recording.
  * @returns The algorithm.
  * @concept informed-search
+ * @index algorithm A* recording its frontier and explored set each step.
  * @example
  * ```ts
  * import { aStarSearchAlgorithm } from 'mdml-engine/search'
@@ -146,6 +147,7 @@ export function aStarSearchAlgorithm<S, A>(
  * @param options - Graph or tree search, tie-breaking, the expansion budget, tree recording and tracing.
  * @returns The result.
  * @concept informed-search
+ * @index function A* search; best-first and IDA* beside it.
  * @example
  * ```ts
  * import { aStarSearch } from 'mdml-engine/search'

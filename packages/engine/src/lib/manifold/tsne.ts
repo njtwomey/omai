@@ -626,6 +626,7 @@ export function tsneSetup(
  * gradient descent on the KL divergence to a Student-t similarity per iteration, exact or Barnes-Hut. The embedding is
  * on the tape at every step; new rows are placed by their nearest training rows (t-SNE has no out-of-sample map).
  *
+ * @index estimator t-SNE embedding, one gradient step at a time.
  * @example
  * ```ts
  * import { tsne } from 'mdml-engine/manifold'

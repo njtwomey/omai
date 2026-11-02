@@ -51,6 +51,7 @@ function rowsOf(indptr: Int32Array): Int32Array {
  * @param source - A dense matrix, or `{ indptr, indices, values, shape }`.
  * @returns The matrix.
  * @concept sparse-matrices
+ * @index structure Compressed sparse row matrix from a dense matrix or its arrays.
  * @example
  * ```ts
  * import { csr } from 'mdml-engine/numerics/sparse'

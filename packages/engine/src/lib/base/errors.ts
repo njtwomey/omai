@@ -24,6 +24,7 @@ export type ErrorCode =
  * @param details - Structured context, such as the shapes involved.
  * @returns The error (use with `throw`).
  * @concept errors
+ * @index structure The library's single error type with machine-readable codes.
  * @example
  * ```ts
  * import { MdmlError } from 'mdml-engine/base'

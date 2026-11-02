@@ -446,6 +446,7 @@ export interface NerfFit {
  * @param options - As {@link fitNerfAlgorithm}, the step count and the run's key, tracer and policy.
  * @returns The trained parameters, per-step losses and the status.
  * @concept neural-radiance-fields
+ * @index function Fit a NeRF to posed images for a number of steps.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

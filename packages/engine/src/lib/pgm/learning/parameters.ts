@@ -257,6 +257,7 @@ export interface EmState {
  * @returns The algorithm.
  * @throws MdmlError with code `value` for a variable without states.
  * @concept expectation-maximisation
+ * @index algorithm EM for Bayesian-network parameters with missing data.
  * @example
  * ```ts
  * import { dag } from 'mdml-engine/pgm'

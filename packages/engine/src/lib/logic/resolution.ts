@@ -3,6 +3,8 @@
  * answered by SLD resolution (depth-first, left-to-right proof search with backtracking and cut) as a traced algorithm
  * whose events follow Byrd's box model. Answers print in SWI-Prolog style, and a run can be recorded as its SLD tree
  * for drawing.
+ *
+ * @index function A small Prolog engine: consult programs, answer queries by SLD resolution.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'

@@ -202,6 +202,14 @@ for (const name of smoothSolvers.names) {
  * The solvers of a smooth objective on a box as one slot: L-BFGS-B (default), SLSQP, and each first-order generic
  * solver of `smoothSolvers` (all but Newton, which needs second derivatives) on a reparametrisation of the box. The state of every mode carries the iterate `x` in the problem's
  * own coordinates (a generic mode's `grad` is in the free coordinates it works in).
+ *
+ * @index table The solvers of a smooth objective on a box.
+ * @example
+ * ```ts
+ * import { boundedSolvers } from 'mdml-engine/optim'
+ * boundedSolvers.names.slice(0, 2) // => ['lbfgsb', 'slsqp']
+ * boundedSolvers.modeOf({ kind: 'slsqp' }).name // => 'slsqp'
+ * ```
  */
 export const boundedSolvers: ModeTable<BoundedProblem, VectorParams> = modes<BoundedProblem, VectorParams>(
   { lbfgsb, slsqp, ...generic },

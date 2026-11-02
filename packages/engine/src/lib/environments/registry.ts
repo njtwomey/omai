@@ -307,6 +307,7 @@ const model = (id: string, make: () => ControlModel): SingleAgentDefinition => (
  * Extend it with {@link registerEnvironments}; query it with {@link whereEnvironments}.
  *
  * @concept environments
+ * @index table Tagged registry of every environment, with action and observation kinds.
  * @example
  * ```ts
  * import { lookup } from 'mdml-engine/base'

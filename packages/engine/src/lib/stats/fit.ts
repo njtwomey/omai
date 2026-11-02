@@ -220,6 +220,14 @@ const levenbergNewton: ModeSpec<MleProblem, NewtonMleState, VectorParams> = {
  * The solvers of the maximum-likelihood slot: `levenbergNewton` (default; the library's own damped Newton, which
  * reproduces the fits of {@link newtonMle}) beside every generic solver of `smoothSolvers` applied to the negative
  * log-likelihood. All of them reach the same maximiser; they differ in the path.
+ *
+ * @index table Solvers of the maximum-likelihood slot.
+ * @example
+ * ```ts
+ * import { mleSolvers } from 'mdml-engine/stats'
+ * mleSolvers.names[0] // => 'levenbergNewton'
+ * mleSolvers.modeOf({ kind: 'bfgs' }).name // => 'bfgs'
+ * ```
  */
 export const mleSolvers: ModeTable<MleProblem, VectorParams> = familySolvers<MleProblem>(
   { levenbergNewton },

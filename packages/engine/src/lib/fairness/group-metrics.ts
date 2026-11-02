@@ -224,6 +224,7 @@ function rateDisparity(
  * @param groups - Sensitive feature `[N]`.
  * @param options - method, posLabel and sample weights.
  * @returns The metric result, with each group's selection rate in the breakdown.
+ * @index function Demographic parity gap; equalized odds and others beside it.
  * @example
  * ```ts
  * import { demographicParityDifference } from 'mdml-engine/fairness'

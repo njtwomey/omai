@@ -318,6 +318,7 @@ export interface FactorAnalysisHyper {
  * Factor analysis (sklearn.decomposition.FactorAnalysis) on the iterative base: a linear-Gaussian latent model with
  * per-feature noise, one maximum-likelihood iteration per step, optionally rotated by varimax or quartimax.
  *
+ * @index estimator Factor analysis by EM.
  * @example
  * ```ts
  * import { factorAnalysis } from 'mdml-engine/decomposition'

@@ -219,6 +219,7 @@ export interface OrbOptions {
  * @param options - Feature count, pyramid, FAST threshold, patch size and pattern key.
  * @returns Keypoints (in input coordinates) and their 32-byte descriptors.
  * @concept binary-descriptors
+ * @index function ORB keypoint descriptors; matchDescriptors in matching.ts.
  * @example
  * ```ts
  * import { orb } from 'mdml-engine/vision'

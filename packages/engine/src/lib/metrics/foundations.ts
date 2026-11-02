@@ -370,6 +370,7 @@ export function pairedBootstrap<O extends MetricOptions, I extends MetricInput>(
  * @param options - sampleWeight and an interval specification.
  * @returns The results, keyed by metric name.
  * @concept evaluation-metrics
+ * @index function Compute many metrics of the same predictions in one pass.
  * @example
  * ```ts
  * import { accuracyScore, evaluate, f1Score } from 'mdml-engine/metrics'

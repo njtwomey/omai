@@ -205,6 +205,7 @@ export interface Interp1dOptions {
  * @param y - Values `[n, ...]`.
  * @param options - Kind, bounds handling and fill value.
  * @returns The interpolating function.
+ * @index function 1-D interpolation: linear, nearest, previous, next or spline.
  * @example
  * ```ts
  * import { interp1d } from 'mdml-engine/numerics/interpolate'

@@ -119,6 +119,7 @@ function run(x: ComplexLike, n: number | undefined, axis: number, norm: FftNorm,
  * @param norm - Normalisation (default backward: no scaling forward).
  * @returns The spectrum as a complex pair.
  * @concept fourier-transform
+ * @index function Discrete Fourier transform along an axis, like numpy.fft.
  * @example
  * ```ts
  * import { fft } from 'mdml-engine/numerics/fourier'

@@ -2,6 +2,8 @@
  * Quasi-random and space-filling point sets: Sobol' sequences (unscrambled, and Matousek-scrambled with a digital
  * shift, matching `scipy.stats.qmc.Sobol`), Halton sequences, Latin hypercube samples as in scipy's `LatinHypercube`,
  * and Poisson disk (blue-noise) samples by Bridson's algorithm in any dimension.
+ *
+ * @index function Sobol, Halton and Latin hypercube quasi-random point sets.
  */
 
 import { MdmlError } from '../base/index.ts'

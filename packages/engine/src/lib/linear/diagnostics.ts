@@ -6,6 +6,8 @@
  * one SVD of the weighted design (intercept column last), so rank-deficient designs are handled through the
  * pseudo-inverse. With sample weights the residuals and leverages are those of the whitened problem sqrt(w) y on
  * sqrt(w) X, as statsmodels reports for weighted fits.
+ *
+ * @index function Leverage, influence, VIF and heteroscedasticity diagnostics.
  */
 
 import { MdmlError, type TestResult } from '../base/index.ts'

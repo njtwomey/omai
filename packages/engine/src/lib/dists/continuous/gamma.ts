@@ -62,6 +62,7 @@ const EULER = 0.5772156649015329
  * @param rate - Rate beta (positive).
  * @returns The distribution; `rsample` uses implicit reparameterisation, so samples differentiate in both parameters.
  * @concept distributions
+ * @index distribution Gamma distribution with shape and rate.
  * @example
  * ```ts
  * import { gamma } from 'mdml-engine/dists'

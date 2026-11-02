@@ -380,6 +380,7 @@ const LARS_DEFAULTS: LarsHyper = { method: 'lasso', alpha: 0, fitIntercept: true
  *
  * @param hyper - `method` (`lasso` or `lar`), `alpha`, `nNonzeroCoefs`, `fitIntercept`.
  * @returns The estimator.
+ * @index estimator Least angle regression: the lasso path one knot per step.
  * @example
  * ```ts
  * import { lars } from 'mdml-engine/linear'

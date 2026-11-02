@@ -192,6 +192,7 @@ function baselineOf(xt: Tensor, baseline: TensorLike | undefined, who: string): 
  * @param x - Inputs `[n, d]`.
  * @param options - target, baseline, nSteps and method.
  * @returns Attributions `[n, d]` and the convergence delta per row.
+ * @index function Integrated-gradients attribution for differentiable models.
  * @example
  * ```ts
  * import * as explain from 'mdml-engine/explain'

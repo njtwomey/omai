@@ -305,6 +305,7 @@ const toTensor = (rows: number[][]): Tensor =>
  * NMF X ~ W H (sklearn.decomposition.NMF) on the iterative base, Frobenius or KL by multiplicative updates, or
  * Frobenius by HALS, one update of W and H per step.
  *
+ * @index estimator Non-negative matrix factorisation by multiplicative or HALS updates.
  * @example
  * ```ts
  * import { nmf } from 'mdml-engine/decomposition'

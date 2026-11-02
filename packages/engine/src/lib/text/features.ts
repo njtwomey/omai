@@ -333,6 +333,7 @@ export interface TfidfVectorizer {
  * @param options - Count vectoriser and tf-idf options.
  * @returns The fitted vectoriser and the tf-idf matrix.
  * @concept tf-idf
+ * @index function TF-IDF document vectors; count and hashing vectorisers beside it.
  * @example
  * ```ts
  * import { tfidfVectorize } from 'mdml-engine/text'
@@ -449,6 +450,7 @@ export interface Bm25Index {
  * @returns The index.
  * @throws MdmlError with code `value` for an empty corpus.
  * @concept bm25
+ * @index function BM25 ranking index.
  * @example
  * ```ts
  * import { bm25 } from 'mdml-engine/text'

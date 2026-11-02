@@ -102,6 +102,7 @@ export function fieldProblem(config: FieldMethodConfig, key: Key): FieldProblem 
  * step (`field/render`) and the error on the whole data (`field/fullMse`).
  *
  * @concept neural-fields
+ * @index estimator Fit an image or SDF with a neural field as a session.
  * @example
  * ```ts
  * import { fitFieldMethod } from 'mdml-engine/fields'

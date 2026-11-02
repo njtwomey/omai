@@ -112,6 +112,7 @@ function pointwise(points: Value, k: number, f: (p: number[]) => number[]): Valu
  * the truth is the distance function.
  *
  * @concept signed-distance-field
+ * @index dataset Exact signed distance samples of sphere, box, torus or union shapes.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'
@@ -214,6 +215,7 @@ function paint(pattern: string, u: number, v: number, texture: number, frequency
  * finer grid than it saw.
  *
  * @concept spectral-bias
+ * @index dataset Procedural colour image as coordinate-to-colour data, with its continuous truth.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

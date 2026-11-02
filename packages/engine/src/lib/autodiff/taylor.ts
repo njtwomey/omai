@@ -222,6 +222,7 @@ export function jet(
  * @param order - The highest order.
  * @returns The coefficients `[f(x), c_1, ..., c_order]`, each with the shape of `f(x)`.
  * @concept taylor-mode-autodiff
+ * @index function Higher derivatives along a direction by Taylor-mode differentiation.
  * @example
  * ```ts
  * import { taylorCoefficients } from 'mdml-engine/autodiff'

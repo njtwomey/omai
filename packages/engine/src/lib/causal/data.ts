@@ -3,6 +3,8 @@
  * generated dataset whose treatment is one of its feature columns, and `EffectEstimate`, an effect with its standard
  * error, interval and p-value, built either from the per-unit influence values of the estimator (the sample variance of
  * the influence over n is its variance) or from a standard error given directly.
+ *
+ * @index structure CausalData: covariates, binary treatment and outcome shared by estimators.
  */
 
 import { type Estimate, estimate, MdmlError } from '../base/index.ts'

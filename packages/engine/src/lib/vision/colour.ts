@@ -351,6 +351,7 @@ const CONVERSIONS: Readonly<Record<ColourConversion, (x: TensorLike) => Tensor>>
  * @returns The converted image.
  * @throws MdmlError with code `value` for an unknown conversion.
  * @concept colour-space
+ * @index function Convert between colour spaces, like cv2.cvtColor.
  * @example
  * ```ts
  * import { cvtColor } from 'mdml-engine/vision'

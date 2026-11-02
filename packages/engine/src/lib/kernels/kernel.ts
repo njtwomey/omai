@@ -3,6 +3,8 @@
  * `defineKernel`, sums, products, scaling and powers of kernels, kernels restricted to some input columns and automatic
  * relevance determination (one length scale per dimension), hyperparameter listing and the log-parameterised `theta`
  * vector, as scikit-learn and GPyTorch, and Gram matrices with their gradients.
+ *
+ * @index structure The Kernel contract and algebra: hyperparameters as data, sums, products, scaling.
  */
 
 import { jacfwd } from '../autodiff/index.ts'
@@ -536,6 +538,7 @@ export interface GramOptions {
  * @param options - Diagonal jitter.
  * @returns `[n, n]`, differentiable in the points and the hyperparameters.
  * @concept kernel-functions
+ * @index function Gram matrix of a kernel over a set of points.
  * @example
  * ```ts
  * import { gram, linearKernel } from 'mdml-engine/kernels'

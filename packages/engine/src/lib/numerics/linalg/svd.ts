@@ -163,6 +163,7 @@ export interface SvdResult {
  * @param options - The method.
  * @returns `{ u, s, vh }`, differentiable (singular vectors only where singular values are distinct and non-zero).
  * @concept linear-algebra
+ * @index function Reduced singular value decomposition, differentiable.
  * @example
  * ```ts
  * import { svd } from 'mdml-engine/numerics/linalg'

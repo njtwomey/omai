@@ -6,6 +6,8 @@
  * from a key. The loss is a `SmoothProblem` over the flat entity and relation matrices, so the optimiser is a slot
  * (the stochastic `gradient` mode by default); evaluation ranks every entity as the head and the tail of each test
  * triple in the filtered setting (other true triples removed from the candidates) and reports MRR, mean rank and Hits@k.
+ *
+ * @index function Knowledge-graph embeddings: TransE, DistMult, ComplEx, RotatE.
  */
 
 import { MdmlError } from '../base/index.ts'

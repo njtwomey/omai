@@ -4,6 +4,8 @@
  * and RAPS scores), conformalised quantile regression, jackknife+ and CV+, Mondrian group-conditional intervals,
  * adaptive conformal inference for shifting data, weighted conformal prediction under covariate shift, and coverage
  * checks.
+ *
+ * @index function Conformal prediction: split, cross and adaptive prediction sets.
  */
 
 import { MdmlError } from '../base/index.ts'

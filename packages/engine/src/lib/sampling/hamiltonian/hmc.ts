@@ -166,6 +166,7 @@ export type HMCRunOptions = HMCAdaptationOptions & Omit<SampleChainsOptions, 'na
  * @param options - Number of integrator steps, adaptation options, and chain options (key, chains, draws, warm-up).
  * @returns The chains, on the target's unconstrained coordinates (see `constrainChains`).
  * @concept hamiltonian-monte-carlo
+ * @index function Hamiltonian Monte Carlo chains.
  * @example
  * ```ts
  * import { hmc, numericTarget } from 'mdml-engine/sampling'

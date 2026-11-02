@@ -291,6 +291,7 @@ export interface MedoidVerbs {
  * k-medoids (sklearn_extra.cluster.KMedoids, PAM or CLARA) on the iterative base: BUILD then SWAP steps, or a sample
  * per step. New rows take the nearest medoid under the same metric.
  *
+ * @index estimator k-medoids (PAM, CLARA).
  * @example
  * ```ts
  * import { kMedoids } from 'mdml-engine/cluster'

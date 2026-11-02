@@ -3,6 +3,8 @@
  * messages, frames, checkpoints), how often (every n steps, log-spaced, first and last, on change) and at what detail.
  * Includes the `minimal`, `standard` and `debug` presets and `shouldRecord`, the single recording decision every run
  * makes.
+ *
+ * @index structure Trace policies: which channels to keep, and how often.
  */
 
 import type { TensorRole } from './events.ts'

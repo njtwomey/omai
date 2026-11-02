@@ -204,6 +204,7 @@ function positiveInt(name: string, v: number): number {
  * @throws MdmlError with code `value` for non-positive sizes, drift points outside the stream or out of order,
  *   transitions that overlap, or a recurring stream with no period to recur on.
  * @concept datasets
+ * @index dataset A data stream with planted drift, reproducible step by step.
  * @example
  * ```ts
  * import { stream } from 'mdml-engine/data'

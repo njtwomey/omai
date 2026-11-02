@@ -24,6 +24,7 @@ const sub = (tree: Params, name: string): Params => (tree[name] ?? {}) as Params
  * (`0.weight`, `2.bias`); each child gets its own key for stochastic layers and its share of the buffers.
  *
  * @concept modules
+ * @index module Modules applied in order.
  * @example
  * ```ts
  * import { Sequential, Linear, ReLU } from 'mdml-engine/nn'
@@ -355,6 +356,7 @@ export class Lambda extends Module {
  * @param widths - Layer widths from input to output (at least two).
  * @param options - The hidden activation (default ReLU) and an initialisation key.
  * @returns The network.
+ * @index function A multilayer perceptron from layer widths and an activation.
  * @example
  * ```ts
  * import { mlp } from 'mdml-engine/nn'

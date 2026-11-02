@@ -394,6 +394,7 @@ function firstSymbol(e: Expr): ExprSym | undefined {
  * @param options - Symbols to bind by name and whether decimals are exact.
  * @returns The expression in canonical form.
  * @throws MdmlError with code `value` on a syntax error.
+ * @index function Parse text into an expression.
  * @example
  * ```ts
  * import { parse, toText } from 'mdml-engine/symbolic'

@@ -475,6 +475,7 @@ export interface DreamerState {
  * @param options - Sizes, sequence batch, imagination, KL balancing, learning rates and schedule.
  * @returns The agent.
  * @concept model-based-rl
+ * @index agent Dreamer world-model agent.
  * @example
  * ```ts
  * import { dreamer } from 'mdml-engine/agents'

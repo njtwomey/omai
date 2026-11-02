@@ -328,6 +328,7 @@ function particular(kind: 'regressor' | 'classifier') {
  *
  * @concept generalized-additive-models
  * @reference S. N. Wood, Generalized Additive Models: An Introduction with R (2nd ed., 2017).
+ * @index estimator Generalised additive model with penalised smooth terms.
  * @example
  * ```ts
  * import { gam, s } from 'mdml-engine/gam'

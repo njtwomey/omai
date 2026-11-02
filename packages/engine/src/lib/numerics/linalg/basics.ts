@@ -136,6 +136,7 @@ export type NormOrder = 'fro' | 'nuc' | number
  * @param ord - The norm.
  * @returns The norm, differentiable where the norm is.
  * @concept linear-algebra
+ * @index function Vector and matrix norms, like numpy.linalg.norm.
  * @example
  * ```ts
  * import { norm } from 'mdml-engine/numerics/linalg'

@@ -3,6 +3,8 @@
  * Kaiming (He) and LeCun schemes in uniform and normal forms, PyTorch's default, constant, uniform, normal and
  * truncated normal draws, orthogonal and identity matrices, the Dirac convolution weight and sparse initialisation.
  * Each draws from an explicit key.
+ *
+ * @index function Weight initialisers: Xavier, Kaiming, LeCun, orthogonal.
  */
 
 import { MdmlError } from '../base/index.ts'

@@ -61,6 +61,7 @@ import { binaryLogits, cdfBySum, entropyBySum, isCount, largest, modeBySearch } 
  * @param rate - The rate (non-negative).
  * @returns The distribution (no reparameterisation).
  * @concept distributions
+ * @index distribution Poisson distribution.
  * @example
  * ```ts
  * import { poisson } from 'mdml-engine/dists'

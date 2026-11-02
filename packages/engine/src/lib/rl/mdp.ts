@@ -52,6 +52,7 @@ export type TabularPolicy = readonly number[] | readonly (readonly number[])[]
  * @returns The MDP.
  * @throws MdmlError with code `value` when a row of probabilities does not sum to one.
  * @concept markov-decision-processes
+ * @index structure A tabular MDP from transitions and rewards.
  * @example
  * ```ts
  * import { tabularMdp } from 'mdml-engine/rl'
@@ -245,6 +246,7 @@ export interface ValueIterationState {
  * @param options - Tolerance and discount.
  * @returns The algorithm.
  * @concept value-iteration
+ * @index algorithm Value iteration, one sweep per step.
  * @example
  * ```ts
  * import { tabularMdp, valueIterationAlgorithm } from 'mdml-engine/rl'
@@ -308,6 +310,7 @@ export interface MdpSolution {
  * @param options - Tolerance, iteration cap, discount and the run options (tracer, policy).
  * @returns Optimal values, action values and a greedy policy.
  * @concept value-iteration
+ * @index function Exact value iteration on a tabular MDP.
  * @example
  * ```ts
  * import { tabularMdp, valueIteration } from 'mdml-engine/rl'

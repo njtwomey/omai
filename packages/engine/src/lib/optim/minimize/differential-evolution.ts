@@ -439,6 +439,7 @@ export function differentialEvolutionAlgorithm(
  *   constraints, budget, key or seed and run options.
  * @returns The best member (polished).
  * @concept differential-evolution
+ * @index function Population-based global minimiser.
  * @example
  * ```ts
  * import { differentialEvolution } from 'mdml-engine/optim'

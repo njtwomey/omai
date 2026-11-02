@@ -48,6 +48,7 @@ const isDistribution = (row: readonly number[]): boolean =>
  * @throws MdmlError with code `shape` for mismatched sizes, `value` for rows that are not distributions or
  * covariances that are not positive definite.
  * @concept hidden-markov-models
+ * @index structure Hidden Markov model with categorical or Gaussian emissions.
  * @example
  * ```ts
  * import { hiddenMarkovModel } from 'mdml-engine/pgm'

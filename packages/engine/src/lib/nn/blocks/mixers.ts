@@ -107,6 +107,7 @@ const form3 = choice(['parallel', 'recurrent', 'chunked'] as const, { default: '
  * `(dim, key) => SequenceMixer` for {@link SequenceModel}.
  *
  * @concept sequence-models
+ * @index table Every sequence mixer (Mamba, RetNet, RWKV, attention) as one slot.
  * @example
  * ```ts
  * import { sequenceMixers } from 'mdml-engine/nn/blocks'

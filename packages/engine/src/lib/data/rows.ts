@@ -163,6 +163,7 @@ export interface SplitOptions {
  * @param options - Test size, shuffling key and stratification.
  * @returns `{ train, test }`.
  * @throws MdmlError with code `value` when a part would be empty, or stratification lacks labels or a key.
+ * @index function Split any dataset kind into train and test rows.
  * @example
  * ```ts
  * import { trainTestSplit, xy } from 'mdml-engine/data'

@@ -169,6 +169,7 @@ export function permutationImportanceAlgorithm(
  * @param options - scoring, nRepeats, permutations, features (column groups), key and tracing.
  * @returns The baseline score and the importances.
  * @concept feature-importance
+ * @index function Permutation feature importance; PDP, ICE and ALE sit beside it.
  * @example
  * ```ts
  * import { permutationImportance } from 'mdml-engine/explain'
@@ -280,6 +281,7 @@ export interface PartialDependenceResult {
  * @param options - gridResolution, percentiles, values, categorical, response and weights.
  * @returns The grid, the averaged curves and the individual curves.
  * @concept partial-dependence
+ * @index function Partial dependence of a model on chosen features.
  * @example
  * ```ts
  * import { partialDependence } from 'mdml-engine/explain'

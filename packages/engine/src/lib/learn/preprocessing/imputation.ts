@@ -172,6 +172,7 @@ function statistic(values: Float64Array, strategy: SimpleImputerHyper['strategy'
  * @param hyper - strategy (default `'mean'`), fillValue, missingValues, addIndicator and keepEmptyFeatures.
  * @returns The estimator.
  * @concept imputation
+ * @index estimator Fill missing values by mean, median or most frequent.
  * @example
  * ```ts
  * import { simpleImputer } from 'mdml-engine/learn/preprocessing'

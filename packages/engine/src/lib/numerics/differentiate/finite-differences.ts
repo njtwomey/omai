@@ -46,6 +46,7 @@ export interface DerivativeResult {
  * @param options - Initial step (default 0.5), step factor (default 2) and maximum levels (default 12).
  * @returns The derivative, its error estimate and the tableau.
  * @concept finite-differences
+ * @index function Derivative of a scalar function by Richardson-extrapolated differences.
  * @example
  * ```ts
  * import { derivative } from 'mdml-engine/numerics/differentiate'

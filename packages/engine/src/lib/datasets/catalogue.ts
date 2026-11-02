@@ -319,6 +319,7 @@ const NETWORKX = 'Public domain data (NetworkX, BSD-3-Clause)'
  * asset, tagged (see `registry.ts`). Extend it with `registerDatasets`; query it with `whereDatasets`.
  *
  * @concept datasets
+ * @index table Tagged registry of every generator, vendored and remote dataset.
  * @example
  * ```ts
  * import { lookup } from 'mdml-engine/base'

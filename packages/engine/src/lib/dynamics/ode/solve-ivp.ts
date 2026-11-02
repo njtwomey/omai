@@ -3,6 +3,8 @@
  * also as a traced algorithm; `odeint` returns states at given times as in scipy and torchdiffeq; `diffeqsolve` mirrors
  * diffrax with step-size controllers and saving policies. Also the LSODA-style automatic switch between Adams and BDF
  * when a problem turns stiff.
+ *
+ * @index function ODE front doors: solveIvp, odeint and diffeqsolve.
  */
 
 import { type Json, MdmlError } from '../../base/index.ts'
@@ -403,6 +405,7 @@ function maxEventsOf(e: EventSpec): number {
  * @param y0 - The initial state.
  * @param options - As {@link solveIvp}.
  * @returns The algorithm and a function turning its final state into the solution.
+ * @index algorithm An ODE solve stepped one accepted step at a time.
  * @example
  * ```ts
  * import { solveIvpAlgorithm } from 'mdml-engine/dynamics/ode'
@@ -657,6 +660,7 @@ export function solveIvpAlgorithm(
  * @returns The solution (states time-major, `[nt, ...stateShape]`).
  * @throws MdmlError with code `value` for a bad span, method or output times.
  * @concept initial-value-problem
+ * @index function Solve an initial value problem with scipy's solve_ivp semantics.
  * @example
  * ```ts
  * import { solveIvp } from 'mdml-engine/dynamics/ode'

@@ -2,6 +2,8 @@
  * Elementwise mathematical functions as differentiable primitives: exponentials and logarithms (with accurate `expm1`
  * and `log1p`), square roots, trigonometric and hyperbolic functions and their inverses, `arctan2`, the stable sigmoid
  * and softplus, ReLU and the Heaviside step, and rounding (floor, ceiling, round half to even, truncation).
+ *
+ * @index function Elementwise exp, log, trigonometric and hyperbolic functions with derivative rules.
  */
 
 import { bind1, type Primitive } from '../primitive.ts'

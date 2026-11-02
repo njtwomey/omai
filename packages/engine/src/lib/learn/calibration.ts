@@ -715,6 +715,7 @@ export interface FittedCalibrated extends Fitted<CalibratedParams> {
  *
  * @param hyper - estimator, method (default `'sigmoid'`), cv and ensemble.
  * @returns The estimator.
+ * @index estimator Calibrate a classifier's probabilities by cross-validation.
  * @example
  * ```ts
  * import { calibratedClassifierCV, defineEstimator } from 'mdml-engine/learn'

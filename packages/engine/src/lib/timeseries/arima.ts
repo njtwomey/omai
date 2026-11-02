@@ -250,6 +250,7 @@ export function arimaFitAlgorithm(y: ArrayLike<number>, spec: ArimaSpec, options
  * @param spec - The orders, trend and exogenous regressors.
  * @param options - The method (`mle`, `css` or `css-mle`), iteration cap, gradient tolerance and run options.
  * @returns The fitted model with its likelihood, information criteria and standard errors.
+ * @index function Fit ARIMA or seasonal ARIMA by exact Gaussian likelihood.
  * @example
  * ```ts
  * import { arimaFit } from 'mdml-engine/timeseries'

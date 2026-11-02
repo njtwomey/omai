@@ -44,6 +44,7 @@ export interface EncodingProperties {
  * frequencies drawn `N(0, sigma^2)` from the key) and `hash` (the Instant-NGP multiresolution hash grid, 1 to 3
  * dimensions).
  *
+ * @index table Coordinate encodings as one slot: positional, Fourier features, hash grid.
  * @example
  * ```ts
  * import { fieldEncodings } from 'mdml-engine/fields'
@@ -140,6 +141,7 @@ export interface BackboneProperties {
  * `siren` (sine layers with frequency factor `omega0` and the paper's initialisation, then an affine output). `depth`
  * is the number of hidden layers.
  *
+ * @index table Backbones of a neural field as one slot.
  * @example
  * ```ts
  * import { fieldBackbones } from 'mdml-engine/fields'

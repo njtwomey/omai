@@ -2,6 +2,8 @@
  * Exponential dispersion families for generalised linear models, as statsmodels.genmod.families: Gaussian, binomial,
  * Poisson, gamma, inverse Gaussian, negative binomial and Tweedie, each with its variance function, unit deviance,
  * log-likelihood and default link, plus the Tweedie compound Poisson-gamma distribution itself.
+ *
+ * @index function GLM exponential-dispersion families with their links.
  */
 
 import { MdmlError, maxOf, minOf } from '../../base/index.ts'

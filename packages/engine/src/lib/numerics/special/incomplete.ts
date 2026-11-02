@@ -64,6 +64,7 @@ const betaincinvP = special('betaincinv', inc.betaincinv, [
  * @param x - Argument (non-negative).
  * @returns P(a, x).
  * @concept special-functions
+ * @index function Regularised lower incomplete gamma function.
  * @example
  * ```ts
  * import { gammainc } from 'mdml-engine/numerics/special'
@@ -168,6 +169,7 @@ export function gammainccinv(a: TensorLike, q: TensorLike): Value {
  * @param b - Second shape (positive).
  * @param x - Argument in [0, 1].
  * @returns I_x(a, b).
+ * @index function Regularised incomplete beta function, the CDF of a beta distribution.
  * @example
  * ```ts
  * import { betainc } from 'mdml-engine/numerics/special'

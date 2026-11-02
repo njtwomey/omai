@@ -193,6 +193,7 @@ export interface LimeOptions extends LimeFitOptions {
  * @param training - Training rows `[n, d]` (their mean and standard deviation set the sampling scale).
  * @param options - nSamples, sampleAroundInstance, label, key and the {@link limeFit} options.
  * @returns The explanation (weights refer to standardised features).
+ * @index function LIME local linear surrogate explanation.
  * @example
  * ```ts
  * import * as explain from 'mdml-engine/explain'

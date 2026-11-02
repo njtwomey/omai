@@ -4,6 +4,8 @@
  * contrastive, cosine and hinge embedding losses, and the additive-margin softmax heads of face recognition (ArcFace,
  * CosFace); and the self-supervised objectives without negatives or with decorrelation, Barlow Twins and VICReg, with
  * the alignment and uniformity terms of Wang and Isola that explain what a contrastive loss optimises.
+ *
+ * @index function Contrastive and metric-learning losses such as InfoNCE and triplet.
  */
 
 import { logaddexp } from '../numerics/special/index.ts'

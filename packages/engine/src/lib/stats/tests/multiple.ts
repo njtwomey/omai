@@ -3,6 +3,8 @@
  * family-wise error rate (Bonferroni, Sidak, Holm, Hochberg, Hommel) or the false discovery rate (Benjamini-Hochberg,
  * Benjamini-Yekutieli), and combination of independent p-values by Fisher's, Stouffer's and related methods
  * (scipy.stats.combine_pvalues).
+ *
+ * @index function p-value corrections: Bonferroni, Holm, Benjamini-Hochberg.
  */
 
 import { MdmlError, type TestResult } from '../../base/index.ts'

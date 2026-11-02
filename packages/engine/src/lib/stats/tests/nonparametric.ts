@@ -68,6 +68,7 @@ export interface MannWhitneyOptions extends TestOptions {
  * @param y - Second sample.
  * @param options - method, useContinuity, alternative.
  * @returns U1 and its p-value.
+ * @index function Mann-Whitney U rank test.
  * @example
  * ```ts
  * import { mannWhitneyU } from 'mdml-engine/stats/tests'

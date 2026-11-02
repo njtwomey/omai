@@ -258,6 +258,7 @@ function growDefaults(hyper: Partial<DecisionTreeHyper>, criterion: Criterion): 
  *   minimum decrease, pruning alpha, categorical features and how many candidates per feature to record.
  * @returns The estimator, with `method(data)` and `session(data)` beside `fit`.
  * @concept decision-trees
+ * @index estimator CART classification tree with split criteria and pruning.
  * @example
  * ```ts
  * import { decisionTreeClassifier } from 'mdml-engine/trees'

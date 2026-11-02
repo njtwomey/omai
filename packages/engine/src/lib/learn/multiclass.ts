@@ -130,6 +130,7 @@ export type OneVsRestPlan = { readonly positives: number[] }
  *
  * @param estimator - The binary base classifier.
  * @returns The estimator.
+ * @index estimator Turn a binary classifier into a multiclass one.
  * @example
  * ```ts
  * import { oneVsRest, linearDiscriminant } from 'mdml-engine/learn'

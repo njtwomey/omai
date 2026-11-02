@@ -111,6 +111,7 @@ function bracketed(
  * are faster near the root but may leave it.
  *
  * @concept root-finding
+ * @index table The scalar root finders as one named slot.
  * @example
  * ```ts
  * import { rootFinders } from 'mdml-engine/numerics/roots'

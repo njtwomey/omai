@@ -355,6 +355,7 @@ function simplifyWithin(e: Expr, budget: WorkBudget | undefined): Derivation {
  * @param e - The expression.
  * @param budget - Work limits (see {@link WorkBudget}).
  * @returns The simplest form found.
+ * @index function Simplify and rewrite an expression, like SymPy simplify.
  * @example
  * ```ts
  * import { parse, simplify, toText } from 'mdml-engine/symbolic'

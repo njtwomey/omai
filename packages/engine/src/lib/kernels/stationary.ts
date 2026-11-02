@@ -77,6 +77,7 @@ export interface LengthScaleOptions {
  * @returns The kernel, hyperparameters `{ lengthScale }`.
  * @concept stationary-kernels
  * @reference C. E. Rasmussen and C. K. I. Williams, Gaussian Processes for Machine Learning (2006), section 4.2.
+ * @index kernel Radial basis function (squared exponential) kernel.
  * @example
  * ```ts
  * import { rbfKernel } from 'mdml-engine/kernels'
@@ -111,6 +112,7 @@ export interface MaternOptions extends LengthScaleOptions {
  * @throws MdmlError `domain` for nu <= 0.
  * @concept stationary-kernels
  * @reference B. Matérn, Spatial Variation (1960); Rasmussen and Williams (2006), section 4.2.1.
+ * @index kernel Matern kernel with smoothness parameter.
  * @example
  * ```ts
  * import { maternKernel } from 'mdml-engine/kernels'
@@ -167,6 +169,7 @@ export interface RationalQuadraticOptions extends LengthScaleOptions {
  * @returns The kernel, hyperparameters `{ alpha, lengthScale }`.
  * @concept stationary-kernels
  * @reference Rasmussen and Williams (2006), equation 4.19.
+ * @index kernel Rational quadratic kernel, a mixture of RBF length scales.
  * @example
  * ```ts
  * import { rationalQuadraticKernel } from 'mdml-engine/kernels'
@@ -277,6 +280,7 @@ function periodicPart(d: Value, lengthScale: Value, period: Value): Value {
  * @throws MdmlError `shape` for a vector length scale (the kernel is isotropic).
  * @concept stationary-kernels
  * @reference D. J. C. MacKay, Introduction to Gaussian processes (1998).
+ * @index kernel Periodic kernel.
  * @example
  * ```ts
  * import { periodicKernel } from 'mdml-engine/kernels'

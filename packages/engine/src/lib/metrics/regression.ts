@@ -31,6 +31,7 @@ const spec = (name: string, direction: Direction, range: readonly [number, numbe
  * @param options - Sample weights.
  * @returns The metric result (multi-output scores are averaged, with a per-output breakdown).
  * @concept regression-metrics
+ * @index function Mean squared error; R2, MAE and the rest sit beside it.
  * @example
  * ```ts
  * import { meanSquaredError } from 'mdml-engine/metrics'
@@ -135,6 +136,7 @@ export const maxError: Metric = perOutputMetric(spec('maxError', 'lower', [0, In
  * @param yPred - Predictions.
  * @param options - Sample weights.
  * @returns The metric result.
+ * @index function Coefficient of determination.
  * @example
  * ```ts
  * import { r2Score } from 'mdml-engine/metrics'

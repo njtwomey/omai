@@ -2,6 +2,8 @@
  * Recipes: a generator, its knobs, a list of modifiers and a seed, held as plain data so a dataset can be remade
  * exactly, described in one line, or shared in a link. `makeFromRecipe` derives every step's key from the seed, the zod
  * `RecipeSchema` validates recipes, and `encodeRecipe` and `parseRecipe` turn them into URL-safe strings and back.
+ *
+ * @index structure Recipes: a generator, knobs, modifiers and seed as plain data.
  */
 
 import { z } from 'zod'
@@ -119,6 +121,7 @@ function resolveKnobs(space: DictSpace, given: Knobs | undefined, owner: string)
  * @param catalogue - Generators (and modifiers) by name.
  * @returns The data and its truth.
  * @throws MdmlError with code `value` for an unknown generator, modifier or knob.
+ * @index function Remake a dataset exactly from its recipe.
  * @example
  * ```ts
  * import { makeFromRecipe } from 'mdml-engine/data'

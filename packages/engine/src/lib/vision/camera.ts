@@ -4,6 +4,8 @@
  * points, undistortion maps and undistorted images (resampled by `signal/image`'s `mapCoordinates`), the pose of a
  * known object from its image (`solvePnP`: a linear start refined by Levenberg-Marquardt, and a RANSAC wrapper) and
  * the reprojection error.
+ *
+ * @index function Pinhole camera with lens distortion: project, undistort, Rodrigues.
  */
 
 import { MdmlError } from '../base/index.ts'

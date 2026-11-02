@@ -407,6 +407,7 @@ function mergeWord(
  * @param options - Training options and an unknown token for the model.
  * @returns The model.
  * @concept byte-pair-encoding
+ * @index function Train a byte-pair-encoding tokeniser.
  * @example
  * ```ts
  * import { trainBpe, bpeTokenize } from 'mdml-engine/text/subword'

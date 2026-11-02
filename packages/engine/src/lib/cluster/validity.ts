@@ -80,6 +80,7 @@ export interface GapStatistic {
  * @param key - Randomness for the reference data and the starts.
  * @param options - Reference datasets (default 10) and starts per fit (default 3).
  * @returns The dispersions, gaps and the chosen k.
+ * @index function Gap statistic for choosing the number of clusters.
  * @example
  * ```ts
  * import { gapStatistic } from 'mdml-engine/cluster'

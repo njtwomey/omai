@@ -306,6 +306,7 @@ export interface FitResult {
  *   run's tracer and policy.
  * @returns The trained parameters and buffers, per-step losses and the run status.
  * @concept training
+ * @index function Train a module on a dataset and load the trained parameters back.
  * @example
  * ```ts
  * import { fit, Linear } from 'mdml-engine/nn'

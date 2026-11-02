@@ -287,6 +287,7 @@ function brandes(
  * @throws MdmlError with code `value` for `samples` without a key or out of range.
  * @concept centrality
  * @reference U. Brandes, A faster algorithm for betweenness centrality, J. Math. Sociology 25 (2001).
+ * @index algorithm Betweenness centrality, one source node per step.
  * @example
  * ```ts
  * import { betweennessAlgorithm, pathGraph } from 'mdml-engine/graph'
@@ -658,6 +659,7 @@ function sourceRow(g: Graph, k: number): number {
  * @throws MdmlError with code `convergence` when the iteration does not converge.
  * @concept pagerank
  * @reference L. Page, S. Brin, R. Motwani and T. Winograd, The PageRank citation ranking (1999).
+ * @index function PageRank centrality.
  * @example
  * ```ts
  * import { cycleGraph, pagerank } from 'mdml-engine/graph'

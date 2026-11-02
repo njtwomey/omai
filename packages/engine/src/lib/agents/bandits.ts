@@ -206,6 +206,7 @@ export interface Ucb1Options {
  * @param options - The exploration constant.
  * @returns The agent.
  * @concept upper-confidence-bounds
+ * @index agent UCB1 bandit agent; Thompson and EXP3 beside it.
  * @example
  * ```ts
  * import { ucb1 } from 'mdml-engine/agents'
@@ -927,6 +928,7 @@ export interface BanditStrategyProperties {
  * `thompson-bernoulli` (posterior sampling), `exp3` (adversarial) and the `gradient` bandit.
  *
  * @concept multi-armed-bandits
+ * @index table Bandit strategies as one slot.
  * @example
  * ```ts
  * import { banditStrategies } from 'mdml-engine/agents'

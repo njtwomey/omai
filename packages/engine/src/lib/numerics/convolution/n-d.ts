@@ -183,6 +183,7 @@ export interface ConvOptions {
  * @param options - Stride, padding, dilation, groups, bias and padding mode.
  * @returns `[B, C_out, *O]`.
  * @concept convolution
+ * @index function Deep-learning convolution over any number of spatial axes.
  * @example
  * ```ts
  * import { convNd } from 'mdml-engine/numerics/convolution'

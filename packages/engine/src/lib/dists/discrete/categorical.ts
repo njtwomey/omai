@@ -81,6 +81,7 @@ function drawIndices(key: Key, cumulative: Value, shape: readonly number[], batc
  * @param params - `{ probs }` (normalised for you) or `{ logits }`.
  * @returns The distribution (no reparameterisation: `rsample` throws; use `relaxedOneHotCategorical`).
  * @concept distributions
+ * @index distribution Categorical distribution from probabilities or logits.
  * @example
  * ```ts
  * import { categorical } from 'mdml-engine/dists'

@@ -255,6 +255,7 @@ function constantRun(study: Study, n: number): boolean {
  * @returns The algorithm.
  * @throws MdmlError with code `value` when there is no space or the directions do not match.
  * @concept hyperparameter-optimisation
+ * @index algorithm A parameter search where each step is one trial.
  * @example
  * ```ts
  * import { functionObjective, studyAlgorithm } from 'mdml-engine/tune'
@@ -367,6 +368,7 @@ export function studyAlgorithm(objective: Objective, space?: Space, options: Tun
  *   rules, and the run options (key or seed, tracer, policy, parent).
  * @returns The study, its best trial(s), and how the run ended.
  * @concept hyperparameter-optimisation
+ * @index function Run a study of an objective over a space with a sampler.
  * @example
  * ```ts
  * import { functionObjective, tune, gridSampler } from 'mdml-engine/tune'

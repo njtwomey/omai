@@ -105,6 +105,20 @@ function admits(mode: ModeSpec<unknown, unknown, Json>, others: SlotValues): boo
  * @param options - The tag, the default mode and metadata.
  * @returns The table.
  * @throws MdmlError with code `value` for an empty table or a default that is not a mode (as `union` does).
+ * @index function Build the table of modes for one slot, with each mode's knobs.
+ * @example
+ * ```ts
+ * import { modes } from 'mdml-engine/trace'
+ * import { dict, real } from 'mdml-engine/space'
+ * const countdown = (start: number) => ({ name: 'countdown', config: {}, init: () => start, step: (n: number) => n - 1 })
+ * const solvers = modes({
+ *   fast: { space: dict({}), make: () => countdown(8), params: (n: number) => ({ n }) },
+ *   slow: { space: dict({ start: real(1, 100, { default: 50 }) }), make: (_p, k) => countdown(k['start'] as number), params: (n: number) => ({ n }) },
+ * })
+ * solvers.names // => ['fast', 'slow']
+ * solvers.modeOf({ kind: 'slow' }).name // => 'slow'
+ * solvers.params({ kind: 'fast' }, 5) // => { n: 5 }
+ * ```
  */
 export function modes<Problem, P extends Json>(
   // biome-ignore lint/suspicious/noExplicitAny: each mode has a state type of its own; the table erases them

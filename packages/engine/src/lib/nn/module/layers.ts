@@ -31,6 +31,7 @@ export interface LinearOptions {
  * +-1/sqrt(inFeatures).
  *
  * @concept modules
+ * @index module Fully connected layer with PyTorch's initialisation.
  * @example
  * ```ts
  * import { Linear } from 'mdml-engine/nn'
@@ -151,6 +152,7 @@ const normaliseIndex = (i: number | undefined, n: number): number | undefined =>
  * initialised N(0, 1) with the padding row at zero.
  *
  * @concept embeddings
+ * @index module Lookup table of embeddings from integer indices.
  * @example
  * ```ts
  * import { Embedding } from 'mdml-engine/nn'

@@ -71,6 +71,7 @@ function isConstant(variance: number, mean: number, n: number): boolean {
  * @param hyper - `withMean` and `withStd` (both default true).
  * @returns The estimator.
  * @concept standardisation
+ * @index estimator Standardise features to zero mean and unit variance.
  * @example
  * ```ts
  * import { standardScaler } from 'mdml-engine/learn/preprocessing'

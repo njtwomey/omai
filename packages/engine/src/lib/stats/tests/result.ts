@@ -3,6 +3,8 @@
  * size, interval, assumption checks) and the helpers that build, format and read it. Also the tests of equal variances
  * (Levene, Brown-Forsythe, Bartlett, Fligner-Killeen) and the normality, equal-variance and expected-count checks that
  * parametric tests attach to their results.
+ *
+ * @index function testResult builder and options shared by hypothesis tests; TestResult is in base.
  */
 
 import {

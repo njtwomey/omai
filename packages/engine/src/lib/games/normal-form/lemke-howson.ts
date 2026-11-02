@@ -237,6 +237,7 @@ export function lemkeHowsonAlgorithm(
  * @throws MdmlError with code `value` for a game with other than two players or a label out of range.
  * @concept lemke-howson
  * @reference Lemke and Howson (1964), Equilibrium points of bimatrix games; von Stengel (2007).
+ * @index function Nash equilibrium of a bimatrix game by Lemke-Howson.
  * @example
  * ```ts
  * import { battleOfTheSexes, lemkeHowson } from 'mdml-engine/games'

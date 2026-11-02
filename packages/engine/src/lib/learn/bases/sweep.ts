@@ -8,6 +8,8 @@
  * kept on request (`keep`) and otherwise summarised in the trial's record. The race is the sweep over a slot done in
  * lockstep: one method whose single run drives several variants of a configuration with the same key, the same data
  * and the same step keys, logging each under `race/<variant>/`.
+ *
+ * @index structure Sweep and race: run an inner method over a grid of knobs.
  */
 
 import { type Json, MdmlError } from '../../base/index.ts'
@@ -400,6 +402,7 @@ function runTrial<S, C extends Config, K extends string>(
  * @returns The algorithm; it ends after `sweepTrials(spec)` steps.
  * @throws MdmlError with code `value` for no metrics, a non-positive count, or an objective that is not a metric.
  * @concept log-contract
+ * @index algorithm Run a method over a grid of knobs, one trial per step.
  * @example
  * ```ts
  * import { sweep } from 'mdml-engine/learn'

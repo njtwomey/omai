@@ -162,6 +162,7 @@ function localVariance(z: Float64Array, q: number, y: ArrayLike<number>, arm: re
  * @param data - Covariates, treatment and outcome.
  * @param options - Distance, neighbours, replacement, caliper and estimand.
  * @returns The effect with the pairs, the unmatched units and how often each unit was used.
+ * @index function Matching estimator of a treatment effect.
  * @example
  * ```ts
  * import { matching } from 'mdml-engine/causal'

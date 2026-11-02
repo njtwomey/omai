@@ -5,6 +5,8 @@
  * binned numeric columns, search by beam or exhaustively over the refinement lattice of `search`, and the two
  * covering variants that return a diverse set of subgroups by reweighting examples: CN2-SD (Lavrač et al. 2004) and
  * Apriori-SD (Kavšek and Lavrač 2006), each a traced algorithm whose step is one rule.
+ *
+ * @index function Subgroup discovery with quality functions and beam search.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'

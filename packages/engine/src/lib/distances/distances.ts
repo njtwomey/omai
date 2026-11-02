@@ -448,6 +448,7 @@ export const haversineDistance: DistanceEntry = {
 /**
  * Every registered distance by name, so a page can list them, show their descriptions and draw their parameters.
  *
+ * @index table Every registered distance by name.
  * @example
  * ```ts
  * import { distances } from 'mdml-engine/distances'

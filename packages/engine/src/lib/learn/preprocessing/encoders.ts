@@ -159,6 +159,7 @@ export interface EncoderVerbs {
  * @returns The estimator.
  * @throws MdmlError with code `value` in transform for an unknown category with `handleUnknown: 'error'`.
  * @concept categorical-encoding
+ * @index estimator One-hot encode categorical columns.
  * @example
  * ```ts
  * import { oneHotEncoder } from 'mdml-engine/learn/preprocessing'

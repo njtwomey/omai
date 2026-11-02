@@ -33,6 +33,7 @@ export type Range = readonly [number, number] | ((...outer: number[]) => readonl
  * @param options - Options passed to every one-dimensional {@link quad}.
  * @returns The integral.
  * @concept quadrature
+ * @index function Iterated adaptive integration over several variables.
  * @example
  * ```ts
  * import { nquad } from 'mdml-engine/numerics/quadrature'

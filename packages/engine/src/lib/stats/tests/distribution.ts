@@ -361,6 +361,7 @@ export function andersonDarling(x: TensorLike, options: { readonly dist?: Anders
  *
  * @param x - The sample.
  * @returns W and its p-value.
+ * @index function Shapiro-Wilk normality test.
  * @example
  * ```ts
  * import { shapiro } from 'mdml-engine/stats/tests'

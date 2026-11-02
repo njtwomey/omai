@@ -48,6 +48,7 @@ export interface BayesNet {
  * @returns The network.
  * @throws MdmlError with code `value` for unknown parents, cycles or invalid CPTs.
  * @concept bayes-networks
+ * @index structure Discrete Bayesian network from nodes, parents and tables.
  * @example
  * ```ts
  * import { bayesNet } from 'mdml-engine/pgm'

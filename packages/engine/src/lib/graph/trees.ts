@@ -28,6 +28,7 @@ export interface SpanningTree {
  * @returns The tree's edges, total weight and graph.
  * @throws MdmlError with code `value` for a directed graph.
  * @concept spanning-trees
+ * @index function Minimum spanning tree by Kruskal or Prim.
  * @example
  * ```ts
  * import { graph, minimumSpanningTree } from 'mdml-engine/graph'

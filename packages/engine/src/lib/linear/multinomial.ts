@@ -391,6 +391,7 @@ function tableOf(p: MultinomialParams, h: MultinomialHyper): CoefficientTable {
  *
  * @param hyper - `alpha`, `fitIntercept`, `tol`, `maxIter`.
  * @returns The estimator.
+ * @index estimator Multinomial logistic (softmax) regression.
  * @example
  * ```ts
  * import { multinomial } from 'mdml-engine/linear'

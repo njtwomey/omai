@@ -401,6 +401,7 @@ export function cannyStages(x: TensorLike, options: CannyOptions = {}): CannySta
  * @param options - Smoothing, thresholds and border.
  * @returns A 0/1 edge map.
  * @concept edge-detection
+ * @index function Canny edge detector.
  * @example
  * ```ts
  * import { image } from 'mdml-engine/signal'

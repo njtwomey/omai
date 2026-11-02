@@ -110,6 +110,7 @@ export function classifyStates(p: TensorLike): ChainClassification {
  * @throws MdmlError with code `value` when there are several closed classes (no unique stationary law; see
  *   {@link stationaryDistributions}).
  * @concept stationary-distribution
+ * @index function Stationary distribution of a Markov chain.
  * @example
  * ```ts
  * import { stationaryDistribution } from 'mdml-engine/stochastic'
@@ -485,6 +486,7 @@ export function timeReversal(p: TensorLike): Value {
  * @param options - The number of paths (default 1, ignored when x0 lists one state per path) and tracing.
  * @returns Paths `[paths, steps + 1]` of state indices (as floats) on the times 0, 1, ..., steps.
  * @concept markov-chains
+ * @index function Simulate paths of a discrete Markov chain.
  * @example
  * ```ts
  * import { key } from 'mdml-engine/random'

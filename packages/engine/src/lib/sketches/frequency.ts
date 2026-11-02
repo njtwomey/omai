@@ -157,6 +157,7 @@ function makeCountMin(
  * @concept count-min-sketch
  * @reference G. Cormode and S. Muthukrishnan, An improved data stream summary: the count-min sketch and its
  *   applications (Journal of Algorithms, 2005).
+ * @index structure Count-Min sketch for stream frequencies.
  * @example
  * ```ts
  * import { countMinSketch } from 'mdml-engine/sketches'

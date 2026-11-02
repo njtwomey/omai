@@ -65,6 +65,7 @@ const row = (
 /**
  * The library's registry of search problems, tagged.
  *
+ * @index table Tagged registry of search puzzles, tours and SAT families.
  * @example
  * ```ts
  * import { problemRegistry, whereProblems } from 'mdml-engine/problems'

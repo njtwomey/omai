@@ -56,6 +56,7 @@ const shared = (k: (name: string) => number | boolean): McmcOptions => ({
  * `McmcOptions` of `mcmc` and `mcmcAlgorithm`.
  *
  * @concept nuts
+ * @index table The MCMC kernels as one slot.
  * @example
  * ```ts
  * import { mcmcKernels } from 'mdml-engine/probprog'

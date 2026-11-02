@@ -835,6 +835,7 @@ export function walksat(f: Cnf, options: WalksatOptions = {}): SatResult {
  * @param f - The formula.
  * @param options - Options as for {@link cdcl}.
  * @returns The status, a model, and the effort.
+ * @index function Satisfiability by DPLL or CDCL.
  * @example
  * ```ts
  * import { cnf, solveSat } from 'mdml-engine/logic'

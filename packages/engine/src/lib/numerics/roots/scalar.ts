@@ -48,6 +48,7 @@ export function bisect(f: (x: number) => number, a: number, b: number, options: 
  * @param options - Tolerances and iteration cap.
  * @returns The root with its history.
  * @concept root-finding
+ * @index function Brent's bracketing root finder for a scalar function.
  * @example
  * ```ts
  * import { brentq } from 'mdml-engine/numerics/roots'

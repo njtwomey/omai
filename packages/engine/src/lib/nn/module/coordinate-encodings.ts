@@ -148,6 +148,7 @@ export class FourierFeatureEncoding extends Module {
  * `L F` interpolated features. Coordinates are read within `bounds` (default `[-1, 1]`).
  *
  * @concept coordinate-encoding
+ * @index module Instant-NGP multiresolution hash grid encoding of coordinates.
  * @example
  * ```ts
  * import { HashGridEncoding } from 'mdml-engine/nn'

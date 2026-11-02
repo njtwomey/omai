@@ -355,6 +355,7 @@ const paramsOf = (s: PcaState, whiten: boolean): PcaParams => ({
  * solvers find every component in one step; `'power'` finds one per step, so a session shows the axes appearing in
  * order of variance.
  *
+ * @index estimator PCA, exact or by power iteration, with whitening and inverse transform.
  * @example
  * ```ts
  * import { pca } from 'mdml-engine/decomposition'

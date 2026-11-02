@@ -237,6 +237,7 @@ function widest(supports: readonly Support[]): Support {
  * @param components - The K components.
  * @returns The mixture (with `logWeights` and `componentLogProbs`).
  * @throws MdmlError with code `shape` when the components disagree in shape or number.
+ * @index distribution Mixture of any component distributions.
  * @example
  * ```ts
  * import { normal } from 'mdml-engine/dists'

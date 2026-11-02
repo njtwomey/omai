@@ -2,6 +2,8 @@
  * Divergences and distances between distributions: the Kullback-Leibler divergence in closed form for many pairs of
  * families (as torch.distributions.kl_divergence) with a differentiable Monte Carlo fallback, the Bhattacharyya
  * coefficient and distance, the Hellinger distance, and the 2-Wasserstein distance between Gaussians.
+ *
+ * @index function KL and other divergences between distributions.
  */
 
 import { MdmlError } from '../base/index.ts'

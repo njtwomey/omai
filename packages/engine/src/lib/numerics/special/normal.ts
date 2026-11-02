@@ -47,6 +47,7 @@ const owensTP = special('owensT', misc.owensT, [
  * @param x - Input.
  * @returns Phi(x), differentiable.
  * @concept special-functions
+ * @index function Standard normal CDF; ndtri is its quantile.
  * @example
  * ```ts
  * import { ndtr } from 'mdml-engine/numerics/special'

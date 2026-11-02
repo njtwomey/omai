@@ -368,6 +368,7 @@ function buildTree(kind: 'kd' | 'ball' | 'vp', x: TensorLike, options: TreeOptio
  * @param options - Metric (euclidean, cityblock, chebyshev or minkowski with p) and leaf size.
  * @returns The tree.
  * @concept spatial-trees
+ * @index structure KD tree for nearest-neighbour and radius queries.
  * @example
  * ```ts
  * import { kdTree } from 'mdml-engine/numerics/spatial'

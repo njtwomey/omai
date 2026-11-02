@@ -3,6 +3,8 @@
  * estimator of moving averages, the Hannan-Rissanen regression for ARMA, and the likelihood fits (conditional sum of
  * squares, exact maximum likelihood through the state-space form) that run as traced algorithms with the objective at
  * each iteration. Every fit is plain data, so it serialises.
+ *
+ * @index function AR, MA and ARMA estimators: Yule-Walker, Burg, innovations.
  */
 
 import { MdmlError, meanOf } from '../base/index.ts'

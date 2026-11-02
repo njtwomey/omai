@@ -111,6 +111,7 @@ export interface EighResult {
  * @param options - The method.
  * @returns `{ eigenvalues, eigenvectors }`, differentiable (eigenvectors only where eigenvalues are distinct).
  * @concept linear-algebra
+ * @index function Symmetric eigendecomposition with derivatives.
  * @example
  * ```ts
  * import { eigh } from 'mdml-engine/numerics/linalg'

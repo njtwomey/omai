@@ -2,6 +2,8 @@
  * The JAX-style derivative transforms: `vjp`, `grad`, `valueAndGrad` and `gradAndAux` in reverse mode, `jvp` and
  * `linearize` in forward mode, Jacobians by either mode (`jacrev`, `jacfwd`, `jacobian`), and Hessians with
  * Hessian-vector and vector-Hessian products that never form the full matrix.
+ *
+ * @index function JAX-style grad, vjp, jvp, Jacobians and Hessians.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -90,6 +92,7 @@ export interface GradOptions {
  * @returns A function from a pytree to `{ value, grad, aux }`, where `grad` mirrors the input.
  * @throws MdmlError with code `shape` when `f` does not return a single-element value.
  * @concept reverse-mode-autodiff
+ * @index function A function's value and gradient in one pass.
  * @example
  * ```ts
  * import { valueAndGrad } from 'mdml-engine/autodiff'
@@ -130,6 +133,7 @@ export function valueAndGrad<P>(
  * @param options - `hasAux`.
  * @returns A function from a pytree to its gradient (same structure).
  * @concept reverse-mode-autodiff
+ * @index function Gradient of a scalar function of a pytree, like jax.grad.
  * @example
  * ```ts
  * import { grad } from 'mdml-engine/autodiff'
@@ -294,6 +298,7 @@ export function jacobian(f: (x: Value) => Value): (x: TensorLike) => Value {
  * @param f - A scalar function of one value.
  * @returns A function returning the Hessian with shape `[...inShape, ...inShape]`.
  * @concept hessian
+ * @index function Hessian of a scalar function, forward over reverse.
  * @example
  * ```ts
  * import { hessian } from 'mdml-engine/autodiff'

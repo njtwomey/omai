@@ -613,6 +613,7 @@ function isMatrix(x: Expr | Matrix): x is Matrix {
  *
  * @param e - The expression or matrix (rows of expressions).
  * @returns The LaTeX source.
+ * @index function Render an expression as LaTeX.
  * @example
  * ```ts
  * import { parse, toLatex } from 'mdml-engine/symbolic'

@@ -3,6 +3,8 @@
  * mechanisms (MCAR, MAR, MNAR), outlier contamination, independent nuisance features, invertible elementwise transforms
  * (with the log-Jacobian added to the density) and linear mixing to a known correlation structure. Each comes as a
  * function and as a recipe modifier.
+ *
+ * @index function Missingness, outlier and feature-noise modifiers.
  */
 
 import { MdmlError } from '../../base/index.ts'

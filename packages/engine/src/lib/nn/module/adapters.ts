@@ -118,6 +118,7 @@ export function loraTargets(
  * Dropout on the adapter's input, which the PEFT library offers, is not part of this wrapper.
  *
  * @concept lora
+ * @index module Low-rank adapter wrapped around chosen weights, with merge and unmerge.
  * @example
  * ```ts
  * import { LoRA, Linear } from 'mdml-engine/nn'

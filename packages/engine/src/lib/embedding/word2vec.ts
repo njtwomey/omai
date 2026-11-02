@@ -632,6 +632,7 @@ export interface Word2vecHyper extends Word2vecOptions {
  * @param run - Run options (`tracer`, `policy`) to record the solver's steps.
  * @returns The model.
  * @concept word-embeddings
+ * @index function Train skip-gram or CBOW word vectors with negative sampling.
  * @example
  * ```ts
  * import { trainWord2vec } from 'mdml-engine/embedding'

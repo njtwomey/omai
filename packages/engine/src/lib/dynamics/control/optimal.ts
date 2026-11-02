@@ -56,6 +56,7 @@ function crossTerm(n: number, m: number, cross: TensorLike | undefined): Value {
  * @param n - The cross weight N `[n, m]` (default 0).
  * @returns K, S and the closed-loop eigenvalues.
  * @concept linear-quadratic-regulator
+ * @index function Continuous-time linear-quadratic regulator.
  * @example
  * ```ts
  * import { control } from 'mdml-engine/dynamics'

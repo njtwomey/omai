@@ -439,6 +439,7 @@ export function milpAlgorithm(problem: MixedIntegerProgram, options: MilpOptions
  * @param options - Node selection, cuts, tolerances, node limit and run options.
  * @returns The solution, its bound and gap, the cuts and the search tree.
  * @concept integer-programming
+ * @index function Mixed-integer linear programming by branch and bound.
  * @example
  * ```ts
  * import { milp } from 'mdml-engine/optim'

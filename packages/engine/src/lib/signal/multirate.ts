@@ -226,6 +226,7 @@ export function resamplePoly(x: TensorLike, up: number, down: number, options: R
  * @param options - Axis (default 0, as scipy) and a spectral window.
  * @returns The resampled signal.
  * @concept multirate
+ * @index function Fourier resampling to a given number of samples.
  * @example
  * ```ts
  * import { resample } from 'mdml-engine/signal'

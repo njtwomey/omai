@@ -33,6 +33,7 @@ import type {
  * @param options - An accessible title and a background paint.
  * @returns The scene.
  * @concept scene-graph
+ * @index function Build a Scene from nodes; rect, circle and path sit beside it.
  * @example
  * ```ts
  * import { scene, circle } from 'mdml-engine/scene'

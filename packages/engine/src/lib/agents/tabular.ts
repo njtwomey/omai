@@ -198,6 +198,7 @@ function controlAgent<O, G extends TabularState>(spec: ControlSpec<O, G>): Agent
  * @param options - Step size, discount, exploration, initial values and the observation coding.
  * @returns The agent.
  * @concept q-learning
+ * @index agent Tabular Q-learning; SARSA and Dyna-Q beside it.
  * @example
  * ```ts
  * import { qLearning } from 'mdml-engine/agents'

@@ -155,6 +155,7 @@ function isConcreteValueError(e: unknown): boolean {
  * @throws MdmlError with code `shape` when batched arguments disagree on the batch size, and `value` when no
  *   argument is batched.
  * @concept vectorisation
+ * @index function Vectorise a function over a batch axis, like jax.vmap.
  * @example
  * ```ts
  * import { vmap, grad } from 'mdml-engine/autodiff'

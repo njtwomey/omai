@@ -2,6 +2,8 @@
  * Samplers, the strategies that propose a study's next configuration from its finished trials, Optuna style: grid
  * search, random search, quasi-random Sobol', Halton and Latin hypercube designs, CMA-ES and Nelder-Mead from `optim`
  * on the unit-cube encoding of the space, and an evolutionary sampler (NSGA-II for several objectives).
+ *
+ * @index function Optuna-style samplers: random, grid, Sobol, CMA-ES, evolutionary.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'

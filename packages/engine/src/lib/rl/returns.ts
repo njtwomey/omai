@@ -205,6 +205,7 @@ export interface Advantages {
  * @param lambda - The GAE parameter (default 0.95).
  * @returns Advantages and returns.
  * @concept advantage-estimation
+ * @index function Generalised advantage estimation.
  * @example
  * ```ts
  * import { gae } from 'mdml-engine/rl'

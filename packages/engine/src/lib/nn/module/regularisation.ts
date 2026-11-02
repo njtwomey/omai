@@ -52,6 +52,7 @@ class Stochastic extends Module {
  * Dropout (torch.nn.Dropout): in training, zero each element with probability p and scale the rest by 1 / (1 - p),
  * using the key in the apply context; the identity in evaluation mode.
  *
+ * @index module Dropout, active only in training mode.
  * @example
  * ```ts
  * import { Dropout } from 'mdml-engine/nn'

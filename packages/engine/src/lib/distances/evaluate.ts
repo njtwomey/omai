@@ -81,6 +81,7 @@ function stacked(x: Value, y: Value): Value {
  * @returns The distances, `[]` for two points or `[n]`.
  * @throws MdmlError `value` for an unknown name, `shape` for points of different dimensions or rows that do not pair up.
  * @concept distances
+ * @index function Named distance between points, from a registry of scipy's metrics.
  * @example
  * ```ts
  * import { distance } from 'mdml-engine/distances'
@@ -188,6 +189,7 @@ function innerDistance(name: SimilarityName, options: SimilarityOptions): Distan
  * @returns The similarities, `[]` for two points or `[n]`.
  * @throws MdmlError `value` for an unknown name, `shape` for points of different dimensions or rows that do not pair up.
  * @concept distances
+ * @index function Named similarity between points.
  * @example
  * ```ts
  * import { similarity } from 'mdml-engine/distances'

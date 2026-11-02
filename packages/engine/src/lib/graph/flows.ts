@@ -44,6 +44,7 @@ function solveMaxFlow(
  * @returns The flow value, the flow on each edge and the number of augmenting paths.
  * @throws MdmlError with code `value` for a negative capacity, an unbounded flow or source equal to sink.
  * @concept network-flows
+ * @index function Maximum flow and minimum cut.
  * @example
  * ```ts
  * import { digraph, maxFlow } from 'mdml-engine/graph'

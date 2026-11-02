@@ -440,6 +440,7 @@ function regressorParams(data: LearnData, n: number, who: string): NeighbourRegr
  *
  * @param hyper - `nNeighbors`, `weights`, `metric`, `metricOptions`, `algorithm`, `leafSize`.
  * @returns The estimator.
+ * @index estimator k-nearest-neighbour classifier under any distance.
  * @example
  * ```ts
  * import { kNeighboursClassifier } from 'mdml-engine/learn'

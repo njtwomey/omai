@@ -370,6 +370,7 @@ function residualVariance(y: Float64Array, s: StlState): number {
  * @param y - The series.
  * @param options - The period and the smoothers.
  * @returns The observed series, trend, seasonal component, residual and robustness weights.
+ * @index function STL seasonal-trend decomposition; mstl handles several seasons.
  * @example
  * ```ts
  * import { stl } from 'mdml-engine/timeseries'

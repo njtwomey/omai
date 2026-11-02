@@ -3,6 +3,8 @@
  * intrinsics from the image of the absolute conic, extrinsics from each homography) refined jointly with OpenCV's five
  * distortion coefficients by Levenberg-Marquardt (`calibrateCamera`), and Bouguet's rectifying rotations for a
  * calibrated stereo pair (`stereoRectify`).
+ *
+ * @index function Zhang's camera calibration and stereo rectification.
  */
 
 // TODO: stereoRectify's alpha-dependent new camera matrices (OpenCV fits them to the undistorted image corners);

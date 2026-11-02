@@ -140,6 +140,7 @@ abstract class TransformerBlockBase<I> extends Module<I, Value> {
  * parameters follow PyTorch's state-dict layout (`self_attn.*`, `linear1`, `linear2`, `norm1`, `norm2`).
  *
  * @concept transformer
+ * @index module Transformer encoder layer: self-attention and feed-forward with residuals.
  * @example
  * ```ts
  * import { TransformerEncoderLayer } from 'mdml-engine/nn'

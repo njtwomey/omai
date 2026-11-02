@@ -326,6 +326,7 @@ function verbsOf(p: KernelRidgeParams, h: KernelRidgeHyper): KernelRidgeVerbs {
  *
  * @concept kernel-ridge
  * @reference K. P. Murphy, Machine Learning: A Probabilistic Perspective (2012), section 14.4.3.
+ * @index estimator Kernel ridge regression with exact leave-one-out shortcuts.
  * @example
  * ```ts
  * import { kernelRidge } from 'mdml-engine/kernel-methods'

@@ -111,6 +111,7 @@ export function nerfProblem(config: NerfMethodConfig, key: Key): NerfProblem {
  * a ray (`nerf/rayWeights`) and the peak signal-to-noise ratio on the held-out views (`nerf/heldOutPsnr`).
  *
  * @concept neural-radiance-fields
+ * @index estimator Fit a NeRF to multi-view images as a session.
  * @example
  * ```ts
  * import { fitNerfMethod } from 'mdml-engine/fields'

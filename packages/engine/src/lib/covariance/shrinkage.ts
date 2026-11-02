@@ -275,6 +275,7 @@ export function shrinkageAlgorithm(x: TensorLike, options: CovarianceHyper = {})
  *
  * @param hyper - The estimator method, its shrinkage and whether the data are centred.
  * @returns The iterative estimator.
+ * @index estimator Empirical, Ledoit-Wolf and OAS shrunk covariance.
  * @example
  * ```ts
  * import { covarianceEstimator } from 'mdml-engine/covariance'

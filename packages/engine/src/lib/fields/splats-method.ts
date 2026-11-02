@@ -130,6 +130,7 @@ export function splatsProblem(config: SplatsMethodConfig, key: Key): SplatsProbl
  * (`splats/render`), the Gaussians of a view as ellipses (`splats/ellipses`) and the held-out peak signal-to-noise ratio.
  *
  * @concept gaussian-splatting
+ * @index estimator Fit 3-D Gaussian splats to multi-view images as a session.
  * @example
  * ```ts
  * import { fitSplatsMethod } from 'mdml-engine/fields'

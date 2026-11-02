@@ -5,6 +5,8 @@
  * solver's channels as `solver/...` paths, `model/params` and the kind's standard probes, serialisation, the
  * scikit-learn `fit` surface (a session run to completion with the method's defaults), the records' rows, and a
  * `session` to drive the same fit live, with `fittedAt(t)` for the fitted value at any reached step.
+ *
+ * @index structure Iterative base: an estimator whose fit is an Algorithm run live.
  */
 
 import type { Json } from '../../base/index.ts'

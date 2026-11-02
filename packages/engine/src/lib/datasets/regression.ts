@@ -129,6 +129,7 @@ export function friedman1Program(d: number, noise: number): GeneratingProgram {
  * first five matter, with the regression function, noise level and Gaussian log density as truth.
  *
  * @concept datasets
+ * @index dataset Friedman's first nonlinear regression problem.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'
@@ -293,6 +294,7 @@ function design(k: Key, n: number, d: number, effectiveRank: number, tailStrengt
  * coefficients uniform on [0, 100], several targets, bias and Gaussian noise. Columns stay in order unless
  * `shuffle` is set (then the truth's coefficients and relevant features follow the permutation).
  *
+ * @index dataset Linear regression problem, like sklearn make_regression.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

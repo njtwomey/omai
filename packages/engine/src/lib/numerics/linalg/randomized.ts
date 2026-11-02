@@ -3,6 +3,8 @@
  * `randomized_svd`), random projection matrices with the Johnson-Lindenstrauss dimension that preserves pairwise
  * distances, and stochastic estimators for large implicit matrices, Hutchinson's trace estimator and log-determinants
  * by stochastic Lanczos quadrature.
+ *
+ * @index function Randomised SVD, range finder and random projections.
  */
 
 import { MdmlError, minOf } from '../../base/index.ts'

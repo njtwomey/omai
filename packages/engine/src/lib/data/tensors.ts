@@ -47,6 +47,7 @@ function strip<T extends TabularMeta>(meta: T): Partial<DatasetMeta> {
  * @param meta - Name, feature and target names, sample weights and other metadata.
  * @returns The dataset.
  * @concept datasets
+ * @index function Build a regression dataset from features and targets.
  * @example
  * ```ts
  * import { xy } from 'mdml-engine/data'
@@ -81,6 +82,7 @@ export function xy(
  * @param y - Class indices `[n]`.
  * @param meta - Class names, feature names, sample weights and other metadata.
  * @returns The dataset.
+ * @index function Build a classification dataset from features and class labels.
  * @example
  * ```ts
  * import { xyClasses } from 'mdml-engine/data'
@@ -230,6 +232,7 @@ function toColumn(name: string, c: ColumnInput, text: boolean, levels?: readonly
  * @param options - The target column, text columns, explicit category levels and metadata.
  * @returns The table.
  * @throws MdmlError with code `shape` when columns differ in length.
+ * @index function A data frame of named mixed-type columns.
  * @example
  * ```ts
  * import { table } from 'mdml-engine/data'

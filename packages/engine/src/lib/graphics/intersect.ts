@@ -3,6 +3,8 @@
  * intersection tests (quadratic roots, Moller-Trumbore, the slab method) with hit records, a brute-force nearest hit,
  * and bounding boxes. Also differentiable versions of the distances and barycentric coordinates for gradients through
  * geometry.
+ *
+ * @index function Ray-shape intersections: spheres, planes, triangles, boxes.
  */
 
 import { MdmlError } from '../base/index.ts'

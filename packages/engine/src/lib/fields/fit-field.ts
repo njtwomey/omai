@@ -273,6 +273,7 @@ export interface FieldFit {
  * @param options - As {@link fitFieldAlgorithm}, the step count, the key and the run's tracer and policy.
  * @returns The trained parameters, the per-step losses and the run's status.
  * @concept neural-fields
+ * @index function Fit a coordinate network to samples of a signal.
  * @example
  * ```ts
  * import { fitField, neuralField } from 'mdml-engine/fields'

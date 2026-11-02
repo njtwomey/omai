@@ -2,6 +2,8 @@
  * Statistics and methods on kernel matrices: centring in feature space, kernel and kernel-target alignment (and centred
  * kernel alignment), the Hilbert-Schmidt independence criterion (HSIC), the squared maximum mean discrepancy (MMD), the
  * effective dimension of a regularised kernel matrix, kernel PCA, and scikit-learn's `pairwise_kernels` by metric name.
+ *
+ * @index function Kernel-matrix statistics: centring, alignment, HSIC.
  */
 
 import { MdmlError } from '../base/index.ts'

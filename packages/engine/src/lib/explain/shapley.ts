@@ -58,6 +58,7 @@ function gameOf(value: CoalitionValue, n: number, who: string): CoalitionalGame 
  * @param nPlayers - The number of players.
  * @returns One value per player.
  * @concept shapley-values
+ * @index function Exact Shapley values of any coalition game.
  * @example
  * ```ts
  * import * as explain from 'mdml-engine/explain'
@@ -165,6 +166,7 @@ export interface ShapExplanation {
  * @param background - Background rows `[m, d]`.
  * @param options - nSamples and key.
  * @returns The values and the base value.
+ * @index function KernelSHAP feature attributions for any model.
  * @example
  * ```ts
  * import * as explain from 'mdml-engine/explain'
@@ -418,6 +420,7 @@ interface PathElement {
  * @param tree - The tree.
  * @param x - Rows to explain `[n, d]`.
  * @returns The values (`[n][d]`) and the base value (the cover-weighted mean leaf).
+ * @index function Exact Shapley values for tree models.
  * @example
  * ```ts
  * import * as explain from 'mdml-engine/explain'

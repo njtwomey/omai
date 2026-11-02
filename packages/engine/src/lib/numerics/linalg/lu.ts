@@ -74,6 +74,7 @@ const solvePrimitive: Primitive<null> = definePrimitive<null>({
  * @returns The solution, differentiable in both arguments.
  * @throws MdmlError with code `value` when A is exactly singular.
  * @concept linear-algebra
+ * @index function Solve a square linear system by LU, like numpy.linalg.solve.
  * @example
  * ```ts
  * import { solve } from 'mdml-engine/numerics/linalg'
@@ -94,6 +95,7 @@ export function solve(a: TensorLike, b: TensorLike): Value {
  *
  * @param a - Square matrix `[..., n, n]`.
  * @returns A^{-1}, differentiable.
+ * @index function Matrix inverse, batched and differentiable.
  * @example
  * ```ts
  * import { inv } from 'mdml-engine/numerics/linalg'

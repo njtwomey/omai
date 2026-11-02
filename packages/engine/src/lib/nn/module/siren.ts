@@ -98,6 +98,7 @@ export class SineLayer extends Module {
  * @param options - `omega0` (default 30) and a key.
  * @returns The network.
  * @concept siren
+ * @index module SIREN: a sine-activated network for coordinate inputs, from layer widths.
  * @example
  * ```ts
  * import { siren } from 'mdml-engine/nn'

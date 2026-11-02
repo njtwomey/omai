@@ -249,6 +249,7 @@ export class RNN extends RNNBase {
  * projection (`projSize`); returns the outputs and the final hidden and cell states.
  *
  * @concept recurrent-networks
+ * @index module Stacked, optionally bidirectional LSTM.
  * @example
  * ```ts
  * import { LSTM } from 'mdml-engine/nn'

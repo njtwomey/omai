@@ -155,6 +155,7 @@ export interface GenerateResult {
  * @param options - Decoding options and the run's tracer and policy.
  * @returns The tokens, text, log-probability and why decoding stopped.
  * @concept decoding
+ * @index function Autoregressive text generation with temperature, top-k and top-p.
  * @example
  * ```ts
  * import { generate, bigramLanguageModel } from 'mdml-engine/nn'

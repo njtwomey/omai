@@ -5,6 +5,8 @@
  * (kinds, modalities, real, form, free text), `loadDataset` and `fetchDataset` make or load an entry's data, and
  * `registerDatasets` returns a new registry with an app's own entries added. The library's own registry, built from
  * the catalogue, is `datasetRegistry` in `catalogue.ts`; nothing registers itself on import.
+ *
+ * @index structure Registry machinery: entries, tags, queries, load and fetch.
  */
 
 import { find, MdmlError, matchesText, type Registry, register } from '../base/index.ts'
@@ -256,6 +258,7 @@ export function matchesDatasetQuery(entry: DatasetEntry, query: DatasetQuery): b
  * @param query - The filters.
  * @returns The matching entries.
  * @concept datasets
+ * @index function Registry entries matching kind, modality, size or free text.
  * @example
  * ```ts
  * import { datasetRegistry, whereDatasets } from 'mdml-engine/datasets'
@@ -327,6 +330,7 @@ export function findDataset(reg: DatasetRegistry, name: string): DatasetEntry | 
  * @returns The data with its truth (empty for a vendored dataset without one).
  * @throws MdmlError with code `value` for a remote entry, or a knob outside the generator's space.
  * @concept datasets
+ * @index function Make or load a registry entry's data synchronously.
  * @example
  * ```ts
  * import { lookup } from 'mdml-engine/base'

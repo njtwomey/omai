@@ -1068,6 +1068,7 @@ export function activeLearningAlgorithm(
  * @param estimator - The classifier.
  * @param options - labeled, pool, oracle, strategy, batchSize, budget, committeeSize, evaluation, scoring, key and tracing.
  * @returns The final model, the queried indices, the labelled data and the per-round scores.
+ * @index function Pool-based active learning with query strategies.
  * @example
  * ```ts
  * import { activeLearning, uncertaintySampling } from 'mdml-engine/learn'

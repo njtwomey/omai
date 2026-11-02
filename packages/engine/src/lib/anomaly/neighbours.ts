@@ -255,6 +255,7 @@ function lofVerbs(p: LofParams, h: LofHyper): LofVerbs {
  *
  * @param hyper - `nNeighbors`, `contamination` (a fraction or `'auto'`) and the neighbour search.
  * @returns The iterative outlier estimator.
+ * @index estimator Local outlier factor.
  * @example
  * ```ts
  * import { localOutlierFactor } from 'mdml-engine/anomaly'

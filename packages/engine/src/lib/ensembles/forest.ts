@@ -354,6 +354,7 @@ const base = (
  * @param hyper - Trees (default 100), criterion (default gini), depth and leaf limits, features per split, bootstrap.
  * @returns The estimator.
  * @concept ensembles
+ * @index estimator Random forest; regressor and extra-trees twins beside it.
  * @example
  * ```ts
  * import { randomForestClassifier } from 'mdml-engine/ensembles'

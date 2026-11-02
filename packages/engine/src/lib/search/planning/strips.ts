@@ -2,6 +2,8 @@
  * STRIPS planning (Fikes and Nilsson): actions with preconditions, add and delete lists over ground facts. Problem
  * construction, action application and goal regression, plan validation, and forward (progression) and regression
  * planners that hand the problem to A*, greedy or other searches with the relaxation heuristics.
+ *
+ * @index function STRIPS planning problems and planners.
  */
 
 import { MdmlError } from '../../base/index.ts'

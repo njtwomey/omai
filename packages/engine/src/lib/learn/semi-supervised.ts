@@ -1176,6 +1176,7 @@ export function labelSpreadingAlgorithm(data: LearnData, hyper: GraphLabelHyper)
  *
  * @param hyper - `kernel`, `gamma`, `nNeighbors`, `maxIter`, `tol`.
  * @returns The estimator; the fitted value has `transduction` and `labelDistributions` of the training rows.
+ * @index estimator Semi-supervised labelling by propagation over a neighbour graph.
  * @example
  * ```ts
  * import { labelPropagation } from 'mdml-engine/learn'

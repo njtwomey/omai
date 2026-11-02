@@ -264,6 +264,7 @@ export function quadAlgorithm(f: (x: Value) => Value, a: number, b: number, opti
  * @param options - Tolerances (default 1.49e-8), subinterval limit and breakpoints.
  * @returns The value, error estimate and the intervals used.
  * @concept quadrature
+ * @index function Adaptive Gauss-Kronrod integration, like scipy.integrate.quad.
  * @example
  * ```ts
  * import { quad } from 'mdml-engine/numerics/quadrature'

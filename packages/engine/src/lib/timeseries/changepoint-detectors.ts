@@ -64,6 +64,7 @@ const penalty = real(0.01, 10_000, { log: true, default: 10, label: 'penalty per
  * option's `make` takes its knobs and returns a {@link ChangepointDetect}.
  *
  * @concept changepoint-detection
+ * @index table Changepoint detectors as one slot.
  * @example
  * ```ts
  * import { changepointDetectors } from 'mdml-engine/timeseries'

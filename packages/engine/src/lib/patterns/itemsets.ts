@@ -297,6 +297,7 @@ export function aprioriAlgorithm(
  * @param options - The support threshold, the largest itemset and tracing.
  * @returns The frequent itemsets in canonical order.
  * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @index function Frequent itemsets by Apriori; FP-growth and Eclat beside it.
  * @example
  * ```ts
  * import { apriori } from 'mdml-engine/patterns'

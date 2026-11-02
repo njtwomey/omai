@@ -559,6 +559,7 @@ export function fixedPoint(g: VectorFunction, x0: TensorLike, options: FixedPoin
  * @param x0 - Starting point.
  * @param options - The method and its options.
  * @returns The solution.
+ * @index function Solve F(x) = 0 with newton, broyden or other methods.
  * @example
  * ```ts
  * import { root } from 'mdml-engine/numerics/roots'

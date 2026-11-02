@@ -534,6 +534,7 @@ export function aipwFrom(
  * @param data - Covariates, treatment and outcome.
  * @param options - Propensity and outcome learners, estimand, folds and trimming.
  * @returns The effect.
+ * @index function Augmented inverse-probability-weighted treatment effect.
  * @example
  * ```ts
  * import { aipw } from 'mdml-engine/causal'
@@ -842,6 +843,7 @@ export function doubleMachineLearningAlgorithm(data: CausalData, options: DmlOpt
  * @param data - Covariates, treatment and outcome.
  * @param options - The model (`'plr'` or `'irm'`), folds, learners and key.
  * @returns The effect with its influence values.
+ * @index function Double machine learning treatment effect with cross-fitting.
  * @example
  * ```ts
  * import { doubleMachineLearning } from 'mdml-engine/causal'

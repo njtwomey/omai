@@ -83,6 +83,7 @@ export function scaleTrilOf(params: CovarianceParams): Value {
  * @returns The distribution; `rsample` is loc + L eps.
  * @throws MdmlError with code `shape` when the shapes disagree.
  * @concept distributions
+ * @index distribution Multivariate normal by covariance, precision or Cholesky factor.
  * @example
  * ```ts
  * import { multivariateNormal } from 'mdml-engine/dists'

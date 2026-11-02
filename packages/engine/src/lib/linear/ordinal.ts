@@ -505,6 +505,7 @@ function tableOf(data: LearnData, p: OrdinalParams): CoefficientTable {
  *
  * @param hyper - `link` (logit, probit, cloglog, loglog), `mode`, `alpha` (ridge on the slopes), `tol`, `maxIter`.
  * @returns The estimator.
+ * @index estimator Ordinal regression with cumulative-link families.
  * @example
  * ```ts
  * import { ordinal } from 'mdml-engine/linear'
