@@ -4,7 +4,7 @@ import { type PinholeCamera, pinholeCamera } from '../graphics/index.ts'
 import { key } from '../random/index.ts'
 import { type Tensor, toFlat } from '../tensor/index.ts'
 import { datasetRegistry } from './catalogue.ts'
-import { hemisphereCameras, multiViewImages, multiViewScene, renderMultiView } from './multiview.ts'
+import { hemisphereCameras, multiViewImages, multiViewScene, orbitCamera, renderMultiView } from './multiview.ts'
 
 describe('multiViewScene and renderMultiView', () => {
   it('renders the background where no ray hits and a shaded albedo where one does', () => {
@@ -52,6 +52,16 @@ describe('hemisphereCameras', () => {
     }
     const azimuths = cams.map((c) => Math.atan2(c.eye[2], c.eye[0]))
     expect(new Set(azimuths.map((a) => Math.round((a * 4) / Math.PI))).size).toBeGreaterThanOrEqual(6)
+  })
+})
+
+describe('orbitCamera', () => {
+  it('places the eye by azimuth and elevation, looking at the origin with y up', () => {
+    const c = orbitCamera(3, 30, 90, 50, 0.1, 100)
+    expect(c.eye[0]).toBeCloseTo(0, 12)
+    expect(c.eye[1]).toBeCloseTo(1.5, 12)
+    expect(c.eye[2]).toBeCloseTo(3 * Math.cos(Math.PI / 6), 12)
+    expect([c.target, c.up, c.fov]).toEqual([[0, 0, 0], [0, 1, 0], 50])
   })
 })
 

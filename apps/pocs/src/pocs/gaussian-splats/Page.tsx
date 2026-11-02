@@ -1,69 +1,85 @@
-import { type SplatEllipses, type SplatRender, fitSplatsMethod, splatsProblem } from 'mdml-engine/fields'
+import { multiViewScene, renderMultiView } from 'mdml-engine/datasets'
+import {
+  fitSplatsMethod,
+  gaussianEllipsoids,
+  gaussiansToPly,
+  renderSplatView,
+  type SplatState,
+  splatsProblem,
+} from 'mdml-engine/fields'
 import { foldIn, key } from 'mdml-engine/random'
+import { face3d, type Item3D } from 'mdml-engine/scene'
 import { bool, defaults, dict, int } from 'mdml-engine/space'
 import { asTensor, toFlat } from 'mdml-engine/tensor'
-import { type Config, Log, metricSeries } from 'mdml-engine/trace'
+import { type Config, Log, metricSeries, type Session } from 'mdml-engine/trace'
 import { cartesian, lines } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import { Chart, ControlPanel, SpaceControls, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { BakedSession, type BakedView } from '../../shared/BakedSession.tsx'
+import { OrbitImage, type Pose, poseCamera, START_POSE, useProgressiveImage } from '../../shared/orbit.tsx'
 import { PixelCanvas } from '../../shared/PixelCanvas.tsx'
+import { cameraDots, frustum, Orbitable, rgba, up } from '../../shared/view3d.tsx'
 
-const FRAMES = 40
-const CURVE = figure({ width: 420, height: 240 })
+const FRAMES = 30
+const CURVE = figure({ width: 210, height: 150 })
+/** The camera orbit of the scene: close enough that three objects fill most of the view. */
+const RADIUS = 2.9
+const FOV = 40
+/** The drawn width of an image panel, and the sides the orbit view is rendered at: a quick one to follow a drag, then a finer one. */
+const PANEL = 128
+const SIDES = [16, 32, 64] as const
+const MOST_DRAWN = 300
 
 const CONTROLS = dict({
-  views: int(3, 16, { default: 6, label: 'training views' }),
+  objects: int(1, 4, { default: 3, label: 'objects in the scene' }),
+  views: int(3, 16, { default: 12, label: 'training views' }),
   resolution: int(8, 24, { default: 16, label: 'image side (pixels)' }),
-  gaussians: int(5, 200, { default: 30, label: 'Gaussians at the start' }),
-  densify: bool({ default: false, label: 'adaptive density control (split and clone)' }),
+  gaussians: int(5, 200, { default: 60, label: 'Gaussians at the start' }),
+  densify: bool({ default: true, label: 'adaptive density control' }),
   steps: int(50, 1000, { default: 300, log: true, label: 'steps' }),
 })
-type Controls = { views: number; resolution: number; gaussians: number; densify: boolean; steps: number }
+type Controls = {
+  objects: number
+  views: number
+  resolution: number
+  gaussians: number
+  densify: boolean
+  steps: number
+}
 const START = defaults(CONTROLS) as unknown as Controls
 
-/** The method's configuration for the page's controls: one object, two held-out views, the library's other defaults. */
+/** The method's configuration for the page's controls: two held-out views, cameras close to the scene, the library's other defaults. */
 const configOf = (c: Controls): Config =>
   ({
     ...(defaults(fitSplatsMethod.config) as Config),
     views: c.views,
     heldOut: 2,
     resolution: c.resolution,
-    objects: 1,
+    objects: c.objects,
+    radius: RADIUS,
+    fov: FOV,
     gaussians: c.gaussians,
+    initialScale: 0.2,
+    meansRate: 0.01,
+    scalesRate: 0.01,
     densify: c.densify,
     densifyUntil: Math.max(21, c.steps - 20),
   }) as Config
 
 interface Frame {
   readonly step: number
-  readonly render: SplatRender
-  readonly ellipses: SplatEllipses
   readonly heldPsnr: number
 }
 
 export default function SplatsPage(): ReactNode {
   const [controls, setControls] = useState<Controls>(START)
   const config = useMemo(() => configOf(controls), [controls])
-  // The first training view, from the generator and key the session's run uses (its root key folded with 7).
-  const truth = useMemo(() => {
-    const data = splatsProblem(config as never, foldIn(key(0), 7)).data
-    const size = controls.resolution * controls.resolution * 3
-    return Array.from(toFlat(asTensor(data.images)).slice(0, size))
-  }, [config, controls.resolution])
+  // The data the session's run uses (its root key folded with 7): the training views and their cameras.
+  const problem = useMemo(() => splatsProblem(config as never, foldIn(key(0), 7)), [config])
   return (
-    <div className="flex flex-col gap-4">
-      <p className="max-w-3xl text-sm text-muted">
-        3-D Gaussian splatting represents a scene as a cloud of coloured, semi-transparent 3-D Gaussians. To draw a
-        view, each Gaussian is projected onto the image as an ellipse and the ellipses are blended from far to near;
-        training moves, stretches, recolours and fades the Gaussians until the drawing matches the photographs. Below is
-        one training view (left), the drawing at the step you are on (middle), and the Gaussians themselves as ellipses
-        over it (right). Adaptive density control splits and clones Gaussians where the picture is still poor, so the
-        count grows. These are toy sizes: a single object, {controls.resolution} by {controls.resolution} pixel views, a
-        few hundred steps.
-      </p>
-      <ControlPanel title="the scene and the training" columns={2}>
+    <div className="flex flex-col gap-3">
+      <ControlPanel title="the scene and the training" columns={6}>
         <SpaceControls space={CONTROLS} value={controls} onChange={(v) => setControls(v as unknown as Controls)} />
       </ControlPanel>
       <BakedSession<Frame>
@@ -74,13 +90,11 @@ export default function SplatsPage(): ReactNode {
         logs={{ 'splats/loss': Log(), 'splats/psnr': Log(), 'splats/count': Log() }}
         bake={(session, t) => ({
           step: t,
-          render: session.probe(t, 'splats/render' as never, { view: 0 }) as unknown as SplatRender,
-          ellipses: session.probe(t, 'splats/ellipses' as never, { view: 0 }) as unknown as SplatEllipses,
           heldPsnr: session.probe(t, 'splats/heldOutPsnr' as never) as unknown as number,
         })}
         onReset={() => setControls(START)}
       >
-        {(view) => <View view={view} truth={truth} side={controls.resolution} />}
+        {(view) => <View view={view} problem={problem} controls={controls} />}
       </BakedSession>
     </div>
   )
@@ -91,14 +105,79 @@ function marker(t: number, lo: number, hi: number, mode: ReturnType<typeof useCo
   return lines([{ x: [t, t], y: [lo, hi], colour: 'muted', dash: 'dashed', width: 1 }], { mode })
 }
 
+/** Offers the Gaussians at the step shown as a `.ply` file, the layout the 3-D Gaussian splatting viewers read. */
+function PlyButton(props: { readonly state: SplatState; readonly step: number }): ReactNode {
+  return (
+    <button
+      type="button"
+      className="w-fit cursor-pointer rounded-md border border-line bg-bg px-2.5 py-1 text-xs text-fg hover:bg-surface"
+      title="The Gaussians at this step as a binary .ply (x y z, f_dc, opacity logit, log scale, rotation), the 3DGS layout"
+      onClick={() => {
+        const blob = new Blob([gaussiansToPly(props.state.params) as BlobPart], { type: 'application/octet-stream' })
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = `gaussians-step-${props.step}.ply`
+        link.click()
+        URL.revokeObjectURL(link.href)
+      }}
+    >
+      download .ply
+    </button>
+  )
+}
+
 function View(props: {
   readonly view: BakedView<Frame>
-  readonly truth: readonly number[]
-  readonly side: number
+  readonly problem: ReturnType<typeof splatsProblem>
+  readonly controls: Controls
 }): ReactNode {
-  const { view, truth, side } = props
-  const { live, t, frame, baked, run, seek } = view
+  const { view, problem, controls } = props
+  const { live, t, baked, run, seek } = view
+  const side = controls.resolution
   const mode = useColourMode()
+  const [pose, setPose] = useState<Pose>(START_POSE)
+  // The Gaussians at the step shown: read back from the session's checkpoints.
+  const session = live.session as unknown as Session<SplatState, never>
+  const state = useMemo(() => session.stateAt(t), [session, t])
+  const truth = useMemo(
+    () => Array.from(toFlat(asTensor(problem.data.images)).slice(0, side * side * 3)),
+    [problem, side],
+  )
+  const drawn = useMemo(
+    () => renderSplatView(state.params, problem.data.cameras[0] as never, [side, side], { background: [1, 1, 1] }),
+    [state, problem, side],
+  )
+  const scene = useMemo(() => multiViewScene(controls.objects), [controls.objects])
+  const camera = useMemo(() => poseCamera(pose, RADIUS, FOV), [pose])
+  const deps = [state, camera, controls.objects]
+  const novel = useProgressiveImage(
+    SIDES,
+    (s) => renderSplatView(state.params, camera, [s, s], { background: [1, 1, 1] }).rgb,
+    deps,
+  )
+  const exact = useProgressiveImage(SIDES, (s) => Array.from(toFlat(renderMultiView(scene, camera, s, s))), deps)
+  const items = useMemo<Item3D[]>(() => {
+    const all = gaussianEllipsoids(state.params)
+      .map((g) => ({ g, weight: g.opacity * Math.hypot(...g.axes[0]) }))
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, MOST_DRAWN)
+    const rings = all.flatMap(({ g }) =>
+      [1, 2].map((k) => {
+        const [a, b] = [g.axes[0], g.axes[k] as readonly number[]]
+        const ring = Array.from({ length: 16 }, (_, i) => {
+          const th = (2 * Math.PI * i) / 16
+          return up(g.centre.map((c, d) => c + 2 * (Math.cos(th) * (a[d] as number) + Math.sin(th) * (b[d] as number))))
+        })
+        return face3d(ring, {
+          fill: rgba(g.rgb, 0.12 + 0.4 * g.opacity),
+          stroke: rgba(g.rgb, 0.35 + 0.5 * g.opacity),
+          strokeWidth: 0.6,
+        })
+      }),
+    )
+    return [...rings, ...cameraDots(problem.data.cameras), ...frustum(camera)]
+  }, [state, problem, camera])
+  // The held-out PSNR of the steps prepared, and the curves.
   const psnr = useMemo(() => metricSeries(run, 'splats/psnr'), [run])
   const count = useMemo(() => metricSeries(run, 'splats/count'), [run])
   const held = (() => {
@@ -117,9 +196,7 @@ function View(props: {
       [
         lines(
           [{ x: train.map((p) => p[0]), y: train.map((p) => p[1]), name: 'training views', width: 1.5, opacity: 0.6 }],
-          {
-            mode,
-          },
+          { mode },
         ),
         lines([{ x: shown.map((p) => p[0]), y: shown.map((p) => p[1]), name: 'held-out views', width: 2.5 }], {
           mode,
@@ -141,57 +218,42 @@ function View(props: {
         mode,
         figure: CURVE,
         x: { label: 'step', limits: [0, Math.max(1, live.head)] },
-        y: { label: 'number of Gaussians' },
+        y: { label: 'Gaussians' },
       },
     )
   }, [count, t, mode, live.head])
   const at = count.steps.findLastIndex((st) => st <= t)
-  const e = frame?.ellipses
+  const last = baked.at(t)
+  const timing = (n: typeof novel): string =>
+    `${n.side} by ${n.side}${n.ms[n.stage] === undefined ? '' : `, ${Math.round(n.ms[n.stage] as number)} ms`}`
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid items-start gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
-        <PixelCanvas width={side} height={side} rgb={truth} caption="training view 0: truth" />
-        <PixelCanvas
-          width={side}
-          height={side}
-          rgb={frame?.render.rgb}
-          caption={`render at step ${t}${frame?.render.psnr === undefined ? '' : `: ${frame.render.psnr.toFixed(1)} dB`}`}
-        />
-        <PixelCanvas
-          width={side}
-          height={side}
-          rgb={frame?.render.rgb}
-          caption="the Gaussians as ellipses (one standard deviation)"
-        >
-          {e === undefined ? null : (
-            <svg
-              viewBox={`0 0 ${e.width} ${e.height}`}
-              className="absolute inset-0 h-full w-full"
-              role="img"
-              aria-label="the Gaussians"
-            >
-              {e.ellipses.map((g) => (
-                <ellipse
-                  key={g.index}
-                  cx={g.x}
-                  cy={g.y}
-                  rx={Math.max(g.major, 0.15)}
-                  ry={Math.max(g.minor, 0.15)}
-                  transform={`rotate(${(g.angle * 180) / Math.PI} ${g.x} ${g.y})`}
-                  fill={`rgb(${g.rgb.map((v) => Math.round(255 * Math.min(1, Math.max(0, v)))).join(',')})`}
-                  fillOpacity={0.35 * g.opacity}
-                  stroke="white"
-                  strokeOpacity={0.35 + 0.5 * g.opacity}
-                  strokeWidth={0.08}
-                />
-              ))}
-            </svg>
-          )}
-        </PixelCanvas>
-        <div className="flex flex-col gap-2">
+    <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-3">
+          <PixelCanvas width={side} height={side} rgb={truth} size={PANEL} caption="training view 0: truth" />
+          <PixelCanvas
+            width={side}
+            height={side}
+            rgb={drawn.rgb}
+            size={PANEL}
+            caption={`its drawing, step ${t}: ${drawn.psnr === undefined ? '' : `${drawn.psnr.toFixed(1)} dB`}`.replace(
+              /: $/,
+              '',
+            )}
+          />
+          <OrbitImage
+            pose={pose}
+            onPose={setPose}
+            image={novel}
+            limit={PANEL}
+            caption={`novel view, drag me (${timing(novel)})`}
+          />
+          <OrbitImage pose={pose} onPose={setPose} image={exact} limit={PANEL} caption="the true scene from there" />
+        </div>
+        <div className="flex items-start gap-3">
           <Chart option={psnrOption} figure={CURVE} onInit={seek as never} />
           <Chart option={countOption} figure={CURVE} onInit={seek as never} />
-          <dl className="grid grid-cols-3 gap-x-6 text-sm">
+          <dl className="flex flex-col gap-1.5 text-sm">
             <div>
               <dt className="text-xs text-muted">step</dt>
               <dd className="font-medium tabular-nums">
@@ -204,13 +266,20 @@ function View(props: {
             </div>
             <div>
               <dt className="text-xs text-muted">held-out PSNR</dt>
-              <dd className="font-medium tabular-nums">
-                {frame === undefined ? '' : `${frame.heldPsnr.toFixed(1)} dB`}
-              </dd>
+              <dd className="font-medium tabular-nums">{last === undefined ? '' : `${last.heldPsnr.toFixed(1)} dB`}</dd>
             </div>
+            <PlyButton state={state} step={t} />
           </dl>
         </div>
       </div>
+      <figure className="flex flex-col gap-1">
+        <Orbitable items={items} width={520} height={340} />
+        <figcaption className="max-w-[520px] text-xs text-muted">
+          the Gaussians at step {t} as ellipsoids (two cross-sections each, two standard deviations, the{' '}
+          {Math.min(MOST_DRAWN, state.params.means.shape[0] ?? 0)} most visible), the training cameras (grey), the novel
+          camera (blue, drawn nearer than it is)
+        </figcaption>
+      </figure>
     </div>
   )
 }

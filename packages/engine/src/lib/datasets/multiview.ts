@@ -142,8 +142,26 @@ export function renderMultiView(scene: MultiViewScene, camera: PinholeCamera, wi
   return fromStorage(out, [height, width, 3], 'float64')
 }
 
-/** A camera on a sphere of the given radius around the origin, looking at it, `elevation` and `azimuth` in degrees. */
-function orbitCamera(
+/**
+ * A camera on a sphere of the given radius around the origin, looking at it, with y up: the eye is at
+ * `radius (cos(el) cos(az), sin(el), cos(el) sin(az))` for `elevation` and `azimuth` in degrees. The scene's cameras are
+ * placed this way, so a camera made here with another angle is a novel view of the same scene.
+ *
+ * @param radius - The distance from the origin.
+ * @param elevation - Degrees above the horizontal plane.
+ * @param azimuth - Degrees about the vertical axis, from the x axis towards z.
+ * @param fov - Vertical field of view in degrees.
+ * @param near - Near clipping distance.
+ * @param far - Far clipping distance.
+ * @returns The camera.
+ * @concept novel-view-synthesis
+ * @example
+ * ```ts
+ * import { orbitCamera } from 'mdml-engine/datasets'
+ * orbitCamera(4, 0, 90, 40, 0.1, 100).eye.map((v) => Math.round(v * 1e9) / 1e9 + 0) // => [0, 0, 4]
+ * ```
+ */
+export function orbitCamera(
   radius: number,
   elevation: number,
   azimuth: number,

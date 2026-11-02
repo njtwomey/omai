@@ -28,6 +28,9 @@ export interface SplatsMethodConfig {
   readonly heldOut: number
   readonly resolution: number
   readonly objects: number
+  /** The cameras' vertical field of view in degrees (default 40) and their distance from the scene's centre (default 4). */
+  readonly fov?: number
+  readonly radius?: number
   /** The number of Gaussians to start from, scattered in a box of this half-width, with this scale and opacity. */
   readonly gaussians: number
   readonly boxHalfWidth: number
@@ -77,7 +80,14 @@ export function splatsProblem(config: SplatsMethodConfig, key: Key): SplatsProbl
   const data = nerfData(
     generate(multiViewImages, {
       key: foldIn(key, 0),
-      knobs: { views: config.views, heldOut: config.heldOut, resolution: config.resolution, objects: config.objects },
+      knobs: {
+        views: config.views,
+        heldOut: config.heldOut,
+        resolution: config.resolution,
+        objects: config.objects,
+        ...(config.fov === undefined ? {} : { fov: config.fov }),
+        ...(config.radius === undefined ? {} : { radius: config.radius }),
+      },
     }),
   )
   const initial = randomGaussians(foldIn(key, 1), config.gaussians, {
@@ -144,6 +154,8 @@ export const fitSplatsMethod: Method<SplatState, SplatsMethodConfig, SplatPath> 
     heldOut: int(0, 20, { default: 3, label: 'held-out views' }),
     resolution: int(4, 64, { default: 8, label: 'image side' }),
     objects: int(1, 4, { default: 1, label: 'objects in the scene' }),
+    fov: real(10, 120, { default: 40, label: 'camera field of view (degrees)' }),
+    radius: real(2.5, 20, { default: 4, label: 'camera distance from the scene' }),
     gaussians: int(1, 5000, { default: 30, label: 'Gaussians at the start' }),
     boxHalfWidth: real(0.1, 5, { default: 0.8, label: 'start box half-width' }),
     initialScale: real(0.01, 2, { log: true, default: 0.25, label: 'initial scale' }),

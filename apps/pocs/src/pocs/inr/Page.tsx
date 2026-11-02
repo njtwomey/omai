@@ -27,7 +27,9 @@ const SIDE = 32
 const WIDTH = 32
 const DEPTH = 2
 const FRAMES = 60
-const CURVE = figure({ width: 420, height: 280 })
+const CURVE = figure({ width: 560, height: 150 })
+/** The drawn width of a picture panel (a whole multiple of the picture's side). */
+const PANEL = 128
 
 /** What the viewer chooses: the picture, the two slots of the field, and how long and how fast to train. */
 const CONTROLS = dict({
@@ -112,16 +114,8 @@ const fitPicture = defineMethod<FieldState, FitConfig, FieldPath>({
 export default function InrPage(): ReactNode {
   const [controls, setControls] = useState<Controls>(START)
   return (
-    <div className="flex flex-col gap-4">
-      <p className="max-w-3xl text-sm text-muted">
-        An implicit neural representation stores a signal in a network&apos;s weights: here the network takes a
-        pixel&apos;s coordinates and returns its colour, and training fits it to a {SIDE} by {SIDE} picture. Left is the
-        target, right is what the network draws at the step you are on. Try the plain ReLU network on the raw
-        coordinates first: it learns the smooth parts and stays blurry on edges and fine texture (the spectral bias of
-        ReLU networks). Then encode the coordinates or switch to sine activations, which sharpen. These are toy sizes (
-        {SIDE} by {SIDE} pixels, {DEPTH} hidden layers of {WIDTH} units), not tuned for quality.
-      </p>
-      <ControlPanel title="the picture and the network" columns={2}>
+    <div className="flex flex-col gap-3">
+      <ControlPanel title="the picture and the network" columns={5}>
         <SpaceControls space={CONTROLS} value={controls} onChange={(v) => setControls(v as unknown as Controls)} />
       </ControlPanel>
       <Training controls={controls} reset={() => setControls(START)} />
@@ -202,15 +196,24 @@ function View(props: {
   }, [psnr, t, mode, head])
   const at = loss.steps.findLastIndex((st) => st <= t)
   return (
-    <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
-      <PixelCanvas width={SIDE} height={SIDE} rgb={target} caption="target picture" />
-      <PixelCanvas
-        width={SIDE}
-        height={SIDE}
-        rgb={frame?.render.values}
-        caption={`the network's picture at step ${t}`}
-      />
-      <div className="flex flex-col gap-2">
+    // aabb / aabb / cccc: the two pictures side by side, small and centred, the curve and readouts across the width.
+    <div
+      className="grid w-full max-w-xl gap-x-3 gap-y-2"
+      style={{ gridTemplateColumns: '1fr 1fr', gridTemplateAreas: '"a b" "c c"' }}
+    >
+      <div className="flex justify-center" style={{ gridArea: 'a' }}>
+        <PixelCanvas width={SIDE} height={SIDE} rgb={target} size={PANEL} caption="target picture" />
+      </div>
+      <div className="flex justify-center" style={{ gridArea: 'b' }}>
+        <PixelCanvas
+          width={SIDE}
+          height={SIDE}
+          rgb={frame?.render.values}
+          size={PANEL}
+          caption={`the network's picture, step ${t}`}
+        />
+      </div>
+      <div className="flex flex-col gap-2" style={{ gridArea: 'c' }}>
         <Chart option={option} figure={CURVE} onInit={seek as never} />
         <dl className="grid grid-cols-3 gap-x-6 text-sm">
           <div>

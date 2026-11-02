@@ -9,6 +9,7 @@
 
 import { type ApplyContext, Composite, initKey, Linear, mlp, type Params, ReLU, Sequential } from '../nn/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
+import type { Vec3 } from '../scene/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { concat, fromStorage, primalOf, relu, reshape, sigmoid, softplus, type Value } from '../tensor/index.ts'
 import { hierarchicalSamples, type Planes, stratifiedSamples } from './sampling.ts'
@@ -274,5 +275,84 @@ export function renderRays(
   return {
     coarse,
     fine: { ...volumeRender(second.density, second.colour, merged, volume), t: merged, density: second.density },
+  }
+}
+
+/** The density and colour of a radiance field on a regular grid of points, from {@link nerfDensityGrid}. */
+export interface NerfDensityGrid {
+  /** Points per axis. */
+  readonly resolution: number
+  /** The box the grid fills: the grid points are the cell centres. */
+  readonly bounds: readonly [Vec3, Vec3]
+  /** Density at each point, `x` varying fastest, then `y`, then `z`: index `i + n (j + n k)`. */
+  readonly density: readonly number[]
+  /** Colour at each point, interleaved red, green, blue, in the same order. */
+  readonly colour: readonly number[]
+  readonly maxDensity: number
+}
+
+/**
+ * Ask a radiance field for its density and colour on a regular grid of points in a box: the learned scene as a volume
+ * rather than as rendered pictures. A point's colour depends on the viewing direction, so one is given (the colour the
+ * point shows to a camera looking along it). Uses the fine network when the model has one.
+ *
+ * @param model - The model.
+ * @param params - Its parameters.
+ * @param options - The box (default `[-1, -1, -1]` to `[1, 1, 1]`), points per axis (default 16) and the viewing
+ *   direction (default along `-z`).
+ * @returns The densities and colours on the grid, and the largest density.
+ * @concept neural-radiance-fields
+ * @example
+ * ```ts
+ * import { nerfDensityGrid, nerfModel, nerfParams } from 'mdml-engine/fields'
+ * import { key } from 'mdml-engine/random'
+ * const model = nerfModel({ width: 8, depth: 1, positionEncoding: { kind: 'frequency', octaves: 2 }, key: key(0) })
+ * const g = nerfDensityGrid(model, nerfParams(model), { resolution: 3 })
+ * [g.density.length, g.colour.length] // => [27, 81]
+ * ```
+ */
+export function nerfDensityGrid(
+  model: NerfModel,
+  params: NerfParams,
+  options: {
+    readonly bounds?: readonly [Vec3, Vec3]
+    readonly resolution?: number
+    readonly direction?: Vec3
+  } = {},
+): NerfDensityGrid {
+  const n = options.resolution ?? 16
+  const bounds = options.bounds ?? [
+    [-1, -1, -1],
+    [1, 1, 1],
+  ]
+  const direction = options.direction ?? [0, 0, -1]
+  const total = n * n * n
+  const points = new Float64Array(total * 3)
+  const views = new Float64Array(total * 3)
+  for (let k = 0; k < n; k++)
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++) {
+        const at = i + n * (j + n * k)
+        const cell = [i, j, k]
+        for (let c = 0; c < 3; c++) {
+          const [lo, hi] = [bounds[0][c] as number, bounds[1][c] as number]
+          points[3 * at + c] = lo + ((hi - lo) * ((cell[c] as number) + 0.5)) / n
+          views[3 * at + c] = direction[c] as number
+        }
+      }
+  const net = model.fine ?? model.coarse
+  const netParams = (model.fine === undefined ? params.coarse : params.fine) as Params
+  const out = net.apply(
+    netParams,
+    [fromStorage(points, [total, 3], 'float64'), fromStorage(views, [total, 3], 'float64')] as const,
+    { train: false },
+  )
+  const density = Array.from(primalOf(out.density).data)
+  return {
+    resolution: n,
+    bounds,
+    density,
+    colour: Array.from(primalOf(out.colour).data),
+    maxDensity: density.reduce((a, b) => Math.max(a, b), 0),
   }
 }

@@ -5409,12 +5409,14 @@ rendering and splatting. The model is an objective and the optimiser a slot, as 
   white or given background, differentiable through the tensor operations.
 - `nerf.ts`: `NerfField` (position and direction encodings from the `fieldEncodings` slot, a ReLU trunk, a density head
   from position alone, a view-dependent colour head), `nerfModel` (one network or coarse and fine), `renderRays` (casts
-  rays by stratified then hierarchical sampling and composites).
+  rays by stratified then hierarchical sampling and composites), `nerfDensityGrid` (the field's density and colour on a
+  grid in a box, the learned scene as a volume).
 - `fit-nerf.ts`: `fitNerfAlgorithm` and `fitNerf` on posed images (`NerfData`, from `multiViewImages` by `nerfData`):
   batches of pixels, squared error of the coarse plus the fine render, optimiser slot, resumable; `nerfContract` with
   `nerf/loss`, `nerf/mse`, `nerf/psnr`, `nerf/gradNorm` and the derived probes `nerf/render` (a `NerfImage` of a
   training or held-out view), `nerf/rayWeights` and `nerf/heldOutPsnr`; `renderView`.
-- `nerf-method.ts`: `fitNerfMethod` (scene, encodings, hierarchical sampling, optimiser as knobs) and `nerfProblem`.
+- `nerf-method.ts`: `fitNerfMethod` (scene with its camera field of view and radius, encodings, hierarchical sampling,
+  optimiser as knobs) and `nerfProblem`.
 - `gaussians.ts`: `GaussianSet` (means, log-scales, rotation quaternions, opacity logits, spherical-harmonic colour
   coefficients of degree 0 and optionally 1; a pytree of tensors), `randomGaussians`, `gaussiansFromPoints` (scales
   from the nearest points), `quaternionToMatrix`, `covariance3d` (R S S^T R^T), `gaussianColour`, `selectGaussians`,
@@ -5429,8 +5431,10 @@ rendering and splatting. The model is an objective and the optimiser a slot, as 
   split, prune by the view-space gradient; optimiser state reset when the set changes size), serialisable and
   resumable; `splatContract` with `splats/loss`, `mse`, `psnr`, `count`, `gradNorm`, the event `splats/densify` and the
   probes `splats/render`, `splats/ellipses` (the Gaussians of a view as ellipses) and `splats/heldOutPsnr`.
-- `splats-method.ts`: `fitSplatsMethod` (scene, start, optimiser and per-group rates, density control as knobs) and
-  `splatsProblem`.
+- `splats-method.ts`: `fitSplatsMethod` (scene with its camera field of view and radius, start, optimiser and per-group
+  rates, density control as knobs) and `splatsProblem`.
+- `splat-export.ts`: `gaussianEllipsoids` (each Gaussian as centre, principal axes, colour and opacity, for a 3-D view)
+  and `gaussiansToPly` (the binary `.ply` of the 3-D Gaussian splatting viewers).
 
 built from: `nn`, `optim`, `autodiff`, `trace`, `losses`, `random`, `space`, `tensor`, `datasets`
 

@@ -3,6 +3,7 @@ import { generate } from '../data/index.ts'
 import { hemisphereCameras, multiViewImages } from '../datasets/index.ts'
 import { adam } from '../optim/index.ts'
 import { key } from '../random/index.ts'
+import { defaults } from '../space/index.ts'
 import { fromStorage, toFlat, treeLeaves } from '../tensor/index.ts'
 import { iterate, Log, metricSeries, recorder, runAlgorithm, session } from '../trace/index.ts'
 import {
@@ -24,6 +25,7 @@ import {
   type SplatsMethodConfig,
   splatContract,
   splatOptimiser,
+  splatsProblem,
 } from './index.ts'
 
 const slot: FitSplatsOptions['optimiser'] = (lr) => adam({ learningRate: lr })
@@ -193,5 +195,19 @@ describe('fitSplatsMethod', () => {
     expect(fired.map((e) => e.step)).toEqual([3, 7, 11])
     expect(Object.keys(fired[0]?.payload ?? {})).toEqual(['step', 'cloned', 'split', 'pruned', 'count'])
     expect((s.state as SplatState).params.sh).toBeDefined()
+  })
+
+  it('places the cameras by the field of view and radius knobs, and keeps the old defaults without them', () => {
+    const full = { ...(defaults(fitSplatsMethod.config) as SplatsMethodConfig), ...config } as SplatsMethodConfig
+    const cameras = (c: SplatsMethodConfig): { eye: readonly number[]; fov: number }[] =>
+      splatsProblem(c, key(0)).data.cameras.map((cam) => ({ eye: cam.eye, fov: cam.fov }))
+    const distance = (eye: readonly number[]): number => Math.hypot(...(eye as [number, number, number]))
+    expect(cameras(full).every((c) => Math.abs(distance(c.eye) - 4) < 1e-9 && c.fov === 40)).toBe(true)
+    expect(
+      cameras({ ...full, radius: 2.8, fov: 55 } as SplatsMethodConfig).every(
+        (c) => Math.abs(distance(c.eye) - 2.8) < 1e-9 && c.fov === 55,
+      ),
+    ).toBe(true)
+    expect(splatsProblem({ ...full, radius: 2.8 } as SplatsMethodConfig, key(0)).data.far).toBeCloseTo(4.8, 12)
   })
 })

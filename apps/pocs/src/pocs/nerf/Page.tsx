@@ -1,74 +1,83 @@
-import { fitNerfMethod, type NerfImage, nerfProblem } from 'mdml-engine/fields'
+import { multiViewScene, renderMultiView } from 'mdml-engine/datasets'
+import { fitNerfMethod, type NerfState, nerfDensityGrid, nerfProblem, renderView } from 'mdml-engine/fields'
 import { foldIn, key } from 'mdml-engine/random'
-import { defaults, dict, int, real } from 'mdml-engine/space'
-import { asTensor, toFlat } from 'mdml-engine/tensor'
-import { type Config, Log, metricSeries } from 'mdml-engine/trace'
+import { type Item3D, point3d } from 'mdml-engine/scene'
+import { bool, defaults, dict, int, real } from 'mdml-engine/space'
+import { asTensor, fromStorage, toFlat } from 'mdml-engine/tensor'
+import { type Config, Log, metricSeries, type Session } from 'mdml-engine/trace'
 import { cartesian, lines } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import { Chart, ControlPanel, SpaceControls, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { BakedSession, type BakedView } from '../../shared/BakedSession.tsx'
+import { OrbitImage, type Pose, poseCamera, START_POSE, useProgressiveImage } from '../../shared/orbit.tsx'
 import { PixelCanvas } from '../../shared/PixelCanvas.tsx'
+import { cameraDots, frustum, Orbitable, rgba, up } from '../../shared/view3d.tsx'
 
-const FRAMES = 40
-const CURVE = figure({ width: 420, height: 280 })
+const FRAMES = 30
+const CURVE = figure({ width: 210, height: 150 })
+/** The camera orbit of the scene: close enough that three objects fill most of the view. */
+const RADIUS = 2.9
+const FOV = 40
+/** The drawn width of an image panel, and the sides the orbit view is rendered at: a quick one to follow a drag, then a finer one. */
+const PANEL = 128
+const SIDES = [20, 40] as const
+/** The density is asked for on a grid of this many points a side, in the cube around the scene. */
+const GRID = 16
+const MOST_DRAWN = 1500
 
 const CONTROLS = dict({
-  views: int(3, 16, { default: 6, label: 'training views' }),
-  resolution: int(8, 24, { default: 16, label: 'image side (pixels)' }),
+  objects: int(1, 4, { default: 3, label: 'objects in the scene' }),
+  views: int(3, 16, { default: 12, label: 'training views' }),
   samples: int(4, 32, { default: 8, label: 'samples per ray' }),
   steps: int(50, 1000, { default: 400, log: true, label: 'steps' }),
-  learningRate: real(5e-4, 2e-2, { default: 5e-3, log: true, label: 'learning rate' }),
+  learningRate: real(5e-4, 2e-2, { default: 1e-2, log: true, label: 'learning rate' }),
+  viewDependent: bool({ default: false, label: 'colour depends on the viewing direction' }),
 })
-type Controls = { views: number; resolution: number; samples: number; steps: number; learningRate: number }
+type Controls = {
+  objects: number
+  views: number
+  samples: number
+  steps: number
+  learningRate: number
+  viewDependent: boolean
+}
+/** The side of the training views in pixels. */
+const RESOLUTION = 16
 const START = defaults(CONTROLS) as unknown as Controls
 
-/** The method's configuration for the page's controls: one object, two held-out views, the library's other defaults. */
-const configOf = (c: Controls): Config =>
-  ({
-    ...(defaults(fitNerfMethod.config) as Config),
+/** The method's configuration for the page's controls: two held-out views, cameras close to the scene, the library's other defaults. */
+const configOf = (c: Controls): Config => {
+  const base = defaults(fitNerfMethod.config) as Config
+  return {
+    ...base,
     views: c.views,
     heldOut: 2,
-    resolution: c.resolution,
+    resolution: RESOLUTION,
+    objects: c.objects,
+    radius: RADIUS,
+    fov: FOV,
     batchRays: 128,
-    objects: 1,
     samples: c.samples,
     learningRate: c.learningRate,
-  }) as Config
+    // The scene is lit by one fixed light, so a colour that ignores the direction fits it with far fewer views.
+    ...(c.viewDependent ? {} : { directionEncoding: { kind: 'none' } }),
+  } as Config
+}
 
 interface Frame {
   readonly step: number
-  readonly train: NerfImage
-  readonly held: NerfImage
   readonly heldPsnr: number
 }
 
 export default function NerfPage(): ReactNode {
   const [controls, setControls] = useState<Controls>(START)
   const config = useMemo(() => configOf(controls), [controls])
-  // The scene's images, from the generator and key the session's run uses (its root key folded with 7).
-  const scene = useMemo(() => {
-    const data = nerfProblem(config as never, foldIn(key(0), 7)).data
-    const side = controls.resolution
-    const slice = (images: typeof data.images, v: number): number[] =>
-      Array.from(toFlat(asTensor(images)).slice(v * side * side * 3, (v + 1) * side * side * 3))
-    return {
-      train: Array.from({ length: controls.views }, (_, v) => slice(data.images, v)),
-      held: slice((data.heldOut as NonNullable<typeof data.heldOut>).images, 0),
-    }
-  }, [config, controls.views, controls.resolution])
+  // The scene's images and the model's architecture, from the key the session's run uses (its root key folded with 7).
+  const problem = useMemo(() => nerfProblem(config as never, foldIn(key(0), 7)), [config])
   return (
-    <div className="flex flex-col gap-4">
-      <p className="max-w-3xl text-sm text-muted">
-        A neural radiance field is a network that maps a 3-D position and a viewing direction to a colour and a density.
-        To draw a pixel, the camera&apos;s ray through it is sampled at a few points, the network is asked at each, and
-        the answers are composited (volume rendering); training moves the weights until the rendered pixels match the
-        photographs. Below are the training views (top row), then one training view and one held-out view, each as the
-        truth (left) and as the network renders it at the step you are on (right). The held-out view was never trained
-        on, so it is the test of whether the network learned the scene. These are toy sizes: a single object,{' '}
-        {controls.resolution} by {controls.resolution} pixel views, a few hundred steps.
-      </p>
-      <ControlPanel title="the scene and the training" columns={2}>
+    <div className="flex flex-col gap-3">
+      <ControlPanel title="the scene and the training" columns={6}>
         <SpaceControls space={CONTROLS} value={controls} onChange={(v) => setControls(v as unknown as Controls)} />
       </ControlPanel>
       <BakedSession<Frame>
@@ -79,13 +88,11 @@ export default function NerfPage(): ReactNode {
         logs={{ 'nerf/loss': Log(), 'nerf/psnr': Log() }}
         bake={(session, t) => ({
           step: t,
-          train: session.probe(t, 'nerf/render' as never, { view: 0 }) as unknown as NerfImage,
-          held: session.probe(t, 'nerf/render' as never, { heldOut: 0 }) as unknown as NerfImage,
           heldPsnr: session.probe(t, 'nerf/heldOutPsnr' as never) as unknown as number,
         })}
         onReset={() => setControls(START)}
       >
-        {(view) => <View view={view} scene={scene} side={controls.resolution} />}
+        {(view) => <View view={view} problem={problem} controls={controls} />}
       </BakedSession>
     </div>
   )
@@ -93,15 +100,81 @@ export default function NerfPage(): ReactNode {
 
 function View(props: {
   readonly view: BakedView<Frame>
-  readonly scene: { readonly train: readonly (readonly number[])[]; readonly held: readonly number[] }
-  readonly side: number
+  readonly problem: ReturnType<typeof nerfProblem>
+  readonly controls: Controls
 }): ReactNode {
-  const { view, scene, side } = props
-  const { live, t, frame, baked, run, seek } = view
+  const { view, problem, controls } = props
+  const { live, t, baked, run, seek } = view
+  const side = RESOLUTION
   const mode = useColourMode()
+  const [pose, setPose] = useState<Pose>(START_POSE)
+  const [threshold, setThreshold] = useState(0.4)
+  // The network's weights at the step shown: read back from the session's checkpoints.
+  const session = live.session as unknown as Session<NerfState, never>
+  const state = useMemo(() => session.stateAt(t), [session, t])
+  const { data, model } = problem
+  const sampling = useMemo(() => ({ near: data.near, far: data.far, whiteBackground: data.whiteBackground }), [data])
+  const truth = useMemo(() => Array.from(toFlat(asTensor(data.images)).slice(0, side * side * 3)), [data, side])
+  const drawn = useMemo(
+    () =>
+      renderView(model, state.params, data.cameras[0] as never, [side, side], {
+        ...sampling,
+        samples: controls.samples,
+        image: fromStorage(Float64Array.from(truth), [side, side, 3], 'float64'),
+      }),
+    [state, model, data, sampling, side, controls.samples, truth],
+  )
+  const scene = useMemo(() => multiViewScene(controls.objects), [controls.objects])
+  const camera = useMemo(() => poseCamera(pose, RADIUS, FOV), [pose])
+  const deps = [state, camera, controls.objects]
+  // A quick look while dragging with the training's samples, a finer one with twice as many once it rests.
+  const novel = useProgressiveImage(
+    SIDES,
+    (s) =>
+      renderView(model, state.params, camera, [s, s], {
+        ...sampling,
+        samples: s === SIDES[0] ? controls.samples : 2 * controls.samples,
+      }).rgb,
+    deps,
+  )
+  const exact = useProgressiveImage(SIDES, (s) => Array.from(toFlat(renderMultiView(scene, camera, s, s))), deps)
+  // The learned density, asked of the network on a grid: the volume as points.
+  const grid = useMemo(
+    () =>
+      nerfDensityGrid(model, state.params, {
+        bounds: [
+          [-1, -1, -1],
+          [1, 1, 1],
+        ],
+        resolution: GRID,
+      }),
+    [model, state],
+  )
+  const cloud = useMemo<Item3D[]>(() => {
+    const n = GRID
+    const keep: number[] = []
+    for (let i = 0; i < grid.density.length; i++)
+      if ((grid.density[i] as number) >= threshold * grid.maxDensity) keep.push(i)
+    keep.sort((a, b) => (grid.density[b] as number) - (grid.density[a] as number))
+    return keep.slice(0, MOST_DRAWN).map((i) => {
+      const [x, y, z] = [i % n, Math.floor(i / n) % n, Math.floor(i / (n * n))]
+      const at = [x, y, z].map((v) => -1 + (2 * (v + 0.5)) / n)
+      const share = (grid.density[i] as number) / Math.max(grid.maxDensity, 1e-9)
+      return point3d(up(at), {
+        fill: rgba(
+          [grid.colour[3 * i] as number, grid.colour[3 * i + 1] as number, grid.colour[3 * i + 2] as number],
+          0.3 + 0.7 * share,
+        ),
+        r: 3,
+      })
+    })
+  }, [grid, threshold])
+  const items = useMemo<Item3D[]>(
+    () => [...cloud, ...cameraDots(data.cameras), ...frustum(camera)],
+    [cloud, data, camera],
+  )
   const psnr = useMemo(() => metricSeries(run, 'nerf/psnr'), [run])
   const loss = useMemo(() => metricSeries(run, 'nerf/loss'), [run])
-  // The held-out peak signal-to-noise ratio at the steps whose views were prepared.
   const held = (() => {
     const seen = new Map<number, number>()
     for (let s = 0; s <= live.head; s++) {
@@ -110,7 +183,7 @@ function View(props: {
     }
     return [...seen.entries()].sort((a, b) => a[0] - b[0])
   })()
-  const option = useMemo(() => {
+  const psnrOption = useMemo(() => {
     const train = psnr.steps.map((st, i) => [st, psnr.values[i] ?? Number.NaN] as const).filter(([st]) => st <= t)
     const shown = held.filter(([st]) => st <= t)
     const all = [...psnr.values, ...held.map((h) => h[1])].filter(Number.isFinite)
@@ -126,9 +199,7 @@ function View(props: {
               opacity: 0.6,
             },
           ],
-          {
-            mode,
-          },
+          { mode },
         ),
         lines([{ x: shown.map((p) => p[0]), y: shown.map((p) => p[1]), name: 'held-out views', width: 2.5 }], {
           mode,
@@ -136,49 +207,40 @@ function View(props: {
         }),
         lines(
           [{ x: [t, t], y: [Math.min(...all, 0), Math.max(...all, 1)], colour: 'muted', dash: 'dashed', width: 1 }],
-          {
-            mode,
-          },
+          { mode },
         ),
       ],
       { mode, figure: CURVE, x: { label: 'step', limits: [0, Math.max(1, live.head)] }, y: { label: 'PSNR (dB)' } },
     )
   }, [psnr, held, t, mode, live.head])
   const at = loss.steps.findLastIndex((st) => st <= t)
+  const last = baked.at(t)
+  const timing = (n: typeof novel): string =>
+    `${n.side} by ${n.side}${n.ms[n.stage] === undefined ? '' : `, ${Math.round(n.ms[n.stage] as number)} ms`}`
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="mb-1 text-xs text-muted">the {scene.train.length} training views (truth)</p>
-        <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${Math.min(scene.train.length, 8)}, minmax(0, 72px))` }}
-        >
-          {scene.train.map((rgb, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: views are positional
-            <PixelCanvas key={i} width={side} height={side} rgb={rgb} caption={`view ${i}`} />
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)]">
-        <div className="grid grid-cols-2 gap-3 md:col-span-2" style={{ maxWidth: 460 }}>
-          <PixelCanvas width={side} height={side} rgb={scene.train[0]} caption="training view 0: truth" />
+    <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-3">
+          <PixelCanvas width={side} height={side} rgb={truth} size={PANEL} caption="training view 0: truth" />
           <PixelCanvas
             width={side}
             height={side}
-            rgb={frame?.train.rgb}
-            caption={`NeRF at step ${t}${frame?.train.psnr === undefined ? '' : `: ${frame.train.psnr.toFixed(1)} dB`}`}
+            rgb={drawn.rgb}
+            size={PANEL}
+            caption={`its rendering, step ${t}${drawn.psnr === undefined ? '' : `: ${drawn.psnr.toFixed(1)} dB`}`}
           />
-          <PixelCanvas width={side} height={side} rgb={scene.held} caption="held-out view: truth" />
-          <PixelCanvas
-            width={side}
-            height={side}
-            rgb={frame?.held.rgb}
-            caption={`NeRF at step ${t}${frame?.held.psnr === undefined ? '' : `: ${frame.held.psnr.toFixed(1)} dB`}`}
+          <OrbitImage
+            pose={pose}
+            onPose={setPose}
+            image={novel}
+            limit={PANEL}
+            caption={`novel view, drag me (${timing(novel)})`}
           />
+          <OrbitImage pose={pose} onPose={setPose} image={exact} limit={PANEL} caption="the true scene from there" />
         </div>
-        <div className="flex flex-col gap-2">
-          <Chart option={option} figure={CURVE} onInit={seek as never} />
-          <dl className="grid grid-cols-3 gap-x-6 text-sm">
+        <div className="flex items-start gap-3">
+          <Chart option={psnrOption} figure={CURVE} onInit={seek as never} />
+          <dl className="flex flex-col gap-1.5 text-sm">
             <div>
               <dt className="text-xs text-muted">step</dt>
               <dd className="font-medium tabular-nums">
@@ -191,13 +253,33 @@ function View(props: {
             </div>
             <div>
               <dt className="text-xs text-muted">held-out PSNR</dt>
-              <dd className="font-medium tabular-nums">
-                {frame === undefined ? '' : `${frame.heldPsnr.toFixed(1)} dB`}
-              </dd>
+              <dd className="font-medium tabular-nums">{last === undefined ? '' : `${last.heldPsnr.toFixed(1)} dB`}</dd>
             </div>
           </dl>
         </div>
       </div>
+      <figure className="flex flex-col gap-1">
+        <Orbitable items={items} width={520} height={340} />
+        <figcaption className="flex max-w-[520px] flex-col gap-1 text-xs text-muted">
+          <span>
+            the density the network has at step {t}, asked on a {GRID} by {GRID} by {GRID} grid and drawn where it is at
+            least{' '}
+            <input
+              type="range"
+              min={0.05}
+              max={0.9}
+              step={0.05}
+              value={threshold}
+              onChange={(e) => setThreshold(Number(e.target.value))}
+              aria-label="density threshold as a share of the largest"
+              className="h-3 w-24 align-middle"
+            />{' '}
+            {Math.round(100 * threshold)}% of its largest, in the colour the network gives there; white points are
+            density spent on the white background; training cameras grey, the novel camera blue (drawn nearer than it
+            is)
+          </span>
+        </figcaption>
+      </figure>
     </div>
   )
 }
