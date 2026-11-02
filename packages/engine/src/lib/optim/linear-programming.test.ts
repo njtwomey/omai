@@ -266,6 +266,49 @@ describe('simplex robustness on near-tied programs', () => {
     expect(r.fun).toBeCloseTo(O.linprogInteriorPoint(lp).fun, 6)
   })
 
+  it('does not pivot on a tiny entry of a degenerate program (a coarse equilibrium program on nearly tied payoffs)', () => {
+    // fast-check found this program (seed 2075411073): every right-hand side is 0, so every ratio ties and the simplex
+    // took pivots of 1e-6 beside entries of 1 and then 9e-9 of rounding noise, ended on a singular basis with
+    // 'numerical difficulties' for both rules, and the interior point called the bounded program unbounded.
+    const lp = {
+      c: [
+        0.9710649971065, 0.9999939999994, 0.5832659583266, 0.10772791077280003, 1, 0.8674859867486, -0.9999531999953,
+        0.512329951233, 3.9000004000144806e-6,
+      ],
+      aUb: [
+        [0, 0, 0, -0.8025397616566224, 0, -1.0298279364100302e-6, -1, -0.5022161897190217, 7.208795554412876e-6],
+        [1, 0, 1.2832111075521467e-6, 0, 0, 0, -0.2460441809584304, -0.6257835607825021, 1.0265688859847313e-5],
+        [
+          1, 0.5022161897190217, -7.208795554412876e-6, 0.19746023834337761, 0.5022161897190217, -8.238623490822907e-6,
+          0, 0, 0,
+        ],
+        [
+          0, -4.000064001041373e-6, -0.41673166770668335, 0, 0.08404534472551563, -0.04846277540440647, 0, 1,
+          -1.2000192003068606e-5,
+        ],
+        [
+          4.000016000081356e-6, 0, -0.41672266689066756, -0.08404433617734472, 0, -0.13250653002612012,
+          -0.9999879999519997, 0, -1,
+        ],
+        [
+          0.41672666690666765, 0.41672266689066756, 0, 0.0484621938487754, 0.13250653002612012, 0,
+          1.2000048000188558e-5, 1, 0,
+        ],
+      ],
+      bUb: [0, 0, 0, 0, 0, 0],
+      aEq: [[1, 1, 1, 1, 1, 1, 1, 1, 1]],
+      bEq: [1],
+      bounds: Array.from({ length: 9 }, () => [0, null] as const),
+    }
+    for (const pivotRule of ['bland', 'dantzig'] as const) {
+      const r = O.linprogSimplex(lp, { pivotRule })
+      expect(r.status).toBe('optimal')
+      expect(r.fun).toBeCloseTo(0.8674859867486, 9)
+      expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-9)
+      for (const v of toFlat(r.slack)) expect(v).toBeGreaterThan(-1e-9)
+    }
+  })
+
   it('cross-checks false verdicts on near-tied programs (simplex said infeasible, interior point unbounded)', () => {
     const base = [1, -1, 0, 1, 3, 2, 0, 0, 0, -1, -1, -3, 0, -1, 0, 0, 1, 0]
     const jitter = [1, 0, 1, 0, 0, -1, 0, 0, 0, 0, 1, 2, 5, -4, 1, 0, 0, 0]

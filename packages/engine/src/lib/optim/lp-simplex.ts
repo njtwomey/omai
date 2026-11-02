@@ -69,8 +69,10 @@ function point(form: StandardForm, s: { tableau: Float64Array; rows: number; col
  * The two-phase simplex method on a dense tableau, as a traced algorithm: every step is one pivot (or the switch from
  * phase 1 to phase 2). Phase 1 minimises the sum of artificial variables from the slack-and-artificial basis to find a
  * feasible vertex (or prove infeasibility), drives remaining artificial variables out and drops redundant rows; phase 2
- * optimises the cost. Bland's rule (smallest eligible index for entering and leaving) prevents cycling; Dantzig's rule
- * (most negative reduced cost) is available. Updating the tableau pivot by pivot accumulates rounding error, so before
+ * optimises the cost. A pivot must exceed the tolerance and also `pivotFloor` (default 1e-7) times the largest
+ * entry of its column (a tiny pivot on a degenerate program is rounding noise and ends on a singular basis). Bland's
+ * rule (smallest eligible index for entering and leaving) prevents cycling in exact arithmetic (with the pivot floor it
+ * can still cycle on badly conditioned programs, which `linprog` retries without the floor); Dantzig's rule (most negative reduced cost) is available. Updating the tableau pivot by pivot accumulates rounding error, so before
  * every decision (optimal, infeasible, end of phase 1), and every 50 pivots, the tableau is recomputed from the
  * original matrix and the basis (re-inversion, one LU solve); if the clean tableau disagrees (a negative reduced cost,
  * or a basic variable below zero), pivoting continues, with dual-simplex pivots to restore feasibility. A basis that
@@ -100,6 +102,7 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
   const feasTol = tol * bScale
   const MAX_REINVERSIONS = 8
   const REINVERT_EVERY = 50
+  const pivotRelative = options.pivotFloor ?? 1e-7
   // Artificial column N + k belongs to row artRow[k] (the rows init cannot start from a slack).
   const artRow: number[] = []
   for (let r = 0; r < m; r++) {
@@ -346,11 +349,20 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
         }
         return finish(s, 'optimal')
       }
+      // A pivot must be large beside the rest of its column, not only above the absolute tolerance: on degenerate
+      // programs (right-hand sides of zero, so every ratio ties) a tiny pivot is rounding noise, or a real entry that
+      // multiplies the tableau's error by its inverse, and either leaves a singular basis (fast-check found an
+      // equilibrium program on nearly tied payoffs where the simplex stopped with 'numerical difficulties' for both
+      // rules and the interior point wrongly said 'unbounded'). A column with no acceptable pivot is re-confirmed on a
+      // clean tableau below.
       let r = -1
       let ratio = Infinity
+      let colMax = 0
+      for (let i = 0; i < s.rows; i++) colMax = Math.max(colMax, Math.abs(s.tableau[i * width + e] ?? 0))
+      const pivotFloor = Math.max(tol, pivotRelative * colMax)
       for (let i = 0; i < s.rows; i++) {
         const a = s.tableau[i * width + e] ?? 0
-        if (a <= tol) continue
+        if (a <= pivotFloor) continue
         const q = (s.tableau[i * width + s.cols] ?? 0) / a
         if (
           r < 0 ||
