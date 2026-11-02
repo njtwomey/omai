@@ -29,7 +29,6 @@ const MOST_DRAWN = 1500
 const CONTROLS = dict({
   objects: int(1, 4, { default: 3, label: 'objects in the scene' }),
   views: int(3, 16, { default: 12, label: 'training views' }),
-  resolution: int(8, 24, { default: 16, label: 'image side (pixels)' }),
   samples: int(4, 32, { default: 8, label: 'samples per ray' }),
   steps: int(50, 1000, { default: 400, log: true, label: 'steps' }),
   learningRate: real(5e-4, 2e-2, { default: 1e-2, log: true, label: 'learning rate' }),
@@ -38,12 +37,13 @@ const CONTROLS = dict({
 type Controls = {
   objects: number
   views: number
-  resolution: number
   samples: number
   steps: number
   learningRate: number
   viewDependent: boolean
 }
+/** The side of the training views in pixels. */
+const RESOLUTION = 16
 const START = defaults(CONTROLS) as unknown as Controls
 
 /** The method's configuration for the page's controls: two held-out views, cameras close to the scene, the library's other defaults. */
@@ -53,7 +53,7 @@ const configOf = (c: Controls): Config => {
     ...base,
     views: c.views,
     heldOut: 2,
-    resolution: c.resolution,
+    resolution: RESOLUTION,
     objects: c.objects,
     radius: RADIUS,
     fov: FOV,
@@ -77,7 +77,7 @@ export default function NerfPage(): ReactNode {
   const problem = useMemo(() => nerfProblem(config as never, foldIn(key(0), 7)), [config])
   return (
     <div className="flex flex-col gap-3">
-      <ControlPanel title="the scene and the training" columns={4}>
+      <ControlPanel title="the scene and the training" columns={6}>
         <SpaceControls space={CONTROLS} value={controls} onChange={(v) => setControls(v as unknown as Controls)} />
       </ControlPanel>
       <BakedSession<Frame>
@@ -105,10 +105,10 @@ function View(props: {
 }): ReactNode {
   const { view, problem, controls } = props
   const { live, t, baked, run, seek } = view
-  const side = controls.resolution
+  const side = RESOLUTION
   const mode = useColourMode()
   const [pose, setPose] = useState<Pose>(START_POSE)
-  const [threshold, setThreshold] = useState(0.2)
+  const [threshold, setThreshold] = useState(0.4)
   // The network's weights at the step shown: read back from the session's checkpoints.
   const session = live.session as unknown as Session<NerfState, never>
   const state = useMemo(() => session.stateAt(t), [session, t])
@@ -274,8 +274,9 @@ function View(props: {
               aria-label="density threshold as a share of the largest"
               className="h-3 w-24 align-middle"
             />{' '}
-            {Math.round(100 * threshold)}% of its largest, in the colour the network gives there; the training cameras
-            (grey) and the novel camera (drawn nearer than it is)
+            {Math.round(100 * threshold)}% of its largest, in the colour the network gives there; white points are
+            density spent on the white background; training cameras grey, the novel camera blue (drawn nearer than it
+            is)
           </span>
         </figcaption>
       </figure>
