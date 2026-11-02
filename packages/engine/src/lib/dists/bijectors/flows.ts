@@ -12,6 +12,7 @@ import { MdmlError } from '../../base/index.ts'
 import { inv, lu, norm, slogdet } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
+  abs,
   add,
   broadcastTo,
   cast,
@@ -110,7 +111,8 @@ export function planar(u: TensorLike, w: TensorLike, b: TensorLike): Bijector {
     inverse: (y) => {
       const wy = sum(mul(y, ww), -1)
       const g = (a: Value): Value => add(a, mul(c, tanh(add(a, bb))))
-      const bound = add(neg(minimum(c, 0)), 1)
+      // The root of a + c tanh(a + b) = w . y is within |c| of w . y (tanh is bounded by 1), whatever the sign of c.
+      const bound = add(abs(c), 1)
       const root = bisect(g, stopGradient(wy), sub(stopGradient(wy), bound), add(stopGradient(wy), bound))
       // One Newton step from the constant root: the value is unchanged, the gradients are those of the implicit root.
       const slope = add(mul(c, sub(1, square(tanh(add(root, bb))))), 1)

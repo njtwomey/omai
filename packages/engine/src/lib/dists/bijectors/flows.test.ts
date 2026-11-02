@@ -60,6 +60,13 @@ describe('planar, radial and normalisation layers', () => {
     checkVectorBijector('planar', B.planar([0.8, -0.5, 0.3], [1.1, 0.4, -0.7], 0.2), x3)
     // A strongly contracting direction: w . u_hat close to -1.
     checkVectorBijector('planar contracting', B.planar([-4, 0, 0], [1, 0.2, 0], -0.3), x3)
+    // An expanding direction with w . u_hat above 1, where the root of the inverse lies further than 1 from w . y
+    // (a counterexample that fast-check found).
+    checkVectorBijector(
+      'planar expanding',
+      B.planar([0, -1.0370896934973455, 0], [0, -1.9999999971987505, 0], 0),
+      tensor([[0, -0.6097326246182959, 0]]),
+    )
   })
 
   it('radial flows invert and have the log-determinant of their Jacobian', () => {
