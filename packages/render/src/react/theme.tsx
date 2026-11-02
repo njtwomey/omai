@@ -43,6 +43,7 @@ const ColourModeContext = createContext<ColourMode | undefined>(undefined)
  *
  * @param props - `mode` to force a mode, and the children.
  * @returns The provider.
+ * @index function React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>`
  */
 export function ThemeProvider(props: { readonly mode?: ColourMode; readonly children?: ReactNode }): ReactElement {
   const page = usePageColourMode()
@@ -54,6 +55,7 @@ export function ThemeProvider(props: { readonly mode?: ColourMode; readonly chil
  * `dark` class, dark by default).
  *
  * @returns The mode.
+ * @index function React hook: the colour mode figures draw in, light or dark: `useColourMode()`
  */
 export function useColourMode(): ColourMode {
   const provided = useContext(ColourModeContext)

@@ -58,6 +58,7 @@ const recordOf = (v: SpaceValue | undefined): Readonly<Record<string, SpaceValue
  *
  * @param props - The union, the knobs held for its options and what to call with new ones.
  * @returns The list.
+ * @index function React component: choose slot options to compare: `<SlotVariants space={union} knobs={k} onChange={setK} />`
  */
 export function SlotVariants(props: SlotVariantsProps): ReactNode {
   const { space, knobs, onChange, disabled = false } = props

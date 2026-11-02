@@ -50,6 +50,7 @@ export function fitScene(
  *
  * @param props - The scene, its view's handlers, the largest size and the frame's text and export settings.
  * @returns The figure.
+ * @index function React component: a Scene in a frame with expand and export: `<SceneFrame scene={scene} />`
  */
 export function SceneFrame(props: SceneFrameProps): ReactElement {
   const { scene, maxWidth = 720, maxHeight = 720, filename = 'scene', title, caption, playback, exportFormats } = props

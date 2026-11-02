@@ -56,7 +56,11 @@ export interface LiveHandle {
   readonly probed?: number
 }
 
-/** A session in a React page: the session, a version that changes as its tape grows, and the producer's controls. */
+/**
+ * A session in a React page: the session, a version that changes as its tape grows, and the producer's controls.
+ *
+ * @index structure A live session: `live.session`, `live.head`, `live.compute()`, `live.apply()`
+ */
 export interface LiveSession<S, C extends Config> extends LiveHandle {
   readonly session: Session<S, C>
   /** Remake the session from the latest method and options now (it is also `session` from the next render). */
@@ -74,6 +78,8 @@ export interface LiveVariant<S, C extends Config> {
  * Several variants of one method in a React page, under one producer: the same seed, data, budget and subscription
  * for all, so the knobs are the only difference. The handle's `head` is the step every variant has reached (see
  * `sharedHead`), `done` when all have ended, `computing` while any is.
+ *
+ * @index structure A comparison of variants under one producer: `live.variants`, `live.head`
  */
 export interface LiveSessions<S, C extends Config> extends LiveHandle {
   readonly variants: readonly LiveVariant<S, C>[]
@@ -142,6 +148,7 @@ export function variantsOf<S, C extends Config>(
  * @param deps - What a remake depends on (the caller names them, as for `useMemo`); not the mode.
  * @param hook - Whether live mode holds changes until `apply`.
  * @returns The comparison.
+ * @index function React hook: run variants of one method in step: `useSessions(method, options, variants, deps)`
  */
 export function useSessions<S, C extends Config>(
   method: Method<S, C>,
@@ -314,6 +321,7 @@ const SINGLE: readonly Variant<Config>[] = [{ label: '', config: {} }]
  * @param deps - What a remake depends on (the caller names them, as for `useMemo`); not the mode.
  * @param hook - Whether live mode holds changes until `apply`.
  * @returns The live session.
+ * @index function React hook: run a method live: `useSession(method, { config, steps }, [config])`
  */
 export function useSession<S, C extends Config>(
   method: Method<S, C>,

@@ -15,6 +15,7 @@ import { type DataRect, rectBetween } from './selection.ts'
  *
  * @param props - The selection, what to call with a new one, and the brushed axes.
  * @returns The brush, inside an {@link InteractionOverlay}.
+ * @index function React component: drag out a data-space rectangle: `<Brush value={rect} onChange={setRect} />`
  */
 export function Brush(props: {
   readonly value: DataRect | null

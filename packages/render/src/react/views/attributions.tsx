@@ -134,6 +134,7 @@ export function DependenceScatterView(
  *
  * @param props - The record and the figure settings.
  * @returns The figure.
+ * @index function React component: feature attributions as waterfall, beeswarm or map: `<AttributionView record={attr} />`
  */
 export function AttributionView(props: RecordViewProps<FeatureAttributions> & PlayerViewProps): ReactElement {
   const layout = props.record.layout?.kind

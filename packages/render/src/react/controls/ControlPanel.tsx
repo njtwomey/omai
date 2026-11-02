@@ -38,6 +38,7 @@ export interface ControlPanelProps {
  *
  * @param props - The controls and their layout.
  * @returns The panel.
+ * @index function React component: lay controls out in columns or bento areas: `<ControlPanel columns={2}>...</ControlPanel>`
  */
 export function ControlPanel(props: ControlPanelProps): ReactNode {
   const { children, title, columns, rows, areas, className } = props
@@ -129,6 +130,7 @@ export type ControlPlacement = 'left' | 'right' | 'top' | 'bottom'
  *
  * @param props - The controls, where they go, the sidebar's width and the figure.
  * @returns The layout.
+ * @index function React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">`
  */
 export function ControlLayout(props: {
   readonly controls: ReactNode

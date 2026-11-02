@@ -45,6 +45,7 @@ export function MathProvider(props: {
  *
  * @param props - The TeX as children, display mode, extra macros, class and style.
  * @returns The typeset maths.
+ * @index function React component: typeset TeX with the shared macros: `<Tex display>{source}</Tex>`
  */
 export function Tex(props: {
   readonly children: string
@@ -75,6 +76,7 @@ export function Tex(props: {
  *
  * @param props - The equation, display mode (default true), class and style.
  * @returns The typeset equation.
+ * @index function React component: an equation that re-typesets as values change: `<Equation>{eq}</Equation>`
  */
 export function Equation(props: {
   readonly children: EquationTemplate | string
@@ -99,6 +101,7 @@ export function Equation(props: {
  *
  * @param props - The steps (see `derivationTex`) and a class.
  * @returns The typeset derivation.
+ * @index function React component: aligned derivation steps with notes: `<Derivation steps={steps} />`
  */
 export function Derivation(props: {
   readonly steps: readonly DerivationStep[]

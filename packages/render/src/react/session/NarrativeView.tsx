@@ -55,6 +55,7 @@ function Prose(props: { readonly text: string }): ReactElement {
  *
  * @param props - The narrative, the session and its cursor, and optionally the page and its setter.
  * @returns The narrative.
+ * @index function React component: one session told in pages: `<NarrativeView id="n" narrative={n} live={live} ... />`
  */
 export function NarrativeView(props: NarrativeViewProps): ReactElement {
   const { narrative, live, at, onScrub } = props

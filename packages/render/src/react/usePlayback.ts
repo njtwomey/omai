@@ -12,6 +12,8 @@ import { advanceFrame, framesDue } from './playhead.ts'
 /**
  * What a {@link Player} drives: the same controls over a precomputed sequence of frames ({@link usePlayback},
  * {@link useTimelinePlayback}) and over a live algorithm stepped as it plays ({@link useLiveRun}).
+ *
+ * @index structure The state and verbs of a playback: `c.frame`, `c.seek(n)`, `c.toggle()`
  */
 export interface PlaybackController {
   /** The frame shown. */
@@ -84,6 +86,7 @@ export interface PlaybackOptions {
  * @param count - The number of frames.
  * @param options - Rate, looping and autoplay.
  * @returns The controller.
+ * @index function React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)`
  */
 export function usePlayback(count: number, options: PlaybackOptions = {}): PlaybackController {
   const { loop = false } = options
@@ -132,6 +135,7 @@ export function usePlayback(count: number, options: PlaybackOptions = {}): Playb
  * @param timeline - The timeline.
  * @param options - Looping and autoplay (the rate defaults to the timeline's).
  * @returns The controller and the current frame.
+ * @index function React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)`
  */
 export function useTimelinePlayback(
   timeline: Timeline,
@@ -170,6 +174,7 @@ export interface LiveRun<S> {
  * @param algorithm - The algorithm (keep its identity stable across renders, e.g. with `useMemo`).
  * @param options - The step budget, seed, rate, steps per frame and history length.
  * @returns The controller, the state shown, its step and the run's status.
+ * @index function React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })`
  */
 export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions): LiveRun<S> {
   const { maxSteps, seed = 0, stepsPerFrame = 1, history = 2000 } = options

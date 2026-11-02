@@ -40,6 +40,7 @@ export function useOverlay(): OverlayContext {
  *
  * @param props - The projection, the figure's size in pixels and the tools.
  * @returns The overlay.
+ * @index function React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...`
  */
 export function InteractionOverlay(props: {
   readonly projection: Projection
@@ -85,6 +86,7 @@ export function InteractionOverlay(props: {
  *
  * @param props - The figure's size, the figure and the overlay.
  * @returns The stack.
+ * @index function React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>`
  */
 export function Overlaid(props: {
   readonly width: number

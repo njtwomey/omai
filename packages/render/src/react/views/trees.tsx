@@ -189,6 +189,7 @@ function TreeFigure(props: {
  *
  * @param props - The record, depth limit, selection and growth player, and the figure and frame settings.
  * @returns The figure with its player.
+ * @index function React component: a fitted tree with candidate splits and growth player: `<TreeView record={tree} />`
  */
 export function TreeView(props: TreeViewProps): ReactElement {
   const figure = useViewFigure(props.figure, TREE_FIGURE)

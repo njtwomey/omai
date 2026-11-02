@@ -55,6 +55,7 @@ function spaceAt(space: Space, value: SpaceValue, path: ControlPath): Space | un
  * @param options - Which options to compare and how to label them.
  * @returns The variants, in the union's order.
  * @throws MdmlError with code `value` when the path holds no union.
+ * @index function Make one comparison variant per option of a slot: `variantsOfSlot(method.config, 'solver')`
  */
 export function variantsOfSlot<C extends Config>(
   space: Space,

@@ -18,6 +18,7 @@ const CONFORMAL_FIGURE = { aspect: 1.75 } as const
  *
  * @param props - The record and the figure and frame settings.
  * @returns The figure.
+ * @index function React component: a reliability diagram: `<CalibrationView record={calibration} />`
  */
 export function CalibrationView(props: RecordViewProps<CalibrationRecord>): ReactElement {
   const figure = useViewFigure(props.figure, RELIABILITY_FIGURE)

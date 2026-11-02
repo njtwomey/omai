@@ -25,6 +25,7 @@ export interface ChoiceProps<T extends OptionValue> {
  *
  * @param props - The value, the options and the label.
  * @returns The segmented control.
+ * @index function React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />`
  */
 export function Choice<T extends OptionValue>(props: ChoiceProps<T>): ReactNode {
   const { label, value, onChange, cycle = false, disabled = false, className } = props

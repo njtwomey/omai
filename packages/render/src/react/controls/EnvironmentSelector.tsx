@@ -76,6 +76,7 @@ export function environmentTags(entry: EnvironmentEntry): string[] {
  *
  * @param props - The filters, the selection and what to call with a new one.
  * @returns The list, the readout and the controls, for a `ControlPanel` to lay out.
+ * @index function React component: pick an environment from the registry: `<EnvironmentSelector value={sel} onChange={setSel} />`
  */
 export function EnvironmentSelector(props: EnvironmentSelectorProps): ReactNode {
   const {

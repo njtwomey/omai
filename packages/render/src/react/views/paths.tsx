@@ -24,6 +24,7 @@ const CURVE_FIGURE = { aspect: 1.6 } as const
  *
  * @param props - The record, the selected penalty, and the figure and frame settings.
  * @returns The figure.
+ * @index function React component: coefficients along a regularisation path: `<PathView record={path} />`
  */
 export function PathView(props: RecordViewProps<RegularisationPath> & { readonly selected?: number }): ReactElement {
   const figure = useViewFigure(props.figure, PATH_FIGURE)

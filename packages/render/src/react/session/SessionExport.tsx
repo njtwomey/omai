@@ -79,6 +79,7 @@ function capture(
  * @param props - The session, the cursor, the element to capture, the title and caption, and what to do with a loaded
  *   tape file.
  * @returns The menu button.
+ * @index function React component: page export menu: PNG, SVG, GIF, WebM, tape JSON: `<SessionExport live={live} ... />`
  */
 export function SessionExport(props: SessionExportProps): ReactElement {
   const { live, at, onScrub, root } = props

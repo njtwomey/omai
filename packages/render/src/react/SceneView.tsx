@@ -241,6 +241,7 @@ function findNode(nodes: readonly SceneNode[], id: string): SceneNode | null {
  *
  * @param props - The scene, its drawn size, the colour mode, event handlers, highlighted ids and overlay children.
  * @returns The SVG.
+ * @index function React component: draw a Scene as SVG with click and hover: `<SceneView scene={scene} />`
  */
 export function SceneView(props: SceneViewProps): ReactElement {
   const { scene, onNodeClick, onNodeHover, highlight = [], children, className, style } = props

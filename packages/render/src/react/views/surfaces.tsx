@@ -30,6 +30,7 @@ const SURFACE_STEPS_FIGURE = { aspect: 1.9 } as const
  * @param props - The record, training rows and labels, contours and aspect, the playback rate, and the figure and
  * frame settings.
  * @returns The figure (with its player when the record has steps).
+ * @index function React component: a classifier's decision surface over the rows: `<DecisionSurfaceView record={surface} points={X} />`
  */
 export function DecisionSurfaceView(
   props: RecordViewProps<DecisionSurface> & Omit<SurfaceViewOptions, 'mode' | 'figure'> & PlayerViewProps,

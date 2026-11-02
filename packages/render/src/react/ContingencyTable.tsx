@@ -73,6 +73,7 @@ const join = (...parts: (string | false | undefined)[]): string => parts.filter(
  *
  * @param props - The table and display options.
  * @returns The table.
+ * @index function React component: confusion matrix with margins and rates: `<ContingencyTable table={cm} positive={1} />`
  * @example
  * ```tsx
  * import { ContingencyTable } from 'mdml-render/react'

@@ -53,6 +53,7 @@ export interface PlayerProps {
  * @param props - The controller (from `usePlayback`, `useTimelinePlayback`, `useLiveRun` or a session player) and the
  *   stamp.
  * @returns The player.
+ * @index function React component: play, step and scrub a playback controller: `<Player controller={c} />`
  */
 export function Player(props: PlayerProps): ReactNode {
   const { controller: c, stamp, stampFps, fpsChoices = FPS_CHOICES, className } = props

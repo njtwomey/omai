@@ -71,6 +71,7 @@ export interface FigureGridProps extends Omit<SubplotOptions, 'figure' | 'mode' 
  *
  * @param props - The grid, the panels, other cell content, the figure and subplot options.
  * @returns The figure.
+ * @index function React component: charts and text on a grid: `<FigureGrid grid={g} panels={p} />`
  */
 export function FigureGrid(props: FigureGridProps): ReactElement {
   const mode = useColourMode()

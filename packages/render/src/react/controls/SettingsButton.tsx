@@ -54,6 +54,7 @@ const FOCUSABLE =
  *
  * @param props - The applied value, what to call on Apply, and a render function for the dialog's contents.
  * @returns The button, and the dialog while open.
+ * @index function React component: a gear opening a modal applied only on confirm: `<SettingsButton value={v} onApply={setV}>...</SettingsButton>`
  */
 export function SettingsButton<T>(props: SettingsButtonProps<T>): ReactNode {
   const {
@@ -218,6 +219,7 @@ export interface SpaceSettingsProps<V extends SpaceValue>
  *
  * @param props - The space, the applied value and what to call on Apply.
  * @returns The button and its dialog.
+ * @index function React component: gear button editing a Space in a modal: `<SpaceSettings space={s} value={v} onApply={setV} />`
  */
 export function SpaceSettings<V extends SpaceValue>(props: SpaceSettingsProps<V>): ReactNode {
   const { space, columns = 2, intro, exclude, admissible, why, segmentedUpTo, ...button } = props

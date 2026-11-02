@@ -238,6 +238,7 @@ export function figureSvg(
  *
  * @param props - Size, title, caption, content, expansion and export settings.
  * @returns The frame.
+ * @index function React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>`
  */
 export function FigureFrame(props: FigureFrameProps): ReactElement {
   const mode = useColourMode()

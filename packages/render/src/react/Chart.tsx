@@ -79,6 +79,7 @@ export interface ChartProps {
  *
  * @param props - The option, size, mode, renderer, events and group.
  * @returns The chart's container.
+ * @index function React component: draw an ECharts option, themed and resized: `<Chart option={option} />`
  */
 export function Chart(props: ChartProps): ReactElement {
   const { option, figure, renderer = 'canvas', onEvents, onInit, group, merge = false } = props

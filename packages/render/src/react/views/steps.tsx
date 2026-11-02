@@ -29,6 +29,7 @@ const REACHABILITY_FIGURE = { aspect: 2.2 } as const
  *
  * @param props - The record, the input rows and columns, the playback rate, and the figure settings.
  * @returns The figure with its player.
+ * @index function React component: replay a clustering step by step: `<ClusteringPlayer record={steps} points={X} />`
  */
 export function ClusteringPlayer(
   props: RecordViewProps<ClusteringSteps> & Omit<StepsViewOptions, 'mode' | 'figure'> & PlayerViewProps,
