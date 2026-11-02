@@ -49,12 +49,16 @@ describe('flow layers on random parameters', () => {
         const y = flat(spline.forward(tensor(x)))
         const back = flat(spline.inverse(tensor(y)))
         for (const [i, v] of back.entries()) expect(v).toBeCloseTo(x[i] ?? Number.NaN, 7)
-        // The log-derivative is the log of the finite-difference slope.
-        const h = 1e-6
-        const shifted = flat(spline.forward(tensor(x.map((v) => v + h))))
+        // The log-derivative is the log of the finite-difference slope, a central difference. The spline is C1 only: its
+        // second derivative jumps at the knots, and at extreme parameters the jump is large (measured: the difference
+        // from the analytic slope is about 50 h at h = 1e-5 on a counterexample fast-check found, so 5e-4 there), so
+        // h is small; the rounding of the two evaluations (1e-16 / h) stays far below the tolerance.
+        const h = 1e-7
+        const above = flat(spline.forward(tensor(x.map((v) => v + h))))
+        const below = flat(spline.forward(tensor(x.map((v) => v - h))))
         const slopes = flat(spline.forwardLogDetJacobian(tensor(x)))
-        for (const [i, v] of shifted.entries())
-          expect(Math.log((v - (y[i] ?? 0)) / h || 1e-300)).toBeCloseTo(slopes[i] ?? Number.NaN, 3)
+        for (const [i, v] of above.entries())
+          expect(Math.log((v - (below[i] ?? 0)) / (2 * h) || 1e-300)).toBeCloseTo(slopes[i] ?? Number.NaN, 3)
       }),
       { numRuns: RUNS },
     )
