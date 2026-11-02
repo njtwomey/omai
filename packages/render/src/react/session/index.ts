@@ -1,6 +1,6 @@
 /**
  * Sessions in React: the hooks that run a method live (one session, or several variants of it in step under one
- * producer), the player and settings over it, the layout vocabulary and the panels that draw a layout over the tape
+ * producer), the player over it, the layout vocabulary and the panels that draw a layout over the tape
  * (overlaying the variants of a comparison on curves and sweeps, and drawing the rest side by side), all sharing one
  * step cursor that charts of the tape move on click, and the generic viewer of everything a tape holds. The rows
  * panel's channels (values, sizes, marks, regions, a focus), the curve families (many runs, bands, truth lines, log
@@ -13,7 +13,6 @@ export * from './Multiples.tsx'
 export * from './NarrativeView.tsx'
 export * from './RecordPanels.tsx'
 export * from './RowsPanel.tsx'
-export * from './SessionControls.tsx'
 export * from './SessionExport.tsx'
 export * from './SessionPanels.tsx'
 export * from './SessionPlayer.tsx'

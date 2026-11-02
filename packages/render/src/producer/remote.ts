@@ -30,11 +30,6 @@ export class ProbePending extends MdmlError {
   }
 }
 
-/** Whether an error is a probe still waiting for the worker. */
-export function isProbePending(e: unknown): boolean {
-  return e instanceof ProbePending
-}
-
 /** What a remote session asks of its producer. */
 export interface RemoteLink {
   /** The probe at once if answered; else ask and throw {@link ProbePending}. */

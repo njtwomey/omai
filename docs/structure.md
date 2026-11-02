@@ -5571,8 +5571,7 @@ tape as it grows; holds a change of method or options until play in live mode, o
 `preferences.ts` (eager against live, and holding, remembered in the browser from page to page), `SessionPlayer` (the
 consumer: the cursor through the tape at a chosen rate, waiting at the head when the computation is slower; the eager
 toggle computes the whole run at once and shows its end; seek to either end and step one; a reset of the page's
-controls to their defaults when the page offers one), `SessionControls` (seed, steps, subscription, and the same
-preferences), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe, curves, per-element series, a
+controls to their defaults when the page offers one), the `Panel` vocabulary (`layout.ts`: rows with an overlay, a probe, curves, per-element series, a
 trajectory, a tensor with row and column labels and marks (`rowLabels`, `colLabels`, `marks`, `marksPath`), a sweep, a
 projection, the whole tape, and the panels of probed records: `field` (a `vectorField` with tape paths over it as a
 trajectory), `strip`, `table`, `images`, `graph` (a `structureSteps` record), `points` (`pointsSteps`, coloured by
@@ -7067,7 +7066,7 @@ Design rules:
 - `tables.ts`: run summaries as table data.
 
 `gym/`
-- `frames.ts`: episode frames from an environment's `render`, filmstrips.
+- `frames.ts`: filmstrips of an environment's rendered frames.
 - `worlds.ts`: one way to draw any `worlds` world (`worldView`: the engine's top-down map with search frontiers and
   explored cells, policies as arrows sized by probability, values and numbers on cells, agent paths), and the
   first-person ray-cast view from `graphics` with its top-down view cone (`raycastViews`).
@@ -7084,8 +7083,6 @@ Design rules:
 `animation/`
 - `timeline.ts`: building `Timeline`s from runs (any event channel), from environment episodes, from structure overlays
   and from parameter sweeps; easing and interpolation between frames.
-- `playback.ts`: the two playback modes: precomputed (train up front, play a timeline) and live (step an `Algorithm`
-  frame by frame through `iterate`, with a frame budget), behind one interface.
 - `svg.ts`: `animatedSvg`, every frame of a timeline in one SVG shown in turn by CSS keyframes.
 - `gif.ts`: `encodeGif` (dependency-free: a median-cut palette from `quantise`, LZW, delays, looping).
 - `video.ts`: `muxWebm` (a pure WebM muxer), `encodeWebm` (WebCodecs VP8 in the browser, else a `MediaRecorder`),
@@ -7197,8 +7194,6 @@ Design rules:
   figure has focus, per press and per frame, for playing worlds).
   `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
   cut-offs, levels; snaps to a step, keyboard-nudgeable).
-- `EpisodePlayer.tsx`: environment episodes (run once from a seed, rendered, played with captions) with overlays;
-  `useEnvStepper.ts`: an environment stepped by hand from a seed.
 - `ExportMenu.tsx`: export of the current figure as SVG, PNG, GIF, MP4 or WebM.
 - `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
   assistive technology; live values highlighted).
@@ -7217,8 +7212,7 @@ Design rules:
   `EnvironmentSelector` (the same over `environmentRegistry`: families, kinds of action and observation, episodic,
   multi-agent; the chosen entry's spaces, formatted, and its options as controls; `useEnvironment` makes it), both
   drawn by `EntryList` (`EntryList.tsx`: the search box and the list of titles with `Tags` chips, `tagLabel`); and
-  `MethodControls` (controls from a method's `hyperSpace`, demo defaults
-  first); `SettingsButton` (a gear that opens a modal of settings and changes nothing until it is confirmed: the dialog
+  `SettingsButton` (a gear that opens a modal of settings and changes nothing until it is confirmed: the dialog
   edits a draft, Apply hands the whole draft to `onApply`, Cancel, Escape and the close button drop it, a press on the
   backdrop closes it only while the draft is untouched, Reset returns the draft to given defaults, focus is kept inside and
   restored; the logic is `settings.ts`: `settingsReducer`, `sameSettings`) and `SpaceSettings` (the same over a `Space`, drawn by
@@ -7246,7 +7240,7 @@ Design rules:
 - `session/`: sessions in React (the Sessions and Comparisons paragraphs of section 5): `useSession.ts` (`useSession`,
   `useSessions`: one producer over one or several sessions, `LiveSession`, `LiveSessions`, `variantsOf`), `compare.ts`
   (the pure part of a comparison: `sharedHead`, `advanceInStep`, `overlayCurves`, `sweepTrials`), `SessionPlayer.tsx`,
-  `SessionControls.tsx`, `preferences.ts`, `layout.ts` (the `Panel` vocabulary), `SessionPanels.tsx`, `RowsPanel.tsx`,
+  `preferences.ts`, `layout.ts` (the `Panel` vocabulary), `SessionPanels.tsx`, `RowsPanel.tsx`,
   `cursor.tsx`, `scrub.ts` and `TapeView.tsx`; `useSession`'s hook options take a `producer` (see `producer/`), so the same
   hook computes in a worker; `SessionExport.tsx` (the player's `pageExport` menu: the whole page as PNG or SVG, a recording from step
   a to b as GIF or WebM, the tape as JSON in and out) over `export.ts` (`probeRequestsOf` a layout, `framesBetween`, `pageSvg`);
@@ -7262,7 +7256,6 @@ Design rules:
   `useSessions`). The gallery's `pages/linear-classifier` is the template of a method page (a dataset picker, the
   objective's controls with validity greying, `SlotVariants` for the solvers, one player, curves overlaid and the
   decision surface of each solver side by side).
-- `EnvView.tsx`: one consistent view of any environment's render, decorated, with room for controls.
 - `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
   or a prop), dark by default; no system-preference detection.
 

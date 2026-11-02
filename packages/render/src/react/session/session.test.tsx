@@ -15,7 +15,6 @@ import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { advanceInStep, overlayCurves, sharedHead, sweepTrials } from './compare.ts'
 import { sessionPreferences, setSessionPreferences } from './preferences.ts'
-import { initialSettings, logsOf } from './SessionControls.tsx'
 import { SessionPanels } from './SessionPanels.tsx'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { nearestStep } from './scrub.ts'
@@ -272,14 +271,6 @@ describe('session panels', () => {
     expect(nearestStep([0, 5, 10], 6)).toBe(5)
     expect(nearestStep([0, 5, 10], 6, [0, 0.5, 1])).toBe(10)
     expect(nearestStep([], 3)).toBeUndefined()
-  })
-
-  it('turns settings into a subscription', () => {
-    expect(logsOf(initialSettings('defaults'))).toBe('defaults')
-    expect(initialSettings('off', 50).steps).toBe(50)
-    const custom = initialSettings({ angle: { every: 1 } as never })
-    expect(custom.preset).toBe('custom')
-    expect(Object.keys(logsOf(custom))).toEqual(['angle'])
   })
 
   it('draws the player with the eager toggle, both seeks and the head in the stamp', () => {

@@ -1,6 +1,5 @@
 import { circle, group, path, rect, scene, sceneTimeline, structure, text, timeline } from 'mdml-engine/scene'
 import { describe, expect, it } from 'vitest'
-import { liveSource, precomputedSource } from './playback.ts'
 import {
   easings,
   frameAt,
@@ -83,27 +82,5 @@ describe('timeline', () => {
     })
     expect(decoded.frames).toHaveLength(1)
     expect(decoded.fps).toBe(5)
-  })
-})
-
-describe('playback', () => {
-  it('serves precomputed frames and timelines', () => {
-    const tl = sceneTimeline([scene(1, 1, [])])
-    const src = precomputedSource(tl)
-    expect(src.kind).toBe('precomputed')
-    expect(src.ensure(10)).toBe(1)
-    expect(src.frame(0)?.kind).toBe('scene')
-  })
-  it('steps live algorithms within the budget, thinning frames', () => {
-    const count = { name: 'count', config: {}, init: () => 0, step: (s: number) => s + 1 }
-    const src = liveSource(count, (s, t) => [s, t], { maxSteps: 7, budget: 100, every: 3, seed: 1 })
-    expect(src.ensure(100)).toBe(4)
-    expect(src.done()).toBe(true)
-    expect(src.frame(3)).toEqual([7, 7])
-    const stop = { ...count, done: (s: number) => (s >= 2 ? ('converged' as const) : undefined) }
-    const short = liveSource(stop, (s) => s, { maxSteps: 100 })
-    short.ensure(50)
-    expect(short.done()).toBe(true)
-    expect(short.available()).toBe(3)
   })
 })
