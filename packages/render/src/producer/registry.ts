@@ -28,6 +28,7 @@ export interface MethodRegistry {
  * @param methods - The methods on offer.
  * @returns The registry.
  * @throws MdmlError with code `value` when two methods share a name.
+ * @index function Methods by name for a worker and tape files: `methodRegistry([methodA, methodB])`.
  */
 export function methodRegistry(methods: readonly AnyMethod[]): MethodRegistry {
   const byName = new Map<string, AnyMethod>()

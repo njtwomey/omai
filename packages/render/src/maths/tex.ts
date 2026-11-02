@@ -30,6 +30,7 @@ export interface TexOptions {
  * @param tex - The TeX source.
  * @param options - Display mode, macros and output markup.
  * @returns The markup.
+ * @index function Typeset TeX with KaTeX and shared macros: `texToHtml('x^2')`.
  * @example
  * ```ts
  * import { texToHtml } from 'mdml-render/maths'

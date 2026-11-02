@@ -47,6 +47,7 @@ function boxes(graph: LayoutGraph, xy: readonly (readonly [number, number])[]): 
  * @param graph - Nodes with sizes and undirected edges.
  * @param options - Seed, edge length, iteration cap, tolerance and margin.
  * @returns The layout, the iterations it took and its final energy.
+ * @index function A seeded force-directed layout: `forceLayout(graph, { seed: 1 })`.
  * @example
  * ```ts
  * import { forceLayout } from 'mdml-render/layout'

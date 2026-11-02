@@ -3,6 +3,8 @@
  * plays and what it needs beside the record, and `stillOf` draws any record as a headless still (a chart option, or a
  * scene for trees and pipelines) for slides, blogs and export. It is exhaustive, so a new record kind does not compile
  * without a view.
+ *
+ * @index table Open first: the standard view of each exposition record kind.
  */
 
 import type { EChartsOption } from 'echarts'
@@ -62,6 +64,8 @@ export type RecordOf<K extends ExpositionKind> = Extract<Exposition, { kind: K }
  * The standard view of a record kind: its React component's name in `mdml-render/react`, a title, whether it plays
  * (frames for a player), what it needs beside the record to draw rows in input space, and a headless still (the
  * figure, or the last frame of one that plays) for slides, blogs and server-side export.
+ *
+ * @index structure A record kind's view: component name, title, whether it plays, and its still.
  */
 export interface StandardView<K extends ExpositionKind = ExpositionKind> {
   readonly kind: K
@@ -628,6 +632,7 @@ const REGISTRY: Registry = {
  *
  * @param kind - The record kind.
  * @returns The view.
+ * @index function The standard view of a record kind: `viewFor('regularisationPath')`.
  * @example
  * ```ts
  * import { viewFor } from 'mdml-render/views'
@@ -653,6 +658,7 @@ export function viewedKinds(): ExpositionKind[] {
  * @param record - The record.
  * @param options - Mode and figure.
  * @returns The chart option or scene.
+ * @index function The chart option or scene that explains a record: `stillOf(record)`.
  */
 export function stillOf(record: Exposition, options: ViewOptions = {}): ViewStill {
   return (viewFor(record.kind) as StandardView).still(record as never, options)

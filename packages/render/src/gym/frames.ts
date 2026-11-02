@@ -10,6 +10,7 @@ import { grid, type Scene } from 'mdml-engine/scene'
  * @param frames - The scenes.
  * @param options - Columns (default 6), the cell size (default 120 by 90) and the stride (default 1).
  * @returns One scene holding the strip.
+ * @index function Rendered environment frames side by side: `filmstrip(frames, { columns: 5 })`.
  */
 export function filmstrip(
   frames: readonly Scene[],

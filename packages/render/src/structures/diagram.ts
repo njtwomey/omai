@@ -245,6 +245,7 @@ function depthOf(s: Structure, id: string): number {
  * @param s - The structure.
  * @param options - Layout, direction, style, overlay (and the frames it comes from), seed and spacing.
  * @returns The scene, with node ids as scene ids (edges are `edge:<index>`, groups `group:<id>`).
+ * @index function Draw a Structure as a scene: `diagram(structure, { layout: 'layered' })`.
  * @example
  * ```ts
  * import { structure } from 'mdml-engine/scene'

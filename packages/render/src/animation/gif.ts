@@ -202,6 +202,7 @@ export interface GifOptions {
  * @param options - Frames per second, loop count and palette.
  * @returns The GIF file's bytes.
  * @throws MdmlError with code `value` for no frames, and `shape` for a frame larger than the first.
+ * @index function Pixel frames to GIF bytes, with no dependency: `encodeGif(frames, { fps: 10 })`.
  * @example
  * ```ts
  * import { encodeGif } from 'mdml-render/animation'

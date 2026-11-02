@@ -31,6 +31,7 @@ export interface AnimatedSvgOptions {
  * @param options - Colour mode, frames per second, width, background and looping.
  * @returns The SVG text.
  * @throws MdmlError with code `value` when there are no frames.
+ * @index function A self-playing animated SVG from a timeline: `animatedSvg(timeline, { fps: 10 })`.
  * @example
  * ```ts
  * import { circle, scene } from 'mdml-engine/scene'

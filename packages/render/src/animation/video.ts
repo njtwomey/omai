@@ -147,6 +147,7 @@ export interface EncodeVideoOptions {
  * writes WebM (never in Node).
  *
  * @returns Whether `encodeWebm` can run.
+ * @index function Whether this browser can encode video: `canEncodeVideo()`.
  */
 export function canEncodeVideo(): boolean {
   return (
@@ -248,6 +249,8 @@ async function withRecorder(frames: readonly Pixels[], options: EncodeVideoOptio
  * @returns A promise of the file's bytes.
  * @throws MdmlError with code `value` for no frames, and `not-implemented` where neither encoder exists (see
  * {@link canEncodeVideo}).
+ *
+ * @index function Pixel frames to WebM bytes in a browser: `await encodeWebm(frames, { fps: 30 })`.
  */
 export async function encodeWebm(frames: readonly Pixels[], options: EncodeVideoOptions = {}): Promise<Uint8Array> {
   if (frames.length === 0) throw new MdmlError('value', 'encodeWebm: need at least one frame')

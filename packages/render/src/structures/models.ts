@@ -93,6 +93,7 @@ export function uNetOrder(levels: readonly UNetLevel[], options: Pick<UNetOption
  * @param options - Skips, time embedding, channels in and out, convolutions per block, active blocks and legend.
  * @returns The scene (block ids as in `active`).
  * @throws MdmlError with code `value` for fewer than two levels.
+ * @index function Draw a U-Net as a scene: `uNet(unetLevels(64, [16, 32, 64]))`.
  * @example
  * ```ts
  * import { uNet, unetLevels } from 'mdml-render/structures'
@@ -329,6 +330,7 @@ const FONT = 11
  * @param bn - The network (`bayesNet` in mdml-engine's `pgm`).
  * @param options - Evidence, marginals, direction and the most rows per table.
  * @returns The scene (cards have the variables' names as ids).
+ * @index function A Bayes network as probability-table cards: `bayesNetCards(bn)`.
  * @example
  * ```ts
  * import { bayesNet } from 'mdml-engine/pgm'

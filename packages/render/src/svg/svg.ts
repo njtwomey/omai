@@ -130,6 +130,7 @@ export interface SceneSvgOptions {
  * @param scene - The scene.
  * @param options - Colour mode, size, background and font.
  * @returns The SVG text.
+ * @index function A Scene to standalone SVG text: `sceneToSvg(scene, { mode: 'dark' })`.
  * @example
  * ```ts
  * import { sceneToSvg } from 'mdml-render/svg'

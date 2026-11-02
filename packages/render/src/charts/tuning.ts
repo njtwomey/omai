@@ -82,6 +82,7 @@ export function historyLayers(study: Study, options: Pick<StudyChartOptions, 'ob
  * @param study - The study.
  * @param options - Figure, title, objective, label and log axis.
  * @returns The ECharts option.
+ * @index function Objective per trial of a hyperparameter study: `historyChart(study)`.
  * @example
  * ```ts
  * import { createStudy } from 'mdml-engine/tune'

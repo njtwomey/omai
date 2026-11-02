@@ -151,6 +151,7 @@ export function regularisationPathPanels(
  * @param path - The record.
  * @param options - Mode, figure and the selected penalty.
  * @returns The ECharts option.
+ * @index function Coefficients against the penalty, lasso style: `regularisationPathView(path)`.
  * @example
  * ```ts
  * import { regularisationPath } from 'mdml-engine/exposition'

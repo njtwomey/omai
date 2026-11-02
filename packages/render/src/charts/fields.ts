@@ -45,6 +45,7 @@ export interface ContourOptions {
  * @param z - Values `[rows, cols]`.
  * @param options - Coordinates, levels, colour, width, dash and labels.
  * @returns The layer.
+ * @index function Contour lines of a 2-D array: `contours(z, { levels: 7 })`.
  * @example
  * ```ts
  * import { contours } from 'mdml-render/charts'
@@ -184,6 +185,7 @@ export interface DecisionRegionOptions {
  * @param probabilities - K grids `[rows, cols]`, one per class.
  * @param options - Coordinates, colours, confidence shading, boundaries, resolution and opacity.
  * @returns The layer.
+ * @index function A classifier's decision regions from class probability grids: `decisionRegions(probs, { x, y })`.
  * @example
  * ```ts
  * import { decisionRegions } from 'mdml-render/charts'
@@ -315,6 +317,7 @@ export function fieldArrows(
  * @param arrows - The arrows (from {@link fieldArrows}, or any segments).
  * @param options - A single colour (default by magnitude), head size, width, colour mode.
  * @returns The layer.
+ * @index function Arrows of a vector field: `vectorField(fieldArrows(f, { x, y }))`.
  * @example
  * ```ts
  * import { fieldArrows, vectorField } from 'mdml-render/charts'

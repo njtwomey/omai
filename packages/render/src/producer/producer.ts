@@ -10,7 +10,11 @@ import type { Json } from 'mdml-engine/base'
 import type { Config, Derived, Method, Session, SessionOptions, SliceBudget } from 'mdml-engine/trace'
 import type { Variant } from './make.ts'
 
-/** A producer of the sessions of a comparison (one variant for a session on its own). */
+/**
+ * A producer of the sessions of a comparison (one variant for a session on its own).
+ *
+ * @index structure The half of a live session that computes; main-thread or worker.
+ */
 export interface Producer<S, C extends Config> {
   /** Where it computes: on the main thread in slices, or in a worker. */
   readonly kind: 'inline' | 'worker'

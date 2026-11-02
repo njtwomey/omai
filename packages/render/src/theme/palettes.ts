@@ -62,6 +62,7 @@ const COOLWARM = ['#3b4cc0', '#7b9ff9', '#c0d4f5', '#f2cbb7', '#ee8468', '#b4042
  * @param name - The ramp (default `viridis`).
  * @param mode - The colour mode.
  * @returns The stops as hex colours.
+ * @index function Colours of a sequential ramp: `sequentialRamp('viridis', 'dark')`.
  * @example
  * ```ts
  * import { sequentialRamp } from 'mdml-render/theme'
@@ -396,6 +397,7 @@ export interface ColourBlindReport {
  * @param colours - At least two colours.
  * @param threshold - The least acceptable delta E (default 10).
  * @returns The report.
+ * @index function Check categorical colours stay distinct under colour blindness: `colourBlindCheck(colours)`.
  * @example
  * ```ts
  * import { colourBlindCheck } from 'mdml-render/theme'

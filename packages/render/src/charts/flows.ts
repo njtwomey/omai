@@ -23,6 +23,7 @@ export interface FlowLink {
  * @param links - The flows.
  * @param options - Mode, figure, title, and the nodes' order or colours when given.
  * @returns The ECharts option.
+ * @index function A Sankey diagram of flows: `sankeyChart([{ source, target, value }])`.
  * @example
  * ```ts
  * import { sankeyChart } from 'mdml-render/charts'

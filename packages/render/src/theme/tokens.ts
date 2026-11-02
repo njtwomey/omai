@@ -64,6 +64,7 @@ const DARK: Tokens = {
  *
  * @param mode - `light` (default) or `dark`.
  * @returns The tokens.
+ * @index function Light and dark design tokens: `tokens('dark').bg`.
  * @example
  * ```ts
  * import { tokens } from 'mdml-render/theme'
@@ -133,6 +134,7 @@ export function cssVariables(mode: ColourMode = 'light', prefix = 'wb'): Record<
  * @param mode - The colour mode.
  * @param selector - The rule's selector (default `:root`).
  * @returns The CSS text.
+ * @index function The tokens as `--wb-*` CSS custom properties: `cssText('dark', '.dark')`.
  * @example
  * ```ts
  * import { cssText } from 'mdml-render/theme'

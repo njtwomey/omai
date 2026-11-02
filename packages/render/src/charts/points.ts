@@ -219,6 +219,7 @@ export function rug(
  * @param sets - The point sets.
  * @param options - Plot options.
  * @returns The ECharts option.
+ * @index function A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`.
  * @example
  * ```ts
  * import { scatterChart } from 'mdml-render/charts'

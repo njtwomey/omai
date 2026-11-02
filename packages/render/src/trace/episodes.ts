@@ -87,6 +87,7 @@ export function episodeCurves(
  * @param runs - Named runs (or one run).
  * @param options - Plot options, the quantity and the window.
  * @returns The ECharts option.
+ * @index function Episode returns with a rolling mean and band: `episodeChart(run)`.
  * @example
  * ```ts
  * import { episodeChart } from 'mdml-render/trace'

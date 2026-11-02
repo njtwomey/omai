@@ -212,6 +212,7 @@ function paramTreemap(s: Structure, width: number): Scene {
  * @param view - Which view.
  * @param options - Diagram options and the width of the shape flow and treemap.
  * @returns The scene.
+ * @index function Draw a network from `describe` as a scene: `architecture(desc, 'compact')`.
  * @example
  * ```ts
  * import { describe, mlp } from 'mdml-engine/nn'

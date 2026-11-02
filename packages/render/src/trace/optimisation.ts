@@ -69,6 +69,7 @@ export interface OptimisationPathOptions {
  * @param paths - Named paths (points in order).
  * @param options - Ranges, grid size, levels, fill, log scale, ramp and colour mode.
  * @returns The layers: the objective, then the paths.
+ * @index function Optimiser paths over the objective's contours: `optimisationPaths(f, paths, { x, y })`.
  * @example
  * ```ts
  * import { optimisationPaths } from 'mdml-render/trace'

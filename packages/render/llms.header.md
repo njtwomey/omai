@@ -33,20 +33,21 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   (line, bar, histogram, heatmap, fields, ...) return an `EChartsOption` or layers that combine on shared axes. Graph
   layouts (`mdml-render/layout`) return positions only; `mdml-render/structures` draws an engine `Structure` as a scene.
 - Export. `chartToSvg(option, { width, height })` and `sceneToSvg(scene)` give SVG text (`mdml-render/svg`);
-  `composeSvg` puts charts and labels into one document; `encodePng` and `svgToPng` give PNG; `animatedSvg`,
-  `timelineFrames`, `encodeGif` and `encodeWebm` (`mdml-render/animation`) turn a `Timeline` of scenes into an
-  animation. In the browser,
-  `FigureFrame` offers these exports (png, svg, gif, mp4, webm, json) on a figure.
+  `composeSvg(width, height, parts)` puts charts and labels into one document; `encodePng(pixels)` gives PNG bytes
+  from RGBA pixels and `svgToPng(svg, width, height)` a PNG data URL (browser only); `animatedSvg(timeline)` gives a
+  self-playing SVG, and `timelineFrames(timeline)` gives pixel frames for `encodeGif(frames)` and `encodeWebm(frames)`
+  (`mdml-render/animation`). In the browser, `FigureFrame` offers a menu of exports on a figure (png and svg by
+  default; gif and webm for a figure with a `playback`; `mp4` and `json` only through your own `onExport` handler).
 - From a trace to a figure. A traced engine `Run` goes to `mdml-render/trace` (`metricChart(run, ['loss'])`, tensor
   trajectories, episode returns, optimisation paths). A result with `exposition` records goes to `mdml-render/views`:
   `viewFor(kind)` is the registry of standard views, `stillOf(record)` gives the chart option or scene that explains a
   record, and the views of one record kind also give player frames. Records come from `mdml-engine/exposition`.
 - The session layer (React). `useSession(method, options, deps)` and `useSessions` (variants of one method in step) run
   an engine `Method` live under a producer and give a `LiveSession`; `Player` and `SessionPlayer` are the playback
-  controls over it; `SessionPanels` draws a layout of panels over the tape, with `RowsPanel`, `RecordPanels` and
-  others beside it; `ExpositionView` picks the standard view of any record. `mdml-render/producer` is the headless
-  side: main-thread and Web Worker producers, the method registry (`methodRegistry`) and the tape as a file
-  (`useTape` replays one).
+  controls over it; `SessionPanels` draws a layout of panels over the tape, with `RowsPanel` and the record panels
+  (`StripPanel`, `TablePanel`, `ImagesPanel`, ...) beside it; `ExpositionView` picks the standard view of any record. `mdml-render/producer` is the headless side: main-thread and Web Worker producers, the
+  method registry (`methodRegistry`) and the tape as a file (`tapeOf`, `parseTape`, `replaySessions`); the React hook
+  `useTape(file, registry)` replays one.
 - Controls and interaction (React). Form controls, controls generated from a `Space` and a dataset picker are in
   `react/controls`; draggable points, brushes and hover overlays are in `react/interaction`; `Chart`, `SceneView`,
   `StructureView` and `FigureGrid` are the base components in `react`.

@@ -114,6 +114,7 @@ function curveLayer(x: readonly number[], y: readonly number[], options: Distrib
  * @param options - Bandwidth (a rule or factor), range (default the data padded by three bandwidths), points, name and
  *   colour.
  * @returns The layer.
+ * @index function A kernel density estimate layer of samples: `kde(samples)`.
  * @example
  * ```ts
  * import { kde } from 'mdml-render/charts'
@@ -287,6 +288,7 @@ export function boxStats(values: TensorLike | readonly number[], whisker = 1.5):
  * @param groups - The samples.
  * @param options - Colour mode and colour.
  * @returns The layer, categories on the x axis.
+ * @index function Box plots of groups: `boxPlot([{ name: 'a', values }])`.
  * @example
  * ```ts
  * import { boxPlot } from 'mdml-render/charts'
@@ -513,6 +515,7 @@ export function priorPosterior(
  * @param dists - Distributions with names.
  * @param options - Plot options, the range and points.
  * @returns The ECharts option.
+ * @index function Densities of distributions on one chart: `densityChart([{ name, dist }])`.
  * @example
  * ```ts
  * import { densityChart } from 'mdml-render/charts'

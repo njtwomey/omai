@@ -15,6 +15,7 @@ import type { Structure, StructureOverlay } from 'mdml-engine/scene'
  * @param order - Node ids in visiting order.
  * @param options - The badge's name (default `order`).
  * @returns One overlay per visit.
+ * @index function Overlays that visit nodes in order, for animation: `traversalFrames(s, order)`.
  * @example
  * ```ts
  * import { structure } from 'mdml-engine/scene'
