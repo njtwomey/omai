@@ -1,6 +1,6 @@
 {
   "name": "mdml-render",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "mdml-js figures: ECharts options, layouts, scene and structure drawing, SVG and animation export; React bindings.",
   "license": "MIT",
   "type": "module",
