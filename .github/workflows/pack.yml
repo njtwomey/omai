@@ -16,13 +16,13 @@ jobs:
   pack:
     # Only after a green ci (a manual run or a tag has no ci run to wait for).
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v5
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build and pack
@@ -38,7 +38,7 @@ jobs:
               echo "| $(basename "$f") | $(du -h "$f" | cut -f1) | $(tar tzf "$f" | wc -l) |"
             done
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tarballs-${{ github.event.workflow_run.head_sha || github.sha }}
           path: tarballs/*.tgz
