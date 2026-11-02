@@ -75,3 +75,50 @@ describe('parseDocComment', () => {
     expect(parseDocComment('S.\n@example Title\nf(1) // => 2').examples[0]).toMatchObject({ title: 'Title' })
   })
 })
+
+describe('parseDocComment: @index', () => {
+  const comment = (body: string): ReturnType<typeof parseDocComment> =>
+    parseDocComment(
+      unframeComment(
+        `/**\n${body
+          .split('\n')
+          .map((l) => ` * ${l}`)
+          .join('\n')}\n */`,
+      ),
+    )
+
+  it('collects the tag text and its line, and keeps it out of the prose', () => {
+    const doc = comment(
+      'Solve a system.\n\nMore prose.\n\n@param a - Matrix.\n@index function Solve a linear system.\n@example\n```ts\nsolve()\n```',
+    )
+    expect(doc.indexTags).toEqual([{ text: 'function Solve a linear system.', line: 6 }])
+    expect(doc.summary).toBe('Solve a system.')
+    expect(doc.description).toBe('More prose.')
+    expect(doc.params).toEqual([{ name: 'a', description: 'Matrix.' }])
+    expect(doc.examples).toHaveLength(1)
+  })
+
+  it('strips a file-level tag at the end of an opening paragraph from the summary and description', () => {
+    const doc = comment(
+      'Krylov solvers for sparse systems.\n\nCG and friends.\n\n@index function Krylov solvers: CG, GMRES.',
+    )
+    expect(doc.summary).toBe('Krylov solvers for sparse systems.')
+    expect(doc.description).toBe('CG and friends.')
+    expect(doc.indexTags).toEqual([{ text: 'function Krylov solvers: CG, GMRES.', line: 5 }])
+  })
+
+  it('joins a description wrapped over several lines', () => {
+    const doc = comment('Summary.\n\n@index table Smooth solvers as\n  one slot.')
+    expect(doc.indexTags[0]?.text).toBe('table Smooth solvers as one slot.')
+  })
+
+  it('keeps every tag when there are several, and none when there is none', () => {
+    expect(comment('Summary.\n\n@index function A.\n@index function B.').indexTags).toHaveLength(2)
+    expect(comment('Summary.').indexTags).toEqual([])
+  })
+
+  it('ignores @index inside a code fence', () => {
+    const doc = comment('Summary.\n\n@example\n```ts\n@index function Not a tag.\n```')
+    expect(doc.indexTags).toEqual([])
+  })
+})

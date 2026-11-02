@@ -2,6 +2,7 @@
  * The documentation catalogue: every public module and exported symbol of the documented packages, as plain data the
  * docs app renders and the example checker runs (docs/structure.md section 7).
  */
+import type { IndexTag } from './agent-index.ts'
 import type { Example, SourceLocation } from './examples.ts'
 
 /** The kinds of exported symbol. */
@@ -59,6 +60,8 @@ export interface SymbolDoc {
   readonly references: readonly string[]
   /** The `@deprecated` text, when the symbol is deprecated. */
   readonly deprecated?: string
+  /** The `@index` tag, when the symbol is one of the library's main things (the agent index). */
+  readonly index?: IndexTag
   /** Other names it is exported under: `<module>#<name>` of each re-export elsewhere. */
   readonly aliases: readonly string[]
   readonly members: readonly MemberDoc[]
@@ -109,6 +112,8 @@ export interface FileDoc {
   readonly module: string
   readonly summary: string
   readonly description: string
+  /** The `@index` tag of the opening paragraph, when the file is a hub to open first (the agent index). */
+  readonly index?: IndexTag
 }
 
 /**

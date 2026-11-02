@@ -15,6 +15,7 @@
       "!docs/port-map.json",
       "!pnpm-lock.yaml",
       "!packages/*/src/**/index.ts",
+      "!packages/engine/index",
       "!docs/methods-catalog"
     ]
   },

@@ -13,6 +13,8 @@
   "files": [
     "dist",
     "src",
+    "llms.txt",
+    "index",
     "!src/**/*.test.ts",
     "!src/**/*.test-d.ts"
   ],

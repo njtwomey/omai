@@ -7,8 +7,10 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { ts } from 'ts-morph'
+import type { IndexProblem } from '../schema/agent-index.ts'
 import type { FileDoc, FolderDoc, MemberDoc, ModuleDoc, ParamDoc, SymbolDoc, SymbolKind } from '../schema/catalogue.ts'
 import type { Example } from '../schema/examples.ts'
+import { readIndexTags } from './index-tags.ts'
 import { type EntryPoint, type Project, relativeTo } from './project.ts'
 import { type ParsedDoc, parseDocComment, unframeComment } from './tsdoc.ts'
 
@@ -31,6 +33,8 @@ export interface SymbolsResult {
   readonly folders: readonly FolderDoc[]
   readonly files: readonly FileDoc[]
   readonly symbols: readonly SymbolDoc[]
+  /** Errors and warnings about `@index` tags (unknown kind, empty or long description, duplicates), with file:line. */
+  readonly indexProblems: readonly IndexProblem[]
 }
 
 const oneLine = (s: string): string => s.replace(/\s+/g, ' ').trim()
@@ -70,13 +74,13 @@ function parsedDoc(
   project: Project,
   sf: ts.SourceFile,
   node: ts.Node,
-): { doc: ParsedDoc; examples: Example[]; found: boolean } {
+): { doc: ParsedDoc; examples: Example[]; found: boolean; line: number } {
   const raw = docOf(sf, node)
-  if (raw === undefined) return { doc: EMPTY_DOC, examples: [], found: false }
+  if (raw === undefined) return { doc: EMPTY_DOC, examples: [], found: false, line: 0 }
   const doc = parseDocComment(raw.text)
   const file = relativeTo(project, sf.fileName)
   const examples = doc.examples.map((e) => ({ ...e, source: { file, line: raw.line + (e.source?.line ?? 0) + 1 } }))
-  return { doc, examples, found: true }
+  return { doc, examples, found: true, line: raw.line }
 }
 
 class Reader {
@@ -381,6 +385,7 @@ export function readSymbols(project: Project): SymbolsResult {
   const moduleSymbols = new Map<string, string[]>()
   const reexports = new Map<string, Record<string, string>>()
   const pending: { entry: EntryPoint; name: string; decl: Declaration }[] = []
+  const indexProblems: IndexProblem[] = []
 
   for (const entry of project.entries) {
     let exports: Map<string, Exported>
@@ -394,9 +399,11 @@ export function readSymbols(project: Project): SymbolsResult {
 
   const build = (decl: Declaration, home: EntryPoint): (SymbolDoc & { aliases: string[] }) | undefined => {
     const node = documentedNode(decl)
-    const { doc, examples } = parsedDoc(project, decl.sf, node)
+    const { doc, examples, line: commentLine } = parsedDoc(project, decl.sf, node)
     if (doc.modifiers.includes('internal') || doc.modifiers.includes('hidden')) return undefined
     const { signature, sig } = signatureOf(decl)
+    const tagged = readIndexTags(doc.indexTags, relativeTo(project, decl.file), commentLine + 1)
+    indexProblems.push(...tagged.problems)
     const first = decl.nodes[0] as ts.Node
     const line = decl.sf.getLineAndCharacterOfPosition(first.getStart(decl.sf)).line + 1
     return {
@@ -416,6 +423,7 @@ export function readSymbols(project: Project): SymbolsResult {
       see: doc.see,
       references: doc.references,
       ...(doc.deprecated === undefined ? {} : { deprecated: doc.deprecated }),
+      ...(tagged.index === undefined ? {} : { index: tagged.index }),
       aliases: [],
       members: ts.isClassDeclaration(first) ? membersOf(project, decl.sf, first) : [],
       source: { file: relativeTo(project, decl.file), line },
@@ -498,9 +506,21 @@ export function readSymbols(project: Project): SymbolsResult {
     }
   })
   const fileDoc = (file: string, module: string): FileDoc => {
-    const m = OPENING.exec(reader.source(file).text)
+    const text = reader.source(file).text
+    const m = OPENING.exec(text)
     const doc = m === null ? undefined : parseDocComment(unframeComment(m[1] as string))
-    return { path: relativeTo(project, file), module, summary: doc?.summary ?? '', description: doc?.description ?? '' }
+    const path = relativeTo(project, file)
+    // The comment starts after any leading whitespace; its text lines are file lines from there.
+    const startLine = m === null ? 1 : text.slice(0, m.index + m[0].indexOf(m[1] as string)).split('\n').length
+    const tagged = readIndexTags(doc?.indexTags ?? [], path, startLine)
+    indexProblems.push(...tagged.problems)
+    return {
+      path,
+      module,
+      summary: doc?.summary ?? '',
+      description: doc?.description ?? '',
+      ...(tagged.index === undefined ? {} : { index: tagged.index }),
+    }
   }
   const files: FileDoc[] = project.entries.flatMap((e) => e.files.map((f) => fileDoc(f, e.specifier)))
   // A private file (`_tree.ts`) that defines a public symbol is listed too, so every symbol has its file.
@@ -510,5 +530,5 @@ export function readSymbols(project: Project): SymbolsResult {
     listed.add(s.source.file)
     files.push(fileDoc(key.slice(0, key.lastIndexOf('#')), s.module))
   }
-  return { modules, folders, files, symbols: ordered.map(([, s]) => s) }
+  return { modules, folders, files, symbols: ordered.map(([, s]) => s), indexProblems }
 }
