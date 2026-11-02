@@ -41,6 +41,7 @@ const recordOf = (v: SpaceValue | undefined): Readonly<Record<string, SpaceValue
  *
  * @param props - The union space, its value and what to call with a new one.
  * @returns The selector.
+ * @index function React component: choose a union option and its knobs: `<ModelSelector space={union} value={v} onChange={setV} />`
  */
 export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>): ReactNode {
   const { space, value, onChange, disabled = false } = props

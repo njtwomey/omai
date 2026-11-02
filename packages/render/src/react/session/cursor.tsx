@@ -28,6 +28,7 @@ export function StepCursorProvider(props: { readonly value: StepCursor; readonly
  * The enclosing step cursor, or `undefined` outside `SessionPanels`.
  *
  * @returns The cursor.
+ * @index function React hook: the viewed step inside a panel: `useStepCursor()`
  */
 export function useStepCursor(): StepCursor | undefined {
   return useContext(CursorContext)

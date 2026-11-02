@@ -27,6 +27,7 @@ export interface SelectProps<T extends OptionValue> {
  *
  * @param props - The value, the options and the label.
  * @returns The select.
+ * @index function React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />`
  */
 export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode {
   const { label, value, onChange, cycle = true, disabled = false, className } = props

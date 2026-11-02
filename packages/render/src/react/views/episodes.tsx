@@ -17,6 +17,7 @@ const EPISODE_FIGURE = { width: 720, aspect: 1.9 } as const
  *
  * @param props - The record, the snapshot, the grid's shape, action glyphs and window, and the figure settings.
  * @returns The figure.
+ * @index function React component: returns, lengths and policy of a reinforcement-learning run: `<EpisodeView record={episodes} />`
  */
 export function EpisodeView(
   props: RecordViewProps<EpisodeRecord> & Omit<EpisodeViewOptions, 'mode' | 'figure'>,

@@ -46,6 +46,7 @@ export interface SpaceControlsProps<V extends SpaceValue> extends SpaceControlOp
  *
  * @param props - The space, its value and what to call with a new value.
  * @returns The controls.
+ * @index function React component: controls generated from an engine Space: `<SpaceControls space={space} value={v} onChange={setV} />`
  */
 export function SpaceControls<V extends SpaceValue>(props: SpaceControlsProps<V>): ReactNode {
   const { space, value, onChange, exclude = [], disabled = false } = props

@@ -40,6 +40,7 @@ export interface DraggablePointsProps {
  *
  * @param props - The points, what to call with new ones, and the rules.
  * @returns The handles, inside an {@link InteractionOverlay}.
+ * @index function React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />`
  */
 export function DraggablePoints(props: DraggablePointsProps): ReactNode {
   const { points, onChange, add = false, remove = false, radius = 6, labels, onActive } = props

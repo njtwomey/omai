@@ -88,6 +88,7 @@ function niceStep(range: readonly [number, number]): number {
  *
  * @param props - The labels and scores (or a sweep), costs, the threshold and its handler, and display options.
  * @returns The figures, the controls and the table.
+ * @index function React component: drag a threshold across ROC, cost and table: `<ThresholdExplorer yTrue={y} scores={s} />`
  * @example
  * ```tsx
  * <ThresholdExplorer yTrue={y} scores={scores} costs={[[0, 1], [20, 0]]} followCheapest />

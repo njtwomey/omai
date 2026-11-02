@@ -5,7 +5,11 @@
 
 import type { Point2 } from './projection.ts'
 
-/** A rule for where a dragged or added point may go: the allowed point nearest to (or standing for) the one asked. */
+/**
+ * A rule for where a dragged or added point may go: the allowed point nearest to (or standing for) the one asked.
+ *
+ * @index structure Where a dragged point may go; build with `inBox`, `onGraph`, `onCircle`, `onGrid`, `chain`
+ */
 export type Constraint = (p: Point2) => Point2
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), hi)

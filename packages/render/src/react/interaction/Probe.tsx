@@ -14,6 +14,7 @@ import type { Point2 } from './projection.ts'
  *
  * @param props - What to draw at the probed point, and whether to draw the crosshair (default true).
  * @returns The probe, inside an {@link InteractionOverlay}.
+ * @index function React component: a crosshair reporting the data point under the pointer: `<Probe onProbe={setPoint} />`
  */
 export function Probe(props: {
   readonly children?: (point: Point2, pixel: Point2) => ReactNode

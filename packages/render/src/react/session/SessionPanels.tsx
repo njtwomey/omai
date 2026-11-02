@@ -85,6 +85,7 @@ const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')
  * @param props - The session or comparison, the scrubbed step and its setter, the training data if any, and the
  *   layout.
  * @returns The grid of panels.
+ * @index function React component: panels of a layout over a session: `<SessionPanels id="p" live={live} at={at} layout={l} />`
  */
 export function SessionPanels(props: PanelContext & { readonly layout: readonly Panel[] }): ReactNode {
   const { layout, live, ...ctx } = props

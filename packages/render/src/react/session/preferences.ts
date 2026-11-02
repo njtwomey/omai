@@ -65,6 +65,7 @@ export function setSessionPreferences(changes: Partial<SessionPreferences>): voi
  * The preferences, re-rendering on change.
  *
  * @returns The preferences.
+ * @index function React hook: the reader's live or eager mode and hold setting: `useSessionPreferences().mode`
  */
 export function useSessionPreferences(): SessionPreferences {
   return useSyncExternalStore(subscribe, sessionPreferences, () => DEFAULT_PREFERENCES)

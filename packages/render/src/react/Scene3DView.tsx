@@ -30,6 +30,7 @@ export interface Scene3DViewProps {
  *
  * @param props - The scene, the starting camera, the size, the drag sensitivity and a camera callback.
  * @returns The view.
+ * @index function React component: a 3-D scene you orbit by dragging: `<Scene3DView scene={scene3d} />`
  */
 export function Scene3DView(props: Scene3DViewProps): ReactElement {
   const { scene: s3, width = 480, height = 360, sensitivity = 0.5, onCamera, className } = props

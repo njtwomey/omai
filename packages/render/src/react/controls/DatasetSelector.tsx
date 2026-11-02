@@ -75,6 +75,7 @@ export function datasetTags(entry: DatasetEntry): string[] {
  *
  * @param props - The filters, the selection and what to call with a new one.
  * @returns The list and the controls, for a `ControlPanel` to lay out.
+ * @index function React component: search the dataset registry: `<DatasetSelector real={false} value={sel} onChange={setSel} />`
  */
 export function DatasetSelector(props: DatasetSelectorProps): ReactNode {
   const {

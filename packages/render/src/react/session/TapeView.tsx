@@ -54,7 +54,11 @@ function groupByPrefix(names: readonly string[]): Map<string, string[]> {
   return out
 }
 
-/** The player over the session, then its tape's channel panels. */
+/**
+ * The player over the session, then its tape's channel panels.
+ *
+ * @index function React component: draw whatever a session logged: `<TapeView live={live} at={at} onScrub={setAt} />`
+ */
 export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): ReactElement {
   return (
     <div className="flex flex-col gap-3">

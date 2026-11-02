@@ -81,6 +81,7 @@ export interface DatasetPickerProps {
  *
  * @param props - The collection, the selection and what to call with a new one.
  * @returns The controls, side by side for a `ControlPanel` to lay out.
+ * @index function React component: pick a dataset and its knobs: `<DatasetPicker collection="classification2d" value={sel} onChange={setSel} />`
  */
 export function DatasetPicker(props: DatasetPickerProps): ReactNode {
   const { value, onChange, knobs = true, exclude = [], label = 'dataset', disabled = false } = props
@@ -113,6 +114,7 @@ export function DatasetPicker(props: DatasetPickerProps): ReactNode {
  * @param source - A collection id, a collection or a registry.
  * @param selection - The selection.
  * @returns The data, with its truth for generated entries.
+ * @index function React hook: generate the dataset a picker selected: `useDataset('classification2d', selection)`
  */
 export function useDataset(
   source: DatasetSource,

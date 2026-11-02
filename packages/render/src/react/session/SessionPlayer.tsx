@@ -26,6 +26,7 @@ const RATES = [1, 2, 5, 10, 30, 60, 120, 300, 1000]
  * @param props - The session or comparison, the scrubbed step (`null` follows the head) and its setter, and the reset
  *   of the page's controls when it has any.
  * @returns The player.
+ * @index function React component: play a session with controls: `<SessionPlayer live={live} at={at} onScrub={setAt} />`
  */
 export function SessionPlayer<S, C extends Config>(props: {
   readonly live: LiveSession<S, C> | LiveSessions<S, C>

@@ -70,6 +70,7 @@ export interface ExpositionViewProps {
  *
  * @param props - The record, the figure, and the input rows and labels for views that use them.
  * @returns The figure.
+ * @index function React component: the standard view of any exposition record: `<ExpositionView record={record} />`
  */
 export function ExpositionView(props: ExpositionViewProps): ReactElement {
   const { record } = props

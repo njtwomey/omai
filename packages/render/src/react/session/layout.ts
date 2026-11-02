@@ -3,6 +3,8 @@
  * what a page shows are separate; the layout alone decides what is drawn, and every panel reads one shared step cursor.
  * Over a comparison of several variants the same layout serves: panels of the tape (`curves`, `sweep`) overlay the
  * variants, one colour each, and the rest are drawn once per variant, side by side.
+ *
+ * @index structure Every panel kind a layout can declare: `{ kind: 'curves', paths: ['loss'] }`
  */
 
 import type { Json } from 'mdml-engine/base'
@@ -397,7 +399,11 @@ export interface NarrativePage {
   readonly moments?: readonly Moment[]
 }
 
-/** A narrative: one session told in several pages, ordered. A page switch keeps the step cursor. */
+/**
+ * A narrative: one session told in several pages, ordered. A page switch keeps the step cursor.
+ *
+ * @index structure A session told in pages: `{ pages: [{ id, title, text, layout }] }`
+ */
 export interface Narrative {
   readonly title?: string
   readonly pages: readonly NarrativePage[]

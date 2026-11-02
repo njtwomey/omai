@@ -41,6 +41,7 @@ type View = readonly [number, number, number, number]
  *
  * @param props - The structure, overlay, layout options, width and handlers.
  * @returns The view.
+ * @index function React component: draw an engine Structure as a diagram: `<StructureView structure={s} />`
  */
 export function StructureView(props: StructureViewProps): ReactElement {
   const { structure, overlay, width, onNodeClick, details = true, className, frames, frame = true, ...layout } = props

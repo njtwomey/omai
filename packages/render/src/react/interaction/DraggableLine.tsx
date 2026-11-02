@@ -32,6 +32,7 @@ export interface DraggableLineProps {
  *
  * @param props - The axis, value, change handler and bounds.
  * @returns The line, its handle and its hit area.
+ * @index function React component: a threshold line dragged across a figure: `<DraggableLine axis="x" value={t} onChange={setT} />`
  * @example
  * ```tsx
  * <InteractionOverlay projection={projection} width={w} height={h}>

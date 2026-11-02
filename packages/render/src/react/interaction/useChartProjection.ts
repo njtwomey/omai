@@ -13,6 +13,7 @@ import { chartProjection, type PixelConverter, type Projection } from './project
  *
  * @param gridIndex - Which grid (set of axes) of the chart (default 0).
  * @returns The projection (`null` until the chart exists) and the chart's `onInit` handler.
+ * @index function React hook: projection of a live Chart for overlays: `useChartProjection()`
  */
 export function useChartProjection(gridIndex = 0): {
   readonly projection: Projection | null

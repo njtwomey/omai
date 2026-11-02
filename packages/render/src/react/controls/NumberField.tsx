@@ -43,6 +43,7 @@ export interface NumberFieldProps extends NumberSpec {
  *
  * @param props - The value, its rules and its label.
  * @returns The field.
+ * @index function React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />`
  */
 export function NumberField(props: NumberFieldProps): ReactNode {
   const { label, value, onChange, unit, disabled = false, className } = props

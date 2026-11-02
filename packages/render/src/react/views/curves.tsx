@@ -18,6 +18,7 @@ const CURVES_FIGURE = { aspect: 1.6 } as const
  *
  * @param props - The record, whether to play (default true), the playback rate, and the figure settings.
  * @returns The figure, with its player when it plays.
+ * @index function React component: several curves on shared axes, played along x: `<CurvesView record={curves} />`
  */
 export function CurvesView(
   props: RecordViewProps<CurveSet> & PlayerViewProps & { readonly play?: boolean },

@@ -58,6 +58,7 @@ export function replayLive(file: TapeFile, registry: MethodRegistry): LiveSessio
  * @param file - The tape file, if one is loaded.
  * @param registry - The methods on offer.
  * @returns The handle, replayed from the file.
+ * @index function React hook: replay a loaded tape file as a live handle: `useTape(file, registry)`
  */
 // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
 export function useTape(file: TapeFile | undefined, registry: MethodRegistry): LiveSessions<any, any> | undefined {

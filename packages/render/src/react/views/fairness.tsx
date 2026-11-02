@@ -130,6 +130,7 @@ export interface GroupReportViewProps extends RecordViewProps<GroupReport> {
  *
  * @param props - The record, thresholds, rates, whether to show the tables, and the figure and frame settings.
  * @returns The figure.
+ * @index function React component: per-group rates, gaps and ROC curves: `<GroupReportView record={report} />`
  */
 export function GroupReportView(props: GroupReportViewProps): ReactElement {
   const figure = useViewFigure(props.figure, REPORT_FIGURE)
