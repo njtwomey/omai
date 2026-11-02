@@ -5385,7 +5385,8 @@ and the goal-reaching task is its own file instead of a variant of `pointMass`.
 
 oracle: none; truth from the datasets (the analytic signals) and gradient checks
 
-A neural field represents a signal as a function of its coordinates. The domain composes `nn` (modules, the coordinate
+A neural field represents a signal as a function of its coordinates (3-D Gaussian splatting, an explicit field of
+Gaussians, shares its data, cameras and renderer with the NeRF). The domain composes `nn` (modules, the coordinate
 encodings and SIREN), `optim` (the optimiser is a slot), `autodiff`, `trace` (algorithms, contracts, sessions) and
 `graphics` (cameras, rays, the ground-truth renderers); it adds the field model, the fits and, in later files, volume
 rendering and splatting. The model is an objective and the optimiser a slot, as everywhere.
@@ -5414,6 +5415,22 @@ rendering and splatting. The model is an objective and the optimiser a slot, as 
   `nerf/loss`, `nerf/mse`, `nerf/psnr`, `nerf/gradNorm` and the derived probes `nerf/render` (a `NerfImage` of a
   training or held-out view), `nerf/rayWeights` and `nerf/heldOutPsnr`; `renderView`.
 - `nerf-method.ts`: `fitNerfMethod` (scene, encodings, hierarchical sampling, optimiser as knobs) and `nerfProblem`.
+- `gaussians.ts`: `GaussianSet` (means, log-scales, rotation quaternions, opacity logits, spherical-harmonic colour
+  coefficients of degree 0 and optionally 1; a pytree of tensors), `randomGaussians`, `gaussiansFromPoints` (scales
+  from the nearest points), `quaternionToMatrix`, `covariance3d` (R S S^T R^T), `gaussianColour`, `selectGaussians`,
+  `concatGaussians`, `sampleGaussians`.
+- `splat-project.ts`: `projectGaussians`: the EWA projection of the paper (camera-space covariance, the perspective
+  Jacobian with clamped ratios, 0.3 pixel^2 dilation), depths, view-dependent colour, culling by 3-sigma extent.
+- `splat-render.ts`: `rasterise` and `renderSplats`: depth-sorted front-to-back alpha compositing at any list of pixels
+  (alpha = min(0.99, o exp(-d^T Sigma'^-1 d / 2)), skipped below 1/255, outside 3 sigma, and after the transmittance
+  would fall under 1e-4), colour, depth and opacity, in chunks, differentiable by autodiff (no custom backward pass).
+- `fit-splats.ts`: `fitSplatsAlgorithm` and `fitSplats`: photometric L1 (+ squared error) on a view or a batch of its
+  pixels, one optimiser per parameter group from the optimiser slot (`splatOptimiser`), adaptive density control (clone,
+  split, prune by the view-space gradient; optimiser state reset when the set changes size), serialisable and
+  resumable; `splatContract` with `splats/loss`, `mse`, `psnr`, `count`, `gradNorm`, the event `splats/densify` and the
+  probes `splats/render`, `splats/ellipses` (the Gaussians of a view as ellipses) and `splats/heldOutPsnr`.
+- `splats-method.ts`: `fitSplatsMethod` (scene, start, optimiser and per-group rates, density control as knobs) and
+  `splatsProblem`.
 
 built from: `nn`, `optim`, `autodiff`, `trace`, `losses`, `random`, `space`, `tensor`, `datasets`
 
