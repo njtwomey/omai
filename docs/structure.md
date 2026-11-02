@@ -5400,6 +5400,20 @@ rendering and splatting. The model is an objective and the optimiser a slot, as 
   `field/psnr`, `field/eikonal`, `field/gradNorm` and the derived probes `field/fullMse` and `field/render`.
 - `field-method.ts`: `fitFieldMethod`, the fit as a method for sessions (signal, encoding, backbone, optimiser as knobs),
   and `fieldProblem`.
+- `sampling.ts`: `stratifiedSamples` (one draw per equal bin between the planes), `samplePdf` (inverse-transform sampling
+  of a piecewise-constant density on arbitrary bins; the quantile function without a key) and `hierarchicalSamples`
+  (NeRF's fine pass: samples drawn from the coarse weights, merged with the coarse distances).
+- `volume.ts`: `volumeRender`: the emission-absorption equation, alpha_i = 1 - exp(-sigma_i delta_i), T_i = exp(-sum_{j<i}
+  sigma_j delta_j), w_i = T_i alpha_i; colour, depth, accumulated opacity, weights and transmittance, optionally on a
+  white or given background, differentiable through the tensor operations.
+- `nerf.ts`: `NerfField` (position and direction encodings from the `fieldEncodings` slot, a ReLU trunk, a density head
+  from position alone, a view-dependent colour head), `nerfModel` (one network or coarse and fine), `renderRays` (casts
+  rays by stratified then hierarchical sampling and composites).
+- `fit-nerf.ts`: `fitNerfAlgorithm` and `fitNerf` on posed images (`NerfData`, from `multiViewImages` by `nerfData`):
+  batches of pixels, squared error of the coarse plus the fine render, optimiser slot, resumable; `nerfContract` with
+  `nerf/loss`, `nerf/mse`, `nerf/psnr`, `nerf/gradNorm` and the derived probes `nerf/render` (a `NerfImage` of a
+  training or held-out view), `nerf/rayWeights` and `nerf/heldOutPsnr`; `renderView`.
+- `nerf-method.ts`: `fitNerfMethod` (scene, encodings, hierarchical sampling, optimiser as knobs) and `nerfProblem`.
 
 built from: `nn`, `optim`, `autodiff`, `trace`, `losses`, `random`, `space`, `tensor`, `datasets`
 
@@ -6583,6 +6597,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   with sharp edges and fine texture, as coordinates and colours; patterns mixed, checker, stripes, discs), and
   `signedDistance` (the exact signed distance of a sphere, box, torus or union in 2-D or 3-D, a share of the points near
   the surface), with the analytic `sdfSphere`, `sdfBox`, `sdfTorus` and `sdfUnion`.
+- `multiview.ts`: `multiViewImages`, posed views of a small lit scene (coloured spheres and a box, Lambert shading with
+  shadows) from cameras on a hemisphere, with held-out views, and the scene as truth: `renderMultiView` renders any
+  camera exactly; `multiViewScene`, `hemisphereCameras`.
 - `regression-real.ts`: `diabetes`, `linnerud` (multi-output), Anscombe's quartet (`anscombe`), `mtcars` (and
   `mtcarsRegression`), a licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive
   by `parseCaliforniaHousing`), growth charts (CDC LMS tables: `growthChart`, `growthValue`, and `growthCurves` with

@@ -103,6 +103,7 @@ export const fieldEncodings: OptionTable<EncodingShape, EncodingProperties> = op
         featuresPerLevel: int(1, 8, { default: 2, label: 'features per level F' }),
         baseResolution: int(1, 256, { default: 4, label: 'base resolution' }),
         finestResolution: int(2, 4096, { default: 64, label: 'finest resolution' }),
+        bound: real(0.1, 100, { log: true, default: 1, label: 'half-width of the box covered' }),
       }),
       properties: { periodic: false, trainable: true },
       make: (k) => (inputDim, key) => {
@@ -114,6 +115,7 @@ export const fieldEncodings: OptionTable<EncodingShape, EncodingProperties> = op
             featuresPerLevel: (k['featuresPerLevel'] as number | undefined) ?? 2,
             baseResolution: (k['baseResolution'] as number | undefined) ?? 4,
             finestResolution: (k['finestResolution'] as number | undefined) ?? 64,
+            bounds: [-((k['bound'] as number | undefined) ?? 1), (k['bound'] as number | undefined) ?? 1],
           },
           { key: foldIn(key, 102) },
         )

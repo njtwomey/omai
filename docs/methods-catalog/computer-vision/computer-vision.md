@@ -15,6 +15,7 @@ process/images/
   segmentation/     thresholds, superpixels (built), active contours (built), GrabCut (built), watershed and region growing, mean shift, graph cuts, contours and shapes
   tracking/         KLT (built), dense optical flow, mean-shift and CAMShift tracking, SORT, background subtraction
   recognition/      Haar boosting (built), cascades, HOG detectors, bags of visual words, non-maximum suppression and anchors
+  neural-fields/    implicit neural representations (encodings, SIREN, hash grids), NeRF, 3-D Gaussian splatting
   shared/           scenes, pictures, quality probes, the two-image and accumulator records (below)
 ```
 
@@ -98,6 +99,15 @@ Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, 
 | `bag-of-visual-words` | Descriptors of every training image clustered into a codebook (k-means one iteration per step, k as the knob), each image a histogram of words, a linear classifier on the histograms; the words of a chosen image drawn as patches (a probe); accuracy against k. | `codebook/centres` t!, `codebook/change` s, `images/histograms` t, `eval/accuracy` s, `image/words` p | `vision/descriptors.ts`: `siftDescriptors`, `orb`; `numerics/spatial/quantisation.ts`: `kmeansCodebook`; `cluster/kmeans.ts`: `lloydAlgorithm`; `linear/`: the classifier | |
 | `non-maximum-suppression` | Overlapping boxes with scores: greedy NMS one box per step (kept, or suppressed by its IoU with the kept set; the threshold as the knob), soft NMS decaying scores instead; anchors generated over a grid and matched to planted boxes (the matcher's IoU thresholds), the box coding's offsets. | `nms/kept` t!, `nms/suppressed` e, `nms/box` m, `anchors/matched` t, `anchors/picture` p | `vision/boxes.ts`: `nms`, `softNms`, `batchedNms`, `generateAnchors`, `gridAnchors`, `matchAnchors`, `encodeBoxes`, `decodeBoxes`; `metrics/detection.ts`: `boxIou`, `generalizedBoxIou` | |
 | `see convolutional-networks` | Recognition and dense prediction by trained networks (filters and feature maps as probes, Grad-CAM) are the neural chapter's; the detectors here are the classical baselines its pages compare with. | | | |
+
+### neural-fields/
+
+The library side is `lib/fields` (and `nn`'s coordinate encodings and SIREN); each row is a page that composes `fitFieldMethod`, `fitNerfMethod` or `fitSplatsMethod` with a scene.
+
+| method | why it is interesting | tracks | needs from lib | status |
+| --- | --- | --- | --- | --- |
+| `implicit-neural-representation` | An image (or a signed distance field, or a 1-D signal) as a network of its coordinates, the encoding and backbone as slots: a plain ReLU MLP blurs the sharp edges and fine texture (spectral bias), the NeRF positional encoding, Gaussian Fourier features (the scale sigma as the knob: too small blurs, too large is noise), a hash grid and a SIREN do not; the field decoded on a grid sharpening over steps, the error on the whole data against the minibatch's. The eikonal term on a distance field (the gradient norm moving to one). | `field/loss` s, `field/mse` s, `field/psnr` s, `field/eikonal` s, `field/gradNorm` s, `field/fullMse` p, `field/render` p | `fields/field-method.ts`: `fitFieldMethod`; `fields/tables.ts`: `fieldEncodings`, `fieldBackbones`; `nn`: `positionalEncoding`, `fourierFeatures`, `hashGridEncode`, `siren`; `datasets/neural-fields.ts`: `fieldImage`, `signedDistance` | built in `lib/fields` |
+| `neural-radiance-field` | Posed images of a small lit scene and a network of position and direction: rays cast, samples drawn (stratified, then resampled from the coarse weights), densities and colours composited by volume rendering; a view rendered at the viewed step, sharpening; the weights along one ray concentrating on the surface (a probe); the held-out views' PSNR against the training views'; the hash grid as the position encoding. | `nerf/loss` s, `nerf/mse` s, `nerf/psnr` s, `nerf/gradNorm` s, `nerf/render` p, `nerf/rayWeights` p, `nerf/heldOutPsnr` p | `fields/nerf-method.ts`: `fitNerfMethod`; `fields/volume.ts`: `volumeRender`; `fields/sampling.ts`: `stratifiedSamples`, `samplePdf`, `hierarchicalSamples`; `datasets/multiview.ts`: `multiViewImages`; `graphics`: cameras, rays | built in `lib/fields` |
 
 ## shared/
 
