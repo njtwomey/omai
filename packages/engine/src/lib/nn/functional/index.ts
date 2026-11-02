@@ -1,7 +1,8 @@
 /**
  * The functional layer library, torch.nn.functional style and part of `mdml-engine/nn`: stateless functions of
  * tensors and explicit weights for activations, linear maps and embeddings, convolution, pooling, normalisation,
- * attention and position encodings, recurrent cells, state-space models, graph and set layers, regularisers and spatial
+ * attention and position encodings, coordinate encodings for neural fields (positional, Fourier features, hash grid),
+ * recurrent cells, state-space models, graph and set layers, regularisers and spatial
  * sampling. The modules are built on these.
  *
  * @inline
@@ -10,6 +11,7 @@
 export * from './activations.ts'
 export * from './attention.ts'
 export * from './conv.ts'
+export * from './coordinate-encodings.ts'
 export * from './graph.ts'
 export * from './linear-recurrent.ts'
 export * from './linear.ts'

@@ -55,6 +55,8 @@ import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes 
 import { mixedSources, sparseDictionary, toySuperposition, twoViews } from './latent.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
+import { multiViewImages } from './multiview.ts'
+import { fieldImage, signedDistance } from './neural-fields.ts'
 import { antiderivativeOperator, burgersOperator, heatOperator } from './operators.ts'
 import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers.ts'
 import { analogyCorpus, linkageTables, plantedRelations } from './planted-embeddings.ts'
@@ -196,6 +198,9 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   heatOperator,
   heteroscedastic,
   kanFunctions,
+  fieldImage,
+  signedDistance,
+  multiViewImages,
   implicitFeedback,
   inContextRegression,
   inhomogeneousPoisson,
@@ -332,6 +337,8 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['biasedCredit', 'Credit with a protected group'],
     ['blobs', 'Blobs'],
     ['kanFunctions', 'The functions of the Kolmogorov-Arnold paper'],
+    ['fieldImage', 'A procedural image as coordinates and colours (neural fields)'],
+    ['signedDistance', 'Signed distance fields of simple shapes (neural fields)'],
     ['blobsWithOutliers', 'Blobs with outliers'],
     ['burgersOperator', 'Burgers operator'],
     ['checkerboard', 'Checkerboard'],
@@ -398,6 +405,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['geometricScenes', 'Geometric scenes'],
     ['shapes', 'Shapes'],
     ['captionedShapes', 'Captioned shapes'],
+    ['multiViewImages', 'Posed views of a small scene (novel view synthesis)'],
   ]),
   ...g('timeSeries', [
     ['arma', 'ARMA process'],

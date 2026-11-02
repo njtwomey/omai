@@ -425,6 +425,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `embedding`      | embeddings learned from data: word2vec (skip-gram, CBOW, negative sampling, hierarchical softmax), fastText subwords, GloVe, PPMI with SVD, knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE) with filtered ranking, and analogy and similarity evaluation, each loss a smooth problem with the optimiser a slot |
 | `patterns`       | pattern mining: Apriori, FP-growth and Eclat (identical itemsets and counts), closed and maximal itemsets, association rules with their measures, PrefixSpan and GSP with gap constraints, subgroup discovery by quality function with beam, exhaustive, CN2-SD and Apriori-SD search                                         |
 | `rules`          | rule learning on the `learn` contract: CN2 (ordered and unordered), PRISM, RIPPER and IREP, OneR and decision tables, CORELS-style certifiably optimal and Bayesian rule lists, the rule, coverage and quality-measure representation, rules from tree paths                                                                  |
+| `fields`         | neural fields: a signal as a network of its coordinates (image, signed distance, radiance), fitted with the optimiser a slot; coordinate encodings and SIREN are in `nn`                                                                                                                                                      |
 
 ### 4.1 `base/`
 
@@ -3452,6 +3453,11 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
   modules.
 - `functional/positional.ts`: sinusoidal and learned positions, rotary angles and `applyRotary` (half or interleaved
   pairs, partial rotary, position interpolation), ALiBi slopes and bias.
+- `functional/coordinate-encodings.ts`: the encodings of neural fields: `positionalEncoding` (the NeRF gamma(p), octaves of
+  sines and cosines, optionally with the input), `gaussianFrequencies` and `fourierFeatures` (Gaussian random Fourier
+  features, Tancik et al.) and the multiresolution hash grid of Instant-NGP (`hashGridEncode`: geometric resolutions,
+  dense or integer-hashed vertex indices, multilinear interpolation, differentiable in the table and the coordinates;
+  1 to 3 dimensions).
 - `functional/recurrent.ts`: RNN, GRU and LSTM cells (LSTM projection), `scan` over time, `recurrent` (stacked,
   bidirectional runs with per-sequence lengths and dropout between layers), packed sequences (`packPaddedSequence`,
   `padPackedSequence`, `packedLengths`, `lengthsFromMask`).
@@ -3504,6 +3510,10 @@ the functional form. `ctx` carries the train flag, the dropout key, taps and buf
 - `module/transformer.ts`: `TransformerEncoderLayer`, `TransformerDecoderLayer` (post- or pre-norm), the stacks
   `TransformerEncoder` and `TransformerDecoder`, `Transformer`, `squareSubsequentMask`.
 - `module/positional.ts`: `SinusoidalPositionalEncoding`, `LearnedPositionalEmbedding`, `RotaryEmbedding`.
+- `module/coordinate-encodings.ts`: `IdentityEncoding`, `FrequencyEncoding`, `FourierFeatureEncoding` (the frequency
+  matrix fixed by a key) and `HashGridEncoding` (the table is the parameter), each with an `outputDim`.
+- `module/siren.ts`: `SineLayer` (sin(omega0 (W x + b)) with the paper's initialisation: first layer U(-1/n, 1/n), later
+  U(+-sqrt(6/n)/omega0)) and `siren(widths)`.
 - `module/vision.ts`: `Upsample`, `UpsamplingNearest2d`, `UpsamplingBilinear2d`, `PixelShuffle`, `PixelUnshuffle`,
   the padding modules (`ZeroPad`, `ConstantPad`, `ReflectionPad`, `ReplicationPad`, `CircularPad`, 1-D to 3-D),
   `PatchEmbedding`, `SpatialTransformer`.
@@ -5371,6 +5381,59 @@ genome. Where this differs from `LIB.md`: the continuous particle swarm was alre
 `environments/prediction.ts` rather than `toy-text.ts`, `changingMaze` in `changing-maze.ts` rather than `gridworlds.ts`,
 and the goal-reaching task is its own file instead of a variant of `pointMass`.
 
+### 4.61 `fields/`: neural fields (SIREN, Instant-NGP, NeRF, 3-D Gaussian splatting)
+
+oracle: none; truth from the datasets (the analytic signals) and gradient checks
+
+A neural field represents a signal as a function of its coordinates (3-D Gaussian splatting, an explicit field of
+Gaussians, shares its data, cameras and renderer with the NeRF). The domain composes `nn` (modules, the coordinate
+encodings and SIREN), `optim` (the optimiser is a slot), `autodiff`, `trace` (algorithms, contracts, sessions) and
+`graphics` (cameras, rays, the ground-truth renderers); it adds the field model, the fits and, in later files, volume
+rendering and splatting. The model is an objective and the optimiser a slot, as everywhere.
+- `tables.ts`: the two slots of a field as option tables: `fieldEncodings` (none, frequency, fourier, hash) and
+  `fieldBackbones` (mlp with relu, gelu, silu or tanh; siren), each option with its knobs and properties.
+- `field.ts`: `neuralField` / `NeuralField` (a `Sequential` of an encoding and a backbone, optionally a sigmoid head).
+- `quality.ts`: `psnrFromMse`, `gridCoordinates` and `decodeField` (a field on a grid of cell centres as a plain
+  `FieldGrid`).
+- `fit-field.ts`: `fitFieldAlgorithm` and `fitField`: minibatch fits of a field to samples of a signal (squared or
+  absolute error, an optional eikonal term for distance fields by nested autodiff), the optimiser a gradient
+  transformation, serialisable state, resumable; `fieldContract` with the typed paths `field/loss`, `field/mse`,
+  `field/psnr`, `field/eikonal`, `field/gradNorm` and the derived probes `field/fullMse` and `field/render`.
+- `field-method.ts`: `fitFieldMethod`, the fit as a method for sessions (signal, encoding, backbone, optimiser as knobs),
+  and `fieldProblem`.
+- `sampling.ts`: `stratifiedSamples` (one draw per equal bin between the planes), `samplePdf` (inverse-transform sampling
+  of a piecewise-constant density on arbitrary bins; the quantile function without a key) and `hierarchicalSamples`
+  (NeRF's fine pass: samples drawn from the coarse weights, merged with the coarse distances).
+- `volume.ts`: `volumeRender`: the emission-absorption equation, alpha_i = 1 - exp(-sigma_i delta_i), T_i = exp(-sum_{j<i}
+  sigma_j delta_j), w_i = T_i alpha_i; colour, depth, accumulated opacity, weights and transmittance, optionally on a
+  white or given background, differentiable through the tensor operations.
+- `nerf.ts`: `NerfField` (position and direction encodings from the `fieldEncodings` slot, a ReLU trunk, a density head
+  from position alone, a view-dependent colour head), `nerfModel` (one network or coarse and fine), `renderRays` (casts
+  rays by stratified then hierarchical sampling and composites).
+- `fit-nerf.ts`: `fitNerfAlgorithm` and `fitNerf` on posed images (`NerfData`, from `multiViewImages` by `nerfData`):
+  batches of pixels, squared error of the coarse plus the fine render, optimiser slot, resumable; `nerfContract` with
+  `nerf/loss`, `nerf/mse`, `nerf/psnr`, `nerf/gradNorm` and the derived probes `nerf/render` (a `NerfImage` of a
+  training or held-out view), `nerf/rayWeights` and `nerf/heldOutPsnr`; `renderView`.
+- `nerf-method.ts`: `fitNerfMethod` (scene, encodings, hierarchical sampling, optimiser as knobs) and `nerfProblem`.
+- `gaussians.ts`: `GaussianSet` (means, log-scales, rotation quaternions, opacity logits, spherical-harmonic colour
+  coefficients of degree 0 and optionally 1; a pytree of tensors), `randomGaussians`, `gaussiansFromPoints` (scales
+  from the nearest points), `quaternionToMatrix`, `covariance3d` (R S S^T R^T), `gaussianColour`, `selectGaussians`,
+  `concatGaussians`, `sampleGaussians`.
+- `splat-project.ts`: `projectGaussians`: the EWA projection of the paper (camera-space covariance, the perspective
+  Jacobian with clamped ratios, 0.3 pixel^2 dilation), depths, view-dependent colour, culling by 3-sigma extent.
+- `splat-render.ts`: `rasterise` and `renderSplats`: depth-sorted front-to-back alpha compositing at any list of pixels
+  (alpha = min(0.99, o exp(-d^T Sigma'^-1 d / 2)), skipped below 1/255, outside 3 sigma, and after the transmittance
+  would fall under 1e-4), colour, depth and opacity, in chunks, differentiable by autodiff (no custom backward pass).
+- `fit-splats.ts`: `fitSplatsAlgorithm` and `fitSplats`: photometric L1 (+ squared error) on a view or a batch of its
+  pixels, one optimiser per parameter group from the optimiser slot (`splatOptimiser`), adaptive density control (clone,
+  split, prune by the view-space gradient; optimiser state reset when the set changes size), serialisable and
+  resumable; `splatContract` with `splats/loss`, `mse`, `psnr`, `count`, `gradNorm`, the event `splats/densify` and the
+  probes `splats/render`, `splats/ellipses` (the Gaussians of a view as ellipses) and `splats/heldOutPsnr`.
+- `splats-method.ts`: `fitSplatsMethod` (scene, start, optimiser and per-group rates, density control as knobs) and
+  `splatsProblem`.
+
+built from: `nn`, `optim`, `autodiff`, `trace`, `losses`, `random`, `space`, `tensor`, `datasets`
+
 ## 5. Methods, exposition records and views
 
 > **Status, 2026-10-28.** The methods layer is being rebuilt on the log contract and sessions (`docs/methods.md`,
@@ -6547,6 +6610,13 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   (`quantileCurves`: Gaussian, Laplace, Student t and Gumbel noise), `piecewiseLinear` data, and `kanFunctions` (the
   Kolmogorov-Arnold paper's `exp(sin(pi x) + y^2)`, `x y` and four-input ring sums, with the smallest network and the
   edges' symbolic names in `truth.extra`).
+- `neural-fields.ts`: signals for neural fields with their truth as a function: `fieldImage` (a procedural colour image
+  with sharp edges and fine texture, as coordinates and colours; patterns mixed, checker, stripes, discs), and
+  `signedDistance` (the exact signed distance of a sphere, box, torus or union in 2-D or 3-D, a share of the points near
+  the surface), with the analytic `sdfSphere`, `sdfBox`, `sdfTorus` and `sdfUnion`.
+- `multiview.ts`: `multiViewImages`, posed views of a small lit scene (coloured spheres and a box, Lambert shading with
+  shadows) from cameras on a hemisphere, with held-out views, and the scene as truth: `renderMultiView` renders any
+  camera exactly; `multiViewScene`, `hemisphereCameras`.
 - `regression-real.ts`: `diabetes`, `linnerud` (multi-output), Anscombe's quartet (`anscombe`), `mtcars` (and
   `mtcarsRegression`), a licence-clean housing set (`californiaHousing`, a remote asset parsed from StatLib's archive
   by `parseCaliforniaHousing`), growth charts (CDC LMS tables: `growthChart`, `growthValue`, and `growthCurves` with
