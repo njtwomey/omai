@@ -111,84 +111,96 @@ export function Player(props: PlayerProps): ReactNode {
         e.preventDefault()
       }}
     >
-      <div className="flex shrink-0">
-        {c.resetForm === undefined ? null : (
+      <div className="flex shrink-0 items-center gap-2">
+        {/* The run: reset the controls, and compute eagerly (the whole run at once) or live. */}
+        {hasReset || hasEager ? (
+          <div className="flex">
+            {c.resetForm === undefined ? null : (
+              <button
+                type="button"
+                className={cx(iconButtonClass, 'rounded-l-md', !hasEager && 'rounded-r-md')}
+                aria-label="Reset to defaults"
+                title="Reset the controls to their defaults"
+                onClick={c.resetForm}
+              >
+                <RewindIcon size={14} />
+              </button>
+            )}
+            {c.setEager === undefined ? null : (
+              <button
+                type="button"
+                className={cx(
+                  iconButtonClass,
+                  'rounded-r-md',
+                  hasReset ? '-ml-px' : 'rounded-l-md',
+                  eager && 'bg-(--wb-surface) text-(--wb-accent)',
+                )}
+                aria-label="Eager"
+                aria-pressed={eager}
+                title={
+                  eager
+                    ? 'Eager: the whole run computed at once and its end shown (click for live)'
+                    : 'Live: computed in the background as it plays (click for eager)'
+                }
+                onClick={() => c.setEager?.(!eager)}
+              >
+                <ZapIcon size={14} />
+              </button>
+            )}
+          </div>
+        ) : null}
+        {/* The playback: to the start, play or pause, to the end, and the speed. */}
+        <div className="flex">
           <button
             type="button"
             className={cx(iconButtonClass, 'rounded-l-md')}
-            aria-label="Reset to defaults"
-            title="Reset the controls to their defaults"
-            onClick={c.resetForm}
+            aria-label="Go to the start"
+            disabled={c.frame <= 0}
+            onClick={toStart}
           >
-            <RewindIcon size={14} />
+            <SkipBackIcon size={14} />
           </button>
-        )}
-        {c.setEager === undefined ? null : (
           <button
             type="button"
-            className={cx(
-              iconButtonClass,
-              hasReset ? '-ml-px' : 'rounded-l-md',
-              eager && 'bg-(--wb-surface) text-(--wb-accent)',
-            )}
-            aria-label="Eager"
-            aria-pressed={eager}
-            title={
-              eager
-                ? 'Eager: the whole run computed at once and its end shown (click for live)'
-                : 'Live: computed in the background as it plays (click for eager)'
-            }
-            onClick={() => c.setEager?.(!eager)}
+            className={cx(iconButtonClass, '-ml-px')}
+            aria-label={c.playing ? 'Pause' : 'Play'}
+            disabled={c.count <= 1 && !c.open}
+            onClick={c.toggle}
           >
-            <ZapIcon size={14} />
+            {c.playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
           </button>
-        )}
-        <button
-          type="button"
-          className={cx(iconButtonClass, hasReset || hasEager ? '-ml-px' : 'rounded-l-md')}
-          aria-label="Go to the start"
-          disabled={c.frame <= 0}
-          onClick={toStart}
-        >
-          <SkipBackIcon size={14} />
-        </button>
-        <button
-          type="button"
-          className={cx(iconButtonClass, '-ml-px')}
-          aria-label="Step back"
-          disabled={c.frame <= 0}
-          onClick={() => c.step(-1)}
-        >
-          <StepBackIcon size={14} />
-        </button>
-        <button
-          type="button"
-          className={cx(iconButtonClass, '-ml-px')}
-          aria-label={c.playing ? 'Pause' : 'Play'}
-          disabled={c.count <= 1 && !c.open}
-          onClick={c.toggle}
-        >
-          {c.playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
-        </button>
-        <button
-          type="button"
-          className={cx(iconButtonClass, '-ml-px')}
-          aria-label="Step forward"
-          disabled={c.frame >= c.count - 1 && !c.open}
-          onClick={() => c.step(1)}
-        >
-          <StepForwardIcon size={14} />
-        </button>
-        <button
-          type="button"
-          className={cx(iconButtonClass, '-ml-px')}
-          aria-label="Go to the end"
-          disabled={c.frame >= c.count - 1 && !c.open}
-          onClick={toEnd}
-        >
-          <SkipForwardIcon size={14} />
-        </button>
-        <FpsMenu fps={c.fps} choices={fpsChoices} onPick={c.setFps} />
+          <button
+            type="button"
+            className={cx(iconButtonClass, '-ml-px')}
+            aria-label="Go to the end"
+            disabled={c.frame >= c.count - 1 && !c.open}
+            onClick={toEnd}
+          >
+            <SkipForwardIcon size={14} />
+          </button>
+          <FpsMenu fps={c.fps} choices={fpsChoices} onPick={c.setFps} />
+        </div>
+        {/* The frames: one back and one forward. */}
+        <div className="flex">
+          <button
+            type="button"
+            className={cx(iconButtonClass, 'rounded-l-md')}
+            aria-label="Step back"
+            disabled={c.frame <= 0}
+            onClick={() => c.step(-1)}
+          >
+            <StepBackIcon size={14} />
+          </button>
+          <button
+            type="button"
+            className={cx(iconButtonClass, '-ml-px rounded-r-md')}
+            aria-label="Step forward"
+            disabled={c.frame >= c.count - 1 && !c.open}
+            onClick={() => c.step(1)}
+          >
+            <StepForwardIcon size={14} />
+          </button>
+        </div>
       </div>
       <Scrubber frame={c.frame} count={c.count} onSeek={c.seek} onGrab={c.pause} />
       {label === null ? null : (
