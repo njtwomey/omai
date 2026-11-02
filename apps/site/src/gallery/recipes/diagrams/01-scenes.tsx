@@ -15,7 +15,7 @@ import {
   tex,
   text,
 } from 'mdml-engine/scene'
-import { ControlPanel, NumberField, SceneFrame, SceneView } from 'mdml-render/react'
+import { ControlPanel, NumberField, SceneFrame } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

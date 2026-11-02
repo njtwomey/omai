@@ -115,9 +115,9 @@ export function matchDescriptors(
   options: { readonly norm?: MatchNorm; readonly crossCheck?: boolean } = {},
 ): DMatch[] {
   const norm = options.norm ?? 'l2'
-  const forward = knnMatch(query, train, 1, norm).flatMap((m) => m)
+  const forward = knnMatch(query, train, 1, norm).flat()
   if (options.crossCheck !== true) return forward
-  const backward = knnMatch(train, query, 1, norm).flatMap((m) => m)
+  const backward = knnMatch(train, query, 1, norm).flat()
   return forward.filter((m) => backward[m.trainIdx]?.trainIdx === m.queryIdx)
 }
 

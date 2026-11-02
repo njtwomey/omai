@@ -16,7 +16,6 @@ import {
   tensor,
 } from '../trace/index.ts'
 import { knobOption } from './_options.ts'
-import { codec } from './_run.ts'
 import type { Adjacency, Graph, GraphRunOptions, NodeId } from './graph.ts'
 import { nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'

@@ -16,7 +16,6 @@ import { ransac } from '../stats/index.ts'
 import {
   add,
   concat,
-  cos,
   div,
   fromStorage,
   matmul,

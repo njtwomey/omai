@@ -1,5 +1,5 @@
 import { type GroupRateName, subgroupReport, tableRates } from 'mdml-engine/exposition'
-import { Choice, ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
+import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { uniforms } from '../../toys/synthetic.ts'

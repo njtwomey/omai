@@ -1,4 +1,4 @@
-import { cartesian, matrix, type Panel, subplots } from 'mdml-render/charts'
+import { matrix, type Panel, subplots } from 'mdml-render/charts'
 import { figure, gridSpec } from 'mdml-render/figure'
 import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'

@@ -17,7 +17,7 @@ import { foldIn, permutation } from '../random/index.ts'
 import { item } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { conflicts, countClasses, type LiteralPool, literalPool, type RuleData, ruleData } from './_table.ts'
-import { argmaxOf, coverageOf, type Literal, literalText, type Rule, type RuleModel } from './rule.ts'
+import { coverageOf, type Literal, literalText, type Rule, type RuleModel } from './rule.ts'
 
 /** Options of RIPPER. */
 export interface RipperOptions {
@@ -267,7 +267,7 @@ function split(
   for (const isC of [true, false]) {
     const group = rows.filter((r) => (ctx.rd.y[r] === c) === isC)
     const order = permutation(foldIn(key, isC ? 1 : 2), group.length).data
-    const cut = Math.max(group.length > 1 ? 1 : group.length, Math.round(ctx.o.growFraction * group.length))
+    const cut = Math.max(Math.min(group.length, 1), Math.round(ctx.o.growFraction * group.length))
     group.forEach((_, i) => {
       const r = group[order[i] as number] as number
       if (i < cut) grow.push(r)

@@ -15,7 +15,12 @@ export const recipe: Recipe = {
 const repeat = (pairs: readonly [string, string, number][]): [string[], string[]] => {
   const t: string[] = []
   const p: string[] = []
-  for (const [a, b, n] of pairs) for (let i = 0; i < n; i++) t.push(a), p.push(b)
+  for (const [a, b, n] of pairs) {
+    for (let i = 0; i < n; i++) {
+      t.push(a)
+      p.push(b)
+    }
+  }
   return [t, p]
 }
 const tables = {

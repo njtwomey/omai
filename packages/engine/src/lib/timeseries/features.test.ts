@@ -6,7 +6,8 @@ import * as T from './index.ts'
 const n = 256
 const noise = Array.from(toFlat(normal(key(4), [n])))
 const sine = Array.from({ length: n }, (_, t) => Math.sin((2 * Math.PI * t) / 16))
-const walk = noise.reduce<number[]>((a, v) => [...a, (a.at(-1) ?? 0) + v], [])
+const walk: number[] = []
+for (const v of noise) walk.push((walk.at(-1) ?? 0) + v)
 const trend = Array.from({ length: n }, (_, t) => 0.05 * t + 0.1 * (noise[t] ?? 0))
 
 describe('permutation entropy', () => {

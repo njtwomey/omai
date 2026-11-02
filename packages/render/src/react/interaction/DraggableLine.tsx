@@ -79,7 +79,6 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
     onChange(snap(value + dir * s))
   }
   return (
-    // biome-ignore lint/a11y/useSemanticElements: an SVG group cannot be an <input type="range">; it carries the slider role.
     <g
       role="slider"
       tabIndex={0}

@@ -14,7 +14,13 @@ describe('k-means core', () => {
     const alg = lloydAlgorithm(data.x, initialCentres(data.x, 3, 'k-means++', key(0)))
     const inertias: number[] = []
     const result = runAlgorithm(
-      { ...alg, step: (s, c) => (inertias.push(s.inertia), alg.step(s, c)) },
+      {
+        ...alg,
+        step: (s, c) => {
+          inertias.push(s.inertia)
+          return alg.step(s, c)
+        },
+      },
       { maxSteps: 100, key: key(0) },
     )
     expect(ari(result.state.labels)).toBeGreaterThan(0.99)

@@ -56,7 +56,7 @@ export function siftDescriptors(x: TensorLike, keypoints: readonly Keypoint[]): 
   return keypoints.map((kp) => {
     const sigma = kp.size / 2
     const hist = 3 * sigma
-    const angle = ((kp.angle < 0 ? 0 : kp.angle) * Math.PI) / 180
+    const angle = (Math.max(kp.angle, 0) * Math.PI) / 180
     const cos = Math.cos(angle) / hist
     const sin = Math.sin(angle) / hist
     const radius = Math.round((hist * Math.SQRT2 * (d + 1)) / 2)

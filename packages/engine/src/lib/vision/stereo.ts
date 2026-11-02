@@ -109,7 +109,7 @@ function winners(vol: Float64Array, h: number, w: number, dmin: number, nd: numb
   return out
 }
 
-function consistency(dl: Float64Array, dr: Float64Array, h: number, w: number, maxDiff: number): Float64Array {
+function consistency(dl: Float64Array, dr: Float64Array, w: number, maxDiff: number): Float64Array {
   return Float64Array.from(dl, (d, p) => {
     if (d < 0) return -1
     const x = p % w
@@ -165,7 +165,7 @@ export function blockMatching(
   const dl = winners(costVolume(L, R, h, w, dmin, nd, half, cost, false), h, w, dmin, nd)
   if (options.lrCheck === false) return imageTensor(dl, h, w)
   const dr = winners(costVolume(L, R, h, w, dmin, nd, half, cost, true), h, w, dmin, nd)
-  return imageTensor(consistency(dl, dr, h, w, options.maxDiff ?? 1), h, w)
+  return imageTensor(consistency(dl, dr, w, options.maxDiff ?? 1), h, w)
 }
 
 /** Aggregate a cost volume along the given directions (Hirschmüller's recursion), summed over paths. */
@@ -273,7 +273,7 @@ export function semiGlobalMatching(
   }
   const dl = solve(false)
   if (options.lrCheck === false) return imageTensor(dl, h, w)
-  return imageTensor(consistency(dl, solve(true), h, w, options.maxDiff ?? 1), h, w)
+  return imageTensor(consistency(dl, solve(true), w, options.maxDiff ?? 1), h, w)
 }
 
 /**

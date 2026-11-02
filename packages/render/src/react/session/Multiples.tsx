@@ -24,7 +24,6 @@ export function Multiples(props: {
 }): ReactNode {
   const { spec, variants } = props
   const labelKey = variants.map((v) => v.label).join('\u0000')
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the labels are keyed by their joined text
   const cells = useMemo(() => facetCells(spec, labelKey.split('\u0000')), [spec, labelKey])
   const version = variants.reduce((v, x) => Math.max(v, x.live.version), 0)
   const first = variants[0]?.live.session

@@ -376,7 +376,7 @@ export function fitEllipse(points: PointsLike): RotatedRect {
   cy = f32(cy / n)
   let spread = 0
   for (const [x, y] of pts) spread += Math.abs(f32(x - cx)) + Math.abs(f32(y - cy))
-  const scale = 100 / (spread > 1.1920928955078125e-7 ? spread : 1.1920928955078125e-7)
+  const scale = 100 / Math.max(spread, 1.1920928955078125e-7)
   const A = new Float64Array(5 * n)
   const b = new Float64Array(n).fill(10000)
   pts.forEach(([x, y], i) => {

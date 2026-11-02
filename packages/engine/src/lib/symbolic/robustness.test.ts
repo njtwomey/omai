@@ -22,11 +22,15 @@ import {
 
 const x = sym('x')
 
-/** Run f, checking that it stays within the default work budget and (generously) within 200 ms. */
+/**
+ * Run f, checking that it stays within the default work budget (the exact bound) and, as a guard against the runaways
+ * these inputs were (seconds to minutes), within 5 s: tight enough to catch one, loose enough for a slow shared runner
+ * (the first bound of 200 ms failed on CI at 206 ms).
+ */
 function quick<T>(f: () => T): T {
   const t0 = performance.now()
   const out = f()
-  expect(performance.now() - t0).toBeLessThan(200)
+  expect(performance.now() - t0).toBeLessThan(5_000)
   expect(lastWork()).toBeLessThanOrEqual(DEFAULT_STEPS)
   return out
 }

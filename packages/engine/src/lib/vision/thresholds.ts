@@ -56,7 +56,7 @@ export function threshold(
   const rule: Readonly<Record<ThresholdType, (v: number) => number>> = {
     binary: (v) => (v > t ? maxValue : 0),
     'binary-inv': (v) => (v > t ? 0 : maxValue),
-    trunc: (v) => (v > t ? t : v),
+    trunc: (v) => Math.min(v, t),
     tozero: (v) => (v > t ? v : 0),
     'tozero-inv': (v) => (v > t ? 0 : v),
   }

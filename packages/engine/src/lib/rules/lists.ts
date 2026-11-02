@@ -16,7 +16,7 @@ import { eclat } from '../patterns/index.ts'
 import { foldIn, uniform } from '../random/index.ts'
 import { item } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
-import { conflicts, countClasses, type LiteralPool, literalPool, type RuleData, ruleData } from './_table.ts'
+import { conflicts, type LiteralPool, literalPool, type RuleData, ruleData } from './_table.ts'
 import { argmaxOf, type Literal, type Rule, type RuleModel } from './rule.ts'
 
 /** Options of the antecedent miner. */

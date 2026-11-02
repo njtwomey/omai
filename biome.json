@@ -63,6 +63,14 @@
   },
   "overrides": [
     {
+      "includes": ["**/*.test.ts", "**/*.test.tsx"],
+      "linter": { "rules": { "complexity": { "useOptionalChain": "off" } } }
+    },
+    {
+      "includes": ["packages/engine/src/lib/signal/wavelets/_filters.ts"],
+      "linter": { "rules": { "suspicious": { "noApproximativeNumericConstant": "off" } } }
+    },
+    {
       "includes": ["scripts/**", "**/*.test.ts", "**/*.test.tsx", "apps/**"],
       "linter": {
         "rules": {
