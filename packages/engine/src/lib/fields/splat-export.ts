@@ -5,7 +5,7 @@
  */
 
 import { toFlat } from '../tensor/index.ts'
-import { gaussianColour, gaussianCount, gaussianOpacity, type GaussianSet, quaternionToMatrix } from './gaussians.ts'
+import { type GaussianSet, gaussianColour, gaussianCount, gaussianOpacity, quaternionToMatrix } from './gaussians.ts'
 
 /** One Gaussian as the ellipsoid of its one-standard-deviation surface. */
 export interface GaussianEllipsoid {

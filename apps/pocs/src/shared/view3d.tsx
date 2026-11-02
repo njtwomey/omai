@@ -1,9 +1,9 @@
 import type { PinholeCamera } from 'mdml-engine/graphics'
 import {
   type Camera,
-  camera as makeCamera,
   fitCamera,
   type Item3D,
+  camera as makeCamera,
   point3d,
   type Scene3D,
   scene3d,

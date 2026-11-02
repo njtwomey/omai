@@ -114,7 +114,7 @@ function View(props: {
   const state = useMemo(() => session.stateAt(t), [session, t])
   const { data, model } = problem
   const sampling = useMemo(() => ({ near: data.near, far: data.far, whiteBackground: data.whiteBackground }), [data])
-  const truth = useMemo(() => Array.from(toFlat(asTensor(data.images)).slice(0, side * side * 3)), [data, side])
+  const truth = useMemo(() => Array.from(toFlat(asTensor(data.images)).slice(0, side * side * 3)), [data])
   const drawn = useMemo(
     () =>
       renderView(model, state.params, data.cameras[0] as never, [side, side], {
@@ -122,7 +122,7 @@ function View(props: {
         samples: controls.samples,
         image: fromStorage(Float64Array.from(truth), [side, side, 3], 'float64'),
       }),
-    [state, model, data, sampling, side, controls.samples, truth],
+    [state, model, data, sampling, controls.samples, truth],
   )
   const scene = useMemo(() => multiViewScene(controls.objects), [controls.objects])
   const camera = useMemo(() => poseCamera(pose, RADIUS, FOV), [pose])
