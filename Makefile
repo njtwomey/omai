@@ -28,7 +28,7 @@ barrels-check: ## Fail if any barrel is stale
 	$(NODE) scripts/barrels.ts --check
 
 .PHONY: agent-index
-agent-index: ## Regenerate the agent index (packages/engine/llms.txt and index/) from the @index tags
+agent-index: ## Regenerate the agent index (llms.txt, packages/{engine,render}/llms.txt and index/) from the @index tags
 	$(NODE) scripts/agent-index.ts
 
 .PHONY: agent-index-check

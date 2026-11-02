@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "package": "mdml-render",
+  "kinds": ["function","estimator","algorithm","structure","table","module","dataset","distribution","kernel","agent"],
+  "entries": []
+}

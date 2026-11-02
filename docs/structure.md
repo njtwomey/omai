@@ -158,27 +158,35 @@ lead back to `stats`. There is no declared order; the import graph is the order,
   opens with its paragraph as well (`make examples ARGS=--coverage` lists any that do not).
 
 **The agent index.** Whoever consumes the library should not have to read its source. The index lists the main things
-of `packages/engine/src/lib`: short, never complete, growing as things are indexed. The place for an entry is the TSDoc
-of the thing itself, as one tag, `@index <kind> <description>`:
+of `packages/engine/src/lib` and of `packages/render/src` (the packages in `AGENT_INDEX_PACKAGES`; a package's domains
+are the top-level folders of that source folder): short, never complete, growing as things are indexed. The place for
+an entry is the TSDoc of the thing itself, as one tag, `@index <kind> <description>`:
 - The first word is the kind, from a closed vocabulary (anything else is an error): `function` (also metrics, losses,
   tests, autodiff transforms), `estimator` (fit and predict objects, on the iterative, trainer, agent and sweep bases;
   the estimator is the entry, not the `Algorithm` it wraps), `algorithm` (a stepped routine you drive or watch, where
   the stepped form is the point), `structure` (a type or contract you build or implement against), `table` (an option
   table, mode table or registry), `module` (an `nn` layer or network), `dataset` (a generator that carries its truth),
-  `distribution`, `kernel`, `agent`. A factory takes the kind of what it returns. The description is one line, at most
+  `distribution`, `kernel`, `agent`. The vocabulary is the same for every package: render adds no kinds, so a React
+  component or hook is a `function` (its description says "React component:" or "React hook:"), a model or record type
+  or class a `structure` and a registry a `table`. A factory takes the kind of what it returns. The description is one line, at most
   about 12 words, plain, with no signature (an entry gives `path:line` and the import path instead); more than 16 words
   is a warning, more than 24 an error. One tag per comment.
 - Three levels. Folder: the `index.ts` summary, which is not tagged. File: `@index` as the last paragraph of a file's
   opening comment, for a hub an agent should open first. Symbol: `@index` in the TSDoc of a function, class, estimator,
   algorithm or option table, before its `@example`. Entries are keyed by import path plus name (names collide across
   domains).
-- `make agent-index` (`scripts/agent-index.ts`) reads the tags and writes `packages/engine/llms.txt` (a hand-written
-  usage note from `packages/engine/llms.header.md`, then one line per domain linking to its file),
-  `packages/engine/index/<domain>.md` (the folder summary, subfolders as nested sections, entries by file then kind) and
-  `packages/engine/index/index.json` (every entry, for tools). All three are committed, deterministic (sorted, no
-  timestamps), and published with the package. `make agent-index-check` (also in `make verify` and `make check`) fails
-  with the list of stale files, or with `file:line` for an invalid tag. To index a thing, add the tag and run
-  `make agent-index`.
+- `make agent-index` (`scripts/agent-index.ts`) reads the tags of each package and writes, per package,
+  `packages/<package>/llms.txt` (a hand-written usage note from `packages/<package>/llms.header.md`, then one line per
+  domain linking to its file; a domain with no entries yet is listed from its folder summary),
+  `packages/<package>/index/<domain>.md` (the folder summary, subfolders as nested sections, entries by file then kind)
+  and `packages/<package>/index/index.json` (every entry, for tools); and at the repository root `llms.txt`, a generated
+  map of the packages (two lines for each indexed package, one for each that is not, such as mdml-meta) that an agent
+  finding the repository starts from. The package files are published with the package (`llms.txt` and `index` in its
+  `files`); the engine's and render's headers refer to each other's `llms.txt`. All are committed and deterministic
+  (sorted, no timestamps). `make agent-index-check` (also in `make verify`, `make check` and the static job of CI)
+  fails with the list of stale files of any package or of the root, or with `file:line` for an invalid tag. To index a
+  thing, add the tag and run `make agent-index` last, after the final edit to the source (a line added above a tagged
+  declaration moves its `path:line`).
 
 **One canonical home.** Every function has exactly one defining file. Another entry point may re-export it as an alias
 (the docs record the canonical home), but nothing is implemented twice. Where two names would collide in meaning (a
@@ -7301,9 +7309,11 @@ Turns the source into documentation data, runs examples and links functions to c
 - `index-tags.ts`: the `@index <kind> <description>` grammar: `parseIndexTag`, and `readIndexTags` with the checks
   (unknown kind, empty description, over 24 words an error and over 16 a warning, a second tag) reported with their
   file and line.
-- `agent-index.ts`: `collectAgentIndex` (the tagged files and symbols of the engine library with the folder summaries
-  and the problems), `renderAgentIndex` (`llms.txt`, a Markdown file per domain, `index.json`; pure and deterministic),
-  `staleAgentIndex` (what `--check` reports) and `buildAgentIndex`, which `scripts/agent-index.ts` runs.
+- `agent-index.ts`: `AGENT_INDEX_PACKAGES` (the indexed packages and their source folders), `collectAgentIndex` (the
+  tagged files and symbols of one package with the folder summaries and the problems), `renderAgentIndex` (`llms.txt`,
+  a Markdown file per domain, `index.json`; pure and deterministic), `staleAgentIndex` (what `--check` reports),
+  `buildAgentIndex` (one package), `renderRootIndex` (the repository-level `llms.txt`) and `buildRepositoryIndex`
+  (every package and the root), which `scripts/agent-index.ts` runs.
 - `built-from.ts`: the import graph between symbols and areas, for "how is this built" views.
 - `content.ts`: how-to Markdown, gallery entries and studies.
 - `coverage.ts`: documentation coverage (summary, every parameter described, `@returns`, an `@example` with a `// =>`
@@ -7477,8 +7487,9 @@ library for the same computation. They do not set a higher bar than that library
 - `mise.toml`: Node, pnpm, Python and uv versions.
 - `scripts/barrels.ts`: every `index.ts` below its hand-written summary, and the module map; `--check`; fails on a
   folder without a summary or a module file without an opening paragraph (section 2).
-- `scripts/agent-index.ts` (`make agent-index`): the agent index written from the `@index` tags (section 2);
-  `--check` (`make agent-index-check`) fails with the stale files or the invalid tags.
+- `scripts/agent-index.ts` (`make agent-index`): the agent index of the engine and render, and the repository-level
+  `llms.txt`, written from the `@index` tags (section 2); `--check` (`make agent-index-check`) fails with the stale
+  files (per package) or the invalid tags.
 - `scripts/layers.ts`: no import cycles between core domains or between methods areas (a cycle is reported as its
   path, one import per step), the core never imports methods, and the package rules (section 1).
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
