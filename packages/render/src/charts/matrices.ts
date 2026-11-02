@@ -511,6 +511,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
  * @param labels - The class names.
  * @param options - Row normalisation (default false), colour mode, and plot options.
  * @returns The ECharts option.
+ * @index function A labelled confusion matrix: `confusionMatrixChart(counts, ['cat', 'dog'])`.
  * @example
  * ```ts
  * import { confusionMatrixChart } from 'mdml-render/charts'
@@ -578,6 +579,7 @@ export function correlationChart(
  * @param heat - Heatmap options (coordinates, smoothing, ramp, range, colour bar).
  * @param options - Plot options.
  * @returns The ECharts option.
+ * @index function A heatmap of a 2-D array: `heatmapChart(z)`.
  * @example
  * ```ts
  * import { heatmapChart } from 'mdml-render/charts'

@@ -20,6 +20,7 @@ import { escapeXml } from './svg.ts'
  * @param option - The option.
  * @param size - Width and height in pixels, and the colour mode (theme).
  * @returns The SVG text.
+ * @index function A chart to SVG text: `chartToSvg(option, { width, height })`.
  * @example
  * ```ts
  * import { lineChart } from 'mdml-render/charts'
@@ -65,6 +66,7 @@ export interface FigurePart {
  * @param parts - The parts.
  * @param options - Background colour.
  * @returns The SVG text.
+ * @index function Charts and labels in one SVG document: `composeSvg(width, height, parts)`.
  * @example
  * ```ts
  * import { composeSvg } from 'mdml-render/svg'
@@ -161,6 +163,7 @@ export function svgToCanvas(
  * @param options - Pixel ratio (default 2) and background colour.
  * @returns A promise of the PNG data URL.
  * @throws MdmlError with code `not-implemented` outside a browser.
+ * @index function SVG text to a PNG data URL in a browser: `svgToPng(svg, width, height)`.
  */
 export async function svgToPng(
   svg: string,
@@ -182,6 +185,8 @@ export async function svgToPng(
  * @returns A promise of the pixels.
  * @throws MdmlError with code `not-implemented` outside a browser; a `SecurityError` where the browser taints
  * canvases drawn from SVG with foreign objects.
+ *
+ * @index function SVG text to RGBA pixels in a browser: `svgToPixels(svg, width, height)`.
  */
 export async function svgToPixels(
   svg: string,
@@ -202,6 +207,7 @@ export async function svgToPixels(
  * @param fig - The figure.
  * @param target - `page` (default), `blog` (1440 wide) or `slide`.
  * @returns The width, height and the pixel ratio to render at from the figure's size.
+ * @index function Export size of a figure for a page, blog or slide: `exportSize(fig, 'slide')`.
  * @example
  * ```ts
  * import { exportSize } from 'mdml-render/svg'

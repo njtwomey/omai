@@ -219,6 +219,7 @@ export function biplotPanel(record: ComponentsRecord, options: ComponentsViewOpt
  * @param record - The record.
  * @param options - Mode, figure, labels, the biplot's pair and the number of components shown.
  * @returns The ECharts option.
+ * @index function Biplot, scree and loadings of PCA-like components: `componentsView(record)`.
  */
 export function componentsView(record: ComponentsRecord, options: ComponentsViewOptions = {}): EChartsOption {
   if (record.space === 'vocabulary') return topicsView(record, options)

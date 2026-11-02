@@ -34,6 +34,7 @@ function diagonal(mode: PlotOptions['mode'], from: [number, number], to: [number
  * @param curves - One curve, or named curves.
  * @param options - Plot options.
  * @returns The ECharts option.
+ * @index function A ROC curve chart: `rocChart(curve)`.
  * @example
  * ```ts
  * import { rocChart } from 'mdml-render/charts'
@@ -184,6 +185,7 @@ export interface ScoreSeries {
  * @param test - Validation scores.
  * @param options - Plot options, and the x and y labels.
  * @returns The ECharts option.
+ * @index function Train and validation scores against training size: `learningCurveChart(sizes, train, test)`.
  * @example
  * ```ts
  * import { learningCurveChart } from 'mdml-render/charts'

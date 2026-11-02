@@ -76,6 +76,7 @@ export async function rasteriseScene(s: Scene, options: FrameOptions = {}): Prom
  * @param options - Colour mode, output width and background.
  * @returns A promise of the frames.
  * @throws MdmlError with code `value` for an empty timeline.
+ * @index function Pixel frames of a timeline for GIF or video: `await timelineFrames(tl)`.
  */
 export async function timelineFrames(tl: Timeline, options: FrameOptions = {}): Promise<Pixels[]> {
   const scenes = timelineScenes(tl)

@@ -49,6 +49,7 @@ function pairs(c: Curve): [number, number][] {
  * @param curves - The curves.
  * @param options - Colour mode and colour offset.
  * @returns The layer.
+ * @index function A layer of lines, steps or areas to combine: `lines([{ y: [1, 3, 2] }])`.
  * @example
  * ```ts
  * import { lines } from 'mdml-render/charts'
@@ -116,6 +117,7 @@ interface PolygonApi {
  * @param bands - The bands.
  * @param options - Colour mode and colour offset.
  * @returns The layer.
+ * @index function A filled band between two curves: `band([{ x, lower, upper }])`.
  * @example
  * ```ts
  * import { band } from 'mdml-render/charts'
@@ -296,6 +298,7 @@ export function curvesFromTensor(t: TensorLike, options: { readonly names?: read
  * @param curves - The curves.
  * @param options - Plot options.
  * @returns The ECharts option.
+ * @index function A line chart of curves: `lineChart([{ y: [3, 1, 2], name: 'loss' }])`.
  * @example
  * ```ts
  * import { lineChart } from 'mdml-render/charts'

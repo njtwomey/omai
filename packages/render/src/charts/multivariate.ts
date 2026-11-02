@@ -208,6 +208,7 @@ export function parallelLayout(
  * @param options - Figure, title, brush, ranges, colouring, line style and legend.
  * @returns The ECharts option.
  * @throws MdmlError with code `shape` when rows do not match the columns.
+ * @index function Parallel coordinates of a table: `parallelCoordinates({ columns, rows })`.
  * @example
  * ```ts
  * import { parallelCoordinates } from 'mdml-render/charts'

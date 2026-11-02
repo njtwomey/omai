@@ -14,6 +14,8 @@ export interface ViewOptions {
 /**
  * A view that plays: a number of frames, a label per frame (for the player's stamp), and the chart option of each.
  * Steps of an iterative method (k-means iterations, EM steps, an embedding's optimisation) are views of this kind.
+ *
+ * @index structure A view that plays: frame count, a label and a chart option per frame.
  */
 export interface ViewFrames {
   readonly count: number

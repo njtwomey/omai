@@ -79,6 +79,7 @@ function finish(graph: LayoutGraph, boxes: Record<string, Box>, margin: number):
  * @param graph - The tree as nodes with sizes and parent-to-child edges.
  * @param options - Root, direction and spacing.
  * @returns The layout.
+ * @index function Lay out a tree with parents over their children: `tidyTree(graph)`.
  * @example
  * ```ts
  * import { tidyTree } from 'mdml-render/layout'
@@ -162,6 +163,7 @@ export function radialTree(graph: LayoutGraph, options: Omit<TreeOptions, 'direc
  * @param options - Root, the drawing's height for the largest merge (`levelSep` is ignored; `scale`, default 240), leaf
  * spacing and margin.
  * @returns The layout, with elbow routes.
+ * @index function Lay out merges at their heights: `dendrogram(graph, heights)`.
  * @example
  * ```ts
  * import { dendrogram } from 'mdml-render/layout'

@@ -17,6 +17,7 @@ import { categoricalColour } from '../theme/palettes.ts'
  * @param run - The trace.
  * @param options - A message kind to keep (default all).
  * @returns The layer, rows as categories.
+ * @index function When each message passed along each edge: `messageTimeline(run)`.
  * @example
  * ```ts
  * import { messageTimeline } from 'mdml-render/trace'

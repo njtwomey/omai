@@ -70,6 +70,7 @@ function centre(w: World, cell: number, k: number): [number, number] {
  * @param w - The world.
  * @param options - The scene options, policy and its actions, labels, frontier and explored cells.
  * @returns The scene.
+ * @index function Draw a grid world with a policy or path: `worldView(world, { policy })`.
  * @example
  * ```ts
  * import { fromAscii } from 'mdml-engine/worlds'
@@ -162,6 +163,7 @@ export interface RaycastViews {
  * @param options - The renderer's options (image size, field of view, surfaces, fog, sprites), the map's cell size
  * (default 32), how often to draw a ray (default every 4th column) and the first-person view's drawn width (default 320).
  * @returns The two scenes and the frame.
+ * @index function First-person ray-cast view beside the map: `raycastViews(world, pose, { width, height })`.
  * @example
  * ```ts
  * import { fromAscii } from 'mdml-engine/worlds'
@@ -215,7 +217,11 @@ export function raycastViews(
   return { firstPerson, topDown, frame }
 }
 
-/** A frame of an agent path through a world, for filmstrips and animations: the world with the path so far. */
+/**
+ * A frame of an agent path through a world, for filmstrips and animations: the world with the path so far.
+ *
+ * @index function Scenes of an agent walking a path: `pathFrames(world, cells)`.
+ */
 export function pathFrames(w: World, cells: readonly number[], options: WorldViewOptions = {}): Scene[] {
   return cells.map((cell, i) => worldView(w, { ...options, agent: cell, path: cells.slice(0, i + 1) }))
 }

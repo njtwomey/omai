@@ -249,6 +249,7 @@ interface RectApi {
  * @param values - The data.
  * @param options - Bins, range, weights, density, cumulative, outline and colour.
  * @returns The layer.
+ * @index function A histogram layer of values: `histogram(values, { bins: 20 })`.
  * @example
  * ```ts
  * import { histogram } from 'mdml-render/charts'
@@ -396,6 +397,7 @@ export function paretoChart(
  * @param groups - The groups, or one array of heights.
  * @param options - Plot options and bar options.
  * @returns The ECharts option.
+ * @index function A bar chart over categories: `barChart(['a', 'b'], [3, 5])`.
  * @example
  * ```ts
  * import { barChart } from 'mdml-render/charts'

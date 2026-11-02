@@ -74,6 +74,7 @@ function bottomOf(c: CellSpec): number {
  * @param options - Figure, title, legend, tooltip, linking and zoom.
  * @returns The ECharts option.
  * @throws MdmlError with code `value` when a panel names a cell that is not in the grid.
+ * @index function Draw panels of layers on a grid spec: `subplots(grid, panels)`.
  * @example
  * ```ts
  * import { histogram, points, subplots } from 'mdml-render/charts'

@@ -21,6 +21,8 @@ export interface Padding {
 /**
  * A figure: a fixed area with a width and a box aspect (width over height), as a matplotlib figure is. Content never
  * resizes it; it changes shape only when these properties say so.
+ *
+ * @index structure A figure's size, aspect, padding and type size, as `figure()` returns it.
  */
 export interface Figure {
   readonly kind: 'figure'
@@ -97,6 +99,7 @@ export function parseAspect(aspect: number | string): number {
  *
  * @param options - Medium, width, aspect or height, padding, font size, colour mode and title.
  * @returns The figure.
+ * @index function Make a figure sized for a medium: `figure({ medium: 'slide' })`.
  * @example
  * ```ts
  * import { figure } from 'mdml-render/figure'
@@ -137,6 +140,7 @@ export function figure(options: FigureOptions = {}): Figure {
  * @param fig - The figure.
  * @param width - The new width.
  * @returns The scaled figure.
+ * @index function Rescale a figure to another width: `scaleFigure(fig, 1280)`.
  * @example
  * ```ts
  * import { figure, scaleFigure } from 'mdml-render/figure'

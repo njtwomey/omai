@@ -102,6 +102,7 @@ function crossings(layers: readonly string[][], down: ReadonlyMap<string, readon
  * @param graph - Nodes with sizes (and groups), and edges.
  * @param options - Direction, spacing, sweeps and margin.
  * @returns Node boxes, edge routes (polylines through the ranks they cross), group boxes and the size.
+ * @index function Lay out a directed graph in layers: `layered({ nodes, edges })`.
  * @example
  * ```ts
  * import { layered } from 'mdml-render/layout'

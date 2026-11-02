@@ -96,6 +96,7 @@ function check(spec: GridSpec): GridSpec {
  * @param options - Ratios, gaps (default 56 px between columns and 52 px between rows: room for tick labels and panel titles) and cells.
  * @returns The grid.
  * @throws MdmlError with code `value` for overlapping or out-of-range cells and unknown shared cells.
+ * @index function Make a grid of panels: `gridSpec(2, 3)`.
  * @example
  * ```ts
  * import { gridSpec } from 'mdml-render/figure'
@@ -142,6 +143,7 @@ function tracks(total: number, ratios: readonly number[], gap: number): { start:
  * @param spec - The grid.
  * @param area - The rectangle to fill.
  * @returns Each cell's rectangle by id.
+ * @index function Place a grid's cells in pixels inside a rectangle: `layoutGrid(spec, area)`.
  * @example
  * ```ts
  * import { gridSpec, layoutGrid } from 'mdml-render/figure'
@@ -186,6 +188,7 @@ export interface MarginalOptions {
  *
  * @param options - Marginal size, gap and sides.
  * @returns The grid, with cells `main`, `top` and `right` (and an empty `corner`).
+ * @index function A scatter grid with marginal axes on top and right: `withMarginals()`.
  * @example
  * ```ts
  * import { withMarginals } from 'mdml-render/figure'
@@ -222,6 +225,7 @@ export function withMarginals(options: MarginalOptions = {}): GridSpec {
  * @param options - Ratios and gaps as {@link gridSpec}, and the kind of each named cell (default axes).
  * @returns The grid.
  * @throws MdmlError with code `value` when rows differ in length or a name does not cover a rectangle.
+ * @index function A bento-box layout of panels from named areas: `bento(['a a b', 'c d b'])`.
  * @example
  * ```ts
  * import { bento } from 'mdml-render/figure'

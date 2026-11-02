@@ -50,6 +50,7 @@ const keyOf = (variant: number, t: number, path: string, args: Json | undefined)
  *
  * @param options - How to make the worker, and the lookahead.
  * @returns The factory, to give a hook as its `producer`.
+ * @index function A producer that computes in a Web Worker: `workerProducer({ createWorker })`.
  */
 export function workerProducer(options: WorkerProducerOptions): ProducerFactory {
   const available = options.available ?? typeof Worker !== 'undefined'

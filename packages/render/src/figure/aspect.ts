@@ -26,6 +26,7 @@ export type DataAspect = 'auto' | 'equal' | number
  * @param aspect - The data aspect.
  * @returns The adjusted ranges.
  * @throws MdmlError with code `value` for a non-positive numeric aspect.
+ * @index function Widen an axis range to meet a data aspect: `fitDataAspect(x, y, box, 'equal')`.
  * @example
  * ```ts
  * import { fitDataAspect } from 'mdml-render/figure'

@@ -116,6 +116,7 @@ const keyOf = (path: string, args: Json | undefined): string => `${path}|${JSON.
  * @param sessions - The sessions, with their labels.
  * @param options - The probes to store and the page's title, layout and step.
  * @returns The file, ready for `JSON.stringify`.
+ * @index function Write a page's sessions and probes as a tape file: `await tapeOf(name, sessions, opts)`.
  */
 export async function tapeOf(
   method: string,
@@ -176,6 +177,7 @@ const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'obj
  * @param input - The text or value.
  * @returns The file.
  * @throws MdmlError with code `schema` when it is not a tape file (or its events are not a valid run).
+ * @index function Validate a tape file read back from JSON: `parseTape(json)`.
  */
 export function parseTape(input: unknown): TapeFile {
   let value: unknown
@@ -318,6 +320,7 @@ export class ReplaySession<S, C extends Config = Config, K extends string = stri
  * @param registry - The methods on offer.
  * @returns A replayed session per variant, with its label.
  * @throws MdmlError with code `value` when the registry does not know the file's method.
+ * @index function Sessions replayed from a tape file, nothing recomputed: `replaySessions(file, registry)`.
  */
 export function replaySessions(
   file: TapeFile,

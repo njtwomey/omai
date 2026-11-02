@@ -18,7 +18,11 @@ export interface LayoutEdge {
   readonly to: string
 }
 
-/** A graph to lay out, with the nesting of its groups (a group inside another names it as `parent`). */
+/**
+ * A graph to lay out, with the nesting of its groups (a group inside another names it as `parent`).
+ *
+ * @index structure The graph every layout takes: nodes with sizes, edges and optional groups.
+ */
 export interface LayoutGraph {
   readonly nodes: readonly LayoutNode[]
   readonly edges: readonly LayoutEdge[]
@@ -40,7 +44,11 @@ export interface EdgeRoute {
   readonly points: readonly (readonly [number, number])[]
 }
 
-/** A layout: node boxes by id, edge routes in the order of the graph's edges, group boxes, and the overall size. */
+/**
+ * A layout: node boxes by id, edge routes in the order of the graph's edges, group boxes, and the overall size.
+ *
+ * @index structure What every layout returns: node boxes, edge routes and group boxes.
+ */
 export interface GraphLayout {
   readonly nodes: Readonly<Record<string, Box>>
   readonly edges: readonly EdgeRoute[]

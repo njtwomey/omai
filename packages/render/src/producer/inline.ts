@@ -18,6 +18,7 @@ import { advanceInStep } from './step.ts'
  * @param variants - The variants.
  * @param fallback - Why this stands in for a worker, when it does.
  * @returns The producer.
+ * @index function The main-thread producer that computes in slices: `inlineProducer(method, options, variants)`.
  */
 export function inlineProducer<S, C extends Config>(
   method: Method<S, C>,

@@ -17,6 +17,7 @@ export interface TableData {
  *
  * @param run - The trace.
  * @returns The table.
+ * @index function A table of a run's summary, children indented: `runTable(run)`.
  * @example
  * ```ts
  * import { runTable } from 'mdml-render/trace'

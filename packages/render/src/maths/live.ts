@@ -108,6 +108,7 @@ export function toTex(t: EquationTemplate | string): string {
  * @param values - Values by name (a missing name stays as `name`).
  * @param options - Digits for numbers.
  * @returns The TeX.
+ * @index function Fill a TeX template with live values: `bindTex('y = {{a}} x', { a: 2 })`.
  * @example
  * ```ts
  * import { bindTex } from 'mdml-render/maths'

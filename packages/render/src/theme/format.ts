@@ -24,6 +24,7 @@ export interface FormatOptions {
  * @param value - The number.
  * @param options - Significant digits, minus sign and exponent thresholds.
  * @returns The text (`NaN`, `∞` and `−∞` for non-finite values).
+ * @index function Format a number for axes and readouts: `formatNumber(Math.PI, { digits: 2 })`.
  * @example
  * ```ts
  * import { formatNumber } from 'mdml-render/theme'

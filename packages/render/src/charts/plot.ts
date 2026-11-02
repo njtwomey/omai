@@ -3,6 +3,8 @@
  * optionally a colour bar or category labels), so layers from any builder combine, and `cartesian` draws layers on one
  * pair of axes, with ranges from the limit policies and the data aspect, log axes, legend, tooltip and colour bars.
  * `panelParts` and `chartFrame` are the pieces subplots reuse.
+ *
+ * @index function Open first: the cartesian plot and `Layer` every chart builder shares.
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
@@ -471,6 +473,7 @@ export function chartFrame(
  * @param layers - The layers, drawn in order.
  * @param options - Figure, title, axes, aspect, legend, tooltip and zoom.
  * @returns The ECharts option.
+ * @index function Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`.
  * @example
  * ```ts
  * import { cartesian, lines } from 'mdml-render/charts'

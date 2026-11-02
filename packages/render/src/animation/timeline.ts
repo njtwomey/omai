@@ -112,6 +112,7 @@ export function interpolateScene(a: Scene, b: Scene, t: number): Scene {
  * @param easing - The easing between frames (default `easeInOut`).
  * @returns The tweened timeline.
  * @throws MdmlError with code `value` for k below 1.
+ * @index function Add in-between frames to a timeline: `tweenTimeline(tl, 4)`.
  * @example
  * ```ts
  * import { tweenTimeline } from 'mdml-render/animation'
@@ -143,6 +144,7 @@ export function tweenTimeline(tl: Timeline, k: number, easing: Easing = easings.
  * @param build - The scene for a value.
  * @param options - Frames per second (default 10), title and captions per value.
  * @returns The timeline.
+ * @index function A timeline from a parameter sweep: `sweepTimeline(values, (v) => scene)`.
  * @example
  * ```ts
  * import { sweepTimeline } from 'mdml-render/animation'
@@ -173,6 +175,7 @@ export function sweepTimeline<V>(
  * @param run - The trace.
  * @param options - A decoder for non-scene payloads, the run id, frames per second.
  * @returns The timeline (frames whose payload is neither a scene nor decodable are skipped).
+ * @index function A timeline from the frame events of a run: `runTimeline(run)`.
  * @example
  * ```ts
  * import { runTimeline } from 'mdml-render/animation'
@@ -205,6 +208,7 @@ export function runTimeline(
  * @param overlays - One overlay per frame.
  * @param options - Frames per second (default 4) and captions.
  * @returns The timeline.
+ * @index function A timeline of overlays on one structure: `structureTimeline(structure, overlays)`.
  * @example
  * ```ts
  * import { structureTimeline } from 'mdml-render/animation'

@@ -108,6 +108,7 @@ export function metricCurves(run: Run, names?: readonly string[], options: Metri
  * @param names - The metrics (default all).
  * @param options - Plot options, smoothing and log scale.
  * @returns The ECharts option.
+ * @index function Metric curves of a run against steps: `metricChart(run, ['loss'])`.
  * @example
  * ```ts
  * import { metricChart } from 'mdml-render/trace'
@@ -139,6 +140,7 @@ export function metricChart(
  * @param metric - The metric.
  * @param options - Plot options and smoothing.
  * @returns The ECharts option.
+ * @index function One metric from several runs, overlaid: `runsChart([{ name, run }], 'loss')`.
  * @example
  * ```ts
  * import { runsChart } from 'mdml-render/trace'

@@ -50,6 +50,7 @@ export function stepPositions(run: Run, name: string, x?: string): { readonly st
  * @param options - Flat element indices to follow (default the first `max`, itself default eight), their names
  *   (default `name[index]`), a metric channel for the x axis, colour mode.
  * @returns The layer, one curve per element; many curves are drawn thin.
+ * @index function Chosen parameter elements against steps: `parameterTrajectories(run, 'w')`.
  * @example
  * ```ts
  * import { parameterTrajectories } from 'mdml-render/trace'
@@ -106,6 +107,7 @@ export function parameterTrajectories(
  * @param options - Bins for rebinning (default 30), ramp, smoothing of the image and colour mode.
  * @returns The layer.
  * @throws MdmlError with code `value` when the channel has neither summaries nor values.
+ * @index function A tensor's histogram over training: `histogramsOverTime(run, 'grad')`.
  * @example
  * ```ts
  * import { histogramsOverTime } from 'mdml-render/trace'

@@ -313,6 +313,7 @@ export function surfaceAxes(
  * @param surface - The record.
  * @param options - Mode, figure, training rows and labels, contours and aspect.
  * @returns The ECharts option.
+ * @index function A classifier's decision surface with its rows: `decisionSurfaceView(record)`.
  * @example
  * ```ts
  * import { decisionSurface } from 'mdml-engine/exposition'

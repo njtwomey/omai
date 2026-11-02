@@ -36,6 +36,7 @@ export interface LinkStore {
  *
  * @param initial - The initial state (default: nothing hovered or selected).
  * @returns The store.
+ * @index function Share hover, selection and brush between figures: `linkStore()`.
  * @example
  * ```ts
  * import { linkStore } from 'mdml-render/figure'

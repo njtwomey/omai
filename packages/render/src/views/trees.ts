@@ -56,6 +56,7 @@ export function nodePrediction(tree: TreeRecord, node: TreeNode): string {
  * @param tree - The record.
  * @param options - The selected node, the growth step and the depth limit.
  * @returns The scene.
+ * @index function A decision tree as a scene of cards: `treeScene(record)`.
  * @example
  * ```ts
  * import { treeRecord } from 'mdml-engine/exposition'

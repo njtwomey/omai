@@ -123,6 +123,7 @@ function pngFile(width: number, height: number, zlib: Uint8Array): Uint8Array {
  * @param pixels - The image.
  * @returns The PNG file's bytes.
  * @throws MdmlError with code `shape` when the pixel buffer does not match the size.
+ * @index function RGBA pixels to PNG file bytes, with no dependency: `encodePng(pixels)`.
  * @example
  * ```ts
  * import { encodePng } from 'mdml-render/svg'

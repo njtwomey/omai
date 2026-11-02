@@ -396,6 +396,7 @@ export function serveProducer(
  * @param registry - The methods the worker can make, by name.
  * @param options - Slice and post intervals.
  * @returns A handle that stops serving.
+ * @index function The whole body of a worker entry file: `serveWorker(registry)`.
  */
 export function serveWorker(registry: MethodRegistry, options: ServeOptions = {}): { readonly close: () => void } {
   return serveProducer(globalThis as unknown as ScopeLike, registry, options)

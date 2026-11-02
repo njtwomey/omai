@@ -137,6 +137,7 @@ export function legibleRange(range: Range): Range {
  * @param previous - The range shown before (used by `expand`).
  * @returns The range to show.
  * @throws MdmlError with code `value` for an empty fixed range or a non-positive follow window.
+ * @index function Turn an axis limit policy into a range: `resolveLimits(policy, extent)`.
  * @example
  * ```ts
  * import { resolveLimits } from 'mdml-render/figure'
