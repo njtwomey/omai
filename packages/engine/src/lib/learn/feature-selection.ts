@@ -356,6 +356,7 @@ function univariate(
  *
  * @param options - The score function (default {@link fClassif}) and k (default 10, or `'all'`).
  * @returns The estimator.
+ * @index estimator Keep the k features with the best univariate scores.
  * @example
  * ```ts
  * import { selectKBest, fRegression } from 'mdml-engine/learn'

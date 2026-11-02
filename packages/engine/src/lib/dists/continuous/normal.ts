@@ -57,6 +57,7 @@ const noise = (key: Key, shape: readonly number[], batch: readonly number[]): Va
  * @returns The distribution; `rsample` is loc + scale eps.
  * @throws MdmlError with code `value` when the scale is not positive.
  * @concept distributions
+ * @index distribution Normal distribution, scipy.stats.norm and torch Normal in one.
  * @example
  * ```ts
  * import { normal } from 'mdml-engine/dists'

@@ -3,6 +3,8 @@
  * and rejections, angles between vectors by Kahan's stable formula, Gram-Schmidt orthonormalisation, linear
  * independence, span dimension and span membership, lines and planes with their equations, distances, closest points
  * and intersections.
+ *
+ * @index function Vector and line-plane geometry, computed and drawable for teaching.
  */
 
 import { MdmlError } from '../base/index.ts'

@@ -362,6 +362,7 @@ const plsEstimator = (
  * PLS regression (sklearn.cross_decomposition.PLSRegression, PLS2 by NIPALS with regression deflation) on the iterative
  * base: one latent direction per step.
  *
+ * @index estimator Partial least squares regression; CCA beside it.
  * @example
  * ```ts
  * import { plsRegression } from 'mdml-engine/decomposition'

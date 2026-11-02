@@ -2,6 +2,8 @@
  * Rules that turn a world into a task: agent states (cell, held items, heading), the standard action sets, and
  * composable rules for rewards, terrain costs, termination, teleports (as CliffWalking's cliff), slippery and noisy
  * moves, Sutton and Barto's wind, one-way cells, pickups and locked doors, resolved for one action by `applyRules`.
+ *
+ * @index function Composable rules turning a world into a task.
  */
 
 import { MdmlError } from '../base/index.ts'

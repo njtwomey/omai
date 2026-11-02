@@ -407,6 +407,7 @@ export interface AgglomerativeVerbs {
  * per step, the tree cut into `nClusters` flat clusters (or at a height). At any step the fitted value is the cut of
  * the merges so far (with the clusters not yet joined left separate).
  *
+ * @index estimator Agglomerative clustering with the linkage matrix.
  * @example
  * ```ts
  * import { agglomerativeClustering } from 'mdml-engine/cluster'

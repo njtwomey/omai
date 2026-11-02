@@ -221,6 +221,7 @@ function specs(vars: readonly DiffSpec[]): [ExprSym, number][] {
  * @param e - The expression.
  * @param vars - Variables (symbols or names), each optionally with an order.
  * @returns The derivative.
+ * @index function Symbolic derivative.
  * @example
  * ```ts
  * import { diff, parse, toText } from 'mdml-engine/symbolic'

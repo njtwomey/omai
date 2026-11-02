@@ -81,6 +81,7 @@ export interface IsomapHyper {
  *
  * @param hyper - Neighbours and dimension.
  * @returns The estimator.
+ * @index estimator Isomap embedding from geodesic distances.
  * @example
  * ```ts
  * import { isomap } from 'mdml-engine/manifold'

@@ -251,6 +251,7 @@ export type LeastSquaresSolveOptions = LevenbergMarquardtOptions &
  * @param options - The method and its options (bounds, loss, scaling, tolerances).
  * @returns The result.
  * @concept least-squares
+ * @index function Nonlinear least squares, scipy style, with bounds and robust losses.
  * @example
  * ```ts
  * import { leastSquares } from 'mdml-engine/optim'
@@ -305,6 +306,7 @@ export interface CurveFitResult {
  * @returns The fitted parameters, covariance, standard errors and the least-squares result.
  * @throws MdmlError with code `convergence` when the fit fails.
  * @concept least-squares
+ * @index function Fit a parametric curve to data by nonlinear least squares.
  * @example
  * ```ts
  * import { curveFit } from 'mdml-engine/optim'

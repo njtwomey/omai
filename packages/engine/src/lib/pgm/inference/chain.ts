@@ -104,6 +104,7 @@ function normaliseRow(v: number[]): number {
  * @returns Log-likelihood, posteriors, pairwise posteriors and the forward and backward messages.
  * @throws MdmlError with code `value` when the observations are impossible.
  * @concept forward-backward
+ * @index function Forward-backward smoothing on chains; viterbi finds the best path.
  * @example
  * ```ts
  * import { forwardBackward } from 'mdml-engine/pgm'

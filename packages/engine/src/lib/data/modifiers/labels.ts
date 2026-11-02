@@ -3,6 +3,8 @@
  * or pair-flip), subsampling to exact prevalences, label shift that resamples towards new class priors while `p(x | y)`
  * stays fixed, and long-tailed or step class imbalance. Clean labels and the transition are kept in the truth, and each
  * modifier is also available as a recipe modifier.
+ *
+ * @index function Label noise and class-imbalance modifiers.
  */
 
 import { MdmlError } from '../../base/index.ts'

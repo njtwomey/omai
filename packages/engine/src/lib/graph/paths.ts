@@ -66,6 +66,7 @@ function dijkstraCore(
  * @returns Distances and predecessors.
  * @throws MdmlError with code `domain` when a negative weight is reached.
  * @concept shortest-paths
+ * @index function Single-source shortest paths with non-negative weights.
  * @example
  * ```ts
  * import { dijkstra, graph } from 'mdml-engine/graph'

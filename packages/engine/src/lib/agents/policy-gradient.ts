@@ -625,6 +625,7 @@ export interface PpoOptions extends PolicyGradientOptions {
  * @returns The agent.
  * @concept policy-gradient
  * @reference Schulman et al. (2017), Proximal policy optimization algorithms.
+ * @index agent Proximal policy optimisation; REINFORCE, A2C and TRPO beside it.
  * @example
  * ```ts
  * import { ppo } from 'mdml-engine/agents'

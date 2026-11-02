@@ -3,6 +3,8 @@
  * markov step, the dependency graph between sites (by tracking which values each one was computed from), and the
  * structures the inference planner looks for, such as conjugate prior-likelihood pairs, linear-Gaussian form and
  * enumerable discrete sites.
+ *
+ * @index function Static analysis of a program from one traced run.
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'

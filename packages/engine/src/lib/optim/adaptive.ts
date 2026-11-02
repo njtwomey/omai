@@ -59,6 +59,7 @@ export interface AdamOptions {
  * @param options - Learning rate, betas, eps, AMSGrad and weight decay.
  * @returns The optimiser.
  * @concept optimisers
+ * @index function Adam as a gradient transformation, like torch.optim.Adam.
  * @example
  * ```ts
  * import { adam } from 'mdml-engine/optim'

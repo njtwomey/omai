@@ -56,6 +56,7 @@ const EULER = 0.5772156649015329
  * @param low - Lower bound.
  * @param high - Upper bound.
  * @returns The distribution; `rsample` is low + (high - low) U.
+ * @index distribution Continuous uniform distribution on an interval.
  * @example
  * ```ts
  * import { uniform } from 'mdml-engine/dists'
@@ -95,6 +96,7 @@ export function uniform(low: TensorLike = 0, high: TensorLike = 1): Distribution
  * @returns The distribution; `rsample` is G1 / (G1 + G2) for implicitly reparameterised gamma variates, so samples
  *   differentiate in both shapes.
  * @concept distributions
+ * @index distribution Beta distribution.
  * @example
  * ```ts
  * import { beta } from 'mdml-engine/dists'

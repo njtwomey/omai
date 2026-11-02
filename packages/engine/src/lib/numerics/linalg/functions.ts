@@ -61,6 +61,7 @@ const THETA13 = 5.371920351148152
  * @param a - Square matrix `[n, n]`.
  * @returns exp(A).
  * @concept matrix-functions
+ * @index function Matrix exponential by Pade scaling and squaring.
  * @example
  * ```ts
  * import { expm } from 'mdml-engine/numerics/linalg'

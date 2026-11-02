@@ -110,6 +110,7 @@ const names = (features: readonly number[]): string => features.map((f) => `x${f
  * @param options - The basis, its dimension and degree, a `by` covariate and the label.
  * @returns The term.
  * @concept generalized-additive-models
+ * @index function A smooth term of a GAM; te and ti sit beside it.
  * @example
  * ```ts
  * import { s } from 'mdml-engine/gam'

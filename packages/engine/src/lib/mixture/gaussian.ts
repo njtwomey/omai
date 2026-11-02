@@ -212,6 +212,7 @@ const emSchema = channels({
  * @param start - Initial weights, means and covariances.
  * @param options - Covariance type, regularisation (1e-6) and tolerance (1e-3).
  * @returns The algorithm.
+ * @index algorithm Gaussian mixture by EM, stepwise; no estimator wraps it.
  * @example
  * ```ts
  * import { gaussianEmAlgorithm } from 'mdml-engine/mixture'

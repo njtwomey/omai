@@ -289,6 +289,7 @@ const stack = (rows: readonly (readonly number[])[], d: number): Tensor => rowsT
  * @param options - Network, optimiser, replay, exploration and the variants.
  * @returns The agent.
  * @concept deep-q-learning
+ * @index agent Deep Q-network agent.
  * @example
  * ```ts
  * import { dqn } from 'mdml-engine/agents'

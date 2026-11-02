@@ -4,6 +4,8 @@
  * Pendulum, MountainCarContinuous, Acrobot and the continuous-control tasks). Linearisation at an operating point,
  * trajectory derivatives for iLQR, batched rollouts and sequence costs for sampling planners such as CEM and MPPI, a
  * model seen as an environment, and a check that a model agrees with its environment.
+ *
+ * @index structure Differentiable models of control environments for planners.
  */
 
 import { grad, jacfwd, jvp } from '../autodiff/index.ts'

@@ -68,6 +68,7 @@ function marginalEntropy(p: Value, keep: readonly number[]): Value {
  * @param options - Base, axis and whether to normalise.
  * @returns The entropy, one value per batch entry.
  * @concept entropy
+ * @index function Shannon entropy of a probability vector; relativeEntropy (KL) and crossEntropy beside it.
  * @example
  * ```ts
  * import { entropy } from 'mdml-engine/information'
@@ -263,6 +264,7 @@ export function totalVariation(p: TensorLike, q: TensorLike, options: DiscreteOp
  * @param options - The logarithm base.
  * @returns I(X; Y) >= 0.
  * @concept mutual-information
+ * @index function Mutual information of a joint probability table.
  * @example
  * ```ts
  * import { mutualInformation } from 'mdml-engine/information'

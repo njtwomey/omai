@@ -43,6 +43,7 @@ export function checkpointEvery(n: number, policy: TracePolicy = policies.minima
  * @param options - The original seed or key, and how many more steps to run.
  * @returns The continued run's result.
  * @throws MdmlError with code `value` when the algorithm cannot deserialise states.
+ * @index function Continue a run exactly from a stored checkpoint.
  * @example
  * ```ts
  * import { resume, type Algorithm } from 'mdml-engine/trace'

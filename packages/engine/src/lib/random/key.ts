@@ -2,6 +2,8 @@
  * Immutable random keys in the style of JAX PRNG keys: two 32-bit words, created from a seed and derived with `split`
  * (several independent keys) and `foldIn` (a key per step or episode). Random bits come from the Philox counter-based
  * generator, and `keyFromPath` derives a key from a seed and a path of names.
+ *
+ * @index structure Immutable counter-based keys: key, split and foldIn.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -32,6 +34,7 @@ const BITS_TAG = 0
  * @returns The key.
  * @throws MdmlError with code `value` for negative or non-integer seeds.
  * @concept counter-based-rng
+ * @index function Create a random key from an integer seed.
  * @example
  * ```ts
  * import { key } from 'mdml-engine/random'
@@ -51,6 +54,7 @@ export function key(seed: number): Key {
  * @param k - The parent key; do not use it again for draws after splitting.
  * @param n - Number of child keys (default 2).
  * @returns The child keys.
+ * @index function Derive n independent keys from one key.
  * @example
  * ```ts
  * import { key, split } from 'mdml-engine/random'
@@ -73,6 +77,7 @@ export function split(k: Key, n = 2): Key[] {
  * @param k - The parent key.
  * @param data - An unsigned 32-bit integer.
  * @returns The derived key; the same inputs always give the same key.
+ * @index function Derive a key from a parent key and an integer (a step).
  * @example
  * ```ts
  * import { key, foldIn } from 'mdml-engine/random'

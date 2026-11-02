@@ -394,6 +394,7 @@ export function subsampleSeries(data: TimeSeriesData, key: Key, fraction = 0.5):
  * series G): trend, growing seasonality and a period of 12. Times are decimal years.
  *
  * @returns The series.
+ * @index dataset Vendored monthly airline passenger series.
  * @example
  * ```ts
  * import { airPassengers } from 'mdml-engine/datasets'

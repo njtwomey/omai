@@ -316,6 +316,7 @@ const base: NoveltyHyper = {
  *
  * @concept support-vector-machines
  * @reference B. Schoelkopf et al., Estimating the support of a high-dimensional distribution (2001).
+ * @index estimator One-class SVM for novelty detection.
  * @example
  * ```ts
  * import { oneClassSvm } from 'mdml-engine/svm'

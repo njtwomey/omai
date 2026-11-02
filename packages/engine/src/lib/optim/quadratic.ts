@@ -275,6 +275,7 @@ export interface QuadprogResult {
  * @param options - Method, tolerance, start, iteration cap and run options.
  * @returns The solution, its multipliers split by constraint type, the active rows and the KKT residuals.
  * @concept quadratic-programming
+ * @index function Convex quadratic programming by active set or interior point.
  * @example
  * ```ts
  * import { quadprog } from 'mdml-engine/optim'

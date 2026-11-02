@@ -48,6 +48,7 @@ const num = (k: Readonly<Record<string, unknown>>, name: string): number => k[na
  * The optimisers as one slot: SGD (default), RMSprop, Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam
  * and Lion, each with its own knobs, all taking the learning rate (or a schedule) when made.
  *
+ * @index table SGD, RMSprop, Adagrad, Adam and relatives as one slot.
  * @example
  * ```ts
  * import { optimisers } from 'mdml-engine/optim'

@@ -142,6 +142,7 @@ export interface DidResult extends EffectEstimate {
  * @param panel - The long panel.
  * @param options - The first post period `cutoff` (default the earliest adoption) and `level`.
  * @returns The effect on the treated, with the four cell means.
+ * @index function Difference-in-differences with event studies and synthetic control.
  * @example
  * ```ts
  * import { differenceInDifferences } from 'mdml-engine/causal'

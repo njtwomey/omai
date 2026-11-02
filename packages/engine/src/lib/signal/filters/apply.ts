@@ -258,6 +258,7 @@ function sectionCoefficients(s: Value, i: number): { b: Value; a: Value } {
  * @param options - Axis, and an initial state.
  * @returns The filtered signal, or the signal and the final state.
  * @concept second-order-sections
+ * @index function Apply a filter in second-order sections; lfilter takes a transfer function.
  * @example
  * ```ts
  * import { sosfilt } from 'mdml-engine/signal'

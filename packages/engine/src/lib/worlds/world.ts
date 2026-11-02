@@ -199,6 +199,7 @@ function checkCell(n: number, cell: number, what: string): number {
  * @throws MdmlError with code `value` for bad sizes, unknown terrains, out-of-range cells or walls between cells
  *   that are not side neighbours.
  * @concept grid-worlds
+ * @index structure A grid, hex or graph world with walls, terrain and items.
  * @example
  * ```ts
  * import { world } from 'mdml-engine/worlds'

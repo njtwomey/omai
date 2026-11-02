@@ -304,6 +304,7 @@ function runElimination(
  * @returns The posterior over the query, log P(evidence), the order and the largest factor size.
  * @throws MdmlError with code `value` for unknown or observed query variables, or an incomplete order.
  * @concept variable-elimination
+ * @index function Exact inference by variable elimination.
  * @example
  * ```ts
  * import { bayesNet, variableElimination, factorValues } from 'mdml-engine/pgm'

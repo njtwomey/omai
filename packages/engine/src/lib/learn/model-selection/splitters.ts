@@ -120,6 +120,7 @@ export interface KFoldOptions {
  * @param options - Whether to shuffle.
  * @returns The splitter.
  * @concept cross-validation
+ * @index function K-fold splitter; stratified, group and shuffle variants beside it.
  * @example
  * ```ts
  * import { kFold, splitIndices } from 'mdml-engine/learn/model-selection'

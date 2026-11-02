@@ -158,6 +158,7 @@ export type DbscanParams = {
  * DBSCAN on the iterative base: one cluster grown per step. New rows join the cluster of the nearest core point within
  * `eps`, else are noise.
  *
+ * @index estimator DBSCAN density clustering.
  * @example
  * ```ts
  * import { dbscan } from 'mdml-engine/cluster'
@@ -1170,6 +1171,7 @@ export const hdbscanEstimator: IterativeEstimator<
  *
  * @param hyper - The hyperparameters.
  * @returns The estimator.
+ * @index estimator HDBSCAN with its condensed tree.
  * @example
  * ```ts
  * import { hdbscanClustering } from 'mdml-engine/cluster'

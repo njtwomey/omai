@@ -146,6 +146,7 @@ export function initialCentres(x: TensorLike, k: number, init: KMeansInit, key: 
  * @param init - Initial centres `[k, d]`.
  * @param options - Tolerance on the squared centre shift, relative to the mean feature variance (default 1e-4).
  * @returns The algorithm; run it with `runAlgorithm`.
+ * @index algorithm Lloyd's k-means, one step at a time; plain k-means has no estimator.
  * @example
  * ```ts
  * import { lloydAlgorithm } from 'mdml-engine/cluster'
@@ -220,6 +221,7 @@ export interface MiniBatchState {
  * @param init - Initial centres `[k, d]`.
  * @param batchSize - Rows per batch.
  * @returns The algorithm.
+ * @index algorithm Mini-batch k-means, one batch at a time; no estimator wraps it.
  * @example
  * ```ts
  * import { miniBatchKMeansAlgorithm } from 'mdml-engine/cluster'

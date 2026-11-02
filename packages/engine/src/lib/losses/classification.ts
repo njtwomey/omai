@@ -225,6 +225,7 @@ export interface CrossEntropyOptions {
  * @param options - Class weights, label smoothing, ignore index and reduction.
  * @returns The loss, differentiable in the logits.
  * @concept losses
+ * @index function Categorical cross-entropy from logits.
  * @example
  * ```ts
  * import { crossEntropy } from 'mdml-engine/losses'

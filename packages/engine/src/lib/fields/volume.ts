@@ -62,6 +62,7 @@ export interface VolumeOptions {
  * @throws MdmlError with code `shape` when the shapes do not agree.
  * @concept volume-rendering
  * @reference Mildenhall et al. (2020), NeRF: representing scenes as neural radiance fields for view synthesis.
+ * @index function Differentiable volume rendering: composite densities and colours along rays.
  * @example
  * ```ts
  * import { volumeRender } from 'mdml-engine/fields'

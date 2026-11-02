@@ -536,6 +536,7 @@ export function simulatedAnnealingAlgorithm<S>(
  * @param options - The schedule, the iteration budget, a seed or key, and tracing.
  * @returns The best state seen and its value.
  * @concept local-search
+ * @index function Simulated annealing local search.
  * @example
  * ```ts
  * import { geometricSchedule, simulatedAnnealing } from 'mdml-engine/search'

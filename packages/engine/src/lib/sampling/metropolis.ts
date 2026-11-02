@@ -131,6 +131,7 @@ export interface RandomWalkOptions {
  * @throws MdmlError with code `value` for non-positive scales or a covariance that is not positive definite.
  * @concept random-walk-metropolis
  * @reference N. Metropolis et al., Equation of state calculations by fast computing machines (J. Chem. Phys. 1953).
+ * @index function Random-walk Metropolis kernel; Langevin kernels sit in langevin.ts.
  * @example
  * ```ts
  * import { randomWalkMetropolis, numericTarget } from 'mdml-engine/sampling'

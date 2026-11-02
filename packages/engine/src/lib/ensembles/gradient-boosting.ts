@@ -86,6 +86,7 @@ export function gradientBoostingRegressor(
  * @param hyper - As {@link gradientBoostingRegressor} (loss `log_loss` or `exponential`).
  * @returns The estimator.
  * @concept boosting
+ * @index estimator Gradient boosting over trees; regressor twin beside it.
  * @example
  * ```ts
  * import { gradientBoostingClassifier } from 'mdml-engine/ensembles'

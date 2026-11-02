@@ -246,6 +246,7 @@ function robust(
  * @param options - Method, threshold, trials, confidence and key.
  * @returns The homography (H[2][2] = 1) and the inlier mask.
  * @concept homography
+ * @index function Robust homography from point correspondences.
  * @example
  * ```ts
  * import { findHomography } from 'mdml-engine/vision'

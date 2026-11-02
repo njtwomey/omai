@@ -2,6 +2,8 @@
  * Discrete-time dynamical systems (iterated maps) and their chaos: the logistic, tent, Henon, standard and circle maps, and the planar attractor maps (de Jong, Clifford, Ikeda),
  * orbits as traced algorithms, cobweb and bifurcation diagrams, and Lyapunov exponents by Benettin's QR method with
  * Jacobians from forward-mode autodiff.
+ *
+ * @index function Iterated maps and chaos: logistic, Henon, standard map.
  */
 
 import { jacfwd } from '../autodiff/index.ts'

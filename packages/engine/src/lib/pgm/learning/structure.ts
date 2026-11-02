@@ -492,6 +492,7 @@ export interface PcResult {
  * @param options - Test, significance, largest conditioning set, separating-set rule and tracer.
  * @returns The CPDAG and the separating sets.
  * @concept constraint-based-learning
+ * @index function PC algorithm for structure learning.
  * @example
  * ```ts
  * import { pc } from 'mdml-engine/pgm/learning'

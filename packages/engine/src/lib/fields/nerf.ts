@@ -142,6 +142,7 @@ export interface NerfParams {
  * @param options - The network options, and whether to add the fine network.
  * @returns The model.
  * @concept neural-radiance-fields
+ * @index structure A NeRF model: one network, or coarse and fine networks.
  * @example
  * ```ts
  * import { nerfModel } from 'mdml-engine/fields'

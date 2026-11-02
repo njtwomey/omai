@@ -116,6 +116,7 @@ export interface QrResult {
  * @param a - Matrix `[..., m, n]`.
  * @returns `{ q, r }`, differentiable when m >= n and A has full column rank.
  * @concept linear-algebra
+ * @index function Reduced QR factorisation by Householder reflections.
  * @example
  * ```ts
  * import { qr } from 'mdml-engine/numerics/linalg'
@@ -136,6 +137,7 @@ export function qr(a: TensorLike): QrResult {
  * @param a - Matrix `[..., m, n]` of full rank.
  * @param b - Right-hand side `[..., m, k]` or `[m]`.
  * @returns The solution `[..., n, k]` or `[n]`, differentiable in both arguments.
+ * @index function Least-squares solution of A x = b.
  * @example
  * ```ts
  * import { lstsq } from 'mdml-engine/numerics/linalg'

@@ -615,6 +615,7 @@ function adaDefaults(hyper: Partial<AdaBoostHyper>, estimator: Estimator): AdaBo
  * @param hyper - Base estimator, rounds (default 50), learning rate (1) and algorithm (SAMME).
  * @returns The estimator.
  * @concept boosting
+ * @index estimator AdaBoost (SAMME) over any base estimator.
  * @example
  * ```ts
  * import { adaBoostClassifier } from 'mdml-engine/ensembles'

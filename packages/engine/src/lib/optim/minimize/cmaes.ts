@@ -291,6 +291,7 @@ export function cmaesAlgorithm(f: Objective, x0: Parameters, options: CmaesOptio
  * @param options - Step size, population, bounds, tolerances, budget, key or seed and run options.
  * @returns The best point found.
  * @concept evolution-strategies
+ * @index function Covariance matrix adaptation evolution strategy.
  * @example
  * ```ts
  * import { cmaes } from 'mdml-engine/optim'

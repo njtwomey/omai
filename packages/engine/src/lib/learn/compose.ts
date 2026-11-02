@@ -247,6 +247,7 @@ function namesAfter(f: Fitted | undefined, input: readonly string[], d: number):
  * @returns The estimator.
  * @throws MdmlError with code `value` for duplicate names or a non-transformer before the last step.
  * @concept pipelines
+ * @index estimator Chain of steps fitted in order, like sklearn Pipeline.
  * @example
  * ```ts
  * import { pipeline } from 'mdml-engine/learn'
@@ -680,6 +681,7 @@ export interface ColumnTransformerHyper {
  * @param transformers - Entries `[name, transformer, columns]`.
  * @param options - remainder and verboseFeatureNamesOut.
  * @returns The estimator.
+ * @index estimator Apply different transformers to different columns.
  * @example
  * ```ts
  * import { columnTransformer } from 'mdml-engine/learn'

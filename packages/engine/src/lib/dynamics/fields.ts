@@ -3,6 +3,8 @@
  * found by Newton's method from many seeds and classified from their eigenvalues (saddle, node, spiral, centre);
  * nullclines by marching squares; streamlines and differentiable flow maps; and the stable and unstable manifolds of
  * saddles.
+ *
+ * @index function Vector-field analysis: equilibria, Jacobians, divergence for phase portraits.
  */
 
 import { jacfwd } from '../autodiff/index.ts'

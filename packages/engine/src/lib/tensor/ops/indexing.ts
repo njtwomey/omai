@@ -3,6 +3,8 @@
  * segment sums, coordinate-tuple `gather` and JAX-style `scatter` (set, add, multiply, max, min), stable sorting and
  * argsort, top-k, one-hot encoding, and the data-dependent operations (`nonzero`, masked selection, `unique`,
  * `bincount`, `searchsorted`).
+ *
+ * @index function Slicing, take, gather, scatter and sort, all differentiable.
  */
 
 import { MdmlError, maxOf } from '../../base/index.ts'

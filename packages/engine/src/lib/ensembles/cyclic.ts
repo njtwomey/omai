@@ -511,6 +511,7 @@ export function explainableBoostingRegressor(options: Omit<ExplainableBoostingOp
  * @param options - bins, rounds, learning rate, interactions and pair rounds.
  * @returns The estimator.
  * @concept boosting
+ * @index estimator Cyclic boosting of additive terms (explainable boosting machine).
  * @example
  * ```ts
  * import { explainableBoostingClassifier } from 'mdml-engine/ensembles'

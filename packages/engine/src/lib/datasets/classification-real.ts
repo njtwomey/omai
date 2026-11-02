@@ -142,6 +142,7 @@ const DIGITS_META = {
  * from scikit-learn's `load_digits`; {@link digitImages} gives the same data as images.
  *
  * @returns The dataset.
+ * @index dataset Vendored 8x8 handwritten digits.
  * @example
  * ```ts
  * import { digits } from 'mdml-engine/datasets'

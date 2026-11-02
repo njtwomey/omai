@@ -3,6 +3,8 @@
  * remover (Kamishima et al., 2012), adversarial debiasing (Zhang, Lemoine and Mitchell, 2018), fairness-constrained
  * logistic regression (Zafar et al., 2017), the meta fair classifier for the statistical rate (Celis et al., 2019) and
  * GerryFair's fictitious play against rich subgroups (Kearns et al., 2018), each as AIF360 offers them.
+ *
+ * @index function Classifiers trained with a fairness term or constraint.
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'

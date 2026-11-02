@@ -189,6 +189,7 @@ export function cfrAlgorithm<S>(
  * @param options - Iterations, the variant, alternation, DCFR's parameters and tracing.
  * @returns The average and current policies and the average's exploitability.
  * @concept counterfactual-regret
+ * @index function Counterfactual regret minimisation for imperfect-information games.
  * @example
  * ```ts
  * import { cfr, kuhnPoker } from 'mdml-engine/games'

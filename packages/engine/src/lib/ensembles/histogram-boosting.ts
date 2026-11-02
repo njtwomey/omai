@@ -378,6 +378,7 @@ export function histGradientBoostingRegressor(
  * @param hyper - As {@link histGradientBoostingRegressor}.
  * @returns The estimator.
  * @concept boosting
+ * @index estimator Histogram gradient boosting with leaf-wise growth.
  * @example
  * ```ts
  * import { histGradientBoostingClassifier } from 'mdml-engine/ensembles'

@@ -74,6 +74,7 @@ export interface LinearOptions {
  * @param options - The optional weight v and offset sigma_0.
  * @returns The kernel, hyperparameters the options given.
  * @concept dot-product-kernels
+ * @index kernel Linear kernel.
  * @example
  * ```ts
  * import { linearKernel } from 'mdml-engine/kernels'
@@ -115,6 +116,7 @@ export interface PolynomialOptions {
  * @returns The kernel, hyperparameters `{ coef0, gamma }` (the degree is a setting).
  * @throws MdmlError `domain` for a degree that is not a positive integer.
  * @concept dot-product-kernels
+ * @index kernel Polynomial kernel.
  * @example
  * ```ts
  * import { polynomialKernel } from 'mdml-engine/kernels'

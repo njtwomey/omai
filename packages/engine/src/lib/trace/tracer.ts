@@ -47,6 +47,7 @@ export interface Recorder extends Tracer {
  *
  * @returns The recorder.
  * @concept tracing
+ * @index function A tracer that keeps events in memory to replay or plot.
  * @example
  * ```ts
  * import { recorder, startRun } from 'mdml-engine/trace'

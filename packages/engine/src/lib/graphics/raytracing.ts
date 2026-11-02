@@ -530,6 +530,7 @@ function initialState(tasks: Task[], pixels: number): WhittedState {
  * @param options - Depth and weight caps, recording and area-light jitter.
  * @returns The algorithm.
  * @concept ray-tracing
+ * @index algorithm Whitted ray tracing, a batch of rays per step.
  * @example
  * ```ts
  * import { material, pinholeCamera, pointLight, rayScene, sphere, whittedAlgorithm } from 'mdml-engine/graphics'
@@ -597,6 +598,7 @@ export function whittedAlgorithm(
  * @param options - Depth and weight caps, recording, area-light jitter, and a tracer and policy for the run.
  * @returns The linear image, the recorded rays and the ray counts.
  * @concept ray-tracing
+ * @index function Whitted ray tracing with reflection, refraction and shadows.
  * @example
  * ```ts
  * import { material, pinholeCamera, rayScene, renderWhitted, sphere } from 'mdml-engine/graphics'

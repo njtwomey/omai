@@ -253,6 +253,18 @@ export function penaltySpace(defaults: { readonly alpha: number; readonly l1Rati
  *
  * @param hyper - Family, link, penalty, intercept, solver and iteration limits.
  * @returns The estimator.
+ * @index estimator One penalised GLM estimator; logistic, ridge and lasso are configurations of it.
+ * @example
+ * ```ts
+ * import { linearModel } from 'mdml-engine/linear'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const x = [[0], [1], [2], [3]]
+ * const ols = linearModel({ family: 'gaussian' }).fit({ x, y: [1, 3, 5, 7] })
+ * toArray(ols.predict([[4]])) // => [9]
+ * // Logistic regression is the same estimator with a binomial family (and a small penalty here).
+ * const logistic = linearModel({ family: 'binomial', alpha: 0.01 }).fit({ x, y: [0, 0, 1, 1] })
+ * (toArray(logistic.predict([[3]])) as number[])[0] > 0.5 // => true
+ * ```
  */
 export function linearModel(
   hyper: Partial<LinearModelHyper> = {},

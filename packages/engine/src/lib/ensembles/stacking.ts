@@ -565,6 +565,7 @@ export function votingRegressor(hyper: Partial<StackingHyper> & Pick<StackingHyp
  * @param hyper - The named bases, the `final` estimator (default a shallow tree), `cv` folds (5) and `passthrough`.
  * @returns The estimator.
  * @concept ensembles
+ * @index estimator Stacked generalisation; voting ensembles sit beside it.
  * @example
  * ```ts
  * import { stackingClassifier } from 'mdml-engine/ensembles'

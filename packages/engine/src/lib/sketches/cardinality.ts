@@ -163,6 +163,7 @@ function makeHll(precision: number, seed: number, registers: Uint8Array): HyperL
  * @concept hyperloglog
  * @reference P. Flajolet, E. Fusy, O. Gandouet and F. Meunier, HyperLogLog: the analysis of a near-optimal cardinality
  *   estimation algorithm (AofA 2007).
+ * @index structure HyperLogLog distinct-count sketch.
  * @example
  * ```ts
  * import { hyperLogLog } from 'mdml-engine/sketches'

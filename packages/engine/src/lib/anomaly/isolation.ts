@@ -418,6 +418,7 @@ export type IsolationForestPath = 'forest/trees' | 'forest/scoreChange' | 'model
  *
  * @param hyper - Trees, rows per tree, contamination and the extended variant.
  * @returns The iterative outlier estimator.
+ * @index estimator Isolation forest outlier detector.
  * @example
  * ```ts
  * import { isolationForest } from 'mdml-engine/anomaly'

@@ -42,7 +42,17 @@ const steps = int(1, 100_000, { log: true, default: 1000, label: 'horizon (steps
 const warmupSteps = int(1, 10_000, { log: true, default: 100, label: 'warm-up steps' })
 const endRatio = real(0, 1, { default: 0.01, label: 'end, as a share of the peak' })
 
-/** The schedules as one slot: constant (default), step, exponential, inverse-time, cosine, restarts, linear, polynomial, warm-ups. */
+/**
+ * The schedules as one slot: constant (default), step, exponential, inverse-time, cosine, restarts, linear, polynomial, warm-ups.
+ *
+ * @index table Learning-rate schedules as one slot.
+ * @example
+ * ```ts
+ * import { schedules } from 'mdml-engine/optim'
+ * schedules.names.slice(0, 3) // => ['constant', 'step', 'exponential']
+ * schedules.optionOf({ kind: 'cosine' }).name // => 'cosine'
+ * ```
+ */
 export const schedules: OptionTable<ScheduleShape, ScheduleProperties> = optionTable(
   {
     constant: shape(

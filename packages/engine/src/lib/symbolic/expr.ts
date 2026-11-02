@@ -3,6 +3,8 @@
  * assumptions, constants, sums, products, powers, function applications, relations, unevaluated derivatives and
  * integrals), its constructors and arithmetic, substitution and free symbols. Also the derivation and step types every
  * rewrite reports, and work budgets that bound symbolic operations deterministically.
+ *
+ * @index structure Immutable symbolic expression tree in canonical form.
  */
 
 import { MdmlError } from '../base/index.ts'

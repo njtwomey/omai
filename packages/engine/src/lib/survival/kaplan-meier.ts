@@ -76,6 +76,7 @@ function intervalBounds(
  * @param event - Event indicators (omitted: all events).
  * @param options - `interval` and `level`.
  * @returns The curve.
+ * @index function Kaplan-Meier survival curve for right-censored data.
  * @example
  * ```ts
  * import { kaplanMeier } from 'mdml-engine/survival'

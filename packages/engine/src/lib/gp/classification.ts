@@ -353,6 +353,7 @@ export type GpcPath = 'gp/logMarginalLikelihood' | 'gp/hyper' | 'gp/latent' | 'm
  *
  * @concept gaussian-process-classification
  * @reference C. E. Rasmussen and C. K. I. Williams, Gaussian Processes for Machine Learning (2006), chapter 3.
+ * @index estimator Gaussian process classification by Laplace or EP.
  * @example
  * ```ts
  * import { gpClassifier } from 'mdml-engine/gp'

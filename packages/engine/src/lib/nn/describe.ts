@@ -253,6 +253,7 @@ export interface DescribeOptions {
  * @param options - Whether to show composite blocks' parts.
  * @returns The structure.
  * @concept architectures
+ * @index function A module as a drawable Structure: layers, shapes, parameters.
  * @example
  * ```ts
  * import { describe, mlp } from 'mdml-engine/nn'
@@ -373,6 +374,7 @@ const human = (n: number): string =>
  * @param module - The module.
  * @param inputShape - The input batch shape.
  * @returns The summary text.
+ * @index function A torchinfo-style text summary of a module.
  * @example
  * ```ts
  * import { summary, mlp } from 'mdml-engine/nn'

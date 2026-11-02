@@ -331,6 +331,7 @@ export const fbetaScore: Metric<FbetaOptions, MetricInput> = rateMetric<FbetaOpt
  * @param yPred - Predicted labels, the same form.
  * @param options - average, labels, posLabel, zeroDivision and sample weights.
  * @returns The metric result.
+ * @index function F1 score, with precision, recall and F-beta beside it.
  * @example
  * ```ts
  * import { f1Score } from 'mdml-engine/metrics'
@@ -425,6 +426,7 @@ export interface AccuracyOptions extends MetricOptions {
  * @param options - normalize and sample weights.
  * @returns The metric result.
  * @concept classification-metrics
+ * @index function Classification accuracy, optionally weighted.
  * @example
  * ```ts
  * import { accuracyScore } from 'mdml-engine/metrics'
@@ -533,6 +535,7 @@ export interface ConfusionMatrix {
  * @param yPred - Predicted labels.
  * @param options - labels (order and subset), normalize ('true' rows, 'pred' columns or 'all') and sample weights.
  * @returns The matrix and its class labels.
+ * @index function Confusion matrix of labels and predictions.
  * @example
  * ```ts
  * import { confusionMatrix } from 'mdml-engine/metrics'

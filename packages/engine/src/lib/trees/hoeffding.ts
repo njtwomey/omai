@@ -412,6 +412,7 @@ export type HoeffdingEstimator = IterativeEstimator<HoeffdingOptions, HoeffdingS
  *   depth limit, categorical features and passes.
  * @returns The estimator.
  * @concept decision-trees
+ * @index estimator Streaming decision tree with the Hoeffding bound.
  * @example
  * ```ts
  * import { hoeffdingTreeClassifier } from 'mdml-engine/trees'

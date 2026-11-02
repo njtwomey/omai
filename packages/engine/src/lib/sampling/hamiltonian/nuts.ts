@@ -253,6 +253,7 @@ export type NUTSRunOptions = NUTSAdaptationOptions & Omit<SampleChainsOptions, '
  * @param options - Tree depth, adaptation options, and chain options (key, chains, draws, warm-up).
  * @returns The chains, on the target's unconstrained coordinates (see `constrainChains`).
  * @concept nuts
+ * @index function No-U-Turn sampler chains.
  * @example
  * ```ts
  * import { nuts, numericTarget } from 'mdml-engine/sampling'

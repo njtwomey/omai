@@ -2,6 +2,8 @@
  * Linear algebra basics on tensors: `matmul` with numpy batching semantics, dot, inner and outer products, `tensordot`,
  * `einsum` over any number of operands, Kronecker products, diagonals and traces. Factorisations and solvers live in
  * `numerics/linalg`.
+ *
+ * @index function matmul, dot, tensordot, einsum and Kronecker products with batching.
  */
 
 import { MdmlError } from '../../base/index.ts'

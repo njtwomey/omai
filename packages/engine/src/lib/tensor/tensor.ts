@@ -2,6 +2,8 @@
  * The `Tensor` type, an n-dimensional array with a dtype, a shape and contiguous row-major storage owned by a backend,
  * and the ways in and out of it: `tensor` (like `numpy.array`), wrapping existing storage, conversion of tensor-like
  * inputs, and `toArray`, `toFlat`, `item` and `clone`.
+ *
+ * @index structure The Tensor type, its constructors and conversions to plain arrays.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -76,6 +78,7 @@ function inferDType(values: NestedArray): DType {
  * @returns A new tensor whose shape is inferred from the nesting.
  * @throws MdmlError with code `shape` for ragged input.
  * @concept tensor
+ * @index function Create a tensor from numbers or nested arrays, like numpy.array.
  * @example
  * ```ts
  * import { tensor } from 'mdml-engine/tensor'

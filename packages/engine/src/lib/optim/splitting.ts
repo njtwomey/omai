@@ -234,6 +234,7 @@ export function ista(f: Objective, prox: Prox, x0: TensorLike, options: Proximal
  * @param options - Step, backtracking, restart, the value of g, tolerances, iteration cap (default 10000).
  * @returns The result.
  * @concept proximal-gradient
+ * @index function Accelerated proximal gradient for composite objectives.
  * @example
  * ```ts
  * import { fista, proxL1 } from 'mdml-engine/optim'

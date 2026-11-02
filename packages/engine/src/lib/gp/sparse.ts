@@ -386,6 +386,7 @@ export type SparseGpPath = 'gp/bound' | 'gp/hyper' | 'gp/inducing' | 'model/post
  * posterior over the first feature, with the inducing points' values on the mean.
  *
  * @concept sparse-gaussian-processes
+ * @index estimator Sparse Gaussian process with inducing points.
  * @example
  * ```ts
  * import { sparseGp } from 'mdml-engine/gp'

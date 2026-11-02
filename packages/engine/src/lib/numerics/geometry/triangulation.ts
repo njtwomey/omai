@@ -72,6 +72,7 @@ export function toPoints(points: TensorLike | readonly Point2[]): Point2[] {
  * @param points - Points `[n, 2]`, at least three and not all collinear.
  * @returns The triangulation with neighbours, hull and point location.
  * @concept delaunay
+ * @index function Delaunay triangulation of planar points.
  * @example
  * ```ts
  * import { delaunay } from 'mdml-engine/numerics/geometry'

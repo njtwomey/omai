@@ -286,6 +286,7 @@ function concatNumbers(...parts: readonly ArrayLike<number>[]): Float64Array {
  * @throws MdmlError with code `convergence` when a solve fails.
  * @concept adjoint-method
  * @reference Chen, Rubanova, Bettencourt and Duvenaud (2018), Neural ordinary differential equations.
+ * @index function ODE solve differentiable in initial state and parameters by the adjoint method.
  * @example
  * ```ts
  * import { odeintAdjoint } from 'mdml-engine/dynamics/ode'

@@ -1,7 +1,8 @@
 /**
  * TSDoc comments as data: the summary and description, `@param`, `@returns`, `@throws`, `@example`, `@concept`,
- * `@see`, `@reference`, `@deprecated`, `@remarks` and the modifier tags (`@internal`, `@alpha`, `@beta`,
- * `@experimental`). Plain string work on the comment text, so it runs anywhere.
+ * `@see`, `@reference`, `@index` (kept as raw text; `index-tags.ts` validates it), `@deprecated`, `@remarks` and the
+ * modifier tags (`@internal`, `@alpha`, `@beta`, `@experimental`). Plain string work on the comment text, so it runs
+ * anywhere.
  */
 import type { Example } from '../schema/examples.ts'
 
@@ -19,6 +20,8 @@ export interface ParsedDoc {
   readonly concepts: readonly string[]
   readonly see: readonly string[]
   readonly references: readonly string[]
+  /** Every `@index` tag as written (text after the tag, on one line) with the 0-based comment line it starts on. */
+  readonly indexTags: readonly { readonly text: string; readonly line: number }[]
   readonly deprecated?: string
   readonly defaultValue?: string
   /** Modifier tags present, without the `@`. */
@@ -133,6 +136,7 @@ export function parseDocComment(text: string): ParsedDoc {
   const concepts: string[] = []
   const see: string[] = []
   const references: string[] = []
+  const indexTags: { text: string; line: number }[] = []
   const remarks: string[] = []
   let returns = ''
   let deprecated: string | undefined
@@ -168,6 +172,9 @@ export function parseDocComment(text: string): ParsedDoc {
       case 'reference':
         references.push(squash(body))
         break
+      case 'index':
+        indexTags.push({ text: squash(body), line: b.start })
+        break
       case 'remarks':
         remarks.push(body.trim())
         break
@@ -193,6 +200,7 @@ export function parseDocComment(text: string): ParsedDoc {
     concepts,
     see,
     references,
+    indexTags,
     ...(deprecated === undefined ? {} : { deprecated }),
     ...(defaultValue === undefined ? {} : { defaultValue }),
     modifiers: [...modifiers],

@@ -3,6 +3,8 @@
  * differentiates with respect to them) with pure methods for densities, CDFs, quantiles, moments, entropy and sampling,
  * built by `defineDistribution`. Also the shape conventions (batch and event shapes, as torch.distributions), supports
  * and membership tests, and parameter validation.
+ *
+ * @index structure The Distribution contract: density, CDF, quantile, moments and sampling.
  */
 
 import { MdmlError } from '../base/index.ts'
@@ -151,6 +153,7 @@ export function unavailable(name: string, what: string): never {
  * @param spec - The defining parts.
  * @returns The distribution.
  * @concept distributions
+ * @index distribution Define a new family from its log density, sampler and moments.
  * @example
  * ```ts
  * import { defineDistribution } from 'mdml-engine/dists'

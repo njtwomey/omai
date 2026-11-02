@@ -53,6 +53,7 @@ export interface GameOptions {
  * @returns The game.
  * @throws MdmlError with code `shape` when the tensors disagree with each other or with the number of players.
  * @concept normal-form-game
+ * @index structure A normal-form game from payoff tensors.
  * @example
  * ```ts
  * import { normalFormGame } from 'mdml-engine/games'

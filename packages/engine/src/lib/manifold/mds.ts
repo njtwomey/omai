@@ -267,6 +267,7 @@ export interface MdsHyper {
  * Multidimensional scaling (sklearn.manifold.MDS) on the iterative base: a Guttman transform per step, or classical MDS
  * in one step. New rows are placed by their nearest training rows (there is no closed-form extension).
  *
+ * @index estimator Metric and non-metric multidimensional scaling (SMACOF).
  * @example
  * ```ts
  * import { mds } from 'mdml-engine/manifold'

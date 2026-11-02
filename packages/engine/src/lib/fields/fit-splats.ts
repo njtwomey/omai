@@ -629,6 +629,7 @@ export interface SplatFit {
  * @param options - As {@link fitSplatsAlgorithm}, the step count and the run's key, tracer and policy.
  * @returns The fitted Gaussians, the per-step losses and counts, and the status.
  * @concept gaussian-splatting
+ * @index function Fit 3-D Gaussians to posed images, with adaptive density control.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

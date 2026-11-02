@@ -81,6 +81,7 @@ export interface FastOptions {
  * @param options - Threshold and non-maximum suppression.
  * @returns The keypoints.
  * @concept corner-detection
+ * @index function FAST-9 corner detector.
  * @example
  * ```ts
  * import { fast } from 'mdml-engine/vision'

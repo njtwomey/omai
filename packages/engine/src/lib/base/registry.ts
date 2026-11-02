@@ -4,6 +4,8 @@
  * `find` get one by name, and `matchesText` is the search-box test the registries' queries use. Nothing registers
  * itself on import: the library builds its registries from its catalogues as values, and an app extends one with
  * `register` and keeps the result.
+ *
+ * @index structure Registries of named entries, the shape dataset and environment registries share.
  */
 
 import { MdmlError } from './errors.ts'

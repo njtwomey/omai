@@ -66,6 +66,7 @@ const nanOutside = (ok: Value, v: Value): Value => where(ok, v, Number.NaN)
  * @returns The distribution; `rsample` is loc + scale eps sqrt(df / V) with V chi-square, differentiable in every
  *   parameter (through the implicitly reparameterised gamma).
  * @concept distributions
+ * @index distribution Student's t distribution.
  * @example
  * ```ts
  * import { studentT } from 'mdml-engine/dists'

@@ -2,6 +2,8 @@
  * The union of every exposition record: the plain, serialisable data a method returns beside its result so a view can
  * explain it. `Explained` pairs a result with its records, `recordsOf` picks the records of one kind, and
  * `isExposition` recognises a record by its `kind` tag.
+ *
+ * @index structure Union of every exposition record a method returns beside its result.
  */
 
 import type { AgentSteps } from './agents.ts'

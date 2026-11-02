@@ -317,6 +317,7 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
  * @returns x, the optimal value, slacks, residuals, status, marginals (duals), and for the simplex the basis,
  * sensitivity ranges and visited vertices.
  * @concept linear-programming
+ * @index function Linear programming by simplex or interior point, scipy form.
  * @example
  * ```ts
  * import { linprog } from 'mdml-engine/optim'

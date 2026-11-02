@@ -160,6 +160,7 @@ export class Conv1d extends ConvNd {
  * 2-D convolution (torch.nn.Conv2d): `[B, C_in, H, W]` to `[B, C_out, H_out, W_out]`.
  *
  * @concept convolution
+ * @index module 2-D convolution layer with PyTorch's weight layout.
  * @example
  * ```ts
  * import { Conv2d } from 'mdml-engine/nn'

@@ -85,6 +85,7 @@ const choleskyPrimitive: Primitive<null> = definePrimitive<null>({
  * @returns Lower-triangular L, differentiable (the derivative treats A as symmetric).
  * @throws MdmlError with code `value` when A is not positive definite.
  * @concept linear-algebra
+ * @index function Cholesky factor of a symmetric positive-definite matrix.
  * @example
  * ```ts
  * import { cholesky } from 'mdml-engine/numerics/linalg'

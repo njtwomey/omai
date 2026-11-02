@@ -66,6 +66,7 @@ export interface PidController {
  * @returns The controller.
  * @throws MdmlError with code `value` for a non-positive sample time.
  * @concept pid-control
+ * @index function Discrete PID controller with anti-windup.
  * @example
  * ```ts
  * import { control } from 'mdml-engine/dynamics'

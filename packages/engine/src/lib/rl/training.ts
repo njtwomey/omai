@@ -203,6 +203,7 @@ export type TrainingPath = 'rl/episode/end'
  * @param options - Episodes, evaluation schedule and checkpoints.
  * @returns The algorithm.
  * @concept agents
+ * @index algorithm The RL training loop: act, step, learn, evaluate.
  * @example
  * ```ts
  * import { make, policyAgent, trainingAlgorithm } from 'mdml-engine/rl'
@@ -270,6 +271,7 @@ export interface TrainResult<G, S, O> {
  * @returns The trained agent state, returns per episode, evaluations and the final state.
  * @throws MdmlError with code `value` when neither `episodes` nor `maxSteps` is given.
  * @concept agents
+ * @index function Train an agent in an environment, with periodic evaluation.
  * @example
  * ```ts
  * import { make, policyAgent, trainAgent } from 'mdml-engine/rl'

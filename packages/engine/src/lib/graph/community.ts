@@ -258,6 +258,7 @@ export function louvainAlgorithm(
  * @concept community-detection
  * @reference V. D. Blondel, J.-L. Guillaume, R. Lambiotte and E. Lefebvre, Fast unfolding of communities in large
  *   networks, J. Stat. Mech. (2008).
+ * @index function Louvain community detection.
  * @example
  * ```ts
  * import { barbellGraph, louvain } from 'mdml-engine/graph'

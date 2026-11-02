@@ -48,6 +48,7 @@ import { type CovarianceParams, multivariateNormal } from './normal.ts'
  * @returns The distribution; `rsample` normalises implicitly reparameterised gamma samples, so samples differentiate in
  *   the concentrations.
  * @concept distributions
+ * @index distribution Dirichlet distribution on the probability simplex.
  * @example
  * ```ts
  * import { dirichlet } from 'mdml-engine/dists'

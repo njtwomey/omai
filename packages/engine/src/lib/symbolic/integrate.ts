@@ -278,6 +278,7 @@ function run(e: Expr, x: ExprSym, steps: Step[] | undefined, budget: WorkBudget 
  * @param x - The variable.
  * @param budget - Work limits (see {@link WorkBudget}).
  * @returns The antiderivative, possibly containing an unevaluated integral.
+ * @index function Symbolic antiderivative by a bounded heuristic integrator.
  * @example
  * ```ts
  * import { integrate, parse, sym, toText } from 'mdml-engine/symbolic'

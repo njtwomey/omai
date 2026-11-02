@@ -2,6 +2,8 @@
  * Studies and trials, the record of a parameter search: a `Study` holds a space, the direction of each objective and
  * its finished trials (complete, pruned or failed, with intermediate reports). Creation, losses, the best trial or
  * Pareto front of best trials, hypervolume, export as rows, and lossless JSON encoding for resuming a study later.
+ *
+ * @index structure Studies and trials: the record of a parameter search.
  */
 
 import { type Decoded, type Encodable, fromJson, type Json, MdmlError, toJson } from '../base/index.ts'

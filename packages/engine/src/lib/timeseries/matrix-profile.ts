@@ -4,6 +4,8 @@
  * dot-product update (STOMP) or by random rows (STAMP), each a traced `Algorithm` whose state is the profile so far and
  * whose step is a batch of diagonals or rows. Self-joins ignore trivial matches within the exclusion zone; an AB-join
  * profiles one series against another.
+ *
+ * @index function Exact matrix profile and anytime relatives (STUMP, STOMP, STAMP).
  */
 
 import type { Json } from '../base/index.ts'

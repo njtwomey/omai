@@ -445,6 +445,7 @@ export function eigshAlgorithm(
  * @returns Eigenvalues (ascending), eigenvectors and residuals.
  * @throws MdmlError with code `convergence` past the restart limit.
  * @concept lanczos
+ * @index function Extreme eigenpairs of a symmetric operator by Lanczos.
  * @example
  * ```ts
  * import { diagCsr, eigsh } from 'mdml-engine/numerics/sparse'

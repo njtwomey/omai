@@ -2,6 +2,8 @@
  * Complex arithmetic on tensors, with a complex value held as a pair of real arrays of the same shape so that
  * everything stays differentiable: construction and real and imaginary parts, sums, products, quotients and conjugates,
  * modulus and argument, polar form (`torch.polar`), the complex exponential and `cis`.
+ *
+ * @index structure Complex tensors held as real and imaginary pairs, still differentiable.
  */
 
 import { zerosLike } from './create.ts'

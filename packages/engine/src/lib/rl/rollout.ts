@@ -117,6 +117,7 @@ function meanStd(xs: readonly number[]): { readonly mean: number; readonly std: 
  * @param options - Episodes (default 10), a step budget, and the run options (key, seed, tracer, policy).
  * @returns Returns, lengths, and their mean and (population) standard deviation.
  * @concept rollouts
+ * @index function Evaluate a policy over episodes.
  * @example
  * ```ts
  * import { make, evaluatePolicy } from 'mdml-engine/rl'

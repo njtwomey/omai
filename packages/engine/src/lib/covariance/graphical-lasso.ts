@@ -247,6 +247,7 @@ export type FittedGraphicalLasso = IterativeFitted<GraphicalLassoParams, Covaria
  *
  * @param hyper - The penalty, tolerances, iteration cap and the regularisation path's penalties.
  * @returns The iterative estimator.
+ * @index estimator Sparse precision matrix by graphical lasso.
  * @example
  * ```ts
  * import { graphicalLassoEstimator } from 'mdml-engine/covariance'

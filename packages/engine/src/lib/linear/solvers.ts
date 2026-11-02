@@ -3,6 +3,8 @@
  * from one SVD), elastic-net coordinate descent with duality gaps, iteratively reweighted least squares (Fisher
  * scoring) and quasi-Newton (L-BFGS, or OWL-QN for an L1 penalty), each traced. `chooseSolver` picks one for a problem
  * and says why.
+ *
+ * @index function Solvers of the penalised GLM core: Cholesky, QR, SVD, coordinate descent.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'

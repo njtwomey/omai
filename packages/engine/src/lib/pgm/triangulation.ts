@@ -528,6 +528,7 @@ export interface JunctionTree {
  * @param order - The elimination order (default: greedy min-fill).
  * @returns The cliques and the tree edges.
  * @concept junction-trees
+ * @index function Junction tree from a model's moral graph.
  * @example
  * ```ts
  * import { junctionTree, undirectedGraph } from 'mdml-engine/pgm'

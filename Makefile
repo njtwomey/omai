@@ -27,6 +27,14 @@ barrels: ## Regenerate index.ts barrels and the module map
 barrels-check: ## Fail if any barrel is stale
 	$(NODE) scripts/barrels.ts --check
 
+.PHONY: agent-index
+agent-index: ## Regenerate the agent index (packages/engine/llms.txt and index/) from the @index tags
+	$(NODE) scripts/agent-index.ts
+
+.PHONY: agent-index-check
+agent-index-check: ## Fail if the agent index is stale or an @index tag is invalid
+	$(NODE) scripts/agent-index.ts --check
+
 .PHONY: layers
 layers: ## Check layering: no import cycles between core domains, and the package rules
 	$(NODE) scripts/layers.ts
@@ -110,7 +118,7 @@ verify: ## Checks scoped to what changed against BASE (default main): the gate f
 	$(NODE) scripts/verify.ts --base $(or $(BASE),main)
 
 .PHONY: check
-check: barrels-check layers lint typecheck test examples ## Everything, every test (periodic full run; `verify` is the per-change gate)
+check: barrels-check agent-index-check layers lint typecheck test examples ## Everything, every test (periodic full run; `verify` is the per-change gate)
 
 .PHONY: clean
 clean: ## Remove build outputs

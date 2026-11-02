@@ -3,6 +3,8 @@
  * inference algorithm manipulates, stored in log space in pgmpy's row-major layout. Construction, product, division and
  * powers, sum and max marginalisation, reduction by evidence, normalisation, the log partition function, lookups,
  * argmax and entropy.
+ *
+ * @index structure Discrete factors, the tables inference algorithms manipulate.
  */
 
 import { type Json, logSumExpOf, MdmlError } from '../base/index.ts'

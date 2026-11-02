@@ -252,6 +252,7 @@ export type IcaVerbs = Omit<ProjectionVerbs, 'score'>
  * the centred data, then a fixed-point iteration per step (`'parallel'`) or a component per step (`'deflation'`),
  * with the sources scaled to unit variance.
  *
+ * @index estimator FastICA independent component analysis.
  * @example
  * ```ts
  * import { fastIca } from 'mdml-engine/decomposition'

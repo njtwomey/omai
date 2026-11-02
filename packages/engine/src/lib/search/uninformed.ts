@@ -470,6 +470,7 @@ export function uniformCostSearchAlgorithm<S, A>(
  * @param options - Graph or tree search, tie-breaking, the expansion budget, tree recording and tracing.
  * @returns The result.
  * @concept uninformed-search
+ * @index function Uniform-cost search; BFS, DFS and iterative deepening beside it.
  * @example
  * ```ts
  * import { uniformCostSearch } from 'mdml-engine/search'

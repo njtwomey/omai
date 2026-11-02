@@ -6,6 +6,8 @@
  * (`episode/return`, `episode/length`, `train/loss`, `agent/<statistic>`, `eval/return`, `env/frame`), the probes (an
  * evaluation episode as an `episodes` record at any step, and for tabular agents the value and action maps as
  * `valueGrids`), serialisation of the whole run state so a session can seek, and `method`, `session` and `train`.
+ *
+ * @index structure Agent base: an RL agent learning in an environment, as a session.
  */
 
 import { lookup, MdmlError } from '../../base/index.ts'

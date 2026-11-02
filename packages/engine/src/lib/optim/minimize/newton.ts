@@ -229,6 +229,7 @@ function newtonOn(obj: FlatObjective, options: NewtonOptions): Algorithm<NewtonS
  * and run options.
  * @returns The result.
  * @concept newton-method
+ * @index function Newton's method with modified Cholesky and line search.
  * @example
  * ```ts
  * import { newton } from 'mdml-engine/optim'

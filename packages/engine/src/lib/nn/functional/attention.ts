@@ -3,6 +3,8 @@
  * boolean or additive masks, causal, sliding-window and local masks, soft-capping and dropout, returning the attention
  * weights when asked. Also head splitting and merging, multi-head attention with PyTorch's parameter layout, and linear
  * attention (Katharopoulos et al. 2020).
+ *
+ * @index function Scaled dot-product attention with masks, causal and sliding-window forms.
  */
 
 import { MdmlError } from '../../base/index.ts'

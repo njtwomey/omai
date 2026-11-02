@@ -228,6 +228,7 @@ export function hemisphereCameras(
  * a model should use, and the held-out cameras with their images, in `truth.extra`.
  *
  * @concept novel-view-synthesis
+ * @index dataset Posed multi-view images of a small scene, with held-out views.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

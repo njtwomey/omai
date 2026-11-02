@@ -308,6 +308,7 @@ export function chebfunAlgorithm(
  * @returns The expansion; its coefficients show the decay.
  * @throws MdmlError with code `convergence` when the coefficients do not decay within the largest sample size.
  * @concept chebyshev-approximation
+ * @index function Adaptive Chebyshev approximation of a smooth function.
  * @example
  * ```ts
  * import { chebfun } from 'mdml-engine/numerics/approximation'

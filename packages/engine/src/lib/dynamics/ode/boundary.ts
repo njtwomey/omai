@@ -362,6 +362,7 @@ export function bvpSolution(state: BvpState, n: number): BvpSolution {
  * @returns The solution with its mesh, spline, residuals and status.
  * @throws MdmlError with code `shape` or `value` for bad inputs.
  * @concept boundary-value-problem
+ * @index function Boundary value problems by collocation.
  * @example
  * ```ts
  * import { solveBvp } from 'mdml-engine/dynamics/ode'

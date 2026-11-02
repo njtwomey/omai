@@ -2,6 +2,8 @@
  * Regularisation paths: coefficients as the penalty varies. The elastic-net and lasso paths by warm-started coordinate
  * descent (scikit-learn's `enet_path`), the ridge path from one SVD, and cross-validated mean squared error along a
  * path with the best and one-standard-error choices of the penalty.
+ *
+ * @index function Regularisation paths over an alpha grid by warm-started coordinate descent.
  */
 
 import { argminOf, MdmlError } from '../base/index.ts'

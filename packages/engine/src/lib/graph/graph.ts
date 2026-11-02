@@ -3,6 +3,8 @@
  * compressed-sparse-row adjacency in both directions. Construction from edge lists, neighbour and degree queries, edge
  * lookup, induced subgraphs, reversal and conversion between directed and undirected forms, and a description of a
  * graph as a drawable structure.
+ *
+ * @index structure The graph data type, NetworkX style, directed or not, weighted.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
@@ -97,6 +99,7 @@ export interface GraphOptions {
  * @throws MdmlError with code `value` for a negative or non-integer node index, a non-finite weight, or a repeated
  *   edge when `duplicates` is `'error'`.
  * @concept graphs
+ * @index function Build a graph from an edge list.
  * @example
  * ```ts
  * import { graph } from 'mdml-engine/graph'

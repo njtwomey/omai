@@ -46,6 +46,7 @@ export interface CustomVjpSpec {
  * @param spec - Name, forward function, vjp rule and optional jvp rule.
  * @returns The function, usable inside and outside transformations.
  * @concept custom-derivatives
+ * @index function Define a function with a hand-written reverse rule.
  * @example
  * ```ts
  * import { customVjp, grad } from 'mdml-engine/autodiff'
@@ -244,6 +245,7 @@ function residualTrace(
  * @param options - The policy for what to save, and a name.
  * @returns The checkpointed function.
  * @concept rematerialisation
+ * @index function Gradient checkpointing: recompute the forward pass instead of storing it.
  * @example
  * ```ts
  * import { checkpoint, grad } from 'mdml-engine/autodiff'

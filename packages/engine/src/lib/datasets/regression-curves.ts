@@ -125,6 +125,7 @@ const constant =
 /**
  * `f(x) = amplitude sin(2 pi frequency x)` on [0, 1], with Gaussian noise.
  *
+ * @index dataset Noisy sine regression with known function.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

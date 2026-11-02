@@ -202,6 +202,7 @@ export interface PathTracerState {
  * @param options - Samples, bounces and jitter.
  * @returns The algorithm.
  * @concept path-tracing
+ * @index algorithm Path tracing accumulating one sample per pixel per step.
  * @example
  * ```ts
  * import { material, pathTracerAlgorithm, pinholeCamera, rayScene, sphere } from 'mdml-engine/graphics'
@@ -298,6 +299,7 @@ export function pathTracerAlgorithm(
  * @param options - Samples, bounces and jitter, the key, and a tracer and policy for the run.
  * @returns The mean image and the samples taken.
  * @concept path-tracing
+ * @index function Monte Carlo path tracing.
  * @example
  * ```ts
  * import { material, pathTrace, pinholeCamera, rayScene, sphere } from 'mdml-engine/graphics'

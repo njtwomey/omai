@@ -356,6 +356,7 @@ const centroidVerbs = (p: CentroidParams): CentroidVerbs => ({
 /**
  * Bisecting k-means on the iterative base: one split per step.
  *
+ * @index estimator Bisecting k-means; Elkan and kernel k-means beside it.
  * @example
  * ```ts
  * import { bisectingKMeans } from 'mdml-engine/cluster'

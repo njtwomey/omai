@@ -2,6 +2,8 @@
  * The environment contract, gymnax style: environments as pure functions whose `reset` and `step` take keys and return
  * new states, so episodes are reproducible and can be replayed from any state. Also step and reset results, explicit
  * tabular models (gymnasium's `P` table), oracles for regret, environment specs and named definitions, and unwrapping.
+ *
+ * @index structure The environment contract: pure reset and step functions with keys.
  */
 
 import type { Json } from '../base/index.ts'

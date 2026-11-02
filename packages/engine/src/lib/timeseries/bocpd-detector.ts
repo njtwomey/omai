@@ -137,6 +137,7 @@ const pruning: RealSpace = real(-100, -2, { default: -40, label: 'pruning thresh
  * strip with the true changepoints marked when the data carries them.
  *
  * @concept bayesian-changepoint-detection
+ * @index estimator Bayesian online changepoint detection.
  * @example
  * ```ts
  * import { bocpdDetector, changepointData } from 'mdml-engine/timeseries'

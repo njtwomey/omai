@@ -74,6 +74,7 @@ export function resolveKernel(choice: KernelChoice, x: TensorLike): ResolvedKern
  * @param y - Rows `[n, d]` (default x).
  * @returns The `m * n` entries.
  * @concept kernel-functions
+ * @index function Gram matrix of a kernel chosen by name.
  * @example
  * ```ts
  * import { kernelMatrix } from 'mdml-engine/kernels'

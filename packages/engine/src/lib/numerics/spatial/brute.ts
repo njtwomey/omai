@@ -43,6 +43,7 @@ export interface BruteOptions extends MetricOptions {
  * @param options - Metric, its parameters, and whether to exclude self-matches.
  * @returns Indices and distances.
  * @concept nearest-neighbours
+ * @index function Exact k nearest neighbours by brute force.
  * @example
  * ```ts
  * import { kNearest } from 'mdml-engine/numerics/spatial'

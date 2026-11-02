@@ -3,6 +3,8 @@
  * `param` for learnable parameters, `deterministic` for recorded values, `factor` for extra log-density terms, `plate`
  * for conditionally independent repetitions and `markov` for loops with sequential dependence. Also the message and
  * handler stack (`send`, `withMessenger`) they all go through.
+ *
+ * @index function sample, observe and param: the vocabulary programs are written in.
  */
 
 import { MdmlError } from '../base/index.ts'

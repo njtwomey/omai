@@ -178,6 +178,7 @@ const snapshot = (dual: Dual, smo: SmoState): Pick<SvrState, 'smo' | 'live' | 'r
  *
  * @concept support-vector-machines
  * @reference A. J. Smola and B. Schoelkopf, A tutorial on support vector regression (2004).
+ * @index estimator Support vector regression.
  * @example
  * ```ts
  * import { svr } from 'mdml-engine/svm'

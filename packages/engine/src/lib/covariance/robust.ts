@@ -312,6 +312,7 @@ export type FittedMinCovDet = IterativeFitted<MinCovDetParams, CovarianceVerbs>
  *
  * @param hyper - Support fraction and the number of random starts.
  * @returns The iterative estimator.
+ * @index estimator Robust minimum covariance determinant by FastMCD.
  * @example
  * ```ts
  * import { minCovDet } from 'mdml-engine/covariance'

@@ -39,6 +39,7 @@ export interface ReplayBuffer<T> {
  * @returns The buffer.
  * @throws MdmlError with code `value` for a capacity below 1.
  * @concept experience-replay
+ * @index structure Replay buffer for off-policy learners.
  * @example
  * ```ts
  * import { replayBuffer } from 'mdml-engine/rl'

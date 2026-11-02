@@ -87,6 +87,7 @@ const budget = int(1, 100_000_000, { log: true, default: 100_000, label: 'most p
  * of the target and how often they reject.
  *
  * @concept rejection-sampling
+ * @index table The exact samplers as one slot.
  * @example
  * ```ts
  * import { rejectionSamplers } from 'mdml-engine/sampling'

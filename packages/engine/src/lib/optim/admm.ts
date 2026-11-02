@@ -264,6 +264,7 @@ function splitRun(options: AdmmRunOptions): {
  * @param options - Starting points, penalty, adaptation, relaxation, tolerances, iteration cap (default 10000).
  * @returns x, z, the scaled dual u and the residuals.
  * @concept admm
+ * @index function Alternating direction method of multipliers.
  * @example
  * ```ts
  * import { admm } from 'mdml-engine/optim'

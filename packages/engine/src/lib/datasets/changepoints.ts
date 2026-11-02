@@ -145,6 +145,7 @@ function modelOf(kind: ChangeKind, noise: number, shift: number, meanRate: numbe
  * trend breaks). The truth holds the changepoints, every segment's parameters, the model, and the exact BOCPD
  * run-length posterior and predictive (`truth.extra.bocpd()`, computed on first call).
  *
+ * @index dataset Series with tunable changepoints for detection methods.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

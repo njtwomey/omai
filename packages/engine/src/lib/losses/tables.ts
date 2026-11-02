@@ -56,7 +56,18 @@ const classification = (
   make: Option<Loss, LossProperties>['make'],
 ): Option<Loss, LossProperties> => ({ description, space, properties: { task: 'classification', ...properties }, make })
 
-/** The regression losses as one slot: squared (default), absolute, Huber, log-cosh, pinball, expectile, smooth L1. */
+/**
+ * The regression losses as one slot: squared (default), absolute, Huber, log-cosh, pinball, expectile, smooth L1.
+ *
+ * @index table The regression losses as one slot: squared, absolute, Huber and more.
+ * @example
+ * ```ts
+ * import { regressionLosses } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const squared = regressionLosses.make({ kind: 'squared' })
+ * toArray(squared([1, 2, 3], [1, 2, 5])) // => 1.3333333333333333
+ * ```
+ */
 export const regressionLosses: OptionTable<Loss, LossProperties> = optionTable(
   {
     squared: regression({ convex: true, smooth: true, likelihood: true }, 'the squared error', dict({}), () => mse),
@@ -95,7 +106,18 @@ export const regressionLosses: OptionTable<Loss, LossProperties> = optionTable(
   { label: 'loss', description: 'the regression loss' },
 )
 
-/** The binary classification losses as one slot: logistic (default), hinge, squared hinge, exponential, modified Huber, perceptron. */
+/**
+ * The binary classification losses as one slot: logistic (default), hinge, squared hinge, exponential, modified Huber, perceptron.
+ *
+ * @index table The binary classification losses as one slot.
+ * @example
+ * ```ts
+ * import { classificationLosses } from 'mdml-engine/losses'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const hinge = classificationLosses.make({ kind: 'hinge' })
+ * toArray(hinge([0.5, -2], [1, 1])) // => 1.75
+ * ```
+ */
 export const classificationLosses: OptionTable<Loss, LossProperties> = optionTable(
   {
     logistic: classification(
@@ -257,6 +279,14 @@ const num = (v: unknown): number => v as number
  * smoothing, focal, and the losses made for noisy labels: generalised, truncated and symmetric cross-entropy,
  * bootstrapping, the probability MAE, the forward and backward corrected losses (for symmetric noise at a given rate)
  * and the bi-tempered logistic loss.
+ *
+ * @index table The multi-class losses as one slot.
+ * @example
+ * ```ts
+ * import { multiclassLosses } from 'mdml-engine/losses'
+ * multiclassLosses.names.slice(0, 2) // => ['crossEntropy', 'labelSmoothing']
+ * multiclassLosses.optionOf({ kind: 'focal' }).name // => 'focal'
+ * ```
  */
 export const multiclassLosses: OptionTable<ClassLoss, ClassLossProperties> = optionTable(
   {

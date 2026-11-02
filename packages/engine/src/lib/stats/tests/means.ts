@@ -98,6 +98,7 @@ export interface TtestIndOptions extends TestOptions {
  * @param y - Second sample.
  * @param options - equalVar (default true), alternative and level.
  * @returns The t statistic, p-value, degrees of freedom, estimate and effect size.
+ * @index function Independent two-sample t test.
  * @example
  * ```ts
  * import { ttestInd } from 'mdml-engine/stats/tests'

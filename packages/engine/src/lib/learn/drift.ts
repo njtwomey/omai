@@ -3,6 +3,8 @@
  * `ddm`), Baena-Garcia's Early Drift Detection Method (`eddmAlgorithm`, `eddm`), Bifet and Gavalda's Adaptive Windowing
  * (`adwinAlgorithm`, `adwin`), Raab's Kolmogorov-Smirnov Windowing (`kswinAlgorithm`, `kswin`), and the Population
  * Stability Index (`populationStabilityIndex`).
+ *
+ * @index function Concept-drift detectors: DDM, EDDM, ADWIN, KSWIN.
  */
 
 import { MdmlError } from '../base/index.ts'

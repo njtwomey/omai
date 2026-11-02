@@ -415,6 +415,7 @@ function breslowBaseline(data: CoxData, beta: readonly number[], ties: CoxTies):
  * @param run - Run options (`key`, `tracer`, `policy`, `parent`) to record the solver's steps.
  * @returns The fit.
  * @throws MdmlError with code `value` when there is no event.
+ * @index function Cox proportional hazards fit with Breslow or Efron ties.
  * @example
  * ```ts
  * import { coxData, coxPh } from 'mdml-engine/survival'

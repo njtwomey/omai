@@ -225,6 +225,7 @@ export interface GaussianKde {
  * @param data - Observations `[N]` or `[N, D]`.
  * @param options - bandwidth, weights and boundary.
  * @returns The estimate.
+ * @index function Gaussian kernel density estimate with bandwidth rules.
  * @example
  * ```ts
  * import { gaussianKde } from 'mdml-engine/stats'

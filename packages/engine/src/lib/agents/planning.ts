@@ -284,6 +284,7 @@ export interface MctsAgentOptions<S, O, A> extends MctsOptions<S, O, A> {
  * @param options - Search options, simulations per decision and `toState`.
  * @returns The agent.
  * @concept monte-carlo-tree-search
+ * @index agent Monte Carlo tree search planning agent.
  * @example
  * ```ts
  * import { mctsAgent } from 'mdml-engine/agents'

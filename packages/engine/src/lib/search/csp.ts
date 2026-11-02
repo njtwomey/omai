@@ -772,6 +772,7 @@ export function backtrackingAlgorithm<D>(
  * @param options - Ordering, inference, all solutions, budgets and tracing.
  * @returns The status, the first solution, every solution found, and the effort.
  * @concept constraint-satisfaction
+ * @index function Backtracking search for constraint satisfaction problems.
  * @example
  * ```ts
  * import { allDifferent, backtrackingSearch, binaryConstraint, csp } from 'mdml-engine/search'

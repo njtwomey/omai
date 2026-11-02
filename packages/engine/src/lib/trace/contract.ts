@@ -4,6 +4,8 @@
  * `resolve` reconciles a contract with a subscription once, into the trace policy, the per-path schedules and the hooks
  * a session installs; after that nothing is clever. Paths give the hierarchy and patterns (`model/params/**`,
  * `**\/loss`) select over it.
+ *
+ * @index structure The log contract: paths a method can log and hook.
  */
 
 import { type Direction, type Json, MdmlError } from '../base/index.ts'
@@ -162,6 +164,7 @@ export type Prefixed<P extends string, K extends string> = `${P}/${K}`
  * @returns The same contract, typed by its keys.
  * @throws MdmlError with code `value` for an empty or malformed path.
  * @concept log-contract
+ * @index function Declare a contract so its paths keep literal types.
  * @example
  * ```ts
  * import { type Contract, type PathsOf, defineContract, scalar } from 'mdml-engine/trace'

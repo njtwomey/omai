@@ -4,6 +4,8 @@
  * parameters. Also the apply context that carries the training flag, keys, buffers and activation taps, the child
  * routing composite modules use, and `functional`, which gives a module's Flax-style `init` and `apply` for `grad` and
  * custom loops.
+ *
+ * @index structure The Module base class: torch.nn-shaped layers over a pure functional core.
  */
 
 import { MdmlError } from '../../base/index.ts'
@@ -429,6 +431,7 @@ export interface Functional<I = Value, O = Value> {
  * @param module - The module.
  * @returns `init`, `initBuffers`, `apply` and `applyWithState`.
  * @concept modules
+ * @index function Pure init and apply form of a module with explicit parameters.
  * @example
  * ```ts
  * import { functional, Linear } from 'mdml-engine/nn'

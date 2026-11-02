@@ -2,6 +2,8 @@
  * Shape manipulation, numpy style: reshaping and flattening, transposes and axis moves, inserting and removing length-1
  * axes, broadcasting and its adjoint `sumToShape`, joining (`concat`, `stack`) and splitting, flips, rolls, tiles and
  * repeats, constant padding, and `slidingWindowView` with step and dilation.
+ *
+ * @index function Reshape, transpose, stack, concatenate and broadcasting.
  */
 
 import { MdmlError } from '../../base/index.ts'

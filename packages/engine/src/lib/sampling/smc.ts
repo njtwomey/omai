@@ -405,6 +405,7 @@ function moveParticles(
  * @throws MdmlError with code `value` for a non-positive number of particles or MCMC steps.
  * @concept sequential-monte-carlo
  * @reference P. Del Moral, A. Doucet and A. Jasra, Sequential Monte Carlo samplers (JRSS B 2006).
+ * @index algorithm Sequential Monte Carlo, one tempering step at a time.
  * @example
  * ```ts
  * import { proposalFromDistribution, smcAlgorithm } from 'mdml-engine/sampling'
@@ -522,6 +523,7 @@ export interface SMCResult {
  * @param options - SMC options, a cap on the number of stages (default 500), key or seed, tracer and policy.
  * @returns The particles, log Z, temperatures and whether the run reached lambda = 1.
  * @concept sequential-monte-carlo
+ * @index function Sequential Monte Carlo sampler with adaptive tempering.
  * @example
  * ```ts
  * import { proposalFromDistribution, smcSampler } from 'mdml-engine/sampling'

@@ -42,6 +42,9 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - `make docs-catalogue`: precompile the docs catalogue into `apps/site/.generated/docs/` (static files the docs pages
   fetch); `make dev` and `make site` run it first, and it skips itself when the output is newer than the sources. The
   dev server regenerates it in the background after engine edits.
+- `make agent-index`: regenerate the agent index (`packages/engine/llms.txt`, `packages/engine/index/`) from the
+  `@index` tags; `make agent-index-check` (part of `make verify` and `make check`) fails on a stale file or an invalid
+  tag. See "The agent index" below.
 - `make test`: all Vitest projects.
 - `make barrels`: regenerate `index.ts` files after adding or removing a file or folder (never edit them by hand).
 - `make layers`, `make lint`, `make format`, `make typecheck`.
@@ -92,6 +95,18 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - Iterative algorithms are `Algorithm`s run by `runAlgorithm` (`lib/trace`), which emits typed trace events according to
   a `TracePolicy`. No `console`, `Math.random` or clocks in published source (`scripts/banned.ts`).
 - Randomness is explicit: immutable `Key`s (`lib/random`) or a `Context` (`lib/context`) that derives keys by name.
+
+## The agent index
+
+Agents that consume the library start from `packages/engine/llms.txt`, then the domain file in
+`packages/engine/index/`, then the source: the index lists the main things, not all of them. The durable place for an
+entry is the TSDoc of the thing itself: `@index <kind> <description>`, at most about 12 words, no signature. Kinds
+(closed): `function` (also metrics, losses, tests, transforms), `estimator`, `algorithm`, `structure`, `table`
+(option tables, registries), `module` (nn layers), `dataset`, `distribution`, `kernel`, `agent`. An estimator is
+indexed instead of the `Algorithm` it wraps; a factory takes the kind of what it returns. A file entry is `@index` as
+the last paragraph of the file's opening comment (a hub to open first); a symbol entry sits in the declaration's TSDoc
+before its `@example`. When asked to "index this function", add the tag and run `make agent-index`. Never edit the
+generated files by hand. Details: `docs/structure.md` section 2.
 
 ## Conventions
 

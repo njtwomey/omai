@@ -2,6 +2,8 @@
  * Descriptive statistics of a sample, numpy and scipy.stats style: mean, variance and standard deviation (optionally
  * weighted), central moments, skewness and kurtosis with or without bias correction, the `describe` summary, z-scores,
  * the standard error of the mean, the mode, and the geometric and harmonic means.
+ *
+ * @index function Mean, variance, skewness, kurtosis, mode and describe, with weights.
  */
 
 import { MdmlError, meanOf, pairwiseSum, varianceOf } from '../base/index.ts'

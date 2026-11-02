@@ -286,6 +286,7 @@ function bodeOf(w: Tensor, h: ComplexValue): BodeResponse {
  * @param options - The number of default frequencies (default 100).
  * @returns Frequencies, magnitude (dB) and phase (degrees).
  * @concept bode-plot
+ * @index function Bode frequency response.
  * @example
  * ```ts
  * import { bode, tf } from 'mdml-engine/systems'

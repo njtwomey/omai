@@ -247,6 +247,7 @@ function bfgsOn(obj: FlatObjective, options: BfgsOptions): Algorithm<BfgsState> 
  * iteration cap (default 200 n) and run options.
  * @returns The result with `hessInv`.
  * @concept quasi-newton
+ * @index function BFGS minimisation, a port of scipy's, gradients by autodiff.
  * @example
  * ```ts
  * import { bfgs } from 'mdml-engine/optim'
@@ -476,6 +477,7 @@ function lbfgsOn(obj: FlatObjective, options: LbfgsOptions): Algorithm<LbfgsStat
  * 15000) and run options.
  * @returns The result.
  * @concept quasi-newton
+ * @index function L-BFGS minimisation without bounds.
  * @example
  * ```ts
  * import { lbfgs } from 'mdml-engine/optim'

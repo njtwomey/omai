@@ -285,6 +285,7 @@ function solveImpl(eq: Expr, x: ExprSym, steps: Step[] | undefined): Expr[] {
  * @param x - The unknown.
  * @returns The solutions.
  * @throws MdmlError with code `not-implemented` when no method applies, `value` for an identity.
+ * @index function Solve equations symbolically.
  * @example
  * ```ts
  * import { parse, solve, sym, toText } from 'mdml-engine/symbolic'

@@ -3,6 +3,8 @@
  * algorithms that iterate on primal values such as Krylov solvers, Lanczos and regularising iterations. These are the
  * shared helpers every such algorithm uses instead of local copies; differentiable code uses the tensor operations
  * instead.
+ *
+ * @index function BLAS-style vector kernels on plain arrays: ddot, dnrm2, daxpy, dgemv.
  */
 
 /**

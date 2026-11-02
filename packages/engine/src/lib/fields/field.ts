@@ -89,6 +89,7 @@ export class NeuralField extends Sequential {
  * @param options - The dimensions, the two slots, the width and depth, the output head and a key.
  * @returns The field.
  * @concept neural-fields
+ * @index module A coordinate encoding plus backbone as one network.
  * @example
  * ```ts
  * import { neuralField } from 'mdml-engine/fields'

@@ -3,6 +3,8 @@
  * specification (name, direction, range, inputs, category) attached by `defineMetric`. Also the input readers every
  * metric uses (flattening, shapes, columns, sample weights), per-output averaging, scikit-learn's weighted percentile
  * and `streaming`, which accumulates a metric over batches as torchmetrics does.
+ *
+ * @index structure The metric contract: a spec plus a function returning a MetricResult.
  */
 
 import { estimate, MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'

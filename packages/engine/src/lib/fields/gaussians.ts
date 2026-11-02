@@ -41,7 +41,11 @@ export const SH_C0 = 0.28209479177387814
 /** The degree-1 spherical-harmonic constant `sqrt(3 / (4 pi))`. */
 export const SH_C1 = 0.4886025119029199
 
-/** A set of `n` 3-D Gaussians as a pytree of tensors. */
+/**
+ * A set of `n` 3-D Gaussians as a pytree of tensors.
+ *
+ * @index structure A set of 3-D Gaussians as a pytree of tensors.
+ */
 export interface GaussianSet {
   /** Centres `[n, 3]`. */
   readonly means: Value

@@ -93,6 +93,7 @@ export function polyvander(x: TensorLike, deg: number): Value {
  * @param deg - Degree.
  * @param w - Optional weights `[m]`.
  * @returns Coefficients `[deg + 1]` (or `[deg + 1, k]`), lowest first.
+ * @index function Least-squares polynomial fit in the power basis.
  * @example
  * ```ts
  * import { polyfit } from 'mdml-engine/numerics/polynomial'

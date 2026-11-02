@@ -276,6 +276,7 @@ export function csd(x: TensorLike, y: TensorLike, options: WelchOptions = {}): S
  * @param options - Sampling rate, window, segments, FFT length, detrending, sides, scaling, axis and averaging.
  * @returns The frequencies and the PSD `[..., bins]`.
  * @concept power-spectral-density
+ * @index function Welch power spectral density estimate.
  * @example
  * ```ts
  * import { welch } from 'mdml-engine/signal'

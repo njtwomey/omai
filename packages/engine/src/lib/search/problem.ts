@@ -2,6 +2,8 @@
  * The search problem contract shared by the state-space searches, AIMA style: problems with actions, transitions, goal
  * tests, step costs and heuristics; search nodes, results, status and effort statistics; node expansion and solution
  * paths; the effective branching factor; problems over explicit graphs; and the search tree as a drawable structure.
+ *
+ * @index structure The search problem contract: actions, transitions, goal test, costs.
  */
 
 import { MdmlError } from '../base/index.ts'

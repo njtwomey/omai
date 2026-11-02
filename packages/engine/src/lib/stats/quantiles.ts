@@ -113,6 +113,7 @@ export interface QuantileOptions {
  * @param q - A level in [0, 1], or several.
  * @param options - method (default `'linear'`).
  * @returns The quantile (a number for a single level, a tensor for several).
+ * @index function Sample quantiles by any of the nine Hyndman-Fan definitions.
  * @example
  * ```ts
  * import { quantile } from 'mdml-engine/stats'

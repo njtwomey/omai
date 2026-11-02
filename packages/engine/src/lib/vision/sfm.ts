@@ -4,6 +4,8 @@
  * cheirality check and the inliers triangulated (`twoViewReconstruction`). Then bundle adjustment: the cameras' poses and
  * the 3-D points refined together by Levenberg-Marquardt on the reprojection error, one iteration per step, with the
  * first camera held fixed. New views join with `solvePnP` against the points already built.
+ *
+ * @index function Structure from motion in steps: RANSAC two-view start, bundle adjustment.
  */
 import type { Json } from '../base/index.ts'
 import { MdmlError } from '../base/index.ts'

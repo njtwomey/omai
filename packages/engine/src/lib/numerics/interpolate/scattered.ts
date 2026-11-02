@@ -121,6 +121,7 @@ export interface RbfOptions {
  * @param options - Kernel, shape parameter, smoothing and polynomial degree.
  * @returns The interpolating function on query points `[q, d]`.
  * @concept radial-basis-functions
+ * @index function Radial-basis interpolation of scattered data.
  * @example
  * ```ts
  * import { rbfInterpolator } from 'mdml-engine/numerics/interpolate'

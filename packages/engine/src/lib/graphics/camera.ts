@@ -69,6 +69,7 @@ function checkClip(near: number, far: number): void {
  * @throws MdmlError with code `value` for an eye at the target, an up vector along the view, a field of view
  *   outside (0, 180) or bad clipping distances.
  * @concept pinhole-camera
+ * @index function Pinhole camera with view and projection matrices.
  * @example
  * ```ts
  * import { pinholeCamera } from 'mdml-engine/graphics'

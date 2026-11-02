@@ -105,6 +105,7 @@ export function eigvals(a: TensorLike): ComplexTensor {
  * @param a - Square matrix.
  * @returns The eigenvalues and eigenvectors, as real and imaginary parts.
  * @concept eigenvalues
+ * @index function Eigenvalues and eigenvectors of a general real matrix.
  * @example
  * ```ts
  * import { eig } from 'mdml-engine/numerics/linalg'

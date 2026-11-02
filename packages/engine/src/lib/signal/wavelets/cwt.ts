@@ -73,6 +73,7 @@ export interface CwtResult {
  * @returns The coefficients (imaginary part zero for real wavelets) and frequencies.
  * @throws MdmlError with code `value` for a scale too small for the signal.
  * @concept continuous-wavelet-transform
+ * @index function Continuous wavelet transform.
  * @example
  * ```ts
  * import { cwt } from 'mdml-engine/signal'

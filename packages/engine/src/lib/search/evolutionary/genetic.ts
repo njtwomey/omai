@@ -385,6 +385,7 @@ function runOptions(options: SearchRunOptions): SearchRunOptions {
  * @returns The best genome, its fitness, the generations run and the best fitness per generation.
  * @throws MdmlError with code `value` when the population or elitism is invalid.
  * @concept evolutionary-algorithms
+ * @index function Genetic algorithm over chosen representations.
  * @example
  * ```ts
  * import { bitStrings, geneticAlgorithm } from 'mdml-engine/search'

@@ -42,6 +42,7 @@ const lfactorialP = special('lfactorial', (n) => k.lgamma(n + 1), [([n]) => diga
  * @param x - Input.
  * @returns Gamma(x), differentiable (Gamma' = Gamma psi).
  * @concept special-functions
+ * @index function Gamma function, differentiable; its log, digamma and beta live beside it.
  * @example
  * ```ts
  * import { gamma } from 'mdml-engine/numerics/special'

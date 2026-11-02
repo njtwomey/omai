@@ -77,6 +77,7 @@ export interface ContingencyOptions {
  * @param x - An r x c table of counts.
  * @param options - correction and lambda.
  * @returns The statistic, p-value (df (r - 1)(c - 1)) and effect size.
+ * @index function Chi-square test of independence on a contingency table.
  * @example
  * ```ts
  * import { chi2Contingency } from 'mdml-engine/stats/tests'

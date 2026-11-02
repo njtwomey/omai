@@ -2,6 +2,8 @@
  * The scene graph types: theme tokens and paints that follow light and dark themes, styles, the node kinds (rectangles,
  * circles, ellipses, lines, paths, text, TeX, images, groups and 3-D layers), transforms, and `Scene`, a complete
  * drawing in SVG-like coordinates with y growing downwards.
+ *
+ * @index structure Scene graph node types: shapes, text, paths, 3-D layers.
  */
 
 import type { Camera } from './projection.ts'

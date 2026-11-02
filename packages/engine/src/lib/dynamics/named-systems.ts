@@ -280,6 +280,7 @@ export interface NamedSystem {
  * The named systems at their default parameters, each with a start and a time span that shows it: the field to hand to
  * `solveIvp` or `solveIvpAlgorithm`.
  *
+ * @index table Lorenz, Van der Pol, Lotka-Volterra and other systems with start and span.
  * @example
  * ```ts
  * import { namedSystems } from 'mdml-engine/dynamics'

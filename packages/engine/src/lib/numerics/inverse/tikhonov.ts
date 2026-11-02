@@ -84,6 +84,7 @@ export function filterFactors(s: TensorLike, parameter: number, method: 'tikhono
  * @param data - From {@link spectralData}.
  * @param lambda - The regularisation parameter.
  * @returns The solution `[n]`.
+ * @index function Tikhonov-regularised solution of an ill-posed linear problem.
  * @example
  * ```ts
  * import { spectralData, tikhonov } from 'mdml-engine/numerics/inverse'

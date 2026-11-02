@@ -6,6 +6,8 @@
  * step an optimiser step or, as an option, one epoch), the standard paths, the parameter checkpoints that let a probe
  * run at any step, the kind's probes, the scikit-learn `fit` surface, and `method` and `session` like the iterative
  * base. One module and one optimiser: a trainer with several (a GAN's two) writes its own step over `trainState`.
+ *
+ * @index structure Trainer base: minibatch training of an nn module as a session.
  */
 
 import { type Json, MdmlError } from '../../base/index.ts'

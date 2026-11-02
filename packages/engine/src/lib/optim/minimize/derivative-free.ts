@@ -271,6 +271,7 @@ export function nelderMeadAlgorithm(
  *   evaluations), bounds and run options.
  * @returns The result.
  * @concept derivative-free-optimisation
+ * @index function Derivative-free Nelder-Mead simplex minimiser.
  * @example
  * ```ts
  * import { nelderMead } from 'mdml-engine/optim'

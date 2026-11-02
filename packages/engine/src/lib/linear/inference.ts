@@ -3,6 +3,8 @@
  * p-values and confidence intervals, the covariance of GLM estimates, and `olsSummary`, an ordinary or weighted
  * least-squares fit with classical or heteroscedasticity-consistent (HC0 to HC3) standard errors, R^2, the F test and
  * information criteria.
+ *
+ * @index function Wald tables, covariances and confidence intervals for linear models.
  */
 
 import { MdmlError } from '../base/index.ts'

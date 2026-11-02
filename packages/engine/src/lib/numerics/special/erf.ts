@@ -27,6 +27,7 @@ const dawsnP = special('dawsn', misc.dawsn, [([x], out) => add(1, mul(mul(x as V
  * @param x - Input.
  * @returns erf(x), differentiable.
  * @concept special-functions
+ * @index function Error function family: erf, erfc, erfinv.
  * @example
  * ```ts
  * import { erf } from 'mdml-engine/numerics/special'

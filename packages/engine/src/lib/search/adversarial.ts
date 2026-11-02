@@ -428,6 +428,7 @@ export function alphaBetaAlgorithm<S, A>(
  * @param options - Depth, evaluation, move ordering, node budget and tracing.
  * @returns The best action, its value, the principal variation, the nodes visited and the cutoffs made.
  * @concept adversarial-search
+ * @index function Minimax with alpha-beta pruning for two-player games.
  * @example
  * ```ts
  * import { alphaBeta } from 'mdml-engine/search'
@@ -763,6 +764,7 @@ export function mctsAlgorithm<S, A>(
  * @returns The chosen action, the root actions with their visits and mean returns, and the simulations run.
  * @throws MdmlError with code `value` when the root is terminal.
  * @concept monte-carlo-tree-search
+ * @index function Monte Carlo tree search for games.
  * @example
  * ```ts
  * import { mcts } from 'mdml-engine/search'

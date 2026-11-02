@@ -2,6 +2,8 @@
  * The tokenizer pipeline of HF tokenizers: added tokens, normaliser, pre-tokeniser, subword model, post-processor
  * (special tokens and type ids) and decoder. `encode` produces ids, tokens, offsets into the input, masks and word
  * indices; `encodeBatch` adds padding and truncation; `decode` turns ids back into text.
+ *
+ * @index function Tokenizer pipelines with encode and decode.
  */
 
 import { MdmlError } from '../base/index.ts'

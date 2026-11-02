@@ -613,6 +613,7 @@ function fixedTable(p: MixedParams, h: MixedHyper, names: readonly string[]): Co
  * @returns The estimator.
  * @reference N. Laird and J. Ware, Random-effects models for longitudinal data, Biometrics 38 (1982); D. Bates et al.,
  * Fitting linear mixed-effects models using lme4, Journal of Statistical Software 67 (2015).
+ * @index estimator Linear mixed-effects model for grouped data.
  * @example
  * ```ts
  * import { mixedModel } from 'mdml-engine/linear'

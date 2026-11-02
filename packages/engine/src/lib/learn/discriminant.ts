@@ -367,6 +367,7 @@ function training(
  * @param hyper - `covariance`, `shrinkage`, `regParam`, `mix`, `unbiased`, `priors`, `nComponents`, `rankTolerance`.
  * @returns The estimator.
  * @reference J. H. Friedman, Regularized discriminant analysis, JASA 84 (1989).
+ * @index estimator Linear and quadratic discriminant analysis.
  * @example
  * ```ts
  * import { discriminantAnalysis } from 'mdml-engine/learn'

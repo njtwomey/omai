@@ -4,6 +4,8 @@
  * Bodla's soft NMS as OpenCV runs it); anchors on a feature-map grid, the Faster R-CNN box encoding and its inverse,
  * and the IoU matcher of anchors to targets. The pairwise IoU, GIoU, DIoU and CIoU matrices are `metrics`'
  * `boxIou` family.
+ *
+ * @index function Detection boxes: format conversions, IoU and non-maximum suppression.
  */
 
 import { MdmlError } from '../base/index.ts'

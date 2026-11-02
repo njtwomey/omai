@@ -263,6 +263,7 @@ export function permutationTestAlgorithm(
  * @param statistic - The statistic of the samples.
  * @param options - permutationType (default independent), alternative, nResamples (default 9999), key or seed, tracer.
  * @returns The statistic, its p-value and the null distribution.
+ * @index function Permutation test of any statistic, exact when feasible.
  * @example
  * ```ts
  * import { meanDifference, permutationTest } from 'mdml-engine/stats'
@@ -448,6 +449,7 @@ export function bootstrapAlgorithm(
  * @param statistic - The statistic.
  * @param options - method (default `'bca'`), nResamples (default 9999), level, paired, key or seed, tracer.
  * @returns The estimate with its bootstrap standard error and interval, the bias and the bootstrap distribution.
+ * @index function Bootstrap confidence intervals for any statistic.
  * @example
  * ```ts
  * import { bootstrap, mean } from 'mdml-engine/stats'

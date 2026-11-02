@@ -88,6 +88,7 @@ function weightOf(
  * @param options - `weight`, Fleming-Harrington's `p` and `q`, and `strata`.
  * @returns The test, with observed and expected events per group.
  * @throws MdmlError with code `value` for fewer than two groups or lengths that differ.
+ * @index function Log-rank test between survival curves.
  * @example
  * ```ts
  * import { logRankTest } from 'mdml-engine/survival'

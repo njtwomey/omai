@@ -560,6 +560,7 @@ function lbfgsbOn(obj: FlatObjective, options: LbfgsbOptions): Algorithm<LbfgsbS
  * line-search and evaluation caps, iteration cap (default 15000) and run options.
  * @returns The result.
  * @concept quasi-newton
+ * @index function L-BFGS-B minimisation under box bounds.
  * @example
  * ```ts
  * import { lbfgsb } from 'mdml-engine/optim'

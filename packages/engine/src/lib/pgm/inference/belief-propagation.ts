@@ -327,6 +327,7 @@ function bethe(
  * @param options - Evidence, mode, schedule, damping, stopping rule and tracer.
  * @returns Variable and factor beliefs, the Bethe free energy, log Z and convergence information.
  * @concept belief-propagation
+ * @index function Loopy and tree belief propagation.
  * @example
  * ```ts
  * import { bayesNet, beliefPropagation, factorValues } from 'mdml-engine/pgm'

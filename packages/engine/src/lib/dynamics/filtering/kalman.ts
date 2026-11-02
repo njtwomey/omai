@@ -205,6 +205,7 @@ export interface KalmanState {
  * @param observations - `[T, p]` (NaN marks missing values).
  * @param options - Inputs `[T, m]` and the Joseph form switch.
  * @returns The algorithm and the number of steps.
+ * @index algorithm Kalman filter, one observation per step, logging the likelihood.
  * @example
  * ```ts
  * import { filtering } from 'mdml-engine/dynamics'
@@ -297,6 +298,7 @@ function castInt(v: Value): Value {
  * @param options - Inputs, Joseph form and tracing.
  * @returns Filtered and predicted moments, the log-likelihood and the NIS per step.
  * @concept kalman-filter
+ * @index function Kalman filter over a sequence; rtsSmoother smooths it.
  * @example
  * ```ts
  * import { filtering } from 'mdml-engine/dynamics'

@@ -133,6 +133,7 @@ const CARTPOLE_DESCRIPTION = 'Balance a pole on a cart by pushing the cart left 
  * (gymnasium returns float32 copies).
  *
  * @concept environments
+ * @index structure CartPole-v1 environment definition.
  * @example
  * ```ts
  * import { cartPole } from 'mdml-engine/environments'

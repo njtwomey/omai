@@ -2,6 +2,8 @@
  * Themed collections of datasets for pickers and hub entries (two-dimensional classification, one-dimensional
  * regression and so on): each entry is a generator with demo knobs or a vendored real dataset, and `loadEntry` makes or
  * loads one.
+ *
+ * @index table Themed dataset collections for pickers.
  */
 
 import { MdmlError } from '../base/index.ts'

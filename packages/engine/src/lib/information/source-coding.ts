@@ -314,6 +314,7 @@ export interface HuffmanCode extends PrefixCode {
  * @param options - Arity, and a tracer and policy to record the construction.
  * @returns The codewords, their lengths and the tree.
  * @concept huffman-coding
+ * @index function Huffman code for a source distribution.
  * @example
  * ```ts
  * import { huffman } from 'mdml-engine/information'

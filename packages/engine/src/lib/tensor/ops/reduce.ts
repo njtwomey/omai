@@ -2,6 +2,8 @@
  * Reductions over axes: sums, products, extrema (ties share the gradient), means, two-pass variances and standard
  * deviations, argmax and argmin, cumulative sums and products, the stable `logsumexp`, `softmax` and `logSoftmax`, and
  * vector norms of any order.
+ *
+ * @index function Sums, means, extrema, argmax, cumulative ops, softmax and logsumexp over axes.
  */
 
 import { MdmlError } from '../../base/index.ts'

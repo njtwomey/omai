@@ -130,6 +130,7 @@ export function treeLeaves(tree: unknown): Value[] {
  * @param trees - The trees; the first defines the structure.
  * @returns A tree of the results with the same structure.
  * @throws MdmlError with code `value` when structures differ.
+ * @index function Map a function over the leaves of nested arrays and records.
  * @example
  * ```ts
  * import { treeMap, add, tensor, toArray } from 'mdml-engine/tensor'

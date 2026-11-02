@@ -234,6 +234,7 @@ const logisticSchema = {
  * @returns The estimator.
  * @concept kernel-classifiers
  * @reference J. Zhu and T. Hastie, Kernel logistic regression and the import vector machine (J. Comp. Graph. Stat. 14, 2005).
+ * @index estimator Kernel logistic regression.
  * @example
  * ```ts
  * import { kernelLogisticRegression } from 'mdml-engine/kernel-methods'

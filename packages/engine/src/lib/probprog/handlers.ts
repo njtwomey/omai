@@ -3,6 +3,8 @@
  * intercepts the messages a program's sites send and rewrites or records them. Tracing, seeding, conditioning,
  * substituting and replaying values, blocking, scaling and masking log densities, Pearl's do-operator, enumeration
  * marks for discrete sites, `uncondition`, and `handle` for custom handlers.
+ *
+ * @index function Effect handlers (trace, condition, substitute, scale) that give programs meaning.
  */
 
 import { MdmlError } from '../base/index.ts'

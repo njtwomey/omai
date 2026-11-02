@@ -321,6 +321,7 @@ function channel(s: StateSpace, input: number): number {
  * @param options - Times or sample count, initial state, input channel, trace options.
  * @returns Times, outputs and states.
  * @concept time-response
+ * @index function Step response of a linear system.
  * @example
  * ```ts
  * import { step, tf } from 'mdml-engine/systems'

@@ -4,6 +4,8 @@
  * JSON and whose verbs (`predict`, `transform`, `predictProba` and so on) are closures over them. `defineEstimator`,
  * cloning, capability guards, serialisation and revival, and the `EstimatorClass` wrapper for `new X().fit(x,
  * y).predict(x)` code.
+ *
+ * @index structure The estimator protocol: hyperparameters, fitted values with verbs, cloning, serialisation.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'

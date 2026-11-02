@@ -264,6 +264,7 @@ export function distanceBetween(
  * @param options - Minkowski order, weights, variances or inverse covariance.
  * @returns Distances `[m, n]`.
  * @concept distances
+ * @index function Pairwise distances between two sets of points, scipy metrics.
  * @example
  * ```ts
  * import { cdist } from 'mdml-engine/numerics/geometry'

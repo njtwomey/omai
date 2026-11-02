@@ -2,6 +2,8 @@
  * The shared vocabulary of the signal domain: the `Signal` (samples with a sampling rate and start time), `Spectrum`
  * and `TimeFrequency` record types the analyses return, `createSignal` and its sample times and duration, decibel
  * conversion, and phase unwrapping (numpy.unwrap).
+ *
+ * @index structure Signal, Spectrum and TimeFrequency records shared across the domain.
  */
 
 import { MdmlError, maxOf } from '../base/index.ts'

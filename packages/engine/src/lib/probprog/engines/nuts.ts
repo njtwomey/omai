@@ -466,6 +466,7 @@ export function mcmcPosterior<D = void>(
  * @param options - Sampler options, key and tracing.
  * @returns The posterior of draws (chains laid end to end, with `chains` on unconstrained coordinates).
  * @concept nuts
+ * @index function Run MCMC on a program and return a posterior.
  * @example
  * ```ts
  * import { mcmc, observe, sample } from 'mdml-engine/probprog'

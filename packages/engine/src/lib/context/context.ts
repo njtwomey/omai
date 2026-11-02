@@ -2,6 +2,8 @@
  * The `Context`: everything a computation needs besides its data, namely a seed with named key derivation, the tracer
  * and trace policy, the backend and the default float dtype. `createContext` makes one, and `derive` makes a child
  * whose keys are namespaced so independent parts of a program never share randomness.
+ *
+ * @index structure Context: a seed with named key derivation, tracer and trace policy.
  */
 
 import { type Key, keyFromPath } from '../random/index.ts'

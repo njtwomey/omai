@@ -180,6 +180,7 @@ function defaultMethod(sde: Sde): SdeMethod {
  * @returns The paths `[paths, times.length, ...state]`.
  * @throws MdmlError with code `shape` when the increments do not match.
  * @concept stochastic-differential-equations
+ * @index function Solve a stochastic differential equation with Euler-Maruyama or Milstein.
  * @example
  * ```ts
  * import { key } from 'mdml-engine/random'

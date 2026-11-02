@@ -53,6 +53,7 @@ const SHAPE_CLASSES = ['circle', 'square', 'triangle'] as const
  * background with optional pixel noise: one shape per image for classification (labels) or several for detection and
  * segmentation, with exact bounding boxes, box labels and per-pixel class masks (0 is background).
  *
+ * @index dataset Images of circles, squares and triangles with labels.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

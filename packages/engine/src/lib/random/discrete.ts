@@ -93,6 +93,7 @@ function invert(cdf: readonly number[], weights: readonly number[], u: number): 
  * @param options - `logits`: treat `weights` as unnormalised log-probabilities.
  * @returns An int32 tensor of category indices.
  * @throws MdmlError with code `value` when the weights have no positive finite sum.
+ * @index function Samples from a categorical distribution given probabilities or logits.
  * @example
  * ```ts
  * import { key, categorical } from 'mdml-engine/random'

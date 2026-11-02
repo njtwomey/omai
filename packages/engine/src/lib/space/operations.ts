@@ -77,6 +77,7 @@ export function activeDims(space: Space, value: SpaceValue): string[] {
  * @param k - The random key.
  * @returns A value of the space.
  * @concept spaces
+ * @index function Draw a random value from a space.
  * @example
  * ```ts
  * import { sample, real } from 'mdml-engine/space'

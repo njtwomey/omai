@@ -196,6 +196,7 @@ export interface SomVerbs {
  * A self-organising map on the iterative base: a rows x cols lattice of prototypes trained online, one epoch per step.
  * `transform` gives the grid position of a row's best-matching unit and `predict` its unit index.
  *
+ * @index estimator Self-organising map.
  * @example
  * ```ts
  * import { selfOrganisingMap } from 'mdml-engine/manifold'

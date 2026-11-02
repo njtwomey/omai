@@ -17,6 +17,7 @@ import { type Key, split } from './key.ts'
  * @param k - The random key.
  * @param n - Length.
  * @returns An int32 tensor of shape `[n]`.
+ * @index function A uniformly random permutation of 0..n-1.
  * @example
  * ```ts
  * import { key, permutation } from 'mdml-engine/random'
@@ -68,6 +69,7 @@ export function shuffle(k: Key, x: TensorLike): Value {
  * @returns An int32 tensor of indices.
  * @throws MdmlError with code `value` when choosing more than `n` (or more than the positive weights) without
  * replacement, or when `weights` does not have length `n`.
+ * @index function Choose indices with or without replacement, optionally weighted.
  * @example
  * ```ts
  * import { key, choice } from 'mdml-engine/random'

@@ -3,6 +3,8 @@
  * posterior, regression function, causal effects, clusters), so methods can be checked against it rather than only
  * against held-out data. Also the Bayes-optimal predictions and a Monte Carlo Bayes error, `completeTruth` for deriving
  * missing pieces by Bayes' rule, and quick checks such as excess risk and cluster agreement.
+ *
+ * @index structure The known truth of a generated dataset: function, boundary, Bayes rate.
  */
 
 import { type Estimate, estimate, MdmlError } from '../base/index.ts'

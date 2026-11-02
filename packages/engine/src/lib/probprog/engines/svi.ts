@@ -206,6 +206,7 @@ export interface SviResult {
  * @param options - SVI options, key and tracing.
  * @returns Parameters, ELBOs, status and posterior.
  * @concept variational-inference
+ * @index function Stochastic variational inference for a model and a guide.
  * @example
  * ```ts
  * import { observe, sample, svi } from 'mdml-engine/probprog'

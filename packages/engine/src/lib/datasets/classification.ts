@@ -93,6 +93,7 @@ const shuffleKnob = bool({
  * centres, and the exact class posterior of the mixture (with priors from the split), its log density and a Monte
  * Carlo Bayes error. The centres are in `truth.latents.centers`.
  *
+ * @index dataset Isotropic Gaussian blobs with the exact class posterior.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'
@@ -311,6 +312,7 @@ function noisyPoints(
  * Gaussian noise, so the class posterior is an exact mixture over the arc points. The angle of each point is
  * `truth.latents.angle`.
  *
+ * @index dataset Two interleaving half circles.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'
@@ -337,6 +339,7 @@ export const moons: DatasetGenerator<ClassificationData> = {
 /**
  * A large circle containing a smaller one (sklearn.datasets.make_circles), with the exact mixture posterior.
  *
+ * @index dataset A large circle containing a smaller one.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'
@@ -379,6 +382,7 @@ export const circles: DatasetGenerator<ClassificationData> = {
  * The XOR problem: four Gaussian blobs at `(±s, ±s)`, labelled by whether the signs of the two coordinates differ,
  * with the exact posterior and Bayes error (each coordinate's sign is misjudged with probability `Φ(-s / σ)`).
  *
+ * @index dataset The XOR problem as four Gaussian blobs.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'
@@ -445,6 +449,7 @@ export const xor: DatasetGenerator<ClassificationData> = {
  * radius `t`, angle `2π (turns t + arm / arms)`, plus Gaussian noise. The posterior integrates over `t` by a
  * 400-point quadrature along each arm, so it is exact to quadrature accuracy; `truth.latents.t` holds the positions.
  *
+ * @index dataset Interleaved spiral arms.
  * @example
  * ```ts
  * import { generate } from 'mdml-engine/data'

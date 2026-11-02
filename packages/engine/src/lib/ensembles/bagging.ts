@@ -298,6 +298,7 @@ function baggingDefaults(hyper: Partial<BaggingHyper>, estimator: Estimator): Ba
  *   member (random subspaces) and bootstrap (false with a fraction below 1 is pasting).
  * @returns The estimator.
  * @concept ensembles
+ * @index estimator Bagging with out-of-bag bookkeeping.
  * @example
  * ```ts
  * import { baggingClassifier } from 'mdml-engine/ensembles'

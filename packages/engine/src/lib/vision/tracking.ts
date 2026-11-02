@@ -3,6 +3,8 @@
  * (over `dynamics/filtering`) with detections assigned by IoU through the Hungarian algorithm of `optim`, as a traced
  * algorithm over frames; OpenCV's mean-shift and CamShift trackers on a back-projection; and pyramidal Lucas-Kanade
  * point tracking (Bouguet's KLT) over `signal/image` pyramids, frame to frame and as a traced algorithm.
+ *
+ * @index function SORT tracking, mean shift and pyramidal point tracking over frames.
  */
 
 import { type Json, MdmlError } from '../base/index.ts'

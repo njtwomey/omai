@@ -65,6 +65,7 @@ function equilibrium(game: NormalFormGame, x: readonly number[], y: readonly num
  * @returns The equilibria, by support size and then supports in lexicographic order.
  * @concept nash-equilibrium
  * @reference Nisan, Roughgarden, Tardos and Vazirani (2007), Algorithmic Game Theory, chapter 3.
+ * @index function All Nash equilibria of a small game by support enumeration.
  * @example
  * ```ts
  * import { battleOfTheSexes, supportEnumeration } from 'mdml-engine/games'

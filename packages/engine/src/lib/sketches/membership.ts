@@ -206,6 +206,7 @@ function makeBloom(shape: BloomShape, words: Uint32Array, insertedAtStart: numbe
  * @throws MdmlError with code `value` for non-positive sizes.
  * @concept bloom-filter
  * @reference B. H. Bloom, Space/time trade-offs in hash coding with allowable errors (Communications of the ACM, 1970).
+ * @index structure Bloom filter for approximate set membership.
  * @example
  * ```ts
  * import { bloomFilter } from 'mdml-engine/sketches'

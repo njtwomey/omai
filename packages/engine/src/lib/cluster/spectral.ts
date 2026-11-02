@@ -143,6 +143,7 @@ export interface SpectralVerbs {
  * the k-means on it runs a step at a time. Spectral clustering has no out-of-sample extension: `predict` gives a new
  * row the label of its nearest training row.
  *
+ * @index estimator Spectral clustering on an affinity graph.
  * @example
  * ```ts
  * import { spectralClustering } from 'mdml-engine/cluster'

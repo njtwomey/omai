@@ -38,6 +38,7 @@ export interface MinimizerOptions {
  * @param options - Stopping tolerance.
  * @returns The algorithm.
  * @concept optimisers
+ * @index algorithm Turn a gradient transformation into a steppable minimising Algorithm.
  * @example
  * ```ts
  * import { minimizer, sgd } from 'mdml-engine/optim'
@@ -109,6 +110,7 @@ function isTransformation(m: unknown): m is GradientTransformation {
  * @param x0 - Initial parameters (any tree, or anything tensor-like for vector methods).
  * @param options - The method and its options, and the run options (tracer, policy, seed).
  * @returns The result.
+ * @index function Minimise an objective scipy-style with a method chosen by value.
  * @example
  * ```ts
  * import { minimize, sgd } from 'mdml-engine/optim'

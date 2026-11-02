@@ -109,6 +109,7 @@ function slice1(x: Value, i: number): Value {
  * @param options - Paths, dimension, start, drift, volatility or covariance, increments to reuse, and tracing.
  * @returns The paths `[paths, times.length, ...state]`.
  * @concept brownian-motion
+ * @index function Brownian motion sample paths on a time grid.
  * @example
  * ```ts
  * import { key } from 'mdml-engine/random'

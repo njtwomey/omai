@@ -334,6 +334,7 @@ export function umapSetup(
  * initialisation (`graph`'s spectral embedding) and the SGD layout with negative sampling, one epoch per step. New rows
  * are placed by their nearest training rows.
  *
+ * @index estimator UMAP embedding.
  * @example
  * ```ts
  * import { umap } from 'mdml-engine/manifold'

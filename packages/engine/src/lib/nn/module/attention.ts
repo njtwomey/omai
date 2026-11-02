@@ -80,6 +80,7 @@ export interface MultiheadAttentionOptions {
  * (averaged over heads unless asked otherwise) are returned and tapped as `weights`.
  *
  * @concept attention
+ * @index module Multi-head attention with torch.nn's parameter layout.
  * @example
  * ```ts
  * import { MultiheadAttention } from 'mdml-engine/nn'

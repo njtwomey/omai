@@ -282,6 +282,7 @@ export function heatAlgorithm(
  * @param options - Step, final time, scheme, source and thinning.
  * @returns Snapshots of the solution.
  * @concept heat-equation
+ * @index function Heat equation on a 1-D or 2-D grid with boundary conditions.
  * @example
  * ```ts
  * import { dirichlet, grid1d, heat, laplacian1d } from 'mdml-engine/dynamics/pde'

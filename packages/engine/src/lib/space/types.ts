@@ -3,6 +3,8 @@
  * booleans for configuration spaces, gymnasium-style `box`, `discrete`, `multiDiscrete` and `multiBinary` spaces for
  * observations and actions, tuples and dicts that compose them, with conditional dimensions declared by `when`, and
  * tagged unions (a mode with the knobs of its own that each option brings).
+ *
+ * @index structure Typed spaces: real, int, choice, box, dict, union.
  */
 
 import { MdmlError } from '../base/index.ts'

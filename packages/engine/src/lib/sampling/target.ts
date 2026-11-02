@@ -3,6 +3,8 @@
  * constrained parameters), built from a differentiable function, plain number functions or a distribution sampled on
  * unconstrained reals, and the `Proposal` used by importance, independence and rejection samplers. Also the standard
  * test targets Neal's funnel and Haario's banana.
+ *
+ * @index structure Log-density targets that every sampler runs on.
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'

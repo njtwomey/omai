@@ -26,6 +26,7 @@ import { resolveAlternative, type TestOptions, testResult } from './result.ts'
  * @param y - Second sample.
  * @param options - alternative (`'greater'` tests whether the CDF of x lies above that of y) and method.
  * @returns D (D+ or D-) and its p-value.
+ * @index function Two-sample Kolmogorov-Smirnov test.
  * @example
  * ```ts
  * import { ks2samp } from 'mdml-engine/stats/tests'

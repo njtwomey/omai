@@ -36,6 +36,7 @@ function fill(shape: Shape, draw: (i: number) => number): Tensor<'float64'> {
  * @param options - `low` (default 0) and `high` (default 1).
  * @returns A float64 tensor.
  * @concept counter-based-rng
+ * @index function Uniform samples from a key and a shape.
  * @example
  * ```ts
  * import { key, uniform } from 'mdml-engine/random'
@@ -102,6 +103,7 @@ export function uniformStream(k: Key, block = 256, from = 0): () => number {
  * @param options - `loc` (default 0) and `scale` (default 1).
  * @returns A float64 tensor.
  * @concept normal-distribution
+ * @index function Normal samples from a key and a shape, like jax.random.normal.
  * @example
  * ```ts
  * import { key, normal } from 'mdml-engine/random'

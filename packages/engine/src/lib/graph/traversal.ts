@@ -123,6 +123,7 @@ export function bfsAlgorithm(
  * @param options - Edge direction, a depth limit, and tracing.
  * @returns Order, distances (-1 when unreached), parents (-1 for roots and unreached nodes) and layers.
  * @concept graph-traversal
+ * @index function Breadth-first search, also available as a traced algorithm.
  * @example
  * ```ts
  * import { bfs, graph } from 'mdml-engine/graph'

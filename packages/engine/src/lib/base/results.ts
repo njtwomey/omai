@@ -2,6 +2,8 @@
  * The shared result shapes: an `Estimate` (a value with its standard error and interval), the `TestResult` every
  * statistical test returns, and the `MetricSpec` and `MetricResult` that let tuners and reports use any metric, plus
  * `estimate` and `formatResult` to build and display them.
+ *
+ * @index structure Estimate, TestResult and MetricResult records shared across domains.
  */
 
 import type { Alternative } from './options.ts'

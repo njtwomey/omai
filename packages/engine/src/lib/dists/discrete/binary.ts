@@ -47,6 +47,7 @@ export type BernoulliParams = { readonly probs: TensorLike } | { readonly logits
  * @param params - `{ probs }` or `{ logits }` (logits keep log-probabilities accurate near 0 and 1).
  * @returns The distribution (no reparameterisation: `rsample` throws; use `relaxedBernoulli` or `straightThrough`).
  * @concept distributions
+ * @index distribution Bernoulli distribution from a probability or logit.
  * @example
  * ```ts
  * import { bernoulli } from 'mdml-engine/dists'
