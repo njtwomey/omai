@@ -9,7 +9,7 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - function `adam`: Adam as a gradient transformation, like torch.optim.Adam. `src/lib/optim/adaptive.ts:69` `mdml-engine/optim`
 - function `admm`: Alternating direction method of multipliers. `src/lib/optim/admm.ts:280` `mdml-engine/optim`
 - function `fista`: Accelerated proximal gradient for composite objectives. `src/lib/optim/splitting.ts:246` `mdml-engine/optim`
-- function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:330` `mdml-engine/optim`
+- function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:332` `mdml-engine/optim`
 - function `milp`: Mixed-integer linear programming by branch and bound. `src/lib/optim/integer.ts:451` `mdml-engine/optim`
 - function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:287` `mdml-engine/optim`
 - function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:67` `mdml-engine/optim`
