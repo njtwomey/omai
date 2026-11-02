@@ -22,7 +22,7 @@ import { inlineProducer } from './inline.ts'
 import type { Producer } from './producer.ts'
 import { isProducerEvent, isProducerRequest, type ProducerEvent, wireOptions } from './protocol.ts'
 import { methodRegistry } from './registry.ts'
-import { isProbePending } from './remote.ts'
+import { ProbePending } from './remote.ts'
 import { serveProducer } from './serve.ts'
 
 interface S {
@@ -246,7 +246,7 @@ describe('the worker producer', () => {
     } catch (e) {
       threw = e
     }
-    expect(isProbePending(threw)).toBe(true)
+    expect(threw).toBeInstanceOf(ProbePending)
     wire().drain()
     const expected = session(counter, { mode: 'eager' }).probe(12, 'square', { a: 1 })
     expect(s?.probe(12, 'square', { a: 1 })).toEqual(expected)

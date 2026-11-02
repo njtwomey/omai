@@ -215,7 +215,7 @@ Common requirements that the capability pages ask for, by how far they exist:
 | **structures** at the viewed step: trees, graphs, graphical models, architectures, with per-step attributes | views yes, panel no                                      |
 | **sequences**: tokens, state sequences, series with events, position-aligned values                         | views yes, panel partly                                  |
 | **images and volumes**: one, a grid, over steps, with masks and points; two images with correspondences     | `image`, `imageSteps`; no grid or pair panel             |
-| **episodes**: an environment rendered, the policy's action, a value overlay                                 | `EpisodePlayer` yes                                      |
+| **episodes**: an environment rendered, the policy's action, a value overlay                                 | `filmstrip`, `worldView`; no episode player              |
 | **3-D**: surfaces, point clouds, cameras                                                                    | yes (`Scene3DView`)                                      |
 | **rows with per-point values**: scores, order, weights, explanations as colour and markers                  | partly (`rows` overlays)                                 |
 | **small multiples**: one chart per layer, client, head, aligned under one cursor                            | missing                                                  |

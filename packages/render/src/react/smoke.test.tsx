@@ -15,7 +15,6 @@ import { selectEntry } from './controls/datasets.ts'
 import { EntryList } from './controls/EntryList.tsx'
 import { EnvironmentSelector } from './controls/EnvironmentSelector.tsx'
 import { selectEnvironment } from './controls/environments.ts'
-import { MethodControls } from './controls/MethodControls.tsx'
 import { NumberField } from './controls/NumberField.tsx'
 import { SeedInput } from './controls/SeedInput.tsx'
 import { Select } from './controls/Select.tsx'
@@ -176,14 +175,7 @@ describe('React bindings render on the server', () => {
     expect(svg).toContain('cx="50"')
   })
 
-  it('draws method controls from a hyperSpace, and the brush and hover tools', () => {
-    const estimator = {
-      name: 'toy',
-      kind: 'classifier',
-      hyper: { depth: 3 },
-      hyperSpace: dict({ depth: int(1, 9, { default: 3, label: 'depth' }) }),
-    } as unknown as Parameters<typeof MethodControls>[0]['estimator']
-    expect(renderToString(<MethodControls estimator={estimator} onChange={noop} />)).toContain('depth')
+  it('draws the brush and hover tools', () => {
     const projection = linearProjection({ x: [0, 1], y: [0, 1], width: 100, height: 100 })
     const svg = renderToString(
       <InteractionOverlay projection={projection} width={100} height={100}>

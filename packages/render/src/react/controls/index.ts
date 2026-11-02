@@ -1,7 +1,7 @@
 /**
  * Form controls for figures and demos, in plain React and Tailwind over the `--wb-*` tokens: number fields, selects,
  * segmented choices, toggles, seed inputs, column ordering, controls generated from a `Space` (with options a rule
- * rules out drawn disabled) or a method's hyperparameters, a dataset picker, the model selector (a list of a union's
+ * rules out drawn disabled), a dataset picker, the model selector (a list of a union's
  * options with a settings popover each), the variants of a slot compared at once (`SlotVariants`), validity rules read
  * from the option tables' properties, and panels that lay controls out beside a figure. The rules behind them are
  * pure modules.
@@ -14,7 +14,6 @@ export * from './DatasetPicker.tsx'
 export * from './DatasetSelector.tsx'
 export * from './EntryList.tsx'
 export * from './EnvironmentSelector.tsx'
-export * from './MethodControls.tsx'
 export * from './ModelSelector.tsx'
 export * from './NumberField.tsx'
 export * from './Popover.tsx'

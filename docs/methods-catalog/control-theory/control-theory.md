@@ -116,7 +116,7 @@ Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, 
 
 ## Rendering
 
-- Curves, pole-zero and Nyquist plots, episodes of an environment under a controller (`EpisodePlayer` with `environments`), a horizon overlay, Bode pairs.
+- Curves, pole-zero and Nyquist plots, episodes of an environment under a controller (`filmstrip`, `worldView`), a horizon overlay, Bode pairs.
 - Missing: the complex plane as a panel kind (poles moving at the viewed step, a locus's branches); a Bode panel with the margins marked and a cursor on the frequency; a horizon overlay on the plant's scene.
 
 ## Problems

@@ -185,7 +185,7 @@ Tags on tracks: `s` a per-step scalar, `t` a per-step tensor at summary detail, 
 
 ## Rendering
 
-- Episodes (`EpisodePlayer`, `episodes`), agent steps (`agentSteps`), value and policy maps as `valueGrids` over the world, returns curves with bands, posteriors over arms, trees with visit counts (`tree`).
+- Episodes (`episodes`, `filmstrip` of the rendered frames), agent steps (`agentSteps`), value and policy maps as `valueGrids` over the world, returns curves with bands, posteriors over arms, trees with visit counts (`tree`).
 - Missing: a value-map panel that follows the cursor over a grid world (the board with the policy's arrows); a replay-buffer probe view; a return-distribution panel (atoms or quantiles of one state over training); a fixed-state Q-value panel; the comparison of two agents on one cursor.
 
 ## Problems

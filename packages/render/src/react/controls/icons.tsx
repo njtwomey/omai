@@ -1,6 +1,6 @@
 /**
  * The small inline SVG icons the controls and player use: chevrons, play, pause, step by a frame (double chevrons), skip to either end and rewind,
- * a bolt, a die, light and dark mode symbols, copy, check, menu, close, sliders and a settings gear, each sized by one prop.
+ * a bolt, a die, copy, check, close, sliders and a settings gear, each sized by one prop.
  */
 
 import type { ReactNode, SVGProps } from 'react'
@@ -117,35 +117,6 @@ export function DiceIcon(props: IconProps): ReactNode {
   )
 }
 
-/** The sun (light mode). */
-export function SunIcon(props: IconProps): ReactNode {
-  return (
-    <Svg {...props}>
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-    </Svg>
-  )
-}
-
-/** The moon (dark mode). */
-export function MoonIcon(props: IconProps): ReactNode {
-  return (
-    <Svg {...props}>
-      <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
-    </Svg>
-  )
-}
-
-/** A screen (follow the system). */
-export function MonitorIcon(props: IconProps): ReactNode {
-  return (
-    <Svg {...props}>
-      <rect x="3" y="4" width="18" height="12" rx="2" />
-      <path d="M8 20h8M12 16v4" />
-    </Svg>
-  )
-}
-
 /** Copy. */
 export function CopyIcon(props: IconProps): ReactNode {
   return (
@@ -161,15 +132,6 @@ export function CheckIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
       <path d="M20 6 9 17l-5-5" />
-    </Svg>
-  )
-}
-
-/** Three lines (open a menu). */
-export function MenuIcon(props: IconProps): ReactNode {
-  return (
-    <Svg {...props}>
-      <path d="M4 6h16M4 12h16M4 18h16" />
     </Svg>
   )
 }

@@ -17,7 +17,7 @@ import { points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { formatNumber } from '../theme/format.ts'
 import type { TableData } from '../trace/tables.ts'
-import { outlined, short, type ViewOptions, viewFigure, wantsLog } from './_view.ts'
+import { outlined, type ViewOptions, viewFigure, wantsLog } from './_view.ts'
 import type { Rows } from './surfaces.ts'
 
 /** The interval of each coefficient: the record's, else the estimate ± 1.96 standard errors, else none. */
@@ -508,14 +508,4 @@ export function searchTrialsView(record: SearchTrials, options: SearchViewOption
     cells: ids.map((id, c) => ({ id, row: 0, col: c, ...(c > 0 ? { sharey: 'history' } : {}) })),
   })
   return subplots(grid, panels, { figure: fig, legend: false, tooltip: 'item' })
-}
-
-/** The best trial's value and parameters as text, e.g. `0.93 at alpha = 0.1, k = 5`. */
-export function bestTrialText(record: SearchTrials): string {
-  const best = record.best === undefined ? undefined : record.trials[record.best]
-  if (best === undefined) return 'no best trial'
-  const params = Object.entries(best.params)
-    .map(([k, v]) => `${k} = ${typeof v === 'number' ? short(v) : JSON.stringify(v)}`)
-    .join(', ')
-  return `${short(best.value)} at ${params}`
 }
