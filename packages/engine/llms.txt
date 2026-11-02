@@ -1,0 +1,132 @@
+# mdml-engine
+
+> A TypeScript library of numerics, probability, learning, neural networks, RL and datasets. Every iterative routine is
+> an `Algorithm` that records a trace. This index lists the main things in `src/lib`; it is short on purpose and grows
+> as things are indexed. The source is the reference.
+
+## How to use this index
+
+Look here first, then open the file an entry points to, then follow its imports. Each entry is one line: kind, name,
+what it is, `path:line` (relative to the package root) and the import path. Entries are not complete and carry no
+signatures: open the source for those. A name can exist in several domains (`gradient`, `solve`, `normal`, `gamma`), so
+the import path is part of an entry's identity. `index/index.json` has every entry for tools.
+
+Kinds: `function` (also metrics, losses, tests, autodiff transforms), `estimator` (fit and predict objects),
+`algorithm` (a stepped routine you drive or watch), `structure` (a type or contract you build or implement against),
+`table` (named options filling a slot), `module` (a neural-network layer or network), `dataset` (a generator that
+carries its truth), `distribution`, `kernel`, `agent`. A "(file)" entry is a hub: open the file first, then what it imports.
+
+## Conventions you need
+
+- Import from an entry point, not a file: `import { solve } from 'mdml-engine/numerics/linalg'`. Every folder under
+  `src/lib` is an import path (`mdml-engine/<domain>`, and `mdml-engine/<domain>/<subfolder>` for a namespace). Inside the
+  library, relative imports carry the `.ts` extension. Resolving packages to TypeScript source needs the `source`
+  condition (`node --conditions=source`).
+- Randomness is explicit: an immutable `Key` from `mdml-engine/random` (`key(seed)`, `split(k, n)`, `foldIn(k, i)`).
+  There is no `Math.random`, no clock and no hidden state; the same key gives the same draw.
+- Tensors are plain arrays outside a transform. Differentiation is opt-in per call, JAX style: `grad(f)(x)`,
+  `vmap`, `jvp`, `hessian` from `mdml-engine/autodiff`.
+- Estimators are configured, not subclassed. `linearModel({ family: 'binomial', alpha: 0.01 }).fit({ x, y })` returns a
+  fitted value with its verbs (`predict`, `score`), `params` and `exposition` records. Logistic, ridge and lasso
+  regression are configurations of `linearModel`, not separate exports. Hyperparameters can be changed with
+  `dbscan.with({ eps: 0.3 })`.
+- A slot is a hyperparameter filled from a table of options (`smoothSolvers`, `optimisers`, `schedules`,
+  `regressionLosses`, `fieldEncodings`): the estimator takes the option by name, with that option's own knobs, such as
+  `solver: { kind: 'lbfgs', gradTol: 1e-9 }`. An estimator fitted by minimising a smooth objective takes its solver
+  from `smoothSolvers`; it is never fused to one solver. The tables list their options (`table.names`).
+
+## Algorithms, runs and the log contract
+
+- An `Algorithm` (`mdml-engine/trace`) is `{ name, config, init(key), step(state, ctx), done?, observe? }`.
+  `runAlgorithm(algorithm, { seed, maxSteps, tracer })` runs it and records a trace; `iterate` and `runFor` step it
+  lazily or in time slices. Step `t` gets the key `foldIn(stepsKey, t)`, so a run is the same however it was paused.
+- A step reports through `ctx.log(path, value)` (metrics, tensors) and `ctx.emit(event)`. Paths such as
+  `training/loss` form the log contract of the method. `defineContract({ 'solver/objective': scalar() })` declares it
+  with literal path types; `defineMethod({ name, config, make, contract })` makes a `Method<S, C, Path>`, so `ctx.log`
+  and `defaults` are checked against the paths.
+- `session(method, { mode: 'eager' | 'live', steps, seed, logs })` runs a method and keeps the tape: `advance`,
+  `stateAt(t)`, `fork(t)`, `probe`, and `metricSeries(session.run(), 'path')` to read a series. Estimators on the
+  iterative, trainer, agent and sweep bases carry `.method` and `.session` for free; `fit` is a session run to completion.
+- Explanations come back as typed exposition records (`mdml-engine/exposition`) beside the result, never as logging.
+- Errors are `MdmlError` with a machine-readable code. Test files sit next to code (`foo.test.ts`); fixtures are generated
+  from a Python oracle and tests never run Python.
+
+## Where to look
+
+1. This index: find the domain, then the entry.
+2. The file at `path:line`: its opening paragraph says what it is; each export has TSDoc with an `@example`.
+3. Its imports, for the pieces it composes. A domain folder's `index.ts` opens with a summary of the folder.
+
+## Domains
+
+- [agents](index/agents.md): The reinforcement-learning agents, constructables over the contracts of `rl`: tabular and deep value-based learners, policy gradients and actor-critics, distributional, model-based and planning agents, offline, imitation, hierarchical ... (7 entries)
+- [anomaly](index/anomaly.md): Anomaly and outlier detection: the isolation forest and extended isolation forest grown one tree per step on the iterative base, neighbour-based detectors (the local outlier factor, connectivity-based outlier factor and k-nearest-neighbour distance) ... (2 entries)
+- [autodiff](index/autodiff.md): Differentiation as function transforms, JAX style: reverse mode (`grad`, `vjp`, `valueAndGrad`), forward mode (`jvp`), Taylor mode for higher derivatives, Jacobians and Hessians, vectorisation (`vmap`) ... (9 entries)
+- [base](index/base.md): The foundation every other domain builds on: the library's error type `MdmlError` and its codes, the `Registry` shape that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`, `MetricResult`) ... (4 entries)
+- [causal](index/causal.md): Causal inference from data: estimators of average treatment effects (regression adjustment, propensity scores and inverse probability weighting, matching, stratification, entropy balancing, AIPW, TMLE and double machine learning) ... (5 entries)
+- [cluster](index/cluster.md): Clustering as traced `Algorithm`s with estimators on the iterative base: k-means (Lloyd, mini-batch, Elkan's bounds, bisecting, kernel), density clustering (DBSCAN, OPTICS, HDBSCAN with its condensed tree, mean shift) ... (9 entries)
+- [context](index/context.md): Reproducibility and defaults in one place: a `Context` holds a seed and derives named keys from it, together with the default tracer and trace policy, so higher-level functions can take `{ ctx }` instead of threading keys and options by hand. (1 entry)
+- [covariance](index/covariance.md): Covariance and precision matrix estimation: empirical and shrunk covariance estimators (fixed shrinkage, Ledoit-Wolf and oracle approximating shrinkage) with Mahalanobis distances and Gaussian log likelihoods ... (3 entries)
+- [data](index/data.md): Datasets as data: schemas for columns and targets (`xy`, `xyClasses`, `table`), generators that come with their exact truth (the function, the decision boundary, the Bayes rate) and run through `generate` ... (15 entries)
+- [datasets](index/datasets.md): Ready-made datasets: generators with exact truths, vendored real datasets (iris, wine, MovieLens samples and more) and themed collections, for regression, classification, clustering, ranking and time series. (20 entries)
+- [decomposition](index/decomposition.md): Linear and factor decompositions as transformers: PCA (exact, randomised or by power iteration one component per step, with whitening and the inverse transform; incremental and sparse variants), FastICA ... (5 entries)
+- [distances](index/distances.md): One entry point for distances and similarities between points ... (3 entries)
+- [dists](index/dists.md): Probability distributions, scipy.stats and torch.distributions style ... (16 entries)
+- [dynamics](index/dynamics.md): Differential equations, nonlinear dynamics, control and filtering: ODE and PDE solvers with dense output, events and adjoint gradients; vector fields, named systems (predator and prey, Lorenz, Van der Pol, a pendulum, an epidemic), maps and chaos; LQR, MPC ... (13 entries)
+- [embedding](index/embedding.md): Embeddings learned from data: word vectors by prediction (word2vec's skip-gram and CBOW with negative sampling or a hierarchical softmax, fastText's subword n-grams), by weighted least squares on co-occurrence counts (GloVe) and in closed form (PPMI and SVD) ... (2 entries)
+- [ensembles](index/ensembles.md): Ensembles of learners: bagging with out-of-bag bookkeeping, random forests and extra trees, the random trees embedding, AdaBoost (SAMME, SAMME.R and R2) over any base estimator, gradient boosting with its losses, histogram boosting with leaf-wise growth ... (7 entries)
+- [environments](index/environments.md): The reinforcement-learning environments, constructables over the contracts of `rl`: gymnasium's classic control and toy-text tasks, grid worlds, bandits, continuous-control tasks with differentiable models of their dynamics, MinAtar games ... (3 entries)
+- [explain](index/explain.md): Explaining models and data: Shapley values (exact, kernel, sampling, tree), LIME, anchors and surrogates, gradient attributions, counterfactuals and recourse, model inspection (permutation importance, PDP, ICE, ALE, interactions), data valuation ... (7 entries)
+- [exposition](index/exposition.md): Typed exposition records: the plain, serialisable data that methods return beside their results so views can explain them, such as paths through a search, grown trees, pipeline stages, iteration steps, tuning trials and RL episodes. (1 entry)
+- [fairness](index/fairness.md): Fairness and bias: group, individual and intersectional fairness measures, bias in data, and mitigation before training (reweighing, repair), during training (constrained fitting) and after it (threshold adjustment), with accuracy-fairness trade-off frontiers. (2 entries)
+- [fields](index/fields.md): Neural fields: signals represented as functions fitted to samples, and scenes represented for novel view synthesis. (12 entries)
+- [foundations](index/foundations.md): Mathematical foundations computed, drawn and stepped through for teaching: trigonometry, vectors, rotations, coordinates, curves, surfaces, calculus, series, linear algebra with worked steps, number theory, combinatorics ... (1 entry)
+- [gam](index/gam.md): Generalised additive models: the terms of an additive predictor on the penalised bases of `stats/smoothing` (smooths `s`, tensor products `te` and `ti`, parametric `linear` and `factor` terms) and the design they make ... (2 entries)
+- [games](index/games.md): Game theory: normal-form games and their equilibria (Nash, correlated, evolutionary), learning in games, extensive-form games solved by counterfactual regret minimisation, cooperative games (Shapley value, core), auctions and voting. (4 entries)
+- [gp](index/gp.md): Gaussian processes: regression over any kernel with the exact log marginal likelihood and its gradient, fitted by L-BFGS-B with restarts as a stepped algorithm, predictive means, variances and posterior samples ... (3 entries)
+- [graph](index/graph.md): Graphs and graph algorithms, NetworkX style: the `graph` data type and its construction, traversal, components, shortest paths (`dijkstra`), spanning trees, flows and cuts, centrality (`pagerank`), communities (`louvain`) ... (9 entries)
+- [graphics](index/graphics.md): Rendering mathematics as data: pinhole and orthographic cameras, grid ray casting over worlds, ray-primitive intersections, bounding-volume hierarchies, recursive ray tracing and a keyed path tracer, shading models and lights, tone mapping ... (7 entries)
+- [information](index/information.md): Information theory and coding: entropies and divergences of distributions, estimators of entropy and mutual information from samples, source and dictionary coding (Huffman, arithmetic, LZ), channels and their capacity ... (5 entries)
+- [kernel-methods](index/kernel-methods.md): Kernel methods built on the kernels of `kernels`: closed-form kernel ridge regression (`kernelRidge`, `solveKernelRidge`) with the exact leave-one-out shortcuts (`hatDiagonal`, `looPredictions`, `looPress`) ... (2 entries)
+- [kernels](index/kernels.md): Kernel functions with differentiable hyperparameters under the `Kernel` contract (`rbfKernel`, `maternKernel`, `periodicKernel`, `linearKernel` and more; `defineKernel` makes a new one), kernel algebra (sums, products, scaling), Gram matrices (`gram`) ... (10 entries)
+- [learn](index/learn.md): The toolkit around models, scikit-learn style: the estimator protocol, preprocessing (scalers, encoders, imputers), composition (pipelines, column transformers), model selection (cross-validation, searches), calibration, conformal prediction ... (25 entries)
+- [linear](index/linear.md): Linear and generalised linear models as library pieces: the design matrix, the solvers (least squares, IRLS, coordinate descent, ridge by SVD), regularisation paths over an alpha grid, the linear model with its parameters and prediction ... (10 entries)
+- [logic](index/logic.md): Logic programming, satisfiability and inductive logic programming: terms, parsing, unification, SLD resolution (a small Prolog), Datalog, propositional logic and SAT solving, first-order theorem proving, answer sets and ILP, with every inference step traced. (3 entries)
+- [losses](index/losses.md): Differentiable training objectives, torch.nn style: regression, classification, ranking, contrastive and distribution losses and regularisers, each with a uniform `reduction` option, for use inside `grad`. (6 entries)
+- [manifold](index/manifold.md): Manifold learning and embeddings: classical and metric or non-metric MDS (SMACOF, a Guttman transform per step), Isomap, locally linear embedding, Laplacian eigenmaps and diffusion maps, t-SNE, UMAP, self-organising maps ... (5 entries)
+- [metrics](index/metrics.md): Evaluation metrics, scikit-learn and torchmetrics style: classification, regression, ranking, clustering, probabilistic, calibration and many more categories, with metric specs (`defineMetric`, each metric returns a `MetricResult`), sample weights ... (8 entries)
+- [mixture](index/mixture.md): Mixture models as traced `Algorithm`s: expectation-maximisation for a Gaussian mixture (full, tied, diagonal or spherical covariances, from a k-means start), its responsibilities and log density; the Bayesian Gaussian mixture by variational inference ... (1 entry)
+- [nn](index/nn.md): Neural networks: functional layers (`nn.functional`), PyTorch-shaped modules (`new nn.Linear(4, 8)`), blocks (attention, transformers, convolutional and recurrent cells), training loops, architecture description as structures, receptive-field analysis ... (25 entries)
+- [numerics](index/numerics.md): Numerical methods, scipy and numpy.linalg style, one subfolder per topic with an import path of its own: `numerics/linalg` (dense linear algebra: `solve`, `svd`, `eigh`, `qr`), `numerics/sparse` (`csr`, Krylov solvers), `numerics/special` (`gamma`, `erf`) ... (41 entries)
+- [optim](index/optim.md): Optimisation: optax-style gradient transformations and optimisers with schedules, scipy-style minimisation (line searches, quasi-Newton, trust regions, constrained), linear and quadratic programming, sparse approximation ... (24 entries)
+- [patterns](index/patterns.md): Pattern mining: frequent itemsets (Apriori, FP-growth, Eclat, closed and maximal), association rules with their measures, sequential patterns (PrefixSpan, GSP) and subgroup discovery (quality functions, beam and exhaustive search, CN2-SD and Apriori-SD) ... (2 entries)
+- [pgm](index/pgm.md): Probabilistic graphical models, pgmpy style: factors, Bayesian and Markov networks, factor graphs, structure learning and causal graphs, and inference both exact (variable elimination, junction trees) and approximate (belief propagation, sampling). (9 entries)
+- [problems](index/problems.md): Search problems as constructables: grid worlds as path problems (`gridProblem`) with the named maps and mazes of `worlds`, constraint-satisfaction puzzles (queens, Sudoku, map colouring), classical planning domains (blocks world, towers) ... (1 entry)
+- [probprog](index/probprog.md): Probabilistic programming, NumPyro style: programs written with `sample` and `observe`, effect handlers, log densities, model analysis, inference engines (MCMC, variational, SMC, exact enumeration) chosen by an automatic planner, posteriors ... (6 entries)
+- [random](index/random.md): Explicit randomness: immutable counter-based keys (`key`, `split`, `foldIn`) and samplers that take a key first (`normal(key, shape)`, `uniform`, `permutation`, `categorical`), so every random result is reproducible from its key. (10 entries)
+- [rl](index/rl.md): Reinforcement learning infrastructure, gymnasium style: environment and agent contracts, wrappers, rollouts, replay buffers, returns and advantage estimates, tabular MDPs with exact solutions, and policy evaluation. (10 entries)
+- [rules](index/rules.md): Rule learning on the `learn` contract: the rule, literal and coverage representation with the rule quality measures and prediction by ordered list, by voting and by default rule; sequential covering (CN2 ordered and unordered, PRISM) ... (2 entries)
+- [sampling](index/sampling.md): Monte Carlo, BlackJAX and ArviZ style: log-density targets, Metropolis, Hamiltonian (HMC, NUTS), Langevin, Gibbs and slice kernels, importance sampling, sequential Monte Carlo, rejection and exact samplers, chains ... (10 entries)
+- [scene](index/scene.md): Pictures and structures as data: drawings (`Scene`: shapes, text, paths), 3-D layers, rasters, graph-shaped descriptions (`Structure`: nodes and edges for trees, networks and architectures) and timelines. (2 entries)
+- [search](index/search.md): Search, AIMA style: state-space search (uninformed and informed), local, evolutionary and swarm search, adversarial search, constraint satisfaction, planning and refinement search ... (10 entries)
+- [signal](index/signal.md): Signal and image processing, scipy.signal and librosa style: windows, filter design and application, multirate processing, spectral and time-frequency analysis, wavelets, decompositions, detection, adaptive filters, peaks, similarity and matrix profiles ... (10 entries)
+- [sketches](index/sketches.md): Probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, the Count-Min and Count sketches, Misra-Gries and Space-Saving heavy hitters, HyperLogLog distinct counting, MinHash with banded LSH, reservoir sampling, the Greenwald-Khanna ... (3 entries)
+- [space](index/space.md): Typed spaces for parameters, knobs, observations and actions: boxes, discrete and categorical choices, products, conditional spaces and tagged unions (a mode with the knobs each option brings), with sampling, containment checks and encodings, shared by tuning ... (3 entries)
+- [stats](index/stats.md): Statistics, scipy.stats and statsmodels style: descriptive statistics, hypothesis tests (the `stats/tests` folder; each returns a `TestResult`, defined in `base`), correlation, resampling (`bootstrap`, `permutationTest`), density estimation ... (14 entries)
+- [stochastic](index/stochastic.md): Stochastic processes and stochastic calculus: Brownian motion and Ito calculus, SDE solvers, diffusions, Markov chains, random walks, branching processes, queues, point processes, determinantal point processes, random measures, Gaussian processes ... (4 entries)
+- [survival](index/survival.md): Survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen estimates, the weighted log-rank tests, Cox proportional hazards regression with Breslow and Efron ties, accelerated failure time models (Weibull, log-normal, log-logistic) ... (3 entries)
+- [svm](index/svm.md): Support vector machines over the duals of `optim/smo.ts`: classification (C and nu forms, one-versus-one, Platt probabilities) and regression (epsilon and nu forms) as estimators whose fit is the stepped dual solve ... (3 entries)
+- [symbolic](index/symbolic.md): A small computer algebra system, SymPy style: immutable expressions (`Expr`, built with `sym` and `num` or read by `parse`) with `simplify`, `diff`, `integrate`, `solve`, series expansion and `toLatex`, used to state and check closed forms. (7 entries)
+- [systems](index/systems.md): Linear time-invariant systems, scipy.signal and python-control style: transfer-function (`tf`), zero-pole-gain (`zpk`) and state-space (`ss`) representations of one `Lti` type, interconnection (`series`, `feedback`) ... (3 entries)
+- [tensor](index/tensor.md): Arrays and differentiable primitives, numpy and torch.Tensor style: the `Tensor` type, dtypes, shapes and broadcasting, primitives with their derivative rules, backends, the operations (arithmetic, reductions, indexing, linear algebra basics) and pytrees. (11 entries)
+- [text](index/text.md): Text processing: normalisation, tokenisation, stemming, vocabularies, subword models and tokenizer pipelines, shingles, vectorisers (counts, TF-IDF, hashing), feature templates, representations, similarity, approximate search, fingerprinting, parsing ... (5 entries)
+- [timeseries](index/timeseries.md): Time-series models and mining, statsmodels and stumpy style: differencing and sample correlation functions, ARMA and ARIMA with their theory, estimators and forecasts, ETS exponential smoothing, classical, STL and MSTL decomposition ... (7 entries)
+- [trace](index/trace.md): Recording what algorithms do and running them as sessions: the `Algorithm` contract (init and step) and `runAlgorithm`; the log contract (`defineContract`) that declares the paths a method can log and hook ... (11 entries)
+- [trees](index/trees.md): Decision trees: the fitted tree as arrays (prediction, decision paths, node regions, importances, drawing and text), the split criteria and split search, the grower as a stepped algorithm that records every candidate split ... (2 entries)
+- [tune](index/tune.md): Parameter selection for anything, Optuna style: studies of trials over spaces, objectives, samplers (grid, random, quasi-random, CMA-ES, Nelder-Mead, evolutionary, TPE, Gaussian-process Bayesian optimisation), pruners, multi-fidelity schedules ... (5 entries)
+- [vision](index/vision.md): Classical computer vision, OpenCV-shaped, available as `mdml-engine/vision`: colour spaces and balance, histograms and equalisation, thresholds, contours and shape descriptors, drawing, keypoints and descriptors with matching ... (10 entries)
+- [worlds](index/worlds.md): Discrete worlds shared by search, reinforcement learning and graphics: grid, hexagonal and graph maps with walls, terrain and items, ASCII maps, rules and transition models, keyed maze and level generators, textbook worlds ... (2 entries)
+
+## For tools
+
+- [index/index.json](index/index.json): every entry as JSON.
