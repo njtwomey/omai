@@ -35,7 +35,11 @@ describe('information inequalities and identities (property)', () => {
   it('Pinsker: TV(p, q) <= sqrt(KL(p || q) / 2); JS <= log 2', () => {
     fc.assert(
       fc.property(prob(4), prob(4), (p, q) => {
-        expect(item(I.totalVariation(p, q))).toBeLessThanOrEqual(Math.sqrt(item(I.relativeEntropy(p, q)) / 2) + 1e-12)
+        // Squared, TV^2 <= KL / 2 with the absolute rounding of the KL sum (as in the Gibbs test): for nearly equal p and q
+        // the KL is about 1e-16 and its rounding can make it slightly negative, and then the square root is NaN (fast-check
+        // found such a pair, seed 401760474). The rounding of a sum of terms of size 1 is not a library defect.
+        const tv = item(I.totalVariation(p, q))
+        expect(tv * tv).toBeLessThanOrEqual(item(I.relativeEntropy(p, q)) / 2 + 1e-15)
         expect(item(I.jensenShannonDivergence(p, q))).toBeLessThanOrEqual(Math.LN2 + 1e-12)
       }),
       { numRuns: RUNS },

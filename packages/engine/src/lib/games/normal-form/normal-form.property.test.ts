@@ -141,14 +141,19 @@ describe('correlated equilibria', () => {
   it('the welfare optimum is a correlated equilibrium at least as good as every Nash equilibrium', () => {
     fc.assert(
       fc.property(generic, (game) => {
+        // The programs are solved by the simplex, or by the interior point when the simplex reports numerical difficulties
+        // (it does on a plain 4 x 3 random game, seed 1507088120, whose optimum is a degenerate pure equilibrium); the
+        // interior point is documented to 1e-8, and its answer there has mass 1 + 1.2e-8, so the programs' own results
+        // are checked to 1e-7. The Nash equilibria come from the enumeration, exact to rounding, and keep 1e-9.
+        const lpTol = 1e-7
         const ce = correlatedEquilibrium(game)
-        expect(isCorrelatedEquilibrium(game, ce.distribution, { tol: 1e-9 })).toBe(true)
+        expect(isCorrelatedEquilibrium(game, ce.distribution, { tol: lpTol })).toBe(true)
         const cce = correlatedEquilibrium(game, { coarse: true })
-        expect(cce.value).toBeGreaterThanOrEqual(ce.value - 1e-9)
+        expect(cce.value).toBeGreaterThanOrEqual(ce.value - lpTol)
         for (const e of supportEnumeration(game)) {
           const p = jointDistribution(game, e.strategies)
           expect(isCorrelatedEquilibrium(game, p, { tol: 1e-9 })).toBe(true)
-          expect(ce.value).toBeGreaterThanOrEqual((e.payoffs[0] ?? 0) + (e.payoffs[1] ?? 0) - 1e-9)
+          expect(ce.value).toBeGreaterThanOrEqual((e.payoffs[0] ?? 0) + (e.payoffs[1] ?? 0) - lpTol)
         }
       }),
       { numRuns: RUNS },

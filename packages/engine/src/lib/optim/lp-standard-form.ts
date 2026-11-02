@@ -260,4 +260,9 @@ export interface LinprogOptions extends Partial<Omit<RunOptions, 'maxSteps' | 's
   readonly tol?: number
   /** Simplex pivoting: Bland's rule (default, never cycles) or Dantzig's most negative reduced cost. */
   readonly pivotRule?: 'bland' | 'dantzig'
+  /**
+   * The simplex's smallest acceptable pivot, relative to the largest entry of its column (default 1e-7; 0 keeps only
+   * the absolute tolerance). `linprog` retries a program that fails with the floor without it.
+   */
+  readonly pivotFloor?: number
 }

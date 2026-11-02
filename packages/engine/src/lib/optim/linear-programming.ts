@@ -256,7 +256,7 @@ function run<S extends { readonly solution: StandardSolution; readonly finished:
   options: LinprogOptions,
   defaultIterations: number,
 ): LinprogResult {
-  const { method: _m, maxIterations, tol: _t, pivotRule: _p, ...rest } = options
+  const { method: _m, maxIterations, tol: _t, pivotRule: _p, pivotFloor: _f, ...rest } = options
   const result = runAlgorithm(algorithm, { ...rest, maxSteps: maxIterations ?? defaultIterations })
   return assembleResult(form, result.state.solution)
 }
@@ -308,8 +308,10 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
 /**
  * Solve a linear program in scipy's form (scipy.optimize.linprog): minimise c^T x subject to A_ub x <= b_ub,
  * A_eq x = b_eq and bounds. The method is a function value; by default {@link linprogSimplex},
- * falling back to {@link linprogInteriorPoint} when the simplex reports numerical difficulties, and
- * returning an infeasible or unbounded verdict only when two methods (the simplex with Bland's and Dantzig's rules,
+ * retrying without the simplex's pivot floor and then falling back to {@link linprogInteriorPoint} when the simplex
+ * reports numerical difficulties (or reaches the default
+ * iteration limit, which on a badly conditioned program is cycling; a limit set in the options is returned as it is),
+ * and returning an infeasible or unbounded verdict only when two methods (the simplex with Bland's and Dantzig's rules,
  * the interior point) agree; otherwise the status is `numerical difficulties`.
  *
  * @param problem - The program.
@@ -330,13 +332,20 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
 export function linprog(problem: LinearProgram, options: LinprogOptions = {}): LinprogResult {
   if (options.method !== undefined) return options.method(problem, options)
   const r = linprogSimplex(problem, options)
-  if (r.status === 'optimal' || r.status === 'iteration limit') return r
-  // Programs the simplex cannot settle numerically (near-tied coefficients) go to the interior-point method, and
-  // infeasible or unbounded verdicts are cross-checked: one is returned only when two methods agree.
+  if (r.status === 'optimal' || (r.status === 'iteration limit' && options.maxIterations !== undefined)) return r
+  // Programs the simplex cannot settle numerically (near-tied coefficients, or cycling to the default iteration
+  // limit) are retried without its pivot floor (which helps some programs and hurts others), then go to the
+  // interior-point method, and infeasible or unbounded verdicts are cross-checked: one is returned only when two
+  // methods agree.
+  const plain = linprogSimplex(problem, { ...options, pivotFloor: 0 })
+  if (plain.status === 'optimal') return plain
   const ip = linprogInteriorPoint(problem, options)
   if (ip.status === 'optimal' || (ip.status === r.status && r.status !== 'numerical difficulties')) return ip
   const dantzig = linprogSimplex(problem, { ...options, pivotRule: 'dantzig' })
-  if (dantzig.status === 'optimal' || (dantzig.status === ip.status && ip.status !== 'iteration limit')) return dantzig
+  if (dantzig.status === 'optimal') return dantzig
+  const dantzigPlain = linprogSimplex(problem, { ...options, pivotRule: 'dantzig', pivotFloor: 0 })
+  if (dantzigPlain.status === 'optimal') return dantzigPlain
+  if (dantzig.status === ip.status && ip.status !== 'iteration limit') return dantzig
   return {
     ...ip,
     status: 'numerical difficulties',
