@@ -7081,7 +7081,7 @@ Design rules:
 - `derivations.ts`: step lists from `symbolic` and `foundations` as aligned equations.
 
 `animation/`
-- `timeline.ts`: building `Timeline`s from runs (any event channel), from environment episodes, from structure overlays
+- `timeline.ts`: building `Timeline`s from runs (any event channel), from structure overlays
   and from parameter sweeps; easing and interpolation between frames.
 - `svg.ts`: `animatedSvg`, every frame of a timeline in one SVG shown in turn by CSS keyframes.
 - `gif.ts`: `encodeGif` (dependency-free: a median-cut palette from `quantise`, LZW, delays, looping).
@@ -7159,7 +7159,6 @@ Design rules:
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
 - `StructureView.tsx`: a `Structure` in a frame (by default) with pan, zoom, hover details and overlay state (`frames`
   sizes nodes once for a whole animation).
-- `TraceView.tsx`: the standard figures of a run; `useRunStream` for live runs.
 - `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
   a reset of the page's controls to their defaults and an eager toggle when the controller offers them, seek to the
   start, step back, play and pause with a caret menu for the target frames per second, step forward, seek to the end,
@@ -7194,7 +7193,6 @@ Design rules:
   figure has focus, per press and per frame, for playing worlds).
   `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
   cut-offs, levels; snaps to a step, keyboard-nudgeable).
-- `ExportMenu.tsx`: export of the current figure as SVG, PNG, GIF, MP4 or WebM.
 - `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
   assistive technology; live values highlighted).
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
@@ -7227,9 +7225,9 @@ Design rules:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
   `stages.tsx` (`EnsembleView`; `PipelineView`: a strip of stage cards and the selected stage's panel, with its
   data table and fitted parameters beside the figure), `components.tsx`, `tables.tsx`, `margins.tsx`, `anomaly.tsx`, `episodes.tsx`, `boards.tsx`:
-  `BoardPlayer`, `PopulationPlayer`; `curves.tsx`: `CurvesView`; `densities.tsx`: `DensityView`; `sequences.tsx`:
+  `BoardPlayer`, `PopulationPlayer`; `curves.tsx`: `CurvesView`; `sequences.tsx`:
   `StateSequenceView`; `cells.tsx`: `ValueGridView`, `ConfusionMatrixView`; `diagrams.tsx`: `DiagramPlayer`, a
-  `StructureView` with the record's steps played beneath; `topics.tsx`: `TopicWordsView`; `fields.tsx`: `VectorFieldView`;
+  `StructureView` with the record's steps played beneath; `fields.tsx`: `VectorFieldView`;
   `strips.tsx`: `StripView`; `marked-tables.tsx`: `MarkedTableView`; `structure-steps.tsx`: `StructureStepsView`;
   `points-steps.tsx`: `PointsStepsView`; `complex-plane.tsx`: `ComplexPlaneView`; `simplex.tsx`: `SimplexView`;
   `landscape-slice.tsx`: `LandscapeSliceView`; `stability-region.tsx`: `StabilityRegionView`; `equation-fit.tsx`:
