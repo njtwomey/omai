@@ -1,6 +1,10 @@
 # Continuous integration: the whole-repo checks and every TypeScript test on each push and pull request.
 # The Python oracle's heavy groups (torch, numpyro, ...) are not installed: tests never run Python, and the
 # fixtures are checked locally with `make fixtures-check`.
+#
+# The jobs run side by side, and the tests are split over shards (the matrix below; `--shard=N/COUNT` of Vitest), each
+# on its own runner. vitest.config.ts reads CI to use every core, to share the module graph between test files and to
+# allow 30 s per test. The pack workflow waits for this workflow as a whole, so it still follows a green run only.
 name: ci
 
 on:
@@ -16,9 +20,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
+  static:
+    name: barrels, layers, lint
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
@@ -26,15 +31,50 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           uv sync --group dev
-      - name: Barrels, layers and lint
-        run: make barrels-check layers lint
+      - name: Barrels, agent index, layers and lint
+        run: make barrels-check agent-index-check layers lint
+
+  types:
+    name: type-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Type-check (TypeScript)
         run: |
           for p in engine render meta; do pnpm --dir packages/$p exec tsc -p tsconfig.json --noEmit; done
           pnpm --dir apps/site exec tsc -p tsconfig.json --noEmit
           pnpm --dir apps/pocs exec tsc -p tsconfig.json --noEmit
           pnpm exec tsc -p tsconfig.json
+
+  test:
+    name: tests (shard ${{ matrix.shard }} of 4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # A failing shard does not cancel the others, so one run lists every failure.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Tests
-        run: make test
+        run: mise exec -- pnpm exec vitest run --shard=${{ matrix.shard }}/4
+
+  examples:
+    name: examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Examples
         run: make examples

@@ -1,13 +1,22 @@
 import { defineConfig } from 'vitest/config'
 
-// Test workers: half the cores by default, so several checkouts (agents' worktrees) can test at once without
-// saturating the machine; set MDML_TEST_WORKERS to a count or a percentage to override.
+const onCi = process.env['CI'] !== undefined
+
+// Test workers: locally half the cores, so several checkouts (agents' worktrees) can test at once without saturating
+// the machine; on CI, where the runner is ours alone, all of them. Set MDML_TEST_WORKERS to a count or a percentage to
+// override either.
 const workers = process.env['MDML_TEST_WORKERS']
-const maxWorkers = workers === undefined ? '50%' : workers.endsWith('%') ? workers : Number(workers)
+const maxWorkers = workers === undefined ? (onCi ? '100%' : '50%') : workers.endsWith('%') ? workers : Number(workers)
 
 // The CI runner is several times slower than a developer machine and runs the whole suite at once: a test that takes
 // a second or two locally can pass 5 s there. Locally the strict default stays, so a slow test still shows up.
-const testTimeout = process.env['CI'] === undefined ? 5_000 : 30_000
+const testTimeout = onCi ? 30_000 : 5_000
+
+// Each test file normally gets a fresh module graph, which re-imports and re-transforms the engine every time: about
+// half the worker time of a full run (measured: the suite took 716 s with isolation and 407 s without, at two workers
+// and CI's timeout, and every test passed both ways). CI shares the graph between the files of a worker; locally files
+// stay isolated, so a test that leaks state between files still shows up when running a few of them.
+const isolate = !onCi
 
 // One Vitest run for the workspace. Packages resolve each other's source through the `source` export condition, so
 // tests never need a build.
@@ -17,6 +26,7 @@ export default defineConfig({
   test: {
     maxWorkers,
     testTimeout,
+    isolate,
     projects: [
       {
         extends: true,
