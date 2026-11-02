@@ -4,8 +4,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Working instructions
 
-- When a message starts with `init`, follow `INIT.md` (a one-time bootstrap, done: the repository exists). With `audit`,
-  follow `AUDIT.md`. Neither is a skill or slash command.
 - There is no methods layer in the engine. `docs/methods-catalog/` is the catalogue of methods (a taxonomy over the
   library: one folder and one `<area>.md` table per chapter, with the methods, why they are interesting, their tracks on
   the tape and what they need from the library; `methods-catalog.md` is its design, `PLAN.md`, `LIB.md` and `RENDER.md`

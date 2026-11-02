@@ -123,7 +123,7 @@ mdml-js/
   scripts/       repository tooling in TypeScript
   docs/          structure.md (this file), decisions.md, extending.md, conventions.md, concepts.yaml, history/
   Makefile, mk/  the single interface for routine work
-  CLAUDE.md, INIT.md, AUDIT.md, PORT.md
+  CLAUDE.md
 ```
 
 `apps/site` is the one site: the gallery shows off `render` and the docs document `engine`. Outside projects (the
@@ -7495,7 +7495,7 @@ library for the same computation. They do not set a higher bar than that library
 - `.github/workflows/`: `ci.yml` (`make check`, `make smoke`), `release.yml` (changesets; tarballs and assets attached
   to a GitHub release), `oracle.yml` (scheduled fixture checks per group), `dependabot.yml`.
 - `docs/`: `structure.md`, `decisions.md`, `extending.md`, `conventions.md`, `concepts.yaml`, `history/`.
-- `CLAUDE.md`, `INIT.md`, `AUDIT.md`, `PORT.md`.
+- `CLAUDE.md`.
 ## 11. Where familiar things live
 
 ### scikit-learn
