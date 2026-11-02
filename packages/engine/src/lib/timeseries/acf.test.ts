@@ -13,6 +13,11 @@ describe('sample correlation functions', () => {
     fc.assert(
       fc.property(series, (y) => {
         fc.pre(new Set(y).size > 2)
+        // The correlations divide by the variance, which underflows to 0 (a NaN, as in statsmodels) for a series of
+        // denormal numbers such as [0, ..., 5e-324, -5e-324] (a counterexample that fast-check found): ask for a
+        // variance a double can carry.
+        const mean = y.reduce((a, v) => a + v, 0) / y.length
+        fc.pre(y.reduce((a, v) => a + (v - mean) ** 2, 0) > 1e-12)
         const { acf } = T.acf(y, 8)
         expect(acf[0]).toBeCloseTo(1, 12)
         for (const v of acf) expect(Math.abs(v)).toBeLessThanOrEqual(1 + 1e-9)
