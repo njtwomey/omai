@@ -61,14 +61,14 @@ below are the folders of `src`; `react` is large and its index is nested by its 
 
 ## Domains
 
-- animation: Animation: building timelines of frames from runs, sweeps and structure overlays, easing and tweening between them, precomputed and live playback, and exporting a timeline as a self-playing SVG, a GIF or a WebM video ... (no entries yet)
+- animation: Animation: building timelines of frames from runs, sweeps and structure overlays, easing and tweening between them, and exporting a timeline as a self-playing SVG, a GIF or a WebM video, all headless and dependency-free where possible. (no entries yet)
 - charts: ECharts option builders: lines, points, bars and histograms, distributions, heatmaps and matrices, fields and decision regions, function plots, evaluation and tuning figures, multivariate charts and subplots. (no entries yet)
 - figure: The headless figure model: fixed figure sizes and box aspects per medium, data aspects, grid specifications for panels and marginal plots, axis limit policies for figures that change as controls move, and shared state for linked brushing and hover. (no entries yet)
-- gym: Pictures of environments and worlds: episode frames, captions and filmstrips from an environment's `render`, and views of grid worlds from above or in first person, with the overlays search and learning agents need. (no entries yet)
+- gym: Pictures of environments and worlds: filmstrips of an environment's rendered frames, and views of grid worlds from above or in first person, with the overlays search and learning agents need. (no entries yet)
 - layout: Graph layout: positions only, with no rendering and no layout library. (no entries yet)
 - maths: Mathematics on the page: TeX typesetting through KaTeX with one shared macro registry, live equations whose values follow the controls, and derivations set as aligned steps with notes. (no entries yet)
 - producer: The producer of a live session, behind one interface: the main-thread producer that computes in slices, and the worker producer that hands a Web Worker the name of a method and its JSON options, computes ahead of the consumer's cursor within a lookahead ... (no entries yet)
-- react: React 19 bindings of mdml-render: live charts, scene, 3-D and structure views, the fixed-size figure frame with expand and export, figure grids, typeset and live maths, the player and its playback hooks, environment views and the colour-mode theme ... (no entries yet)
+- react: React 19 bindings of mdml-render: live charts, scene, 3-D and structure views, the fixed-size figure frame with expand and export, figure grids, typeset and live maths, the player and its playback hooks and the colour-mode theme, with controls ... (no entries yet)
 - structures: Any engine `Structure` drawn as a diagram: layout and drawing to a scene, the visual language of each kind of structure (graphical models, trees, automata, networks), views of neural architectures ... (no entries yet)
 - svg: Headless SVG and PNG output: scenes as standalone SVG documents, shared path data, a dependency-free PNG encoder, and export of whole figures (charts and overlays composed into one SVG, rasterised for slides and blog posts). (no entries yet)
 - theme: The look of every figure: light and dark design tokens and their CSS variables, categorical, sequential and diverging palettes with colour-blindness checks, the registered ECharts themes, and number formatting for axes, tooltips and readouts. (no entries yet)
