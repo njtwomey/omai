@@ -166,4 +166,22 @@ describe('fitNerfMethod', () => {
     expect(p.data.images.shape).toEqual([3, 4, 4, 3])
     expect(p.model.coarse.densityActivation).toBe('relu')
   })
+
+  it('places the cameras by the field of view and radius knobs, and keeps the old defaults without them', () => {
+    const cameras = (c: Partial<NerfMethodConfig>): { eye: readonly number[]; fov: number }[] =>
+      nerfProblem({ ...(config as NerfMethodConfig), ...c } as unknown as NerfMethodConfig, key(0)).data.cameras.map(
+        (cam) => ({
+          eye: cam.eye,
+          fov: cam.fov,
+        }),
+      )
+    const distance = (eye: readonly number[]): number => Math.hypot(...(eye as [number, number, number]))
+    expect(cameras({}).every((c) => Math.abs(distance(c.eye) - 4) < 1e-9 && c.fov === 40)).toBe(true)
+    expect(cameras({ radius: 2.8, fov: 55 }).every((c) => Math.abs(distance(c.eye) - 2.8) < 1e-9 && c.fov === 55)).toBe(
+      true,
+    )
+    expect(
+      nerfProblem({ ...(config as NerfMethodConfig), radius: 2.8 } as unknown as NerfMethodConfig, key(0)).data.far,
+    ).toBeCloseTo(4.8, 12)
+  })
 })

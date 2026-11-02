@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { gradCheck, valueAndGrad } from '../autodiff/index.ts'
 import { key } from '../random/index.ts'
 import { mul, sum, tensor, toFlat, treeLeaves, type Value } from '../tensor/index.ts'
-import { NerfField, nerfModel, nerfParams, renderRays } from './index.ts'
+import { NerfField, nerfDensityGrid, nerfModel, nerfParams, renderRays } from './index.ts'
 
 const small = {
   width: 8,
@@ -107,5 +107,41 @@ describe('renderRays', () => {
       return sum(renderRays(model, next, rays, { near: 2, far: 6, samples: 5 }).coarse.colour)
     }
     expect(gradCheck(f, head).passed).toBe(true)
+  })
+})
+
+describe('nerfDensityGrid', () => {
+  it('evaluates the field at the cell centres of a box, x fastest, with the density that renderRays uses', () => {
+    const model = nerfModel({ ...small, key: key(3) })
+    const params = nerfParams(model)
+    const g = nerfDensityGrid(model, params, {
+      bounds: [
+        [0, 0, 0],
+        [2, 4, 6],
+      ],
+      resolution: 2,
+    })
+    expect(g.density.length).toBe(8)
+    expect(g.colour.length).toBe(24)
+    // Cell (1, 0, 1) is index 1 + 2 (0 + 2 * 1) = 5, at the point (1.5, 1, 4.5).
+    const out = model.coarse.apply(params.coarse, [tensor([[1.5, 1, 4.5]]), tensor([[0, 0, -1]])] as never, {
+      train: false,
+    })
+    expect(g.density[5]).toBeCloseTo(toFlat(out.density)[0] as number, 12)
+    expect(toFlat(out.colour).every((v, c) => Math.abs(v - (g.colour[15 + c] as number)) < 1e-12)).toBe(true)
+    expect(g.maxDensity).toBe(Math.max(...g.density))
+    expect(g.density.every((v) => v >= 0)).toBe(true)
+  })
+
+  it('uses the fine network when there is one', () => {
+    const model = nerfModel({ ...small, fine: true, key: key(4) })
+    const params = nerfParams(model)
+    const g = nerfDensityGrid(model, params, { resolution: 2 })
+    const fine = (model.fine as NerfField).apply(
+      params.fine as never,
+      [tensor([[-0.5, -0.5, -0.5]]), tensor([[0, 0, -1]])] as never,
+      { train: false },
+    )
+    expect(g.density[0]).toBeCloseTo(toFlat(fine.density)[0] as number, 12)
   })
 })
