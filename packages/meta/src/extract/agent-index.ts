@@ -121,9 +121,13 @@ export function collectAgentIndex(root: string, pkg: AgentIndexPackage = ENGINE)
       folder: where.folder,
     })
   }
+  // A file can be listed under several entry points (render's root barrel re-exports every domain): keep the most
+  // specific one, the longest import path, so a file is indexed once.
+  const homes = new Map<string, string>()
+  for (const f of files) if (f.module.length > (homes.get(f.path)?.length ?? -1)) homes.set(f.path, f.module)
   for (const f of files) {
     const where = place(f.path)
-    if (f.index === undefined || where === undefined) continue
+    if (f.index === undefined || where === undefined || homes.get(f.path) !== f.module) continue
     entries.push({
       kind: f.index.kind,
       name: basename(f.path),
