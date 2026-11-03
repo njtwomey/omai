@@ -26,7 +26,7 @@ import {
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { SessionPanels } from './SessionPanels.tsx'
-import type { LiveSession } from './useSession.ts'
+import { type LiveSession, STILL_HANDLE } from './useSession.ts'
 
 // A method of nothing but its configuration: a counter, and a probe of each record kind the panels draw.
 interface State {
@@ -122,6 +122,7 @@ function liveOf(steps: number): LiveSession<State, Config> {
     lastMs: 0,
     stale: false,
     held: false,
+    ...STILL_HANDLE,
     apply: () => s,
   }
 }

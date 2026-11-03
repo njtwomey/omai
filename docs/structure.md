@@ -5614,6 +5614,28 @@ scrubs to the nearest trial. Bayesian optimisation (`methods/tune`) logs `x`, `v
 `{ kind: 'sweep', path: 'value', over: 'x' }` is its sweep. The gallery's `animation/05-compare` recipe runs the toy
 walk as three variants under one player.
 
+**Start policies, status and dispose.** When a session computes, and where its cursor starts, is the start policy
+(`SessionHookOptions.start`, `SessionPlayer`'s `start`, `useLiveRun`'s `start`; `react/start.ts`): `'play'` (live, the
+default: nothing is computed until play, then the producer computes ahead of the cursor), `'first'` (primed: the whole
+run is computed in the background from the moment the session is made, and the cursor is parked at step 0, paused,
+until play) and `'end'` (eager: the whole run is computed in the background and the cursor jumps to the end when it is
+done). The engine's `mode: 'eager'` in the options means `'end'` unless `start` is given, so the pages that pass the
+reader's stored mode and the player's eager toggle are unchanged; the hook makes the session live and computes it in
+time slices, so mounting a 200-step eager run no longer blocks the page (the synchronous eager of `makeSessions` is
+still there for callers outside React). Priming uses 8 ms of each animation frame on the main thread (12 ms while
+playing), or a worker with its lookahead ignored. The handle says where it is: `status` (`'preparing'`: the tape is
+incomplete and nothing plays; `'ready'`: the whole tape exists and nothing plays; `'running'`: playing, including a
+play pressed before the tape was ready, which plays at the head as live does), `progress` (0 to 1 of the options'
+`steps`, the engine default of 1000 without one; 1 once the run has ended), `playing`, `play()` and `pause()` (a host
+can start the player's clock), `onReady` (once per run) and `dispose()` (stops the producer, terminates the worker,
+drops the tape; the handle then stands at step 0 and starts from nothing if used again; unmounting calls it after a
+microtask, so a strict-mode double effect keeps the producer). The playhead is a clock: `SessionPlayer` keeps the step
+the clock has reached in a ref, adds the frames due by the display's timestamps (up to half a second at once), tells the
+page once per tick and only when the step changed, and optionally writes it to a `playhead` ref the caller gives, so
+slow drawing skips steps rather than slowing playback. What remains: the views still draw from the page's `at` state at
+render time (a shared playhead store the figures subscribe to is not built). `useLiveRun` keeps its states in a
+`RingBuffer` of `history` states (a primed run keeps all of it) and has `phase`, `progress`, `oldest` and `dispose`.
+
 **The worker producer, page export and narratives.** `useSession`'s producer is a factory (`SessionHookOptions.producer`):
 the default computes on the main thread; `workerProducer({ createWorker })` (`render/producer/`) hands a Web Worker the
 method's name and its JSON options, computes the run ahead of the cursor (the player tells it where the cursor is, so a
@@ -7172,8 +7194,9 @@ Design rules:
   start, step back, play and pause with a caret menu for the target frames per second, step forward, seek to the end,
   a draggable scrubber, and an optional time stamp.
   `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over precomputed frames and
-  live algorithm steps, and `useTicker`, the animation-frame ticker every player shares) and `playhead.ts` (frame
-  timing, the pure part).
+  live algorithm steps, and `useTicker`, the animation-frame ticker every player shares), `playhead.ts` (frame
+  timing, the pure part), `start.ts` (`StartPolicy`, `PlayStatus`, `startOf`, `statusOf`, `progressOf`) and `ring.ts`
+  (`RingBuffer`, the history of a live run). `_harness.tsx` is the test harness for hooks with no DOM library.
 - `ContingencyTable.tsx`: a contingency table (confusion matrix) with full margins: named cells (TP, FN, FP, TN),
   row and column totals with their rates (TPR, FNR, TNR, FPR; PPV, FDR, NPV, FOR; recall and precision for more
   classes), prevalence and accuracy; hovering a rate outlines its numerator and denominator. Static from any table,

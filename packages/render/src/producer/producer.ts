@@ -43,7 +43,10 @@ export interface Producer<S, C extends Config> {
   readonly probed: number
   /** Be told when the tape grew, a probe was answered or something failed. Returns the way to stop. */
   subscribe(listener: () => void): () => void
-  /** Drop everything it holds, terminating a worker; a producer used again after this starts from nothing. */
+  /**
+   * Drop everything it holds (the tape, a worker's thread: terminated); a producer used again after this starts from
+   * nothing, at step 0.
+   */
   dispose(): void
 }
 

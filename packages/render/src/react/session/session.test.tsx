@@ -18,7 +18,7 @@ import { sessionPreferences, setSessionPreferences } from './preferences.ts'
 import { SessionPanels } from './SessionPanels.tsx'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { nearestStep } from './scrub.ts'
-import type { LiveSession, LiveSessions } from './useSession.ts'
+import { type LiveSession, type LiveSessions, STILL_HANDLE } from './useSession.ts'
 
 // A method of nothing but its configuration: a point walking a circle, with its angle, position and a 2-by-2 matrix
 // on the tape and the plane's distance from the origin as a probe.
@@ -101,6 +101,7 @@ function liveOf(steps: number, config: Partial<Config> = {}): LiveSession<State,
     lastMs: 0,
     stale: false,
     held: false,
+    ...STILL_HANDLE,
     apply: () => s,
   }
 }
@@ -122,6 +123,7 @@ function comparisonOf(
     lastMs: 0,
     stale: false,
     held: false,
+    ...STILL_HANDLE,
     apply: () => list.map((v) => v.live.session),
   }
 }

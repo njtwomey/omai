@@ -19,11 +19,14 @@ React 19 bindings of mdml-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `ThemeProvider`: React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>` `src/react/theme.tsx:48` `mdml-render/react`
 - function `ThresholdExplorer`: React component: drag a threshold across ROC, cost and table: `<ThresholdExplorer yTrue={y} scores={s} />` `src/react/ThresholdExplorer.tsx:97` `mdml-render/react`
 - function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:60` `mdml-render/react`
-- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:179` `mdml-render/react`
-- function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:91` `mdml-render/react`
-- function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:140` `mdml-render/react`
+- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:208` `mdml-render/react`
+- function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:95` `mdml-render/react`
+- function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:144` `mdml-render/react`
 
-- structure `PlaybackController`: The state and verbs of a playback: `c.frame`, `c.seek(n)`, `c.toggle()` `src/react/usePlayback.ts:18` `mdml-render/react`
+- structure `PlayStatus`: Where a session is: 'preparing', 'ready' or 'running' (`live.status`) `src/react/start.ts:30` `mdml-render/react`
+- structure `PlaybackController`: The state and verbs of a playback: `c.frame`, `c.seek(n)`, `c.toggle()` `src/react/usePlayback.ts:20` `mdml-render/react`
+- structure `RingBuffer`: The latest n items, the oldest dropped: `new RingBuffer(2000)`, `ring.push(x)`, `ring.at(0)` `src/react/ring.ts:12` `mdml-render/react`
+- structure `StartPolicy`: When a session computes and where its cursor starts: 'play' (live), 'first' (primed), 'end' (eager) `src/react/start.ts:21` `mdml-render/react`
 
 ## react/controls
 
@@ -68,17 +71,17 @@ Sessions in React. `useSession` runs a method live (`useSessions` runs several v
 - function `NarrativeView`: React component: one session told in pages: `<NarrativeView id="n" narrative={n} live={live} ... />` `src/react/session/NarrativeView.tsx:60` `mdml-render/react`
 - function `SessionExport`: React component: page export menu: PNG, SVG, GIF, WebM, tape JSON: `<SessionExport live={live} ... />` `src/react/session/SessionExport.tsx:84` `mdml-render/react`
 - function `SessionPanels`: React component: panels of a layout over a session: `<SessionPanels id="p" live={live} at={at} layout={l} />` `src/react/session/SessionPanels.tsx:90` `mdml-render/react`
-- function `SessionPlayer`: React component: play a session with controls: `<SessionPlayer live={live} at={at} onScrub={setAt} />` `src/react/session/SessionPlayer.tsx:31` `mdml-render/react`
+- function `SessionPlayer`: React component: play a session with controls: `<SessionPlayer live={live} at={at} onScrub={setAt} />` `src/react/session/SessionPlayer.tsx:36` `mdml-render/react`
 - function `TapeView`: React component: draw whatever a session logged: `<TapeView live={live} at={at} onScrub={setAt} />` `src/react/session/TapeView.tsx:62` `mdml-render/react`
-- function `useSession`: React hook: run a method live: `useSession(method, { config, steps }, [config])` `src/react/session/useSession.ts:326` `mdml-render/react`
+- function `useSession`: React hook: run a method live: `useSession(method, { config, steps }, [config])` `src/react/session/useSession.ts:430` `mdml-render/react`
 - function `useSessionPreferences`: React hook: the reader's live or eager mode and hold setting: `useSessionPreferences().mode` `src/react/session/preferences.ts:70` `mdml-render/react`
-- function `useSessions`: React hook: run variants of one method in step: `useSessions(method, options, variants, deps)` `src/react/session/useSession.ts:153` `mdml-render/react`
+- function `useSessions`: React hook: run variants of one method in step: `useSessions(method, options, variants, deps)` `src/react/session/useSession.ts:222` `mdml-render/react`
 - function `useStepCursor`: React hook: the viewed step inside a panel: `useStepCursor()` `src/react/session/cursor.tsx:33` `mdml-render/react`
-- function `useTape`: React hook: replay a loaded tape file as a live handle: `useTape(file, registry)` `src/react/session/useTape.ts:64` `mdml-render/react`
+- function `useTape`: React hook: replay a loaded tape file as a live handle: `useTape(file, registry)` `src/react/session/useTape.ts:65` `mdml-render/react`
 - function `variantsOfSlot`: Make one comparison variant per option of a slot: `variantsOfSlot(method.config, 'solver')` `src/react/session/slots.ts:60` `mdml-render/react`
 
-- structure `LiveSession`: A live session: `live.session`, `live.head`, `live.compute()`, `live.apply()` `src/react/session/useSession.ts:64` `mdml-render/react`
-- structure `LiveSessions`: A comparison of variants under one producer: `live.variants`, `live.head` `src/react/session/useSession.ts:84` `mdml-render/react`
+- structure `LiveSession`: A live session: `live.session`, `live.head`, `live.compute()`, `live.apply()` `src/react/session/useSession.ts:113` `mdml-render/react`
+- structure `LiveSessions`: A comparison of variants under one producer: `live.variants`, `live.head` `src/react/session/useSession.ts:133` `mdml-render/react`
 - structure `Narrative`: A session told in pages: `{ pages: [{ id, title, text, layout }] }` `src/react/session/layout.ts:407` `mdml-render/react`
 
 ## react/views

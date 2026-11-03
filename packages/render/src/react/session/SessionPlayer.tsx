@@ -1,8 +1,12 @@
 /**
  * The player over a live session, or over a comparison of several: the consumer of the tape. Play moves the cursor
  * through the recorded steps at the chosen rate while the producer computes ahead in the background, and waits at the
- * head when the computation is slower than the rate; the eager toggle computes the whole run at once and shows its
- * end. Seek to either end, step one, a rate menu and a status line; a change held while live is applied when play is
+ * head when the computation is slower than the rate. Where the cursor starts follows the start policy of the handle
+ * (`useSession`'s `start`, or this player's own): live parks it at the start with nothing computed, primed
+ * (`'first'`) computes the whole run in the background and keeps it parked at step 0 until play, eager (`'end'`, the
+ * toggle) computes the whole run in the background and jumps to its end when it is done. The playhead is a clock: the
+ * position advances by the display's frame times in a ref, whatever the drawing costs, and the page's state is set
+ * once per displayed frame, so slow drawing drops frames instead of slowing playback. Seek to either end, step one, a rate menu and a status line; a change held while live is applied when play is
  * pressed; a reset of the page's controls when the page offers one. Over a comparison every verb acts on all the
  * variants, the cursor is shared and the stamp shows the head of the slowest. Given `pageExport`, an export menu sits in
  * the status row (the page as PNG or SVG, a recording as GIF or WebM, the tape as JSON in and out); a session computed
@@ -10,10 +14,11 @@
  */
 
 import type { Config } from 'mdml-engine/trace'
-import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import { type MutableRefObject, type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { Player } from '../Player.tsx'
+import type { StartPolicy } from '../start.ts'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
-import { setSessionPreferences, useSessionPreferences } from './preferences.ts'
+import { setSessionPreferences } from './preferences.ts'
 import { SessionExport, type SessionExportProps } from './SessionExport.tsx'
 import { type LiveSession, type LiveSessions, variantsOf } from './useSession.ts'
 
@@ -39,12 +44,25 @@ export function SessionPlayer<S, C extends Config>(props: {
   readonly onReset?: () => void
   /** The page's export menu: the element holding the figures, the title and caption, the layout, loading a tape. */
   readonly pageExport?: Omit<SessionExportProps, 'live' | 'at' | 'onScrub'>
+  /**
+   * Where the cursor starts, in place of the handle's own policy (`'play'`, `'first'` or `'end'`); the player then asks
+   * the producer to compute, and the eager toggle is not offered. Omitted, the handle's `start` rules and the toggle
+   * switches between `'end'` and `'play'` through the stored preference.
+   */
+  readonly start?: StartPolicy
+  /**
+   * A ref the player keeps at the playhead's step on every animation frame, before the page re-renders: a figure that
+   * draws on its own frame (a canvas) reads it to show the frame at the playhead.
+   */
+  readonly playhead?: MutableRefObject<number>
 }): ReactElement {
   const { live, at, onScrub } = props
   const variants = variantsOf(live)
   // Every variant is remade at once, so the first one's session stands for the remake.
   const first = variants[0]?.live.session
-  const eager = useSessionPreferences().mode === 'eager'
+  const policy = props.start ?? live.start
+  const eager = policy === 'end'
+  const parked = policy !== 'play'
   const head = live.head
   const viewed = at === null ? head : Math.min(at, head)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
@@ -65,54 +83,126 @@ export function SessionPlayer<S, C extends Config>(props: {
   const [ticking, setTicking] = useState(false)
   const cursor = useRef({ viewed, head, done: live.done })
   cursor.current = { viewed, head, done: live.done }
-  const handlers = useRef({ onScrub, onReset: props.onReset })
-  handlers.current = { onScrub, onReset: props.onReset }
+  const handlers = useRef({ onScrub, onReset: props.onReset, pause: live.pause })
+  handlers.current = { onScrub, onReset: props.onReset, pause: live.pause }
+  // The playhead: the step the clock has reached. Ticks add to it rather than to the step the page last rendered, so
+  // a slow render does not slow the clock; the page is told the step once per tick, and only when it changed. The steps
+  // told but not yet rendered are remembered, to tell the page catching up from the page moving the cursor itself.
+  const jumpToEnd = useRef(false)
+  const pos = useRef(viewed)
+  const told = useRef<number[]>([])
+  const playheadRef = props.playhead
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the position follows the step the page renders
+  useEffect(() => {
+    const seen = told.current.indexOf(viewed)
+    if (seen >= 0) told.current.splice(0, seen + 1)
+    else {
+      told.current = []
+      pos.current = viewed
+    }
+    if (playheadRef !== undefined && !ticking) playheadRef.current = viewed
+  }, [viewed])
+  const tell = (step: number, ticked = false): void => {
+    pos.current = step
+    if (ticked) told.current.push(step)
+    if (playheadRef !== undefined) playheadRef.current = step
+    handlers.current.onScrub(step)
+  }
+  const stop = (): void => {
+    setTicking(false)
+    jumpToEnd.current = false
+    told.current = []
+    handlers.current.pause()
+  }
   useTicker(
     ticking,
     fps,
     (n) => {
-      const { viewed: v, head: h, done } = cursor.current
-      const next = v + n
-      if (next < h) handlers.current.onScrub(next)
+      const { head: h, done } = cursor.current
+      const next = pos.current + n
+      if (next < h) tell(next, true)
       else if (done) {
+        told.current = []
         handlers.current.onScrub(null)
-        setTicking(false)
-      } else handlers.current.onScrub(h)
+        pos.current = h
+        if (playheadRef !== undefined) playheadRef.current = h
+        stop()
+      } else if (pos.current !== h) tell(h, true)
     },
-    Math.max(4, Math.ceil(fps / 15)),
+    // A tick may be a long frame (slow drawing) but not a long absence: up to half a second of steps are due at once,
+    // so the clock keeps its time through slow frames, and a tab back from the background does not race ahead.
+    Math.max(4, Math.ceil(fps / 2)),
   )
-  // A remade session plays from its first step when play asked for it, and otherwise stands at its end (eager) or at
-  // its start (live, nothing computed yet).
+  // A remade session plays from its first step when play asked for it; otherwise it stands at its start (live and
+  // primed: nothing shown but step 0, and the run computing in the background when primed) or, eager, waits at its start
+  // until it is done and then shows its end.
   const playOnRemake = useRef(false)
+  const wasDone = useRef(live.done)
   // biome-ignore lint/correctness/useExhaustiveDependencies: once per remake
   useEffect(() => {
+    wasDone.current = cursor.current.done
     if (playOnRemake.current) {
       playOnRemake.current = false
-      handlers.current.onScrub(0)
+      jumpToEnd.current = false
+      tell(0)
       setTicking(true)
-    } else {
-      setTicking(false)
+      live.play()
+      return
+    }
+    setTicking(false)
+    if (props.start !== undefined && !cursor.current.done) live.compute()
+    if (!parked || cursor.current.done) {
+      jumpToEnd.current = false
+      told.current = []
       handlers.current.onScrub(null)
+    } else {
+      jumpToEnd.current = policy === 'end'
+      tell(0)
     }
   }, [first])
+  // Eager: the cursor jumps to the end once the whole run exists, if nothing has moved it since.
+  useEffect(() => {
+    const was = wasDone.current
+    wasDone.current = live.done
+    if (!was && live.done && jumpToEnd.current) {
+      jumpToEnd.current = false
+      told.current = []
+      handlers.current.onScrub(null)
+    }
+  }, [live.done])
+  // The handle's `play()` and `pause()`, called by the host, start and stop the clock.
+  const hostPlaying = useRef(live.playing)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: on the edge only
+  useEffect(() => {
+    if (hostPlaying.current === live.playing) return
+    hostPlaying.current = live.playing
+    if (live.playing && !ticking) begin()
+    else if (!live.playing && ticking) setTicking(false)
+  }, [live.playing])
   const following = at === null && live.computing && !live.done
   const playing = ticking || following
-  const play = (): void => {
+  // The verb behind play, for the player's button and for the host's `live.play()`.
+  function begin(): void {
     if (live.stale) {
       playOnRemake.current = true
       live.apply()
       live.compute()
       return
     }
-    if (live.done && viewed >= head) onScrub(0)
+    jumpToEnd.current = false
+    if (live.done && viewed >= head) tell(0)
     // A cursor that follows the head stands wherever the head gets to, and a cheap method computes ahead within a frame:
     // play from the step being looked at (the start of a fresh run), not from wherever the first tick finds the head.
-    else if (at === null) onScrub(viewed)
+    else if (at === null) tell(viewed)
     live.compute()
     setTicking(true)
   }
+  const play = (): void => {
+    live.play()
+    begin()
+  }
   const pause = (): void => {
-    setTicking(false)
+    stop()
     if (following) onScrub(head)
   }
   const controller: PlaybackController = {
@@ -122,18 +212,23 @@ export function SessionPlayer<S, C extends Config>(props: {
     fps,
     open: !live.done,
     eager,
-    setEager: (on) => {
-      setSessionPreferences({ mode: on ? 'eager' : 'live' })
-      if (on) {
-        setTicking(false)
-        onScrub(null)
-      }
-    },
+    ...(props.start === undefined
+      ? {
+          setEager: (on: boolean): void => {
+            setSessionPreferences({ mode: on ? 'eager' : 'live' })
+            if (on) {
+              stop()
+              if (live.done) onScrub(null)
+              else jumpToEnd.current = true
+            }
+          },
+        }
+      : {}),
     play,
     pause,
     toggle: () => (playing ? pause() : play()),
     step: (dir) => {
-      setTicking(false)
+      stop()
       if (dir === -1) onScrub(Math.max(0, viewed - 1))
       else if (live.stale) live.apply()
       else if (viewed < head) onScrub(viewed + 1)
@@ -143,6 +238,7 @@ export function SessionPlayer<S, C extends Config>(props: {
       }
     },
     seek: (f) => {
+      jumpToEnd.current = false
       if (f < head) onScrub(Math.max(0, f))
       else {
         if (live.stale) live.apply()
@@ -152,14 +248,14 @@ export function SessionPlayer<S, C extends Config>(props: {
     },
     setFps,
     reset: () => {
-      setTicking(false)
+      stop()
       onScrub(0)
     },
     ...(props.onReset === undefined
       ? {}
       : {
           resetForm: () => {
-            setTicking(false)
+            stop()
             onScrub(0)
             handlers.current.onReset?.()
           },
@@ -179,11 +275,13 @@ export function SessionPlayer<S, C extends Config>(props: {
         ? ' · changes held: press play'
         : live.done
           ? ` · ${ended()}`
-          : live.computing
-            ? viewed < head
-              ? ` · computed to ${head}`
-              : ' · computing'
-            : ''
+          : parked && live.computing && !live.playing
+            ? ` · preparing ${Math.round(live.progress * 100)}%`
+            : live.computing
+              ? viewed < head
+                ? ` · computed to ${head}`
+                : ' · computing'
+              : ''
   return (
     <div className="flex flex-col gap-3">
       <Player controller={controller} stamp={(f) => `step ${f} of ${head}${status}${where}`} fpsChoices={RATES} />

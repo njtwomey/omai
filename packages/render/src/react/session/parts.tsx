@@ -7,7 +7,7 @@
 import type { Session } from 'mdml-engine/trace'
 import { type ReactNode, useEffect, useState } from 'react'
 import { cx, iconButtonClass } from '../controls/classes.ts'
-import type { LiveSession } from './useSession.ts'
+import { type LiveSession, STILL_HANDLE } from './useSession.ts'
 
 /**
  * A labelled text button, outlined like the player's buttons.
@@ -77,6 +77,7 @@ export function staticLive(session: Session<any, any>): LiveSession<any, any> {
     lastMs: 0,
     stale: false,
     held: false,
+    ...STILL_HANDLE,
     apply: () => session,
   }
 }
