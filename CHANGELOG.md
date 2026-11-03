@@ -2,6 +2,22 @@
 
 Versions are released in lockstep for mdml-engine, mdml-render and mdml-meta.
 
+## Unreleased
+
+- mdml-render: a third start policy for sessions, `start: 'first'` (primed): `useSession`, `useSessions`,
+  `useLiveRun` and `SessionPlayer` compute the whole run in the background and park the cursor at step 0, paused,
+  until play. `start: 'play'` is today's live (the default) and `start: 'end'` today's eager.
+- mdml-render: eager no longer blocks the page. An engine `mode: 'eager'` (and `start: 'end'`) is computed in
+  animation-frame slices by the hook, and the cursor jumps to the end when the run is done, instead of computing the
+  whole run synchronously when the session is made.
+- mdml-render: the live handle has `status` (`preparing`, `ready`, `running`), `progress` (0 to 1), `playing`, `play()`,
+  `pause()`, `dispose()` and an `onReady` hook option; `dispose` stops the producer, terminates the worker and
+  releases the tape, and unmounting calls it. `useLiveRun` returns `phase`, `progress`, `oldest` and `dispose`, takes
+  `start` and `onReady`, and keeps its history in a ring buffer.
+- mdml-render: the player's clock no longer slows when drawing is slow (it skips steps instead), and
+  `SessionPlayer` takes a `playhead` ref that holds the step the clock has reached.
+- mdml-render: hand-made handles need `...STILL_HANDLE` for the new members.
+
 ## 0.1.1
 
 - The agent index covers mdml-render as well as mdml-engine: `packages/render/llms.txt` (with a hand-written

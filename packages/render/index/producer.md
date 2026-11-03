@@ -4,7 +4,7 @@
 
 The producer of a live session, behind one interface: `inlineProducer`, the main-thread producer that computes in slices, and `workerProducer`, which hands a Web Worker the name of a method and its JSON options (the worker entry is `serveWorker`), computes ahead of the consumer's cursor within a lookahead, streams the tape back as deltas and answers probes of derived paths on request. The wire protocol, `methodRegistry` (the registry both sides resolve names against), the session the panels read while the run is elsewhere (`RemoteSession`), and the tape as a file (`tapeOf` writes a page's sessions, `parseTape` and `replaySessions` play one back with nothing recomputed). Headless: no React, so a worker entry bundles only this.
 
-- function `inlineProducer`: The main-thread producer that computes in slices: `inlineProducer(method, options, variants)`. `src/producer/inline.ts:23` `mdml-render/producer`
+- function `inlineProducer`: The main-thread producer that computes in slices: `inlineProducer(method, options, variants)`. `src/producer/inline.ts:24` `mdml-render/producer`
 - function `methodRegistry`: Methods by name for a worker and tape files: `methodRegistry([methodA, methodB])`. `src/producer/registry.ts:33` `mdml-render/producer`
 - function `parseTape`: Validate a tape file read back from JSON: `parseTape(json)`. `src/producer/tape.ts:182` `mdml-render/producer`
 - function `replaySessions`: Sessions replayed from a tape file, nothing recomputed: `replaySessions(file, registry)`. `src/producer/tape.ts:325` `mdml-render/producer`

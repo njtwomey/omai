@@ -24,6 +24,8 @@ export type StartPolicy = 'play' | 'first' | 'end'
  * Where a session is for a host that shows a quiet indicator: `preparing` while the tape is incomplete and nothing is
  * playing, `ready` once the whole tape exists and nothing is playing, `running` while it plays (including a play
  * pressed before the tape was ready, which plays at the head as live does).
+ *
+ * @index structure Where a session is: 'preparing', 'ready' or 'running' (`live.status`)
  */
 export type PlayStatus = 'preparing' | 'ready' | 'running'
 

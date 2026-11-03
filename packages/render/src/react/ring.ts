@@ -4,7 +4,11 @@
  * array costs, and counts what it has dropped so a position can be turned into a step number.
  */
 
-/** A ring buffer of the latest `capacity` items. */
+/**
+ * A ring buffer of the latest `capacity` items.
+ *
+ * @index structure The latest n items, the oldest dropped: `new RingBuffer(2000)`, `ring.push(x)`, `ring.at(0)`
+ */
 export class RingBuffer<T> {
   private items: (T | undefined)[]
   private first = 0
