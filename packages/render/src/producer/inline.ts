@@ -1,7 +1,8 @@
 /**
  * The main-thread producer: the sessions are real ones, computed by the caller in slices (the hook gives each animation
  * frame a few milliseconds). Nothing here runs by itself; it is the producer that has always been, behind the
- * interface a worker producer shares.
+ * interface a worker producer shares. Disposing it drops the sessions and their tape; used again afterwards it makes
+ * them anew, from step 0.
  */
 
 import type { Json } from 'mdml-engine/base'
@@ -26,20 +27,27 @@ export function inlineProducer<S, C extends Config>(
   variants: readonly Variant<C>[],
   fallback?: string,
 ): Producer<S, C> {
-  const made: Made<S, C> = makeSessions(method, options, variants)
+  let held: Made<S, C> | undefined = makeSessions(method, options, variants)
+  const made = (): Made<S, C> => {
+    held ??= makeSessions(method, options, variants)
+    return held
+  }
+  const labels = variants.map((v) => v.label)
   return {
     kind: 'inline',
     ...(fallback === undefined ? {} : { fallback }),
-    sessions: made.sessions,
-    labels: made.labels,
+    get sessions() {
+      return made().sessions
+    },
+    labels,
     background: false,
-    advance: (budget) => advanceInStep(made.sessions, budget),
+    advance: (budget) => advanceInStep(made().sessions, budget),
     start: () => undefined,
     stop: () => undefined,
     follow: () => undefined,
     probeAsync: (variant, t, path, args?: Json): Promise<Derived> => {
       try {
-        const s = made.sessions[variant]
+        const s = made().sessions[variant]
         if (s === undefined) throw new Error(`no variant ${variant}`)
         return Promise.resolve(s.probe(t, path, args))
       } catch (e) {
@@ -50,6 +58,8 @@ export function inlineProducer<S, C extends Config>(
     lastMs: 0,
     probed: 0,
     subscribe: () => () => undefined,
-    dispose: () => undefined,
+    dispose: () => {
+      held = undefined
+    },
   }
 }

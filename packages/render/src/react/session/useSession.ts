@@ -8,6 +8,12 @@
  * producer that keeps them in step, so one cursor can view all of them; a single session is a comparison of one. The
  * producer is the main-thread one by default (slices in the spare time of each frame); given a `producer` factory
  * (`workerProducer`) the same hook computes in a Web Worker and the tape streams back, and nothing else changes.
+ *
+ * When the run is computed and where the cursor starts is the start policy (`start`): `'play'` computes while playing
+ * (live), `'first'` computes the whole run in the background and parks the cursor at step 0 until play (primed), `'end'`
+ * computes the whole run in the background and shows its end (eager). Every computing is in time slices, so mounting a
+ * session never blocks the page. The handle says where it is (`status`, `progress`) and lets go of everything it holds
+ * (`dispose`).
  */
 
 import { MdmlError } from 'mdml-engine/base'
@@ -17,8 +23,9 @@ import { inlineProducer } from '../../producer/inline.ts'
 import type { Variant } from '../../producer/make.ts'
 import type { Producer, ProducerFactory } from '../../producer/producer.ts'
 import { sharedHead } from '../../producer/step.ts'
+import { DEFAULT_STEPS, type PlayStatus, progressOf, type StartPolicy, startOf, statusOf } from '../start.ts'
 
-export type { Variant }
+export type { PlayStatus, StartPolicy, Variant }
 
 /** What a live session and a comparison of several share: the producer's state and controls, as the player drives them. */
 export interface LiveHandle {
@@ -54,6 +61,48 @@ export interface LiveHandle {
   follow?(step: number): void
   /** Counts the probe answers that have arrived from a worker, so panels reading probes ask again. */
   readonly probed?: number
+  /** The start policy in force: when the run is computed and where the cursor starts (see {@link StartPolicy}). */
+  readonly start: StartPolicy
+  /**
+   * `preparing` while the tape is incomplete and nothing plays (under `'play'` the producer idles until play, so check
+   * `computing` to tell a fill in progress from a wait), `ready` once the whole tape exists and nothing plays,
+   * `running` while playing, including a play pressed before the tape is ready (it plays at the head, as live does).
+   */
+  readonly status: PlayStatus
+  /**
+   * The fraction of the run computed, 0 to 1. The total is the options' `steps` (the engine's default of 1000 without
+   * one), so a run that ends early (it converged) reads less than 1 until it ends, and exactly 1 once it has.
+   */
+  readonly progress: number
+  /** Whether play has been pressed (by the player or by `play()`) and not stopped. */
+  readonly playing: boolean
+  /** Ask for play: compute (if the tape is not whole) and let the player move the cursor. A no-op without a player. */
+  play(): void
+  /** Stop playing (the tape, and the priming of one, carry on). */
+  pause(): void
+  /**
+   * Let go of everything: stop the producer, terminate a worker, drop the tape and the history buffers. The handle
+   * stays valid, at step 0 with nothing computed, and starts from nothing if it is used again (`play`, `compute`).
+   * Unmounting does this by itself.
+   */
+  dispose(): void
+}
+
+/**
+ * The members of a handle that never changes (a finished tape, a replay): ready, not playing, nothing to dispose.
+ * Spread it into a handle made by hand.
+ */
+export const STILL_HANDLE: Pick<
+  LiveHandle,
+  'start' | 'status' | 'progress' | 'playing' | 'play' | 'pause' | 'dispose'
+> = {
+  start: 'end',
+  status: 'ready',
+  progress: 1,
+  playing: false,
+  play: () => undefined,
+  pause: () => undefined,
+  dispose: () => undefined,
 }
 
 /**
@@ -89,8 +138,16 @@ export interface LiveSessions<S, C extends Config> extends LiveHandle {
 
 /** How {@link useSession} treats a change of method or options. */
 export interface SessionHookOptions {
-  /** In live mode, hold a change until `apply` (the player's play) rather than apply it after a pause (default true). */
+  /** Under the `'play'` policy, hold a change until `apply` (the player's play) rather than apply it after a pause (default true). */
   readonly hold?: boolean
+  /**
+   * When the run is computed and where the cursor starts: `'play'` (live, the default), `'first'` (primed) or `'end'`
+   * (eager). Omitted, an engine `mode: 'eager'` in the options means `'end'` and anything else `'play'`, so a page that
+   * passes the reader's stored mode keeps working; given, it wins over the mode.
+   */
+  readonly start?: StartPolicy
+  /** Called once per run when the whole tape exists (`status` is then `ready`, unless play was pressed). */
+  readonly onReady?: () => void
   /**
    * Where the sessions are computed: a factory such as `workerProducer({ createWorker })` computes them in a Web Worker
    * and streams the tape back; omitted, they are computed on the main thread in the spare time of each frame. Keep the
@@ -99,12 +156,24 @@ export interface SessionHookOptions {
   readonly producer?: ProducerFactory
 }
 
-/** Milliseconds of computation per animation frame while computing ahead: the rest of the frame is the page's. */
+/** Milliseconds of computation per animation frame while computing ahead and playing: the rest of the frame is the page's. */
 const FRAME_MS = 12
+/** The same while priming and nothing plays (a whole run in the background): less, so the page stays responsive. */
+const PRIME_MS = 8
 /** How often the version moves while computing ahead, so views redraw at a steady rate rather than every frame. */
 const BUMP_MS = 100
 /** The pause after the last change before an unheld change is applied (one remake per slider drag). */
 const DEBOUNCE_MS = 250
+
+// A producer whose owner unmounted is disposed after a microtask, not at once: a strict-mode double effect runs its
+// cleanup and its setup in the same task, and the setup takes the producer off this list, so it is not disposed.
+const leaving = new WeakSet<object>()
+
+// An engine `mode: 'eager'` computes when the session is made, on the spot; the hook computes it in slices instead (the
+// `'end'` policy), so the session is made live.
+function forProducer<S, C extends Config>(options: SessionOptions<S, C>): SessionOptions<S, C> {
+  return options.mode === 'eager' ? { ...options, mode: 'live' } : options
+}
 
 function same(a: readonly unknown[], b: readonly unknown[]): boolean {
   return a.length === b.length && a.every((v, i) => Object.is(v, b[i]))
@@ -141,12 +210,12 @@ export function variantsOf<S, C extends Config>(
  * (the shared `options`); its own `config` is laid over the shared one.
  *
  * @param method - The method.
- * @param options - The options every variant shares. Eager mode computes every variant whole when it is made, and
- *   finishes the current ones on the spot when switched on.
+ * @param options - The options every variant shares. An engine `mode: 'eager'` is the `'end'` start policy (computed in
+ *   slices in the background, not on the spot).
  * @param variants - The variants: a label and the knobs each changes. A change to them remakes the comparison, as a
  *   change to `deps` does.
  * @param deps - What a remake depends on (the caller names them, as for `useMemo`); not the mode.
- * @param hook - Whether live mode holds changes until `apply`.
+ * @param hook - The start policy, whether the `'play'` policy holds changes until `apply`, the producer, `onReady`.
  * @returns The comparison.
  * @index function React hook: run variants of one method in step: `useSessions(method, options, variants, deps)`
  */
@@ -159,22 +228,30 @@ export function useSessions<S, C extends Config>(
 ): LiveSessions<S, C> {
   const allDeps = [...deps, JSON.stringify(variants)]
   const factory: ProducerFactory = hook.producer ?? inlineProducer
+  const start = startOf(hook.start, options.mode)
+  const prime = start !== 'play'
   const latest = useRef({ method, options, variants, deps: allDeps, factory })
   latest.current = { method, options, variants, deps: allDeps, factory }
-  const [producer, setProducer] = useState<Producer<S, C>>(() => factory(method, options, variants))
+  const [producer, setProducer] = useState<Producer<S, C>>(() => factory(method, forProducer(options), variants))
   const current = useRef(producer)
   const applied = useRef(allDeps)
   const [version, setVersion] = useState(0)
   const [computing, setComputing] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const playingNow = useRef(playing)
+  playingNow.current = playing
+  const hooks = useRef(hook)
+  hooks.current = hook
   const [lastMs, setLastMs] = useState(0)
   const bump = useCallback(() => setVersion((v) => v + 1), [])
   const apply = useCallback((): readonly Session<S, C>[] => {
     const l = latest.current
-    const next = l.factory(l.method, l.options, l.variants)
+    const next = l.factory(l.method, forProducer(l.options), l.variants)
     applied.current = l.deps
     current.current = next
     setProducer(next)
     setComputing(false)
+    setPlaying(false)
     bump()
     return next.sessions
   }, [bump])
@@ -187,9 +264,17 @@ export function useSessions<S, C extends Config>(
     },
     [bump],
   )
-  // A producer that is replaced or left is disposed (a worker terminated, its tape dropped); one that has not started
-  // holds nothing, so the second mount of a strict-mode double effect finds it as new.
-  useEffect(() => () => producer.dispose(), [producer])
+  // A producer that is replaced or left is disposed (a worker terminated, its tape dropped), after a microtask so that a
+  // strict-mode double effect, which cleans up and sets up again at once, keeps it.
+  useEffect(() => {
+    leaving.delete(producer)
+    return () => {
+      leaving.add(producer)
+      queueMicrotask(() => {
+        if (leaving.delete(producer)) producer.dispose()
+      })
+    }
+  }, [producer])
   // The producer on the main thread: as many steps as fit in the frame's budget, every frame, until every run ends;
   // several variants take turns within the budget, the one furthest behind first. The version (and so the views) moves
   // at most every BUMP_MS.
@@ -200,7 +285,7 @@ export function useSessions<S, C extends Config>(
     let handle = requestAnimationFrame(function tick(now: number) {
       const sessions = current.current.sessions
       const t0 = performance.now() // allow: the frame budget and the cost of the frame's work; not on the tape
-      current.current.advance({ ms: FRAME_MS, clock: () => performance.now() }) // allow: as above
+      current.current.advance({ ms: playingNow.current ? FRAME_MS : PRIME_MS, clock: () => performance.now() }) // allow: as above
       cost = performance.now() - t0 // allow: as above
       const ended = sessions.every((s) => s.status !== undefined)
       if (ended || lastBump === undefined || now - lastBump >= BUMP_MS) {
@@ -216,7 +301,6 @@ export function useSessions<S, C extends Config>(
     })
     return () => cancelAnimationFrame(handle)
   }, [computing, producer, bump])
-  const mode = options.mode ?? 'live'
   // A producer in a worker computes by itself: told to start or stop with `computing`, it reports back as the tape
   // grows (the version moves at most every BUMP_MS), and the hook stops computing when every run has ended.
   useEffect(() => {
@@ -242,23 +326,18 @@ export function useSessions<S, C extends Config>(
   }, [producer, bump])
   useEffect(() => {
     if (!producer.background) return
-    if (computing) producer.start({ eager: mode === 'eager' })
+    if (computing) producer.start({ eager: prime })
     else producer.stop()
-  }, [computing, producer, mode])
-  // Eager switched on finishes the current runs on the spot (sessions made in eager mode are already whole); a worker is
-  // told to run them to the end without waiting for the cursor.
+  }, [computing, producer, prime])
+  // Priming (the `'first'` and `'end'` policies) computes the whole run as soon as the session is made, and when the
+  // policy is switched on later (the player's eager toggle): in time slices on the main thread, or in the worker, which
+  // is told to ignore the lookahead.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a remake (a new producer) is primed again
   useEffect(() => {
-    if (mode === 'eager' && current.current.sessions.some((s) => s.status === undefined)) {
-      if (producer.background) {
-        setComputing(true)
-        return
-      }
-      setComputing(false)
-      advance({ steps: Number.POSITIVE_INFINITY })
-    }
-  }, [mode, producer, advance])
+    if (prime && current.current.sessions.some((s) => s.status === undefined)) setComputing(true)
+  }, [prime, producer])
   const stale = !same(allDeps, applied.current)
-  const held = stale && mode === 'live' && (hook.hold ?? true)
+  const held = stale && start === 'play' && (hook.hold ?? true)
   // An unheld change is applied after a pause, and each further change restarts the pause.
   const changes = useRef({ deps: allDeps, n: 0 })
   if (!same(allDeps, changes.current.deps)) changes.current = { deps: allDeps, n: changes.current.n + 1 }
@@ -274,6 +353,22 @@ export function useSessions<S, C extends Config>(
   }
   const halt = (): void => setComputing(false)
   const follow = (step: number): void => current.current.follow(step)
+  const play = (): void => {
+    setPlaying(true)
+    compute()
+  }
+  const pause = (): void => setPlaying(false)
+  const dispose = (): void => {
+    current.current.dispose()
+    setComputing(false)
+    setPlaying(false)
+    bump()
+  }
+  const sessions = producer.sessions
+  const head = sharedHead(sessions.map((s) => ({ head: s.t, done: s.status !== undefined })))
+  const done = sessions.every((s) => s.status !== undefined)
+  const progress = progressOf(head, done, options.steps ?? DEFAULT_STEPS)
+  const status = statusOf(playing, done)
   const handle = {
     version,
     computing,
@@ -287,8 +382,15 @@ export function useSessions<S, C extends Config>(
     producer: { kind: producer.kind, ...(producer.fallback === undefined ? {} : { fallback: producer.fallback }) },
     error: producer.error,
     probed: producer.probed,
+    start,
+    status,
+    progress,
+    playing,
+    play,
+    pause,
+    dispose,
   }
-  const list = producer.sessions.map(
+  const list = sessions.map(
     (s, i): LiveVariant<S, C> => ({
       label: producer.labels[i] ?? '',
       live: {
@@ -300,13 +402,14 @@ export function useSessions<S, C extends Config>(
       },
     }),
   )
-  return {
-    ...handle,
-    variants: list,
-    head: sharedHead(list.map((v) => v.live)),
-    done: list.every((v) => v.live.done),
-    apply,
-  }
+  // `onReady` fires once per run, when the whole tape exists (a remake is a new run).
+  const announced = useRef<object | undefined>(undefined)
+  useEffect(() => {
+    if (!done || announced.current === producer) return
+    announced.current = producer
+    hooks.current.onReady?.()
+  }, [done, producer])
+  return { ...handle, variants: list, head, done, apply }
 }
 
 /** The one variant of a session on its own. */
@@ -316,11 +419,12 @@ const SINGLE: readonly Variant<Config>[] = [{ label: '', config: {} }]
  * A live session of a method.
  *
  * @param method - The method.
- * @param options - The session's options. Eager mode computes a session whole when it is made, and finishes the
- *   current one on the spot when switched on.
+ * @param options - The session's options. An engine `mode: 'eager'` is the `'end'` start policy (computed in slices in
+ *   the background, not on the spot).
  * @param deps - What a remake depends on (the caller names them, as for `useMemo`); not the mode.
- * @param hook - Whether live mode holds changes until `apply`.
- * @returns The live session.
+ * @param hook - The start policy (`start: 'play' | 'first' | 'end'`), whether the `'play'` policy holds changes until
+ *   `apply`, the producer, `onReady`.
+ * @returns The live session, with its `status` and `progress`.
  * @index function React hook: run a method live: `useSession(method, { config, steps }, [config])`
  */
 export function useSession<S, C extends Config>(

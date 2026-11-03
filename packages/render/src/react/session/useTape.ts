@@ -9,7 +9,7 @@ import { useMemo } from 'react'
 import type { MethodRegistry } from '../../producer/registry.ts'
 import { sharedHead } from '../../producer/step.ts'
 import { replaySessions, type TapeFile } from '../../producer/tape.ts'
-import type { LiveSessions, LiveVariant } from './useSession.ts'
+import { type LiveSessions, type LiveVariant, STILL_HANDLE } from './useSession.ts'
 
 /**
  * The live handle of a tape file.
@@ -32,6 +32,7 @@ export function replayLive(file: TapeFile, registry: MethodRegistry): LiveSessio
     lastMs: 0,
     stale: false,
     held: false,
+    ...STILL_HANDLE,
     producer: { kind: 'inline' as const },
     probed: 0,
   }

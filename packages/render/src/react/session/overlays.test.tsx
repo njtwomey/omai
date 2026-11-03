@@ -24,7 +24,7 @@ import {
   regionPoints,
 } from './overlays.ts'
 import { SessionPanels } from './SessionPanels.tsx'
-import type { LiveSession } from './useSession.ts'
+import { type LiveSession, STILL_HANDLE } from './useSession.ts'
 
 describe('row channel values', () => {
   it('reads numbers from arrays, tensors and records with values', () => {
@@ -144,6 +144,7 @@ function liveOf(steps: number): LiveSession<State, Config> {
     lastMs: 0,
     stale: false,
     held: false,
+    ...STILL_HANDLE,
     apply: () => s,
   }
 }
