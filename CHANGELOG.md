@@ -2,7 +2,7 @@
 
 Versions are released in lockstep for mdml-engine, mdml-render and mdml-meta.
 
-## Unreleased
+## 0.1.2
 
 - mdml-render: a third start policy for sessions, `start: 'first'` (primed): `useSession`, `useSessions`,
   `useLiveRun` and `SessionPlayer` compute the whole run in the background and park the cursor at step 0, paused,
@@ -17,6 +17,13 @@ Versions are released in lockstep for mdml-engine, mdml-render and mdml-meta.
 - mdml-render: the player's clock no longer slows when drawing is slow (it skips steps instead), and
   `SessionPlayer` takes a `playhead` ref that holds the step the clock has reached.
 - mdml-render: hand-made handles need `...STILL_HANDLE` for the new members.
+- mdml-engine: the linear-programming solver no longer ends on a singular basis for programs where every ratio ties (a
+  nearly tied game's correlated equilibrium): a pivot must be large beside its column (`pivotFloor`, default 1e-7),
+  `linprog` retries without that floor before the interior point, and a simplex that reaches its default iteration limit
+  falls back too. Measured on a nearly-tied generator: 4 failures in 120,000 solves before, 2 in 240,000 after.
+- Tests: five flaky property tests fixed (autocorrelation of denormals, the ray cast at a world's boundary, NMS
+  thresholds, the spline's finite-difference step, and the text round trip of a negated sum among them); each was a
+  false or too-tight claim, not a library bug.
 
 ## 0.1.1
 

@@ -1,6 +1,6 @@
 {
   "name": "mdml-engine",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "mdml-js compute: tensors, autodiff, numerics, probability, learning, neural networks, RL and datasets, all traced.",
   "license": "MIT",
   "type": "module",
