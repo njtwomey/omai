@@ -8,7 +8,7 @@ finding will be written to, or the section of `findings.md` or `reports/` a plan
 
 ## Phase 0: scripts and measurements (no model reading)
 
-| id   | item                                                                                               | status   | started     | ended | where                                  |
+| id   | item                                                                                               | status   | started     | ended | commit or file                         |
 | ---- | -------------------------------------------------------------------------------------------------- | -------- | ----------- | ----- | -------------------------------------- |
 | P0.1 | plan; the public-surface digest and `make api-surface-check`                                       | complete | 09:40 about | 09:44 | `b09e46da`                             |
 | P0.2 | scans: duplicate names and bodies, helpers, constants, layering, casts, collisions, unused exports | complete | 09:44 about | 09:51 | `4e726d9a`, `d24f7be6` (shared module) |
@@ -19,7 +19,7 @@ finding will be written to, or the section of `findings.md` or `reports/` a plan
 
 ## Phase 1: targeted reading (read-only agents, findings in `findings/<cluster>.md`)
 
-| id   | cluster                                                                                               | status      | started     | ended | where                     |
+| id   | cluster                                                                                               | status      | started     | ended | commit or file            |
 | ---- | ----------------------------------------------------------------------------------------------------- | ----------- | ----------- | ----- | ------------------------- |
 | P1.1 | foundations: base, context, tensor, random, space, trace, autodiff (about 17,600 lines, read in full) | in progress | 10:15 about |       | `findings/foundations.md` |
 | P1.2 | numerics, by subfolder, led by the flags                                                              | planned     |             |       |                           |
@@ -36,7 +36,7 @@ finding will be written to, or the section of `findings.md` or `reports/` a plan
 
 ## Phase 3: fixes (small agents, at most two at a time; each merges after the full local gate and a surface comparison)
 
-| id    | item                                                                                                                                                                                                                                             | status                       | started     | ended | where                                                                   |
+| id    | item                                                                                                                                                                                                                                             | status                       | started     | ended | commit or file                                                          |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- | ----------- | ----- | ----------------------------------------------------------------------- |
 | P3.1  | fixed-size tuple types: `Vec2`, `Vec3`, `Vec4` in `base`; restated and synonym definitions removed; guard in `make lint`                                                                                                                         | complete                     | 10:04 about | 10:17 | `287b6c93`..`1581aa2c`, merged `44f5bd50`                               |
 | P3.2  | the pytree leaf error names the path and says to wrap numbers with `tensor(...)`                                                                                                                                                                 | complete                     | 10:10 about | 10:17 | `b1c32597`                                                              |
