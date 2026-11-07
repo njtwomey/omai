@@ -33,7 +33,8 @@ function pairwise(a: Boxes, b: Boxes, f: (p: readonly number[], q: readonly numb
   const ra = rowsOf(a)
   const rb = rowsOf(b)
   const out = new Float64Array(ra.length * rb.length)
-  ra.forEach((p, i) => rb.forEach((q, j) => (out[i * rb.length + j] = f(p, q))))
+  for (let i = 0; i < ra.length; i++)
+    for (let j = 0; j < rb.length; j++) out[i * rb.length + j] = f(ra[i] as number[], rb[j] as number[])
   return fromStorage(out, [ra.length, rb.length], 'float64')
 }
 

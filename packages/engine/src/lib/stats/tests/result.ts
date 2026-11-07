@@ -19,9 +19,9 @@ import {
   varianceOf,
 } from '../../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { rankKernel } from '../_ranks.ts'
 import { chi2Sf, fSf, groupsOf, normPpf } from '../_util.ts'
 import { median } from '../quantiles.ts'
-import { rankKernel } from '../_ranks.ts'
 import { shapiroWilk } from './_shapiro.ts'
 
 /** Options shared by tests: the alternative hypothesis and the confidence level of reported intervals. */

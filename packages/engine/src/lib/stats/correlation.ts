@@ -11,9 +11,9 @@ import { type Estimate, MdmlError, meanOf, type TestResult } from '../base/index
 import { bootstrapIndices, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { pinvSym } from './_linear.ts'
+import { rankKernel } from './_ranks.ts'
 import { betaInc, mat, normCdf, normPpf, normSf, paired, type Rows, rowsOf, tCdf, tSf } from './_util.ts'
 import { quantile } from './quantiles.ts'
-import { rankKernel } from './_ranks.ts'
 import { intervalEstimate, pValueFromTails, resolveTestOptions, type TestOptions, testResult } from './tests/result.ts'
 
 /** Pearson's r of two number arrays (centred dot products, scaled by their largest deviations against overflow). */
