@@ -39,7 +39,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { reduce } from './_reduce.ts'
+import { checkScalar, reduce } from './_reduce.ts'
 import { crossEntropy } from './classification.ts'
 
 /**
@@ -164,6 +164,7 @@ export function distillation(
   teacherLogits: TensorLike,
   options: DistillationOptions = {},
 ): Value {
+  checkScalar('distillation', 'temperature', options.temperature, 'positive')
   const [s, t] = promoteFloat(studentLogits, teacherLogits) as [Value, Value]
   const temp = options.temperature ?? 1
   const teacher = stopGradient(logSoftmax(div(t, temp), -1))
@@ -322,6 +323,7 @@ function sinkhornCost(cost: Value, logA: Value, logB: Value, eps: number, maxIte
  * ```
  */
 export function sinkhorn(x: TensorLike, y: TensorLike, options: SinkhornOptions = {}): Value {
+  checkScalar('sinkhorn', 'epsilon', options.epsilon, 'positive')
   const [p, q] = promoteFloat(x, y) as [Value, Value]
   const n = p.shape[0] ?? 1
   const m = q.shape[0] ?? 1

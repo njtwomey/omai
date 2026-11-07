@@ -38,7 +38,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, reduce } from './_reduce.ts'
+import { checkScalar, type LossOptions, reduce } from './_reduce.ts'
 
 /**
  * Negative log-likelihood of observations under any distribution: -log p(x), reduced. Gradients flow to the
@@ -158,6 +158,7 @@ export function heteroscedasticGaussianNll(
   target: TensorLike,
   options: HeteroscedasticOptions = {},
 ): Value {
+  checkScalar('heteroscedasticGaussianNll', 'beta', options.beta, 'unit')
   const [mu, s, y] = promoteFloat(mean, logVariance, target) as [Value, Value, Value]
   let terms = mul(add(s, mul(square(sub(y, mu)), exp(neg(s)))), 0.5)
   if (options.full === true) terms = add(terms, 0.5 * Math.log(2 * Math.PI))

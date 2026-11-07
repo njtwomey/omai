@@ -35,7 +35,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { reduce } from './_reduce.ts'
+import { checkScalar, reduce } from './_reduce.ts'
 
 /** Options of the overlap losses (Dice, Tversky, focal Tversky); classes lie along the last axis, as MONAI's. */
 export interface OverlapOptions {
@@ -155,6 +155,8 @@ export function tversky(
   target: TensorLike,
   options: OverlapOptions & { readonly alpha?: number; readonly beta?: number } = {},
 ): Value {
+  checkScalar('tversky', 'alpha', options.alpha, 'nonNegative')
+  checkScalar('tversky', 'beta', options.beta, 'nonNegative')
   return finish(tverskyLoss(counts(input, target, options), options), options)
 }
 
@@ -184,6 +186,7 @@ export function focalTversky(
   target: TensorLike,
   options: OverlapOptions & { readonly alpha?: number; readonly beta?: number; readonly gamma?: number } = {},
 ): Value {
+  checkScalar('focalTversky', 'gamma', options.gamma, 'positive')
   const k = counts(input, target, options)
   const score = tverskyLoss(k, { ...options, alpha: options.alpha ?? 0.7, beta: options.beta ?? 0.3 })
   return finish(pow(relu(score), options.gamma ?? 0.75), options)

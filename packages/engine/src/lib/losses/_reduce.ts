@@ -1,5 +1,17 @@
 import { MdmlError, type Reduction } from '../base/index.ts'
-import { broadcastShapes, broadcastTo, div, mean, mul, sum, type Value } from '../tensor/index.ts'
+import {
+  asTensor,
+  broadcastShapes,
+  broadcastTo,
+  div,
+  mean,
+  mul,
+  primalOf,
+  sum,
+  type TensorLike,
+  toFlat,
+  type Value,
+} from '../tensor/index.ts'
 
 /** Options every loss accepts. */
 export interface LossOptions {
@@ -22,4 +34,30 @@ export function reduce(terms: Value, options: LossOptions = {}): Value {
     default:
       throw new MdmlError('value', `unknown reduction ${String(options.reduction)}`)
   }
+}
+
+/**
+ * Reject a hyperparameter outside its domain. An absent value is the default and passes; NaN and infinities are outside
+ * every domain. `positive` is (0, inf), `nonNegative` [0, inf), `unit` [0, 1].
+ */
+export function checkScalar(
+  loss: string,
+  name: string,
+  value: number | undefined,
+  domain: 'positive' | 'nonNegative' | 'unit',
+): void {
+  if (value === undefined) return
+  const ok =
+    Number.isFinite(value) &&
+    (domain === 'positive' ? value > 0 : domain === 'nonNegative' ? value >= 0 : value <= 1 && value >= 0)
+  if (ok) return
+  const want = { positive: 'positive', nonNegative: 'non-negative', unit: 'in [0, 1]' }[domain]
+  throw new MdmlError('value', `${loss}: ${name} must be ${want}, got ${value}`)
+}
+
+/** Reject negative or non-finite entries of a weight vector (read from its primal when it is traced). */
+export function checkWeights(loss: string, name: string, weights: TensorLike | undefined): void {
+  if (weights === undefined) return
+  if (toFlat(primalOf(asTensor(weights))).some((w) => !(w >= 0) || !Number.isFinite(w)))
+    throw new MdmlError('value', `${loss}: ${name} must be non-negative and finite`)
 }

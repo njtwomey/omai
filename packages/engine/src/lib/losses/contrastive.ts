@@ -47,7 +47,7 @@ import {
   variance,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, reduce } from './_reduce.ts'
+import { checkScalar, type LossOptions, reduce } from './_reduce.ts'
 import { l2Normalise, pairwiseDistance } from './_vectors.ts'
 import { crossEntropy } from './classification.ts'
 
@@ -80,6 +80,7 @@ export interface InfoNceOptions {
  * ```
  */
 export function infoNce(query: TensorLike, positive: TensorLike, options: InfoNceOptions = {}): Value {
+  checkScalar('infoNce', 'temperature', options.temperature, 'positive')
   let [q, k] = promoteFloat(query, positive) as [Value, Value]
   const normalise = options.normalise ?? true
   if (normalise) {
@@ -126,6 +127,7 @@ export function ntXent(
   const [e] = promoteFloat(embeddings) as [Value]
   const n = e.shape[0] ?? 0
   const z = l2Normalise(e, 2.220446049250313e-16)
+  checkScalar('ntXent', 'temperature', options.temperature, 'positive')
   const sim = div(matmul(z, transpose(z)), options.temperature ?? 0.07)
   const y = asTensor(labels)
   const same = equal(expandDims(y, 1), expandDims(y, 0))
@@ -164,6 +166,7 @@ export function tripletMargin(
     readonly swap?: boolean
   } = {},
 ): Value {
+  checkScalar('tripletMargin', 'margin', options.margin, 'nonNegative')
   const [a, p, n] = promoteFloat(anchor, positive, negative) as [Value, Value, Value]
   const norm = options.p ?? 2
   const eps = options.eps ?? 1e-6
@@ -195,6 +198,7 @@ export function contrastive(
   similar: TensorLike,
   options: LossOptions & { readonly margin?: number } = {},
 ): Value {
+  checkScalar('contrastive', 'margin', options.margin, 'nonNegative')
   const [a, b, y] = promoteFloat(x1, x2, similar) as [Value, Value, Value]
   const d2 = sum(square(sub(a, b)), -1)
   const d = sqrt(d2)
@@ -250,6 +254,7 @@ export function hingeEmbedding(
   y: TensorLike,
   options: LossOptions & { readonly margin?: number } = {},
 ): Value {
+  checkScalar('hingeEmbedding', 'margin', options.margin, 'nonNegative')
   const [d, t] = promoteFloat(x, y) as [Value, Value]
   return reduce(where(greater(t, 0), d, relu(sub(options.margin ?? 1, d))), options)
 }
@@ -276,6 +281,8 @@ export function supervisedContrastive(
   labels: TensorLike,
   options: { readonly temperature?: number; readonly baseTemperature?: number; readonly normalise?: boolean } = {},
 ): Value {
+  checkScalar('supervisedContrastive', 'temperature', options.temperature, 'positive')
+  checkScalar('supervisedContrastive', 'baseTemperature', options.baseTemperature, 'positive')
   const [f] = promoteFloat(features) as [Value]
   const z = (options.normalise ?? true) ? l2Normalise(f) : f
   const t = options.temperature ?? 0.07
@@ -366,6 +373,8 @@ export function arcFaceLogits(
   labels: TensorLike,
   options: MarginSoftmaxOptions & { readonly easyMargin?: boolean } = {},
 ): Value {
+  checkScalar('arcFaceLogits', 'scale', options.scale, 'positive')
+  checkScalar('arcFaceLogits', 'margin', options.margin, 'nonNegative')
   const cos = cosines(embeddings, weights)
   const c = cos.shape[1] ?? 0
   const m = options.margin ?? 0.5
@@ -401,6 +410,8 @@ export function cosFaceLogits(
   labels: TensorLike,
   options: MarginSoftmaxOptions = {},
 ): Value {
+  checkScalar('cosFaceLogits', 'scale', options.scale, 'positive')
+  checkScalar('cosFaceLogits', 'margin', options.margin, 'nonNegative')
   const cos = cosines(embeddings, weights)
   const hot = targetMask(labels, cos.shape[1] ?? 0)
   return mul(sub(cos, mul(hot, options.margin ?? 0.35)), options.scale ?? 64)
@@ -561,6 +572,7 @@ export function vicreg(z1: TensorLike, z2: TensorLike, options: VicregOptions = 
  * ```
  */
 export function alignment(x: TensorLike, y: TensorLike, options: { readonly alpha?: number } = {}): Value {
+  checkScalar('alignment', 'alpha', options.alpha, 'positive')
   const [a, b] = promoteFloat(x, y) as [Value, Value]
   const alpha = options.alpha ?? 2
   const sq = sum(square(sub(a, b)), -1)
@@ -582,6 +594,7 @@ export function alignment(x: TensorLike, y: TensorLike, options: { readonly alph
  * ```
  */
 export function uniformity(x: TensorLike, options: { readonly t?: number } = {}): Value {
+  checkScalar('uniformity', 't', options.t, 'positive')
   const [a] = promoteFloat(x) as [Value]
   const n = a.shape[0] ?? 0
   const gram = matmul(a, transpose(a))

@@ -25,7 +25,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { reduce } from './_reduce.ts'
+import { checkScalar, reduce } from './_reduce.ts'
 
 /**
  * The log-probability of a response from its per-token log-probabilities: their sum over the tokens that are not
@@ -110,6 +110,8 @@ export function dpo(
   batch: PreferenceBatch,
   options: { readonly beta?: number; readonly labelSmoothing?: number; readonly reduction?: Reduction } = {},
 ): Value {
+  checkScalar('dpo', 'beta', options.beta, 'positive')
+  checkScalar('dpo', 'labelSmoothing', options.labelSmoothing, 'unit')
   const z = mul(logitsOf(batch), options.beta ?? 0.1)
   const eps = options.labelSmoothing ?? 0
   const terms = add(mul(neg(logSigmoid(z)), 1 - eps), mul(neg(logSigmoid(neg(z))), eps))

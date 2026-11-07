@@ -38,7 +38,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, reduce } from './_reduce.ts'
+import { checkScalar, type LossOptions, reduce } from './_reduce.ts'
 
 /** Options shared by the learning-to-rank losses: lists lie along the last axis. */
 export interface RankingOptions {
@@ -243,6 +243,7 @@ export function listNet(
   relevance: TensorLike,
   options: RankingOptions & { readonly temperature?: number } = {},
 ): Value {
+  checkScalar('listNet', 'temperature', options.temperature, 'positive')
   const [s, r, m] = listInputs(scores, relevance, options.mask)
   const target = mul(softmax(where(greater(m, 0), div(r, options.temperature ?? 1), Number.NEGATIVE_INFINITY), -1), m)
   const logp = where(greater(m, 0), maskedLogSoftmax(s, m), 0)
@@ -320,6 +321,7 @@ export function approxNdcg(
   relevance: TensorLike,
   options: RankingOptions & { readonly alpha?: number; readonly gain?: Gain } = {},
 ): Value {
+  checkScalar('approxNdcg', 'alpha', options.alpha, 'positive')
   const [s, r, m] = listInputs(scores, relevance, options.mask)
   const alpha = options.alpha ?? 10
   const pairMask = mul(expandDims(m, -1), expandDims(m, -2))

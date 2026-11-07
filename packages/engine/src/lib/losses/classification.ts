@@ -45,7 +45,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, reduce } from './_reduce.ts'
+import { checkScalar, checkWeights, type LossOptions, reduce } from './_reduce.ts'
 
 /**
  * Binary cross-entropy on logits, -[y log sigma(x) + (1 - y) log(1 - sigma(x))], computed stably from the logits
@@ -69,12 +69,16 @@ export function binaryCrossEntropyWithLogits(
   target: TensorLike,
   options: LossOptions & { readonly posWeight?: TensorLike; readonly labelSmoothing?: number } = {},
 ): Value {
+  checkScalar('binaryCrossEntropyWithLogits', 'labelSmoothing', options.labelSmoothing, 'unit')
   const [x, t] = promoteFloat(logits, target) as [Value, Value]
   const y = smoothBinary(t, options.labelSmoothing)
   const positive =
     options.posWeight === undefined ? logSigmoid(x) : mul(logSigmoid(x), promoteFloat(options.posWeight)[0] as Value)
   return reduce(neg(add(mul(y, positive), mul(sub(1, y), logSigmoid(neg(x))))), options)
 }
+
+/** exp(-100): below this probability torch's binary cross-entropy clamps its logarithm at -100. */
+const LOG_FLOOR = Math.exp(-100)
 
 const smoothBinary = (y: Value, eps: number | undefined): Value =>
   eps === undefined || eps === 0 ? y : add(mul(y, 1 - eps), eps / 2)
@@ -99,10 +103,12 @@ export function binaryCrossEntropy(
   target: TensorLike,
   options: LossOptions & { readonly labelSmoothing?: number } = {},
 ): Value {
+  checkScalar('binaryCrossEntropy', 'labelSmoothing', options.labelSmoothing, 'unit')
   const [p, t] = promoteFloat(probs, target) as [Value, Value]
   const y = smoothBinary(t, options.labelSmoothing)
-  // torch clamps each log at -100 so that a probability of exactly 0 or 1 gives a finite loss.
-  const clampedLog = (v: Value): Value => maximum(log(v), -100)
+  // torch clamps each log at -100 so that a probability of exactly 0 or 1 gives a finite loss: the clamp is on the
+  // input of the log (log(max(p, e^-100)) is the same value), so the gradient there is 0, not infinity times 0.
+  const clampedLog = (v: Value): Value => log(maximum(v, LOG_FLOOR))
   return reduce(neg(add(mul(y, clampedLog(p)), mul(sub(1, y), clampedLog(sub(1, p))))), options)
 }
 
@@ -128,6 +134,7 @@ export function focal(
   options: LossOptions & { readonly alpha?: number; readonly gamma?: number } = {},
 ): Value {
   const [x, y] = promoteFloat(logits, target) as [Value, Value]
+  checkScalar('focal', 'gamma', options.gamma, 'nonNegative')
   const alpha = options.alpha ?? 0.25
   const gamma = options.gamma ?? 2
   const ce = neg(add(mul(y, logSigmoid(x)), mul(sub(1, y), logSigmoid(neg(x)))))
@@ -164,6 +171,7 @@ export function categoricalFocal(
     readonly reduction?: Reduction
   } = {},
 ): Value {
+  checkScalar('categoricalFocal', 'gamma', options.gamma, 'nonNegative')
   const [z] = promoteFloat(logits) as [Value]
   const gamma = options.gamma ?? 2
   const t = promoteFloat(target)[0] as Value
@@ -234,6 +242,8 @@ export interface CrossEntropyOptions {
  * ```
  */
 export function crossEntropy(logits: TensorLike, target: TensorLike, options: CrossEntropyOptions = {}): Value {
+  checkScalar('crossEntropy', 'labelSmoothing', options.labelSmoothing, 'unit')
+  checkWeights('crossEntropy', 'classWeight', options.classWeight)
   const [z] = promoteFloat(logits) as [Value]
   const logp = logSoftmax(z, -1)
   const c = z.shape[z.shape.length - 1] ?? 0
