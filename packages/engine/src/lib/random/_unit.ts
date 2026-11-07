@@ -2,15 +2,16 @@ import { type Key, randomBits } from './key.ts'
 
 const TWO_POW_53 = 9007199254740992
 
+/** One uniform double in [0, 1) with 53 random bits from two 32-bit words (as numpy does). */
+export function unitDouble(w0: number, w1: number): number {
+  return ((w0 >>> 5) * 67108864 + (w1 >>> 6)) / TWO_POW_53
+}
+
 /** `n` uniform doubles in [0, 1) with 53 random bits each (two 32-bit words per value, as numpy does). */
 export function unitDoubles(k: Key, n: number): Float64Array {
   const bits = randomBits(k, 2 * n)
   const out = new Float64Array(n)
-  for (let i = 0; i < n; i++) {
-    const a = (bits[2 * i] ?? 0) >>> 5
-    const b = (bits[2 * i + 1] ?? 0) >>> 6
-    out[i] = (a * 67108864 + b) / TWO_POW_53
-  }
+  for (let i = 0; i < n; i++) out[i] = unitDouble(bits[2 * i] ?? 0, bits[2 * i + 1] ?? 0)
   return out
 }
 

@@ -38,6 +38,15 @@ export type TreeDef =
       readonly children: readonly TreeDef[]
     }
 
+// Whether two structures are equal: the same shape of nesting and the same record keys.
+function sameDef(a: TreeDef, b: TreeDef): boolean {
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'leaf' || b.kind === 'leaf') return true
+  if (a.children.length !== b.children.length) return false
+  if (a.kind === 'record' && b.kind === 'record' && a.keys.some((k, i) => k !== b.keys[i])) return false
+  return a.children.every((c, i) => sameDef(c, b.children[i] as TreeDef))
+}
+
 function isBranchArray(node: unknown): node is readonly unknown[] {
   return Array.isArray(node)
 }
@@ -145,9 +154,8 @@ export function treeLeaves(tree: unknown): Value[] {
 export function treeMap<T>(fn: (...leaves: Value[]) => Value, ...trees: readonly [T, ...T[]]): T {
   const flats = trees.map((t) => treeFlatten(t))
   const first = flats[0] as { leaves: Value[]; def: TreeDef }
-  const sig = JSON.stringify(first.def)
   for (const f of flats.slice(1)) {
-    if (JSON.stringify(f.def) !== sig) throw new MdmlError('value', 'treeMap: trees have different structures')
+    if (!sameDef(first.def, f.def)) throw new MdmlError('value', 'treeMap: trees have different structures')
   }
   const out = first.leaves.map((_, i) => fn(...flats.map((f) => f.leaves[i] as Value)))
   return treeUnflatten(first.def, out) as T

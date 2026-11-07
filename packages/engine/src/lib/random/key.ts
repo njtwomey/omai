@@ -7,6 +7,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { bitsBlock } from './_bits.ts'
 import { philox4x32 } from './philox.ts'
 
 /**
@@ -22,10 +23,9 @@ export interface Key {
   readonly words: readonly [number, number]
 }
 
-// Domain tags in the fourth counter word keep key derivation and bit generation from ever sharing a block.
+// Domain tags in the fourth counter word keep key derivation and bit generation (`_bits.ts`) from ever sharing a block.
 const SPLIT_TAG = 0x53504c54
 const FOLD_TAG = 0x464f4c44
-const BITS_TAG = 0
 
 /**
  * Create a key from an integer seed.
@@ -104,7 +104,7 @@ export function foldIn(k: Key, data: number): Key {
 export function randomBits(k: Key, n: number): Uint32Array {
   const out = new Uint32Array(n)
   for (let block = 0; block * 4 < n; block++) {
-    const words = philox4x32([block >>> 0, Math.floor(block / 2 ** 32) >>> 0, 0, BITS_TAG], k.words)
+    const words = bitsBlock(k.words, block)
     for (let j = 0; j < 4 && block * 4 + j < n; j++) out[block * 4 + j] = words[j] ?? 0
   }
   return out

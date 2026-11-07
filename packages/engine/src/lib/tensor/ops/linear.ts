@@ -188,10 +188,50 @@ export function tensordot(
   return reshape(out, [...freeA.map((i) => x.shape[i] ?? 1), ...freeB.map((i) => y.shape[i] ?? 1)])
 }
 
+/** An einsum operand with a name for each of its axes. */
+interface Term {
+  readonly v: Value
+  readonly s: readonly string[]
+}
+
+const product = (xs: readonly number[]): number => xs.reduce((p, n) => p * n, 1)
+
+// Contract two terms with one matrix product. Letters in both and still needed (the output or a later operand) are
+// batch axes, letters in both and not needed are summed by the product, and letters in one only that are not needed
+// are summed first. The result's axes are the batch letters, then a's own, then b's own.
+function contractPair(a: Term, b: Term, keep: ReadonlySet<string>, sizes: ReadonlyMap<string, number>): Term {
+  const presum = (t: Term, other: Term): Term => {
+    const drop = t.s.flatMap((c, i) => (other.s.includes(c) || keep.has(c) ? [] : [i]))
+    return drop.length === 0 ? t : { v: sum(t.v, drop), s: t.s.filter((_, i) => !drop.includes(i)) }
+  }
+  const x = presum(a, b)
+  const y = presum(b, a)
+  const batch = x.s.filter((c) => y.s.includes(c) && keep.has(c))
+  const inner = x.s.filter((c) => y.s.includes(c) && !keep.has(c))
+  const left = x.s.filter((c) => !y.s.includes(c))
+  const right = y.s.filter((c) => !x.s.includes(c))
+  const dims = (cs: readonly string[]): number[] => cs.map((c) => sizes.get(c) ?? 1)
+  const arrange = (t: Term, order: readonly string[], shape: readonly number[]): Value => {
+    const perm = order.map((c) => t.s.indexOf(c))
+    return reshape(perm.every((p, i) => p === i) ? t.v : transpose(t.v, perm), shape)
+  }
+  const batched = batch.length > 0
+  const lead = batched ? [product(dims(batch))] : []
+  const m = product(dims(left))
+  const k = product(dims(inner))
+  const n = product(dims(right))
+  const xa = arrange(x, [...batch, ...left, ...inner], [...lead, m, k])
+  const yb = arrange(y, [...batch, ...inner, ...right], [...lead, k, n])
+  const letters = [...batch, ...left, ...right]
+  return { v: reshape(matmul(xa, yb), dims(letters)), s: letters }
+}
+
 /**
- * Einstein summation over any number of operands (`'ij,jk->ik'`). Each operand is aligned to a common index order by
- * transposition and broadcasting, multiplied, and summed over indices absent from the output; so it is differentiable
- * like any composition of primitives.
+ * Einstein summation over any number of operands (`'ij,jk->ik'`). Operands are contracted pairwise from the left, each
+ * pair by one matrix product (so the cost is that of the contraction, not the product of every index extent), with
+ * indices that nothing else needs summed as early as possible; it is differentiable like any composition of
+ * primitives. Operands whose shared indices differ in length by broadcasting a length of 1, and degenerate lengths of
+ * 0, are instead aligned to a common index order, multiplied and summed.
  *
  * @param spec - The subscripts, with an explicit `->` output.
  * @param operands - The operands.
@@ -212,7 +252,7 @@ export function einsum(spec: string, ...operands: TensorLike[]): Value {
   if (inputs.length !== operands.length) throw new MdmlError('value', 'einsum: operand count does not match subscripts')
   const letters = [...new Set([...inputs.join(''), ...rhs])]
   const sizes = new Map<string, number>()
-  const aligned = inputs.map((subs, k) => {
+  const terms = inputs.map((subs, k): Term => {
     let v = val(operands[k] as TensorLike)
     if (subs.length !== v.shape.length)
       throw new MdmlError('value', `einsum: '${subs}' does not match rank ${v.shape.length}`)
@@ -234,26 +274,45 @@ export function einsum(spec: string, ...operands: TensorLike[]): Value {
       }
       sizes.set(c, Math.max(known ?? 1, n))
     })
-    const present = letters.filter((c) => s.includes(c))
-    const permuted = transpose(
-      v,
-      present.map((c) => s.indexOf(c)),
-    )
-    return reshape(
-      permuted,
-      letters.map((c) => (s.includes(c) ? (v.shape[s.indexOf(c)] ?? 1) : 1)),
-    )
+    return { v, s: [...s] }
   })
-  let product = aligned[0] as Value
-  for (const v of aligned.slice(1)) product = mul(product, v)
-  const summed = letters.map((c, i) => (rhs.includes(c) ? -1 : i)).filter((i) => i >= 0)
-  let out = summed.length > 0 ? sum(product, summed) : product
-  const remaining = letters.filter((c) => rhs.includes(c))
-  out = transpose(
+  const pairwise =
+    terms.length >= 2 &&
+    new Set(rhs).size === rhs.length &&
+    [...rhs].every((c) => terms.some((t) => t.s.includes(c))) &&
+    terms.every((t) => t.s.every((c, i) => (t.v.shape[i] ?? 1) === sizes.get(c) && (sizes.get(c) ?? 0) > 0))
+  let out: Value
+  let remaining: readonly string[]
+  if (pairwise) {
+    let acc = terms[0] as Term
+    for (let i = 1; i < terms.length; i++) {
+      const keep = new Set([...rhs, ...terms.slice(i + 1).flatMap((t) => t.s)])
+      acc = contractPair(acc, terms[i] as Term, keep, sizes)
+    }
+    out = acc.v
+    remaining = acc.s
+  } else {
+    const aligned = terms.map(({ v, s }) => {
+      const present = letters.filter((c) => s.includes(c))
+      const permuted = transpose(
+        v,
+        present.map((c) => s.indexOf(c)),
+      )
+      return reshape(
+        permuted,
+        letters.map((c) => (s.includes(c) ? (v.shape[s.indexOf(c)] ?? 1) : 1)),
+      )
+    })
+    let prod = aligned[0] as Value
+    for (const v of aligned.slice(1)) prod = mul(prod, v)
+    const summed = letters.map((c, i) => (rhs.includes(c) ? -1 : i)).filter((i) => i >= 0)
+    out = summed.length > 0 ? sum(prod, summed) : prod
+    remaining = letters.filter((c) => rhs.includes(c))
+  }
+  return transpose(
     out,
     [...rhs].map((c) => remaining.indexOf(c)),
   )
-  return out
 }
 
 /**

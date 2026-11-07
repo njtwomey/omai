@@ -18,7 +18,8 @@ import {
   transpose,
   type Value,
 } from '../tensor/index.ts'
-import { unitDoubles } from './_unit.ts'
+import { bitsBlock } from './_bits.ts'
+import { unitDouble, unitDoubles } from './_unit.ts'
 import { gammaOne, logGammaOne, truncatedOne } from './_variates.ts'
 import { foldIn, type Key, split } from './key.ts'
 
@@ -82,16 +83,29 @@ export function uniformStream(k: Key, block = 256, from = 0): () => number {
     throw new MdmlError('value', 'uniformStream: block must be a positive integer')
   if (!(Number.isInteger(from) && from >= 0))
     throw new MdmlError('value', 'uniformStream: from must be a non-negative integer')
+  // Block b is unitDoubles(foldIn(k, b), block), whose draws 2j and 2j + 1 come from Philox block j alone: the stream
+  // computes those two on demand, so a sampler that uses a handful of draws pays for a handful of Philox blocks.
   let b = Math.floor(from / block)
-  let buf = unitDoubles(foldIn(k, b), block)
+  let blockKey = foldIn(k, b)
   let i = from - b * block
+  let pair = -1
+  let even = 0
+  let odd = 0
   return () => {
-    if (i >= buf.length) {
+    if (i >= block) {
       b += 1
-      buf = unitDoubles(foldIn(k, b), block)
+      blockKey = foldIn(k, b)
       i = 0
+      pair = -1
     }
-    return buf[i++] ?? 0
+    const j = Math.floor(i / 2)
+    if (j !== pair) {
+      const w = bitsBlock(blockKey.words, j)
+      even = unitDouble(w[0], w[1])
+      odd = unitDouble(w[2], w[3])
+      pair = j
+    }
+    return i++ % 2 === 0 ? even : odd
   }
 }
 

@@ -132,3 +132,14 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   boundary casts silently, no exposition record or scene builder checks finiteness (7 of 54 exposition files do), and the layering review says `scene`
   needs only `base` and `exposition` only `base` plus scene types, so both belong right above `base`, not between `optim` and `losses` (this fixes the rank
   order used by `scripts/review/scan.mjs` and the proposed rank check in `make layers`).
+- **12:50 Result.** Wave A performance fixes P3.12 and P3.32 step 1 (worktree `agent-pf01-perf`, commits `2d7e4d30`, `dc7144fa`, `6a57ed75`,
+  `5b9c4334`, `2df913a6`). `scheduler.fired` is append-only (20,000 firings 421 ms to 0.5 ms). The sampler cost was one mechanism: a
+  stream block of 256 draws is 128 Philox blocks and draws 2j, 2j+1 come from block j alone, so `uniformStream` now computes the pair on
+  demand (same counters, same words): `gammaVariates` x20,000 206 ms to 9.9 ms and the dists gamma, beta, studentT, chi2, F, dirichlet,
+  poisson, binomial and negativeBinomial samplers 20x to 25x faster per 1e5 draws (1.0 s to 50 to 130 ms). Bit-identity is pinned by 117
+  recorded samples taken from the old code (`random/stream-bits.test.ts`, `dists/sampling-bits.test.ts`). `einsum` contracts pairwise
+  through `matmul` (322 ms to 9.4 ms at 200 x 200); the 2-operand cases are bitwise equal to the old result, chains of 3 or more differ by
+  up to 3.6e-15. Gotcha: `matmul` skips zero entries (FD-3), so `einsum` of a 0 against Infinity or NaN no longer gives NaN until FD-3 is
+  fixed in `matmul` (Wave B). FD-37 done in part (`summarise`, `treeMap`, `stateAt`); the `metricSeries` per-name scans and the `maxBytes`
+  stringify are left (a cache needs invalidation on `forget`; the byte count is the contract). DSM-12 step 2 left: it changes which key draws
+  each element. The full gate was not run (own tests and checks only, as the agent rules say).
