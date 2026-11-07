@@ -6,7 +6,7 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 
 - function `plot.ts` (file): Open first: the cartesian plot and `Layer` every chart builder shares. `src/charts/plot.ts:1` `mdml-render/charts`
 
-- function `band`: A filled band between two curves: `band([{ x, lower, upper }])`. `src/charts/lines.ts:128` `mdml-render/charts`
+- function `band`: A filled band between two curves: `band([{ x, lower, upper }])`. `src/charts/lines.ts:126` `mdml-render/charts`
 - function `barChart`: A bar chart over categories: `barChart(['a', 'b'], [3, 5])`. `src/charts/bars.ts:407` `mdml-render/charts`
 - function `boxPlot`: Box plots of groups: `boxPlot([{ name: 'a', values }])`. `src/charts/distributions.ts:298` `mdml-render/charts`
 - function `cartesian`: Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`. `src/charts/plot.ts:484` `mdml-render/charts`
@@ -19,7 +19,7 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 - function `historyChart`: Objective per trial of a hyperparameter study: `historyChart(study)`. `src/charts/tuning.ts:95` `mdml-render/charts`
 - function `kde`: A kernel density estimate layer of samples: `kde(samples)`. `src/charts/distributions.ts:124` `mdml-render/charts`
 - function `learningCurveChart`: Train and validation scores against training size: `learningCurveChart(sizes, train, test)`. `src/charts/evaluation.ts:195` `mdml-render/charts`
-- function `lineChart`: A line chart of curves: `lineChart([{ y: [3, 1, 2], name: 'loss' }])`. `src/charts/lines.ts:310` `mdml-render/charts`
+- function `lineChart`: A line chart of curves: `lineChart([{ y: [3, 1, 2], name: 'loss' }])`. `src/charts/lines.ts:308` `mdml-render/charts`
 - function `lines`: A layer of lines, steps or areas to combine: `lines([{ y: [1, 3, 2] }])`. `src/charts/lines.ts:62` `mdml-render/charts`
 - function `parallelCoordinates`: Parallel coordinates of a table: `parallelCoordinates({ columns, rows })`. `src/charts/multivariate.ts:221` `mdml-render/charts`
 - function `rocChart`: A ROC curve chart: `rocChart(curve)`. `src/charts/evaluation.ts:45` `mdml-render/charts`
