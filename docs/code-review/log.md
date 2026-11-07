@@ -48,3 +48,12 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `Mat` is a `Float64Array` in two files and an interface in `causal/instrumental.ts`; `Vec` is `number[]` in `agents` and
   `Float64Array` in ten other files; `Box` is a 4-tuple whose meaning depends on `BoxFormat`.
 - **10:17 Process.** At most two agents at a time; read-only reviewers work in the main checkout, no worktree.
+- **10:50 Result.** Foundations read in full (37 findings, `findings/foundations.md`). The core is sound: per-op dispatch on
+  tiny tensors 0.24 µs, `grad` of a small MLP 3x its forward pass, Philox passes its known-answer tests, no clock, `Math.random`
+  or `console` in scope. Not sound: degenerate inputs (the live twins of the flaky tests: `matmul` skips zero entries so `0 * Infinity`
+  is 1; `tril`/`triu` turn `Infinity` into NaN; `all([])` is false; `cumsum` of a bool wraps at 256; `pow(1, Infinity)` is NaN;
+  gradients of `prod`, `norm`, `std`, `pow(x, 0)` are NaN at zero; `scatterAdd` out of range corrupts a neighbouring lane).
+  Accidental-quadratic paths: `scheduler.fired` (20k firings 1.9 s, 40k 6.9 s), `gammaVariates`, `einsum`. The three Algorithm
+  drivers disagree on the end status. The layering finding: the guessed order was wrong for `context` and `scene`, not the code;
+  the real debt is file-level cycles inside `tensor` that `make layers` cannot see. Native arrays: 56 public functions in scope,
+  six real findings, all in `random` (`dirichlet`, `categorical`, `multinomial`, `aliasTable`, `choice` weights, `randomSplit`).
