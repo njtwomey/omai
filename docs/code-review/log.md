@@ -57,3 +57,7 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   drivers disagree on the end status. The layering finding: the guessed order was wrong for `context` and `scene`, not the code;
   the real debt is file-level cycles inside `tensor` that `make layers` cannot see. Native arrays: 56 public functions in scope,
   six real findings, all in `random` (`dirichlet`, `categorical`, `multinomial`, `aliasTable`, `choice` weights, `randomSplit`).
+- **11:15 Scope.** The maintainer asked whether render is covered. It was only in the plan as the reading P1.6; the
+  surface digest and the type scan already covered it, the other scans had run on the engine only. The scripts take
+  `--package=render` now and render's Phase 0 is done (P0.7). Render is clean on duplicated helpers and constants; its gap
+  is tests of the React layer (57.9% of statements).

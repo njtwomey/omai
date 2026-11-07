@@ -167,6 +167,24 @@ checks its parameters and return type separately.
   vector or matrix (to migrate). Migrating a public signature changes the public surface, so it is the one deliberate,
   reviewed break, staged by domain.
 
+## Render (Phase 0)
+
+The scripts take `--package=render` (names, scan, coverage); the surface digest and the type scan already covered
+render. 977 functions in 254 files, 56 name clusters spanning two or more files.
+- **Duplicates:** one verified cluster only: `recordOf` in `react/controls/ModelSelector.tsx` (116 lines) and
+  `react/controls/SlotVariants.tsx` (98 lines), alike at 80% or more. No generic-named helper copies and no repeated named
+  constants. Render is much cleaner than the engine on this.
+- **Coverage** (render project, CI mode, 499 tests): **78.2% of statements, 74.6% of functions, 63.5% of branches**; 984
+  functions never run. The `react` layer is the gap (57.9% / 52.9% / 52.1%, 675 never-run functions; 130 files); `views`
+  83.6%; `charts`, `figure`, `maths`, `svg`, `structures`, `trace` are at 92 to 98%. Lowest files: `react/session/NarrativeView.tsx`
+  (no test reaches it), `react/session/SessionExport.tsx` 1.7%, `react/views/trees.tsx` 2.1%, `react/views/fairness.tsx` 3.3%,
+  `react/views/stages.tsx` 5.1%, `views/epicycles.ts` 4.6%, `react/views/attributions.tsx` 7.5%, `views/sequences.ts` 2.0%,
+  `react/FigureFrame.tsx` 20.9%, `react/Chart.tsx` 23.5%, `react/Player.tsx` 29.7%. Caveat: this counts render's own tests;
+  the gallery and docs pages of `apps/site` exercise the components but are not measured here.
+- **Casts:** 1,317 `as T` assertions, 36 `as unknown as`; the densest are `animation/gif.ts` (11.6 per 100 lines),
+  `svg/_deflate.ts` (11.5), `charts/annotations.ts`, `maths/derivations.ts`, `react/controls/ModelSelector.tsx`.
+- **Not applicable to render:** the core and constructed split, the tensor signature rule (render holds no numerics).
+
 ## Not yet done
 
 The CPU profile for the hot paths, the cluster reading (Phase 1), and the

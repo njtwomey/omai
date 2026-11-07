@@ -6,7 +6,7 @@
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
-import { CORE, CORE_ORDER, domainOf, engineSource, LIB, listFor, relOf } from './_shared.mjs'
+import { CORE, CORE_ORDER, domainOf, engineSource, LIB, listFor, PACKAGE, relOf } from './_shared.mjs'
 
 const GENERIC = new Set(
   'dot norm axpy dscal dnrm2 ddot dgemv sum mean clamp cumsum outer transpose matmul argmax argmin linspace range zeros identity eye logsumexp softmax sigmoid median variance maxOf minOf sumOf meanOf dist euclidean sq square lerp sign toArray flatten arange repeat swap copy'.split(
@@ -59,12 +59,14 @@ const edgeGroups = (list) => {
 const down = (e) => CORE_ORDER.indexOf(e.to) > CORE_ORDER.indexOf(e.from)
 const outside = edges.filter((e) => !CORE.has(e.to))
 const against = edges.filter((e) => CORE.has(e.to) && down(e))
-console.log(
-  `\nD. LAYERING: core files importing a constructed domain: ${outside.length}; against the order: ${against.length}`,
-)
-for (const [k, files] of edgeGroups(outside)) console.log(`  ${k} (${files.length}): ${files.slice(0, 3).join(', ')}`)
-console.log(`  -- against the order (${CORE_ORDER.join(' < ')}):`)
-for (const [k, files] of edgeGroups(against)) console.log(`  ${k} (${files.length}): ${files.slice(0, 3).join(', ')}`)
+if (PACKAGE === 'engine') {
+  console.log(
+    `\nD. LAYERING: core files importing a constructed domain: ${outside.length}; against the order: ${against.length}`,
+  )
+  for (const [k, files] of edgeGroups(outside)) console.log(`  ${k} (${files.length}): ${files.slice(0, 3).join(', ')}`)
+  console.log(`  -- against the order (${CORE_ORDER.join(' < ')}):`)
+  for (const [k, files] of edgeGroups(against)) console.log(`  ${k} (${files.length}): ${files.slice(0, 3).join(', ')}`)
+}
 
 const density = core
   .map((f) => {

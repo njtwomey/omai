@@ -8,7 +8,9 @@ import { readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 export const ROOT = join(import.meta.dirname, '..', '..')
-export const LIB = join(ROOT, 'packages/engine/src/lib')
+/** The package under review: the engine by default, render with `--package=render`. */
+export const PACKAGE = process.argv.includes('--package=render') ? 'render' : 'engine'
+export const LIB = join(ROOT, PACKAGE === 'engine' ? 'packages/engine/src/lib' : 'packages/render/src')
 
 /** The core, in the order they stack (a first guess at the layering: lower may not import higher). */
 export const CORE_ORDER = [
@@ -30,7 +32,8 @@ export const CORE_ORDER = [
   'metrics',
   'data',
 ]
-export const CORE = new Set(CORE_ORDER)
+/** The domains in scope: the engine's core, or every folder of render (it has no core and constructed split). */
+export const CORE = PACKAGE === 'engine' ? new Set(CORE_ORDER) : { has: () => true }
 
 /** Every .ts and .tsx file under a folder, skipping build output and dependencies. */
 export function walk(dir, found = []) {
