@@ -22,7 +22,9 @@ import {
   primalOf,
   reshape,
   type Tensor,
+  type TensorLike,
   toFlat,
+  toVector,
   transpose,
   treeFlatten,
   treeMap,
@@ -142,13 +144,15 @@ export interface Slice1d {
 }
 
 /**
- * The loss along one direction: L(theta + alpha d) for each alpha. With alpha = 0 it is the loss at the point.
+ * The loss along one direction: L(theta + alpha d) for each alpha. With alpha = 0 it is the loss at the point. Takes
+ * the grid as a tensor-like (migration, D-009: `alphas` was `readonly number[]`).
  *
  * @param loss - The loss.
  * @param params - The centre.
  * @param direction - The direction (for example from {@link randomDirection}).
- * @param alphas - Where to evaluate.
+ * @param alphas - Where to evaluate: a vector (a tensor, a typed array or a list).
  * @returns The alphas and losses.
+ * @throws MdmlError with code `shape` unless `alphas` has rank 1, and `not-differentiable` for a traced one.
  * @concept loss-landscape
  * @example
  * ```ts
@@ -157,8 +161,9 @@ export interface Slice1d {
  * slice1d((x: Value) => sum(square(x)), tensor([1, 0]), tensor([1, 0]), [-1, 0, 1]).losses // => [0, 1, 4]
  * ```
  */
-export function slice1d(loss: LossFunction, params: Tree, direction: Tree, alphas: readonly number[]): Slice1d {
-  return { alphas, losses: alphas.map((a) => lossAt(loss, along(params, direction, a))) }
+export function slice1d(loss: LossFunction, params: Tree, direction: Tree, alphas: TensorLike): Slice1d {
+  const grid = toVector(alphas, 'slice1d')
+  return { alphas: grid, losses: grid.map((a) => lossAt(loss, along(params, direction, a))) }
 }
 
 /** A grid of losses over two directions. */
@@ -171,15 +176,17 @@ export interface Slice2d {
 
 /**
  * The loss over a plane through the parameters, spanned by two directions (Li et al.'s contour plots): L(theta + alpha
- * d1 + beta d2) on a grid.
+ * d1 + beta d2) on a grid. Takes the grids as tensor-likes (migration, D-009: `alphas` and `betas` were
+ * `readonly number[]`).
  *
  * @param loss - The loss.
  * @param params - The centre.
  * @param d1 - First direction.
  * @param d2 - Second direction.
- * @param alphas - Grid along `d1`.
- * @param betas - Grid along `d2`.
+ * @param alphas - Grid along `d1`: a vector (a tensor, a typed array or a list).
+ * @param betas - Grid along `d2`: the same.
  * @returns The grid of losses.
+ * @throws MdmlError with code `shape` unless a grid has rank 1, and `not-differentiable` for a traced one.
  * @concept loss-landscape
  * @example
  * ```ts
@@ -193,23 +200,26 @@ export function slice2d(
   params: Tree,
   d1: Tree,
   d2: Tree,
-  alphas: readonly number[],
-  betas: readonly number[],
+  alphas: TensorLike,
+  betas: TensorLike,
 ): Slice2d {
-  const data = new Float64Array(alphas.length * betas.length)
-  alphas.forEach((a, i) => {
+  const as = toVector(alphas, 'slice2d')
+  const bs = toVector(betas, 'slice2d')
+  const data = new Float64Array(as.length * bs.length)
+  as.forEach((a, i) => {
     const row = along(params, d1, a)
-    betas.forEach((b, j) => {
-      data[i * betas.length + j] = lossAt(loss, along(row, d2, b))
+    bs.forEach((b, j) => {
+      data[i * bs.length + j] = lossAt(loss, along(row, d2, b))
     })
   })
-  return { alphas, betas, losses: fromStorage(data, [alphas.length, betas.length], 'float64') }
+  return { alphas: as, betas: bs, losses: fromStorage(data, [as.length, bs.length], 'float64') }
 }
 
 /**
  * A filter-normalised slice, 1-D or 2-D, around a point: draws one or two random directions from the key, normalises
  * them, and evaluates the loss on the grid. The directions are returned so the slice can be redrawn after training, or
- * so a trajectory can be projected onto them.
+ * so a trajectory can be projected onto them. Takes the grids as tensor-likes (migration, D-009: they were
+ * `readonly number[]`).
  *
  * @param loss - The loss.
  * @param params - The centre.
@@ -230,7 +240,7 @@ export function randomSlice(
   loss: LossFunction,
   params: Tree,
   key: Key,
-  grid: { readonly alphas: readonly number[]; readonly betas?: readonly number[] },
+  grid: { readonly alphas: TensorLike; readonly betas?: TensorLike },
   options: FilterNormOptions = {},
 ): { readonly directions: readonly Tree[]; readonly slice: Slice1d | Slice2d } {
   const d1 = randomDirection(params, foldIn(key, 0), options)
@@ -241,13 +251,15 @@ export function randomSlice(
 
 /**
  * The loss along the straight line between two parameter vectors: L((1 - t) a + t b), with t = 0 at `a` and t = 1 at
- * `b` (values outside [0, 1] extrapolate).
+ * `b` (values outside [0, 1] extrapolate). Takes the positions as a tensor-like (migration, D-009: `ts` was
+ * `readonly number[]`).
  *
  * @param loss - The loss.
  * @param a - One endpoint.
  * @param b - The other.
- * @param ts - Where to evaluate.
+ * @param ts - Where to evaluate: a vector (a tensor, a typed array or a list).
  * @returns The positions and losses.
+ * @throws MdmlError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
  * @concept mode-connectivity
  * @example
  * ```ts
@@ -256,9 +268,10 @@ export function randomSlice(
  * interpolationSlice((x: Value) => sum(square(x)), tensor([-1]), tensor([1]), [0, 0.5, 1]).losses // => [1, 0, 1]
  * ```
  */
-export function interpolationSlice(loss: LossFunction, a: Tree, b: Tree, ts: readonly number[]): Slice1d {
+export function interpolationSlice(loss: LossFunction, a: Tree, b: Tree, ts: TensorLike): Slice1d {
+  const grid = toVector(ts, 'interpolationSlice')
   const diff = treeMap((x, y) => add(y, mul(x, -1)), asTree(a), asTree(b))
-  return { alphas: ts, losses: ts.map((t) => lossAt(loss, along(a, diff, t))) }
+  return { alphas: grid, losses: grid.map((t) => lossAt(loss, along(a, diff, t))) }
 }
 
 /**
@@ -292,13 +305,15 @@ export function barrier(slice: Slice1d): number {
  * The loss along a quadratic Bezier curve (Garipov et al. 2018): from `a` to `b` through a control point `c`,
  * (1 - t)^2 a + 2 (1 - t) t c + t^2 b. With the control point chosen to lower the loss the curve connects two minima
  * with no barrier where the straight line has one; choosing it is a training problem, this evaluates a given one.
+ * Takes the positions as a tensor-like (migration, D-009: `ts` was `readonly number[]`).
  *
  * @param loss - The loss.
  * @param a - Start (a minimum).
  * @param c - Control point.
  * @param b - End.
- * @param ts - Positions in [0, 1].
+ * @param ts - Positions in [0, 1]: a vector (a tensor, a typed array or a list).
  * @returns The positions and losses.
+ * @throws MdmlError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
  * @concept mode-connectivity
  * @example
  * ```ts
@@ -307,7 +322,8 @@ export function barrier(slice: Slice1d): number {
  * bezierSlice((x: Value) => sum(x), tensor([0]), tensor([2]), tensor([0]), [0, 0.5, 1]).losses // => [0, 1, 0]
  * ```
  */
-export function bezierSlice(loss: LossFunction, a: Tree, c: Tree, b: Tree, ts: readonly number[]): Slice1d {
+export function bezierSlice(loss: LossFunction, a: Tree, c: Tree, b: Tree, ts: TensorLike): Slice1d {
+  const grid = toVector(ts, 'bezierSlice')
   const point = (t: number): Tree =>
     treeMap(
       (x, y, z) => add(add(mul(x, (1 - t) ** 2), mul(y, 2 * (1 - t) * t)), mul(z, t * t)),
@@ -315,7 +331,7 @@ export function bezierSlice(loss: LossFunction, a: Tree, c: Tree, b: Tree, ts: r
       asTree(c),
       asTree(b),
     )
-  return { alphas: ts, losses: ts.map((t) => lossAt(loss, point(t))) }
+  return { alphas: grid, losses: grid.map((t) => lossAt(loss, point(t))) }
 }
 
 /** The top Hessian eigenvalue and its eigenvector. */
@@ -336,7 +352,8 @@ export interface Sharpness {
  *
  * @param loss - The loss.
  * @param params - The point.
- * @param options - `method`, power iteration `iterations` and `tol`, and a start vector.
+ * @param options - `method`, power iteration `iterations` and `tol`, and a start vector `v0` (takes a tensor-like;
+ *   migration, D-009: was `ArrayLike<number>`).
  * @returns The eigenvalue, its eigenvector as a tree, and the number of products.
  * @concept sharpness
  * @example
@@ -354,9 +371,10 @@ export function sharpness(
     readonly method?: 'lanczos' | 'power'
     readonly iterations?: number
     readonly tol?: number
-    readonly v0?: ArrayLike<number>
+    readonly v0?: TensorLike
   } = {},
 ): Sharpness {
+  const v0 = options.v0 === undefined ? undefined : toVector(options.v0, 'sharpness')
   const f = flatObjective(loss, asTree(params))
   const x = f.x0
   let products = 0
@@ -375,14 +393,14 @@ export function sharpness(
     }
     const r = eigsh(op, 1, {
       which: 'LA',
-      ...(options.v0 === undefined ? {} : { v0: options.v0 }),
+      ...(v0 === undefined ? {} : { v0 }),
       tol: options.tol ?? 1e-10,
     })
     const top = r.values.data[0] as number
     // The eigenvectors are the columns of an [n, 1] matrix, so the single column is the data in order.
     return { value: top, vector: f.unravel(r.vectors.data), products }
   }
-  let v = Float64Array.from(options.v0 ?? Array.from({ length: f.n }, (_, i) => Math.cos(1.3 * i + 0.4)))
+  let v = Float64Array.from(v0 ?? Array.from({ length: f.n }, (_, i) => Math.cos(1.3 * i + 0.4)))
   const s = dnrm2(v)
   v = v.map((q) => q / s)
   let value = Number.NaN
