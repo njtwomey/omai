@@ -179,8 +179,27 @@ export function erfinv(y: number): number {
   // (1 - y) / 2 is exact for y > 1/2, so the tail keeps its precision.
   if (y > 0.5) return -ndtri((1 - y) / 2) / Math.SQRT2
   if (y < -0.5) return ndtri((1 + y) / 2) / Math.SQRT2
-  return ndtri((y + 1) / 2) / Math.SQRT2
+  // (y + 1) / 2 keeps only the bits of y that fit beside 1, so the quantile route is accurate to 1e-16 / |y| (8e-8 relative
+  // at 1e-10, 0 below 1e-16). Near 0 the Maclaurin series is exact; between, a Halley step on erf itself repairs the start.
+  if (Math.abs(y) < 0.01) {
+    const z = y * y
+    const [c3, c5, c7, c9, c11] = ERFINV_SERIES
+    return (SQRT_PI / 2) * y * (1 + z * (c3 + z * (c5 + z * (c7 + z * (c9 + z * c11)))))
+  }
+  let x = ndtri((y + 1) / 2) / Math.SQRT2
+  const e = erf(x) - y
+  x -= e / ((2 / SQRT_PI) * Math.exp(-x * x) + x * e)
+  return x
 }
+
+// erfinv(y) = sqrt(pi) / 2 (y + c3 y^3 + c5 y^5 + ...), the coefficients being pi/12, 7 pi^2 / 480, 127 pi^3 / 40320, ...
+const ERFINV_SERIES = [
+  Math.PI / 12,
+  (7 * Math.PI ** 2) / 480,
+  (127 * Math.PI ** 3) / 40320,
+  (4369 * Math.PI ** 4) / 5806080,
+  (34807 * Math.PI ** 5) / 182476800,
+] as const
 
 export function erfcinv(y: number): number {
   if (y <= 0) return y === 0 ? Infinity : Number.NaN
