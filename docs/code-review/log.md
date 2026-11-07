@@ -335,3 +335,20 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   tsc for engine and render, 1,059 engine test files of the 31 domains touched (18,240 tests: two timeouts of 5 s under a load average of 30 to 50, both pass alone;
   the files that changed during the run were run again), render 87 files, 535 `@example`s of the changed files, barrels, layers, lint, agent index and surface. Tests added: 4 `it`.
   Surface: 21 added, 1 removed (`exposition#Complex`, still re-exported by `exposition`), 1 changed (`LineSearchResult`).
+
+- **17:45 Native arrays, stage 1 (P3.8, D-009, D-015: `random` and `data` only).** Branch `agent-na02-random`. Migrated: `random`
+  `dirichlet`, `categorical`, `multinomial`, `aliasTable` (and `AliasTable`, whose fields are now tensors), `choice`
+  (`weights`), `randomSplit` (`fractions`); `data` `weightedRandomSampler`, `balancedWeights` (also returns a tensor),
+  `noiseTransition` (returns a `[k, k]` tensor), `withLabelNoise` (`transition`). Inputs are `TensorLike`, so every old call
+  still compiles; only the returns broke callers, and the only callers were `sampling.aliasMethod` and the tests of `data`.
+  Draws are bit-identical (every golden, stream-bits and `@example` unchanged except the printed form of
+  `noiseTransition` and `balancedWeights`, now `toArray(...)` and `Array.from(....data)`). Gotcha found by measuring: the
+  first version read inputs with `asTensor` and cost 154 us per `categorical` call at 5000 weights against 33 us before, because
+  `tensor()` boxes a nested array. The shared reader `tensor/toVector` returns a flat array of numbers as it is, so a
+  `number[]` caller pays nothing (33 us). Kept native: `random.gammaVariates` (a kernel), the index and label lists of `data`
+  (`take`, `bootstrap`, `stratifiedIndices`, `labelsOf`, the splits, `subsetRandomSampler`), `parseNpy` (a decoder).
+  `labelsOf` returning an int32 tensor stays for a later stage (KDES-32 partly). None of the nine is differentiable (draws
+  and indices), so no gradient row; a traced weight is rejected with `not-differentiable`, tested. Own checks only (the full
+  gate was not run): engine, render, meta, site and pocs tsc; 665 files, 10,984 tests of the 17 caller domains and 57 files,
+  1,161 tests of `random`, `data`, `tensor` and `sampling/exact`; 65 `@example`s; barrels, layers, lint, agent index, surface.
+  Tests added: 1 `it.each` (7 rows). Surface: 1 added (`tensor#toVector`), 11 changed.
