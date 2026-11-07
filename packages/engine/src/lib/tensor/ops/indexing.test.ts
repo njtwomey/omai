@@ -314,6 +314,26 @@ describe('indexing operations agree with numpy', () => {
     ]
     for (const [name, thunk] of invalid)
       expect(thunk, name).toThrow(expect.objectContaining({ code: expect.stringMatching(/value|shape/) }))
+    // scatterAdd differentiates in its updates, and its second derivative is zero (it is linear)
+    const spots = T.tensor(
+      [
+        [3, 3],
+        [0, 3],
+      ],
+      { dtype: 'int32' },
+    )
+    expect(
+      V.checkPrimitive(
+        (u) => T.scatterAdd([2, 4], spots, u, 1),
+        [
+          T.tensor([
+            [1, 2],
+            [3, 4],
+          ]),
+        ],
+        { order: 2 },
+      ).failures,
+    ).toEqual([])
     // NaN sorts last, as in numpy
     expect(T.toArray(T.sort(T.tensor([3, nan, 1])))).toEqual([1, 3, nan])
     expect(

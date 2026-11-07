@@ -1,6 +1,6 @@
 mdml-engine/agents	384	0b30622a3c4b
 mdml-engine/anomaly	72	a3d09895de23
-mdml-engine/autodiff	54	33e9f058f38c
+mdml-engine/autodiff	54	516844ab6294
 mdml-engine/base	80	e381bc2db98a
 mdml-engine/causal	145	0c687dfea6fd
 mdml-engine/cluster	148	4fd55ef970d4
@@ -119,4 +119,4 @@ mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17944	d03608daf09e
+total	17944	9a23a065dfb7
