@@ -2,7 +2,7 @@
  * Modes: the options of a slot that each build the algorithm their own way (a solver, an optimiser, a kernel, a
  * search). A mode is one module's worth of declarations: its knobs (a dict space), the factory that makes a library
  * algorithm for a problem, the common fitted parameters its state yields, the paths only it can say, and what it needs
- * of the other slots. A table of modes is one `union` space and one dispatcher, so a method's `algorithm` and `params`
+ * of the other slots. A table of modes is an `optionTable` of the space domain (one `union` space and one dispatcher), so a method's `algorithm` and `params`
  * become one line each, and the controls, grids and tuners see every mode's knobs through the space. A mode never
  * logs: the method's contract reads its state through `params`, and the mode's `extras` are derived from the state too.
  */
@@ -13,9 +13,9 @@ import {
   type DictSpace,
   type ModeConfig,
   type ModeTableOptions,
+  optionTable,
   type SpaceValue,
   type UnionSpace,
-  union,
 } from '../space/index.ts'
 import type { Algorithm } from './algorithm.ts'
 import type { Contract } from './contract.ts'
@@ -87,8 +87,18 @@ function optionOf(value: SpaceValue | undefined): string | number | boolean | un
   return value
 }
 
+/** What a table of modes reads of a mode without building it. */
+interface ModeProperties<P extends Json> {
+  readonly params: (state: unknown) => P
+  readonly extras: Contract<unknown> | undefined
+  readonly needs: ModeSpec<unknown, unknown, P>['needs']
+}
+
+/** What a mode builds for a problem and key, its knobs bound. */
+type ModeBuilder<Problem> = (problem: Problem, key: Key) => Algorithm<unknown>
+
 /** Whether a mode admits the other slots' values. */
-function admits(mode: ModeSpec<unknown, unknown, Json>, others: SlotValues): boolean {
+function admits(mode: Pick<ModeProperties<Json>, 'needs'>, others: SlotValues): boolean {
   if (mode.needs === undefined) return true
   return Object.entries(mode.needs).every(([slot, allowed]) => {
     const option = optionOf(others[slot])
@@ -125,44 +135,42 @@ export function modes<Problem, P extends Json>(
   table: Readonly<Record<string, ModeSpec<Problem, any, P>>>,
   options: ModeTableOptions = {},
 ): ModeTable<Problem, P> {
-  const tag = options.tag ?? 'kind'
-  const names = Object.keys(table)
-  const space = union(Object.fromEntries(names.map((n) => [n, table[n]?.space as DictSpace])), {
-    tag,
-    ...(options.default === undefined ? {} : { default: options.default }),
-    ...(options.label === undefined ? {} : { label: options.label }),
-    ...(options.description === undefined ? {} : { description: options.description }),
-  })
-  const nameOf = (config: SpaceValue | undefined): string => {
-    const fallback = options.default ?? (names[0] as string)
-    if (typeof config !== 'object' || config === null || Array.isArray(config)) return fallback
-    const name = (config as Readonly<Record<string, SpaceValue>>)[tag]
-    return typeof name === 'string' && Object.hasOwn(table, name) ? name : fallback
-  }
+  // A mode is an option whose value is the builder `(problem, key) => algorithm` and whose properties are what the
+  // table reads without building: `params`, `extras` and `needs`.
+  const built = optionTable<ModeBuilder<Problem>, ModeProperties<P>>(
+    Object.fromEntries(
+      Object.entries(table).map(([name, mode]) => [
+        name,
+        {
+          space: mode.space,
+          ...(mode.description === undefined ? {} : { description: mode.description }),
+          properties: { params: mode.params, extras: mode.extras, needs: mode.needs },
+          make: (knobs: ModeConfig) => (problem: Problem, key: Key) => mode.make(problem, knobs, key),
+        },
+      ]),
+    ),
+    options,
+  )
   const modeOf = (config: SpaceValue | undefined): NamedMode<Problem, P> => {
-    const name = nameOf(config)
+    const { name } = built.optionOf(config)
     return { ...(table[name] as ModeSpec<Problem, unknown, P>), name }
   }
-  const knobsOf = (config: SpaceValue | undefined): ModeConfig =>
-    typeof config === 'object' && config !== null && !Array.isArray(config)
-      ? (config as Readonly<Record<string, SpaceValue>>)
-      : {}
   return {
-    tag,
-    names,
-    space,
+    tag: built.tag,
+    names: built.names,
+    space: built.space,
     modeOf,
-    admissible: (others) => names.filter((n) => admits(table[n] as ModeSpec<unknown, unknown, Json>, others)),
+    admissible: (others) => built.where((mode) => admits(mode, others)),
     make: (problem, config, key, others) => {
-      const mode = modeOf(config)
-      if (others !== undefined && !admits(mode as ModeSpec<unknown, unknown, Json>, others))
+      const mode = built.properties(config)
+      if (others !== undefined && !admits(mode, others))
         throw new MdmlError(
           'value',
-          `modes: '${mode.name}' does not admit ${JSON.stringify(others)} (needs ${JSON.stringify(mode.needs)})`,
+          `modes: '${built.optionOf(config).name}' does not admit ${JSON.stringify(others)} (needs ${JSON.stringify(mode.needs)})`,
         )
-      return mode.make(problem, knobsOf(config), key)
+      return built.make(config)(problem, key)
     },
-    params: (config, state) => modeOf(config).params(state),
-    extras: (config) => modeOf(config).extras ?? {},
+    params: (config, state) => built.properties(config).params(state),
+    extras: (config) => built.properties(config).extras ?? {},
   }
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { gradientDescentAlgorithm, newtonAlgorithm } from '../optim/index.ts'
 import { key } from '../random/index.ts'
-import { defaults, dict, real } from '../space/index.ts'
+import { defaults, dict, optionTable, real } from '../space/index.ts'
 import { square, sub, sum, type Value } from '../tensor/index.ts'
 import { runAlgorithm, scalar } from './index.ts'
 import { type ModeSpec, modes } from './modes.ts'
@@ -89,5 +89,37 @@ describe('modes', () => {
       solver.make({ centre: [0] }, { kind: 'gradient', learningRate: 0.1 }, key(0), { landscape: 'rough' }),
     ).toThrow(/does not admit/)
     expect(() => modes({})).toThrow(/at least one/)
+  })
+
+  it('is the option table of the space domain: same union, same choice of mode for any configuration', () => {
+    const options = optionTable(
+      Object.fromEntries(
+        Object.entries({ gradient, newton }).map(([name, m]) => [
+          name,
+          {
+            space: m.space,
+            properties: null,
+            make: () => name,
+            ...(m.description === undefined ? {} : { description: m.description }),
+          },
+        ]),
+      ),
+      { default: 'newton', label: 'solver' },
+    )
+    expect(solver.space).toEqual(options.space)
+    expect(solver.tag).toBe(options.tag)
+    const configs = [
+      undefined,
+      { kind: 'gradient' },
+      { kind: 'newton', x: 1 },
+      { kind: 'nope' },
+      { kind: 3 },
+      { kind: 'valueOf' },
+      'gradient',
+      [1],
+      {},
+    ]
+    for (const config of configs)
+      expect(solver.modeOf(config as never).name).toBe(options.optionOf(config as never).name)
   })
 })
