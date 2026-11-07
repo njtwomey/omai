@@ -655,6 +655,13 @@ describe('eigh, expm, sqrtm and logm against scipy on clustered, defective and l
       }
       // What only propagates (elementwise, or a summary with a defined non-finite value): not rejected.
       expect(L.isPositiveDefinite(nan)).toBe(false)
+      // The norm of infinite entries is Infinity (the scaled sum made it NaN, which hid an overflow from fsolve's line search)
+      // and a NaN entry still gives NaN.
+      expect([
+        L.dnrm2([1, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]),
+        L.dnrm2([Number.POSITIVE_INFINITY]),
+      ]).toEqual([Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY])
+      expect(L.dnrm2([Number.POSITIVE_INFINITY, Number.NaN])).toBeNaN()
       const calls: readonly (readonly [string, () => Value | number[] | number])[] = [
         ['det', () => L.det(nan)],
         ['slogdet', () => L.slogdet(nan).logabsdet],

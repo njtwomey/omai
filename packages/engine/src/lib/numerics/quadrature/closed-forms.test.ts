@@ -82,11 +82,14 @@ describe('adaptive and tanh-sinh quadrature against closed forms', () => {
         ['1 / sqrt(x) on [0, 1]', (x) => div(1, sqrt(x)), 0, 1, 2],
         ['sqrt(1 - x^2) on [-1, 1]', (x) => sqrt(sub(1, square(x))), -1, 1, PI / 2],
         ['x^-0.6 on [0, 1]', (x) => exp(mul(log(x), -0.6)), 0, 1, 2.5],
+        // ND-33: a singularity stronger than x^-0.6 lost its tail to the cut at t = 4 (x^-0.9 was 0.02% short).
+        ['x^-0.9 on [0, 1]', (x) => exp(mul(log(x), -0.9)), 0, 1, 10],
+        ['x^-0.9 on [0, 3]', (x) => exp(mul(log(x), -0.9)), 0, 3, 10 * 3 ** 0.1],
         ['exp(x) on [0, 1]', exp, 0, 1, Math.E - 1],
       ]
       for (const [name, f, a, b, exact] of rows) {
         const r = Q.tanhSinh(f, a, b, { tol: 1e-12 })
-        expect(item(r.value), name).toBeCloseTo(exact, 8)
+        expect(Math.abs(item(r.value) / exact - 1), name).toBeLessThan(1e-10)
         expect(r.status, name).toBe('converged')
       }
       // Fixed double-exponential rules (tanh-sinh on [-1, 1], exp-sinh on [0, inf), sinh-sinh on the line) as nodes and weights.
