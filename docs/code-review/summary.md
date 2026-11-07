@@ -11,7 +11,7 @@ Where the code review stands at the end of 2026-11-07, for the person deciding w
 | Full local gate (last run)          | 26,624 tests passed (26,208 at the start of this stretch), 0 failed; 9,612 `@example`s passed; barrels, layers, lint, agent index, API digest and all six `tsc` runs clean |
 | Suite wall time                     | 162 s (it was 222 s before the review: the kernel and reverse-mode speed-ups pay for the new tests)                                                                        |
 | Work items (`progress.md`, Phase 3) | 39 of 44 complete; 5 partly done (P3.8, P3.20, P3.30, P3.32, P3.40): each is done except the follow-ups recorded in its row                                                |
-| Register (`register.md`)            | 253 findings: 113 fixed, 46 partly fixed, 19 noted, 5 open, 9 in progress, 60 still read `planned` (see "What is not done")                                                |
+| Register (`register.md`)            | 253 findings: 120 fixed, 66 partly fixed, 25 noted, 5 open, 1 wontfix, 36 still planned (reconciled against the tree; see "What is not done")                              |
 | Completion by effort                | about 93%                                                                                                                                                                  |
 
 ## What changed, by wave
@@ -79,8 +79,7 @@ on ties (one `@example` path changed).
   the classifier animation and decision-surface export, focus order in the expanded figure, export menu and popovers, Space and
   Enter on the player in Chrome, Firefox and Safari, Alt+Left in the narrative, a screen reader on a chart, reduced motion,
   dashed comparison lines, a recording started while playing, GIF/WebM/JSON/PNG downloads.
-- **The 60 register rows still reading `planned`:** some were fixed in passing by the agents' work and not re-marked. A
-  reconciliation pass (read each row against the tree) is the cheap next step.
+- **The 36 register rows still reading `planned`** (reconciled row by row against the tree on 2026-11-07; 74 rows were read; 24 of the 60 moved to fixed, noted or partly fixed, and the 9 marked in progress became partly fixed): untouched or unchanged, not forgotten. In optim and losses: the failure of IRLS and the GLM modes (OL-10), the knob specs and casts (OL-12), the tensor coercions (OL-13), the two proximal types (OL-14), the tolerance vocabulary (OL-17), the two `sinkhorn` and `slicedWasserstein` (OL-21), tests of the minimise family (OL-26), TSDoc (OL-28), `sharpness` as an Algorithm (OL-29), bare `catch` (OL-30), copied path and history (OL-31). In dists, stats and metrics: tail precision (DSM-10), `streaming` (DSM-15), the 18 `spec` builders (DSM-16), the metrics bootstrap (DSM-17), error codes (DSM-20), the `unavailable` methods (DSM-22), TSDoc and notes (DSM-29, 30). In kernels, data, exposition and scene: camera (KDES-14), `clusterAgreement` (KDES-15), data helpers (KDES-27, 36), exposition duplicates (KDES-29), scene model (KDES-30), structured kernels (KDES-35). In render: memoisation and the marker (RD-12, 14), unused exports (RD-19), module state (RD-21), swallowed export errors (RD-22), test helpers in the package (RD-24), repeated hooks (RD-25), TSDoc (RD-27). In the foundations: the copies forced by the layer order (FD-28), and no CPU profile (F-033, P0.6). The rows reading `partly fixed` or `open` carry what is left in their notes.
 - **`ci.yml` does not run `api-surface-check`** (F-031), and the repository has no `LICENSE` file.
 
 ## Before pushing
