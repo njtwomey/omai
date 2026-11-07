@@ -52,57 +52,57 @@ const scipyRows: readonly (readonly [string, 'bisect' | 'brentq' | 'ridder' | 't
 ]
 
 describe('scalar root finders on hard functions', () => {
-  it('bisect, brentq, ridder and toms748 find the root scipy finds (brentq runs out of iterations on the triple root, as scipy)', () => {
-    const failures: string[] = []
-    for (const [name, finder, root, iterations, converged] of scipyRows) {
-      const [f, a, b, truth] = functions[name] as readonly [Scalar, number, number, number]
-      const r = R[finder](f, a, b)
-      const label = `${finder} on ${name}`
-      if (r.converged !== converged) failures.push(`${label}: converged ${r.converged}, scipy ${converged}`)
-      if (r.status !== (converged ? 'converged' : 'completed')) failures.push(`${label}: status ${r.status}`)
-      if (finder === 'toms748') {
-        // Same method, other implementation: within the default xtol (2e-12) of the true root.
-        if (Math.abs(r.root - truth) > 1e-11) failures.push(`${label}: root ${r.root}, true ${truth}`)
-      } else {
-        if (Math.abs(r.root - root) > 1e-13 * Math.max(1, Math.abs(root)))
-          failures.push(`${label}: root ${r.root}, scipy ${root}`)
-        if (r.iterations !== iterations) failures.push(`${label}: ${r.iterations} iterations, scipy ${iterations}`)
+  it('the bracketing finders match scipy on hard functions, find end-point roots and refuse bad brackets', () => {
+    {
+      const failures: string[] = []
+      for (const [name, finder, root, iterations, converged] of scipyRows) {
+        const [f, a, b, truth] = functions[name] as readonly [Scalar, number, number, number]
+        const r = R[finder](f, a, b)
+        const label = `${finder} on ${name}`
+        if (r.converged !== converged) failures.push(`${label}: converged ${r.converged}, scipy ${converged}`)
+        if (r.status !== (converged ? 'converged' : 'completed')) failures.push(`${label}: status ${r.status}`)
+        if (finder === 'toms748') {
+          // Same method, other implementation: within the default xtol (2e-12) of the true root.
+          if (Math.abs(r.root - truth) > 1e-11) failures.push(`${label}: root ${r.root}, true ${truth}`)
+        } else {
+          if (Math.abs(r.root - root) > 1e-13 * Math.max(1, Math.abs(root)))
+            failures.push(`${label}: root ${r.root}, scipy ${root}`)
+          if (r.iterations !== iterations) failures.push(`${label}: ${r.iterations} iterations, scipy ${iterations}`)
+        }
+      }
+      expect(failures).toEqual([])
+    }
+    {
+      for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
+        const at = R[finder]((x) => x * (x - 1), 0, 1)
+        expect([finder, at.root, at.iterations, at.converged]).toEqual([finder, 0, 0, true])
+        expect(R[finder]((x) => x - 0.5, 1, 0).root, `${finder} reversed`).toBeCloseTo(0.5, 11)
+        // The root 0 of a function with an infinite slope there, found to the absolute tolerance.
+        expect(Math.abs(R[finder](Math.cbrt, -1, 8).root), `${finder} cube root`).toBeLessThan(1e-11)
+        // f(1000) is Infinity; ridder's interpolation cannot use it, the others do.
+        if (finder !== 'ridder') {
+          const r = R[finder]((x) => Math.exp(x) - 1e100, 0, 1000)
+          expect(r.converged, `${finder} exp`).toBe(true)
+          expect(r.root, `${finder} exp`).toBeCloseTo(100 * Math.LN10, 9)
+        }
       }
     }
-    expect(failures).toEqual([])
-  })
-
-  it('end points that are roots, reversed brackets, a cube root and exp(x) = 1e100 are handled by all four', () => {
-    for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
-      const at = R[finder]((x) => x * (x - 1), 0, 1)
-      expect([finder, at.root, at.iterations, at.converged]).toEqual([finder, 0, 0, true])
-      expect(R[finder]((x) => x - 0.5, 1, 0).root, `${finder} reversed`).toBeCloseTo(0.5, 11)
-      // The root 0 of a function with an infinite slope there, found to the absolute tolerance.
-      expect(Math.abs(R[finder](Math.cbrt, -1, 8).root), `${finder} cube root`).toBeLessThan(1e-11)
-      // f(1000) is Infinity; ridder's interpolation cannot use it, the others do.
-      if (finder !== 'ridder') {
-        const r = R[finder]((x) => Math.exp(x) - 1e100, 0, 1000)
-        expect(r.converged, `${finder} exp`).toBe(true)
-        expect(r.root, `${finder} exp`).toBeCloseTo(100 * Math.LN10, 9)
-      }
-    }
-  })
-
-  it('refuse a bracket without a sign change and an infinite bracket, with a value error that names the finder', () => {
-    for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
-      expect(() => R[finder]((x) => x * x + 1, -1, 1), `${finder} same signs`).toThrow(
-        expect.objectContaining({
-          code: 'value',
-          message: expect.stringContaining(`${finder}: f(a) and f(b) must have different signs`),
-        }),
-      )
-      for (const [a, b] of [
-        [0, Number.POSITIVE_INFINITY],
-        [Number.NEGATIVE_INFINITY, 1],
-      ] as const) {
-        expect(() => R[finder]((x) => x - 0.3, a, b), `${finder} on [${a}, ${b}]`).toThrow(
-          expect.objectContaining({ code: 'value', message: `${finder}: the bracket must be finite` }),
+    {
+      for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
+        expect(() => R[finder]((x) => x * x + 1, -1, 1), `${finder} same signs`).toThrow(
+          expect.objectContaining({
+            code: 'value',
+            message: expect.stringContaining(`${finder}: f(a) and f(b) must have different signs`),
+          }),
         )
+        for (const [a, b] of [
+          [0, Number.POSITIVE_INFINITY],
+          [Number.NEGATIVE_INFINITY, 1],
+        ] as const) {
+          expect(() => R[finder]((x) => x - 0.3, a, b), `${finder} on [${a}, ${b}]`).toThrow(
+            expect.objectContaining({ code: 'value', message: `${finder}: the bracket must be finite` }),
+          )
+        }
       }
     }
   })

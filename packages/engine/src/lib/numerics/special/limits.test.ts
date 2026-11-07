@@ -739,81 +739,82 @@ const loose = new Map<string, number>([
 ])
 
 describe('special functions on grids of arguments at the edges, against scipy.special', () => {
-  it(`agree with scipy to 1e-10 relative on ${rows.length} rows (exactly where scipy gives 0, Infinity or NaN)`, () => {
-    const failures: string[] = []
-    for (const [name, args, expected] of rows) {
-      const fn = (S as unknown as Record<string, (...a: number[]) => Value>)[name]
-      const label = `${name}(${args.join(',')})`
-      const rtol = loose.get(label) ?? 1e-10
-      let got: number
-      try {
-        got = item(fn?.(...args) as Value)
-      } catch (e) {
-        failures.push(`${label}: threw ${String(e)}`)
-        continue
+  it('agree with scipy.special on 718 rows at the edges, and differentiate through the incomplete gamma and beta kernels', () => {
+    {
+      const failures: string[] = []
+      for (const [name, args, expected] of rows) {
+        const fn = (S as unknown as Record<string, (...a: number[]) => Value>)[name]
+        const label = `${name}(${args.join(',')})`
+        const rtol = loose.get(label) ?? 1e-10
+        let got: number
+        try {
+          got = item(fn?.(...args) as Value)
+        } catch (e) {
+          failures.push(`${label}: threw ${String(e)}`)
+          continue
+        }
+        const ok = Number.isNaN(expected)
+          ? Number.isNaN(got)
+          : !Number.isFinite(expected) || expected === 0
+            ? Object.is(got, expected) || (expected === 0 && Math.abs(got) < 1e-300)
+            : Math.abs(got / expected - 1) <= rtol
+        if (!ok) failures.push(`${label}: expected ${expected}, got ${got}`)
       }
-      const ok = Number.isNaN(expected)
-        ? Number.isNaN(got)
-        : !Number.isFinite(expected) || expected === 0
-          ? Object.is(got, expected) || (expected === 0 && Math.abs(got) < 1e-300)
-          : Math.abs(got / expected - 1) <= rtol
-      if (!ok) failures.push(`${label}: expected ${expected}, got ${got}`)
+      expect(failures).toEqual([])
     }
-    expect(failures).toEqual([])
-  })
-
-  it('differentiate through the incomplete gamma and beta kernels: closed forms in x, central differences in the parameters', () => {
-    // d/dx P(a, x) = x^(a - 1) e^-x / Gamma(a);  d/dx I_x(a, b) = x^(a - 1) (1 - x)^(b - 1) / B(a, b).
-    const gammaDx = (a: number, x: number): number => Math.exp((a - 1) * Math.log(x) - x - item(S.lgamma(a)))
-    const betaDx = (a: number, b: number, x: number): number =>
-      Math.exp((a - 1) * Math.log(x) + (b - 1) * Math.log1p(-x) - item(S.lbeta(a, b)))
-    const parts = (f: (p: Value[]) => Value, at: number[]): number[] =>
-      (grad(f)(at.map((v) => tensor(v))) as Value[]).map((g) => toArray(g) as unknown as number)
-    const central = (f: (...a: number[]) => number, at: number[], k: number): number => {
-      const h = 1e-5 * Math.max(Math.abs(at[k] ?? 0), 1e-2)
-      const up = at.map((v, i) => (i === k ? v + h : v))
-      const down = at.map((v, i) => (i === k ? v - h : v))
-      return (f(...up) - f(...down)) / (2 * h)
-    }
-    const failures: string[] = []
-    const compare = (label: string, got: number, want: number, rtol: number, atol = 1e-300): void => {
-      if (!(Math.abs(got - want) <= rtol * Math.abs(want) + atol))
-        failures.push(`${label}: expected ${want}, got ${got}`)
-    }
-    for (const a of [0.3, 1, 2.5, 20, 150]) {
-      for (const x of [0.05, 0.5, 1, 5, 40, 200]) {
-        const p = (u: number, v: number): number => item(S.gammainc(u, v))
-        const q = (u: number, v: number): number => item(S.gammaincc(u, v))
-        const [da, dx] = parts((v) => S.gammainc(v[0] as Value, v[1] as Value), [a, x]) as [number, number]
-        const [qa, qx] = parts((v) => S.gammaincc(v[0] as Value, v[1] as Value), [a, x]) as [number, number]
-        compare(`gammainc(${a}, ${x}) d/dx`, dx, gammaDx(a, x), 1e-8)
-        compare(`gammaincc(${a}, ${x}) d/dx`, qx, -gammaDx(a, x), 1e-8)
-        // The central difference has an absolute error of about 1e-10 near the flat tails: compare to 1e-9 there.
-        const fd = central(p, [a, x], 0)
-        compare(`gammainc(${a}, ${x}) d/da`, da, fd, 1e-5, 1e-9)
-        compare(`gammaincc(${a}, ${x}) d/da`, qa, -fd, 1e-5, 1e-9)
-        expect(q(a, x) + p(a, x)).toBeCloseTo(1, 12)
+    {
+      // d/dx P(a, x) = x^(a - 1) e^-x / Gamma(a);  d/dx I_x(a, b) = x^(a - 1) (1 - x)^(b - 1) / B(a, b).
+      const gammaDx = (a: number, x: number): number => Math.exp((a - 1) * Math.log(x) - x - item(S.lgamma(a)))
+      const betaDx = (a: number, b: number, x: number): number =>
+        Math.exp((a - 1) * Math.log(x) + (b - 1) * Math.log1p(-x) - item(S.lbeta(a, b)))
+      const parts = (f: (p: Value[]) => Value, at: number[]): number[] =>
+        (grad(f)(at.map((v) => tensor(v))) as Value[]).map((g) => toArray(g) as unknown as number)
+      const central = (f: (...a: number[]) => number, at: number[], k: number): number => {
+        const h = 1e-5 * Math.max(Math.abs(at[k] ?? 0), 1e-2)
+        const up = at.map((v, i) => (i === k ? v + h : v))
+        const down = at.map((v, i) => (i === k ? v - h : v))
+        return (f(...up) - f(...down)) / (2 * h)
       }
-    }
-    for (const [a, b] of [
-      [0.5, 0.5],
-      [2, 3],
-      [10, 0.7],
-      [30, 40],
-    ] as const) {
-      for (const x of [0.1, 0.4, 0.8]) {
-        const f = (u: number, v: number, w: number): number => item(S.betainc(u, v, w))
-        const [da, db, dx] = parts((v) => S.betainc(v[0] as Value, v[1] as Value, v[2] as Value), [a, b, x]) as [
-          number,
-          number,
-          number,
-        ]
-        compare(`betainc(${a}, ${b}, ${x}) d/dx`, dx, betaDx(a, b, x), 1e-8)
-        const [fa, fb] = [central(f, [a, b, x], 0), central(f, [a, b, x], 1)]
-        compare(`betainc(${a}, ${b}, ${x}) d/da`, da, fa, 1e-5, 1e-9)
-        compare(`betainc(${a}, ${b}, ${x}) d/db`, db, fb, 1e-5, 1e-9)
+      const failures: string[] = []
+      const compare = (label: string, got: number, want: number, rtol: number, atol = 1e-300): void => {
+        if (!(Math.abs(got - want) <= rtol * Math.abs(want) + atol))
+          failures.push(`${label}: expected ${want}, got ${got}`)
       }
+      for (const a of [0.3, 1, 2.5, 20, 150]) {
+        for (const x of [0.05, 0.5, 1, 5, 40, 200]) {
+          const p = (u: number, v: number): number => item(S.gammainc(u, v))
+          const q = (u: number, v: number): number => item(S.gammaincc(u, v))
+          const [da, dx] = parts((v) => S.gammainc(v[0] as Value, v[1] as Value), [a, x]) as [number, number]
+          const [qa, qx] = parts((v) => S.gammaincc(v[0] as Value, v[1] as Value), [a, x]) as [number, number]
+          compare(`gammainc(${a}, ${x}) d/dx`, dx, gammaDx(a, x), 1e-8)
+          compare(`gammaincc(${a}, ${x}) d/dx`, qx, -gammaDx(a, x), 1e-8)
+          // The central difference has an absolute error of about 1e-10 near the flat tails: compare to 1e-9 there.
+          const fd = central(p, [a, x], 0)
+          compare(`gammainc(${a}, ${x}) d/da`, da, fd, 1e-5, 1e-9)
+          compare(`gammaincc(${a}, ${x}) d/da`, qa, -fd, 1e-5, 1e-9)
+          expect(q(a, x) + p(a, x)).toBeCloseTo(1, 12)
+        }
+      }
+      for (const [a, b] of [
+        [0.5, 0.5],
+        [2, 3],
+        [10, 0.7],
+        [30, 40],
+      ] as const) {
+        for (const x of [0.1, 0.4, 0.8]) {
+          const f = (u: number, v: number, w: number): number => item(S.betainc(u, v, w))
+          const [da, db, dx] = parts((v) => S.betainc(v[0] as Value, v[1] as Value, v[2] as Value), [a, b, x]) as [
+            number,
+            number,
+            number,
+          ]
+          compare(`betainc(${a}, ${b}, ${x}) d/dx`, dx, betaDx(a, b, x), 1e-8)
+          const [fa, fb] = [central(f, [a, b, x], 0), central(f, [a, b, x], 1)]
+          compare(`betainc(${a}, ${b}, ${x}) d/da`, da, fa, 1e-5, 1e-9)
+          compare(`betainc(${a}, ${b}, ${x}) d/db`, db, fb, 1e-5, 1e-9)
+        }
+      }
+      expect(failures).toEqual([])
     }
-    expect(failures).toEqual([])
   })
 })

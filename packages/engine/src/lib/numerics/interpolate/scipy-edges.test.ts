@@ -278,94 +278,95 @@ const ok = (got: number, want: number): boolean =>
   Number.isNaN(want) ? Number.isNaN(got) : Math.abs(got - want) <= 1e-9 * Math.max(1, Math.abs(want))
 
 describe('interpolation against scipy.interpolate', () => {
-  it('cubic splines, PCHIP, Akima, interp1d and B-splines match scipy at, between and outside the knots, in value and derivatives', () => {
-    const failures: string[] = []
-    const compare = (name: string, got: Value): void => {
-      const want = expected.get(name) ?? []
-      const g = arr(got)
-      if (g.length !== want.length) failures.push(`${name}: ${g.length} values, scipy ${want.length}`)
-      want.forEach((w, i) => {
-        if (!ok(g[i] ?? Number.NaN, w)) failures.push(`${name}[${i}]: ${g[i]}, scipy ${w}`)
+  it('splines, PCHIP, Akima, interp1d, B-splines, grid, RBF and scattered-data interpolation match scipy.interpolate on awkward data', () => {
+    {
+      const failures: string[] = []
+      const compare = (name: string, got: Value): void => {
+        const want = expected.get(name) ?? []
+        const g = arr(got)
+        if (g.length !== want.length) failures.push(`${name}: ${g.length} values, scipy ${want.length}`)
+        want.forEach((w, i) => {
+          if (!ok(g[i] ?? Number.NaN, w)) failures.push(`${name}[${i}]: ${g[i]}, scipy ${w}`)
+        })
+      }
+      for (const bc of ['not-a-knot', 'natural', 'clamped'] as const) {
+        const s = I.cubicSpline(x1, y1, bc)
+        for (const nu of [0, 1, 2]) compare(`cubic ${bc} nu${nu}`, s.evaluate(q1, nu))
+      }
+      const mixed = I.cubicSpline(x1, y1, [
+        [1, 0.5],
+        [2, -1],
+      ])
+      for (const nu of [0, 1]) compare(`cubic mixed nu${nu}`, mixed.evaluate(q1, nu))
+      compare('cubic two points', I.cubicSpline([0, 2], [1, 3]).evaluate([-1, 0.5, 3]))
+      compare('cubic three points', I.cubicSpline([0, 1, 3], [1, 0, 2]).evaluate([-1, 0.5, 2, 4]))
+      const periodic = I.cubicSpline([0, 1, 2.5, 4], [1, -1, 0.5, 1], 'periodic')
+      compare('cubic periodic', periodic.evaluate([-1.5, 0, 0.7, 3.2, 4, 5.3, 9]))
+      compare('cubic periodic nu1', periodic.evaluate([-1.5, 0, 0.7, 3.2, 4, 5.3, 9], 1))
+      const pchip = I.pchip(x1, y1)
+      compare('pchip', pchip.evaluate(q1))
+      compare('pchip nu1', pchip.evaluate(q1, 1))
+      // Flat stretches stay flat (no overshoot): the derivative is exactly 0 where the data repeat.
+      const flat = I.pchip(xm, ym)
+      compare('pchip flat', flat.evaluate(qm))
+      compare('pchip flat nu1', flat.evaluate(qm, 1))
+      compare('akima', I.akima(x1, y1, 'akima', false).evaluate(q1))
+      compare('makima', I.akima(x1, y1, 'makima', false).evaluate(q1))
+      compare('akima flat', I.akima(xm, ym, 'akima', false).evaluate(qm))
+      const outside = (kind: I.Interp1dOptions['kind']): I.Interp1dOptions => ({
+        kind,
+        fillValue: ['linear', 'slinear', 'quadratic', 'cubic'].includes(kind ?? '') ? 'extrapolate' : Number.NaN,
       })
+      for (const kind of ['linear', 'nearest', 'previous', 'next', 'zero', 'slinear', 'quadratic', 'cubic'] as const) {
+        compare(`interp1d ${kind}`, I.interp1d(x1, y1, outside(kind))(q1))
+      }
+      for (const k of [1, 2, 3, 4, 5]) compare(`interp spline k${k}`, I.makeInterpSpline(x1, y1, k).evaluate(q1))
+      compare('interp spline k3 nu1', I.makeInterpSpline(x1, y1, 3).evaluate(q1, 1))
+      compare('lsq spline', I.makeLsqSpline(x1, y1, [0, 0, 0, 0, 1.5, 3, 5, 5, 5, 5], 3).evaluate(q1))
+      expect(failures).toEqual([])
     }
-    for (const bc of ['not-a-knot', 'natural', 'clamped'] as const) {
-      const s = I.cubicSpline(x1, y1, bc)
-      for (const nu of [0, 1, 2]) compare(`cubic ${bc} nu${nu}`, s.evaluate(q1, nu))
+    {
+      const failures: string[] = []
+      const compare = (name: string, got: Value, tol = 1e-9): void => {
+        const want = expected.get(name) ?? []
+        const g = arr(got)
+        if (g.length !== want.length) failures.push(`${name}: ${g.length} values, scipy ${want.length}`)
+        want.forEach((w, i) => {
+          if (!(Math.abs((g[i] ?? Number.NaN) - w) <= tol * Math.max(1, Math.abs(w))))
+            failures.push(`${name}[${i}]: ${g[i]}, scipy ${w}`)
+        })
+      }
+      for (const method of ['linear', 'nearest', 'slinear'] as const) {
+        compare(`grid ${method}`, I.regularGridInterpolator([grid.x, grid.y], gridValues, { method })(gridQueries))
+      }
+      const rbf = (name: string, options: I.RbfOptions): void =>
+        compare(`rbf ${name}`, I.rbfInterpolator(sites, siteValues, options)(targets), 1e-7)
+      rbf('thin_plate_spline', {})
+      rbf('linear', { kernel: 'linear' })
+      rbf('cubic', { kernel: 'cubic' })
+      rbf('gaussian', { kernel: 'gaussian', epsilon: 2 })
+      rbf('multiquadric', { kernel: 'multiquadric', epsilon: 1.5 })
+      rbf('inverse_multiquadric', { kernel: 'inverse_multiquadric', epsilon: 1.5 })
+      rbf('tps smoothing', { smoothing: 0.1 })
+      compare('griddata linear', I.griddata(sites, siteValues, targets, 'linear', -9), 1e-9)
+      compare('griddata nearest', I.griddata(sites, siteValues, targets, 'nearest'), 1e-12)
+      // Outside the grid is an error unless a fill value is given; a kernel that is not scale invariant needs epsilon.
+      expect(() => I.regularGridInterpolator([grid.x, grid.y], gridValues)([[5, 1]])).toThrow(
+        expect.objectContaining({ code: 'value' }),
+      )
+      expect(
+        arr(
+          I.regularGridInterpolator([grid.x, grid.y], gridValues, { boundsError: false })([
+            [5, 1],
+            [1, 2],
+          ]),
+        )[0],
+      ).toBeNaN()
+      expect(() => I.rbfInterpolator(sites, siteValues, { kernel: 'gaussian' })).toThrow(
+        expect.objectContaining({ code: 'value' }),
+      )
+      expect(() => I.cubicSpline([0, 1, 2], [1, 2, 3], 'periodic')).toThrow(expect.objectContaining({ code: 'value' }))
+      expect(() => I.cubicSpline([0], [1])).toThrow(expect.objectContaining({ code: 'value' }))
     }
-    const mixed = I.cubicSpline(x1, y1, [
-      [1, 0.5],
-      [2, -1],
-    ])
-    for (const nu of [0, 1]) compare(`cubic mixed nu${nu}`, mixed.evaluate(q1, nu))
-    compare('cubic two points', I.cubicSpline([0, 2], [1, 3]).evaluate([-1, 0.5, 3]))
-    compare('cubic three points', I.cubicSpline([0, 1, 3], [1, 0, 2]).evaluate([-1, 0.5, 2, 4]))
-    const periodic = I.cubicSpline([0, 1, 2.5, 4], [1, -1, 0.5, 1], 'periodic')
-    compare('cubic periodic', periodic.evaluate([-1.5, 0, 0.7, 3.2, 4, 5.3, 9]))
-    compare('cubic periodic nu1', periodic.evaluate([-1.5, 0, 0.7, 3.2, 4, 5.3, 9], 1))
-    const pchip = I.pchip(x1, y1)
-    compare('pchip', pchip.evaluate(q1))
-    compare('pchip nu1', pchip.evaluate(q1, 1))
-    // Flat stretches stay flat (no overshoot): the derivative is exactly 0 where the data repeat.
-    const flat = I.pchip(xm, ym)
-    compare('pchip flat', flat.evaluate(qm))
-    compare('pchip flat nu1', flat.evaluate(qm, 1))
-    compare('akima', I.akima(x1, y1, 'akima', false).evaluate(q1))
-    compare('makima', I.akima(x1, y1, 'makima', false).evaluate(q1))
-    compare('akima flat', I.akima(xm, ym, 'akima', false).evaluate(qm))
-    const outside = (kind: I.Interp1dOptions['kind']): I.Interp1dOptions => ({
-      kind,
-      fillValue: ['linear', 'slinear', 'quadratic', 'cubic'].includes(kind ?? '') ? 'extrapolate' : Number.NaN,
-    })
-    for (const kind of ['linear', 'nearest', 'previous', 'next', 'zero', 'slinear', 'quadratic', 'cubic'] as const) {
-      compare(`interp1d ${kind}`, I.interp1d(x1, y1, outside(kind))(q1))
-    }
-    for (const k of [1, 2, 3, 4, 5]) compare(`interp spline k${k}`, I.makeInterpSpline(x1, y1, k).evaluate(q1))
-    compare('interp spline k3 nu1', I.makeInterpSpline(x1, y1, 3).evaluate(q1, 1))
-    compare('lsq spline', I.makeLsqSpline(x1, y1, [0, 0, 0, 0, 1.5, 3, 5, 5, 5, 5], 3).evaluate(q1))
-    expect(failures).toEqual([])
-  })
-
-  it('regular-grid, radial-basis and scattered-data interpolation match scipy, and a periodic or out-of-range query is handled', () => {
-    const failures: string[] = []
-    const compare = (name: string, got: Value, tol = 1e-9): void => {
-      const want = expected.get(name) ?? []
-      const g = arr(got)
-      if (g.length !== want.length) failures.push(`${name}: ${g.length} values, scipy ${want.length}`)
-      want.forEach((w, i) => {
-        if (!(Math.abs((g[i] ?? Number.NaN) - w) <= tol * Math.max(1, Math.abs(w))))
-          failures.push(`${name}[${i}]: ${g[i]}, scipy ${w}`)
-      })
-    }
-    for (const method of ['linear', 'nearest', 'slinear'] as const) {
-      compare(`grid ${method}`, I.regularGridInterpolator([grid.x, grid.y], gridValues, { method })(gridQueries))
-    }
-    const rbf = (name: string, options: I.RbfOptions): void =>
-      compare(`rbf ${name}`, I.rbfInterpolator(sites, siteValues, options)(targets), 1e-7)
-    rbf('thin_plate_spline', {})
-    rbf('linear', { kernel: 'linear' })
-    rbf('cubic', { kernel: 'cubic' })
-    rbf('gaussian', { kernel: 'gaussian', epsilon: 2 })
-    rbf('multiquadric', { kernel: 'multiquadric', epsilon: 1.5 })
-    rbf('inverse_multiquadric', { kernel: 'inverse_multiquadric', epsilon: 1.5 })
-    rbf('tps smoothing', { smoothing: 0.1 })
-    compare('griddata linear', I.griddata(sites, siteValues, targets, 'linear', -9), 1e-9)
-    compare('griddata nearest', I.griddata(sites, siteValues, targets, 'nearest'), 1e-12)
-    // Outside the grid is an error unless a fill value is given; a kernel that is not scale invariant needs epsilon.
-    expect(() => I.regularGridInterpolator([grid.x, grid.y], gridValues)([[5, 1]])).toThrow(
-      expect.objectContaining({ code: 'value' }),
-    )
-    expect(
-      arr(
-        I.regularGridInterpolator([grid.x, grid.y], gridValues, { boundsError: false })([
-          [5, 1],
-          [1, 2],
-        ]),
-      )[0],
-    ).toBeNaN()
-    expect(() => I.rbfInterpolator(sites, siteValues, { kernel: 'gaussian' })).toThrow(
-      expect.objectContaining({ code: 'value' }),
-    )
-    expect(() => I.cubicSpline([0, 1, 2], [1, 2, 3], 'periodic')).toThrow(expect.objectContaining({ code: 'value' }))
-    expect(() => I.cubicSpline([0], [1])).toThrow(expect.objectContaining({ code: 'value' }))
   })
 })

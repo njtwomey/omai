@@ -87,5 +87,18 @@ describe('delaunay output post-conditions', () => {
       if (d.findSimplex([1e6, 1e6]) !== -1) failures.push(`${name}: a far point is inside`)
     }
     expect(failures).toEqual([])
+    {
+      // isolines of x^2 + y^2 on a grid: the level-1 contour is the unit circle to the interpolation error, in one path.
+      const n = 41
+      const axis = Array.from({ length: n }, (_, i) => (i - 20) / 10)
+      const z = axis.map((x) => axis.map((y) => x * x + y * y))
+      const [contour] = G.isolines(z, [1], { x: axis, y: axis })
+      expect(contour?.level).toBe(1)
+      expect(contour?.paths).toHaveLength(1)
+      const path = contour?.paths[0] ?? []
+      expect(path.every(([px = 0, py = 0]) => Math.abs(Math.hypot(px, py) - 1) < 0.012)).toBe(true)
+      expect(path[0]).toEqual(path.at(-1))
+      expect(path.length).toBeGreaterThan(30)
+    }
   })
 })
