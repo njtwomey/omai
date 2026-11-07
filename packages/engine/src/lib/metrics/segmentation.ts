@@ -4,23 +4,13 @@
  * matched segments of both things and stuff.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { classCounts, encodeLabels, labelValues } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower' = 'higher',
-  range: readonly [number, number] = [0, 1],
-): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'labels',
-  category: 'segmentation',
-  concept: 'segmentation-evaluation',
-})
+const spec = specOf('segmentation', 'labels', 'segmentation-evaluation', { range: [0, 1] })
 
 /** A binary mask read as a grid of booleans. */
 interface Mask {

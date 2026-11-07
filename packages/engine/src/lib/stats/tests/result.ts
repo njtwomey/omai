@@ -86,7 +86,8 @@ export interface TestResultInput {
 }
 
 /**
- * Build a {@link TestResult}, dropping undefined optional fields and defaulting the alternative to two-sided.
+ * Build a {@link TestResult}, dropping undefined optional fields and defaulting the alternative to two-sided. A NaN
+ * statistic gives a NaN p-value, and a NaN statistic or p-value marks the result `status: 'undefined'`.
  *
  * @param input - The fields.
  * @returns The result.
@@ -94,6 +95,7 @@ export interface TestResultInput {
  * ```ts
  * import { testResult } from 'mdml-engine/stats/tests'
  * testResult({ test: 'example', statistic: 2, pValue: 0.05 }).alternative // => 'two-sided'
+ * testResult({ test: 'example', statistic: Number.NaN, pValue: 0.05 }).status // => 'undefined'
  * ```
  */
 export function testResult(input: TestResultInput): TestResult {
@@ -102,6 +104,7 @@ export function testResult(input: TestResultInput): TestResult {
     statistic: input.statistic,
     // A p-value of an undefined statistic is undefined, never a number.
     pValue: Number.isNaN(input.statistic) ? Number.NaN : input.pValue,
+    ...(Number.isNaN(input.statistic) || Number.isNaN(input.pValue) ? { status: 'undefined' as const } : {}),
     alternative: input.alternative ?? 'two-sided',
     ...(input.df === undefined ? {} : { df: input.df }),
     ...(input.effectSize === undefined ? {} : { effectSize: input.effectSize }),
@@ -373,7 +376,8 @@ export function checkNormality(
  *
  * @param groups - Two or more samples.
  * @param alpha - The level below which equality is rejected (default 0.05).
- * @returns Whether the variances look equal and the test's p-value.
+ * @returns Whether the variances look equal and the test's p-value (NaN when the test is undefined, as for constant
+ * samples, whose spreads are all 0: `equal` is then true).
  * @example
  * ```ts
  * import { checkEqualVariances } from 'mdml-engine/stats/tests'
@@ -385,7 +389,7 @@ export function checkEqualVariances(
   alpha = 0.05,
 ): { readonly equal: boolean; readonly pValue: number } {
   const p = levene(groups).pValue
-  return { equal: !(p < alpha), pValue: Number.isNaN(p) ? 1 : p }
+  return { equal: !(p < alpha), pValue: p }
 }
 
 /**

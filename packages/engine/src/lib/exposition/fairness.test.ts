@@ -119,4 +119,27 @@ describe('group reports', () => {
       /scored\.labels/,
     )
   })
+
+  it('leave groups with fewer than minSize rows out of the gaps, as the subgroup report does', () => {
+    // Counts 100 and 50: the demographic gap is 0.35 with both, and 0 once the smaller group (50 rows) is left out.
+    const gap = (minSize?: number): number | undefined =>
+      groupReport(
+        groupReportFromTables({
+          attribute: 'a',
+          groups: ['m', 'f'],
+          tables,
+          reference: 0,
+          ...(minSize === undefined ? {} : { minSize }),
+        }),
+      ).disparities.find((x) => x.name === 'demographic parity difference')?.value
+    expect(gap()).toBeCloseTo(0.35, 12)
+    expect(gap(50)).toBeCloseTo(0.35, 12)
+    expect(gap(51)).toBe(0)
+    // With the other group left out the disparate impact is 1 (parity with itself), not an undefined ratio.
+    const alone = groupReportFromTables({ attribute: 'a', groups: ['m', 'f'], tables, reference: 0, minSize: 51 })
+    expect(alone.disparities.find((x) => x.name === 'disparate impact')?.value).toBe(1)
+    expect(() =>
+      groupReport({ ...groupReportFromTables({ attribute: 'a', groups: ['m', 'f'], tables }), minSize: 0 }),
+    ).toThrow(expect.objectContaining({ code: 'value' }))
+  })
 })

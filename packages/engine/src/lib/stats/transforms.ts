@@ -59,7 +59,7 @@ export function boxcoxLlf(lambda: number, x: TensorLike): number {
 
 function positive(name: string, x: TensorLike): Float64Array {
   const a = sample(name, x, 2)
-  for (const v of a) if (!(v > 0)) throw new MdmlError('domain', `${name}: data must be positive`)
+  for (const v of a) if (!(v > 0)) throw new MdmlError('value', `${name}: data must be positive`)
   return a
 }
 

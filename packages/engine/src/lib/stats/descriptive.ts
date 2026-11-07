@@ -31,7 +31,7 @@ function weightsOf(name: string, w: TensorLike | undefined, n: number): Float64A
   if (w === undefined) return undefined
   const out = sample(name, w)
   if (out.length !== n) throw new MdmlError('shape', `${name}: weights must match the data`)
-  for (const v of out) if (!(v >= 0)) throw new MdmlError('domain', `${name}: weights must be non-negative`)
+  for (const v of out) if (!(v >= 0)) throw new MdmlError('value', `${name}: weights must be non-negative`)
   return out
 }
 
@@ -337,7 +337,7 @@ export function mode(x: TensorLike): ModeResult {
 
 function positiveSample(name: string, x: TensorLike): Float64Array {
   const a = sample(name, x)
-  for (const v of a) if (v < 0) throw new MdmlError('domain', `${name}: values must be non-negative`)
+  for (const v of a) if (v < 0) throw new MdmlError('value', `${name}: values must be non-negative`)
   return a
 }
 
@@ -347,7 +347,7 @@ function positiveSample(name: string, x: TensorLike): Float64Array {
  * @param x - Non-negative values (a zero gives 0).
  * @param options - Optional weights.
  * @returns The geometric mean.
- * @throws MdmlError with code `domain` for negative values.
+ * @throws MdmlError with code `value` for negative values.
  * @example
  * ```ts
  * import { geometricMean } from 'mdml-engine/stats'
@@ -368,7 +368,7 @@ export function geometricMean(x: TensorLike, options: { readonly weights?: Tenso
  * @param x - Non-negative values (a zero gives 0).
  * @param options - Optional weights.
  * @returns The harmonic mean.
- * @throws MdmlError with code `domain` for negative values.
+ * @throws MdmlError with code `value` for negative values.
  * @example
  * ```ts
  * import { harmonicMean } from 'mdml-engine/stats'
@@ -390,7 +390,7 @@ export function harmonicMean(x: TensorLike, options: { readonly weights?: Tensor
  *
  * @param x - Non-negative values (wealth, say).
  * @returns The coefficient, in [0, (n - 1) / n]; 0 when every value is 0.
- * @throws MdmlError with code `domain` for negative values.
+ * @throws MdmlError with code `value` for negative values.
  * @concept inequality
  * @example
  * ```ts

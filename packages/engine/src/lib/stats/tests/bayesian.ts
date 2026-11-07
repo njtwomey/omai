@@ -16,7 +16,7 @@ import { testResult } from './result.ts'
 // Generalised hypergeometric series pFq(a; b; z) for |z| < 1, summed in logs until the terms are negligible.
 // TODO: replace with numerics/special's hypergeometric functions once they exist.
 function hypergeometricSeries(a: readonly number[], b: readonly number[], z: number): number {
-  if (!(Math.abs(z) < 1)) throw new MdmlError('domain', 'hypergeometric series: |z| must be below 1')
+  if (!(Math.abs(z) < 1)) throw new MdmlError('value', 'hypergeometric series: |z| must be below 1')
   let term = 1
   let sum = 1
   for (let k = 0; k < 100000; k++) {

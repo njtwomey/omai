@@ -4,19 +4,12 @@
  * generalise R^2 to the absolute error, pinball loss and Tweedie deviance.
  */
 
-import type { MetricDirection, MetricSpec } from '../base/index.ts'
+import { specOf } from './_spec.ts'
 import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 
 const map = (n: number, f: (i: number) => number): Float64Array => Float64Array.from({ length: n }, (_, i) => f(i))
 
-const spec = (name: string, direction: MetricDirection, range: readonly [number, number]): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'values',
-  category: 'regression',
-  concept: 'regression-metrics',
-})
+const spec = specOf('regression', 'values', 'regression-metrics')
 
 /** Options of {@link meanTweedieDeviance}. */
 export interface TweedieOptions extends MetricOptions {
@@ -24,7 +17,19 @@ export interface TweedieOptions extends MetricOptions {
   readonly power?: number
 }
 
-/** The unit Tweedie deviance of one observation (sklearn's _mean_tweedie_deviance terms). */
+/**
+ * The unit Tweedie deviance of one observation (sklearn's _mean_tweedie_deviance terms).
+ *
+ * @param y - The observed value.
+ * @param mu - The predicted mean.
+ * @param power - The Tweedie power: 0 normal, 1 Poisson, 2 gamma, otherwise the general form.
+ * @returns The unit deviance (0 when `y` equals `mu`).
+ * @example
+ * ```ts
+ * import { tweedieUnitDeviance } from 'mdml-engine/metrics'
+ * tweedieUnitDeviance(3, 1, 0) // => 4
+ * ```
+ */
 export function tweedieUnitDeviance(y: number, mu: number, power: number): number {
   if (power === 0) return (y - mu) ** 2
   if (power === 1) return 2 * ((y > 0 ? y * Math.log(y / mu) : 0) - y + mu)

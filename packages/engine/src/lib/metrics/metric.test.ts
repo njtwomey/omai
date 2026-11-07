@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { specOf } from './_spec.ts'
 import * as M from './index.ts'
 
 describe('metric infrastructure', () => {
@@ -111,9 +112,48 @@ describe('metric infrastructure', () => {
     )
     expect([c.n, c.k]).toEqual([3, 2])
     expect(() => M.columns('demo', [1, 2], [1, 2, 3])).toThrow()
+    // Too few observations is an invalid value, not a shape.
+    expect(() => M.intraclassCorrelation([[1, 2]])).toThrow(expect.objectContaining({ code: 'value' }))
     expect(M.weightedMean([1, 3], [3, 1])).toBe(1.5)
     expect(M.isStringInput(['a', 'b'])).toBe(true)
     expect(M.isStringInput([1, 2])).toBe(false)
     expect(M.isStringInput([])).toBe(false)
+    // One definition of "string labels": an empty array is a numeric input of no rows, in rowCount too.
+    expect([
+      M.rowCount([]),
+      M.rowCount(['a', 'b']),
+      M.rowCount([
+        [1, 2],
+        [3, 4],
+        [5, 6],
+      ]),
+    ]).toEqual([0, 2, 3])
+  })
+
+  it('builds specs from one factory: keys in order, defaults per file, a metric may override both', () => {
+    const regression = specOf('regression', 'values', 'regression-metrics')
+    expect(Object.keys(regression('x', 'lower', [0, 1]))).toEqual([
+      'name',
+      'direction',
+      'range',
+      'inputs',
+      'category',
+      'concept',
+    ])
+    expect(regression('x', 'lower', [0, 1])).toEqual({
+      name: 'x',
+      direction: 'lower',
+      range: [0, 1],
+      inputs: 'values',
+      category: 'regression',
+      concept: 'regression-metrics',
+    })
+    const distance = specOf('distance', 'values', 'distances', { direction: 'lower', range: [0, Infinity] })
+    expect(distance('d')).toMatchObject({ direction: 'lower', range: [0, Infinity] })
+    expect(distance('d', 'higher', [-1, 1])).toMatchObject({ direction: 'higher', range: [-1, 1] })
+    expect(regression('free')).toMatchObject({ direction: 'higher', range: [-Infinity, Infinity] })
+    expect(M.meanSquaredError.spec).toEqual(
+      specOf('regression', 'values', 'regression-metrics')('meanSquaredError', 'lower', [0, Infinity]),
+    )
   })
 })

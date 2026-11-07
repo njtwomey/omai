@@ -8,6 +8,7 @@
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { Grid } from './_scores.ts'
+import { specOf } from './_spec.ts'
 import {
   defineMetric,
   type Metric,
@@ -19,18 +20,7 @@ import {
   weightedMean,
 } from './metric.ts'
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower' = 'higher',
-  range: readonly [number, number] = [0, 1],
-): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'rankings',
-  category: 'ranking',
-  concept: 'ranking-metrics',
-})
+const spec = specOf('ranking', 'rankings', 'ranking-metrics', { range: [0, 1] })
 
 /** Options of the ranking metrics: one query per row of relevance and scores. */
 export interface RankingOptions extends MetricOptions {

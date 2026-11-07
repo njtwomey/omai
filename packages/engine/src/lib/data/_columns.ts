@@ -11,11 +11,11 @@ function indexTensor(indices: Int32Array): Tensor<'int32'> {
 function takeTableColumn(c: TableColumn, idx: Int32Array): TableColumn {
   switch (c.kind) {
     case 'numeric':
-      return { ...c, values: takeRows(c.values, indexTensor(idx), 0) as Tensor<'float64'> }
+      return { ...c, values: takeRows(c.values, indexTensor(idx), 0) }
     case 'categorical':
-      return { ...c, codes: takeRows(c.codes, indexTensor(idx), 0) as Tensor<'int32'> }
+      return { ...c, codes: takeRows(c.codes, indexTensor(idx), 0) }
     case 'boolean':
-      return { ...c, values: takeRows(c.values, indexTensor(idx), 0) as Tensor<'bool'> }
+      return { ...c, values: takeRows(c.values, indexTensor(idx), 0) }
     case 'text':
       return { ...c, values: Array.from(idx, (i) => c.values[i] ?? null) }
   }
@@ -48,7 +48,7 @@ function concatTableColumn(parts: readonly TableColumn[]): TableColumn {
         values: concat(
           parts.map((p) => (p as typeof first).values),
           0,
-        ) as Tensor<'float64'>,
+        ),
       }
     case 'categorical': {
       for (const p of parts) {
@@ -60,7 +60,7 @@ function concatTableColumn(parts: readonly TableColumn[]): TableColumn {
         codes: concat(
           parts.map((p) => (p as typeof first).codes),
           0,
-        ) as Tensor<'int32'>,
+        ),
       }
     }
     case 'boolean':
@@ -69,7 +69,7 @@ function concatTableColumn(parts: readonly TableColumn[]): TableColumn {
         values: concat(
           parts.map((p) => (p as typeof first).values),
           0,
-        ) as Tensor<'bool'>,
+        ),
       }
     case 'text':
       return { ...first, values: parts.flatMap((p) => (p as typeof first).values) }

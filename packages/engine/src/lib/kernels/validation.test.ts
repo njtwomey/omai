@@ -10,6 +10,7 @@ import {
   linearKernel,
   locallyPeriodicKernel,
   nystroem,
+  onDimensions,
   orthogonalRandomFeatures,
   periodicKernel,
   polynomialCountSketch,
@@ -66,6 +67,10 @@ describe('kernel entry points refuse arguments that would hang, wrap or give NaN
       ['count sketch inputDim 0', () => polynomialCountSketch({ inputDim: 0, key: k })],
       ['nystroem nComponents 0', () => nystroem(linearKernel(), [[1], [2]], { nComponents: 0 })],
       ['nystroem landmark out of range', () => nystroem(linearKernel(), [[1], [2]], { indices: [2] })],
+      ['additive chi2 transform of a negative feature', () => additiveChi2Sampler().transform([[-1]])],
+      ['onDimensions with no columns', () => onDimensions(linearKernel(), [])],
+      ['onDimensions with a fractional column', () => onDimensions(linearKernel(), [0.5])],
+      ['onDimensions beyond the input', () => onDimensions(linearKernel(), [3]).k([[1, 2]], [[3, 4]])],
     ]
     for (const [name, f] of rows) expect(codeOf(f), name).toBe('value')
     // The defaults and valid sizes still build.

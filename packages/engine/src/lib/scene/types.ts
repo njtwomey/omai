@@ -119,7 +119,11 @@ export interface TexNode extends NodeBase {
   readonly anchor?: 'start' | 'middle' | 'end'
 }
 
-/** Pixels of a raster image: straight (not premultiplied) RGBA bytes, row-major, `width * height * 4` long. */
+/**
+ * Pixels of a raster image: straight (not premultiplied) RGBA bytes, row-major, `width * height * 4` long. The bytes are a
+ * typed array, so a scene with images survives the trace codec (`$typed`) but not a plain `JSON.stringify`, which
+ * writes the array as an object of indices; `validateScene` reports such a scene.
+ */
 export interface Pixels {
   readonly width: number
   readonly height: number

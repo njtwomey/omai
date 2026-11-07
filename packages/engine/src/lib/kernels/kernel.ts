@@ -404,6 +404,8 @@ export function powerKernel(kernel: Kernel, exponent: number): Kernel {
  * @param kernel - The base kernel (of the selected dimension).
  * @param dims - Column indices.
  * @returns The restricted kernel.
+ * @throws MdmlError `value` for no columns or an index that is not a non-negative whole number, and from `k` for an index
+ *   beyond the input's columns.
  * @concept kernel-algebra
  * @example
  * ```ts
@@ -413,8 +415,19 @@ export function powerKernel(kernel: Kernel, exponent: number): Kernel {
  * ```
  */
 export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
+  if (dims.length === 0 || !dims.every((d) => Number.isInteger(d) && d >= 0))
+    throw new MdmlError(
+      'value',
+      `onDimensions: dims must be a non-empty list of non-negative whole numbers, got [${dims}]`,
+    )
   const index = fromStorage(Int32Array.from(dims), [dims.length], 'int32')
-  const pick = (x: Value): Value => take(x, index, 1)
+  const widest = Math.max(...dims)
+  const pick = (x: Value): Value => {
+    const columns = x.shape[1] ?? 0
+    if (widest >= columns)
+      throw new MdmlError('value', `onDimensions: column ${widest} is beyond the ${columns} columns of the input`)
+    return take(x, index, 1)
+  }
   return defineKernel({
     name: 'dimensions',
     params: kernel.params,

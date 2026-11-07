@@ -9,10 +9,10 @@
 import { MdmlError } from '../../base/index.ts'
 import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'
-import { resultType } from '../dtype.ts'
+import { type DType, resultType } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { broadcastShapes, formatShape, normaliseAxis, type Shape, shapesEqual, sizeOf } from '../shape.ts'
-import type { TensorLike } from '../tensor.ts'
+import type { Tensor, TensorLike } from '../tensor.ts'
 import type { Value } from '../traced.ts'
 import { asDtype, coerce2, val } from './_coerce.ts'
 import { slice, take } from './indexing.ts'
@@ -378,6 +378,8 @@ export function sumToShape(x: TensorLike, shape: Shape): Value {
  * toArray(concat([tensor([1, 2]), tensor([3])])) // => [1, 2, 3]
  * ```
  */
+export function concat<D extends DType>(xs: readonly Tensor<D>[], axis?: number): Tensor<D>
+export function concat(xs: readonly TensorLike[], axis?: number): Value
 export function concat(xs: readonly TensorLike[], axis = 0): Value {
   const vs = xs.map(val)
   const first = vs[0]

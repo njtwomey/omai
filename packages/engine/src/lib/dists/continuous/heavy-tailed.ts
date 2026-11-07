@@ -135,17 +135,34 @@ export function cauchy(loc: TensorLike = 0, scale: TensorLike = 1): Distribution
   const batchShape = batchShapeOf(mu, sigma)
   const b = (v: Value): Value => broadcastBatch(v, batchShape)
   const z = (x: Value): Value => div(sub(x, mu), sigma)
-  const ppf = (q: Value): Value => add(mu, mul(sigma, tan(mul(sub(q, 0.5), Math.PI))))
+  // the standard quantile: tan(pi (q - 0.5)) in the middle, the cotangent of the smaller tail in the tails, where
+  // q - 0.5 would carry an absolute error of 1e-16 (a relative error of 1e-16 / q in the quantile)
+  const standardPpf = (q: Value): Value =>
+    where(
+      less(q, 0.25),
+      neg(div(1, tan(mul(q, Math.PI)))),
+      where(less(0.75, q), div(1, tan(mul(sub(1, q), Math.PI))), tan(mul(sub(q, 0.5), Math.PI))),
+    )
+  const ppf = (q: Value): Value => add(mu, mul(sigma, standardPpf(q)))
   return defineDistribution({
     name: 'cauchy',
     params: { loc: mu, scale: sigma },
     support: { kind: 'real' },
     batchShape,
     logProb: (x) => neg(add(add(log(sigma), LOG_PI), log1p(square(z(x))))),
-    cdf: (x) => add(0.5, div(arctan(z(x)), Math.PI)),
-    sf: (x) => sub(0.5, div(arctan(z(x)), Math.PI)),
+    // beyond one scale the smaller tail is atan(1 / |z|) / pi: 0.5 + atan(z) / pi cancels to nothing there
+    cdf: (x) => {
+      const v = z(x)
+      const far = less(v, -1)
+      return where(far, div(arctan(neg(div(1, where(far, v, -2)))), Math.PI), add(0.5, div(arctan(v), Math.PI)))
+    },
+    sf: (x) => {
+      const v = z(x)
+      const far = less(1, v)
+      return where(far, div(arctan(div(1, where(far, v, 2))), Math.PI), sub(0.5, div(arctan(v), Math.PI)))
+    },
     ppf,
-    isf: (q) => sub(mu, mul(sigma, tan(mul(sub(q, 0.5), Math.PI)))),
+    isf: (q) => sub(mu, mul(sigma, standardPpf(q))),
     rsample: (key, shape) => ppf(uniformOpen(key, [...shape, ...batchShape])),
     mean: () => b(mul(mu, Number.NaN)),
     variance: () => b(mul(mu, Number.NaN)),

@@ -8,7 +8,7 @@ Probability distributions, scipy.stats and torch.distributions style: families t
 
 - structure `distribution.ts` (file): The Distribution contract: density, CDF, quantile, moments and sampling. `src/lib/dists/distribution.ts:1` `mdml-engine/dists`
 
-- distribution `defineDistribution`: Define a new family from its log density, sampler and moments. `src/lib/dists/distribution.ts:174` `mdml-engine/dists`
+- distribution `defineDistribution`: Define a new family from its log density, sampler and moments. `src/lib/dists/distribution.ts:177` `mdml-engine/dists`
 
 ## dists/bijectors
 

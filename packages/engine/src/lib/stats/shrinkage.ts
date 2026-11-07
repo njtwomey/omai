@@ -65,7 +65,7 @@ export interface JamesSteinResult {
  * @param y - 1-D vector of observed normal means ($p \ge 3$ for a fixed target, $p \ge 4$ for `'grand-mean'`).
  * @param options - `sigma` or `variance` (default $\sigma^2 = 1$), `target` (default `'zero'`), and `positivePart` (default `true`).
  * @returns Shrunk estimates, target vector, shrinkage factor, SURE risk estimate, MLE risk, and empirical Bayes prior variance.
- * @throws MdmlError with code `shape` if $p$ is too small for Stein domination, or `domain` if $\sigma^2 \le 0$.
+ * @throws MdmlError with code `value` if $p$ is too small for Stein domination or $\sigma^2 \le 0$, `shape` if the target length differs.
  * @example
  * ```ts
  * import { jamesStein } from 'mdml-engine/stats'
@@ -81,7 +81,7 @@ export function jamesStein(y: TensorLike, options: JamesSteinOptions = {}): Jame
   const sigma2 =
     options.variance !== undefined ? options.variance : options.sigma !== undefined ? options.sigma * options.sigma : 1
   if (!(sigma2 > 0) || !Number.isFinite(sigma2)) {
-    throw new MdmlError('domain', `jamesStein: variance must be finite and > 0, got ${sigma2}`)
+    throw new MdmlError('value', `jamesStein: variance must be finite and > 0, got ${sigma2}`)
   }
 
   const targetOpt = options.target ?? 'zero'
@@ -91,7 +91,7 @@ export function jamesStein(y: TensorLike, options: JamesSteinOptions = {}): Jame
   if (targetOpt === 'grand-mean') {
     if (p < 4) {
       throw new MdmlError(
-        'shape',
+        'value',
         `jamesStein: shrinking towards 'grand-mean' requires dimension p >= 4 (so p - 3 >= 1), got p=${p}`,
       )
     }
@@ -101,7 +101,7 @@ export function jamesStein(y: TensorLike, options: JamesSteinOptions = {}): Jame
   } else {
     if (p < 3) {
       throw new MdmlError(
-        'shape',
+        'value',
         `jamesStein: shrinking towards a fixed target requires dimension p >= 3 (so p - 2 >= 1), got p=${p}`,
       )
     }
@@ -110,7 +110,7 @@ export function jamesStein(y: TensorLike, options: JamesSteinOptions = {}): Jame
       targetArr.fill(0)
     } else if (typeof targetOpt === 'number') {
       if (!Number.isFinite(targetOpt)) {
-        throw new MdmlError('domain', `jamesStein: scalar target must be finite, got ${targetOpt}`)
+        throw new MdmlError('value', `jamesStein: scalar target must be finite, got ${targetOpt}`)
       }
       targetArr.fill(targetOpt)
     } else {
@@ -233,7 +233,7 @@ export interface EmpiricalBayesNormalMeansResult {
  * @param y - 1-D vector of observed normal means $y_1, \dots, y_p$.
  * @param options - Sampling noise (`sigma`, `variance`, `variances`, or `se`), optional fixed `priorMean` / `priorVariance`, and `level`.
  * @returns Posterior means, variances, standard errors, shrinkage factors $B_i$, estimated hyperparameters, and credible intervals.
- * @throws MdmlError with code `shape` or `domain` for invalid inputs.
+ * @throws MdmlError with code `shape` or `value` for invalid inputs.
  * @example
  * ```ts
  * import { empiricalBayesNormalMeans } from 'mdml-engine/stats'
@@ -261,7 +261,7 @@ export function empiricalBayesNormalMeans(
     for (let i = 0; i < p; i++) {
       const vi = v[i] ?? 0
       if (!(vi > 0) || !Number.isFinite(vi)) {
-        throw new MdmlError('domain', `empiricalBayesNormalMeans: variances[${i}] must be > 0, got ${vi}`)
+        throw new MdmlError('value', `empiricalBayesNormalMeans: variances[${i}] must be > 0, got ${vi}`)
       }
       sig2[i] = vi
       if (i > 0 && vi !== sig2[0]) homoscedastic = false
@@ -274,7 +274,7 @@ export function empiricalBayesNormalMeans(
     for (let i = 0; i < p; i++) {
       const si = s[i] ?? 0
       if (!(si > 0) || !Number.isFinite(si)) {
-        throw new MdmlError('domain', `empiricalBayesNormalMeans: se[${i}] must be > 0, got ${si}`)
+        throw new MdmlError('value', `empiricalBayesNormalMeans: se[${i}] must be > 0, got ${si}`)
       }
       sig2[i] = si * si
       if (i > 0 && sig2[i] !== sig2[0]) homoscedastic = false
@@ -287,7 +287,7 @@ export function empiricalBayesNormalMeans(
           ? options.sigma * options.sigma
           : 1
     if (!(v0 > 0) || !Number.isFinite(v0)) {
-      throw new MdmlError('domain', `empiricalBayesNormalMeans: variance must be finite and > 0, got ${v0}`)
+      throw new MdmlError('value', `empiricalBayesNormalMeans: variance must be finite and > 0, got ${v0}`)
     }
     sig2.fill(v0)
   }
@@ -299,7 +299,7 @@ export function empiricalBayesNormalMeans(
   if (options.priorVariance !== undefined) {
     if (!(options.priorVariance >= 0) || !Number.isFinite(options.priorVariance)) {
       throw new MdmlError(
-        'domain',
+        'value',
         `empiricalBayesNormalMeans: priorVariance must be >= 0, got ${options.priorVariance}`,
       )
     }

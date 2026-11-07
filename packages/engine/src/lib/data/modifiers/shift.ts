@@ -6,7 +6,7 @@
  * @index function Covariate shift, concept drift and partial labels.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, sigmoidOf } from '../../base/index.ts'
 import { categorical, type Key, normal, uniform } from '../../random/index.ts'
 import { choice, dict, real } from '../../space/index.ts'
 import {
@@ -27,17 +27,10 @@ import {
 } from '../../tensor/index.ts'
 import type { Generated } from '../generator.ts'
 import type { Modifier } from '../recipes.ts'
-import { stratifiedIndices, take } from '../rows.ts'
+import { splitSize, stratifiedIndices, take } from '../rows.ts'
 import { type Dataset, rowCount } from '../schema/common.ts'
 import type { ClassificationData, TabularData } from '../schema/tabular.ts'
-import {
-  columnStats,
-  composedFunctions,
-  logistic,
-  requireClassification,
-  requireTabular,
-  withoutProgram,
-} from './_shared.ts'
+import { columnStats, composedFunctions, requireClassification, requireTabular, withoutProgram } from './_shared.ts'
 
 /** A standardised projection `z(x) = (x - mean) . direction / sd` of the rows of a feature matrix. */
 function projection(
@@ -255,7 +248,7 @@ export function shiftedSplit<D extends TabularData>(
     const strength = options.strength ?? 2
     const order = Array.from(z).sort((a, b) => a - b)
     const cut = order[Math.min(n - 1, Math.max(0, Math.round(frac * n) - 1))] ?? 0
-    for (let i = 0; i < n; i++) ((u[i] ?? 0) < logistic(strength * ((z[i] ?? 0) - cut)) ? test : train).push(i)
+    for (let i = 0; i < n; i++) ((u[i] ?? 0) < sigmoidOf(strength * ((z[i] ?? 0) - cut)) ? test : train).push(i)
   } else {
     const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (z[a] ?? 0) - (z[b] ?? 0) || a - b)
     const m = Math.round(frac * n)
@@ -304,7 +297,7 @@ export function semiSupervisedSplit<D extends TabularData & Dataset>(
     throw new MdmlError('value', `semiSupervisedSplit: needs classification or regression data, got ${data.kind}`)
   const n = rowCount(data)
   const size = options.labelled ?? 0.1
-  const m = size < 1 ? Math.ceil(size * n) : Math.round(size)
+  const m = splitSize(size, n, 'semiSupervisedSplit')
   let lab: number[]
   let unl: number[]
   if (data.kind === 'classification' && options.stratify !== false) {

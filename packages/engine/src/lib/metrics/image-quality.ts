@@ -4,10 +4,11 @@
  * angle mapper, ERGAS and RASE for multispectral images, and LPIPS and DISTS from supplied network features.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { convNd } from '../numerics/convolution/index.ts'
 import { image as filters } from '../signal/index.ts'
 import { fromStorage, primalOf, reshape, type TensorLike, type Value } from '../tensor/index.ts'
+import { specOf } from './_spec.ts'
 import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 // Images are handled as channel planes; the filtering itself is signal's (scipy.ndimage semantics).
@@ -111,14 +112,7 @@ function decimate(p: Plane): Plane {
 /** scipy.ndimage.uniform_filter of a plane (reflect borders). */
 const uniformFilter = (p: Plane, size: number): Plane => filterPlane(p, (t) => filters.uniformFilter(t, size))
 
-const spec = (name: string, direction: 'higher' | 'lower', range: readonly [number, number]): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'values',
-  category: 'image-quality',
-  concept: 'image-quality',
-})
+const spec = specOf('image-quality', 'values', 'image-quality')
 
 const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
 

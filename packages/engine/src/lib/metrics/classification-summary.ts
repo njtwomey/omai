@@ -9,6 +9,7 @@ import { MdmlError, type MetricResult, type MetricSpec, maxOf, minOf, toRows } f
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { fixed, right } from './_format.ts'
 import { classCounts, encodeLabels, indicator, isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import { type Average, accuracyScore, confusionMatrix, precisionRecallFscoreSupport } from './classification.ts'
 import {
   type Metric,
@@ -27,12 +28,13 @@ function confusionRows(yTrue: MetricInput, yPred: MetricInput, options: MetricOp
   return toRows(matrix.data, labels.length, labels.length)
 }
 
+const labelsSpec = specOf('classification', 'labels', 'classification-metrics')
 const spec = (
   name: string,
   direction: 'higher' | 'lower',
   range: readonly [number, number],
   inputs: MetricSpec['inputs'] = 'labels',
-): MetricSpec => ({ name, direction, range, inputs, category: 'classification', concept: 'classification-metrics' })
+): MetricSpec => ({ ...labelsSpec(name, direction, range), inputs })
 
 /**
  * Matthews correlation coefficient (sklearn.metrics.matthews_corrcoef), in its multi-class form

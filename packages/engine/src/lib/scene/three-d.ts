@@ -4,6 +4,7 @@
  */
 
 import { MdmlError, type Vec3 } from '../base/index.ts'
+import { vertices } from './_check.ts'
 import type { NodeBase, Paint, Style } from './types.ts'
 
 /** A dot drawn at a point, `r` scene units across the projected image (default 3). */
@@ -84,6 +85,7 @@ export function scene3d(items: readonly Item3D[], options: { readonly title?: st
  * @param at - The position.
  * @param style - Radius, fill, stroke, id and title.
  * @returns The item.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { point3d } from 'mdml-engine/scene'
@@ -91,6 +93,7 @@ export function scene3d(items: readonly Item3D[], options: { readonly title?: st
  * ```
  */
 export function point3d(at: Vec3, style: Style & NodeBase & { readonly r?: number } = {}): Point3D {
+  vertices('point3d', [at], 3)
   return { kind: 'point', at, ...style }
 }
 
@@ -101,6 +104,7 @@ export function point3d(at: Vec3, style: Style & NodeBase & { readonly r?: numbe
  * @param to - End.
  * @param style - Stroke, id and title.
  * @returns The item.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { segment3d } from 'mdml-engine/scene'
@@ -108,6 +112,7 @@ export function point3d(at: Vec3, style: Style & NodeBase & { readonly r?: numbe
  * ```
  */
 export function segment3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): Segment3D {
+  vertices('segment3d', [from, to], 3)
   return { kind: 'segment', from, to, ...style }
 }
 
@@ -118,6 +123,7 @@ export function segment3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): S
  * @param to - The head.
  * @param style - Stroke, id and title.
  * @returns The item.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { arrow3d } from 'mdml-engine/scene'
@@ -125,6 +131,7 @@ export function segment3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): S
  * ```
  */
 export function arrow3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): Segment3D {
+  vertices('arrow3d', [from, to], 3)
   return { kind: 'segment', from, to, arrow: true, ...style }
 }
 
@@ -134,6 +141,7 @@ export function arrow3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): Seg
  * @param points - The vertices in order.
  * @param style - Stroke, closure, id and title.
  * @returns The item.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { polyline3d } from 'mdml-engine/scene'
@@ -144,6 +152,7 @@ export function polyline3d(
   points: readonly Vec3[],
   style: Style & NodeBase & { readonly closed?: boolean } = {},
 ): Polyline3D {
+  vertices('polyline3d', points, 3)
   return { kind: 'polyline', points, ...style }
 }
 
@@ -155,6 +164,7 @@ export function polyline3d(
  * @param c - Third vertex.
  * @param style - Fill, stroke, id and title.
  * @returns The face.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { triangle3d } from 'mdml-engine/scene'
@@ -162,6 +172,7 @@ export function polyline3d(
  * ```
  */
 export function triangle3d(a: Vec3, b: Vec3, c: Vec3, style: Style & NodeBase = {}): Face3D {
+  vertices('triangle3d', [a, b, c], 3)
   return { kind: 'face', points: [a, b, c], ...style }
 }
 
@@ -171,7 +182,7 @@ export function triangle3d(a: Vec3, b: Vec3, c: Vec3, style: Style & NodeBase = 
  * @param points - Three or more coplanar vertices in order.
  * @param style - Fill, stroke, id and title.
  * @returns The face.
- * @throws MdmlError with code `value` for fewer than three vertices.
+ * @throws MdmlError with code `value` for fewer than three vertices or a coordinate that is not finite.
  * @example
  * ```ts
  * import { face3d } from 'mdml-engine/scene'
@@ -180,6 +191,7 @@ export function triangle3d(a: Vec3, b: Vec3, c: Vec3, style: Style & NodeBase = 
  */
 export function face3d(points: readonly Vec3[], style: Style & NodeBase = {}): Face3D {
   if (points.length < 3) throw new MdmlError('value', 'face3d: a face needs at least three vertices')
+  vertices('face3d', points, 3)
   return { kind: 'face', points, ...style }
 }
 
@@ -190,6 +202,7 @@ export function face3d(points: readonly Vec3[], style: Style & NodeBase = {}): F
  * @param content - The text, or TeX source when `tex` is set.
  * @param style - TeX flag, size, fill, anchor, id and title.
  * @returns The item.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { label3d } from 'mdml-engine/scene'
@@ -197,6 +210,7 @@ export function face3d(points: readonly Vec3[], style: Style & NodeBase = {}): F
  * ```
  */
 export function label3d(at: Vec3, content: string, style: Omit<Label3D, 'kind' | 'at' | 'text'> = {}): Label3D {
+  vertices('label3d', [at], 3)
   return { kind: 'label', at, text: content, ...style }
 }
 

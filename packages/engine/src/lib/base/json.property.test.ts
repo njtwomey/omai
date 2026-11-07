@@ -2,6 +2,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { type Encodable, fromJson, type Json, JsonSchema, toJson } from './json.ts'
 import { resolveConfidenceLevel } from './options.ts'
+import { estimate } from './results.ts'
 
 const leaf = fc.oneof(
   fc.constant(null),
@@ -57,5 +58,8 @@ describe('toJson and fromJson', () => {
     expect(resolveConfidenceLevel()).toBe(0.95)
     expect(() => resolveConfidenceLevel(1)).toThrow(/\(0, 1\)/)
     expect(() => resolveConfidenceLevel(Number.NaN)).toThrow()
+    // `estimate` takes the same check (it gave an interval of NaN for a level of 1.5).
+    expect(() => estimate(1, 0.5, 1.5)).toThrow(expect.objectContaining({ code: 'value' }))
+    expect(estimate(1, 0.5, 0.9).level).toBe(0.9)
   })
 })

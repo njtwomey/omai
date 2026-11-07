@@ -41,6 +41,22 @@ describe('structure', () => {
     const down = subStructure(layer, ['y'], 'descendants')
     expect(down.nodes.map((n) => n.id)).toEqual(['y'])
     expect(down.annotations?.map((a) => a.text)).toEqual(['a whole-structure note'])
+    // A long chain with its edges listed far end first: reached in one pass (a sweep until nothing changes took 325 ms
+    // for 4,000 nodes), and cycles and branches are visited once.
+    const n = 4000
+    const node = (i: number): { id: string; label: string; role: 'other' } => ({
+      id: `n${i}`,
+      label: `n${i}`,
+      role: 'other',
+    })
+    const edges = Array.from({ length: n - 1 }, (_, i) => ({ from: `n${n - 2 - i}`, to: `n${n - 1 - i}` }))
+    const chain = structure(
+      'chain',
+      Array.from({ length: n }, (_, i) => node(i)),
+      [...edges, { from: `n${n - 1}`, to: 'n0' }],
+    )
+    expect(subStructure(chain, ['n0'], 'descendants').nodes).toHaveLength(n)
+    expect(subStructure(chain, ['n3999'], 'ancestors').nodes).toHaveLength(n)
   })
 
   it('mergeStructures identifies shared ids and merges their fields', () => {

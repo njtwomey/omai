@@ -105,7 +105,7 @@ export function fitGev(x: TensorLike, options: NewtonMleOptions = {}): ExtremeFi
 export function fitGpd(x: TensorLike, options: NewtonMleOptions & { readonly threshold?: number } = {}): ExtremeFit {
   const u = options.threshold ?? 0
   const a = sample('fitGpd', x, 3)
-  for (const v of a) if (v < u) throw new MdmlError('domain', 'fitGpd: observations must exceed the threshold')
+  for (const v of a) if (v < u) throw new MdmlError('value', 'fitGpd: observations must exceed the threshold')
   const data = asTensor(a)
   const e = Float64Array.from(a, (v) => v - u)
   const m = meanOf(e)

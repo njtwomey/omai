@@ -24,6 +24,28 @@ function counts(name: string, k: number, n: number): void {
 const betaPpf = (a: number, b: number, p: number): number => item(betaincinv(a, b, p))
 
 /**
+ * The Wilson score interval of a proportion at a normal quantile, unclamped: the arithmetic of `proportionConfint`'s
+ * `'wilson'` method for a proportion `p` of `n` trials, which `metrics` shares for weighted proportions.
+ *
+ * @param p - The proportion.
+ * @param n - The number of trials (the effective number for weighted data).
+ * @param z - The normal quantile of the coverage, `ndtri(1 - alpha)`.
+ * @returns The lower and upper bound.
+ * @example
+ * ```ts
+ * import { wilsonBounds } from 'mdml-engine/stats/tests'
+ * wilsonBounds(0.5, 4, 1.96).map((v) => Number(v.toFixed(4))) // => [0.15, 0.85]
+ * ```
+ */
+export function wilsonBounds(p: number, n: number, z: number): readonly [number, number] {
+  const z2 = z * z
+  const denom = 1 + z2 / n
+  const center = (p + z2 / (2 * n)) / denom
+  const d = (z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n))) / denom
+  return [center - d, center + d]
+}
+
+/**
  * A confidence interval for a binomial proportion (statsmodels proportion_confint): Wald (`'wald'`, statsmodels'
  * `normal`), Wilson's score interval, Agresti-Coull, the exact Clopper-Pearson interval (`'clopper-pearson'`,
  * statsmodels' `beta`) and Jeffreys' equal-tailed Bayesian interval; Wald, Wilson and Agresti-Coull are clipped to [0,
@@ -65,14 +87,9 @@ export function proportionConfint(
       ;[lo, hi] = [qc - d, qc + d]
       break
     }
-    case 'wilson': {
-      const z2 = z * z
-      const denom = 1 + z2 / n
-      const center = (q + z2 / (2 * n)) / denom
-      const d = (z * Math.sqrt((q * (1 - q)) / n + z2 / (4 * n * n))) / denom
-      ;[lo, hi] = [center - d, center + d]
+    case 'wilson':
+      ;[lo, hi] = wilsonBounds(q, n, z)
       break
-    }
     case 'clopper-pearson':
       lo = k === 0 ? 0 : betaPpf(k, n - k + 1, alpha)
       hi = k === n ? 1 : betaPpf(k + 1, n - k, 1 - alpha)

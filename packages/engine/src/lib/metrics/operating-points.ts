@@ -4,25 +4,15 @@
  * the minimum expected detection cost, and Drummond and Holte's cost curve.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { precisionRecallRows, rocRows, thresholdRows } from './_curves.ts'
 import { labelValues } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import type { CurveOptions } from './curves.ts'
 import { type Metric, type MetricInput, metricResult } from './metric.ts'
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower' = 'higher',
-  range: readonly [number, number] = [0, 1],
-): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'scores',
-  category: 'classification',
-  concept: 'operating-points',
-})
+const spec = specOf('classification', 'scores', 'operating-points', { range: [0, 1] })
 
 /** The ROC points without dropping intermediate thresholds. */
 const roc = (yTrue: MetricInput, yScore: MetricInput, options: CurveOptions) =>

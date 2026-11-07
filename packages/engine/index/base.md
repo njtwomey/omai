@@ -8,4 +8,4 @@ The foundation every other domain builds on: the library's error type `MdmlError
 - structure `registry.ts` (file): Registries of named entries, the shape dataset and environment registries share. `src/lib/base/registry.ts:1` `mdml-engine/base`
 - structure `results.ts` (file): Estimate, TestResult and MetricResult records shared across domains. `src/lib/base/results.ts:1` `mdml-engine/base`
 
-- structure `MdmlError`: The library's single error type with machine-readable codes. `src/lib/base/errors.ts:34` `mdml-engine/base`
+- structure `MdmlError`: The library's single error type with machine-readable codes. `src/lib/base/errors.ts:39` `mdml-engine/base`

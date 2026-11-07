@@ -46,8 +46,8 @@ export interface RandomSamplerOptions {
  * @param key - The base key; epoch `e` uses `foldIn(key, e)`.
  * @param options - Replacement and samples per epoch.
  * @returns The sampler.
- * @throws MdmlError with code `value` when more samples than rows are asked for without replacement, or the number of
- *   samples is not a whole number.
+ * @throws MdmlError with code `value` when more samples than rows are asked for without replacement, the number of
+ *   samples is not a whole number, or samples are drawn with replacement from no rows.
  * @example
  * ```ts
  * import { randomSampler } from 'mdml-engine/data'
@@ -61,6 +61,7 @@ export function randomSampler(n: number, key: Key, options: RandomSamplerOptions
     throw new MdmlError('value', `randomSampler: the number of samples must be a whole number, got ${m}`)
   if (options.replacement !== true && m > n)
     throw new MdmlError('value', `randomSampler: ${m} samples from ${n} rows need replacement`)
+  if (m > 0 && n === 0) throw new MdmlError('value', `randomSampler: cannot draw ${m} samples from no rows`)
   return (epoch) => {
     const k = foldIn(key, epoch)
     if (options.replacement === true) return Int32Array.from(randint(k, [m], 0, n).data)
@@ -78,8 +79,8 @@ export function randomSampler(n: number, key: Key, options: RandomSamplerOptions
  * @param key - The base key.
  * @param options - Whether to draw with replacement (default true).
  * @returns The sampler.
- * @throws MdmlError with code `value` when too few rows have positive weight for sampling without replacement, and
- * `shape` unless `weights` is a vector.
+ * @throws MdmlError with code `value` when too few rows have positive weight for sampling without replacement or no row
+ * has positive weight, and `shape` unless `weights` is a vector.
  * @example
  * ```ts
  * import { weightedRandomSampler } from 'mdml-engine/data'
@@ -95,6 +96,8 @@ export function weightedRandomSampler(
 ): RowOrder {
   const score = toVector(weights, 'weightedRandomSampler')
   const positive = score.filter((w) => w > 0).length
+  if (numSamples > 0 && positive === 0)
+    throw new MdmlError('value', 'weightedRandomSampler: the weights have no positive entry to draw from')
   if (options.replacement === false && numSamples > positive)
     throw new MdmlError('value', `weightedRandomSampler: ${numSamples} draws from ${positive} rows without replacement`)
   return (epoch) => {

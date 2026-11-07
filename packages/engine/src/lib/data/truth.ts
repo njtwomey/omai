@@ -8,6 +8,7 @@
  */
 
 import { type Estimate, estimate, MdmlError } from '../base/index.ts'
+import { linearSumAssignment } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Structure } from '../scene/index.ts'
 import { argmax, full, max, reshape, softmax, stack, sub, type Tensor, toFlat, type Value } from '../tensor/index.ts'
@@ -210,41 +211,39 @@ export function completeTruth(truth: Truth, options: CompleteTruthOptions = {}):
 }
 
 /**
- * The fraction of rows whose true cluster agrees with a labelling, maximised over relabellings by greedy matching
- * of the largest overlaps (a quick check; `metrics` has the adjusted indices).
+ * The fraction of rows whose true cluster agrees with a labelling, maximised over relabellings: each true cluster is
+ * matched to at most one predicted cluster, by the optimal assignment of the contingency table (the Hungarian
+ * algorithm; `metrics` has the adjusted indices, which need no matching).
  *
  * @param truth - A truth with `clusters`.
  * @param labels - Predicted cluster labels `[n]`.
- * @returns The matched accuracy in [0, 1].
- * @throws MdmlError with code `value` when the truth has no clusters.
+ * @returns The matched accuracy in [0, 1] (1 for no rows).
+ * @throws MdmlError with code `value` when the truth has no clusters or `labels` has another length.
  * @example
  * ```ts
  * import { clusterAgreement } from 'mdml-engine/data'
  * import { tensor } from 'mdml-engine/tensor'
  * clusterAgreement({ clusters: tensor([0, 0, 1, 1], { dtype: 'int32' }) }, [1, 1, 0, 0]) // => 1
+ * clusterAgreement({ clusters: tensor([0, 0, 0, 0, 0, 1, 1], { dtype: 'int32' }) }, [0, 0, 0, 1, 1, 0, 0]) // => 0.5714285714285714
  * ```
  */
 export function clusterAgreement(truth: Truth, labels: Value | readonly number[]): number {
   if (truth.clusters === undefined) throw new MdmlError('value', 'clusterAgreement: the truth has no clusters')
   const a = truth.clusters.data
   const b = Array.isArray(labels) ? labels : toFlat(labels as Value)
-  const counts = new Map<string, number>()
+  if (b.length !== a.length)
+    throw new MdmlError('value', `clusterAgreement: labels has ${b.length} entries, the truth has ${a.length}`)
+  if (a.length === 0) return 1
+  const classes = new Map<number, number>()
+  const clusters = new Map<number, number>()
+  for (const v of a) if (!classes.has(v)) classes.set(v, classes.size)
+  for (const v of b) if (!clusters.has(v)) clusters.set(v, clusters.size)
+  const table = Array.from({ length: classes.size }, () => new Array<number>(clusters.size).fill(0))
   for (let i = 0; i < a.length; i++) {
-    const k = `${a[i]},${b[i]}`
-    counts.set(k, (counts.get(k) ?? 0) + 1)
+    const row = table[classes.get(a[i] as number) as number] as number[]
+    row[clusters.get(b[i] as number) as number] = (row[clusters.get(b[i] as number) as number] ?? 0) + 1
   }
-  const pairs = [...counts.entries()].sort((p, q) => q[1] - p[1])
-  const usedA = new Set<string>()
-  const usedB = new Set<string>()
-  let matched = 0
-  for (const [k, c] of pairs) {
-    const [i, j] = k.split(',') as [string, string]
-    if (usedA.has(i) || usedB.has(j)) continue
-    usedA.add(i)
-    usedB.add(j)
-    matched += c
-  }
-  return a.length === 0 ? 1 : matched / a.length
+  return linearSumAssignment(table, { maximize: true }).cost / a.length
 }
 
 /**

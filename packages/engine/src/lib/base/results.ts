@@ -6,7 +6,7 @@
  * @index structure Estimate, TestResult and MetricResult records shared across domains.
  */
 
-import type { Alternative } from './options.ts'
+import { type Alternative, defaultConfidenceLevel, resolveConfidenceLevel } from './options.ts'
 
 /**
  * An estimate with its uncertainty: the shape shared by every metric, test effect size and summary statistic.
@@ -30,6 +30,12 @@ export interface TestResult {
   readonly test: string
   readonly statistic: number
   readonly pValue: number
+  /**
+   * `'undefined'` when the test is not defined for the data (a constant sample, an empty row: the statistic or the
+   * p-value is NaN), so "no evidence" and "no test" can be told apart; absent when the test is defined. `rejects` is
+   * false for an undefined test.
+   */
+  readonly status?: 'undefined'
   readonly alternative: Alternative
   readonly df?: number | readonly number[]
   readonly effectSize?: Estimate & { readonly name: string }
@@ -74,6 +80,7 @@ export interface MetricResult {
  * @param standardError - Its standard error, if known.
  * @param level - The interval's coverage (default 0.95).
  * @returns The estimate.
+ * @throws MdmlError with code `value` when a standard error is given and `level` is not in (0, 1).
  * @example
  * ```ts
  * import { estimate } from 'mdml-engine/base'
@@ -82,6 +89,7 @@ export interface MetricResult {
  */
 export function estimate(value: number, standardError?: number, level = 0.95): Estimate {
   if (standardError === undefined) return { value }
+  resolveConfidenceLevel(level)
   const z = normalQuantile(0.5 + level / 2)
   return {
     value,
@@ -110,12 +118,12 @@ export function formatResult(result: Estimate | TestResult | MetricResult, digit
   const e = 'estimate' in result ? result.estimate : result
   const head = 'metric' in result ? `${result.metric} ` : ''
   if (e.interval === undefined) return `${head}${f(e.value)}`
-  const pct = Math.round((e.level ?? 0.95) * 100)
+  const pct = Math.round((e.level ?? defaultConfidenceLevel) * 100)
   return `${head}${f(e.value)} (${pct}% CI ${f(e.interval[0])} to ${f(e.interval[1])})`
 }
 
-// Acklam's rational approximation (relative error below 1.2e-9). Used only for interval widths here; the full
-// special-function family lives in numerics/special.
+// Acklam's rational approximation (relative error below 1.2e-9). Used only for interval widths here: `base` sits below
+// `numerics`, so the exact `ndtri` of numerics/special cannot be imported (FD-28; `stats` uses the exact one).
 const A = [
   -39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239,
 ] as const

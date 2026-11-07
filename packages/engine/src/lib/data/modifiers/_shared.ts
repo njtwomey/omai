@@ -1,4 +1,4 @@
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, sigmoidOf } from '../../base/index.ts'
 import {
   asTensor,
   concat,
@@ -163,18 +163,13 @@ export function columnStats(x: Tensor): { mean: number[]; std: number[] } {
   return { mean, std }
 }
 
-/** The logistic function on a number. */
-export function logistic(z: number): number {
-  return z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z))
-}
-
 /** The intercept `a` with mean(logistic(a + b z_i)) = rate, by bisection (the mean is increasing in `a`). */
 export function calibrateIntercept(z: ArrayLike<number>, slope: number, rate: number): number {
   let lo = -60
   let hi = 60
   const meanAt = (a: number) => {
     let s = 0
-    for (let i = 0; i < z.length; i++) s += logistic(a + slope * (z[i] ?? 0))
+    for (let i = 0; i < z.length; i++) s += sigmoidOf(a + slope * (z[i] ?? 0))
     return s / Math.max(1, z.length)
   }
   for (let it = 0; it < 200; it++) {

@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { expectRows } from '../../../testing/close.ts'
 import type { NestedArray, Value } from '../../tensor/index.ts'
 import * as T from '../../tensor/index.ts'
@@ -67,5 +67,27 @@ describe('heavy-tailed distributions against scipy', () => {
   ]
   it('have the reference moments (or NaN and Infinity where they do not exist), entropies, modes and quantiles', () => {
     expectRows(rows, 1e-7)
+  })
+
+  // -1 / tan(pi q) evaluated exactly (pi q has a relative error of 1e-16); the old tan(pi (q - 0.5)) lost the tail:
+  // -3.183097e9 at 1e-10, -1.63e16 at 1e-17.
+  const tails: [string, () => Value, NestedArray][] = [
+    ['cauchy ppf(1e-10)', () => D.cauchy(0, 1).ppf(1e-10), -3183098861.8379064],
+    ['cauchy ppf(1e-14)', () => D.cauchy(0, 1).ppf(1e-14), -31830988618379.066],
+    ['cauchy ppf(1e-17)', () => D.cauchy(0, 1).ppf(1e-17), -3.1830988618379064e16],
+    ['cauchy isf(1e-14) is the mirror image', () => D.cauchy(0, 1).isf(1e-14), 31830988618379.066],
+    ['cauchy ppf in the middle: 0.25, 0.5, 0.75', () => D.cauchy(0, 1).ppf(T.tensor([0.25, 0.5, 0.75])), [-1, 0, 1]],
+    [
+      'cauchy(2, 3) ppf(0) and ppf(1)',
+      () => T.stack([D.cauchy(2, 3).ppf(0), D.cauchy(2, 3).ppf(1)]),
+      [-Infinity, Infinity],
+    ],
+  ]
+  it('keep the relative precision of the Cauchy quantile and tails', () => {
+    expectRows(tails, 1e-12)
+    // cdf and sf in the far tails come back to 1e-14 with a relative (not absolute) error of rounding.
+    const x = -31830988618379.066
+    for (const got of [T.item(D.cauchy(0, 1).cdf(x)), T.item(D.cauchy(0, 1).sf(-x))])
+      expect(Math.abs(got - 1e-14) / 1e-14).toBeLessThan(1e-12)
   })
 })

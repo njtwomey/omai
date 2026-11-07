@@ -8,16 +8,11 @@ import { MdmlError, type MetricResult, type MetricSpec, toRows } from '../base/i
 import { lgamma } from '../numerics/special/index.ts'
 import { arange, fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import { type Metric, type MetricInput, type MetricOptions, metricResult, sampleWeights } from './metric.ts'
 
-const spec = (name: string, range: readonly [number, number] = [0, 1]): MetricSpec => ({
-  name,
-  direction: 'higher',
-  range,
-  inputs: 'labels',
-  category: 'clustering',
-  concept: 'clustering-evaluation',
-})
+const clusteringSpec = specOf('clustering', 'labels', 'clustering-evaluation', { range: [0, 1] })
+const spec = (name: string, range?: readonly [number, number]): MetricSpec => clusteringSpec(name, 'higher', range)
 
 /**
  * A contingency table: counts of samples by true class (rows) and cluster (columns). Holds a tensor (migration,

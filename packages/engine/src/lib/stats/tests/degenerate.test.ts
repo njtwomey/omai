@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import type { TestResult } from '../../base/index.ts'
-import { etaSquared, histogram, kendallTau, p2Push, p2Quantile, rankdata, spearman } from '../index.ts'
+import { key } from '../../random/index.ts'
+import {
+  boxcoxLlf,
+  cohensH,
+  etaSquared,
+  fitGpd,
+  histogram,
+  hoeffdingBound,
+  jamesStein,
+  kendallTau,
+  markovBound,
+  p2Push,
+  p2Quantile,
+  rankdata,
+  simpleRandomisation,
+  spearman,
+} from '../index.ts'
 import * as T from './index.ts'
 
 const c = [3, 3, 3, 3]
@@ -25,7 +41,19 @@ describe('hypothesis tests on degenerate input', () => {
       const r = call()
       expect(r.statistic, name).toBeNaN()
       expect(r.pValue, name).toBeNaN()
+      // The record says so: "no test" is told from "no evidence", and an undefined test never rejects.
+      expect(r.status, name).toBe('undefined')
+      expect(T.rejects(r, 1), name).toBe(false)
     }
+    // A defined test carries no status, and the variance check of constants is undefined rather than p = 1.
+    expect(
+      T.fOneway([
+        [1, 2, 3],
+        [2, 3, 5],
+      ]).status,
+    ).toBeUndefined()
+    const same = T.checkEqualVariances([c, c])
+    expect([same.equal, same.pValue]).toEqual([true, Number.NaN])
   })
 
   it('fOneway of two different constants is F = Infinity, p = 0, eta squared exactly 1', () => {
@@ -74,5 +102,20 @@ describe('hypothesis tests on degenerate input', () => {
   ]
   it('throw value for NaN where the data is ranked, sorted or read as categories, and for negative counts', () => {
     for (const [name, call] of rejected) expect(call, name).toThrow(expect.objectContaining({ code: 'value' }))
+  })
+
+  // An invalid argument is `value`, whatever it is about (a number out of range, too few observations): `domain` is
+  // the kernels' hyperparameter range and `shape` is for dimensions that disagree.
+  const invalid: readonly (readonly [string, () => unknown])[] = [
+    ['markovBound with a negative mean', () => markovBound(-1, 1)],
+    ['hoeffdingBound with n = 0', () => hoeffdingBound(0, 1)],
+    ['simpleRandomisation with n = 0', () => simpleRandomisation(key(0), 0)],
+    ['jamesStein with p = 2', () => jamesStein([1, 2])],
+    ['cohensH outside [0, 1]', () => cohensH(2, 0.5)],
+    ['fitGpd below the threshold', () => fitGpd([1, 2, 3], { threshold: 2 })],
+    ['boxcoxLlf of non-positive data', () => boxcoxLlf(0, [1, -1, 2])],
+  ]
+  it('throw value, not domain or shape, for an out-of-range argument or too few observations', () => {
+    for (const [name, call] of invalid) expect(call, name).toThrow(expect.objectContaining({ code: 'value' }))
   })
 })

@@ -111,11 +111,11 @@ function parseBinaryTreatment(
       mask[i] = 0
       n0++
     } else {
-      throw new MdmlError('domain', `${name}: treatment must contain only 0 and 1, got ${v} at index ${i}`)
+      throw new MdmlError('value', `${name}: treatment must contain only 0 and 1, got ${v} at index ${i}`)
     }
   }
   if (n1 < 2 || n0 < 2) {
-    throw new MdmlError('shape', `${name}: need at least 2 treated and 2 control observations, got n1=${n1}, n0=${n0}`)
+    throw new MdmlError('value', `${name}: need at least 2 treated and 2 control observations, got n1=${n1}, n0=${n0}`)
   }
   return { mask, n1, n0 }
 }
@@ -131,7 +131,7 @@ function parseBinaryTreatment(
  * @param xPre - 1-D vector of pre-randomization covariate values $X_1, \dots, X_n$.
  * @param options - Optional binary `treatment` vector, fixed `theta`, `alternative`, and confidence `level`.
  * @returns CUPED coefficient `theta`, `correlation`, `varianceReduction`, `adjustedOutcomes`, and (when `treatment` is given) `ate`, `unadjustedAte`, and `test`.
- * @throws MdmlError with code `shape` or `domain` if inputs have mismatched lengths or fewer than 2 observations.
+ * @throws MdmlError with code `shape` or `value` if inputs have mismatched lengths or fewer than 2 observations.
  * @example
  * ```ts
  * import { cuped } from 'mdml-engine/stats'
@@ -271,7 +271,7 @@ export interface PostStratifyResult extends TestResult {
  * @param strata - 1-D vector of discrete integer or numeric stratum labels of length $n$.
  * @param options - Optional population `weights` across sorted unique strata, `alternative`, and `level`.
  * @returns `PostStratifyResult` (`TestResult` plus per-stratum breakdown and variance reduction).
- * @throws MdmlError with code `shape` or `domain` if any stratum lacks treated or control observations.
+ * @throws MdmlError with code `shape` or `value` if any stratum lacks treated or control observations.
  * @example
  * ```ts
  * import { postStratify } from 'mdml-engine/stats'
@@ -312,7 +312,7 @@ export function postStratify(
     for (let s = 0; s < S; s++) {
       const ws = wIn[s] ?? 0
       if (!(ws > 0) || !Number.isFinite(ws)) {
-        throw new MdmlError('domain', `postStratify: weights[${s}] must be > 0, got ${ws}`)
+        throw new MdmlError('value', `postStratify: weights[${s}] must be > 0, got ${ws}`)
       }
       weightsArr[s] = ws
       wSum += ws
@@ -336,7 +336,7 @@ export function postStratify(
     }
     if (y1.length < 1 || y0.length < 1) {
       throw new MdmlError(
-        'domain',
+        'value',
         `postStratify: stratum ${label} must contain at least 1 treated and 1 control unit (got n1=${y1.length}, n0=${y0.length})`,
       )
     }
@@ -456,7 +456,7 @@ export interface RegressionAdjustmentResult extends TestResult {
  * @param covariates - 1-D vector (length $n$) or 2-D matrix (shape `[n, p]`) of pre-treatment covariates.
  * @param options - `interaction` (default `true`), `alternative`, and confidence `level`.
  * @returns `RegressionAdjustmentResult` (`TestResult` plus `ate`, slopes, `robustSe`, `olsSe`, and `rSquared`).
- * @throws MdmlError with code `shape` or `domain` for mismatched dimensions or singular design.
+ * @throws MdmlError with code `shape` or `value` for mismatched dimensions or singular design.
  * @example
  * ```ts
  * import { regressionAdjustment } from 'mdml-engine/stats'
@@ -629,7 +629,7 @@ function singleGroupRatioMoments(
   const meanY = meanOf(num)
   const meanX = meanOf(den)
   if (Math.abs(meanX) < 1e-15) {
-    throw new MdmlError('domain', 'deltaMethodRatio: denominator mean must be non-zero')
+    throw new MdmlError('value', 'deltaMethodRatio: denominator mean must be non-zero')
   }
   const ratio = meanY / meanX
   let syy = 0
@@ -666,7 +666,7 @@ function singleGroupRatioMoments(
  * @param denominator - 1-D vector of user-level denominator totals $X_1, \dots, X_n$ with $\bar{X} \ne 0$.
  * @param options - Optional binary `treatment` vector, `nullValue`, `alternative`, and `level`.
  * @returns Ratio estimate, delta-method variance and SE, user-level linearized scores, and hypothesis test.
- * @throws MdmlError with code `shape` or `domain` if $\bar{X} = 0$ or inputs have fewer than 2 users.
+ * @throws MdmlError with code `shape` or `value` if $\bar{X} = 0$ or inputs have fewer than 2 users.
  * @example
  * ```ts
  * import { deltaMethodRatio } from 'mdml-engine/stats'
@@ -808,7 +808,7 @@ export interface ClusterRandomisedResult extends TestResult {
  * @param clusterIds - 1-D vector of numeric cluster identifiers of length $n$.
  * @param options - `alternative` and confidence `level`.
  * @returns `ClusterRandomisedResult` (`TestResult` plus `ate`, `icc`, `designEffect`, `effectiveSampleSize`, `clusterRobustSe`, and `naiveSe`).
- * @throws MdmlError with code `shape` or `domain` if fewer than 2 clusters per arm or treatment varies within a cluster.
+ * @throws MdmlError with code `shape` or `value` if fewer than 2 clusters per arm or treatment varies within a cluster.
  * @example
  * ```ts
  * import { clusterRandomisedTest } from 'mdml-engine/stats'
@@ -844,7 +844,7 @@ export function clusterRandomisedTest(
     } else {
       if (existing.treat !== tr) {
         throw new MdmlError(
-          'domain',
+          'value',
           `clusterRandomisedTest: cluster ${cid} has mixed treatment assignments (must be cluster-level assigned)`,
         )
       }
@@ -1028,7 +1028,7 @@ export interface SwitchbackResult extends TestResult {
  * @param periodIds - 1-D vector of sequential time-period identifiers of length $n$.
  * @param options - `maxLag` (default $\lfloor T^{1/4} \rfloor$), optional `key` and `nPermutations` for randomization inference, `alternative`, and `level`.
  * @returns `SwitchbackResult` (`TestResult` plus period series, `hacSe`, `periodSe`, `lag1Autocorrelation`, and optional `permutationPValue`).
- * @throws MdmlError with code `shape` or `domain` if fewer than 2 treated or 2 control periods exist.
+ * @throws MdmlError with code `shape` or `value` if fewer than 2 treated or 2 control periods exist.
  * @example
  * ```ts
  * import { switchbackAnalysis } from 'mdml-engine/stats'
@@ -1064,7 +1064,7 @@ export function switchbackAnalysis(
     } else {
       if (existing.treat !== tr) {
         throw new MdmlError(
-          'domain',
+          'value',
           `switchbackAnalysis: period ${pid} has mixed treatment assignments (must be constant within each period)`,
         )
       }
@@ -1131,7 +1131,7 @@ export function switchbackAnalysis(
 
   const maxLag = options.maxLag !== undefined ? options.maxLag : Math.floor(T ** 0.25)
   if (!Number.isInteger(maxLag) || maxLag < 0) {
-    throw new MdmlError('domain', `switchbackAnalysis: maxLag must be a non-negative integer, got ${maxLag}`)
+    throw new MdmlError('value', `switchbackAnalysis: maxLag must be a non-negative integer, got ${maxLag}`)
   }
 
   // Newey-West variance of the OLS slope: the Bartlett-weighted long-run variance of the scores, with a T / (T - 2)

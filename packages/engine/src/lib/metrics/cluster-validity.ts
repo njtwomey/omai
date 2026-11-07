@@ -4,20 +4,14 @@
  * the Dunn index, as in scikit-learn.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { cdist, type DistanceMetric as DistanceName } from '../numerics/geometry/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { labelValues, sortLabels } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import { defineMetric, type MetricFunction, type MetricInput, metricResult, shapedArray } from './metric.ts'
 
-const spec = (name: string, direction: 'higher' | 'lower', range: readonly [number, number]): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'values',
-  category: 'clustering',
-  concept: 'cluster-validity',
-})
+const spec = specOf('clustering', 'values', 'cluster-validity')
 
 /** Options of the internal validity indices. */
 export interface ValidityOptions {

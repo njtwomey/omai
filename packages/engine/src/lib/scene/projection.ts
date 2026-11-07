@@ -5,6 +5,7 @@
  */
 
 import { clamp, MdmlError, type Vec3 } from '../base/index.ts'
+import { finite, size } from './_check.ts'
 import { arrow, group, line, polygon, scene, tex, text } from './build.ts'
 import type { Item3D, Scene3D } from './three-d.ts'
 import type { Layer3DNode, NodeBase, Paint, Scene, SceneNode, Style } from './types.ts'
@@ -32,8 +33,8 @@ export interface Camera {
  *
  * @param options - Any camera fields.
  * @returns The camera.
- * @throws MdmlError with code `value` for a non-positive distance, a field of view outside (0, 180) or a
- * non-positive extent.
+ * @throws MdmlError with code `value` for a distance or extent that is not finite and positive, a field of view outside
+ * (0, 180), an elevation outside [-90, 90], or an azimuth, elevation or target coordinate that is not finite.
  * @example
  * ```ts
  * import { camera } from 'mdml-engine/scene'
@@ -43,16 +44,23 @@ export interface Camera {
 export function camera(options: Partial<Camera> = {}): Camera {
   const distance = options.distance ?? 5
   const fov = options.fov ?? 35
-  if (!(distance > 0)) throw new MdmlError('value', 'camera: distance must be positive')
+  if (!(distance > 0 && Number.isFinite(distance))) throw new MdmlError('value', 'camera: distance must be positive')
   if (!(fov > 0 && fov < 180)) throw new MdmlError('value', 'camera: fov must be in (0, 180) degrees')
   const extent = options.extent ?? distance * Math.tan((fov * Math.PI) / 360)
-  if (!(extent > 0)) throw new MdmlError('value', 'camera: extent must be positive')
+  if (!(extent > 0 && Number.isFinite(extent))) throw new MdmlError('value', 'camera: extent must be positive')
+  const azimuth = options.azimuth ?? -60
+  const elevation = options.elevation ?? 30
+  const target = options.target ?? ([0, 0, 0] as const)
+  if (!Number.isFinite(azimuth)) throw new MdmlError('value', `camera: azimuth must be finite, got ${azimuth}`)
+  if (!(elevation >= -90 && elevation <= 90))
+    throw new MdmlError('value', `camera: elevation must be in [-90, 90] degrees, got ${elevation}`)
+  if (!target.every(Number.isFinite)) throw new MdmlError('value', `camera: target must be finite, got [${target}]`)
   return {
     projection: options.projection ?? 'perspective',
-    azimuth: options.azimuth ?? -60,
-    elevation: options.elevation ?? 30,
+    azimuth,
+    elevation,
     distance,
-    target: options.target ?? [0, 0, 0],
+    target,
     fov,
     extent,
   }
@@ -99,7 +107,8 @@ function itemPoints(item: Item3D): readonly Vec3[] {
  * @param cam - The camera (its projection, angles and field of view are kept).
  * @param s - The scene.
  * @param margin - Extra room as a factor (default 1.1).
- * @returns The fitted camera (unchanged for an empty scene).
+ * @returns The fitted camera (unchanged for an empty scene or one without a finite point; for a scene of one point only
+ *   the target moves, the camera keeps its distance and extent).
  * @example
  * ```ts
  * import { camera, fitCamera, scene3d, point3d } from 'mdml-engine/scene'
@@ -113,6 +122,7 @@ export function fitCamera(cam: Camera, s: Scene3D, margin = 1.1): Camera {
     for (const p of itemPoints(item)) {
       for (let k = 0; k < 3; k++) {
         const v = p[k] as number
+        if (!Number.isFinite(v)) continue
         if (v < (lo[k] as number)) lo[k] = v
         if (v > (hi[k] as number)) hi[k] = v
       }
@@ -121,7 +131,10 @@ export function fitCamera(cam: Camera, s: Scene3D, margin = 1.1): Camera {
   if (!Number.isFinite(lo[0] as number)) return cam
   const mid = (k: number): number => ((lo[k] as number) + (hi[k] as number)) / 2
   const half = (k: number): number => ((hi[k] as number) - (lo[k] as number)) / 2
-  const extent = margin * Math.max(1e-9, Math.hypot(half(0), half(1), half(2)))
+  const radius = Math.hypot(half(0), half(1), half(2))
+  // One point (or coincident ones) has no size to frame: aim at it and keep the camera's own distance and extent.
+  if (!(radius > 0)) return { ...cam, target: [mid(0), mid(1), mid(2)] }
+  const extent = margin * radius
   // The sphere fits the perspective view when its angular radius is at most half the field of view.
   const distance = extent / Math.sin((cam.fov * Math.PI) / 360)
   return { ...cam, target: [mid(0), mid(1), mid(2)], extent, distance }
@@ -153,6 +166,24 @@ export function projectPoint(
   p: Vec3,
   viewport: { readonly width: number; readonly height: number },
 ): Projected | undefined {
+  const q = viewSpace(cam, p)
+  const depth = q.depth
+  const half = Math.min(viewport.width, viewport.height) / 2
+  let k: number
+  if (cam.projection === 'perspective') {
+    if (depth <= 1e-9 * cam.distance) return undefined
+    k = half / (depth * Math.tan((cam.fov * Math.PI) / 360))
+  } else {
+    k = half / cam.extent
+  }
+  const x = viewport.width / 2 + k * q.xc
+  const y = viewport.height / 2 - k * q.yc
+  // A non-finite coordinate (NaN, Infinity) has no image: it is dropped like a point behind the eye.
+  return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(depth) ? { x, y, depth } : undefined
+}
+
+/** A world point in the camera's frame: right, up and the depth along the view direction (larger is farther). */
+function viewSpace(cam: Camera, p: Vec3): { readonly xc: number; readonly yc: number; readonly depth: number } {
   const az = (cam.azimuth * Math.PI) / 180
   const el = (cam.elevation * Math.PI) / 180
   const ca = Math.cos(az)
@@ -166,16 +197,50 @@ export function projectPoint(
   const xc = -sa * dx + ca * dy
   const yc = -se * ca * dx - se * sa * dy + ce * dz
   const zc = ce * ca * dx + ce * sa * dy + se * dz
-  const depth = cam.distance - zc
-  const half = Math.min(viewport.width, viewport.height) / 2
-  let k: number
-  if (cam.projection === 'perspective') {
-    if (depth <= 1e-9 * cam.distance) return undefined
-    k = half / (depth * Math.tan((cam.fov * Math.PI) / 360))
-  } else {
-    k = half / cam.extent
+  return { xc, yc, depth: cam.distance - zc }
+}
+
+/** The view a projection reads: the camera's image of a point, its depth, and the near plane that clips (perspective). */
+interface View {
+  readonly at: (p: Vec3) => Projected | undefined
+  readonly depth: (p: Vec3) => number
+  readonly perspective: boolean
+  readonly near: number
+}
+
+/**
+ * A segment that starts or ends behind the eye, cut at the near plane (1% of the camera distance), with whether its end
+ * `b` is still the original one (an arrow head belongs there); undefined if none of it is in front.
+ */
+function clipSegment(view: View, a: Vec3, b: Vec3): readonly [Vec3, Vec3, boolean] | undefined {
+  const da = view.depth(a)
+  const db = view.depth(b)
+  if (!(Number.isFinite(da) && Number.isFinite(db)) || (da < view.near && db < view.near)) return undefined
+  const cut = (from: Vec3, to: Vec3, df: number, dt: number): Vec3 => {
+    const t = (df - view.near) / (df - dt)
+    return [from[0] + t * (to[0] - from[0]), from[1] + t * (to[1] - from[1]), from[2] + t * (to[2] - from[2])]
   }
-  return { x: viewport.width / 2 + k * xc, y: viewport.height / 2 - k * yc, depth }
+  return da >= view.near ? [a, cut(a, b, da, db), false] : [cut(b, a, db, da), b, true]
+}
+
+/** A polygon cut at the near plane (Sutherland-Hodgman); fewer than three vertices left is nothing to draw. */
+function clipPolygon(view: View, points: readonly Vec3[]): readonly Vec3[] {
+  const depths = points.map((p) => view.depth(p))
+  if (!depths.every(Number.isFinite)) return []
+  const out: Vec3[] = []
+  for (let i = 0; i < points.length; i++) {
+    const j = (i + 1) % points.length
+    const p = points[i] as Vec3
+    const q = points[j] as Vec3
+    const dp = depths[i] as number
+    const dq = depths[j] as number
+    if (dp >= view.near) out.push(p)
+    if (dp >= view.near !== dq >= view.near) {
+      const t = (dp - view.near) / (dp - dq)
+      out.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1]), p[2] + t * (q[2] - p[2])])
+    }
+  }
+  return out.length < 3 ? [] : out
 }
 
 interface Drawn {
@@ -185,18 +250,22 @@ interface Drawn {
   readonly label: boolean
 }
 
-function projectItem(
-  item: Item3D,
-  order: number,
-  at: (p: Vec3) => Projected | undefined,
-  cull: boolean,
-  out: Drawn[],
-): void {
+function projectItem(item: Item3D, order: number, view: View, cull: boolean, out: Drawn[]): void {
+  const at = view.at
   const segment = (a: Vec3, b: Vec3, style: Style & NodeBase, head: boolean): void => {
-    const pa = at(a)
-    const pb = at(b)
-    if (pa === undefined || pb === undefined) return
-    const node = (head ? arrow : line)(pa.x, pa.y, pb.x, pb.y, style)
+    let pa = at(a)
+    let pb = at(b)
+    let tip = head
+    if (pa === undefined || pb === undefined) {
+      // Under perspective the part of the segment in front of the eye is still drawn, cut at the near plane.
+      const cut = view.perspective ? clipSegment(view, a, b) : undefined
+      if (cut === undefined) return
+      pa = at(cut[0])
+      pb = at(cut[1])
+      tip = head && cut[2]
+      if (pa === undefined || pb === undefined) return
+    }
+    const node = (tip ? arrow : line)(pa.x, pa.y, pb.x, pb.y, style)
     out.push({ depth: (pa.depth + pb.depth) / 2, order, node, label: false })
   }
   switch (item.kind) {
@@ -222,7 +291,12 @@ function projectItem(
     case 'face': {
       const { kind: _, points, ...style } = item
       const pts: Projected[] = []
-      for (const q of points) {
+      let vertices = points
+      if (view.perspective && points.some((q) => at(q) === undefined)) {
+        vertices = clipPolygon(view, points)
+        if (vertices.length === 0) return
+      }
+      for (const q of vertices) {
         const p = at(q)
         if (p === undefined) return
         pts.push(p)
@@ -260,8 +334,9 @@ function projectItem(
 /**
  * Project a 3-D scene to a 2-D {@link Scene} with the painter's algorithm: every point, segment, polyline segment and
  * face becomes a 2-D node, and nodes are drawn from the farthest (by mean vertex depth) to the nearest, ties in item
- * order. Labels are drawn last unless `labelsOnTop` is false. Under perspective, anything with a vertex at or behind
- * the eye is dropped. With `cull`, faces wound clockwise as seen from the eye (their backs) are dropped.
+ * order. Labels are drawn last unless `labelsOnTop` is false. Under perspective, a segment or face reaching behind the
+ * eye is cut at a near plane (1% of the camera distance) and its visible part drawn, and a point or label behind the
+ * eye, or with a non-finite coordinate, is dropped. With `cull`, faces wound clockwise as seen from the eye (their backs) are dropped.
  *
  * @param s - The 3-D scene.
  * @param cam - The camera.
@@ -289,9 +364,14 @@ export function project(
 ): Scene {
   const { width = 400, height = 400, cull = false, labelsOnTop = true } = options
   const viewport = { width, height }
-  const at = (p: Vec3): Projected | undefined => projectPoint(cam, p, viewport)
+  const view: View = {
+    at: (p) => projectPoint(cam, p, viewport),
+    depth: (p) => viewSpace(cam, p).depth,
+    perspective: cam.projection === 'perspective',
+    near: 0.01 * cam.distance,
+  }
   const drawn: Drawn[] = []
-  for (let order = 0; order < s.items.length; order++) projectItem(s.items[order] as Item3D, order, at, cull, drawn)
+  for (let order = 0; order < s.items.length; order++) projectItem(s.items[order] as Item3D, order, view, cull, drawn)
   const rank = (d: Drawn): number => (labelsOnTop && d.label ? 1 : 0)
   drawn.sort((a, b) => rank(a) - rank(b) || b.depth - a.depth || a.order - b.order)
   const title = options.title ?? s.title
@@ -314,6 +394,7 @@ export function project(
  * @param box - Where the layer sits in the enclosing scene.
  * @param options - Id and title.
  * @returns The node.
+ * @throws MdmlError `value` when the box corner is not finite or its width or height is not a finite number >= 0.
  * @example
  * ```ts
  * import { camera, layer3d, scene3d } from 'mdml-engine/scene'
@@ -326,6 +407,8 @@ export function layer3d(
   box: { readonly x: number; readonly y: number; readonly width: number; readonly height: number },
   options: NodeBase = {},
 ): Layer3DNode {
+  finite('layer3d', { x: box.x, y: box.y })
+  size('layer3d', { width: box.width, height: box.height })
   return { kind: 'layer3d', ...box, scene: s, camera: cam, ...options }
 }
 

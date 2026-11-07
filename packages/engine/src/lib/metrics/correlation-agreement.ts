@@ -9,6 +9,7 @@ import { ndtri } from '../numerics/special/index.ts'
 import { cov, kendallTau as kendallTest, spearman } from '../stats/index.ts'
 import { item, type TensorLike, toFlat } from '../tensor/index.ts'
 import { rejectSampleWeight, sortLabels } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import { cohenKappaScore, type KappaOptions } from './classification-summary.ts'
 import { contingencyMatrix } from './clustering.ts'
 import {
@@ -23,18 +24,12 @@ import {
   shapedArray,
 } from './metric.ts'
 
+const agreementSpec = specOf('agreement', 'values', 'correlation-agreement', { range: [-1, 1] })
 const spec = (
   name: string,
-  range: readonly [number, number] = [-1, 1],
+  range?: readonly [number, number],
   inputs: MetricSpec['inputs'] = 'values',
-): MetricSpec => ({
-  name,
-  direction: 'higher',
-  range,
-  inputs,
-  category: 'agreement',
-  concept: 'correlation-agreement',
-})
+): MetricSpec => ({ ...agreementSpec(name, 'higher', range), inputs })
 
 const pair = (name: string, x: TensorLike, y: TensorLike): [Float64Array, Float64Array] => {
   const a = flat(x)
@@ -292,7 +287,7 @@ export const intraclassCorrelation: MetricFunction<[TensorLike, { readonly type?
     const r = shapedArray(ratings)
     const n = r.shape[0] ?? 0
     const k = r.shape[1] ?? 0
-    if (n < 2 || k < 2) throw new MdmlError('shape', 'intraclassCorrelation: needs at least two targets and two raters')
+    if (n < 2 || k < 2) throw new MdmlError('value', 'intraclassCorrelation: needs at least two targets and two raters')
     let grand = 0
     for (const v of r.data) grand += v
     grand /= n * k

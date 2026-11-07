@@ -4,7 +4,12 @@
  * numbers and shapes at function boundaries.
  */
 
-/** The category of a {@link MdmlError}: callers branch on this, never on message text. */
+/**
+ * The category of a {@link MdmlError}: callers branch on this, never on message text. `value` is an invalid argument (a
+ * number out of range, too few observations, a bad choice); `shape` dimensions that disagree; `domain` a kernel
+ * hyperparameter outside its range (the kernels' contract); `schema` data that does not parse; `not-implemented` a
+ * capability the thing truly lacks.
+ */
 export type ErrorCode =
   | 'shape'
   | 'dtype'

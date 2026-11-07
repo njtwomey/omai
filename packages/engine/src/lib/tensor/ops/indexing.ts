@@ -10,7 +10,7 @@
 import { MdmlError, maxOf } from '../../base/index.ts'
 import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'
-import { allocate } from '../dtype.ts'
+import { allocate, type DType } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { formatShape, normaliseAxis, type Shape, sizeOf } from '../shape.ts'
 import { isTensor, type Tensor, type TensorLike } from '../tensor.ts'
@@ -339,6 +339,8 @@ export function slice(
  * toArray(take(tensor([[1, 2], [3, 4], [5, 6]]), [2, 0])) // => [[5, 6], [1, 2]]
  * ```
  */
+export function take<D extends DType>(x: Tensor<D>, indices: TensorLike, axis?: number): Tensor<D>
+export function take(x: TensorLike, indices: TensorLike, axis?: number): Value
 export function take(x: TensorLike, indices: TensorLike, axis = 0): Value {
   const v = val(x)
   const a = normaliseAxis(axis, v.shape.length)
