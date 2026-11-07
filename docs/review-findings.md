@@ -101,6 +101,23 @@ groups them by name and by structure.
 - **What the scan cannot say:** whether two names with one structure mean one thing (a `Point2` and a `Complex` do not).
   The cluster review reads only the vector, matrix, point, colour and complex families, not every shape.
 
+### The rule for these types
+
+Specialised names stay (`Rgba`, `Complex`, `Point2`, `Quat` mean different things in different code); what the review
+wants is that each is a specialisation of one underlying type and not a restatement of it: `type Rgba = Vec4`, not
+`type Rgba = readonly [number, number, number, number]`. The scan separates the two. Of the base shapes there are 83
+definitions (`Vec2` 26, `Vec3` 7, `Vec4` 11, a plain vector 18, a matrix of rows 21), and **none is an alias of
+another name**: every one restates the shape, because the engine has no canonical small-vector or matrix type (`Vec3`
+lives in `scene/three-d.ts`, `Point2` in `graphics/rasterise.ts`, `Matrix` in seven places). The proposal is a few
+canonical types in `base` (`Vec2`, `Vec3`, `Vec4`, `Vector`, `Matrix`, readonly, tuples and arrays of `number`), and the
+vector-named definitions (about 42, listed by `types.mjs`) become aliases of them, in the engine and in render (which
+already depends on `mdml-engine`). It is a change of types only: no runtime, the same structural types, so nothing
+type-checks differently. The signature digest of the declarations that change moves, which `make api-surface-check`
+reports; that is the intended, reviewed change.
+
+The hot-path vector spellings (`Float64Array` against `number[]` against `TensorLike`) are a design question, not a
+restatement, and are left to the cluster review.
+
 ## Not yet done
 
 Coverage per file for the core (running), the CPU profile for the hot paths, the cluster reading (Phase 1), and the

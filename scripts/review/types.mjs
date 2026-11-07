@@ -100,6 +100,35 @@ for (const [shape, v] of [...groups].sort((a, b) => b[1].length - a[1].length).s
   console.log(`  x${v.length} ${shape}: ${[...new Set(v.map((d) => d.name))].slice(0, 8).join(', ')}`)
 }
 
+// ---- the base shapes: who restates them, and who aliases a named type ----
+const BASE = {
+  '[number,number]': 'Vec2',
+  '[number,number,number]': 'Vec3',
+  '[number,number,number,number]': 'Vec4',
+  'number[]': 'Vector',
+  '(number[])[]': 'Matrix',
+  'number[][]': 'Matrix',
+}
+console.log(
+  '\nBASE SHAPES (a specialisation is fine as an alias of one canonical type; an independent restatement is the finding):',
+)
+for (const canonical of ['Vec2', 'Vec3', 'Vec4', 'Vector', 'Matrix']) {
+  const shapes = Object.entries(BASE)
+    .filter(([, c]) => c === canonical)
+    .map(([k]) => k)
+  const all = defs.filter((d) => shapes.includes(d.shape) && !d.generic && d.kind === 'type')
+  const independent = all.filter((d) => !/^[A-Z]\w*$/.test(d.shape))
+  const names = independent.filter((d) =>
+    /^(Vec|Vector|Mat|Matrix|Point|Pt|P\d|Rgb|Rgba|Quat|Complex|C|Plane|Box|Pair|Triplet|Rows?|Embedding|Tuple)/i.test(
+      d.name,
+    ),
+  )
+  console.log(
+    `  ${canonical}: ${independent.length} independent definitions (${names.length} with a vector-like name), ${all.length - independent.length} aliases of another name`,
+  )
+  for (const d of names.slice(0, 14)) console.log(`      ${d.name.padEnd(14)} ${d.where.replace(/^packages\//, '')}`)
+}
+
 // ---- how the engine spells numeric parameters, per domain (counts of the spelling in source) ----
 const SPELLINGS = {
   'number[]': /\bnumber\[\]/g,
