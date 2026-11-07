@@ -59,9 +59,24 @@ function radix2(re: Float64Array, im: Float64Array, sign: number): void {
   }
 }
 
-/** Bluestein: X_k = conj(w_k) sum_n (x_n conj(w_n)) w_{k-n}, w_m = exp(i pi m^2 / n), as a power-of-two convolution. */
-function bluestein(re: Float64Array, im: Float64Array, sign: number): void {
-  const n = re.length
+/**
+ * Everything Bluestein's algorithm needs for one length and sign: the chirp w_k = exp(-sign i pi k^2 / n), the
+ * transform of its zero-padded, wrapped copy, and scratch space for the padded line. Built once per call over many
+ * lines of the same length (the chirp costs a third of a line), never kept between calls.
+ */
+interface BluesteinPlan {
+  readonly n: number
+  readonly sign: number
+  readonly m: number
+  readonly wr: Float64Array
+  readonly wi: Float64Array
+  readonly br: Float64Array
+  readonly bi: Float64Array
+  readonly ar: Float64Array
+  readonly ai: Float64Array
+}
+
+function bluesteinPlan(n: number, sign: number): BluesteinPlan {
   let m = 1
   while (m < 2 * n - 1) m <<= 1
   const wr = new Float64Array(n)
@@ -72,13 +87,6 @@ function bluestein(re: Float64Array, im: Float64Array, sign: number): void {
     wr[k] = Math.cos(angle)
     wi[k] = -sign * Math.sin(angle)
   }
-  const ar = new Float64Array(m)
-  const ai = new Float64Array(m)
-  for (let k = 0; k < n; k++) {
-    // x_k * conj-chirp (the chirp with the transform's sign).
-    ar[k] = (re[k] ?? 0) * (wr[k] ?? 0) + (im[k] ?? 0) * (wi[k] ?? 0)
-    ai[k] = (im[k] ?? 0) * (wr[k] ?? 0) - (re[k] ?? 0) * (wi[k] ?? 0)
-  }
   const br = new Float64Array(m)
   const bi = new Float64Array(m)
   br[0] = wr[0] ?? 1
@@ -87,8 +95,21 @@ function bluestein(re: Float64Array, im: Float64Array, sign: number): void {
     br[k] = br[m - k] = wr[k] ?? 0
     bi[k] = bi[m - k] = wi[k] ?? 0
   }
-  radix2(ar, ai, -1)
   radix2(br, bi, -1)
+  return { n, sign, m, wr, wi, br, bi, ar: new Float64Array(m), ai: new Float64Array(m) }
+}
+
+/** Bluestein: X_k = conj(w_k) sum_n (x_n conj(w_n)) w_{k-n}, w_m = exp(i pi m^2 / n), as a power-of-two convolution. */
+function bluestein(re: Float64Array, im: Float64Array, plan: BluesteinPlan): void {
+  const { n, m, wr, wi, br, bi, ar, ai } = plan
+  ar.fill(0)
+  ai.fill(0)
+  for (let k = 0; k < n; k++) {
+    // x_k * conj-chirp (the chirp with the transform's sign).
+    ar[k] = (re[k] ?? 0) * (wr[k] ?? 0) + (im[k] ?? 0) * (wi[k] ?? 0)
+    ai[k] = (im[k] ?? 0) * (wr[k] ?? 0) - (re[k] ?? 0) * (wi[k] ?? 0)
+  }
+  radix2(ar, ai, -1)
   for (let k = 0; k < m; k++) {
     const r = (ar[k] ?? 0) * (br[k] ?? 0) - (ai[k] ?? 0) * (bi[k] ?? 0)
     const i = (ar[k] ?? 0) * (bi[k] ?? 0) + (ai[k] ?? 0) * (br[k] ?? 0)
@@ -104,8 +125,11 @@ function bluestein(re: Float64Array, im: Float64Array, sign: number): void {
   }
 }
 
-/** In-place DFT of one sequence: sum_n x_n exp(sign 2 pi i k n / N), times scale. */
-export function transform(re: Float64Array, im: Float64Array, sign: number, scale: number): void {
+/**
+ * In-place DFT of one sequence: sum_n x_n exp(sign 2 pi i k n / N), times scale. `plan` is the Bluestein plan of this
+ * length and sign when the caller transforms many lines (built here for a single line).
+ */
+export function transform(re: Float64Array, im: Float64Array, sign: number, scale: number, plan?: BluesteinPlan): void {
   const n = re.length
   if (n <= 1) {
     if (n === 1) {
@@ -115,7 +139,7 @@ export function transform(re: Float64Array, im: Float64Array, sign: number, scal
     return
   }
   if (isPowerOfTwo(n)) radix2(re, im, sign)
-  else bluestein(re, im, sign)
+  else bluestein(re, im, plan ?? bluesteinPlan(n, sign))
   if (scale !== 1) {
     for (let k = 0; k < n; k++) {
       re[k] = (re[k] ?? 0) * scale
@@ -140,6 +164,8 @@ export function transformAxis(
   const outIm = Float64Array.from(im)
   const lineRe = new Float64Array(n)
   const lineIm = new Float64Array(n)
+  // One chirp and its transform for all the lines of this call.
+  const plan = n > 1 && !isPowerOfTwo(n) ? bluesteinPlan(n, sign) : undefined
   for (let o = 0; o < outer; o++) {
     for (let i = 0; i < inner; i++) {
       const base = o * n * inner + i
@@ -147,7 +173,7 @@ export function transformAxis(
         lineRe[k] = outRe[base + k * inner] ?? 0
         lineIm[k] = outIm[base + k * inner] ?? 0
       }
-      transform(lineRe, lineIm, sign, scale)
+      transform(lineRe, lineIm, sign, scale, plan)
       for (let k = 0; k < n; k++) {
         outRe[base + k * inner] = lineRe[k] ?? 0
         outIm[base + k * inner] = lineIm[k] ?? 0
