@@ -249,15 +249,22 @@ export function isStructure(value: unknown): value is Structure {
  * ```
  */
 export function subStructure(s: Structure, ids: readonly string[], direction: 'ancestors' | 'descendants'): Structure {
+  // A queue over the adjacency lists: linear in the edges whatever their order (a sweep until nothing changes is
+  // quadratic when the edges list the far end of a chain first).
+  const next = new Map<string, string[]>()
+  for (const e of s.edges) {
+    const [from, to] = direction === 'descendants' ? [e.from, e.to] : [e.to, e.from]
+    const out = next.get(from)
+    if (out === undefined) next.set(from, [to])
+    else out.push(to)
+  }
   const keep = new Set(ids)
-  let changed = true
-  while (changed) {
-    changed = false
-    for (const e of s.edges) {
-      const [from, to] = direction === 'descendants' ? [e.from, e.to] : [e.to, e.from]
-      if (keep.has(from) && !keep.has(to)) {
+  const queue = [...keep]
+  for (let head = 0; head < queue.length; head++) {
+    for (const to of next.get(queue[head] as string) ?? []) {
+      if (!keep.has(to)) {
         keep.add(to)
-        changed = true
+        queue.push(to)
       }
     }
   }

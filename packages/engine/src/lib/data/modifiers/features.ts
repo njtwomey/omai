@@ -7,7 +7,7 @@
  * @index function Missingness, outlier and feature-noise modifiers.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, sigmoidOf } from '../../base/index.ts'
 import { foldIn, type Key, normal, permutation, uniform } from '../../random/index.ts'
 import { choice, dict, int, real } from '../../space/index.ts'
 import {
@@ -43,7 +43,6 @@ import {
   columnStats,
   columnsOf,
   composedFunctions,
-  logistic,
   mapColumns,
   requireTabular,
   selectColumns,
@@ -124,7 +123,7 @@ export function withMissing<D extends TabularData>(input: Generated<D>, options:
       mechanism === 'MAR' ? drivers.reduce((s, k) => s + z(i, k), 0) / drivers.length : z(i, j),
     )
     const a = rate <= 0 ? -Infinity : rate >= 1 ? Infinity : calibrateIntercept(score, strength, rate)
-    for (let i = 0; i < n; i++) prob[i * d + j] = logistic(a + strength * (score[i] ?? 0))
+    for (let i = 0; i < n; i++) prob[i * d + j] = sigmoidOf(a + strength * (score[i] ?? 0))
   }
   const u = uniform(options.key, [n, d]).data
   const values = Float64Array.from(x.data as ArrayLike<number>)

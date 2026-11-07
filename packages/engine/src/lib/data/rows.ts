@@ -94,7 +94,23 @@ export function labelsOf(data: Dataset): number[] | undefined {
   }
 }
 
-function sizeOf(size: number, n: number, name: string): number {
+/**
+ * The number of rows a split size means: a fraction below 1 is a share of the rows (rounded up), from 1 up a count of
+ * rows, which must be whole and fit.
+ *
+ * @param size - A fraction in [0, 1) or a whole number of rows.
+ * @param n - The number of rows.
+ * @param name - The caller's name, for errors.
+ * @returns The number of rows.
+ * @throws MdmlError with code `value` for a negative, non-finite or fractional count, or a size beyond `n`.
+ * @example
+ * ```ts
+ * import { splitSize } from 'mdml-engine/data'
+ * splitSize(0.25, 10, 'demo') // => 3
+ * splitSize(4, 10, 'demo') // => 4
+ * ```
+ */
+export function splitSize(size: number, n: number, name: string): number {
   // A fraction below 1 is a share of the rows (rounded up); from 1 up it is a count of rows and must be whole.
   if (!Number.isFinite(size) || size < 0 || (size >= 1 && !Number.isInteger(size)))
     throw new MdmlError('value', `${name}: a size is a fraction in [0, 1) or a whole number of rows, got ${size}`)
@@ -198,7 +214,7 @@ export function trainTestSplit<D extends Dataset>(
   options: SplitOptions = {},
 ): { readonly train: D; readonly test: D } {
   const n = rowCount(data)
-  const nTest = sizeOf(options.testSize ?? 0.25, n, 'trainTestSplit')
+  const nTest = splitSize(options.testSize ?? 0.25, n, 'trainTestSplit')
   if (nTest <= 0 || nTest >= n)
     throw new MdmlError('value', `trainTestSplit: test size ${nTest} leaves no rows to train on`)
   if (options.stratify === true) {
@@ -243,8 +259,8 @@ export function trainValTestSplit<D extends Dataset>(
   options: ThreeWaySplitOptions = {},
 ): { readonly train: D; readonly val: D; readonly test: D } {
   const n = rowCount(data)
-  const nTest = sizeOf(options.testSize ?? 0.15, n, 'trainValTestSplit')
-  const nVal = sizeOf(options.valSize ?? 0.15, n, 'trainValTestSplit')
+  const nTest = splitSize(options.testSize ?? 0.15, n, 'trainValTestSplit')
+  const nVal = splitSize(options.valSize ?? 0.15, n, 'trainValTestSplit')
   if (nTest <= 0 || nVal <= 0 || nTest + nVal >= n)
     throw new MdmlError('value', `trainValTestSplit: sizes ${nVal} and ${nTest} leave no rows to train on`)
   const first = trainTestSplit(data, { ...options, testSize: nTest })
@@ -279,7 +295,7 @@ export function stratifiedSplit<D extends Dataset>(
   const labels = options.labels ?? labelsOf(data)
   if (labels === undefined) throw new MdmlError('value', 'stratifiedSplit: the dataset has no class labels')
   const n = rowCount(data)
-  const nTest = sizeOf(options.testSize ?? 0.25, n, 'stratifiedSplit')
+  const nTest = splitSize(options.testSize ?? 0.25, n, 'stratifiedSplit')
   const { train, test } = stratifiedIndices(labels, nTest, options.key)
   return { train: take(data, train), test: take(data, test) }
 }
