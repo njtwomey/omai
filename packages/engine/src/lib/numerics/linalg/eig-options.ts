@@ -8,6 +8,7 @@ import {
   type DictSpace,
   dict,
   int,
+  type Knobs,
   knobOption,
   type Option,
   type OptionTable,
@@ -43,8 +44,6 @@ export interface EigenIterationProperties {
   /** The order of convergence, as text. */
   readonly order: string
 }
-
-type Knobs = (name: string) => number
 
 function method(
   description: string,

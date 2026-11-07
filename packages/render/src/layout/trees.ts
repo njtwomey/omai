@@ -21,13 +21,13 @@ export interface TreeOptions {
   readonly margin?: number
 }
 
-interface Shape {
+interface TreeStructure {
   readonly root: string
   readonly children: ReadonlyMap<string, readonly string[]>
   readonly size: ReadonlyMap<string, { readonly width: number; readonly height: number }>
 }
 
-function shape(graph: LayoutGraph, root?: string): Shape {
+function shape(graph: LayoutGraph, root?: string): TreeStructure {
   const children = new Map<string, string[]>()
   const hasParent = new Set<string>()
   const ids = new Set(graph.nodes.map((n) => n.id))
@@ -41,7 +41,7 @@ function shape(graph: LayoutGraph, root?: string): Shape {
 }
 
 /** Leaves placed in order, each parent centred over its children; returns the breadth position and depth of each node. */
-function tidyPositions(s: Shape, siblingSep: number, horizontal: boolean): Map<string, [number, number]> {
+function tidyPositions(s: TreeStructure, siblingSep: number, horizontal: boolean): Map<string, [number, number]> {
   const out = new Map<string, [number, number]>()
   let next = 0
   const extent = (v: string): number => {

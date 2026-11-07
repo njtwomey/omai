@@ -11,6 +11,7 @@ import {
   type DictSpace,
   dict,
   int,
+  type Knobs,
   knobOption,
   type Option,
   type OptionTable,
@@ -54,8 +55,6 @@ export interface RejectionSamplerProperties {
   /** Whether it handles more than one dimension. */
   readonly multivariate: boolean
 }
-
-type Knobs = (name: string) => number
 
 function sampler(
   description: string,

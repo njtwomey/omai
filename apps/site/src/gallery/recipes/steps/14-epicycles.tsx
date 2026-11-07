@@ -11,9 +11,9 @@ export const recipe: Recipe = {
   shows: ['epicycles', 'EpicyclePlayer'],
 }
 
-type Shape = 'heart' | 'star' | 'square'
+type EpicycleShape = 'heart' | 'star' | 'square'
 
-const curve = (shape: Shape, n: number): [number, number][] =>
+const curve = (shape: EpicycleShape, n: number): [number, number][] =>
   Array.from({ length: n }, (_, i) => {
     const t = (2 * Math.PI * i) / n
     if (shape === 'heart')
@@ -34,7 +34,7 @@ const curve = (shape: Shape, n: number): [number, number][] =>
   })
 
 export default function EpicyclesRecipe(): ReactNode {
-  const [shape, setShape] = useState<Shape>('heart')
+  const [shape, setShape] = useState<EpicycleShape>('heart')
   const [kept, setKept] = useState(12)
   const record = useMemo(() => {
     const raw = curve(shape, 256)

@@ -8,6 +8,7 @@ import { gamma, weibull } from '../dists/index.ts'
 import {
   type DictSpace,
   dict,
+  type Knobs,
   knobOption,
   type Option,
   type OptionTable,
@@ -37,8 +38,6 @@ export interface PointProcessProperties {
   /** Whether it is simulated by thinning (some candidates are rejected). */
   readonly thinned: boolean
 }
-
-type Knobs = (name: string) => number
 
 function process(
   description: string,

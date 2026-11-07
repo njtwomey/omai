@@ -110,7 +110,7 @@ function entropyBits(counts: ArrayLike<number>): number {
 }
 
 /** A candidate multiway or binary split of a node: groups of rows, ranked by gain and a score. */
-interface Option {
+interface SplitOption {
   readonly feature: number
   readonly threshold: number
   readonly branches: readonly (readonly number[])[]
@@ -221,7 +221,7 @@ export function classicTreeAlgorithm(
     }
   }
   /** The options at a node for one feature. */
-  const optionsFor = (node: ClassicNode, j: number): Option | undefined => {
+  const optionsFor = (node: ClassicNode, j: number): SplitOption | undefined => {
     const total = node.value.reduce((a, b) => a + b, 0)
     const rows = Array.from(node.rows).filter((r) => !Number.isNaN(m.data[r * m.d + j] ?? 0))
     if (rows.length < 2) return undefined
@@ -332,11 +332,11 @@ export function classicTreeAlgorithm(
       const open = [...s.open]
       const id = open.pop() ?? 0
       const node = nodes[id] as ClassicNode
-      let chosen: Option | undefined
+      let chosen: SplitOption | undefined
       const candidates: SplitCandidate[] = []
       const stop = node.depth >= maxDepth || node.rows.length < options.minSamplesSplit || node.impurity <= 1e-12
       if (!stop) {
-        const all: Option[] = []
+        const all: SplitOption[] = []
         for (let j = 0; j < m.d; j++) {
           if (options.mode !== 'c45' && node.used.includes(j)) continue
           const o = optionsFor(node, j)

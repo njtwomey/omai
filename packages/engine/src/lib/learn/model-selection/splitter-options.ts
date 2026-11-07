@@ -4,7 +4,17 @@
  * `union` space for controls, grids and tuners, and builds the `Splitter` from a configuration.
  */
 
-import { bool, dict, int, knobOption, type Option, type OptionTable, optionTable, real } from '../../space/index.ts'
+import {
+  bool,
+  dict,
+  int,
+  type Knobs,
+  knobOption,
+  type Option,
+  type OptionTable,
+  optionTable,
+  real,
+} from '../../space/index.ts'
 import {
   kFold,
   leaveOneOut,
@@ -25,13 +35,11 @@ export interface SplitterProperties {
   readonly randomised: boolean
 }
 
-type Knobs = (name: string) => number | boolean
-
 function scheme(
   description: string,
   properties: SplitterProperties,
   space: ReturnType<typeof dict>,
-  build: (k: Knobs) => Splitter,
+  build: (k: Knobs<number | boolean>) => Splitter,
 ): Option<Splitter, SplitterProperties> {
   return knobOption(description, properties, space, build)
 }

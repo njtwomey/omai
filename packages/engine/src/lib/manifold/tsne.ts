@@ -267,7 +267,7 @@ export function tsneGradient(
 // Barnes-Hut
 
 /** A space-partitioning tree over an embedding (a quadtree in 2-D, an octree in 3-D, ...), in flat arrays. */
-interface Tree {
+interface SpacePartitionTree {
   readonly k: number
   readonly arity: number
   count: number[]
@@ -279,7 +279,7 @@ interface Tree {
   point: number[]
 }
 
-function newNode(t: Tree, centre: ArrayLike<number>, half: number): number {
+function newNode(t: SpacePartitionTree, centre: ArrayLike<number>, half: number): number {
   const id = t.count.length
   t.count.push(0)
   t.half.push(half)
@@ -292,7 +292,7 @@ function newNode(t: Tree, centre: ArrayLike<number>, half: number): number {
   return id
 }
 
-function childOf(t: Tree, node: number, y: ArrayLike<number>): number {
+function childOf(t: SpacePartitionTree, node: number, y: ArrayLike<number>): number {
   let which = 0
   const centre = new Array<number>(t.k)
   const half = (t.half[node] ?? 0) / 2
@@ -309,7 +309,7 @@ function childOf(t: Tree, node: number, y: ArrayLike<number>): number {
   return id
 }
 
-function insert(t: Tree, node: number, i: number, y: Float64Array, depth: number): void {
+function insert(t: SpacePartitionTree, node: number, i: number, y: Float64Array, depth: number): void {
   const k = t.k
   const before = t.count[node] ?? 0
   for (let a = 0; a < k; a++)
@@ -332,7 +332,7 @@ function insert(t: Tree, node: number, i: number, y: Float64Array, depth: number
   insert(t, childOf(t, node, y.subarray(i * k, (i + 1) * k)), i, y, depth + 1)
 }
 
-function buildTree(y: Float64Array, n: number, k: number): Tree {
+function buildTree(y: Float64Array, n: number, k: number): SpacePartitionTree {
   const lo = new Array<number>(k).fill(Number.POSITIVE_INFINITY)
   const hi = new Array<number>(k).fill(Number.NEGATIVE_INFINITY)
   for (let i = 0; i < n; i++)
@@ -342,7 +342,7 @@ function buildTree(y: Float64Array, n: number, k: number): Tree {
     }
   const centre = lo.map((v, a) => (v + (hi[a] ?? 0)) / 2)
   const half = Math.max(maxOf(lo.map((v, a) => ((hi[a] ?? 0) - v) / 2)), 1e-12) * (1 + 1e-9)
-  const t: Tree = { k, arity: 1 << k, count: [], centre: [], half: [], com: [], child: [], point: [] }
+  const t: SpacePartitionTree = { k, arity: 1 << k, count: [], centre: [], half: [], com: [], child: [], point: [] }
   const root = newNode(t, centre, half)
   for (let i = 0; i < n; i++) insert(t, root, i, y, 0)
   return t
