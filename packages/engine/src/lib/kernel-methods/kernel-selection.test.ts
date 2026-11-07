@@ -130,7 +130,9 @@ describe('the tuners', () => {
       tuneKernelRidge(fixed, x, y, {
         alpha: 0.5,
         solver: smoothSolverConfig({ ...s, gradTol: 1e-8 } as never),
-        maxSteps: 300,
+        // The solvers get within 1e-8 of the optimum in at most 20 steps; gradTol 1e-8 is the noise floor of the
+        // objective (about sqrt(eps)), so a solver whose rounding falls the wrong way would otherwise walk to the cap.
+        maxSteps: 60,
       }),
     )
     for (const t of values) expect(t.value).toBeCloseTo(values[0]?.value ?? 0, 4)
