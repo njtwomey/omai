@@ -9,7 +9,8 @@
 import { MdmlError } from '../base/index.ts'
 import { cpu } from './cpu.ts'
 import { allocate, type DType } from './dtype.ts'
-import { cast, mul, sub } from './ops/arithmetic.ts'
+import { cast } from './ops/arithmetic.ts'
+import { equal, where } from './ops/compare.ts'
 import { type Shape, sizeOf } from './shape.ts'
 import type { CreateOptions, Tensor, TensorLike } from './tensor.ts'
 import { asTensor } from './tensor.ts'
@@ -306,7 +307,8 @@ export function meshgrid(axes: readonly TensorLike[], indexing: 'xy' | 'ij' = 'x
 }
 
 /**
- * The lower triangle of a matrix (entries above the `k`th diagonal set to zero).
+ * The lower triangle of a matrix (entries above the `k`th diagonal set to zero, whatever they hold: Infinity and NaN
+ * above the diagonal do not leak).
  *
  * @param x - A matrix (or batch of matrices).
  * @param k - Diagonal offset.
@@ -321,11 +323,12 @@ export function tril(x: TensorLike, k = 0): Value {
   const v = asTensor(x)
   const n = v.shape[v.shape.length - 2] ?? 1
   const m = v.shape[v.shape.length - 1] ?? 1
-  return mul(v, cast(tri(n, m, k), v.dtype))
+  return where(cast(tri(n, m, k), 'bool'), v, 0)
 }
 
 /**
- * The upper triangle of a matrix (entries below the `k`th diagonal set to zero).
+ * The upper triangle of a matrix (entries below the `k`th diagonal set to zero, whatever they hold: Infinity and NaN
+ * below the diagonal do not leak).
  *
  * @param x - A matrix (or batch of matrices).
  * @param k - Diagonal offset.
@@ -340,7 +343,7 @@ export function triu(x: TensorLike, k = 0): Value {
   const v = asTensor(x)
   const n = v.shape[v.shape.length - 2] ?? 1
   const m = v.shape[v.shape.length - 1] ?? 1
-  return mul(v, cast(sub(1, tri(n, m, k - 1)), v.dtype))
+  return where(equal(tri(n, m, k - 1), 0), v, 0)
 }
 
 /**

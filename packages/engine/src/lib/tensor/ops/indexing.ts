@@ -10,6 +10,7 @@
 import { MdmlError, maxOf } from '../../base/index.ts'
 import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'
+import { allocate } from '../dtype.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { formatShape, normaliseAxis, type Shape, sizeOf } from '../shape.ts'
 import { isTensor, type Tensor, type TensorLike } from '../tensor.ts'
@@ -262,6 +263,21 @@ function normaliseSlice(
   ]
 }
 
+/**
+ * Negative indices counted from the end of a length-`n` axis, as numpy does. With `op` the indices are also range
+ * checked (the scatter kernels are trusted and never look). A traced value passes through untouched.
+ */
+function wrapIndices(idx: Value, n: number, op?: string): Value {
+  if (!isTensor(idx)) return idx
+  const wrapped = Int32Array.from(idx.data as Int32Array, (i) => {
+    const j = i < 0 ? i + n : i
+    if (op !== undefined && (j < 0 || j >= n))
+      throw new MdmlError('value', `${op}: index ${i} out of range for length ${n}`)
+    return j
+  })
+  return cpu.wrap('int32', idx.shape, wrapped)
+}
+
 function indexTensor(indices: TensorLike): Value {
   if (Array.isArray(indices) && indices.every((i) => typeof i === 'number'))
     return cpu.wrap('int32', [indices.length], Int32Array.from(indices as readonly number[]))
@@ -323,8 +339,7 @@ export function take(x: TensorLike, indices: TensorLike, axis = 0): Value {
   const a = normaliseAxis(axis, v.shape.length)
   const n = v.shape[a] ?? 0
   const idx = indexTensor(indices)
-  const flat = isTensor(idx) ? Int32Array.from(idx.data, (i) => (i < 0 ? i + n : i)) : undefined
-  const fixed = flat === undefined ? idx : cpu.wrap('int32', idx.shape, flat)
+  const fixed = wrapIndices(idx, n)
   if (fixed.shape.length !== 1) {
     const out = bind1(takePrimitive, [v, reshape(fixed, [-1])], { axis: a })
     return reshape(out, [...v.shape.slice(0, a), ...fixed.shape, ...v.shape.slice(a + 1)])
@@ -360,13 +375,14 @@ export function takeAlongAxis(x: TensorLike, indices: TensorLike, axis: number):
 
 /**
  * Add `updates` into a zero array of `shape` at `indices` along an axis (the adjoint of {@link takeAlongAxis}; torch
- * `scatter_add`). Repeated indices accumulate.
+ * `scatter_add`). Repeated indices accumulate; negative indices count from the end.
  *
  * @param shape - Shape of the result.
  * @param indices - int32 indices with the shape of `updates`.
  * @param updates - Values to add.
  * @param axis - The axis.
  * @returns The accumulated value.
+ * @throws MdmlError with code `value` for an index outside `[-n, n)` along the axis.
  * @example
  * ```ts
  * import { scatterAdd, toArray } from 'mdml-engine/tensor'
@@ -375,17 +391,20 @@ export function takeAlongAxis(x: TensorLike, indices: TensorLike, axis: number):
  */
 export function scatterAdd(shape: Shape, indices: TensorLike, updates: TensorLike, axis: number): Value {
   const u = val(updates)
-  const idx = asDtype(val(indices), 'int32')
-  return bind1(putAlongPrimitive, [u, idx], { axis: normaliseAxis(axis, shape.length), shape: [...shape] })
+  const a = normaliseAxis(axis, shape.length)
+  const idx = wrapIndices(asDtype(val(indices), 'int32'), shape[a] ?? 0, 'scatterAdd')
+  return bind1(putAlongPrimitive, [u, idx], { axis: a, shape: [...shape] })
 }
 
 /**
- * Sum rows of `data` into segments given by an id per row (TensorFlow `unsorted_segment_sum`).
+ * Sum rows of `data` into segments given by an id per row (TensorFlow `unsorted_segment_sum`). Negative ids count
+ * from the end, as in {@link take}.
  *
  * @param data - Values with segments along axis 0.
  * @param segmentIds - The segment of each row (int32, length of axis 0).
  * @param numSegments - The number of segments.
  * @returns A value with `numSegments` rows.
+ * @throws MdmlError with code `value` for an id outside `[-numSegments, numSegments)`.
  * @example
  * ```ts
  * import { segmentSum, toArray } from 'mdml-engine/tensor'
@@ -393,7 +412,8 @@ export function scatterAdd(shape: Shape, indices: TensorLike, updates: TensorLik
  * ```
  */
 export function segmentSum(data: TensorLike, segmentIds: TensorLike, numSegments: number): Value {
-  return bind1(takeScatterPrimitive, [val(data), indexTensor(segmentIds)], { axis: 0, size: numSegments })
+  const ids = wrapIndices(indexTensor(segmentIds), numSegments, 'segmentSum')
+  return bind1(takeScatterPrimitive, [val(data), ids], { axis: 0, size: numSegments })
 }
 
 /**
@@ -578,8 +598,12 @@ export function unique(x: TensorLike): { readonly values: Tensor; readonly count
   const counts = new Map<number, number>()
   for (const v of t.data) counts.set(v, (counts.get(v) ?? 0) + 1)
   const keys = [...counts.keys()].sort((a, b) => a - b)
+  const values = allocate(t.dtype, keys.length)
+  keys.forEach((k, i) => {
+    values[i] = k
+  })
   return {
-    values: t.backend.wrap(t.dtype, [keys.length], Float64Array.from(keys) as never),
+    values: t.backend.wrap(t.dtype, [keys.length], values),
     counts: cpu.wrap(
       'int32',
       [keys.length],

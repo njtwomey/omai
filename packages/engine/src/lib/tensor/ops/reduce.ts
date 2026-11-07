@@ -37,6 +37,25 @@ function expandBack(g: Value, shape: readonly number[], axes: readonly number[])
   return broadcastTo(reshape(g, keptShape(shape, axes)), shape)
 }
 
+/**
+ * The product of all the other elements of each reduced group, at every position: `out / x` where the group has no
+ * zero, the product of the rest where it has exactly one (at the zero itself), and 0 everywhere else. Built from
+ * safe divisions, so there is no 0/0 and the rule stays differentiable.
+ */
+function prodOfOthers(x: Value, axes: readonly number[]): Value {
+  const isZero = equal(x, 0)
+  const safe = where(isZero, 1, x)
+  const nonZeroProduct = prod(safe, axes, true)
+  const zeros = sum(isZero, axes, true)
+  return where(isZero, where(equal(zeros, 1), nonZeroProduct, 0), where(equal(zeros, 0), div(nonZeroProduct, safe), 0))
+}
+
+/** `sqrt` with a zero gradient at zero (the subgradient of a norm) instead of 0 * Infinity; NaN still propagates. */
+function sqrtZeroGradient(s: Value): Value {
+  const isZero = equal(s, 0)
+  return where(isZero, 0, sqrt(where(isZero, 1, s)))
+}
+
 function reducePrimitive(op: ReduceKernel): Primitive<ReduceParams> {
   const primitive: Primitive<ReduceParams> = definePrimitive<ReduceParams>({
     name: `reduce_${op}`,
@@ -48,7 +67,7 @@ function reducePrimitive(op: ReduceKernel): Primitive<ReduceParams> {
       const x = arg(xs, 0)
       if (op === 'sum') return [sum(t, p.axes, p.keepDims)]
       const out = expandBack(arg(outs, 0), x.shape, p.axes)
-      if (op === 'prod') return [mul(arg(outs, 0), sum(div(t, x), p.axes, p.keepDims))]
+      if (op === 'prod') return [sum(mul(t, prodOfOthers(x, p.axes)), p.axes, p.keepDims)]
       const mask = cast(equal(x, out), x.dtype)
       const share = div(mask, expandBack(sum(mask, p.axes, true), x.shape, p.axes))
       return [sum(mul(t, share), p.axes, p.keepDims)]
@@ -60,8 +79,7 @@ function reducePrimitive(op: ReduceKernel): Primitive<ReduceParams> {
       const gx = expandBack(g, x.shape, p.axes)
       if (op === 'sum') return [gx]
       const out = expandBack(arg(outs, 0), x.shape, p.axes)
-      // The product rule as out / x: exact away from zeros, which is the case the rule documents.
-      if (op === 'prod') return [div(mul(gx, out), x)]
+      if (op === 'prod') return [mul(gx, prodOfOthers(x, p.axes))]
       const mask = cast(equal(x, out), x.dtype)
       return [mul(gx, div(mask, expandBack(sum(mask, p.axes, true), x.shape, p.axes)))]
     },
@@ -186,8 +204,7 @@ function reduceWith(
  * ```
  */
 export function sum(x: TensorLike, axis?: number | readonly number[], keepDims = false): Value {
-  const v = val(x)
-  return reduceWith(sumPrimitive, v.dtype === 'bool' ? cast(v, 'int32') : v, axis, keepDims)
+  return reduceWith(sumPrimitive, intForBool(val(x)), axis, keepDims)
 }
 
 /**
@@ -204,8 +221,7 @@ export function sum(x: TensorLike, axis?: number | readonly number[], keepDims =
  * ```
  */
 export function prod(x: TensorLike, axis?: number | readonly number[], keepDims = false): Value {
-  const v = val(x)
-  return reduceWith(prodPrimitive, v.dtype === 'bool' ? cast(v, 'int32') : v, axis, keepDims)
+  return reduceWith(prodPrimitive, intForBool(val(x)), axis, keepDims)
 }
 
 /**
@@ -293,7 +309,8 @@ export function variance(x: TensorLike, axis?: number | readonly number[], optio
 }
 
 /**
- * Standard deviation over axes (the square root of {@link variance}).
+ * Standard deviation over axes (the square root of {@link variance}; its gradient is 0, not NaN, where the variance
+ * is 0).
  *
  * @param x - Input.
  * @param axis - An axis or list of axes.
@@ -306,7 +323,7 @@ export function variance(x: TensorLike, axis?: number | readonly number[], optio
  * ```
  */
 export function std(x: TensorLike, axis?: number | readonly number[], options: VarianceOptions = {}): Value {
-  return sqrt(variance(x, axis, options))
+  return sqrtZeroGradient(variance(x, axis, options))
 }
 
 /**
@@ -347,8 +364,13 @@ export function argmin(x: TensorLike, axis?: number, keepDims = false): Value {
   return bind1(argminPrimitive, [v], { axis: normaliseAxis(axis, v.shape.length), keepDims })
 }
 
+/** Bool input counts as int32 in sums and products (a bool running total would wrap at 256). */
+function intForBool(v: Value): Value {
+  return v.dtype === 'bool' ? cast(v, 'int32') : v
+}
+
 /**
- * Cumulative sum along an axis (flattened when no axis is given).
+ * Cumulative sum along an axis (flattened when no axis is given). Bool input counts as int32.
  *
  * @param x - Input.
  * @param axis - The axis.
@@ -361,7 +383,7 @@ export function argmin(x: TensorLike, axis?: number, keepDims = false): Value {
  * ```
  */
 export function cumsum(x: TensorLike, axis?: number, reverse = false): Value {
-  const v = val(x)
+  const v = intForBool(val(x))
   const input = axis === undefined ? reshape(v, [-1]) : v
   return bind1(cumsumPrimitive, [input], {
     axis: axis === undefined ? 0 : normaliseAxis(axis, v.shape.length),
@@ -370,8 +392,8 @@ export function cumsum(x: TensorLike, axis?: number, reverse = false): Value {
 }
 
 /**
- * Cumulative product along an axis (flattened when no axis is given). Its derivative divides by the input, so it is
- * exact away from zeros.
+ * Cumulative product along an axis (flattened when no axis is given). Bool input counts as int32. Its derivative
+ * divides by the input, so it is exact away from zeros.
  *
  * @param x - Input.
  * @param axis - The axis.
@@ -384,7 +406,7 @@ export function cumsum(x: TensorLike, axis?: number, reverse = false): Value {
  * ```
  */
 export function cumprod(x: TensorLike, axis?: number, reverse = false): Value {
-  const v = val(x)
+  const v = intForBool(val(x))
   const input = axis === undefined ? reshape(v, [-1]) : v
   return bind1(cumprodPrimitive, [input], {
     axis: axis === undefined ? 0 : normaliseAxis(axis, v.shape.length),
@@ -410,9 +432,11 @@ export function cumprod(x: TensorLike, axis?: number, reverse = false): Value {
 export function logsumexp(x: TensorLike, axis?: number | readonly number[], keepDims = false): Value {
   const v = floatify(x)
   const axes = normaliseAxes(axis, v.shape.length)
-  const m = stopGradient(max(v, axes, true))
-  // Rows that are entirely -Infinity (or contain +Infinity) are shifted by 0 so the result stays exact.
-  const shift = where(isfinite(m), m, 0)
+  // Rows that are entirely -Infinity (or contain +Infinity) are shifted by 0 so the result stays exact, and so are
+  // empty reductions (no maximum exists; the result is log(0) = -Infinity, as in scipy).
+  const empty = axes.some((a) => v.shape[a] === 0)
+  const m = empty ? undefined : stopGradient(max(v, axes, true))
+  const shift = m === undefined ? 0 : where(isfinite(m), m, 0)
   const out = add(log(sum(exp(sub(v, shift)), axes, true)), shift)
   return keepDims
     ? out
@@ -459,7 +483,7 @@ export function logSoftmax(x: TensorLike, axis = -1): Value {
 
 /**
  * Vector norm over axes (all by default): `ord` 2 (Euclidean, the default), 1, `Infinity`, `-Infinity` or any p > 0.
- * Matrix norms other than Frobenius are in `numerics/linalg`.
+ * The gradient of the 2-norm at the zero vector is 0. Matrix norms other than Frobenius are in `numerics/linalg`.
  *
  * @param x - Input.
  * @param ord - The order (default 2).
@@ -475,7 +499,7 @@ export function logSoftmax(x: TensorLike, axis = -1): Value {
  */
 export function norm(x: TensorLike, ord = 2, axis?: number | readonly number[], keepDims = false): Value {
   const v = floatify(x)
-  if (ord === 2) return sqrt(sum(square(v), axis, keepDims))
+  if (ord === 2) return sqrtZeroGradient(sum(square(v), axis, keepDims))
   if (ord === 1) return sum(abs(v), axis, keepDims)
   if (ord === Infinity) return max(abs(v), axis, keepDims)
   if (ord === -Infinity) return min(abs(v), axis, keepDims)

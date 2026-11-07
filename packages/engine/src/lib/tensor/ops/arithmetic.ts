@@ -47,14 +47,19 @@ function powLogTerm(a: Value, out: Value): Value {
   return where(equal(a, 0), 0, mul(out, log(a)))
 }
 
+// d/da a^b = b a^(b-1), taken as 0 where b = 0 (a^0 is constant; 0 * 0^-1 would be NaN at a = 0).
+function powBaseTerm(a: Value, b: Value): Value {
+  return where(equal(b, 0), 0, mul(b, pow(a, sub(b, 1))))
+}
+
 /** Elementwise power. @internal */
 export const powPrimitive: Primitive<null> = binaryPrimitive('pow', {
   jvp: (a, b, ta, tb, out) => {
-    const da = ta === null ? null : mul(ta, mul(b, pow(a, sub(b, 1))))
+    const da = ta === null ? null : mul(ta, powBaseTerm(a, b))
     const db = tb === null ? null : mul(tb, powLogTerm(a, out))
     return da === null ? db : db === null ? da : add(da, db)
   },
-  vjp: (g, a, b, out) => [mul(g, mul(b, pow(a, sub(b, 1)))), mul(g, powLogTerm(a, out))],
+  vjp: (g, a, b, out) => [mul(g, powBaseTerm(a, b)), mul(g, powLogTerm(a, out))],
 })
 
 // Ties share the derivative equally, as in JAX.
@@ -197,7 +202,8 @@ export function div(a: TensorLike, b: TensorLike): Value {
 }
 
 /**
- * Elementwise power with broadcasting (computed in floating point).
+ * Elementwise power with broadcasting (computed in floating point). `1 ** y` and `x ** 0` are 1 even for NaN, and
+ * `(-1) ** (+-Infinity)` is 1, as in C99 and numpy.
  *
  * @param a - Base.
  * @param b - Exponent.
@@ -245,11 +251,12 @@ export function minimum(a: TensorLike, b: TensorLike): Value {
 }
 
 /**
- * Elementwise floor division (rounds towards negative infinity).
+ * Elementwise floor division (rounds towards negative infinity), computed as numpy does from the exact remainder, so
+ * `1 // 0.1` is 9 where `floor(1 / 0.1)` is 10.
  *
  * @param a - Dividend.
  * @param b - Divisor.
- * @returns `floor(a / b)`.
+ * @returns `floor(a / b)` computed from the exact remainder.
  * @example
  * ```ts
  * import { floorDiv, tensor, toArray } from 'mdml-engine/tensor'
@@ -261,11 +268,11 @@ export function floorDiv(a: TensorLike, b: TensorLike): Value {
 }
 
 /**
- * Elementwise modulo with the sign of the divisor (Python and numpy semantics).
+ * Elementwise modulo with the sign of the divisor (Python and numpy semantics), from the exact remainder of `a % b`.
  *
  * @param a - Dividend.
  * @param b - Divisor.
- * @returns `a - b * floor(a / b)`.
+ * @returns `a - b * floor(a / b)`, without the rounding of `a / b`.
  * @example
  * ```ts
  * import { mod, tensor, toArray } from 'mdml-engine/tensor'

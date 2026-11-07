@@ -17,6 +17,8 @@ export type UnaryKernel =
   | 'expm1'
   | 'log'
   | 'log1p'
+  | 'log2'
+  | 'log10'
   | 'sqrt'
   | 'sin'
   | 'cos'
