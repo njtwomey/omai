@@ -279,59 +279,62 @@ describe('linprog in other units', () => {
     const unit = Math.max(...want.filter(Number.isFinite).map(Math.abs), Number.MIN_VALUE)
     got.forEach((v, i) => {
       const w = want[i] ?? 0
-      if (!Number.isFinite(w)) return expect(v, `${what}[${i}]`).toBe(w)
-      expect(Math.abs(v - w) / unit, `${what}[${i}] = ${v}, expected ${w}`).toBeLessThan(1e-5)
+      if (!Number.isFinite(w)) expect(v, `${what}[${i}]`).toBe(w)
+      else expect(Math.abs(v - w) / unit, `${what}[${i}] = ${v}, expected ${w}`).toBeLessThan(1e-5)
     })
   }
 
-  it.each([
-    ['textbook', textbook, 1e-9, 1],
-    ['textbook', textbook, 1e-12, 1],
-    ['textbook', textbook, 1e9, 1],
-    ['textbook', textbook, 1, 1e-12],
-    ['textbook', textbook, 1, 1e9],
-    ['textbook', textbook, 1e-9, 1e-12],
-    ['bounded', bounded, 1e-9, 1],
-    ['bounded', bounded, 1, 1e-12],
-    ['bounded', bounded, 1e9, 1e9],
-  ] as const)('%s, row %#: the same vertex in the new units, by every method', (_, lp, kc, kb) => {
-    for (const [name, method] of Object.entries(methods)) {
-      const ref = method(lp)
-      const r = method(scaled(lp, kc, kb))
-      expect(r.status, `${name} status`).toBe('optimal')
-      rel(
-        toFlat(r.x),
-        toFlat(ref.x).map((v) => v * kb),
-        `${name} x`,
-      )
-      rel([r.fun], [ref.fun * kc * kb], `${name} fun`)
-      rel(
-        toFlat(r.marginals.ineqlin),
-        toFlat(ref.marginals.ineqlin).map((v) => v * kc),
-        `${name} ineqlin`,
-      )
-      rel(
-        toFlat(r.marginals.eqlin),
-        toFlat(ref.marginals.eqlin).map((v) => v * kc),
-        `${name} eqlin`,
-      )
-      if (r.sensitivity !== undefined && ref.sensitivity !== undefined) {
+  it('finds the same vertex in the new units, by every method', () => {
+    const rows = [
+      ['textbook', textbook, 1e-9, 1],
+      ['textbook', textbook, 1e-12, 1],
+      ['textbook', textbook, 1e9, 1],
+      ['textbook', textbook, 1, 1e-12],
+      ['textbook', textbook, 1, 1e9],
+      ['textbook', textbook, 1e-9, 1e-12],
+      ['bounded', bounded, 1e-9, 1],
+      ['bounded', bounded, 1, 1e-12],
+      ['bounded', bounded, 1e9, 1e9],
+    ] as const
+    for (const [label, lp, kc, kb] of rows) {
+      for (const [name, method] of Object.entries(methods)) {
+        const ref = method(lp)
+        const r = method(scaled(lp, kc, kb))
+        expect(r.status, `${label} c x ${kc} b x ${kb} ${name} status`).toBe('optimal')
         rel(
-          r.sensitivity.cost.flat(),
-          ref.sensitivity.cost.flat().map((v) => v * kc),
-          `${name} cost range`,
+          toFlat(r.x),
+          toFlat(ref.x).map((v) => v * kb),
+          `${label} c x ${kc} b x ${kb} ${name} x`,
+        )
+        rel([r.fun], [ref.fun * kc * kb], `${label} c x ${kc} b x ${kb} ${name} fun`)
+        rel(
+          toFlat(r.marginals.ineqlin),
+          toFlat(ref.marginals.ineqlin).map((v) => v * kc),
+          `${label} c x ${kc} b x ${kb} ${name} ineqlin`,
         )
         rel(
-          r.sensitivity.bUb.flat(),
-          ref.sensitivity.bUb.flat().map((v) => v * kb),
-          `${name} b range`,
+          toFlat(r.marginals.eqlin),
+          toFlat(ref.marginals.eqlin).map((v) => v * kc),
+          `${label} c x ${kc} b x ${kb} ${name} eqlin`,
+        )
+        if (r.sensitivity !== undefined && ref.sensitivity !== undefined) {
+          rel(
+            r.sensitivity.cost.flat(),
+            ref.sensitivity.cost.flat().map((v) => v * kc),
+            `${label} c x ${kc} b x ${kb} ${name} cost range`,
+          )
+          rel(
+            r.sensitivity.bUb.flat(),
+            ref.sensitivity.bUb.flat().map((v) => v * kb),
+            `${label} c x ${kc} b x ${kb} ${name} b range`,
+          )
+        }
+        rel(
+          r.path.at(-1)?.x ?? [],
+          (ref.path.at(-1)?.x ?? []).map((v) => v * kb),
+          `${label} c x ${kc} b x ${kb} ${name} path`,
         )
       }
-      rel(
-        r.path.at(-1)?.x ?? [],
-        (ref.path.at(-1)?.x ?? []).map((v) => v * kb),
-        `${name} path`,
-      )
     }
   })
 })

@@ -55,7 +55,12 @@ describe('smoothSolvers', () => {
     const expected = Math.sqrt(n)
     const logged = loggedSolver(problem, config, key(0))
     const seen: Record<string, number> = {}
-    const ctx = { log: (path: string, v: number) => void (seen[path] = v), key: key(1) }
+    const ctx = {
+      log: (path: string, v: number) => {
+        seen[path] = v
+      },
+      key: key(1),
+    }
     logged.step(logged.init(key(0)), ctx as never)
     expect(seen['solver/gradNorm']).toBeCloseTo(expected, 6)
     const slotted = slotAlgorithm<SlotState>({

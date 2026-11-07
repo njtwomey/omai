@@ -94,26 +94,28 @@ describe('greedy pursuits and thresholding', () => {
 
   // The linear-dependence test was absolute (`alpha^2 < eps`): a dictionary or signal in small units selected nothing
   // and reported success. It is the cosine of the atom with the signal that is negligible, not the correlation.
-  it.each([1e-9, 1, 1e9])('OMP at the scale %d of the data selects the same atoms and coefficients', (k) => {
-    const d = [
-      [1, 0],
-      [0, 1],
-    ].map((row) => row.map((v) => v * k))
-    const y = [1, 2].map((v) => v * k)
-    const r = O.orthogonalMatchingPursuit(d, y, { nNonzeroCoefs: 2 })
-    expect(r.support).toEqual([1, 0])
-    expect(round(toFlat(r.coef))).toEqual([1, 2])
-    expect(r.iterations).toBe(2)
-    // A repeated atom is a linear dependence at any scale: the run stops early, with the atoms it has.
-    const twin = O.orthogonalMatchingPursuit(
-      [
-        [k, k],
-        [0, 0],
-      ],
-      [k, 0],
-      { nNonzeroCoefs: 2 },
-    )
-    expect(twin.support).toEqual([0])
+  it('OMP selects the same atoms and coefficients at the scales 1e-9, 1 and 1e9 of the data', () => {
+    for (const k of [1e-9, 1, 1e9]) {
+      const d = [
+        [1, 0],
+        [0, 1],
+      ].map((row) => row.map((v) => v * k))
+      const y = [1, 2].map((v) => v * k)
+      const r = O.orthogonalMatchingPursuit(d, y, { nNonzeroCoefs: 2 })
+      expect(r.support, `scale ${k}`).toEqual([1, 0])
+      expect(round(toFlat(r.coef)), `scale ${k}`).toEqual([1, 2])
+      expect(r.iterations).toBe(2)
+      // A repeated atom is a linear dependence at any scale: the run stops early, with the atoms it has.
+      const twin = O.orthogonalMatchingPursuit(
+        [
+          [k, k],
+          [0, 0],
+        ],
+        [k, 0],
+        { nNonzeroCoefs: 2 },
+      )
+      expect(twin.support, `scale ${k}`).toEqual([0])
+    }
   })
 
   it('plain IHT with a fixed step below 1 / |D|^2 also converges', () => {
