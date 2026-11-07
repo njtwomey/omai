@@ -208,7 +208,17 @@ function newtonOn(obj: FlatObjective, options: NewtonOptions): Algorithm<NewtonS
         lineSearch: ls,
         ...(infNorm(grad) <= gtol
           ? { stop: { status: 'converged' as const, message: 'gradient norm below tolerance' } }
-          : {}),
+          : // An accepted step that leaves the objective and the gradient no better is a step made of rounding: the
+            // tolerance is below the noise of the objective, and more steps would only walk to the cap.
+            value >= s.value && infNorm(grad) >= infNorm(s.grad)
+            ? {
+                stop: {
+                  status: 'failed' as const,
+                  message:
+                    'no decrease: the step changes neither the objective nor the gradient norm (the tolerance is below the noise floor)',
+                },
+              }
+            : {}),
       }
     },
     done: vectorDone,
