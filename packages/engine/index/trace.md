@@ -15,4 +15,4 @@ Recording what algorithms do and running them as sessions: the `Algorithm` contr
 - function `recorder`: A tracer that keeps events in memory to replay or plot. `src/lib/trace/tracer.ts:64` `mdml-engine/trace`
 - function `resume`: Continue a run exactly from a stored checkpoint. `src/lib/trace/checkpoint.ts:57` `mdml-engine/trace`
 - function `runAlgorithm`: Run an Algorithm and record a traced run. `src/lib/trace/algorithm.ts:234` `mdml-engine/trace`
-- function `session`: Open a session on a method to step, seek and fork. `src/lib/trace/session.ts:200` `mdml-engine/trace`
+- function `session`: Open a session on a method to step, seek and fork. `src/lib/trace/session.ts:212` `mdml-engine/trace`
