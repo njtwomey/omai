@@ -6,7 +6,7 @@ Differentiable training objectives, torch.nn style: regression, classification, 
 
 - function `contrastive.ts` (file): Contrastive and metric-learning losses such as InfoNCE and triplet. `src/lib/losses/contrastive.ts:1` `mdml-engine/losses`
 
-- function `crossEntropy`: Categorical cross-entropy from logits. `src/lib/losses/classification.ts:236` `mdml-engine/losses`
+- function `crossEntropy`: Categorical cross-entropy from logits. `src/lib/losses/classification.ts:244` `mdml-engine/losses`
 - function `mse`: Mean squared error, torch.nn.functional style. `src/lib/losses/regression.ts:47` `mdml-engine/losses`
 
 - table `classificationLosses`: The binary classification losses as one slot. `src/lib/losses/tables.ts:121` `mdml-engine/losses`
