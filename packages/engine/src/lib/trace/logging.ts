@@ -69,6 +69,14 @@ export function scheduler<S>(resolved: Resolved<S>): Scheduler<S> {
     found.set(path, e)
     return e
   }
+  // Only logs scheduled on an event wait for firings: found once here, not by scanning every log per firing.
+  const onEvent: { readonly path: Path; readonly on: Path; readonly n: number }[] = []
+  for (const l of resolved.logs) {
+    const every = l.spec.every
+    if (every === undefined || typeof every === 'number' || every === 'logSpaced') continue
+    const [on, n] = typeof every === 'string' ? [every, 1] : every
+    onEvent.push({ path: l.path, on, n: Math.max(1, n) })
+  }
   const names = resolved.paths === undefined ? undefined : new Set(resolved.paths)
   const contractPatterns = resolved.paths?.filter(isPattern) ?? []
   const known = new Map<Path, boolean>()
@@ -95,18 +103,16 @@ export function scheduler<S>(resolved: Resolved<S>): Scheduler<S> {
     fired: (ev, t) => {
       const c = (counts.get(ev) ?? 0) + 1
       counts.set(ev, c)
-      steps.set(ev, [...(steps.get(ev) ?? []), t])
-      for (const l of resolved.logs) {
-        const every = l.spec.every
-        if (every === undefined || typeof every === 'number' || every === 'logSpaced') continue
-        const [on, n] = typeof every === 'string' ? [every, 1] : every
-        if (on === ev && c % Math.max(1, n) === 0) pending.add(l.path)
-      }
+      const fired = steps.get(ev)
+      if (fired === undefined) steps.set(ev, [t])
+      else fired.push(t)
+      for (const l of onEvent) if (l.on === ev && c % l.n === 0) pending.add(l.path)
     },
     consume: (path) => {
       const e = entry(path)
       if (e !== undefined) pending.delete(e.path)
     },
+    // A live view: the array grows as the event fires (Session.stepsOf copies it).
     stepsOf: (ev) => steps.get(ev) ?? [],
   }
 }

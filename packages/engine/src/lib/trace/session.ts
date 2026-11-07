@@ -318,7 +318,7 @@ export function session<S, C extends Config, K extends string = string>(
       return p(self.run(), projectOptions)
     },
     run: () => (rec === undefined ? { schema: 'mdml.run/1', events: [] } : rec.run()),
-    stepsOf: (ev) => sched.stepsOf(ev),
+    stepsOf: (ev) => sched.stepsOf(ev).slice(),
   }
   const mode = options.mode ?? 'live'
   if (mode === 'eager') advance()
