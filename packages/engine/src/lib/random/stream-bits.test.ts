@@ -1,16 +1,26 @@
 // Bit-for-bit pins of the sample streams, recorded from the code before `uniformStream` computed its Philox blocks
-// lazily: for a given key the draws must never change. Each row is a checksum (FNV-1a over the 32-bit words of the
-// float64 values) of the whole array, and its first value.
+// lazily: for a given key the draws must never change. Each row is a checksum of the whole array (see `checksum`) and its first value.
 import { describe, expect, it } from 'vitest'
 import { toFlat } from '../tensor/index.ts'
 import { beta, binomial, dirichlet, gamma, gammaVariates, key, poisson, studentT, uniformStream } from './index.ts'
 
-function checksum(values: ArrayLike<number>): string {
-  const words = new Uint32Array(Float64Array.from(values).buffer)
+/**
+ * The checksum of a sample: FNV-1a over the 32-bit words of its float64 values. The raw stream and integer-valued draws
+ * are hashed bit for bit. The others are built from `log`, `pow` and `sqrt`, whose last digit differs between platforms
+ * (macOS against the Linux runner), so their values are rounded to 9 significant digits first: a change of the stream
+ * changes them at the first digit, a platform's rounding at the sixteenth.
+ */
+function checksum(values: ArrayLike<number>, rounded: boolean): string {
+  const source = rounded ? Array.from(values, (v) => Number(v.toPrecision(9))) : Array.from(values)
+  const words = new Uint32Array(Float64Array.from(source).buffer)
   let h = 0x811c9dc5
   for (const w of words) h = Math.imul(h ^ w, 0x01000193) >>> 0
   return h.toString(16).padStart(8, '0')
 }
+
+/** Whether a pinned sample comes through libm (so it is compared to a tolerance): not a raw stream, not integer-valued. */
+const roundedPin = (name: string, values: ArrayLike<number>): boolean =>
+  !name.startsWith('stream') && !Array.from(values).every((v) => Number.isInteger(v))
 
 const ALPHAS = Float64Array.from({ length: 64 }, (_, i) => [0.3, 1, 2.5, 30, 0.9, 7][i % 6] ?? 1)
 
@@ -68,11 +78,11 @@ const PINS: readonly (readonly [string, string, number, number])[] = [
   ['stream(0,256,1)', '20fdf37b', 600, 0.975544165934352],
   ['stream(0,256,7)', '8c315466', 600, 0.045937981311307],
   ['stream(0,256,300)', 'ebe0e6b2', 600, 0.12518681498543405],
-  ['gammaVariates(0)', 'dcf3e017', 64, 1.388650128619132],
-  ['gamma(0)', '87a2c554', 200, 1.3118007753706977],
-  ['beta(0)', '96b405d1', 100, 0.3817010240152741],
-  ['studentT(0)', 'c7fa0522', 100, -0.061217365510408385],
-  ['dirichlet(0)', '15acc2ce', 120, 0.16948009873221231],
+  ['gammaVariates(0)', '909d3b30', 64, 1.388650128619132],
+  ['gamma(0)', '112b6e4c', 200, 1.3118007753706977],
+  ['beta(0)', 'e691720d', 100, 0.3817010240152741],
+  ['studentT(0)', '612be4af', 100, -0.061217365510408385],
+  ['dirichlet(0)', '7fab8940', 120, 0.16948009873221231],
   ['poisson(0)', 'b71a6705', 200, 3],
   ['poissonBig(0)', 'febff865', 100, 67],
   ['binomial(0)', 'ab486705', 200, 4],
@@ -97,11 +107,11 @@ const PINS: readonly (readonly [string, string, number, number])[] = [
   ['stream(7,256,1)', '169dfd69', 600, 0.5937725828809671],
   ['stream(7,256,7)', '20737962', 600, 0.1599261954235185],
   ['stream(7,256,300)', 'ab9309cd', 600, 0.38466819926017803],
-  ['gammaVariates(7)', 'a5dd5a82', 64, 0.015861896680236184],
-  ['gamma(7)', '543ded08', 200, 0.5413184470718303],
-  ['beta(7)', '6f1134aa', 100, 0.03831418951080337],
-  ['studentT(7)', '4ee65158', 100, -0.5786506916643104],
-  ['dirichlet(7)', 'dfd864f2', 120, 0.02439513536755501],
+  ['gammaVariates(7)', 'fdfbeb3f', 64, 0.015861896680236184],
+  ['gamma(7)', 'c2f37077', 200, 0.5413184470718303],
+  ['beta(7)', 'e2d51541', 100, 0.03831418951080337],
+  ['studentT(7)', '0e13c806', 100, -0.5786506916643104],
+  ['dirichlet(7)', '2e1184d1', 120, 0.02439513536755501],
   ['poisson(7)', 'd5766705', 200, 7],
   ['poissonBig(7)', 'ac13f865', 100, 86],
   ['binomial(7)', '2a5e6705', 200, 4],
@@ -126,11 +136,11 @@ const PINS: readonly (readonly [string, string, number, number])[] = [
   ['stream(12345,256,1)', 'e35f9466', 600, 0.2406184054983228],
   ['stream(12345,256,7)', '96dc8087', 600, 0.9697618977991801],
   ['stream(12345,256,300)', 'f26dd6d7', 600, 0.46338150483771756],
-  ['gammaVariates(12345)', '74267a26', 64, 0.6131013551820811],
-  ['gamma(12345)', '664acff7', 200, 0.945287147253217],
-  ['beta(12345)', '03be84d8', 100, 0.5225716409470544],
-  ['studentT(12345)', 'cecdaef8', 100, 4.110508244416309],
-  ['dirichlet(12345)', 'f9c68f95', 120, 0.2174947839092428],
+  ['gammaVariates(12345)', '58732008', 64, 0.6131013551820811],
+  ['gamma(12345)', 'e883c31f', 200, 0.945287147253217],
+  ['beta(12345)', '01ec497b', 100, 0.5225716409470544],
+  ['studentT(12345)', '08634dc2', 100, 4.110508244416309],
+  ['dirichlet(12345)', 'c3ff6663', 120, 0.2174947839092428],
   ['poisson(12345)', 'c8506705', 200, 4],
   ['poissonBig(12345)', '70513865', 100, 87],
   ['binomial(12345)', 'd2a06705', 200, 7],
@@ -141,7 +151,9 @@ describe('sample streams are bit-for-bit stable', () => {
   it.each(PINS)('%s', (name, hash, length, first) => {
     const values = sampleOf(name)
     expect(values.length).toBe(length)
-    expect(values[0]).toBe(first)
-    expect(checksum(values)).toBe(hash)
+    const rounded = roundedPin(name, values)
+    if (rounded) expect(values[0]).toBeCloseTo(first, 10)
+    else expect(values[0]).toBe(first)
+    expect(checksum(values, rounded)).toBe(hash)
   })
 })

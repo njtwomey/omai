@@ -143,3 +143,9 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   fixed in `matmul` (Wave B). FD-37 done in part (`summarise`, `treeMap`, `stateAt`); the `metricSeries` per-name scans and the `maxBytes`
   stringify are left (a cache needs invalidation on `forget`; the byte count is the contract). DSM-12 step 2 left: it changes which key draws
   each element. The full gate was not run (own tests and checks only, as the agent rules say).
+- **13:10 Slip, fixed.** The bit-identity pins added for the sampler fix (P3.12 and P3.32) failed on CI (12 tests in shard 2: `gamma`, `beta`,
+  `studentT`, `gammaVariates`): they hashed the exact bits of float draws that come through `log`, `pow` and `sqrt`, whose last digit differs
+  between macOS and the Linux runner. The samples did not change (the 84 pins on the raw stream and integer-valued draws, which use no libm, passed
+  on CI, and every pin passed on the Mac against values recorded from the old code). The float pins now hash the values rounded to 9 significant
+  digits and compare the first value to a tolerance. Lesson for any future pin or golden on a float sampler: compare to a tolerance or round, never
+  to the bits, and run it on the Linux runner before trusting it.
