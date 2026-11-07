@@ -12,7 +12,7 @@ Datasets as data: schemas for columns and targets (`xy`, `xyClasses`, `table`), 
 - function `generate`: Run a generator with a key and knob values. `src/lib/data/generator.ts:67` `mdml-engine/data`
 - function `makeFromRecipe`: Remake a dataset exactly from its recipe. `src/lib/data/recipes.ts:133` `mdml-engine/data`
 - function `table`: A data frame of named mixed-type columns. `src/lib/data/tensors.ts:251` `mdml-engine/data`
-- function `trainTestSplit`: Split any dataset kind into train and test rows. `src/lib/data/rows.ts:196` `mdml-engine/data`
+- function `trainTestSplit`: Split any dataset kind into train and test rows. `src/lib/data/rows.ts:212` `mdml-engine/data`
 - function `xy`: Build a regression dataset from features and targets. `src/lib/data/tensors.ts:57` `mdml-engine/data`
 - function `xyClasses`: Build a classification dataset from features and class labels. `src/lib/data/tensors.ts:94` `mdml-engine/data`
 
