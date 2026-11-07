@@ -681,7 +681,7 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
 - **23:20 Gate.** The render merge (P3.40 in part, P3.42, P3.44) passed the full local gate: 26,535 tests, 9,614 examples, all static checks and all six tsc runs, first run.
   35 of 44 work items complete, the other 9 each done except the follow-ups recorded in the register. Completion about 85% by effort. Nothing pushed (D-014).
 
-- **21:55 Foundations follow-ups (`agent-ff02-foundations-followups`, P3.7 leftovers, P3.12, P3.15; FD-12, 13, 14, 16, 22, 23, 25, 35, 37).** Thirteen commits on the branch (twelve of code and tests, one of documentation), nothing pushed (D-014).
+- **21:55 Foundations follow-ups (`agent-ff02-foundations-followups`, P3.7 leftovers, P3.12, P3.15; FD-12, 13, 14, 16, 22, 23, 25, 35, 37).** Fifteen commits on the branch (twelve of code and tests, then documentation, the regenerated index and surface, and this count), nothing pushed (D-014).
   Performance (niced throwaway script outside the repo, median of 9 after 3 warm-ups, ms, before to after): kernels without index maps or megamorphic calls (`65bcb155`, `7da78da6`; 1e6 elements:
   `add` 4.1 to 1.6, `mul` by a scalar 14.5 to 1.5, `greater` 14.2 to 1.7, `where` 19.6 to 4.7, `sum` 6.1 to 1.6, `sum` over the last axis of 1000x1000 6.0 to 1.0, `max` 15.1 to 4.3,
   `transpose` 10.1 to 4.9, `concat` 3.5 to 1.6, `log1p` 17.7 to 6.5, `sigmoid` 16.2 to 6.2, `tanh` 23.4 to 9.2): the per-element call of the shared unary and binary tables was megamorphic,
