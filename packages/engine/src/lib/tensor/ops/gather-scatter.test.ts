@@ -40,7 +40,10 @@ describe('gather and scatter', () => {
   it('are differentiable in every mode', () => {
     expect(checkPrimitive((x) => gather(x, pairs), [cube], { order: 2 }).failures).toEqual([])
     for (const mode of ['set', 'add', 'mul', 'max', 'min'] as ScatterMode[])
-      expect(checkPrimitive((x, u) => scatter(x, pairs, u, mode), [cube, updates], { order: 2 }).failures, mode).toEqual([])
+      expect(
+        checkPrimitive((x, u) => scatter(x, pairs, u, mode), [cube, updates], { order: 2 }).failures,
+        mode,
+      ).toEqual([])
   })
 
   it('set keeps the last write and routes its gradient only to the winner', () => {
