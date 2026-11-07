@@ -7,7 +7,7 @@
 import { type Json, MdmlError, maxOf } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
 import { eighKernel, qrKernel } from './_kernels.ts'
 import { dnrm2 } from './blas.ts'
 
@@ -191,6 +191,8 @@ export interface SubspaceResult {
   readonly basis: Tensor
   readonly iterations: number
   readonly converged: boolean
+  /** How the run ended (`converged`, `completed` at the iteration cap, ...). */
+  readonly status: RunStatus
   /** The largest Ritz-pair residual norm after each iteration (the first is the start's). */
   readonly residualHistory: readonly number[]
 }
@@ -240,6 +242,7 @@ export function subspaceIteration(
     basis: fromStorage(Float64Array.from(result.state.q), [n, k], 'float64'),
     iterations: result.steps,
     converged: result.status === 'converged',
+    status: result.status,
     residualHistory: history,
   }
 }

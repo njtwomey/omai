@@ -164,6 +164,7 @@ export interface ImplicitFixedPointOptions extends ImplicitOptions {
  * @param solver - A solver from concrete parameters (default: fixed-point iteration from `options.x0`).
  * @param options - The linear solver, and the default solver's start, tolerance and iteration cap.
  * @returns x*(...thetas).
+ * @throws MdmlError with code `convergence` when the default solver does not converge (the result must be a solution).
  * @concept implicit-differentiation
  * @example
  * ```ts
@@ -189,6 +190,8 @@ export function implicitFixedPoint(
         xtol: options.xtol ?? 1e-14,
         maxIterations: options.maxIterations ?? 10000,
       })
+      if (!r.converged)
+        throw new MdmlError('convergence', `implicitFixedPoint: no convergence after ${r.iterations} iterations`)
       return reshape(r.x, start.shape)
     })
   return implicitRoot((x, ...thetas) => sub(x, T(x, ...thetas)), solve, options)

@@ -12,6 +12,7 @@ import {
   numbersFromJson,
   numbersToJson,
   numberToJson,
+  type RunStatus,
   runAlgorithm,
 } from '../../trace/index.ts'
 import { solve } from '../linalg/index.ts'
@@ -29,6 +30,8 @@ export interface MinimaxResult {
   readonly reference: readonly number[]
   readonly iterations: number
   readonly converged: boolean
+  /** `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
   /** Evaluate the approximation at numbers. */
   readonly evaluate: (x: number) => number
 }
@@ -243,6 +246,7 @@ export function remez(f: (x: number) => number, m: number, options: RemezOptions
     reference: s.reference.map((t) => (a + b) / 2 + ((b - a) / 2) * t),
     iterations: s.converged ? s.iterations : (options.maxIterations ?? 60),
     converged: s.converged,
+    status: s.converged ? 'converged' : 'completed',
     evaluate: (x) => r((2 * x - a - b) / (b - a)),
   }
 }

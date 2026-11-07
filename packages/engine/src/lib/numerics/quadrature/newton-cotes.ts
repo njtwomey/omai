@@ -19,6 +19,7 @@ import {
   type Value,
   zeros,
 } from '../../tensor/index.ts'
+import type { RunStatus } from '../../trace/index.ts'
 
 /** Sample spacing: explicit sample points `x`, or a constant step `dx` (default 1). */
 export interface SpacingOptions {
@@ -163,7 +164,8 @@ export type RombergRow = readonly number[]
  * @param a - Lower limit.
  * @param b - Upper limit.
  * @param options - Absolute and relative tolerances (1.48e-8) and the maximum number of halvings (10).
- * @returns The estimate and the Romberg table.
+ * @returns The estimate and the Romberg table; `converged` is false (status `completed`) when the diagonal never settled
+ *   within the halvings.
  * @example
  * ```ts
  * import { romberg } from 'mdml-engine/numerics/quadrature'
@@ -176,7 +178,12 @@ export function romberg(
   a: number,
   b: number,
   options: { readonly tol?: number; readonly rtol?: number; readonly divmax?: number } = {},
-): { readonly value: number; readonly table: readonly RombergRow[]; readonly converged: boolean } {
+): {
+  readonly value: number
+  readonly table: readonly RombergRow[]
+  readonly converged: boolean
+  readonly status: RunStatus
+} {
   const tol = options.tol ?? 1.48e-8
   const rtol = options.rtol ?? 1.48e-8
   const evaluate = (xs: number[]): number[] =>
@@ -198,7 +205,8 @@ export function romberg(
     table.push(row)
     const last = row[k] ?? 0
     const before = table[k - 1]?.[k - 1] ?? 0
-    if (Math.abs(last - before) <= Math.max(tol, rtol * Math.abs(last))) return { value: last, table, converged: true }
+    if (Math.abs(last - before) <= Math.max(tol, rtol * Math.abs(last)))
+      return { value: last, table, converged: true, status: 'converged' }
   }
-  return { value: table.at(-1)?.at(-1) ?? Number.NaN, table, converged: false }
+  return { value: table.at(-1)?.at(-1) ?? Number.NaN, table, converged: false, status: 'completed' }
 }
