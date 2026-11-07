@@ -1,5 +1,4 @@
 import { goldenSuite } from '../../testing/suite.ts'
-import { tensor } from '../tensor/index.ts'
 import * as M from './index.ts'
 
 interface Image {
@@ -22,10 +21,10 @@ const split = (images: readonly Image[], flag: 'iscrowd' | 'difficult') => ({
 })
 
 goldenSuite('box overlaps and detection mAP against torchvision, pycocotools and voc_eval', 'metrics/detection', {
-  boxIou: ([a, b]) => tensor(M.boxIou(a, b)),
-  generalizedBoxIou: ([a, b]) => tensor(M.generalizedBoxIou(a, b)),
-  distanceBoxIou: ([a, b]) => tensor(M.distanceBoxIou(a, b)),
-  completeBoxIou: ([a, b]) => tensor(M.completeBoxIou(a, b)),
+  boxIou: ([a, b]) => M.boxIou(a, b),
+  generalizedBoxIou: ([a, b]) => M.generalizedBoxIou(a, b),
+  distanceBoxIou: ([a, b]) => M.distanceBoxIou(a, b),
+  completeBoxIou: ([a, b]) => M.completeBoxIou(a, b),
   cocoStat: (_inputs, p) => {
     const { preds, targets } = split(p['images'] as Image[], 'iscrowd')
     return M.detectionMeanAveragePrecision(preds, targets).breakdown?.[p['stat'] as string] ?? Number.NaN
