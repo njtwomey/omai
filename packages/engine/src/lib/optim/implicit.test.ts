@@ -32,7 +32,7 @@ const cubicRoot = (t: Tensor): Tensor =>
     t.shape,
     'float64',
   )
-const cubic: O.Residual = (x, t) => sub(add(pow(x, 3), x), t as Value)
+const cubic: O.ImplicitResidual = (x, t) => sub(add(pow(x, 3), x), t as Value)
 
 describe('implicit differentiation', () => {
   it('root of an equation: reverse and forward mode agree with finite differences', () => {
@@ -53,7 +53,7 @@ describe('implicit differentiation', () => {
 
   it('several parameters, shaped solutions and second-order use', () => {
     // F(X, A, B) = A X - B for a matrix X: X* = A^{-1} B.
-    const F: O.Residual = (x, a, b) => sub(matmul(a as Value, x), b as Value)
+    const F: O.ImplicitResidual = (x, a, b) => sub(matmul(a as Value, x), b as Value)
     const xs = O.implicitRoot(F, (a, b) => solve(a as Tensor, b as Tensor))
     const a = tensor([
       [3, 1],
@@ -84,7 +84,7 @@ describe('implicit differentiation', () => {
       [0.1, 0.3, -0.2],
       [-0.15, 0.05, 0.1],
     ])
-    const T: O.Residual = (x, t) => tanh(add(reshape(matmul(w, reshape(x, [-1, 1])), [-1]), t as Value))
+    const T: O.ImplicitResidual = (x, t) => tanh(add(reshape(matmul(w, reshape(x, [-1, 1])), [-1]), t as Value))
     const layer = O.implicitFixedPoint(T, undefined, { x0: [0, 0, 0] })
     const theta = tensor([0.3, -0.5, 0.8])
     const x = layer(theta)
@@ -102,7 +102,7 @@ describe('implicit differentiation', () => {
       [2, 0.3],
     ])
     const y = tensor([1, -0.5, 2])
-    const f: O.Residual = (x, lam) =>
+    const f: O.ImplicitResidual = (x, lam) =>
       add(sum(square(sub(reshape(matmul(A, reshape(x, [-1, 1])), [-1]), y))), mul(sum(square(x)), lam as Value))
     const closed = (lam: Value): Value => {
       const at = swapaxes(A, 0, 1)

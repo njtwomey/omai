@@ -39,7 +39,7 @@ import {
   treeZeros,
   type Value,
 } from '../tensor/index.ts'
-import type { GradientTransformation, LearningRate, Tree } from './transform.ts'
+import type { GradientTransformation, LearningRate, ParamTree } from './transform.ts'
 
 const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number' ? lr : lr(step))
 
@@ -248,7 +248,7 @@ export interface KfacLayer {
 export interface KfacState {
   readonly count: number
   readonly factors: Readonly<Record<string, KfacFactors & { readonly bias?: string }>>
-  readonly momentum?: Tree
+  readonly momentum?: ParamTree
 }
 
 /** Options of {@link kfac}. */
@@ -340,7 +340,7 @@ export interface ShampooState {
   readonly stats: readonly (readonly Value[])[]
   /** Per leaf, the per-mode preconditioners H_i^(-1/(2k)) (identity for modes above maxDim). */
   readonly roots: readonly (readonly (Value | undefined)[])[]
-  readonly momentum?: Tree
+  readonly momentum?: ParamTree
 }
 
 /** Options of {@link shampoo}. */
@@ -479,6 +479,6 @@ export function preconditionBy(
  * toArray(diagonalPrecondition(tensor([2, 2]), tensor([4, 16]), 0) as never) // => [1, 0.5]
  * ```
  */
-export function diagonalPrecondition(grads: Tree, diagonal: Tree, eps = 1e-8): Tree {
+export function diagonalPrecondition(grads: ParamTree, diagonal: ParamTree, eps = 1e-8): ParamTree {
   return treeMap((g, d) => div(g, add(sqrt(d), eps)), grads, diagonal)
 }

@@ -6,7 +6,7 @@
  */
 
 import { choice, dict, fillKnobs, int, type Option, type OptionTable, optionTable, real } from '../../space/index.ts'
-import type { Metric } from '../geometry/index.ts'
+import type { DistanceMetric } from '../geometry/index.ts'
 import type { HnswOptions } from './graphs.ts'
 
 /** What an HNSW profile is built from: everything of {@link HnswOptions} but the key. */
@@ -18,7 +18,7 @@ export interface HnswProfileProperties {
   readonly m: number
 }
 
-const METRICS: readonly Metric[] = ['euclidean', 'sqeuclidean', 'cityblock', 'cosine']
+const METRICS: readonly DistanceMetric[] = ['euclidean', 'sqeuclidean', 'cityblock', 'cosine']
 
 function profile(description: string, m: number, ef: number): Option<HnswProfile, HnswProfileProperties> {
   const space = dict({
@@ -37,7 +37,7 @@ function profile(description: string, m: number, ef: number): Option<HnswProfile
         m: full['m'] as number,
         efConstruction: full['efConstruction'] as number,
         levelMultiplier: full['levelMultiplier'] as number,
-        metric: full['metric'] as Metric,
+        metric: full['metric'] as DistanceMetric,
       }
     },
   }

@@ -116,7 +116,7 @@ interface TrainingSpec<B> {
 }
 ```
 
-`TrainHooks` is the existing `HookContext` (`log`, `logTensor`, `stop`, `setLearningRateScale`, `run`) plus
+`TrainHooks` is the existing `TrainingHookContext` (`log`, `logTensor`, `stop`, `setLearningRateScale`, `run`) plus
 `step(optimizerName, loss)` for manual optimisation. The callbacks of `lib/nn/training/callbacks.ts` stay the hook
 system; `_train.ts`'s stopping rules and adaptive learning rate become callbacks; its `Snapshot`s become tape
 checkpoints. An MLP classifier method is then thirty lines: a module, a loss, an optimiser, a probe for the decision

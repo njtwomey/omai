@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { normal } from '../random/index.ts'
 import type { Algorithm } from './algorithm.ts'
 import { runAlgorithm } from './algorithm.ts'
-import { type ChannelRef, onSchedule, type Schedule, shouldRecord, tracePolicy } from './policy.ts'
+import { type ChannelRef, onSchedule, type RecordSchedule, shouldRecord, tracePolicy } from './policy.ts'
 import { metricSeries } from './query.ts'
 import { recorder } from './tracer.ts'
 
-const schedule: fc.Arbitrary<Schedule> = fc.oneof(
+const schedule: fc.Arbitrary<RecordSchedule> = fc.oneof(
   fc.integer({ min: 1, max: 12 }).map((every) => ({ every })),
   fc.constant({ logSpaced: true as const }),
   fc.constant({ firstAndLast: true as const }),

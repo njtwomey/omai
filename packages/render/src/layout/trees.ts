@@ -5,7 +5,7 @@
  */
 
 import { maxOf, minOf } from 'mdml-engine/base'
-import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
+import { type GraphLayout, type LayoutBox, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /** Options of the tree layouts. */
 export interface TreeOptions {
@@ -21,13 +21,13 @@ export interface TreeOptions {
   readonly margin?: number
 }
 
-interface Shape {
+interface TreeStructure {
   readonly root: string
   readonly children: ReadonlyMap<string, readonly string[]>
   readonly size: ReadonlyMap<string, { readonly width: number; readonly height: number }>
 }
 
-function shape(graph: LayoutGraph, root?: string): Shape {
+function shape(graph: LayoutGraph, root?: string): TreeStructure {
   const children = new Map<string, string[]>()
   const hasParent = new Set<string>()
   const ids = new Set(graph.nodes.map((n) => n.id))
@@ -41,7 +41,7 @@ function shape(graph: LayoutGraph, root?: string): Shape {
 }
 
 /** Leaves placed in order, each parent centred over its children; returns the breadth position and depth of each node. */
-function tidyPositions(s: Shape, siblingSep: number, horizontal: boolean): Map<string, [number, number]> {
+function tidyPositions(s: TreeStructure, siblingSep: number, horizontal: boolean): Map<string, [number, number]> {
   const out = new Map<string, [number, number]>()
   let next = 0
   const extent = (v: string): number => {
@@ -68,7 +68,7 @@ function tidyPositions(s: Shape, siblingSep: number, horizontal: boolean): Map<s
   return out
 }
 
-function finish(graph: LayoutGraph, boxes: Record<string, Box>, margin: number): GraphLayout {
+function finish(graph: LayoutGraph, boxes: Record<string, LayoutBox>, margin: number): GraphLayout {
   return normaliseLayout(boxes, straightRoutes(boxes, graph.edges), {}, margin)
 }
 
@@ -106,7 +106,7 @@ export function tidyTree(graph: LayoutGraph, options: TreeOptions = {}): GraphLa
     offsets.push(acc + h / 2)
     acc += h + levelSep
   }
-  const boxes: Record<string, Box> = {}
+  const boxes: Record<string, LayoutBox> = {}
   for (const [v, [at, d]] of pos) {
     const z = s.size.get(v) ?? { width: 0, height: 0 }
     const depthAt = offsets[d] ?? 0
@@ -141,7 +141,7 @@ export function radialTree(graph: LayoutGraph, options: Omit<TreeOptions, 'direc
   const span = maxOf(ats) - lo
   const leaves = [...pos.keys()].filter((v) => (s.children.get(v) ?? []).length === 0).length
   const full = span === 0 ? 1 : (span * leaves) / Math.max(leaves - 1, 1)
-  const boxes: Record<string, Box> = {}
+  const boxes: Record<string, LayoutBox> = {}
   for (const [v, [at, d]] of pos) {
     const z = s.size.get(v) ?? { width: 0, height: 0 }
     const angle = (2 * Math.PI * (at - lo)) / full - Math.PI / 2
@@ -182,7 +182,7 @@ export function dendrogram(
   const s = shape(graph, options.root)
   const pos = tidyPositions(s, siblingSep, false)
   const top = Math.max(1e-12, maxOf([...pos.keys()].map((v) => heights[v] ?? 0)))
-  const boxes: Record<string, Box> = {}
+  const boxes: Record<string, LayoutBox> = {}
   for (const [v, [at]] of pos) {
     const z = s.size.get(v) ?? { width: 0, height: 0 }
     boxes[v] = { x: at, y: scale * (1 - (heights[v] ?? 0) / top), width: z.width, height: z.height }

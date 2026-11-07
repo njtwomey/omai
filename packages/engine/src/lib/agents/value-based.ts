@@ -8,7 +8,7 @@
 import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { huber } from '../losses/index.ts'
 import { linear } from '../nn/index.ts'
-import { type GradientTransformation, incrementalUpdate, linearSchedule, type Tree } from '../optim/index.ts'
+import { type GradientTransformation, incrementalUpdate, linearSchedule, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import {
   type Agent,
@@ -356,7 +356,7 @@ export function dqn(env: Spaces, options: DqnOptions = {}): Agent<DqnState, read
     const mask = oneHot(actions, nA)
     const weights = sample.weights === undefined ? undefined : vectorTensor(sample.weights)
     const noiseKey = noisy ? foldIn(k, 3) : undefined
-    const lossFn = (p: Tree): Value => {
+    const lossFn = (p: ParamTree): Value => {
       const q = sum(mul(net.apply(p as QParams, obs, noiseKey), mask), -1)
       return huber(q, y, { delta, ...(weights === undefined ? {} : { weight: weights }) })
     }

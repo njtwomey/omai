@@ -9,36 +9,28 @@ import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { cholesky, choSolve, daxpy, ddot, dgemv, dnrm2, lstsq } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
+import type { DenseMatrix } from './_vector.ts'
 import { admmAlgorithm } from './admm.ts'
 
-type Vec = Float64Array
-
-/** A dense matrix as row-major data with its dimensions. */
-interface Matrix {
-  readonly data: Vec
-  readonly rows: number
-  readonly cols: number
-}
-
-function matrix(a: TensorLike, name: string): Matrix {
+function matrix(a: TensorLike, name: string): DenseMatrix {
   const t = primalOf(asTensor(a)) as Tensor
   if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: the dictionary must be a matrix`)
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0 }
 }
 
-const vector = (y: TensorLike): Vec => Float64Array.from(toFlat(primalOf(asTensor(y))))
-const column = (d: Matrix, j: number): Vec =>
+const vector = (y: TensorLike): Float64Array => Float64Array.from(toFlat(primalOf(asTensor(y))))
+const column = (d: DenseMatrix, j: number): Float64Array =>
   Float64Array.from({ length: d.rows }, (_, i) => d.data[i * d.cols + j] ?? 0)
-const columns = (d: Matrix, idx: readonly number[]): Tensor => {
+const columns = (d: DenseMatrix, idx: readonly number[]): Tensor => {
   const out = new Float64Array(d.rows * idx.length)
   for (let i = 0; i < d.rows; i++)
     for (const [k, j] of idx.entries()) out[i * idx.length + k] = d.data[i * d.cols + j] ?? 0
   return fromStorage(out, [d.rows, idx.length], 'float64')
 }
-const correlations = (d: Matrix, r: Vec): Vec => dgemv(d.data, d.rows, d.cols, r, true)
+const correlations = (d: DenseMatrix, r: Float64Array): Float64Array => dgemv(d.data, d.rows, d.cols, r, true)
 
 /** Least squares on a support: argmin |D_S c - y|, as dense coefficients of length `cols`. */
-function supportLeastSquares(d: Matrix, y: Vec, support: readonly number[]): Vec {
+function supportLeastSquares(d: DenseMatrix, y: Float64Array, support: readonly number[]): Float64Array {
   const x = new Float64Array(d.cols)
   if (support.length === 0) return x
   const c = toFlat(primalOf(lstsq(columns(d, support), fromStorage(Float64Array.from(y), [y.length], 'float64'))))
@@ -69,8 +61,8 @@ export interface SparseResult {
 
 /** State of the greedy pursuits. */
 export interface PursuitState {
-  readonly x: Vec
-  readonly residual: Vec
+  readonly x: Float64Array
+  readonly residual: Float64Array
   readonly support: readonly number[]
   readonly residualNorm: number
   readonly history: readonly number[]
@@ -92,7 +84,7 @@ const observePursuit = (s: PursuitState) => ({
   messages: s.support.length > 0 ? [{ kind: 'select', payload: s.support.at(-1) ?? -1 }] : [],
 })
 
-const initial = (d: Matrix, y: Vec): PursuitState => {
+const initial = (d: DenseMatrix, y: Float64Array): PursuitState => {
   const n = dnrm2(y)
   return { x: new Float64Array(d.cols), residual: Float64Array.from(y), support: [], residualNorm: n, history: [n] }
 }
@@ -228,7 +220,7 @@ export function orthogonalMatchingPursuitAlgorithm(
     { length: d.cols * d.rows },
     (_, q) => d.data[(q % d.rows) * d.cols + Math.floor(q / d.rows)] ?? 0,
   )
-  const atom = (j: number): Vec => atoms.subarray(j * d.rows, (j + 1) * d.rows)
+  const atom = (j: number): Float64Array => atoms.subarray(j * d.rows, (j + 1) * d.rows)
   const yy = ddot(yv, yv)
   // An early exit is convergence only when nothing is left to explain; with a residual left, the atoms are dependent
   // (a repeated column) and the run stops short of what was asked.
@@ -282,7 +274,7 @@ export function orthogonalMatchingPursuitAlgorithm(
       if (coefs.some((v) => !Number.isFinite(v))) return early(s, 'ended early: selected atoms are linearly dependent')
       const x = new Float64Array(d.cols)
       for (const [k, j] of support.entries()) x[j] = coefs[k] ?? 0
-      const fitted = dgemv(ds.data as Vec, d.rows, support.length, Float64Array.from(coefs))
+      const fitted = dgemv(ds.data as Float64Array, d.rows, support.length, Float64Array.from(coefs))
       const residual = daxpy(-1, fitted, yv)
       const rn = dnrm2(residual)
       const stop =
@@ -447,8 +439,8 @@ export function iterativeHardThresholdingAlgorithm(
   const yv = vector(y)
   const normalized = options.normalized ?? true
   const tol = (options.tol ?? 1e-10) * Math.max(dnrm2(yv), 1e-300)
-  const apply = (x: Vec): Vec => dgemv(d.data, d.rows, d.cols, x)
-  const threshold = (v: Vec): { x: Vec; support: number[] } => {
+  const apply = (x: Float64Array): Float64Array => dgemv(d.data, d.rows, d.cols, x)
+  const threshold = (v: Float64Array): { x: Float64Array; support: number[] } => {
     const support = topK(v, sparsity).sort((a, b) => a - b)
     const x = new Float64Array(v.length)
     for (const j of support) x[j] = v[j] ?? 0
@@ -573,12 +565,13 @@ export function basisPursuit(
       ddt[i * d.rows + j] = s
     }
   const l = cholesky(fromStorage(ddt, [d.rows, d.rows], 'float64'))
-  const project = (v: Vec): Vec => {
+  const project = (v: Float64Array): Float64Array => {
     const r = daxpy(-1, yv, dgemv(d.data, d.rows, d.cols, v))
     const w = Float64Array.from(toFlat(primalOf(choSolve(l, fromStorage(r, [r.length], 'float64')))))
     return daxpy(-1, dgemv(d.data, d.rows, d.cols, w, true), v)
   }
-  const soft = (v: Vec, t: number): Vec => Float64Array.from(v, (e) => Math.sign(e) * Math.max(Math.abs(e) - t, 0))
+  const soft = (v: Float64Array, t: number): Float64Array =>
+    Float64Array.from(v, (e) => Math.sign(e) * Math.max(Math.abs(e) - t, 0))
   const alg = admmAlgorithm(
     {
       xUpdate: (z, u) => project(daxpy(-1, u, z)),
@@ -616,8 +609,8 @@ export interface LassoCoordinateDescentOptions extends Partial<Omit<RunOptions, 
 
 /** State of {@link lassoCoordinateDescentAlgorithm}. */
 export interface LassoCoordinateDescentState {
-  readonly x: Vec
-  readonly residual: Vec
+  readonly x: Float64Array
+  readonly residual: Float64Array
   readonly gap: number
   readonly maxUpdate: number
   readonly objective: number
@@ -651,12 +644,12 @@ export function lassoCoordinateDescentAlgorithm(
   const l2 = options.l2 ?? 0
   const tol = (options.tol ?? 1e-4) * ddot(yv, yv)
   const norms = Float64Array.from({ length: d.cols }, (_, j) => ddot(column(d, j), column(d, j)))
-  const objective = (x: Vec, r: Vec): number => {
+  const objective = (x: Float64Array, r: Float64Array): number => {
     let l1 = 0
     for (const v of x) l1 += Math.abs(v)
     return ddot(r, r) / 2 + lambda * l1 + (l2 / 2) * ddot(x, x)
   }
-  const dualityGap = (x: Vec, r: Vec): number => {
+  const dualityGap = (x: Float64Array, r: Float64Array): number => {
     // sklearn's gap for the elastic net (in the scaling |r|^2 / 2 + lambda |x|_1 + l2 |x|^2 / 2).
     const xta = daxpy(-l2, x, correlations(d, r))
     let dualNorm = 0

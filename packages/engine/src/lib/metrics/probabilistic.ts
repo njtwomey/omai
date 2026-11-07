@@ -12,9 +12,9 @@ import {
   type Metric,
   type MetricInput,
   type MetricOptions,
-  matrix,
   metricResult,
   sampleWeights,
+  shapedArray,
   weightedMean,
 } from './metric.ts'
 
@@ -41,7 +41,7 @@ function probabilityTable(
   labels: readonly Label[] | undefined,
 ): { t: Grid; p: Grid; n: number; classes: readonly Label[] } {
   const y = labelValues(yTrue)
-  const raw = matrix(yProba)
+  const raw = shapedArray(yProba)
   const classes = labels ?? sortLabels(y)
   let p: Grid = raw
   if (raw.shape.length === 1 || raw.shape[1] === 1) {
@@ -166,7 +166,7 @@ export interface BrierOptions extends ProbabilityOptions {
 export const brierScoreLoss: Metric<BrierOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yProba: MetricInput, options: BrierOptions = {}): MetricResult => {
     const name = 'brierScoreLoss'
-    const raw = matrix(yProba as TensorLike)
+    const raw = shapedArray(yProba as TensorLike)
     const scale = options.scaleByHalf ?? 'auto'
     const half = scale === 'auto' ? raw.shape.length === 1 || (raw.shape[1] ?? 0) < 3 : scale
     if (raw.shape.length === 1 || raw.shape[1] === 1) {
@@ -219,7 +219,7 @@ function binaryForecast(yTrue: MetricInput, yProb: TensorLike, posLabel?: Label)
   const classes = sortLabels(labels)
   if (classes.length > 2) throw new MdmlError('value', 'needs binary labels')
   const pos = posLabel ?? (classes.includes(1) ? 1 : classes[classes.length - 1])
-  const p = matrix(yProb).data
+  const p = shapedArray(yProb).data
   if (p.length !== labels.length) throw new MdmlError('shape', 'yTrue and yProb have different lengths')
   return { y: Float64Array.from(labels, (l) => (l === pos ? 1 : 0)), p }
 }
@@ -365,7 +365,7 @@ function calibrationError(
 
 /** Confidences and hits: binary forecasts as they are, multi-class as the top-label confidence and its correctness. */
 function confidences(name: string, yTrue: MetricInput, yProba: TensorLike): { conf: Float64Array; hit: Float64Array } {
-  const raw = matrix(yProba)
+  const raw = shapedArray(yProba)
   if (raw.shape.length === 1) {
     const { y, p } = binaryForecast(yTrue, yProba)
     return { conf: p, hit: y }
@@ -450,7 +450,7 @@ export const maximumCalibrationError: Metric<Omit<CalibrationErrorOptions, 'norm
 export const classwiseCalibrationError: Metric<CalibrationErrorOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yProba: MetricInput, options: CalibrationErrorOptions = {}): MetricResult => {
     const name = 'classwiseCalibrationError'
-    const raw = matrix(yProba as TensorLike)
+    const raw = shapedArray(yProba as TensorLike)
     const labels = labelValues(yTrue)
     const n = raw.shape[0] ?? 0
     const c = raw.shape[1] ?? 0

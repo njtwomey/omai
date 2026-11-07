@@ -9,7 +9,7 @@
 import { type Json, MdmlError } from '../base/index.ts'
 import { crossEntropy, mse } from '../losses/index.ts'
 import { mlp } from '../nn/index.ts'
-import type { Schedule, Tree } from '../optim/index.ts'
+import type { LearningRateSchedule, ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import {
   type Agent,
@@ -64,7 +64,7 @@ export interface BonusModule<B, O, A> {
 /** Options of {@link intrinsicReward}. */
 export interface IntrinsicRewardOptions {
   /** The weight of the bonus: a number or a schedule over environment steps (default 1). */
-  readonly scale?: number | Schedule
+  readonly scale?: number | LearningRateSchedule
   /** Multiply the scale by `decay^t` after `t` steps (default 1: no decay). */
   readonly decay?: number
   /** The weight of the extrinsic reward (default 1; 0 trains on curiosity alone, as in Pathak et al.'s no-reward runs). */
@@ -266,7 +266,7 @@ export interface RndOptions extends LearnedBonusOptions {
 
 /** The state of {@link rndModule}. */
 export interface RndState {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly optState: unknown
   readonly observations: RunningMeanStd
   readonly returns: RunningMeanStd
@@ -306,7 +306,7 @@ export function rndModule<O, A>(env: Spaces, options: RndOptions = {}): BonusMod
   const key = options.key ?? makeKey(0)
   const targetNet = mlp([d, ...hidden, k], { key: foldIn(key, 0) })
   const predictorNet = mlp([d, ...hidden, ...hidden.slice(-1), k], { key: foldIn(key, 1) })
-  const rnd: RandomNetworkDistillation<Tree> = {
+  const rnd: RandomNetworkDistillation<ParamTree> = {
     target: (x) => targetNet.apply(targetNet.params, x),
     predictor: (p, x) => predictorNet.apply(p as never, x),
   }
@@ -330,8 +330,8 @@ export function rndModule<O, A>(env: Spaces, options: RndOptions = {}): BonusMod
     name: 'rnd',
     config: { hidden: [...hidden], features: k, normalizeObservations: normObs, normalizeRewards: normRew, gamma },
     init: () => ({
-      params: predictorNet.params as Tree,
-      optState: opt.init(predictorNet.params as Tree),
+      params: predictorNet.params as ParamTree,
+      optState: opt.init(predictorNet.params as ParamTree),
       observations: runningMeanStd(d),
       returns: runningMeanStd(1),
       intrinsicReturn: 0,
@@ -381,7 +381,7 @@ export interface IcmItem {
 
 /** The state of {@link icmModule}. */
 export interface IcmState {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly optState: unknown
   readonly buffer: ReplayBuffer<IcmItem>
   readonly steps: number
@@ -420,12 +420,16 @@ export function icmModule<O, A>(env: Spaces, options: IcmOptions = {}): BonusMod
   const forwardNet = mlp([k + act.size, ...hidden, k], { key: foldIn(key, 1) })
   const inverseNet = mlp([2 * k, ...hidden, act.size], { key: foldIn(key, 2) })
   type P = { readonly encoder: never; readonly forward: never; readonly inverse: never }
-  const icm: CuriosityModule<Tree> = {
+  const icm: CuriosityModule<ParamTree> = {
     encode: (p, x) => encoder.apply((p as P).encoder, x),
     forward: (p, f, a) => forwardNet.apply((p as P).forward, concat([f, a], -1)),
     inverse: (p, f, g) => inverseNet.apply((p as P).inverse, concat([f, g], -1)),
   }
-  const params: Tree = { encoder: encoder.params, forward: forwardNet.params, inverse: inverseNet.params } as Tree
+  const params: ParamTree = {
+    encoder: encoder.params,
+    forward: forwardNet.params,
+    inverse: inverseNet.params,
+  } as ParamTree
   const opt = optimiserOf(options, 1e-3)
   const beta = options.beta ?? 0.2
   const eta = options.eta ?? 1
@@ -435,7 +439,7 @@ export function icmModule<O, A>(env: Spaces, options: IcmOptions = {}): BonusMod
   const bonusOf = (s: IcmState, t: Transition<O, A>): number =>
     curiosityBonus(icm, s.params, [obs.of(t.observation)], [act.of(t.action)], [obs.of(t.nextObservation)], eta)[0] ?? 0
   // The weighted loss, with the forward and inverse losses as terms for the statistics.
-  const loss = (p: Tree, batch: readonly IcmItem[]): readonly [Value, Value] => {
+  const loss = (p: ParamTree, batch: readonly IcmItem[]): readonly [Value, Value] => {
     const phi = icm.encode(
       p,
       rowsTensor(

@@ -9,7 +9,7 @@
 import { type Json, MdmlError, meanOf } from '../base/index.ts'
 import { binaryCrossEntropyWithLogits } from '../losses/index.ts'
 import type { ActivationName, Params } from '../nn/index.ts'
-import { adam, type Tree } from '../optim/index.ts'
+import { adam, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, randint, uniform } from '../random/index.ts'
 import {
   type Agent,
@@ -39,8 +39,6 @@ import type { PolicyAction } from './_on-policy.ts'
 import { type PolicyGradientState, type PpoOptions, ppo } from './policy-gradient.ts'
 
 export type { Demonstration } from './_learner.ts'
-
-type Vec = readonly number[]
 
 // --------------------------------------------------------------------------------------------------------- DAgger
 
@@ -102,8 +100,8 @@ export interface DaggerState<A> {
  * ```
  */
 export function daggerAlgorithm<S, A extends PolicyAction>(
-  env: Env<S, Vec, A>,
-  expert: Policy<Vec, A>,
+  env: Env<S, readonly number[], A>,
+  expert: Policy<readonly number[], A>,
   options: DaggerOptions = {},
 ): Algorithm<DaggerState<A>> {
   const net = learner(env, options)
@@ -169,7 +167,7 @@ export function daggerAlgorithm<S, A extends PolicyAction>(
         const n = Math.min(batchSize, dataset.length)
         const idx = Array.from(randint(foldIn(foldIn(ctx.key, 100), epoch), [n], 0, dataset.length).data)
         const batch = idx.map((i) => dataset[i] as Demonstration<A>)
-        const step = gradientStep((p: Tree) => net.loss(p as Params, batch), params, opt, optState)
+        const step = gradientStep((p: ParamTree) => net.loss(p as Params, batch), params, opt, optState)
         params = step.params as Params
         optState = step.optState
         loss = step.loss
@@ -201,7 +199,7 @@ export function daggerAlgorithm<S, A extends PolicyAction>(
 export interface DaggerResult<A> {
   readonly params: Params
   /** The learner's (deterministic) policy. */
-  readonly policy: Policy<Vec, A>
+  readonly policy: Policy<readonly number[], A>
   readonly dataset: readonly Demonstration<A>[]
   readonly iterations: number
   readonly agreement: number
@@ -224,8 +222,8 @@ export interface DaggerResult<A> {
  * ```
  */
 export function dagger<S, A extends PolicyAction>(
-  env: Env<S, Vec, A>,
-  expert: Policy<Vec, A>,
+  env: Env<S, readonly number[], A>,
+  expert: Policy<readonly number[], A>,
   options: DaggerOptions & { readonly iterations?: number } & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): DaggerResult<A> {
   const { iterations, episodesPerIteration, beta, hidden, activation, learningRate, epochs, batchSize, ...rest } =
@@ -273,7 +271,7 @@ export interface GailState {
   readonly policy: PolicyGradientState
   readonly discriminator: Params
   readonly discriminatorOptState: unknown
-  readonly pending: readonly Transition<Vec, PolicyAction>[]
+  readonly pending: readonly Transition<readonly number[], PolicyAction>[]
   readonly steps: number
   readonly stats: Readonly<Record<string, number>>
 }
@@ -303,7 +301,7 @@ export function gail<A extends PolicyAction = PolicyAction>(
   env: Spaces,
   demonstrations: readonly Demonstration<A>[],
   options: GailOptions = {},
-): Agent<GailState, Vec, A> {
+): Agent<GailState, readonly number[], A> {
   if (demonstrations.length === 0) throw new MdmlError('value', 'gail: needs demonstrations')
   const inner = ppo<A>(env, options)
   const nSteps = options.nSteps ?? 256
@@ -319,8 +317,10 @@ export function gail<A extends PolicyAction = PolicyAction>(
   const steps = options.discriminatorSteps ?? 5
   const rewardType = options.rewardType ?? 'gail'
   const actionRows = (actions: readonly PolicyAction[]): Tensor =>
-    discrete ? (oneHot(vectorTensor(actions as readonly number[]), k) as Tensor) : rowsTensor(actions as Vec[], k)
-  const inputs = (pairs: readonly { observation: Vec; action: PolicyAction }[]): Value =>
+    discrete
+      ? (oneHot(vectorTensor(actions as readonly number[]), k) as Tensor)
+      : rowsTensor(actions as (readonly number[])[], k)
+  const inputs = (pairs: readonly { observation: readonly number[]; action: PolicyAction }[]): Value =>
     concat(
       [
         rowsTensor(
@@ -331,7 +331,7 @@ export function gail<A extends PolicyAction = PolicyAction>(
       ],
       1,
     )
-  const logits = (p: Params, pairs: readonly { observation: Vec; action: PolicyAction }[]): Value =>
+  const logits = (p: Params, pairs: readonly { observation: readonly number[]; action: PolicyAction }[]): Value =>
     sum(disc.apply(p, inputs(pairs)), -1)
 
   const relabel = (s: GailState, k2: Key): GailState => {
@@ -345,7 +345,7 @@ export function gail<A extends PolicyAction = PolicyAction>(
       const labels = vectorTensor([...expertPairs.map(() => 1), ...policyPairs.map(() => 0)])
       const both = [...expertPairs, ...policyPairs]
       const step = gradientStep(
-        (p: Tree) => binaryCrossEntropyWithLogits(logits(p as Params, both), labels),
+        (p: ParamTree) => binaryCrossEntropyWithLogits(logits(p as Params, both), labels),
         params,
         opt,
         optState,
@@ -360,8 +360,8 @@ export function gail<A extends PolicyAction = PolicyAction>(
     const policyAccuracy = meanOf(toFlat(z).map((x) => (x < 0 ? 1 : 0)))
     let ppoState = s.policy
     for (const [i, t] of policyPairs.entries()) {
-      const relabelled: Transition<Vec, A> = {
-        ...(t as Transition<Vec, A>),
+      const relabelled: Transition<readonly number[], A> = {
+        ...(t as Transition<readonly number[], A>),
         reward: rewards[i] ?? 0,
         info: { ...(t.info ?? {}), envReward: t.reward },
       }
@@ -404,7 +404,11 @@ export function gail<A extends PolicyAction = PolicyAction>(
     act: (s, o, k2) => inner.act(s.policy, o, k2),
     greedy: (s, o) => inner.greedy(s.policy, o),
     learn: (s, t, k2) => {
-      const next: GailState = { ...s, pending: [...s.pending, t as Transition<Vec, PolicyAction>], steps: s.steps + 1 }
+      const next: GailState = {
+        ...s,
+        pending: [...s.pending, t as Transition<readonly number[], PolicyAction>],
+        steps: s.steps + 1,
+      }
       return next.pending.length >= nSteps ? relabel(next, k2) : next
     },
     stats: (s) => s.stats,

@@ -9,7 +9,7 @@ import { MdmlError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type DType, fromStorage, isTensor, stack, type Tensor, tensor } from '../tensor/index.ts'
 import { take } from './rows.ts'
-import { batchSampler, randomSampler, type Sampler, sequentialSampler } from './samplers.ts'
+import { batchSampler, type RowOrder, randomSampler, sequentialSampler } from './samplers.ts'
 import { type PadLayout, padRagged } from './schema/_coerce.ts'
 import { type Dataset, rowCount } from './schema/common.ts'
 
@@ -21,7 +21,7 @@ export interface BatchOptions {
   /** Drop a final batch smaller than `batchSize`. */
   readonly dropLast?: boolean
   /** Visit rows in this sampler's order instead (it overrides `key`). */
-  readonly sampler?: Sampler
+  readonly sampler?: RowOrder
   /** The epoch number passed to the sampler (default 0). */
   readonly epoch?: number
 }

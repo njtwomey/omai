@@ -8,7 +8,7 @@
 import { heap, MdmlError } from '../../base/index.ts'
 import { cauchy, foldIn, type Key, normal, randint, uniform } from '../../random/index.ts'
 import { concreteOrThrow, item, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Metric, metricFunction } from '../geometry/index.ts'
+import { type DistanceMetric, metricFunction } from '../geometry/index.ts'
 import { ndtr } from '../special/index.ts'
 
 /**
@@ -338,7 +338,7 @@ export function lshIndex(
     readonly k?: number
     readonly w?: number
     readonly p?: 1 | 2
-    readonly metric?: Metric
+    readonly metric?: DistanceMetric
     readonly key: Key
   },
 ): LshIndex {

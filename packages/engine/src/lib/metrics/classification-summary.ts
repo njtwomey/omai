@@ -14,10 +14,10 @@ import {
   type Metric,
   type MetricInput,
   type MetricOptions,
-  matrix,
   metricResult,
   rowCount,
   sampleWeights,
+  shapedArray,
   weightedMean,
 } from './metric.ts'
 
@@ -316,7 +316,7 @@ export const topKAccuracyScore: Metric<TopKOptions, MetricInput> = Object.assign
   (yTrue: MetricInput, yScore: MetricInput, options: TopKOptions = {}): MetricResult => {
     const name = 'topKAccuracyScore'
     const t = labelValues(yTrue)
-    const s = matrix(yScore as TensorLike)
+    const s = shapedArray(yScore as TensorLike)
     const k = options.k ?? 2
     const w = sampleWeights(name, t.length, options.sampleWeight)
     const hits: number[] = []

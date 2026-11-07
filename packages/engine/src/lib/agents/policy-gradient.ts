@@ -10,7 +10,7 @@ import { type Json, MdmlError, meanOf } from '../base/index.ts'
 import type { Params } from '../nn/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { cg } from '../numerics/sparse/index.ts'
-import { adam, rmsprop, type Tree } from '../optim/index.ts'
+import { adam, type ParamTree, rmsprop } from '../optim/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import { type Agent, discountedReturns, minibatchIndices } from '../rl/index.ts'
 import {
@@ -303,7 +303,7 @@ export function reinforce<A extends PolicyAction = PolicyAction>(
     const weights = vectorTensor(options.normalizeReturns === true ? standardize(raw) : raw)
     const actions = net.actions(steps.map((t) => t.action))
     let entropy = 0
-    const policyLoss = (p: Tree): Value => {
+    const policyLoss = (p: ParamTree): Value => {
       const head = net.head(net.dist(p as Params, obs))
       const ent = mean(head.entropy())
       entropy = item(primalOf(ent))
@@ -416,7 +416,7 @@ export function a2c<A extends PolicyAction = PolicyAction>(
     const advT = vectorTensor(options.normalizeAdvantage === true ? standardize(adv) : adv)
     const returns = vectorTensor(batch.reward.returns)
     const aux = { policyLoss: 0, valueLoss: 0, entropy: 0 }
-    const loss = (p: Tree): Value => {
+    const loss = (p: ParamTree): Value => {
       const q = p as ActorCriticParams
       const head = net.head(net.dist(q.policy, obs))
       const pl = mul(-1, mean(mul(head.logProb(actions), advT)))

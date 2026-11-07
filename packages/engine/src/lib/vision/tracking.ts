@@ -26,7 +26,7 @@ import {
   tensor,
 } from '../trace/index.ts'
 import { greyOf } from './_image.ts'
-import { type Box, type BoxesLike, boxesOf } from './boxes.ts'
+import { type BoxCoords, type BoxesLike, boxesOf } from './boxes.ts'
 import type { RotatedRect } from './fitting.ts'
 import { imageMoments } from './moments.ts'
 
@@ -40,13 +40,13 @@ const R4 = diag([1, 1, 10, 10])
 const Q7 = diag([1, 1, 1, 1, 0.01, 0.01, 0.0001])
 const P07 = diag([10, 10, 10, 10, 10000, 10000, 10000])
 
-const toZ = ([x1, y1, x2, y2]: Box): number[] => {
+const toZ = ([x1, y1, x2, y2]: BoxCoords): number[] => {
   const w = x2 - x1
   const h = y2 - y1
   return [x1 + w / 2, y1 + h / 2, w * h, w / h]
 }
 
-const toBox = (x: readonly number[]): Box => {
+const toBox = (x: readonly number[]): BoxCoords => {
   const w = Math.sqrt(Math.max(0, (x[2] ?? 0) * (x[3] ?? 0)))
   const h = w > 0 ? (x[2] ?? 0) / w : 0
   return [(x[0] ?? 0) - w / 2, (x[1] ?? 0) - h / 2, (x[0] ?? 0) + w / 2, (x[1] ?? 0) + h / 2]
@@ -69,7 +69,7 @@ export interface SortState {
   readonly nextId: number
   readonly tracks: readonly SortTrack[]
   /** The confirmed tracks of the last frame: [x1, y1, x2, y2] and the track id (from 1). */
-  readonly output: readonly { readonly box: Box; readonly id: number }[]
+  readonly output: readonly { readonly box: BoxCoords; readonly id: number }[]
 }
 
 /** Options of {@link sortAlgorithm}. */
@@ -152,7 +152,7 @@ export function sortAlgorithm(frames: readonly BoxesLike[], options: SortOptions
       const updated = live.map((t, ti) => {
         const d = [...matched.entries()].find(([, tt]) => tt === ti)?.[0]
         if (d === undefined) return t
-        const u = filtering.kalmanUpdate(t.x, t.P, toZ(boxes[d] as Box), H7, R4)
+        const u = filtering.kalmanUpdate(t.x, t.P, toZ(boxes[d] as BoxCoords), H7, R4)
         return {
           ...t,
           x: toFlat(primalOf(u.x) as Tensor),
@@ -204,9 +204,9 @@ export function sortAlgorithm(frames: readonly BoxesLike[], options: SortOptions
 export function sortTrack(
   frames: readonly BoxesLike[],
   options: SortOptions & Partial<Pick<RunOptions, 'tracer' | 'policy' | 'parent'>> = {},
-): { readonly box: Box; readonly id: number }[][] {
+): { readonly box: BoxCoords; readonly id: number }[][] {
   const algorithm = sortAlgorithm(frames, options)
-  const out: { readonly box: Box; readonly id: number }[][] = []
+  const out: { readonly box: BoxCoords; readonly id: number }[][] = []
   // Step frame by frame to collect each frame's output (the tape records the run when a tracer is given).
   runAlgorithm(
     {

@@ -4,7 +4,13 @@
  * each as padded input and target token sequences.
  */
 
-import { type DatasetGenerator, type Generated, type Knobs, type SequenceData, sequences } from '../data/index.ts'
+import {
+  type DatasetGenerator,
+  type Generated,
+  type GeneratorKnobs,
+  type SequenceData,
+  sequences,
+} from '../data/index.ts'
 import { solve as solveLinear } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, randint, uniform } from '../random/index.ts'
 import { bool, choice, dict, int, real } from '../space/index.ts'
@@ -17,7 +23,7 @@ const SPECIAL = ['<pad>', '<sep>'] as const
 function task(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   inputs: readonly (readonly number[])[],
   targets: readonly (readonly number[])[],
   vocabulary: readonly string[],
@@ -589,7 +595,7 @@ export const inContextRegression: DatasetGenerator<SequenceData> = {
 function alignedTask(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   inputs: readonly (readonly number[])[],
   targets: readonly (readonly number[])[],
   supervised: readonly (readonly boolean[])[],

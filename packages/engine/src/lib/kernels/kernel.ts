@@ -40,7 +40,7 @@ import {
  * How a hyperparameter is optimised: `positive` ones are log-parameterised in {@link theta}, `real` ones enter as they
  * are, and `fixed` ones are held constant (left out of `theta`).
  */
-export type Constraint = 'positive' | 'real' | 'fixed'
+export type HyperparameterConstraint = 'positive' | 'real' | 'fixed'
 
 /**
  * Whether a kernel's Gram matrices are positive semi-definite: `always` for any points and any valid hyperparameters,
@@ -64,7 +64,7 @@ export interface Kernel {
   /** Hyperparameters in natural units (length scales, variances), as a pytree of values. */
   readonly params: KernelParams
   /** The constraint of each hyperparameter, keyed by its pytree path (as `treePaths` names it). */
-  readonly constraints: Readonly<Record<string, Constraint>>
+  readonly constraints: Readonly<Record<string, HyperparameterConstraint>>
   /** Whether k(x, y) depends on x - y only. */
   readonly stationary: boolean
   /**
@@ -99,7 +99,7 @@ export interface KernelSpec<P extends KernelParams> {
   readonly name: string
   readonly params: P
   /** Constraints by pytree path (default `positive` for every hyperparameter). */
-  readonly constraints?: Readonly<Record<string, Constraint>>
+  readonly constraints?: Readonly<Record<string, HyperparameterConstraint>>
   readonly stationary?: boolean
   /** Positive semi-definiteness (default `always`), see {@link Kernel.psd}. */
   readonly psd?: KernelPsd
@@ -150,8 +150,12 @@ const STRICTLY_POSITIVE: ReadonlySet<string> = new Set(['lengthScale', 'period',
  * set to 0. Concrete values must be finite and non-negative, and a length scale, period, alpha or decay strictly
  * positive.
  */
-function resolveConstraints(name: string, params: KernelParams, given: Readonly<Record<string, Constraint>>) {
-  const out: Record<string, Constraint> = {}
+function resolveConstraints(
+  name: string,
+  params: KernelParams,
+  given: Readonly<Record<string, HyperparameterConstraint>>,
+) {
+  const out: Record<string, HyperparameterConstraint> = {}
   for (const [path, leaf] of Object.entries(treePaths(params))) {
     let c = given[path] ?? 'positive'
     if (isTensor(leaf)) {
@@ -245,8 +249,12 @@ export function defineKernel<P extends KernelParams>(spec: KernelSpec<P>): Kerne
 }
 
 /** Constraints of parts under a prefix: `terms[0].lengthScale`, or `base.lengthScale` for a single part. */
-function prefixed(prefix: string, kernels: readonly Kernel[], indexed: boolean): Record<string, Constraint> {
-  const out: Record<string, Constraint> = {}
+function prefixed(
+  prefix: string,
+  kernels: readonly Kernel[],
+  indexed: boolean,
+): Record<string, HyperparameterConstraint> {
+  const out: Record<string, HyperparameterConstraint> = {}
   kernels.forEach((kernel, i) => {
     const head = indexed ? `${prefix}[${i}]` : prefix
     for (const [path, c] of Object.entries(kernel.constraints)) out[`${head}.${path}`] = c
@@ -492,7 +500,7 @@ export function fixHyperparameters(kernel: Kernel, paths: readonly string[]): Ke
 export interface Hyperparameter {
   /** Pytree path ('lengthScale', 'terms[1].noiseLevel'). */
   readonly name: string
-  readonly constraint: Constraint
+  readonly constraint: HyperparameterConstraint
   readonly shape: readonly number[]
   /** Current values (natural units), flattened. */
   readonly value: readonly number[]

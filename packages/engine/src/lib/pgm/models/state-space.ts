@@ -6,7 +6,7 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
-import { checkSquare, choleskyLower, dotVec, logdetPositive, type Matrix, matVec, solveVector, sub } from '../_dense.ts'
+import { checkSquare, choleskyLower, dotVec, logdetPositive, matVec, type Rows, solveVector, sub } from '../_dense.ts'
 import { gaussianFromMoments, gaussianLogValue } from '../gaussian-factor.ts'
 import type { ChainModel } from '../inference/chain.ts'
 import { type DynamicBayesNet, dynamicBayesNet } from './dynamic.ts'
@@ -19,8 +19,8 @@ import {
 
 /** The emission model of a hidden Markov model: a table over symbols, or a Gaussian per state. */
 export type HmmEmission =
-  | { readonly kind: 'categorical'; readonly symbols: readonly string[]; readonly probabilities: Matrix }
-  | { readonly kind: 'gaussian'; readonly means: Matrix; readonly covariances: readonly Matrix[] }
+  | { readonly kind: 'categorical'; readonly symbols: readonly string[]; readonly probabilities: Rows }
+  | { readonly kind: 'gaussian'; readonly means: Rows; readonly covariances: readonly Rows[] }
 
 /**
  * A hidden Markov model: hidden states with an initial distribution and transition matrix, and categorical or Gaussian
@@ -33,7 +33,7 @@ export interface HiddenMarkovModel {
   readonly states: readonly string[]
   readonly initial: readonly number[]
   /** transition[i][j] = P(z_{t+1} = j | z_t = i). */
-  readonly transition: Matrix
+  readonly transition: Rows
   readonly emission: HmmEmission
 }
 
@@ -229,12 +229,12 @@ export function hmmToDbn(hmm: HiddenMarkovModel): DynamicBayesNet {
  */
 export interface LinearDynamicalSystem {
   readonly kind: 'lds'
-  readonly transition: Matrix
-  readonly observation: Matrix
-  readonly transitionCovariance: Matrix
-  readonly observationCovariance: Matrix
+  readonly transition: Rows
+  readonly observation: Rows
+  readonly transitionCovariance: Rows
+  readonly observationCovariance: Rows
   readonly initialMean: readonly number[]
-  readonly initialCovariance: Matrix
+  readonly initialCovariance: Rows
 }
 
 /**
@@ -272,9 +272,9 @@ export function linearDynamicalSystem(spec: Omit<LinearDynamicalSystem, 'kind'>)
 function vectorNodes(
   names: readonly string[],
   parents: readonly string[],
-  B: Matrix,
+  B: Rows,
   c: readonly number[],
-  S: Matrix,
+  S: Rows,
 ): LinearGaussianNode[] {
   return names.map((name, i) => {
     const before = Array.from({ length: i }, (_, k) => k)

@@ -11,8 +11,8 @@ import {
   dotVec,
   inverse,
   logdetPositive,
-  type Matrix,
   matVec,
+  type Rows,
   solveVector,
   sub,
   symmetrise,
@@ -60,7 +60,7 @@ export interface GaussianMoments {
  * gaussianFactor(['x'], [[2]], [4]).h // => [4]
  * ```
  */
-export function gaussianFactor(variables: readonly string[], K: Matrix, h: readonly number[], g = 0): GaussianFactor {
+export function gaussianFactor(variables: readonly string[], K: Rows, h: readonly number[], g = 0): GaussianFactor {
   const n = variables.length
   if (new Set(variables).size !== n) throw new MdmlError('value', 'gaussianFactor: variables must be distinct')
   checkSquare(K, n, 'gaussianFactor')
@@ -87,7 +87,7 @@ export function gaussianFactor(variables: readonly string[], K: Matrix, h: reado
 export function gaussianFromMoments(
   variables: readonly string[],
   mean: readonly number[],
-  covariance: Matrix,
+  covariance: Rows,
   logMass = 0,
 ): GaussianFactor {
   checkSquare(covariance, variables.length, 'gaussianFromMoments')

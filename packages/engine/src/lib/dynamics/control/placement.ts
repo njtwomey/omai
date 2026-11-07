@@ -71,16 +71,19 @@ function orderPoles(poles: readonly Pole[]): Cpole[] {
   return out
 }
 
-type Mat = Float64Array
-
-const col = (m: Mat, rows: number, cols: number, j: number): Float64Array =>
+const col = (m: Float64Array, rows: number, cols: number, j: number): Float64Array =>
   Float64Array.from({ length: rows }, (_, i) => m[i * cols + j] ?? 0)
 
-function setCol(m: Mat, cols: number, j: number, v: ArrayLike<number>): void {
+function setCol(m: Float64Array, cols: number, j: number, v: ArrayLike<number>): void {
   for (let i = 0; i < v.length; i++) m[i * cols + j] = v[i] ?? 0
 }
 
-function dropCols(m: Mat, rows: number, cols: number, drop: readonly number[]): { m: Mat; cols: number } {
+function dropCols(
+  m: Float64Array,
+  rows: number,
+  cols: number,
+  drop: readonly number[],
+): { m: Float64Array; cols: number } {
   const keep = Array.from({ length: cols }, (_, j) => j).filter((j) => !drop.includes(j))
   const out = new Float64Array(rows * keep.length)
   for (let i = 0; i < rows; i++)
@@ -90,11 +93,11 @@ function dropCols(m: Mat, rows: number, cols: number, drop: readonly number[]): 
   return { m: out, cols: keep.length }
 }
 
-const tensor2 = (m: Mat, r: number, c: number): Tensor => fromNumbers(m, [r, c])
+const tensor2 = (m: Float64Array, r: number, c: number): Tensor => fromNumbers(m, [r, c])
 const numbers2 = (t: TensorLike): Float64Array => Float64Array.from(numbersOf(primalOf(asTensor(t))))
 
 /** An orthonormal basis of the orthogonal complement of the columns of m (n x k), as columns `[n, n - rank]`. */
-function complement(m: Mat, n: number, k: number): { basis: Mat; cols: number } {
+function complement(m: Float64Array, n: number, k: number): { basis: Float64Array; cols: number } {
   const ns = primalOf(nullSpace(transpose(tensor2(m, n, k))))
   return { basis: Float64Array.from(ns.data), cols: ns.shape[1] ?? 0 }
 }
@@ -105,7 +108,7 @@ function allClose(v: ArrayLike<number>): boolean {
 }
 
 /** M v for a row-major r x c matrix. */
-function mv(m: Mat, r: number, c: number, v: ArrayLike<number>): Float64Array {
+function mv(m: Float64Array, r: number, c: number, v: ArrayLike<number>): Float64Array {
   const out = new Float64Array(r)
   for (let i = 0; i < r; i++) {
     let s = 0
@@ -116,7 +119,13 @@ function mv(m: Mat, r: number, c: number, v: ArrayLike<number>): Float64Array {
 }
 
 /** The kernel K (n x d) for one pole: vectors v with u1^T (A - lambda I) v = 0. */
-function kernelFor(a: Mat, u1: Mat, n: number, r: number, p: Cpole): { re: Mat; im: Mat; d: number } {
+function kernelFor(
+  a: Float64Array,
+  u1: Float64Array,
+  n: number,
+  r: number,
+  p: Cpole,
+): { re: Float64Array; im: Float64Array; d: number } {
   if (isReal(p)) {
     const M = new Float64Array(r * n)
     for (let i = 0; i < r; i++) {
@@ -164,7 +173,7 @@ function kernelFor(a: Mat, u1: Mat, n: number, r: number, p: Cpole): { re: Mat; 
 }
 
 /** One KNV0 update of column j: the projection of the complement direction onto the pole's kernel. */
-function knv0(X: Mat, n: number, ker: Mat, d: number, j: number): void {
+function knv0(X: Float64Array, n: number, ker: Float64Array, d: number, j: number): void {
   const { m: rest, cols } = dropCols(X, n, n, [j])
   const { basis, cols: c } = complement(rest, n, cols)
   const q = col(basis, n, c, c - 1)
@@ -182,7 +191,16 @@ function knv0(X: Mat, n: number, ker: Mat, d: number, j: number): void {
 }
 
 /** One Tits-Yang update of a pair of real-pole columns (i, j) (scipy's _YT_real). */
-function ytReal(X: Mat, n: number, Ki: Mat, di: number, Kj: Mat, dj: number, i: number, j: number): void {
+function ytReal(
+  X: Float64Array,
+  n: number,
+  Ki: Float64Array,
+  di: number,
+  Kj: Float64Array,
+  dj: number,
+  i: number,
+  j: number,
+): void {
   const { m: rest, cols } = dropCols(X, n, n, [i, j])
   const { basis, cols: c } = complement(rest, n, cols)
   const u = col(basis, n, c, c - 2)
@@ -313,16 +331,16 @@ export interface PlacementState {
 }
 
 interface PlacementSetup {
-  readonly A: Mat
+  readonly A: Float64Array
   readonly Bt: Tensor
   readonly n: number
   readonly m: number
   readonly ps: Cpole[]
   readonly rankB: number
-  readonly u0r: Mat
-  readonly zr: Mat
-  readonly kernels: { re: Mat; im: Mat; d: number }[]
-  readonly X: Mat
+  readonly u0r: Float64Array
+  readonly zr: Float64Array
+  readonly kernels: { re: Float64Array; im: Float64Array; d: number }[]
+  readonly X: Float64Array
   readonly method: 'YT' | 'KNV0'
   readonly rtol: number
   readonly maxIter: number
@@ -354,7 +372,7 @@ function placementSetup(a: TensorLike, b: TensorLike, poles: readonly Pole[], op
   for (let i = 0; i < n; i++) for (let k = 0; k < rankB; k++) u0r[i * rankB + k] = u0[i * u0cols + k] ?? 0
   const zr = new Float64Array(rankB * m)
   for (let k = 0; k < rankB; k++) for (let j = 0; j < m; j++) zr[k * m + j] = z[k * m + j] ?? 0
-  const kernels: { re: Mat; im: Mat; d: number }[] = []
+  const kernels: { re: Float64Array; im: Float64Array; d: number }[] = []
   const X = new Float64Array(n * n)
   if (rankB === n) {
     for (let i = 0; i < n; i++) X[i * n + i] = 1
@@ -395,7 +413,7 @@ function placementSetup(a: TensorLike, b: TensorLike, poles: readonly Pole[], op
 }
 
 /** The gain, achieved poles and the rest of the result, from the setup and the eigenvector matrix the sweeps reached. */
-function placementFinish(S: PlacementSetup, X: Mat, iterations: number, curRtol: number): PlacementResult {
+function placementFinish(S: PlacementSetup, X: Float64Array, iterations: number, curRtol: number): PlacementResult {
   const { A, Bt, n, m, ps, rankB, u0r, zr } = S
   let gain: Tensor
   if (rankB === n) {
@@ -475,8 +493,8 @@ export function placeAlgorithm(
         const pi = ps[i] as Cpole
         const pj = ps[j] as Cpole
         if (!isReal(pi) || !isReal(pj)) continue
-        const ki = kernels[i] as { re: Mat; d: number }
-        const kj = kernels[j] as { re: Mat; d: number }
+        const ki = kernels[i] as { re: Float64Array; d: number }
+        const kj = kernels[j] as { re: Float64Array; d: number }
         if (i === j) knv0(X, n, ki.re, ki.d, i)
         else ytReal(X, n, ki.re, ki.d, kj.re, kj.d, i, j)
       }
@@ -599,7 +617,7 @@ function blockFor(ps: readonly Cpole[], n: number): Tensor {
   return tensor2(D, n, n)
 }
 
-function primalDet(X: Mat, n: number): number {
+function primalDet(X: Float64Array, n: number): number {
   return numbersOf(primalOf(det(tensor2(X, n, n))))[0] ?? 0
 }
 

@@ -1,7 +1,7 @@
 // Shared plumbing of the tabular agents (private to methods/rl/agents): observations to state indices, step sizes,
 // exploration schedules, random tie-breaking and copy-on-write tables.
 import { MdmlError, maxOf } from '../base/index.ts'
-import type { Schedule } from '../optim/index.ts'
+import type { LearningRateSchedule } from '../optim/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import type { Space } from '../space/index.ts'
 
@@ -84,7 +84,7 @@ export function stepSizeAt(alpha: StepSize, visits: number): number {
 }
 
 /** A rate (exploration or step size) as a constant or a schedule. */
-export type Rate = number | Schedule
+export type Rate = number | LearningRateSchedule
 
 /** The value of a rate at a count. */
 export function rateAt(rate: Rate, count: number): number {

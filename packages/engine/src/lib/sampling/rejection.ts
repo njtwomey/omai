@@ -22,7 +22,7 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import type { LogDensity, Proposal } from './target.ts'
+import type { ChainProposal, LogDensity } from './target.ts'
 
 /** The result of the rejection samplers. */
 export interface RejectionResult {
@@ -173,7 +173,7 @@ export interface RejectionState extends RejectionBaseState {
  */
 export function rejectionAlgorithm(
   target: LogDensity,
-  q: Proposal,
+  q: ChainProposal,
   options: RejectionOptions,
 ): Algorithm<RejectionState, RejectionPath> {
   if (q.dim !== target.dim) throw new MdmlError('shape', 'rejectionSample: proposal and target dimensions differ')
@@ -263,7 +263,7 @@ export function rejectionAlgorithm(
  */
 export function rejectionSample(
   target: LogDensity,
-  q: Proposal,
+  q: ChainProposal,
   options: RejectionOptions,
 ): RejectionResult & { readonly envelopeViolations: number } {
   const algorithm = rejectionAlgorithm(target, q, options)

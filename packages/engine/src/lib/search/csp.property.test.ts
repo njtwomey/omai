@@ -4,8 +4,8 @@ import {
   type Assignment,
   ac3,
   backtrackingSearch,
-  type Constraint,
   type Csp,
+  type CspConstraint,
   constraint,
   csp,
   cspProblem,
@@ -27,7 +27,7 @@ const randomCsp: fc.Arbitrary<Csp<number>> = fc
     const domains = Object.fromEntries(vars.map((v) => [v, Array.from({ length: d }, (_, k) => k)]))
     let bit = 0
     const next = (): boolean => seed[bit++ % seed.length] ?? false
-    const constraints: Constraint<number>[] = []
+    const constraints: CspConstraint<number>[] = []
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         if (!next()) continue

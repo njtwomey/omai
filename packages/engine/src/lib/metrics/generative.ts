@@ -8,7 +8,7 @@ import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { eigvalsh, funmSymmetric } from '../numerics/linalg/index.ts'
 import { type Key, key as makeKey, permutation, split } from '../random/index.ts'
 import { matmul, relu, sqrt, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
-import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 const spec = (
   name: string,
@@ -25,7 +25,7 @@ const spec = (
 
 /** Rows of a feature matrix `[N, D]`. */
 function rows(name: string, x: TensorLike): { n: number; d: number; data: Float64Array } {
-  const m = matrix(x)
+  const m = shapedArray(x)
   if (m.shape.length !== 2) throw new MdmlError('shape', `${name}: features are [N, D]`)
   return { n: m.shape[0] ?? 0, d: m.shape[1] ?? 0, data: m.data }
 }
@@ -109,7 +109,7 @@ export const frechetDistance: MetricFunction<[TensorLike, TensorLike]> = defineM
     const b = moments(rows('frechetDistance', fakeFeatures))
     const root = funmSymmetric(tensor(a.cov), (w) => sqrt(relu(w)))
     const inner = matmul(matmul(root, tensor(b.cov)), root)
-    const sym = matrix(inner)
+    const sym = shapedArray(inner)
     const d = a.mu.length
     // Symmetrise against rounding before the eigenvalues.
     const s = Array.from({ length: d }, (_, i) =>

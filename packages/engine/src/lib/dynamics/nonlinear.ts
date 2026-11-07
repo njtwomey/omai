@@ -25,7 +25,7 @@ import {
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { floatState, fromNumbers, numbersOf, rms } from './ode/_vec.ts'
 import { forwardSensitivities } from './ode/adjoint.ts'
-import { event, type VectorField } from './ode/problem.ts'
+import { event, type OdeVectorField } from './ode/problem.ts'
 import { type OdeMethodName, solveIvp } from './ode/solve-ivp.ts'
 
 /** Integrator settings shared by the flow tools. */
@@ -63,7 +63,7 @@ const solverOf = (o: FlowOptions): { method: OdeMethodName; rtol: number; atol: 
  * ```
  */
 export function poincareSection(
-  f: VectorField,
+  f: OdeVectorField,
   y0: TensorLike,
   surface: (y: Tensor) => number,
   options: FlowOptions & { readonly direction?: -1 | 1; readonly crossings?: number; readonly tEnd?: number } = {},
@@ -112,7 +112,7 @@ export interface LimitCycle {
  * ```
  */
 export function limitCycle(
-  f: VectorField,
+  f: OdeVectorField,
   guess: TensorLike,
   period: number,
   options: FlowOptions & { readonly fixedIndex?: number; readonly maxIterations?: number } = {},
@@ -167,7 +167,7 @@ export function limitCycle(
  * ```
  */
 export function floquetMultipliers(
-  f: VectorField,
+  f: OdeVectorField,
   y0: TensorLike,
   period: number,
   options: FlowOptions = {},
@@ -212,7 +212,7 @@ export interface LyapunovSpectrumOptions extends FlowOptions {
  * ```
  */
 export function lyapunovSpectrum(
-  f: VectorField,
+  f: OdeVectorField,
   y0: TensorLike,
   options: LyapunovSpectrumOptions = {},
 ): { readonly exponents: number[]; readonly history: readonly number[][] } {
@@ -229,7 +229,7 @@ export function lyapunovSpectrum(
   }
   const interval = options.interval ?? 0.5
   const steps = Math.max(1, Math.round((options.tEnd ?? 100) / interval))
-  const augmented: VectorField = (t, z) => {
+  const augmented: OdeVectorField = (t, z) => {
     const yy = reshape(sliceAxis(z, 0, 0, n), shape)
     const Q = reshape(sliceAxis(z, 0, n, n + n * k), [n, k])
     const g = (v: Value): Value => reshape(f(t, reshape(v, shape)), [n])

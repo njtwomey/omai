@@ -9,7 +9,7 @@ import { MdmlError } from '../../base/index.ts'
 import { item, mul, reshape, sliceAxis, stack, sum, type TensorLike, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { combine, floatState, numbersOf } from './_vec.ts'
-import type { VectorField } from './problem.ts'
+import type { OdeVectorField } from './problem.ts'
 
 /**
  * A separable Hamiltonian system H(q, p) = T(p) + V(q): the velocity dH/dp = dT/dp and the force -dH/dq = -dV/dq,
@@ -68,7 +68,7 @@ export function separableHamiltonian(
  * toFlat(f(0, tensor([[1], [2]]))) // => [2, -1]
  * ```
  */
-export function separableField(system: SeparableSystem): VectorField {
+export function separableField(system: SeparableSystem): OdeVectorField {
   return (_t, y) => {
     const q = sliceAxis(y, 0, 0, 1)
     const p = sliceAxis(y, 0, 1, 2)

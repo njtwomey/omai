@@ -5,10 +5,10 @@
  */
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
-import { cdist, type Metric as DistanceName } from '../numerics/geometry/index.ts'
+import { cdist, type DistanceMetric as DistanceName } from '../numerics/geometry/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { labelValues, sortLabels } from './_labels.ts'
-import { defineMetric, type MetricFunction, type MetricInput, matrix, metricResult } from './metric.ts'
+import { defineMetric, type MetricFunction, type MetricInput, metricResult, shapedArray } from './metric.ts'
 
 const spec = (name: string, direction: 'higher' | 'lower', range: readonly [number, number]): MetricSpec => ({
   name,
@@ -31,7 +31,7 @@ function clusters(
   x: TensorLike,
   labels: MetricInput,
 ): { points: { shape: readonly number[]; data: Float64Array }; idx: Int32Array; k: number; n: number } {
-  const points = matrix(x)
+  const points = shapedArray(x)
   const l = labelValues(labels)
   const n = points.shape[0] ?? 0
   if (l.length !== n) throw new MdmlError('shape', `${name}: one label per sample`)
@@ -42,8 +42,8 @@ function clusters(
 
 /** The full distance matrix of the samples. */
 function distances(x: TensorLike, n: number, metric: DistanceName | 'precomputed' | undefined): Float64Array {
-  if (metric === 'precomputed') return matrix(x).data
-  const d = matrix(cdist(x, x, metric ?? 'euclidean')).data
+  if (metric === 'precomputed') return shapedArray(x).data
+  const d = shapedArray(cdist(x, x, metric ?? 'euclidean')).data
   if (d.length !== n * n) throw new MdmlError('shape', 'distance matrix has the wrong size')
   return d
 }

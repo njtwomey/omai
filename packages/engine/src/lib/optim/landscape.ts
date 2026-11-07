@@ -32,7 +32,7 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { flatObjective, type Objective } from './minimize/objective.ts'
-import type { Tree } from './transform.ts'
+import type { ParamTree } from './transform.ts'
 
 /** A loss as a function of a parameter tree: a scalar. */
 export type LossFunction = Objective
@@ -50,7 +50,7 @@ export interface FilterNormOptions {
   readonly biases?: 'zero' | 'normalise'
 }
 
-const lossAt = (loss: LossFunction, params: Tree): number => item(primalOf(loss(params)))
+const lossAt = (loss: LossFunction, params: ParamTree): number => item(primalOf(loss(params)))
 
 const leafNorm = (v: Value): Value => norm(reshape(v, [-1]), 2)
 
@@ -90,7 +90,7 @@ function normaliseLeaf(d: Value, theta: Value, options: FilterNormOptions): Valu
  * toArray(filterNormalise(tensor([[1, 1], [2, 0]]), tensor([[3, 4], [0, 1]]))) // => [[3.5355339059327378, 3.5355339059327378], [1, 0]]
  * ```
  */
-export function filterNormalise<P extends Tree>(direction: P, params: P, options: FilterNormOptions = {}): P {
+export function filterNormalise<P extends ParamTree>(direction: P, params: P, options: FilterNormOptions = {}): P {
   const d = treeFlatten(asTree(direction))
   const t = treeFlatten(asTree(params))
   const out = d.leaves.map((leaf, i) => normaliseLeaf(leaf, t.leaves[i] as Value, options))
@@ -98,7 +98,7 @@ export function filterNormalise<P extends Tree>(direction: P, params: P, options
 }
 
 /** Numeric leaves of a user-supplied tree as tensors. */
-function asTree(x: unknown): Tree {
+function asTree(x: unknown): ParamTree {
   const walk = (v: unknown): unknown => {
     if (Array.isArray(v) && v.length > 0 && v.every((e) => Array.isArray(e) || typeof e === 'number'))
       return asTensor(v as never)
@@ -108,7 +108,7 @@ function asTree(x: unknown): Tree {
       return Object.fromEntries(Object.entries(v).map(([k, e]) => [k, walk(e)]))
     return v
   }
-  return walk(x) as Tree
+  return walk(x) as ParamTree
 }
 
 /**
@@ -127,14 +127,14 @@ function asTree(x: unknown): Tree {
  * randomDirection(tensor([[3, 4], [0, 2]]), key(0)).shape // => [2, 2]
  * ```
  */
-export function randomDirection<P extends Tree>(params: P, key: Key, options: FilterNormOptions = {}): P {
+export function randomDirection<P extends ParamTree>(params: P, key: Key, options: FilterNormOptions = {}): P {
   const t = treeFlatten(asTree(params))
   const noise = t.leaves.map((leaf, i) => normal(foldIn(key, i), [...leaf.shape]) as Value)
   const raw = treeUnflatten(t.def, noise) as P
   return filterNormalise(raw, asTree(params) as P, options)
 }
 
-const along = (params: Tree, direction: Tree, alpha: number): Tree =>
+const along = (params: ParamTree, direction: ParamTree, alpha: number): ParamTree =>
   treeMap((p, d) => add(p, mul(d, alpha)), asTree(params), asTree(direction))
 
 /** The loss along a line through the parameters. */
@@ -161,7 +161,7 @@ export interface Slice1d {
  * slice1d((x: Value) => sum(square(x)), tensor([1, 0]), tensor([1, 0]), [-1, 0, 1]).losses // => [0, 1, 4]
  * ```
  */
-export function slice1d(loss: LossFunction, params: Tree, direction: Tree, alphas: TensorLike): Slice1d {
+export function slice1d(loss: LossFunction, params: ParamTree, direction: ParamTree, alphas: TensorLike): Slice1d {
   const grid = toVector(alphas, 'slice1d')
   return { alphas: grid, losses: grid.map((a) => lossAt(loss, along(params, direction, a))) }
 }
@@ -197,9 +197,9 @@ export interface Slice2d {
  */
 export function slice2d(
   loss: LossFunction,
-  params: Tree,
-  d1: Tree,
-  d2: Tree,
+  params: ParamTree,
+  d1: ParamTree,
+  d2: ParamTree,
   alphas: TensorLike,
   betas: TensorLike,
 ): Slice2d {
@@ -238,11 +238,11 @@ export function slice2d(
  */
 export function randomSlice(
   loss: LossFunction,
-  params: Tree,
+  params: ParamTree,
   key: Key,
   grid: { readonly alphas: TensorLike; readonly betas?: TensorLike },
   options: FilterNormOptions = {},
-): { readonly directions: readonly Tree[]; readonly slice: Slice1d | Slice2d } {
+): { readonly directions: readonly ParamTree[]; readonly slice: Slice1d | Slice2d } {
   const d1 = randomDirection(params, foldIn(key, 0), options)
   if (grid.betas === undefined) return { directions: [d1], slice: slice1d(loss, params, d1, grid.alphas) }
   const d2 = randomDirection(params, foldIn(key, 1), options)
@@ -268,7 +268,7 @@ export function randomSlice(
  * interpolationSlice((x: Value) => sum(square(x)), tensor([-1]), tensor([1]), [0, 0.5, 1]).losses // => [1, 0, 1]
  * ```
  */
-export function interpolationSlice(loss: LossFunction, a: Tree, b: Tree, ts: TensorLike): Slice1d {
+export function interpolationSlice(loss: LossFunction, a: ParamTree, b: ParamTree, ts: TensorLike): Slice1d {
   const grid = toVector(ts, 'interpolationSlice')
   const diff = treeMap((x, y) => add(y, mul(x, -1)), asTree(a), asTree(b))
   return { alphas: grid, losses: grid.map((t) => lossAt(loss, along(a, diff, t))) }
@@ -322,9 +322,9 @@ export function barrier(slice: Slice1d): number {
  * bezierSlice((x: Value) => sum(x), tensor([0]), tensor([2]), tensor([0]), [0, 0.5, 1]).losses // => [0, 1, 0]
  * ```
  */
-export function bezierSlice(loss: LossFunction, a: Tree, c: Tree, b: Tree, ts: TensorLike): Slice1d {
+export function bezierSlice(loss: LossFunction, a: ParamTree, c: ParamTree, b: ParamTree, ts: TensorLike): Slice1d {
   const grid = toVector(ts, 'bezierSlice')
-  const point = (t: number): Tree =>
+  const point = (t: number): ParamTree =>
     treeMap(
       (x, y, z) => add(add(mul(x, (1 - t) ** 2), mul(y, 2 * (1 - t) * t)), mul(z, t * t)),
       asTree(a),
@@ -339,7 +339,7 @@ export interface Sharpness {
   /** The largest eigenvalue of the Hessian (the sharpness). */
   readonly value: number
   /** The eigenvector, as a tree shaped like the parameters. */
-  readonly vector: Tree
+  readonly vector: ParamTree
   /** Hessian-vector products used. */
   readonly products: number
 }
@@ -366,7 +366,7 @@ export interface Sharpness {
  */
 export function sharpness(
   loss: LossFunction,
-  params: Tree,
+  params: ParamTree,
   options: {
     readonly method?: 'lanczos' | 'power'
     readonly iterations?: number

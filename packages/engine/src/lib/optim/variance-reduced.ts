@@ -10,14 +10,14 @@ import { randint } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { type FlatObjective, flatObjective, type MinimizeResult, type Parameters } from './minimize/objective.ts'
-import type { Tree } from './transform.ts'
+import type { ParamTree } from './transform.ts'
 
 /** A finite sum f(x) = (1/n) sum_i f_i(x): the empirical risk of a model on n examples. */
 export interface FiniteSum {
   /** The number of terms. */
   readonly n: number
   /** The i-th term f_i, a scalar function of the parameters (one example's loss plus its share of a smooth penalty). */
-  readonly term: (params: Tree, i: number) => Value
+  readonly term: (params: ParamTree, i: number) => Value
 }
 
 /** A proximal operator: argmin_z h(z) + |z - x|^2 / (2 step), for a non-smooth penalty h such as an L1 norm. */

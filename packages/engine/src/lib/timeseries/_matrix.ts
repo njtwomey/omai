@@ -10,7 +10,7 @@ import { fromStorage, toFlat, type Value } from '../tensor/index.ts'
 import { leastSquares } from './_ml.ts'
 
 /** A matrix as an array of rows. */
-export type Matrix = number[][]
+export type MutableRows = number[][]
 
 /** The tensor of a matrix. */
 export function tensorOf(a: readonly (readonly number[])[]): Value {
@@ -20,17 +20,17 @@ export function tensorOf(a: readonly (readonly number[])[]): Value {
 }
 
 /** The rows of a matrix tensor. */
-export function rowsOf(t: Value, rows: number, cols: number): Matrix {
+export function rowsOf(t: Value, rows: number, cols: number): MutableRows {
   return toRows(toFlat(t), rows, cols)
 }
 
 /** The identity of size n. */
-export function identity(n: number): Matrix {
+export function identity(n: number): MutableRows {
   return Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)))
 }
 
 /** The product A B. */
-export function multiply(a: readonly (readonly number[])[], b: readonly (readonly number[])[]): Matrix {
+export function multiply(a: readonly (readonly number[])[], b: readonly (readonly number[])[]): MutableRows {
   const m = a.length
   const k = b.length
   const n = b[0]?.length ?? 0
@@ -39,23 +39,23 @@ export function multiply(a: readonly (readonly number[])[], b: readonly (readonl
 }
 
 /** The transpose. */
-export function transpose(a: readonly (readonly number[])[]): Matrix {
+export function transpose(a: readonly (readonly number[])[]): MutableRows {
   const n = a[0]?.length ?? 0
   return Array.from({ length: n }, (_, j) => a.map((row) => row[j] ?? 0))
 }
 
 /** The sum of two matrices (or the difference with `sign = -1`). */
-export function add(a: readonly (readonly number[])[], b: readonly (readonly number[])[], sign = 1): Matrix {
+export function add(a: readonly (readonly number[])[], b: readonly (readonly number[])[], sign = 1): MutableRows {
   return a.map((row, i) => row.map((v, j) => v + sign * (b[i]?.[j] ?? 0)))
 }
 
 /** The inverse of a square matrix. */
-export function invert(a: readonly (readonly number[])[]): Matrix {
+export function invert(a: readonly (readonly number[])[]): MutableRows {
   return rowsOf(inv(tensorOf(a)), a.length, a.length)
 }
 
 /** The lower Cholesky factor of a symmetric positive definite matrix. */
-export function choleskyLower(a: readonly (readonly number[])[]): Matrix {
+export function choleskyLower(a: readonly (readonly number[])[]): MutableRows {
   return rowsOf(cholesky(tensorOf(a)), a.length, a.length)
 }
 
@@ -73,7 +73,7 @@ export function eigenvalueModuli(a: readonly (readonly number[])[]): number[] {
 }
 
 /** The eigenvalues (largest first) and orthonormal eigenvectors (as the columns of `vectors`) of a symmetric matrix. */
-export function symmetricEigen(a: readonly (readonly number[])[]): { values: number[]; vectors: Matrix } {
+export function symmetricEigen(a: readonly (readonly number[])[]): { values: number[]; vectors: MutableRows } {
   const n = a.length
   const sym = a.map((r, i) => r.map((v, j) => 0.5 * (v + (a[j]?.[i] ?? 0))))
   const { eigenvalues, eigenvectors } = eigh(tensorOf(sym))
@@ -84,7 +84,7 @@ export function symmetricEigen(a: readonly (readonly number[])[]): { values: num
 }
 
 /** The symmetric inverse square root of a symmetric positive definite matrix. */
-export function inverseSquareRoot(a: readonly (readonly number[])[]): Matrix {
+export function inverseSquareRoot(a: readonly (readonly number[])[]): MutableRows {
   const { values, vectors } = symmetricEigen(a)
   const scaled = vectors.map((row) => row.map((v, j) => v / Math.sqrt(values[j] ?? 1)))
   return multiply(scaled, transpose(vectors))
@@ -97,7 +97,7 @@ export function columnsOf(a: readonly (readonly number[])[]): Float64Array[] {
 }
 
 /** A matrix of rows from its columns. */
-export function fromColumns(c: readonly ArrayLike<number>[]): Matrix {
+export function fromColumns(c: readonly ArrayLike<number>[]): MutableRows {
   const n = c[0]?.length ?? 0
   return Array.from({ length: n }, (_, i) => c.map((col) => col[i] ?? 0))
 }

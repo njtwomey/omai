@@ -5,7 +5,7 @@
  */
 
 import { EULER_GAMMA } from '../base/index.ts'
-import type { DatasetGenerator, Generated, Knobs, RegressionData, Truth } from '../data/index.ts'
+import type { DatasetGenerator, Generated, GeneratorKnobs, RegressionData, Truth } from '../data/index.ts'
 import { xy } from '../data/index.ts'
 import { type Distribution, gumbel, laplace, normal as normalDist, studentT } from '../dists/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
@@ -66,7 +66,7 @@ function noiseDistribution(name: string): Distribution {
 function curveData(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   k: Key,
   f: (x: Value) => Value,
   scale: (x: Value) => Value,

@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { circularLayout, forceLayout, spectralLayout } from './force.ts'
-import type { Box, GraphLayout, LayoutGraph } from './graph.ts'
+import type { GraphLayout, LayoutBox, LayoutGraph } from './graph.ts'
 import { bipartiteLayout, gridLayout, latticeLayout } from './grids.ts'
 import { layered } from './layered.ts'
 import { dendrogram, radialTree, tidyTree } from './trees.ts'
 
 const nodes = (ids: string[], size = 20): LayoutGraph['nodes'] => ids.map((id) => ({ id, width: size, height: size }))
-const at = (l: GraphLayout, id: string): Box => {
+const at = (l: GraphLayout, id: string): LayoutBox => {
   const b = l.nodes[id]
   if (b === undefined) throw new Error(`no node ${id}`)
   return b
 }
-const overlaps = (a: Box, b: Box): boolean =>
+const overlaps = (a: LayoutBox, b: LayoutBox): boolean =>
   Math.abs(a.x - b.x) < (a.width + b.width) / 2 && Math.abs(a.y - b.y) < (a.height + b.height) / 2
 
 describe('layered', () => {

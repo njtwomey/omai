@@ -176,7 +176,7 @@ export function bitSink(): BitSink {
 }
 
 /** A dynamic tree: frequencies, codes, parents and lengths (zlib's ct_data unions kept apart). */
-interface Tree {
+interface DeflateTree {
   readonly freq: Int32Array
   readonly code: Int32Array
   readonly dad: Int32Array
@@ -208,7 +208,7 @@ const D_DESC: StaticDesc = {
 }
 const BL_DESC: StaticDesc = { extra: EXTRA_BLBITS, extraBase: 0, elems: BL_CODES, maxLength: MAX_BL_BITS }
 
-function tree(size: number): Tree {
+function tree(size: number): DeflateTree {
   return {
     freq: new Int32Array(size),
     code: new Int32Array(size),
@@ -373,10 +373,10 @@ export function deflateRaw(input: Uint8Array, level: number, strategy: DeflateSt
   }
   initBlock()
 
-  const smaller = (t: Tree, n: number, m: number): boolean =>
+  const smaller = (t: DeflateTree, n: number, m: number): boolean =>
     (t.freq[n] ?? 0) < (t.freq[m] ?? 0) || ((t.freq[n] ?? 0) === (t.freq[m] ?? 0) && (depth[n] ?? 0) <= (depth[m] ?? 0))
 
-  const pqdownheap = (t: Tree, k0: number): void => {
+  const pqdownheap = (t: DeflateTree, k0: number): void => {
     let k = k0
     const v = heap[k] ?? 0
     let j = k << 1
@@ -390,7 +390,7 @@ export function deflateRaw(input: Uint8Array, level: number, strategy: DeflateSt
     heap[k] = v
   }
 
-  const genBitlen = (t: Tree, desc: StaticDesc): void => {
+  const genBitlen = (t: DeflateTree, desc: StaticDesc): void => {
     const maxCode = t.maxCode
     blCount.fill(0)
     t.len[heap[heapMax] ?? 0] = 0
@@ -434,7 +434,7 @@ export function deflateRaw(input: Uint8Array, level: number, strategy: DeflateSt
     }
   }
 
-  const buildTree = (t: Tree, desc: StaticDesc): void => {
+  const buildTree = (t: DeflateTree, desc: StaticDesc): void => {
     const elems = desc.elems
     let maxCode = -1
     heapLen = 0
@@ -476,9 +476,9 @@ export function deflateRaw(input: Uint8Array, level: number, strategy: DeflateSt
   }
 
   /** The length at n, with zlib's guard of 0xffff just past max_code. */
-  const lenAt = (t: Tree, n: number, maxCode: number): number => (n === maxCode + 1 ? 0xffff : (t.len[n] ?? 0))
+  const lenAt = (t: DeflateTree, n: number, maxCode: number): number => (n === maxCode + 1 ? 0xffff : (t.len[n] ?? 0))
 
-  const scanTree = (t: Tree, maxCode: number): void => {
+  const scanTree = (t: DeflateTree, maxCode: number): void => {
     let prevlen = -1
     let nextlen = lenAt(t, 0, maxCode)
     let count = 0
@@ -517,7 +517,7 @@ export function deflateRaw(input: Uint8Array, level: number, strategy: DeflateSt
     sink.bits(t.code[c] ?? 0, t.len[c] ?? 0)
   }
 
-  const sendTree = (t: Tree, maxCode: number): void => {
+  const sendTree = (t: DeflateTree, maxCode: number): void => {
     let prevlen = -1
     let nextlen = lenAt(t, 0, maxCode)
     let count = 0

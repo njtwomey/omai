@@ -20,7 +20,7 @@ import {
   towards,
 } from './_step.ts'
 import { allFinite, combine, floatState, fromNumbers, numbersOf } from './_vec.ts'
-import { hermiteSegment, type Stepper, type StepperState, type VectorField } from './problem.ts'
+import { hermiteSegment, type OdeVectorField, type Stepper, type StepperState } from './problem.ts'
 
 /**
  * A semilinear problem y' = L y + N(t, y): a stiff linear part (a diagonal, given with the state's shape, as for
@@ -28,7 +28,7 @@ import { hermiteSegment, type Stepper, type StepperState, type VectorField } fro
  */
 export interface SemilinearProblem {
   readonly linear: TensorLike
-  readonly nonlinear: VectorField
+  readonly nonlinear: OdeVectorField
 }
 
 /**
@@ -43,7 +43,7 @@ export interface SemilinearProblem {
  * toArray(semilinearField({ linear: [-2], nonlinear: (_t, y) => zerosLike(y) })(0, tensor([3]))) // => [-6]
  * ```
  */
-export function semilinearField(problem: SemilinearProblem): VectorField {
+export function semilinearField(problem: SemilinearProblem): OdeVectorField {
   const l = floatState(problem.linear)
   return (t, y) => add(applyLinear(l, y), problem.nonlinear(t, y))
 }
@@ -132,7 +132,7 @@ export interface ExponentialOptions {
 
 /** The state of an exponential integrator. */
 export interface ExponentialState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly fOld: Value
 }

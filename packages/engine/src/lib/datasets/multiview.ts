@@ -6,7 +6,7 @@
  */
 
 import type { Vec3 } from '../base/index.ts'
-import { type DatasetGenerator, type ImageData, images, type Knobs, type Truth } from '../data/index.ts'
+import { type DatasetGenerator, type GeneratorKnobs, type ImageData, images, type Truth } from '../data/index.ts'
 import {
   box,
   material,
@@ -262,7 +262,7 @@ export const multiViewImages: DatasetGenerator<ImageData> = {
       default: 4,
     }),
   }),
-  generate: (k: Key, knobs: Knobs) => {
+  generate: (k: Key, knobs: GeneratorKnobs) => {
     const views = knobs['views'] as number
     const heldOut = knobs['heldOut'] as number
     const side = knobs['resolution'] as number

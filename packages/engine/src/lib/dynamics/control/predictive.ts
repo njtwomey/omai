@@ -23,11 +23,9 @@ import { fromNumbers } from '../ode/_vec.ts'
 import { f64 } from './_model.ts'
 import { type DiscreteModel, ilqr } from './trajectory.ts'
 
-type Mat = Float64Array
+const at = (m: Float64Array, cols: number, r: number, c: number): number => m[r * cols + c] ?? 0
 
-const at = (m: Mat, cols: number, r: number, c: number): number => m[r * cols + c] ?? 0
-
-function matmulN(a: Mat, b: Mat, n: number, k: number, m: number): Mat {
+function matmulN(a: Float64Array, b: Float64Array, n: number, k: number, m: number): Float64Array {
   return Float64Array.from(primalOf(matmul(f64(Array.from(a), [n, k]), f64(Array.from(b), [k, m]))).data)
 }
 
@@ -102,14 +100,14 @@ export function linearMpc(options: LinearMpcOptions): LinearMpc {
   const N = options.horizon
   if (!Number.isInteger(N) || N < 1) throw new MdmlError('value', 'linearMpc: the horizon must be at least 1')
   // Powers A^k and the prediction matrices Phi (Nn x n) and Gamma (Nn x Nm).
-  const powers: Mat[] = [Float64Array.from({ length: n * n }, (_, i) => (Math.floor(i / n) === i % n ? 1 : 0))]
-  for (let k = 1; k <= N; k++) powers.push(matmulN(A, powers[k - 1] as Mat, n, n, n))
+  const powers: Float64Array[] = [Float64Array.from({ length: n * n }, (_, i) => (Math.floor(i / n) === i % n ? 1 : 0))]
+  for (let k = 1; k <= N; k++) powers.push(matmulN(A, powers[k - 1] as Float64Array, n, n, n))
   const Phi = new Float64Array(N * n * n)
-  for (let k = 0; k < N; k++) Phi.set(powers[k + 1] as Mat, k * n * n)
+  for (let k = 0; k < N; k++) Phi.set(powers[k + 1] as Float64Array, k * n * n)
   const Gamma = new Float64Array(N * n * N * m)
   for (let k = 0; k < N; k++) {
     for (let j = 0; j <= k; j++) {
-      const blk = matmulN(powers[k - j] as Mat, B, n, n, m)
+      const blk = matmulN(powers[k - j] as Float64Array, B, n, n, m)
       for (let r = 0; r < n; r++)
         for (let c = 0; c < m; c++) Gamma[(k * n + r) * (N * m) + j * m + c] = at(blk, m, r, c)
     }
@@ -117,7 +115,7 @@ export function linearMpc(options: LinearMpcOptions): LinearMpc {
   // Qbar Gamma and the Hessian H = 2 (Gamma^T Qbar Gamma + Rbar).
   const nu = N * m
   const nx = N * n
-  const qOf = (k: number): Mat => (k === N - 1 ? Qf : Q)
+  const qOf = (k: number): Float64Array => (k === N - 1 ? Qf : Q)
   const QG = new Float64Array(nx * nu)
   for (let k = 0; k < N; k++) {
     const blk = matmulN(qOf(k), Gamma.subarray(k * n * nu, (k + 1) * n * nu), n, n, nu)

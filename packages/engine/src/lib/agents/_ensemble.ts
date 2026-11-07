@@ -4,7 +4,7 @@
 import { meanOf, varianceOf } from '../base/index.ts'
 import { gaussianNll } from '../losses/index.ts'
 import { mlp, SiLU } from '../nn/index.ts'
-import type { GradientTransformation, Tree } from '../optim/index.ts'
+import type { GradientTransformation, ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, randint } from '../random/index.ts'
 import { type DynamicsModel, type Ensemble, ensembleSample } from '../rl/index.ts'
 import {
@@ -33,7 +33,7 @@ export interface Normaliser {
 
 /** One member: network weights, the learned log-variance bounds, and its normaliser. */
 export interface Member {
-  readonly params: { readonly net: Tree; readonly maxLogVar: Tensor; readonly minLogVar: Tensor }
+  readonly params: { readonly net: ParamTree; readonly maxLogVar: Tensor; readonly minLogVar: Tensor }
   readonly norm: Normaliser
 }
 
@@ -153,7 +153,7 @@ export function trainEnsemble(
     const km = foldIn(key, i)
     // The member's bootstrap resample, drawn once per round.
     const boot = Array.from(randint(foldIn(km, 0), [n], 0, n).data)
-    let params: Tree = member.params
+    let params: ParamTree = member.params
     let opt = optStates[i]
     let loss = 0
     for (let s = 0; s < options.gradientSteps; s++) {
@@ -168,7 +168,7 @@ export function trainEnsemble(
         pick.map((j) => ys[j] ?? []),
         outW,
       )
-      const lossFn = (p: Tree): Value => {
+      const lossFn = (p: ParamTree): Value => {
         const q = p as Member['params']
         const r = net.raw(q, x)
         const nll = gaussianNll(r.mean, y, exp(r.logVar))

@@ -28,7 +28,6 @@ import {
 // Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
 vi.setConfig({ testTimeout: 60_000 })
 
-type Vec = readonly number[]
 const oneHot = (n: number, i: number): number[] => Array.from({ length: n }, (_, j) => (j === i ? 1 : 0))
 
 describe('DAgger', () => {
@@ -36,7 +35,7 @@ describe('DAgger', () => {
     const raw = frozenLake.create({ isSlippery: false })
     const expertPolicy = valueIteration(mdpFromEnv(raw, 0.9)).policy
     const env = make(frozenLake, { isSlippery: false }, { wrappers: [(e) => oneHotObservation(e as never) as never] })
-    const expert = (o: Vec): number => expertPolicy[argmaxOf(o)] ?? 0
+    const expert = (o: readonly number[]): number => expertPolicy[argmaxOf(o)] ?? 0
     const rec = recorder()
     const result = dagger(env as never, expert, {
       iterations: 4,
@@ -45,7 +44,7 @@ describe('DAgger', () => {
     })
     expect(result.iterations).toBe(4)
     expect(result.agreement).toBe(1)
-    const learned = evaluatePolicy(env as never, (o: Vec) => result.policy(o, key(0)), { episodes: 1 })
+    const learned = evaluatePolicy(env as never, (o: readonly number[]) => result.policy(o, key(0)), { episodes: 1 })
     expect(learned.meanReturn).toBe(1)
     expect(learned.lengths[0]).toBe(6)
     const betas = rec
@@ -57,7 +56,7 @@ describe('DAgger', () => {
 
   it('imitates a continuous controller by regression, visiting the states the learner reaches', () => {
     const env = timeLimit(reach(), 10)
-    const expert = (o: Vec): number[] => [Math.max(-1, Math.min(1, -4 * (o[0] ?? 0)))]
+    const expert = (o: readonly number[]): number[] => [Math.max(-1, Math.min(1, -4 * (o[0] ?? 0)))]
     const result = dagger(env, expert, { iterations: 4, epochs: 100, learningRate: 1e-2, hidden: [16] })
     const learned = evaluatePolicy(env, result.policy, { episodes: 20, seed: 1 }).meanReturn
     const reference = evaluatePolicy(env, expert, { episodes: 20, seed: 1 }).meanReturn
@@ -71,7 +70,7 @@ describe('GAIL', () => {
   // The hazard grid with an expert that walks around the hazards (down, right, right, right, up).
   const action: Readonly<Record<number, number>> = { 0: 2, 1: 2, 2: 2, 3: 0, 4: 1, 5: 1, 6: 1, 7: 0 }
   const env = oneHotObservation(timeLimit(hazardGrid(), 20))
-  const expert = (o: Vec): number => action[argmaxOf(o)] ?? 0
+  const expert = (o: readonly number[]): number => action[argmaxOf(o)] ?? 0
   const demonstrations = runEpisode(env, expert, key(0))
     .observations.slice(0, 5)
     .map((o) => ({

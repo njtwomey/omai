@@ -8,7 +8,7 @@
 
 import { add, mul, neg, sin, sliceAxis, stack, sub, sum, type Value } from '../tensor/index.ts'
 import { doublePendulumField } from './mechanics.ts'
-import type { VectorField } from './ode/problem.ts'
+import type { OdeVectorField } from './ode/problem.ts'
 
 /** Component `i` of a state vector, as a scalar. */
 const at = (y: Value, i: number): Value => sum(sliceAxis(y, 0, i, i + 1))
@@ -39,7 +39,7 @@ export interface LotkaVolterraParameters {
  * toFlat(lotkaVolterraField()(0, tensor([20, 10]))) // => [0, 0]
  * ```
  */
-export function lotkaVolterraField(parameters: LotkaVolterraParameters = {}): VectorField {
+export function lotkaVolterraField(parameters: LotkaVolterraParameters = {}): OdeVectorField {
   const { alpha = 1, beta = 0.1, delta = 0.075, gamma = 1.5 } = parameters
   return (_t, y) => {
     const x = at(y, 0)
@@ -72,7 +72,7 @@ export interface LorenzParameters {
  * toFlat(lorenzField()(0, tensor([1, 1, 1]))) // => [0, 26, -1.6666666666666665]
  * ```
  */
-export function lorenzField(parameters: LorenzParameters = {}): VectorField {
+export function lorenzField(parameters: LorenzParameters = {}): OdeVectorField {
   const { sigma = 10, rho = 28, beta = 8 / 3 } = parameters
   return (_t, s) => {
     const x = at(s, 0)
@@ -95,7 +95,7 @@ export function lorenzField(parameters: LorenzParameters = {}): VectorField {
  * toFlat(vanDerPolField(2)(0, tensor([2, 1]))) // => [1, -8]
  * ```
  */
-export function vanDerPolField(mu = 2): VectorField {
+export function vanDerPolField(mu = 2): OdeVectorField {
   return (_t, y) => {
     const x = at(y, 0)
     const v = at(y, 1)
@@ -124,7 +124,7 @@ export interface DampedPendulumParameters {
  * toFlat(dampedPendulumField({ gravityOverLength: 1, damping: 0.5 })(0, tensor([0, 2]))) // => [2, -1]
  * ```
  */
-export function dampedPendulumField(parameters: DampedPendulumParameters = {}): VectorField {
+export function dampedPendulumField(parameters: DampedPendulumParameters = {}): OdeVectorField {
   const { gravityOverLength = 1, damping = 0.25 } = parameters
   return (_t, y) => {
     const omega = at(y, 1)
@@ -157,7 +157,7 @@ export interface RosslerParameters {
  * toFlat(rosslerField()(0, tensor([1, 1, 1]))) // => [-2, 1.2, -4.5]
  * ```
  */
-export function rosslerField(parameters: RosslerParameters = {}): VectorField {
+export function rosslerField(parameters: RosslerParameters = {}): OdeVectorField {
   const { a = 0.2, b = 0.2, c = 5.7 } = parameters
   return (_t, s) => {
     const x = at(s, 0)
@@ -209,7 +209,7 @@ export interface ThomasParameters {
  * toFlat(thomasField({ b: 0.2 })(0, tensor([0, 0, 0]))) // => [0, 0, 0]
  * ```
  */
-export function thomasField(parameters: ThomasParameters = {}): VectorField {
+export function thomasField(parameters: ThomasParameters = {}): OdeVectorField {
   const { b = 0.208186 } = parameters
   return (_t, s) => {
     const x = at(s, 0)
@@ -241,7 +241,7 @@ export interface SirParameters {
  * toFlat(sirField()(0, tensor([0.5, 0.25, 0.25]))) // => [-0.05, 0.025, 0.025]
  * ```
  */
-export function sirField(parameters: SirParameters = {}): VectorField {
+export function sirField(parameters: SirParameters = {}): OdeVectorField {
   const { beta = 0.4, gamma = 0.1 } = parameters
   return (_t, y) => {
     const s = at(y, 0)
@@ -267,7 +267,7 @@ export type NamedSystemName =
 export interface NamedSystem {
   readonly label: string
   readonly description: string
-  readonly field: VectorField
+  readonly field: OdeVectorField
   /** The initial state. */
   readonly y0: readonly number[]
   /** A time span long enough to show the behaviour (many cycles, or until the epidemic has run its course). */

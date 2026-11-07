@@ -43,7 +43,7 @@ import {
 import { inv } from '../linalg/index.ts'
 
 /** The metrics of scipy.spatial.distance (and haversine, as sklearn). */
-export type Metric =
+export type DistanceMetric =
   | 'euclidean'
   | 'sqeuclidean'
   | 'cityblock'
@@ -119,7 +119,7 @@ function coordinate(x: Value, k: number): Value {
 }
 
 /** Whether a metric still needs scipy's data-dependent defaults. */
-function needsStatistics(metric: Metric, options: MetricOptions): boolean {
+function needsStatistics(metric: DistanceMetric, options: MetricOptions): boolean {
   return (metric === 'seuclidean' && options.v === undefined) || (metric === 'mahalanobis' && options.vi === undefined)
 }
 
@@ -140,7 +140,11 @@ function needsStatistics(metric: Metric, options: MetricOptions): boolean {
  * resolveMetricOptions('euclidean', [[0, 0], [2, 4]], { p: 2 }) // => { p: 2 }
  * ```
  */
-export function resolveMetricOptions(metric: Metric, points: TensorLike, options: MetricOptions = {}): MetricOptions {
+export function resolveMetricOptions(
+  metric: DistanceMetric,
+  points: TensorLike,
+  options: MetricOptions = {},
+): MetricOptions {
   if (!needsStatistics(metric, options)) return options
   const [x] = promoteFloat(points) as [Value]
   if (x.shape.length !== 2) throw new MdmlError('shape', 'resolveMetricOptions: points must be [n, d]')
@@ -174,7 +178,7 @@ export function resolveMetricOptions(metric: Metric, points: TensorLike, options
 export function distanceBetween(
   a: TensorLike,
   b: TensorLike,
-  metric: Metric = 'euclidean',
+  metric: DistanceMetric = 'euclidean',
   options: MetricOptions = {},
 ): Value {
   const [x, y] = promoteFloat(a, b) as [Value, Value]
@@ -275,7 +279,7 @@ export function distanceBetween(
 export function cdist(
   xa: TensorLike,
   xb: TensorLike,
-  metric: Metric = 'euclidean',
+  metric: DistanceMetric = 'euclidean',
   options: MetricOptions = {},
 ): Value {
   const [a, b] = promoteFloat(xa, xb) as [Value, Value]
@@ -301,7 +305,7 @@ export function cdist(
  * toArray(pdist([[0, 0], [3, 4], [6, 8]])) // => [5, 10, 5]
  * ```
  */
-export function pdist(x: TensorLike, metric: Metric = 'euclidean', options: MetricOptions = {}): Value {
+export function pdist(x: TensorLike, metric: DistanceMetric = 'euclidean', options: MetricOptions = {}): Value {
   const [v] = promoteFloat(x) as [Value]
   const n = v.shape[0] ?? 0
   const full = reshape(cdist(v, v, metric, resolveMetricOptions(metric, v, options)), [-1])
@@ -354,7 +358,7 @@ export function squareform(d: TensorLike): Value {
 export type PointDistance = (a: ArrayLike<number>, ia: number, b: ArrayLike<number>, ib: number) => number
 
 /** Metrics satisfying the triangle inequality (usable by ball and vantage-point trees). */
-export const TRUE_METRICS: ReadonlySet<Metric> = new Set<Metric>([
+export const TRUE_METRICS: ReadonlySet<DistanceMetric> = new Set<DistanceMetric>([
   'euclidean',
   'cityblock',
   'chebyshev',
@@ -381,7 +385,7 @@ export const TRUE_METRICS: ReadonlySet<Metric> = new Set<Metric>([
  * metricFunction('cityblock', 2)([0, 0, 1, 2], 0, [0, 0, 1, 2], 2) // => 3
  * ```
  */
-export function metricFunction(metric: Metric, dim: number, options: MetricOptions = {}): PointDistance {
+export function metricFunction(metric: DistanceMetric, dim: number, options: MetricOptions = {}): PointDistance {
   const w = options.w === undefined ? undefined : toFlat(primalOf(promoteFloat(options.w)[0] as Value))
   const weight = (k: number): number => (w === undefined ? 1 : (w[k] ?? 1))
   switch (metric) {

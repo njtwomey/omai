@@ -35,7 +35,7 @@ Fourier transforms, numpy.fft and scipy.fft style: the FFT for every length (rea
 
 Computational geometry: distances and metrics (scipy.spatial.distance), convex hulls, polygons and clipping, Delaunay triangulations and Voronoi diagrams, segment collision primitives, contours and confidence ellipses, and rotations, homographies and point-set alignment.
 
-- function `cdist`: Pairwise distances between two sets of points, scipy metrics. `src/lib/numerics/geometry/distances.ts:275` `mdml-engine/numerics/geometry`
+- function `cdist`: Pairwise distances between two sets of points, scipy metrics. `src/lib/numerics/geometry/distances.ts:279` `mdml-engine/numerics/geometry`
 - function `delaunay`: Delaunay triangulation of planar points. `src/lib/numerics/geometry/triangulation.ts:184` `mdml-engine/numerics/geometry`
 
 ## numerics/interpolate
@@ -98,8 +98,8 @@ Sparse linear algebra, scipy.sparse style: compressed sparse row matrices and li
 
 - function `iterative.ts` (file): Krylov solvers: CG, BiCGSTAB, GMRES and MINRES with preconditioners. `src/lib/numerics/sparse/iterative.ts:1` `mdml-engine/numerics/sparse`
 
-- function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:166` `mdml-engine/numerics/sparse`
-- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:485` `mdml-engine/numerics/sparse`
+- function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:164` `mdml-engine/numerics/sparse`
+- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:484` `mdml-engine/numerics/sparse`
 
 - structure `csr`: Compressed sparse row matrix from a dense matrix or its arrays. `src/lib/numerics/sparse/csr.ts:67` `mdml-engine/numerics/sparse`
 
@@ -109,7 +109,7 @@ Nearest-neighbour search: exact brute force and spatial trees (KD, ball, vantage
 
 - function `kNearest`: Exact k nearest neighbours by brute force. `src/lib/numerics/spatial/brute.ts:126` `mdml-engine/numerics/spatial`
 
-- structure `kdTree`: KD tree for nearest-neighbour and radius queries. `src/lib/numerics/spatial/trees.ts:379` `mdml-engine/numerics/spatial`
+- structure `kdTree`: KD tree for nearest-neighbour and radius queries. `src/lib/numerics/spatial/trees.ts:385` `mdml-engine/numerics/spatial`
 
 ## numerics/special
 

@@ -7,7 +7,7 @@
 
 import { argmaxOf } from '../base/index.ts'
 import type { Params } from '../nn/index.ts'
-import { adam, incrementalUpdate, type Tree } from '../optim/index.ts'
+import { adam, incrementalUpdate, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import {
   type Agent,
@@ -109,7 +109,7 @@ function deterministic(env: Spaces, options: Td3Options, twin: boolean, name: st
       : net.q('q1', s.criticTarget, b.next, nextU)
     const y = primalOf(add(b.rewards, mul(mul(b.notDone, c.gamma), qNext)))
     let qMean = 0
-    const criticLoss = (p: Tree): Value => {
+    const criticLoss = (p: ParamTree): Value => {
       const q1 = net.q('q1', p as Params, b.obs, u)
       qMean = scalar(mean(q1))
       const l1 = mse(q1, y)
@@ -124,7 +124,7 @@ function deterministic(env: Spaces, options: Td3Options, twin: boolean, name: st
     }
     if ((s.updates + 1) % delay !== 0) return next
     const criticNow = next.critic
-    const actorLoss = (p: Tree): Value => mul(-1, mean(net.q('q1', criticNow, b.obs, mu(p as Params, b.obs))))
+    const actorLoss = (p: ParamTree): Value => mul(-1, mean(net.q('q1', criticNow, b.obs, mu(p as Params, b.obs))))
     const as = gradientStep(actorLoss, s.actor, c.actorOpt, s.actorOptState)
     next = {
       ...next,
@@ -246,7 +246,7 @@ function temperature(options: SacOptions) {
   const step = (s: ActorCriticAgentState, g: number): { logAlpha: number; alphaOptState: unknown } => {
     if (!tune) return { logAlpha: s.logAlpha, alphaOptState: s.alphaOptState }
     const t = gradientStep(
-      (p: Tree) => mul(-g, (p as { logAlpha: Value }).logAlpha),
+      (p: ParamTree) => mul(-g, (p as { logAlpha: Value }).logAlpha),
       { logAlpha: fromStorage(Float64Array.of(s.logAlpha), [], 'float64') },
       alphaOpt,
       s.alphaOptState,
@@ -320,7 +320,7 @@ export function sac<A extends readonly number[] = readonly number[]>(
     const qNext = sub(minQ(s.criticTarget, b.next, normaliseT(nextSample.action)), mul(alphaNow, nextSample.logProb))
     const y = primalOf(add(b.rewards, mul(mul(b.notDone, c.gamma), qNext)))
     let qMean = 0
-    const criticLoss = (p: Tree): Value => {
+    const criticLoss = (p: ParamTree): Value => {
       const q1 = net.q('q1', p as Params, b.obs, u)
       qMean = scalar(mean(q1))
       return add(mse(q1, y), mse(net.q('q2', p as Params, b.obs, u), y))
@@ -329,7 +329,7 @@ export function sac<A extends readonly number[] = readonly number[]>(
     const criticNow = cs.params as Params
     const actorKey = foldIn(k, 3)
     let entropy = 0
-    const actorLoss = (p: Tree): Value => {
+    const actorLoss = (p: ParamTree): Value => {
       const { action, logProb } = head(p as Params, b.obs).sampleWithLogProb(actorKey, true)
       entropy = -scalar(mean(logProb))
       return mean(sub(mul(alphaNow, logProb), minQ(criticNow, b.obs, normaliseT(action))))
@@ -427,7 +427,7 @@ export function sacDiscrete(
     const vNext = sum(mul(exp(nextLogPi), sub(minQ(s.criticTarget, b.next), mul(alpha, nextLogPi))), -1)
     const y = primalOf(add(b.rewards, mul(mul(b.notDone, c.gamma), vNext)))
     let qMean = 0
-    const criticLoss = (p: Tree): Value => {
+    const criticLoss = (p: ParamTree): Value => {
       const q = p as Params
       const qa1 = sum(mul(q1.apply(q['q1'] as Params, b.obs), mask), -1)
       const qa2 = sum(mul(q2.apply(q['q2'] as Params, b.obs), mask), -1)
@@ -437,7 +437,7 @@ export function sacDiscrete(
     const cs = gradientStep(criticLoss, s.critic, c.criticOpt, s.criticOptState)
     const qNow = primalOf(minQ(cs.params as Params, b.obs))
     let entropy = 0
-    const actorLoss = (p: Tree): Value => {
+    const actorLoss = (p: ParamTree): Value => {
       const lp = logSoftmax(actor.apply(p as Params, b.obs), -1)
       const pi = exp(lp)
       entropy = -scalar(mean(sum(mul(pi, lp), -1)))

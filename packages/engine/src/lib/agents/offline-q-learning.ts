@@ -7,7 +7,7 @@
 
 import { argmaxOf, MdmlError } from '../base/index.ts'
 import { crossEntropy, huber } from '../losses/index.ts'
-import { incrementalUpdate, type Tree } from '../optim/index.ts'
+import { incrementalUpdate, type ParamTree } from '../optim/index.ts'
 import { foldIn, key as makeKey } from '../random/index.ts'
 import {
   add,
@@ -33,11 +33,11 @@ import { gradientStepWithTerms, optimiserOf, rowsTensor, type Spaces, vectorTens
 import { network, type OfflineBatch, offlineBatch, offlineSpaces } from './_offline.ts'
 
 import {
-  type Dataset,
   type OfflineLearner,
   type OfflineNetOptions,
   type OfflineOptions,
   type OfflineResult,
+  type TransitionDataset,
   trainOffline,
 } from './offline.ts'
 
@@ -64,8 +64,8 @@ export interface CqlOptions extends OfflineQOptions {
 
 /** The state of an offline Q-learner. */
 export interface OfflineQState {
-  readonly params: Tree
-  readonly target: Tree
+  readonly params: ParamTree
+  readonly target: ParamTree
   readonly optState: unknown
   readonly updates: number
   readonly loss: number
@@ -124,7 +124,7 @@ function offlineQLearner<O>(
   const { sp, hidden, opt, gamma, interval, tau, syncTarget } = qLearnerParts(env, options, name)
   const net = network([sp.obsSize, ...hidden, sp.actionSize], options.key ?? makeKey(0))
   const delta = options.huberDelta ?? 1
-  const q = (p: Tree, o: O): number[] => toFlat(net.apply(p, rowsTensor([sp.features(o)], sp.obsSize)))
+  const q = (p: ParamTree, o: O): number[] => toFlat(net.apply(p, rowsTensor([sp.features(o)], sp.obsSize)))
   return {
     name,
     config: { hidden: [...hidden], gamma, targetUpdateInterval: interval, tau, ...(name === 'cql' ? { alpha } : {}) },
@@ -153,7 +153,7 @@ function offlineQLearner<O>(
         gamma,
         sp.actionSize,
       )
-      const loss = (p: Tree): readonly [Value, Value] => {
+      const loss = (p: ParamTree): readonly [Value, Value] => {
         const all = net.apply(p, b.obs)
         const qa = chosen(all, b.actions)
         const td = huber(qa, y, { delta })
@@ -217,7 +217,7 @@ function qTargets(
  */
 export function cql<O>(
   env: Spaces,
-  dataset: Dataset<O, number>,
+  dataset: TransitionDataset<O, number>,
   options: CqlOptions & OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): OfflineResult<OfflineQState, O, number> {
   return trainOffline(cqlLearner<O>(env, options), dataset, options)
@@ -243,7 +243,7 @@ export function cql<O>(
  */
 export function offlineDqn<O>(
   env: Spaces,
-  dataset: Dataset<O, number>,
+  dataset: TransitionDataset<O, number>,
   options: OfflineQOptions & OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): OfflineResult<OfflineQState, O, number> {
   return trainOffline(offlineQLearner<O>(env, options, 0, 'offlineDqn'), dataset, options)
@@ -282,10 +282,10 @@ export function bcqLearner<O>(env: Spaces, options: BcqOptions = {}): OfflineLea
   const qNet = network([sp.obsSize, ...hidden, sp.actionSize], foldIn(key, 0))
   const gNet = network([sp.obsSize, ...hidden, sp.actionSize], foldIn(key, 1))
   const delta = options.huberDelta ?? 1
-  const params: Tree = { q: qNet.params, g: gNet.params }
-  type P = { readonly q: Tree; readonly g: Tree }
+  const params: ParamTree = { q: qNet.params, g: gNet.params }
+  type P = { readonly q: ParamTree; readonly g: ParamTree }
   // Q with unsupported actions pushed to -1e8 (the paper's mask), for the target's and the policy's argmax.
-  const masked = (p: Tree, x: Value): Value => {
+  const masked = (p: ParamTree, x: Value): Value => {
     const probs = softmax(gNet.apply((p as P).g, x), -1)
     const ok = greater(probs, mul(max(probs, -1, true), threshold))
     return where(ok, qNet.apply((p as P).q, x), -1e8)
@@ -316,7 +316,7 @@ export function bcqLearner<O>(env: Spaces, options: BcqOptions = {}): OfflineLea
       const r = toFlat(b.rewards)
       const nd = toFlat(b.notDone)
       const y = vectorTensor(r.map((ri, i) => ri + gamma * (nd[i] ?? 0) * (next[i] ?? 0)))
-      const loss = (p: Tree): readonly [Value, Value] => {
+      const loss = (p: ParamTree): readonly [Value, Value] => {
         const qa = chosen(qNet.apply((p as P).q, b.obs), b.actions)
         const logits = gNet.apply((p as P).g, b.obs)
         const td = huber(qa, y, { delta })
@@ -361,7 +361,7 @@ export function bcqLearner<O>(env: Spaces, options: BcqOptions = {}): OfflineLea
  */
 export function bcq<O>(
   env: Spaces,
-  dataset: Dataset<O, number>,
+  dataset: TransitionDataset<O, number>,
   options: BcqOptions & OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): OfflineResult<OfflineQState, O, number> {
   return trainOffline(bcqLearner<O>(env, options), dataset, options)

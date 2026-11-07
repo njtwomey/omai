@@ -20,7 +20,7 @@ import {
   validTolerances,
 } from './_step.ts'
 import { allFinite, combine, floatState, numbersOf, rms, type Term, tolAt } from './_vec.ts'
-import type { DenseSegment, Stepper, StepperOptions, StepperState, VectorField } from './problem.ts'
+import type { DenseSegment, OdeVectorField, Stepper, StepperOptions, StepperState } from './problem.ts'
 
 /**
  * The Taylor coefficients y_0 = y, y_1, ..., y_order of the solution of the autonomous ODE y' = f(y) through y, so
@@ -73,7 +73,7 @@ export interface TaylorOptions extends StepperOptions {
 
 /** The state of {@link taylor}: the series of the last step. */
 export interface TaylorState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly series: readonly Value[]
   readonly h: number
 }

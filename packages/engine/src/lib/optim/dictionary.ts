@@ -10,30 +10,22 @@ import { ddot, dnrm2, lstsq, svd } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
+import type { DenseMatrix } from './_vector.ts'
 import { lassoCoordinateDescent, orthogonalMatchingPursuit } from './sparse.ts'
 
-type Vec = Float64Array
-
-/** A row-major matrix. */
-interface Matrix {
-  readonly data: Vec
-  readonly rows: number
-  readonly cols: number
-}
-
-function matrix(a: TensorLike, name: string): Matrix {
+function matrix(a: TensorLike, name: string): DenseMatrix {
   const t = primalOf(asTensor(a)) as Tensor
   if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a matrix`)
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0 }
 }
 
-const row = (m: Matrix, i: number): Vec => m.data.slice(i * m.cols, (i + 1) * m.cols)
-const transposed = (m: Matrix): Matrix => {
+const row = (m: DenseMatrix, i: number): Float64Array => m.data.slice(i * m.cols, (i + 1) * m.cols)
+const transposed = (m: DenseMatrix): DenseMatrix => {
   const out = new Float64Array(m.rows * m.cols)
   for (let i = 0; i < m.rows; i++) for (let j = 0; j < m.cols; j++) out[j * m.rows + i] = m.data[i * m.cols + j] ?? 0
   return { data: out, rows: m.cols, cols: m.rows }
 }
-const asTensorOf = (m: Matrix): Tensor => fromStorage(m.data, [m.rows, m.cols], 'float64')
+const asTensorOf = (m: DenseMatrix): Tensor => fromStorage(m.data, [m.rows, m.cols], 'float64')
 
 /** Options of {@link sparseEncode}. */
 export interface SparseEncodeOptions {
@@ -112,15 +104,15 @@ export interface DictionaryLearningOptions extends Partial<Omit<RunOptions, 'max
 /** State of the dictionary learners. */
 export interface DictionaryState {
   /** Atoms as rows `[nComponents, nFeatures]`, unit norm. */
-  readonly dictionary: Vec
+  readonly dictionary: Float64Array
   /** Codes `[nSamples, nComponents]`. */
-  readonly code: Vec
+  readonly code: Float64Array
   /** Frobenius norm of X - code dictionary. */
   readonly error: number
   readonly change: number
   /** Online learning's sufficient statistics A (k x k) and B (nFeatures x k). */
-  readonly a?: Vec
-  readonly b?: Vec
+  readonly a?: Float64Array
+  readonly b?: Float64Array
 }
 
 /** Result of the dictionary learners. */
@@ -142,7 +134,7 @@ const DICT_SCHEMA = channels({
   tensors: { dictionary: { role: 'param', description: 'atoms as rows' } },
 })
 
-function reconstructionError(X: Matrix, dictionary: Vec, code: Vec, k: number): number {
+function reconstructionError(X: DenseMatrix, dictionary: Float64Array, code: Float64Array, k: number): number {
   let s = 0
   for (let i = 0; i < X.rows; i++)
     for (let f = 0; f < X.cols; f++) {
@@ -153,7 +145,7 @@ function reconstructionError(X: Matrix, dictionary: Vec, code: Vec, k: number): 
   return Math.sqrt(s)
 }
 
-function normaliseRows(d: Vec, k: number, m: number): Vec {
+function normaliseRows(d: Float64Array, k: number, m: number): Float64Array {
   const out = Float64Array.from(d)
   for (let j = 0; j < k; j++) {
     const n = dnrm2(out.subarray(j * m, (j + 1) * m))
@@ -163,7 +155,7 @@ function normaliseRows(d: Vec, k: number, m: number): Vec {
 }
 
 /** Initial atoms: the given ones, or distinct random samples (normalised). */
-function initialAtoms(X: Matrix, k: number, options: DictionaryLearningOptions, key: Key): Vec {
+function initialAtoms(X: DenseMatrix, k: number, options: DictionaryLearningOptions, key: Key): Float64Array {
   if (options.init !== undefined) {
     const init = matrix(options.init, 'dictionary learning')
     if (init.rows !== k || init.cols !== X.cols) throw new MdmlError('shape', 'init must be [nComponents, nFeatures]')
@@ -176,7 +168,7 @@ function initialAtoms(X: Matrix, k: number, options: DictionaryLearningOptions, 
   return normaliseRows(d, k, X.cols)
 }
 
-function encodeOmp(X: Matrix, dictionary: Vec, k: number, sparsity: number): Vec {
+function encodeOmp(X: DenseMatrix, dictionary: Float64Array, k: number, sparsity: number): Float64Array {
   return Float64Array.from(
     toFlat(
       sparseEncode(asTensorOf(X), fromStorage(dictionary, [k, X.cols], 'float64'), {
@@ -188,7 +180,7 @@ function encodeOmp(X: Matrix, dictionary: Vec, k: number, sparsity: number): Vec
 }
 
 /** The sample with the largest residual, normalised: the replacement for an unused atom. */
-function worstSample(X: Matrix, dictionary: Vec, code: Vec, k: number): Vec {
+function worstSample(X: DenseMatrix, dictionary: Float64Array, code: Float64Array, k: number): Float64Array {
   let best = 0
   let worst = -1
   for (let i = 0; i < X.rows; i++) {
@@ -468,7 +460,7 @@ export function onlineDictionaryLearningAlgorithm(
   const alpha = options.alpha ?? 1
   const batch = Math.min(options.batchSize ?? 3, X.rows)
   const forget = options.forget ?? 1
-  const code = (dictionary: Vec, rows: Matrix): Vec =>
+  const code = (dictionary: Float64Array, rows: DenseMatrix): Float64Array =>
     Float64Array.from(
       toFlat(
         sparseEncode(asTensorOf(rows), fromStorage(dictionary, [k, m], 'float64'), { algorithm: 'lassoCd', alpha }),
@@ -494,7 +486,7 @@ export function onlineDictionaryLearningAlgorithm(
       const order = permutation(foldIn(ctx.key, 7), X.rows).data
       const rows = new Float64Array(batch * m)
       for (let i = 0; i < batch; i++) rows.set(row(X, order[i] ?? 0), i * m)
-      const mb: Matrix = { data: rows, rows: batch, cols: m }
+      const mb: DenseMatrix = { data: rows, rows: batch, cols: m }
       const c = code(s.dictionary, mb)
       const a = Float64Array.from(s.a ?? new Float64Array(k * k), (v) => forget * v)
       const b = Float64Array.from(s.b ?? new Float64Array(m * k), (v) => forget * v)
@@ -556,7 +548,7 @@ export function onlineDictionaryLearning(
 }
 
 /** The normalised Gram matrix |<d_i, d_j>| / (|d_i| |d_j|) of a dictionary's columns. */
-function normalisedGram(d: Matrix): Vec {
+function normalisedGram(d: DenseMatrix): Float64Array {
   const cols = Array.from({ length: d.cols }, (_, j) =>
     Float64Array.from({ length: d.rows }, (_, i) => d.data[i * d.cols + j] ?? 0),
   )
@@ -565,7 +557,8 @@ function normalisedGram(d: Matrix): Vec {
   for (let i = 0; i < d.cols; i++)
     for (let j = 0; j < d.cols; j++)
       g[i * d.cols + j] =
-        Math.abs(ddot(cols[i] as Vec, cols[j] as Vec)) / Math.max((norms[i] ?? 0) * (norms[j] ?? 0), 1e-300)
+        Math.abs(ddot(cols[i] as Float64Array, cols[j] as Float64Array)) /
+        Math.max((norms[i] ?? 0) * (norms[j] ?? 0), 1e-300)
   return g
 }
 

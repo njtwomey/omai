@@ -2,7 +2,7 @@
 // head contract that distinguishes them, and the quantile Huber kernel with its derivative rules.
 import { customVjp } from '../autodiff/index.ts'
 import { argmaxOf, type Json, toRows } from '../base/index.ts'
-import { incrementalUpdate, linearSchedule, type Tree } from '../optim/index.ts'
+import { incrementalUpdate, linearSchedule, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import {
   type Agent,
@@ -239,7 +239,7 @@ export function distributionalAgent(
     }
     const prep = head.prepare(s.params, s.target, batch, foldIn(k, 1))
     const weights = sample.weights === undefined ? undefined : vectorTensor(sample.weights)
-    const lossFn = (p: Tree): readonly [Value, Value] => {
+    const lossFn = (p: ParamTree): readonly [Value, Value] => {
       const { loss, q } = prep.terms(p as QParams)
       return [mean(weights === undefined ? loss : mul(loss, weights)), concat([loss, q])]
     }

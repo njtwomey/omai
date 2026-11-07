@@ -12,19 +12,19 @@ import { fromStorage } from '../tensor/index.ts'
 import { stamp } from './_util.ts'
 
 /** A shape to rasterise: a membership test in pixel coordinates and its bounding box. */
-interface Shape {
+interface RasterShape {
   readonly inside: (x: number, y: number) => boolean
   readonly box: readonly [number, number, number, number]
 }
 
 /** Fraction of 2 by 2 sub-pixel samples inside a shape (light anti-aliasing). */
-function coverage(shape: Shape, px: number, py: number): number {
+function coverage(shape: RasterShape, px: number, py: number): number {
   let c = 0
   for (const dx of [0.25, 0.75]) for (const dy of [0.25, 0.75]) if (shape.inside(px + dx, py + dy)) c++
   return c / 4
 }
 
-function polygon(points: readonly (readonly [number, number])[]): Shape {
+function polygon(points: readonly (readonly [number, number])[]): RasterShape {
   const inside = (x: number, y: number) => {
     let odd = false
     for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
@@ -101,7 +101,7 @@ export const shapes: DatasetGenerator<ImageData> = {
         const cy = r + (s - 2 * r) * (geo[4 * j + 2] ?? 0)
         const ang = 2 * Math.PI * (geo[4 * j + 3] ?? 0)
         const c = cls[j] ?? 0
-        const shape: Shape =
+        const shape: RasterShape =
           c === 0
             ? { inside: (x, y) => (x - cx) ** 2 + (y - cy) ** 2 <= r * r, box: [cx - r, cy - r, cx + r, cy + r] }
             : polygon(regular(cx, cy, r, c === 1 ? 4 : 3, ang))

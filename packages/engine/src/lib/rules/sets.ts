@@ -10,7 +10,7 @@
 import { type Json, MdmlError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
-import type { Tree } from '../trees/index.ts'
+import type { FittedTree } from '../trees/index.ts'
 import { countClasses, type RuleData, ruleData } from './_table.ts'
 import { argmaxOf, type Literal, type Rule, type RuleModel } from './rule.ts'
 
@@ -437,7 +437,7 @@ export function fitDecisionTable(
  * treeRuleSet(fitted.params).rules.map((r) => r.label) // => [0, 1]
  * ```
  */
-export function treeRuleSet(tree: Tree): RuleModel {
+export function treeRuleSet(tree: FittedTree): RuleModel {
   if (tree.task !== 'classification') throw new MdmlError('value', 'treeRuleSet: a classification tree is required')
   const rules: Rule[] = []
   const walk = (node: number, path: readonly Literal[]): void => {

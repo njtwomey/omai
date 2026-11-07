@@ -11,7 +11,7 @@ export const EPS = 1e-12
  * arc starts with no capacity; an undirected edge's two arcs both carry its capacity, so the net flow along the edge is
  * `capacity - residual[2e]` either way.
  */
-export interface Residual {
+export interface ResidualNetwork {
   readonly n: number
   readonly to: Int32Array
   readonly residual: Float64Array
@@ -21,7 +21,7 @@ export interface Residual {
 }
 
 /** Build the residual network of a graph with the given capacities (default the edge weights). */
-export function residualNetwork(g: Graph, capacity: ArrayLike<number> | undefined): Residual {
+export function residualNetwork(g: Graph, capacity: ArrayLike<number> | undefined): ResidualNetwork {
   const m = g.edges.length
   const to = new Int32Array(2 * m)
   const residual = new Float64Array(2 * m)
@@ -43,12 +43,12 @@ export function residualNetwork(g: Graph, capacity: ArrayLike<number> | undefine
 }
 
 /** Net flow per edge (source to target; negative when an undirected edge carries flow the other way). */
-export function edgeFlows(r: Residual): Float64Array {
+export function edgeFlows(r: ResidualNetwork): Float64Array {
   return Float64Array.from(r.capacity, (c, e) => c - (r.residual[2 * e] ?? 0))
 }
 
 /** Push the bottleneck of a path of arcs through the residual capacities (in place); returns the amount pushed. */
-export function augment(r: Residual, path: readonly number[]): number {
+export function augment(r: ResidualNetwork, path: readonly number[]): number {
   let bottleneck = Number.POSITIVE_INFINITY
   for (const a of path) bottleneck = Math.min(bottleneck, r.residual[a] ?? 0)
   if (bottleneck === Number.POSITIVE_INFINITY) throw new MdmlError('value', 'maxFlow: the flow is unbounded')
@@ -60,7 +60,7 @@ export function augment(r: Residual, path: readonly number[]): number {
 }
 
 /** 1 for the nodes reachable from `s` along arcs with residual capacity: the source side of the cut. */
-export function sourceSide(r: Residual, s: number): Uint8Array {
+export function sourceSide(r: ResidualNetwork, s: number): Uint8Array {
   const side = new Uint8Array(r.n)
   side[s] = 1
   const stack = [s]

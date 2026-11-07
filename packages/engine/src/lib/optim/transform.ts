@@ -31,7 +31,7 @@ import {
 } from '../tensor/index.ts'
 
 /** A tree of values (parameters, gradients or updates): nested records and arrays with tensor leaves. */
-export type Tree = unknown
+export type ParamTree = unknown
 
 /** A learning rate: a constant or a function of the step count (from 0). */
 export type LearningRate = number | ((step: number) => number)
@@ -45,8 +45,8 @@ export type LearningRate = number | ((step: number) => number)
  */
 export interface GradientTransformation<S = unknown> {
   readonly name: string
-  init(params: Tree): S
-  update(grads: Tree, state: S, params?: Tree): { readonly updates: Tree; readonly state: S }
+  init(params: ParamTree): S
+  update(grads: ParamTree, state: S, params?: ParamTree): { readonly updates: ParamTree; readonly state: S }
 }
 
 const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number' ? lr : lr(step))
@@ -64,7 +64,7 @@ const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number'
  * toArray((applyUpdates({ w: tensor([1, 2]) }, { w: tensor([0.5, -1]) }) as { w: never }).w) // => [1.5, 1]
  * ```
  */
-export function applyUpdates(params: Tree, updates: Tree): Tree {
+export function applyUpdates(params: ParamTree, updates: ParamTree): ParamTree {
   return treeMap((p, u) => add(p, u), params, updates)
 }
 
@@ -131,7 +131,7 @@ export function scaleByLearningRate(learningRate: LearningRate): GradientTransfo
  * item(globalNorm({ a: tensor([3]), b: tensor([4]) })) // => 5
  * ```
  */
-export function globalNorm(tree: Tree): Value {
+export function globalNorm(tree: ParamTree): Value {
   const squares = treeLeaves(tree).map((leaf) => sum(square(leaf)))
   return sqrt(squares.reduce((acc, x) => add(acc, x), squares.length === 0 ? tensor(0) : (squares.shift() as Value)))
 }
@@ -207,7 +207,7 @@ export function addDecayedWeights(weightDecay: number): GradientTransformation<u
 /** State of {@link traceMomentum}. */
 export interface TraceState {
   readonly count: number
-  readonly trace: Tree
+  readonly trace: ParamTree
 }
 
 /**
@@ -243,9 +243,9 @@ export function traceMomentum(decay: number, nesterov = false, dampening = 0): G
 /** State of {@link scaleByAdam}. */
 export interface AdamState {
   readonly count: number
-  readonly mu: Tree
-  readonly nu: Tree
-  readonly nuMax?: Tree
+  readonly mu: ParamTree
+  readonly nu: ParamTree
+  readonly nuMax?: ParamTree
 }
 
 /**
@@ -290,9 +290,9 @@ export function scaleByAdam(b1 = 0.9, b2 = 0.999, eps = 1e-8, amsgrad = false): 
 
 /** State of {@link scaleByRms}. */
 export interface RmsState {
-  readonly nu: Tree
+  readonly nu: ParamTree
   /** The running mean of the gradient (centred RMSprop only). */
-  readonly mu?: Tree
+  readonly mu?: ParamTree
 }
 
 /**
@@ -337,7 +337,10 @@ export function scaleByRms(decay = 0.99, eps = 1e-8, centered = false): Gradient
  * scaleByAdagrad().name // => 'scaleByAdagrad'
  * ```
  */
-export function scaleByAdagrad(eps = 1e-10, initialAccumulator = 0): GradientTransformation<{ readonly sum: Tree }> {
+export function scaleByAdagrad(
+  eps = 1e-10,
+  initialAccumulator = 0,
+): GradientTransformation<{ readonly sum: ParamTree }> {
   return {
     name: 'scaleByAdagrad',
     init: (params) => ({ sum: treeMap((p) => add(mul(p, 0), initialAccumulator), params) }),
@@ -450,8 +453,8 @@ function labelLeaves(labels: unknown): unknown[] {
   return out
 }
 
-function resolveLabels(labels: unknown, tree: Tree, count: number): unknown[] {
-  const leaves = labelLeaves(typeof labels === 'function' ? (labels as (p: Tree) => unknown)(tree) : labels)
+function resolveLabels(labels: unknown, tree: ParamTree, count: number): unknown[] {
+  const leaves = labelLeaves(typeof labels === 'function' ? (labels as (p: ParamTree) => unknown)(tree) : labels)
   if (leaves.length !== count)
     throw new MdmlError('value', `labels have ${leaves.length} leaves but the parameters have ${count}`)
   return leaves
@@ -481,7 +484,7 @@ export interface MaskedState {
  * ```
  */
 export function masked(inner: GradientTransformation, mask: Labels): GradientTransformation<MaskedState> {
-  const pick = (tree: Tree, leaves: readonly Value[]): boolean[] =>
+  const pick = (tree: ParamTree, leaves: readonly Value[]): boolean[] =>
     resolveLabels(mask, tree, leaves.length).map((m) => m === true)
   return {
     name: `masked(${inner.name})`,
@@ -529,7 +532,7 @@ export function multiTransform(
   transforms: Readonly<Record<string, GradientTransformation>>,
   labels: Labels,
 ): GradientTransformation<Readonly<Record<string, unknown>>> {
-  const groups = (tree: Tree, leaves: readonly Value[]): string[] => {
+  const groups = (tree: ParamTree, leaves: readonly Value[]): string[] => {
     const ls = resolveLabels(labels, tree, leaves.length).map(String)
     for (const l of ls)
       if (transforms[l] === undefined) throw new MdmlError('value', `no transformation for label '${l}'`)
@@ -583,6 +586,6 @@ export function multiTransform(
  * toArray((incrementalUpdate({ w: tensor([4]) }, { w: tensor([0]) }, 0.25) as { w: never }).w) // => [1]
  * ```
  */
-export function incrementalUpdate(newTree: Tree, oldTree: Tree, stepSize: number): Tree {
+export function incrementalUpdate(newTree: ParamTree, oldTree: ParamTree, stepSize: number): ParamTree {
   return treeMap((n, o) => add(mul(n, stepSize), mul(o, 1 - stepSize)), newTree, oldTree)
 }

@@ -16,7 +16,7 @@ import type { Dataset, DatasetKind } from './schema/common.ts'
 import type { Truth } from './truth.ts'
 
 /** Knob values of a generator: a value of its knob space. */
-export type Knobs = Readonly<Record<string, SpaceValue>>
+export type GeneratorKnobs = Readonly<Record<string, SpaceValue>>
 
 /** A dataset together with the truth of how it was generated. */
 export interface Generated<D extends Dataset = Dataset> {
@@ -35,13 +35,13 @@ export interface DatasetGenerator<D extends Dataset = Dataset> {
   readonly kind: DatasetKind
   readonly description: string
   readonly knobs: DictSpace
-  generate(key: Key, knobs: Knobs): Generated<D>
+  generate(key: Key, knobs: GeneratorKnobs): Generated<D>
 }
 
 /** Options of {@link generate}. */
 export interface GenerateOptions {
   /** Knob values; missing knobs take the space's defaults. */
-  readonly knobs?: Knobs
+  readonly knobs?: GeneratorKnobs
   readonly key?: Key
   readonly ctx?: Context
 }
@@ -75,7 +75,7 @@ export function generate<D extends Dataset>(
     if (!contains(space, value))
       throw new MdmlError('value', `${generator.name}: knob ${name} = ${String(value)} is outside its space`)
   }
-  const knobs = { ...(defaults(generator.knobs) as Knobs), ...given }
+  const knobs = { ...(defaults(generator.knobs) as GeneratorKnobs), ...given }
   const k = resolveKey(options, `dataset/${generator.name}`)
   const out = generator.generate(k, knobs)
   const meta = out.data.meta
@@ -121,7 +121,7 @@ export interface GeneratorDescription {
  * ```
  */
 export function describeGenerator(generator: DatasetGenerator): GeneratorDescription {
-  const defs = defaults(generator.knobs) as Knobs
+  const defs = defaults(generator.knobs) as GeneratorKnobs
   const knobs = Object.entries(generator.knobs.spaces).map(([name, s]): KnobDescription => {
     const range = s.kind === 'real' || s.kind === 'int' ? { low: s.low, high: s.high } : {}
     const value = defs[name]

@@ -10,7 +10,7 @@ import type { Algorithm } from '../../trace/index.ts'
 import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
 import {
   type Bounds,
-  type Box,
+  type BoundVectors,
   boxOf,
   clipToBox,
   type FlatObjective,
@@ -151,7 +151,7 @@ export function projectedGradientAlgorithm(
 }
 
 function projectedGradientOn(obj: FlatObjective, options: ProjectedGradientOptions): Algorithm<ProjectedGradientState> {
-  const box: Box = boxOf(options.bounds, obj.n)
+  const box: BoundVectors = boxOf(options.bounds, obj.n)
   const project = options.project ?? ((x: Float64Array) => clipToBox(x, box))
   const gtol = options.gradTol ?? 1e-6
   const rule = options.step ?? 'spectral'

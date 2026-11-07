@@ -27,7 +27,7 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
-import { type Matrix, refine } from './_refine.ts'
+import { type MutableRows, refine } from './_refine.ts'
 
 /** Options of the RANSAC estimators. */
 export interface RansacEstimateOptions {
@@ -45,7 +45,7 @@ export interface RansacEstimateOptions {
 
 /** A robust fit: the model and which correspondences are its inliers. */
 export interface RobustFit {
-  readonly model: Matrix
+  readonly model: MutableRows
   /** 1 for an inlier, 0 for an outlier, per correspondence. */
   readonly mask: number[]
 }
@@ -73,7 +73,7 @@ function pairsOf(src: PointsLike, dst: PointsLike, name: string, min: number): {
  * getPerspectiveTransform([[0, 0], [1, 0], [1, 1], [0, 1]], [[0, 0], [2, 0], [2, 2], [0, 2]]) // => [[2, 0, 0], [0, 2, 0], [0, 0, 1]]
  * ```
  */
-export function getPerspectiveTransform(src: PointsLike, dst: PointsLike): Matrix {
+export function getPerspectiveTransform(src: PointsLike, dst: PointsLike): MutableRows {
   const { a, b } = pairsOf(src, dst, 'getPerspectiveTransform', 4)
   if (a.length !== 4) throw new MdmlError('value', 'getPerspectiveTransform: exactly four correspondences')
   const A = new Float64Array(64)
@@ -107,7 +107,7 @@ export function getPerspectiveTransform(src: PointsLike, dst: PointsLike): Matri
  * getAffineTransform([[0, 0], [1, 0], [0, 1]], [[1, 1], [3, 1], [1, 4]]) // => [[2, 0, 1], [0, 3, 1]]
  * ```
  */
-export function getAffineTransform(src: PointsLike, dst: PointsLike): Matrix {
+export function getAffineTransform(src: PointsLike, dst: PointsLike): MutableRows {
   const { a, b } = pairsOf(src, dst, 'getAffineTransform', 3)
   if (a.length !== 3) throw new MdmlError('value', 'getAffineTransform: exactly three correspondences')
   const A = new Float64Array(36)
@@ -159,8 +159,8 @@ function homographyResiduals(a: readonly Point2[], b: readonly Point2[]): (p: Va
 }
 
 /** The homography of correspondences: the normalised DLT, refined by minimising the reprojection error. */
-function fitHomography(a: readonly Point2[], b: readonly Point2[], polish: boolean): Matrix {
-  const h0 = toArray(homography(a as Point2[], b as Point2[])) as Matrix
+function fitHomography(a: readonly Point2[], b: readonly Point2[], polish: boolean): MutableRows {
+  const h0 = toArray(homography(a as Point2[], b as Point2[])) as MutableRows
   if (!polish || a.length <= 4) return h0
   const x = refine(homographyResiduals(a, b), h0.flat().slice(0, 8), 50)
   return [
@@ -171,7 +171,7 @@ function fitHomography(a: readonly Point2[], b: readonly Point2[], polish: boole
 }
 
 /** The reprojection error of a correspondence under a homography. */
-const homographyError = (h: Matrix, p: Point2, q: Point2): number => {
+const homographyError = (h: MutableRows, p: Point2, q: Point2): number => {
   const w = (h[2]?.[0] ?? 0) * p[0] + (h[2]?.[1] ?? 0) * p[1] + (h[2]?.[2] ?? 0)
   const x = ((h[0]?.[0] ?? 0) * p[0] + (h[0]?.[1] ?? 0) * p[1] + (h[0]?.[2] ?? 0)) / w
   const y = ((h[1]?.[0] ?? 0) * p[0] + (h[1]?.[1] ?? 0) * p[1] + (h[1]?.[2] ?? 0)) / w
@@ -183,8 +183,8 @@ function robust(
   a: readonly Point2[],
   b: readonly Point2[],
   minSamples: number,
-  fit: (a: readonly Point2[], b: readonly Point2[], final: boolean) => Matrix,
-  error: (m: Matrix, p: Point2, q: Point2) => number,
+  fit: (a: readonly Point2[], b: readonly Point2[], final: boolean) => MutableRows,
+  error: (m: MutableRows, p: Point2, q: Point2) => number,
   options: RansacEstimateOptions,
   name: string,
 ): RobustFit {
@@ -193,7 +193,7 @@ function robust(
   const idx = Array.from({ length: n }, (_, i) => i)
   let final = false
   const model = {
-    fit: (sample: readonly number[]): Matrix | undefined => {
+    fit: (sample: readonly number[]): MutableRows | undefined => {
       try {
         return fit(
           sample.map((i) => a[i] as Point2),
@@ -204,7 +204,7 @@ function robust(
         return undefined
       }
     },
-    residual: (m: Matrix | undefined, i: number): number =>
+    residual: (m: MutableRows | undefined, i: number): number =>
       m === undefined ? Number.POSITIVE_INFINITY : error(m, a[i] as Point2, b[i] as Point2),
   }
   const r = ransac(idx, model, {
@@ -218,7 +218,7 @@ function robust(
   // Local optimisation (as LO-RANSAC and OpenCV's USAC): refit on the inliers and re-score until the set is stable.
   const threshold = options.threshold ?? 3
   let inliers = [...r.inliers]
-  let refit: Matrix | undefined
+  let refit: MutableRows | undefined
   for (let it = 0; it < 10; it++) {
     refit = model.fit(inliers)
     if (refit === undefined) throw new MdmlError('value', `${name}: the inliers are degenerate`)
@@ -260,7 +260,7 @@ export function findHomography(src: PointsLike, dst: PointsLike, options: Ransac
 }
 
 /** The least-squares affine map of correspondences (exact for three). */
-function fitAffine(a: readonly Point2[], b: readonly Point2[]): Matrix {
+function fitAffine(a: readonly Point2[], b: readonly Point2[]): MutableRows {
   const A = a.map(([x, y]) => [x, y, 1])
   const sol = toFlat(
     lstsq(
@@ -293,7 +293,7 @@ function fitAffine(a: readonly Point2[], b: readonly Point2[]): Matrix {
  */
 export function estimateAffine2D(src: PointsLike, dst: PointsLike, options: RansacEstimateOptions = {}): RobustFit {
   const { a, b } = pairsOf(src, dst, 'estimateAffine2D', 3)
-  const error = (m: Matrix, p: Point2, q: Point2): number =>
+  const error = (m: MutableRows, p: Point2, q: Point2): number =>
     Math.hypot(
       (m[0]?.[0] ?? 0) * p[0] + (m[0]?.[1] ?? 0) * p[1] + (m[0]?.[2] ?? 0) - q[0],
       (m[1]?.[0] ?? 0) * p[0] + (m[1]?.[1] ?? 0) * p[1] + (m[1]?.[2] ?? 0) - q[1],
@@ -302,14 +302,14 @@ export function estimateAffine2D(src: PointsLike, dst: PointsLike, options: Rans
 }
 
 /** The fundamental matrix of correspondences by the normalised eight-point algorithm, scaled to F[2][2] = 1. */
-function fitFundamental(a: readonly Point2[], b: readonly Point2[]): Matrix {
-  const f = toArray(fundamentalMatrix(a as Point2[], b as Point2[])) as Matrix
+function fitFundamental(a: readonly Point2[], b: readonly Point2[]): MutableRows {
+  const f = toArray(fundamentalMatrix(a as Point2[], b as Point2[])) as MutableRows
   const s = f[2]?.[2] ?? 0
   return Math.abs(s) > 1.1920928955078125e-7 ? f.map((r) => r.map((v) => v / s)) : f
 }
 
 /** The larger distance of a correspondence from its two epipolar lines (OpenCV's fundamental-matrix error). */
-function epipolarError(f: Matrix, p: Point2, q: Point2): number {
+function epipolarError(f: MutableRows, p: Point2, q: Point2): number {
   const F = (i: number, j: number): number => f[i]?.[j] ?? 0
   let a = F(0, 0) * p[0] + F(0, 1) * p[1] + F(0, 2)
   let b = F(1, 0) * p[0] + F(1, 1) * p[1] + F(1, 2)

@@ -13,7 +13,7 @@ import { configOf, observeVector, vectorDone, vectorSchema } from './_shared.ts'
 import type { LeastSquaresResult, LeastSquaresState } from './least-squares.ts'
 import type { DogboxOptions } from './least-squares-bounded.ts'
 import {
-  type Box,
+  type BoundVectors,
   boxOf,
   type FlatResiduals,
   flatResiduals,
@@ -37,7 +37,7 @@ export interface TrfState extends LeastSquaresState {
 }
 
 /** The Coleman-Li scaling vector v and its derivative dv (scipy's CL_scaling_vector). */
-function clScaling(x: Float64Array, g: Float64Array, box: Box): { v: Float64Array; dv: Float64Array } {
+function clScaling(x: Float64Array, g: Float64Array, box: BoundVectors): { v: Float64Array; dv: Float64Array } {
   const n = x.length
   const v = new Float64Array(n).fill(1)
   const dv = new Float64Array(n)
@@ -58,7 +58,7 @@ function clScaling(x: Float64Array, g: Float64Array, box: Box): { v: Float64Arra
 }
 
 /** Active constraints within rtol (scipy's find_active_constraints). */
-function activeConstraints(x: Float64Array, box: Box, rtol: number): Int8Array {
+function activeConstraints(x: Float64Array, box: BoundVectors, rtol: number): Int8Array {
   const n = x.length
   const out = new Int8Array(n)
   for (let i = 0; i < n; i++) {
@@ -79,7 +79,7 @@ function activeConstraints(x: Float64Array, box: Box, rtol: number): Int8Array {
 }
 
 /** Move points on or near a bound strictly inside (scipy's make_strictly_feasible). */
-function strictlyFeasible(x: Float64Array, box: Box, rstep: number): Float64Array {
+function strictlyFeasible(x: Float64Array, box: BoundVectors, rstep: number): Float64Array {
   const active = activeConstraints(x, box, rstep)
   const out = Float64Array.from(x)
   for (let i = 0; i < x.length; i++) {
@@ -93,7 +93,7 @@ function strictlyFeasible(x: Float64Array, box: Box, rstep: number): Float64Arra
 }
 
 /** The largest step along s from x within the bounds and which bounds it hits (scipy's step_size_to_bound). */
-function stepToBound(x: ArrayLike<number>, s: ArrayLike<number>, box: Box): { step: number; hits: Int8Array } {
+function stepToBound(x: ArrayLike<number>, s: ArrayLike<number>, box: BoundVectors): { step: number; hits: Int8Array } {
   const n = s.length
   let min = Infinity
   const steps = new Float64Array(n).fill(Infinity)
@@ -244,7 +244,7 @@ function selectStep(
   ph0: Float64Array,
   d: Float64Array,
   delta: number,
-  box: Box,
+  box: BoundVectors,
   theta: number,
 ): { step: Float64Array; stepH: Float64Array; predicted: number } {
   const n = x.length

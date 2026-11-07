@@ -22,7 +22,7 @@ import {
 import { draws, positiveInt } from '../automata/_core.ts'
 
 /** An affine map of the plane, `(x, y) -> (a x + b y + e, c x + d y + f)`. */
-export interface AffineMap {
+export interface PlanarAffineMap {
   readonly a: number
   readonly b: number
   readonly c: number
@@ -34,12 +34,12 @@ export interface AffineMap {
 /** A system of affine contractions, with the chance of picking each map in the chaos game. */
 export interface Ifs {
   readonly name: string
-  readonly maps: readonly AffineMap[]
+  readonly maps: readonly PlanarAffineMap[]
   /** The probabilities of the maps (default proportional to each map's area scaling, which fills the attractor evenly). */
   readonly probabilities?: readonly number[]
 }
 
-const similarity = (s: number, tx: number, ty: number): AffineMap => ({ a: s, b: 0, c: 0, d: s, e: tx, f: ty })
+const similarity = (s: number, tx: number, ty: number): PlanarAffineMap => ({ a: s, b: 0, c: 0, d: s, e: tx, f: ty })
 
 /** Sierpinski's triangle: three maps halving the plane toward the corners of an equilateral triangle. Dimension log 3 / log 2. */
 export const SIERPINSKI: Ifs = {
@@ -82,7 +82,7 @@ export const BARNSLEY_FERN: Ifs = {
  * fractals.applyAffine({ a: 0.5, b: 0, c: 0, d: 0.5, e: 1, f: 2 }, 2, 4) // => [2, 4]
  * ```
  */
-export function applyAffine(m: AffineMap, x: number, y: number): [number, number] {
+export function applyAffine(m: PlanarAffineMap, x: number, y: number): [number, number] {
   return [m.a * x + m.b * y + m.e, m.c * x + m.d * y + m.f]
 }
 
@@ -222,7 +222,7 @@ export function chaosGame(options: ChaosGameOptions = {}): Algorithm<ChaosGameSt
       const u = draws(key, burn + 2)
       let x = u[burn] ?? 0
       let y = u[burn + 1] ?? 0
-      for (let i = 0; i < burn; i++) [x, y] = applyAffine(ifs.maps[pick(u[i] ?? 0)] as AffineMap, x, y)
+      for (let i = 0; i < burn; i++) [x, y] = applyAffine(ifs.maps[pick(u[i] ?? 0)] as PlanarAffineMap, x, y)
       return { point: Float64Array.of(x, y), cloud: new Float64Array(0), generated: 0 }
     },
     step: (s, ctx) => {
@@ -233,7 +233,7 @@ export function chaosGame(options: ChaosGameOptions = {}): Algorithm<ChaosGameSt
       let x = s.point[0] ?? 0
       let y = s.point[1] ?? 0
       for (let i = 0; i < batch; i++) {
-        ;[x, y] = applyAffine(ifs.maps[pick(u[i] ?? 0)] as AffineMap, x, y)
+        ;[x, y] = applyAffine(ifs.maps[pick(u[i] ?? 0)] as PlanarAffineMap, x, y)
         if (i < room) {
           cloud[s.cloud.length + 2 * i] = x
           cloud[s.cloud.length + 2 * i + 1] = y

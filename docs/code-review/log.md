@@ -600,3 +600,26 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   vectors). Surface: 0 added, 0 removed, 38 changed.
 - **20:30 Gate.** The dists, stats and metrics contract tests (P3.31, FD-33) and native-array stage 4 (`optim`, `losses`) passed the full local gate: 26,510 tests, 9,613 examples,
   all static checks and all six tsc runs, first run. 223 commits ahead of `origin/main`; nothing pushed (D-014).
+
+- **19:30 Names and unused exports (P3.10, P3.9, `agent-ty02-names`).** Same-name-different-meaning types renamed to what they
+  are, with the language service (references, imports and links; 207 files): `Box` (4 meanings: `BoundVectors`, `BoxCoords`,
+  `LayoutBox`, `Aabb`, `ColourBox`), `Bounds` (`BoundingBox`, `IntervalBounds`, `TruncationBounds`; `optim` keeps it),
+  `Constraint` (`ParameterConstraint`, `HyperparameterConstraint`, `CspConstraint`), `Schedule` and `Selection` (four each, all
+  renamed), `Direction` (three), `Kernel`, `Sampler`, `Transition`, `Metric`, `Tree`, `Primitive`, `Shape`, `Sample`,
+  `Objective`, `Bracket`, `Residual`, `Option`, `Knobs`, `Dataset`, `TrajectoryData`, `Importances`, `ConfusionMatrix`,
+  `LearningCurve`, `TreeNode`, `Projected`, `QuadraticModel`, `GlmProblem`, `Atom`, `Transform`, `VectorField`,
+  `StabilityRegion`, `AffineMap`, `FieldDerivatives`, `HookContext`, `Proposal`, `Matrix` (metrics, symbolic), `Mat`
+  (causal), and the metrics reader `matrix()` to `shapedArray()`. The meaning with the widest use keeps the name. Twelve local
+  `Vec` and `Mat` aliases of `Float64Array` and the six agents files with `Vec = readonly number[]` write the type; the local
+  `Matrix` are `Rows`, `MutableRows` or `DenseMatrix`. `ComplexNumber` has one meaning left and is documented as the record
+  form of `Complex`. Five local copies of `Knobs<V>` import it. Left: the `*Options`/`*State`/`*Result` records (named for
+  their function) and function names (namespaced by entry point, as the references they mirror), `EmbeddingParams`,
+  `AnyModule`, `Rec`, `Any`. Guard: `scripts/type-definitions.ts` has a `RESERVED` table (7 retired names, 29 with one home and
+  the names the others got) and flags typed-array aliases. Surface against `surface-before-waveb15.tsv`: 59 added, 60 removed,
+  457 changed (signatures that name a renamed type); no deprecated aliases kept.
+  Unused exports: 1,970 core exports no other source file uses (1,966 by `surface.mjs`) sorted by signal with
+  `scripts/review/unused.mjs`: 1,963 deliberate public API (1,040 named by a test, 63 `@concept`, 103 in docs, 757 types of
+  public signatures), 3 building blocks (`scaleBySparseAdam`, `steppedLineSearch`, `mleSmoothProblem`), 4 dead (`RowColumn`
+  deleted; `isContext`, `supportRank`, `avalOf` kept: executed examples). Findings: `findings/unused-exports.md`. Own checks
+  only (the full gate was not run): six tsc runs, 1,306 test files with 19,354 tests of the 41 touched domains plus render and the
+  site, 1,521 `@example`s, barrels, layers, lint, agent index, surface.

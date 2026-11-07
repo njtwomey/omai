@@ -12,8 +12,8 @@ import {
   dotVec,
   inverse,
   logdetPositive,
-  type Matrix,
   matVec,
+  type Rows,
   solveVector,
   sub,
   symmetrise,
@@ -259,7 +259,7 @@ export interface Gmrf {
  * gmrf(['a', 'b'], [0, 0], [[2, -1], [-1, 2]]).precision[0] // => [2, -1]
  * ```
  */
-export function gmrf(variables: readonly string[], mean: readonly number[], precision: Matrix): Gmrf {
+export function gmrf(variables: readonly string[], mean: readonly number[], precision: Rows): Gmrf {
   const n = variables.length
   if (mean.length !== n || precision.length !== n || precision.some((r) => r.length !== n))
     throw new MdmlError('shape', `gmrf: expected ${n} means and a ${n} x ${n} precision`)
@@ -304,7 +304,7 @@ export interface GmrfInformation {
  */
 export function gmrfInformation(
   variables: readonly string[],
-  precision: Matrix,
+  precision: Rows,
   potential: readonly number[],
 ): GmrfInformation {
   const n = variables.length

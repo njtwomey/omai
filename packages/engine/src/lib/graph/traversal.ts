@@ -20,9 +20,9 @@ import { nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
 
 /** Which edges a traversal follows in a directed graph: out-edges (default), in-edges, or both. */
-export type Direction = 'out' | 'in' | 'both'
+export type EdgeDirection = 'out' | 'in' | 'both'
 
-function sides(g: Graph, direction: Direction): readonly Adjacency[] {
+function sides(g: Graph, direction: EdgeDirection): readonly Adjacency[] {
   if (!g.directed || direction === 'out') return [g.out]
   return direction === 'in' ? [g.in] : [g.out, g.in]
 }
@@ -66,7 +66,7 @@ export interface BfsResult {
 export function bfsAlgorithm(
   g: Graph,
   sources: NodeId | readonly NodeId[],
-  options: { readonly direction?: Direction; readonly maxDepth?: number } = {},
+  options: { readonly direction?: EdgeDirection; readonly maxDepth?: number } = {},
 ): Algorithm<BfsState> {
   const starts = [...new Set((Array.isArray(sources) ? sources : [sources]).map((v: NodeId) => nodeIndex(g, v)))]
   const adj = sides(g, options.direction ?? 'out')
@@ -134,7 +134,7 @@ export function bfsAlgorithm(
 export function bfs(
   g: Graph,
   sources: NodeId | readonly NodeId[],
-  options: { readonly direction?: Direction; readonly maxDepth?: number } & GraphRunOptions = {},
+  options: { readonly direction?: EdgeDirection; readonly maxDepth?: number } & GraphRunOptions = {},
 ): BfsResult {
   const { direction, maxDepth, ...run } = options
   const algorithm = bfsAlgorithm(g, sources, {
@@ -632,7 +632,7 @@ export function kHopNeighbourhood(
   g: Graph,
   v: NodeId,
   k: number,
-  options: { readonly direction?: Direction } = {},
+  options: { readonly direction?: EdgeDirection } = {},
 ): number[] {
   return [...bfs(g, v, { ...options, maxDepth: k }).order].sort((a, b) => a - b)
 }

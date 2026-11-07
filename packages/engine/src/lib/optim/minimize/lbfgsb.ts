@@ -22,7 +22,7 @@ import {
 } from './_shared.ts'
 import {
   type Bounds,
-  type Box,
+  type BoundVectors,
   boxOf,
   clipToBox,
   type FlatObjective,
@@ -88,7 +88,7 @@ export interface LbfgsbState extends VectorState {
  * projectedGradientNorm([0, 1], [3, -0.5], boxOf({ lower: 0 }, 2)) // => 0.5
  * ```
  */
-export function projectedGradientNorm(x: ArrayLike<number>, g: ArrayLike<number>, box: Box): number {
+export function projectedGradientNorm(x: ArrayLike<number>, g: ArrayLike<number>, box: BoundVectors): number {
   let m = 0
   for (let i = 0; i < x.length; i++) {
     let gi = g[i] ?? 0
@@ -148,7 +148,7 @@ const mv = (c: Compact, v: Float64Array): Float64Array => (c.k === 0 ? new Float
 function cauchyPoint(
   x: Float64Array,
   g: Float64Array,
-  box: Box,
+  box: BoundVectors,
   theta: number,
   c: Compact,
 ): { xcp: Float64Array; cvec: Float64Array; free: boolean[]; segments: number } {
@@ -255,7 +255,7 @@ function cauchyPoint(
 function subspaceMin(
   x: Float64Array,
   g: Float64Array,
-  box: Box,
+  box: BoundVectors,
   theta: number,
   c: Compact,
   xcp: Float64Array,

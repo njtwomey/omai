@@ -8,7 +8,7 @@
  * an L2 penalty). Stochastic boosting, early stopping on a held-out loss and staged predictions are included.
  */
 
-import { leafCount, type Tree } from '../trees/tree.ts'
+import { type FittedTree, leafCount } from '../trees/tree.ts'
 import {
   boostingEstimator,
   type ClassificationLoss,
@@ -114,5 +114,5 @@ export function gradientBoostingClassifier(
  * ```
  */
 export function stageLeaves(params: GradientBoostingParams): number[] {
-  return params.stages.map((s) => leafCount(s[0] as Tree))
+  return params.stages.map((s) => leafCount(s[0] as FittedTree))
 }

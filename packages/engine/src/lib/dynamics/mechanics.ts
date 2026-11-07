@@ -10,7 +10,7 @@ import { grad, hessian } from '../autodiff/index.ts'
 import { MdmlError } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { add, concat, cos, div, item, mul, sin, sliceAxis, sub, sum, tensor, type Value } from '../tensor/index.ts'
-import type { VectorField } from './ode/problem.ts'
+import type { OdeVectorField } from './ode/problem.ts'
 
 /** A Lagrangian L(q, qdot): the kinetic minus the potential energy, a scalar of the coordinates and their velocities. */
 export type Lagrangian = (q: Value, qdot: Value) => Value
@@ -38,7 +38,7 @@ const block = (m: Value, r0: number, r1: number, c0: number, c1: number): Value 
  * toFlat(f(0, tensor([2, 3]))) // => [3, -2]
  * ```
  */
-export function lagrangianField(L: Lagrangian, dof: number): VectorField {
+export function lagrangianField(L: Lagrangian, dof: number): OdeVectorField {
   const joint = (x: Value): Value => L(part(x, 0, dof), part(x, dof, 2 * dof))
   const g = grad(joint)
   const h = hessian(joint)
@@ -124,7 +124,7 @@ export function hamiltonianOfLagrangian(L: Lagrangian): (q: Value, p: Value) => 
  * toFlat(f(0, tensor([2, 3]))) // => [3, -2]
  * ```
  */
-export function hamiltonianField(H: (q: Value, p: Value) => Value, dof: number): VectorField {
+export function hamiltonianField(H: (q: Value, p: Value) => Value, dof: number): OdeVectorField {
   const joint = (x: Value): Value => H(part(x, 0, dof), part(x, dof, 2 * dof))
   const g = grad(joint)
   return (_t, y) => {
@@ -202,7 +202,7 @@ export function doublePendulumLagrangian(parameters: DoublePendulumParameters = 
  * toFlat(doublePendulumField()(0, tensor([0, 0, 0, 0]))).map((v) => v + 0) // => [0, 0, 0, 0]
  * ```
  */
-export function doublePendulumField(parameters: DoublePendulumParameters = {}): VectorField {
+export function doublePendulumField(parameters: DoublePendulumParameters = {}): OdeVectorField {
   const { m1, m2, l1, l2, g } = resolved(parameters)
   return (_t, y) => {
     const t1 = part(y, 0, 1)
@@ -277,7 +277,7 @@ export function doublePendulumEnergy(state: ArrayLike<number>, parameters: Doubl
  */
 export function doublePendulumHamiltonian(parameters: DoublePendulumParameters = {}): {
   readonly H: (q: Value, p: Value) => Value
-  readonly field: VectorField
+  readonly field: OdeVectorField
 } {
   const H = hamiltonianOfLagrangian(doublePendulumLagrangian(parameters))
   return { H, field: hamiltonianField(H, 2) }

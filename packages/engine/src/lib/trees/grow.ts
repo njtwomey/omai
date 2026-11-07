@@ -6,7 +6,7 @@
  * Limits: depth, samples to split, samples and weight per leaf, leaf count and minimum impurity decrease; each split may
  * look at a random subset of the features (for forests), at categorical features by subsets of their codes and at
  * missing values. `growTree` runs it to completion; `treeOfState` and `treeRecordOf` turn a state, even a partial one,
- * into a `Tree` and an exposition record.
+ * into a `FittedTree` and an exposition record.
  */
 
 import { MdmlError, maxOf } from '../base/index.ts'
@@ -25,7 +25,7 @@ import {
   type SplitSearch,
   searchSplits,
 } from './criteria.ts'
-import type { Tree } from './tree.ts'
+import type { FittedTree } from './tree.ts'
 
 /** How many features a split may look at: all, a count, a fraction, or sqrt / log2 of the number of features. */
 export type MaxFeatures = number | 'sqrt' | 'log2' | 'all'
@@ -379,7 +379,7 @@ function growthOrder(nodes: readonly GrownNode[]): number[] {
  * treeOfState({ nodes: [root], open: [0], decided: 0 }, { task: 'classification', classes: [0, 1], nFeatures: 1 }).left // => [-1]
  * ```
  */
-export function treeOfState(state: GrowState, info: TreeInfo): Tree {
+export function treeOfState(state: GrowState, info: TreeInfo): FittedTree {
   const byFinal = growthOrder(state.nodes)
   const finalOf = new Map(byFinal.map((birthId, f) => [birthId, f]))
   const range = byFinal.map((birthId) => state.nodes[birthId] as GrownNode)
@@ -524,7 +524,7 @@ export function splitProblem(data: TreeData, options: GrowOptions, categorical: 
 
 /** A grown tree: its arrays, the nodes of its record and the final state. */
 export interface GrownTree {
-  readonly tree: Tree
+  readonly tree: FittedTree
   readonly nodes: readonly TreeNode[]
   readonly state: GrowState
 }

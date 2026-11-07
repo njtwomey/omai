@@ -18,8 +18,8 @@ import {
   type DatasetRef,
   type Generated,
   type GenerateOptions,
+  type GeneratorKnobs,
   generate,
-  type Knobs,
   type LoadOptions,
   load,
 } from '../data/index.ts'
@@ -86,7 +86,7 @@ export interface DatasetEntryBase extends DatasetTags {
  */
 export type DatasetEntry = DatasetEntryBase &
   (
-    | { readonly form: 'generator'; readonly generator: DatasetGenerator; readonly knobs?: Knobs }
+    | { readonly form: 'generator'; readonly generator: DatasetGenerator; readonly knobs?: GeneratorKnobs }
     | { readonly form: 'vendored'; readonly load: () => Generated }
     | { readonly form: 'remote'; readonly ref: DatasetRef }
   )
@@ -103,7 +103,7 @@ export interface GeneratorEntryTags extends Partial<Omit<DatasetTags, 'kind' | '
   /** A description other than the generator's. */
   readonly description?: string
   /** Knob values a selector starts from (the rest at the generator's defaults). */
-  readonly knobs?: Knobs
+  readonly knobs?: GeneratorKnobs
 }
 
 /**

@@ -49,7 +49,7 @@ export interface AsymmetricParameters {
   readonly nu?: number
 }
 
-interface Shape {
+interface VolatilitySpec {
   readonly egarch: boolean
   readonly p: number
   readonly o: number
@@ -58,7 +58,7 @@ interface Shape {
   readonly student: boolean
 }
 
-function shapeOf(spec: AsymmetricSpec): Shape {
+function shapeOf(spec: AsymmetricSpec): VolatilitySpec {
   const egarch = spec.kind === 'egarch'
   const p = spec.p ?? 1
   const q = spec.q ?? 1
@@ -173,7 +173,7 @@ export function asymmetricLogLikelihood(
 }
 
 /** The unconstrained parameterisation: omega free (EGARCH) or positive (APARCH), betas in (-1/q, 1/q) or shares of one. */
-function layoutOf(r: Shape): {
+function layoutOf(r: VolatilitySpec): {
   readonly size: number
   readonly toParams: (u: ArrayLike<number>) => AsymmetricParameters
   readonly start: (variance: number, mean: number) => number[]

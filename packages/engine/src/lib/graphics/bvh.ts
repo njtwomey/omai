@@ -7,7 +7,7 @@
 import { MdmlError, type Vec3 } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import type { Ray } from './camera.ts'
-import { bounds, type Hit, intersect, RAY_EPSILON, type Shape, slabs } from './intersect.ts'
+import { bounds, type Hit, intersect, RAY_EPSILON, type RayShape, slabs } from './intersect.ts'
 
 /**
  * A node of a bounding-volume hierarchy: its box, and either two children (`left`, `right`) or, for a leaf, the range
@@ -29,7 +29,7 @@ export interface BvhNode {
 
 /** A bounding-volume hierarchy over shapes: node 0 is the root, and `order` lists shape indices leaf by leaf. */
 export interface Bvh {
-  readonly shapes: readonly Shape[]
+  readonly shapes: readonly RayShape[]
   readonly nodes: readonly BvhNode[]
   readonly order: readonly number[]
 }
@@ -44,24 +44,24 @@ export interface BvhOptions {
   readonly bins?: number
 }
 
-interface Box {
+interface Aabb {
   min: [number, number, number]
   max: [number, number, number]
 }
 
-const emptyBox = (): Box => ({
+const emptyBox = (): Aabb => ({
   min: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
   max: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
 })
 
-function grow(b: Box, min: Vec3, max: Vec3): void {
+function grow(b: Aabb, min: Vec3, max: Vec3): void {
   for (let k = 0; k < 3; k++) {
     if ((min[k] ?? 0) < (b.min[k] ?? 0)) b.min[k] = min[k] ?? 0
     if ((max[k] ?? 0) > (b.max[k] ?? 0)) b.max[k] = max[k] ?? 0
   }
 }
 
-const area = (b: Box): number => {
+const area = (b: Aabb): number => {
   const dx = Math.max(0, b.max[0] - b.min[0])
   const dy = Math.max(0, b.max[1] - b.min[1])
   const dz = Math.max(0, b.max[2] - b.min[2])
@@ -86,7 +86,7 @@ const area = (b: Box): number => {
  * [bvh.nodes.length, bvh.nodes[0].min.map(Math.round), bvh.nodes[0].max.map(Math.round)] // => [5, [-1, -1, -1], [11, 1, 1]]
  * ```
  */
-export function buildBvh(shapes: readonly Shape[], options: BvhOptions = {}): Bvh {
+export function buildBvh(shapes: readonly RayShape[], options: BvhOptions = {}): Bvh {
   if (shapes.length === 0) throw new MdmlError('value', 'buildBvh: need at least one shape')
   const maxLeaf = options.maxLeaf ?? 2
   if (!(Number.isInteger(maxLeaf) && maxLeaf >= 1)) throw new MdmlError('value', 'buildBvh: maxLeaf must be >= 1')

@@ -17,7 +17,7 @@ import { centredDistances, corrcoef, distanceCorrelationOf } from '../correlatio
 import { mean, std } from '../descriptive.ts'
 import { histogram2d } from '../histograms.ts'
 import { permutationTest, type ResamplingRunOptions } from '../resampling.ts'
-import { centreGram, gaussianKernel, type Kernel } from './kernel.ts'
+import { centreGram, gaussianKernel, type KernelFunction } from './kernel.ts'
 import { testResult } from './result.ts'
 
 /** Options of the permutation-based independence tests. */
@@ -414,8 +414,8 @@ export function kernelCITest(
   // causal-learn's empirical widths: 1.2, 0.7 or 0.4 by sample size, with theta = 1 / (width^2 dim_z).
   const empirical = n < 200 ? 1.2 : n < 1200 ? 0.7 : 0.4
   const thetaOf = (w: number | undefined): number => (w === undefined ? 1 / (empirical * empirical) / dz : 1 / (w * w))
-  const kernelOf = (theta: number): Kernel => gaussianKernel(1 / Math.sqrt(theta))
-  const gramOf = (m: Rows, k: Kernel): Float64Array => {
+  const kernelOf = (theta: number): KernelFunction => gaussianKernel(1 / Math.sqrt(theta))
+  const gramOf = (m: Rows, k: KernelFunction): Float64Array => {
     const g = new Float64Array(n * n)
     for (let i = 0; i < n; i++)
       for (let j = 0; j < n; j++)

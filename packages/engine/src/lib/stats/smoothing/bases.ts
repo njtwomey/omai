@@ -516,7 +516,7 @@ export function cc(x: TensorLike, options: CubicRegressionOptions = {}): SmoothB
 }
 
 /** The radial kernel of a thin-plate (or Duchon) spline of order m in d dimensions (Wood 2003, eq. 2). */
-function thinPlateKernel(m: number, d: number, s = 0): Kernel {
+function thinPlateKernel(m: number, d: number, s = 0): RadialKernel {
   const p = 2 * m + 2 * s - d
   // The log term appears when the power is an even integer (for thin plates: when d is even).
   const even = Number.isInteger(p) && p % 2 === 0
@@ -565,12 +565,12 @@ export interface RadialOptions {
 }
 
 /** A radial kernel of the distance, with its first and second derivative in the distance where it has them. */
-type Kernel = ((r: number) => number) & { readonly derivative?: (order: 1 | 2) => (r: number) => number }
+type RadialKernel = ((r: number) => number) & { readonly derivative?: (order: 1 | 2) => (r: number) => number }
 
 function radialBasis(
   kind: string,
   x: TensorLike,
-  kernel: Kernel,
+  kernel: RadialKernel,
   nullPowers: number[][],
   k: number,
   centresIn: TensorLike | undefined,
@@ -805,7 +805,7 @@ export function gp(
     const e = Math.exp(-a3 * u)
     return [(1 + a3 * u) * e, -3 * u * e, (-3 + 3 * a3 * u) * e]
   }
-  const kernel: Kernel = Object.assign((r: number): number => profile(r / rho)[0], {
+  const kernel: RadialKernel = Object.assign((r: number): number => profile(r / rho)[0], {
     derivative:
       (order: 1 | 2) =>
       (r: number): number =>

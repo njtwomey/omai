@@ -12,7 +12,7 @@ import { configOf, observeVector, vectorDone, vectorSchema } from './_shared.ts'
 import type { LeastSquaresOptions, LeastSquaresResult, LeastSquaresState, RobustLoss } from './least-squares.ts'
 import {
   type Bounds,
-  type Box,
+  type BoundVectors,
   boxOf,
   clipToBox,
   type FlatResiduals,
@@ -174,7 +174,7 @@ export function dogboxAlgorithm(
 
 function dogboxOn(res: FlatResiduals, options: DogboxOptions): Algorithm<DogboxState> {
   const { m, n } = res
-  const box: Box = boxOf(options.bounds, n)
+  const box: BoundVectors = boxOf(options.bounds, n)
   const ftol = options.ftol ?? 1e-8
   const xtol = options.xtol ?? 1e-8
   const gtol = options.gradTol ?? 1e-8

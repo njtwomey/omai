@@ -43,13 +43,13 @@ export interface ImplicitOptions {
 }
 
 /** The residual F(x, theta_1, ..., theta_k) whose root x*(theta) is differentiated. */
-export type Residual = (x: Value, ...thetas: Value[]) => Value
+export type ImplicitResidual = (x: Value, ...thetas: Value[]) => Value
 
 /** A solver: x*(theta) from concrete parameters. */
 export type ImplicitSolver = (...thetas: Tensor[]) => TensorLike
 
 interface ImplicitParams {
-  readonly F: Residual
+  readonly F: ImplicitResidual
   readonly options: ImplicitOptions
 }
 
@@ -131,7 +131,7 @@ const implicitPrimitive: Primitive<ImplicitParams> = definePrimitive<ImplicitPar
  * ```
  */
 export function implicitRoot(
-  F: Residual,
+  F: ImplicitResidual,
   solver: ImplicitSolver,
   options: ImplicitOptions = {},
 ): (...thetas: Value[]) => Value {
@@ -177,7 +177,7 @@ export interface ImplicitFixedPointOptions extends ImplicitOptions {
  * ```
  */
 export function implicitFixedPoint(
-  T: Residual,
+  T: ImplicitResidual,
   solver?: ImplicitSolver,
   options: ImplicitFixedPointOptions = {},
 ): (...thetas: Value[]) => Value {
@@ -225,7 +225,7 @@ export interface ImplicitArgminOptions extends ImplicitOptions {
  * ```
  */
 export function implicitArgmin(
-  f: Residual,
+  f: ImplicitResidual,
   solver?: ImplicitSolver,
   options: ImplicitArgminOptions = {},
 ): (...thetas: Value[]) => Value {
@@ -235,6 +235,6 @@ export function implicitArgmin(
       if (options.x0 === undefined) throw new MdmlError('value', 'implicitArgmin: give a solver or x0')
       return minimize((x) => f(x as Value, ...thetas), primalOf(asTensor(options.x0))).x as Value
     })
-  const stationarity: Residual = (x, ...thetas) => grad((v: Value) => f(v, ...thetas))(x)
+  const stationarity: ImplicitResidual = (x, ...thetas) => grad((v: Value) => f(v, ...thetas))(x)
   return implicitRoot(stationarity, solve, options)
 }

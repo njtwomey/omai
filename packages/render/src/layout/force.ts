@@ -9,7 +9,7 @@ import { maxOf, minOf } from 'mdml-engine/base'
 import { eigh } from 'mdml-engine/numerics/linalg'
 import { key as makeKey, uniform } from 'mdml-engine/random'
 import { toArray } from 'mdml-engine/tensor'
-import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
+import { type GraphLayout, type LayoutBox, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /** Options of {@link forceLayout}. */
 export interface ForceOptions {
@@ -31,8 +31,8 @@ export interface ForceLayout extends GraphLayout {
   readonly energy: number
 }
 
-function boxes(graph: LayoutGraph, xy: readonly (readonly [number, number])[]): Record<string, Box> {
-  const out: Record<string, Box> = {}
+function boxes(graph: LayoutGraph, xy: readonly (readonly [number, number])[]): Record<string, LayoutBox> {
+  const out: Record<string, LayoutBox> = {}
   graph.nodes.forEach((n, i) => {
     const [x, y] = xy[i] ?? [0, 0]
     out[n.id] = { x, y, width: n.width, height: n.height }

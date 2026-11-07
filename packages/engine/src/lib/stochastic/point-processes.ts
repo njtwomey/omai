@@ -78,7 +78,7 @@ export const pointProcessContract: Contract<EventState, PointProcessPath> = defi
 })
 
 /** One proposal of an event simulation: the candidate time, whether it is accepted, and the memory after it. */
-interface Proposal {
+interface EventProposal {
   readonly t: number
   readonly accept: boolean
   readonly memory: number
@@ -90,7 +90,7 @@ function eventAlgorithm(
   name: string,
   config: Record<string, number>,
   horizon: number,
-  propose: (s: EventState, key: Key) => Proposal,
+  propose: (s: EventState, key: Key) => EventProposal,
 ): Algorithm<EventState, PointProcessPath> {
   if (!(horizon > 0 && Number.isFinite(horizon))) throw new MdmlError('value', `${name}: the horizon must be > 0`)
   return {

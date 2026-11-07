@@ -3,7 +3,7 @@
  * stream, one example per step. Each leaf keeps class counts and per-feature statistics (a Gaussian per class for a
  * numeric feature, counts per value and class for a categorical one); every `gracePeriod` examples a leaf asks which
  * split would gain most, and splits when its best candidate beats the runner-up by more than the Hoeffding bound
- * sqrt(R^2 ln(1/delta) / 2n), or when the bound has shrunk below a tie threshold. The tree is the same binary `Tree`
+ * sqrt(R^2 ln(1/delta) / 2n), or when the bound has shrunk below a tie threshold. The tree is the same binary `FittedTree`
  * as the batch grower's, so prediction, drawing and importances are shared. The stream is the rows of the data in order.
  */
 
@@ -24,7 +24,7 @@ import {
   stateToJson,
 } from '../trace/index.ts'
 import { type TreeVerbs, treeVerbs } from './decision-tree.ts'
-import { type Tree, treeFeatureImportances } from './tree.ts'
+import { type FittedTree, treeFeatureImportances } from './tree.ts'
 
 /** Options of the Hoeffding tree. */
 export interface HoeffdingOptions {
@@ -364,7 +364,7 @@ export function hoeffdingTreeAlgorithm(
 }
 
 /**
- * The tree of a state as a `Tree` (nodes in the order they were created): leaves predict their majority class.
+ * The tree of a state as a `FittedTree` (nodes in the order they were created): leaves predict their majority class.
  *
  * @param state - A state of {@link hoeffdingTreeAlgorithm}.
  * @param info - The class labels and the number of features.
@@ -379,7 +379,7 @@ export function hoeffdingTreeAlgorithm(
 export function hoeffdingTreeOf(
   state: HoeffdingState,
   info: { readonly classes: readonly number[]; readonly nFeatures: number },
-): Tree {
+): FittedTree {
   const nodes = state.nodes
   const impurity = nodes.map((n) => impurityOf(n.counts, 'entropy'))
   const weight = nodes.map((n) => n.counts.reduce((a, b) => a + b, 0))
@@ -401,7 +401,13 @@ export function hoeffdingTreeOf(
 }
 
 /** A Hoeffding tree estimator on the iterative base. */
-export type HoeffdingEstimator = IterativeEstimator<HoeffdingOptions, HoeffdingState, Tree, TreeVerbs, HoeffdingPath>
+export type HoeffdingEstimator = IterativeEstimator<
+  HoeffdingOptions,
+  HoeffdingState,
+  FittedTree,
+  TreeVerbs,
+  HoeffdingPath
+>
 
 /**
  * A Hoeffding tree classifier (river's HoeffdingTreeClassifier) on the iterative base: a fit streams the rows once in
@@ -436,7 +442,7 @@ export function hoeffdingTreeClassifier(hyper: Partial<HoeffdingOptions> = {}): 
     passes: hyper.passes ?? 1,
   }
   const classesOf = (data: LearnData): readonly number[] => encodeLabels(data.y ?? [], 'hoeffdingTree').classes
-  return iterative<HoeffdingOptions, HoeffdingState, Tree, TreeVerbs, HoeffdingPath>(
+  return iterative<HoeffdingOptions, HoeffdingState, FittedTree, TreeVerbs, HoeffdingPath>(
     {
       name: 'hoeffding-tree-classifier',
       kind: 'classifier',

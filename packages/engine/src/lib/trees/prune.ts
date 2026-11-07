@@ -11,7 +11,7 @@ import { type PruningPath, pruningPath } from '../exposition/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { codesFor, matrixView, sampleWeightsOf, targetVector } from '../learn/validation.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
-import { isLeaf, type Tree } from './tree.ts'
+import { type FittedTree, isLeaf } from './tree.ts'
 
 /** The state of {@link weakestLinkAlgorithm}: the subtree so far and the path walked. */
 export interface PruneState {
@@ -33,7 +33,7 @@ export interface PruneState {
 }
 
 /** Parents of the nodes of a tree (-1 for the root). */
-function parentsOf(tree: Tree): Int32Array {
+function parentsOf(tree: FittedTree): Int32Array {
   const parent = new Int32Array(tree.feature.length).fill(-1)
   for (let i = 0; i < tree.feature.length; i++)
     if (!isLeaf(tree, i)) {
@@ -75,7 +75,7 @@ export type PrunePath = 'prune/alpha' | 'prune/leaves' | 'prune/trainError' | 'p
  * ```
  */
 export function weakestLinkAlgorithm(
-  tree: Tree,
+  tree: FittedTree,
   stopAlpha: number = Number.POSITIVE_INFINITY,
 ): Algorithm<PruneState, PrunePath> {
   const n = tree.feature.length
@@ -192,7 +192,7 @@ export function weakestLinkAlgorithm(
  * collapseTree(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }), [1, 0, 0]).left // => [-1]
  * ```
  */
-export function collapseTree(tree: Tree, isLeafNow: ArrayLike<number | boolean>): Tree {
+export function collapseTree(tree: FittedTree, isLeafNow: ArrayLike<number | boolean>): FittedTree {
   const keep: number[] = []
   const walk = (node: number): void => {
     keep.push(node)
@@ -232,7 +232,7 @@ export function collapseTree(tree: Tree, isLeafNow: ArrayLike<number | boolean>)
  * costComplexityPath({ ...stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 2 }), impurity: [1, 0, 0] }).alphas // => [0, 1]
  * ```
  */
-export function costComplexityPath(tree: Tree): PruningPath {
+export function costComplexityPath(tree: FittedTree): PruningPath {
   const s = runAlgorithm(weakestLinkAlgorithm(tree), { maxSteps: tree.feature.length + 1 }).state
   return pruningPath({ alphas: [...s.alphas], impurities: [...s.impurities], leaves: [...s.leaves] })
 }
@@ -252,7 +252,7 @@ export function costComplexityPath(tree: Tree): PruningPath {
  * pruneTree(t, 1).left.length // => 1
  * ```
  */
-export function pruneTree(tree: Tree, alpha: number): Tree {
+export function pruneTree(tree: FittedTree, alpha: number): FittedTree {
   if (!(alpha > 0)) return tree
   const s = runAlgorithm(weakestLinkAlgorithm(tree, alpha), { maxSteps: tree.feature.length + 1 }).state
   return collapseTree(tree, s.leaf)
@@ -287,7 +287,7 @@ export interface ReducedErrorState {
  * runAlgorithm(reducedErrorAlgorithm(t, { x: [[0], [1]], y: [0.5, 0.5] }), { maxSteps: 5 }).state.pruned // => [1, 0, 0]
  * ```
  */
-export function reducedErrorAlgorithm(tree: Tree, held: LearnData): Algorithm<ReducedErrorState, PrunePath> {
+export function reducedErrorAlgorithm(tree: FittedTree, held: LearnData): Algorithm<ReducedErrorState, PrunePath> {
   if (held.y === undefined) throw new MdmlError('value', 'reducedErrorAlgorithm: held-out targets are needed')
   const m = matrixView(held.x, 'reducedErrorAlgorithm', { nFeatures: tree.nFeatures, allowNaN: true })
   const w = sampleWeightsOf(held.weights, m.n, 'reducedErrorAlgorithm')
@@ -378,7 +378,7 @@ export function reducedErrorAlgorithm(tree: Tree, held: LearnData): Algorithm<Re
  * reducedErrorPrune(t, { x: [[0], [1]], y: [0, 1] }).left // => [1, -1, -1]
  * ```
  */
-export function reducedErrorPrune(tree: Tree, held: LearnData): Tree {
+export function reducedErrorPrune(tree: FittedTree, held: LearnData): FittedTree {
   const r = runAlgorithm(reducedErrorAlgorithm(tree, held), { maxSteps: tree.feature.length + 1 })
   return collapseTree(tree, r.state.pruned)
 }

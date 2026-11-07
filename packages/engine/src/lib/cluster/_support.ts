@@ -7,9 +7,7 @@
 import { type DistanceAlias, type DistanceName, pairwiseDistances } from '../distances/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-
-/** Rows of a matrix as plain arrays. */
-export type Matrix = readonly (readonly number[])[]
+import type { Rows } from './kmeans.ts'
 
 /** Rows `idx` of a flat row-major matrix with `d` columns. */
 export function rowsAt(data: ArrayLike<number>, d: number, idx: readonly number[]): number[][] {
@@ -37,7 +35,7 @@ export function kthInRow(dist: ArrayLike<number>, n: number, i: number, k: numbe
  * within `radius` (-1 when none is).
  */
 export function labelledPredict(
-  points: Matrix,
+  points: Rows,
   labels: readonly number[],
   radius: number,
   metric: DistanceName | DistanceAlias,

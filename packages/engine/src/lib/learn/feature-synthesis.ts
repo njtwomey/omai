@@ -25,14 +25,14 @@ export interface EntityTable {
 export type Aggregation = 'sum' | 'mean' | 'min' | 'max' | 'std' | 'count'
 
 /** Arithmetic on two features of one table. */
-export type Transform = 'add' | 'subtract' | 'multiply' | 'divide'
+export type FeatureArithmetic = 'add' | 'subtract' | 'multiply' | 'divide'
 
 /** Options of {@link deepFeatureSynthesis}. */
 export interface SynthesisOptions {
   /** The aggregations (default sum, mean, min, max, std; `count` of child rows is always added). */
   readonly aggregations?: readonly Aggregation[]
   /** The arithmetic transforms (default add, subtract, multiply, divide). */
-  readonly transforms?: readonly Transform[]
+  readonly transforms?: readonly FeatureArithmetic[]
   /** The deepest stack of primitives (default 1; 0 is the raw columns). */
   readonly maxDepth?: number
   /** Stop adding features past this many (default 5000). */
@@ -51,7 +51,7 @@ export interface SynthesisedFeature {
 }
 
 const DEFAULT_AGGREGATIONS: readonly Aggregation[] = ['sum', 'mean', 'min', 'max', 'std']
-const DEFAULT_TRANSFORMS: readonly Transform[] = ['add', 'subtract', 'multiply', 'divide']
+const DEFAULT_TRANSFORMS: readonly FeatureArithmetic[] = ['add', 'subtract', 'multiply', 'divide']
 
 function aggregate(kind: Aggregation, values: readonly number[]): number {
   if (kind === 'count') return values.length
@@ -68,14 +68,14 @@ function aggregate(kind: Aggregation, values: readonly number[]): number {
   return values.length > 1 ? Math.sqrt(ss / (values.length - 1)) : 0
 }
 
-function apply(kind: Transform, a: number, b: number): number {
+function apply(kind: FeatureArithmetic, a: number, b: number): number {
   if (kind === 'add') return a + b
   if (kind === 'subtract') return a - b
   if (kind === 'multiply') return a * b
   return b === 0 ? 0 : a / b
 }
 
-const SYMBOL: Readonly<Record<Transform, string>> = { add: '+', subtract: '-', multiply: '*', divide: '/' }
+const SYMBOL: Readonly<Record<FeatureArithmetic, string>> = { add: '+', subtract: '-', multiply: '*', divide: '/' }
 
 /**
  * Generate candidate features for a target table by deep feature synthesis. Depth 0 is the table's own columns; each
@@ -223,7 +223,7 @@ export interface SelectOptions {
 }
 
 /** The outcome of {@link selectSynthesised}. */
-export interface Selection {
+export interface SynthesisSelection {
   /** The chosen features, in the order added. */
   readonly features: readonly SynthesisedFeature[]
   /** The cross-validated score after each addition. */
@@ -274,7 +274,7 @@ export function selectSynthesised(
   features: readonly SynthesisedFeature[],
   y: ArrayLike<number>,
   options: SelectOptions,
-): Selection {
+): SynthesisSelection {
   const maxFeatures = options.maxFeatures ?? 5
   const folds = options.folds ?? 4
   const minGain = options.minGain ?? 1e-4

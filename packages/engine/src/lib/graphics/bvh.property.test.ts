@@ -8,7 +8,7 @@ import {
   intersectBvh,
   nearestHit,
   occludedBvh,
-  type Shape,
+  type RayShape,
   sphere,
   triangle,
 } from './index.ts'
@@ -21,7 +21,7 @@ const unit = vec
     const n = Math.hypot(d[0], d[1], d[2])
     return [d[0] / n, d[1] / n, d[2] / n]
   })
-const shape: fc.Arbitrary<Shape> = fc.oneof(
+const shape: fc.Arbitrary<RayShape> = fc.oneof(
   fc.tuple(vec, fc.double({ min: 0.1, max: 1.5, noNaN: true })).map(([c, r]) => sphere(c, r)),
   fc
     .tuple(vec, vec)
@@ -109,7 +109,7 @@ describe('bounding-volume hierarchies', () => {
   })
 
   it('tests far fewer shapes than brute force on a spread-out scene', () => {
-    const shapes: Shape[] = []
+    const shapes: RayShape[] = []
     for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) shapes.push(sphere([i * 3, j * 3, 0], 1))
     const bvh = buildBvh(shapes)
     const r = intersectBvh(bvh, { origin: [21, 21, 10], direction: [0, 0, -1] })

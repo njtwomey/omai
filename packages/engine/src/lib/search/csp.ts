@@ -12,7 +12,7 @@ import { check, compile, conflictsOf, type Model } from './_csp-model.ts'
 import type { SearchProblem, SearchRunOptions } from './problem.ts'
 
 /** A constraint of a CSP: a scope of variables and a test of their values (given in scope order). */
-export interface Constraint<D> {
+export interface CspConstraint<D> {
   readonly scope: readonly string[]
   readonly test: (values: readonly D[]) => boolean
   readonly name?: string
@@ -28,7 +28,7 @@ export interface Constraint<D> {
 export interface Csp<D> {
   readonly variables: readonly string[]
   readonly domains: Readonly<Record<string, readonly D[]>>
-  readonly constraints: readonly Constraint<D>[]
+  readonly constraints: readonly CspConstraint<D>[]
 }
 
 /** A (partial) assignment of values to variables. */
@@ -54,7 +54,7 @@ export type Assignment<D> = Readonly<Record<string, D>>
 export function csp<D>(
   variables: readonly string[],
   domains: Readonly<Record<string, readonly D[]>>,
-  constraints: readonly Constraint<D>[],
+  constraints: readonly CspConstraint<D>[],
 ): Csp<D> {
   const problem = { variables, domains, constraints }
   compile(problem, 'csp')
@@ -75,7 +75,12 @@ export function csp<D>(
  * binaryConstraint('x', 'y', (x: number, y: number) => x !== y).test([1, 2]) // => true
  * ```
  */
-export function binaryConstraint<D>(a: string, b: string, test: (x: D, y: D) => boolean, name?: string): Constraint<D> {
+export function binaryConstraint<D>(
+  a: string,
+  b: string,
+  test: (x: D, y: D) => boolean,
+  name?: string,
+): CspConstraint<D> {
   return { scope: [a, b], test: (v) => test(v[0] as D, v[1] as D), ...(name === undefined ? {} : { name }) }
 }
 
@@ -96,7 +101,7 @@ export function constraint<D>(
   scope: readonly string[],
   test: (values: readonly D[]) => boolean,
   name?: string,
-): Constraint<D> {
+): CspConstraint<D> {
   return { scope, test, ...(name === undefined ? {} : { name }) }
 }
 
@@ -111,8 +116,8 @@ export function constraint<D>(
  * allDifferent(['a', 'b', 'c']).length // => 3
  * ```
  */
-export function allDifferent<D>(variables: readonly string[]): Constraint<D>[] {
-  const out: Constraint<D>[] = []
+export function allDifferent<D>(variables: readonly string[]): CspConstraint<D>[] {
+  const out: CspConstraint<D>[] = []
   for (let i = 0; i < variables.length; i++) {
     for (let j = i + 1; j < variables.length; j++) {
       out.push(binaryConstraint<D>(variables[i] as string, variables[j] as string, (x, y) => x !== y, 'all-different'))
@@ -134,7 +139,7 @@ export function allDifferent<D>(variables: readonly string[]): Constraint<D>[] {
  * violations(p, { a: 1, b: 1 }).length // => 1
  * ```
  */
-export function violations<D>(problem: Csp<D>, assignment: Assignment<D>): Constraint<D>[] {
+export function violations<D>(problem: Csp<D>, assignment: Assignment<D>): CspConstraint<D>[] {
   return problem.constraints.filter(
     (c) => c.scope.every((v) => v in assignment) && !c.test(c.scope.map((v) => assignment[v] as D)),
   )

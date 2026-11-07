@@ -8,16 +8,16 @@ import { valueAndGrad } from '../../autodiff/index.ts'
 import type { Json } from '../../base/index.ts'
 import { item, treePaths, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
-import { applyUpdates, type GradientTransformation, globalNorm, type Tree } from '../transform.ts'
+import { applyUpdates, type GradientTransformation, globalNorm, type ParamTree } from '../transform.ts'
 import type { MinimizeMethod, MinimizeResult, Objective, Parameters } from './objective.ts'
 import { type BfgsOptions, bfgs } from './quasi-newton.ts'
 
 /** The state of a {@link minimizer} run. */
 export interface MinimizerState {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly optState: unknown
   readonly value: number
-  readonly grad: Tree
+  readonly grad: ParamTree
   readonly gradNorm: number
 }
 
@@ -49,13 +49,13 @@ export interface MinimizerOptions {
  * ```
  */
 export function minimizer(
-  f: (params: Tree) => Value,
-  params: Tree,
+  f: (params: ParamTree) => Value,
+  params: ParamTree,
   transformation: GradientTransformation,
   options: MinimizerOptions = {},
 ): Algorithm<MinimizerState> {
   const vg = valueAndGrad(f)
-  const evaluate = (p: Tree, optState: unknown): MinimizerState => {
+  const evaluate = (p: ParamTree, optState: unknown): MinimizerState => {
     const { value, grad } = vg(p)
     return { params: p, optState, value: item(value), grad, gradNorm: item(globalNorm(grad)) }
   }
@@ -124,7 +124,7 @@ export function minimize<O extends object>(
   x0: Parameters,
   options: O & { readonly method: MinimizeMethod<O> },
 ): MinimizeResult
-export function minimize(f: Objective, x0: Tree, options?: TransformationMinimizeOptions): MinimizeResult
+export function minimize(f: Objective, x0: ParamTree, options?: TransformationMinimizeOptions): MinimizeResult
 export function minimize(f: Objective, x0: Parameters, options: object = {}): MinimizeResult {
   const { method, ...rest } = options as { readonly method?: unknown }
   if (typeof method === 'function') return (method as MinimizeMethod<object>)(f, x0, rest)

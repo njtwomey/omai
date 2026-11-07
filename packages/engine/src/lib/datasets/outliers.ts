@@ -8,7 +8,7 @@ import {
   type ClassificationData,
   type DatasetGenerator,
   type Generated,
-  type Knobs,
+  type GeneratorKnobs,
   type RegressionData,
   xy,
   xyClasses,
@@ -52,7 +52,7 @@ function rowOrder(k: Key, n: number, shuffle: boolean): readonly number[] {
 function withUniformOutliers(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   k: Key,
   inliers: Float64Array,
   nOutliers: number,

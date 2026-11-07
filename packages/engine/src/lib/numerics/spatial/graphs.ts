@@ -20,7 +20,7 @@ import {
   stateToJson,
   tensor,
 } from '../../trace/index.ts'
-import { type Metric, metricFunction } from '../geometry/index.ts'
+import { type DistanceMetric, metricFunction } from '../geometry/index.ts'
 
 type Scored = readonly [distance: number, node: number]
 
@@ -32,7 +32,7 @@ export interface HnswOptions {
   readonly efConstruction?: number
   /** Level multiplier (default 1 / ln M). */
   readonly levelMultiplier?: number
-  readonly metric?: Metric
+  readonly metric?: DistanceMetric
   readonly key: Key
 }
 
@@ -342,7 +342,7 @@ export function nnDescentAlgorithm(
   options: {
     readonly rho?: number
     readonly delta?: number
-    readonly metric?: Metric
+    readonly metric?: DistanceMetric
     readonly key: Key
     readonly truth?: ArrayLike<number>
   },

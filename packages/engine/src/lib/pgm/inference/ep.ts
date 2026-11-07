@@ -17,7 +17,7 @@ import {
   type TracePolicy,
   type Tracer,
 } from '../../trace/index.ts'
-import { dotVec, inverse, type Matrix, matVec, symmetrise } from '../_dense.ts'
+import { dotVec, inverse, matVec, type Rows, symmetrise } from '../_dense.ts'
 import type { Factor } from '../factor.ts'
 import { gaussianFactor, gaussianFromMoments, gaussianLogMass, gaussianProduct } from '../gaussian-factor.ts'
 import type { DiscreteModel } from '../models/factor-graph.ts'
@@ -347,7 +347,7 @@ function tiltedMoments(
 
 /** The posterior N(mean, covariance) from the prior and the site parameters. */
 function posterior(
-  priorPrecision: Matrix,
+  priorPrecision: Rows,
   priorShift: readonly number[],
   sites: readonly EpSite[],
   tau: Float64Array,
@@ -389,7 +389,7 @@ function posterior(
  * ```
  */
 export function gaussianEpAlgorithm(
-  prior: { readonly mean: readonly number[]; readonly covariance: Matrix },
+  prior: { readonly mean: readonly number[]; readonly covariance: Rows },
   sites: readonly EpSite[],
   options: GaussianEpOptions = {},
 ): Algorithm<GaussianEpState> {
@@ -479,7 +479,7 @@ export function gaussianEpAlgorithm(
  * ```
  */
 export function gaussianEp(
-  prior: { readonly mean: readonly number[]; readonly covariance: Matrix },
+  prior: { readonly mean: readonly number[]; readonly covariance: Rows },
   sites: readonly EpSite[],
   options: GaussianEpOptions = {},
 ): GaussianEpResult {

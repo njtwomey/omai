@@ -30,7 +30,7 @@ import {
 import { headSite, type ResidualModel, type SiteHook } from './residual.ts'
 
 /** A scalar of a run's logits `[B, T, V]` whose change a patch is measured by. */
-export type Metric = (logits: Value) => Value
+export type PatchMetric = (logits: Value) => Value
 
 function at(logits: Value, position: number): Value {
   const t = logits.shape[1] ?? 1
@@ -53,7 +53,7 @@ function at(logits: Value, position: number): Value {
  * toFlat(logitDifference(0, 1)(tensor([[[2, 0.5]]]))) // => [1.5]
  * ```
  */
-export function logitDifference(correct: number, wrong: number, position = -1): Metric {
+export function logitDifference(correct: number, wrong: number, position = -1): PatchMetric {
   return (logits) => {
     const row = at(logits, position)
     return sub(sliceAxis(row, 1, correct, correct + 1), sliceAxis(row, 1, wrong, wrong + 1))
@@ -73,7 +73,7 @@ export function logitDifference(correct: number, wrong: number, position = -1): 
  * toFlat(tokenLogProbability(0)(tensor([[[0, 0]]]))) // => [-0.6931471805599453]
  * ```
  */
-export function tokenLogProbability(token: number, position = -1): Metric {
+export function tokenLogProbability(token: number, position = -1): PatchMetric {
   return (logits) => sliceAxis(logSoftmax(at(logits, position), -1), 1, token, token + 1)
 }
 
@@ -90,7 +90,7 @@ export function tokenLogProbability(token: number, position = -1): Metric {
  * toFlat(tokenProbability(1)(tensor([[[0, 0]]]))) // => [0.5]
  * ```
  */
-export function tokenProbability(token: number, position = -1): Metric {
+export function tokenProbability(token: number, position = -1): PatchMetric {
   return (logits) => sliceAxis(softmax(at(logits, position), -1), 1, token, token + 1)
 }
 
@@ -130,7 +130,7 @@ function replaceAt(v: Value, donor: Value, p: number | undefined): Value {
 /** Options of {@link activationPatching}. */
 export interface PatchingOptions {
   /** The scalar to measure. */
-  readonly metric: Metric
+  readonly metric: PatchMetric
   /** The sites to patch (default {@link defaultSites}). */
   readonly sites?: readonly string[]
   /** Patch the heads individually when the default sites are used. */
@@ -237,7 +237,7 @@ export interface CausalTraceOptions {
   /** The positions of the subject tokens, whose embeddings are corrupted. */
   readonly subject: readonly number[]
   /** The metric to restore (usually {@link tokenProbability} of the answer). */
-  readonly metric: Metric
+  readonly metric: PatchMetric
   /** The key of the noise. */
   readonly key: Key
   /** The noise's standard deviation, in units of the embeddings' (default 3 times their standard deviation). */
@@ -307,7 +307,7 @@ export function causalTrace(model: ResidualModel, tokens: readonly number[], opt
 
 /** Options of {@link attributionPatching}. */
 export interface AttributionPatchingOptions {
-  readonly metric: Metric
+  readonly metric: PatchMetric
   readonly sites?: readonly string[]
   readonly heads?: boolean
   /** `denoise` (default) approximates patching clean into corrupted; `noise` the reverse. */
@@ -405,7 +405,7 @@ export interface PathPatchingResult {
 
 /** Options of {@link pathPatching}. */
 export interface PathPatchingOptions {
-  readonly metric: Metric
+  readonly metric: PatchMetric
   /** The components that read the sender (their sites); `'logits'` (default) is the direct path to the output. */
   readonly receivers?: readonly string[] | 'logits'
 }

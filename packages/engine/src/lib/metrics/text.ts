@@ -16,7 +16,7 @@ import {
   countTotal as total,
 } from '../text/index.ts'
 import { terEdits } from './_ter.ts'
-import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 const spec = (
   name: string,
@@ -915,7 +915,7 @@ export const bertScore: MetricFunction<[readonly TensorLike[], readonly TensorLi
     ): MetricResult => {
       sameLength('bertScore', targetEmbeddings, predEmbeddings)
       const unit = (x: TensorLike): { n: number; d: number; data: Float64Array } => {
-        const m = matrix(x)
+        const m = shapedArray(x)
         if (m.shape.length !== 2) throw new MdmlError('shape', 'bertScore: embeddings are [tokens, D]')
         const n = m.shape[0] ?? 0
         const d = m.shape[1] ?? 0
@@ -929,7 +929,7 @@ export const bertScore: MetricFunction<[readonly TensorLike[], readonly TensorLi
         return { n, d, data }
       }
       const weights = (w: TensorLike | undefined, n: number): Float64Array => {
-        const v = w === undefined ? new Float64Array(n).fill(1) : matrix(w).data
+        const v = w === undefined ? new Float64Array(n).fill(1) : shapedArray(w).data
         const s = v.reduce((a, b) => a + b, 0)
         return Float64Array.from(v, (x) => x / s)
       }
@@ -987,8 +987,8 @@ export const bertScore: MetricFunction<[readonly TensorLike[], readonly TensorLi
 export const perplexity: MetricFunction<[TensorLike, TensorLike, { readonly ignoreIndex?: number }?]> = defineMetric(
   spec('perplexity', 'lower', [1, Infinity], 'scores'),
   (logits: TensorLike, targets: TensorLike, options: { readonly ignoreIndex?: number } = {}): MetricResult => {
-    const l = matrix(logits)
-    const t = matrix(targets).data
+    const l = shapedArray(logits)
+    const t = shapedArray(targets).data
     const v = l.shape[l.shape.length - 1] ?? 0
     if (l.data.length !== t.length * v)
       throw new MdmlError('shape', 'perplexity: logits are [..., T, V] for targets [..., T]')

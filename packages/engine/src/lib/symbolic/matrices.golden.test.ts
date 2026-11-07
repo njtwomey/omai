@@ -3,11 +3,22 @@
 import { describe, expect, it } from 'vitest'
 import { loadFixture } from '../../testing/golden.ts'
 import { expectValues, symbolicOutput } from '../../testing/symbolic.ts'
-import { charpoly, det, eigenvals, evaluateComplex, inverse, type Matrix, matrix, parse, sym, toText } from './index.ts'
+import {
+  charpoly,
+  det,
+  type ExprMatrix,
+  eigenvals,
+  evaluateComplex,
+  inverse,
+  matrix,
+  parse,
+  sym,
+  toText,
+} from './index.ts'
 
 const fixture = loadFixture('symbolic/matrices')
 
-function parseMatrix(src: string): Matrix {
+function parseMatrix(src: string): ExprMatrix {
   return matrix(src.split(';').map((r) => r.split(',').map((v) => parse(v))))
 }
 

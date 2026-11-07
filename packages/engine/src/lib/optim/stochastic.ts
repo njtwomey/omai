@@ -19,15 +19,15 @@ import { observeVector, type VectorState, vectorDone, vectorSchema } from './min
 import { flatObjective, infNorm, type Parameters } from './minimize/objective.ts'
 import type { OptimiserShape } from './optimiser-table.ts'
 import type { ScheduleShape } from './schedule-table.ts'
-import { constantSchedule, type Schedule } from './schedules.ts'
-import type { Tree } from './transform.ts'
+import { constantSchedule, type LearningRateSchedule } from './schedules.ts'
+import type { ParamTree } from './transform.ts'
 
 /**
  * An objective that can be summed over a batch: a scalar function of the parameters and, optionally, the indices of
  * the examples to use (the mean over those examples, so batches of different sizes are comparable). Called without
  * a batch it is the objective over the whole set; an objective of the parameters alone is one.
  */
-export type BatchObjective = { bivariant(params: Tree, batch?: readonly number[]): Value }['bivariant']
+export type BatchObjective = { bivariant(params: ParamTree, batch?: readonly number[]): Value }['bivariant']
 
 /** The examples an objective is summed over, when it can be summed over a part of them. */
 export interface Batches {
@@ -87,7 +87,7 @@ export function gradientAlgorithm(
   options: GradientOptions = {},
 ): Algorithm<GradientState> {
   const peak = options.learningRate ?? 1e-2
-  const schedule: Schedule = (options.schedule ?? constantSchedule)(peak)
+  const schedule: LearningRateSchedule = (options.schedule ?? constantSchedule)(peak)
   const make = options.optimiser ?? ((learningRate) => sgd({ learningRate }))
   const optimiser = make(schedule)
   const gtol = options.gradTol ?? 1e-5

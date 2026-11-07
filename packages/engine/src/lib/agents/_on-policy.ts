@@ -8,7 +8,7 @@ import { valueAndGrad } from '../autodiff/index.ts'
 import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { explainedVarianceScore } from '../metrics/index.ts'
 import type { ActivationName, Params } from '../nn/index.ts'
-import type { GradientTransformation, Tree } from '../optim/index.ts'
+import type { GradientTransformation, ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import {
   categoricalPolicy,
@@ -401,7 +401,7 @@ export function ppoEpochs(
         old: vectorTensor(pick(h.oldValues, idx)),
       }))
       const aux: Record<string, number> = {}
-      const loss = (tree: Tree): Value => {
+      const loss = (tree: ParamTree): Value => {
         const q = tree as ActorCriticParams
         const dist = net.dist(q.policy, obs)
         const head = net.head(dist)

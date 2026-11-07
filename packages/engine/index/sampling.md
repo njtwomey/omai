@@ -8,12 +8,12 @@ Monte Carlo, BlackJAX and ArviZ style: log-density targets, Metropolis, Hamilton
 
 - function `randomWalkMetropolis`: Random-walk Metropolis kernel; Langevin kernels sit in langevin.ts. `src/lib/sampling/metropolis.ts:144` `mdml-engine/sampling`
 - function `sampleChains`: Run several chains of any MCMC kernel. `src/lib/sampling/chains.ts:423` `mdml-engine/sampling`
-- function `smcSampler`: Sequential Monte Carlo sampler with adaptive tempering. `src/lib/sampling/smc.ts:537` `mdml-engine/sampling`
+- function `smcSampler`: Sequential Monte Carlo sampler with adaptive tempering. `src/lib/sampling/smc.ts:541` `mdml-engine/sampling`
 
 - algorithm `samplerAlgorithm`: Run any MCMC kernel as a steppable Algorithm. `src/lib/sampling/chains.ts:181` `mdml-engine/sampling`
-- algorithm `smcAlgorithm`: Sequential Monte Carlo, one tempering step at a time. `src/lib/sampling/smc.ts:418` `mdml-engine/sampling`
+- algorithm `smcAlgorithm`: Sequential Monte Carlo, one tempering step at a time. `src/lib/sampling/smc.ts:422` `mdml-engine/sampling`
 
-- table `rejectionSamplers`: The exact samplers as one slot. `src/lib/sampling/rejection-options.ts:89` `mdml-engine/sampling`
+- table `rejectionSamplers`: The exact samplers as one slot. `src/lib/sampling/rejection-options.ts:88` `mdml-engine/sampling`
 
 ## sampling/diagnostics
 

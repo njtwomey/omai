@@ -1,11 +1,19 @@
 /**
  * The two readers the public functions of `optim` share to take their numbers from a tensor-like once, at the boundary
  * (a matrix as rows of plain numbers, a float64 vector built from a list), so the loops stay on plain arrays and the
- * tensor is built or read only at entry and exit. Private to the domain, as `numerics/_vector.ts` is.
+ * tensor is built or read only at entry and exit; and `DenseMatrix`, the row-major record the dictionary and pursuit
+ * routines read a matrix into. Private to the domain, as `numerics/_vector.ts` is.
  */
 
 import { MdmlError } from '../base/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+
+/** A dense matrix as row-major data with its dimensions, read once from a tensor-like. */
+export interface DenseMatrix {
+  readonly data: Float64Array
+  readonly rows: number
+  readonly cols: number
+}
 
 /**
  * The rows of a matrix given as a tensor-like, as plain numbers.

@@ -6,7 +6,7 @@
 
 import type { Json } from '../base/index.ts'
 import type { Params } from '../nn/index.ts'
-import { chain, clipByGlobalNorm, type GradientTransformation, type Tree } from '../optim/index.ts'
+import { chain, clipByGlobalNorm, type GradientTransformation, type ParamTree } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Agent, Transition } from '../rl/index.ts'
 import { mean, square, sub, type Value } from '../tensor/index.ts'
@@ -110,5 +110,5 @@ export function onPolicyAgent<A>(
 
 export const valueLossOf =
   (net: ActorCritic, obs: Value, targets: Value) =>
-  (p: Tree): Value =>
+  (p: ParamTree): Value =>
     mean(square(sub(targets, net.value(p as Params, obs))))

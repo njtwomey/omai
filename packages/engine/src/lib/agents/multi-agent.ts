@@ -9,7 +9,7 @@ import { argmaxOf, type Json, MdmlError, meanOf } from '../base/index.ts'
 import { solveZeroSum } from '../games/index.ts'
 import { crossEntropy } from '../losses/index.ts'
 import { mlp } from '../nn/index.ts'
-import { adam, type Tree } from '../optim/index.ts'
+import { adam, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'
 import {
   type AecEnv,
@@ -472,7 +472,7 @@ export interface FictitiousSelfPlayOptions extends DqnOptions {
 /** One player's state in neural fictitious self-play. */
 export interface FspPlayer {
   readonly br: DqnState
-  readonly average: Tree
+  readonly average: ParamTree
   readonly averageOpt: unknown
   readonly reservoir: Reservoir<{ readonly observation: readonly number[]; readonly action: number }>
   readonly averageLoss: number
@@ -488,8 +488,8 @@ export interface FspState {
 
 interface FspModel {
   readonly best: Agent<DqnState, readonly number[], number>
-  readonly averageApply: (p: Tree, x: Value) => Value
-  readonly averageParams: Tree
+  readonly averageApply: (p: ParamTree, x: Value) => Value
+  readonly averageParams: ParamTree
   readonly size: number
   readonly nActions: number
 }
@@ -515,7 +515,7 @@ function fspModel<S>(env: AecEnv<S, readonly number[], number>, options: Fictiti
 /** The average policy's action probabilities, restricted to the legal actions when given. */
 function averageProbabilities(
   model: FspModel,
-  params: Tree,
+  params: ParamTree,
   observation: readonly number[],
   legal?: readonly number[],
 ): number[] {
@@ -717,7 +717,7 @@ export function fictitiousSelfPlay<S>(
     ...runOptions(options),
     maxSteps: episodes ?? 1000,
   })
-  const params = (agent: string): Tree => {
+  const params = (agent: string): ParamTree => {
     const p = result.state.players[agent]
     if (p === undefined) throw new MdmlError('value', `fictitiousSelfPlay: no agent ${agent}`)
     return p.average

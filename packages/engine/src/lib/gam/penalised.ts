@@ -550,7 +550,7 @@ function criterionOf(sol: PenalisedSolution, ctx: CriterionContext): number {
 }
 
 /** The result of {@link selectLogLambda}. */
-export interface Selection {
+export interface LambdaSelection {
   readonly logLambda: number[]
   readonly value: number
   readonly evaluations: number
@@ -586,7 +586,7 @@ export function selectLogLambda(
   start: readonly number[],
   method: Exclude<SmoothingMethod, 'fixed'>,
   options: { readonly gamma?: number; readonly scale?: number } = {},
-): Selection {
+): LambdaSelection {
   const m = structure.blocks.length
   if (m === 0) return { logLambda: [], value: 0, evaluations: 0 }
   let n = 0

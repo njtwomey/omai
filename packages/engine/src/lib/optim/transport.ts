@@ -22,13 +22,11 @@ import {
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
 
-type Vec = Float64Array
-
 /** A transport problem's data as plain arrays. */
 interface Problem {
-  readonly a: Vec
-  readonly b: Vec
-  readonly m: Vec
+  readonly a: Float64Array
+  readonly b: Float64Array
+  readonly m: Float64Array
   readonly n: number
   readonly k: number
 }
@@ -68,9 +66,9 @@ export interface EmdResult {
 /** State of {@link emdAlgorithm}: the basic cells (a spanning tree of the bipartite graph) with their flows. */
 export interface EmdState {
   readonly basis: readonly (readonly [number, number])[]
-  readonly flow: Vec
-  readonly u: Vec
-  readonly v: Vec
+  readonly flow: Float64Array
+  readonly u: Float64Array
+  readonly v: Float64Array
   readonly cost: number
   readonly entering?: readonly [number, number]
   readonly reducedCost: number
@@ -78,7 +76,7 @@ export interface EmdState {
 }
 
 /** The north-west corner rule: a basic feasible solution with exactly n + k - 1 basic cells. */
-function northWest(p: Problem): { basis: [number, number][]; flow: Vec } {
+function northWest(p: Problem): { basis: [number, number][]; flow: Float64Array } {
   const a = Float64Array.from(p.a)
   const b = Float64Array.from(p.b)
   const flow = new Float64Array(p.n * p.k)
@@ -100,7 +98,7 @@ function northWest(p: Problem): { basis: [number, number][]; flow: Vec } {
 }
 
 /** Potentials u, v with u_i + v_j = M_ij on the basis (a tree), u_0 = 0. */
-function potentials(p: Problem, basis: readonly (readonly [number, number])[]): { u: Vec; v: Vec } {
+function potentials(p: Problem, basis: readonly (readonly [number, number])[]): { u: Float64Array; v: Float64Array } {
   const rows: number[][] = Array.from({ length: p.n }, () => [])
   const cols: number[][] = Array.from({ length: p.k }, () => [])
   for (const [i, j] of basis) {
@@ -167,7 +165,7 @@ function cycle(p: Problem, basis: readonly (readonly [number, number])[], i: num
   return path
 }
 
-function emdCost(p: Problem, flow: Vec): number {
+function emdCost(p: Problem, flow: Float64Array): number {
   let s = 0
   for (let q = 0; q < flow.length; q++) s += (flow[q] ?? 0) * (p.m[q] ?? 0)
   return s
@@ -193,7 +191,11 @@ export function emdAlgorithm(a: TensorLike, b: TensorLike, cost: TensorLike): Al
   const p = problem(a, b, cost, 'emd')
   const scale = p.m.reduce((s, v) => Math.max(s, Math.abs(v)), 0)
   const tol = 1e-12 * Math.max(scale, 1)
-  const evaluate = (basis: readonly (readonly [number, number])[], flow: Vec, degenerate: number): EmdState => {
+  const evaluate = (
+    basis: readonly (readonly [number, number])[],
+    flow: Float64Array,
+    degenerate: number,
+  ): EmdState => {
     const { u, v } = potentials(p, basis)
     const inBasis = new Uint8Array(p.n * p.k)
     for (const [i, j] of basis) inBasis[i * p.k + j] = 1
@@ -319,8 +321,8 @@ export interface SinkhornOptions extends Partial<Omit<RunOptions, 'maxSteps' | '
 
 /** State of {@link sinkhornAlgorithm}: the dual potentials f, g (log-scalings times reg). */
 export interface SinkhornState {
-  readonly f: Vec
-  readonly g: Vec
+  readonly f: Float64Array
+  readonly g: Float64Array
   readonly marginalError: number
 }
 
@@ -340,7 +342,7 @@ export interface SinkhornResult {
   readonly converged: boolean
 }
 
-function planOf(p: Problem, f: Vec, g: Vec, reg: number, logRef?: Vec): Vec {
+function planOf(p: Problem, f: Float64Array, g: Float64Array, reg: number, logRef?: Float64Array): Float64Array {
   const out = new Float64Array(p.n * p.k)
   for (let i = 0; i < p.n; i++)
     for (let j = 0; j < p.k; j++)
@@ -350,14 +352,21 @@ function planOf(p: Problem, f: Vec, g: Vec, reg: number, logRef?: Vec): Vec {
   return out
 }
 
-function columnError(p: Problem, plan: Vec): number {
+function columnError(p: Problem, plan: Float64Array): number {
   const col = new Float64Array(p.k)
   for (let i = 0; i < p.n; i++) for (let j = 0; j < p.k; j++) col[j] = (col[j] ?? 0) + (plan[i * p.k + j] ?? 0)
   return dnrm2(Float64Array.from(col, (v, j) => v - (p.b[j] ?? 0)))
 }
 
 /** One Sinkhorn half-step in the log domain: the potential of one side given the other (with exponent fi). */
-function softUpdate(p: Problem, other: Vec, reg: number, rows: boolean, fi: number, logRef?: Vec): Vec {
+function softUpdate(
+  p: Problem,
+  other: Float64Array,
+  reg: number,
+  rows: boolean,
+  fi: number,
+  logRef?: Float64Array,
+): Float64Array {
   const size = rows ? p.n : p.k
   const len = rows ? p.k : p.n
   const marg = rows ? p.a : p.b
@@ -415,8 +424,8 @@ export function sinkhornAlgorithm(
     }),
     init: () => ({ f: new Float64Array(p.n), g: new Float64Array(p.k), marginalError: Infinity }),
     step: (s) => {
-      let f: Vec
-      let g: Vec
+      let f: Float64Array
+      let g: Float64Array
       if (method === 'log') {
         g = softUpdate(p, s.f, reg, false, 1)
         f = softUpdate(p, g, reg, true, 1)
@@ -448,7 +457,7 @@ export function sinkhornAlgorithm(
   }
 }
 
-function entropicObjective(plan: Vec, m: Vec, reg: number, logRef?: Vec): number {
+function entropicObjective(plan: Float64Array, m: Float64Array, reg: number, logRef?: Float64Array): number {
   let s = 0
   for (let q = 0; q < plan.length; q++) {
     const x = plan[q] ?? 0
@@ -602,7 +611,7 @@ export function sinkhornUnbalancedAlgorithm(
           (_, q) => Math.log(p.a[Math.floor(q / p.k)] ?? 0) + Math.log(p.b[q % p.k] ?? 0),
         )
       : undefined
-  const relChange = (x: Vec, y: Vec): number => {
+  const relChange = (x: Float64Array, y: Float64Array): number => {
     // POT's test on the scalings u = exp(f / reg).
     let d = 0
     let m = 1
@@ -681,7 +690,7 @@ export function sinkhornUnbalanced(
         )
       : undefined
   const plan = planOf(p, s.f, s.g, reg, logRef)
-  const kl = (x: Vec, y: Vec): number => {
+  const kl = (x: Float64Array, y: Float64Array): number => {
     let t = 0
     for (let i = 0; i < x.length; i++) {
       const xi = x[i] ?? 0

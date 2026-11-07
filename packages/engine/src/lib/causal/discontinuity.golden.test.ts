@@ -1,6 +1,6 @@
 import { learnGolden, num, str } from '../../testing/learn.ts'
 import type { Tensor } from '../tensor/index.ts'
-import { type Kernel, regressionDiscontinuity } from './discontinuity.ts'
+import { type DiscontinuityKernel, regressionDiscontinuity } from './discontinuity.ts'
 
 learnGolden('Sharp regression discontinuity against statsmodels weighted least squares', 'causal/discontinuity', {
   regressionDiscontinuity: (inputs, p) => {
@@ -10,7 +10,7 @@ learnGolden('Sharp regression discontinuity against statsmodels weighted least s
       {
         cutoff: num(p, 'cutoff'),
         bandwidth: num(p, 'bandwidth'),
-        kernel: str(p, 'kernel') as Kernel,
+        kernel: str(p, 'kernel') as DiscontinuityKernel,
         order: num(p, 'order'),
       },
     )

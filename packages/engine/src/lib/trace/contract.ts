@@ -8,7 +8,7 @@
  * @index structure The log contract: paths a method can log and hook.
  */
 
-import { type Direction, type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, type MetricDirection } from '../base/index.ts'
 import type { Value } from '../tensor/index.ts'
 import type { TensorRole } from './events.ts'
 import { policies, type TracePolicy } from './policy.ts'
@@ -49,7 +49,7 @@ interface SourceBase {
 export interface ScalarSource extends SourceBase {
   readonly kind: 'scalar'
   readonly unit?: string
-  readonly direction?: Direction
+  readonly direction?: MetricDirection
 }
 
 /** A tensor per step, with its role (parameters, gradients, a state, activations, an output). */
@@ -605,7 +605,7 @@ export function resolve<S, K extends string = string>(
 export function contractSchema<S>(contract: Contract<S>): TraceSchema {
   const metrics: Record<
     string,
-    { readonly description: string; readonly unit?: string; readonly direction?: Direction }
+    { readonly description: string; readonly unit?: string; readonly direction?: MetricDirection }
   > = {}
   const tensors: Record<
     string,

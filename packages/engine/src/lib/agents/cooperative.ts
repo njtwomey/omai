@@ -8,7 +8,7 @@
 import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
 import { mse } from '../losses/index.ts'
 import { elu, mlp } from '../nn/index.ts'
-import { adam, incrementalUpdate, linearSchedule, type Tree } from '../optim/index.ts'
+import { adam, incrementalUpdate, linearSchedule, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import { type Agent, bufferAdd, bufferSample, type PerAgent, type ReplayBuffer, replayBuffer } from '../rl/index.ts'
 import type { Space } from '../space/index.ts'
@@ -67,8 +67,8 @@ interface JointSample {
 
 /** The state of {@link vdn} and {@link qmix}. */
 export interface ValueDecompositionState {
-  readonly params: Tree
-  readonly target: Tree
+  readonly params: ParamTree
+  readonly target: ParamTree
   readonly optState: unknown
   readonly buffer: ReplayBuffer<JointSample>
   readonly steps: number
@@ -101,7 +101,7 @@ function valueDecomposition(
     w2: mlp([sd, embed], { key: foldIn(k0, 3) }),
     v: mlp([sd, embed, 1], { key: foldIn(k0, 4) }),
   }
-  const initial: Tree =
+  const initial: ParamTree =
     kind === 'qmix'
       ? {
           agent: agentNet.params,
@@ -127,7 +127,7 @@ function valueDecomposition(
   }
   const encodeAll = (obs: PerAgent<unknown>): number[][] =>
     agents.map((a) => encodeObservation(env.observationSpaces[a], obs[a]))
-  type P = { readonly agent: Tree; readonly mixer?: Readonly<Record<string, Tree>> }
+  type P = { readonly agent: ParamTree; readonly mixer?: Readonly<Record<string, ParamTree>> }
   // Per-agent action values [B, n, nA] of a batch of joint observations.
   const agentQ = (p: P, batch: readonly (readonly (readonly number[])[])[]): Value =>
     reshape(
@@ -156,7 +156,7 @@ function valueDecomposition(
     const v = reshape(hyper.v.apply(m['v'] as typeof hyper.v.params, st), [B])
     return add(sum(mul(hidden, w2), -1), v)
   }
-  const greedyActions = (p: Tree, obs: PerAgent<unknown>): number[] => {
+  const greedyActions = (p: ParamTree, obs: PerAgent<unknown>): number[] => {
     const q = toFlat(agentQ(p as P, [encodeAll(obs)]))
     return agents.map((_, i) => argmaxOf(q.slice(i * nA, (i + 1) * nA)))
   }
@@ -318,10 +318,10 @@ interface MaddpgSample {
 
 /** The state of {@link maddpg}: per-agent actors and critics with their targets and optimisers, and the replay. */
 export interface MaddpgState {
-  readonly actors: readonly Tree[]
-  readonly critics: readonly Tree[]
-  readonly targetActors: readonly Tree[]
-  readonly targetCritics: readonly Tree[]
+  readonly actors: readonly ParamTree[]
+  readonly critics: readonly ParamTree[]
+  readonly targetActors: readonly ParamTree[]
+  readonly targetCritics: readonly ParamTree[]
   readonly actorOpt: readonly unknown[]
   readonly criticOpt: readonly unknown[]
   readonly buffer: ReplayBuffer<MaddpgSample>
@@ -384,9 +384,9 @@ export function maddpg(
     const mid = fromStorage(Float64Array.from(b.high.map((h, j) => (h + (b.low[j] ?? 0)) / 2)), [b.size], 'float64')
     return add(mul(u, half), mid)
   }
-  const actor = (i: number, p: Tree, x: Value): Value =>
+  const actor = (i: number, p: ParamTree, x: Value): Value =>
     scale(i, tanh((actorNets[i] as (typeof actorNets)[0]).apply(p as never, x)))
-  const critic = (i: number, p: Tree, x: Value): Value =>
+  const critic = (i: number, p: ParamTree, x: Value): Value =>
     reshape((criticNets[i] as (typeof criticNets)[0]).apply(p as never, x), [x.shape[0] ?? 1])
   const obsTensor = (rows: readonly (readonly (readonly number[])[])[], i: number): Value =>
     rowsTensor(
@@ -483,8 +483,8 @@ export function maddpg(
       actorLoss: { description: 'negated critic value of the actors', direction: 'lower' },
     },
     init: () => {
-      const actors = actorNets.map((m) => m.params as Tree)
-      const critics = criticNets.map((m) => m.params as Tree)
+      const actors = actorNets.map((m) => m.params as ParamTree)
+      const critics = criticNets.map((m) => m.params as ParamTree)
       return {
         actors,
         critics,

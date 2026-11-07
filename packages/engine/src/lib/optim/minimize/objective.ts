@@ -28,13 +28,13 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import type { RunOptions, RunStatus } from '../../trace/index.ts'
-import type { Tree } from '../transform.ts'
+import type { ParamTree } from '../transform.ts'
 
 /**
  * An objective: a scalar function of a parameter tree (a vector, a matrix or nested records of tensors). Declared
  * bivariantly, so a function of a narrower parameter type (`(x: Value) => Value`) is accepted.
  */
-export type Objective = { bivariant(params: Tree): Value }['bivariant']
+export type Objective = { bivariant(params: ParamTree): Value }['bivariant']
 
 /** Options every vector method accepts: an iteration cap, the gradient tolerance and the run options. */
 export interface VectorMethodOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
@@ -58,7 +58,7 @@ export interface FlatObjective {
   /** The starting point, flattened. */
   readonly x0: Float64Array
   /** Rebuild a parameter tree (concrete tensors) from a flat vector. */
-  readonly unravel: (x: ArrayLike<number>) => Tree
+  readonly unravel: (x: ArrayLike<number>) => ParamTree
   /** The objective of a flat value (differentiable: usable inside transformations). */
   readonly ofValue: (x: Value) => Value
   /** f(x). */
@@ -72,18 +72,18 @@ export interface FlatObjective {
 }
 
 /** Parameters as given by a caller: a parameter tree, or anything tensor-like (numbers, nested arrays, typed arrays). */
-export type Parameters = Tree | TensorLike
+export type Parameters = ParamTree | TensorLike
 
 const isNumeric = (x: unknown): boolean =>
   typeof x === 'number' || ArrayBuffer.isView(x) || (Array.isArray(x) && x.length > 0 && x.every(isNumeric))
 
 /** Convert numeric leaves (numbers, typed arrays, nested number arrays) of a parameter tree to tensors. */
-function asTree(x0: unknown): Tree {
+function asTree(x0: unknown): ParamTree {
   if (isValue(x0)) return x0
   if (isNumeric(x0)) return asTensor(x0 as TensorLike)
   if (Array.isArray(x0)) return x0.map(asTree)
   if (typeof x0 === 'object' && x0 !== null) {
-    const out: Record<string, Tree> = {}
+    const out: Record<string, ParamTree> = {}
     for (const [k, v] of Object.entries(x0)) out[k] = asTree(v)
     return out
   }
@@ -139,7 +139,7 @@ export function flatObjective(f: Objective, x0: Parameters): FlatObjective {
 }
 
 /** The flattening of a parameter tree: its size, flat start and the differentiable inverse. */
-function flattener(x0: Parameters): { n: number; start: Float64Array; toTree: (v: Value) => Tree } {
+function flattener(x0: Parameters): { n: number; start: Float64Array; toTree: (v: Value) => ParamTree } {
   const raw = treeFlatten(asTree(x0))
   const leaves = raw.leaves.map((l) => asTensor(l))
   const shapes = leaves.map((l) => l.shape)
@@ -149,7 +149,7 @@ function flattener(x0: Parameters): { n: number; start: Float64Array; toTree: (v
   const single = leaves.length === 1 && raw.def.kind === 'leaf'
   const start = new Float64Array(n)
   for (const [i, leaf] of leaves.entries()) start.set(toFlat(primalOf(leaf)), offsets[i] ?? 0)
-  const toTree = (v: Value): Tree => {
+  const toTree = (v: Value): ParamTree => {
     if (single) return reshape(v, shapes[0] ?? [])
     const parts = shapes.map((s, i) =>
       reshape(sliceAxis(v, 0, offsets[i] ?? 0, (offsets[i] ?? 0) + (sizes[i] ?? 0)), s),
@@ -160,7 +160,7 @@ function flattener(x0: Parameters): { n: number; start: Float64Array; toTree: (v
 }
 
 /** A residual function: a vector-valued function of a parameter tree (least squares minimises half its squared norm). */
-export type ResidualFunction = { bivariant(params: Tree): Value }['bivariant']
+export type ResidualFunction = { bivariant(params: ParamTree): Value }['bivariant']
 
 /** Residuals of a parameter tree as a function of one flat vector, with the Jacobian by autodiff. */
 export interface FlatResiduals {
@@ -168,7 +168,7 @@ export interface FlatResiduals {
   /** The number of residuals. */
   readonly m: number
   readonly x0: Float64Array
-  readonly unravel: (x: ArrayLike<number>) => Tree
+  readonly unravel: (x: ArrayLike<number>) => ParamTree
   /** The residuals of a flat value, flattened (differentiable). */
   readonly ofValue: (x: Value) => Value
   residuals(x: ArrayLike<number>): Float64Array
@@ -215,7 +215,7 @@ export type Bounds =
   | { readonly lower?: ArrayLike<number> | number; readonly upper?: ArrayLike<number> | number }
 
 /** Bounds as two vectors. */
-export interface Box {
+export interface BoundVectors {
   readonly lower: Float64Array
   readonly upper: Float64Array
 }
@@ -235,7 +235,7 @@ export interface Box {
  * [Array.from(b.lower), Array.from(b.upper)] // => [[0, -Infinity], [1, 2]]
  * ```
  */
-export function boxOf(bounds: Bounds | undefined, n: number): Box {
+export function boxOf(bounds: Bounds | undefined, n: number): BoundVectors {
   const lower = new Float64Array(n).fill(-Infinity)
   const upper = new Float64Array(n).fill(Infinity)
   if (bounds === undefined) return { lower, upper }
@@ -278,7 +278,7 @@ export function boxOf(bounds: Bounds | undefined, n: number): Box {
  * Array.from(clipToBox([-1, 5], boxOf({ lower: 0, upper: 2 }, 2))) // => [0, 2]
  * ```
  */
-export function clipToBox(x: ArrayLike<number>, box: Box): Float64Array {
+export function clipToBox(x: ArrayLike<number>, box: BoundVectors): Float64Array {
   const out = new Float64Array(x.length)
   for (let i = 0; i < x.length; i++)
     out[i] = Math.min(Math.max(x[i] ?? 0, box.lower[i] ?? -Infinity), box.upper[i] ?? Infinity)
@@ -288,11 +288,11 @@ export function clipToBox(x: ArrayLike<number>, box: Box): Float64Array {
 /** Result of a minimisation (scipy's OptimizeResult). */
 export interface MinimizeResult {
   /** The solution, with the structure of the starting parameters. */
-  readonly x: Tree
+  readonly x: ParamTree
   /** The objective at the solution. */
   readonly fun: number
   /** The gradient at the solution (absent for derivative-free methods). */
-  readonly grad?: Tree
+  readonly grad?: ParamTree
   /** The gradient norm at the solution (the infinity norm for vector methods, NaN when no gradient is known). */
   readonly gradNorm: number
   /** Iterations taken. */

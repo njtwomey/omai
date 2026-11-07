@@ -5,4 +5,4 @@
 Decision trees: the fitted tree as arrays (prediction, decision paths, node regions, importances, drawing and text), the split criteria and split search, the grower as a stepped algorithm that records every candidate split, pruning (cost-complexity and reduced-error), the CART estimators on the iterative base, and the streaming Hoeffding tree.
 
 - estimator `decisionTreeClassifier`: CART classification tree with split criteria and pruning. `src/lib/trees/decision-tree.ts:272` `mdml-engine/trees`
-- estimator `hoeffdingTreeClassifier`: Streaming decision tree with the Hoeffding bound. `src/lib/trees/hoeffding.ts:426` `mdml-engine/trees`
+- estimator `hoeffdingTreeClassifier`: Streaming decision tree with the Hoeffding bound. `src/lib/trees/hoeffding.ts:432` `mdml-engine/trees`

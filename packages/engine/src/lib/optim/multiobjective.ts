@@ -25,10 +25,10 @@ import {
 import { crowdingRows, dominatesRow, hv, sortRows } from './_pareto.ts'
 import type { InequalityConstraint } from './minimize/cobyla.ts'
 import type { Objective } from './minimize/objective.ts'
-import type { Tree } from './transform.ts'
+import type { ParamTree } from './transform.ts'
 
 /** A vector objective: the m objectives of a multiobjective problem as one vector of a parameter tree. */
-export type VectorObjective = (params: Tree) => Value
+export type VectorObjective = (params: ParamTree) => Value
 
 /** Rows of a points matrix [n, m] as number arrays. */
 function rowsOf(points: TensorLike): number[][] {

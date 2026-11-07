@@ -8,7 +8,7 @@ import {
   type ClassificationData,
   type DatasetGenerator,
   type Generated,
-  type Knobs,
+  type GeneratorKnobs,
   type Truth,
   take,
   xyClasses,
@@ -40,7 +40,7 @@ import { evenSplit, labels, matrix, stamp } from './_util.ts'
 function clustered(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   k: Key,
   x: Tensor,
   y: readonly number[],

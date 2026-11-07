@@ -17,7 +17,7 @@ import {
 import { atBound, attempt, type Counter, snapshot, statusAfter, tally } from './_step.ts'
 import { allFinite, combine, fromNumbers, minStep, numbersOf, scaledRms, type Term, tolAt } from './_vec.ts'
 import type { BdfState } from './implicit.ts'
-import type { DenseSegment, StepAttempt, VectorField } from './problem.ts'
+import type { DenseSegment, OdeVectorField, StepAttempt } from './problem.ts'
 
 /** The highest BDF order. */
 export const BDF_MAX_ORDER = 5
@@ -62,7 +62,7 @@ export function changeDifferences(d: readonly Value[], order: number, factor: nu
 }
 
 function solveSystem(
-  f: VectorField,
+  f: OdeVectorField,
   tNew: number,
   yPred: Float64Array,
   shape: readonly number[],

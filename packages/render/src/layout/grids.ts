@@ -4,7 +4,7 @@
  */
 
 import { maxOf } from 'mdml-engine/base'
-import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
+import { type GraphLayout, type LayoutBox, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /**
  * Nodes on a grid, row by row, in order (`columns` per row, default the square root of the count).
@@ -27,7 +27,7 @@ export function gridLayout(
   const n = graph.nodes.length
   const columns = Math.max(1, options.columns ?? Math.ceil(Math.sqrt(n)))
   const cell = options.cell ?? Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height)))) + 24
-  const placed: Record<string, Box> = {}
+  const placed: Record<string, LayoutBox> = {}
   graph.nodes.forEach((v, i) => {
     placed[v.id] = { x: (i % columns) * cell, y: Math.floor(i / columns) * cell, width: v.width, height: v.height }
   })
@@ -65,7 +65,7 @@ export function bipartiteLayout(
   const isLeft = new Set(left)
   const sides = [graph.nodes.filter((v) => isLeft.has(v.id)), graph.nodes.filter((v) => !isLeft.has(v.id))]
   const longest = Math.max(sides[0]?.length ?? 0, sides[1]?.length ?? 0)
-  const placed: Record<string, Box> = {}
+  const placed: Record<string, LayoutBox> = {}
   sides.forEach((side, s) => {
     const offset = ((longest - side.length) * spacing) / 2
     side.forEach((v, i) => {

@@ -7,7 +7,7 @@
 import { MdmlError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo, spmv } from '../../numerics/sparse/index.ts'
 import { add, fromStorage, mul, type Tensor, type Value } from '../../tensor/index.ts'
-import type { VectorField } from '../ode/problem.ts'
+import type { OdeVectorField } from '../ode/problem.ts'
 import {
   type BoundaryCondition,
   boundaryValue,
@@ -96,7 +96,7 @@ export function firstDerivative1d(
 
 /** A semi-discretised PDE: the ODE system for {@link solveIvp}, with its grid and operator. */
 export interface MolSystem {
-  readonly field: VectorField
+  readonly field: OdeVectorField
   readonly size: number
   readonly operator: DiscreteOperator
   /** Node coordinates (`[n]`, or `[nx * ny, 2]` flat in 2-D). */
@@ -162,7 +162,7 @@ export function semiDiscretise(grid: Grid1d, options: MolOptions1d): MolSystem {
     [n],
     'float64',
   )
-  const field: VectorField = (t, u) => {
+  const field: OdeVectorField = (t, u) => {
     let du: Value = mul(add(spmv(op.matrix, u), fromStorage(op.forcing(t), [n], 'float64')), D)
     if (deriv !== undefined) du = add(du, mul(spmv(deriv, u), -a))
     if (options.reaction !== undefined) du = add(du, options.reaction(u, x, t))
@@ -221,7 +221,7 @@ export function semiDiscretise2d(
     [n],
     'float64',
   )
-  const field: VectorField = (t, u) => {
+  const field: OdeVectorField = (t, u) => {
     let du: Value = mul(add(spmv(op.matrix, u), fromStorage(op.forcing(t), [n], 'float64')), D)
     if (options.reaction !== undefined) du = add(du, options.reaction(u, t))
     du = mul(du, freeMask)

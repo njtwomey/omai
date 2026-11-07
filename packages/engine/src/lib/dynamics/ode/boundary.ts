@@ -29,7 +29,7 @@ import {
   solveNewton,
 } from './_bvp.ts'
 import { floatState, fromNumbers, numbersOf } from './_vec.ts'
-import type { Stepper, VectorField } from './problem.ts'
+import type { OdeVectorField, Stepper } from './problem.ts'
 import { type OdeMethodName, solveIvp } from './solve-ivp.ts'
 
 /** A vectorised boundary-value field: x `[m]`, y `[n, m]`, parameters `[k]` to dy/dx `[n, m]` (scipy's `fun`). */
@@ -412,7 +412,7 @@ export interface ShootingResult {
   readonly message: string
 }
 
-function integrate(f: VectorField, t0: number, t1: number, y0: Value, options: ShootingOptions): Value {
+function integrate(f: OdeVectorField, t0: number, t1: number, y0: Value, options: ShootingOptions): Value {
   const sol = solveIvp(f, [t0, t1], y0, {
     method: options.method ?? 'DOP853',
     rtol: options.rtol ?? 1e-10,
@@ -499,7 +499,7 @@ function shootingResult(s: SystemState, maxIterations: number, n: number, segmen
  * ```
  */
 export function singleShootingAlgorithm(
-  f: VectorField,
+  f: OdeVectorField,
   bc: (ya: Value, yb: Value) => Value,
   span: readonly [number, number],
   guess: TensorLike,
@@ -550,7 +550,7 @@ export function shootingOf(state: SystemState, n: number, options: ShootingOptio
  * ```
  */
 export function shooting(
-  f: VectorField,
+  f: OdeVectorField,
   bc: (ya: Value, yb: Value) => Value,
   span: readonly [number, number],
   guess: TensorLike,
@@ -587,7 +587,7 @@ export function shooting(
  * ```
  */
 export function multipleShootingAlgorithm(
-  f: VectorField,
+  f: OdeVectorField,
   bc: (ya: Value, yb: Value) => Value,
   nodes: readonly number[],
   guesses: TensorLike,
@@ -637,7 +637,7 @@ export function multipleShootingAlgorithm(
  * ```
  */
 export function multipleShooting(
-  f: VectorField,
+  f: OdeVectorField,
   bc: (ya: Value, yb: Value) => Value,
   nodes: readonly number[],
   guesses: TensorLike,

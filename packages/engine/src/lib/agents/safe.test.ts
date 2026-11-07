@@ -27,7 +27,6 @@ import {
 // Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
 vi.setConfig({ testTimeout: 60_000 })
 
-type Vec = readonly number[]
 const hazards = hazardCells()
 const options = { hidden: [16], learningRate: 3e-3, nEpochs: 4, nSteps: 128, batchSize: 32 } as const
 
@@ -41,7 +40,11 @@ function constrained(counter?: { visits: number }, inner: Env<number, number, nu
   return oneHotObservation(timeLimit(costed, 20))
 }
 
-function averageCost<G>(env: Env<unknown, Vec, number>, agent: Agent<G, Vec, number>, state: G): number {
+function averageCost<G>(
+  env: Env<unknown, readonly number[], number>,
+  agent: Agent<G, readonly number[], number>,
+  state: G,
+): number {
   let total = 0
   for (let i = 0; i < 50; i++)
     for (const info of runEpisode(env, behaviourPolicy(agent, state), key(100 + i)).infos)
@@ -124,7 +127,7 @@ describe('shielding', () => {
     const safe = shield(
       ppo<number>(env, options),
       modelShield(model, (s) => hazards.has(s)),
-      (o: Vec) => argmaxOf(o),
+      (o: readonly number[]) => argmaxOf(o),
     )
     const result = trainAgent(env, safe, { maxSteps: 2000, seed: 0, checkpoints: false })
     expect(counter.visits).toBe(0)

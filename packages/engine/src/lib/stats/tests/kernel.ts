@@ -24,7 +24,7 @@ import { median } from '../quantiles.ts'
 import { testResult } from './result.ts'
 
 /** A positive-definite kernel on points (rows of the data). */
-export type Kernel = (a: ArrayLike<number>, b: ArrayLike<number>) => number
+export type KernelFunction = (a: ArrayLike<number>, b: ArrayLike<number>) => number
 
 /**
  * The Gaussian (RBF) kernel exp(-|a - b|^2 / (2 sigma^2)).
@@ -37,7 +37,7 @@ export type Kernel = (a: ArrayLike<number>, b: ArrayLike<number>) => number
  * gaussianKernel(1)([0, 0], [1, 1]) // => 0.367879
  * ```
  */
-export function gaussianKernel(sigma: number): Kernel {
+export function gaussianKernel(sigma: number): KernelFunction {
   if (!(sigma > 0)) throw new MdmlError('value', 'gaussianKernel: sigma must be positive')
   const c = 1 / (2 * sigma * sigma)
   return (a, b) => {
@@ -76,7 +76,7 @@ export function medianHeuristic(x: TensorLike): number {
   return Math.sqrt(0.5 * median(d))
 }
 
-function gram(a: Rows, b: Rows, k: Kernel): Float64Array {
+function gram(a: Rows, b: Rows, k: KernelFunction): Float64Array {
   const g = new Float64Array(a.rows * b.rows)
   for (let i = 0; i < a.rows; i++) for (let j = 0; j < b.rows; j++) g[i * b.rows + j] = k(rowAt(a, i), rowAt(b, j))
   return g
@@ -110,7 +110,7 @@ function mmd2Of(K: Float64Array, N: number, idx: ArrayLike<number>, m: number, u
 /** Options of the kernel tests. */
 export interface KernelTestOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
   /** The kernel (default Gaussian with the median-heuristic bandwidth of the pooled data). */
-  readonly kernel?: Kernel
+  readonly kernel?: KernelFunction
   /** The null distribution: permutations (default) or Gretton et al.'s gamma approximation. */
   readonly null?: 'permutation' | 'gamma'
   /** Permutations (default 999). */
@@ -134,7 +134,7 @@ export interface KernelTestOptions extends Partial<Omit<RunOptions, 'maxSteps' |
 export function mmd2(
   x: TensorLike,
   y: TensorLike,
-  options: { readonly kernel?: Kernel; readonly unbiased?: boolean } = {},
+  options: { readonly kernel?: KernelFunction; readonly unbiased?: boolean } = {},
 ): number {
   const a = rowsOf('mmd2', x)
   const b = rowsOf('mmd2', y)
@@ -317,7 +317,7 @@ export function centreGram(K: Float64Array, n: number): Float64Array {
 /** Options of {@link hsic} and {@link hsicTest}. */
 export interface HsicOptions extends KernelTestOptions {
   /** The kernel on y (default Gaussian with y's median heuristic); `kernel` is the kernel on x. */
-  readonly kernelY?: Kernel
+  readonly kernelY?: KernelFunction
 }
 
 function hsicGrams(

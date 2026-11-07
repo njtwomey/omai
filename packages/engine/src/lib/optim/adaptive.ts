@@ -35,10 +35,10 @@ import {
   chain,
   type GradientTransformation,
   type LearningRate,
+  type ParamTree,
   scaleByAdam,
   scaleByLearningRate,
   scaleByTrustRatio,
-  type Tree,
 } from './transform.ts'
 
 const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number' ? lr : lr(step))
@@ -113,8 +113,8 @@ export function amsgrad(options: Omit<AdamOptions, 'amsgrad'>): GradientTransfor
 /** State of {@link scaleByAdamax}. */
 export interface AdamaxState {
   readonly count: number
-  readonly mu: Tree
-  readonly nu: Tree
+  readonly mu: ParamTree
+  readonly nu: ParamTree
 }
 
 /**
@@ -170,8 +170,8 @@ export function adamax(options: Omit<AdamOptions, 'amsgrad'>): GradientTransform
 export interface NadamState {
   readonly count: number
   readonly muProduct: number
-  readonly mu: Tree
-  readonly nu: Tree
+  readonly mu: ParamTree
+  readonly nu: ParamTree
 }
 
 /**
@@ -266,8 +266,8 @@ export function nadam(options: NadamOptions): GradientTransformation<unknown[]> 
 /** State of {@link scaleByRadam}. */
 export interface RadamState {
   readonly count: number
-  readonly mu: Tree
-  readonly nu: Tree
+  readonly mu: ParamTree
+  readonly nu: ParamTree
 }
 
 /**
@@ -342,7 +342,7 @@ export function radam(options: NadamOptions): GradientTransformation<unknown[]> 
  * toArray(t.update(tensor([0.3, -2]), t.init(tensor([0, 0]))).updates as never) // => [1, -1]
  * ```
  */
-export function scaleByLion(b1 = 0.9, b2 = 0.99): GradientTransformation<{ readonly mu: Tree }> {
+export function scaleByLion(b1 = 0.9, b2 = 0.99): GradientTransformation<{ readonly mu: ParamTree }> {
   return {
     name: 'scaleByLion',
     init: (params) => ({ mu: treeZeros(params) }),
@@ -421,7 +421,7 @@ export interface AdafactorOptions {
 export interface AdafactorState {
   readonly count: number
   /** Per leaf: `[rowVar, colVar]` for leaves with two or more dimensions, `[variance]` otherwise. */
-  readonly stats: Tree
+  readonly stats: ParamTree
 }
 
 const rms = (x: Value): number => Math.sqrt(item(mean(square(x))))
@@ -494,7 +494,7 @@ export function adafactor(options: AdafactorOptions = {}): GradientTransformatio
 }
 
 /** A diagonal Hessian estimator for {@link sophiaLite}: given the gradients, parameters and step, an estimate tree. */
-export type HessianDiagonalEstimator = (grads: Tree, params: Tree | undefined, step: number) => Tree
+export type HessianDiagonalEstimator = (grads: ParamTree, params: ParamTree | undefined, step: number) => ParamTree
 
 /** Options of {@link scaleBySophia}. */
 export interface SophiaOptions {
@@ -512,8 +512,8 @@ export interface SophiaOptions {
 /** State of {@link scaleBySophia}. */
 export interface SophiaState {
   readonly count: number
-  readonly mu: Tree
-  readonly h: Tree
+  readonly mu: ParamTree
+  readonly h: ParamTree
 }
 
 /**

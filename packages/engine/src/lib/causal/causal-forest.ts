@@ -14,7 +14,7 @@ import { foldIn, key as makeKey, permutation } from '../random/index.ts'
 import { fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { decisionTreeRegressor } from '../trees/decision-tree.ts'
-import { applyTree, type Tree } from '../trees/tree.ts'
+import { applyTree, type FittedTree } from '../trees/tree.ts'
 import { mean, type Prepared, pickRows, prepare } from './_dense.ts'
 import { type CausalData, type EffectEstimate, effectFromInfluence } from './data.ts'
 import { nuisancesFor } from './estimation.ts'
@@ -40,7 +40,7 @@ export interface CausalForestOptions extends NuisanceOptions {
 
 /** One tree of the forest: the tree, the leaf moments from its estimation sample, and the units it did not see. */
 export type CausalTreeRecord = {
-  readonly tree: Tree
+  readonly tree: FittedTree
   /** Per leaf (by node id): the sum of `T~ Y~`, the sum of `T~^2` and the number of units. */
   readonly leaves: Readonly<Record<string, readonly [number, number, number]>>
   /** The rows outside the tree's subsample. */
@@ -73,7 +73,7 @@ export interface CausalForest {
 }
 
 function leafMoments(
-  tree: Tree,
+  tree: FittedTree,
   x: Float64Array,
   d: number,
   rows: readonly number[],

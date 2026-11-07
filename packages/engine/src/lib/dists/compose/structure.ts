@@ -178,16 +178,16 @@ export function transformed(base: Distribution, bijector: Bijector | readonly Bi
 }
 
 /** Bounds for {@link truncated} and {@link censored}; either may be omitted. */
-export interface Bounds {
+export interface TruncationBounds {
   readonly low?: TensorLike
   readonly high?: TensorLike
 }
 
-function boundsOf(bounds: Bounds): [Value, Value] {
+function boundsOf(bounds: TruncationBounds): [Value, Value] {
   return promoteFloat(bounds.low ?? Number.NEGATIVE_INFINITY, bounds.high ?? Number.POSITIVE_INFINITY) as [Value, Value]
 }
 
-function intervalSupport(lo: Value, hi: Value, bounds: Bounds): Support {
+function intervalSupport(lo: Value, hi: Value, bounds: TruncationBounds): Support {
   if (bounds.low !== undefined && bounds.high !== undefined) return { kind: 'interval', low: lo, high: hi }
   if (bounds.low !== undefined) return { kind: 'greaterThan', low: lo }
   if (bounds.high !== undefined) return { kind: 'lessThan', high: hi }
@@ -214,12 +214,12 @@ function intervalSupport(lo: Value, hi: Value, bounds: Bounds): Support {
  * Math.abs(item(d.prob(0)) - 1 / (1 - Math.exp(-1))) < 1e-14 // => true
  * ```
  */
-export function truncated(base: Distribution, bounds: Bounds): Distribution {
+export function truncated(base: Distribution, bounds: TruncationBounds): Distribution {
   if (base.eventShape.length > 0) throw new MdmlError('shape', 'truncated: the base must be univariate')
   return isDiscrete(base.support) ? truncatedDiscrete(base, bounds) : truncatedContinuous(base, bounds)
 }
 
-function truncatedContinuous(base: Distribution, bounds: Bounds): Distribution {
+function truncatedContinuous(base: Distribution, bounds: TruncationBounds): Distribution {
   const [lo, hi] = boundsOf(bounds)
   const loFinite = isfinite(lo)
   const hiFinite = isfinite(hi)
@@ -265,7 +265,7 @@ function truncatedContinuous(base: Distribution, bounds: Bounds): Distribution {
   return self
 }
 
-function truncatedDiscrete(base: Distribution, bounds: Bounds): Distribution {
+function truncatedDiscrete(base: Distribution, bounds: TruncationBounds): Distribution {
   const baseLow = base.support.kind === 'integerInterval' ? base.support.low : 0
   const baseHigh = base.support.kind === 'integerInterval' ? base.support.high : 1
   const [lo, hi] = promoteFloat(bounds.low ?? baseLow, bounds.high ?? baseHigh) as [Value, Value]
@@ -362,7 +362,7 @@ const expSafe = (lp: Value): Value => {
  * Math.abs(item(d.prob(0)) - 0.5) < 1e-15 // => true
  * ```
  */
-export function censored(base: Distribution, bounds: Bounds): Distribution {
+export function censored(base: Distribution, bounds: TruncationBounds): Distribution {
   if (base.eventShape.length > 0) throw new MdmlError('shape', 'censored: the base must be univariate')
   const [lo, hi] = boundsOf(bounds)
   const loFinite = isfinite(lo)

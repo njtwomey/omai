@@ -6,7 +6,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import type { Metric } from '../numerics/geometry/index.ts'
+import type { DistanceMetric } from '../numerics/geometry/index.ts'
 import { kNeighboursGraph } from '../numerics/spatial/index.ts'
 import { foldIn, type Key, permutation, subsample, uniform } from '../random/index.ts'
 import { concreteOrThrow, promoteFloat, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -655,7 +655,7 @@ export function randomGeometricGraph(
 export function kNearestNeighbourGraph(
   points: TensorLike,
   k: number,
-  options: { readonly mutual?: boolean; readonly weighted?: boolean; readonly metric?: Metric } = {},
+  options: { readonly mutual?: boolean; readonly weighted?: boolean; readonly metric?: DistanceMetric } = {},
 ): Graph {
   const x = concreteOrThrow(promoteFloat(points)[0] as Tensor, 'kNearestNeighbourGraph')
   const n = x.shape[0] ?? 0

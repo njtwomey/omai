@@ -76,13 +76,13 @@ export interface IvResult {
   readonly n: number
 }
 
-interface Mat {
+interface ObservationMatrix {
   readonly data: Float64Array
   readonly n: number
   readonly k: number
 }
 
-function asMatrix(x: TensorLike | undefined, n: number, who: string): Mat {
+function asMatrix(x: TensorLike | undefined, n: number, who: string): ObservationMatrix {
   if (x === undefined) return { data: new Float64Array(0), n, k: 0 }
   const t = asTensor(x)
   if (t.shape.length === 1) {
@@ -95,7 +95,7 @@ function asMatrix(x: TensorLike | undefined, n: number, who: string): Mat {
   return { data: v.data, n, k: v.d }
 }
 
-function hcat(parts: readonly Mat[], n: number): Mat {
+function hcat(parts: readonly ObservationMatrix[], n: number): ObservationMatrix {
   const k = parts.reduce((s, p) => s + p.k, 0)
   const out = new Float64Array(n * k)
   let c0 = 0
@@ -107,7 +107,7 @@ function hcat(parts: readonly Mat[], n: number): Mat {
 }
 
 /** The residuals of the columns of `a` regressed on the columns of `w` (all zero columns when `w` is empty: the columns themselves). */
-function residualise(a: Mat, w: Mat): Mat {
+function residualise(a: ObservationMatrix, w: ObservationMatrix): ObservationMatrix {
   if (w.k === 0) return a
   const gram = dgemm(w.data, w.data, w.k, w.n, w.k, { transposeA: true })
   const rhs = dgemm(w.data, a.data, w.k, w.n, a.k, { transposeA: true })
@@ -116,10 +116,10 @@ function residualise(a: Mat, w: Mat): Mat {
   return { data: Float64Array.from(a.data, (v, i) => v - (fit[i] ?? 0)), n: a.n, k: a.k }
 }
 
-const column = (a: Mat, j: number): Float64Array =>
+const column = (a: ObservationMatrix, j: number): Float64Array =>
   Float64Array.from({ length: a.n }, (_, i) => a.data[i * a.k + j] ?? 0)
 
-const sumSquares = (a: Mat, j: number): number => {
+const sumSquares = (a: ObservationMatrix, j: number): number => {
   let s = 0
   for (let i = 0; i < a.n; i++) s += (a.data[i * a.k + j] ?? 0) ** 2
   return s
@@ -171,12 +171,12 @@ export function instrumentalVariables(data: IvData, options: IvOptions = {}): Iv
   const yt = asTensor(data.outcome)
   const n = yt.shape[0] ?? 0
   const sw = options.weights === undefined ? undefined : Float64Array.from(options.weights, Math.sqrt)
-  const scale = (m: Mat): Mat =>
+  const scale = (m: ObservationMatrix): ObservationMatrix =>
     sw === undefined
       ? m
       : { ...m, data: Float64Array.from(m.data, (v, i) => v * (sw[Math.floor(i / Math.max(1, m.k))] ?? 0)) }
   const intercept = options.intercept ?? true
-  const ones: Mat = intercept
+  const ones: ObservationMatrix = intercept
     ? { data: Float64Array.from({ length: n }, () => 1), n, k: 1 }
     : { data: new Float64Array(0), n, k: 0 }
   const endog = scale(asMatrix(data.endogenous, n, 'instrumentalVariables'))
@@ -239,7 +239,7 @@ export function instrumentalVariables(data: IvData, options: IvOptions = {}): Iv
   // First stages.
   const restricted = included
   const firstStage: FirstStage[] = Array.from({ length: k }, (_, j) => {
-    const target: Mat = { data: column(endog, j), n, k: 1 }
+    const target: ObservationMatrix = { data: column(endog, j), n, k: 1 }
     const full = residualise(target, w)
     const part = residualise(target, restricted)
     const rssU = sumSquares(full, 0)
@@ -264,7 +264,7 @@ export function instrumentalVariables(data: IvData, options: IvOptions = {}): Iv
   })
   let sargan: IvResult['sargan']
   if (z.k > k) {
-    const u: Mat = { data: residuals, n, k: 1 }
+    const u: ObservationMatrix = { data: residuals, n, k: 1 }
     const ru = residualise(u, w)
     const ssu = sumSquares(u, 0)
     const stat = (n * (ssu - sumSquares(ru, 0))) / ssu

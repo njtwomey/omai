@@ -24,8 +24,6 @@ import {
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
 import { type Prox, proxL1 } from './proximal.ts'
 
-type Vec = Float64Array
-
 /**
  * The problem min f(x) + g(z) subject to A x + B z = c, given by its two partial minimisations (scaled form, u the
  * scaled dual variable). A defaults to the identity, B to minus the identity and c to zero (the splitting x = z). The
@@ -34,15 +32,15 @@ type Vec = Float64Array
  */
 export interface AdmmProblem {
   /** argmin_x f(x) + (rho / 2) |A x + B z - c + u|^2. */
-  readonly xUpdate: (z: Vec, u: Vec, rho: number) => ArrayLike<number>
+  readonly xUpdate: (z: Float64Array, u: Float64Array, rho: number) => ArrayLike<number>
   /** argmin_z g(z) + (rho / 2) |A x + B z - c + u|^2, where `ax` is A x (over-relaxed when requested). */
-  readonly zUpdate: (ax: Vec, u: Vec, rho: number, x: Vec) => ArrayLike<number>
+  readonly zUpdate: (ax: Float64Array, u: Float64Array, rho: number, x: Float64Array) => ArrayLike<number>
   /** The constraint matrices `[p, n]` and `[p, m]`, and c `[p]`. */
   readonly A?: TensorLike
   readonly B?: TensorLike
   readonly c?: TensorLike
   /** f(x) + g(z), for the trace. */
-  readonly objective?: (x: Vec, z: Vec) => number
+  readonly objective?: (x: Float64Array, z: Float64Array) => number
 }
 
 /**
@@ -68,9 +66,9 @@ export interface AdmmOptions {
 
 /** State of {@link admmAlgorithm}. */
 export interface AdmmState {
-  readonly x: Vec
-  readonly z: Vec
-  readonly u: Vec
+  readonly x: Float64Array
+  readonly z: Float64Array
+  readonly u: Float64Array
   readonly rho: number
   readonly primalResidual: number
   readonly dualResidual: number
@@ -95,7 +93,7 @@ export interface AdmmResult {
 }
 
 interface Dense {
-  readonly data: Vec | null
+  readonly data: Float64Array | null
   readonly rows: number
   readonly cols: number
   readonly scale: number
@@ -109,10 +107,10 @@ function dense(a: TensorLike | undefined, rows: number, cols: number, scale: num
 }
 
 /** A starting vector as a fresh array: the tensor-like when given, else the fallback. */
-const startOf = (v: TensorLike | undefined, fallback: ArrayLike<number>): Vec =>
+const startOf = (v: TensorLike | undefined, fallback: ArrayLike<number>): Float64Array =>
   Float64Array.from(v === undefined ? fallback : toVector(v, 'admm'))
 
-const apply = (m: Dense, x: Vec, transpose = false): Vec =>
+const apply = (m: Dense, x: Float64Array, transpose = false): Float64Array =>
   m.data === null ? dscal(m.scale, x) : dgemv(m.data, m.rows, m.cols, x, transpose)
 
 const SCHEMA = channels({
@@ -159,7 +157,7 @@ export function admmAlgorithm(problem: AdmmProblem, options: AdmmOptions = {}): 
   const alpha = options.relaxation ?? 1
   const mu = options.mu ?? 10
   const tauIncr = options.tauIncr ?? 2
-  const objective = (x: Vec, z: Vec): number => problem.objective?.(x, z) ?? Number.NaN
+  const objective = (x: Float64Array, z: Float64Array): number => problem.objective?.(x, z) ?? Number.NaN
   return {
     name: 'admm',
     config: {
@@ -191,7 +189,7 @@ export function admmAlgorithm(problem: AdmmProblem, options: AdmmOptions = {}): 
         alpha === 1 ? ax : Float64Array.from(ax, (v, i) => alpha * v - (1 - alpha) * ((bzOld[i] ?? 0) - (c[i] ?? 0)))
       const z = Float64Array.from(problem.zUpdate(axHat, s.u, rho, x))
       const bz = apply(B, z)
-      let u: Vec = Float64Array.from(s.u, (v, i) => v + (axHat[i] ?? 0) + (bz[i] ?? 0) - (c[i] ?? 0))
+      let u: Float64Array = Float64Array.from(s.u, (v, i) => v + (axHat[i] ?? 0) + (bz[i] ?? 0) - (c[i] ?? 0))
       const r = Float64Array.from(ax, (v, i) => v + (bz[i] ?? 0) - (c[i] ?? 0))
       const sDual = dscal(rho, apply(A, daxpy(-1, bzOld, bz), true))
       const primalResidual = dnrm2(r)
@@ -388,9 +386,9 @@ export function admmLasso(a: TensorLike, b: TensorLike, lambda: number, options:
 
 /** State of {@link consensusAdmmAlgorithm}. */
 export interface ConsensusState {
-  readonly xs: readonly Vec[]
-  readonly us: readonly Vec[]
-  readonly z: Vec
+  readonly xs: readonly Float64Array[]
+  readonly us: readonly Float64Array[]
+  readonly z: Float64Array
   readonly primalResidual: number
   readonly dualResidual: number
 }
@@ -447,12 +445,12 @@ export function consensusAdmmAlgorithm(
       }
     },
     step: (s) => {
-      const xs = proxes.map((prox, i) => flat(prox(shaped(daxpy(-1, s.us[i] as Vec, s.z)), 1 / rho)))
+      const xs = proxes.map((prox, i) => flat(prox(shaped(daxpy(-1, s.us[i] as Float64Array, s.z)), 1 / rho)))
       const mean = new Float64Array(n)
       for (const [i, x] of xs.entries())
-        for (let j = 0; j < n; j++) mean[j] = (mean[j] ?? 0) + ((x[j] ?? 0) + ((s.us[i] as Vec)[j] ?? 0)) / N
+        for (let j = 0; j < n; j++) mean[j] = (mean[j] ?? 0) + ((x[j] ?? 0) + ((s.us[i] as Float64Array)[j] ?? 0)) / N
       const z = options.proxG === undefined ? mean : flat(options.proxG(shaped(mean), 1 / (N * rho)))
-      const us = xs.map((x, i) => Float64Array.from(s.us[i] as Vec, (v, j) => v + (x[j] ?? 0) - (z[j] ?? 0)))
+      const us = xs.map((x, i) => Float64Array.from(s.us[i] as Float64Array, (v, j) => v + (x[j] ?? 0) - (z[j] ?? 0)))
       let pr = 0
       for (const x of xs) pr += dnrm2(daxpy(-1, z, x)) ** 2
       return { xs, us, z, primalResidual: Math.sqrt(pr), dualResidual: Math.sqrt(N) * rho * dnrm2(daxpy(-1, s.z, z)) }

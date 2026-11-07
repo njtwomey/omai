@@ -1,5 +1,5 @@
 // Shared helpers for the dataset generators: columns of draws, noise, column access and metadata stamps.
-import type { DatasetMeta, Knobs } from '../data/index.ts'
+import type { DatasetMeta, GeneratorKnobs } from '../data/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import {
   add,
@@ -59,7 +59,7 @@ export function columns(cols: readonly Value[]): Value {
 }
 
 /** Metadata for generated data: name, description and the recipe. */
-export function stamp(name: string, description: string, knobs: Knobs): Partial<DatasetMeta> {
+export function stamp(name: string, description: string, knobs: GeneratorKnobs): Partial<DatasetMeta> {
   return { name, description, source: 'mdml-js generator', recipe: { generator: name, knobs } }
 }
 
@@ -69,12 +69,12 @@ export function row(values: readonly number[]): Tensor {
 }
 
 /** Integer knob value. */
-export function intKnob(knobs: Knobs, name: string): number {
+export function intKnob(knobs: GeneratorKnobs, name: string): number {
   return knobs[name] as number
 }
 
 /** Real knob value. */
-export function realKnob(knobs: Knobs, name: string): number {
+export function realKnob(knobs: GeneratorKnobs, name: string): number {
   return knobs[name] as number
 }
 

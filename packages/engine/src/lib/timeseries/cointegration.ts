@@ -23,7 +23,7 @@ import {
   choleskyLower,
   columnsOf,
   invert,
-  type Matrix,
+  type MutableRows,
   multiply,
   residualsOn,
   symmetricEigen,
@@ -149,7 +149,7 @@ export interface JohansenResult {
   /** The eigenvalues of the reduced-rank problem, largest first (squared canonical correlations). */
   readonly eigenvalues: readonly number[]
   /** The eigenvectors as columns (`[variable][vector]`), normalised so that v' S_kk v = I. */
-  readonly eigenvectors: Matrix
+  readonly eigenvectors: MutableRows
   /** The trace statistics for ranks 0, 1, ..., K - 1. */
   readonly traceStatistics: readonly number[]
   /** The maximum-eigenvalue statistics for ranks 0, 1, ..., K - 1. */
@@ -185,9 +185,9 @@ function laggedDifferences(dx: readonly Float64Array[], k: number): Float64Array
 export function reducedRankEigen(
   r0: readonly Float64Array[],
   rk: readonly Float64Array[],
-): { values: number[]; vectors: Matrix; skk: Matrix; s00: Matrix; sk0: Matrix } {
+): { values: number[]; vectors: MutableRows; skk: MutableRows; s00: MutableRows; sk0: MutableRows } {
   const t = r0[0]?.length ?? 0
-  const moment = (a: readonly Float64Array[], b: readonly Float64Array[]): Matrix =>
+  const moment = (a: readonly Float64Array[], b: readonly Float64Array[]): MutableRows =>
     a.map((x) =>
       b.map((y) => {
         let s = 0

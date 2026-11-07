@@ -8,7 +8,7 @@ Kernel functions with differentiable hyperparameters under the `Kernel` contract
 
 - structure `kernel.ts` (file): The Kernel contract and algebra: hyperparameters as data, sums, products, scaling. `src/lib/kernels/kernel.ts:1` `mdml-engine/kernels`
 
-- function `gram`: Gram matrix of a kernel over a set of points. `src/lib/kernels/kernel.ts:610` `mdml-engine/kernels`
+- function `gram`: Gram matrix of a kernel over a set of points. `src/lib/kernels/kernel.ts:618` `mdml-engine/kernels`
 - function `kernelMatrix`: Gram matrix of a kernel chosen by name. `src/lib/kernels/named.ts:84` `mdml-engine/kernels`
 
 - kernel `linearKernel`: Linear kernel. `src/lib/kernels/dot-product.ts:85` `mdml-engine/kernels`

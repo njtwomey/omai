@@ -11,13 +11,13 @@ import { primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../t
 import { valuesOf } from './_image.ts'
 
 /** A dense matrix as rows. */
-export type Matrix = number[][]
+export type MutableRows = number[][]
 
 /** Rows to a row-major array. */
 export const flatOf = (m: readonly (readonly number[])[]): Float64Array => Float64Array.from(m.flat())
 
 /** The product of two matrices given as rows. */
-export function matMul(a: readonly (readonly number[])[], b: readonly (readonly number[])[]): Matrix {
+export function matMul(a: readonly (readonly number[])[], b: readonly (readonly number[])[]): MutableRows {
   const m = a.length
   const k = b.length
   const n = b[0]?.length ?? 0
@@ -25,11 +25,11 @@ export function matMul(a: readonly (readonly number[])[], b: readonly (readonly 
 }
 
 /** The transpose of a matrix given as rows. */
-export const transposeOf = (a: readonly (readonly number[])[]): Matrix =>
+export const transposeOf = (a: readonly (readonly number[])[]): MutableRows =>
   Array.from({ length: a[0]?.length ?? 0 }, (_, j) => a.map((r) => r[j] ?? 0))
 
 /** The inverse of a square matrix (by LU solves against the identity). */
-export function invOf(a: readonly (readonly number[])[]): Matrix {
+export function invOf(a: readonly (readonly number[])[]): MutableRows {
   const n = a.length
   const eye = Float64Array.from({ length: n * n }, (_, i) => (Math.floor(i / n) === i % n ? 1 : 0))
   // dgesv solves A X = B for B (and X) row-major n x n.
@@ -47,7 +47,7 @@ export function det3(m: readonly (readonly number[])[]): number {
 }
 
 /** The SVD of a matrix given as rows: U (m x k), s (k) and V (n x k) as rows, k = min(m, n). */
-export function svdOf(a: readonly (readonly number[])[]): { u: Matrix; s: number[]; v: Matrix } {
+export function svdOf(a: readonly (readonly number[])[]): { u: MutableRows; s: number[]; v: MutableRows } {
   const m = a.length
   const n = a[0]?.length ?? 0
   const { u, s, v } = dgesvd(flatOf(a), m, n)

@@ -201,7 +201,7 @@ export function timeDerivativeOf(u: (t: Value, x: Value) => Value): (t: TensorLi
 }
 
 /** The derivatives a PDE residual may use, all at the collocation points. */
-export interface FieldDerivatives {
+export interface CollocationDerivatives {
   readonly u: Value
   /** `[m, d]` */
   readonly grad: Value
@@ -228,7 +228,11 @@ export interface FieldDerivatives {
  * toFlat(pdeResidual((p) => sum(mul(p, p), 1), (d) => sub(d.laplacian, 4), tensor([[1, 2], [0.5, 0.1]]))) // => [0, 0]
  * ```
  */
-export function pdeResidual(u: PointField, residual: (d: FieldDerivatives, x: Value) => Value, x: TensorLike): Value {
+export function pdeResidual(
+  u: PointField,
+  residual: (d: CollocationDerivatives, x: Value) => Value,
+  x: TensorLike,
+): Value {
   const p = points(x)
   const d = p.shape[1] ?? 0
   const second = stack(

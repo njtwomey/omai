@@ -6,7 +6,7 @@ import * as O from './index.ts'
 type P = Readonly<Record<string, unknown>>
 const n = (p: P, k: string): number => p[k] as number
 
-const FACTORIES: Readonly<Record<string, (p: P) => O.Schedule>> = {
+const FACTORIES: Readonly<Record<string, (p: P) => O.LearningRateSchedule>> = {
   constantFactor: (p) => O.constantFactor(n(p, 'init'), n(p, 'factor'), n(p, 'steps')),
   stepDecay: (p) => O.stepDecay(n(p, 'init'), n(p, 'stepSize'), n(p, 'gamma')),
   multiStepDecay: (p) => O.multiStepDecay(n(p, 'init'), p['milestones'] as number[], n(p, 'gamma')),
@@ -53,7 +53,7 @@ describe('schedules against torch.optim.lr_scheduler and optax', () => {
         expectMatches(tensor(rates), c.output, c.rtol, c.atol, c.name)
         return
       }
-      const schedule = (FACTORIES[c.fn] as (p: P) => O.Schedule)(c.params)
+      const schedule = (FACTORIES[c.fn] as (p: P) => O.LearningRateSchedule)(c.params)
       const values = Array.from({ length: n(c.params, 'count') }, (_, t) => schedule(t))
       expectMatches(tensor(values), c.output, c.rtol, c.atol, c.name)
     })

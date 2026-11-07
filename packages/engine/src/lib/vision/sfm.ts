@@ -15,7 +15,7 @@ import { type RansacState, ransacAlgorithm } from '../stats/index.ts'
 import { concat, reshape, sliceAxis, sub, type TensorLike, take, tensor, type Value } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
-import type { Matrix } from './_refine.ts'
+import type { MutableRows } from './_refine.ts'
 import { type Pose, projectPoints, projectValue, solvePnP } from './camera.ts'
 import { findEssentialMat, recoverPose, triangulatePoints } from './epipolar.ts'
 import { type RefinementPath, type RefinementState, steppedRefinement } from './refinement.ts'
@@ -30,7 +30,7 @@ function normalise(points: readonly Point2[], k: readonly (readonly number[])[])
 }
 
 /** The Sampson distance of a normalised correspondence to an essential matrix (OpenCV's error for it). */
-function sampson(e: Matrix, a: Point2, b: Point2): number {
+function sampson(e: MutableRows, a: Point2, b: Point2): number {
   const E = (r: number, c: number): number => e[r]?.[c] ?? 0
   const l = [0, 1, 2].map((r) => E(r, 0) * a[0] + E(r, 1) * a[1] + E(r, 2))
   const lt = [0, 1, 2].map((c) => E(0, c) * b[0] + E(1, c) * b[1] + E(2, c))
@@ -77,19 +77,19 @@ export function essentialRansacAlgorithm(
   points2: PointsLike,
   cameraMatrix: readonly (readonly number[])[],
   options: EssentialRansacOptions = {},
-): Algorithm<RansacState<Matrix>> {
+): Algorithm<RansacState<MutableRows>> {
   const p1 = pointsOf(points1, 'essentialRansacAlgorithm')
   const p2 = pointsOf(points2, 'essentialRansacAlgorithm')
   if (p1.length !== p2.length) throw new MdmlError('shape', 'essentialRansacAlgorithm: the point sets differ in size')
   const a = normalise(p1, cameraMatrix)
   const b = normalise(p2, cameraMatrix)
   const focal = ((cameraMatrix[0]?.[0] ?? 1) + (cameraMatrix[1]?.[1] ?? 1)) / 2
-  const identity: Matrix = [
+  const identity: MutableRows = [
     [1, 0, 0],
     [0, 1, 0],
     [0, 0, 1],
   ]
-  return ransacAlgorithm<number, Matrix>(
+  return ransacAlgorithm<number, MutableRows>(
     p1.map((_, i) => i),
     {
       // A model is fitted on normalised points, so the intrinsics of the fit are the identity.
@@ -115,9 +115,9 @@ export function essentialRansacAlgorithm(
 /** Two views reconstructed: the pose of the second camera, the triangulated inliers. */
 export interface TwoViewReconstruction {
   /** The essential matrix refit to the inliers. */
-  readonly essential: Matrix
+  readonly essential: MutableRows
   /** The rotation of the second camera (the first is the identity). */
-  readonly R: Matrix
+  readonly R: MutableRows
   /** The unit translation of the second camera: the scale of a two-view reconstruction is free. */
   readonly t: [number, number, number]
   /** The indices of the correspondences that were triangulated (RANSAC inliers in front of both cameras). */
@@ -151,7 +151,7 @@ export interface TwoViewReconstruction {
  * ```
  */
 export function twoViewReconstruction(
-  ransac: RansacState<Matrix>,
+  ransac: RansacState<MutableRows>,
   points1: PointsLike,
   points2: PointsLike,
   cameraMatrix: readonly (readonly number[])[],

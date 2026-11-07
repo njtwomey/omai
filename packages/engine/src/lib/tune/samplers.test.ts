@@ -14,7 +14,7 @@ import {
   multiObjective,
   nelderMeadSampler,
   randomSampler,
-  type Sampler,
+  type StudySampler,
   sobolSampler,
   studyHypervolume,
   tpeSampler,
@@ -29,7 +29,7 @@ const braninSpace = dict({ x: real(-5, 10), y: real(0, 15) })
 const hartmann = (f: typeof hartmann3) => functionObjective((p) => item(f(asTensor(p as number[]))))
 
 describe('samplers on Branin (minimum 0.397887) within a budget', () => {
-  const cases: [string, Sampler, number, number][] = [
+  const cases: [string, StudySampler, number, number][] = [
     ['random', randomSampler(), 100, 2],
     ['sobol', sobolSampler(), 64, 3],
     ['latin hypercube', latinHypercubeSampler({ n: 64 }), 64, 1],

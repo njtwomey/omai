@@ -6,11 +6,11 @@
 
 import { maxOf, minOf } from 'mdml-engine/base'
 import {
-  type Box,
   boxBoundary,
   type EdgeRoute,
   type GraphLayout,
   groupBoxes,
+  type LayoutBox,
   type LayoutGraph,
   normaliseLayout,
 } from './graph.ts'
@@ -331,7 +331,7 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
     rankY.push(y + h / 2)
     y += h
   })
-  const place = (v: string): Box => {
+  const place = (v: string): LayoutBox => {
     const it = items.get(v) as Item
     const bx = x.get(v) ?? 0
     const by = rankY[rank.get(v) ?? 0] ?? 0
@@ -339,7 +339,7 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
       ? { x: by, y: bx, width: it.height, height: it.width }
       : { x: bx, y: by, width: it.width, height: it.height }
   }
-  const nodes: Record<string, Box> = {}
+  const nodes: Record<string, LayoutBox> = {}
   for (const v of ids) nodes[v] = place(v)
   // Routes: through the dummies of each chain, clipped to the end boxes; reversed edges are turned back.
   const routes: EdgeRoute[] = []
@@ -353,8 +353,8 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
     })
     const forward = chain[0] === e.from
     const ordered = forward ? pts : [...pts].reverse()
-    const a = nodes[e.from] as Box
-    const b = nodes[e.to] as Box
+    const a = nodes[e.from] as LayoutBox
+    const b = nodes[e.to] as LayoutBox
     const first = ordered[1] ?? [b.x, b.y]
     const last = ordered[ordered.length - 2] ?? [a.x, a.y]
     routes.push({

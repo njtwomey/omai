@@ -15,7 +15,7 @@ import { fsolve } from '../numerics/roots/index.ts'
 import { type Key, key as keyOf, uniform } from '../random/index.ts'
 import { primalOf, reshape, sliceAxis, stack, type Tensor, type TensorLike, type Value } from '../tensor/index.ts'
 import { floatState, fromNumbers, numbersOf, rms } from './ode/_vec.ts'
-import type { VectorField } from './ode/problem.ts'
+import type { OdeVectorField } from './ode/problem.ts'
 import { type OdeMethodName, solveIvp } from './ode/solve-ivp.ts'
 
 /**
@@ -33,7 +33,7 @@ import { type OdeMethodName, solveIvp } from './ode/solve-ivp.ts'
  * toArray(fieldJacobian((_t, y) => mul(y, y), [3])) // => [[6]]
  * ```
  */
-export function fieldJacobian(f: VectorField, y: TensorLike, t = 0): Tensor {
+export function fieldJacobian(f: OdeVectorField, y: TensorLike, t = 0): Tensor {
   const v = floatState(y)
   const n = numbersOf(v).length
   const g = (x: Value): Value => reshape(f(t, reshape(x, v.shape)), [n])
@@ -54,7 +54,7 @@ export function fieldJacobian(f: VectorField, y: TensorLike, t = 0): Tensor {
  * fieldDivergence((_t, y) => mul(y, -2), [1, 1, 1]) // => -6
  * ```
  */
-export function fieldDivergence(f: VectorField, y: TensorLike, t = 0): number {
+export function fieldDivergence(f: OdeVectorField, y: TensorLike, t = 0): number {
   const J = fieldJacobian(f, y, t)
   const n = J.shape[0] ?? 0
   let s = 0
@@ -77,7 +77,7 @@ export function fieldDivergence(f: VectorField, y: TensorLike, t = 0): number {
  * fieldCurl((_t, y) => stack([neg(sum(sliceAxis(y, 0, 1, 2))), sum(sliceAxis(y, 0, 0, 1))]), [0.3, 0.2]) // => [2]
  * ```
  */
-export function fieldCurl(f: VectorField, y: TensorLike, t = 0): number[] {
+export function fieldCurl(f: OdeVectorField, y: TensorLike, t = 0): number[] {
   const J = fieldJacobian(f, y, t)
   const n = J.shape[0] ?? 0
   const j = (r: number, c: number): number => J.data[r * n + c] ?? 0
@@ -178,7 +178,7 @@ export interface FixedPointOptions {
  * fixedPoints(f, { seeds: [[-2, 1], [0.1, 0], [3, -1]] }).map((p) => p.type) // => ['stable-node', 'saddle', 'stable-node']
  * ```
  */
-export function fixedPoints(f: VectorField, options: FixedPointOptions): FixedPointReport[] {
+export function fixedPoints(f: OdeVectorField, options: FixedPointOptions): FixedPointReport[] {
   const t = options.t ?? 0
   let seeds: number[][]
   if (options.seeds !== undefined) seeds = options.seeds.map((s) => [...s])
@@ -229,7 +229,7 @@ export function fixedPoints(f: VectorField, options: FixedPointOptions): FixedPo
  * ```
  */
 export function nullclines(
-  f: VectorField,
+  f: OdeVectorField,
   xRange: readonly [number, number],
   yRange: readonly [number, number],
   n = 101,
@@ -286,7 +286,7 @@ export interface StreamlineOptions {
  * ```
  */
 export function streamline(
-  f: VectorField,
+  f: OdeVectorField,
   y0: TensorLike,
   options: StreamlineOptions = {},
 ): { readonly t: readonly number[]; readonly points: Value } {
@@ -326,7 +326,7 @@ export function streamline(
  * ```
  */
 export function flowMap(
-  f: VectorField,
+  f: OdeVectorField,
   points: TensorLike,
   t: number,
   options: { readonly method?: OdeMethodName; readonly rtol?: number; readonly atol?: number } = {},
@@ -378,7 +378,7 @@ export interface ManifoldBranch {
  * ```
  */
 export function invariantManifold(
-  f: VectorField,
+  f: OdeVectorField,
   saddle: TensorLike,
   kind: 'stable' | 'unstable',
   options: { readonly offset?: number; readonly tEnd?: number; readonly points?: number } = {},

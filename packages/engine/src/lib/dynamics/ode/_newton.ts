@@ -4,7 +4,7 @@ import { MdmlError, minOf } from '../../base/index.ts'
 import { type LuFactorisation, luFactor, luSolve, solve } from '../../numerics/linalg/index.ts'
 import { isTensor, matmul, primalOf, reshape, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import { floatState, fromNumbers, numbersOf, type Tol } from './_vec.ts'
-import type { VectorField } from './problem.ts'
+import type { OdeVectorField } from './problem.ts'
 
 /**
  * How an implicit solver gets df/dy: by forward-mode automatic differentiation (exact; the default), by forward finite
@@ -13,7 +13,7 @@ import type { VectorField } from './problem.ts'
 export type JacobianOption = 'autodiff' | 'fd' | ((t: number, y: Value) => Value)
 
 /** df/dy at (t, y) as a row-major n x n array of numbers. */
-export function jacobianAt(f: VectorField, t: number, y: Value, jac: JacobianOption = 'autodiff'): Float64Array {
+export function jacobianAt(f: OdeVectorField, t: number, y: Value, jac: JacobianOption = 'autodiff'): Float64Array {
   const n = numbersOf(y).length
   const shape = y.shape
   if (typeof jac === 'function') {
@@ -33,7 +33,7 @@ export function jacobianAt(f: VectorField, t: number, y: Value, jac: JacobianOpt
 }
 
 /** Forward-difference Jacobian with steps sqrt(eps) max(1, |y_j|). */
-export function fdJacobian(f: VectorField, t: number, y: Value): Float64Array {
+export function fdJacobian(f: OdeVectorField, t: number, y: Value): Float64Array {
   const y0 = numbersOf(y)
   const n = y0.length
   const f0 = numbersOf(f(t, fromNumbers(y0, y.shape)))

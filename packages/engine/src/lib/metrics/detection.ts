@@ -6,13 +6,13 @@
 
 import { MdmlError, type MetricResult, type MetricSpec, toRows } from '../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 /** Boxes as rows [x1, y1, x2, y2] (corner format, x2 > x1, y2 > y1). */
 type Boxes = TensorLike | readonly (readonly number[])[]
 
 const rowsOf = (boxes: Boxes): number[][] => {
-  const m = matrix(boxes as TensorLike)
+  const m = shapedArray(boxes as TensorLike)
   const n = m.shape.length === 1 ? (m.data.length === 0 ? 0 : 1) : (m.shape[0] ?? 0)
   return toRows(m.data, n, 4)
 }

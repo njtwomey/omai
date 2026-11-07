@@ -8,7 +8,7 @@ import {
   type ClassificationData,
   type DatasetGenerator,
   type Generated,
-  type Knobs,
+  type GeneratorKnobs,
   type Truth,
   take,
   xyClasses,
@@ -43,7 +43,7 @@ import { column, evenSplit, labels, matrix, stamp } from './_util.ts'
 function finish(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   k: Key,
   x: Tensor,
   y: readonly number[],
@@ -258,7 +258,7 @@ export function circlePoints(
 function noisyPoints(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   k: Key,
   base: { readonly x: Tensor; readonly y: number[]; readonly angle: number[] },
 ): Generated<ClassificationData> {

@@ -10,13 +10,13 @@
 import type { TensorRole } from './events.ts'
 
 /** Which channels of one kind to record: all, none, or a list of names. */
-export type Selection = boolean | readonly string[]
+export type ChannelSelection = boolean | readonly string[]
 
 /**
  * How often to record: every n steps, at log-spaced steps (0, 1, 2, 4, 8, ...), only at the first and last step, or
  * whenever a value changes (by more than `tolerance`, default 0) since it was last recorded.
  */
-export type Schedule =
+export type RecordSchedule =
   | { readonly every: number }
   | { readonly logSpaced: true }
   | { readonly firstAndLast: true }
@@ -30,16 +30,16 @@ export type Schedule =
  * @concept tracing
  */
 export interface TracePolicy {
-  readonly metrics: Selection
-  readonly tensors: Selection
+  readonly metrics: ChannelSelection
+  readonly tensors: ChannelSelection
   /** Tensor roles to record (for example `['param', 'grad']`). */
   readonly roles: readonly TensorRole[]
-  readonly messages: Selection
+  readonly messages: ChannelSelection
   readonly frames: boolean
   readonly checkpoints: boolean
   /** With `checkpoints`, the runner stores a checkpoint every this many steps (0: only when an algorithm asks). */
   readonly checkpointInterval: number
-  readonly schedule: Schedule
+  readonly schedule: RecordSchedule
   /** Record full tensor values, or summaries (norms, moments, histograms). */
   readonly detail: 'summary' | 'full'
   /** Tensors with more elements than this are summarised even at full detail. */
@@ -146,7 +146,7 @@ export function tracePolicy(
  * [0, 1, 2, 3, 4, 5, 8].filter((s) => onSchedule({ logSpaced: true }, s)) // => [0, 1, 2, 4, 8]
  * ```
  */
-export function onSchedule(schedule: Schedule, step: number): boolean {
+export function onSchedule(schedule: RecordSchedule, step: number): boolean {
   if (step === 0) return true
   if ('every' in schedule) return step % Math.max(1, schedule.every) === 0
   if ('logSpaced' in schedule) return (step & (step - 1)) === 0
@@ -166,7 +166,7 @@ export function onSchedule(schedule: Schedule, step: number): boolean {
  * selected(['loss'], 'loss') // => true
  * ```
  */
-export function selected(selection: Selection, name: string): boolean {
+export function selected(selection: ChannelSelection, name: string): boolean {
   return selection === true || (Array.isArray(selection) && selection.includes(name))
 }
 

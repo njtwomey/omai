@@ -36,8 +36,8 @@ import {
   applyTree,
   decisionPath,
   exportText,
+  type FittedTree,
   predictTree,
-  type Tree,
   treeFeatureImportances,
   treeOutputs,
   treeToStructure,
@@ -80,7 +80,7 @@ export interface TreeVerbs extends Verbs, FittedFacts {
  * toFlat(treeVerbs(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })).predict([[0], [1]])) // => [0, 1]
  * ```
  */
-export function treeVerbs(tree: Tree): TreeVerbs {
+export function treeVerbs(tree: FittedTree): TreeVerbs {
   const classifier = tree.task === 'classification'
   return {
     predict: (x) => predictTree(tree, x),
@@ -105,7 +105,7 @@ export function treeVerbs(tree: Tree): TreeVerbs {
 export type TreePath = GrowPath | 'model/structure' | 'model/importances'
 
 /** The tree estimators' type: the iterative base over growth states, with a tree as parameters. */
-export type TreeEstimator = IterativeEstimator<DecisionTreeHyper, GrowState, Tree, TreeVerbs, TreePath>
+export type TreeEstimator = IterativeEstimator<DecisionTreeHyper, GrowState, FittedTree, TreeVerbs, TreePath>
 
 /** The tree's data and facts, prepared once per dataset. */
 interface Prepared {
@@ -130,7 +130,7 @@ function treeEstimator(name: string, classifier: boolean, defaults: DecisionTree
   const criteria: readonly Criterion[] = classifier
     ? ['gini', 'entropy', 'log_loss', 'gain_ratio']
     : ['squared_error', 'friedman_mse', 'absolute_error', 'poisson']
-  return iterative<DecisionTreeHyper, GrowState, Tree, TreeVerbs, TreePath>({
+  return iterative<DecisionTreeHyper, GrowState, FittedTree, TreeVerbs, TreePath>({
     name,
     kind: classifier ? 'classifier' : 'regressor',
     defaults,

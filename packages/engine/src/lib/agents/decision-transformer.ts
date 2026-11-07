@@ -9,7 +9,7 @@
 import { argmaxOf, type Json } from '../base/index.ts'
 import { crossEntropy } from '../losses/index.ts'
 import { gelu } from '../nn/index.ts'
-import type { GradientTransformation, Tree } from '../optim/index.ts'
+import type { GradientTransformation, ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, randint } from '../random/index.ts'
 import { type Agent, categoricalPolicy, type Env, type Transition, trainAgent } from '../rl/index.ts'
 import {
@@ -38,7 +38,13 @@ import {
 import type { RunOptions } from '../trace/index.ts'
 import { gradientStepWithTerms, optimiserOf, type Spaces, vectorTensor } from './_common.ts'
 import { type Net, network, type OfflineSpaces, offlineSpaces, squashToBox } from './_offline.ts'
-import { type Dataset, datasetEpisodes, type OfflineLearner, type OfflineOptions, trainOffline } from './offline.ts'
+import {
+  datasetEpisodes,
+  type OfflineLearner,
+  type OfflineOptions,
+  type TransitionDataset,
+  trainOffline,
+} from './offline.ts'
 
 /** Options of {@link decisionTransformer}. */
 export interface DecisionTransformerOptions {
@@ -64,7 +70,7 @@ export interface DecisionTransformerOptions {
 }
 
 /** The dataset's episodes as the model reads them. */
-export interface TrajectoryData {
+export interface DecisionTransformerData {
   readonly states: readonly (readonly (readonly number[])[])[]
   /** Encoded actions (one-hot or continuous) per step. */
   readonly actions: readonly (readonly (readonly number[])[])[]
@@ -79,11 +85,11 @@ export interface TrajectoryData {
 
 /** The state of a decision-transformer learner. */
 export interface DecisionTransformerState {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly optState: unknown
   readonly updates: number
   readonly loss: number
-  readonly data: TrajectoryData
+  readonly data: DecisionTransformerData
   readonly targetReturn: number
   readonly returnScale: number
   readonly maxTimestep: number
@@ -102,8 +108,8 @@ interface Window {
 // ---------------------------------------------------------------------------------------------- the network
 
 interface Model {
-  readonly params: Tree
-  apply(p: Tree, w: Window): Value
+  readonly params: ParamTree
+  apply(p: ParamTree, w: Window): Value
 }
 
 type Layer = { readonly g: Value; readonly b: Value }
@@ -152,7 +158,7 @@ function buildModel(
     nets[`up${l}`] = network([h, 4 * h], foldIn(key, 12 + 4 * l))
     nets[`down${l}`] = network([4 * h, h], foldIn(key, 13 + 4 * l))
   }
-  const params: Record<string, Tree> = {}
+  const params: Record<string, ParamTree> = {}
   for (const [name, n] of Object.entries(nets)) params[name] = n.params
   params['time'] = mul(normal(foldIn(key, 4), [maxT, h]), 0.02)
   params['lnIn'] = lnInit(h)
@@ -163,9 +169,9 @@ function buildModel(
   }
   const dh = h / heads
   const L = 3 * K
-  const apply = (p: Tree, w: Window): Value => {
-    const P = p as Readonly<Record<string, Tree>>
-    const net = (name: string, x: Value): Value => (nets[name] as Net).apply(P[name] as Tree, x)
+  const apply = (p: ParamTree, w: Window): Value => {
+    const P = p as Readonly<Record<string, ParamTree>>
+    const net = (name: string, x: Value): Value => (nets[name] as Net).apply(P[name] as ParamTree, x)
     const B = w.states.shape[0] ?? 1
     const time = matmul(oneHot(w.timesteps, maxT), P['time'] as Value)
     const r = add(net('returns', reshape(w.rtg, [B, K, 1])), time)
@@ -192,7 +198,7 @@ function buildModel(
 
 // ------------------------------------------------------------------------------------------- data and windows
 
-function trajectories<O, A>(sp: OfflineSpaces, dataset: Dataset<O, A>): TrajectoryData {
+function trajectories<O, A>(sp: OfflineSpaces, dataset: TransitionDataset<O, A>): DecisionTransformerData {
   const episodes = datasetEpisodes(dataset)
   const encode = (a: A): number[] => {
     if (!sp.discrete) return [...(a as readonly number[])]
@@ -266,7 +272,7 @@ function windows(
   }
 }
 
-function locate(data: TrajectoryData, g: number): readonly [number, number] {
+function locate(data: DecisionTransformerData, g: number): readonly [number, number] {
   let lo = 0
   let hi = data.offsets.length - 1
   while (lo < hi) {
@@ -370,7 +376,7 @@ export function decisionTransformerLearner<O, A>(
         1,
         toFlat(valid).reduce((a, b) => a + b, 0),
       )
-      const loss = (p: Tree): readonly [Value, Value] => {
+      const loss = (p: ParamTree): readonly [Value, Value] => {
         const pred = m.apply(p, w)
         const perStep = sp.discrete
           ? crossEntropy(reshape(pred, [B * K, sp.actionSize]), vectorTensor(labels), { reduction: 'none' })
@@ -508,7 +514,7 @@ export interface DecisionTransformerResult<O, A> {
  */
 export function decisionTransformer<O, A>(
   env: Spaces,
-  dataset: Dataset<O, A>,
+  dataset: TransitionDataset<O, A>,
   options: DecisionTransformerOptions & OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): DecisionTransformerResult<O, A> {
   const r = trainOffline(decisionTransformerLearner<O, A>(env, options), dataset, options)

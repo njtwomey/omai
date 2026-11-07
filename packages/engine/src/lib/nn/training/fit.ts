@@ -20,7 +20,7 @@ import {
   tapContext,
 } from '../../trace/index.ts'
 import type { Module, Params } from '../module/module.ts'
-import type { Callback, HookContext } from './callbacks.ts'
+import type { Callback, TrainingHookContext } from './callbacks.ts'
 import { accumulate, applyGradients, hasFrozen, lossAndGrads, type TrainState, trainState } from './state.ts'
 
 /** Validation during training. */
@@ -168,7 +168,7 @@ export function fitAlgorithm(model: Module, data: TabularData, options: FitOptio
       const batchIndex = s.step % perEpoch
       let stopped: string | undefined
       let lrScale = s.lrScale
-      const hook = (params: Params, step: number): HookContext => ({
+      const hook = (params: Params, step: number): TrainingHookContext => ({
         step,
         epoch,
         batch: batchIndex,

@@ -5,7 +5,7 @@
  */
 
 import { runAlgorithm } from '../trace/index.ts'
-import { edgeFlows, type Residual, residualNetwork, sourceSide } from './_residual.ts'
+import { edgeFlows, type ResidualNetwork, residualNetwork, sourceSide } from './_residual.ts'
 import { type FlowOptions, maxFlowAlgorithm, minCostFlowAlgorithm } from './flow-algorithms.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
 import { hopcroftKarpAlgorithm } from './hopcroft-karp.ts'
@@ -25,7 +25,7 @@ function solveMaxFlow(
   source: NodeId,
   sink: NodeId,
   options: FlowOptions & { readonly method?: 'edmonds-karp' | 'dinic' },
-): { r: Residual; s: number; value: number; augmentations: number } {
+): { r: ResidualNetwork; s: number; value: number; augmentations: number } {
   const alg = maxFlowAlgorithm(g, source, sink, options)
   const run = runAlgorithm(alg, { maxSteps: Number.MAX_SAFE_INTEGER })
   const r = { ...residualNetwork(g, options.capacity), residual: run.state.residual }

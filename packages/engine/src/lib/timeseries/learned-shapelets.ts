@@ -36,7 +36,7 @@ export interface LearnedShapeletConfig {
   readonly ridge?: number
 }
 
-interface Shape {
+interface ShapeletDimensions {
   readonly n: number
   readonly T: number
   readonly K: number
@@ -46,7 +46,7 @@ interface Shape {
   readonly ridge: number
 }
 
-function shapeOf(data: LearnedShapeletData, config: LearnedShapeletConfig): Shape {
+function shapeOf(data: LearnedShapeletData, config: LearnedShapeletConfig): ShapeletDimensions {
   const n = data.series.length
   const T = data.series[0]?.length ?? 0
   const K = config.nShapelets ?? 3
@@ -118,7 +118,7 @@ export function softMinDistance(series: ArrayLike<number>, shapelet: ArrayLike<n
 }
 
 /** The packed parameters: the shapelets row by row, then the classifier weights class by class (bias first). */
-function split(p: ArrayLike<number>, s: Shape): { shapelets: Float64Array; weights: Float64Array } {
+function split(p: ArrayLike<number>, s: ShapeletDimensions): { shapelets: Float64Array; weights: Float64Array } {
   const flat = Float64Array.from(p as ArrayLike<number>)
   return { shapelets: flat.subarray(0, s.K * s.L), weights: flat.subarray(s.K * s.L) }
 }
@@ -126,7 +126,7 @@ function split(p: ArrayLike<number>, s: Shape): { shapelets: Float64Array; weigh
 /** The mean cross-entropy of the rows in `rows` (all by default), the penalty, and the gradient of their sum. */
 function evaluate(
   data: LearnedShapeletData,
-  s: Shape,
+  s: ShapeletDimensions,
   p: ArrayLike<number>,
   rows?: readonly number[],
 ): { value: number; gradient: Float64Array; accuracy: number } {

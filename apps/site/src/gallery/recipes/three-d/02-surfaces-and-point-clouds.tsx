@@ -13,10 +13,10 @@ export const recipe: Recipe = {
 }
 
 const grid = (n: number): number[] => Array.from({ length: n }, (_, i) => -2 + (4 * i) / (n - 1))
-type Shape = 'saddle' | 'ripple' | 'clusters'
+type SurfaceShape = 'saddle' | 'ripple' | 'clusters'
 
 export default function SurfacesAndPointClouds(): ReactNode {
-  const [shape, setShape] = useState<Shape>('ripple')
+  const [shape, setShape] = useState<SurfaceShape>('ripple')
   const [detail, setDetail] = useState(25)
   const [separation, setSeparation] = useState(1.2)
   const scene = useMemo(() => {
@@ -55,7 +55,12 @@ export default function SurfacesAndPointClouds(): ReactNode {
   return (
     <div className="flex w-fit max-w-full flex-col gap-3">
       <ControlPanel columns={3}>
-        <Choice label="scene" value={shape} onChange={setShape} options={['ripple', 'saddle', 'clusters'] as Shape[]} />
+        <Choice
+          label="scene"
+          value={shape}
+          onChange={setShape}
+          options={['ripple', 'saddle', 'clusters'] as SurfaceShape[]}
+        />
         <NumberField label="grid points" value={detail} onChange={setDetail} min={6} max={60} integer />
         <NumberField label="separation" value={separation} onChange={setSeparation} min={0} max={2.5} step={0.1} />
       </ControlPanel>

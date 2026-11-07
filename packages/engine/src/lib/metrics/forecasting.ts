@@ -14,10 +14,10 @@ import {
   type Metric,
   type MetricFunction,
   type MetricOptions,
-  matrix,
   metricResult,
   perOutputMetric,
   sampleWeights,
+  shapedArray,
   weightedMean,
 } from './metric.ts'
 import { meanAbsolutePercentageError } from './regression.ts'
@@ -312,7 +312,7 @@ export const quantileLoss: MetricFunction<[TensorLike, TensorLike, QuantileLossO
   spec('quantileLoss'),
   (yTrue: TensorLike, yPred: TensorLike, options: QuantileLossOptions): MetricResult => {
     const t = flat(yTrue)
-    const p = matrix(yPred)
+    const p = shapedArray(yPred)
     const q = options.quantiles.length
     if ((p.shape[1] ?? 1) !== q) throw new MdmlError('shape', 'quantileLoss: one forecast column per quantile')
     const absTotal = t.reduce((a, v) => a + Math.abs(v), 0)
@@ -352,7 +352,7 @@ export const crpsEnsemble: MetricFunction<[TensorLike, TensorLike, (MetricOption
     spec('crpsEnsemble'),
     (y: TensorLike, samples: TensorLike, options: MetricOptions & { readonly fair?: boolean } = {}): MetricResult => {
       const t = flat(y)
-      const s = matrix(samples)
+      const s = shapedArray(samples)
       const m = s.shape[1] ?? 1
       const w = sampleWeights('crpsEnsemble', t.length, options.sampleWeight)
       const values = Array.from(t, (v, i) => {

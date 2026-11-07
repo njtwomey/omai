@@ -8,7 +8,7 @@ import { group } from './build.ts'
 import type { GroupNode, Scene, SceneNode, Transform } from './types.ts'
 
 /** An axis-aligned bounding box. */
-export interface Bounds {
+export interface BoundingBox {
   readonly x: number
   readonly y: number
   readonly width: number
@@ -62,7 +62,7 @@ function nodePoints(node: SceneNode): (readonly [number, number])[] {
  * bounds([rect(0, 0, 2, 1), circle(5, 5, 1)]) // => { x: 0, y: 0, width: 6, height: 6 }
  * ```
  */
-export function bounds(nodes: readonly SceneNode[]): Bounds {
+export function bounds(nodes: readonly SceneNode[]): BoundingBox {
   const points = nodes.flatMap(nodePoints)
   if (points.length === 0) return { x: 0, y: 0, width: 0, height: 0 }
   let x0 = Infinity
@@ -238,7 +238,7 @@ export function scaleTo(
  * fit([rect(0, 0, 1, 1)], { x: 0, y: 0, width: 10, height: 10 }).scale // => 10
  * ```
  */
-export function fit(nodes: readonly SceneNode[], box: Bounds, padding = 0): GroupNode {
+export function fit(nodes: readonly SceneNode[], box: BoundingBox, padding = 0): GroupNode {
   const b = bounds(nodes)
   const w = box.width - 2 * padding
   const h = box.height - 2 * padding

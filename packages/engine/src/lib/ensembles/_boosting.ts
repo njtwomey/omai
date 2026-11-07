@@ -31,7 +31,7 @@ import {
   tensor,
 } from '../trace/index.ts'
 import { type GrowOptions, growTree, type MaxFeatures, type TreeData } from '../trees/grow.ts'
-import { applyTree, type Tree, treeFeatureImportances } from '../trees/tree.ts'
+import { applyTree, type FittedTree, treeFeatureImportances } from '../trees/tree.ts'
 import { stagesFromRun } from './_stages.ts'
 
 /** Losses for regression. */
@@ -72,7 +72,7 @@ export type GradientBoostingParams = {
   /** One raw value per output (one for regression and binary problems, K otherwise). */
   readonly init: number[]
   /** `stages[m][k]`: the tree for output k at stage m (leaf values final, before the learning rate). */
-  readonly stages: Tree[][]
+  readonly stages: FittedTree[][]
   readonly learningRate: number
   readonly loss: string
   readonly classes: number[]
@@ -96,7 +96,7 @@ export interface GradientBoostingVerbs extends Verbs, FittedFacts {
 export interface BoostingState {
   /** Raw predictions on all training rows, `[n * k]`. */
   readonly f: Float64Array
-  readonly stages: readonly (readonly Tree[])[]
+  readonly stages: readonly (readonly FittedTree[])[]
   /** After each stage: the loss on the rows the stage was fitted to, on the held-out rows, out of bag. */
   readonly trainLoss: readonly number[]
   readonly validLoss: readonly number[]
@@ -393,7 +393,7 @@ export interface StageInput {
 
 /** The tree of a stage with its final leaf values (before the learning rate), and the leaf of every training row. */
 export interface StageTree {
-  readonly tree: Tree
+  readonly tree: FittedTree
   readonly leaves: Int32Array
   /** Histogram growers: the bins per feature, for the log `boost/bins`. */
   readonly bins?: number
@@ -530,7 +530,7 @@ export function boostingAlgorithm(
       const inBag = new Uint8Array(n)
       for (const r of bag) inBag[r] = 1
       const f = Float64Array.from(s.f)
-      const stage: Tree[] = []
+      const stage: FittedTree[] = []
       let firstResidual: Float64Array | undefined
       let leafValues: number[] = []
       let bins: number | undefined

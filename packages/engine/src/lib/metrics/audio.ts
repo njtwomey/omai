@@ -10,18 +10,18 @@ import { ddot, solveToeplitz } from '../numerics/linalg/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
 import { dtw, firwin, hann, resamplePoly, stft } from '../signal/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
-import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 /** A mono signal as a Float64Array. */
 function signal(name: string, x: TensorLike): Float64Array {
-  const m = matrix(x)
+  const m = shapedArray(x)
   if (m.shape.length !== 1) throw new MdmlError('shape', `${name}: signals are 1-D`)
   return m.data
 }
 
 /** Signals `[T]` or `[S, T]` as rows. */
 function signals(name: string, x: TensorLike): Float64Array[] {
-  const m = matrix(x)
+  const m = shapedArray(x)
   if (m.shape.length === 1) return [m.data]
   if (m.shape.length !== 2) throw new MdmlError('shape', `${name}: signals are [T] or [S, T]`)
   const t = m.shape[1] ?? 0
@@ -570,8 +570,8 @@ export const melCepstralDistortion: MetricFunction<
     predCepstra: TensorLike,
     options: { readonly includeC0?: boolean; readonly align?: 'none' | 'dtw' } = {},
   ): MetricResult => {
-    const a = matrix(targetCepstra)
-    const b = matrix(predCepstra)
+    const a = shapedArray(targetCepstra)
+    const b = shapedArray(predCepstra)
     const name = 'melCepstralDistortion'
     if (a.shape.length !== 2 || b.shape.length !== 2 || a.shape[1] !== b.shape[1])
       throw new MdmlError('shape', `${name}: cepstra are [frames, D] with the same D`)

@@ -483,7 +483,7 @@ export function performanceProfile(
 }
 
 /** A learning curve: values per step (steps 0, 1, 2, ...), or explicit steps and values. */
-export type LearningCurve =
+export type LearningCurveInput =
   | readonly number[]
   | { readonly steps: readonly number[]; readonly values: readonly number[] }
 
@@ -505,7 +505,7 @@ export type LearningCurve =
  * ```
  */
 export function alignCurves(
-  curves: readonly LearningCurve[],
+  curves: readonly LearningCurveInput[],
   options: { readonly grid?: readonly number[]; readonly points?: number } = {},
 ): { readonly steps: number[]; readonly values: number[][] } {
   if (curves.length === 0) throw new MdmlError('value', 'alignCurves: no curves')
@@ -551,7 +551,7 @@ export function alignCurves(
  * ```
  */
 export function aggregateCurves(
-  curves: readonly LearningCurve[],
+  curves: readonly LearningCurveInput[],
   options: BootstrapOptions & {
     readonly aggregate?: AggregateMetric
     readonly tasks?: readonly number[]

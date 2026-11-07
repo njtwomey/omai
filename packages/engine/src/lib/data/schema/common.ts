@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { isTensor, type Tensor } from '../../tensor/index.ts'
+import { isTensor } from '../../tensor/index.ts'
 import type { ComparisonData } from './comparisons.ts'
 import type { CorpusData, ParallelData, SequenceLabellingData } from './corpus.ts'
 import type { EventData } from './events.ts'
@@ -93,9 +93,6 @@ export type Dataset =
   | TripleData
   | ImageData
   | TrajectoryData
-
-/** A per-row field: a tensor whose first axis is the row, or a plain array with one entry per row. */
-export type RowColumn = Tensor | readonly unknown[]
 
 const ROW_FIELDS: Readonly<Record<DatasetKind, readonly string[]>> = {
   regression: ['x', 'y', 'weights'],

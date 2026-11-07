@@ -7,7 +7,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { identity, invert, type Matrix, multiply, transpose } from './_matrix.ts'
+import { identity, invert, type MutableRows, multiply, transpose } from './_matrix.ts'
 
 /** A node of a hierarchy: a name and its children (a leaf has none). */
 export interface HierarchyNode {
@@ -17,7 +17,7 @@ export interface HierarchyNode {
 
 /** The summing matrix of a hierarchy and the names of its rows (all series, top first) and columns (bottom series). */
 export interface SummingMatrix {
-  readonly S: Matrix
+  readonly S: MutableRows
   readonly names: readonly string[]
   readonly bottom: readonly string[]
 }
@@ -48,7 +48,7 @@ export function treeSummingMatrix(root: HierarchyNode): SummingMatrix {
     return s
   }
   const names: string[] = []
-  const S: Matrix = []
+  const S: MutableRows = []
   let level: HierarchyNode[] = [root]
   while (level.length > 0) {
     for (const n of level) {
@@ -83,7 +83,7 @@ export function groupedSummingMatrix(
   if (groupings.some((g) => g.length !== n))
     throw new MdmlError('shape', 'groupedSummingMatrix: every grouping needs one label per bottom series')
   const bottomNames = bottom ?? Array.from({ length: n }, (_, i) => `b${i}`)
-  const S: Matrix = [new Array<number>(n).fill(1)]
+  const S: MutableRows = [new Array<number>(n).fill(1)]
   const names = ['total']
   groupings.forEach((g, gi) => {
     for (const label of [...new Set(g)]) {
@@ -104,13 +104,13 @@ export type ReconcileMethod = 'bottom-up' | 'ols' | 'wls-structural' | 'wls-vari
 /** The result of a reconciliation. */
 export interface Reconciliation {
   /** The coherent forecasts for all series, `[horizon][series]`. */
-  readonly reconciled: Matrix
+  readonly reconciled: MutableRows
   /** The bottom-level forecasts, `[horizon][bottom series]`. */
-  readonly bottom: Matrix
+  readonly bottom: MutableRows
   /** The matrix G mapping base forecasts to bottom-level forecasts, `[bottom series][series]`. */
-  readonly G: Matrix
+  readonly G: MutableRows
   /** The covariance W of the base forecast errors that the method assumed (identity for OLS and bottom-up). */
-  readonly W: Matrix
+  readonly W: MutableRows
 }
 
 /**
@@ -128,12 +128,12 @@ export interface Reconciliation {
  * ```
  */
 export function shrinkCovariance(residuals: readonly (readonly number[])[]): {
-  readonly covariance: Matrix
+  readonly covariance: MutableRows
   readonly lambda: number
 } {
   const n = residuals.length
   const k = residuals[0]?.length ?? 0
-  const sample: Matrix = Array.from({ length: k }, (_, i) =>
+  const sample: MutableRows = Array.from({ length: k }, (_, i) =>
     Array.from({ length: k }, (_, j) => residuals.reduce((s, r) => s + (r[i] ?? 0) * (r[j] ?? 0), 0) / n),
   )
   const scale = sample.map((r, i) => Math.sqrt(r[i] ?? 1) || 1)
@@ -161,7 +161,7 @@ export function shrinkCovariance(residuals: readonly (readonly number[])[]): {
 }
 
 /** The matrix G = (S' W^-1 S)^-1 S' W^-1 for a covariance (or weight) matrix W. */
-function generalisedLeastSquares(S: Matrix, W: Matrix): Matrix {
+function generalisedLeastSquares(S: MutableRows, W: MutableRows): MutableRows {
   const Wi = invert(W)
   const St = transpose(S)
   return multiply(invert(multiply(St, multiply(Wi, S))), multiply(St, Wi))
@@ -197,8 +197,8 @@ export function reconcile(
   const nb = S[0]?.length ?? 0
   if (base.some((r) => r.length !== n)) throw new MdmlError('shape', `reconcile: base forecasts need ${n} series`)
   const Sm = S.map((r) => [...r])
-  let W: Matrix = identity(n)
-  let G: Matrix
+  let W: MutableRows = identity(n)
+  let G: MutableRows
   if (method === 'bottom-up') {
     G = Array.from({ length: nb }, (_, i) => Array.from({ length: n }, (_, j) => (j === n - nb + i ? 1 : 0)))
   } else {

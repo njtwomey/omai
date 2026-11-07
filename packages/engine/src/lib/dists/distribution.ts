@@ -423,7 +423,7 @@ function isPdArray(m: readonly number[], n: number, unitDiagonal: boolean): bool
 }
 
 /** A constraint on a distribution parameter, checked by {@link validateParams}. */
-export type Constraint =
+export type ParameterConstraint =
   | 'real'
   | 'finite'
   | 'positive'
@@ -435,7 +435,7 @@ export type Constraint =
   | 'positiveInteger'
 
 // `positive` and `nonNegative` exclude Infinity: an infinite scale, rate or df makes NaN at the first use.
-const CHECKS: Readonly<Record<Constraint, (v: number) => boolean>> = {
+const CHECKS: Readonly<Record<ParameterConstraint, (v: number) => boolean>> = {
   real: (v) => !Number.isNaN(v),
   finite: (v) => Number.isFinite(v),
   positive: (v) => v > 0 && v < Number.POSITIVE_INFINITY,
@@ -462,7 +462,10 @@ const CHECKS: Readonly<Record<Constraint, (v: number) => boolean>> = {
  * validateParams('normal', { scale: [tensor(-1), 'positive'] }) // => throws value
  * ```
  */
-export function validateParams(family: string, checks: Readonly<Record<string, readonly [Value, Constraint]>>): void {
+export function validateParams(
+  family: string,
+  checks: Readonly<Record<string, readonly [Value, ParameterConstraint]>>,
+): void {
   for (const [name, [v, constraint]] of Object.entries(checks)) {
     const values = concreteFlat(v)
     if (values === undefined) continue

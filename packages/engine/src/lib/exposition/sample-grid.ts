@@ -9,13 +9,13 @@ import { MdmlError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** A sample: an image as flat row-major pixel values (grey, or interleaved red, green and blue), or a string. */
-export type Sample = readonly number[] | string
+export type GridSample = readonly number[] | string
 
 /** The samples at one recorded step. */
 export interface SampleStep {
   /** The tape step the samples were drawn after. */
   readonly step: number
-  readonly samples: readonly Sample[]
+  readonly samples: readonly GridSample[]
   /** A short caption under each sample (its class, a score). */
   readonly labels?: readonly string[]
 }

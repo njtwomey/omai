@@ -35,7 +35,7 @@ import {
 } from './expr.ts'
 
 /** Direction of approach: from above (`'+'`) or below (`'-'`). */
-export type Direction = '+' | '-'
+export type SeriesDirection = '+' | '-'
 
 /** Where the expansion variable is and how it maps back to x. */
 interface Frame {
@@ -47,7 +47,7 @@ interface Frame {
 
 const T = sym('t_series__', { positive: true })
 
-function frame(x: ExprSym, x0: Expr, dir: Direction): Frame {
+function frame(x: ExprSym, x0: Expr, dir: SeriesDirection): Frame {
   if (x0.key === OO.key) return { t: T, sub: makePow(T, MINUS_ONE), back: makePow(x, MINUS_ONE), point: OO }
   if (x0.key === NEG_INF.key)
     return {
@@ -65,7 +65,7 @@ function logBack(f: Frame): Expr {
   return makeFn('log', [f.back])
 }
 
-function expansion(e: Expr, x: ExprSym, x0: Expr, n: number, dir: Direction, steps?: Step[]): [S, Frame] {
+function expansion(e: Expr, x: ExprSym, x0: Expr, n: number, dir: SeriesDirection, steps?: Step[]): [S, Frame] {
   const f = frame(x, x0, dir)
   const inT = substitute(e, [[x, f.sub]])
   return [seriesAt0(inT, f.t, n, steps), f]
@@ -103,7 +103,14 @@ function backToX(s: S, f: Frame): Expr {
  * series(parse('exp(sin(x))'), sym('x'), 0, 8, '+', { steps: 100 }) // => throws convergence
  * ```
  */
-export function series(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6, dir: Direction = '+', budget?: WorkBudget): Expr {
+export function series(
+  e: Expr,
+  x: ExprSym,
+  x0: ExprLike = 0,
+  n = 6,
+  dir: SeriesDirection = '+',
+  budget?: WorkBudget,
+): Expr {
   return bounded(
     'series',
     () => {
@@ -145,13 +152,13 @@ export function seriesSteps(
   x: ExprSym,
   x0: ExprLike = 0,
   n = 6,
-  dir: Direction = '+',
+  dir: SeriesDirection = '+',
   budget?: WorkBudget,
 ): Derivation {
   return bounded('seriesSteps', () => seriesStepsBody(e, x, asExpr(x0), n, dir), budget)
 }
 
-function seriesStepsBody(e: Expr, x: ExprSym, x0: Expr, n: number, dir: Direction): Derivation {
+function seriesStepsBody(e: Expr, x: ExprSym, x0: Expr, n: number, dir: SeriesDirection): Derivation {
   const steps: Step[] = []
   const p = x0
   const [s, f] = expansion(e, x, p, n, dir, steps)

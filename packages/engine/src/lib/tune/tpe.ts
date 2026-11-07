@@ -18,7 +18,7 @@ import {
   parzenSample,
   tpeAcquisition,
 } from './parzen.ts'
-import type { Sampler } from './samplers.ts'
+import type { StudySampler } from './samplers.ts'
 import { lossMatrix, lossOf, type Study, type StudyDirection, type Trial } from './study.ts'
 
 const EPS = 1e-12
@@ -201,7 +201,7 @@ function observationsOf(study: Study, trials: readonly Trial[], columns: readonl
  * (tune(f, dict({ x: real(-5, 5), y: real(-5, 5) }), { sampler: tpeSampler(), nTrials: 80, seed: 0 }).best?.values[0] ?? 9) < 0.5 // => true
  * ```
  */
-export function tpeSampler(options: TpeOptions = {}): Sampler {
+export function tpeSampler(options: TpeOptions = {}): StudySampler {
   const nStartup = options.nStartupTrials ?? 10
   const nCandidates = options.nEiCandidates ?? 24
   const parzen: ParzenOptions = {

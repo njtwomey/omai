@@ -13,8 +13,8 @@ import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } fr
 import { lowerCholesky, squareMatrix, vectorOf } from './_linear.ts'
 import { acceptWith, initState, type Welford, welfordCovariance, welfordInit, welfordUpdate } from './_mcmc.ts'
 import { type AdaptPath, chainFromJson, chainToJson } from './adaptation-contract.ts'
-import type { Adaptation, MCMCKernel, MCMCState, Transition, TransitionInfo, Warmup } from './chains.ts'
-import type { LogDensity, Proposal } from './target.ts'
+import type { Adaptation, ChainTransition, MCMCKernel, MCMCState, TransitionInfo, Warmup } from './chains.ts'
+import type { ChainProposal, LogDensity } from './target.ts'
 
 /**
  * The Metropolis-Hastings acceptance probability min(1, pi(x') q(x | x') / (pi(x) q(x' | x))) from log terms. A NaN
@@ -50,7 +50,7 @@ function transition(
   logTargetProposal: number,
   alpha: number,
   key: Key,
-): Transition<MCMCState> {
+): ChainTransition<MCMCState> {
   const accepted = acceptWith(key, alpha)
   const info: TransitionInfo = { acceptanceRate: alpha, accepted }
   return { state: accepted ? { position: proposal, logDensity: logTargetProposal } : state, info }
@@ -203,7 +203,7 @@ function rwmKernel(
  * Math.abs(k.step(key(0), k.init([0.3])).info.acceptanceRate - 1) < 1e-12 // => true
  * ```
  */
-export function independenceMetropolis(target: LogDensity, q: Proposal): MCMCKernel {
+export function independenceMetropolis(target: LogDensity, q: ChainProposal): MCMCKernel {
   if (q.dim !== target.dim) {
     throw new MdmlError(
       'shape',

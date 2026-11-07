@@ -5,7 +5,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { type Key, uniform } from '../random/index.ts'
-import { allDifferent, binaryConstraint, type Constraint, type Csp, csp } from '../search/index.ts'
+import { allDifferent, binaryConstraint, type Csp, type CspConstraint, csp } from '../search/index.ts'
 
 /**
  * The n-queens puzzle as a CSP: one variable per column (`'0'` to `'n-1'`), valued by the row of its queen, with no two
@@ -62,7 +62,7 @@ export function sudoku(grid: string): Csp<number> {
       units.push(unit)
     }
   const seen = new Set<string>()
-  const pairs: Constraint<number>[] = []
+  const pairs: CspConstraint<number>[] = []
   for (const unit of units)
     for (const p of allDifferent<number>(unit)) {
       const id = [...p.scope].sort().join(',')

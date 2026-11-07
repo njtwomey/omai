@@ -13,16 +13,16 @@ import {
   cosineWarmRestarts,
   exponentialDecay,
   inverseTimeDecay,
+  type LearningRateSchedule,
   linearSchedule,
   polynomialDecay,
-  type Schedule,
   stepDecay,
   warmupCosineDecay,
   warmupExponentialDecay,
 } from './schedules.ts'
 
 /** A schedule shape: given the peak (the optimiser's learning rate), the schedule over steps. */
-export type ScheduleShape = (peak: number) => Schedule
+export type ScheduleShape = (peak: number) => LearningRateSchedule
 
 /** What a schedule does, for validity rules and selectors. */
 export interface ScheduleProperties {

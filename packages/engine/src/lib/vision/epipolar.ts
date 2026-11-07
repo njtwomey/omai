@@ -12,7 +12,7 @@ import type { Key } from '../random/index.ts'
 import { ransac } from '../stats/index.ts'
 import { toArray } from '../tensor/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
-import { det3, invOf, type Matrix, matMul, nullVector, svdOf, transposeOf } from './_refine.ts'
+import { det3, invOf, type MutableRows, matMul, nullVector, svdOf, transposeOf } from './_refine.ts'
 import type { RobustFit } from './geometry.ts'
 
 /** Pixel points to normalised camera coordinates K^-1 [u, v, 1]. */
@@ -29,7 +29,7 @@ function normalised(points: readonly Point2[], k: readonly (readonly number[])[]
 }
 
 /** The nearest essential matrix: singular values made (1, 1, 0). */
-function toEssential(e: Matrix): Matrix {
+function toEssential(e: MutableRows): MutableRows {
   const { u, v } = svdOf(e)
   const d = [
     [1, 0, 0],
@@ -40,8 +40,8 @@ function toEssential(e: Matrix): Matrix {
 }
 
 /** The essential matrix of normalised correspondences: the eight-point fundamental matrix, made essential. */
-function fitEssential(a: readonly Point2[], b: readonly Point2[]): Matrix {
-  const f = toArray(fundamentalMatrix(a as Point2[], b as Point2[])) as Matrix
+function fitEssential(a: readonly Point2[], b: readonly Point2[]): MutableRows {
+  const f = toArray(fundamentalMatrix(a as Point2[], b as Point2[])) as MutableRows
   const e = toEssential(f)
   // Unit Frobenius norm (sqrt 2 for singular values 1, 1), the sign with the largest entry positive.
   let big = 0
@@ -93,7 +93,7 @@ export function findEssentialMat(
   const n = a.length
   if ((options.method ?? 'ransac') === 'all') return { model: fitEssential(a, b), mask: new Array<number>(n).fill(1) }
   const focal = ((cameraMatrix[0]?.[0] ?? 1) + (cameraMatrix[1]?.[1] ?? 1)) / 2
-  const error = (e: Matrix, i: number): number => {
+  const error = (e: MutableRows, i: number): number => {
     const [x1, y1] = a[i] as Point2
     const [x2, y2] = b[i] as Point2
     const E = (r: number, c: number): number => e[r]?.[c] ?? 0
@@ -106,7 +106,7 @@ export function findEssentialMat(
   const r = ransac(
     a.map((_, i) => i),
     {
-      fit: (s: readonly number[]): Matrix | undefined => {
+      fit: (s: readonly number[]): MutableRows | undefined => {
         try {
           return fitEssential(
             s.map((i) => a[i] as Point2),
@@ -116,7 +116,7 @@ export function findEssentialMat(
           return undefined
         }
       },
-      residual: (e: Matrix | undefined, i: number) => (e === undefined ? Number.POSITIVE_INFINITY : error(e, i)),
+      residual: (e: MutableRows | undefined, i: number) => (e === undefined ? Number.POSITIVE_INFINITY : error(e, i)),
     },
     {
       minSamples: 8,
@@ -147,8 +147,8 @@ export function findEssentialMat(
  * ```
  */
 export function decomposeEssentialMat(e: readonly (readonly number[])[]): {
-  readonly R1: Matrix
-  readonly R2: Matrix
+  readonly R1: MutableRows
+  readonly R2: MutableRows
   readonly t: [number, number, number]
 } {
   let { u, v } = svdOf(e.map((r) => [...r]))
@@ -232,7 +232,7 @@ export function recoverPose(
   points2: PointsLike,
   cameraMatrix: readonly (readonly number[])[],
   options: { readonly distanceThreshold?: number; readonly mask?: readonly number[] } = {},
-): { readonly R: Matrix; readonly t: [number, number, number]; readonly good: number; readonly mask: number[] } {
+): { readonly R: MutableRows; readonly t: [number, number, number]; readonly good: number; readonly mask: number[] } {
   const a = normalised(pointsOf(points1, 'recoverPose'), cameraMatrix)
   const b = normalised(pointsOf(points2, 'recoverPose'), cameraMatrix)
   const dist = options.distanceThreshold ?? 50
@@ -242,7 +242,7 @@ export function recoverPose(
     [0, 1, 0, 0],
     [0, 0, 1, 0],
   ]
-  const candidates: { R: Matrix; t: [number, number, number] }[] = [
+  const candidates: { R: MutableRows; t: [number, number, number] }[] = [
     { R: R1, t },
     { R: R2, t },
     { R: R1, t: [-t[0], -t[1], -t[2]] },
@@ -282,7 +282,7 @@ export function essentialFromFundamental(
   f: readonly (readonly number[])[],
   k1: readonly (readonly number[])[],
   k2: readonly (readonly number[])[] = k1,
-): Matrix {
+): MutableRows {
   return matMul(matMul(transposeOf(k2), f), k1)
 }
 
@@ -304,6 +304,6 @@ export function fundamentalFromEssential(
   e: readonly (readonly number[])[],
   k1: readonly (readonly number[])[],
   k2: readonly (readonly number[])[] = k1,
-): Matrix {
+): MutableRows {
   return matMul(matMul(transposeOf(invOf(k2)), e), invOf(k1))
 }
