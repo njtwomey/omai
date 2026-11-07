@@ -41,4 +41,4 @@ reported.
 
 ## Findings
 
-Recorded in `docs/review-findings.md` as the phases produce them.
+Recorded in `docs/code-review/findings.md` as the phases produce them.

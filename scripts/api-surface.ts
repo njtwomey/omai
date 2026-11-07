@@ -1,5 +1,5 @@
 /**
- * The public surface of the packages as data, the guard for refactors that must not change it (docs/review-plan.md).
+ * The public surface of the packages as data, the guard for refactors that must not change it (docs/code-review/plan.md).
  *
  *   node scripts/api-surface.ts                 write docs/api-surface.txt: per entry point, its export count and a digest
  *   node scripts/api-surface.ts --check         fail, listing the entry points whose exports or signatures changed

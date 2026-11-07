@@ -1,6 +1,6 @@
 # Structural review: findings
 
-Phase 0 of `docs/review-plan.md`: what the scripts found, before any model reading. Every number is from running the
+Phase 0 of `docs/code-review/plan.md`: what the scripts found, before any model reading. Every number is from running the
 scripts on 2026-11-07 (commit b09e46da plus the scripts). Re-run them with:
 - `node scripts/review/names.mjs <out> [similarity=0.6] [min tokens=12]`: names the function definitions, clusters them
   by name, and verifies each cluster by comparing the bodies (token shingles). `0.8 40` is the strict tier below.
