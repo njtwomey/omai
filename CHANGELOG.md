@@ -2,6 +2,55 @@
 
 Versions are released in lockstep for mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.3
+
+A structural review of the core (record: `docs/code-review/`, start at `summary.md`). Much of it is behaviour-preserving, but
+the public surface changes in the ways listed here, so read this before upgrading from 0.1.2.
+
+**Numerical results that were wrong are now right.** Rank-deficient `lstsq` and `polyfit` return the minimum-norm solution
+(they returned garbage of size 1e15); `matmul` no longer turns 0 x NaN into 0 (so neither does `einsum`); `delaunay` on
+cocircular points; `svd`, `norm` and the root finders at extreme scales; empty-axis reductions throw as numpy does; the
+samplers validate their parameters; NaN no longer reads as a tie in rank tests or as certainty in `chdtr` and `fdtr`;
+`permutationTest` with `pairings` enumerated every permutation n! times; `erfinv`, `betainc`, `gammainc`, `tanhSinh`, the
+Cauchy `ppf` tails and `floorDiv(0, -1)` at their edges; `vmap(grad(f))` evaluated `f` twice before reporting a missing rule.
+
+**Speed (results unchanged).** `scheduler.fired`, the gamma and count samplers (about 20x), `einsum` (30x), general `eig`
+(n = 200: 15.6 s to 0.26 s), `convolve`, `spmv`, OMP, the stationary kernels' Gram matrices (7x to 20x), the elementwise and
+reduction kernels, reverse mode (`grad` of a chain 142 ms to 10 ms) and the decision-surface frame (29 ms to 5 ms).
+
+**Breaking: native arrays become tensors (decision D-009).** Public numeric functions take a `TensorLike` (a tensor, a typed
+array or nested arrays, so old calls still compile) and return tensors. Done for `random`, `data`, `stats`, `metrics`,
+`numerics`, `optim` and `losses` and their result records (about 180 signatures; the full lists are in `docs/structure.md`,
+section 2). Examples: `random.dirichlet`, `categorical`, `multinomial`, `aliasTable` (its fields are tensors), `data.balancedWeights`
+and `noiseTransition`, `stats.ranksOf`, `metrics.auc` and the curve and confusion records, the polynomial functions (`polymul`,
+`polyroots`, ...), `homography`, `GlmProblem.x` (now the `[n, d]` matrix; `n` and `d` are gone), `constraintNullSpace(C)` (no `k`).
+Exposition records stay plain data. New: `tensor.toVector`, `tensor.fromVector`.
+
+**Breaking: one name, one meaning.** 59 generic type names that meant different things in different places were renamed to what
+they are: `Matrix` (now `ShapedArray`, `ExprMatrix`, `DenseMatrix`, `Rows`), `Box` (`BoundVectors`, `BoxCoords`, `LayoutBox`, `Aabb`),
+`Mat` (`ObservationMatrix`), `Bounds`, `Constraint`, `Schedule`, `Selection`, `Direction`, `Kernel`, `Sampler`, `Tree` and others;
+`metrics.matrix` is `shapedArray`. No deprecated aliases. `make lint` now forbids redefining the retired names.
+
+**Breaking: removed.** `Context.backend` and `Context.dtype`, `BackendCapabilities`, `supportsDType`, the `not`, `and`, `or` and
+`xor` kernels, `avalOf`, `Tolerance`, `defaultTolerance`, `resolveTolerance`, `data.RowColumn`.
+
+**One failure convention.** Result records carry `status` (the one `RunStatus` vocabulary: `converged`, `completed`, `stopped`,
+`diverged`, `failed`) and `converged`; non-convergence does not throw (`fixedPoint` now returns a result at its cap instead of
+throwing); invalid arguments throw `MdmlError('value')` (`shape` only for dimensions that disagree, `domain` only for a kernel
+hyperparameter range). The factorisations, Krylov solvers and nearest-neighbour queries reject NaN and Infinity input with `value`.
+`iterate`, `runAlgorithm` and `runFor` share one stepper and agree on the end status. Tape end statuses of the root finders
+and eigen iterations at their cap are `completed`.
+
+**Other additions.** `Kernel.psd`; `Primitive.linear`; `RecordBoundary`, `expositionSamples` and `validateScene`; `useTape(file,
+registry, onError)`; optional `label` on `Chart`; opt-in `gradTolRel` on the generic solvers; preconditioned `minres`; optional
+`CreateOptions` on `arange`, `linspace`, `eye` and the other constructors; `GroupReport.minSize`; `TestResult.status`.
+
+**Tapes.** Checkpoint states are written with the shared JSON codec (typed arrays as `{ $typed, values }`, non-finite numbers and
+-0 survive JSON text). Tapes saved by 0.1.2 still load.
+
+**Tooling.** `make layers` checks the tiers of the core and file-level import cycles; `make api-surface-check` (the digest of every
+export's signature) runs in `make verify`, `make check` and CI; the render test helpers are no longer in the published package.
+
 ## 0.1.2
 
 - mdml-render: a third start policy for sessions, `start: 'first'` (primed): `useSession`, `useSessions`,
