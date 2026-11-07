@@ -465,3 +465,41 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   layers, lint, agent index, surface. Tests added: 1 `it` (a table). Surface: 0 added, 0 removed, 26 changed.
 - **18:40 Gate.** The core-test-gap merge (P3.7, P3.16) and native-array stage 2 (`stats`, `metrics`) passed the full local gate: 26,464 tests, 9,613 examples, all static checks and
   all six tsc runs, first run. 178 commits ahead of `origin/main`; nothing pushed (D-014).
+- **19:05 Native arrays, stage 3 (P3.8, D-009, D-015: `numerics`).** Branch `agent-na04-numerics`, 11 commits (`0f53c59f`,
+  `d87e3eed`, `931a4e93`, `8966d58c`, `c7aef818`, `c7d6fb41`, `a88e8e9c`, `97bfde72`, `acb749c1`, `7f906413`, `1fe801c1`). The
+  sorting's 60 public vectors and matrices of `numerics` (F19 of the numerics reading): 59 migrated, `primalValues` kept native
+  as a kernel. The plain-number loops sit in private kernels (`polynomial/_power.ts`, which `rational.ts` calls directly;
+  `numerics/_vector.ts` with `vectorOf` and `matrixOf`), the public functions read once with `toVector` and wrap once.
+  Polynomial: `polytrim`, `polyder`, `polyint`, `polyadd`, `polysub`, `polymul`, `polydiv` (new `PolynomialDivision`),
+  `companion`, `polyroots` (`ComplexRoots` fields are vectors, as `eigvals`), `polyFromRoots`, `orthoToPower`, `powerToOrtho`,
+  `monicFromNodes` take and return tensors; `residue`, `residuez`, `invres` take tensor-likes. Geometry:
+  `rotationFromQuat`, `rotationFromRotvec`, `rotationFromEuler` take tensor-likes (`Vec3`, `Vec4` tuples still work),
+  `applyHomography` takes the matrix as a tensor-like and is now differentiable in it, `homography`, `fundamentalMatrix` return
+  `[3, 3]` tensors, `contourLevels` a tensor, `isolines` takes the levels as a tensor-like, `windingNumber` and `pointInPolygon`
+  return int32 tensors. `inverse`: `lambdaGrid`, `lCurve`, `gcv`, `quasiOptimality`, `tikhonovPath` (`ParameterChoice` and
+  `PathPoint.x` are tensors). `approximation`: `richardson`, `aitken`, `wynnEpsilon`, `shanks`, `eulerTransform`, `chebyshev`,
+  `chebyshevCoefficients`, `chebyshevSeries`, `pade`, `propagateError`. `interpolate`: `barycentric` weights,
+  `barycentricWeights`, `lagrange`, `chebyshevNodes`, `equispacedNodes`, `lebesgueConstant`, `notAKnot`, the knots of
+  `makeInterpSpline` and `makeLsqSpline`, `realRoots`, the weights of `makeSmoothingSpline` and `univariateSpline`.
+  `differentiate`: `jacobianFd` and `hessianFd` (the point; the callbacks stay flat), `finiteDifferenceWeights`. `sparse`:
+  `lanczos`, `arnoldi`, `arnoldiAlgorithm` (start vector; `deflate` is a `[k, n]` matrix, a list of `Float64Array`s still
+  works), `multigridCycle`. Callers updated: `systems` 4 files (three highest-first helpers wrap the public functions),
+  `timeseries` 3, `foundations` 1, `signal` 1, `vision` 3, `graph` 1, render 2 (`contourLevels`), the gallery recipe 1, the
+  tests of `numerics` and `systems`. Kept native, with the reason: `primalValues` (a kernel the sparse solvers read);
+  `csr`, `fromCoo` (index arrays) and `prolongation` (axis sizes); `compensatedSum`, a kernel on plain numbers (tried:
+  132 us to 736 us for 1e5 terms, 5.5x, so reverted); the ragged results of `richardson` and `wynnEpsilon`; the result and
+  state records that are built literally across files or are the iteration's state (`ComplexArray` and `PartialFractions`
+  in `systems`, `Chebyshev` and `MinimaxResult`, `LanczosResult`, `NormalisedPoints.transform`, `Rotation.asMatrix`,
+  `AffineMap.homogeneous`), and the `eigsh` start vector (`optim` passes `ArrayLike`); the other `numerics` functions the sorting
+  counts as kernels (`lapack.ts`, `blas.ts`) or shapes. None of the migrated functions is differentiable except `applyHomography`
+  and `polyval` as before: a traced input is rejected with `not-differentiable` (`toVector`). Bit-identical: no golden changed;
+  examples differ only where `.map` needs `toFlat`. Hot paths measured before and after (niced throwaway script, best of 5,
+  per call): `polymul` 10 x 10 0.22 / 0.57 us (60 x 60 19.7 / 7.1 us), `polyder` 60 0.23 / 0.66 us, `polytrim` 0.03 / 0.52 us
+  (the flat-array check of `toVector`), `polyroots` 6 23.3 / 21.4 us, `homography` 29.6 / 29.2 us, `applyHomography` 1000
+  points 216 / 206 us, `pointInPolygon` 1000 points 168 / 107 us, `windingNumber` 1000 points 33.3 / 32.7 us, `aitken` 200
+  1.75 / 3.27 us, `chebyshevSeries` 1000 76 / 82 us, `lagrange` 15 42 / 41 us, `jacobianFd` 5 1.69 / 1.58 us; only
+  `compensatedSum` was clearly slower, and it stayed native. Own checks only (the full gate was not run): engine, render, meta,
+  site and pocs tsc; 305 files, 6,766 tests of `numerics`, `timeseries`, `systems`, `signal`, `foundations`, `vision`, `graph`
+  and render's `charts`; 216 `@example`s of the touched files; barrels, layers, lint, agent index, surface. Tests added: 7 `it`
+  (one table per family: `polynomial`, `geometry`, `inverse`, `approximation`, `interpolate`, `differentiate`, `sparse`).
+  Surface: 1 added (`PolynomialDivision`), 0 removed, 63 changed.

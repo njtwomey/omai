@@ -302,6 +302,25 @@ the `thresholdSweep` rows) until the records themselves are staged; the callback
 imports only `base` and `scene` (section 3, layering): a tensor-like input would need `tensor` below the records, and the
 record data is plain JSON by contract.
 
+Stage 3 (`numerics`): `polynomial` `polytrim`, `polyder`, `polyint`, `polyadd`, `polysub`, `polymul`, `polydiv`, `companion`,
+`polyroots` (`ComplexRoots` fields are vectors, as `linalg.eigvals`), `polyFromRoots`, `orthoToPower`, `powerToOrtho`,
+`monicFromNodes` (take tensor-likes, return tensors), `residue`, `residuez`, `invres` (take tensor-likes); `geometry`
+`rotationFromQuat`, `rotationFromRotvec`, `rotationFromEuler` (a `Vec3` or `Vec4` tuple still works), `applyHomography` (the matrix,
+now differentiable in it), `homography`, `fundamentalMatrix` (return `[3, 3]` tensors), `contourLevels`, `isolines` (`levels`),
+`windingNumber`, `pointInPolygon` (return int32 tensors); `inverse` `lambdaGrid`, `lCurve`, `gcv`, `quasiOptimality`,
+`tikhonovPath` (`ParameterChoice` and `PathPoint.x` are tensors); `approximation` `richardson`, `aitken`, `wynnEpsilon`,
+`shanks`, `eulerTransform`, `chebyshev`, `chebyshevCoefficients`, `chebyshevSeries`, `pade`, `propagateError`; `interpolate`
+`barycentric` (`weights`), `barycentricWeights`, `lagrange`, `chebyshevNodes`, `equispacedNodes`, `lebesgueConstant`, `notAKnot`,
+`makeInterpSpline` and `makeLsqSpline` (knots), `realRoots`, the `w` of `makeSmoothingSpline` and `univariateSpline`;
+`differentiate` `jacobianFd`, `hessianFd` (the point; the callbacks stay on flat arrays), `finiteDifferenceWeights`; `sparse`
+`lanczos`, `arnoldi`, `arnoldiAlgorithm` (`v0`; `deflate` is a `[k, n]` matrix), `multigridCycle`. The loops of a migrated file
+sit in a private kernel (`polynomial/_power.ts`) and the two wrappers `vectorOf` and `matrixOf` in `numerics/_vector.ts`. Kept native
+on purpose: `primalValues` (the sparse solvers read it), `csr` and `fromCoo` (index arrays), `prolongation` (axis sizes),
+`compensatedSum` (a kernel; 5.5x slower on 1e5 terms when read as a tensor-like), the ragged `richardson` tableau and
+`wynnEpsilon` columns, the eigsh start vector, and the result records read across files or holding an iteration's state until the
+records are staged (`ComplexArray`, `PartialFractions`, `Chebyshev`, `MinimaxResult`, `LanczosResult`, `NormalisedPoints.transform`,
+`Rotation.asMatrix`, `AffineMap.homogeneous`).
+
 **Docstrings.** Every export has a TSDoc block: summary, `@param` per parameter, `@returns`, `@throws` where relevant,
 and at least one `@example` with `// => value`, `// => figure`, `// => trace` or `// => throws Code` expectations that
 the build runs. `@concept` tags link to the concept taxonomy (section 7), `@see` and `@reference` cite sources.
@@ -894,6 +913,11 @@ oracle: numpy, scipy
 Every routine accepts traced values. The derivative rule is stated per folder: "composed" means it follows from the
 primitives; "custom" means a dedicated rule.
 
+`_vector.ts` (private, at the root of `numerics`): `vectorOf` (a float64 vector from numbers) and `matrixOf` (a float64 matrix over
+row-major storage), the two ways the public functions hand plain-number kernels' results back as tensors (decision D-009, section 2).
+A function that reads its input as plain numbers (the polynomial, interpolation, approximation and sparse functions of the list
+there) rejects a traced value with `not-differentiable`; its TSDoc says so.
+
 `special/` (scipy.special; each function is a primitive with an analytic derivative)
 - `erf.ts`: `erf`, `erfc`, `erfcx`, `erfinv`, `erfcinv`, `dawsn`.
 - `gamma.ts`: `gamma`, `lgamma`, `digamma`, `trigamma`, `polygamma`, `beta`, `lbeta`, `factorial`, `lfactorial`,
@@ -967,6 +991,8 @@ primitives; "custom" means a dedicated rule.
 - `power.ts` (lowest degree first, as numpy.polynomial): `polyval`, `polyvander`, `polyfit`, `polyder`, `polyint`,
   `polyadd`, `polysub`, `polymul`, `polydiv`, `polytrim`, `polyroots`, `polyFromRoots`, `companion`, `charpoly`
   (numpy.poly of a matrix, with an exact derivative rule).
+- `_power.ts` (private): the plain-number kernels of `power.ts` (trim, derivative, integral, sum, difference, product, division,
+  companion matrix, roots, polynomial from roots), which `rational.ts` calls directly.
 - `orthogonal.ts`: Legendre, Chebyshev, Hermite (both), Laguerre and Jacobi families by their recurrences:
   `orthoval` (Clenshaw), `orthovander`, `orthofit`, `orthogauss`, `orthoToPower`, `powerToOrtho`.
 - `rational.ts`: `residue`, `residuez`, `invres`, partial fractions.

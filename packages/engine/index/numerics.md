@@ -8,7 +8,7 @@ Numerical methods, scipy and numpy.linalg style, one subfolder per topic with an
 
 Approximating functions and sequences: Chebyshev expansions and adaptive chebfun-style approximation, minimax approximation by the Remez algorithm, Pade approximants and continued fractions, convergence acceleration of sequences and series, and floating-point arithmetic itself (ulps, error-free sums and products, conditioning).
 
-- function `chebfun`: Adaptive Chebyshev approximation of a smooth function. `src/lib/numerics/approximation/chebyshev.ts:320` `mdml-engine/numerics/approximation`
+- function `chebfun`: Adaptive Chebyshev approximation of a smooth function. `src/lib/numerics/approximation/chebyshev.ts:333` `mdml-engine/numerics/approximation`
 
 ## numerics/convolution
 
@@ -21,7 +21,7 @@ Convolution and padding: 1-D convolution and correlation (direct, FFT and overla
 
 Numerical differentiation by finite differences: extrapolated derivatives with error estimates, gradients of sampled data, finite-difference Jacobians and Hessians, stencil weights, complex-step derivatives and difference matrices. Exact derivatives come from `autodiff`; these are for references, sampled data and checks.
 
-- function `derivative`: Derivative of a scalar function by Richardson-extrapolated differences. `src/lib/numerics/differentiate/finite-differences.ts:57` `mdml-engine/numerics/differentiate`
+- function `derivative`: Derivative of a scalar function by Richardson-extrapolated differences. `src/lib/numerics/differentiate/finite-differences.ts:59` `mdml-engine/numerics/differentiate`
 
 ## numerics/fourier
 
@@ -42,7 +42,7 @@ Computational geometry: distances and metrics (scipy.spatial.distance), convex h
 
 Interpolation, scipy.interpolate style: polynomial interpolation in barycentric form, piecewise polynomials, cubic, B- and smoothing splines, shape-preserving PCHIP and Akima interpolants, gridded interpolation in any dimension, and scattered-data methods (radial basis functions, inverse distance, natural neighbour).
 
-- function `cubicSpline`: Cubic spline with not-a-knot, natural, clamped or periodic ends. `src/lib/numerics/interpolate/splines.ts:125` `mdml-engine/numerics/interpolate`
+- function `cubicSpline`: Cubic spline with not-a-knot, natural, clamped or periodic ends. `src/lib/numerics/interpolate/splines.ts:127` `mdml-engine/numerics/interpolate`
 - function `interp1d`: 1-D interpolation: linear, nearest, previous, next or spline. `src/lib/numerics/interpolate/grid.ts:216` `mdml-engine/numerics/interpolate`
 - function `rbfInterpolator`: Radial-basis interpolation of scattered data. `src/lib/numerics/interpolate/scattered.ts:134` `mdml-engine/numerics/interpolate`
 
@@ -50,7 +50,7 @@ Interpolation, scipy.interpolate style: polynomial interpolation in barycentric 
 
 Ill-posed inverse problems, where small noise in the data makes the plain solution useless: spectral regularisation (Tikhonov, truncated SVD), regularising iterations (Landweber, CGLS, LSQR) and the rules for choosing the regularisation parameter (L-curve, GCV, discrepancy principle).
 
-- function `tikhonov`: Tikhonov-regularised solution of an ill-posed linear problem. `src/lib/numerics/inverse/tikhonov.ts:100` `mdml-engine/numerics/inverse`
+- function `tikhonov`: Tikhonov-regularised solution of an ill-posed linear problem. `src/lib/numerics/inverse/tikhonov.ts:102` `mdml-engine/numerics/inverse`
 
 ## numerics/linalg
 
@@ -74,7 +74,7 @@ Dense linear algebra, numpy.linalg and scipy.linalg style: determinants and norm
 
 Polynomials as coefficient arrays, numpy.polynomial style: the power basis (evaluation, fitting, arithmetic, roots), orthogonal families with their Gauss rules, and partial fractions of rational functions. Coefficients are lowest degree first (numpy.polynomial), except in `residue`, `residuez` and `invres`, which follow scipy.signal and take highest degree first.
 
-- function `polyfit`: Least-squares polynomial fit in the power basis. `src/lib/numerics/polynomial/power.ts:104` `mdml-engine/numerics/polynomial`
+- function `polyfit`: Least-squares polynomial fit in the power basis. `src/lib/numerics/polynomial/power.ts:119` `mdml-engine/numerics/polynomial`
 
 ## numerics/quadrature
 
@@ -99,7 +99,7 @@ Sparse linear algebra, scipy.sparse style: compressed sparse row matrices and li
 - function `iterative.ts` (file): Krylov solvers: CG, BiCGSTAB, GMRES and MINRES with preconditioners. `src/lib/numerics/sparse/iterative.ts:1` `mdml-engine/numerics/sparse`
 
 - function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:166` `mdml-engine/numerics/sparse`
-- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:455` `mdml-engine/numerics/sparse`
+- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:485` `mdml-engine/numerics/sparse`
 
 - structure `csr`: Compressed sparse row matrix from a dense matrix or its arrays. `src/lib/numerics/sparse/csr.ts:67` `mdml-engine/numerics/sparse`
 
