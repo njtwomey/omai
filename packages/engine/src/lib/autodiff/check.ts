@@ -13,12 +13,13 @@ import {
   mul,
   sizeOf,
   stack,
+  sum,
   type Tensor,
   type TensorLike,
   toFlat,
   type Value,
 } from '../tensor/index.ts'
-import { jvp, vjp } from './transforms.ts'
+import { grad, jvp, vjp } from './transforms.ts'
 import { vmap } from './vmap.ts'
 
 function concrete(x: Value, where: string): Tensor {
@@ -85,6 +86,12 @@ export interface CheckOptions {
   readonly wrt?: readonly number[]
   /** Also check `vmap` against a loop over a small batch (default true). */
   readonly vmap?: boolean
+  /**
+   * `2` also checks the second derivative of the rules (default: first order only): the Hessian-vector product by
+   * forward over reverse and by reverse over forward, each against a finite difference of the first-order gradient.
+   * Use it on smooth primitives; a rule that calls a kernel or reads `primalOf` instead of operations fails it.
+   */
+  readonly order?: 1 | 2
 }
 
 // Collects comparisons against a reference with one tolerance, tracking the largest errors.
@@ -164,6 +171,51 @@ function vmapAgainstLoop(
   }
 }
 
+// The second-order check of one input: the Hessian-vector product `H t` of `<g, f>` by forward over reverse and by
+// reverse over forward, against a five-point difference of the first-order gradient along `t`.
+function secondOrder(
+  fi: (v: Value) => Value,
+  xi: Tensor,
+  g: Tensor,
+  direction: Tensor,
+  i: number,
+  eps: number,
+  compare: (what: string, got: number, want: number) => void,
+  failures: string[],
+): void {
+  const gradAt = (v: Value): Value => vjp(fi, v).pullback(g)
+  // A five-point stencil with a wide step: the gradient of a special function carries about 1e-10 of error, which a
+  // two-point difference at a small step would amplify into the second derivative.
+  const h = 100 * eps
+  // Each coordinate moves in proportion to its own size, so an input that mixes 0.5 and 200 is differenced well in both.
+  const t = fromStorage(
+    Float64Array.from(xi.data, (v, k) => Math.max(1, Math.abs(v)) * (direction.data[k] ?? 0)),
+    xi.shape,
+    'float64',
+  )
+  const at = (s: number): Value =>
+    fromStorage(
+      Float64Array.from(xi.data, (v, k) => v + s * h * (t.data[k] ?? 0)),
+      xi.shape,
+      'float64',
+    )
+  try {
+    const grads = [-2, -1, 1, 2].map((s) => toFlat(gradAt(at(s))))
+    const forwardOverReverse = toFlat(concrete(jvp(gradAt, xi as Value, t as Value).tangent, 'checkPrimitive'))
+    const reverseOverForward = toFlat(
+      concrete(grad((v: Value) => sum(mul(g, jvp(fi, v, t as Value).tangent)))(xi), 'checkPrimitive'),
+    )
+    for (let k = 0; k < xi.data.length; k++) {
+      const [m2, m1, p1, p2] = grads.map((gr) => gr[k] ?? Number.NaN) as [number, number, number, number]
+      const fd = (m2 - 8 * m1 + 8 * p1 - p2) / (12 * h)
+      compare(`hvp (forward over reverse) input ${i}[${k}]`, forwardOverReverse[k] ?? Number.NaN, fd)
+      compare(`hvp (reverse over forward) input ${i}[${k}]`, reverseOverForward[k] ?? Number.NaN, fd)
+    }
+  } catch (e) {
+    failures.push(`second order input ${i} threw: ${e instanceof Error ? e.message : String(e)}`)
+  }
+}
+
 /**
  * The dot-product (adjoint) test: for random directions `v` and `u`, the forward-mode product and the reverse-mode
  * product must satisfy `<u, J v> = <J^T u, v>`. It links the two modes without any finite differences, so it holds to
@@ -202,11 +254,15 @@ export function dotProductTest(f: (x: Value) => Value, x: TensorLike, options: C
  * 3. the dot-product test `<g, J t> = <J^T g, t>` linking the two;
  * 4. `vmap` against a loop over a small batch of scaled copies of the point, batched on the first and on the last
  *    axis (this exercises the batch rules, or the per-example fallback);
- * 5. the inputs are not mutated.
+ * 5. the inputs are not mutated;
+ * 6. with `order: 2`, the second derivative of the rules: the Hessian-vector product of `<g, f>` along a random
+ *    direction by forward over reverse and by reverse over forward, against finite differences of the first-order
+ *    gradient (so a rule that is right at first order but calls a kernel or `primalOf` fails).
  *
  * @param f - A function of several values returning one value.
  * @param inputs - The point (concrete float values for the differentiated inputs).
- * @param options - Step, tolerances, key for the random directions, which inputs to check, and whether to check vmap.
+ * @param options - Step, tolerances, key for the random directions, which inputs to check, whether to check vmap and
+ *   whether to check second derivatives (`order: 2`).
  * @returns A report with the largest errors and any failures.
  * @concept gradient-check
  * @index function Conformance test every primitive's jvp and vjp must pass.
@@ -269,6 +325,11 @@ export function checkPrimitive(
 
     // 3. dot-product test: <g, J t> = <J^T g, t>
     compare(`dot product input ${i}`, dotFlat(g, tangent), dotFlat(gradRev, t))
+
+    // 6. second order: Hessian-vector products against finite differences of the gradient
+    if (options.order === 2) {
+      secondOrder(fOf(i), xi, g, normal(foldIn(baseKey, 200 + i), xi.shape) as Tensor, i, eps, compare, failures)
+    }
   }
 
   // 4. vmap against a loop, with the batch first and last

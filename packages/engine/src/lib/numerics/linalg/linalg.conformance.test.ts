@@ -81,7 +81,7 @@ const cases: readonly (readonly [string, (...xs: Value[]) => Value, readonly Ten
 describe('linear algebra primitives are conformant', () => {
   for (const [name, f, inputs] of cases) {
     it(name, () => {
-      const report = checkPrimitive(f, inputs, { rtol: 1e-5, atol: 1e-7 })
+      const report = checkPrimitive(f, inputs, { rtol: 1e-5, atol: 1e-7, order: 2 })
       expect(report.failures).toEqual([])
     })
   }

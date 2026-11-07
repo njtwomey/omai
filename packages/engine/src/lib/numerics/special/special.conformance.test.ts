@@ -264,15 +264,19 @@ const cases: readonly (readonly [string, (...xs: Value[]) => Value, readonly num
   ],
 ]
 
+// The Bessel and elliptic evaluators carry about 1e-9 of error in their gradients, which differencing the gradient
+// amplifies: their second derivatives are checked to 1e-2, still enough to catch a wrong sign or factor.
+const looseSecondOrder = new Set(['iv', 'ive', 'logIv', 'kv', 'jv', 'yv', 'ellipj.sn'])
+
 describe('special functions are conformant primitives', () => {
   for (const [name, f, inputs] of cases) {
     it(name, () => {
-      const report = checkPrimitive(
-        f,
-        inputs.map((x) => tensor(x)),
-        { rtol: 1e-5, atol: 1e-7 },
-      )
-      expect(report.failures).toEqual([])
+      const xs = inputs.map((x) => tensor(x))
+      const loose = looseSecondOrder.has(name)
+      expect(checkPrimitive(f, xs, { rtol: 1e-5, atol: 1e-7, ...(loose ? {} : { order: 2 }) }).failures).toEqual([])
+      if (loose) {
+        expect(checkPrimitive(f, xs, { rtol: 1e-2, atol: 1e-4, order: 2, vmap: false }).failures).toEqual([])
+      }
     })
   }
 })

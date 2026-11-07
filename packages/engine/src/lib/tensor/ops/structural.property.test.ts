@@ -59,7 +59,7 @@ function check(
   const gen = distinct ? distinctTensor : tensorOf
   it(name, () => {
     fc.assert(
-      fc.property(fc.tuple(...shapes.map((s) => gen(s, lo, hi))), (xs) => expectConformant(f, xs)),
+      fc.property(fc.tuple(...shapes.map((s) => gen(s, lo, hi))), (xs) => expectConformant(f, xs, { order: 2 })),
       { numRuns: RUNS },
     )
   })
