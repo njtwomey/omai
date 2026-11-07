@@ -3,11 +3,25 @@
 // points in turn, keeping the best run. Not exported from the barrel.
 
 import { customVjp } from '../autodiff/index.ts'
+import { hyperparameters, type Kernel } from '../kernels/index.ts'
 import { type BoundedProblem, boundedSolvers, infNorm, solverConfigOf } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { fromStorage, mul, toFlat, type Value } from '../tensor/index.ts'
 import type { Algorithm, StepContext } from '../trace/index.ts'
+
+/** The box of the free hyperparameters in theta (log) coordinates: positive ones within `bounds`, real ones free. */
+export function thetaBox(kernel: Kernel, bounds: readonly [number, number]): { lower: number[]; upper: number[] } {
+  const lower: number[] = []
+  const upper: number[] = []
+  for (const hp of hyperparameters(kernel)) {
+    for (let i = 0; i < hp.size; i++) {
+      lower.push(hp.constraint === 'positive' ? Math.log(bounds[0]) : -Infinity)
+      upper.push(hp.constraint === 'positive' ? Math.log(bounds[1]) : Infinity)
+    }
+  }
+  return { lower, upper }
+}
 
 /** What a search reads of the state of the solver in progress, whichever solver of the slot it is. */
 export interface SearchInner {

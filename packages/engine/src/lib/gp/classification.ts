@@ -61,6 +61,7 @@ import {
   lbfgsbSearch,
   negatedObjective,
   type SearchState,
+  thetaBox,
 } from './_search.ts'
 import {
   type ClassLikelihood,
@@ -174,17 +175,6 @@ function prepare(data: LearnData, h: GpClassifierHyper): Prepared {
 
 const natural = (kernel: Kernel, theta: readonly number[]): number[] =>
   hyperparameters(theta.length === 0 ? kernel : withTheta(kernel, theta)).flatMap((hp) => [...hp.value])
-
-function thetaBox(kernel: Kernel, bounds: readonly [number, number]): { lower: number[]; upper: number[] } {
-  const lower: number[] = []
-  const upper: number[] = []
-  for (const hp of hyperparameters(kernel))
-    for (let i = 0; i < hp.size; i++) {
-      lower.push(hp.constraint === 'positive' ? Math.log(bounds[0]) : -Infinity)
-      upper.push(hp.constraint === 'positive' ? Math.log(bounds[1]) : Infinity)
-    }
-  return { lower, upper }
-}
 
 /** The posterior at theta, run to convergence (no gradient). */
 function converged(

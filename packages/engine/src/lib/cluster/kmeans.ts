@@ -11,6 +11,7 @@ import { kmeansCodebook } from '../numerics/spatial/index.ts'
 import { type Key, subsample } from '../random/index.ts'
 import { fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
+import { toRows } from './_support.ts'
 
 /** Rows of a matrix as plain arrays. */
 export type Rows = readonly (readonly number[])[]
@@ -43,9 +44,6 @@ function squaredShift(a: Rows, b: Rows): number {
   for (const [j, row] of a.entries()) for (const [q, v] of row.entries()) shift += (v - (b[j]?.[q] ?? 0)) ** 2
   return shift
 }
-
-const rowsOf = (flat: ArrayLike<number>, n: number, d: number): number[][] =>
-  Array.from({ length: n }, (_, i) => Array.from({ length: d }, (_, j) => flat[i * d + j] ?? 0))
 
 /**
  * Squared Euclidean distances from every row to every centre, `[n, k]` row-major.
@@ -134,7 +132,7 @@ export function initialCentres(x: TensorLike, k: number, init: KMeansInit, key: 
     return Array.from(rows, (i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
   }
   const seeded = kmeansCodebook(fromStorage(m.data, [m.n, m.d], 'float64'), k, { key, maxIterations: 0 })
-  return rowsOf(toFlat(seeded.centroids), k, m.d)
+  return toRows(toFlat(seeded.centroids), k, m.d)
 }
 
 /**
@@ -180,7 +178,7 @@ export function lloydAlgorithm(
     },
     step: (s) => {
       const book = kmeansCodebook(data, k, { init: s.centres as number[][], maxIterations: 1 })
-      const centres = rowsOf(toFlat(book.centroids), k, m.d)
+      const centres = toRows(toFlat(book.centroids), k, m.d)
       const shift = squaredShift(centres, s.centres)
       const labels = Array.from(book.assignments)
       return {
