@@ -7,32 +7,32 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - structure `transform.ts` (file): Optax-style gradient transformations composed with chain. `src/lib/optim/transform.ts:1` `mdml-engine/optim`
 
 - function `adam`: Adam as a gradient transformation, like torch.optim.Adam. `src/lib/optim/adaptive.ts:69` `mdml-engine/optim`
-- function `admm`: Alternating direction method of multipliers. `src/lib/optim/admm.ts:289` `mdml-engine/optim`
+- function `admm`: Alternating direction method of multipliers. `src/lib/optim/admm.ts:290` `mdml-engine/optim`
 - function `fista`: Accelerated proximal gradient for composite objectives. `src/lib/optim/splitting.ts:246` `mdml-engine/optim`
 - function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:392` `mdml-engine/optim`
 - function `milp`: Mixed-integer linear programming by branch and bound. `src/lib/optim/integer.ts:464` `mdml-engine/optim`
-- function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:306` `mdml-engine/optim`
+- function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:307` `mdml-engine/optim`
 - function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:67` `mdml-engine/optim`
 - function `sinkhorn`: Entropic optimal transport by Sinkhorn iterations. `src/lib/optim/transport.ts:491` `mdml-engine/optim`
 
 - table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:225` `mdml-engine/optim`
 - table `optimisers`: SGD, RMSprop, Adagrad, Adam and relatives as one slot. `src/lib/optim/optimiser-table.ts:58` `mdml-engine/optim`
 - table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:56` `mdml-engine/optim`
-- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:261` `mdml-engine/optim`
+- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:279` `mdml-engine/optim`
 
 ## optim/minimize
 
 Minimisation of functions of parameter trees, scipy.optimize style: the `minimize` front end and objective types, gradient, quasi-Newton, Newton and trust-region methods, nonlinear and linear least squares, constrained methods (projected gradient, penalties, SLSQP, COBYLA), derivative-free and global methods (Nelder-Mead, Powell, CMA-ES, differential evolution, annealing, swarms), and convex first-order methods. Each method is a traced algorithm. Part of `mdml-engine/optim`.
 
-- function `bfgs`: BFGS minimisation, a port of scipy's, gradients by autodiff. `src/lib/optim/minimize/quasi-newton.ts:259` `mdml-engine/optim`
-- function `cmaes`: Covariance matrix adaptation evolution strategy. `src/lib/optim/minimize/cmaes.ts:303` `mdml-engine/optim`
+- function `bfgs`: BFGS minimisation, a port of scipy's, gradients by autodiff. `src/lib/optim/minimize/quasi-newton.ts:261` `mdml-engine/optim`
+- function `cmaes`: Covariance matrix adaptation evolution strategy. `src/lib/optim/minimize/cmaes.ts:311` `mdml-engine/optim`
 - function `curveFit`: Fit a parametric curve to data by nonlinear least squares. `src/lib/optim/minimize/least-squares.ts:319` `mdml-engine/optim`
 - function `differentialEvolution`: Population-based global minimiser. `src/lib/optim/minimize/differential-evolution.ts:454` `mdml-engine/optim`
-- function `lbfgs`: L-BFGS minimisation without bounds. `src/lib/optim/minimize/quasi-newton.ts:484` `mdml-engine/optim`
-- function `lbfgsb`: L-BFGS-B minimisation under box bounds. `src/lib/optim/minimize/lbfgsb.ts:572` `mdml-engine/optim`
+- function `lbfgs`: L-BFGS minimisation without bounds. `src/lib/optim/minimize/quasi-newton.ts:486` `mdml-engine/optim`
+- function `lbfgsb`: L-BFGS-B minimisation under box bounds. `src/lib/optim/minimize/lbfgsb.ts:575` `mdml-engine/optim`
 - function `leastSquares`: Nonlinear least squares, scipy style, with bounds and robust losses. `src/lib/optim/minimize/least-squares.ts:263` `mdml-engine/optim`
-- function `minimize`: Minimise an objective scipy-style with a method chosen by value. `src/lib/optim/minimize/minimizer.ts:122` `mdml-engine/optim`
-- function `nelderMead`: Derivative-free Nelder-Mead simplex minimiser. `src/lib/optim/minimize/derivative-free.ts:284` `mdml-engine/optim`
-- function `newton`: Newton's method with modified Cholesky and line search. `src/lib/optim/minimize/newton.ts:251` `mdml-engine/optim`
+- function `minimize`: Minimise an objective scipy-style with a method chosen by value. `src/lib/optim/minimize/minimizer.ts:127` `mdml-engine/optim`
+- function `nelderMead`: Derivative-free Nelder-Mead simplex minimiser. `src/lib/optim/minimize/derivative-free.ts:292` `mdml-engine/optim`
+- function `newton`: Newton's method with modified Cholesky and line search. `src/lib/optim/minimize/newton.ts:253` `mdml-engine/optim`
 
 - algorithm `minimizer`: Turn a gradient transformation into a steppable minimising Algorithm. `src/lib/optim/minimize/minimizer.ts:51` `mdml-engine/optim`
