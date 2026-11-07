@@ -4,6 +4,7 @@
 import { MdmlError } from '../base/index.ts'
 import { choleskyJitter, choSolve, dgemv, luFactor, luSolve } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { flatOf } from './_vector.ts'
 
 /** A dense row-major matrix. */
 export interface Dense {
@@ -15,7 +16,7 @@ export interface Dense {
 /** A vector from anything tensor-like (empty when undefined). */
 export function vectorFrom(x: TensorLike | undefined): Float64Array {
   if (x === undefined) return new Float64Array(0)
-  return Float64Array.from(toFlat(primalOf(asTensor(x))))
+  return flatOf(asTensor(x))
 }
 
 /**
@@ -91,7 +92,7 @@ export function solveDenseTransposed(a: Float64Array, b: Float64Array, n: number
 export function solveSpd(s: Float64Array, b: Float64Array, n: number): Float64Array {
   if (n === 0) return new Float64Array(0)
   const { l } = choleskyJitter(fromStorage(Float64Array.from(s), [n, n], 'float64'), 1e-2)
-  return Float64Array.from(toFlat(primalOf(choSolve(l, fromStorage(Float64Array.from(b), [n], 'float64')))))
+  return flatOf(choSolve(l, fromStorage(Float64Array.from(b), [n], 'float64')))
 }
 
 /** y = A x (or A^T x) for a dense matrix, by BLAS dgemv. */

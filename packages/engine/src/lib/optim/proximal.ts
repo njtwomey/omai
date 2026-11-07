@@ -22,7 +22,6 @@ import {
   mul,
   neg,
   norm,
-  primalOf,
   relu,
   reshape,
   segmentSum,
@@ -34,18 +33,17 @@ import {
   swapaxes,
   type TensorLike,
   take,
-  toFlat,
   type Value,
   where,
 } from '../tensor/index.ts'
+import { flatOf } from './_vector.ts'
 
 /**
  * A proximal operator: prox_{t g}(x) = argmin_u g(u) + |u - x|^2 / (2 t). Operators act on values, so they are
- * differentiable wherever the proximal map is.
+ * differentiable wherever the proximal map is. `ProximalStep` of the variance-reduced methods is the same operator on a
+ * flat vector of plain numbers; `flatProx` converts.
  */
 export type Prox = (x: Value, t: number) => Value
-
-const flatPrimal = (x: Value): Float64Array => Float64Array.from(toFlat(primalOf(x)))
 
 /**
  * The proximal operator of t |x|_1, soft thresholding: sign(x) max(|x| - t, 0), computed as x - clip(x, -t, t).
@@ -296,7 +294,7 @@ function simplexThreshold(a: Float64Array, z: number): { readonly mask: Float64A
 export function projectSimplex(x: TensorLike, z = 1): Value {
   if (!(z > 0)) throw new MdmlError('value', `projectSimplex: the total must be positive, got ${z}`)
   const v = asTensor(x)
-  const { mask, k } = simplexThreshold(flatPrimal(v), z)
+  const { mask, k } = simplexThreshold(flatOf(v), z)
   const m = fromStorage(mask, v.shape, 'float64')
   const tau = div(sub(sum(mul(v, m)), z), k)
   return mul(relu(sub(v, tau)), m)
@@ -319,7 +317,7 @@ export function projectSimplex(x: TensorLike, z = 1): Value {
  */
 export function projectL1Ball(x: TensorLike, r = 1): Value {
   const v = asTensor(x)
-  const a = flatPrimal(v)
+  const a = flatOf(v)
   let l1 = 0
   for (const e of a) l1 += Math.abs(e)
   if (l1 <= r) return v

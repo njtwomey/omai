@@ -314,7 +314,7 @@ export interface DualCdResult {
  * @param x - The features `[n, d]`.
  * @param y - Two class labels.
  * @param C - The penalty.
- * @param options - Loss, tolerance, shrinking, intercept, sweeps cap (`maxSweeps`, default 1000) and the key.
+ * @param options - Loss, tolerance, shrinking, intercept, sweeps cap (`maxSweeps`, or its alias `maxIterations`; default 1000) and the key.
  * @returns The weights, intercept, dual variables, objectives and gap.
  * @concept support-vector-machines
  * @example
@@ -328,11 +328,11 @@ export function linearSvmDualCd(
   x: TensorLike,
   y: TensorLike,
   C: number,
-  options: DualCdOptions & { readonly maxSweeps?: number; readonly key?: Key } = {},
+  options: DualCdOptions & { readonly maxSweeps?: number; readonly maxIterations?: number; readonly key?: Key } = {},
 ): DualCdResult {
-  const { maxSweeps, key, ...rest } = options
+  const { maxSweeps, maxIterations, key, ...rest } = options
   const r = runAlgorithm(linearSvmDualCdAlgorithm(x, y, C, rest), {
-    maxSteps: maxSweeps ?? 1000,
+    maxSteps: maxSweeps ?? maxIterations ?? 1000,
     key: key ?? makeKey(0),
   })
   const s = r.state

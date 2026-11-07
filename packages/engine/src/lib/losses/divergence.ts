@@ -277,6 +277,8 @@ export interface SinkhornOptions {
   readonly b?: TensorLike
   /** Iteration cap (default 1000) and marginal tolerance for stopping early (default 1e-9; checked on concrete values). */
   readonly maxIter?: number
+  /** The iteration cap under the name `optim` uses (`maxIterations` wins when both are given). */
+  readonly maxIterations?: number
   readonly tol?: number
   /** The debiased Sinkhorn divergence OT(x, y) - (OT(x, x) + OT(y, y)) / 2 (default false). */
   readonly debiased?: boolean
@@ -309,7 +311,9 @@ function sinkhornCost(cost: Value, logA: Value, logB: Value, eps: number, maxIte
  * `method='sinkhorn_log'`), optionally debiased into the Sinkhorn divergence (POT's
  * `empirical_sinkhorn_divergence`). The iterations are unrolled, so the loss is differentiable in the points. That is
  * the difference from `sinkhorn` of `optim`, which solves one transport problem on a given cost matrix over plain
- * numbers (the plan, potentials and convergence flag, as a steppable `sinkhornAlgorithm`) and carries no gradient.
+ * numbers (the plan, potentials and convergence flag, as a steppable `sinkhornAlgorithm`) and carries no gradient; the
+ * two are different computations of one idea, not a copy of each other, and are exported under one name from each
+ * folder.
  *
  * @param x - Points `[N, D]`.
  * @param y - Points `[M, D]`.
@@ -328,7 +332,7 @@ export function sinkhorn(x: TensorLike, y: TensorLike, options: SinkhornOptions 
   const n = p.shape[0] ?? 1
   const m = q.shape[0] ?? 1
   const eps = options.epsilon ?? 0.1
-  const maxIter = options.maxIter ?? 1000
+  const maxIter = options.maxIterations ?? options.maxIter ?? 1000
   const tol = options.tol ?? 1e-9
   const weights = (w: TensorLike | undefined, k: number): Value =>
     w === undefined ? tensor(Array.from({ length: k }, () => Math.log(1 / k))) : log(promoteFloat(w)[0] as Value)
@@ -344,7 +348,11 @@ export function sinkhorn(x: TensorLike, y: TensorLike, options: SinkhornOptions 
 /**
  * The sliced Wasserstein distance (Rabin et al., 2012; Bonneel et al., 2015): project both samples onto random
  * directions on the sphere, solve the one-dimensional optimal transport in each by sorting, and average. Cheap
- * (O(L N log N)) and differentiable, so it trains generators where full transport is too slow.
+ * (O(L N log N)) and differentiable, so it trains generators where full transport is too slow. It is not
+ * `slicedWasserstein` of `optim`, which returns the p-th root always (this returns the power `SW_p^p` unless `root` is
+ * set), takes its directions as a `[d, L]` matrix or its own key option, and accepts weights and clouds of different
+ * sizes; this one is one vectorised sort over all directions and needs equal sample counts, which is why the two are
+ * kept as separate implementations.
  *
  * @param x - Samples `[N, D]`.
  * @param y - Samples `[N, D]` (the same count as x).

@@ -532,13 +532,39 @@ export function backwardCorrected(
   return reduce(squeeze(takeAlongAxis(corrected, index, -1), -1), { reduction: options.reduction ?? 'mean' })
 }
 
-/** The tempered logarithm log_t(x) = (x^(1-t) - 1) / (1 - t), the logarithm at t = 1. */
+/**
+ * The tempered logarithm log_t(x) = (x^(1-t) - 1) / (1 - t), the logarithm at t = 1.
+ *
+ * @param x - The argument, positive.
+ * @param t - The temperature; `1` is the ordinary logarithm.
+ * @returns The tempered logarithm of each element, differentiable.
+ * @example
+ * ```ts
+ * import { logTemperature } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * item(logTemperature(5, 0)) // => 4
+ * item(logTemperature(1, 1)) // => 0
+ * ```
+ */
 export function logTemperature(x: TensorLike, t: number): Value {
   const [v] = promoteFloat(x) as [Value]
   return t === 1 ? log(v) : div(sub(pow(v, 1 - t), 1), 1 - t)
 }
 
-/** The tempered exponential exp_t(x) = [1 + (1 - t) x]_+^(1 / (1 - t)), the exponential at t = 1. */
+/**
+ * The tempered exponential exp_t(x) = [1 + (1 - t) x]_+^(1 / (1 - t)), the exponential at t = 1.
+ *
+ * @param x - The argument.
+ * @param t - The temperature; `1` is the ordinary exponential.
+ * @returns The tempered exponential of each element, differentiable.
+ * @example
+ * ```ts
+ * import { expTemperature } from 'mdml-engine/losses'
+ * import { item } from 'mdml-engine/tensor'
+ * item(expTemperature(3, 0)) // => 4
+ * item(expTemperature(0, 1)) // => 1
+ * ```
+ */
 export function expTemperature(x: TensorLike, t: number): Value {
   const [v] = promoteFloat(x) as [Value]
   return t === 1 ? exp(v) : pow(relu(add(mul(v, 1 - t), 1)), 1 / (1 - t))

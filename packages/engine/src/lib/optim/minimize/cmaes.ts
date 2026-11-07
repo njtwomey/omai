@@ -10,7 +10,15 @@ import { Generator } from '../../random/index.ts'
 import { fromStorage, toFlat } from '../../tensor/index.ts'
 import type { Algorithm, StepContext } from '../../trace/index.ts'
 import { boundArrays, clipInto } from './_bounds.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import type { Bounds } from './objective.ts'
 import {
   flatObjective,
@@ -302,6 +310,7 @@ export function cmaesAlgorithm(f: Objective, x0: Parameters, options: CmaesOptio
  */
 export function cmaes(f: Objective, x0: Parameters, options: CmaesOptions = {}): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   const lambda = options.popSize ?? 4 + Math.floor(3 * Math.log(obj.n))
   return runVector(
     cmaesAlgorithm(f, x0, options),

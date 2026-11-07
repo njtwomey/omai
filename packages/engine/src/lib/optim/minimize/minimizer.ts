@@ -64,7 +64,12 @@ export function minimizer(
     name: 'minimizer',
     config: { transformation: transformation.name, gradTol: tol } as Json,
     schema: channels({
-      metrics: { loss: { description: 'objective value' }, gradNorm: { description: 'global gradient norm' } },
+      metrics: {
+        loss: { description: 'objective value' },
+        gradNorm: {
+          description: 'global Euclidean norm of the gradient over all leaves (what `gradTol` is compared with)',
+        },
+      },
       tensors: {
         params: { role: 'param', description: 'parameters' },
         grad: { role: 'grad', description: 'gradient' },

@@ -23,7 +23,6 @@ import {
   reshape,
   type Tensor,
   type TensorLike,
-  toFlat,
   toVector,
   transpose,
   treeFlatten,
@@ -31,7 +30,8 @@ import {
   treeUnflatten,
   type Value,
 } from '../tensor/index.ts'
-import { vectorOf } from './_vector.ts'
+import type { RunStatus } from '../trace/index.ts'
+import { flatOf, vectorOf } from './_vector.ts'
 import { flatObjective, type Objective } from './minimize/objective.ts'
 import type { ParamTree } from './transform.ts'
 
@@ -350,6 +350,16 @@ export interface Sharpness {
   readonly vector: ParamTree
   /** Hessian-vector products used. */
   readonly products: number
+  /** True when the eigenvalue met its tolerance (always for Lanczos, which throws instead of returning unconverged). */
+  readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, `completed` when power iteration ran out of iterations, `diverged` for a non-finite eigenvalue. */
+  readonly status: RunStatus
+}
+
+/** The `converged` flag and `status` of a sharpness run whose eigenvalue is `value`. */
+function finished(value: number, converged: boolean): Pick<Sharpness, 'converged' | 'status'> {
+  if (!Number.isFinite(value)) return { converged: false, status: 'diverged' }
+  return { converged, status: converged ? 'converged' : 'completed' }
 }
 
 /**
@@ -362,7 +372,8 @@ export interface Sharpness {
  * @param params - The point.
  * @param options - `method`, power iteration `iterations` and `tol`, and a start vector `v0` (takes a tensor-like;
  *   migration, D-009: was `ArrayLike<number>`).
- * @returns The eigenvalue, its eigenvector as a tree, and the number of products.
+ * @returns The eigenvalue, its eigenvector as a tree, the number of products, and whether the eigenvalue converged with
+ *   its `status` (a power iteration that used up its `iterations` is `completed`, not converged).
  * @concept sharpness
  * @example
  * ```ts
@@ -392,12 +403,12 @@ export function sharpness(
   }
   if (f.n === 1) {
     const h = matvec([1])
-    return { value: h[0] as number, vector: f.unravel([1]), products }
+    return { value: h[0] as number, vector: f.unravel([1]), products, ...finished(h[0] as number, true) }
   }
   if ((options.method ?? 'lanczos') === 'lanczos') {
     const op = {
       shape: [f.n, f.n] as const,
-      matvec: (v: Value): Value => fromStorage(matvec(toVec(v)), [f.n], 'float64'),
+      matvec: (v: Value): Value => fromStorage(matvec(flatOf(v)), [f.n], 'float64'),
     }
     const r = eigsh(op, 1, {
       which: 'LA',
@@ -406,12 +417,13 @@ export function sharpness(
     })
     const top = r.values.data[0] as number
     // The eigenvectors are the columns of an [n, 1] matrix, so the single column is the data in order.
-    return { value: top, vector: f.unravel(r.vectors.data), products }
+    return { value: top, vector: f.unravel(r.vectors.data), products, ...finished(top, true) }
   }
   let v = Float64Array.from(v0 ?? Array.from({ length: f.n }, (_, i) => Math.cos(1.3 * i + 0.4)))
   const s = dnrm2(v)
   v = v.map((q) => q / s)
   let value = Number.NaN
+  let converged = false
   for (let it = 0; it < (options.iterations ?? 200); it++) {
     const hv = matvec(v)
     const next = v.reduce((acc, q, i) => acc + q * (hv[i] as number), 0)
@@ -419,14 +431,13 @@ export function sharpness(
     v = hv.map((q) => q / (n === 0 ? 1 : n))
     if (Math.abs(next - value) <= (options.tol ?? 1e-10) * Math.max(1, Math.abs(next))) {
       value = next
+      converged = true
       break
     }
     value = next
   }
-  return { value, vector: f.unravel(v), products }
+  return { value, vector: f.unravel(v), products, ...finished(value, converged) }
 }
-
-const toVec = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
 
 /**
  * The edge-of-stability threshold 2 / eta of gradient descent with step size eta: the sharpness above which the

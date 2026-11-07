@@ -8,6 +8,7 @@ import { MdmlError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
+import { rethrowUnless } from './_catch.ts'
 import {
   boundVectorFrom,
   type Dense,
@@ -446,8 +447,9 @@ export function boxQpAlgorithm(
             k,
           )
           for (const [a, j] of free.entries()) d[j] = newton[a] ?? 0
-        } catch {
+        } catch (error) {
           // Not positive definite on the free block: keep the gradient step.
+          rethrowUnless(error, 'value', 'singular')
         }
       }
       let alpha = 1

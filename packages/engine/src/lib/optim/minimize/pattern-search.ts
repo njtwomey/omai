@@ -8,7 +8,15 @@ import { MdmlError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { type BoundArrays, boundArrays } from './_bounds.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import type { Bounds } from './objective.ts'
 import {
   flatObjective,
@@ -189,6 +197,7 @@ export function hookeJeevesAlgorithm(
  */
 export function hookeJeeves(f: Objective, x0: Parameters, options: HookeJeevesOptions = {}): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(hookeJeevesAlgorithm(f, x0, options), obj, options, 100_000)
 }
 
@@ -352,5 +361,6 @@ export function compassSearchAlgorithm(
  */
 export function compassSearch(f: Objective, x0: Parameters, options: CompassSearchOptions = {}): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(compassSearchAlgorithm(f, x0, options), obj, options, 100_000)
 }

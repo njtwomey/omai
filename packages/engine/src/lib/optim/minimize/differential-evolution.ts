@@ -11,7 +11,7 @@ import { fromStorage, toFlat, type Value } from '../../tensor/index.ts'
 import type { Algorithm, StepContext } from '../../trace/index.ts'
 import { asPairs, clipInto, constraintValues, finiteBounds } from './_bounds.ts'
 import { defaultLocal } from './_local.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorSchema } from './_shared.ts'
+import { configOf, noParametersResult, observeVector, runVector, type VectorState, vectorSchema } from './_shared.ts'
 import { cobyla, type InequalityConstraint } from './cobyla.ts'
 import type { LocalMethod } from './global.ts'
 import type { Bounds } from './objective.ts'
@@ -457,5 +457,6 @@ export function differentialEvolution(
   options: DifferentialEvolutionOptions,
 ): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(differentialEvolutionAlgorithm(f, x0, options), obj, options, 1000)
 }

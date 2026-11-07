@@ -8,7 +8,15 @@ import { MdmlError } from '../../base/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { boundArrays, clipInto } from './_bounds.ts'
 import { counted, isBudget } from './_budget.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import {
   type Bounds,
   flatObjective,
@@ -283,5 +291,6 @@ export function nelderMeadAlgorithm(
  */
 export function nelderMead(f: Objective, x0: Parameters, options: NelderMeadOptions = {}): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(nelderMeadAlgorithm(f, x0, options), obj, options, 200 * obj.n)
 }

@@ -3,7 +3,7 @@ import { grad } from '../autodiff/index.ts'
 import { families } from '../dists/index.ts'
 import { key } from '../random/index.ts'
 import { defaults } from '../space/index.ts'
-import { fromStorage, sum, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
+import { fromStorage, mul, sum, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { runAlgorithm, type StepContext } from '../trace/index.ts'
 import { fitGlm, type GlmProblem, glmGradient, glmSolvers, glmValue } from './glm.ts'
 import { loggedSolverOf } from './solvers.ts'
@@ -165,6 +165,37 @@ describe('glmSolvers', () => {
     const ctx = { t: 0, key: key(0), log: (path: string) => logged.push(path), emit: () => undefined }
     algorithm.step(algorithm.init(key(0)), ctx as unknown as StepContext)
     expect(logged).toEqual(['solver/objective', 'solver/gradNorm', 'solver/step'])
+  })
+})
+
+describe('non-finite pieces', () => {
+  const base: GlmProblem = {
+    x: [[0], [1], [2]],
+    y: [0, 1, 2],
+    family: families.gaussian(),
+    link: families.identity(),
+    fitIntercept: true,
+  }
+
+  // The data was zeroed or carried silently (OL-10): a NaN or infinity in it is invalid, and a fit that cannot reach a
+  // finite objective ends `diverged` at its last finite iterate.
+  it('rejects non-finite data, weights and offsets, and ends diverged on a non-finite objective', () => {
+    const bad: Partial<GlmProblem>[] = [
+      { x: [[0], [Number.NaN], [2]] },
+      { y: [0, Number.POSITIVE_INFINITY, 2] },
+      { weights: [1, Number.NaN, 1] },
+      { offset: [0, 0, Number.NEGATIVE_INFINITY] },
+      { start: [0, Number.NaN] },
+    ]
+    for (const piece of bad)
+      expect(() => fitGlm({ ...base, ...piece }), JSON.stringify(piece)).toThrow(
+        expect.objectContaining({ code: 'value' }),
+      )
+    const nan = { ...families.identity(), inverse: (eta: TensorLike): Value => mul(eta as Value, Number.NaN) }
+    const fit = fitGlm({ ...base, link: nan }, { kind: 'irls' })
+    expect(fit.status).toBe('diverged')
+    expect(fit.converged).toBe(false)
+    expect(toFlat(fit.x).every(Number.isFinite)).toBe(true)
   })
 })
 

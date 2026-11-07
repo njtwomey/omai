@@ -11,7 +11,15 @@ import { item } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { clipInto, finiteBounds } from './_bounds.ts'
 import { defaultLocal, localSearch } from './_local.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import type { LocalMethod } from './global.ts'
 import type { Bounds } from './objective.ts'
 import {
@@ -356,5 +364,6 @@ export function dualAnnealingAlgorithm(
  */
 export function dualAnnealing(f: Objective, x0: Parameters, options: DualAnnealingOptions): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(dualAnnealingAlgorithm(f, x0, options), obj, options, 1000)
 }

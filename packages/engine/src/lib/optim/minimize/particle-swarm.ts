@@ -9,7 +9,15 @@ import { metricFunction } from '../../numerics/geometry/index.ts'
 import { Generator } from '../../random/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { clipInto, finiteBounds } from './_bounds.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import type { Bounds } from './objective.ts'
 import {
   type FlatObjective,
@@ -266,5 +274,6 @@ export function particleSwarmAlgorithm(
  */
 export function particleSwarm(f: Objective, x0: Parameters, options: ParticleSwarmOptions): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(particleSwarmAlgorithm(f, x0, options), obj, options, 1000)
 }

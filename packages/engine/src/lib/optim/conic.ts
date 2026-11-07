@@ -8,6 +8,7 @@ import { MdmlError } from '../base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, eigvalsh } from '../numerics/linalg/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
+import { rethrowUnless } from './_catch.ts'
 import {
   type Dense,
   finiteVectorFrom,
@@ -18,6 +19,7 @@ import {
   vectorFrom,
   vectorTensor,
 } from './_programming.ts'
+import { flatOf } from './_vector.ts'
 
 /** A second-order cone constraint |A x + b|_2 <= c^T x + d. */
 export interface SecondOrderCone {
@@ -141,13 +143,14 @@ function barrier(
     let L: Tensor
     try {
       L = primalOf(cholesky(S)) as Tensor
-    } catch {
+    } catch (error) {
+      rethrowUnless(error, 'value', 'singular')
       return out()
     }
     for (let i = 0; i < p; i++) value -= 2 * Math.log(L.data[i * p + i] ?? 1)
     if (!withDerivatives) continue
     // M_k = S^{-1} F_k; gradient -tr(M_k), Hessian tr(M_k M_l).
-    const M = l.F.map((F) => Float64Array.from(toFlat(primalOf(choSolve(L, fromStorage(F, [p, p], 'float64'))))))
+    const M = l.F.map((F) => flatOf(choSolve(L, fromStorage(F, [p, p], 'float64'))))
     for (let a = 0; a < n; a++) {
       const Ma = M[a] as Float64Array
       let tr = 0

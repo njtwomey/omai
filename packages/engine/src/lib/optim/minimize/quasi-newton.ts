@@ -7,12 +7,14 @@
 import { daxpy, ddot, dgemv, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
+import { defaultFtol, defaultGradTol } from '../_knobs.ts'
 import { type LineSearch, type LineSearchResult, lineFunction } from '../line-search.ts'
 import { moreThuente, wolfe12 } from '../line-search-interval.ts'
 import {
   CURVATURE_CHANNEL,
   configOf,
   curvatureMessage,
+  gradientThreshold,
   LINE_SEARCH_CHANNEL,
   lineSearchMessage,
   observeVector,
@@ -125,7 +127,7 @@ export function bfgsAlgorithm(f: Objective, x0: Parameters, options: BfgsOptions
 
 function bfgsOn(obj: FlatObjective, options: BfgsOptions): Algorithm<BfgsState> {
   const n = obj.n
-  const gtol = options.gradTol ?? 1e-5
+  const gtol = gradientThreshold(obj, options, defaultGradTol)
   const xrtol = options.xrtol ?? 0
   const search =
     options.lineSearch ??
@@ -362,8 +364,8 @@ export function lbfgsAlgorithm(f: Objective, x0: Parameters, options: LbfgsOptio
 
 function lbfgsOn(obj: FlatObjective, options: LbfgsOptions): Algorithm<LbfgsState> {
   const memory = options.memory ?? 10
-  const gtol = options.gradTol ?? 1e-5
-  const ftol = options.ftol ?? 2.220446049250313e-9
+  const gtol = gradientThreshold(obj, options, defaultGradTol)
+  const ftol = options.ftol ?? defaultFtol
   const search = options.lineSearch ?? moreThuente({ alphaMax: 1e10 })
   return {
     name: 'lbfgs',
