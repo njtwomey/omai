@@ -8,15 +8,16 @@
 import { z } from 'zod'
 import { type Json, JsonSchema } from '../base/index.ts'
 
-// The statuses and roles are written once, here, and the type and the schema both read them.
-const RUN_STATUSES = ['completed', 'converged', 'diverged', 'stopped', 'failed'] as const
-const TENSOR_ROLES = ['param', 'grad', 'state', 'activation', 'output'] as const
-
 /** How a run ended. */
-export type RunStatus = (typeof RUN_STATUSES)[number]
+export type RunStatus = 'completed' | 'converged' | 'diverged' | 'stopped' | 'failed'
 
 /** What a recorded tensor is: a parameter, a gradient, an algorithm state, an activation or an output. */
-export type TensorRole = (typeof TENSOR_ROLES)[number]
+export type TensorRole = 'param' | 'grad' | 'state' | 'activation' | 'output'
+
+// What the schema's enums read; each is checked against its type (every member is one, and `events.test.ts` checks
+// that none is missing), so the type text stays the plain union a reader sees.
+const RUN_STATUSES = ['completed', 'converged', 'diverged', 'stopped', 'failed'] as const satisfies readonly RunStatus[]
+const TENSOR_ROLES = ['param', 'grad', 'state', 'activation', 'output'] as const satisfies readonly TensorRole[]
 
 /** Summary statistics recorded instead of full values at `summary` detail. */
 export interface TensorSummary {
