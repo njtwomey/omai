@@ -312,3 +312,62 @@ describe('cpu structure kernels against a reference loop', () => {
     }
   })
 })
+
+describe('cpu kernels: the branches the other suites do not reach', () => {
+  const t = (values: number[], dtype: DType = 'float64'): Tensor => {
+    const out = allocate(dtype, values.length)
+    out.set(values)
+    return cpu.wrap(dtype, [values.length], out)
+  }
+  const floorDiv = (a: number, b: number): number => cpu.binary('floorDiv', t([a]), t([b])).data[0] as number
+  // [name, result, numpy's answer] (one-off numpy 2.5 run: floor_divide, argsort(kind='stable'), argmax and argmin with keepdims)
+  const rows: [string, () => ArrayLike<number>, number[]][] = [
+    ['floorDiv(0.5, 1)', () => [floorDiv(0.5, 1)], [0]],
+    ['floorDiv(-0.5, -1)', () => [floorDiv(-0.5, -1)], [0]],
+    ['floorDiv(7, 2)', () => [floorDiv(7, 2)], [3]],
+    ['floorDiv(-7, 2)', () => [floorDiv(-7, 2)], [-4]],
+    ['floorDiv(1, Infinity)', () => [floorDiv(1, Infinity)], [0]],
+    ['floorDiv(-1, Infinity)', () => [floorDiv(-1, Infinity)], [-1]],
+    // a quotient too large for the remainder to correct it: the rounding step that follows
+    ['floorDiv(1.177429996454888e16, 7)', () => [floorDiv(1.177429996454888e16, 7)], [1682042852078411]],
+    [
+      'argsort ascending keeps NaNs last in order',
+      () => cpu.argsort(t([3, Number.NaN, 1, Number.NaN]), 0, false).data,
+      [2, 0, 1, 3],
+    ],
+    [
+      'argsort descending keeps NaNs last in order',
+      () => cpu.argsort(t([3, Number.NaN, 1, Number.NaN]), 0, true).data,
+      [0, 2, 1, 3],
+    ],
+    [
+      'argmax keepDims over axis 1',
+      () => cpu.argReduce('max', cpu.wrap('float64', [2, 3], Float64Array.of(1, 5, 2, 7, 3, 3)), 1, true).data,
+      [1, 0],
+    ],
+    [
+      'argmin keepDims over axis 0',
+      () => cpu.argReduce('min', cpu.wrap('float64', [2, 3], Float64Array.of(1, 5, 2, 7, 3, 3)), 0, true).data,
+      [0, 1, 0],
+    ],
+  ]
+  it.each(rows)('%s', (_name, got, want) => same(got(), want))
+
+  const x23 = cpu.wrap('float64', [2, 3], Float64Array.of(1, 2, 3, 4, 5, 6))
+  const errors: [string, () => unknown, RegExp][] = [
+    ['binary of two dtypes', () => cpu.binary('add', t([1]), t([1], 'int32')), /dtypes float64 and int32 differ/],
+    ['matmul with unequal inner extents', () => cpu.matmul(x23, x23), /do not align/],
+    ['transpose with a repeated axis', () => cpu.transpose(x23, [0, 0]), /not a permutation/],
+    ['broadcastTo a shape that does not contain the operand', () => cpu.broadcastTo(x23, [3]), /cannot broadcast/],
+    ['concat of nothing', () => cpu.concat([], 0), /at least one/],
+    [
+      'takeAlongAxis with an index past the end',
+      () => cpu.takeAlongAxis(x23, cpu.wrap('int32', [2, 1], Int32Array.of(0, 3)), 1),
+      /out of range/,
+    ],
+    ['take with a negative index', () => cpu.take(x23, Int32Array.of(-1), 1), /out of range/],
+  ]
+  it.each(errors)('raises on %s', (_name, run, message) => {
+    expect(run).toThrow(message)
+  })
+})
