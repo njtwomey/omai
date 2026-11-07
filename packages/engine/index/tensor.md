@@ -11,7 +11,7 @@ Arrays and differentiable primitives, numpy and torch.Tensor style: the `Tensor`
 
 - function `definePrimitive`: Declare a new operation with its kernel and derivative rules. `src/lib/tensor/primitive.ts:82` `mdml-engine/tensor`
 - function `tensor`: Create a tensor from numbers or nested arrays, like numpy.array. `src/lib/tensor/tensor.ts:90` `mdml-engine/tensor`
-- function `treeMap`: Map a function over the leaves of nested arrays and records. `src/lib/tensor/pytree.ts:141` `mdml-engine/tensor`
+- function `treeMap`: Map a function over the leaves of nested arrays and records. `src/lib/tensor/pytree.ts:145` `mdml-engine/tensor`
 
 ## tensor/ops
 

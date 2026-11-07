@@ -59,19 +59,23 @@ function isRecord(node: unknown): node is Readonly<Record<string, unknown>> {
  */
 export function treeFlatten(tree: unknown): { readonly leaves: Value[]; readonly def: TreeDef } {
   const leaves: Value[] = []
-  const visit = (node: unknown): TreeDef => {
+  const visit = (node: unknown, path: string): TreeDef => {
     if (isValue(node)) {
       leaves.push(node)
       return { kind: 'leaf' }
     }
-    if (isBranchArray(node)) return { kind: 'array', children: node.map(visit) }
+    if (isBranchArray(node)) return { kind: 'array', children: node.map((child, i) => visit(child, `${path}[${i}]`)) }
     if (isRecord(node)) {
       const keys = Object.keys(node).sort()
-      return { kind: 'record', keys, children: keys.map((k) => visit(node[k])) }
+      return { kind: 'record', keys, children: keys.map((k) => visit(node[k], `${path}.${k}`)) }
     }
-    throw new MdmlError('value', `pytree leaves must be tensors or traced values, got ${typeof node}`)
+    throw new MdmlError(
+      'value',
+      `pytree leaves must be tensors or traced values, got ${typeof node} at ${path === '' ? 'the root' : path}: ` +
+        'wrap numbers and arrays of numbers with tensor(...) first',
+    )
   }
-  const def = visit(tree)
+  const def = visit(tree, '')
   return { leaves, def }
 }
 
