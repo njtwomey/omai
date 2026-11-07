@@ -10,6 +10,7 @@ import { MdmlError } from '../base/index.ts'
 import {
   abs,
   asTensor,
+  fromStorage,
   mul,
   promoteFloat,
   reshape,
@@ -18,9 +19,11 @@ import {
   stack,
   sub,
   sum,
+  type Tensor,
   type TensorLike,
   tensor,
   toFlat,
+  toVector,
   treeLeaves,
   type Value,
   zeros,
@@ -179,43 +182,50 @@ export function initialConditionLoss(
 /** A loss term as a function of the model parameters (any pytree). */
 export type LossTerm<P> = (params: P) => Value
 
+const vectorOf = (a: ArrayLike<number>): Tensor<'float64', [number]> =>
+  fromStorage(Float64Array.from(a), [a.length], 'float64')
+
 const flatAbs = (tree: unknown): number[] => treeLeaves(tree).flatMap((leaf) => toFlat(abs(asTensor(leaf))))
 
 /**
  * Learning-rate annealing weights for multi-term PINN losses (Wang, Teng and Perdikaris, 2021): with the first term the
  * PDE residual, lambda_i = max |grad L_0| / mean |grad L_i| for every other term, blended with the previous weights as
  * lambda <- (1 - alpha) lambda_prev + alpha lambda_hat. The weights are numbers (no gradient), recomputed every few
- * steps.
+ * steps. Takes the previous weights as a tensor-like and returns a tensor (migration, D-009: `previous` was
+ * `readonly number[]`, the result a `number[]`).
  *
  * @param terms - Loss terms as functions of the parameters, the residual first.
  * @param params - The current parameters.
- * @param options - previous weights and alpha (default 0.9).
- * @returns One weight per term (the first is 1).
+ * @param options - previous weights (a vector) and alpha (default 0.9).
+ * @returns One weight per term (the first is 1), a `[terms]` tensor.
+ * @throws MdmlError with code `shape` unless `previous` has rank 1, and `not-differentiable` for a traced one.
  * @example
  * ```ts
  * import { gradientNormWeights } from 'mdml-engine/losses'
- * import { mul, sum, tensor, type Value } from 'mdml-engine/tensor'
+ * import { mul, sum, tensor, toFlat, type Value } from 'mdml-engine/tensor'
  * const terms = [(p: Value) => sum(mul(p, 4)), (p: Value) => sum(mul(p, 2))]
- * gradientNormWeights(terms, tensor([1, 1]), { alpha: 1 }) // => [1, 2]
+ * toFlat(gradientNormWeights(terms, tensor([1, 1]), { alpha: 1 })) // => [1, 2]
  * ```
  */
 export function gradientNormWeights<P>(
   terms: readonly LossTerm<P>[],
   params: P,
-  options: { readonly previous?: readonly number[]; readonly alpha?: number } = {},
-): number[] {
-  if (terms.length === 0) return []
+  options: { readonly previous?: TensorLike; readonly alpha?: number } = {},
+): Tensor<'float64', [number]> {
+  const previous = options.previous === undefined ? undefined : toVector(options.previous, 'gradientNormWeights')
+  if (terms.length === 0) return vectorOf([])
   const alpha = options.alpha ?? 0.9
   const grads = terms.map((t) => flatAbs(grad(t)(params)))
   let top = 0
   for (const g of grads[0] ?? []) top = Math.max(top, g)
-  return grads.map((g, i) => {
+  const weights = grads.map((g, i) => {
     if (i === 0) return 1
     const meanAbs = g.reduce((s, v) => s + v, 0) / Math.max(g.length, 1)
     const hat = meanAbs > 0 ? top / meanAbs : 1
-    const prev = options.previous?.[i]
+    const prev = previous?.[i]
     return prev === undefined ? hat : (1 - alpha) * prev + alpha * hat
   })
+  return vectorOf(weights)
 }
 
 /** A pointwise model output (a residual or a prediction at points) as a function of the parameters `[N_i]`. */
@@ -229,15 +239,15 @@ export type PointwiseTerm<P> = (params: P) => Value
  *
  * @param terms - Pointwise terms as functions of the parameters.
  * @param params - The current parameters.
- * @returns One weight per term.
+ * @returns One weight per term, a `[terms]` tensor (migration, D-009: was a `number[]`).
  * @example
  * ```ts
  * import { ntkWeights } from 'mdml-engine/losses'
- * import { mul, tensor, type Value } from 'mdml-engine/tensor'
- * ntkWeights([(p: Value) => mul(p, 1), (p: Value) => mul(p, 3)], tensor([1, 2])) // => [10, 1.1111111111111112]
+ * import { mul, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * toFlat(ntkWeights([(p: Value) => mul(p, 1), (p: Value) => mul(p, 3)], tensor([1, 2]))) // => [10, 1.1111111111111112]
  * ```
  */
-export function ntkWeights<P>(terms: readonly PointwiseTerm<P>[], params: P): number[] {
+export function ntkWeights<P>(terms: readonly PointwiseTerm<P>[], params: P): Tensor<'float64', [number]> {
   const traces = terms.map((t) => {
     const { out, pullback } = vjp(t, params)
     const n = toFlat(asTensor(out)).length
@@ -250,5 +260,5 @@ export function ntkWeights<P>(terms: readonly PointwiseTerm<P>[], params: P): nu
     return trace
   })
   const total = traces.reduce((s, v) => s + v, 0)
-  return traces.map((t) => (t > 0 ? total / t : 1))
+  return vectorOf(traces.map((t) => (t > 0 ? total / t : 1)))
 }

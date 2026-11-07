@@ -13,6 +13,7 @@ import {
   tanh,
   tensor,
   toArray,
+  toFlat,
   type Value,
 } from '../tensor/index.ts'
 import * as L from './index.ts'
@@ -79,10 +80,19 @@ describe('physics-informed losses', () => {
     const w = tensor([0.5, -1, 2])
     const terms = [(p: Value) => mul(matmul(p, tensor([1, 1, 1])), 3), (p: Value) => matmul(p, tensor([1, 0, 0]))]
     // grad L0 = (3, 3, 3), max 3; grad L1 = (1, 0, 0), mean 1/3: weight 9.
-    expect(L.gradientNormWeights(terms, w, { alpha: 1 })).toEqual([1, 9])
-    expect(L.gradientNormWeights(terms, w, { previous: [1, 1] })).toEqual([1, expect.closeTo(0.1 + 0.9 * 9, 14)])
+    expect(toFlat(L.gradientNormWeights(terms, w, { alpha: 1 }))).toEqual([1, 9])
+    expect(toFlat(L.gradientNormWeights(terms, w, { previous: [1, 1] }))).toEqual([
+      1,
+      expect.closeTo(0.1 + 0.9 * 9, 14),
+    ])
+    expect(toFlat(L.gradientNormWeights(terms, w, { previous: tensor([1, 1]) }))).toEqual(
+      toFlat(L.gradientNormWeights(terms, w, { previous: Float64Array.of(1, 1) })),
+    )
+    expect(() => L.gradientNormWeights(terms, w, { previous: tensor([[1, 1]]) })).toThrow(
+      expect.objectContaining({ code: 'shape' }),
+    )
     const pointwise = [(p: Value) => mul(p, 2), (p: Value) => sliceAxis(p, 0, 0, 1)]
     // Traces: 4 * 3 = 12 and 1; total 13.
-    expect(L.ntkWeights(pointwise, w)).toEqual([13 / 12, 13])
+    expect(toFlat(L.ntkWeights(pointwise, w))).toEqual([13 / 12, 13])
   })
 })
