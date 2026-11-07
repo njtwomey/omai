@@ -7,8 +7,8 @@
 
 import {
   type DictSpace,
-  defaults,
   dict,
+  fillKnobs,
   type Option,
   type OptionTable,
   optionTable,
@@ -36,7 +36,7 @@ function windup(
     description,
     properties,
     space,
-    make: (config) => make({ ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }),
+    make: (config) => make(fillKnobs(space, config)),
   }
 }
 
@@ -133,7 +133,7 @@ function signal(
     properties,
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       return build((name) => Number(full[name]))
     },
   }

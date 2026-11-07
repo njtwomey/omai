@@ -8,14 +8,14 @@
 import { MdmlError } from '../base/index.ts'
 import {
   choice,
-  defaults,
   dict,
   int,
+  type Knobs,
+  knobOption,
   type Option,
   type OptionTable,
   optionTable,
   real,
-  type SpaceValue,
 } from '../space/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { type Graph, type NodeId, nodeIndex, reverse } from './graph.ts'
@@ -40,21 +40,13 @@ export interface HeuristicProperties {
   readonly precomputed: boolean
 }
 
-/** The knobs of a configuration read with the option's defaults filling those not given. */
-type Knobs = (name: string) => number | string
-
-function knobsOf(space: ReturnType<typeof dict>, config: Readonly<Record<string, SpaceValue>>): Knobs {
-  const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-  return (name) => full[name] as number | string
-}
-
 function heuristicOption(
   description: string,
   properties: HeuristicProperties,
   space: ReturnType<typeof dict>,
-  build: (k: Knobs) => HeuristicBuilder,
+  build: (k: Knobs<number | string>) => HeuristicBuilder,
 ): Option<HeuristicBuilder, HeuristicProperties> {
-  return { description, properties, space, make: (config) => build(knobsOf(space, config)) }
+  return knobOption(description, properties, space, build)
 }
 
 /** Hops from every node to the target along edges (a breadth-first search on the reversed graph), -1 when none. */
@@ -188,9 +180,9 @@ function method(
   description: string,
   properties: SingleSourceProperties,
   space: ReturnType<typeof dict>,
-  build: (k: Knobs) => SingleSourceBuilder,
+  build: (k: Knobs<number | string>) => SingleSourceBuilder,
 ): Option<SingleSourceBuilder, SingleSourceProperties> {
-  return { description, properties, space, make: (config) => build(knobsOf(space, config)) }
+  return knobOption(description, properties, space, build)
 }
 
 /**

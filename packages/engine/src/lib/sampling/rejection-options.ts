@@ -9,9 +9,9 @@ import { MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import {
   type DictSpace,
-  defaults,
   dict,
   int,
+  knobOption,
   type Option,
   type OptionTable,
   optionTable,
@@ -63,15 +63,7 @@ function sampler(
   space: DictSpace,
   build: (k: Knobs) => RejectionSampler,
 ): Option<RejectionSampler, RejectionSamplerProperties> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 const needs = (what: string, has: boolean, name: string): void => {

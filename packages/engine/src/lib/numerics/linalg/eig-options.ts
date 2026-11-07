@@ -6,9 +6,9 @@
 
 import {
   type DictSpace,
-  defaults,
   dict,
   int,
+  knobOption,
   type Option,
   type OptionTable,
   optionTable,
@@ -52,15 +52,7 @@ function method(
   space: DictSpace,
   build: (k: Knobs) => EigenIterationMethod,
 ): Option<EigenIterationMethod, EigenIterationProperties> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 const startOf = (p: EigenProblem): EigenIterationOptions => ({

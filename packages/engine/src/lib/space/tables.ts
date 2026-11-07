@@ -34,6 +34,9 @@ export interface Option<T, Props> {
   make(knobs: ModeConfig): T
 }
 
+/** The knobs of an option read by name; the type argument is what the option's knobs are (numbers by default). */
+export type Knobs<V extends SpaceValue = number> = (name: string) => V
+
 /** An option with its name, as the table hands it back. */
 export type NamedOption<T, Props> = Option<T, Props> & { readonly name: string }
 
@@ -116,4 +119,84 @@ export function completeOption<T, P>(table: OptionTable<T, P>, config: SpaceValu
   const given = (typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}) as ModeConfig
   const chosen = table.optionOf(given)
   return { ...(defaults(chosen.space) as ModeConfig), ...given, [table.tag]: chosen.name }
+}
+
+/**
+ * The knobs of a configuration as a whole record: the option's defaults, overridden by what the configuration gives.
+ *
+ * @param space - The option's knob space.
+ * @param config - The configuration, possibly partial.
+ * @returns The record of every knob of the space.
+ * @example
+ * ```ts
+ * import { dict, fillKnobs, int } from 'mdml-engine/space'
+ * fillKnobs(dict({ k: int(0, 9, { default: 3 }), m: int(0, 9, { default: 4 }) }), { m: 7 }) // => { k: 3, m: 7 }
+ * ```
+ */
+export function fillKnobs(space: DictSpace, config: ModeConfig): ModeConfig {
+  return { ...(defaults(space) as ModeConfig), ...config }
+}
+
+/**
+ * The knobs of a configuration read by name, the option's defaults filling those the configuration leaves out.
+ *
+ * @param space - The option's knob space.
+ * @param config - The configuration, possibly partial.
+ * @returns A function from a knob's name to its value.
+ * @example
+ * ```ts
+ * import { dict, int, readKnobs } from 'mdml-engine/space'
+ * const k = readKnobs(dict({ k: int(0, 9, { default: 3 }), m: int(0, 9, { default: 4 }) }), { m: 7 })
+ * [k('k'), k('m')] // => [3, 7]
+ * ```
+ */
+export function readKnobs<V extends SpaceValue = number>(space: DictSpace, config: ModeConfig): Knobs<V> {
+  const full = fillKnobs(space, config)
+  return (name) => full[name] as V
+}
+
+/**
+ * An option whose value is built from its knobs: `make` reads the configuration against the knob space (defaults
+ * filling the gaps) and hands the knobs to `build`. The one builder behind the option tables of the algorithms' slots.
+ *
+ * @param description - What the option is, for a control.
+ * @param properties - The properties the validity rules and selectors read.
+ * @param space - The option's knob space.
+ * @param build - The value the knobs make.
+ * @returns The option.
+ * @example
+ * ```ts
+ * import { dict, int, knobOption } from 'mdml-engine/space'
+ * const option = knobOption('two', null, dict({ k: int(0, 9, { default: 3 }) }), (k) => 2 * k('k'))
+ * [option.make({}), option.make({ k: 5 })] // => [6, 10]
+ * ```
+ */
+export function knobOption<T, Props, V extends SpaceValue = number>(
+  description: string,
+  properties: Props,
+  space: DictSpace,
+  build: (k: Knobs<V>) => T,
+): Option<T, Props> {
+  return { description, properties, space, make: (config) => build(readKnobs<V>(space, config)) }
+}
+
+/**
+ * An option with no properties (a table that is only selected from, not filtered): `knobOption` with `{}` for them.
+ *
+ * @param description - What the option is, for a control.
+ * @param space - The option's knob space.
+ * @param build - The value the knobs make.
+ * @returns The option.
+ * @example
+ * ```ts
+ * import { dict, int, plainOption } from 'mdml-engine/space'
+ * plainOption('one', dict({ k: int(0, 9, { default: 3 }) }), (k) => k('k') + 1).make({}) // => 4
+ * ```
+ */
+export function plainOption<T, V extends SpaceValue = number>(
+  description: string,
+  space: DictSpace,
+  build: (k: Knobs<V>) => T,
+): Option<T, Record<string, never>> {
+  return knobOption(description, {}, space, build)
 }

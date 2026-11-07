@@ -5,17 +5,7 @@
  * table is one `union` space for controls and grids.
  */
 
-import {
-  bool,
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../space/index.ts'
+import { bool, dict, int, knobOption, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import {
   type CykState,
@@ -34,15 +24,7 @@ function option<T, P>(
   space: ReturnType<typeof dict>,
   build: (k: (name: string) => number | boolean) => T,
 ): Option<T, P> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number | boolean)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 /** What a chart parser is built from: a grammar and the words, giving its stepped algorithm. */

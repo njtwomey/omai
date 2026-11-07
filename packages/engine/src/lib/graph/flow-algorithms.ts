@@ -7,7 +7,7 @@
  */
 
 import { type Json, kahanSum, MdmlError } from '../base/index.ts'
-import { dict, type OptionTable, optionTable } from '../space/index.ts'
+import { dict, knobOption, type OptionTable, optionTable } from '../space/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -17,7 +17,6 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { knobOption } from './_options.ts'
 import { augment, EPS, type Residual, residualNetwork, sourceSide } from './_residual.ts'
 import { floatsFromJson, floatsToJson } from './_run.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'

@@ -7,8 +7,8 @@
 import { gamma, weibull } from '../dists/index.ts'
 import {
   type DictSpace,
-  defaults,
   dict,
+  knobOption,
   type Option,
   type OptionTable,
   optionTable,
@@ -46,15 +46,7 @@ function process(
   space: DictSpace,
   build: (k: Knobs) => PointProcessSimulator,
 ): Option<PointProcessSimulator, PointProcessProperties> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 const rate = (label: string, def: number): ReturnType<typeof real> =>

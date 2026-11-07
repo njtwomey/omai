@@ -5,7 +5,7 @@
  * space for controls, grids and tuners, and builds the schedule function from a configuration.
  */
 
-import { defaults, dict, type Option, type OptionTable, optionTable, real, type SpaceValue } from '../space/index.ts'
+import { dict, knobOption, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 
 /** The weight of the prediction loss for the next round, from the current weight and the round just finished (from 0). */
 export type LambdaSchedule = (lambda: number, round: number) => number
@@ -24,15 +24,7 @@ function schedule(
   space: ReturnType<typeof dict>,
   build: (k: (name: string) => number) => LambdaSchedule,
 ): Option<LambdaSchedule, LambdaScheduleProperties> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 /**

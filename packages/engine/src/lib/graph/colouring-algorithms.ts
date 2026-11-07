@@ -9,10 +9,9 @@
 
 import { MdmlError } from '../base/index.ts'
 import { type Key, permutation } from '../random/index.ts'
-import { dict, type Option, type OptionTable, optionTable } from '../space/index.ts'
+import { dict, knobOption, type Option, type OptionTable, optionTable } from '../space/index.ts'
 import { type Algorithm, type Contract, defineContract, scalar, tensor } from '../trace/index.ts'
 import { neighbourSets } from './_neighbours.ts'
-import { knobOption } from './_options.ts'
 import { codec } from './_run.ts'
 import { connectedComponents } from './components.ts'
 import { degree, type Graph, type NodeId, nodeIndex } from './graph.ts'

@@ -5,16 +5,7 @@
  */
 
 import type { Key } from '../random/index.ts'
-import {
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../space/index.ts'
+import { dict, int, knobOption, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { gkSummaryAlgorithm, kllSketchAlgorithm, p2Algorithm, type QuantileSketchPath } from './quantiles.ts'
 
@@ -44,15 +35,7 @@ function sketch(
   space: ReturnType<typeof dict>,
   build: (k: (name: string) => number) => QuantileSketchBuilder,
 ): Option<QuantileSketchBuilder, QuantileSketchProperties> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 /**

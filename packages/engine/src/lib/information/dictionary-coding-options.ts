@@ -5,32 +5,16 @@
  * space for controls and grids.
  */
 
-import { defaults, dict, int, type Option, type OptionTable, optionTable, type SpaceValue } from '../space/index.ts'
+import { dict, int, type Option, type OptionTable, optionTable, plainOption } from '../space/index.ts'
 import type { Lz77Options } from './dictionary-coding.ts'
 import { type ReedSolomonCode, reedSolomon } from './reed-solomon.ts'
-
-function option<T>(
-  description: string,
-  space: ReturnType<typeof dict>,
-  build: (k: (name: string) => number) => T,
-): Option<T, Record<string, never>> {
-  return {
-    description,
-    properties: {},
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
-}
 
 function windowOption(
   description: string,
   window: number,
   maxLength: number,
 ): Option<Lz77Options, Record<string, never>> {
-  return option(
+  return plainOption(
     description,
     dict({
       window: int(1, 65536, { default: window, label: 'window' }),
@@ -75,7 +59,7 @@ export const lz77Windows: OptionTable<Lz77Options, Record<string, never>> = opti
  */
 export const reedSolomonFields: OptionTable<ReedSolomonCode, Record<string, never>> = optionTable(
   {
-    gf16: option(
+    gf16: plainOption(
       'GF(2^4): words of up to 15 symbols, to see the algebra',
       dict({
         nsym: int(1, 13, { default: 4, label: 'parity symbols' }),
@@ -83,7 +67,7 @@ export const reedSolomonFields: OptionTable<ReedSolomonCode, Record<string, neve
       }),
       (k) => reedSolomon(k('nsym'), { m: 4, fcr: k('fcr') }),
     ),
-    gf256: option(
+    gf256: plainOption(
       'GF(2^8): bytes, words of up to 255 symbols',
       dict({
         nsym: int(1, 253, { default: 8, label: 'parity symbols' }),
@@ -91,7 +75,7 @@ export const reedSolomonFields: OptionTable<ReedSolomonCode, Record<string, neve
       }),
       (k) => reedSolomon(k('nsym'), { m: 8, fcr: k('fcr') }),
     ),
-    gf1024: option(
+    gf1024: plainOption(
       'GF(2^10): words of up to 1023 symbols',
       dict({
         nsym: int(1, 1021, { default: 16, label: 'parity symbols' }),

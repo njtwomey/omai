@@ -5,37 +5,11 @@
  * space for controls and grids.
  */
 
-import {
-  choice,
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../space/index.ts'
+import { choice, dict, int, type OptionTable, optionTable, plainOption, real } from '../space/index.ts'
 import type { SoftNmsOptions } from './boxes.ts'
 import type { FloodFillOptions } from './components.ts'
 import type { SeamCarveOptions } from './seams.ts'
 import type { MeanShiftOptions } from './tracking.ts'
-
-function option<T>(
-  description: string,
-  space: ReturnType<typeof dict>,
-  build: (k: (name: string) => number | string | boolean) => T,
-): Option<T, Record<string, never>> {
-  return {
-    description,
-    properties: {},
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number | string | boolean)
-    },
-  }
-}
 
 const scoreThreshold = (): ReturnType<typeof real> =>
   real(1e-6, 0.5, { default: 0.001, log: true, label: 'score threshold' })
@@ -53,12 +27,12 @@ const scoreThreshold = (): ReturnType<typeof real> =>
  */
 export const softNmsMethods: OptionTable<SoftNmsOptions, Record<string, never>> = optionTable(
   {
-    gaussian: option<SoftNmsOptions>(
+    gaussian: plainOption<SoftNmsOptions, number | string | boolean>(
       'every overlap decays the score by exp(-iou^2 / sigma)',
       dict({ sigma: real(0.05, 5, { default: 0.5, label: 'sigma' }), scoreThreshold: scoreThreshold() }),
       (k) => ({ method: 'gaussian', sigma: k('sigma') as number, scoreThreshold: k('scoreThreshold') as number }),
     ),
-    linear: option<SoftNmsOptions>(
+    linear: plainOption<SoftNmsOptions, number | string | boolean>(
       'overlaps above the IoU threshold decay the score by 1 - iou',
       dict({
         iouThreshold: real(0.05, 0.95, { default: 0.3, label: 'IoU threshold' }),
@@ -88,17 +62,17 @@ export const softNmsMethods: OptionTable<SoftNmsOptions, Record<string, never>> 
  */
 export const seamMaskStrengths: OptionTable<SeamCarveOptions, Record<string, never>> = optionTable(
   {
-    gentle: option<SeamCarveOptions>(
+    gentle: plainOption<SeamCarveOptions, number | string | boolean>(
       'a mask is a strong hint',
       dict({ bias: real(1, 1e15, { default: 1e3, log: true, label: 'bias' }) }),
       (k) => ({ bias: k('bias') as number }),
     ),
-    firm: option<SeamCarveOptions>(
+    firm: plainOption<SeamCarveOptions, number | string | boolean>(
       'a mask is nearly a wall',
       dict({ bias: real(1, 1e15, { default: 1e6, log: true, label: 'bias' }) }),
       (k) => ({ bias: k('bias') as number }),
     ),
-    absolute: option<SeamCarveOptions>(
+    absolute: plainOption<SeamCarveOptions, number | string | boolean>(
       'a mask is a wall',
       dict({ bias: real(1, 1e15, { default: 1e12, log: true, label: 'bias' }) }),
       (k) => ({ bias: k('bias') as number }),
@@ -124,7 +98,7 @@ export const seamMaskStrengths: OptionTable<SeamCarveOptions, Record<string, nev
  */
 export const meanShiftCriteria: OptionTable<MeanShiftOptions, Record<string, never>> = optionTable(
   {
-    loose: option<MeanShiftOptions>(
+    loose: plainOption<MeanShiftOptions, number | string | boolean>(
       'stop early',
       dict({
         maxIter: int(1, 1000, { default: 20, label: 'most updates' }),
@@ -132,7 +106,7 @@ export const meanShiftCriteria: OptionTable<MeanShiftOptions, Record<string, nev
       }),
       (k) => ({ maxIter: k('maxIter') as number, eps: k('eps') as number }),
     ),
-    standard: option<MeanShiftOptions>(
+    standard: plainOption<MeanShiftOptions, number | string | boolean>(
       "OpenCV's default",
       dict({
         maxIter: int(1, 1000, { default: 100, label: 'most updates' }),
@@ -140,7 +114,7 @@ export const meanShiftCriteria: OptionTable<MeanShiftOptions, Record<string, nev
       }),
       (k) => ({ maxIter: k('maxIter') as number, eps: k('eps') as number }),
     ),
-    tight: option<MeanShiftOptions>(
+    tight: plainOption<MeanShiftOptions, number | string | boolean>(
       'stop only when the window sits still',
       dict({
         maxIter: int(1, 1000, { default: 500, label: 'most updates' }),
@@ -166,7 +140,7 @@ export const meanShiftCriteria: OptionTable<MeanShiftOptions, Record<string, nev
  */
 export const floodFillModes: OptionTable<FloodFillOptions, Record<string, never>> = optionTable(
   {
-    floating: option<FloodFillOptions>(
+    floating: plainOption<FloodFillOptions, number | string | boolean>(
       'compare with the neighbour the region grows from',
       dict({
         loDiff: real(0, 1, { default: 0.1, label: 'step down' }),
@@ -180,7 +154,7 @@ export const floodFillModes: OptionTable<FloodFillOptions, Record<string, never>
         fixedRange: false,
       }),
     ),
-    fixed: option<FloodFillOptions>(
+    fixed: plainOption<FloodFillOptions, number | string | boolean>(
       'compare with the seed',
       dict({
         loDiff: real(0, 1, { default: 0.1, label: 'step down' }),
@@ -217,12 +191,12 @@ export interface SimplificationOptions {
  */
 export const simplifications: OptionTable<SimplificationOptions, Record<string, never>> = optionTable(
   {
-    polygon: option<SimplificationOptions>(
+    polygon: plainOption<SimplificationOptions, number | string | boolean>(
       'a closed curve',
       dict({ epsilon: real(0, 50, { default: 1, label: 'epsilon' }) }),
       (k) => ({ epsilon: k('epsilon') as number, closed: true }),
     ),
-    polyline: option<SimplificationOptions>(
+    polyline: plainOption<SimplificationOptions, number | string | boolean>(
       'an open curve',
       dict({ epsilon: real(0, 50, { default: 1, label: 'epsilon' }) }),
       (k) => ({ epsilon: k('epsilon') as number, closed: false }),

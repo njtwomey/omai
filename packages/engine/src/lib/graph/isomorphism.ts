@@ -5,7 +5,7 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
-import { dict, type OptionTable, optionTable } from '../space/index.ts'
+import { dict, knobOption, type OptionTable, optionTable } from '../space/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -16,7 +16,6 @@ import {
   scalar,
   tensor,
 } from '../trace/index.ts'
-import { knobOption } from './_options.ts'
 import { codec } from './_run.ts'
 import { degree, type Graph, type GraphRunOptions } from './graph.ts'
 

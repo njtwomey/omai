@@ -4,16 +4,7 @@
  * cap). The table is one `union` space for controls and grids, and builds the options of `eigsh` and `eigshAlgorithm`.
  */
 
-import {
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../../space/index.ts'
+import { dict, fillKnobs, int, type Option, type OptionTable, optionTable, real } from '../../space/index.ts'
 import type { EigshOptions, Which } from './eigen.ts'
 
 /** What a target of the spectrum means, for validity rules and selectors. */
@@ -33,7 +24,7 @@ function target(description: string, which: Which): Option<EigshOptions, Spectru
     properties: { which },
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       return {
         which,
         tol: full['tol'] as number,

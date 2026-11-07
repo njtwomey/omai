@@ -4,16 +4,7 @@
  * space for controls and grids, and builds the options of `felzenszwalb` and `felzenszwalbAlgorithm`.
  */
 
-import {
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../../space/index.ts'
+import { dict, fillKnobs, int, type Option, type OptionTable, optionTable, real } from '../../space/index.ts'
 import type { FelzenszwalbOptions } from './segmentation.ts'
 
 function coarseness(
@@ -31,7 +22,7 @@ function coarseness(
     properties: {},
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       return { scale: full['scale'] as number, sigma: full['sigma'] as number, minSize: full['minSize'] as number }
     },
   }
