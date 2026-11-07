@@ -5,6 +5,7 @@
  */
 
 import { clamp, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { finite, size } from './_check.ts'
 import type {
   CircleNode,
   EllipseNode,
@@ -34,6 +35,7 @@ import type {
  * @returns The scene.
  * @concept scene-graph
  * @index function Build a Scene from nodes; rect, circle and path sit beside it.
+ * @throws MdmlError `value` when the width or height is not a finite number >= 0.
  * @example
  * ```ts
  * import { scene, circle } from 'mdml-engine/scene'
@@ -46,6 +48,7 @@ export function scene(
   children: readonly SceneNode[],
   options: { readonly title?: string; readonly background?: Paint } = {},
 ): Scene {
+  size('scene', { width, height })
   return { kind: 'scene', width, height, children, ...options }
 }
 
@@ -58,6 +61,7 @@ export function scene(
  * @param height - Height.
  * @param style - Fill, stroke, corner radius, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when a coordinate is not finite or the width or height is not a finite number >= 0.
  * @example
  * ```ts
  * import { rect } from 'mdml-engine/scene'
@@ -71,6 +75,8 @@ export function rect(
   height: number,
   style: Style & NodeBase & { readonly radius?: number } = {},
 ): RectNode {
+  finite('rect', { x, y })
+  size('rect', { width, height })
   return { kind: 'rect', x, y, width, height, ...style }
 }
 
@@ -82,6 +88,7 @@ export function rect(
  * @param r - Radius.
  * @param style - Fill, stroke, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when the centre is not finite or the radius is not a finite number >= 0.
  * @example
  * ```ts
  * import { circle } from 'mdml-engine/scene'
@@ -89,6 +96,8 @@ export function rect(
  * ```
  */
 export function circle(cx: number, cy: number, r: number, style: Style & NodeBase = {}): CircleNode {
+  finite('circle', { cx, cy })
+  size('circle', { r })
   return { kind: 'circle', cx, cy, r, ...style }
 }
 
@@ -101,6 +110,7 @@ export function circle(cx: number, cy: number, r: number, style: Style & NodeBas
  * @param ry - Vertical radius.
  * @param style - Fill, stroke, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when the centre is not finite or a radius is not a finite number >= 0.
  * @example
  * ```ts
  * import { ellipse } from 'mdml-engine/scene'
@@ -108,6 +118,8 @@ export function circle(cx: number, cy: number, r: number, style: Style & NodeBas
  * ```
  */
 export function ellipse(cx: number, cy: number, rx: number, ry: number, style: Style & NodeBase = {}): EllipseNode {
+  finite('ellipse', { cx, cy })
+  size('ellipse', { rx, ry })
   return { kind: 'ellipse', cx, cy, rx, ry, ...style }
 }
 
@@ -120,6 +132,7 @@ export function ellipse(cx: number, cy: number, rx: number, ry: number, style: S
  * @param y2 - End y.
  * @param style - Stroke, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { line } from 'mdml-engine/scene'
@@ -127,6 +140,7 @@ export function ellipse(cx: number, cy: number, rx: number, ry: number, style: S
  * ```
  */
 export function line(x1: number, y1: number, x2: number, y2: number, style: Style & NodeBase = {}): LineNode {
+  finite('line', { x1, y1, x2, y2 })
   return { kind: 'line', x1, y1, x2, y2, ...style }
 }
 
@@ -139,6 +153,7 @@ export function line(x1: number, y1: number, x2: number, y2: number, style: Styl
  * @param y2 - End y.
  * @param style - Stroke, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when a coordinate is not finite.
  * @example
  * ```ts
  * import { arrow } from 'mdml-engine/scene'
@@ -146,6 +161,7 @@ export function line(x1: number, y1: number, x2: number, y2: number, style: Styl
  * ```
  */
 export function arrow(x1: number, y1: number, x2: number, y2: number, style: Style & NodeBase = {}): LineNode {
+  finite('arrow', { x1, y1, x2, y2 })
   return { kind: 'line', x1, y1, x2, y2, arrow: true, ...style }
 }
 

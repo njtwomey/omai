@@ -258,6 +258,7 @@ export function fit(nodes: readonly SceneNode[], box: Bounds, padding = 0): Grou
  * @param columns - Cells per row.
  * @param cell - Cell width and height.
  * @returns One scene containing the grid.
+ * @throws MdmlError `value` when `columns` is not an integer >= 1 or the cell is not finite and positive.
  * @example
  * ```ts
  * import { grid, scene } from 'mdml-engine/scene'
@@ -266,6 +267,10 @@ export function fit(nodes: readonly SceneNode[], box: Bounds, padding = 0): Grou
  */
 export function grid(scenes: readonly Scene[], columns: number, cell: readonly [number, number]): Scene {
   const [cw, ch] = cell
+  if (!(Number.isInteger(columns) && columns >= 1))
+    throw new MdmlError('value', `grid: columns is ${columns}, expected an integer >= 1`)
+  if (!(cw > 0 && ch > 0 && Number.isFinite(cw) && Number.isFinite(ch)))
+    throw new MdmlError('value', `grid: the cell is ${cw} by ${ch}, expected finite positive sizes`)
   const rows = Math.ceil(scenes.length / columns)
   const children = scenes.map((s, i) => {
     const scale = Math.min(cw / s.width, ch / s.height)

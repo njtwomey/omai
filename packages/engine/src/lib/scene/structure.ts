@@ -104,6 +104,8 @@ export interface Structure {
  * @param options - Groups, annotations, a title and the preferred layout direction.
  * @returns The structure.
  * @concept structures
+ * @throws MdmlError `value` when two nodes share an id. (An edge to an id that is not a node is allowed: a part
+ *   of a structure may join nodes that another part defines; {@link mergeStructures} checks the whole.)
  * @example
  * ```ts
  * import { structure } from 'mdml-engine/scene'
@@ -123,6 +125,11 @@ export function structure(
   } = {},
 ): Structure {
   const { groups = [], ...rest } = options
+  const ids = new Set<string>()
+  for (const n of nodes) {
+    if (ids.has(n.id)) throw new MdmlError('value', `structure: the node id '${n.id}' is used twice`)
+    ids.add(n.id)
+  }
   return { kind: 'structure', type, nodes, edges, groups, ...rest }
 }
 
@@ -134,7 +141,8 @@ export function structure(
  * @param parts - The structures.
  * @param options - Id prefixes per part, and the type, title and direction of the result (default: the first part's).
  * @returns The merged structure.
- * @throws MdmlError with code `value` when `prefixes` does not have one entry per part.
+ * @throws MdmlError with code `value` when `prefixes` does not have one entry per part, or an edge of the result joins
+ *   an id that is not a node.
  * @example
  * ```ts
  * import { mergeStructures, structure } from 'mdml-engine/scene'
@@ -195,12 +203,20 @@ export function mergeStructures(
   const first = parts[0]
   const title = options.title ?? first?.title
   const direction = options.direction ?? first?.direction
-  return structure(options.type ?? first?.type ?? 'merged', [...nodes.values()], [...edges.values()], {
+  const merged = structure(options.type ?? first?.type ?? 'merged', [...nodes.values()], [...edges.values()], {
     groups: [...groups.values()],
     ...(annotations.length > 0 ? { annotations } : {}),
     ...(title === undefined ? {} : { title }),
     ...(direction === undefined ? {} : { direction }),
   })
+  for (const [i, e] of merged.edges.entries())
+    for (const end of [e.from, e.to])
+      if (!nodes.has(end))
+        throw new MdmlError(
+          'value',
+          `mergeStructures: edge ${i} joins '${e.from}' to '${e.to}', and '${end}' is not a node`,
+        )
+  return merged
 }
 
 /**
