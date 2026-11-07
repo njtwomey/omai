@@ -24,6 +24,16 @@ describe('exact trees on ties and duplicates', () => {
           [-2, 3],
         ],
       ],
+      [
+        'duplicated lattice',
+        duplicated(),
+        [
+          [0, 0],
+          [1, 1],
+          [0.5, 0.5],
+          [2, 3],
+        ],
+      ],
       ['a line of 20 points', line(20), [[0], [9.5], [-3], [25]]],
       [
         'one point',
