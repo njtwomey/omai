@@ -379,6 +379,9 @@ and the options and inputs of the four domains that no stage has listed.
 **Docstrings.** Every export has a TSDoc block: summary, `@param` per parameter, `@returns`, `@throws` where relevant,
 and at least one `@example` with `// => value`, `// => figure`, `// => trace` or `// => throws Code` expectations that
 the build runs. `@concept` tags link to the concept taxonomy (section 7), `@see` and `@reference` cite sources.
+In `mdml-render` the standard is the same for the first three (summary, `@param` per parameter, `@returns`) on every
+exported function; an `@example` is given where one reads well (`make examples` runs the engine's only), and
+`@index` marks what an agent should find first.
 
 **Tests next to code.** For `foo.ts`: `foo.test.ts` (unit), `foo.property.test.ts` (fast-check properties: gradients
 against finite differences, distribution identities, decomposition reconstruction, invariances), `foo.golden.test.ts`
