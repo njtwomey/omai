@@ -452,7 +452,7 @@ export function compareAlgorithms(scores: TensorLike, options: CompareAlgorithms
   const mean = new Float64Array(k)
   for (let i = 0; i < n; i++) {
     const row = Float64Array.from({ length: k }, (_, j) => sign * (flat[i * k + j] ?? 0))
-    const r = ranksOf(row)
+    const r = ranksOf(row).data
     for (let j = 0; j < k; j++) mean[j] = (mean[j] ?? 0) + (r[j] ?? 0) / n
   }
   const fr = friedman(scores)

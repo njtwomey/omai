@@ -13,7 +13,7 @@ import { asTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.
 import { pinvSym } from './_linear.ts'
 import { betaInc, mat, normCdf, normPpf, normSf, paired, type Rows, rowsOf, tCdf, tSf } from './_util.ts'
 import { quantile } from './quantiles.ts'
-import { ranksOf } from './ranks.ts'
+import { rankKernel } from './_ranks.ts'
 import { intervalEstimate, pValueFromTails, resolveTestOptions, type TestOptions, testResult } from './tests/result.ts'
 
 /** Pearson's r of two number arrays (centred dot products, scaled by their largest deviations against overflow). */
@@ -105,7 +105,7 @@ export function spearman(x: TensorLike, y: TensorLike, options: TestOptions = {}
   const { alternative, level } = resolveTestOptions(options)
   const [a, b] = paired('spearman', x, y, 2)
   const n = a.length
-  const r = pearsonR(ranksOf(a), ranksOf(b))
+  const r = pearsonR(rankKernel(a), rankKernel(b))
   const dof = n - 2
   const t = r * Math.sqrt(Math.max(0, dof / ((r + 1) * (1 - r))))
   const pValue = pValueFromTails(alternative, tCdf(dof, t), tSf(dof, t))
@@ -432,7 +432,7 @@ export function partialCorrelation(
   const p = k + 2
   const cols: Float64Array[] = [a, b]
   for (let j = 0; j < k; j++) cols.push(Float64Array.from({ length: n }, (_, i) => z.data[i * k + j] ?? 0))
-  const used = options.method === 'spearman' ? cols.map((c) => ranksOf(c)) : cols
+  const used = options.method === 'spearman' ? cols.map((c) => rankKernel(c)) : cols
   const data = new Float64Array(n * p)
   for (let i = 0; i < n; i++) for (let j = 0; j < p; j++) data[i * p + j] = used[j]?.[i] ?? 0
   const C = toFlat(cov(mat(data, n, p), undefined, { rowvar: false }))

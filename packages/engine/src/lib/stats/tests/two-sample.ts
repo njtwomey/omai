@@ -11,7 +11,7 @@ import type { TensorLike } from '../../tensor/index.ts'
 import { matrixRankSym, ols, pinvSym } from '../_linear.ts'
 import { chi2Sf, groupsOf, rowsOf, sample, sortedCopy } from '../_util.ts'
 import { iqr } from '../quantiles.ts'
-import { ranksOf } from '../ranks.ts'
+import { rankKernel } from '../_ranks.ts'
 import { permutationTest, type ResamplingRunOptions } from '../resampling.ts'
 import { cvmCdfInf } from './_cvm.ts'
 import { kolmogn, ks2Exact } from './_kolmogorov.ts'
@@ -145,7 +145,7 @@ export function cramervonmises2samp(
   const b = sortedCopy(sample('cramervonmises2samp', y, 2))
   const nx = a.length
   const ny = b.length
-  const r = ranksOf(Float64Array.from([...a, ...b]))
+  const r = rankKernel(Float64Array.from([...a, ...b]))
   let u = 0
   for (let i = 0; i < nx; i++) u += nx * ((r[i] ?? 0) - (i + 1)) ** 2
   for (let j = 0; j < ny; j++) u += ny * ((r[nx + j] ?? 0) - (j + 1)) ** 2

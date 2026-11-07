@@ -21,7 +21,7 @@ import {
 import type { TensorLike } from '../../tensor/index.ts'
 import { chi2Sf, fSf, groupsOf, normPpf } from '../_util.ts'
 import { median } from '../quantiles.ts'
-import { ranksOf } from '../ranks.ts'
+import { rankKernel } from '../_ranks.ts'
 import { shapiroWilk } from './_shapiro.ts'
 
 /** Options shared by tests: the alternative hypothesis and the confidence level of reported intervals. */
@@ -323,7 +323,7 @@ export function fligner(groups: readonly TensorLike[], options: { readonly cente
     for (const v of g) all.push(Math.abs(v - c))
   }
   const N = all.length
-  const ranks = ranksOf(all)
+  const ranks = rankKernel(all)
   const a = Float64Array.from(ranks, (r) => normPpf(r / (2 * (N + 1)) + 0.5))
   const abar = meanOf(a)
   const varsq = varianceOf(a, 1)

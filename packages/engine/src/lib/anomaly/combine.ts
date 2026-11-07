@@ -294,7 +294,7 @@ export function minmaxNormalise(scores: readonly number[]): number[] {
  */
 export function rankNormalise(scores: readonly number[]): number[] {
   const n = scores.length
-  return Array.from(ranksOf(scores), (r) => (n > 1 ? (r - 1) / (n - 1) : 0))
+  return Array.from(ranksOf(scores).data, (r) => (n > 1 ? (r - 1) / (n - 1) : 0))
 }
 
 /**
