@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import { RunSchema, type RunStatus, type TensorRole, type TraceEvent, TraceEventSchema } from './events.ts'
+import {
+  type OutcomeWord,
+  RunSchema,
+  type RunStatus,
+  runStatusOf,
+  type TensorRole,
+  type TraceEvent,
+  TraceEventSchema,
+} from './events.ts'
 
 // One event of every kind with every field present (optional ones too). `Required<E>` makes the compiler demand each
 // field of each interface, so adding one to an interface fails to compile here until it is added to its sample; the
@@ -76,5 +84,27 @@ describe('events: the interfaces and the schema are one vocabulary', () => {
     const members = membersOfSchema()
     expect([...(inJson(members, 'end', 'status') ?? [])].sort()).toEqual(Object.keys(statuses).sort())
     expect([...(inJson(members, 'tensor', 'role') ?? [])].sort()).toEqual(Object.keys(roles).sort())
+  })
+
+  // The older words of the result types (programming verdicts, root-finder flags) onto the one status: every word has a
+  // row (the record is typed by `OutcomeWord`, so a new word fails to compile until it is mapped here).
+  it('maps every older outcome word onto one RunStatus', () => {
+    const table: Record<OutcomeWord, RunStatus> = {
+      optimal: 'converged',
+      converged: 'converged',
+      'iteration limit': 'completed',
+      'node limit': 'completed',
+      'maximum iterations': 'completed',
+      infeasible: 'failed',
+      unbounded: 'failed',
+      'numerical difficulties': 'failed',
+      'derivative was zero': 'failed',
+      'sign error': 'failed',
+      success: 'completed',
+      event: 'stopped',
+      failed: 'failed',
+    }
+    for (const [word, status] of Object.entries(table)) expect(runStatusOf(word as OutcomeWord), word).toBe(status)
+    expect(Object.values(table).every((s) => s in statuses)).toBe(true)
   })
 })
