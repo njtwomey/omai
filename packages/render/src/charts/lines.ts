@@ -5,6 +5,7 @@
 
 import type { EChartsOption, SeriesOption } from 'echarts'
 import { MdmlError } from 'mdml-engine/base'
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 import { asTensor, type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { extentOf, unionRange } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
@@ -104,7 +105,7 @@ export interface Band {
   readonly edges?: boolean
 }
 
-type Pt = readonly [number, number]
+type Pt = Point2
 
 interface PolygonApi {
   coord(p: readonly number[]): number[]

@@ -3,8 +3,10 @@
  * (Catmull-Rom splines as cubic Bézier segments), and arrow-head triangles.
  */
 
+import type { Point2 } from 'mdml-engine/numerics/geometry'
+
 /** A point `[x, y]`. */
-type Pt = readonly [number, number]
+type Pt = Point2
 
 /**
  * SVG path data of a polyline or polygon through points.

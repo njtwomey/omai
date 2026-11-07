@@ -4,10 +4,10 @@
  * `decimate` as the default choice.
  */
 
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, type Vec2 } from 'mdml-engine/base'
 
 /** A point `[x, y]`. */
-export type XY = readonly [number, number]
+export type XY = Vec2
 
 /**
  * Largest-triangle-three-buckets downsampling (Steinarsson, 2013, "Downsampling time series for visual
