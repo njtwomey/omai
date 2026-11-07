@@ -154,6 +154,19 @@ describe('Krylov solvers on small systems with known solutions', () => {
           jacobi.status === 'converged' && jacobi.iterations <= 1,
         )
       }
+      // The eigensolvers take the same rule: a NaN matrix is rejected naming the routine, not answered with `convergence`.
+      const nanMatrix = S.csr([
+        [2, Number.NaN],
+        [Number.NaN, 2],
+      ])
+      for (const [name, call] of [
+        ['eigsh', () => S.eigsh(nanMatrix, 1)],
+        ['lanczos', () => S.lanczos(nanMatrix, 2)],
+        ['svds', () => S.svds(nanMatrix, 1)],
+      ] as const)
+        expect(call, name).toThrow(
+          expect.objectContaining({ code: 'value', message: expect.stringMatching(`^${name}: `) }),
+        )
       // Matrix sizes that do not match, and a rectangular operator, are shape errors.
       expect(() => S.cg(tri(4, 2, -1, -1), [1, 2, 3])).toThrow(expect.objectContaining({ code: 'shape' }))
       expect(failures).toEqual([])

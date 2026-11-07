@@ -28,7 +28,18 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { luKernel, solveKernel, triangularKernel } from './_kernels.ts'
-import { asColumns, assemble, broadcastBatch, identity, matrices, matrixShape, mT, squareSize } from './_matrix.ts'
+import { assertFinite } from '../_vector.ts'
+import {
+  asColumns,
+  assemble,
+  broadcastBatch,
+  identity,
+  matrices,
+  matrixShape,
+  mT,
+  namingNonFinite,
+  squareSize,
+} from './_matrix.ts'
 import { triangularSolve } from './triangular.ts'
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -42,8 +53,8 @@ const solvePrimitive: Primitive<null> = definePrimitive<null>({
     const bv = b as NonNullable<typeof b>
     const n = squareSize(av.shape, 'solve')
     const { batch, n: k } = matrixShape(bv.shape, 'solve')
-    const bs = matrices(bv)
-    const parts = matrices(av).map((m, i) => solveKernel(m, bs[i] as Float64Array, n, k))
+    const bs = matrices(bv, 'solve')
+    const parts = matrices(av, 'solve').map((m, i) => solveKernel(m, bs[i] as Float64Array, n, k))
     return [assemble(bv, bv.dtype as FloatDType, batch, [n, k], parts)]
   },
   // X = A^{-1} B: dX = A^{-1} (dB - dA X).
@@ -72,7 +83,7 @@ const solvePrimitive: Primitive<null> = definePrimitive<null>({
  * @param a - Square matrix `[..., n, n]`.
  * @param b - Right-hand side `[..., n, k]` or `[n]`.
  * @returns The solution, differentiable in both arguments.
- * @throws MdmlError with code `value` when A is exactly singular.
+ * @throws MdmlError with code `value` when A is exactly singular, or when `a` or `b` has a NaN or infinite entry.
  * @concept linear-algebra
  * @index function Solve a square linear system by LU, like numpy.linalg.solve.
  * @example
@@ -95,6 +106,7 @@ export function solve(a: TensorLike, b: TensorLike): Value {
  *
  * @param a - Square matrix `[..., n, n]`.
  * @returns A^{-1}, differentiable.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @index function Matrix inverse, batched and differentiable.
  * @example
  * ```ts
@@ -106,7 +118,7 @@ export function solve(a: TensorLike, b: TensorLike): Value {
 export function inv(a: TensorLike): Value {
   const [av] = promoteFloat(a) as [Value]
   const n = squareSize(av.shape, 'inv')
-  return solve(av, identity(n, av))
+  return namingNonFinite('inv', () => solve(av, identity(n, av)))
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -131,7 +143,7 @@ const luPrimitive: Primitive<null> = definePrimitive<null>({
     const ps: Float64Array[] = []
     const ls: Float64Array[] = []
     const us: Float64Array[] = []
-    for (const m of matrices(av)) {
+    for (const m of matrices(av, 'lu')) {
       const { lu, perm } = luKernel(m, n)
       const l = new Float64Array(n * n)
       const u = new Float64Array(n * n)
@@ -197,6 +209,7 @@ export interface LuResult {
  *
  * @param a - Square matrix `[..., n, n]`.
  * @returns `{ p, l, u }`; L and U are differentiable (P is piecewise constant).
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @concept linear-algebra
  * @example
  * ```ts
@@ -225,6 +238,7 @@ export interface LuFactorisation {
  *
  * @param a - Square matrix `[n, n]`.
  * @returns The packed factors and pivot indices.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { luFactor } from 'mdml-engine/numerics/linalg'
@@ -234,6 +248,7 @@ export interface LuFactorisation {
 export function luFactor(a: TensorLike): LuFactorisation {
   const t = concreteOrThrow(promoteFloat(a)[0] as Tensor, 'luFactor')
   const n = squareSize(t.shape, 'luFactor')
+  assertFinite('luFactor', t.data)
   const { lu: packed, piv } = luKernel(Float64Array.from(t.data), n)
   return { lu: fromStorage(packed, [n, n], 'float64'), piv: fromStorage(piv, [n], 'int32') }
 }

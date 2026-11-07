@@ -28,6 +28,7 @@ import {
 } from '../../trace/index.ts'
 import { vectorOf } from '../_vector.ts'
 import { ddot as dot, eigh, eigvals, dnrm2 as norm } from '../linalg/index.ts'
+import { assertFiniteOperand } from './_finite.ts'
 import { asOperator, type CsrMatrix, type LinearOperator } from './csr.ts'
 
 function numeric(op: LinearOperator, transpose = false): (x: Float64Array) => Float64Array {
@@ -97,6 +98,7 @@ interface LanczosRows {
  * @param m - Number of steps.
  * @param options - Start vector `[n]` or key, and vectors to stay orthogonal to (deflation) as `[k, n]` rows.
  * @returns T's diagonals (`[m]` tensors) and the basis (an `[m, n]` matrix).
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
  * @throws MdmlError with code `shape` unless the start vector is a vector and the deflation vectors a matrix, and
  *   `not-differentiable` for a traced value.
  * @concept lanczos
@@ -134,6 +136,7 @@ function lanczosRows(
     readonly deflate?: TensorLike | readonly Float64Array[]
   },
 ): LanczosRows {
+  assertFiniteOperand('lanczos', a)
   const op = asOperator(a)
   const apply = numeric(op)
   const n = op.shape[0]
@@ -213,7 +216,8 @@ export interface ArnoldiState {
  * @param m - Number of steps.
  * @param options - Start vector `[n]` (a tensor-like; migration, D-009: was `ArrayLike<number>`) or key.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` unless the start vector is a vector, and `not-differentiable` for a traced value.
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry; `shape` unless the start vector is a
+ *   vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { arnoldiAlgorithm } from 'mdml-engine/numerics/sparse'
@@ -227,6 +231,7 @@ export function arnoldiAlgorithm(
   m: number,
   options: { readonly v0?: TensorLike; readonly key?: Key } = {},
 ): Algorithm<ArnoldiState, KrylovPath> {
+  assertFiniteOperand('arnoldi', a)
   const op = asOperator(a)
   const apply = numeric(op)
   const n = op.shape[0]
@@ -280,6 +285,7 @@ export function arnoldiAlgorithm(
  * @param m - Number of steps.
  * @param options - Start vector `[n]` (a tensor-like; migration, D-009: was `ArrayLike<number>`) or key.
  * @returns The Hessenberg matrix `[m + 1, m]` and the basis (a `[k, n]` matrix, was a list of `Float64Array`s).
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
  * @throws MdmlError with code `shape` unless the start vector is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
@@ -384,7 +390,7 @@ export interface EigshState {
  * @param options - Which end (default LM), tolerance (default 1e-10), Krylov size m (default max(2k + 1, 20)), restart
  *   cap and start vector.
  * @returns The algorithm.
- * @throws MdmlError with code `value` unless 1 <= k < n.
+ * @throws MdmlError with code `value` unless 1 <= k < n, or when the matrix has a NaN or infinite entry.
  * @concept lanczos
  * @example
  * ```ts
@@ -399,6 +405,7 @@ export function eigshAlgorithm(
   k: number,
   options: EigshOptions = {},
 ): Algorithm<EigshState, KrylovPath> {
+  assertFiniteOperand('eigsh', a)
   const op = asOperator(a)
   const apply = numeric(op)
   const n = op.shape[0]
@@ -510,6 +517,7 @@ export function eigshAlgorithm(
  * @param options - Which end (default LM), tolerance (default 1e-10), Krylov size m (default max(2k + 1, 20)), restart
  *   cap and start vector.
  * @returns Eigenvalues (ascending), eigenvectors and residuals.
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
  * @throws MdmlError with code `convergence` past the restart limit.
  * @concept lanczos
  * @index function Extreme eigenpairs of a symmetric operator by Lanczos.
@@ -572,6 +580,7 @@ function gramOf(op: LinearOperator): {
  * @param k - Number of triplets.
  * @param options - Tolerance.
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry.
  * @example
  * ```ts
  * import { svdsAlgorithm } from 'mdml-engine/numerics/sparse'
@@ -583,6 +592,7 @@ export function svdsAlgorithm(
   k: number,
   options: { readonly tol?: number } = {},
 ): Algorithm<EigshState, KrylovPath> {
+  assertFiniteOperand('svds', a)
   const { gram } = gramOf(asOperator(a))
   return { ...eigshAlgorithm(gram, k, { which: 'LA', tol: options.tol ?? 1e-12 }), name: 'numerics/svds' }
 }
@@ -595,6 +605,7 @@ export function svdsAlgorithm(
  * @param k - Number of triplets.
  * @param options - Tolerance.
  * @returns Singular values (ascending, as scipy), left and right vectors.
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
  * import { svds } from 'mdml-engine/numerics/sparse'
@@ -606,6 +617,7 @@ export function svds(
   k: number,
   options: { readonly tol?: number } = {},
 ): { s: Tensor; u: Tensor; vt: Tensor } {
+  assertFiniteOperand('svds', a)
   const { gram, apply, m, n } = gramOf(asOperator(a))
   const { values, vectors } = eigsh(gram, k, { which: 'LA', tol: options.tol ?? 1e-12 })
   const lambdas = toFlat(values)

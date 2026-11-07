@@ -23,6 +23,7 @@ import {
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
 import { assertFinite } from '../_vector.ts'
 import { daxpy, ddot as dot, dnrm2 as norm } from '../linalg/index.ts'
+import { assertFiniteOperand } from './_finite.ts'
 import { asOperator, type CsrMatrix, csr, type LinearOperator, primalValues, spmv, transposeCsr } from './csr.ts'
 
 /** A new Krylov direction shorter than this many rounding errors of its column is no direction: the space has stopped growing. */
@@ -79,9 +80,7 @@ function setup(name: string, a: CsrMatrix | TensorLike | LinearOperator, b: Tens
   // The NaN rule: a solver rejects non-finite data at its boundary (an operator is opaque, a matrix is scanned).
   assertFinite(name, bv, 'b')
   if (options.x0 !== undefined) assertFinite(name, options.x0, 'x0')
-  if (typeof a === 'object' && a !== null && 'indptr' in a) assertFinite(name, primalValues(a as CsrMatrix), 'matrix')
-  else if (!(typeof a === 'object' && a !== null && 'matvec' in a))
-    assertFinite(name, toFlat(primalOf(promoteFloat(a as TensorLike)[0] as Value)), 'matrix')
+  assertFiniteOperand(name, a)
   if (op.shape[0] !== bv.length || op.shape[1] !== bv.length)
     throw new MdmlError('shape', 'Krylov solvers need a square operator matching b')
   const x0 = options.x0 === undefined ? new Float64Array(bv.length) : Float64Array.from(options.x0)
@@ -120,6 +119,7 @@ const observe = (s: KrylovState) => ({
  * @param b - Right-hand side.
  * @param options - Start, tolerances and preconditioner.
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
  * import { cgAlgorithm } from 'mdml-engine/numerics/sparse'
@@ -166,6 +166,7 @@ export function cgAlgorithm(
  * @param b - Right-hand side.
  * @param options - Tolerances, start, preconditioner, iteration cap (default 10 n) and trace options.
  * @returns The solution with its residual history.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @concept krylov-methods
  * @index function Conjugate gradients for symmetric positive-definite systems.
  * @example
@@ -201,6 +202,7 @@ export function cg(
  * @param b - Right-hand side.
  * @param options - Start, tolerances and (right) preconditioner.
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
  * import { bicgstabAlgorithm } from 'mdml-engine/numerics/sparse'
@@ -283,6 +285,7 @@ export function bicgstabAlgorithm(
  * @param b - Right-hand side.
  * @param options - Tolerances, start, preconditioner, iteration cap and trace options.
  * @returns The solution with its residual history.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
  * import { bicgstab } from 'mdml-engine/numerics/sparse'
@@ -317,6 +320,7 @@ export function bicgstab(
  * @param b - Right-hand side.
  * @param options - Start, tolerances, preconditioner and restart length.
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
  * import { gmresAlgorithm } from 'mdml-engine/numerics/sparse'
@@ -433,6 +437,7 @@ export function gmresAlgorithm(
  * @param b - Right-hand side.
  * @param options - Tolerances, start, preconditioner, restart, iteration cap and trace options.
  * @returns The solution with its residual history.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
  * import { gmres } from 'mdml-engine/numerics/sparse'

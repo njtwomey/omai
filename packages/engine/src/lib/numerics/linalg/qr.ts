@@ -23,7 +23,8 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { qrKernel } from './_kernels.ts'
-import { asColumns, assemble, broadcastBatch, matrices, matrixShape, mT } from './_matrix.ts'
+import { assertFinite } from '../_vector.ts'
+import { asColumns, assemble, broadcastBatch, matrices, matrixShape, mT, namingNonFinite } from './_matrix.ts'
 import { pinv } from './svd.ts'
 import { triangularSolve } from './triangular.ts'
 
@@ -54,7 +55,7 @@ const qrPrimitive: Primitive<null> = definePrimitive<null>({
     const av = a as NonNullable<typeof a>
     const { batch, m, n } = matrixShape(av.shape, 'qr')
     const k = Math.min(m, n)
-    const results = matrices(av).map((x) => qrKernel(x, m, n))
+    const results = matrices(av, 'qr').map((x) => qrKernel(x, m, n))
     const dtype = av.dtype as FloatDType
     return [
       assemble(
@@ -118,6 +119,7 @@ export interface QrResult {
  *
  * @param a - Matrix `[..., m, n]`.
  * @returns `{ q, r }`, differentiable when m >= n and A has full column rank.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @concept linear-algebra
  * @index function Reduced QR factorisation by Householder reflections.
  * @example
@@ -165,6 +167,7 @@ function rankDeficient(r: Value, m: number, n: number): boolean {
  * @param a - Matrix `[..., m, n]`.
  * @param b - Right-hand side `[..., m, k]` or `[m]`.
  * @returns The solution `[..., n, k]` or `[n]`, differentiable in both arguments.
+ * @throws MdmlError with code `value` when `a` or `b` has a NaN or infinite entry.
  * @index function Least-squares solution of A x = b.
  * @example
  * ```ts
@@ -175,19 +178,22 @@ function rankDeficient(r: Value, m: number, n: number): boolean {
  */
 export function lstsq(a: TensorLike, b: TensorLike): Value {
   const [av, bv] = promoteFloat(a, b) as [Value, Value]
+  assertFinite('lstsq', toFlat(primalOf(bv)), 'b')
   const cols = asColumns(av, bv)
   const [ab, bb] = broadcastBatch(av, cols.b)
   const { m, n } = matrixShape(ab.shape, 'lstsq')
-  let x: Value
-  if (m >= n) {
-    const { q, r } = qr(ab)
-    x = rankDeficient(r, m, n) ? matmul(pinv(ab), bb) : triangularSolve(r, matmul(mT(q), bb), upper(false))
-  } else {
-    // A^T = Q R, so A = R^T Q^T and the minimum-norm solution is Q R^{-T} b.
-    const { q, r } = qr(mT(ab))
-    x = rankDeficient(r, m, n) ? matmul(pinv(ab), bb) : matmul(q, triangularSolve(r, bb, upper(true)))
-  }
-  return cols.vector ? squeeze(x, -1) : x
+  return namingNonFinite('lstsq', () => {
+    let x: Value
+    if (m >= n) {
+      const { q, r } = qr(ab)
+      x = rankDeficient(r, m, n) ? matmul(pinv(ab), bb) : triangularSolve(r, matmul(mT(q), bb), upper(false))
+    } else {
+      // A^T = Q R, so A = R^T Q^T and the minimum-norm solution is Q R^{-T} b.
+      const { q, r } = qr(mT(ab))
+      x = rankDeficient(r, m, n) ? matmul(pinv(ab), bb) : matmul(q, triangularSolve(r, bb, upper(true)))
+    }
+    return cols.vector ? squeeze(x, -1) : x
+  })
 }
 
 /**

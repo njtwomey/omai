@@ -92,6 +92,37 @@ describe('exact trees on ties and duplicates', () => {
     )
       failures.push('the nearest neighbour of a data point is not itself')
     expect(toFlat(own.distances).every((v) => v >= 1)).toBe(true)
+    // The NaN rule (ND-11): a NaN or infinite coordinate in the data or the queries is rejected at the boundary naming the
+    // routine (a NaN row used to come back as the nearest point, at distance NaN, and the tree query unsorted).
+    const poisoned = [
+      [0, 0],
+      [Number.NaN, 1],
+      [2, 2],
+    ]
+    const infinite = [
+      [0, 0],
+      [1, 1],
+      [Number.POSITIVE_INFINITY, 2],
+    ]
+    const rejects: readonly (readonly [string, () => unknown])[] = [
+      ['kNearest', () => S.kNearest(poisoned, [[0, 0]], 1)],
+      ['kNearest', () => S.kNearest(lattice(3, 3), infinite, 1)],
+      ['radiusNeighbours', () => S.radiusNeighbours(infinite, undefined, 1)],
+      ['kNeighboursGraph', () => S.kNeighboursGraph(poisoned, 1)],
+      ['radiusNeighboursGraph', () => S.radiusNeighboursGraph(poisoned, 1)],
+      ['kdTree', () => S.kdTree(poisoned)],
+      ['ballTree', () => S.ballTree(infinite)],
+      ['vpTree', () => S.vpTree(poisoned)],
+      ['query', () => S.kdTree(lattice(3, 3)).query(poisoned, 1)],
+      ['queryRadius', () => S.ballTree(lattice(3, 3)).queryRadius(infinite, 1)],
+    ]
+    for (const [name, call] of rejects)
+      expect(call, name).toThrow(
+        expect.objectContaining({
+          code: 'value',
+          message: expect.stringMatching(new RegExp(`^${name}: .*non-finite`)),
+        }),
+      )
     expect(failures).toEqual([])
   })
 })

@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import { assertFinite } from '../_vector.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import {
   type DistanceMetric,
@@ -46,7 +47,10 @@ export interface SpatialTree {
   readonly size: number
   readonly dim: number
   readonly nodes: readonly SpatialTreeNode[]
-  /** The k nearest data points of each query (nearest first), optionally with query logs. */
+  /**
+   * The k nearest data points of each query (nearest first), optionally with query logs. A query with a NaN or infinite
+   * coordinate throws `value`.
+   */
   readonly query: (
     queries: TensorLike,
     k: number,
@@ -85,7 +89,9 @@ interface Internal {
 function flatPoints(x: TensorLike, name: string): { data: number[]; n: number; d: number } {
   const t = concreteOrThrow(promoteFloat(x)[0] as Tensor, name)
   if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: points must be [n, d]`)
-  return { data: toFlat(t), n: t.shape[0] ?? 0, d: t.shape[1] ?? 0 }
+  const data = toFlat(t)
+  assertFinite(name, data, 'points')
+  return { data, n: t.shape[0] ?? 0, d: t.shape[1] ?? 0 }
 }
 
 /** Partition perm[start..end) around the median along dimension dim (quickselect). */
@@ -378,6 +384,8 @@ function buildTree(kind: 'kd' | 'ball' | 'vp', x: TensorLike, options: TreeOptio
  * @param data - Points `[n, d]`.
  * @param options - Metric (euclidean, cityblock, chebyshev or minkowski with p) and leaf size.
  * @returns The tree.
+ * @throws MdmlError with code `value` when the points have a NaN or infinite coordinate (the queries are checked the same
+ *   way).
  * @concept spatial-trees
  * @index structure KD tree for nearest-neighbour and radius queries.
  * @example
@@ -398,6 +406,8 @@ export function kdTree(data: TensorLike, options: TreeOptions = {}): SpatialTree
  * @param data - Points `[n, d]`.
  * @param options - Metric, its parameters and leaf size.
  * @returns The tree.
+ * @throws MdmlError with code `value` when the points have a NaN or infinite coordinate (the queries are checked the same
+ *   way).
  * @example
  * ```ts
  * import { ballTree } from 'mdml-engine/numerics/spatial'
@@ -415,6 +425,8 @@ export function ballTree(data: TensorLike, options: TreeOptions = {}): SpatialTr
  * @param data - Points `[n, d]`.
  * @param options - Metric, its parameters and leaf size.
  * @returns The tree.
+ * @throws MdmlError with code `value` when the points have a NaN or infinite coordinate (the queries are checked the same
+ *   way).
  * @example
  * ```ts
  * import { vpTree } from 'mdml-engine/numerics/spatial'

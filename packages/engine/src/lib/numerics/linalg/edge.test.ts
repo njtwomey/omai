@@ -593,18 +593,71 @@ describe('eigh, expm, sqrtm and logm against scipy on clustered, defective and l
           return 'throws'
         }
       }
+      // The NaN rule (ND-11): a routine that decides or summarises rejects a non-finite entry at its boundary with a
+      // `value` error naming itself, for NaN and for either infinity; before, NaN gave garbage (`nullSpace` of a NaN
+      // matrix was the identity, `matrixRank` 0, `eigh` threw `convergence`, `cholesky` blamed positive definiteness).
+      const inf = [
+        [Number.NEGATIVE_INFINITY, 1],
+        [1, 1],
+      ]
+      const rejects: readonly (readonly [string, (m: number[][]) => unknown])[] = [
+        ['svd', (m) => L.svd(m)],
+        ['svdvals', (m) => L.svdvals(m)],
+        ['qr', (m) => L.qr(m)],
+        ['lu', (m) => L.lu(m)],
+        ['luFactor', (m) => L.luFactor(m)],
+        ['cholesky', (m) => L.cholesky(m)],
+        ['choleskyJitter', (m) => L.choleskyJitter(m)],
+        ['eigh', (m) => L.eigh(m)],
+        ['eigh', (m) => L.eigh(m, { method: 'jacobi' })],
+        ['eigvalsh', (m) => L.eigvalsh(m)],
+        ['solve', (m) => L.solve(m, [1, 2])],
+        [
+          'solve',
+          (m) =>
+            L.solve(
+              [
+                [2, 0],
+                [0, 2],
+              ],
+              m[0] as number[],
+            ),
+        ],
+        ['inv', (m) => L.inv(m)],
+        ['pinv', (m) => L.pinv(m)],
+        ['lstsq', (m) => L.lstsq(m, [1, 2])],
+        [
+          'lstsq',
+          (m) =>
+            L.lstsq(
+              [
+                [1, 0],
+                [0, 1],
+              ],
+              m[0] as number[],
+            ),
+        ],
+        ['nullSpace', (m) => L.nullSpace(m)],
+        ['matrixRank', (m) => L.matrixRank(m)],
+        ['cond', (m) => L.cond(m)],
+        ['polar', (m) => L.polar(m)],
+        ['lowRankApproximation', (m) => L.lowRankApproximation(m, 1)],
+      ]
+      for (const [name, call] of rejects) {
+        for (const m of [nan, inf]) {
+          expect(() => call(m), `${name} of ${m[0]?.[0]}`).toThrow(
+            expect.objectContaining({
+              code: 'value',
+              message: expect.stringMatching(new RegExp(`^${name}: .*non-finite`)),
+            }),
+          )
+        }
+      }
+      // What only propagates (elementwise, or a summary with a defined non-finite value): not rejected.
+      expect(L.isPositiveDefinite(nan)).toBe(false)
       const calls: readonly (readonly [string, () => Value | number[] | number])[] = [
-        ['svd', () => L.svd(nan).s],
-        ['qr', () => L.qr(nan).r],
-        ['lu', () => L.lu(nan).u],
-        ['cholesky', () => L.cholesky(nan)],
-        ['eigh', () => L.eigh(nan).eigenvalues],
-        ['solve', () => L.solve(nan, [1, 2])],
-        ['inv', () => L.inv(nan)],
         ['det', () => L.det(nan)],
         ['slogdet', () => L.slogdet(nan).logabsdet],
-        ['pinv', () => L.pinv(nan)],
-        ['lstsq', () => L.lstsq(nan, [1, 2])],
         ['expm', () => L.expm(nan)],
         [
           'expm of an infinite matrix (the squaring count was infinite)',
@@ -616,7 +669,6 @@ describe('eigh, expm, sqrtm and logm against scipy on clustered, defective and l
         ],
         ['sqrtm', () => L.sqrtm(nan)],
         ['norm', () => L.norm(nan)],
-        ['cond', () => L.cond(nan)],
       ]
       for (const [name, call] of calls) expect(nonFinite(call), `${name} of a NaN matrix`).not.toBe(false)
       // numpy raises LinAlgError for these; so do we, with a value error naming the cause.

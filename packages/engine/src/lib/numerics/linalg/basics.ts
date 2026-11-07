@@ -33,7 +33,7 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { scaleExponent, slogdetKernel } from './_kernels.ts'
-import { assemble, identity, matrices, matrixShape, mT, squareSize, sym } from './_matrix.ts'
+import { assemble, identity, matrices, matrixShape, mT, namingNonFinite, squareSize, sym } from './_matrix.ts'
 import { cholesky } from './cholesky.ts'
 import { inv } from './lu.ts'
 import { svdvals } from './svd.ts'
@@ -202,6 +202,7 @@ function powNorm(a: Value, p: number): Value {
  * @param a - Matrix `[..., m, n]` (square unless p is 2 or -2).
  * @param p - The norm.
  * @returns The condition number, differentiable.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { cond } from 'mdml-engine/numerics/linalg'
@@ -211,11 +212,13 @@ function powNorm(a: Value, p: number): Value {
  */
 export function cond(a: TensorLike, p: NormOrder = 2): Value {
   const [v] = promoteFloat(a) as [Value]
-  if (p === 2 || p === -2) {
-    const s = svdvals(v)
-    return p === 2 ? div(max(s, -1), min(s, -1)) : div(min(s, -1), max(s, -1))
-  }
-  return mul(norm(v, p), norm(inv(v), p))
+  return namingNonFinite('cond', () => {
+    if (p === 2 || p === -2) {
+      const s = svdvals(v)
+      return p === 2 ? div(max(s, -1), min(s, -1)) : div(min(s, -1), max(s, -1))
+    }
+    return mul(norm(v, p), norm(inv(v), p))
+  })
 }
 
 /**
@@ -225,6 +228,7 @@ export function cond(a: TensorLike, p: NormOrder = 2): Value {
  * @param a - Matrix `[m, n]`.
  * @param tol - Threshold.
  * @returns The rank.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { matrixRank } from 'mdml-engine/numerics/linalg'
@@ -234,7 +238,7 @@ export function cond(a: TensorLike, p: NormOrder = 2): Value {
 export function matrixRank(a: TensorLike, tol?: number): number {
   const [v] = promoteFloat(a) as [Value]
   const { m, n } = matrixShape(v.shape, 'matrixRank')
-  const s = toFlat(svdvals(v))
+  const s = toFlat(namingNonFinite('matrixRank', () => svdvals(v)))
   const largest = s.length === 0 ? 0 : Math.max(0, maxOf(s))
   const threshold = tol ?? largest * Math.max(m, n) * 2.220446049250313e-16
   return s.filter((x) => x > threshold).length
@@ -310,7 +314,8 @@ export function symmetricPart(a: TensorLike): Value {
  * Whether a symmetric matrix is positive definite (its Cholesky factorisation succeeds).
  *
  * @param a - Symmetric matrix `[n, n]`.
- * @returns `true` when positive definite.
+ * @returns `true` when positive definite; a matrix with a NaN or infinite entry is not (`false`, the one place a
+ *   non-finite matrix is answered rather than rejected: a predicate has no other honest value).
  * @example
  * ```ts
  * import { isPositiveDefinite } from 'mdml-engine/numerics/linalg'
