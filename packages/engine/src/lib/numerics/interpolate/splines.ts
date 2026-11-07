@@ -449,6 +449,16 @@ export function bsplineBasisElement(t: TensorLike, extrapolate = true): BSpline 
  * The default interpolation knots of make_interp_spline: for odd k, not-a-knot (the data points without the (k - 1) / 2
  * nearest each end, plus k + 1 repeated end knots); for k = 2, the midpoints between data points without the first and
  * last; for k = 0, the data points themselves plus the last repeated.
+ *
+ * @param x - Data points, increasing.
+ * @param k - Degree: 0, 2 or odd.
+ * @returns The knot vector.
+ * @throws MdmlError with code `value` for an even degree other than 0 and 2.
+ * @example
+ * ```ts
+ * import { notAKnot } from 'mdml-engine/numerics/interpolate'
+ * notAKnot([0, 1, 2, 3, 4, 5], 3) // => [0, 0, 0, 0, 2, 3, 5, 5, 5, 5]
+ * ```
  */
 export function notAKnot(x: readonly number[], k: number): number[] {
   const first = x[0] ?? 0

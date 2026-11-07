@@ -90,7 +90,20 @@ export function barycentric(x: TensorLike, y: TensorLike, weights?: readonly num
   return { nodes, weights: wt, evaluate }
 }
 
-/** Barycentric weights 1 / prod_{k != j} (x_j - x_k), computed with a scaling that avoids overflow. */
+/**
+ * Barycentric weights 1 / prod_{k != j} (x_j - x_k), computed with a scaling that avoids overflow (a common factor, so
+ * the ratios of the weights are exact).
+ *
+ * @param x - Distinct nodes.
+ * @returns The weights, up to one common positive factor.
+ * @throws MdmlError with code `value` for repeated nodes.
+ * @example
+ * ```ts
+ * import { barycentricWeights } from 'mdml-engine/numerics/interpolate'
+ * const w = barycentricWeights([0, 1, 2])
+ * w.map((v) => v / (w[0] ?? 1)) // => [1, -2, 1]
+ * ```
+ */
 export function barycentricWeights(x: readonly number[]): number[] {
   const n = x.length
   const span = maxOf(x) - minOf(x) || 1
@@ -162,7 +175,18 @@ export function chebyshevNodes(n: number, interval: readonly [number, number] = 
   return nodes.map((t) => (a + b) / 2 + ((b - a) / 2) * t).reverse()
 }
 
-/** Equally spaced nodes on [a, b], including the ends. */
+/**
+ * Equally spaced nodes on [a, b], including the ends.
+ *
+ * @param n - Number of nodes.
+ * @param interval - The interval (default [-1, 1]).
+ * @returns The nodes, increasing (the midpoint for n = 1).
+ * @example
+ * ```ts
+ * import { equispacedNodes } from 'mdml-engine/numerics/interpolate'
+ * equispacedNodes(5) // => [-1, -0.5, 0, 0.5, 1]
+ * ```
+ */
 export function equispacedNodes(n: number, interval: readonly [number, number] = [-1, 1]): number[] {
   const [a, b] = interval
   return Array.from({ length: n }, (_, j) => (n === 1 ? (a + b) / 2 : a + ((b - a) * j) / (n - 1)))

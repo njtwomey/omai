@@ -323,7 +323,18 @@ export function csrAdd(a: CsrMatrix, b: CsrMatrix, beta = 1): CsrMatrix {
   return fromCoo(rows, cols, concat([a.values, mul(b.values, beta)], 0), a.shape)
 }
 
-/** The diagonal of a CSR matrix (zeros where nothing is stored). */
+/**
+ * The diagonal of a CSR matrix (zeros where nothing is stored).
+ *
+ * @param a - The matrix.
+ * @returns The diagonal `[min(m, n)]`.
+ * @example
+ * ```ts
+ * import { csr, csrDiagonal } from 'mdml-engine/numerics/sparse'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(csrDiagonal(csr([[1, 2], [0, 3]]))) // => [1, 3]
+ * ```
+ */
 export function csrDiagonal(a: CsrMatrix): Value {
   const n = Math.min(a.shape[0], a.shape[1])
   const picks: number[] = []
@@ -378,12 +389,32 @@ export function asOperator(a: CsrMatrix | TensorLike | LinearOperator): LinearOp
   }
 }
 
-/** The number of stored entries. */
+/**
+ * The number of stored entries.
+ *
+ * @param a - The matrix.
+ * @returns The count.
+ * @example
+ * ```ts
+ * import { csr, nnz } from 'mdml-engine/numerics/sparse'
+ * nnz(csr([[1, 0, 2], [0, 3, 0]])) // => 3
+ * ```
+ */
 export function nnz(a: CsrMatrix): number {
   return a.indices.length
 }
 
-/** The stored values as numbers (primal), for kernels that do not need derivatives. */
+/**
+ * The stored values as numbers (primal), for kernels that do not need derivatives.
+ *
+ * @param a - The matrix.
+ * @returns The values, in storage order.
+ * @example
+ * ```ts
+ * import { csr, primalValues } from 'mdml-engine/numerics/sparse'
+ * primalValues(csr([[1, 0, 2], [0, 3, 0]])) // => [1, 2, 3]
+ * ```
+ */
 export function primalValues(a: CsrMatrix): number[] {
   return toFlat(primalOf(a.values))
 }

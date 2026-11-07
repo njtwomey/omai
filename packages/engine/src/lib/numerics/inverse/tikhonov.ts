@@ -160,7 +160,19 @@ export function tikhonovGeneral(
   return lstsq(concat([av, mul(lv, lambda)], 0), concat([bv, mul(prior, lambda)], 0))
 }
 
-/** The second-difference regulariser L `[n - 2, n]` (rows [1, -2, 1]), a common smoothness prior. */
+/**
+ * The second-difference regulariser L `[n - 2, n]` (rows [1, -2, 1]), a common smoothness prior.
+ *
+ * @param n - Number of unknowns (at least 3).
+ * @returns The matrix `[n - 2, n]`.
+ * @throws MdmlError with code `value` for n below 3.
+ * @example
+ * ```ts
+ * import { secondDifference } from 'mdml-engine/numerics/inverse'
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(secondDifference(4)) // => [[1, -2, 1, 0], [0, 1, -2, 1]]
+ * ```
+ */
 export function secondDifference(n: number): Tensor {
   if (n < 3) throw new MdmlError('value', 'secondDifference: n must be at least 3')
   const rows = Array.from({ length: n - 2 }, (_, i) =>

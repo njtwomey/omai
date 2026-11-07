@@ -66,7 +66,20 @@ const SCHEMA = channels({
   },
 })
 
-/** The singular values of a state: the norms of the working columns, in column order. */
+/**
+ * The singular values of a state: the norms of the working columns, in column order.
+ *
+ * @param state - The state of {@link jacobiSvdAlgorithm}.
+ * @param m - Rows of the matrix.
+ * @param n - Columns of the matrix.
+ * @returns The `n` column norms.
+ * @example
+ * ```ts
+ * import { jacobiSingularValues } from 'mdml-engine/numerics/linalg'
+ * const state = { u: [3, 0, 0, 4], v: [1, 0, 0, 1], sweeps: 0, pair: [0, 1], rotationsInSweep: 0, maxCosine: 0, finished: false } as const
+ * jacobiSingularValues(state, 2, 2) // => [3, 4]
+ * ```
+ */
 export function jacobiSingularValues(state: JacobiSvdState, m: number, n: number): number[] {
   return Array.from({ length: n }, (_, c) => {
     let s = 0

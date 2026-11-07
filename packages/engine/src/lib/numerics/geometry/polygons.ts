@@ -256,7 +256,18 @@ export function polygonPerimeter(polygon: TensorLike): Value {
   return sum(sqrt(sum(mul(d, d), 1)))
 }
 
-/** Whether a polygon is convex (all turns the same way). */
+/**
+ * Whether a polygon is convex (all turns the same way).
+ *
+ * @param polygon - Vertices `[n, 2]` in order.
+ * @returns True when every turn has the same sign (collinear vertices are ignored).
+ * @example
+ * ```ts
+ * import { isConvex } from 'mdml-engine/numerics/geometry'
+ * isConvex([[0, 0], [1, 0], [1, 1], [0, 1]]) // => true
+ * isConvex([[0, 0], [2, 0], [1, 0.5], [2, 2], [0, 2]]) // => false
+ * ```
+ */
 export function isConvex(polygon: TensorLike | readonly Point2[]): boolean {
   const p = toPoints(polygon)
   let sign = 0

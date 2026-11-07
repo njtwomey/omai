@@ -12,7 +12,20 @@ function arrays(data: SpectralData): { s: number[]; beta: number[] } {
   return { s: toFlat(primalOf(data.s)), beta: toFlat(primalOf(data.beta)) }
 }
 
-/** A geometric grid of n parameters from the largest to a small fraction of the singular values. */
+/**
+ * A geometric grid of n parameters from the largest to a small fraction of the singular values.
+ *
+ * @param data - The SVD of the problem (see `spectralData`).
+ * @param n - Number of parameters (default 100).
+ * @returns The grid, decreasing, starting at the largest singular value.
+ * @throws MdmlError with code `value` when the singular values are all zero.
+ * @example
+ * ```ts
+ * import { lambdaGrid, spectralData } from 'mdml-engine/numerics/inverse'
+ * const grid = lambdaGrid(spectralData([[2, 0], [0, 1]], [1, 1]), 3)
+ * [grid.length, grid[0]] // => [3, 2]
+ * ```
+ */
 export function lambdaGrid(data: SpectralData, n = 100): number[] {
   const { s } = arrays(data)
   const hi = s[0] ?? 1

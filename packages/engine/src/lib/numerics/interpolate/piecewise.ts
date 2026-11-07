@@ -199,7 +199,17 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
   return self
 }
 
-/** Real roots of sum_j a_j t^(n - j) (highest first), by companion-matrix eigenvalues polished with Newton steps. */
+/**
+ * Real roots of sum_j a_j t^(n - j) (highest first), by companion-matrix eigenvalues polished with Newton steps.
+ *
+ * @param coefficients - Coefficients, highest power first.
+ * @returns The real roots (none for a constant).
+ * @example
+ * ```ts
+ * import { realRoots } from 'mdml-engine/numerics/interpolate'
+ * realRoots([1, -3, 2]).map((r) => Math.round(r * 1e9) / 1e9).sort((a, b) => a - b) // => [1, 2]
+ * ```
+ */
 export function realRoots(coefficients: readonly number[]): number[] {
   let a = [...coefficients]
   const scale = maxOf(a.map(Math.abs))

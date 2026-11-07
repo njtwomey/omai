@@ -78,7 +78,21 @@ export interface SolveTriangularOptions {
   readonly unitDiagonal?: boolean
 }
 
-/** Apply the triangular-solve primitive (no batch broadcasting or vector handling). */
+/**
+ * Apply the triangular-solve primitive (no batch broadcasting or vector handling); {@link solveTriangular} is the
+ * front with scipy's defaults.
+ *
+ * @param a - Triangular matrix `[n, n]`.
+ * @param b - Right-hand side `[n, k]`.
+ * @param options - Triangle, transpose and unit diagonal.
+ * @returns The solution `[n, k]`.
+ * @example
+ * ```ts
+ * import { triangularSolve } from 'mdml-engine/numerics/linalg'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
+ * toArray(triangularSolve(tensor([[2, 0], [1, 1]]), tensor([[2], [3]]), { lower: true, transpose: false, unitDiagonal: false })) // => [[1], [2]]
+ * ```
+ */
 export function triangularSolve(a: Value, b: Value, options: TriangularOptions): Value {
   return bind1(triangularPrimitive, [a, b], options)
 }

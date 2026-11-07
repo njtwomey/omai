@@ -272,7 +272,19 @@ function mdctBasis(n: number): Tensor {
   return fromStorage(m, [2 * n, n], 'float64')
 }
 
-/** The sine window sin(pi (n + 1/2) / 2N), which satisfies the Princen-Bradley condition w_n^2 + w_{n+N}^2 = 1. */
+/**
+ * The sine window sin(pi (n + 1/2) / 2N), which satisfies the Princen-Bradley condition w_n^2 + w_{n+N}^2 = 1.
+ *
+ * @param length - Window length 2N.
+ * @returns The window `[length]`.
+ * @example
+ * ```ts
+ * import { sineWindow } from 'mdml-engine/numerics/fourier'
+ * import { toArray } from 'mdml-engine/tensor'
+ * const w = toArray(sineWindow(4)) as number[]
+ * Math.abs(w[0] ** 2 + w[2] ** 2 - 1) < 1e-12 // => true
+ * ```
+ */
 export function sineWindow(length: number): Tensor {
   return vector(Array.from({ length }, (_, i) => Math.sin((Math.PI * (i + 0.5)) / length)))
 }

@@ -27,7 +27,19 @@ import {
 import { eighKernel, eighQlKernel } from './_kernels.ts'
 import { assemble, diagEmbed, diagPart, matrices, mT, squareSize, sym } from './_matrix.ts'
 
-/** F_ij = 1 / (w_j - w_i) off the diagonal and 0 on it (infinite for repeated eigenvalues, where V is not unique). */
+/**
+ * F_ij = 1 / (w_j - w_i) off the diagonal and 0 on it (infinite for repeated eigenvalues, where V is not unique): the
+ * matrix of the eigenvector derivative of a symmetric eigendecomposition.
+ *
+ * @param w - Eigenvalues `[..., n]`.
+ * @returns The matrix `[..., n, n]`.
+ * @example
+ * ```ts
+ * import { eigengapInverse } from 'mdml-engine/numerics/linalg'
+ * import { tensor, toArray } from 'mdml-engine/tensor'
+ * toArray(eigengapInverse(tensor([1, 3]))) // => [[0, 0.5], [-0.5, 0]]
+ * ```
+ */
 export function eigengapInverse(w: Value): Value {
   const n = w.shape[w.shape.length - 1] ?? 0
   const gaps = sub(expandDims(w, -2), expandDims(w, -1))
