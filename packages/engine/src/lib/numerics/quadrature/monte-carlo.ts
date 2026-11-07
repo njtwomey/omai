@@ -60,6 +60,7 @@ function standardError(values: Value, n: number): number {
  * @param key - Random key.
  * @param n - Number of samples.
  * @returns The estimate and its standard error.
+ * @throws MdmlError with code `value` when `n` is not a positive integer.
  * @concept monte-carlo
  * @example
  * ```ts
@@ -76,6 +77,7 @@ export function monteCarlo(
   key: Key,
   n: number,
 ): MonteCarloResult {
+  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'monteCarlo: n must be a positive integer')
   const u = uniform(key, [n, box.length]).data as Float64Array
   const values = mul(f(scaleToBox(u, n, box)), boxVolume(box))
   return { value: mean(values), standardError: standardError(values, n), samples: n }

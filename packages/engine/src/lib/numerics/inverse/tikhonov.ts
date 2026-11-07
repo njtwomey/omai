@@ -10,6 +10,7 @@ import {
   add,
   concat,
   div,
+  greater,
   matmul,
   mul,
   primalOf,
@@ -20,6 +21,7 @@ import {
   type TensorLike,
   toFlat,
   type Value,
+  where,
   zeros,
 } from '../../tensor/index.ts'
 import { lstsq, svd } from '../linalg/index.ts'
@@ -74,7 +76,10 @@ export function filterFactors(s: TensorLike, parameter: number, method: 'tikhono
     return promoteFloat(Array.from({ length: n }, (_, i) => (i < parameter ? 1 : 0)))[0] as Value
   }
   const s2 = mul(sv, sv)
-  return div(s2, add(s2, parameter * parameter))
+  const denominator = add(s2, parameter * parameter)
+  // A zero singular value with lambda = 0 has no filter factor (0 / 0): it is dropped, as the pseudo-inverse does.
+  const positive = greater(denominator, 0)
+  return where(positive, div(s2, where(positive, denominator, 1)), 0)
 }
 
 /**
@@ -94,8 +99,13 @@ export function filterFactors(s: TensorLike, parameter: number, method: 'tikhono
  */
 export function tikhonov(data: SpectralData, lambda: number): Value {
   const f = filterFactors(data.s, lambda)
-  const coefficients = div(mul(f, data.beta), data.s)
-  return reshape(matmul(reshape(coefficients, [1, -1]), data.vh), [-1])
+  return reshape(matmul(reshape(coefficientsOf(f, data), [1, -1]), data.vh), [-1])
+}
+
+/** f_i u_i^T b / s_i, with the term of a zero singular value taken as 0 (the pseudo-inverse's convention, not 0 / 0). */
+function coefficientsOf(f: Value, data: SpectralData): Value {
+  const positive = greater(data.s, 0)
+  return where(positive, div(mul(f, data.beta), where(positive, data.s, 1)), 0)
 }
 
 /**
@@ -113,8 +123,7 @@ export function tikhonov(data: SpectralData, lambda: number): Value {
  */
 export function tsvd(data: SpectralData, k: number): Value {
   const f = filterFactors(data.s, k, 'tsvd')
-  const coefficients = div(mul(f, data.beta), data.s)
-  return reshape(matmul(reshape(coefficients, [1, -1]), data.vh), [-1])
+  return reshape(matmul(reshape(coefficientsOf(f, data), [1, -1]), data.vh), [-1])
 }
 
 /**

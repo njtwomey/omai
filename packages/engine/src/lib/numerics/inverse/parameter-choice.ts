@@ -16,6 +16,7 @@ function arrays(data: SpectralData): { s: number[]; beta: number[] } {
 export function lambdaGrid(data: SpectralData, n = 100): number[] {
   const { s } = arrays(data)
   const hi = s[0] ?? 1
+  if (!(hi > 0)) throw new MdmlError('value', 'lambdaGrid: the singular values are all zero')
   const lo = Math.max((s[s.length - 1] ?? hi * 1e-16) / 10, hi * 1e-16)
   return Array.from({ length: n }, (_, i) => hi * (lo / hi) ** (i / (n - 1)))
 }

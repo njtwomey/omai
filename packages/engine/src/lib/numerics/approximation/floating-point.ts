@@ -56,7 +56,9 @@ export function nextAfter(x: number, y: number): number {
 export function ulp(x: number): number {
   if (!Number.isFinite(x)) return Number.NaN
   const a = Math.abs(x)
-  return nextAfter(a, Number.POSITIVE_INFINITY) - a
+  const above = nextAfter(a, Number.POSITIVE_INFINITY)
+  // The largest finite double has no double above it: its spacing is the gap below (numpy.spacing).
+  return Number.isFinite(above) ? above - a : a - nextAfter(a, Number.NEGATIVE_INFINITY)
 }
 
 /** The binary formats the module can name: IEEE double and single, IEEE half (float16) and Google's bfloat16. */
