@@ -728,18 +728,61 @@ const rows: readonly (readonly [string, readonly number[], number])[] = [
   ['klDiv', [0.3, 0.7], 0.14581064188383885],
   ['klDiv', [2.0, 2.0], 0.0],
   ['klDiv', [1e-300, 1.0], 1.0],
+  // Very large shape parameters (ND-32): mpmath at 50 digits where it converges (scipy 1.18 agrees to 1e-15 on those), scipy
+  // for the symmetric a = b = 5e7 and 2e5 rows. The prefix of the incomplete beta and gamma functions is a difference of
+  // terms of order a (1e-9 at a = 5e7 before), and the continued fraction near x = 1 had two cancellations (stdtr at 1e8 df).
+  ['betainc', [50000000.0, 0.5, 0.99999996], 0.045500262333466324],
+  ['betainc', [50000000.0, 0.5, 0.99999999], 0.31731050664706945],
+  ['betainc', [50000000.0, 0.5, 0.9999998], 7.744208733802284e-6],
+  ['betainc', [50000000.0, 50000000.0, 0.5], 0.49999999999999983],
+  ['betainc', [50000000.0, 50000000.0, 0.5001], 0.9772498688616764],
+  ['betainc', [50000000.0, 50000000.0, 0.4998], 3.167122175866667e-5],
+  ['betainc', [100000000.0, 1.5, 0.9999999], 0.0001697423513564638],
+  ['betainc', [1000000.0, 3.0, 0.999996], 0.23810154725299246],
+  ['betainc', [200000.0, 200000.0, 0.501], 0.8970484796631194],
+  ['betainc', [50000000.0, 2.0, 0.99999994], 0.19914825578396267],
+  ['betainc', [1000000000.0, 0.5, 0.999999998], 0.04550026087510828],
+  ['betainc', [50000000.0, 0.5, 0.999999], 1.523932514806886e-23],
+  ['stdtr', [100000000.0, -2.0], 0.022750133297953376],
+  ['stdtr', [100000000.0, 0.5], 0.691462460723911],
+  ['stdtr', [100000000.0, -1.0], 0.15865525514131068],
+  ['stdtr', [10000000.0, -3.0], 0.0013499013555185806],
+  ['stdtr', [1000000000.0, -2.0], 0.022750132083156623],
+  ['stdtr', [1000000.0, 2.0], 0.9772497330743404],
+  ['gammainc', [100000.0, 100000.0], 0.5004205221103651],
+  ['gammaincc', [100000.0, 100000.0], 0.4995794778896348],
+  ['gammainc', [100000.0, 100300.0], 0.8286363112512076],
+  ['gammaincc', [100000.0, 100300.0], 0.17136368874879235],
+  ['gammainc', [100000.0, 99700.0], 0.17141731451450293],
+  ['gammaincc', [100000.0, 99700.0], 0.8285826854854971],
+  ['gammainc', [1000000.0, 1000000.0], 0.5001329807608725],
+  ['gammaincc', [1000000.0, 1000000.0], 0.4998670192391274],
+  ['gammainc', [10000.0, 10000.0], 0.5013298083399552],
+  ['gammaincc', [10000.0, 10000.0], 0.4986701916600448],
+  ['gammainc', [100000.0, 99000.0], 0.0007574199211747679],
+  ['gammaincc', [100000.0, 99000.0], 0.9992425800788253],
+  ['gammainc', [100000.0, 101000.0], 0.9991915784870744],
+  ['gammaincc', [100000.0, 101000.0], 0.0008084215129255907],
+  ['gammainc', [50000.0, 51000.0], 0.9999955880607448],
+  ['gammaincc', [50000.0, 51000.0], 4.4119392551203065e-6],
+  ['gammainc', [200000.0, 200500.0], 0.868184223254723],
+  ['gammaincc', [200000.0, 200500.0], 0.13181577674527703],
+  ['gammainc', [1000000.0, 998000.0], 0.022696114006736802],
+  ['gammaincc', [1000000.0, 998000.0], 0.9773038859932632],
 ]
 
-// Rows where the reference itself is only good to 1e-9 or the algorithm is documented to be: the incomplete gamma function
-// with a = x = 1e5 (the uniform expansion at its transition) and the Student t CDF at 1e8 degrees of freedom.
+// Rows held tighter than the default 1e-10 (ND-32: they were held to 1e-9 to 1e-7 while the large-parameter prefix lost
+// digits): the incomplete gamma function with a = x = 1e5 and the Student t CDF at 1e8 degrees of freedom, to 1e-12.
 const loose = new Map<string, number>([
-  ['gammainc(100000,100000)', 1e-9],
-  ['gammaincc(100000,100000)', 1e-9],
-  ['stdtr(100000000,-2)', 1e-7],
+  ['gammainc(100000,100000)', 1e-12],
+  ['gammaincc(100000,100000)', 1e-12],
+  ['stdtr(100000000,-2)', 1e-12],
+  ['betainc(50000000,0.5,0.99999996)', 1e-12],
+  ['stdtr(1000000000,-2)', 1e-12],
 ])
 
 describe('special functions on grids of arguments at the edges, against scipy.special', () => {
-  it('agree with scipy.special on 718 rows at the edges, and differentiate through the incomplete gamma and beta kernels', () => {
+  it('agree with scipy.special on 756 rows at the edges, and differentiate through the incomplete gamma and beta kernels', () => {
     {
       const failures: string[] = []
       for (const [name, args, expected] of rows) {

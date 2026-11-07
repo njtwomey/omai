@@ -117,10 +117,34 @@ describe('Krylov solvers on small systems with known solutions', () => {
           'the capped residual is the true one',
           Math.abs(capped.residualNorm - residual(a, toFlat(capped.x as Tensor), ones)) <= 1e-8 * norm(ones),
         )
-        const nan = f(a, new Array<number>(n).fill(Number.NaN), {})
-        at('a NaN right-hand side: status diverged', nan.status === 'diverged' && !nan.converged)
-        // MINRES takes no preconditioner (the option is accepted and ignored: register row ND-30), so it is left out here.
-        if (name === 'minres') continue
+        // The NaN rule (ND-11): a solver rejects non-finite data at its boundary, naming itself; it does not answer.
+        for (const [what, call] of [
+          ['a NaN right-hand side', () => f(a, new Array<number>(n).fill(Number.NaN), {})],
+          ['an infinite start', () => f(a, ones, { x0: new Array<number>(n).fill(Number.POSITIVE_INFINITY) })],
+          [
+            'a NaN matrix entry',
+            () =>
+              f(
+                [
+                  [Number.NaN, 0],
+                  [0, 1],
+                ],
+                [1, 1],
+                {},
+              ),
+          ],
+        ] as const) {
+          try {
+            call()
+            failures.push(`${name}: ${what} did not throw`)
+          } catch (error) {
+            const e = error as { code?: string; message?: string }
+            at(
+              `${what} throws value naming it (${e.code}: ${e.message})`,
+              e.code === 'value' && e.message?.startsWith(`${name}:`) === true,
+            )
+          }
+        }
         const jacobi = f(S.diagCsr([1, 2, 3, 4, 5, 6]), [1, 1, 1, 1, 1, 1], {
           preconditioner: S.jacobiPreconditioner(S.diagCsr([1, 2, 3, 4, 5, 6])),
           rtol: 1e-12,
@@ -130,9 +154,72 @@ describe('Krylov solvers on small systems with known solutions', () => {
           jacobi.status === 'converged' && jacobi.iterations <= 1,
         )
       }
+      // The eigensolvers take the same rule: a NaN matrix is rejected naming the routine, not answered with `convergence`.
+      const nanMatrix = S.csr([
+        [2, Number.NaN],
+        [Number.NaN, 2],
+      ])
+      for (const [name, call] of [
+        ['eigsh', () => S.eigsh(nanMatrix, 1)],
+        ['lanczos', () => S.lanczos(nanMatrix, 2)],
+        ['svds', () => S.svds(nanMatrix, 1)],
+      ] as const)
+        expect(call, name).toThrow(
+          expect.objectContaining({ code: 'value', message: expect.stringMatching(`^${name}: `) }),
+        )
       // Matrix sizes that do not match, and a rectangular operator, are shape errors.
       expect(() => S.cg(tri(4, 2, -1, -1), [1, 2, 3])).toThrow(expect.objectContaining({ code: 'shape' }))
       expect(failures).toEqual([])
+    }
+    {
+      // ND-30: MINRES takes the Jacobi preconditioner (the Lanczos process in the M^-1 inner product, z = M^-1 r). On an
+      // ill-scaled SPD matrix D T D it takes fewer iterations than without, to the same solution.
+      const n = 40
+      const scale = Array.from({ length: n }, (_, i) => 10 ** ((i % 4) / 2))
+      const t = tri(n, 2, -1, -1)
+      const scaled = S.csr(dense(t).map((row, i) => row.map((v, j) => v * (scale[i] ?? 1) * (scale[j] ?? 1))))
+      const truth = Array.from({ length: n }, (_, i) => Math.sin(i + 1))
+      const b = dense(scaled).map((row) => row.reduce((acc, v, j) => acc + v * (truth[j] ?? 0), 0))
+      const plain = S.minres(scaled, b, { rtol: 1e-12, maxIterations: 800 })
+      const jacobi = S.minres(scaled, b, {
+        rtol: 1e-12,
+        maxIterations: 800,
+        preconditioner: S.jacobiPreconditioner(scaled),
+      })
+      const worst = (r: S.KrylovResult): number =>
+        toFlat(r.x as Tensor).reduce((m, v, i) => Math.max(m, Math.abs(v - (truth[i] ?? 0))), 0)
+      expect([plain.status, jacobi.status]).toEqual(['converged', 'converged'])
+      expect(jacobi.iterations).toBeLessThan(plain.iterations)
+      expect(worst(jacobi)).toBeLessThan(1e-6)
+      expect(worst(plain)).toBeLessThan(1e-6)
+      // The residual it reports is the M^-1 norm of the true residual.
+      const x = toFlat(jacobi.x as Tensor)
+      const res = dense(scaled).map((row, i) => (b[i] ?? 0) - row.reduce((acc, v, j) => acc + v * (x[j] ?? 0), 0))
+      const diag = dense(scaled).map((row, i) => row[i] ?? 1)
+      const mNorm = Math.sqrt(res.reduce((acc, v, i) => acc + (v * v) / (diag[i] ?? 1), 0))
+      expect(Math.abs(jacobi.residualNorm - mNorm)).toBeLessThan(1e-9 * Math.sqrt(norm(b)))
+      // A preconditioner that is not positive definite is rejected, not followed.
+      expect(() => S.minres(scaled, b, { preconditioner: (r) => r.map((v) => -v) })).toThrow(
+        expect.objectContaining({ code: 'value' }),
+      )
+    }
+    {
+      // ND-31: a singular system with a right-hand side outside the range of A. [[1, 1], [1, 1]] x = [1, 2] has the least
+      // residual 0.7071 (at x = [0.75, 0.75]); gmres reported 5e13 and minres 0.106, both `completed`. Now `failed`, with
+      // the honest residual of the returned x. A consistent singular system still converges.
+      const singular = S.csr([
+        [1, 1],
+        [1, 1],
+      ])
+      for (const name of ['gmres', 'minres'] as const) {
+        const r = SOLVERS[name](singular, [1, 2], { rtol: 1e-10 })
+        const x = toFlat(r.x as Tensor)
+        expect([name, r.status, r.converged]).toEqual([name, 'failed', false])
+        expect(Math.abs(r.residualNorm - residual(singular, x, [1, 2]))).toBeLessThan(1e-9)
+        expect(Math.abs(r.residualNorm - Math.SQRT1_2)).toBeLessThan(1e-9)
+        const consistent = SOLVERS[name](singular, [2, 2], { rtol: 1e-10 })
+        expect([name, consistent.status]).toEqual([name, 'converged'])
+      }
     }
     {
       // The diagonal and the stored count of a CSR matrix: duplicates are summed, explicit zeros are not stored.

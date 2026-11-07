@@ -34,7 +34,16 @@ import { svdKernel } from './_kernels.ts'
 /** The SVD algorithms: one-sided Jacobi (accurate small singular values) or Golub-Kahan-Reinsch (the classic). */
 export type SvdMethod = 'jacobi' | 'golub-kahan'
 
-import { assemble, diagEmbed, diagPart, identity as identityOf, matrices, matrixShape, mT } from './_matrix.ts'
+import {
+  assemble,
+  diagEmbed,
+  diagPart,
+  identity as identityOf,
+  matrices,
+  matrixShape,
+  mT,
+  namingNonFinite,
+} from './_matrix.ts'
 import { eigengapInverse } from './eigh.ts'
 
 // Scale columns (right-multiply by diag(s)) and rows (left-multiply by diag(s)).
@@ -61,7 +70,7 @@ const svdPrimitive: Primitive<SvdParams> = definePrimitive<SvdParams>({
     const av = a as NonNullable<typeof a>
     const { batch, m, n } = matrixShape(av.shape, 'svd')
     const k = Math.min(m, n)
-    const results = matrices(av).map((x) => svdKernel(x, m, n, method))
+    const results = matrices(av, 'svd').map((x) => svdKernel(x, m, n, method))
     const dtype = av.dtype as FloatDType
     const vh = results.map((r) => {
       const t = new Float64Array(k * n)
@@ -162,6 +171,10 @@ export interface SvdResult {
  * @param a - Matrix `[..., m, n]`.
  * @param options - The method.
  * @returns `{ u, s, vh }`, differentiable (singular vectors only where singular values are distinct and non-zero).
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws MdmlError with code `convergence` for `method: 'golub-kahan'` when the implicit QR sweeps do not deflate
+ *   within 75 iterations of one singular value. The result is a bare value of a differentiable primitive, with no
+ *   place for a status; the default `jacobi` method has no such limit, and `jacobiSvd` returns a record with `status`.
  * @concept linear-algebra
  * @index function Reduced singular value decomposition, differentiable.
  * @example
@@ -182,6 +195,7 @@ export function svd(a: TensorLike, options: { readonly method?: SvdMethod } = {}
  *
  * @param a - Matrix `[..., m, n]`.
  * @returns The singular values, differentiable.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { svdvals } from 'mdml-engine/numerics/linalg'
@@ -190,7 +204,7 @@ export function svd(a: TensorLike, options: { readonly method?: SvdMethod } = {}
  * ```
  */
 export function svdvals(a: TensorLike): Value {
-  return svd(a).s
+  return namingNonFinite('svdvals', () => svd(a).s)
 }
 
 /**
@@ -200,6 +214,7 @@ export function svdvals(a: TensorLike): Value {
  * @param a - Matrix `[..., m, n]`.
  * @param rtol - Relative cutoff.
  * @returns The pseudo-inverse `[..., n, m]`, differentiable where the rank is locally constant.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { pinv } from 'mdml-engine/numerics/linalg'
@@ -210,7 +225,7 @@ export function svdvals(a: TensorLike): Value {
 export function pinv(a: TensorLike, rtol?: number): Value {
   const [av] = promoteFloat(a) as [Value]
   const { m, n } = matrixShape(av.shape, 'pinv')
-  const { u, s, vh } = svd(av)
+  const { u, s, vh } = namingNonFinite('pinv', () => svd(av))
   const cutoff = mul(max(s, -1, true), rtol ?? Math.max(m, n) * 2.220446049250313e-16)
   const keep = greater(s, cutoff)
   const sinv = where(keep, div(1, where(keep, s, 1)), 0)
@@ -223,6 +238,7 @@ export function pinv(a: TensorLike, rtol?: number): Value {
  * @param a - Matrix `[..., m, n]`.
  * @param rank - The rank r.
  * @returns U_r diag(s_r) Vh_r, differentiable.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { lowRankApproximation } from 'mdml-engine/numerics/linalg'
@@ -231,7 +247,7 @@ export function pinv(a: TensorLike, rtol?: number): Value {
  * ```
  */
 export function lowRankApproximation(a: TensorLike, rank: number): Value {
-  const { u, s, vh } = svd(a)
+  const { u, s, vh } = namingNonFinite('lowRankApproximation', () => svd(a))
   const ur = sliceAxis(u, -1, 0, rank)
   const sr = sliceAxis(s, -1, 0, rank)
   const vr = sliceAxis(vh, -2, 0, rank)
@@ -245,6 +261,7 @@ export function lowRankApproximation(a: TensorLike, rank: number): Value {
  * @param a - Matrix `[m, n]`.
  * @param rcond - Relative cutoff (default max(m, n) eps).
  * @returns The basis `[n, nullity]`.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { nullSpace } from 'mdml-engine/numerics/linalg'
@@ -254,7 +271,7 @@ export function lowRankApproximation(a: TensorLike, rank: number): Value {
 export function nullSpace(a: TensorLike, rcond?: number): Value {
   const [av] = promoteFloat(a) as [Value]
   const { m, n } = matrixShape(av.shape, 'nullSpace')
-  const { s, vh } = svd(av)
+  const { s, vh } = namingNonFinite('nullSpace', () => svd(av))
   const values = toFlat(primalOf(s))
   const cut = (rcond ?? Math.max(m, n) * 2.220446049250313e-16) * (values[0] ?? 0)
   const rank = values.filter((x) => x > cut).length
@@ -272,6 +289,7 @@ export function nullSpace(a: TensorLike, rcond?: number): Value {
  * @param a - Matrix `[m, n]` with m >= n for `right`.
  * @param side - `right` (default) or `left`.
  * @returns `{ u, p }`, differentiable.
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
  * import { polar } from 'mdml-engine/numerics/linalg'
@@ -280,7 +298,7 @@ export function nullSpace(a: TensorLike, rcond?: number): Value {
  * ```
  */
 export function polar(a: TensorLike, side: 'right' | 'left' = 'right'): { readonly u: Value; readonly p: Value } {
-  const { u, s, vh } = svd(a)
+  const { u, s, vh } = namingNonFinite('polar', () => svd(a))
   const unitary = matmul(u, vh)
   const p = side === 'right' ? matmul(mul(mT(vh), expandDims(s, -2)), vh) : matmul(mul(u, expandDims(s, -2)), mT(u))
   return { u: unitary, p }

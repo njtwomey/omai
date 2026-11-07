@@ -314,7 +314,8 @@ export function solveDareAlgorithm(
  * @param q - `[n, n]`.
  * @param r - `[m, m]`.
  * @returns X (symmetric).
- * @throws MdmlError with code `convergence` when the doubling does not converge.
+ * @throws MdmlError with code `convergence` when the doubling does not converge (the return is a bare matrix; use
+ *   {@link solveDareAlgorithm} for a run that ends with a status).
  * @example
  * ```ts
  * import { solveDare } from 'mdml-engine/numerics/linalg'

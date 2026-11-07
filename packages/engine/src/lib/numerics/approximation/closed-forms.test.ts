@@ -82,13 +82,14 @@ describe('approximation against closed forms', () => {
           (j) => (j === 0 ? 0 : 2 * j - 1),
         ).value,
       ).toBeCloseTo(Math.tan(1), 14)
-      expect(() =>
-        A.continuedFraction(
-          () => 1,
-          () => 1,
-          { maxTerms: 3 },
-        ),
-      ).toThrow(expect.objectContaining({ code: 'convergence' }))
+      // Out of terms: a result with status `completed` and the last convergent (5/3, the third convergent of the golden ratio), no throw (ND-28).
+      const capped = A.continuedFraction(
+        () => 1,
+        () => 1,
+        { maxTerms: 3 },
+      )
+      expect([capped.status, capped.converged, capped.terms]).toEqual(['completed', false, 3])
+      expect(capped.value).toBeCloseTo(5 / 3, 12)
     }
     {
       // The best degree-1 approximation of x^2 on [-1, 1] is the constant 1/2 with error 1/2; of x^3 by degree 2 it is 3x/4
@@ -98,6 +99,11 @@ describe('approximation against closed forms', () => {
       const cubic = A.remez((x) => x ** 3, 2)
       expect(Math.abs(cubic.error)).toBeCloseTo(0.25, 9)
       expect(cubic.evaluate(0.8)).toBeCloseTo(0.6, 9)
+      // A degree the function does not need (x^2 by degree 4: the error is zero, nothing alternates) ends `failed` with the
+      // last good approximation, which is exact; it used to throw `convergence` from inside the step (ND-28).
+      const spare = A.remez((x) => x * x, 4)
+      expect([spare.status, spare.converged, spare.iterations]).toEqual(['failed', false, 2])
+      expect(spare.evaluate(0.5)).toBeCloseTo(0.25, 12)
       // Chebyshev series by Clenshaw: sum c_k T_k(cos t) = sum c_k cos(k t).
       const c = [1, 2, 3, -1, 0.5]
       for (const t of [0.3, 1, 2.5]) {

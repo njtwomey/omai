@@ -436,7 +436,7 @@ export function polygamma(n: number, x: number): number {
 }
 
 // Stirling series: lgamma(x) = (x - 1/2) ln x - x + ln sqrt(2 pi) + correction(x), for x >= 10.
-function stirlingCorrection(x: number): number {
+export function stirlingCorrection(x: number): number {
   const inv2 = 1 / (x * x)
   let pow = 1 / x
   let sum = 0

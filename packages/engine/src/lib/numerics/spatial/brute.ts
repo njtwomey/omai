@@ -8,6 +8,7 @@ import { MdmlError } from '../../base/index.ts'
 import {
   fromStorage,
   primalOf,
+  promoteFloat,
   reshape,
   type Tensor,
   type TensorLike,
@@ -15,8 +16,15 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
+import { assertFinite } from '../_vector.ts'
 import { cdist, type DistanceMetric, type MetricOptions } from '../geometry/index.ts'
 import { type CsrMatrix, csr } from '../sparse/index.ts'
+
+/** The NaN rule at the boundary of a query: a point with a non-finite coordinate has no neighbours worth ordering. */
+function requireFinite(name: string, data: TensorLike, queries: TensorLike | undefined): void {
+  assertFinite(name, toFlat(primalOf(promoteFloat(data)[0] as Value)), 'data')
+  if (queries !== undefined) assertFinite(name, toFlat(primalOf(promoteFloat(queries)[0] as Value)), 'queries')
+}
 
 /** Neighbours of each query point: indices into the data and distances, nearest first. */
 export interface Neighbours {
@@ -114,6 +122,8 @@ function selectSmallest(
  * @param k - Number of neighbours.
  * @param options - Metric, its parameters, and whether to exclude self-matches.
  * @returns Indices and distances.
+ * @throws MdmlError with code `value` when the data or the queries have a NaN or infinite coordinate (a NaN row used to
+ *   come back as the nearest point, with distance NaN), or when k exceeds the number of candidates.
  * @concept nearest-neighbours
  * @index function Exact k nearest neighbours by brute force.
  * @example
@@ -130,6 +140,7 @@ export function kNearest(
   options: BruteOptions = {},
 ): Neighbours {
   const { metric = 'euclidean', excludeSelf = false, ...metricOptions } = options
+  requireFinite('kNearest', data, queries)
   const d = cdist(queries ?? data, data, metric, metricOptions)
   const [q = 0, n = 0] = d.shape
   const values = toFlat(primalOf(d))
@@ -157,6 +168,7 @@ export function kNearest(
  * @param r - The radius (inclusive).
  * @param options - Metric, parameters and self-exclusion.
  * @returns Per query: indices and distances.
+ * @throws MdmlError with code `value` when the data or the queries have a NaN or infinite coordinate.
  * @example
  * ```ts
  * import { radiusNeighbours } from 'mdml-engine/numerics/spatial'
@@ -170,6 +182,7 @@ export function radiusNeighbours(
   options: BruteOptions = {},
 ): { readonly indices: number[]; readonly distances: number[] }[] {
   const { metric = 'euclidean', excludeSelf = false, ...metricOptions } = options
+  requireFinite('radiusNeighbours', data, queries)
   const d = cdist(queries ?? data, data, metric, metricOptions)
   const [q = 0, n = 0] = d.shape
   const values = toFlat(primalOf(d))
@@ -189,6 +202,7 @@ export function radiusNeighbours(
  * @param k - Neighbours per point.
  * @param options - Mode (connectivity or distance), includeSelf (default false) and metric.
  * @returns A sparse `[n, n]` matrix.
+ * @throws MdmlError with code `value` when the data have a NaN or infinite coordinate.
  * @example
  * ```ts
  * import { kNeighboursGraph } from 'mdml-engine/numerics/spatial'
@@ -203,6 +217,7 @@ export function kNeighboursGraph(
   options: { readonly mode?: 'connectivity' | 'distance'; readonly includeSelf?: boolean } & BruteOptions = {},
 ): CsrMatrix {
   const { mode = 'connectivity', includeSelf = false, ...rest } = options
+  requireFinite('kNeighboursGraph', data, undefined)
   const nb = kNearest(data, undefined, k, { ...rest, excludeSelf: !includeSelf })
   const n = nb.indices.shape[0] ?? 0
   const idx = Array.from(nb.indices.data)
@@ -230,6 +245,7 @@ export function kNeighboursGraph(
  * @param r - The radius.
  * @param options - Mode, includeSelf and metric.
  * @returns A sparse `[n, n]` matrix.
+ * @throws MdmlError with code `value` when the data have a NaN or infinite coordinate.
  * @example
  * ```ts
  * import { radiusNeighboursGraph } from 'mdml-engine/numerics/spatial'
@@ -243,6 +259,7 @@ export function radiusNeighboursGraph(
   options: { readonly mode?: 'connectivity' | 'distance'; readonly includeSelf?: boolean } & BruteOptions = {},
 ): CsrMatrix {
   const { mode = 'connectivity', includeSelf = false, ...rest } = options
+  requireFinite('radiusNeighboursGraph', data, undefined)
   const hits = radiusNeighbours(data, undefined, r, { ...rest, excludeSelf: !includeSelf })
   const indptr = [0]
   const indices: number[] = []

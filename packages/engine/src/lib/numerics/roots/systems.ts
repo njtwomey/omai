@@ -118,8 +118,30 @@ function logSystem(ctx: StepContext<SystemPath>, s: SystemState): void {
   if (ctx.wants('system/jacobian-age')) ctx.log('system/jacobian-age', s.jacobianAge)
 }
 
-const statusOfSystem = (s: Pick<SystemState, 'converged' | 'iteration'>, max: number): RunStatus | undefined =>
-  s.converged ? 'converged' : s.iteration >= max ? 'completed' : undefined
+/** Whether the last residual norm left the finite numbers (a NaN or infinite residual, or a Jacobian that was). */
+const lostFinite = (s: Pick<SystemState, 'history'>): boolean => !Number.isFinite(s.history[s.history.length - 1] ?? 0)
+
+const statusOfSystem = (
+  s: Pick<SystemState, 'converged' | 'iteration' | 'history'>,
+  max: number,
+): RunStatus | undefined =>
+  s.converged ? 'converged' : lostFinite(s) ? 'diverged' : s.iteration >= max ? 'completed' : undefined
+
+/**
+ * The step of an iteration that cannot be taken because the Jacobian or the residual has a non-finite entry: the
+ * iterate stays, the residual norm becomes NaN, so the run ends `diverged` (a linear solve would reject the entries).
+ */
+const diverge = (s: SystemState): SystemState => ({
+  ...s,
+  iteration: s.iteration + 1,
+  history: [...s.history, Number.NaN],
+  stepLength: 0,
+  backtracks: 0,
+  converged: false,
+})
+
+const allFinite = (...vs: readonly ArrayLike<number>[]): boolean =>
+  vs.every((v) => Array.prototype.every.call(v, (x: number) => Number.isFinite(x)))
 
 function systemResult(
   s: Pick<SystemState, 'x' | 'residual' | 'converged' | 'iteration' | 'functionCalls' | 'history'>,
@@ -128,11 +150,15 @@ function systemResult(
   return {
     x: asVector(s.x),
     residual: asVector(s.residual),
-    iterations: s.converged ? s.iteration : max,
+    iterations: s.converged || lostFinite(s) ? s.iteration : max,
     functionCalls: s.functionCalls,
     converged: s.converged,
-    status: s.converged ? 'converged' : 'completed',
-    message: s.converged ? 'converged' : 'maximum iterations',
+    status: s.converged ? 'converged' : lostFinite(s) ? 'diverged' : 'completed',
+    message: s.converged
+      ? 'converged'
+      : lostFinite(s)
+        ? 'the residual or the Jacobian is not finite'
+        : 'maximum iterations',
     history: s.history,
   }
 }
@@ -213,7 +239,9 @@ export function fsolveAlgorithm(
     },
     step: (s, ctx) => {
       const x = asVector(s.x)
-      const step = vec(solve(jac(x), neg(asVector(s.residual))))
+      const jx = jac(x)
+      if (!allFinite(toFlat(jx), s.residual)) return diverge(s)
+      const step = vec(solve(jx, neg(asVector(s.residual))))
       const search = lineSearch(f, x, step, s.history[s.history.length - 1] ?? 0)
       const moved = norm(toFlat(sub(search.next, x)))
       const fnorm = norm(toFlat(search.fn))
@@ -246,7 +274,8 @@ export function fsolveAlgorithm(
  * @param f - The system, built from operations.
  * @param x0 - Starting point `[n]`.
  * @param options - Tolerances, iteration cap and an optional Jacobian.
- * @returns The solution with its residual history.
+ * @returns The solution with its residual history. A non-finite residual or Jacobian ends the run with status
+ *   `diverged` (no throw); a singular Jacobian throws `value` from the linear solve.
  * @concept root-finding
  * @example
  * ```ts
@@ -312,6 +341,7 @@ export function broydenAlgorithm(
       const x = asVector(s.x)
       const fx = asVector(s.residual)
       let b: Tensor = fromStorage(Float64Array.from(s.jacobian ?? []), [n, n], 'float64')
+      if (!allFinite(toFlat(b), s.residual)) return diverge(s)
       const step = vec(solve(b, neg(fx)))
       const search = lineSearch(f, x, step, s.history[s.history.length - 1] ?? 0)
       const dx = toFlat(sub(search.next, x))
@@ -355,7 +385,8 @@ export function broydenAlgorithm(
  * @param f - The system.
  * @param x0 - Starting point.
  * @param options - Tolerances, iteration cap and an optional initial Jacobian.
- * @returns The solution with its residual history.
+ * @returns The solution with its residual history. A non-finite residual or Jacobian ends the run with status
+ *   `diverged` (no throw).
  * @example
  * ```ts
  * import { broyden } from 'mdml-engine/numerics/roots'

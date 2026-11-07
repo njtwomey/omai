@@ -19,15 +19,18 @@ import {
   matmul,
   mul,
   type Primitive,
+  primalOf,
   promoteFloat,
   squeeze,
   sub,
   sum,
   type Tensor,
   type TensorLike,
+  toFlat,
   tril,
   type Value,
 } from '../../tensor/index.ts'
+import { assertFinite } from '../_vector.ts'
 import { choleskyKernel } from './_kernels.ts'
 import {
   asColumns,
@@ -55,7 +58,7 @@ const choleskyPrimitive: Primitive<null> = definePrimitive<null>({
   impl: ([a]) => {
     const x = a as NonNullable<typeof a>
     const n = squareSize(x.shape, 'cholesky')
-    const parts = matrices(x).map((m) => choleskyKernel(m, n))
+    const parts = matrices(x, 'cholesky').map((m) => choleskyKernel(m, n))
     return [assemble(x, x.dtype as FloatDType, x.shape.slice(0, -2), [n, n], parts)]
   },
   // dL = L Phi(L^{-1} sym(dA) L^{-T}) (Murray 2016), with the input tangent symmetrised.
@@ -83,6 +86,7 @@ const choleskyPrimitive: Primitive<null> = definePrimitive<null>({
  *
  * @param a - Symmetric positive-definite matrix `[..., n, n]`.
  * @returns Lower-triangular L, differentiable (the derivative treats A as symmetric).
+ * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
  * @throws MdmlError with code `value` when A is not positive definite.
  * @concept linear-algebra
  * @index function Cholesky factor of a symmetric positive-definite matrix.
@@ -150,7 +154,8 @@ export interface JitteredCholesky {
  * @param a - Symmetric matrix `[n, n]`.
  * @param maxJitter - The largest relative jitter to try (default 1e-4).
  * @returns The factor and the jitter added.
- * @throws MdmlError with code `value` when even the largest jitter fails.
+ * @throws MdmlError with code `value` when even the largest jitter fails, or when `a` has a NaN or infinite entry (a
+ *   jitter does not repair that, so the ladder is not walked).
  * @example
  * ```ts
  * import { choleskyJitter } from 'mdml-engine/numerics/linalg'
@@ -160,6 +165,7 @@ export interface JitteredCholesky {
 export function choleskyJitter(a: TensorLike, maxJitter = 1e-4): JitteredCholesky {
   const [av] = promoteFloat(a) as [Value]
   const n = squareSize(av.shape, 'choleskyJitter')
+  assertFinite('choleskyJitter', toFlat(primalOf(av)))
   try {
     return { l: cholesky(av), jitter: 0 }
   } catch {

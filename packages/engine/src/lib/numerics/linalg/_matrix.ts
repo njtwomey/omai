@@ -17,6 +17,7 @@ import {
   type Tensor,
   type Value,
 } from '../../tensor/index.ts'
+import { assertFinite } from '../_vector.ts'
 
 /** The batch shape and matrix size of a value with at least two axes. */
 export function matrixShape(shape: readonly number[], name: string): { batch: number[]; m: number; n: number } {
@@ -45,9 +46,29 @@ export function squareSize(shape: readonly number[], name: string): number {
   return n
 }
 
-/** The matrices of a tensor as float64 copies, one per batch element. */
-export function matrices(x: Tensor): Float64Array[] {
+/**
+ * Run `run`, a routine built on the factorisations, for the function `name`: a non-finite entry rejected inside it is
+ * reported as `name: input has a non-finite entry ...` (a `value` error), not as the message of the inner kernel, which
+ * names a function the caller did not write.
+ */
+export function namingNonFinite<T>(name: string, run: () => T): T {
+  try {
+    return run()
+  } catch (error) {
+    if (error instanceof MdmlError && error.code === 'value' && error.message.includes('non-finite entry'))
+      throw new MdmlError('value', error.message.replace(/^[^:]*:/, `${name}:`))
+    throw error
+  }
+}
+
+/**
+ * The matrices of a tensor as float64 copies, one per batch element. With a `name`, the routine is one that decides or
+ * summarises (a factorisation or a solve), and a NaN or infinite entry throws `value` naming it (the NaN rule of the
+ * domain: one O(n) scan against the O(n^3) of the kernel).
+ */
+export function matrices(x: Tensor, name?: string): Float64Array[] {
   const { m, n } = matrixShape(x.shape, 'matrices')
+  if (name !== undefined) assertFinite(name, x.data)
   const size = m * n
   const count = size === 0 ? 0 : x.data.length / size
   return Array.from({ length: count }, (_, b) => Float64Array.from(x.data.subarray(b * size, (b + 1) * size)))

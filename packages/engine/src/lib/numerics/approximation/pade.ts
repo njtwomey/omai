@@ -6,6 +6,7 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
+import type { RunStatus } from '../../trace/index.ts'
 import { vectorOf } from '../_vector.ts'
 import { solve } from '../linalg/index.ts'
 
@@ -64,7 +65,8 @@ export function pade(
  * @param a - The partial numerators a_j (j >= 1).
  * @param b - The partial denominators b_j (j >= 0).
  * @param options - Tolerance (default 1e-15) and maximum terms (default 10000).
- * @returns The value and the number of terms used.
+ * @returns The value, the number of terms used, `converged` and `status` (`converged`, or `completed` when `maxTerms`
+ *   ran out: the value is then the last convergent, not an answer to `tol`; it used to throw `convergence`).
  * @concept continued-fractions
  * @example
  * ```ts
@@ -77,7 +79,7 @@ export function continuedFraction(
   a: (j: number) => number,
   b: (j: number) => number,
   options: { readonly tol?: number; readonly maxTerms?: number } = {},
-): { value: number; terms: number } {
+): { value: number; terms: number; converged: boolean; status: RunStatus } {
   const tiny = 1e-300
   const tol = options.tol ?? 1e-15
   let f = b(0)
@@ -94,7 +96,7 @@ export function continuedFraction(
     d = 1 / d
     const delta = c * d
     f *= delta
-    if (Math.abs(delta - 1) < tol) return { value: f, terms: j }
+    if (Math.abs(delta - 1) < tol) return { value: f, terms: j, converged: true, status: 'converged' }
   }
-  throw new MdmlError('convergence', 'continuedFraction: no convergence')
+  return { value: f, terms: options.maxTerms ?? 10000, converged: false, status: 'completed' }
 }

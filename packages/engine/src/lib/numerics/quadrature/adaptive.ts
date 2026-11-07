@@ -376,6 +376,15 @@ export function adaptiveSimpson(
 }
 
 /**
+ * The tanh-sinh nodes are taken for |t| up to this value: past it the weights underflow (cosh(u)^2 overflows from u = 355,
+ * t = 6.1) and the offset from the end point is below the smallest double. A smaller cut (4, until now) lost the tail of an
+ * end-point singularity stronger than x^-0.6: x^-0.9 on (0, 1] came out 0.02% short, because the mass within 1e-37 of the
+ * end point is 1e-3.7 of the integral. Nodes that round to an end point, or have no weight, are skipped. The grid
+ * t = k h is exact in binary, so the nodes inside the old range are the same numbers as before.
+ */
+const TANH_SINH_TMAX = 6.5
+
+/**
  * Tanh-sinh (double-exponential) quadrature (Takahasi and Mori): the substitution x = tanh((pi/2) sinh t) makes the
  * trapezoidal rule converge double-exponentially, even with endpoint singularities. Levels halve the step until two
  * estimates agree.
@@ -385,7 +394,10 @@ export function adaptiveSimpson(
  * @param b - Upper limit.
  * @param options - Tolerance (default 1e-12) and maximum level (default 8).
  * @returns The value (differentiable in f's parameters) and the levels used; `converged` is false (status `completed`)
- *   when two levels never agreed within the maximum level.
+ *   when two levels never agreed within the maximum level. A singularity at the lower end point is integrated to its
+ *   tail (the nodes are measured from the end point, down to the smallest double); at an upper end point other than 0
+ *   the node x = b - offset rounds to the grid of b, so the part of the integral within about 1e-16 |b| of it is lost
+ *   (1 / sqrt(1 - x^2) on [-1, 1] is 7e-9 short): integrate from the singular end, or substitute, for those.
  * @example
  * ```ts
  * import { tanhSinh } from 'mdml-engine/numerics/quadrature'
@@ -402,7 +414,7 @@ export function tanhSinh(
   const half = (b - a) / 2
   const estimate = (h: number): Value => {
     const ts: number[] = []
-    for (let t = -4; t <= 4 + 1e-12; t += h) ts.push(t)
+    for (let t = -TANH_SINH_TMAX; t <= TANH_SINH_TMAX + 1e-12; t += h) ts.push(t)
     const xs: number[] = []
     const ws: number[] = []
     for (const t of ts) {

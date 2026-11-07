@@ -62,7 +62,9 @@ export function hessenberg(a: TensorLike): { readonly h: Tensor; readonly q: Ten
  *
  * @param a - Square matrix.
  * @returns T and orthogonal Z.
- * @throws MdmlError with code `convergence` if the QR iteration stalls.
+ * @throws MdmlError with code `convergence` if the QR iteration stalls (60 n sweeps; finite input does not do it in
+ *   practice). The return is a bare pair of tensors with no place for a status, so this is the one outcome that
+ *   throws; a non-finite entry is a `value` error before that.
  * @concept eigenvalues
  * @example
  * ```ts
@@ -81,6 +83,7 @@ export function schur(a: TensorLike): { readonly t: Tensor; readonly z: Tensor }
  *
  * @param a - Square matrix.
  * @returns Real and imaginary parts.
+ * @throws MdmlError with code `convergence` if the QR iteration stalls (see {@link schur}).
  * @example
  * ```ts
  * import { eigvals } from 'mdml-engine/numerics/linalg'
@@ -104,6 +107,7 @@ export function eigvals(a: TensorLike): ComplexTensor {
  *
  * @param a - Square matrix.
  * @returns The eigenvalues and eigenvectors, as real and imaginary parts.
+ * @throws MdmlError with code `convergence` if the QR iteration stalls (see {@link schur}).
  * @concept eigenvalues
  * @index function Eigenvalues and eigenvectors of a general real matrix.
  * @example

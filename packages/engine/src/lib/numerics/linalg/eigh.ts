@@ -25,7 +25,7 @@ import {
   where,
 } from '../../tensor/index.ts'
 import { eighKernel, eighQlKernel } from './_kernels.ts'
-import { assemble, diagEmbed, diagPart, matrices, mT, squareSize, sym } from './_matrix.ts'
+import { assemble, diagEmbed, diagPart, matrices, mT, namingNonFinite, squareSize, sym } from './_matrix.ts'
 
 /**
  * F_ij = 1 / (w_j - w_i) off the diagonal and 0 on it (infinite for repeated eigenvalues, where V is not unique): the
@@ -65,7 +65,7 @@ const eighPrimitive: Primitive<EighParams> = definePrimitive<EighParams>({
     const av = a as NonNullable<typeof a>
     const n = squareSize(av.shape, 'eigh')
     const batch = av.shape.slice(0, -2)
-    const results = matrices(av).map((m) => (method === 'jacobi' ? eighKernel(m, n) : eighQlKernel(m, n)))
+    const results = matrices(av, 'eigh').map((m) => (method === 'jacobi' ? eighKernel(m, n) : eighQlKernel(m, n)))
     const dtype = av.dtype as FloatDType
     return [
       assemble(
@@ -122,6 +122,12 @@ export interface EighResult {
  * @param a - Symmetric matrix `[..., n, n]`.
  * @param options - The method.
  * @returns `{ eigenvalues, eigenvectors }`, differentiable (eigenvectors only where eigenvalues are distinct).
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (a routine that decides rejects it at
+ *   its boundary; elementwise operations propagate).
+ * @throws MdmlError with code `convergence` when the implicit QL iteration of the default method needs more than 60
+ *   sweeps for one eigenvalue (it does not happen on finite symmetric input in practice). The result is a bare value of
+ *   a differentiable primitive, with no place for a status; `method: 'jacobi'` is the sibling with no such limit, and for
+ *   a run that reports how it ended use `jacobiEigenSteps` or the traced `eigshAlgorithm`.
  * @concept linear-algebra
  * @index function Symmetric eigendecomposition with derivatives.
  * @example
@@ -142,6 +148,7 @@ export function eigh(a: TensorLike, options: { readonly method?: EighMethod } = 
  *
  * @param a - Symmetric matrix `[..., n, n]`.
  * @returns The eigenvalues, differentiable (also at repeated eigenvalues, for symmetric functions of them).
+ * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry.
  * @example
  * ```ts
  * import { eigvalsh } from 'mdml-engine/numerics/linalg'
@@ -150,7 +157,7 @@ export function eigh(a: TensorLike, options: { readonly method?: EighMethod } = 
  * ```
  */
 export function eigvalsh(a: TensorLike): Value {
-  return eigh(a).eigenvalues
+  return namingNonFinite('eigvalsh', () => eigh(a).eigenvalues)
 }
 
 /** One sweep of the cyclic Jacobi method. */
@@ -183,7 +190,7 @@ export function jacobiEigenSteps(a: TensorLike): {
   const [av] = promoteFloat(a) as [Value]
   const n = squareSize(av.shape, 'jacobiEigenSteps')
   const sweeps: { offDiagonalNorm: number; rotations: { p: number; q: number; c: number; s: number }[] }[] = []
-  const data = matrices(primalOf(av))[0] ?? new Float64Array(0)
+  const data = matrices(primalOf(av), 'jacobiEigenSteps')[0] ?? new Float64Array(0)
   const { w, v } = eighKernel(
     data,
     n,

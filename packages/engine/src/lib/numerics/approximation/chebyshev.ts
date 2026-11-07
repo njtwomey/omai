@@ -318,7 +318,8 @@ export function chebfunAlgorithm(
  * @param domain - The interval (default [-1, 1]).
  * @param options - Tolerance (default 2^-52 times 10) and the largest sample size (default 2^16 + 1).
  * @returns The expansion (a record of tensors); its coefficients show the decay.
- * @throws MdmlError with code `convergence` when the coefficients do not decay within the largest sample size.
+ * @throws MdmlError with code `convergence` when the coefficients do not decay within the largest sample size (the
+ *   return is a fitted polynomial, a bare value; use {@link chebfunAlgorithm} for a run that ends with a status).
  * @concept chebyshev-approximation
  * @index function Adaptive Chebyshev approximation of a smooth function.
  * @example
