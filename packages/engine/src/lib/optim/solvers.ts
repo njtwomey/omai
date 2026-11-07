@@ -9,6 +9,7 @@
  */
 
 import type { Json } from '../base/index.ts'
+import { dnrm2 } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
 import {
   bool,
@@ -326,7 +327,7 @@ export function loggedSolverOf<Problem, K extends string = never>(
       const next = inner.step(state, ctx)
       const r = next as SolverReached
       ctx.log('solver/objective', r.value)
-      ctx.log('solver/gradNorm', Math.hypot(...r.grad))
+      ctx.log('solver/gradNorm', dnrm2(r.grad))
       ctx.log('solver/step', r.step)
       if (r.lr !== undefined) ctx.log('solver/lr', r.lr)
       extra?.(r.x, ctx, r)

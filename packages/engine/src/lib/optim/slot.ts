@@ -8,6 +8,7 @@
  */
 
 import type { Json } from '../base/index.ts'
+import { dnrm2 } from '../numerics/linalg/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import {
@@ -134,7 +135,7 @@ export function slotAlgorithm<S extends SlotState, Problem = SmoothProblem>(spec
     observe: (s) => {
       const own = spec.observe(s)
       const r = reached(s)
-      return { ...own, metrics: { ...own.metrics, gradNorm: Math.hypot(...r.grad), step: r.step } }
+      return { ...own, metrics: { ...own.metrics, gradNorm: dnrm2(r.grad), step: r.step } }
     },
     serialise: (s) => stateToJson(s) as Json,
     deserialise: (j) => stateFromJson(j) as S,
