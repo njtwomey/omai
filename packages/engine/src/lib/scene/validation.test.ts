@@ -53,22 +53,55 @@ describe('the scene builders check their arguments where the drawing is made', (
         'merged edge to a missing node',
         () => mergeStructures([structure('g', [node('a')], [{ from: 'a', to: 'zzz' }])]),
       ],
-      ['path with a NaN vertex', () => path([[0, 0], [Number.NaN, 1]])],
+      [
+        'path with a NaN vertex',
+        () =>
+          path([
+            [0, 0],
+            [Number.NaN, 1],
+          ]),
+      ],
       ['path with a three-number vertex', () => path([[0, 0, 0] as unknown as [number, number]])],
-      ['polygon with an infinite vertex', () => polygon([[0, 0], [1, Number.POSITIVE_INFINITY], [1, 1]])],
+      [
+        'polygon with an infinite vertex',
+        () =>
+          polygon([
+            [0, 0],
+            [1, Number.POSITIVE_INFINITY],
+            [1, 1],
+          ]),
+      ],
       ['text at NaN', () => text(Number.NaN, 0, 'a')],
       ['text of negative size', () => text(0, 0, 'a', { size: -1 })],
       ['tex at an infinite point', () => tex(0, Number.POSITIVE_INFINITY, 'x')],
-      ['image with a negative width', () => image(0, 0, -1, 1, { width: 1, height: 1, rgba: new Uint8ClampedArray(4) })],
+      [
+        'image with a negative width',
+        () => image(0, 0, -1, 1, { width: 1, height: 1, rgba: new Uint8ClampedArray(4) }),
+      ],
       ['group with scale 0', () => group([], { scale: 0 })],
       ['group with a NaN translation', () => group([], { translate: [Number.NaN, 0] })],
       ['group with an infinite rotation', () => group([], { rotate: Number.POSITIVE_INFINITY })],
       ['3-D point at NaN', () => point3d([0, Number.NaN, 0])],
       ['3-D segment to infinity', () => segment3d([0, 0, 0], [0, 0, Number.POSITIVE_INFINITY])],
       ['3-D arrow with a NaN tail', () => arrow3d([Number.NaN, 0, 0], [1, 0, 0])],
-      ['3-D polyline with a NaN point', () => polyline3d([[0, 0, 0], [Number.NaN, 0, 0]])],
+      [
+        '3-D polyline with a NaN point',
+        () =>
+          polyline3d([
+            [0, 0, 0],
+            [Number.NaN, 0, 0],
+          ]),
+      ],
       ['3-D triangle with a NaN vertex', () => triangle3d([0, 0, 0], [1, 0, 0], [0, Number.NaN, 0])],
-      ['3-D face with a NaN vertex', () => face3d([[0, 0, 0], [1, 0, 0], [0, 1, Number.NaN]])],
+      [
+        '3-D face with a NaN vertex',
+        () =>
+          face3d([
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, Number.NaN],
+          ]),
+      ],
       ['3-D label at NaN', () => label3d([Number.NaN, 0, 0], 'x')],
       ['3-D layer with a negative box', () => layer3d(scene3d([]), camera(), { x: 0, y: 0, width: -1, height: 1 })],
       ['camera elevation 200', () => camera({ elevation: 200 })],
@@ -89,13 +122,27 @@ describe('the scene builders check their arguments where the drawing is made', (
   })
 
   it('validateScene walks a scene assembled by hand and names the path of the first fault', () => {
-    const ok = scene(10, 10, [group([circle(5, 5, 2, { id: 'a' }), path([[0, 0], [1, 1]])], { translate: [1, 1] })])
+    const ok = scene(10, 10, [
+      group(
+        [
+          circle(5, 5, 2, { id: 'a' }),
+          path([
+            [0, 0],
+            [1, 1],
+          ]),
+        ],
+        { translate: [1, 1] },
+      ),
+    ])
     expect(validateScene(ok)).toBe(ok)
     const bad = (children: readonly unknown[], pattern: RegExp, width = 10): void =>
       expect(() => validateScene({ kind: 'scene', width, height: 10, children } as never)).toThrow(
         expect.objectContaining({ code: 'value', message: expect.stringMatching(pattern) }),
       )
-    bad([{ kind: 'group', children: [{ kind: 'circle', cx: 0, cy: 0, r: -1 }] }], /children\[0\]\.children\[0\]: r is -1/)
+    bad(
+      [{ kind: 'group', children: [{ kind: 'circle', cx: 0, cy: 0, r: -1 }] }],
+      /children\[0\]\.children\[0\]: r is -1/,
+    )
     bad([{ kind: 'rect', x: 0, y: 0, width: Number.NaN, height: 1 }], /children\[0\]: width is NaN/)
     bad([{ kind: 'path', points: [[0, 0], [1]] }], /points\[1\] is \[1\]/)
     bad([{ kind: 'group', children: [], scale: 0 }], /scale is 0/)
@@ -103,7 +150,10 @@ describe('the scene builders check their arguments where the drawing is made', (
     bad([{ kind: 'circle', cx: 0, cy: 0, r: 1, opacity: 2 }], /opacity is 2/)
     bad([circle(0, 0, 1, { id: 'x' }), circle(1, 1, 1, { id: 'x' })], /duplicate id 'x'/)
     bad([{ kind: 'blob' }], /unknown node kind "blob"/)
-    bad([{ kind: 'image', x: 0, y: 0, width: 1, height: 1, pixels: { width: 2, height: 1, rgba: {} } }], /pixels.rgba has undefined/)
+    bad(
+      [{ kind: 'image', x: 0, y: 0, width: 1, height: 1, pixels: { width: 2, height: 1, rgba: {} } }],
+      /pixels.rgba has undefined/,
+    )
     bad([], /width is -1/, -1)
     expect(() => validateScene({ kind: 'structure' } as never)).toThrow(/not a scene/)
     const layer = layer3d(scene3d([point3d([0, 0, 0])]), camera(), { x: 0, y: 0, width: 5, height: 5 })
@@ -129,7 +179,7 @@ describe('the scene builders check their arguments where the drawing is made', (
     expect(project(scene3d([segment3d([0, -7, 0], [0, -6, 0])]), cam, viewport).children).toHaveLength(0)
     const clipped = project(scene3d([triangle3d([0, -6, 0], [1, 0, 0], [-1, 0, 0])]), cam, viewport).children
     expect(clipped.map((n) => n.kind)).toEqual(['path'])
-    expect((clipped[0] as { points: unknown[] }).points.length).toBe(4)
+    expect((clipped[0] as unknown as { points: unknown[] }).points.length).toBe(4)
     expect(project(scene3d([triangle3d([0, -6, 0], [1, -7, 0], [-1, -8, 0])]), cam, viewport).children).toHaveLength(0)
     // A non-finite coordinate in a hand-made item has no image.
     const nan = { kind: 'point' as const, at: [Number.NaN, 0, 0] as const }

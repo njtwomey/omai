@@ -230,8 +230,10 @@ function clipPolygon(view: View, points: readonly Vec3[]): readonly Vec3[] {
   const out: Vec3[] = []
   for (let i = 0; i < points.length; i++) {
     const j = (i + 1) % points.length
-    const [p, q] = [points[i] as Vec3, points[j] as Vec3]
-    const [dp, dq] = [depths[i] as number, depths[j] as number]
+    const p = points[i] as Vec3
+    const q = points[j] as Vec3
+    const dp = depths[i] as number
+    const dq = depths[j] as number
     if (dp >= view.near) out.push(p)
     if (dp >= view.near !== dq >= view.near) {
       const t = (dp - view.near) / (dp - dq)
@@ -251,12 +253,16 @@ interface Drawn {
 function projectItem(item: Item3D, order: number, view: View, cull: boolean, out: Drawn[]): void {
   const at = view.at
   const segment = (a: Vec3, b: Vec3, style: Style & NodeBase, head: boolean): void => {
-    let [pa, pb, tip] = [at(a), at(b), head]
+    let pa = at(a)
+    let pb = at(b)
+    let tip = head
     if (pa === undefined || pb === undefined) {
       // Under perspective the part of the segment in front of the eye is still drawn, cut at the near plane.
       const cut = view.perspective ? clipSegment(view, a, b) : undefined
       if (cut === undefined) return
-      ;[pa, pb, tip] = [at(cut[0]), at(cut[1]), head && cut[2]]
+      pa = at(cut[0])
+      pb = at(cut[1])
+      tip = head && cut[2]
       if (pa === undefined || pb === undefined) return
     }
     const node = (tip ? arrow : line)(pa.x, pa.y, pb.x, pb.y, style)

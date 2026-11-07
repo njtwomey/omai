@@ -70,8 +70,11 @@ describe('camera and projection', () => {
     const farX = (projectPoint(cam, [1, 2, 0], viewport)?.x ?? 0) - 50
     expect(nearX).toBeGreaterThan(farX)
     expect(projectPoint(cam, [0, -6, 0], viewport)).toBeUndefined()
+    // A segment reaching behind the eye is cut at the near plane and its visible part drawn (it was dropped whole).
     const s = project(scene3d([segment3d([0, -6, 0], [0, 0, 0]), point3d([0, 0, 0])]), cam, viewport)
-    expect(s.children.map((n) => n.kind)).toEqual(['circle'])
+    expect(s.children.map((n) => n.kind)).toEqual(['circle', 'line'])
+    const wholly = project(scene3d([segment3d([0, -7, 0], [0, -6, 0]), point3d([0, 0, 0])]), cam, viewport)
+    expect(wholly.children.map((n) => n.kind)).toEqual(['circle'])
   })
 
   it('validates and orbits cameras', () => {

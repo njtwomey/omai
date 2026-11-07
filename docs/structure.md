@@ -647,13 +647,17 @@ It uses `base` (errors, `clamp`, `maxOf`) and nothing else, so every other domai
   `surface3d`, `label3d`, `axes3d`), for vectors, surfaces, loss landscapes and rotations without WebGL.
 - `projection.ts`: `Camera` and `camera` (orthographic and perspective, orbit angles as in matplotlib's `view_init`),
   `orbit`, `fitCamera`, `projectPoint`, `project` (to a 2-D `Scene` with painter's-algorithm depth sorting and optional
-  back-face culling), `layer3d`, `projectLayers` (what renderers call before drawing).
+  back-face culling; under perspective a segment or face reaching behind the eye is cut at a near plane, 1% of the camera
+  distance), `layer3d`, `projectLayers` (what renderers call before drawing).
 - `structure.ts`: `Structure` (typed nodes with role, label, value badges and ports; typed edges between ports; groups
   such as plates, repeated blocks and clusters; annotations), `structure` builder, `mergeStructures`, `subStructure`,
   `isStructure`.
 - `timeline.ts`: `Timeline` (frames keyed by step: scene or structure states with highlights), the data behind every
   animation and export; `timeline`, `sceneTimeline`, `isTimeline`.
 - `paint.ts`: `palettes` (the light and dark token colours, tab10 for the categorical tokens), `parsePaint`.
+- `validation.ts`: `validateScene`, one walk that checks a whole scene (finite coordinates, sizes at least 0, a group's
+  scale not 0, colours, opacities, unique ids, image bytes, 3-D layers) and names the path of the first fault; the builders
+  check one node as it is made (`_check.ts`, private).
 - `raster.ts`: `rasterise`, a small software rasteriser from scenes to RGBA pixels (pixel observations for RL, frames in
   Node): nonzero fills at pixel centres, strokes with dashes, joins and arrow heads, smooth paths, images, 3-D layers,
   supersampling. TODO: text and TeX labels are skipped (they need a bundled bitmap font).
@@ -1216,8 +1220,8 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
   `posterior` for classification programs, `regressionFunction`, `sample`); `probprog.generatingProgram` builds one, and
   `completeTruth` derives the log density, posterior and regression function from it. Modifiers that change how the
   data arise drop the program (their own densities and posteriors remain).
-- `rows.ts`: `take`, `trainTestSplit` (optionally stratified), `trainValTestSplit`, `stratifiedSplit`,
-  `stratifiedIndices`, `bootstrap` (with out-of-bag rows), `concatRows`, `shuffleRows`, `labelsOf`.
+- `rows.ts`: `take`, `splitSize` (the one size rule: a fraction or a count of rows), `trainTestSplit` (optionally
+  stratified), `trainValTestSplit`, `stratifiedSplit`, `stratifiedIndices`, `bootstrap` (with out-of-bag rows), `concatRows`, `shuffleRows`, `labelsOf`.
 - `tensors.ts`: `toTensors`, `fromTensors`, `xy`, `xyClasses`, `xyMultilabel`, `xyMultiOutput` (build a dataset from
   arrays), `table`, `tableToXy` (one-hot or code encoding), `describe` (pandas-style feature summaries and class
   counts).
@@ -1714,7 +1718,7 @@ of the rank tests); `tests/_shapiro.ts`,
   discovery.
 - `tests/multivariate.ts`: `hotellingT2`, `manova`, `boxM`, `mardia`.
 - `tests/proportions.ts`: `binomTest`, `proportionsZtest`, `proportionConfint` (Wald, Wilson, Agresti-Coull,
-  Clopper-Pearson, Jeffreys), `proportionsDifference`.
+  Clopper-Pearson, Jeffreys), `wilsonBounds` (the Wilson arithmetic, which `metrics` shares), `proportionsDifference`.
 - `tests/timeseries.ts`: `ljungBox`, `durbinWatson`, `adfuller` (with `mackinnonp`, `mackinnoncrit`, which take the number
   of integrated variables N for the Engle-Granger tables; the private `tests/_mackinnon.ts` holds the 1994 surfaces and
   2010 critical values), `kpss`, `runsTest`.
@@ -2964,7 +2968,7 @@ The files follow the encyclopedia's evaluation chapters, in its order. Every met
 weights where the reference does, and metrics over rows of samples (targets, predictions) can attach a confidence
 interval (`withInterval`). Metrics that need a pretrained network (LPIPS, DISTS, FID, KID, CLIPScore, BERTScore,
 Inception score) take its features, embeddings or outputs, and DNSMOS takes the networks as functions; mdml ships
-none of those weights.
+none of those weights. Each file builds its specs with `specOf(category, inputs, concept)` of `_spec.ts` (private).
 - `foundations.ts`: choosing a metric for a decision (`expectedCost`, `expectedUtility`, `bayesDecision`,
   `costThreshold`), `withInterval` (bootstrap: percentile, basic and BCa; analytic (Wald); Wilson; DeLong, with
   `delongVariance`), paired comparisons of two models on one test set (`pairedBootstrap`, `mcnemarTest`,

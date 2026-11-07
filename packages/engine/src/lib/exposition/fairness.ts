@@ -212,7 +212,8 @@ function spread(values: readonly number[]): number {
 /**
  * The summary disparities of per-group rates, between groups (fairlearn's `between_groups`): demographic parity,
  * equal opportunity, equalised odds (the larger of the true- and false-positive gaps), predictive parity and accuracy
- * differences, and the disparate-impact ratio (the smallest selection rate over the reference group's).
+ * differences, and the disparate-impact ratio (the smallest selection rate over the reference group's; 1 when no other
+ * group counts).
  *
  * @param rates - Each group's rates.
  * @param reference - The reference group for disparate impact.
@@ -241,7 +242,13 @@ export function groupDisparities(
   const pick = (r: GroupRateName): number[] => rates.filter((_, g) => live(g)).map((v) => v[r])
   const ref = rates[reference]?.selectionRate ?? 0
   const others = rates.filter((_, g) => g !== reference && live(g)).map((v) => v.selectionRate)
-  const impact = ref === 0 ? Number.NaN : Math.min(minOf(others.map((v) => v / ref)), Number.POSITIVE_INFINITY)
+  // With no other group left to compare (every one empty or below `minSize`) the reference is at parity with itself.
+  const impact =
+    others.length === 0
+      ? 1
+      : ref === 0
+        ? Number.NaN
+        : Math.min(minOf(others.map((v) => v / ref)), Number.POSITIVE_INFINITY)
   return [
     { name: 'demographic parity difference', value: spread(pick('selectionRate')), ideal: 0, kind: 'difference' },
     { name: 'equal opportunity difference', value: spread(pick('truePositiveRate')), ideal: 0, kind: 'difference' },
