@@ -121,6 +121,9 @@ describe('the power-basis functions take tensor-likes and return tensors (migrat
     ['polyFromRoots', (c) => P.polyFromRoots(c)],
     ['orthoToPower', (c) => P.orthoToPower('legendre', c)],
     ['powerToOrtho', (c) => P.powerToOrtho('legendre', c)],
+    ['residue', (c) => tensor(P.residue(c, [1, 3, 2]).residues.re)],
+    ['residuez', (c) => tensor(P.residuez(c, [1, -0.5, 0.25]).residues.re)],
+    ['invres', (c) => tensor(P.invres({ re: c, im: [0, 0, 0] }, { re: [-1, -2, -3], im: [0, 0, 0] }, []).numerator.re)],
   ]
   it('a tensor, a typed array and an array agree; wrong rank is a shape error; traced is rejected', () => {
     for (const [name, f] of calls) {
