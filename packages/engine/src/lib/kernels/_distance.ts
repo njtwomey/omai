@@ -13,8 +13,8 @@
 
 import { MdmlError } from '../base/index.ts'
 import {
-  add,
   type Aval,
+  add,
   arg,
   bind1,
   concat,

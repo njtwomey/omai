@@ -21,36 +21,39 @@ describe('squaredDistances against the broadcast form of cdist', () => {
     { offset: 1e8, spread: 1, d: 20, m: 60 },
     { offset: 1e8, spread: 1e-3, d: 50, m: 60 },
   ]
-  it.each(cases)('offset $offset, spread $spread, d = $d: same values, symmetric, zero diagonal, differentiable', (c) => {
-    const x = tensor(points(c.m, c.d, c.offset, c.spread))
-    const y = tensor(points(c.m - 7, c.d, c.offset, c.spread * 1.5))
-    for (const [a, b] of [
-      [x, undefined],
-      [x, y],
-    ] as const) {
-      const got = toFlat(squaredDistances(a, b))
-      const want = toFlat(cdist(a, b ?? a, 'sqeuclidean'))
-      want.forEach((w, i) => {
-        expect(Math.abs((got[i] ?? Number.NaN) - w)).toBeLessThanOrEqual(1e-13 * w)
-      })
-    }
-    const n = c.m
-    const g = toFlat(squaredDistances(x))
-    for (let i = 0; i < n; i++) {
-      expect(g[i * n + i]).toBe(0)
-      for (let j = 0; j < n; j++) {
-        expect(g[i * n + j]).toBe(g[j * n + i])
-        expect(g[i * n + j]).toBeGreaterThanOrEqual(0)
+  it.each(cases)(
+    'offset $offset, spread $spread, d = $d: same values, symmetric, zero diagonal, differentiable',
+    (c) => {
+      const x = tensor(points(c.m, c.d, c.offset, c.spread))
+      const y = tensor(points(c.m - 7, c.d, c.offset, c.spread * 1.5))
+      for (const [a, b] of [
+        [x, undefined],
+        [x, y],
+      ] as const) {
+        const got = toFlat(squaredDistances(a, b))
+        const want = toFlat(cdist(a, b ?? a, 'sqeuclidean'))
+        want.forEach((w, i) => {
+          expect(Math.abs((got[i] ?? Number.NaN) - w)).toBeLessThanOrEqual(1e-13 * w)
+        })
       }
-    }
-    expect(g[1]).toBe(0) // the repeated row: exactly zero off the diagonal too
-    if (c.d <= 3) {
-      // Finite differences, jvp, vjp and vmap, with the coincident pair and a Euclidean distance that is not smooth there.
-      const small = [[0.1, 0.2, 0.3].slice(0, c.d), [0.1, 0.2, 0.3].slice(0, c.d), [0.9, -0.4, 0.5].slice(0, c.d)]
-      const other = [[0.1, 0.2, 0.3].slice(0, c.d), [-0.6, 0.7, 0.2].slice(0, c.d)]
-      expectConformant((p: Value) => squaredDistances(p), [small])
-      expectConformant((p: Value, q: Value) => euclideanDistances(p, q), [small, other])
-      expectConformant((p: Value) => euclideanDistances(p), [small])
-    }
-  })
+      const n = c.m
+      const g = toFlat(squaredDistances(x))
+      for (let i = 0; i < n; i++) {
+        expect(g[i * n + i]).toBe(0)
+        for (let j = 0; j < n; j++) {
+          expect(g[i * n + j]).toBe(g[j * n + i])
+          expect(g[i * n + j]).toBeGreaterThanOrEqual(0)
+        }
+      }
+      expect(g[1]).toBe(0) // the repeated row: exactly zero off the diagonal too
+      if (c.d <= 3) {
+        // Finite differences, jvp, vjp and vmap, with the coincident pair and a Euclidean distance that is not smooth there.
+        const small = [[0.1, 0.2, 0.3].slice(0, c.d), [0.1, 0.2, 0.3].slice(0, c.d), [0.9, -0.4, 0.5].slice(0, c.d)]
+        const other = [[0.1, 0.2, 0.3].slice(0, c.d), [-0.6, 0.7, 0.2].slice(0, c.d)]
+        expectConformant((p: Value) => squaredDistances(p), [small])
+        expectConformant((p: Value, q: Value) => euclideanDistances(p, q), [small, other])
+        expectConformant((p: Value) => euclideanDistances(p), [small])
+      }
+    },
+  )
 })
