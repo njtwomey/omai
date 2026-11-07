@@ -138,6 +138,7 @@ export function hoeffdingD(x: TensorLike, y: TensorLike, options: IndependenceOp
  * @param y - Second variable `[N]`.
  * @param options - discrete (treat values as categories) or bins (default Sturges' ceil(log2 N + 1)).
  * @returns The mutual information, at least 0.
+ * @throws MdmlError with code `value` when the data contains NaN: it is not a category in `discrete` mode, and the histogram rejects it otherwise.
  * @example
  * ```ts
  * import { mutualInformation } from 'mdml-engine/stats/tests'
@@ -149,7 +150,7 @@ export function mutualInformation(
   y: TensorLike,
   options: { readonly discrete?: boolean; readonly bins?: number } = {},
 ): number {
-  const [a, b] = paired('mutualInformation', x, y, 2)
+  const [a, b] = paired('mutualInformation', x, y, 2, true)
   return plugInMI(a, b, options)
 }
 
@@ -191,6 +192,7 @@ function plugInMI(
  * @param y - Second variable `[N]`.
  * @param options - discrete, bins, nResamples, key or seed.
  * @returns The mutual information and its p-value.
+ * @throws MdmlError with code `value` when the data contains NaN: it is not a category in `discrete` mode, and the histogram rejects it otherwise.
  * @example
  * ```ts
  * import { mutualInformationTest } from 'mdml-engine/stats/tests'
@@ -203,7 +205,7 @@ export function mutualInformationTest(
   y: TensorLike,
   options: IndependenceOptions & { readonly discrete?: boolean; readonly bins?: number } = {},
 ): TestResult {
-  const [a, b] = paired('mutualInformationTest', x, y, 2)
+  const [a, b] = paired('mutualInformationTest', x, y, 2, true)
   const { nResamples, discrete, bins, ...run } = options
   const settings = { ...(discrete === undefined ? {} : { discrete }), ...(bins === undefined ? {} : { bins }) }
   const r = permutationTest([b], (yy) => plugInMI(a, yy, settings), {
@@ -275,6 +277,7 @@ export function partialCorrelationTest(data: TensorLike, x: number, y: number, z
  * @param z - Columns of the conditioning set.
  * @param options - statistic (`'g'`, default, or `'chi2'`).
  * @returns The statistic, its p-value and degrees of freedom.
+ * @throws MdmlError with code `value` when a column contains NaN: a NaN is not a category.
  * @example
  * ```ts
  * import { gTestConditional } from 'mdml-engine/stats/tests'
@@ -292,6 +295,8 @@ export function gTestConditional(
   // Each column's distinct values (over all the data) are its categories, as causal-learn encodes them.
   const code = (j: number): { codes: Int32Array; card: number } => {
     const col = Float64Array.from({ length: m.rows }, (_, i) => m.data[i * m.cols + j] ?? 0)
+    if (col.some(Number.isNaN))
+      throw new MdmlError('value', `gTestConditional: column ${j} contains NaN, which is not a category`)
     const u = Array.from(new Set(col)).sort((p, q) => p - q)
     const at = new Map(u.map((v, i) => [v, i]))
     return { codes: Int32Array.from(col, (v) => at.get(v) ?? 0), card: u.length }

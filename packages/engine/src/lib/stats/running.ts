@@ -215,6 +215,7 @@ export function p2Quantile(p: number): P2State {
  * @param state - The estimator.
  * @param x - The observation.
  * @returns The updated estimator.
+ * @throws MdmlError with code `value` when `x` is not finite (a NaN would move the positions and no height).
  * @example
  * ```ts
  * import { p2Estimate, p2Push, p2Quantile } from 'mdml-engine/stats'
@@ -224,6 +225,7 @@ export function p2Quantile(p: number): P2State {
  * ```
  */
 export function p2Push(state: P2State, x: number): P2State {
+  if (!Number.isFinite(x)) throw new MdmlError('value', `p2Push: the observation must be finite, got ${x}`)
   const p = state.p
   if (state.n < 5) {
     const heights = [...state.heights, x].sort((a, b) => a - b)

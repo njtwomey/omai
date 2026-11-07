@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TestResult } from '../../base/index.ts'
-import { etaSquared, histogram, kendallTau, rankdata, spearman } from '../index.ts'
+import { etaSquared, histogram, kendallTau, p2Push, p2Quantile, rankdata, spearman } from '../index.ts'
 import * as T from './index.ts'
 
 const c = [3, 3, 3, 3]
@@ -48,10 +48,31 @@ describe('hypothesis tests on degenerate input', () => {
     ['kendallTau', () => kendallTau(withNaN, other)],
     ['rankdata', () => rankdata(withNaN)],
     ['histogram', () => histogram(withNaN, { bins: 2 })],
+    [
+      'mutualInformationTest, discrete (NaN is not a category)',
+      () => T.mutualInformationTest(withNaN, other, { discrete: true }),
+    ],
+    ['mutualInformationTest, binned', () => T.mutualInformationTest(withNaN, other)],
+    [
+      'gTestConditional (NaN is not a category)',
+      () =>
+        T.gTestConditional(
+          [
+            [0, 0],
+            [1, Number.NaN],
+            [1, 1],
+            [0, 1],
+          ],
+          0,
+          1,
+        ),
+    ],
+    ['p2Push (a NaN moves no marker)', () => p2Push(p2Quantile(0.5), Number.NaN)],
+    ['p2Push (an infinity breaks the interpolation)', () => p2Push(p2Quantile(0.5), Number.POSITIVE_INFINITY)],
     ['chisquare with a negative count', () => T.chisquare([5, -5])],
     ['fOneway of singletons', () => T.fOneway([[1], [2], [3]])],
   ]
-  it('throw value for NaN where the data is ranked or sorted, and for negative counts', () => {
+  it('throw value for NaN where the data is ranked, sorted or read as categories, and for negative counts', () => {
     for (const [name, call] of rejected) expect(call, name).toThrow(expect.objectContaining({ code: 'value' }))
   })
 })

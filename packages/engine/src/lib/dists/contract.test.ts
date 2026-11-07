@@ -74,10 +74,15 @@ describe('every family follows the Distribution contract', () => {
     }
   })
 
-  it('has the limits of a distribution function at an infinite argument', () => {
+  it('has the limits of a density and a distribution function at an infinite argument', () => {
     const inf = Number.POSITIVE_INFINITY
     for (const [name, make] of families) {
       const d = make()
+      expect([item(d.logProb(-inf)), item(d.logProb(inf)), item(d.prob(inf))], `${name}: density`).toEqual([
+        -inf,
+        -inf,
+        0,
+      ])
       expect([item(d.cdf(-inf)), item(d.cdf(inf)), item(d.sf(-inf)), item(d.sf(inf))], `${name}: cdf and sf`).toEqual([
         0, 1, 1, 0,
       ])

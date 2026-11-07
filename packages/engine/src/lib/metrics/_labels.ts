@@ -9,6 +9,9 @@ export type Label = number | string
 export function labelValues(x: MetricInput): Label[] {
   const values = isStringInput(x) ? [...x] : toFlat(asTensor(x as TensorLike))
   if (values.length === 0) throw new MdmlError('value', 'a metric of labels needs at least one sample')
+  // A NaN is not a label: as a Map key it would equal itself, so a missing label would count as a class and as correct.
+  if (values.some((v) => typeof v === 'number' && Number.isNaN(v)))
+    throw new MdmlError('value', 'a metric of labels does not accept NaN labels (drop or encode the missing ones)')
   return values
 }
 
