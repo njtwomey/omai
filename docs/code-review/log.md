@@ -69,7 +69,7 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `converged: false`, a flag, or nothing; `fixedPoint` and `fsolve` have the same return type and opposite behaviour). The
   approximate-nearest-neighbour code in `spatial` (about 1,850 lines) looks like a retrieval domain, filed as a placement
   question. The reader ran no Python: every quoted scipy or numpy value needs the oracle.
-||||||| 02ab5f59
+  ||||||| 02ab5f59
 - **10:58 Result (P3.3, `agent-dd01-helpers`, `f1e64336`..`e651ebc0`).** Duplicated helpers replaced by shared ones, one
   commit per family; behaviour preserved, the test directories of every touched domain run (1,098 tests next to the touched
   files, then 18,614 by domain, all green; 556 `@example`s of the touched files pass). Replaced: `dot` x8 by `ddot` (blas), `matmul` of the
