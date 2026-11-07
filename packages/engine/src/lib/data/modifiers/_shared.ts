@@ -1,5 +1,17 @@
 import { MdmlError } from '../../base/index.ts'
-import { concat, div, matmul, mul, sliceAxis, sum, type Tensor, tensor, type Value } from '../../tensor/index.ts'
+import {
+  asTensor,
+  concat,
+  div,
+  matmul,
+  mul,
+  sliceAxis,
+  sum,
+  type Tensor,
+  type TensorLike,
+  tensor,
+  type Value,
+} from '../../tensor/index.ts'
 import type { Generated } from '../generator.ts'
 import type { ClassificationData, TabularData } from '../schema/tabular.ts'
 import { bayesErrorEstimate, type Truth } from '../truth.ts'
@@ -21,8 +33,8 @@ export function classPriors(input: Generated<ClassificationData>): number[] {
 }
 
 /** A posterior multiplied on the right by a matrix (clean-to-noisy label transitions). */
-export function posteriorTimes(posterior: (x: Value) => Value, m: readonly (readonly number[])[]): (x: Value) => Value {
-  const t = tensor(m as number[][])
+export function posteriorTimes(posterior: (x: Value) => Value, m: TensorLike): (x: Value) => Value {
+  const t = asTensor(m)
   return (x) => matmul(posterior(x), t)
 }
 

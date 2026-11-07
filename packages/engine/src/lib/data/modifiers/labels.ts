@@ -10,7 +10,7 @@
 import { MdmlError } from '../../base/index.ts'
 import { categorical, dirichlet, foldIn, type Key, permutation, uniform } from '../../random/index.ts'
 import { choice, dict, real } from '../../space/index.ts'
-import { fromStorage } from '../../tensor/index.ts'
+import { asTensor, cast, concreteOrThrow, fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import type { Generated } from '../generator.ts'
 import type { Modifier } from '../recipes.ts'
 import { take } from '../rows.ts'
@@ -32,32 +32,42 @@ export interface LabelNoiseOptions {
    * `symmetric` (default): to a uniformly chosen other class; `pairflip`: to the next class; or give `transition`.
    */
   readonly mode?: 'symmetric' | 'pairflip'
-  /** A clean-to-noisy transition matrix `T[clean][noisy]` (rows sum to 1), overriding `rate` and `mode`. */
-  readonly transition?: readonly (readonly number[])[]
+  /**
+   * A clean-to-noisy transition matrix `T[clean][noisy]` (rows sum to 1), overriding `rate` and `mode`: a `[k, k]`
+   * tensor or nested array (migration, D-009: was `readonly (readonly number[])[]`).
+   */
+  readonly transition?: TensorLike
   readonly key: Key
 }
 
 /**
- * The clean-to-noisy transition matrix of symmetric or pair-flip label noise.
+ * The clean-to-noisy transition matrix of symmetric or pair-flip label noise. Returns a tensor (migration, D-009: was a
+ * `number[][]`; {@link LabelNoiseOptions} `transition` takes it back).
  *
  * @param k - The number of classes.
  * @param rate - The corruption probability.
  * @param mode - `symmetric` or `pairflip`.
- * @returns `T[clean][noisy]`.
+ * @returns A float64 tensor of shape `[k, k]`, `T[clean, noisy]`.
  * @example
  * ```ts
  * import { noiseTransition } from 'mdml-engine/data'
- * noiseTransition(2, 0.2, 'symmetric') // => [[0.8, 0.2], [0.2, 0.8]]
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(noiseTransition(2, 0.2, 'symmetric')) // => [[0.8, 0.2], [0.2, 0.8]]
  * ```
  */
-export function noiseTransition(k: number, rate: number, mode: 'symmetric' | 'pairflip' = 'symmetric'): number[][] {
-  return Array.from({ length: k }, (_, i) =>
-    Array.from({ length: k }, (_, j) => {
-      if (i === j) return k === 1 ? 1 : 1 - rate
-      if (mode === 'pairflip') return j === (i + 1) % k ? rate : 0
-      return rate / (k - 1)
-    }),
-  )
+export function noiseTransition(
+  k: number,
+  rate: number,
+  mode: 'symmetric' | 'pairflip' = 'symmetric',
+): Tensor<'float64'> {
+  const out = new Float64Array(k * k)
+  for (let i = 0; i < k; i++) {
+    for (let j = 0; j < k; j++) {
+      out[i * k + j] =
+        i === j ? (k === 1 ? 1 : 1 - rate) : mode === 'pairflip' ? (j === (i + 1) % k ? rate : 0) : rate / (k - 1)
+    }
+  }
+  return fromStorage(out, [k, k], 'float64')
 }
 
 /**
@@ -67,7 +77,8 @@ export function noiseTransition(k: number, rate: number, mode: 'symmetric' | 'pa
  *
  * @param input - Classification data and its truth.
  * @param options - Rate, mode or transition matrix, and key.
- * @returns The noisy data; `truth.latents.cleanLabels`, `truth.latents.flipped` and `truth.extra.transition`.
+ * @returns The noisy data; `truth.latents.cleanLabels`, `truth.latents.flipped` and `truth.extra.transition` (a `[k, k]`
+ * float64 tensor).
  * @throws MdmlError with code `value` for non-classification data or a malformed transition matrix.
  * @example
  * ```ts
@@ -83,8 +94,23 @@ export function withLabelNoise<D extends ClassificationData>(
 ): Generated<D> {
   const { data, truth } = requireClassification(input, 'withLabelNoise') as Generated<D>
   const k = data.classes.length
-  const t = options.transition ?? noiseTransition(k, options.rate ?? 0.1, options.mode ?? 'symmetric')
-  if (t.length !== k || t.some((row) => row.length !== k || Math.abs(row.reduce((a, b) => a + b, 0) - 1) > 1e-9))
+  const given =
+    options.transition === undefined ? undefined : concreteOrThrow(asTensor(options.transition), 'withLabelNoise')
+  const t = cast(
+    given ?? noiseTransition(k, options.rate ?? 0.1, options.mode ?? 'symmetric'),
+    'float64',
+  ) as Tensor<'float64'>
+  const rowSum = (i: number): number => {
+    let total = 0
+    for (let j = 0; j < k; j++) total += t.data[i * k + j] ?? 0
+    return total
+  }
+  if (
+    t.shape.length !== 2 ||
+    t.shape[0] !== k ||
+    t.shape[1] !== k ||
+    Array.from({ length: k }, (_, i) => i).some((i) => Math.abs(rowSum(i) - 1) > 1e-9)
+  )
     throw new MdmlError('value', `withLabelNoise: the transition matrix must be ${k} by ${k} with rows summing to 1`)
   const n = data.y.shape[0] ?? 0
   const y = new Int32Array(n)
@@ -92,11 +118,12 @@ export function withLabelNoise<D extends ClassificationData>(
   const u = uniform(options.key, [n]).data
   for (let i = 0; i < n; i++) {
     const c = data.y.data[i] ?? 0
-    const row = t[c] ?? []
     // Invert the row's cumulative distribution at u_i.
-    let v = row.length - 1
+    const valid = c >= 0 && c < k
+    let v = valid ? k - 1 : -1
     let acc = 0
-    for (const [j, p] of row.entries()) {
+    for (let j = 0; valid && j < k; j++) {
+      const p = t.data[c * k + j] ?? 0
       acc += p
       if ((u[i] ?? 0) < acc && p > 0) {
         v = j

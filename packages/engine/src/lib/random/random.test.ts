@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { minOf } from '../base/index.ts'
-import { grad, sum } from '../autodiff/index.ts'
-import { tensor, toFlat, type TensorLike, type Value } from '../tensor/index.ts'
+import { grad } from '../autodiff/index.ts'
+import { sum, tensor, toFlat, type TensorLike, type Value } from '../tensor/index.ts'
 import {
   aliasSample,
   aliasTable,
