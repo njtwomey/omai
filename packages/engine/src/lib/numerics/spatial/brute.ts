@@ -34,6 +34,78 @@ export interface BruteOptions extends MetricOptions {
 }
 
 /**
+ * The `k` smallest of `values[offset .. offset + n)` (skipping the index `skip`), by a bounded max-heap: O(n log k)
+ * instead of sorting every candidate. They are left in `heapValue` and `heapIndex` sorted by value and then by index
+ * (ties resolved as a stable sort of the whole row would), with NaN last. Returns how many were selected.
+ */
+function selectSmallest(
+  values: ArrayLike<number>,
+  offset: number,
+  n: number,
+  k: number,
+  skip: number,
+  heapValue: Float64Array,
+  heapIndex: Int32Array,
+): number {
+  // The heap root is the worst kept candidate: the largest value, the largest index among equal values. Candidates come
+  // in ascending index, so one that ties the root is never better, and a strict comparison is enough.
+  let size = 0
+  const worse = (va: number, ia: number, vb: number, ib: number): boolean => va > vb || (va === vb && ia > ib)
+  const siftDown = (start: number): void => {
+    let i = start
+    for (;;) {
+      const left = 2 * i + 1
+      if (left >= size) return
+      const right = left + 1
+      const child =
+        right < size && worse(heapValue[right] ?? 0, heapIndex[right] ?? 0, heapValue[left] ?? 0, heapIndex[left] ?? 0)
+          ? right
+          : left
+      if (!worse(heapValue[child] ?? 0, heapIndex[child] ?? 0, heapValue[i] ?? 0, heapIndex[i] ?? 0)) return
+      swap(i, child)
+      i = child
+    }
+  }
+  const swap = (a: number, b: number): void => {
+    const v = heapValue[a] ?? 0
+    heapValue[a] = heapValue[b] ?? 0
+    heapValue[b] = v
+    const x = heapIndex[a] ?? 0
+    heapIndex[a] = heapIndex[b] ?? 0
+    heapIndex[b] = x
+  }
+  for (let j = 0; j < n && k > 0; j++) {
+    if (j === skip) continue
+    const raw = values[offset + j] ?? 0
+    const v = Number.isNaN(raw) ? Number.POSITIVE_INFINITY : raw
+    if (size < k) {
+      // Sift the new entry up.
+      let i = size++
+      heapValue[i] = v
+      heapIndex[i] = j
+      while (i > 0) {
+        const parent = (i - 1) >> 1
+        if (!worse(heapValue[i] ?? 0, heapIndex[i] ?? 0, heapValue[parent] ?? 0, heapIndex[parent] ?? 0)) break
+        swap(i, parent)
+        i = parent
+      }
+    } else if (v < (heapValue[0] ?? 0)) {
+      heapValue[0] = v
+      heapIndex[0] = j
+      siftDown(0)
+    }
+  }
+  // Heap sort in place: repeatedly move the worst to the end, leaving ascending (value, index) order.
+  const count = size
+  while (size > 1) {
+    swap(0, size - 1)
+    size -= 1
+    siftDown(0)
+  }
+  return count
+}
+
+/**
  * The k nearest neighbours by computing every distance (sklearn's brute algorithm): exact, O(n q d), the reference for
  * the trees and approximate indexes. Ties are broken by index.
  *
@@ -64,13 +136,13 @@ export function kNearest(
   if (k > n - (excludeSelf ? 1 : 0)) throw new MdmlError('value', `kNearest: k = ${k} exceeds the number of candidates`)
   const indices = new Int32Array(q * k)
   const flat = new Int32Array(q * k)
+  const heapValue = new Float64Array(Math.max(k, 0))
+  const heapIndex = new Int32Array(Math.max(k, 0))
   for (let r = 0; r < q; r++) {
-    const order = Array.from({ length: n }, (_, j) => j)
-      .filter((j) => !(excludeSelf && j === r))
-      .sort((a, b) => (values[r * n + a] ?? 0) - (values[r * n + b] ?? 0) || a - b)
-    for (let j = 0; j < k; j++) {
-      indices[r * k + j] = order[j] ?? 0
-      flat[r * k + j] = r * n + (order[j] ?? 0)
+    const size = selectSmallest(values, r * n, n, k, excludeSelf ? r : -1, heapValue, heapIndex)
+    for (let j = 0; j < size; j++) {
+      indices[r * k + j] = heapIndex[j] ?? 0
+      flat[r * k + j] = r * n + (heapIndex[j] ?? 0)
     }
   }
   const distances = reshape(take(reshape(d, [-1]), fromStorage(flat, [q * k], 'int32'), 0), [q, k])
