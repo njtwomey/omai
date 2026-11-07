@@ -3,11 +3,73 @@
 // term (forward mode through the recurrences, as in Moore 1982 and Boik and Robison-Cox 1998), so they are as accurate
 // as the values themselves, including in the tails; implicit reparameterisation of gamma, beta and Dirichlet samples
 // depends on them.
-import { digamma, digammaDiff, EPS, lbeta, lgamma, TINY } from './_kernels.ts'
+import { digamma, digammaDiff, EPS, lbeta, lgamma, stirlingCorrection, TINY } from './_kernels.ts'
 
 const MAXIT = 100000
 const BIG = 4.503599627370496e15
 const BIGINV = 2.220446049250313e-16
+
+const LOG_SQRT_2PI = 0.9189385332046727
+
+/** ln(1 + u) - u, without the cancellation of the two terms for small |u| (the series -u^2/2 + u^3/3 - ...). */
+function log1pmx(u: number): number {
+  if (Math.abs(u) >= 0.25) return Math.log1p(u) - u
+  let power = u
+  let sum = 0
+  for (let k = 2; k < 60; k++) {
+    power *= -u
+    const term = power / k
+    sum += term
+    if (Math.abs(term) <= 1e-18 * Math.abs(sum)) break
+  }
+  return sum
+}
+
+/** The exact product of two numbers as an unevaluated sum p + e (Dekker's splitting; there is no fused multiply-add). */
+function twoProd(a: number, b: number): [number, number] {
+  const p = a * b
+  const ca = 134217729 * a
+  const ah = ca - (ca - a)
+  const al = a - ah
+  const cb = 134217729 * b
+  const bh = cb - (cb - b)
+  const bl = b - bh
+  return [p, ah * bh - p + ah * bl + al * bh + al * bl]
+}
+
+// Above this size of a shape parameter the log of the prefix of the series and fractions, a ln x - x - lgamma(a) or
+// a ln x + b ln(1 - x) - lbeta(a, b), is a difference of terms of order a that agree to the last digits: their rounding
+// (a eps, 1e-9 at a = 1e7) is the error of the value. The prefix is then formed from the Stirling series in the
+// variable u = x / mu - 1 around the mode, where it is a sum of terms of order one.
+const STIRLING_GAMMA = 1000
+const STIRLING_BETA = 10000
+
+/** log (x^a e^-x / Gamma(a)), the prefix of the incomplete gamma function, accurate for large a. */
+function gammaPrefix(a: number, x: number): number {
+  if (a < STIRLING_GAMMA) return a * Math.log(x) - x - lgamma(a)
+  // Gamma(a) = sqrt(2 pi) a^(a - 1/2) e^-a e^corr, so the prefix is a (ln(1 + u) - u) + (1/2) ln(a / 2 pi) - corr.
+  return a * log1pmx((x - a) / a) + 0.5 * Math.log(a) - LOG_SQRT_2PI - stirlingCorrection(a)
+}
+
+/** log (x^a y^b / B(a, b)) with y = 1 - x given accurately (the caller may know it better than 1 - x), for large a or b. */
+function betaPrefix(a: number, b: number, x: number, y: number): number {
+  if (Math.max(a, b) < STIRLING_BETA) return a * Math.log(x) + b * Math.log1p(-x) - lbeta(a, b)
+  if (Math.min(a, b) >= 10) {
+    // With mu = a / (a + b): x^a y^b / B = sqrt(a b / (a + b) / 2 pi) e^-corr exp(a (ln(1 + u) - u) + b (ln(1 + v) - v)),
+    // u = x / mu - 1, v = y / (1 - mu) - 1, (the linear terms cancel since a u + b v = 0 up to the rounding of y).
+    const s = a + b
+    const [px, ex] = twoProd(x, s)
+    const [py, ey] = twoProd(y, s)
+    const u = (px - a + ex) / a
+    const v = (py - b + ey) / b
+    const corr = stirlingCorrection(a) + stirlingCorrection(b) - stirlingCorrection(s)
+    return a * log1pmx(u) + b * log1pmx(v) + 0.5 * Math.log((a * b) / s) - LOG_SQRT_2PI - corr
+  }
+  // One parameter small: the terms are of order one except a ln x or b ln y, formed from the better of x and y.
+  const lx = x < 0.5 ? Math.log(x) : Math.log1p(-y)
+  const ly = y < 0.5 ? Math.log(y) : Math.log1p(-x)
+  return a * lx + b * ly - lbeta(a, b)
+}
 
 /** A value with its derivatives with respect to the first and second shape parameters. */
 interface Dual {
@@ -34,7 +96,7 @@ function gammaPSeries(a: number, x: number): { logP: number; dlogP: number } {
     dans += dc
     if (c <= EPS * ans && Math.abs(dc) <= EPS * Math.abs(dans) + EPS * EPS) break
   }
-  const logax = a * Math.log(x) - x - lgamma(a)
+  const logax = gammaPrefix(a, x)
   // P = (ax / a) ans; d log P / da = ln x - psi(a) - 1/a + dans / ans.
   return { logP: logax - Math.log(a) + Math.log(ans), dlogP: Math.log(x) - digamma(a) - 1 / a + dans / ans }
 }
@@ -94,7 +156,7 @@ function gammaQFraction(a: number, x: number): { logQ: number; dlogQ: number } {
     }
     if (t <= EPS && dt <= 1e-15) break
   }
-  const logax = a * Math.log(x) - x - lgamma(a)
+  const logax = gammaPrefix(a, x)
   return { logQ: logax + Math.log(ans), dlogQ: Math.log(x) - digamma(a) + dans / ans }
 }
 
@@ -247,14 +309,21 @@ function logTailNewton(a: number, start: number, upper: boolean, target: number)
 // ---------------------------------------------------------------------------------------------------------------------
 // Incomplete beta: the Numerical Recipes continued fraction with derivatives in a and b carried through modified Lentz.
 
-function betaFraction(a: number, b: number, x: number): Dual {
+// `y` is 1 - x, known accurately by the caller. Near x = 1 with a large and b small the first terms of the fraction are
+// 1 + (a quantity close to -1): the first denominator 1 - (a + b) x / (a + 1) and the odd-step terms 1 + d_m, with
+// d_m = -(a + m)(a + b + m) x / ((a + 2m)(a + 1 + 2m)), each lose their digits to the cancellation (1e-9 relative at
+// a = 5e7). They are formed instead from y (1 - b + (a + b) y) / (a + 1), and (1 + d_m) = (a (1 + 2m - b) + m (2 + 3m - b) +
+// (a + m)(a + b + m) y) / ((a + 2m)(a + 1 + 2m)), and the deviations c - 1 and d - 1 are carried beside c and d so
+// that 1 + aa / c and 1 + aa d are (1 + aa) plus a correction, not a difference of numbers that agree.
+function betaFraction(a: number, b: number, x: number, y: number): Dual {
   const qab = a + b
   const qap = a + 1
   const qam = a - 1
   let c = 1
   let dca = 0
   let dcb = 0
-  let d = 1 - (qab * x) / qap
+  const nearOne = x > 0.5
+  let d = nearOne ? (1 - b + qab * y) / qap : 1 - (qab * x) / qap
   let dda = (-x * (1 - b)) / (qap * qap)
   let ddb = -x / qap
   if (Math.abs(d) < TINY) {
@@ -262,6 +331,9 @@ function betaFraction(a: number, b: number, x: number): Dual {
     dda = 0
     ddb = 0
   }
+  // d - 1 for the reciprocal below: (1 - d0) / d0 with 1 - d0 = (a + b) x / (a + 1).
+  let dm1 = nearOne ? (qab * x) / qap / d : 1 / d - 1
+  let cm1 = 0
   d = 1 / d
   dda = -dda * d * d
   ddb = -ddb * d * d
@@ -270,9 +342,11 @@ function betaFraction(a: number, b: number, x: number): Dual {
   let dhb = ddb
   // Returns whether the value and both derivatives have stopped changing. The value alone is not enough: when b is a
   // small integer the fraction terminates (a numerator m (b - m) x vanishes) while its derivative in b does not.
-  const step = (aa: number, daa: number, dab: number): boolean => {
-    // d <- 1 / (1 + aa d), c <- 1 + aa / c, h <- h d c, with derivatives.
-    let nd = 1 + aa * d
+  const step = (aa: number, daa: number, dab: number, onePlus: number = 1 + aa): boolean => {
+    // d <- 1 / (1 + aa d), c <- 1 + aa / c, h <- h d c, with derivatives; 1 + aa d = (1 + aa) + aa (d - 1) and
+    // 1 + aa / c = (1 + aa) - aa (c - 1) / c.
+    const aad = aa * d
+    let nd = nearOne ? onePlus + aa * dm1 : 1 + aad
     let ndA = daa * d + aa * dda
     let ndB = dab * d + aa * ddb
     if (Math.abs(nd) < TINY) {
@@ -280,7 +354,8 @@ function betaFraction(a: number, b: number, x: number): Dual {
       ndA = 0
       ndB = 0
     }
-    let nc = 1 + aa / c
+    let nc = nearOne ? onePlus - (aa * cm1) / c : 1 + aa / c
+    const aac = aa / c
     let ncA = daa / c - (aa * dca) / (c * c)
     let ncB = dab / c - (aa * dcb) / (c * c)
     if (Math.abs(nc) < TINY) {
@@ -288,6 +363,8 @@ function betaFraction(a: number, b: number, x: number): Dual {
       ncA = 0
       ncB = 0
     }
+    dm1 = -aad / nd
+    cm1 = aac
     d = 1 / nd
     dda = -ndA * d * d
     ddb = -ndB * d * d
@@ -311,17 +388,26 @@ function betaFraction(a: number, b: number, x: number): Dual {
     const ev = (m * (b - m) * x) / ((qam + m2) * (a + m2))
     const evenDone = step(ev, -ev * (1 / (qam + m2) + 1 / (a + m2)), (m * x) / ((qam + m2) * (a + m2)))
     const od = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2))
-    const oddDone = step(od, od * (1 / (a + m) + 1 / (qab + m) - 1 / (a + m2) - 1 / (qap + m2)), od / (qab + m))
+    const onePlusOd =
+      nearOne && 1 + m2 - b > 0 && 2 + 3 * m - b > 0
+        ? (a * (1 + m2 - b) + m * (2 + 3 * m - b) + (a + m) * (qab + m) * y) / ((a + m2) * (qap + m2))
+        : 1 + od
+    const oddDone = step(
+      od,
+      od * (1 / (a + m) + 1 / (qab + m) - 1 / (a + m2) - 1 / (qap + m2)),
+      od / (qab + m),
+      onePlusOd,
+    )
     if (evenDone && oddDone && m > 1) break
   }
   return { v: h, da: dha, db: dhb }
 }
 
 /** I_x(a, b) through the fraction for the side where it converges, with d/da and d/db. */
-function betaDual(a: number, b: number, x: number): Dual {
+function betaDual(a: number, b: number, x: number, y: number = 1 - x): Dual {
   if (x < (a + 1) / (a + b + 2)) {
-    const f = betaFraction(a, b, x)
-    const front = Math.exp(a * Math.log(x) + b * Math.log1p(-x) - lbeta(a, b)) / a
+    const f = betaFraction(a, b, x, y)
+    const front = Math.exp(betaPrefix(a, b, x, y)) / a
     const v = front * f.v
     return {
       v,
@@ -330,8 +416,8 @@ function betaDual(a: number, b: number, x: number): Dual {
     }
   }
   // I_x(a, b) = 1 - I_{1-x}(b, a).
-  const f = betaFraction(b, a, 1 - x)
-  const front = Math.exp(b * Math.log1p(-x) + a * Math.log(x) - lbeta(a, b)) / b
+  const f = betaFraction(b, a, y, x)
+  const front = Math.exp(betaPrefix(a, b, x, y)) / b
   const w = front * f.v
   // f.da is d/d(first parameter of the swapped fraction) = d/db here, and f.db = d/da.
   return {
@@ -350,6 +436,12 @@ export function betainc(a: number, b: number, x: number): number {
   if (invalidBeta(a, b, x)) return Number.NaN
   if (x === 0 || x === 1) return x
   return betaDual(a, b, x).v
+}
+
+/** I_x(a, b) for a caller that knows both x and y = 1 - x more accurately than the subtraction gives (x near 1). */
+function betaincXY(a: number, b: number, x: number, y: number): number {
+  if (x === 0 || y === 0) return x === 0 ? 0 : 1
+  return betaDual(a, b, x, y).v
 }
 
 /** dI_x(a, b)/da. */
@@ -445,9 +537,9 @@ export function stdtr(df: number, t: number): number {
   if (t === -Infinity) return 0
   const t2 = t * t
   // tail = P(T < -|t|) = I_x(df / 2, 1 / 2) / 2 with x = df / (df + t^2): accurate when small.
-  const tail = 0.5 * betainc(df / 2, 0.5, df / (df + t2))
+  const tail = 0.5 * betaincXY(df / 2, 0.5, df / (df + t2), t2 / (df + t2))
   if (tail < 0.25) return t > 0 ? 1 - tail : tail
   // Near the centre: 1/2 +- I_z(1/2, df / 2) / 2 with z = t^2 / (df + t^2), formed directly (not as 1 - x).
-  const centre = 0.5 * betainc(0.5, df / 2, t2 / (df + t2))
+  const centre = 0.5 * betaincXY(0.5, df / 2, t2 / (df + t2), df / (df + t2))
   return t > 0 ? 0.5 + centre : 0.5 - centre
 }
