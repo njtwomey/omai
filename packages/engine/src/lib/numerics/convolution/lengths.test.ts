@@ -14,11 +14,9 @@ const arr = (v: unknown): number[] => toArray(v as never) as number[]
 /** The full linear convolution by its definition. */
 function direct(a: readonly number[], v: readonly number[]): number[] {
   const out = new Array<number>(a.length + v.length - 1).fill(0)
-  a.forEach((x, i) =>
-    v.forEach((y, j) => {
-      out[i + j] = (out[i + j] ?? 0) + x * y
-    }),
-  )
+  for (const [i, x] of a.entries()) {
+    for (const [j, y] of v.entries()) out[i + j] = (out[i + j] ?? 0) + x * y
+  }
   return out
 }
 

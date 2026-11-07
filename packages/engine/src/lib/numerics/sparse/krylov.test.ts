@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toFlat, type Tensor } from '../../tensor/index.ts'
+import { type Tensor, toFlat } from '../../tensor/index.ts'
 import * as S from './index.ts'
 
 // Small systems with known solutions for cg, gmres, minres and bicgstab: the status, the iteration count where theory fixes

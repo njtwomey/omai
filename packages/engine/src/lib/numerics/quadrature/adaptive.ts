@@ -400,7 +400,6 @@ export function tanhSinh(
   options: { readonly tol?: number; readonly maxLevel?: number } = {},
 ): { readonly value: Value; readonly levels: number; readonly converged: boolean; readonly status: RunStatus } {
   const half = (b - a) / 2
-  const mid = (a + b) / 2
   const estimate = (h: number): Value => {
     const ts: number[] = []
     for (let t = -4; t <= 4 + 1e-12; t += h) ts.push(t)

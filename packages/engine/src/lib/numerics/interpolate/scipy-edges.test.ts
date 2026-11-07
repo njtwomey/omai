@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toArray, type TensorLike, type Value } from '../../tensor/index.ts'
+import { toArray, type Value } from '../../tensor/index.ts'
 import * as I from './index.ts'
 
 // Interpolants on awkward data (two and three points, flat monotone stretches, periodic data, queries on, outside and

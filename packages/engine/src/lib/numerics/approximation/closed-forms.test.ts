@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { exp, item, log, mul, sin, sqrt, square, sum, type Value } from '../../tensor/index.ts'
-import { toArray } from '../../tensor/index.ts'
-import { iv } from '../special/index.ts'
+import { exp, item, log, mul, sin, sqrt, square, sum, toArray, type Value } from '../../tensor/index.ts'
 import { monicFromNodes, polysub } from '../polynomial/index.ts'
+import { iv } from '../special/index.ts'
 import * as A from './index.ts'
 
 // Sequence acceleration, Pade approximants, continued fractions, minimax and Chebyshev approximation, and the
@@ -12,7 +11,10 @@ const PI = Math.PI
 const partial = (term: (k: number) => number, n: number): number[] => {
   const out: number[] = []
   let s = 0
-  for (let k = 0; k < n; k++) out.push((s += term(k)))
+  for (let k = 0; k < n; k++) {
+    s += term(k)
+    out.push(s)
+  }
   return out
 }
 
@@ -26,10 +28,10 @@ describe('approximation against closed forms', () => {
       // Partial sums of a geometric series (limit 2) are exact after aitken and shanks of order 1; two geometric terms
       // (0.5^k + 0.2^k, limit 3.25) need order 2.
       const geometric = partial((k) => 0.5 ** k, 9)
-      arr(A.aitken(geometric)).forEach((v, i) => check(`aitken geometric [${i}]`, v, 2, 1e-12))
-      arr(A.shanks(geometric, 1)).forEach((v, i) => check(`shanks 1 [${i}]`, v, 2, 1e-12))
+      for (const [i, v] of arr(A.aitken(geometric)).entries()) check(`aitken geometric [${i}]`, v, 2, 1e-12)
+      for (const [i, v] of arr(A.shanks(geometric, 1)).entries()) check(`shanks 1 [${i}]`, v, 2, 1e-12)
       const two = partial((k) => 0.5 ** k + 0.2 ** k, 9)
-      arr(A.shanks(two, 2)).forEach((v, i) => check(`shanks 2 [${i}]`, v, 3.25, 1e-10))
+      for (const [i, v] of arr(A.shanks(two, 2)).entries()) check(`shanks 2 [${i}]`, v, 3.25, 1e-10)
       expect(arr(A.aitken([1, 1.5, 1.75]))).toEqual([2])
       // The Leibniz series for pi: 12 terms are 0.04 off; Aitken is 100 times closer, the epsilon algorithm 1e-8.
       const leibniz = partial((k) => (4 * (k % 2 ? -1 : 1)) / (2 * k + 1), 12)
@@ -120,33 +122,31 @@ describe('approximation against closed forms', () => {
         expect.objectContaining({ code: 'convergence' }),
       )
     }
-    {
-      // twoSum and twoProduct return the rounded result and its exact error, so that s + e is the true sum or product.
-      expect(A.twoSum(0.1, 0.2)).toEqual([0.30000000000000004, -2.7755575615628914e-17])
-      expect(A.twoSum(1e16, 1)).toEqual([1e16, 1])
-      expect(A.twoProduct(1 + 2 ** -30, 1 + 2 ** -30)).toEqual([1 + 2 ** -29, 2 ** -60])
-      expect(A.twoProduct(3, 0.1)).toEqual([0.30000000000000004, -2.7755575615628914e-17])
-      // Neumaier's sum recovers the 1 in [1e16, 1, -1e16] that the naive and Kahan sums lose; fsum([0.1] * 10^6) = 100000.00000000001.
-      expect(
-        ['naive', 'kahan', 'neumaier', 'pairwise'].map((m) => A.compensatedSum([1e16, 1, -1e16], m as A.SumMethod)),
-      ).toEqual([0, 0, 1, 0])
-      expect(A.compensatedSum(new Array<number>(1e6).fill(0.1), 'neumaier')).toBeCloseTo(100000, 9)
-      // The condition number |x f'(x) / f(x)|: sqrt 1/2, exp x, log at e is 1, x^2 is 2; the propagated error of x y.
-      expect(A.conditionNumber((x) => sqrt(x), 4)).toBeCloseTo(0.5, 7)
-      expect(A.conditionNumber((x) => exp(x), 10)).toBeCloseTo(10, 6)
-      expect(A.conditionNumber((x) => log(x), Math.E)).toBeCloseTo(1, 6)
-      expect(A.conditionNumber((x) => square(x), 7)).toBeCloseTo(2, 6)
-      // f = x^2 + y^2 at (3, 4) with sigma (0.1, 0.2): sqrt((6 * 0.1)^2 + (8 * 0.2)^2).
-      expect(A.propagateError((x) => sum(square(x)), [3, 4], [0.1, 0.2])).toBeCloseTo(Math.sqrt(0.36 + 2.56), 10)
-      expect(A.significantDigits(1.0001, 1)).toBeCloseTo(4, 9)
-      expect(A.significantDigits(3.14159, PI)).toBeCloseTo(-Math.log10(Math.abs(3.14159 - PI) / PI), 12)
-      expect(A.significantDigits(2, 2)).toBe(Number.POSITIVE_INFINITY)
-      // polysub: [1, 2, 3] - [1, 2] = [0, 0, 3], a - a = [0], and the monic Gauss polynomials: Legendre n = 3, 4, Chebyshev n = 3.
-      expect(arr(polysub([1, 2, 3], [1, 2]))).toEqual([0, 0, 3])
-      expect(arr(polysub([1, 2], [1, 2]))).toEqual([0])
-      expect(arr(monicFromNodes('legendre', 3))).toEqual([0, -0.6, 0, 1].map((e) => expect.closeTo(e, 14)))
-      expect(arr(monicFromNodes('legendre', 4))).toEqual([3 / 35, 0, -6 / 7, 0, 1].map((e) => expect.closeTo(e, 14)))
-      expect(arr(monicFromNodes('chebyshev', 3))).toEqual([0, -0.75, 0, 1].map((e) => expect.closeTo(e, 14)))
-    }
+    // twoSum and twoProduct return the rounded result and its exact error, so that s + e is the true sum or product.
+    expect(A.twoSum(0.1, 0.2)).toEqual([0.30000000000000004, -2.7755575615628914e-17])
+    expect(A.twoSum(1e16, 1)).toEqual([1e16, 1])
+    expect(A.twoProduct(1 + 2 ** -30, 1 + 2 ** -30)).toEqual([1 + 2 ** -29, 2 ** -60])
+    expect(A.twoProduct(3, 0.1)).toEqual([0.30000000000000004, -2.7755575615628914e-17])
+    // Neumaier's sum recovers the 1 in [1e16, 1, -1e16] that the naive and Kahan sums lose; fsum([0.1] * 10^6) = 100000.00000000001.
+    expect(
+      ['naive', 'kahan', 'neumaier', 'pairwise'].map((m) => A.compensatedSum([1e16, 1, -1e16], m as A.SumMethod)),
+    ).toEqual([0, 0, 1, 0])
+    expect(A.compensatedSum(new Array<number>(1e6).fill(0.1), 'neumaier')).toBeCloseTo(100000, 9)
+    // The condition number |x f'(x) / f(x)|: sqrt 1/2, exp x, log at e is 1, x^2 is 2; the propagated error of x y.
+    expect(A.conditionNumber((x) => sqrt(x), 4)).toBeCloseTo(0.5, 7)
+    expect(A.conditionNumber((x) => exp(x), 10)).toBeCloseTo(10, 6)
+    expect(A.conditionNumber((x) => log(x), Math.E)).toBeCloseTo(1, 6)
+    expect(A.conditionNumber((x) => square(x), 7)).toBeCloseTo(2, 6)
+    // f = x^2 + y^2 at (3, 4) with sigma (0.1, 0.2): sqrt((6 * 0.1)^2 + (8 * 0.2)^2).
+    expect(A.propagateError((x) => sum(square(x)), [3, 4], [0.1, 0.2])).toBeCloseTo(Math.sqrt(0.36 + 2.56), 10)
+    expect(A.significantDigits(1.0001, 1)).toBeCloseTo(4, 9)
+    expect(A.significantDigits(Math.PI, PI)).toBeCloseTo(-Math.log10(Math.abs(Math.PI - PI) / PI), 12)
+    expect(A.significantDigits(2, 2)).toBe(Number.POSITIVE_INFINITY)
+    // polysub: [1, 2, 3] - [1, 2] = [0, 0, 3], a - a = [0], and the monic Gauss polynomials: Legendre n = 3, 4, Chebyshev n = 3.
+    expect(arr(polysub([1, 2, 3], [1, 2]))).toEqual([0, 0, 3])
+    expect(arr(polysub([1, 2], [1, 2]))).toEqual([0])
+    expect(arr(monicFromNodes('legendre', 3))).toEqual([0, -0.6, 0, 1].map((e) => expect.closeTo(e, 14)))
+    expect(arr(monicFromNodes('legendre', 4))).toEqual([3 / 35, 0, -6 / 7, 0, 1].map((e) => expect.closeTo(e, 14)))
+    expect(arr(monicFromNodes('chebyshev', 3))).toEqual([0, -0.75, 0, 1].map((e) => expect.closeTo(e, 14)))
   })
 })

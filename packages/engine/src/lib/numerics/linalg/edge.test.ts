@@ -98,46 +98,44 @@ const shapes: readonly (readonly [string, Mat, number])[] = [
 
 describe('factorisations on rank-deficient, ill-conditioned and extreme-scale matrices', () => {
   it('QR, SVD, pinv, nullSpace and matrixRank satisfy their identities and numpy on 14 awkward matrices', () => {
-    {
-      for (const [name, a, rank] of shapes) {
-        const size = fro(a)
-        const m = a.length
-        const n = a[0]?.length ?? 0
-        const k = Math.min(m, n)
-        // A = QR with orthonormal Q and upper-triangular R.
-        const { q, r } = L.qr(a)
-        expect(fro(sub(mm(mat(q), mat(r)), a)), `${name}: A - QR`).toBeLessThanOrEqual(1e-14 * size * m)
-        expect(fro(sub(mm(t(mat(q)), mat(q)), eye(k))), `${name}: Q'Q - I`).toBeLessThan(1e-13)
-        expect(fro(sub(mat(r), upper(mat(r)))), `${name}: below the diagonal of R`).toBe(0)
-        // A = U diag(s) Vh with orthonormal U and Vh, s non-negative and descending.
-        const { u, s, vh } = L.svd(a)
-        const [ua, sa, va] = [mat(u), vec(s), mat(vh)]
-        const us = ua.map((row) => row.map((x, j) => x * (sa[j] ?? 0)))
-        expect(fro(sub(mm(us, va), a)), `${name}: A - U S Vh`).toBeLessThanOrEqual(1e-14 * size * m)
-        expect(fro(sub(mm(t(ua), ua), eye(k))), `${name}: U'U - I`).toBeLessThan(1e-13)
-        expect(fro(sub(mm(va, t(va)), eye(k))), `${name}: Vh Vh' - I`).toBeLessThan(1e-13)
-        expect(
-          sa.every((x, i) => x >= 0 && (i === 0 || x <= (sa[i - 1] ?? 0))),
-          `${name}: s sorted`,
-        ).toBe(true)
-        expect(L.matrixRank(a), `${name}: rank`).toBe(rank)
-        // The four Penrose conditions of the pseudo-inverse (A+ has the scale of 1 / A, so they are relative).
-        const p = mat(L.pinv(a))
-        const [ap, pa] = [mm(a, p), mm(p, a)]
-        // Hilbert 12 keeps singular values down to 3e-14, so its pseudo-inverse carries errors of cond * eps (numpy's too).
-        const loose = name.startsWith('Hilbert 12') ? 1e7 : 1
-        expect(fro(sub(mm(ap, a), a)), `${name}: A A+ A = A`).toBeLessThanOrEqual(1e-9 * size * loose)
-        expect(fro(sub(mm(pa, p), p)), `${name}: A+ A A+ = A+`).toBeLessThanOrEqual(1e-9 * fro(p) * loose)
-        expect(fro(sub(ap, t(ap))), `${name}: A A+ symmetric`).toBeLessThanOrEqual(1e-7 * loose)
-        expect(fro(sub(pa, t(pa))), `${name}: A+ A symmetric`).toBeLessThanOrEqual(1e-7 * loose)
-        // The null space: n - rank orthonormal columns that A maps to zero.
-        const nul = mat(L.nullSpace(a))
-        const cols = nul[0]?.length ?? 0
-        expect(cols, `${name}: nullity`).toBe(n - rank)
-        if (cols > 0) {
-          expect(fro(mm(a, nul)), `${name}: A N = 0`).toBeLessThanOrEqual(1e-12 * size)
-          expect(fro(sub(mm(t(nul), nul), eye(cols))), `${name}: N'N - I`).toBeLessThan(1e-12)
-        }
+    for (const [name, a, rank] of shapes) {
+      const size = fro(a)
+      const m = a.length
+      const n = a[0]?.length ?? 0
+      const k = Math.min(m, n)
+      // A = QR with orthonormal Q and upper-triangular R.
+      const { q, r } = L.qr(a)
+      expect(fro(sub(mm(mat(q), mat(r)), a)), `${name}: A - QR`).toBeLessThanOrEqual(1e-14 * size * m)
+      expect(fro(sub(mm(t(mat(q)), mat(q)), eye(k))), `${name}: Q'Q - I`).toBeLessThan(1e-13)
+      expect(fro(sub(mat(r), upper(mat(r)))), `${name}: below the diagonal of R`).toBe(0)
+      // A = U diag(s) Vh with orthonormal U and Vh, s non-negative and descending.
+      const { u, s, vh } = L.svd(a)
+      const [ua, sa, va] = [mat(u), vec(s), mat(vh)]
+      const us = ua.map((row) => row.map((x, j) => x * (sa[j] ?? 0)))
+      expect(fro(sub(mm(us, va), a)), `${name}: A - U S Vh`).toBeLessThanOrEqual(1e-14 * size * m)
+      expect(fro(sub(mm(t(ua), ua), eye(k))), `${name}: U'U - I`).toBeLessThan(1e-13)
+      expect(fro(sub(mm(va, t(va)), eye(k))), `${name}: Vh Vh' - I`).toBeLessThan(1e-13)
+      expect(
+        sa.every((x, i) => x >= 0 && (i === 0 || x <= (sa[i - 1] ?? 0))),
+        `${name}: s sorted`,
+      ).toBe(true)
+      expect(L.matrixRank(a), `${name}: rank`).toBe(rank)
+      // The four Penrose conditions of the pseudo-inverse (A+ has the scale of 1 / A, so they are relative).
+      const p = mat(L.pinv(a))
+      const [ap, pa] = [mm(a, p), mm(p, a)]
+      // Hilbert 12 keeps singular values down to 3e-14, so its pseudo-inverse carries errors of cond * eps (numpy's too).
+      const loose = name.startsWith('Hilbert 12') ? 1e7 : 1
+      expect(fro(sub(mm(ap, a), a)), `${name}: A A+ A = A`).toBeLessThanOrEqual(1e-9 * size * loose)
+      expect(fro(sub(mm(pa, p), p)), `${name}: A+ A A+ = A+`).toBeLessThanOrEqual(1e-9 * fro(p) * loose)
+      expect(fro(sub(ap, t(ap))), `${name}: A A+ symmetric`).toBeLessThanOrEqual(1e-7 * loose)
+      expect(fro(sub(pa, t(pa))), `${name}: A+ A symmetric`).toBeLessThanOrEqual(1e-7 * loose)
+      // The null space: n - rank orthonormal columns that A maps to zero.
+      const nul = mat(L.nullSpace(a))
+      const cols = nul[0]?.length ?? 0
+      expect(cols, `${name}: nullity`).toBe(n - rank)
+      if (cols > 0) {
+        expect(fro(mm(a, nul)), `${name}: A N = 0`).toBeLessThanOrEqual(1e-12 * size)
+        expect(fro(sub(mm(t(nul), nul), eye(cols))), `${name}: N'N - I`).toBeLessThan(1e-12)
       }
     }
     {
@@ -394,10 +392,11 @@ describe('eigh, expm, sqrtm and logm against scipy on clustered, defective and l
           `${name}: ascending`,
         ).toBe(true)
         // The spectrum of the symmetric matrix: absolute accuracy eps times its largest eigenvalue.
-        const close = (got: readonly number[], want: readonly number[]): void =>
-          got.forEach((g, i) =>
-            expect(Math.abs(g - (want[i] ?? 0)), `${name}: w[${i}]`).toBeLessThanOrEqual(1e-14 * size * n),
-          )
+        const close = (got: readonly number[], want: readonly number[]): void => {
+          for (const [i, g] of got.entries()) {
+            expect(Math.abs(g - (want[i] ?? 0)), `${name}: w[${i}]`).toBeLessThanOrEqual(1e-14 * size * n)
+          }
+        }
         if (expected) close(w, expected)
         close(vec(L.eigvalsh(a)), w)
       }
@@ -534,7 +533,7 @@ describe('eigh, expm, sqrtm and logm against scipy on clustered, defective and l
             [0, 1e-8],
           ],
           [
-            [1.4142135623730951, 0],
+            [Math.SQRT2, 0],
             [0, 1e-4],
           ],
         ],

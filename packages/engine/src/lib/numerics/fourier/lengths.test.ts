@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toArray, type ComplexValue } from '../../tensor/index.ts'
+import { type ComplexValue, toArray } from '../../tensor/index.ts'
 import * as F from './index.ts'
 
 // FFTs at the lengths where the algorithm changes (1, 2, odd, prime, power of two, 4093, 65537) against numpy.fft rows
@@ -124,7 +124,7 @@ describe('fft at awkward lengths', () => {
         near(`fft n=${n} im[${k}]`, im[k] ?? Number.NaN, i, 1e-11)
       }
       const [back] = parts(F.ifft(F.fft(x)))
-      back.forEach((v, j) => near(`ifft(fft) n=${n}[${j}]`, v, x[j] ?? 0, 1e-12))
+      for (const [j, v] of back.entries()) near(`ifft(fft) n=${n}[${j}]`, v, x[j] ?? 0, 1e-12)
       // The real transform is the first n / 2 + 1 bins, and irfft with the length n recovers odd and even lengths.
       const half = Math.floor(n / 2) + 1
       const [rr, ri] = parts(F.rfft(x))
@@ -133,9 +133,8 @@ describe('fft at awkward lengths', () => {
         near(`rfft n=${n} re[${k}]`, rr[k] ?? Number.NaN, re[k] ?? 0, 1e-11)
         near(`rfft n=${n} im[${k}]`, ri[k] ?? Number.NaN, im[k] ?? 0, 1e-11)
       }
-      ;(toArray(F.irfft(F.rfft(x), n)) as number[]).forEach((v, j) =>
-        near(`irfft(rfft) n=${n}[${j}]`, v, x[j] ?? 0, 1e-12),
-      )
+      const roundTrip = toArray(F.irfft(F.rfft(x), n)) as number[]
+      for (const [j, v] of roundTrip.entries()) near(`irfft(rfft) n=${n}[${j}]`, v, x[j] ?? 0, 1e-12)
     }
     expect(failures).toEqual([])
   })

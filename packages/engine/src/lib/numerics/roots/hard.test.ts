@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import * as R from './index.ts'
 
+const finders = { bisect: R.bisect, brentq: R.brentq, ridder: R.ridder, toms748: R.toms748 } as const
+
 // Hard functions for the scalar root finders: a triple root, a step, a steep tanh, Wilkinson's polynomial, tiny values.
 // The expected [root, iterations, converged] of bisect, brentq and ridder are scipy.optimize's (1.18, same algorithms,
 // the same last digits); toms748 is a different implementation of the same method, so it is held to the true root.
@@ -57,7 +59,7 @@ describe('scalar root finders on hard functions', () => {
       const failures: string[] = []
       for (const [name, finder, root, iterations, converged] of scipyRows) {
         const [f, a, b, truth] = functions[name] as readonly [Scalar, number, number, number]
-        const r = R[finder](f, a, b)
+        const r = finders[finder](f, a, b)
         const label = `${finder} on ${name}`
         if (r.converged !== converged) failures.push(`${label}: converged ${r.converged}, scipy ${converged}`)
         if (r.status !== (converged ? 'converged' : 'completed')) failures.push(`${label}: status ${r.status}`)
@@ -72,37 +74,33 @@ describe('scalar root finders on hard functions', () => {
       }
       expect(failures).toEqual([])
     }
-    {
-      for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
-        const at = R[finder]((x) => x * (x - 1), 0, 1)
-        expect([finder, at.root, at.iterations, at.converged]).toEqual([finder, 0, 0, true])
-        expect(R[finder]((x) => x - 0.5, 1, 0).root, `${finder} reversed`).toBeCloseTo(0.5, 11)
-        // The root 0 of a function with an infinite slope there, found to the absolute tolerance.
-        expect(Math.abs(R[finder](Math.cbrt, -1, 8).root), `${finder} cube root`).toBeLessThan(1e-11)
-        // f(1000) is Infinity; ridder's interpolation cannot use it, the others do.
-        if (finder !== 'ridder') {
-          const r = R[finder]((x) => Math.exp(x) - 1e100, 0, 1000)
-          expect(r.converged, `${finder} exp`).toBe(true)
-          expect(r.root, `${finder} exp`).toBeCloseTo(100 * Math.LN10, 9)
-        }
+    for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
+      const at = finders[finder]((x) => x * (x - 1), 0, 1)
+      expect([finder, at.root, at.iterations, at.converged]).toEqual([finder, 0, 0, true])
+      expect(finders[finder]((x) => x - 0.5, 1, 0).root, `${finder} reversed`).toBeCloseTo(0.5, 11)
+      // The root 0 of a function with an infinite slope there, found to the absolute tolerance.
+      expect(Math.abs(finders[finder](Math.cbrt, -1, 8).root), `${finder} cube root`).toBeLessThan(1e-11)
+      // f(1000) is Infinity; ridder's interpolation cannot use it, the others do.
+      if (finder !== 'ridder') {
+        const r = finders[finder]((x) => Math.exp(x) - 1e100, 0, 1000)
+        expect(r.converged, `${finder} exp`).toBe(true)
+        expect(r.root, `${finder} exp`).toBeCloseTo(100 * Math.LN10, 9)
       }
     }
-    {
-      for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
-        expect(() => R[finder]((x) => x * x + 1, -1, 1), `${finder} same signs`).toThrow(
-          expect.objectContaining({
-            code: 'value',
-            message: expect.stringContaining(`${finder}: f(a) and f(b) must have different signs`),
-          }),
+    for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
+      expect(() => finders[finder]((x) => x * x + 1, -1, 1), `${finder} same signs`).toThrow(
+        expect.objectContaining({
+          code: 'value',
+          message: expect.stringContaining(`${finder}: f(a) and f(b) must have different signs`),
+        }),
+      )
+      for (const [a, b] of [
+        [0, Number.POSITIVE_INFINITY],
+        [Number.NEGATIVE_INFINITY, 1],
+      ] as const) {
+        expect(() => finders[finder]((x) => x - 0.3, a, b), `${finder} on [${a}, ${b}]`).toThrow(
+          expect.objectContaining({ code: 'value', message: `${finder}: the bracket must be finite` }),
         )
-        for (const [a, b] of [
-          [0, Number.POSITIVE_INFINITY],
-          [Number.NEGATIVE_INFINITY, 1],
-        ] as const) {
-          expect(() => R[finder]((x) => x - 0.3, a, b), `${finder} on [${a}, ${b}]`).toThrow(
-            expect.objectContaining({ code: 'value', message: `${finder}: the bracket must be finite` }),
-          )
-        }
       }
     }
   })
@@ -113,7 +111,7 @@ describe('newton, secant and halley', () => {
     // [rows of scipy.optimize.newton: root, iterations]: x^2 = 2 by newton from 1 (5), cos x = x by secant (5), x^3 = 2 by
     // halley (four evaluations), and (x - 1)^3 from 3, where convergence is only linear (35 iterations to the tolerance 1e-6).
     const newton = R.newton((x) => x * x - 2, 1, { fprime: (x) => 2 * x })
-    expect([newton.root, newton.iterations, newton.status]).toEqual([1.4142135623730951, 5, 'converged'])
+    expect([newton.root, newton.iterations, newton.status]).toEqual([Math.SQRT2, 5, 'converged'])
     const secant = R.newton((x) => Math.cos(x) - x, 1)
     expect([secant.root, secant.iterations]).toEqual([expect.closeTo(0.7390851332151608, 12), 5])
     const halley = R.halley(
