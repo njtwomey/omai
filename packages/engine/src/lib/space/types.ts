@@ -175,6 +175,7 @@ export function real(low: number, high: number, options: Omit<RealSpace, 'kind' 
  * @param high - Upper bound.
  * @param options - Log scale, default and metadata.
  * @returns The space.
+ * @throws MdmlError with code `value` when the interval holds no integer (after rounding `low` up and `high` down).
  * @example
  * ```ts
  * import { int } from 'mdml-engine/space'
@@ -183,6 +184,7 @@ export function real(low: number, high: number, options: Omit<RealSpace, 'kind' 
  */
 export function int(low: number, high: number, options: Omit<IntSpace, 'kind' | 'low' | 'high'> = {}): IntSpace {
   checkInterval(low, high, options.log, 'int')
+  if (Math.ceil(low) > Math.floor(high)) throw new MdmlError('value', `int: [${low}, ${high}] contains no integer`)
   return { kind: 'int', low: Math.ceil(low), high: Math.floor(high), ...options }
 }
 
@@ -229,6 +231,8 @@ export function bool(meta: Omit<BoolSpace, 'kind'> = {}): BoolSpace {
  * @param shape - The shape.
  * @param meta - Default and metadata.
  * @returns The space.
+ * @throws MdmlError with code `value` for a shape that is not non-negative integers, a bound array whose length is not
+ *   the box's size, or a bound pair with `high < low`.
  * @example
  * ```ts
  * import { box } from 'mdml-engine/space'
@@ -241,6 +245,23 @@ export function box(
   shape: readonly number[],
   meta: Omit<BoxSpace, 'kind' | 'low' | 'high' | 'shape'> = {},
 ): BoxSpace {
+  if (shape.some((n) => !Number.isInteger(n) || n < 0)) {
+    throw new MdmlError('value', `box: shape entries must be non-negative integers, got [${shape.join(', ')}]`)
+  }
+  const size = shape.reduce((a, n) => a * n, 1)
+  for (const [name, bound] of [
+    ['low', low],
+    ['high', high],
+  ] as const) {
+    if (typeof bound !== 'number' && bound.length !== size) {
+      throw new MdmlError('value', `box: ${name} has ${bound.length} entries for a box of ${size} elements`)
+    }
+  }
+  for (let i = 0; i < size; i++) {
+    const lo = typeof low === 'number' ? low : (low[i] as number)
+    const hi = typeof high === 'number' ? high : (high[i] as number)
+    if (!(hi >= lo)) throw new MdmlError('value', `box: need high >= low, got [${lo}, ${hi}] at element ${i}`)
+  }
   return { kind: 'box', low, high, shape, ...meta }
 }
 
@@ -267,6 +288,7 @@ export function discrete(n: number, options: Omit<DiscreteSpace, 'kind' | 'n'> =
  * @param nvec - Number of values per coordinate.
  * @param meta - Default and metadata.
  * @returns The space.
+ * @throws MdmlError with code `value` unless every count is a positive integer.
  * @example
  * ```ts
  * import { multiDiscrete } from 'mdml-engine/space'
@@ -277,6 +299,9 @@ export function multiDiscrete(
   nvec: readonly number[],
   meta: Omit<MultiDiscreteSpace, 'kind' | 'nvec'> = {},
 ): MultiDiscreteSpace {
+  if (nvec.some((n) => !Number.isInteger(n) || n < 1)) {
+    throw new MdmlError('value', `multiDiscrete: every count must be a positive integer, got [${nvec.join(', ')}]`)
+  }
   return { kind: 'multiDiscrete', nvec, ...meta }
 }
 
@@ -286,6 +311,7 @@ export function multiDiscrete(
  * @param n - Length.
  * @param meta - Default and metadata.
  * @returns The space.
+ * @throws MdmlError with code `value` unless `n` is a positive integer.
  * @example
  * ```ts
  * import { multiBinary } from 'mdml-engine/space'
@@ -293,6 +319,7 @@ export function multiDiscrete(
  * ```
  */
 export function multiBinary(n: number, meta: Omit<MultiBinarySpace, 'kind' | 'n'> = {}): MultiBinarySpace {
+  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', `multiBinary: n must be a positive integer, got ${n}`)
   return { kind: 'multiBinary', n, ...meta }
 }
 
@@ -352,10 +379,10 @@ export function union(
   const names = Object.keys(options)
   if (names.length === 0) throw new MdmlError('value', 'union: need at least one option')
   const tag = meta.tag ?? 'kind'
-  if (meta.default !== undefined && !(meta.default in options))
+  if (meta.default !== undefined && !Object.hasOwn(options, meta.default))
     throw new MdmlError('value', `union: default '${meta.default}' is not an option`)
   for (const [name, option] of Object.entries(options))
-    if (tag in option.spaces)
+    if (Object.hasOwn(option.spaces, tag))
       throw new MdmlError('value', `union: option '${name}' has a knob named like the tag '${tag}'`)
   return { kind: 'union', options, ...meta }
 }

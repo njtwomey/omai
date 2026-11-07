@@ -62,6 +62,9 @@ describe('modes', () => {
     expect(solver.modeOf({ kind: 'gradient', learningRate: 0.1 }).name).toBe('gradient')
     expect(solver.modeOf(undefined).name).toBe('newton')
     expect(solver.modeOf({ kind: 'nope' }).name).toBe('newton')
+    // inherited object names are not modes
+    expect(solver.modeOf({ kind: 'constructor' }).name).toBe('newton')
+    expect(solver.modeOf({ kind: 'toString' }).name).toBe('newton')
   })
 
   it('dispatches make and params to the mode a configuration names, and keeps the mode’s extras', () => {

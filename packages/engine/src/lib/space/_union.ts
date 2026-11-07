@@ -18,7 +18,7 @@ export function optionOf(space: UnionSpace, value: SpaceValue | undefined): stri
   const fallback = space.default ?? (names[0] as string)
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return fallback
   const name = (value as Readonly<Record<string, SpaceValue>>)[tagOf(space)]
-  return typeof name === 'string' && name in space.options ? name : fallback
+  return typeof name === 'string' && Object.hasOwn(space.options, name) ? name : fallback
 }
 
 /** A union value split into the option it names and the option's own values (everything but the tag). */

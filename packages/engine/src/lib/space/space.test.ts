@@ -133,4 +133,22 @@ describe('spaces', () => {
     expect(() => union({ a: dict({}) }, { default: 'b' })).toThrow(/not an option/)
     expect(() => union({ a: dict({ kind: bool() }) })).toThrow(/named like the tag/)
   })
+
+  it('rejects empty or malformed spaces and inherited option names', () => {
+    const invalid: [string, () => unknown][] = [
+      ['an integer interval holding no integer', () => int(0.2, 0.8)],
+      ['a box with a fractional shape', () => box(0, 1, [1.5])],
+      ['a box with a negative shape', () => box(0, 1, [-1])],
+      ['a box whose bounds do not fill its shape', () => box([0, 0], [1, 1, 1], [2])],
+      ['a box with high below low', () => box([0, 2], [1, 1], [2])],
+      ['a multiDiscrete with a zero count', () => multiDiscrete([3, 0])],
+      ['a multiBinary of fractional length', () => multiBinary(2.5)],
+    ]
+    for (const [name, make] of invalid) expect(make, name).toThrow(expect.objectContaining({ code: 'value' }))
+    expect(int(0.2, 1.8).low).toBe(1)
+    expect(box(-Infinity, Infinity, [2]).shape).toEqual([2])
+    // `constructor` and `toString` are not options of a union, whatever the object prototype holds
+    const solver = union({ a: dict({}), b: dict({}) })
+    for (const kind of ['constructor', 'toString', '__proto__']) expect(contains(solver, { kind }), kind).toBe(false)
+  })
 })

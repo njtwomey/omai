@@ -197,7 +197,7 @@ export function contains(space: Space, value: SpaceValue): boolean {
     case 'union': {
       if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
       const name = (value as Rec)[tagOf(space)]
-      if (typeof name !== 'string' || !(name in space.options)) return false
+      if (typeof name !== 'string' || !Object.hasOwn(space.options, name)) return false
       const { option, rest } = splitUnion(space, value)
       return contains(option, rest)
     }
@@ -252,7 +252,7 @@ export function clip(space: Space, value: SpaceValue): SpaceValue {
     case 'union': {
       const name =
         typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Rec)[tagOf(space)] : undefined
-      if (typeof name !== 'string' || !(name in space.options))
+      if (typeof name !== 'string' || !Object.hasOwn(space.options, name))
         throw new MdmlError('value', `clip: ${String(name)} is not an option`)
       const { option, rest } = splitUnion(space, value)
       return joinUnion(space, name, clip(option, rest) as Rec)

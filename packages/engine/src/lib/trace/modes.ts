@@ -137,7 +137,7 @@ export function modes<Problem, P extends Json>(
     const fallback = options.default ?? (names[0] as string)
     if (typeof config !== 'object' || config === null || Array.isArray(config)) return fallback
     const name = (config as Readonly<Record<string, SpaceValue>>)[tag]
-    return typeof name === 'string' && name in table ? name : fallback
+    return typeof name === 'string' && Object.hasOwn(table, name) ? name : fallback
   }
   const modeOf = (config: SpaceValue | undefined): NamedMode<Problem, P> => {
     const name = nameOf(config)
