@@ -27,7 +27,7 @@ const SCALARS: Readonly<Record<string, F.ScalarField>> = {
   gauss3: (p) => add(exp(sub(sub(neg(sq(c(p, 0))), mul(2, sq(c(p, 1)))), div(sq(c(p, 2)), 2))), mul(c(p, 0), c(p, 2))),
 }
 
-const FIELDS: Readonly<Record<string, F.VectorField>> = {
+const FIELDS: Readonly<Record<string, F.PointVectorField>> = {
   swirl: (p) => {
     const [x, y, z] = [c(p, 0), c(p, 1), c(p, 2)]
     return stack([add(neg(y), mul(x, z)), add(x, mul(y, z)), sub(sq(z), mul(x, y))], -1)

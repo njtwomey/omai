@@ -8,7 +8,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { Dataset } from '../data/index.ts'
-import { type Generated, generate, type Knobs } from '../data/index.ts'
+import { type Generated, type GeneratorKnobs, generate } from '../data/index.ts'
 import type { Key } from '../random/index.ts'
 import { datasetGenerators } from './catalogue.ts'
 import { breastCancer, digits, iris, penguinsClassification, wine } from './classification-real.ts'
@@ -65,7 +65,7 @@ export type CollectionEntry =
       /** A generator name in {@link datasetGenerators}. */
       readonly generator: string
       /** Knob values for demos (missing knobs take the generator's defaults). */
-      readonly knobs?: Knobs
+      readonly knobs?: GeneratorKnobs
     }
   | { readonly name: string; readonly title: string; readonly load: () => Dataset }
 
@@ -76,9 +76,9 @@ export interface DatasetCollection {
   readonly entries: readonly CollectionEntry[]
 }
 
-function g(name: string, title: string, knobs?: Knobs): CollectionEntry
-function g(name: string, title: string, generator: string, knobs: Knobs): CollectionEntry
-function g(name: string, title: string, a?: Knobs | string, b?: Knobs): CollectionEntry {
+function g(name: string, title: string, knobs?: GeneratorKnobs): CollectionEntry
+function g(name: string, title: string, generator: string, knobs: GeneratorKnobs): CollectionEntry
+function g(name: string, title: string, a?: GeneratorKnobs | string, b?: GeneratorKnobs): CollectionEntry {
   const generator = typeof a === 'string' ? a : name
   const knobs = typeof a === 'string' ? b : a
   return knobs === undefined ? { name, title, generator } : { name, title, generator, knobs }
@@ -353,7 +353,7 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
 export function loadEntry(
   entry: CollectionEntry,
   key: Key,
-  knobs: Knobs = {},
+  knobs: GeneratorKnobs = {},
 ): { readonly data: Dataset } & Partial<Generated> {
   if ('load' in entry) return { data: entry.load() }
   const generator = datasetGenerators[entry.generator]

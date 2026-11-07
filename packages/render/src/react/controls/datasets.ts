@@ -4,7 +4,7 @@
  * its demo knobs, and generating or loading the selected dataset with its generating truth.
  */
 
-import type { Dataset, Generated, Knobs } from 'mdml-engine/data'
+import type { Dataset, Generated, GeneratorKnobs } from 'mdml-engine/data'
 import {
   type CollectionEntry,
   type DatasetCollection,
@@ -23,7 +23,7 @@ export interface DatasetSelection {
   readonly name: string
   readonly seed: number
   /** The generator's knob values (empty for a vendored dataset). */
-  readonly knobs: Knobs
+  readonly knobs: GeneratorKnobs
 }
 
 /** Where a picker's entries come from: a collection id, a collection, or a dataset registry (tagged entries). */
@@ -73,7 +73,7 @@ export function entryKnobSpace(entry: PickableEntry): DictSpace | undefined {
 }
 
 /** The knob values an entry starts from (a collection's demo knobs, a registry entry's starting knobs). */
-function demoKnobs(entry: PickableEntry): Knobs {
+function demoKnobs(entry: PickableEntry): GeneratorKnobs {
   if ('form' in entry) return entry.form === 'generator' ? (entry.knobs ?? {}) : {}
   return 'generator' in entry ? (entry.knobs ?? {}) : {}
 }
@@ -92,7 +92,7 @@ export function selectEntry(source: DatasetSource, name?: string, seed = 0): Dat
   const entry = name === undefined ? entries[0] : entries.find((e) => e.name === name)
   if (entry === undefined) throw new Error(`${sourceName(source)} has no entry '${name ?? ''}'`)
   const space = entryKnobSpace(entry)
-  const knobs = space === undefined ? {} : { ...(defaults(space) as Knobs), ...demoKnobs(entry) }
+  const knobs = space === undefined ? {} : { ...(defaults(space) as GeneratorKnobs), ...demoKnobs(entry) }
   return { name: entry.name, seed, knobs }
 }
 

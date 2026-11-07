@@ -16,7 +16,7 @@ import { asExpr, type Expr, type ExprLike, sym } from './expr.ts'
 import { exactRoots, type Root } from './polynomials.ts'
 
 /** A symbolic matrix: rows of expressions (all rows the same length). */
-export type Matrix = readonly (readonly Expr[])[]
+export type ExprMatrix = readonly (readonly Expr[])[]
 
 /** An eigenvalue with its algebraic multiplicity and a basis of its eigenspace. */
 export interface Eigenvector {
@@ -25,11 +25,11 @@ export interface Eigenvector {
   readonly vectors: readonly (readonly Expr[])[]
 }
 
-function shape(a: Matrix): [number, number] {
+function shape(a: ExprMatrix): [number, number] {
   return [a.length, a[0]?.length ?? 0]
 }
 
-function square(a: Matrix, what: string): number {
+function square(a: ExprMatrix, what: string): number {
   const [n, m] = shape(a)
   if (n !== m) throw new MdmlError('shape', `${what}: matrix must be square, got ${n}x${m}`)
   return n
@@ -64,7 +64,7 @@ function isZero(e: Expr): boolean {
  * matrix([[1, 2], [3, 4]]).length // => 2
  * ```
  */
-export function matrix(rows: readonly (readonly ExprLike[])[]): Matrix {
+export function matrix(rows: readonly (readonly ExprLike[])[]): ExprMatrix {
   const m = rows[0]?.length ?? 0
   if (rows.some((r) => r.length !== m)) throw new MdmlError('shape', 'matrix: rows must have equal length')
   return rows.map((r) => r.map(asExpr))
@@ -81,7 +81,7 @@ export function matrix(rows: readonly (readonly ExprLike[])[]): Matrix {
  * toText(identityMatrix(2)[1]?.[1] ?? 0) // => '1'
  * ```
  */
-export function identityMatrix(n: number): Matrix {
+export function identityMatrix(n: number): ExprMatrix {
   return Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? ONE : ZERO)))
 }
 
@@ -96,7 +96,7 @@ export function identityMatrix(n: number): Matrix {
  * toText(transpose(matrix([[1, 2]]))[1]?.[0] ?? 0) // => '2'
  * ```
  */
-export function transpose(a: Matrix): Matrix {
+export function transpose(a: ExprMatrix): ExprMatrix {
   const [n, m] = shape(a)
   return Array.from({ length: m }, (_, j) => Array.from({ length: n }, (_, i) => (a[i] as Expr[])[j] as Expr))
 }
@@ -114,7 +114,7 @@ export function transpose(a: Matrix): Matrix {
  * toText(matMul(matrix([[parse('a'), 1]]), matrix([[2], [parse('b')]]))[0]?.[0] ?? 0) // => '2*a + b'
  * ```
  */
-export function matMul(a: Matrix, b: Matrix): Matrix {
+export function matMul(a: ExprMatrix, b: ExprMatrix): ExprMatrix {
   return bounded('matMul', () => {
     const [n, k] = shape(a)
     const [k2, m] = shape(b)
@@ -134,7 +134,7 @@ export function matMul(a: Matrix, b: Matrix): Matrix {
 /**
  * Coefficients of det(λI - A) by Berkowitz's division-free algorithm: [1, c1, ..., cn].
  */
-function berkowitz(a: Matrix): Expr[] {
+function berkowitz(a: ExprMatrix): Expr[] {
   const n = a.length
   let v: Expr[] = [ONE]
   for (let k = 0; k < n; k++) {
@@ -170,7 +170,7 @@ function berkowitz(a: Matrix): Expr[] {
  * toText(det(matrix([[parse('a'), parse('b')], [parse('c'), parse('d')]]))) // => 'a*d - b*c'
  * ```
  */
-export function det(a: Matrix): Expr {
+export function det(a: ExprMatrix): Expr {
   return bounded('det', () => {
     const n = square(a, 'det')
     if (n === 0) return ONE
@@ -191,7 +191,7 @@ export function det(a: Matrix): Expr {
  * toText(charpoly(matrix([[1, 2], [2, 1]]), sym('lambda'))) // => 'lambda**2 - 2*lambda - 3'
  * ```
  */
-export function charpoly(a: Matrix, lambda: Expr): Expr {
+export function charpoly(a: ExprMatrix, lambda: Expr): Expr {
   return bounded('charpoly', () => {
     const n = square(a, 'charpoly')
     // As SymPy's Poly.as_expr: each coefficient (simplified) times its power of lambda, the products not expanded.
@@ -200,7 +200,7 @@ export function charpoly(a: Matrix, lambda: Expr): Expr {
   })
 }
 
-function minor(a: Matrix, r: number, c: number): Matrix {
+function minor(a: ExprMatrix, r: number, c: number): ExprMatrix {
   return a.filter((_, i) => i !== r).map((row) => row.filter((_, j) => j !== c))
 }
 
@@ -216,7 +216,7 @@ function minor(a: Matrix, r: number, c: number): Matrix {
  * inverse(matrix([[2, 1], [1, 1]])).map((r) => r.map(toText)) // => [['1', '-1'], ['-1', '2']]
  * ```
  */
-export function inverse(a: Matrix): Matrix {
+export function inverse(a: ExprMatrix): ExprMatrix {
   return bounded('inverse', () => {
     const n = square(a, 'inverse')
     const d = det(a)
@@ -243,7 +243,7 @@ export function inverse(a: Matrix): Matrix {
  * nullspace(matrix([[1, 2], [2, 4]])).map((v) => v.map(toText)) // => [['-2', '1']]
  * ```
  */
-export function nullspace(a: Matrix): Expr[][] {
+export function nullspace(a: ExprMatrix): Expr[][] {
   return bounded('nullspace', () => {
     const [n, m] = shape(a)
     const rows = a.map((r) => [...r])
@@ -302,7 +302,7 @@ export function nullspace(a: Matrix): Expr[][] {
  * eigenvals(matrix([[2, 1], [1, 2]])).map((r) => toText(r.value)) // => ['1', '3']
  * ```
  */
-export function eigenvals(a: Matrix): Root[] {
+export function eigenvals(a: ExprMatrix): Root[] {
   return bounded('eigenvals', () => {
     square(a, 'eigenvals')
     const lam = sym('lambda_')
@@ -321,7 +321,7 @@ export function eigenvals(a: Matrix): Root[] {
  * eigenvects(matrix([[2, 0], [0, 3]])).map((e) => e.vectors[0]?.map(toText)) // => [['1', '0'], ['0', '1']]
  * ```
  */
-export function eigenvects(a: Matrix): Eigenvector[] {
+export function eigenvects(a: ExprMatrix): Eigenvector[] {
   return bounded('eigenvects', () => {
     square(a, 'eigenvects')
     return eigenvals(a).map(({ value, multiplicity }) => {

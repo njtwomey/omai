@@ -2,7 +2,7 @@
 import { MdmlError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { combine, numbersOf, rms, type Tol, tolAt } from './_vec.ts'
-import type { SolveCounts, StepAttempt, StepperState, StepperStatus, VectorField } from './problem.ts'
+import type { OdeVectorField, SolveCounts, StepAttempt, StepperState, StepperStatus } from './problem.ts'
 
 /** Mutable evaluation counts private to one integration. */
 export interface Counter {
@@ -22,7 +22,7 @@ export function snapshot(c: Counter): SolveCounts {
 }
 
 /** The field with every evaluation counted into `c`. */
-export function tally(f: VectorField, c: Counter): VectorField {
+export function tally(f: OdeVectorField, c: Counter): OdeVectorField {
   return (t, y) => {
     c.nfev += 1
     return f(t, y)
@@ -30,7 +30,7 @@ export function tally(f: VectorField, c: Counter): VectorField {
 }
 
 /** The field with its output checked to have the state's shape. */
-export function checked(f: VectorField, shape: readonly number[]): VectorField {
+export function checked(f: OdeVectorField, shape: readonly number[]): OdeVectorField {
   return (t, y) => {
     const out = f(t, y)
     if (out.shape.length !== shape.length || out.shape.some((n, i) => n !== shape[i])) {
@@ -50,7 +50,7 @@ export function directionOf(t0: number, tBound: number): 1 | -1 {
  * f and a finite-difference estimate of the second derivative.
  */
 export function selectInitialStep(
-  f: VectorField,
+  f: OdeVectorField,
   t0: number,
   y0: Value,
   tBound: number,

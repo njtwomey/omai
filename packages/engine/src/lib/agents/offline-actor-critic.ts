@@ -7,7 +7,7 @@
 
 import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { mse } from '../losses/index.ts'
-import { incrementalUpdate, type Tree } from '../optim/index.ts'
+import { incrementalUpdate, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../random/index.ts'
 import { categoricalPolicy, gaussianPolicy, type Transition } from '../rl/index.ts'
 import {
@@ -42,11 +42,11 @@ import {
   squashToBox,
 } from './_offline.ts'
 import {
-  type Dataset,
   type OfflineLearner,
   type OfflineNetOptions,
   type OfflineOptions,
   type OfflineResult,
+  type TransitionDataset,
   trainOffline,
 } from './offline.ts'
 
@@ -56,7 +56,7 @@ function critic(
   sp: OfflineSpaces,
   hidden: readonly number[],
   key: Key,
-): { net: Net; q: (p: Tree, x: Value, a: Value) => Value } {
+): { net: Net; q: (p: ParamTree, x: Value, a: Value) => Value } {
   if (sp.discrete) {
     const net = network([sp.obsSize, ...hidden, sp.actionSize], key)
     return { net, q: (p, x, a) => sum(mul(net.apply(p, x), a), -1) }
@@ -84,8 +84,8 @@ export interface IqlOptions extends OfflineNetOptions {
 
 /** The state of an IQL learner. */
 export interface IqlState {
-  readonly params: Tree
-  readonly target: Tree
+  readonly params: ParamTree
+  readonly target: ParamTree
   readonly optState: unknown
   readonly updates: number
   readonly valueLoss: number
@@ -146,22 +146,28 @@ export function iqlLearner<O, A>(env: Spaces, options: IqlOptions = {}): Offline
   const c2 = critic(sp, hidden, foldIn(key, 1))
   const vNet = network([sp.obsSize, ...hidden, 1], foldIn(key, 2))
   const piNet = network([sp.obsSize, ...hidden, sp.actionSize], foldIn(key, 3))
-  type P = { readonly q1: Tree; readonly q2: Tree; readonly v: Tree; readonly pi: Tree; readonly logStd?: Value }
-  const params: Tree = {
+  type P = {
+    readonly q1: ParamTree
+    readonly q2: ParamTree
+    readonly v: ParamTree
+    readonly pi: ParamTree
+    readonly logStd?: Value
+  }
+  const params: ParamTree = {
     q1: c1.net.params,
     q2: c2.net.params,
     v: vNet.params,
     pi: piNet.params,
     ...(sp.discrete ? {} : { logStd: vectorTensor(new Array<number>(sp.actionSize).fill(0)) }),
   }
-  const targetOf = (p: Tree): Tree => ({ q1: (p as P).q1, q2: (p as P).q2 })
-  const qMin = (p: Tree, x: Value, a: Value): Value => minimum(c1.q((p as P).q1, x, a), c2.q((p as P).q2, x, a))
-  const v = (p: Tree, x: Value): Value => column(vNet.apply((p as P).v, x))
-  const policyOut = (p: Tree, x: Value): Value => {
+  const targetOf = (p: ParamTree): ParamTree => ({ q1: (p as P).q1, q2: (p as P).q2 })
+  const qMin = (p: ParamTree, x: Value, a: Value): Value => minimum(c1.q((p as P).q1, x, a), c2.q((p as P).q2, x, a))
+  const v = (p: ParamTree, x: Value): Value => column(vNet.apply((p as P).v, x))
+  const policyOut = (p: ParamTree, x: Value): Value => {
     const u = piNet.apply((p as P).pi, x)
     return sp.discrete ? u : squashToBox(sp, u)
   }
-  const logProb = (p: Tree, x: Value, b: OfflineBatch): Value => {
+  const logProb = (p: ParamTree, x: Value, b: OfflineBatch): Value => {
     const out = policyOut(p, x)
     if (sp.discrete) return sum(mul(logSoftmax(out, -1), b.actions), -1)
     return gaussianPolicy(out, (p as P).logStd as Value).logProb(b.actions)
@@ -197,7 +203,7 @@ export function iqlLearner<O, A>(env: Spaces, options: IqlOptions = {}): Offline
       const y = vectorTensor(r.map((ri, i) => ri + gamma * (nd[i] ?? 0) * (vNext[i] ?? 0)))
       const adv = toFlat(qT).map((q, i) => q - (vNow[i] ?? 0))
       const w = vectorTensor(adv.map((a) => Math.min(maxWeight, Math.exp(beta * a))))
-      const loss = (p: Tree): readonly [Value, Value] => {
+      const loss = (p: ParamTree): readonly [Value, Value] => {
         const valueLoss = expectileLoss(sub(qT, v(p, b.obs)), tauE)
         const criticLoss = add(mse(c1.q((p as P).q1, b.obs, b.actions), y), mse(c2.q((p as P).q2, b.obs, b.actions), y))
         const actorLoss = neg(mean(mul(w, logProb(p, b.obs, b))))
@@ -256,7 +262,7 @@ export function iqlLearner<O, A>(env: Spaces, options: IqlOptions = {}): Offline
  */
 export function iql<O, A>(
   env: Spaces,
-  dataset: Dataset<O, A>,
+  dataset: TransitionDataset<O, A>,
   options: IqlOptions & OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): OfflineResult<IqlState, O, A> {
   return trainOffline(iqlLearner<O, A>(env, options), dataset, options)
@@ -282,10 +288,10 @@ export interface Td3BcOptions extends OfflineNetOptions {
 
 /** The state of a TD3+BC learner. */
 export interface Td3BcState {
-  readonly actor: Tree
-  readonly critic: Tree
-  readonly actorTarget: Tree
-  readonly criticTarget: Tree
+  readonly actor: ParamTree
+  readonly critic: ParamTree
+  readonly actorTarget: ParamTree
+  readonly criticTarget: ParamTree
   readonly actorOpt: unknown
   readonly criticOpt: unknown
   readonly updates: number
@@ -336,9 +342,9 @@ export function td3bcLearner<O>(
   const actorNet = network([sp.obsSize, ...hidden, sp.actionSize], foldIn(key, 0))
   const c1 = critic(sp, hidden, foldIn(key, 1))
   const c2 = critic(sp, hidden, foldIn(key, 2))
-  type C = { readonly q1: Tree; readonly q2: Tree }
-  const criticParams: Tree = { q1: c1.net.params, q2: c2.net.params }
-  const pi = (p: Tree, x: Value): Value => squashToBox(sp, actorNet.apply(p, x))
+  type C = { readonly q1: ParamTree; readonly q2: ParamTree }
+  const criticParams: ParamTree = { q1: c1.net.params, q2: c2.net.params }
+  const pi = (p: ParamTree, x: Value): Value => squashToBox(sp, actorNet.apply(p, x))
   const m = sp.actionSize
   const scale = vectorTensor(sp.scale)
   const low = vectorTensor(sp.low)
@@ -356,7 +362,7 @@ export function td3bcLearner<O>(
       lambda: { description: 'normalised Q weight alpha / mean |Q|' },
       qValue: { description: 'mean Q1 of the data actions' },
     },
-    init: (_k, dataset: Dataset<O, readonly number[]>) => {
+    init: (_k, dataset: TransitionDataset<O, readonly number[]>) => {
       const d = sp.obsSize
       const obsMean = new Array<number>(d).fill(0)
       const obsStd = new Array<number>(d).fill(1)
@@ -470,7 +476,7 @@ export function td3bcLearner<O>(
  */
 export function td3bc<O>(
   env: Spaces,
-  dataset: Dataset<O, readonly number[]>,
+  dataset: TransitionDataset<O, readonly number[]>,
   options: Td3BcOptions & OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): OfflineResult<Td3BcState, O, readonly number[]> {
   return trainOffline(td3bcLearner<O>(env, options), dataset, options)

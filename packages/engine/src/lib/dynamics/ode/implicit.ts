@@ -43,11 +43,11 @@ import {
 import { allFinite, combine, errorScale, floatState, fromNumbers, minStep, numbersOf, rms, scaledRms } from './_vec.ts'
 import {
   hermiteSegment,
+  type OdeVectorField,
   type StepAttempt,
   type Stepper,
   type StepperOptions,
   type StepperState,
-  type VectorField,
 } from './problem.ts'
 
 const EPS = Number.EPSILON
@@ -62,7 +62,7 @@ export interface ImplicitOptions extends StepperOptions {
 
 /** The state of {@link radau}. */
 export interface RadauState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly jacobian: Float64Array
   readonly luReal: LuFactorisation | undefined
@@ -137,7 +137,7 @@ export function radau(options: ImplicitOptions = {}): Stepper<RadauState> {
 
 /** The state of {@link bdf}: the modified divided differences D of the solution and the Newton matrices. */
 export interface BdfState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly d: readonly Value[]
   readonly nEqualSteps: number
   readonly jacobian: Float64Array
@@ -255,7 +255,7 @@ export interface DirkOptions {
 
 /** The state of a fixed-step implicit stepper. */
 export interface DirkState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly fOld: Value
 }
@@ -374,8 +374,8 @@ export function dirk(tableau: DirkTableau, options: DirkOptions): Stepper<DirkSt
 
 /** Solve z = base + ha f(t, z) by Newton's method on numbers; undefined when it does not converge. */
 function newtonStage(
-  f: VectorField,
-  raw: VectorField,
+  f: OdeVectorField,
+  raw: OdeVectorField,
   t: number,
   base: Value,
   ha: number,
@@ -471,7 +471,7 @@ export function sdirk(options: DirkOptions & { readonly order?: 2 | 3 }): Steppe
 
 /** The state of {@link rosenbrock23}. */
 export interface RosenbrockState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly k1: Value
   readonly k2: Value
@@ -623,7 +623,7 @@ export function rosenbrock23(options: ImplicitOptions = {}): Stepper<RosenbrockS
 }
 
 /** df/dy as a value: traced (by forward mode) when the state or the field is traced, else concrete numbers. */
-function jacobianValue(f: VectorField, t: number, y: Value, jac: JacobianOption): Value {
+function jacobianValue(f: OdeVectorField, t: number, y: Value, jac: JacobianOption): Value {
   const n = numbersOf(y).length
   if (typeof jac === 'function') return reshape(jac(t, y), [n, n])
   const probe = f(t, y)
@@ -668,7 +668,7 @@ export interface StiffnessReport {
  * ```
  */
 export function stiffness(
-  f: VectorField,
+  f: OdeVectorField,
   t: number,
   y: TensorLike,
   options: { readonly h?: number; readonly boundary?: number; readonly jac?: JacobianOption } = {},

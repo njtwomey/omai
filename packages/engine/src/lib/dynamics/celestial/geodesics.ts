@@ -12,7 +12,7 @@ import { brentq } from '../../numerics/roots/index.ts'
 import { add, div, item, tensor as makeTensor, mul, sliceAxis, sqrt, stack, sub, sum } from '../../tensor/index.ts'
 import { type Algorithm, type Contract, defineContract, event, scalar, tensor } from '../../trace/index.ts'
 import { type FlowState, flowAlgorithm } from '../ode/flow.ts'
-import type { VectorField } from '../ode/problem.ts'
+import type { OdeVectorField } from '../ode/problem.ts'
 
 /**
  * The radius of the photon sphere, 3 M: the circular (unstable) orbit of light.
@@ -141,7 +141,7 @@ function startAngle(b: number, M: number, u0: number): number {
  * toFlat(schwarzschildNullGeodesicField(1)(0, tensor([1 / 3, 0])))[1] // => 0
  * ```
  */
-export function schwarzschildNullGeodesicField(M: number): VectorField {
+export function schwarzschildNullGeodesicField(M: number): OdeVectorField {
   return (_phi, s) => {
     const u = sum(sliceAxis(s, 0, 0, 1))
     const v = sum(sliceAxis(s, 0, 1, 2))

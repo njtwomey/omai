@@ -14,9 +14,9 @@ import { type EffectEstimate, effectFromSe } from './data.ts'
 import { instrumentalVariables } from './instrumental.ts'
 
 /** Kernel weights over the scaled distance `u = (x - cutoff) / h`. */
-export type Kernel = 'triangular' | 'uniform' | 'epanechnikov'
+export type DiscontinuityKernel = 'triangular' | 'uniform' | 'epanechnikov'
 
-const kernelWeight = (kernel: Kernel, u: number): number => {
+const kernelWeight = (kernel: DiscontinuityKernel, u: number): number => {
   if (Math.abs(u) >= 1) return 0
   if (kernel === 'uniform') return 0.5
   if (kernel === 'epanechnikov') return 0.75 * (1 - u * u)
@@ -39,7 +39,7 @@ export interface RdOptions {
   readonly cutoff?: number
   /** The bandwidth, or `'ik'` for the Imbens-Kalyanaraman choice (default). */
   readonly bandwidth?: number | 'ik'
-  readonly kernel?: Kernel
+  readonly kernel?: DiscontinuityKernel
   /** The order of the local polynomial (default 1). */
   readonly order?: number
   /** `'sharp'` (default) or `'fuzzy'` (needs `treatment`). */
@@ -97,7 +97,7 @@ function sideFit(
   y: Float64Array,
   cutoff: number,
   h: number,
-  kernel: Kernel,
+  kernel: DiscontinuityKernel,
   order: number,
   above: boolean,
 ): SideFit {

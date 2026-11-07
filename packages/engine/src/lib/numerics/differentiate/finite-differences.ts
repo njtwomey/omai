@@ -331,7 +331,11 @@ export function finiteDifferenceWeights(order: number, points: TensorLike, x0 = 
   )
 }
 
-/** A complex number for complex-step differentiation. */
+/**
+ * A complex number as a record with named parts, for writing functions differentiated by {@link complexStep}. It is the
+ * record form of `Complex` (`[re, im]` of `mdml-engine/base`), which is what the arithmetic of `base` takes; the two
+ * are one concept in two shapes, and a pair converts to a record and back without loss.
+ */
 export interface ComplexNumber {
   readonly re: number
   readonly im: number

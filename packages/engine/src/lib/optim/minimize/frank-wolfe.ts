@@ -17,17 +17,15 @@ import {
   type VectorMethodOptions,
 } from './objective.ts'
 
-type Vec = Float64Array
-
 /** An extreme point returned by a linear minimisation oracle, with an identity for the away-step bookkeeping. */
-export interface Atom {
-  readonly vertex: Vec
+export interface FrankWolfeAtom {
+  readonly vertex: Float64Array
   /** A stable key for polytope vertices; absent for smooth sets (no away steps there). */
   readonly id?: string
 }
 
 /** A linear minimisation oracle: argmin over the feasible set of g . s. */
-export type Lmo = (grad: Vec) => Atom
+export type Lmo = (grad: Float64Array) => FrankWolfeAtom
 
 /**
  * The linear minimisation oracle of the simplex {s >= 0, sum s = radius}: the vertex radius e_i at the smallest
@@ -159,7 +157,7 @@ export interface FrankWolfeOptions extends VectorMethodOptions {
 /** One atom of the active set with its convex weight. */
 export interface ActiveAtom {
   readonly id: string
-  readonly vertex: Vec
+  readonly vertex: Float64Array
   readonly weight: number
 }
 
@@ -200,7 +198,7 @@ export function frankWolfeAlgorithm(
   const variant = options.variant ?? 'lineSearch'
   const gapTol = options.gapTol ?? 1e-10
   const activeSet = variant === 'away' || variant === 'pairwise'
-  const estimateL = (x: Vec, g: Vec, d: Vec): number => {
+  const estimateL = (x: Float64Array, g: Float64Array, d: Float64Array): number => {
     const dn = dnrm2(d)
     if (dn === 0) return 1
     const eps = 1e-3 / dn
@@ -208,7 +206,7 @@ export function frankWolfeAlgorithm(
     return Math.max(dnrm2(daxpy(-1, g, g2)) / (eps * dn), 1e-12)
   }
   // When the start is a vertex, the oracle at -x0 returns it: use its id so the atom is not duplicated later.
-  const startId = (x: Vec): string => {
+  const startId = (x: Float64Array): string => {
     const s = lmo(Float64Array.from(x, (v) => -v))
     return s.id !== undefined && dnrm2(daxpy(-1, x, s.vertex)) <= 1e-12 * Math.max(1, dnrm2(x)) ? s.id : 'x0'
   }
@@ -271,7 +269,7 @@ export function frankWolfeAlgorithm(
       let ngev = s.ngev
       let gamma: number
       let L = s.lipschitz
-      let x: Vec
+      let x: Float64Array
       let value: number
       if (variant === 'standard') {
         gamma = 2 / (ctx.t + 2)

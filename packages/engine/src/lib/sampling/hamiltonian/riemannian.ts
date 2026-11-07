@@ -11,7 +11,7 @@ import { foldIn, normal } from '../../random/index.ts'
 import { fromStorage, neg, reshape, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { allFinite, inverse, lowerCholesky } from '../_linear.ts'
 import { acceptWith, checkStepSize } from '../_mcmc.ts'
-import type { MCMCKernel, MCMCState, Transition } from '../chains.ts'
+import type { ChainTransition, MCMCKernel, MCMCState } from '../chains.ts'
 import type { LogDensity } from '../target.ts'
 
 /** Options of {@link riemannianHmcKernel}. */
@@ -327,7 +327,7 @@ export function riemannianHmcKernel(target: LogDensity, options: RiemannianHMCOp
       return s
     },
     step: (key, state) => {
-      const reject = (numSteps: number): Transition<MCMCState> => ({
+      const reject = (numSteps: number): ChainTransition<MCMCState> => ({
         state,
         info: { acceptanceRate: 0, accepted: false, divergent: true, numSteps, stepSize },
       })

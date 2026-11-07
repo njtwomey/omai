@@ -37,7 +37,7 @@ import { sphereUv } from './textures.ts'
  *
  * @concept ray-intersection
  */
-export type Shape =
+export type RayShape =
   | { readonly kind: 'sphere'; readonly centre: Vec3; readonly radius: number }
   | { readonly kind: 'plane'; readonly point: Vec3; readonly normal: Vec3 }
   | {
@@ -64,7 +64,7 @@ export type Shape =
  * sphere([0, 0, 0], 2).radius // => 2
  * ```
  */
-export function sphere(centre: Vec3, radius: number): Shape {
+export function sphere(centre: Vec3, radius: number): RayShape {
   if (!(radius > 0)) throw new MdmlError('value', 'sphere: the radius must be positive')
   return { kind: 'sphere', centre: check3(centre, 'centre'), radius }
 }
@@ -82,7 +82,7 @@ export function sphere(centre: Vec3, radius: number): Shape {
  * plane([0, 0, 0], [0, 3, 0]).normal // => [0, 1, 0]
  * ```
  */
-export function plane(point: Vec3, normal: Vec3): Shape {
+export function plane(point: Vec3, normal: Vec3): RayShape {
   return { kind: 'plane', point: check3(point, 'point'), normal: normalise3(check3(normal, 'normal'), 'normal') }
 }
 
@@ -110,7 +110,7 @@ export function triangle(
     readonly normals?: readonly [Vec3, Vec3, Vec3]
     readonly uvs?: readonly [readonly [number, number], readonly [number, number], readonly [number, number]]
   } = {},
-): Shape {
+): RayShape {
   const [pa, pb, pc] = [check3(a, 'a'), check3(b, 'b'), check3(c, 'c')]
   normalise3(cross3(sub3(pb, pa), sub3(pc, pa)), 'the triangle normal (the vertices must not be collinear)')
   return { kind: 'triangle', a: pa, b: pb, c: pc, ...options }
@@ -130,7 +130,7 @@ export function triangle(
  * box([0, 0, 0], [1, 2, 3]).max // => [1, 2, 3]
  * ```
  */
-export function box(min: Vec3, max: Vec3): Shape {
+export function box(min: Vec3, max: Vec3): RayShape {
   const lo = check3(min, 'min')
   const hi = check3(max, 'max')
   if (!(hi[0] >= lo[0] && hi[1] >= lo[1] && hi[2] >= lo[2])) throw new MdmlError('value', 'box: need max >= min')
@@ -172,7 +172,7 @@ export const RAY_EPSILON = 1e-9
  */
 export function intersectSphere(
   ray: Ray,
-  s: Shape,
+  s: RayShape,
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): Hit | null {
@@ -215,7 +215,7 @@ export function intersectSphere(
  */
 export function intersectPlane(
   ray: Ray,
-  s: Shape,
+  s: RayShape,
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): Hit | null {
@@ -251,7 +251,7 @@ export function intersectPlane(
  */
 export function intersectTriangle(
   ray: Ray,
-  s: Shape,
+  s: RayShape,
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
   cull: boolean = false,
@@ -346,7 +346,7 @@ export function slabs(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3): [num
  */
 export function intersectBox(
   ray: Ray,
-  s: Shape,
+  s: RayShape,
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): Hit | null {
@@ -399,7 +399,7 @@ export function intersectBox(
  */
 export function intersect(
   ray: Ray,
-  s: Shape,
+  s: RayShape,
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): Hit | null {
@@ -433,7 +433,7 @@ export function intersect(
  */
 export function nearestHit(
   ray: Ray,
-  shapes: readonly Shape[],
+  shapes: readonly RayShape[],
   tMin: number = RAY_EPSILON,
   tMax: number = Number.POSITIVE_INFINITY,
 ): (Hit & { readonly index: number }) | null {
@@ -462,7 +462,7 @@ export function nearestHit(
  * bounds(sphere([1, 1, 1], 1)) // => { min: [0, 0, 0], max: [2, 2, 2] }
  * ```
  */
-export function bounds(s: Shape): { readonly min: Vec3; readonly max: Vec3 } {
+export function bounds(s: RayShape): { readonly min: Vec3; readonly max: Vec3 } {
   switch (s.kind) {
     case 'sphere':
       return {

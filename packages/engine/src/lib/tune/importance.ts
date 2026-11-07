@@ -14,13 +14,13 @@ import { fitGpSurrogate, type GpSurrogate } from './surrogate.ts'
 import { splitTrials } from './tpe.ts'
 
 /** Parameter importances by parameter path, largest first. */
-export type Importances = Readonly<Record<string, number>>
+export type ParamImportances = Readonly<Record<string, number>>
 
-function sorted(entries: readonly (readonly [string, number])[]): Importances {
+function sorted(entries: readonly (readonly [string, number])[]): ParamImportances {
   return Object.fromEntries([...entries].sort((a, b) => b[1] - a[1]))
 }
 
-function normalised(entries: readonly (readonly [string, number])[]): Importances {
+function normalised(entries: readonly (readonly [string, number])[]): ParamImportances {
   const total = entries.reduce((s, [, v]) => s + v, 0)
   return sorted(entries.map(([k, v]) => [k, total > 0 ? v / total : 1 / entries.length]))
 }
@@ -64,7 +64,7 @@ function dataOf(study: Study, objective: number): Data {
 export function correlationImportance(
   study: Study,
   options: { readonly method?: 'spearman' | 'pearson'; readonly objective?: number } = {},
-): Importances {
+): ParamImportances {
   const { leaves, natives, losses } = dataOf(study, options.objective ?? 0)
   const test = options.method === 'pearson' ? pearson : spearman
   return normalised(
@@ -121,7 +121,7 @@ function needTrials(data: Data, n: number, name: string): void {
 export function permutationImportance(
   study: Study,
   options: { readonly repeats?: number; readonly key?: Key; readonly objective?: number } = {},
-): Importances {
+): ParamImportances {
   const data = dataOf(study, options.objective ?? 0)
   needTrials(data, 3, 'permutationImportance')
   const { gp, columns } = surrogateOf(data)
@@ -178,7 +178,7 @@ export function fanovaImportance(
     readonly key?: Key
     readonly objective?: number
   } = {},
-): Importances {
+): ParamImportances {
   const data = dataOf(study, options.objective ?? 0)
   needTrials(data, 3, 'fanovaImportance')
   const { gp } = surrogateOf(data)
@@ -325,7 +325,7 @@ export function pedAnovaImportance(
     readonly evaluateOnLocal?: boolean
     readonly objective?: number
   } = {},
-): Importances {
+): ParamImportances {
   const target = options.targetQuantile ?? 0.1
   const region = options.regionQuantile ?? 1
   if (!(target > 0 && target < region && region <= 1))

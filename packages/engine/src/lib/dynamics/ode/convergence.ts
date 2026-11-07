@@ -9,7 +9,7 @@ import { MdmlError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 import type { TensorLike, Value } from '../../tensor/index.ts'
 import { floatState, numbersOf, rms } from './_vec.ts'
-import type { Stepper, VectorField } from './problem.ts'
+import type { OdeVectorField, Stepper } from './problem.ts'
 import { type OdeMethodName, solveIvp } from './solve-ivp.ts'
 
 /** The coefficients a, b, c of any Runge-Kutta method (explicit, diagonally implicit or fully implicit). */
@@ -194,7 +194,7 @@ export function convergenceOrder(error: (h: number) => number, steps: readonly n
  */
 export function stepperOrder(
   stepper: (dt: number) => Stepper,
-  f: VectorField,
+  f: OdeVectorField,
   tspan: readonly [number, number],
   y0: TensorLike,
   exact: TensorLike,
@@ -267,7 +267,7 @@ export function stabilityFunction(method: RungeKuttaCoefficients, z: ComplexNumb
 }
 
 /** A stability region sampled on a grid of h lambda. */
-export interface StabilityRegion {
+export interface SampledStabilityRegion {
   readonly re: readonly number[]
   readonly im: readonly number[]
   /** |R(z)| at [i][j] = (im[i], re[j]). */
@@ -296,7 +296,7 @@ export function stabilityRegion(
     readonly im?: readonly [number, number]
     readonly n?: number
   } = {},
-): StabilityRegion {
+): SampledStabilityRegion {
   const n = options.n ?? 81
   const [r0, r1] = options.re ?? [-5, 2]
   const [i0, i1] = options.im ?? [-4, 4]
@@ -432,7 +432,7 @@ export interface WorkPrecisionPoint {
  * ```
  */
 export function workPrecision(
-  f: VectorField,
+  f: OdeVectorField,
   tspan: readonly [number, number],
   y0: TensorLike,
   reference: TensorLike,

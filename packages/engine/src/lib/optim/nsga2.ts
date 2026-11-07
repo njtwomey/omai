@@ -15,7 +15,7 @@ import type { InequalityConstraint } from './minimize/cobyla.ts'
 import type { Bounds } from './minimize/objective.ts'
 import { flatObjective, type Parameters } from './minimize/objective.ts'
 import type { VectorObjective } from './multiobjective.ts'
-import type { Tree } from './transform.ts'
+import type { ParamTree } from './transform.ts'
 
 /** Options of {@link sbxCrossover}. */
 export interface SbxOptions {
@@ -227,7 +227,7 @@ export interface Nsga2Result {
   /** Indices of the first (non-dominated, feasible) front within the population. */
   readonly front: readonly number[]
   /** The Pareto set as parameter trees, and the Pareto front [k, m]. */
-  readonly paretoSet: readonly Tree[]
+  readonly paretoSet: readonly ParamTree[]
   readonly paretoFront: Tensor
   readonly generations: number
   readonly nfev: number

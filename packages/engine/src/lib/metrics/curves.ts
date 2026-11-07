@@ -13,9 +13,9 @@ import {
   type Metric,
   type MetricInput,
   type MetricOptions,
-  matrix,
   metricResult,
   sampleWeights,
+  shapedArray,
 } from './metric.ts'
 
 /** Options of the binary score curves. */
@@ -211,14 +211,14 @@ export interface RocAucOptions extends MetricOptions {
 export const rocAucScore: Metric<RocAucOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yScore: MetricInput, options: RocAucOptions = {}): MetricResult => {
     const name = 'rocAucScore'
-    const s = matrix(yScore as TensorLike)
+    const s = shapedArray(yScore as TensorLike)
     const multilabel = isMultilabel(yTrue)
     const n = s.shape[0] ?? 0
     const w = options.sampleWeight === undefined ? undefined : sampleWeights(name, n, options.sampleWeight)
     const score = (y: Float64Array, sc: Float64Array, ww: Float64Array | undefined): number =>
       binaryRocAuc(y, sc, ww, options.maxFpr)
     if (multilabel) {
-      const t = matrix(yTrue as TensorLike)
+      const t = shapedArray(yTrue as TensorLike)
       const r = averageBinary(t, s, w, options.average ?? 'macro', score)
       return metricResult(name, r.value, n, Object.fromEntries(r.perClass.map((v, j) => [String(j), v])))
     }

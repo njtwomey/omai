@@ -28,11 +28,11 @@ import { RK4, rkStep } from './explicit.ts'
 import {
   type DenseSegment,
   hermiteSegment,
+  type OdeVectorField,
   type StepAttempt,
   type Stepper,
   type StepperOptions,
   type StepperState,
-  type VectorField,
 } from './problem.ts'
 
 /** Adams-Bashforth weights of orders 1 to 5, on f_n, f_{n-1}, ... */
@@ -65,7 +65,7 @@ export interface MultistepOptions {
 
 /** The state of a fixed-step multistep method: past derivatives, most recent first. */
 export interface MultistepState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly fOld: Value
   readonly history: readonly Value[]
@@ -201,8 +201,8 @@ function multistep(kind: MultistepKind, options: MultistepOptions): Stepper<Mult
 }
 
 function newtonSolve(
-  f: VectorField,
-  raw: VectorField,
+  f: OdeVectorField,
+  raw: OdeVectorField,
   t: number,
   base: Value,
   ha: number,
@@ -338,7 +338,7 @@ export function nordsieckAdamsL(q: number): number[] {
 
 /** The state of {@link adams}: the Nordsieck array [y, h y', h^2 y''/2, ...] at the current point. */
 export interface NordsieckState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly z: readonly Value[]
   /** The signed step the Nordsieck array is scaled to. */

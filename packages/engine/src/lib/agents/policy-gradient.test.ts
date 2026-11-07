@@ -22,11 +22,10 @@ import { a2c, adaptKlCoefficient, type PolicyGradientState, ppo, reinforce, trpo
 // Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
 vi.setConfig({ testTimeout: 60_000 })
 
-type Vec = readonly number[]
 const first = (xs: readonly number[]): number => meanOf(xs.slice(0, 10))
 const last = (xs: readonly number[]): number => meanOf(xs.slice(-10))
 
-function trainCartPole(agent: Agent<PolicyGradientState, Vec, number>, steps: number, seed = 0) {
+function trainCartPole(agent: Agent<PolicyGradientState, readonly number[], number>, steps: number, seed = 0) {
   const env = make(cartPole)
   const result = trainAgent(env, agent, { maxSteps: steps, seed, checkpoints: false })
   const greedy = evaluatePolicy(env, greedyPolicyOf(agent, result.agent), { episodes: 3, seed: 1 }).meanReturn
@@ -126,7 +125,7 @@ describe('policy-gradient agents on continuous actions', () => {
   it('PPO solves the reach task with state-independent and squashed state-dependent Gaussians', () => {
     const env = timeLimit(reach(), 10)
     for (const options of [{}, { stateDependentStd: true, squash: true }]) {
-      const agent = ppo<Vec>(env, { hidden: [16], learningRate: 3e-3, nEpochs: 4, ...options })
+      const agent = ppo<readonly number[]>(env, { hidden: [16], learningRate: 3e-3, nEpochs: 4, ...options })
       const before = evaluatePolicy(env, greedyPolicyOf(agent, agent.init(key(0))), { episodes: 20, seed: 1 })
       const result = trainAgent(env, agent, { maxSteps: 3000, seed: 0, checkpoints: false })
       const after = evaluatePolicy(env, greedyPolicyOf(agent, result.agent), { episodes: 20, seed: 1 })
@@ -137,7 +136,7 @@ describe('policy-gradient agents on continuous actions', () => {
 
   it('TRPO solves the reach task; REINFORCE and A2C improve on it', () => {
     const env = timeLimit(reach(), 10)
-    const greedyAfter = (agent: Agent<PolicyGradientState, Vec, Vec>): number => {
+    const greedyAfter = (agent: Agent<PolicyGradientState, readonly number[], readonly number[]>): number => {
       const result = trainAgent(env, agent, { maxSteps: 3000, seed: 0, checkpoints: false })
       return evaluatePolicy(env, greedyPolicyOf(agent, result.agent), { episodes: 20, seed: 1 }).meanReturn
     }
@@ -148,7 +147,13 @@ describe('policy-gradient agents on continuous actions', () => {
 
   it('PPO learns the contextual bandit, and greedy actions stay within the bounds', () => {
     const env = timeLimit(continuousBandit(), 1)
-    const agent = ppo<Vec>(env, { hidden: [16], learningRate: 3e-3, nEpochs: 4, nSteps: 128, batchSize: 32 })
+    const agent = ppo<readonly number[]>(env, {
+      hidden: [16],
+      learningRate: 3e-3,
+      nEpochs: 4,
+      nSteps: 128,
+      batchSize: 32,
+    })
     const result = trainAgent(env, agent, { maxSteps: 1500, seed: 1, checkpoints: false })
     expect(
       evaluatePolicy(env, greedyPolicyOf(agent, result.agent), { episodes: 50, seed: 1 }).meanReturn,
@@ -161,8 +166,11 @@ describe('policy-gradient building blocks', () => {
   it('bootstraps truncated steps from the value of their final observation', () => {
     const env = cartPole.create()
     const net = actorCritic(env, { hidden: [4] }, 'test')
-    const o = (x: number): Vec => [x, 0, 0, 0]
-    const step = (x: number, done: Partial<Transition<Vec, PolicyAction>>): Transition<Vec, PolicyAction> => ({
+    const o = (x: number): readonly number[] => [x, 0, 0, 0]
+    const step = (
+      x: number,
+      done: Partial<Transition<readonly number[], PolicyAction>>,
+    ): Transition<readonly number[], PolicyAction> => ({
       observation: o(x),
       action: 0,
       reward: 1,

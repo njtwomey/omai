@@ -15,7 +15,7 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
-import { cdist, type Metric, type MetricOptions } from '../geometry/index.ts'
+import { cdist, type DistanceMetric, type MetricOptions } from '../geometry/index.ts'
 import { type CsrMatrix, csr } from '../sparse/index.ts'
 
 /** Neighbours of each query point: indices into the data and distances, nearest first. */
@@ -28,7 +28,7 @@ export interface Neighbours {
 
 /** Options of brute-force neighbour searches. */
 export interface BruteOptions extends MetricOptions {
-  readonly metric?: Metric
+  readonly metric?: DistanceMetric
   /** Leave each point out of its own neighbours when the queries are the data (default false). */
   readonly excludeSelf?: boolean
 }

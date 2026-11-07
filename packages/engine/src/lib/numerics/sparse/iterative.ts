@@ -27,9 +27,7 @@ import { asOperator, type CsrMatrix, csr, type LinearOperator, primalValues, spm
 /** A preconditioner: z = M^{-1} r. */
 export type Preconditioner = (r: Float64Array) => Float64Array
 
-type Vec = Float64Array
-
-function numeric(op: LinearOperator): (x: Vec) => Vec {
+function numeric(op: LinearOperator): (x: Float64Array) => Float64Array {
   return (x) => Float64Array.from(toFlat(primalOf(op.matvec(fromStorage(x, [x.length], 'float64')))))
 }
 
@@ -43,7 +41,7 @@ export interface KrylovOptions {
 
 /** State of a Krylov solver. */
 export interface KrylovState {
-  readonly x: Vec
+  readonly x: Float64Array
   readonly residualNorm: number
   readonly history: readonly number[]
   readonly internal: Readonly<Record<string, unknown>>
@@ -74,7 +72,7 @@ function setup(a: CsrMatrix | TensorLike | LinearOperator, b: TensorLike, option
     throw new MdmlError('shape', 'Krylov solvers need a square operator matching b')
   const x0 = options.x0 === undefined ? new Float64Array(bv.length) : Float64Array.from(options.x0)
   const tol = Math.max((options.rtol ?? 1e-5) * norm(bv), options.atol ?? 0)
-  const precondition = options.preconditioner ?? ((r: Vec) => Float64Array.from(r))
+  const precondition = options.preconditioner ?? ((r: Float64Array) => Float64Array.from(r))
   return { op, apply, b: bv, x0, tol, precondition }
 }
 
@@ -131,7 +129,7 @@ export function cgAlgorithm(
       return { x: x0, residualNorm: rn, history: [rn], internal: { r, p: z, rz: dot(r, z) } }
     },
     step: (s) => {
-      const { r, p, rz } = s.internal as { r: Vec; p: Vec; rz: number }
+      const { r, p, rz } = s.internal as { r: Float64Array; p: Float64Array; rz: number }
       const ap = apply(p)
       const alpha = rz / dot(p, ap)
       const x = daxpy(alpha, p, s.x)
@@ -224,7 +222,15 @@ export function bicgstabAlgorithm(
       }
     },
     step: (s) => {
-      const st = s.internal as { r: Vec; rhat: Vec; p: Vec; v: Vec; rho: number; alpha: number; omega: number }
+      const st = s.internal as {
+        r: Float64Array
+        rhat: Float64Array
+        p: Float64Array
+        v: Float64Array
+        rho: number
+        alpha: number
+        omega: number
+      }
       const rho = dot(st.rhat, st.r)
       if (rho === 0) return { ...s, residualNorm: Number.NaN }
       const beta = (rho / st.rho) * (st.alpha / st.omega)
@@ -309,19 +315,19 @@ export function gmresAlgorithm(
   options: KrylovOptions & { readonly restart?: number } = {},
 ): Algorithm<KrylovState> {
   const { apply: rawApply, b: rawB, x0, tol: rawTol, precondition } = setup(a, b, options)
-  const apply = (x: Vec): Vec => precondition(rawApply(x))
+  const apply = (x: Float64Array): Float64Array => precondition(rawApply(x))
   const bv = precondition(rawB)
   const tol =
     options.preconditioner === undefined ? rawTol : Math.max((options.rtol ?? 1e-5) * norm(bv), options.atol ?? 0)
   const m = Math.min(options.restart ?? 20, rawB.length)
-  type Cycle = { V: Vec[]; H: number[][]; cs: number[]; sn: number[]; g: number[]; base: Vec }
-  const begin = (x: Vec): { cycle: Cycle; rn: number } => {
+  type Cycle = { V: Float64Array[]; H: number[][]; cs: number[]; sn: number[]; g: number[]; base: Float64Array }
+  const begin = (x: Float64Array): { cycle: Cycle; rn: number } => {
     const r = daxpy(-1, apply(x), bv)
     const beta = norm(r)
     return { cycle: { V: [r.map((v) => v / (beta || 1))], H: [], cs: [], sn: [], g: [beta], base: x }, rn: beta }
   }
   // The iterate from the first j columns: x = base + V_j y with H_j y = g_j (upper triangular after the rotations).
-  const solution = (c: Cycle): Vec => {
+  const solution = (c: Cycle): Float64Array => {
     const j = c.H.length
     const y = new Array<number>(j).fill(0)
     for (let i = j - 1; i >= 0; i--) {
@@ -331,7 +337,7 @@ export function gmresAlgorithm(
     }
     let x = c.base
     y.forEach((yi, i) => {
-      x = daxpy(yi, c.V[i] as Vec, x)
+      x = daxpy(yi, c.V[i] as Float64Array, x)
     })
     return x
   }
@@ -347,11 +353,11 @@ export function gmresAlgorithm(
       const c = (s.internal as { cycle: Cycle }).cycle
       const j = c.H.length
       // Arnoldi with modified Gram-Schmidt: column j of H.
-      let w = apply(c.V[j] as Vec)
+      let w = apply(c.V[j] as Float64Array)
       const h: number[] = []
       for (let i = 0; i <= j; i++) {
-        h[i] = dot(w, c.V[i] as Vec)
-        w = daxpy(-(h[i] ?? 0), c.V[i] as Vec, w)
+        h[i] = dot(w, c.V[i] as Float64Array)
+        w = daxpy(-(h[i] ?? 0), c.V[i] as Float64Array, w)
       }
       const hn = norm(w)
       h[j + 1] = hn
@@ -447,11 +453,11 @@ export function minresAlgorithm(
 ): Algorithm<KrylovState> {
   const { apply, b: bv, x0, tol } = setup(a, b, options)
   type M = {
-    vOld: Vec
-    v: Vec
+    vOld: Float64Array
+    v: Float64Array
     beta: number
-    wOld: Vec
-    wOlder: Vec
+    wOld: Float64Array
+    wOlder: Float64Array
     gamma: number
     gammaOld: number
     sigma: number
@@ -670,7 +676,7 @@ export function sparseSolve(
   } = {},
 ): Value {
   const method = options.method ?? 'gmres'
-  const solveWith = (m: CsrMatrix, rhs: Vec): Vec => {
+  const solveWith = (m: CsrMatrix, rhs: Float64Array): Float64Array => {
     const opts = {
       rtol: options.rtol ?? 1e-12,
       atol: options.atol ?? 0,

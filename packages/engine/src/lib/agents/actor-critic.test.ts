@@ -16,11 +16,10 @@ import { type ActorCriticAgentState, ddpg, sac, sacDiscrete, td3 } from './actor
 // Learning runs take seconds alone; the timeout only guards against a heavily loaded machine.
 vi.setConfig({ testTimeout: 60_000 })
 
-type Vec = readonly number[]
 const env = timeLimit(reach(), 10)
 const small = { hidden: [16], batchSize: 32 } as const
 
-function solve(agent: Agent<ActorCriticAgentState, Vec, Vec>, steps: number, seed: number) {
+function solve(agent: Agent<ActorCriticAgentState, readonly number[], readonly number[]>, steps: number, seed: number) {
   const before = evaluatePolicy(env, greedyPolicyOf(agent, agent.init(key(0))), { episodes: 20, seed: 1 }).meanReturn
   const result = trainAgent(env, agent, { maxSteps: steps, seed, checkpoints: false })
   const after = evaluatePolicy(env, greedyPolicyOf(agent, result.agent), { episodes: 20, seed: 1 }).meanReturn

@@ -38,7 +38,7 @@ export type CallbackPath =
  * current parameters, and ways to log into the run's trace and to stop. The parameter is the type of the paths a
  * callback logs (`string`: any; the library's callbacks declare theirs, see {@link CallbackPath}).
  */
-export interface HookContext<K extends string = string> {
+export interface TrainingHookContext<K extends string = string> {
   /** Optimiser updates applied so far. */
   readonly step: number
   readonly epoch: number
@@ -69,19 +69,21 @@ export interface Callback<K extends string = string> {
   readonly name: string
   /** Ask the loop to tap activations in the forward pass (delivered to `onBatchEnd`). */
   readonly tapsActivations?: boolean
-  onTrainStart?(ctx: HookContext<K>): void
-  onEpochStart?(ctx: HookContext<K>): void
-  onBatchStart?(ctx: HookContext<K>): void
+  onTrainStart?(ctx: TrainingHookContext<K>): void
+  onEpochStart?(ctx: TrainingHookContext<K>): void
+  onBatchStart?(ctx: TrainingHookContext<K>): void
   /** After the loss has been differentiated: the gradients by parameter path's tree. */
-  onAfterBackward?(ctx: HookContext<K> & { readonly loss: number; readonly grads: Params }): void
+  onAfterBackward?(ctx: TrainingHookContext<K> & { readonly loss: number; readonly grads: Params }): void
   /** Just before the updates are applied (after any clipping by the optimiser chain). */
-  onBeforeOptimizerStep?(ctx: HookContext<K> & { readonly grads: Params; readonly updates: Params }): void
+  onBeforeOptimizerStep?(ctx: TrainingHookContext<K> & { readonly grads: Params; readonly updates: Params }): void
   /** After the update, with the loss and the activations tapped in the forward pass (when a callback asked). */
-  onBatchEnd?(ctx: HookContext<K> & { readonly loss: number; readonly activations: ReadonlyMap<string, Value> }): void
-  onEpochEnd?(ctx: HookContext<K> & { readonly meanLoss: number }): void
+  onBatchEnd?(
+    ctx: TrainingHookContext<K> & { readonly loss: number; readonly activations: ReadonlyMap<string, Value> },
+  ): void
+  onEpochEnd?(ctx: TrainingHookContext<K> & { readonly meanLoss: number }): void
   /** After validation, with every validation metric (always `valLoss`). */
-  onValidationEnd?(ctx: HookContext<K> & { readonly metrics: Readonly<Record<string, number>> }): void
-  onTrainEnd?(ctx: HookContext<K> & { readonly status: 'completed' | 'stopped' }): void
+  onValidationEnd?(ctx: TrainingHookContext<K> & { readonly metrics: Readonly<Record<string, number>> }): void
+  onTrainEnd?(ctx: TrainingHookContext<K> & { readonly status: 'completed' | 'stopped' }): void
 }
 
 /** The L2 norm of a value, as a number. */
@@ -227,7 +229,7 @@ export function earlyStopping(options: EarlyStoppingOptions = {}): Callback<neve
   const sign = options.mode === 'max' ? -1 : 1
   let best = Number.POSITIVE_INFINITY
   let wait = 0
-  const check = (ctx: HookContext<never>, value: number | undefined): void => {
+  const check = (ctx: TrainingHookContext<never>, value: number | undefined): void => {
     if (value === undefined) return
     if (sign * value < best - delta) {
       best = sign * value
@@ -270,7 +272,7 @@ export function bestCheckpoint(
   let value = Number.POSITIVE_INFINITY
   let params: Params | undefined
   let epoch = -1
-  const offer = (ctx: HookContext<never>, v: number | undefined): void => {
+  const offer = (ctx: TrainingHookContext<never>, v: number | undefined): void => {
     if (v === undefined || !(sign * v < value)) return
     value = sign * v
     params = ctx.params
@@ -333,7 +335,7 @@ export function reduceLROnPlateau(
   let bad = 0
   let cooling = 0
   let scale = 1
-  const check = (ctx: HookContext<'lr_scale'>, value: number | undefined): void => {
+  const check = (ctx: TrainingHookContext<'lr_scale'>, value: number | undefined): void => {
     if (value === undefined) return
     const v = sign * value
     // PyTorch's 'rel' mode: improvement means v < best (1 - threshold) for positive best.

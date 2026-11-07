@@ -26,7 +26,7 @@ import {
   latinHypercubeSampler,
   nelderMeadSampler,
   randomSampler,
-  type Sampler,
+  type StudySampler,
   sobolSampler,
   tpeSampler,
   tune,
@@ -46,7 +46,7 @@ const SPACES: readonly Space[] = [
   }),
 ]
 
-const SAMPLERS: readonly (() => Sampler)[] = [
+const SAMPLERS: readonly (() => StudySampler)[] = [
   () => randomSampler(),
   () => sobolSampler(),
   () => sobolSampler({ scramble: key(1) }),
@@ -75,7 +75,7 @@ describe('every sampler proposes members of the space', () => {
         fc.integer({ min: 0, max: 1000 }),
         (s, m, seed) => {
           const space = SPACES[s] as Space
-          const sampler = (SAMPLERS[m] as () => Sampler)()
+          const sampler = (SAMPLERS[m] as () => StudySampler)()
           const study = tune(functionObjective(rugged), space, {
             sampler,
             nTrials: 12,

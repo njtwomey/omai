@@ -14,7 +14,7 @@ import { fromStorage, type Tensor, type TensorLike, toVector } from '../tensor/i
  *
  * @concept datasets
  */
-export type Sampler = (epoch: number) => Int32Array
+export type RowOrder = (epoch: number) => Int32Array
 
 /**
  * Visit rows `0, 1, ..., n - 1` in order every epoch.
@@ -27,7 +27,7 @@ export type Sampler = (epoch: number) => Int32Array
  * Array.from(sequentialSampler(3)(0)) // => [0, 1, 2]
  * ```
  */
-export function sequentialSampler(n: number): Sampler {
+export function sequentialSampler(n: number): RowOrder {
   return () => Int32Array.from({ length: n }, (_, i) => i)
 }
 
@@ -55,7 +55,7 @@ export interface RandomSamplerOptions {
  * Array.from(randomSampler(4, key(0))(0)).sort() // => [0, 1, 2, 3]
  * ```
  */
-export function randomSampler(n: number, key: Key, options: RandomSamplerOptions = {}): Sampler {
+export function randomSampler(n: number, key: Key, options: RandomSamplerOptions = {}): RowOrder {
   const m = options.numSamples ?? n
   if (!Number.isInteger(m) || m < 0)
     throw new MdmlError('value', `randomSampler: the number of samples must be a whole number, got ${m}`)
@@ -92,7 +92,7 @@ export function weightedRandomSampler(
   numSamples: number,
   key: Key,
   options: { readonly replacement?: boolean } = {},
-): Sampler {
+): RowOrder {
   const score = toVector(weights, 'weightedRandomSampler')
   const positive = score.filter((w) => w > 0).length
   if (options.replacement === false && numSamples > positive)
@@ -121,7 +121,7 @@ export function weightedRandomSampler(
  * Array.from(subsetRandomSampler([5, 7], key(0))(0)).sort() // => [5, 7]
  * ```
  */
-export function subsetRandomSampler(indices: readonly number[], key: Key): Sampler {
+export function subsetRandomSampler(indices: readonly number[], key: Key): RowOrder {
   return (epoch) => {
     const p = permutation(foldIn(key, epoch), indices.length).data
     return Int32Array.from(p, (i) => indices[i] ?? 0)
@@ -168,7 +168,7 @@ export function balancedWeights(labels: TensorLike): Tensor<'float64'> {
  * batchSampler(sequentialSampler(5), 2)(0).map((b) => Array.from(b)) // => [[0, 1], [2, 3], [4]]
  * ```
  */
-export function batchSampler(sampler: Sampler, batchSize: number, dropLast = false): (epoch: number) => Int32Array[] {
+export function batchSampler(sampler: RowOrder, batchSize: number, dropLast = false): (epoch: number) => Int32Array[] {
   if (!(Number.isInteger(batchSize) && batchSize >= 1))
     throw new MdmlError('value', `batchSampler: the batch size must be a whole number of at least 1, got ${batchSize}`)
   return (epoch) => {

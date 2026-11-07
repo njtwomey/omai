@@ -4,7 +4,7 @@
  * proxy feature), the Statlog German credit data, and Titanic survival with sex and age as protected attributes.
  */
 
-import { type ClassificationData, type DatasetGenerator, type Knobs, xyClasses } from '../data/index.ts'
+import { type ClassificationData, type DatasetGenerator, type GeneratorKnobs, xyClasses } from '../data/index.ts'
 import { ndtr } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
@@ -34,7 +34,7 @@ interface CreditModel {
   readonly noise: number
 }
 
-function creditModel(knobs: Knobs): CreditModel {
+function creditModel(knobs: GeneratorKnobs): CreditModel {
   return {
     share: knobs['minorityShare'] as number,
     gap: knobs['baseRateGap'] as number,

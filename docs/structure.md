@@ -372,7 +372,7 @@ Everything in the library is written against these contracts. A reader who knows
 |   7 | `Estimator`, `Fitted`                                           | `lib/learn`                                       | every learner: linear, kernel, tree, neural, Bayesian                                         |
 |   8 | data schemas, `DatasetGenerator`, `Truth`                       | `lib/data`                                        | datasets, estimators, splitters, metrics                                                      |
 |   9 | `MetricSpec`, `MetricResult`, `TestResult`, `Estimate`          | `lib/base/results.ts`, `lib/metrics`, `lib/stats` | every metric and every statistical test                                                       |
-|  10 | `Objective`, `Study`, `Trial`, `Sampler`                        | `lib/tune`                                        | every selection problem                                                                       |
+|  10 | `StudyObjective`, `Study`, `Trial`, `StudySampler`              | `lib/tune`                                        | every selection problem                                                                       |
 |  11 | `Env`, `Agent`                                                  | `lib/rl`                                          | every sequential decision problem                                                             |
 |  12 | `SearchProblem`                                                 | `lib/search`                                      | paths, planning, constraint satisfaction, games, pattern and rule search, ILP                 |
 |  13 | `Scene`, `Structure`, `describe()`                              | `lib/scene`                                       | every picture and every graph-shaped thing                                                    |
@@ -462,9 +462,9 @@ declares a metric's name, inputs, direction, range and category, so tuners and r
 
 ### 3.10 Objectives and studies
 
-Any selection problem is an `Objective` from a `Space` to one or more values (optionally reporting intermediate values
+Any selection problem is a `StudyObjective` from a `Space` to one or more values (optionally reporting intermediate values
 for pruning). Adapters turn estimators with a splitter and metric, training loops, agents in environments, programs
-(evidence, ELBO, LOO) and black-box functions into objectives. A `Study` runs a `Sampler` (grid, random, Sobol, CMA-ES,
+(evidence, ELBO, LOO) and black-box functions into objectives. A `Study` runs a `StudySampler` (grid, random, Sobol, CMA-ES,
 Bayesian optimisation, TPE) with optional pruning and multi-fidelity schedules, as a traced algorithm whose steps are
 trials.
 
@@ -755,7 +755,7 @@ lambdify values)
   piecewise, Leibniz's rule for integrals), `diffSteps`, `gradient`, `jacobian`, `hessian`, `implicitDiff`,
   `implicitDiffSteps`, `DiffSpec`.
 - `series.ts`: `series` (Taylor, Laurent at poles, at points and at infinity, log terms), `seriesSteps`, `taylor`,
-  `seriesCoefficients`, `residue`, `pade`, `bigO`, `removeO`, `Direction`. TODO: Puiseux series (fractional powers at
+  `seriesCoefficients`, `residue`, `pade`, `bigO`, `removeO`, `SeriesDirection`. TODO: Puiseux series (fractional powers at
   branch points) and expansions at essential singularities.
 - `limits.ts`: `limit` (direct substitution, series leading terms, continuity of composed functions, l'Hopital's rule
   for 0/0, oo/oo and 0*oo, exp(lim g log f) for powers, with a numeric cross-check), one-sided and two-sided limits,
@@ -776,7 +776,7 @@ lambdify values)
   equations, products, polynomials in exp(x) or another single function of x, invertible a*h(u) + b = 0 with SymPy's
   principal solutions), `solveSteps`, `solveLinearSystem` (Gauss-Jordan over expressions, underdetermined systems in
   terms of the free unknowns).
-- `matrices.ts`: `Matrix`, `matrix`, `identityMatrix`, `transpose`, `matMul`, `det` and `charpoly` (Berkowitz,
+- `matrices.ts`: `ExprMatrix`, `matrix`, `identityMatrix`, `transpose`, `matMul`, `det` and `charpoly` (Berkowitz,
   division-free), `inverse` (adjugate), `nullspace`, `eigenvals`, `eigenvects`, `Eigenvector`.
 - `latex.ts`: `toLatex` (expressions and matrices), `toText`, `stepsToLatex` (derivations as `aligned` blocks).
 - `compile.ts`: `compile(expr, symbols, options)` to a function over tensors and traced values built from tensor
@@ -1186,7 +1186,7 @@ are inlined into `mdml-engine/data`. Each modifier also comes as a recipe `Modif
 - `loader.ts`: `DatasetRef`, `load` (embedded, remote or several remote files; sha256 verification with Web Crypto),
   `AssetCache` (`memoryCache`, `indexedDbCache`), `sha256Hex`.
 - `archives.ts`: `gunzip`, `untar`, `unzip`, `parseCsv`, `parseNpy`, for parsing remote assets in the browser.
-- `samplers.ts`: `Sampler`, `sequentialSampler`, `randomSampler`, `weightedRandomSampler`, `subsetRandomSampler`,
+- `samplers.ts`: `RowOrder`, `sequentialSampler`, `randomSampler`, `weightedRandomSampler`, `subsetRandomSampler`,
   `batchSampler`, `balancedWeights` (torch.utils.data samplers, reshuffled per epoch by derived keys).
 - `batching.ts`: `batches` (batch size, shuffle by key or sampler, drop last), `epochBatches`, `epochs`, `dataLoader`,
   `collate`, `padSequences`, `sequenceLengths`, `bucketBy`.
@@ -2365,7 +2365,7 @@ traced through `samplerAlgorithm`; every loop has an iteration or depth cap and 
 gradients, infinite step sizes) end in rejections or divergences, never hangs.
 - `target.ts`: `LogDensity` (log density, gradient by autodiff or by hand, dimension, names, constraints,
   `constrain`/`unconstrain`), `target`, `numericTarget`, `targetFromDistribution` (unconstrained through
-  `bijectorForSupport`), `unconstrainedTarget` (per-coordinate supports or a bijector), `Proposal`, `proposal`,
+  `bijectorForSupport`), `unconstrainedTarget` (per-coordinate supports or a bijector), `ChainProposal`, `proposal`,
   `proposalFromDistribution`, and the standard targets `nealsFunnel` (centred and non-centred) and `banana` (Haario).
 - `chains.ts`: the kernel protocol (`MCMCKernel`, `MCMCState`, `TransitionInfo`, `Adaptation`, `Warmup`),
   `samplerSchema`, `samplerAlgorithm` (per-iteration position, log density, acceptance, step size, tree depth,
@@ -3338,7 +3338,7 @@ oracle once the oracle environment has it.
   `StackingPath`, `BoostingPath`, `AdaBoostPath`), in `gp/` (`GpPath`, `GpcPath`, `SparseGpPath`, `RvmPath`), in
   `rules/` (`CoveringPath`, `RipperPath`, `CorelsPath`, `BayesianRuleListPath`, `OneRPath`, `DecisionTablePath`),
   `anomaly/isolation.ts` (`IsolationForestPath`), `learn/naive-bayes.ts` (the tree-augmented naive Bayes, `never`),
-  `nn/training/callbacks.ts` (`Callback<K>`, `HookContext<K>` and `CallbackPath`, with template literals for the
+  `nn/training/callbacks.ts` (`Callback<K>`, `TrainingHookContext<K>` and `CallbackPath`, with template literals for the
   parameter and tap names), `rl/training.ts` (`TrainingPath`), the methods `mixture/` (`GmmPath`, `BgmmPath`,
   `MoePath`), `linear/bayesianRegression.ts`, `cluster/kmeans.ts`, `sequence/hmm.ts`, and the `defineMethod` pages of
   `dynamics/`, `linalg/`, `probability/`, `stochastic/`, `tune/` and `vision/`. **What is left (counted by grep,
@@ -3356,7 +3356,7 @@ oracle once the oracle environment has it.
   matches `\b(iterative|defineTrainer|defineAgentMethod)\s*[<(]`, `^\s*contract[:(]` or `ctx\.(log|emit)\(`, and drop
   those that also mention `Algorithm<_, K>`, `Contract<_, K>`, `Method<_, _, K>`, `StepContext<` or `defineContract(`
   (the file is the unit, so a file typed in part counts as typed); `callbacks.ts` and `vision/refinement.ts` match the
-  log rule and are typed through `HookContext<K>` and `Algorithm<_, RefinementPath>`, which the pattern does not see.; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
+  log rule and are typed through `TrainingHookContext<K>` and `Algorithm<_, RefinementPath>`, which the pattern does not see.; `sweep.ts`: the sweep and repeated-fit base. `sweep(spec)` is an `Algorithm` with one trial per step
   (a configuration at a repeat) that runs an inner `Method` as an eager `session` over a `grid` or `sample` of some of
   its knobs (`knobsOf` picks them), or over explicit configurations, under paired keys (repeat `r` is the same key in
   every configuration) or fresh ones; it logs `trial/<knob>`, `trial/<metric>` (the final value of each metric path
@@ -3890,7 +3890,7 @@ Hyperband brackets, Pareto fronts and hypervolume, PED-ANOVA importance, GP post
 posteriors with fixed kernels) and scipy (acquisition closed forms); stochastic samplers are checked by optimisation
 performance on Branin and Hartmann functions within budgets, with explicit keys
 
-A study runs trials over a `Space` against an `Objective`. Objectives can be cross-validated estimators, training runs
+A study runs trials over a `Space` against a `StudyObjective`. Objectives can be cross-validated estimators, training runs
 with epochs as fidelity, agents in environments, probabilistic programs (evidence, ELBO, LOO) or any function. The same
 samplers, pruners and schedules work for all of them. A study is a traced algorithm whose steps are trials, each a
 child run. Samplers and pruners are pure functions of the study (what they remember lives on the trials), so a study
@@ -3901,14 +3901,14 @@ resumed at trial t draws exactly what an uninterrupted run would.
 - `tuning.ts`: `studyAlgorithm` (one trial per step; trial child runs record reports and pruning decisions; stops on the
   trial or resource budget, an exhausted sampler or schedule, repeated failures, a constant objective or lack of
   improvement) and `tune(objective, space, options)` (enqueued configurations, resuming a study).
-- `objectives.ts`: the `Objective` and `TrialContext` contracts (`report` returns whether to stop), `objectiveBase`,
+- `objectives.ts`: the `StudyObjective` and `TrialContext` contracts (`report` returns whether to stop), `objectiveBase`,
   `functionObjective`, `multiObjective`, `trainingObjective` (a traced algorithm as a child run, reporting per step for
   pruning, with the schedule's budget as its steps), `agentObjective`, `programObjective`. TODO(probprog):
   `programObjective` takes a fit function returning the criteria until `probprog` lands; then a model and data.
 - `estimators.ts`: estimator objectives on `learn`'s contract: `estimatorFor` (`estimator.with(params)` or a factory),
   `estimatorObjective` (a `learn` splitter or `cv` count, scored by a metric, a `learn` scorer or the estimator's own
   score; the running mean reported per fold; each fit a child run of the trial) and `holdoutObjective`.
-- `samplers.ts`: the `Sampler` contract; grid (scikit-learn's order), random, Sobol (plain or scrambled), Halton and
+- `samplers.ts`: the `StudySampler` contract; grid (scikit-learn's order), random, Sobol (plain or scrambled), Halton and
   Latin hypercube samplers; CMA-ES (IPOP restarts) and Nelder-Mead samplers from `optim`, asked and told by replaying the
   optimiser (`_replay.ts`); an evolutionary sampler (NSGA-II for several objectives) from the operators of `search`.
 - `parzen.ts`: Optuna's Parzen estimators (bandwidths, prior, weights; truncated normals, stepped and log leaves,
@@ -4909,7 +4909,7 @@ gradient, so any `optim` minimiser could use it).
 
 ### 4.48 `trees/`: decision trees (scikit-learn tree, river)
 
-A fitted tree is plain arrays in the layout of scikit-learn's `tree_` (`Tree`), with categorical subset splits and a
+A fitted tree is plain arrays in the layout of scikit-learn's `tree_` (`FittedTree`), with categorical subset splits and a
 missing-value direction per split; `tree.ts` holds prediction, `applyTree`, `decisionPath`, `nodeRegions`, impurity
 importances, `treeToStructure`, `exportText`, and `TreeModel` and `treePredict` (the scalar-valued view tree SHAP and rule
 extraction read; moved from `explain/shapley.ts`, which re-exports them). `criteria.ts` holds Gini, entropy (bits; the same
@@ -4918,7 +4918,7 @@ as log loss), squared error, Friedman's improvement, absolute error, Poisson dev
 the codes of a categorical feature, missing values sent to the better side, sample weights and leaf-size limits, with
 every candidate evaluated and recorded. `grow.ts` is the grower as an `Algorithm`, one node decided per step, depth-first
 (ids in preorder, as scikit-learn), breadth-first or best-first under a leaf limit, with depth, samples, minimum impurity
-decrease and a per-split feature subset (`maxFeatures`, for forests); a state, even a partial one, gives a `Tree`
+decrease and a per-split feature subset (`maxFeatures`, for forests); a state, even a partial one, gives a `FittedTree`
 (`treeOfState`) and a `TreeRecord` with every node's candidates (`treeRecordOf`); `growTree` runs it. `prune.ts` has
 minimal cost-complexity pruning as an algorithm (the weakest link per step; `costComplexityPath` is the `PruningPath`
 record, `pruneTree` stops at an alpha) and reduced-error pruning on held-out rows (also an algorithm).
@@ -5961,7 +5961,7 @@ built from: `kernels`, `numerics/linalg`, `optim`, `learn`
 
 `trees/` (sklearn.tree)
 built from: `learn`, `metrics`, `scene` (tree structures)
-- `tree.ts`: the `Tree` data structure, prediction, `apply`, decision paths, node regions, `toStructure`, text export.
+- `tree.ts`: the `FittedTree` data structure, prediction, `apply`, decision paths, node regions, `toStructure`, text export.
 - `criteria.ts`: Gini, entropy, log loss, squared error (two-pass), absolute error and Poisson criteria; exact and
   histogram split search; surrogate splits.
 - `grow.ts`: depth-first, breadth-first and best-first growth (one node per step, traced), classifiers and regressors.

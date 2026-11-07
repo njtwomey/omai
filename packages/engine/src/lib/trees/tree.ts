@@ -19,7 +19,7 @@ import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
  * `left[i] = -1`, `feature[i] = -2` and `threshold[i] = -2`. `value` holds the weighted class counts of a classifier
  * and the (weighted) mean target, in a one-entry list, of a regressor.
  */
-export type Tree = {
+export type FittedTree = {
   readonly task: 'classification' | 'regression'
   /** Class labels of a classifier (empty for regression). */
   readonly classes: number[]
@@ -115,7 +115,7 @@ export function leafOfModel(tree: TreeModel, m: MatrixView, i: number): number {
  * isLeaf(t, 1) // => true
  * ```
  */
-export function isLeaf(tree: Tree, node: number): boolean {
+export function isLeaf(tree: FittedTree, node: number): boolean {
   return (tree.left[node] ?? -1) < 0
 }
 
@@ -136,7 +136,7 @@ export function stumpTree(split: {
   readonly threshold: number
   readonly left: number
   readonly right: number
-}): Tree {
+}): FittedTree {
   return {
     task: 'regression',
     classes: [],
@@ -154,7 +154,7 @@ export function stumpTree(split: {
   }
 }
 
-function goesLeft(tree: Tree, node: number, v: number): boolean {
+function goesLeft(tree: FittedTree, node: number, v: number): boolean {
   if (Number.isNaN(v)) return tree.missingLeft[node] === true
   const cats = tree.categories[node] ?? []
   if (cats.length > 0) return cats.includes(v)
@@ -173,7 +173,7 @@ function goesLeft(tree: Tree, node: number, v: number): boolean {
  * Array.from(applyTree(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }), [[0], [1], [0.2]])) // => [1, 2, 1]
  * ```
  */
-export function applyTree(tree: Tree, x: TensorLike): Int32Array {
+export function applyTree(tree: FittedTree, x: TensorLike): Int32Array {
   const m = matrixView(x, 'applyTree', { nFeatures: tree.nFeatures, allowNaN: true })
   const out = new Int32Array(m.n)
   for (let i = 0; i < m.n; i++) {
@@ -199,7 +199,7 @@ export function applyTree(tree: Tree, x: TensorLike): Int32Array {
  * decisionPath(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }), [[0], [1]]) // => [[0, 1], [0, 2]]
  * ```
  */
-export function decisionPath(tree: Tree, x: TensorLike): number[][] {
+export function decisionPath(tree: FittedTree, x: TensorLike): number[][] {
   const m = matrixView(x, 'decisionPath', { nFeatures: tree.nFeatures, allowNaN: true })
   return Array.from({ length: m.n }, (_, i) => {
     const path = [0]
@@ -227,7 +227,7 @@ export function decisionPath(tree: Tree, x: TensorLike): number[][] {
  * toFlat(treeOutputs(stumpTree({ feature: 0, threshold: 0.5, left: 3, right: 5 }), [[0], [1]])) // => [3, 5]
  * ```
  */
-export function treeOutputs(tree: Tree, x: TensorLike): Tensor {
+export function treeOutputs(tree: FittedTree, x: TensorLike): Tensor {
   const leaves = applyTree(tree, x)
   if (tree.task === 'regression')
     return fromStorage(
@@ -258,7 +258,7 @@ export function treeOutputs(tree: Tree, x: TensorLike): Tensor {
  * toFlat(predictTree(stumpTree({ feature: 0, threshold: 0.5, left: 1, right: 2 }), [[0.9]])) // => [2]
  * ```
  */
-export function predictTree(tree: Tree, x: TensorLike): Tensor {
+export function predictTree(tree: FittedTree, x: TensorLike): Tensor {
   if (tree.task === 'regression') return treeOutputs(tree, x)
   const leaves = applyTree(tree, x)
   return fromStorage(
@@ -279,7 +279,7 @@ export function predictTree(tree: Tree, x: TensorLike): Tensor {
  * treeDepth(stumpTree({ feature: 0, threshold: 0, left: 0, right: 1 })) // => 1
  * ```
  */
-export function treeDepth(tree: Tree): number {
+export function treeDepth(tree: FittedTree): number {
   const depth = (node: number): number =>
     isLeaf(tree, node) ? 0 : 1 + Math.max(depth(tree.left[node] ?? 0), depth(tree.right[node] ?? 0))
   return depth(0)
@@ -296,7 +296,7 @@ export function treeDepth(tree: Tree): number {
  * leafCount(stumpTree({ feature: 0, threshold: 0, left: 0, right: 1 })) // => 2
  * ```
  */
-export function leafCount(tree: Tree): number {
+export function leafCount(tree: FittedTree): number {
   return tree.left.filter((l) => l < 0).length
 }
 
@@ -321,7 +321,7 @@ export interface NodeRegion {
  * r[1]?.upper[0] // => 0.5
  * ```
  */
-export function nodeRegions(tree: Tree): NodeRegion[] {
+export function nodeRegions(tree: FittedTree): NodeRegion[] {
   const d = tree.nFeatures
   const out: NodeRegion[] = new Array<NodeRegion>(tree.feature.length)
   out[0] = {
@@ -366,7 +366,7 @@ export function nodeRegions(tree: Tree): NodeRegion[] {
  * treeFeatureImportances({ ...stumpTree({ feature: 1, threshold: 0, left: 0, right: 1 }), impurity: [0.5, 0, 0] }) // => [0, 1]
  * ```
  */
-export function treeFeatureImportances(tree: Tree): number[] {
+export function treeFeatureImportances(tree: FittedTree): number[] {
   const out = new Array<number>(tree.nFeatures).fill(0)
   for (let i = 0; i < tree.feature.length; i++) {
     if (isLeaf(tree, i)) continue
@@ -395,7 +395,7 @@ export function treeFeatureImportances(tree: Tree): number[] {
  * treeModel(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })).value // => [0.5, 0, 1]
  * ```
  */
-export function treeModel(tree: Tree, output?: number | 'label'): TreeModel {
+export function treeModel(tree: FittedTree, output?: number | 'label'): TreeModel {
   if (tree.categories.some((c) => c.length > 0))
     throw new MdmlError('value', 'treeModel: categorical splits have no scalar-valued form')
   const k = tree.classes.length
@@ -417,7 +417,7 @@ export function treeModel(tree: Tree, output?: number | 'label'): TreeModel {
 
 const fmt = (v: number): string => (Number.isInteger(v) ? String(v) : v.toFixed(3))
 
-function testText(tree: Tree, node: number, name: (j: number) => string): string {
+function testText(tree: FittedTree, node: number, name: (j: number) => string): string {
   const f = name(tree.feature[node] ?? 0)
   const cats = tree.categories[node] ?? []
   return cats.length > 0 ? `${f} in {${cats.join(', ')}}` : `${f} <= ${fmt(tree.threshold[node] ?? 0)}`
@@ -438,7 +438,7 @@ function testText(tree: Tree, node: number, name: (j: number) => string): string
  * ```
  */
 export function treeToStructure(
-  tree: Tree,
+  tree: FittedTree,
   features: readonly string[] = [],
   classNames: readonly string[] = [],
 ): Structure {
@@ -481,7 +481,7 @@ export function treeToStructure(
  * exportText(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })).split('\n')[0] // => '|--- x0 <= 0.50'
  * ```
  */
-export function exportText(tree: Tree, features: readonly string[] = []): string {
+export function exportText(tree: FittedTree, features: readonly string[] = []): string {
   const lines: string[] = []
   const name = (j: number): string => features[j] ?? `x${j}`
   const leafText = (id: number): string => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadFixture } from '../../testing/golden.ts'
 import { choice, dict, int, real, type SpaceValue } from '../space/index.ts'
-import { functionObjective, gridSampler, haltonSampler, type Sampler, sobolSampler, tune } from './index.ts'
+import { functionObjective, gridSampler, haltonSampler, type StudySampler, sobolSampler, tune } from './index.ts'
 
 const fixture = loadFixture('tune/samplers')
 
@@ -42,7 +42,7 @@ describe('sampler orders against scikit-learn and optuna', () => {
         expect(got).toEqual(c.output)
         return
       }
-      const sampler: Sampler = c.fn === 'sobol' ? sobolSampler() : haltonSampler()
+      const sampler: StudySampler = c.fn === 'sobol' ? sobolSampler() : haltonSampler()
       const n = Number(c.params['n'])
       const study = tune(
         functionObjective(() => 0),

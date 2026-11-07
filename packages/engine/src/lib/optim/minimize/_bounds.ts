@@ -1,11 +1,11 @@
 // Box bounds shared by the derivative-free and global methods (not exported from the barrel).
 import { MdmlError } from '../../base/index.ts'
 import { toFlat, type Value } from '../../tensor/index.ts'
-import type { Tree } from '../transform.ts'
-import { type Bounds, type Box, boxOf, clipToBox, type FlatObjective } from './objective.ts'
+import type { ParamTree } from '../transform.ts'
+import { type Bounds, type BoundVectors, boxOf, clipToBox, type FlatObjective } from './objective.ts'
 
-/** Lower and upper bound vectors (the shared {@link Box}). */
-export type BoundArrays = Box
+/** Lower and upper bound vectors (the shared {@link BoundVectors}). */
+export type BoundArrays = BoundVectors
 
 /** The bound vectors for `n` parameters, checking the shape and order. */
 export function boundArrays(bounds: Bounds, n: number, name: string): BoundArrays {
@@ -39,6 +39,10 @@ export function asPairs(b: BoundArrays): readonly (readonly [number, number])[] 
 }
 
 /** The flat values of a constraint function (one value or a vector) at a flat point. */
-export function constraintValues(c: (params: Tree) => Value, objective: FlatObjective, x: ArrayLike<number>): number[] {
+export function constraintValues(
+  c: (params: ParamTree) => Value,
+  objective: FlatObjective,
+  x: ArrayLike<number>,
+): number[] {
   return toFlat(c(objective.unravel(x)))
 }

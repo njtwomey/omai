@@ -6,7 +6,7 @@
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { cdist, metricFunction, procrustes } from '../numerics/geometry/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
-import { defineMetric, flat, type MetricFunction, matrix, metricResult } from './metric.ts'
+import { defineMetric, flat, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 const spec = (
   name: string,
@@ -72,8 +72,8 @@ export const minkowskiDistance: MetricFunction<
 export const cosineSimilarity: MetricFunction<[TensorLike, TensorLike]> = defineMetric(
   spec('cosineSimilarity', 'higher', [-1, 1]),
   (u: TensorLike, v: TensorLike): MetricResult => {
-    const a = matrix(u)
-    const b = matrix(v)
+    const a = shapedArray(u)
+    const b = shapedArray(v)
     const d = a.shape[a.shape.length - 1] ?? 1
     const rows = a.data.length / d
     if (b.data.length !== a.data.length) throw new MdmlError('shape', 'cosineSimilarity: inputs differ in shape')
@@ -133,12 +133,12 @@ export const mahalanobisDistance: MetricFunction<[TensorLike, TensorLike, Tensor
 export const procrustesDisparity: MetricFunction<[TensorLike, TensorLike]> = defineMetric(
   spec('procrustesDisparity', 'lower', [0, 1]),
   (data1: TensorLike, data2: TensorLike): MetricResult =>
-    metricResult('procrustesDisparity', item(procrustes(data1, data2).disparity), matrix(data1).shape[0] ?? 0),
+    metricResult('procrustesDisparity', item(procrustes(data1, data2).disparity), shapedArray(data1).shape[0] ?? 0),
 )
 
 /** For each point of a, the distance to its nearest point of b (Euclidean). */
 function nearest(a: TensorLike, b: TensorLike): { ab: number[]; ba: number[] } {
-  const d = matrix(cdist(a, b))
+  const d = shapedArray(cdist(a, b))
   const n = d.shape[0] ?? 0
   const m = d.shape[1] ?? 0
   const ab = Array.from({ length: n }, (_, i) => {

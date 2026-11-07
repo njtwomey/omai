@@ -22,22 +22,22 @@ import {
 } from '../scene/index.ts'
 import { matmul, mul, promoteFloat, sum, type TensorLike, toArray, toFlat, type Value } from '../tensor/index.ts'
 
-type Matrix = number[][]
+type MutableRows = number[][]
 
-function matrix(a: TensorLike, name: string): Matrix {
+function matrix(a: TensorLike, name: string): MutableRows {
   const [v] = promoteFloat(a) as [Value]
   if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a matrix [m, n]`)
-  return toArray(v) as Matrix
+  return toArray(v) as MutableRows
 }
 
-function square(a: TensorLike, name: string): Matrix {
+function square(a: TensorLike, name: string): MutableRows {
   const m = matrix(a, name)
   if (m.some((row) => row.length !== m.length)) throw new MdmlError('shape', `${name}: expected a square matrix`)
   return m
 }
 
-const copy = (m: Matrix): Matrix => m.map((r) => r.map((x) => (Object.is(x, -0) ? 0 : x)))
-const scaleOf = (m: Matrix): number => maxOf(m.flat().map(Math.abs))
+const copy = (m: MutableRows): MutableRows => m.map((r) => r.map((x) => (Object.is(x, -0) ? 0 : x)))
+const scaleOf = (m: MutableRows): number => maxOf(m.flat().map(Math.abs))
 
 /** An elementary row operation. */
 export type RowOperation =
@@ -71,7 +71,7 @@ function describe(op: RowOperation): string {
   return `R${op.target + 1} <- R${op.target + 1} ${sign} ${fmt(Math.abs(op.factor))} R${op.source + 1}`
 }
 
-function apply(m: Matrix, op: RowOperation): void {
+function apply(m: MutableRows, op: RowOperation): void {
   if (op.kind === 'swap') {
     const [i, j] = op.rows
     const t = m[i] as number[]
@@ -87,11 +87,11 @@ function apply(m: Matrix, op: RowOperation): void {
 
 /** Run forward elimination (and, for the reduced form, back substitution) recording every step. */
 function eliminate(
-  a: Matrix,
+  a: MutableRows,
   reduced: boolean,
   options: EliminationOptions,
   columns?: number,
-): { m: Matrix; pivots: [number, number][]; steps: EliminationStep[]; swaps: number } {
+): { m: MutableRows; pivots: [number, number][]; steps: EliminationStep[]; swaps: number } {
   const m = copy(a)
   const rows = m.length
   const cols = columns ?? m[0]?.length ?? 0
@@ -270,7 +270,7 @@ export function luSteps(a: TensorLike): LuSteps {
   const am = square(a, 'luSteps')
   const n = am.length
   const u = copy(am)
-  const l: Matrix = Array.from({ length: n }, () => Array.from({ length: n }, () => 0))
+  const l: MutableRows = Array.from({ length: n }, () => Array.from({ length: n }, () => 0))
   const perm = Array.from({ length: n }, (_, i) => i)
   const steps: EliminationStep[] = []
   for (let k = 0; k < n; k++) {
@@ -329,7 +329,7 @@ export interface CofactorTerm {
 export function detByCofactors(a: TensorLike): { readonly value: number; readonly terms: CofactorTerm[] } {
   const am = square(a, 'detByCofactors')
   if (am.length > 9) throw new MdmlError('value', 'detByCofactors: n! work; use detByElimination beyond 9 x 9')
-  const det = (m: Matrix): number => {
+  const det = (m: MutableRows): number => {
     const n = m.length
     if (n === 0) return 1
     if (n === 1) return m[0]?.[0] ?? 0
@@ -353,7 +353,7 @@ export function detByCofactors(a: TensorLike): { readonly value: number; readonl
   }
 }
 
-function minorOf(m: Matrix, row: number, col: number): Matrix {
+function minorOf(m: MutableRows, row: number, col: number): MutableRows {
   return m.filter((_, i) => i !== row).map((r) => r.filter((_, j) => j !== col))
 }
 
@@ -715,11 +715,11 @@ export interface CharacteristicPolynomial {
 export function characteristicPolynomial(a: TensorLike): CharacteristicPolynomial {
   const am = square(a, 'characteristicPolynomial')
   const n = am.length
-  const mul2 = (p: Matrix, q: Matrix): Matrix =>
+  const mul2 = (p: MutableRows, q: MutableRows): MutableRows =>
     p.map((row) => q[0]?.map((_, j) => row.reduce((s, v, k) => s + v * (q[k]?.[j] ?? 0), 0)) ?? [])
   const coefficients = [1]
-  const steps: Matrix[] = []
-  let mk: Matrix = am.map((r, i) => r.map((_, j) => (i === j ? 1 : 0)))
+  const steps: MutableRows[] = []
+  let mk: MutableRows = am.map((r, i) => r.map((_, j) => (i === j ? 1 : 0)))
   for (let k = 1; k <= n; k++) {
     steps.push(copy(mk))
     const product = mul2(am, mk)
@@ -788,7 +788,7 @@ export function smallEigen(a: TensorLike, tol = 1e-5): SmallEigenpair[] {
       ns === null || (ns.shape[1] ?? 0) === 0
         ? []
         : (() => {
-            const cols = toArray(ns) as Matrix
+            const cols = toArray(ns) as MutableRows
             const k = ns.shape[1] ?? 0
             return Array.from({ length: k }, (_, j) => {
               const v = cols.map((r) => r[j] ?? 0)
@@ -844,7 +844,7 @@ export function diagonalise(a: TensorLike): Diagonalisation {
   const cols = pairs.flatMap((p) => p.eigenvectors)
   const d = pairs.flatMap((p) => p.eigenvectors.map(() => p.re))
   const pm = Array.from({ length: n }, (_, i) => cols.map((c) => c[i] ?? 0))
-  const inv = toArray(pinv(pm)) as Matrix
+  const inv = toArray(pinv(pm)) as MutableRows
   return { diagonalisable: true, p: pm, d, pInverse: inv }
 }
 
@@ -937,7 +937,7 @@ export function principalAxes(a: TensorLike): {
   const sym = am.map((r, i) => r.map((v, j) => (v + (am[j]?.[i] ?? 0)) / 2))
   const { eigenvalues, eigenvectors } = eigh(sym)
   const values = toFlat(eigenvalues)
-  const vecs = toArray(eigenvectors) as Matrix
+  const vecs = toArray(eigenvectors) as MutableRows
   return {
     eigenvalues: values,
     axes: values.map((_, j) => vecs.map((r) => r[j] ?? 0)),
@@ -976,9 +976,9 @@ export function svdGeometry(a: TensorLike, n = 64): SvdGeometry {
   const d = am.length
   if (d !== 2 && d !== 3) throw new MdmlError('shape', 'svdGeometry: a 2x2 or 3x3 matrix')
   const { u, s, vh } = svd(am)
-  const um = toArray(u) as Matrix
+  const um = toArray(u) as MutableRows
   const sv = toFlat(s)
-  const vt = toArray(vh) as Matrix
+  const vt = toArray(vh) as MutableRows
   const ts = Array.from({ length: n }, (_, i) => (2 * Math.PI * i) / n)
   const circle =
     d === 2
@@ -988,7 +988,7 @@ export function svdGeometry(a: TensorLike, n = 64): SvdGeometry {
           ...ts.map((t) => [Math.cos(t), 0, Math.sin(t)]),
           ...ts.map((t) => [0, Math.cos(t), Math.sin(t)]),
         ]
-  const apply = (m: Matrix, pts: number[][]): number[][] =>
+  const apply = (m: MutableRows, pts: number[][]): number[][] =>
     pts.map((p) => m.map((r) => r.reduce((acc, v, j) => acc + v * (p[j] ?? 0), 0)))
   const rotated = apply(vt, circle)
   const stretched = rotated.map((p) => p.map((x, i) => x * (sv[i] ?? 0)))

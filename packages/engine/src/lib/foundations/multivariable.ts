@@ -40,7 +40,7 @@ import { crossProduct } from './vectors.ts'
 export type ScalarField = (x: Value) => Value
 
 /** A vector field: points `[n, d]` to vectors `[n, m]` (usually m = d), vectorised over the points. */
-export type VectorField = (x: Value) => Value
+export type PointVectorField = (x: Value) => Value
 
 function points(x: TensorLike): Value {
   const [v] = promoteFloat(x) as [Value]
@@ -122,7 +122,7 @@ export function directionalDerivative(f: ScalarField, x: TensorLike, direction: 
  * toArray(jacobianAt((p: Value) => mul(p, p), [1, 3])) // => [[[2, 0], [0, 6]]]
  * ```
  */
-export function jacobianAt(F: VectorField, x: TensorLike): Value {
+export function jacobianAt(F: PointVectorField, x: TensorLike): Value {
   const p = points(x)
   return stack(
     Array.from({ length: dims(p) }, (_, j) => along(F, p, j)),
@@ -150,7 +150,7 @@ export function hessianAt(f: ScalarField, x: TensorLike): Value {
 }
 
 /** The local models of a scalar field at a point. */
-export interface QuadraticModel {
+export interface LocalModels {
   readonly point: number[]
   readonly value: number
   readonly gradient: number[]
@@ -178,7 +178,7 @@ export interface QuadraticModel {
  * toArray(q.quadratic([[0.1, 0.1]])) // => [1.22]
  * ```
  */
-export function quadraticApproximation(f: ScalarField, a: readonly number[]): QuadraticModel {
+export function quadraticApproximation(f: ScalarField, a: readonly number[]): LocalModels {
   const p = points([...a])
   const value = item(f(p))
   const gradient = toFlat(gradientAt(f, p))
@@ -339,7 +339,7 @@ export function lagrangeMultipliers(
  * toArray(divergence((p: Value) => p, [[1, 2, 3]])) // => [3]
  * ```
  */
-export function divergence(F: VectorField, x: TensorLike): Value {
+export function divergence(F: PointVectorField, x: TensorLike): Value {
   const p = points(x)
   let total: Value | null = null
   for (let j = 0; j < dims(p); j++) {
@@ -367,7 +367,7 @@ export function divergence(F: VectorField, x: TensorLike): Value {
  * toArray(curl(rotation, [[0.3, 0.4]])) // => [2]
  * ```
  */
-export function curl(F: VectorField, x: TensorLike): Value {
+export function curl(F: PointVectorField, x: TensorLike): Value {
   const p = points(x)
   const d = dims(p)
   const partial = (i: number, j: number): Value => squeeze(sliceAxis(along(F, p, j), -1, i, i + 1), -1)
@@ -432,7 +432,7 @@ export function scalarLineIntegral(f: ScalarField, r: ParametricCurve, a: number
  * vectorLineIntegral((p: Value) => p, (t: Value) => stack([t, t], -1), 0, 1) // => 1
  * ```
  */
-export function vectorLineIntegral(F: VectorField, r: ParametricCurve, a: number, b: number): number {
+export function vectorLineIntegral(F: PointVectorField, r: ParametricCurve, a: number, b: number): number {
   return item(quad((t) => sum(mul(F(r(t)), tangentOf(r, t)), -1), a, b, { epsabs: 1e-12, epsrel: 1e-12 }).value)
 }
 
@@ -453,7 +453,7 @@ export function vectorLineIntegral(F: VectorField, r: ParametricCurve, a: number
  * planeFlux((p: Value) => p, (t: Value) => stack([cos(t), sin(t)], -1), 0, 2 * Math.PI) / Math.PI // => 2
  * ```
  */
-export function planeFlux(F: VectorField, r: ParametricCurve, a: number, b: number): number {
+export function planeFlux(F: PointVectorField, r: ParametricCurve, a: number, b: number): number {
   return item(
     quad(
       (t) => {
@@ -522,7 +522,7 @@ export function scalarSurfaceIntegral(f: ScalarField, s: ParametricSurface, box:
  * Math.round(surfaceFlux((p: Value) => p, sphere(1), [[0, Math.PI], [0, 2 * Math.PI]]) / Math.PI * 1e12) / 1e12 // => 4
  * ```
  */
-export function surfaceFlux(F: VectorField, s: ParametricSurface, box: ParameterBox, n = 24): number {
+export function surfaceFlux(F: PointVectorField, s: ParametricSurface, box: ParameterBox, n = 24): number {
   const rule = productGaussRule(box, n)
   return item(
     cubature((uv) => {
@@ -562,7 +562,7 @@ export interface TheoremCheck {
  * ```
  */
 export function greensTheorem(
-  F: VectorField,
+  F: PointVectorField,
   boundary: { readonly curve: ParametricCurve; readonly range: readonly [number, number] },
   region: { readonly map: (uv: Value) => Value; readonly box: ParameterBox },
   n = 24,
@@ -602,7 +602,7 @@ export function greensTheorem(
  * ```
  */
 export function stokesTheorem(
-  F: VectorField,
+  F: PointVectorField,
   boundary: { readonly curve: ParametricCurve; readonly range: readonly [number, number] },
   surface: { readonly surface: ParametricSurface; readonly box: ParameterBox },
   n = 24,
@@ -633,7 +633,7 @@ export function stokesTheorem(
  * ```
  */
 export function divergenceTheorem(
-  F: VectorField,
+  F: PointVectorField,
   surface: { readonly surface: ParametricSurface; readonly box: ParameterBox },
   solid: {
     readonly map: (uvw: Value) => Value

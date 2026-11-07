@@ -8,7 +8,7 @@ import { MdmlError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { attempt, checked, counter, initialState, snapshot, statusAfter, tally, towards } from './_step.ts'
 import { allFinite, combine, numbersOf, type Term } from './_vec.ts'
-import { hermiteSegment, type Stepper, type StepperState, type VectorField } from './problem.ts'
+import { hermiteSegment, type OdeVectorField, type Stepper, type StepperState } from './problem.ts'
 
 /**
  * An explicit Runge-Kutta method as its Butcher tableau: stage times `c`, the strictly lower-triangular coupling `a`
@@ -118,7 +118,7 @@ export const RK38: ButcherTableau = butcherTableau(
  * ```
  */
 export function rkStages(
-  f: VectorField,
+  f: OdeVectorField,
   t: number,
   y: Value,
   h: number,
@@ -157,7 +157,7 @@ export function rkStages(
  * Math.abs(item(rkStep((_t, y) => tensor([1]), 0, tensor([0]), 0.5, RK4)) - 0.5) < 1e-15 // => true
  * ```
  */
-export function rkStep(f: VectorField, t: number, y: Value, h: number, tableau: ButcherTableau, f0?: Value): Value {
+export function rkStep(f: OdeVectorField, t: number, y: Value, h: number, tableau: ButcherTableau, f0?: Value): Value {
   const ks = rkStages(f, t, y, h, tableau, f0)
   return combine(
     y,
@@ -173,7 +173,7 @@ export interface FixedStepOptions {
 
 /** The state of a fixed-step stepper: the derivative at the current point is kept for the next step and for dense output. */
 export interface FixedStepState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly fOld: Value
   readonly dt: number

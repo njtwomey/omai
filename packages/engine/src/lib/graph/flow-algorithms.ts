@@ -17,7 +17,7 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { augment, EPS, type Residual, residualNetwork, sourceSide } from './_residual.ts'
+import { augment, EPS, type ResidualNetwork, residualNetwork, sourceSide } from './_residual.ts'
 import { floatsFromJson, floatsToJson } from './_run.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'
@@ -100,7 +100,7 @@ export interface MaxFlowState {
 type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
 /** Edmonds-Karp: the shortest augmenting path by breadth-first search ([] when there is none). */
-function shortestAugmenting(r: Residual, s: number, t: number): number[] {
+function shortestAugmenting(r: ResidualNetwork, s: number, t: number): number[] {
   const via = new Int32Array(r.n).fill(-1)
   const seen = new Uint8Array(r.n)
   seen[s] = 1
@@ -122,7 +122,7 @@ function shortestAugmenting(r: Residual, s: number, t: number): number[] {
 }
 
 /** Dinic: the next path of the blocking flow, starting a new phase when the last one is exhausted ([] when done). */
-function blockingPath(r: Residual, s: number, t: number, st: Mutable<MaxFlowState>): number[] {
+function blockingPath(r: ResidualNetwork, s: number, t: number, st: Mutable<MaxFlowState>): number[] {
   for (;;) {
     if (!st.leveled) {
       st.level.fill(-1)
@@ -207,7 +207,7 @@ export function maxFlowAlgorithm(
   if (s === t) throw new MdmlError('value', 'maxFlow: source and sink are the same node')
   const method = options.method ?? 'dinic'
   const net = residualNetwork(g, options.capacity)
-  const view = (residual: Float64Array): Residual => ({ ...net, residual })
+  const view = (residual: Float64Array): ResidualNetwork => ({ ...net, residual })
   const find = (st: Mutable<MaxFlowState>): number[] =>
     method === 'dinic' ? blockingPath(view(st.residual), s, t, st) : shortestAugmenting(view(st.residual), s, t)
   return {

@@ -124,7 +124,7 @@ export function flat(x: TensorLike): Float64Array {
 }
 
 /** A numeric array input with its shape, read once. */
-export interface Matrix {
+export interface ShapedArray {
   readonly shape: readonly number[]
   readonly data: Float64Array
 }
@@ -136,11 +136,11 @@ export interface Matrix {
  * @returns Its shape and row-major values.
  * @example
  * ```ts
- * import { matrix } from 'mdml-engine/metrics'
- * matrix([[1, 2], [3, 4]]).shape // => [2, 2]
+ * import { shapedArray } from 'mdml-engine/metrics'
+ * shapedArray([[1, 2], [3, 4]]).shape // => [2, 2]
  * ```
  */
-export function matrix(x: TensorLike): Matrix {
+export function shapedArray(x: TensorLike): ShapedArray {
   const t = asTensor(x)
   return { shape: t.shape, data: Float64Array.from(toFlat(t)) }
 }

@@ -9,9 +9,9 @@ import { MdmlError, toRows } from '../base/index.ts'
 import { type ThresholdSweep, thresholdSweep } from '../exposition/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
-import type { ConfusionMatrix } from './classification.ts'
+import type { LabelledConfusionMatrix } from './classification.ts'
 import { auc } from './curves.ts'
-import { flat, type MetricInput, type MetricOptions, matrix, sampleWeights } from './metric.ts'
+import { flat, type MetricInput, type MetricOptions, sampleWeights, shapedArray } from './metric.ts'
 
 /**
  * The margins of a contingency table (a confusion matrix with actual classes as rows and predicted classes as
@@ -55,7 +55,7 @@ export interface ConfusionMargins {
  * m.actual // => [4, 6]
  * ```
  */
-export function confusionMargins(table: ConfusionMatrix): ConfusionMargins {
+export function confusionMargins(table: LabelledConfusionMatrix): ConfusionMargins {
   const k = table.labels.length
   if (table.matrix.length !== k || table.matrix.some((row) => row.length !== k))
     throw new MdmlError('shape', `confusionMargins: the matrix must be ${k} by ${k}, one row and column per label`)
@@ -111,7 +111,7 @@ export function thresholdConfusion(
   yScore: TensorLike,
   threshold: number,
   options: ThresholdConfusionOptions = {},
-): ConfusionMatrix {
+): LabelledConfusionMatrix {
   const t = labelValues(yTrue)
   const s = flat(yScore)
   if (s.length !== t.length) throw new MdmlError('shape', 'thresholdConfusion: yTrue and yScore have different lengths')
@@ -160,7 +160,7 @@ export interface TableCost {
  * c.perCase // => 0.47
  * ```
  */
-export function tableCost(table: ConfusionMatrix, costs: TensorLike): TableCost {
+export function tableCost(table: LabelledConfusionMatrix, costs: TensorLike): TableCost {
   const k = table.labels.length
   const c = costRows('tableCost', costs, k, `${k} by ${k}, like the table`)
   const cells = table.matrix.map((row, i) => row.map((n, j) => n * (c[i]?.[j] ?? 0)))
@@ -219,7 +219,7 @@ export function thresholdCosts(
 
 /** The rows of a cost matrix that must be `k` by `k` (`what` names the size in the error). */
 function costRows(name: string, costs: TensorLike, k: number, what: string): number[][] {
-  const m = matrix(costs)
+  const m = shapedArray(costs)
   if (m.shape.length !== 2 || m.shape[0] !== k || m.shape[1] !== k)
     throw new MdmlError('shape', `${name}: the cost matrix must be ${what}`)
   return toRows(m.data, k, k)

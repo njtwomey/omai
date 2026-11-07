@@ -34,7 +34,7 @@ import { lossMatrix, lossOf, type Study, type StudyDirection, type Trial } from 
  *
  * @concept hyperparameter-optimisation
  */
-export interface Sampler {
+export interface StudySampler {
   readonly name: string
   readonly config: Json
   /** Whether the sampler handles several objectives. */
@@ -77,7 +77,7 @@ export function ownTrials(study: Study, name: string): Trial[] {
  * gridSampler().ask(createStudy(dict({ a: choice([1, 2]), b: choice(['x', 'y']) })), key(0)) // => { a: 1, b: 'x' }
  * ```
  */
-export function gridSampler(options: { readonly points?: number; readonly shuffle?: Key } = {}): Sampler {
+export function gridSampler(options: { readonly points?: number; readonly shuffle?: Key } = {}): StudySampler {
   const points = options.points ?? 5
   const cache = new WeakMap<Space, SpaceValue[]>()
   const configs = (space: Space): SpaceValue[] => {
@@ -115,7 +115,7 @@ export function gridSampler(options: { readonly points?: number; readonly shuffl
  * x >= 2 && x <= 3 // => true
  * ```
  */
-export function randomSampler(): Sampler {
+export function randomSampler(): StudySampler {
   return { name: 'random', config: {}, multiObjective: true, ask: (study, k) => sample(study.space, k) }
 }
 
@@ -136,7 +136,7 @@ export function randomSampler(): Sampler {
  * sobolSampler({ skip: 1 }).ask(createStudy(dict({ x: real(0, 4), y: real(0, 4) })), key(0)) // => { x: 2, y: 2 }
  * ```
  */
-export function sobolSampler(options: { readonly skip?: number; readonly scramble?: Key } = {}): Sampler {
+export function sobolSampler(options: { readonly skip?: number; readonly scramble?: Key } = {}): StudySampler {
   const skip = options.skip ?? 0
   return {
     name: 'sobol',
@@ -168,7 +168,7 @@ export function sobolSampler(options: { readonly skip?: number; readonly scrambl
  * haltonSampler({ skip: 1 }).ask(createStudy(dict({ x: real(0, 6), y: real(0, 6) })), key(0)) // => { x: 3, y: 2 }
  * ```
  */
-export function haltonSampler(options: { readonly skip?: number } = {}): Sampler {
+export function haltonSampler(options: { readonly skip?: number } = {}): StudySampler {
   const skip = options.skip ?? 0
   return {
     name: 'halton',
@@ -197,7 +197,7 @@ export function haltonSampler(options: { readonly skip?: number } = {}): Sampler
  * study.trials.map((t) => Math.floor((t.params as number) * 4)).sort() // => [0, 1, 2, 3]
  * ```
  */
-export function latinHypercubeSampler(options: { readonly n?: number; readonly key?: Key } = {}): Sampler {
+export function latinHypercubeSampler(options: { readonly n?: number; readonly key?: Key } = {}): StudySampler {
   const n = options.n ?? 10
   if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'latinHypercubeSampler: n must be positive')
   const base = options.key ?? makeKey(0)
@@ -236,7 +236,7 @@ function optimiserSampler(
   config: Json,
   make: (f: (x: unknown) => Value, x0: number[], restart: number) => Algorithm<unknown>,
   options: { readonly x0?: SpaceValue; readonly key?: Key },
-): Sampler {
+): StudySampler {
   const base = options.key ?? makeKey(0)
   return {
     name,
@@ -283,7 +283,7 @@ export interface CmaesSamplerOptions {
  * (tune(sphere, box(-1, 1, [3]), { sampler: cmaesSampler(), nTrials: 300 }).best?.values[0] ?? 1) < 1e-4 // => true
  * ```
  */
-export function cmaesSampler(options: CmaesSamplerOptions = {}): Sampler {
+export function cmaesSampler(options: CmaesSamplerOptions = {}): StudySampler {
   const sigma0 = options.sigma0 ?? 1 / 6
   const ipop = options.ipop ?? true
   return optimiserSampler(
@@ -320,7 +320,7 @@ export function cmaesSampler(options: CmaesSamplerOptions = {}): Sampler {
  * (tune(f, dict({ x: real(-3, 3), y: real(-3, 3) }), { sampler: nelderMeadSampler(), nTrials: 120 }).best?.values[0] ?? 1) < 1e-4 // => true
  * ```
  */
-export function nelderMeadSampler(options: { readonly x0?: SpaceValue; readonly edge?: number } = {}): Sampler {
+export function nelderMeadSampler(options: { readonly x0?: SpaceValue; readonly edge?: number } = {}): StudySampler {
   const edge = options.edge ?? 0.25
   return optimiserSampler(
     'nelderMead',
@@ -386,7 +386,7 @@ export interface EvolutionarySamplerOptions {
  * (tune(sphere, box(-2, 2, [2]), { sampler: evolutionarySampler({ populationSize: 10 }), nTrials: 200, seed: 0 }).best?.values[0] ?? 1) < 0.01 // => true
  * ```
  */
-export function evolutionarySampler(options: EvolutionarySamplerOptions = {}): Sampler {
+export function evolutionarySampler(options: EvolutionarySamplerOptions = {}): StudySampler {
   const pop = options.populationSize ?? 20
   if (!(Number.isInteger(pop) && pop >= 2))
     throw new MdmlError('value', 'evolutionarySampler: populationSize must be an integer of at least 2')

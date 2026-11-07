@@ -52,7 +52,7 @@ export type ObjectiveResult =
  *
  * @concept hyperparameter-optimisation
  */
-export interface Objective {
+export interface StudyObjective {
   readonly name: string
   readonly directions: readonly StudyDirection[]
   /** The default search space (an estimator's `hyperSpace`). */
@@ -88,7 +88,7 @@ export function objectiveBase(
   options: ObjectiveOptions,
   name: string,
   direction: StudyDirection,
-): Omit<Objective, 'evaluate'> {
+): Omit<StudyObjective, 'evaluate'> {
   return {
     name: options.name ?? name,
     directions: [options.direction ?? direction],
@@ -116,7 +116,7 @@ export function objectiveBase(
 export function functionObjective(
   f: (params: SpaceValue, trial: TrialContext) => ObjectiveResult,
   options: ObjectiveOptions & { readonly directions?: readonly StudyDirection[] } = {},
-): Objective {
+): StudyObjective {
   const base = objectiveBase(options, 'function', 'minimize')
   return { ...base, ...(options.directions === undefined ? {} : { directions: options.directions }), evaluate: f }
 }
@@ -139,9 +139,9 @@ export function functionObjective(
  * both.directions // => ['minimize', 'maximize']
  * ```
  */
-export function multiObjective(objectives: readonly Objective[]): Objective {
+export function multiObjective(objectives: readonly StudyObjective[]): StudyObjective {
   if (objectives.length === 0) throw new MdmlError('value', 'multiObjective: need at least one objective')
-  const first = objectives[0] as Objective
+  const first = objectives[0] as StudyObjective
   return {
     name: objectives.map((o) => o.name).join('+'),
     directions: objectives.flatMap((o) => o.directions),
@@ -204,7 +204,7 @@ export interface TrainingObjectiveOptions<S> extends ObjectiveOptions {
 export function trainingObjective<S>(
   make: (params: SpaceValue, budget: number | undefined) => Algorithm<S>,
   options: TrainingObjectiveOptions<S>,
-): Objective {
+): StudyObjective {
   const every = options.reportEvery ?? 1
   if (!(Number.isInteger(every) && every >= 1))
     throw new MdmlError('value', 'trainingObjective: reportEvery must be a positive integer')
@@ -265,7 +265,7 @@ export function agentObjective<G, S, O, A>(
   env: Env<S, O, A>,
   make: (params: SpaceValue) => Agent<G, O, A>,
   options: AgentObjectiveOptions = {},
-): Objective {
+): StudyObjective {
   const every = options.reportEvery ?? 10
   const window = options.window ?? 10
   return {
@@ -337,7 +337,7 @@ export interface ProgramFit {
 export function programObjective(
   fit: (params: SpaceValue, trial: TrialContext) => ProgramFit,
   options: ObjectiveOptions & { readonly criterion?: keyof ProgramFit } = {},
-): Objective {
+): StudyObjective {
   const criterion = options.criterion ?? 'logEvidence'
   return {
     ...objectiveBase(options, `program:${criterion}`, 'maximize'),

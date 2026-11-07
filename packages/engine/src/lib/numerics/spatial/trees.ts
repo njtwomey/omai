@@ -6,7 +6,13 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Metric, type MetricOptions, metricFunction, type PointDistance, TRUE_METRICS } from '../geometry/index.ts'
+import {
+  type DistanceMetric,
+  type MetricOptions,
+  metricFunction,
+  type PointDistance,
+  TRUE_METRICS,
+} from '../geometry/index.ts'
 
 /** What a query did: for figures of pruning and for comparing trees. */
 export interface QueryLog {
@@ -18,7 +24,7 @@ export interface QueryLog {
 }
 
 /** A node of a spatial tree, for figures. */
-export interface TreeNode {
+export interface SpatialTreeNode {
   readonly id: number
   readonly depth: number
   /** Indices (into the data) of the points below this node. */
@@ -39,7 +45,7 @@ export interface SpatialTree {
   readonly kind: 'kd' | 'ball' | 'vp'
   readonly size: number
   readonly dim: number
-  readonly nodes: readonly TreeNode[]
+  readonly nodes: readonly SpatialTreeNode[]
   /** The k nearest data points of each query (nearest first), optionally with query logs. */
   readonly query: (
     queries: TensorLike,
@@ -58,7 +64,7 @@ export interface SpatialTree {
 
 /** Options of the tree builders. */
 export interface TreeOptions extends MetricOptions {
-  readonly metric?: Metric
+  readonly metric?: DistanceMetric
   /** Maximum points in a leaf (default 40, as sklearn). */
   readonly leafSize?: number
 }
@@ -337,7 +343,7 @@ function buildTree(kind: 'kd' | 'ball' | 'vp', x: TensorLike, options: TreeOptio
     return { indices, distances, ...(options.log === true ? { logs } : {}) }
   }
 
-  const exported: TreeNode[] = nodes.map((node, id) => ({
+  const exported: SpatialTreeNode[] = nodes.map((node, id) => ({
     id,
     depth: node.depth,
     points: Array.from(perm.subarray(node.start, node.end)),

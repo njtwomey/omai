@@ -13,9 +13,9 @@ import {
   type Metric,
   type MetricFunction,
   type MetricOptions,
-  matrix,
   metricResult,
   sampleWeights,
+  shapedArray,
   weightedMean,
 } from './metric.ts'
 
@@ -40,8 +40,8 @@ export interface RankingOptions extends MetricOptions {
 
 /** Rows of a relevance matrix `[Q, L]` (a 1-D input is one query). */
 function rows(name: string, yTrue: TensorLike, yScore: TensorLike): { t: Grid; s: Grid; q: number; l: number } {
-  const t0 = matrix(yTrue)
-  const s0 = matrix(yScore)
+  const t0 = shapedArray(yTrue)
+  const s0 = shapedArray(yScore)
   const t = t0.shape.length === 1 ? { shape: [1, t0.shape[0] ?? 0], data: t0.data } : t0
   const s = s0.shape.length === 1 ? { shape: [1, s0.shape[0] ?? 0], data: s0.data } : s0
   if (t.shape[0] !== s.shape[0] || t.shape[1] !== s.shape[1])
@@ -318,7 +318,7 @@ export const expectedReciprocalRank: Metric<RankingOptions & { readonly maxGrade
     yScore: TensorLike,
     options: RankingOptions & { readonly maxGrade?: number } = {},
   ): MetricResult => {
-    const top = options.maxGrade ?? matrix(yTrue).data.reduce((a, v) => Math.max(a, v), 0)
+    const top = options.maxGrade ?? shapedArray(yTrue).data.reduce((a, v) => Math.max(a, v), 0)
     return perQuery('expectedReciprocalRank', yTrue, yScore, options, (rel) => {
       const k = Math.min(options.k ?? rel.length, rel.length)
       let stillLooking = 1
@@ -412,7 +412,7 @@ export const intraListDiversity: MetricFunction<
     itemFeatures: TensorLike,
     options: { readonly distance?: 'cosine' | 'euclidean' } = {},
   ): MetricResult => {
-    const f = matrix(itemFeatures)
+    const f = shapedArray(itemFeatures)
     const d = f.shape[1] ?? 0
     const vec = (i: number): Float64Array => f.data.subarray(i * d, (i + 1) * d)
     const dist = (a: Float64Array, b: Float64Array): number => {
@@ -459,7 +459,7 @@ export const intraListDiversity: MetricFunction<
 export const novelty: MetricFunction<[Recommendations, TensorLike]> = defineMetric(
   beyondSpec('novelty', [0, Infinity]),
   (recommendations: Recommendations, popularity: TensorLike): MetricResult => {
-    const pop = matrix(popularity).data
+    const pop = shapedArray(popularity).data
     const total = pop.reduce((a, b) => a + b, 0)
     const items = recommendations.flat()
     const info = items.map((i) => -Math.log2((pop[i] ?? 0) / total))

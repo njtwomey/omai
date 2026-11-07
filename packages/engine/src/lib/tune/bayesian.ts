@@ -28,7 +28,7 @@ import {
   where,
 } from '../tensor/index.ts'
 import { type Leaf, leafCoordinate, leavesOf, nativeOf } from './_leaves.ts'
-import type { Sampler } from './samplers.ts'
+import type { StudySampler } from './samplers.ts'
 import { lossOf, type StudyDirection } from './study.ts'
 import { fitGpSurrogate, type GpSurrogate } from './surrogate.ts'
 
@@ -317,7 +317,7 @@ export interface GpSamplerOptions {
  * (tune(f, real(0, 1), { sampler: gpSampler({ nStartupTrials: 4 }), nTrials: 10, seed: 0 }).best?.values[0] ?? 1) < 1e-3 // => true
  * ```
  */
-export function gpSampler(options: GpSamplerOptions = {}): Sampler {
+export function gpSampler(options: GpSamplerOptions = {}): StudySampler {
   const nStartup = options.nStartupTrials ?? 10
   const acq = options.acquisition ?? 'logEI'
   const acquisition = typeof acq === 'function' ? acq : acquisitions[acq]

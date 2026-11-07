@@ -30,11 +30,11 @@ import { type ButcherTableau, butcherTableau, rkStages } from './explicit.ts'
 import {
   type DenseSegment,
   hermiteSegment,
+  type OdeVectorField,
   type StepAttempt,
   type Stepper,
   type StepperOptions,
   type StepperState,
-  type VectorField,
 } from './problem.ts'
 
 /**
@@ -232,7 +232,7 @@ export interface AdaptiveOptions extends StepperOptions {
 
 /** The state of an adaptive Runge-Kutta stepper: the stages of the last step and the controller's memory. */
 export interface AdaptiveState extends StepperState {
-  readonly f: VectorField
+  readonly f: OdeVectorField
   readonly fy: Value
   readonly k: readonly Value[]
   /** The signed size of the last accepted step. */

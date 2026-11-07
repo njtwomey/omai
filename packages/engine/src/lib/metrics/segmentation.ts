@@ -7,7 +7,7 @@
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { classCounts, encodeLabels, labelValues } from './_labels.ts'
-import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 const spec = (
   name: string,
@@ -29,7 +29,7 @@ interface Mask {
 }
 
 const mask = (x: TensorLike): Mask => {
-  const m = matrix(x)
+  const m = shapedArray(x)
   return { shape: m.shape, data: Uint8Array.from(m.data, (v) => (v > 0 ? 1 : 0)) }
 }
 
@@ -303,7 +303,7 @@ export const panopticQuality: MetricFunction<[TensorLike, TensorLike, PanopticOp
     const modified = new Set(options.modifiedStuffs ?? [])
     const voidCat = 1 + [...things, ...stuffs].reduce((a, b) => Math.max(a, b), 0)
     const colours = (x: TensorLike): string[] => {
-      const m = matrix(x)
+      const m = shapedArray(x)
       const n = m.data.length / 2
       return Array.from({ length: n }, (_, i) => {
         const cat = m.data[2 * i] ?? 0

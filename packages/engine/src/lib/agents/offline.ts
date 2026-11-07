@@ -8,7 +8,7 @@
 
 import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { crossEntropy, gaussianNll, mse } from '../losses/index.ts'
-import type { Tree } from '../optim/index.ts'
+import type { ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, randint } from '../random/index.ts'
 import { type Agent, categoricalPolicy, type Env, type Policy, runEpisode, type Transition } from '../rl/index.ts'
 import { exp, mul, toFlat, type Value } from '../tensor/index.ts'
@@ -19,7 +19,7 @@ import { clipToBox, network, type OfflineSpaces, offlineBatch, offlineSpaces, sq
 // ------------------------------------------------------------------------------------------------- datasets
 
 /** A fixed dataset of transitions (in collection order, so episodes can be recovered). */
-export type Dataset<O, A> = readonly Transition<O, A>[]
+export type TransitionDataset<O, A> = readonly Transition<O, A>[]
 
 /** Options of {@link collectDataset}. */
 export interface CollectOptions {
@@ -90,7 +90,7 @@ export function collectDataset<S, O, A>(
  * datasetEpisodes([t, { ...t, terminated: true }, t]).map((e) => e.length) // => [2, 1]
  * ```
  */
-export function datasetEpisodes<O, A>(dataset: Dataset<O, A>): Transition<O, A>[][] {
+export function datasetEpisodes<O, A>(dataset: TransitionDataset<O, A>): Transition<O, A>[][] {
   const out: Transition<O, A>[][] = []
   let current: Transition<O, A>[] = []
   for (const t of dataset) {
@@ -116,7 +116,7 @@ export interface OfflineLearner<G, O, A> {
   readonly name: string
   readonly config: Json
   readonly metrics: Readonly<Record<string, MetricChannel>>
-  init(key: Key, dataset: Dataset<O, A>): G
+  init(key: Key, dataset: TransitionDataset<O, A>): G
   update(state: G, batch: readonly Transition<O, A>[], key: Key): G
   stats(state: G): Readonly<Record<string, number>>
   greedy(state: G, observation: O): A
@@ -159,7 +159,7 @@ export interface OfflineState<G> {
  */
 export function offlineAlgorithm<G, O, A>(
   learner: OfflineLearner<G, O, A>,
-  dataset: Dataset<O, A>,
+  dataset: TransitionDataset<O, A>,
   options: OfflineOptions = {},
 ): Algorithm<OfflineState<G>> {
   if (dataset.length === 0) throw new MdmlError('value', `${learner.name}: the dataset is empty`)
@@ -240,7 +240,7 @@ export interface OfflineResult<G, O, A> {
  */
 export function trainOffline<G, O, A>(
   learner: OfflineLearner<G, O, A>,
-  dataset: Dataset<O, A>,
+  dataset: TransitionDataset<O, A>,
   options: OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): OfflineResult<G, O, A> {
   const { steps, batchSize, ...run } = options
@@ -281,7 +281,7 @@ export interface BehaviourCloningOptions extends OfflineNetOptions {
 
 /** The state of a behaviour-cloning learner. */
 export interface BehaviourCloningState {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly optState: unknown
   readonly loss: number
   readonly updates: number
@@ -317,12 +317,12 @@ export function behaviourCloningLearner<O, A>(
   const kind = sp.discrete ? 'crossEntropy' : (options.loss ?? 'mse')
   const net = policyNet(sp, hidden, options.key ?? makeKey(0))
   const opt = optimiserOf(options, 1e-3)
-  const init: Tree =
+  const init: ParamTree =
     kind === 'gaussian'
       ? { net: net.params, logStd: vectorTensor(new Array<number>(sp.actionSize).fill(0)) }
       : { net: net.params }
-  const head = (p: Tree, x: Value): Value => {
-    const u = net.apply((p as { net: Tree }).net, x)
+  const head = (p: ParamTree, x: Value): Value => {
+    const u = net.apply((p as { net: ParamTree }).net, x)
     return sp.discrete ? u : squashToBox(sp, u)
   }
   const out = (s: BehaviourCloningState, o: O): Value => head(s.params, rowsTensor([sp.features(o)], sp.obsSize))
@@ -334,7 +334,7 @@ export function behaviourCloningLearner<O, A>(
     init: () => ({ params: init, optState: opt.init(init), loss: 0, updates: 0 }),
     update: (s, batch) => {
       const b = offlineBatch(sp, batch)
-      const loss = (p: Tree): readonly [Value, Value] => {
+      const loss = (p: ParamTree): readonly [Value, Value] => {
         const y = head(p, b.obs)
         let l: Value
         if (kind === 'crossEntropy') l = crossEntropy(y, b.labels)
@@ -383,7 +383,7 @@ export function behaviourCloningLearner<O, A>(
  */
 export function behaviourCloning<O, A>(
   env: Spaces,
-  dataset: Dataset<O, A>,
+  dataset: TransitionDataset<O, A>,
   options: BehaviourCloningOptions & OfflineOptions & Partial<Omit<RunOptions, 'maxSteps'>> = {},
 ): OfflineResult<BehaviourCloningState, O, A> {
   return trainOffline(behaviourCloningLearner<O, A>(env, options), dataset, options)

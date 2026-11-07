@@ -9,7 +9,7 @@ import { type Estimate, logSumExpOf, MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { ess as essOf } from './diagnostics/convergence.ts'
-import type { LogDensity, Proposal } from './target.ts'
+import type { ChainProposal, LogDensity } from './target.ts'
 
 function values(x: TensorLike, name: string): Float64Array {
   const v = Float64Array.from(toFlat(asTensor(x) as Tensor))
@@ -164,7 +164,7 @@ export interface ImportanceResult {
  */
 export function importanceSampling(
   target: LogDensity,
-  q: Proposal,
+  q: ChainProposal,
   options: { readonly key: Key; readonly n: number },
 ): ImportanceResult {
   if (q.dim !== target.dim) {

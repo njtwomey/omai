@@ -9,18 +9,22 @@ import { primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { dgemv, ddot as dot, dnrm2 as norm } from '../linalg/index.ts'
 
-type Vec = Float64Array
-
 /** A dense matrix with products A x and A^T y. */
-function operator(a: TensorLike): { m: number; n: number; mv: (x: Vec) => Vec; rmv: (y: Vec) => Vec; norm2: number } {
+function operator(a: TensorLike): {
+  m: number
+  n: number
+  mv: (x: Float64Array) => Float64Array
+  rmv: (y: Float64Array) => Float64Array
+  norm2: number
+} {
   const [av] = promoteFloat(a) as [Value]
   if (av.shape.length !== 2) throw new MdmlError('shape', 'regularising iterations need a matrix')
   const [m = 0, n = 0] = av.shape
   const d = toFlat(primalOf(av))
-  const mv = (x: Vec): Vec => dgemv(d, m, n, x)
-  const rmv = (y: Vec): Vec => dgemv(d, m, n, y, true)
+  const mv = (x: Float64Array): Float64Array => dgemv(d, m, n, x)
+  const rmv = (y: Float64Array): Float64Array => dgemv(d, m, n, y, true)
   // The largest singular value squared, by power iteration on A^T A (for Landweber's step bound).
-  let v: Vec = Float64Array.from({ length: n }, (_, i) => 1 + Math.sin(i))
+  let v: Float64Array = Float64Array.from({ length: n }, (_, i) => 1 + Math.sin(i))
   let lambda = 0
   for (let it = 0; it < 100; it++) {
     const w = rmv(mv(v))
@@ -39,7 +43,7 @@ function operator(a: TensorLike): { m: number; n: number; mv: (x: Vec) => Vec; r
 
 /** State of a regularising iteration. */
 export interface RegularisingState {
-  readonly x: Vec
+  readonly x: Float64Array
   readonly residualNorm: number
   readonly solutionNorm: number
   /** |x - x_true| when a true solution was given (semi-convergence). */
@@ -64,7 +68,12 @@ const SCHEMA = channels({
   tensors: { x: { role: 'state', description: 'current iterate' } },
 })
 
-function stateOf(x: Vec, r: Vec, xTrue: Vec | undefined, internal: Record<string, unknown>): RegularisingState {
+function stateOf(
+  x: Float64Array,
+  r: Float64Array,
+  xTrue: Float64Array | undefined,
+  internal: Record<string, unknown>,
+): RegularisingState {
   return {
     x,
     residualNorm: norm(r),
@@ -161,7 +170,7 @@ export function cglsAlgorithm(
       return stateOf(new Float64Array(op.n), bv, xTrue, { r: bv, s: s0, p: s0, gamma: dot(s0, s0) })
     },
     step: (st) => {
-      const { r, p, gamma } = st.internal as { r: Vec; s: Vec; p: Vec; gamma: number }
+      const { r, p, gamma } = st.internal as { r: Float64Array; s: Float64Array; p: Float64Array; gamma: number }
       if (gamma === 0) return st
       const q = op.mv(p)
       const alpha = gamma / dot(q, q)
@@ -204,7 +213,7 @@ export function lsqrAlgorithm(
   const op = operator(a)
   const bv = Float64Array.from(toFlat(primalOf(promoteFloat(b)[0] as Value)))
   const xTrue = options.xTrue === undefined ? undefined : Float64Array.from(options.xTrue)
-  type L = { u: Vec; v: Vec; w: Vec; phiBar: number; rhoBar: number; alpha: number }
+  type L = { u: Float64Array; v: Float64Array; w: Float64Array; phiBar: number; rhoBar: number; alpha: number }
   return {
     name: 'lsqr',
     config: {} as Json,

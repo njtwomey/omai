@@ -33,8 +33,6 @@ import {
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
 import { emd } from './transport.ts'
 
-type Vec = Float64Array
-
 /** Options of {@link wasserstein1d}. */
 export interface Wasserstein1dOptions {
   /** Weights of the samples (default uniform; normalised to sum 1). */
@@ -44,7 +42,7 @@ export interface Wasserstein1dOptions {
   readonly p?: number
 }
 
-function normalisedWeights(w: TensorLike | undefined, n: number, name: string): Vec {
+function normalisedWeights(w: TensorLike | undefined, n: number, name: string): Float64Array {
   const out = w === undefined ? new Float64Array(n).fill(1) : Float64Array.from(toFlat(primalOf(asTensor(w))))
   if (out.length !== n) throw new MdmlError('shape', `${name}: one weight per value`)
   let s = 0
@@ -54,7 +52,7 @@ function normalisedWeights(w: TensorLike | undefined, n: number, name: string): 
 }
 
 /** W_p^p between two weighted samples on the line, as a value differentiable in the sample positions. */
-function wassersteinPower(u: Value, v: Value, uw: Vec, vw: Vec, p: number): Value {
+function wassersteinPower(u: Value, v: Value, uw: Float64Array, vw: Float64Array, p: number): Value {
   const uu = toFlat(primalOf(u))
   const vv = toFlat(primalOf(v))
   const su = Array.from(uu.keys()).sort((i, j) => (uu[i] ?? 0) - (uu[j] ?? 0))
@@ -190,8 +188,8 @@ export interface BarycenterOptions extends Partial<Omit<RunOptions, 'maxSteps' |
 
 /** State of {@link sinkhornBarycenterAlgorithm}: the log-scalings, one column per input histogram. */
 export interface BarycenterState {
-  readonly logU: Vec
-  readonly logMarginals: Vec
+  readonly logU: Float64Array
+  readonly logMarginals: Float64Array
   readonly spread: number
 }
 
@@ -228,8 +226,8 @@ export function sinkhornBarycenterAlgorithm(
   const tol = options.tol ?? 1e-9
   const logA = Float64Array.from(A.data, (v) => Math.log(v))
   const logK = Float64Array.from(M.data, (v) => -v / reg)
-  const at = (x: Vec, i: number, k: number): number => x[i * N + k] ?? 0
-  const marginals = (logU: Vec): Vec => {
+  const at = (x: Float64Array, i: number, k: number): number => x[i * N + k] ?? 0
+  const marginals = (logU: Float64Array): Float64Array => {
     // log(u_k * K^T (a_k / (K u_k))) for each k, stored n x N.
     const out = new Float64Array(n * N)
     const row = new Float64Array(n)
@@ -246,7 +244,7 @@ export function sinkhornBarycenterAlgorithm(
     }
     return out
   }
-  const spreadOf = (logM: Vec): number => {
+  const spreadOf = (logM: Float64Array): number => {
     let s = 0
     for (let j = 0; j < n; j++) {
       let m = 0
@@ -287,7 +285,7 @@ export function sinkhornBarycenterAlgorithm(
   }
 }
 
-function barycentreOf(s: BarycenterState, w: Vec, n: number, N: number): Vec {
+function barycentreOf(s: BarycenterState, w: Float64Array, n: number, N: number): Float64Array {
   return Float64Array.from({ length: n }, (_, j) => {
     let bar = 0
     for (let k = 0; k < N; k++) bar += (w[k] ?? 0) * (s.logMarginals[j * N + k] ?? 0)
@@ -356,7 +354,7 @@ export interface FreeSupportOptions extends Partial<Omit<RunOptions, 'maxSteps' 
 
 /** State of {@link freeSupportBarycenterAlgorithm}. */
 export interface FreeSupportState {
-  readonly x: Vec
+  readonly x: Float64Array
   readonly displacement: number
 }
 
@@ -417,7 +415,7 @@ export function freeSupportBarycenterAlgorithm(
             for (let e = 0; e < d; e++) q += ((s.x[r * d + e] ?? 0) - ((Xi.data[c * d + e] as number) ?? 0)) ** 2
             cost[r * ki + c] = q
           }
-        const plan = toFlat(emd(b, weights[t] as Vec, fromStorage(cost, [k, ki], 'float64')).plan)
+        const plan = toFlat(emd(b, weights[t] as Float64Array, fromStorage(cost, [k, ki], 'float64')).plan)
         for (let r = 0; r < k; r++)
           for (let e = 0; e < d; e++) {
             let q = 0

@@ -18,9 +18,9 @@ import {
   type MetricFunction,
   type MetricInput,
   type MetricOptions,
-  matrix,
   metricResult,
   sampleWeights,
+  shapedArray,
 } from './metric.ts'
 
 const spec = (
@@ -283,7 +283,7 @@ export type IccType = 'ICC1' | 'ICC2' | 'ICC3' | 'ICC1k' | 'ICC2k' | 'ICC3k'
 export const intraclassCorrelation: MetricFunction<[TensorLike, { readonly type?: IccType }?]> = defineMetric(
   spec('intraclassCorrelation'),
   (ratings: TensorLike, options: { readonly type?: IccType } = {}): MetricResult => {
-    const r = matrix(ratings)
+    const r = shapedArray(ratings)
     const n = r.shape[0] ?? 0
     const k = r.shape[1] ?? 0
     if (n < 2 || k < 2) throw new MdmlError('shape', 'intraclassCorrelation: needs at least two targets and two raters')
@@ -360,7 +360,7 @@ export const weightedCohenKappa: Metric<KappaOptions, MetricInput> = Object.assi
 export const fleissKappa: MetricFunction<[TensorLike, { readonly method?: 'fleiss' | 'randolph' }?]> = defineMetric(
   spec('fleissKappa', [-1, 1], 'labels'),
   (table: TensorLike, options: { readonly method?: 'fleiss' | 'randolph' } = {}): MetricResult => {
-    const t = matrix(table)
+    const t = shapedArray(table)
     const n = t.shape[0] ?? 0
     const c = t.shape[1] ?? 0
     const raters = t.data.subarray(0, c).reduce((a, b) => a + b, 0)
@@ -402,7 +402,7 @@ export type MeasurementLevel = 'nominal' | 'ordinal' | 'interval' | 'ratio'
 export const krippendorffAlpha: MetricFunction<[TensorLike, { readonly level?: MeasurementLevel }?]> = defineMetric(
   spec('krippendorffAlpha', [-Infinity, 1], 'labels'),
   (reliabilityData: TensorLike, options: { readonly level?: MeasurementLevel } = {}): MetricResult => {
-    const r = matrix(reliabilityData)
+    const r = shapedArray(reliabilityData)
     const raters = r.shape[0] ?? 0
     const units = r.shape[1] ?? 0
     const values = sortLabels(Array.from(r.data).filter((v) => !Number.isNaN(v))) as number[]

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { toFlat } from '../tensor/index.ts'
 import { decisionTreeClassifier, decisionTreeRegressor } from './decision-tree.ts'
 import { costComplexityPath, pruneTree } from './prune.ts'
-import { applyTree, isLeaf, leafCount, type Tree } from './tree.ts'
+import { applyTree, type FittedTree, isLeaf, leafCount } from './tree.ts'
 
 /** Distinct continuous rows (no tied splits) with labels from a seed. */
 const dataset = fc
@@ -24,7 +24,7 @@ const dataset = fc
     return { x, y, t: x.map((row) => row.reduce((a, b) => a + b, 0) + 0.1 * next()) }
   })
 
-const consistent = (t: Tree): void => {
+const consistent = (t: FittedTree): void => {
   for (let i = 0; i < t.feature.length; i++) {
     if (isLeaf(t, i)) continue
     const l = t.left[i] ?? 0

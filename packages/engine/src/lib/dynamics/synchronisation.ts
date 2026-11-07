@@ -28,7 +28,7 @@ import {
 } from '../tensor/index.ts'
 import { type Algorithm, type Contract, defineContract, scalar, tensor as tensorSource } from '../trace/index.ts'
 import { type FlowState, flowAlgorithm } from './ode/flow.ts'
-import type { VectorField } from './ode/problem.ts'
+import type { OdeVectorField } from './ode/problem.ts'
 
 /** How the coupling is scaled. */
 export type KuramotoNormalisation = 'n' | 'degree' | 'none'
@@ -62,7 +62,7 @@ export interface KuramotoOptions {
  * toFlat(kuramotoField({ omega: [0, 0], K: 2 })(0, tensor([0, Math.PI / 2]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
  * ```
  */
-export function kuramotoField(options: KuramotoOptions): VectorField {
+export function kuramotoField(options: KuramotoOptions): OdeVectorField {
   const n = options.omega.length
   const omega = tensor([...options.omega])
   const adjacency = options.adjacency === undefined ? undefined : (asTensor(options.adjacency) as Tensor)
@@ -339,7 +339,7 @@ export function kuramotoAlgorithm(
  * toFlat(consensusField([[0, 1], [1, 0]])(0, tensor([1, 0]))) // => [-1, 1]
  * ```
  */
-export function consensusField(adjacency: TensorLike): VectorField {
+export function consensusField(adjacency: TensorLike): OdeVectorField {
   const a = asTensor(adjacency)
   return (_t, x) => {
     // (A x)_i - degree_i x_i = sum_j A_ij (x_j - x_i)

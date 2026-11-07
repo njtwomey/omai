@@ -22,7 +22,7 @@ import * as F from './index.ts'
 
 const c = (p: Value, i: number): Value => squeeze(sliceAxis(p, -1, i, i + 1), -1)
 const potential: F.ScalarField = (p) => add(mul(c(p, 0), c(p, 1)), sin(c(p, 2)))
-const swirl: F.VectorField = (p) => stack([neg(c(p, 1)), c(p, 0), mul(c(p, 0), c(p, 2))], -1)
+const swirl: F.PointVectorField = (p) => stack([neg(c(p, 1)), c(p, 0), mul(c(p, 0), c(p, 2))], -1)
 const pts = tensor([
   [0.3, -0.7, 1.1],
   [1.2, 0.4, -0.5],
@@ -30,7 +30,7 @@ const pts = tensor([
 
 describe('derivatives of fields', () => {
   it('the curl of a gradient and the divergence of a curl vanish', () => {
-    const gradField: F.VectorField = (p) => F.gradientAt(potential, p)
+    const gradField: F.PointVectorField = (p) => F.gradientAt(potential, p)
     for (const v of toFlat(F.curl(gradField, pts))) expect(v).toBeCloseTo(0, 13)
     for (const v of toFlat(F.divergence((p) => F.curl(swirl, p), pts))) expect(v).toBeCloseTo(0, 13)
   })
@@ -93,7 +93,7 @@ describe('Lagrange multipliers', () => {
 
 describe('integrals and the integral theorems', () => {
   const circle: F.ParametricCurve = (t) => stack([cos(t), sin(t)], -1)
-  const plane: F.VectorField = (p) =>
+  const plane: F.PointVectorField = (p) =>
     stack([sub(mul(c(p, 0), c(p, 0)), c(p, 1)), mul(c(p, 0), mul(c(p, 1), c(p, 1)))], -1)
   const disc = {
     map: F.polarToCartesian,
@@ -110,7 +110,7 @@ describe('integrals and the integral theorems', () => {
   })
 
   it('a gradient field does path-independent work', () => {
-    const gradField: F.VectorField = (p) => F.gradientAt(potential, p)
+    const gradField: F.PointVectorField = (p) => F.gradientAt(potential, p)
     const straight: F.ParametricCurve = (t) => stack([t, mul(t, 2), mul(t, -1)], -1)
     const bent: F.ParametricCurve = (t) => stack([mul(t, t), mul(2, mul(t, mul(t, t))), neg(t)], -1)
     const end = toFlat(potential(tensor([[1, 2, -1]])))[0] ?? 0

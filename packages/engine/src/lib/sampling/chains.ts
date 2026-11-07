@@ -45,7 +45,7 @@ export interface TransitionInfo {
 }
 
 /** A kernel's next state and what the transition did. */
-export interface Transition<S> {
+export interface ChainTransition<S> {
   readonly state: S
   readonly info: TransitionInfo
 }
@@ -62,7 +62,7 @@ export interface MCMCKernel<S extends MCMCState = MCMCState> {
   readonly dim: number
   readonly config: Json
   init(position: ArrayLike<number>): S
-  step(key: Key, state: S): Transition<S>
+  step(key: Key, state: S): ChainTransition<S>
 }
 
 /** The tuned kernel and state after warm-up, with the tuned parameters as data. */

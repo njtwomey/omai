@@ -15,7 +15,7 @@ import { homography } from '../numerics/geometry/index.ts'
 import { concat, reshape, sliceAxis, sub, tensor, toArray, type Value } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
-import { invOf, type Matrix, matMul, nullVector, points3Of, refine, transposeOf } from './_refine.ts'
+import { invOf, type MutableRows, matMul, nullVector, points3Of, refine, transposeOf } from './_refine.ts'
 import { type Distortion, type Pose, projectValue, reprojectionError, rodrigues, rodriguesVector } from './camera.ts'
 import { type RefinementPath, type RefinementState, steppedRefinement } from './refinement.ts'
 
@@ -23,7 +23,7 @@ import { type RefinementPath, type RefinementState, steppedRefinement } from './
 export interface Calibration {
   /** The root-mean-square reprojection error over every point of every view. */
   readonly rms: number
-  readonly cameraMatrix: Matrix
+  readonly cameraMatrix: MutableRows
   /** k1, k2, p1, p2, k3. */
   readonly distortion: number[]
   /** One pose per view. */
@@ -31,8 +31,8 @@ export interface Calibration {
 }
 
 /** The intrinsics of planar homographies by Zhang's closed form (zero skew imposed). */
-function zhangIntrinsics(hs: readonly Matrix[]): Matrix {
-  const v = (h: Matrix, i: number, j: number): number[] => {
+function zhangIntrinsics(hs: readonly MutableRows[]): MutableRows {
+  const v = (h: MutableRows, i: number, j: number): number[] => {
     const a = (r: number, c: number): number => h[r]?.[c] ?? 0
     return [
       a(0, i) * a(0, j),
@@ -71,7 +71,7 @@ function zhangIntrinsics(hs: readonly Matrix[]): Matrix {
 }
 
 /** The pose of a planar target from its homography and the intrinsics. */
-function zhangPose(h: Matrix, k: Matrix): Pose {
+function zhangPose(h: MutableRows, k: MutableRows): Pose {
   const ki = invOf(k)
   const col = (j: number): number[] => [0, 1, 2].map((i) => h[i]?.[j] ?? 0)
   const kh = (j: number): number[] =>
@@ -161,7 +161,7 @@ function calibrationProblem(
           o.map(([a, b]) => [a, b] as [number, number]),
           x[v] as [number, number][],
         ),
-      ) as Matrix,
+      ) as MutableRows,
   )
   const K0 = zhangIntrinsics(hs)
   const poses0 = hs.map((h) => zhangPose(h, K0))
@@ -254,13 +254,13 @@ export function calibrationAlgorithm(
 /** The output of {@link stereoRectify}. */
 export interface StereoRectification {
   /** The rectifying rotations of the first and second camera. */
-  readonly R1: Matrix
-  readonly R2: Matrix
+  readonly R1: MutableRows
+  readonly R2: MutableRows
   /** The 3 x 4 projection matrices of the rectified cameras. */
-  readonly P1: Matrix
-  readonly P2: Matrix
+  readonly P1: MutableRows
+  readonly P2: MutableRows
   /** The 4 x 4 disparity-to-depth matrix. */
-  readonly Q: Matrix
+  readonly Q: MutableRows
 }
 
 /**

@@ -30,7 +30,13 @@ import {
   where,
   zerosLike,
 } from '../tensor/index.ts'
-import { chain, type GradientTransformation, type LearningRate, scaleByLearningRate, type Tree } from './transform.ts'
+import {
+  chain,
+  type GradientTransformation,
+  type LearningRate,
+  type ParamTree,
+  scaleByLearningRate,
+} from './transform.ts'
 
 const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number' ? lr : lr(step))
 
@@ -60,8 +66,8 @@ export function activeMask(grad: Value, rowwise = false): Value {
 /** State of {@link scaleBySparseAdam}. */
 export interface SparseAdamState {
   readonly count: number
-  readonly mu: Tree
-  readonly nu: Tree
+  readonly mu: ParamTree
+  readonly nu: ParamTree
 }
 
 /**
@@ -147,7 +153,7 @@ export interface LazyAdagradOptions {
 /** State of {@link lazyAdagrad}. */
 export interface LazyAdagradState {
   readonly count: number
-  readonly sum: Tree
+  readonly sum: ParamTree
 }
 
 /**
@@ -202,7 +208,7 @@ export interface CumulativeL1State {
   /** The total L1 penalty every weight could have received so far. */
   readonly u: number
   /** The penalty each weight has actually received. */
-  readonly q: Tree
+  readonly q: ParamTree
 }
 
 /**
@@ -339,8 +345,8 @@ export interface FtrlProximalOptions {
 
 /** State of {@link ftrlProximal}: the per-coordinate z (adjusted gradient sums) and n (squared-gradient sums). */
 export interface FtrlProximalState {
-  readonly z: Tree
-  readonly n: Tree
+  readonly z: ParamTree
+  readonly n: ParamTree
 }
 
 /**
@@ -406,6 +412,6 @@ export function ftrlProximal(options: FtrlProximalOptions = {}): GradientTransfo
  * toArray(ftrlSupport(opt.update(tensor([3, 0.5]), opt.init(p), p).state, 1) as never) // => [1, 0]
  * ```
  */
-export function ftrlSupport(state: FtrlProximalState, l1: number): Tree {
+export function ftrlSupport(state: FtrlProximalState, l1: number): ParamTree {
   return treeMap((z) => cast(greater(abs(z), l1), 'float64'), state.z)
 }

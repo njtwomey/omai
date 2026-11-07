@@ -5,8 +5,8 @@ import { randint } from '../lib/random/index.ts'
 import {
   allDifferent,
   binaryConstraint,
-  type Constraint,
   type Csp,
+  type CspConstraint,
   constraint,
   csp,
   type Game,
@@ -274,7 +274,7 @@ export function sudokuCsp(grid: string, side: 4 | 9 = 9): Csp<number> {
     }
   }
   const seen = new Set<string>()
-  const pairs: Constraint<number>[] = []
+  const pairs: CspConstraint<number>[] = []
   for (const unit of units) {
     for (const p of allDifferent<number>(unit)) {
       const id = [...p.scope].sort().join(',')

@@ -10,7 +10,7 @@
 
 import { maxOf } from '../base/index.ts'
 import type { MatrixView } from '../learn/validation.ts'
-import type { Tree } from '../trees/tree.ts'
+import type { FittedTree } from '../trees/tree.ts'
 import {
   type BoostEnv,
   boostingEstimator,
@@ -288,7 +288,7 @@ function histogramGrower({ m, w, loss, h }: BoostEnv): StageGrower {
       }
       return [-node.g / (node.h + lambda || 1e-12)]
     })
-    const tree: Tree = {
+    const tree: FittedTree = {
       task: 'regression',
       classes: [],
       nFeatures: d,

@@ -41,7 +41,7 @@ import {
  *
  * @concept options-framework
  */
-export interface Option {
+export interface HierarchicalOption {
   readonly name: string
   initiation(state: number): boolean
   policy(state: number): readonly number[]
@@ -62,7 +62,7 @@ export interface Option {
  * [up?.policy(7), up?.termination(7)] // => [[1, 0, 0, 0], 1]
  * ```
  */
-export function primitiveOptions(nActions: number): Option[] {
+export function primitiveOptions(nActions: number): HierarchicalOption[] {
   return Array.from({ length: nActions }, (_, a) => {
     const probs = Array.from({ length: nActions }, (_, b) => (b === a ? 1 : 0))
     return { name: `action ${a}`, initiation: () => true, policy: () => probs, termination: () => 1 }
@@ -95,7 +95,7 @@ export function subgoalOption(
   region: readonly number[],
   subgoal: number,
   options: { readonly gamma?: number; readonly name?: string } = {},
-): Option {
+): HierarchicalOption {
   const inside = new Set(region)
   inside.delete(subgoal)
   const sub: EnvModel<number, number> = {
@@ -191,7 +191,7 @@ function roomsOf(layout: readonly string[]): {
 export function hallwayOptions(
   env: Env<number, number, number>,
   options: { readonly layout?: readonly string[]; readonly gamma?: number } = {},
-): Option[] {
+): HierarchicalOption[] {
   const model = env.model
   if (model === undefined) throw new MdmlError('value', 'hallwayOptions: the environment has no model')
   const { cells, rooms, hallways } = roomsOf(options.layout ?? FOUR_ROOMS)
@@ -200,7 +200,7 @@ export function hallwayOptions(
     const [r2, c2] = cells[j] ?? [0, 0]
     return Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1
   }
-  const out: Option[] = []
+  const out: HierarchicalOption[] = []
   for (const [ri, members] of rooms.entries()) {
     const doors = hallways.filter((h) => members.some((m) => adjacent(m, h)))
     for (const door of doors) {
@@ -222,7 +222,7 @@ export function hallwayOptions(
 /** Options of {@link smdpQLearning} and {@link intraOptionQLearning}. */
 export interface OptionAgentOptions<O> extends TabularCodingOptions<O> {
   /** The options to choose among (include {@link primitiveOptions} to keep every action available). */
-  readonly options: readonly Option[]
+  readonly options: readonly HierarchicalOption[]
   /** Step size (default 0.1). */
   readonly alpha?: StepSize
   /** Discount per primitive step (default 0.99). */

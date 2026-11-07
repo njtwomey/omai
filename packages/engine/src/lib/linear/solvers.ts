@@ -46,7 +46,7 @@ export type LinearSolver = 'auto' | 'cholesky' | 'qr' | 'svd' | 'irls' | 'coordi
  * alpha (1 - l1Ratio) / 2 |beta|^2 with mu = g^{-1}(x beta + b) and the intercept b unpenalised (scikit-learn's
  * scaling of the elastic net and of its GLMs).
  */
-export interface GlmProblem {
+export interface GlmDesignProblem {
   readonly design: Design
   readonly family: DispersionFamily
   readonly link: Link
@@ -99,7 +99,7 @@ const sumOf = (v: ArrayLike<number>): number => {
   return s
 }
 
-const isLeastSquares = (p: GlmProblem): boolean => p.family.name === 'gaussian' && p.link.name === 'identity'
+const isLeastSquares = (p: GlmDesignProblem): boolean => p.family.name === 'gaussian' && p.link.name === 'identity'
 
 /**
  * The solver the core picks for a problem, and why: least squares without an L1 penalty is a direct solve (Cholesky
@@ -109,7 +109,7 @@ const isLeastSquares = (p: GlmProblem): boolean => p.family.name === 'gaussian' 
  * @param problem - The problem.
  * @returns The solver and the reason.
  */
-export function chooseSolver(problem: GlmProblem): {
+export function chooseSolver(problem: GlmDesignProblem): {
   readonly solver: Exclude<LinearSolver, 'auto'>
   readonly reason: string
 } {
@@ -126,7 +126,7 @@ export function chooseSolver(problem: GlmProblem): {
 }
 
 /** The penalised objective of a problem at given coefficients. */
-export function glmObjective(problem: GlmProblem, coef: ArrayLike<number>, intercept: number): number {
+export function glmObjective(problem: GlmDesignProblem, coef: ArrayLike<number>, intercept: number): number {
   const { x, y, w } = problem.design
   const eta = new Float64Array(x.n)
   for (let i = 0; i < x.n; i++) eta[i] = intercept + ddot(x.data.subarray(i * x.d, (i + 1) * x.d), coef)
@@ -155,7 +155,7 @@ const isConfig = (solver: SolveOptions['solver']): solver is Exclude<SolveOption
  * @returns The factory problem, to be solved by any mode of `glmSolvers`.
  * @throws MdmlError `value` when the penalty has an L1 part.
  */
-export function factoryProblem(problem: GlmProblem, start?: SolveOptions['start']): FactoryProblem {
+export function factoryProblem(problem: GlmDesignProblem, start?: SolveOptions['start']): FactoryProblem {
   if (problem.alpha * problem.l1Ratio > 0)
     throw new MdmlError('value', 'a penalty with an L1 part is non-smooth: use the elastic-net solvers, not glmSolvers')
   const { x, y, w } = problem.design
@@ -182,7 +182,7 @@ export function factoryProblem(problem: GlmProblem, start?: SolveOptions['start'
  * @param options - Iterations (default per mode), warm start and run options.
  * @returns The solution, with the objective after each step and the iterates (the start first).
  */
-export function solveGlmWith(problem: GlmProblem, config: SpaceValue, options: SolveOptions = {}): GlmSolution {
+export function solveGlmWith(problem: GlmDesignProblem, config: SpaceValue, options: SolveOptions = {}): GlmSolution {
   const factory = factoryProblem(problem, options.start)
   const fit = fitGlm(factory, config, {
     ...(options.maxIter === undefined ? {} : { maxSteps: options.maxIter }),
@@ -389,7 +389,7 @@ export interface IrlsState {
  * @param options - Tolerance on the largest relative coefficient change (default 1e-10) and a warm start.
  * @returns The algorithm.
  */
-export function irlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): Algorithm<IrlsState> {
+export function irlsAlgorithm(problem: GlmDesignProblem, options: SolveOptions = {}): Algorithm<IrlsState> {
   if (problem.alpha * problem.l1Ratio > 0) return elasticNetIrlsAlgorithm(problem, options)
   const inner = glmSolvers
     .modeOf({ kind: 'irls' })
@@ -435,7 +435,7 @@ export function irlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): 
 }
 
 /** The elastic-net IRLS: Fisher scoring with coordinate descent inside for the L1 part (glmnet's proximal Newton step). */
-function elasticNetIrlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}): Algorithm<IrlsState> {
+function elasticNetIrlsAlgorithm(problem: GlmDesignProblem, options: SolveOptions = {}): Algorithm<IrlsState> {
   const { x, y, w } = problem.design
   const s = sumOf(w)
   const tol = options.tol ?? 1e-10
@@ -533,7 +533,7 @@ function elasticNetIrlsAlgorithm(problem: GlmProblem, options: SolveOptions = {}
  * @param options - Iterations, gradient tolerance and run options.
  * @returns The solution.
  */
-export function quasiNewtonSolve(problem: GlmProblem, options: SolveOptions = {}): GlmSolution {
+export function quasiNewtonSolve(problem: GlmDesignProblem, options: SolveOptions = {}): GlmSolution {
   const { x, y, w } = problem.design
   const s = sumOf(w)
   const d = x.d
@@ -589,7 +589,7 @@ export function quasiNewtonSolve(problem: GlmProblem, options: SolveOptions = {}
  * @returns The solution.
  * @throws MdmlError `value` when a direct least-squares solver is asked for a problem it cannot solve.
  */
-export function solveGlm(problem: GlmProblem, options: SolveOptions = {}): GlmSolution {
+export function solveGlm(problem: GlmDesignProblem, options: SolveOptions = {}): GlmSolution {
   if (isConfig(options.solver)) return solveGlmWith(problem, options.solver, options)
   const solver =
     options.solver === undefined || options.solver === 'auto' ? chooseSolver(problem).solver : options.solver
@@ -613,7 +613,7 @@ export function solveGlm(problem: GlmProblem, options: SolveOptions = {}): GlmSo
   return irls(problem, options)
 }
 
-function irls(problem: GlmProblem, options: SolveOptions): GlmSolution {
+function irls(problem: GlmDesignProblem, options: SolveOptions): GlmSolution {
   const tracked = collecting(
     irlsAlgorithm(problem, options),
     (state): GlmIterate => ({ coef: Array.from(state.coef), intercept: state.intercept, objective: state.objective }),

@@ -4,7 +4,7 @@
 import { stopGradient } from '../autodiff/index.ts'
 import { binaryCrossEntropyWithLogits } from '../losses/index.ts'
 import { mlp, type Sequential, SiLU } from '../nn/index.ts'
-import type { Tree } from '../optim/index.ts'
+import type { ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import { categoricalPolicy, gaussianPolicy, type PolicyHead } from '../rl/index.ts'
 import {
@@ -57,9 +57,9 @@ type WorldPart = 'encoder' | 'transition' | 'prior' | 'posterior' | 'decoder' | 
 
 /** The parameters of the world model, actor and critic. */
 export interface DreamerParams {
-  readonly world: Readonly<Record<WorldPart, Tree>>
-  readonly actor: Tree
-  readonly critic: Tree
+  readonly world: Readonly<Record<WorldPart, ParamTree>>
+  readonly actor: ParamTree
+  readonly critic: ParamTree
 }
 
 const net = (widths: readonly number[], key: Key): Sequential => mlp(widths, { activation: () => new SiLU(), key })
@@ -96,12 +96,15 @@ export function dreamerNets(
 
 /** The initial parameters of the networks. */
 export function dreamerParams(nets: DreamerNets): DreamerParams {
-  const world = Object.fromEntries(Object.entries(nets.world).map(([k, m]) => [k, m.params])) as Record<WorldPart, Tree>
+  const world = Object.fromEntries(Object.entries(nets.world).map(([k, m]) => [k, m.params])) as Record<
+    WorldPart,
+    ParamTree
+  >
   return { world, actor: nets.actor.params, critic: nets.critic.params }
 }
 
-const apply = (m: Sequential, p: Tree, x: Value): Value => m.apply(p as never, x)
-const scalarHead = (m: Sequential, p: Tree, x: Value): Value => squeeze(apply(m, p, x), -1)
+const apply = (m: Sequential, p: ParamTree, x: Value): Value => m.apply(p as never, x)
+const scalarHead = (m: Sequential, p: ParamTree, x: Value): Value => squeeze(apply(m, p, x), -1)
 
 /** A diagonal Gaussian from a network output `[mean, raw std]`, with the std bounded below by 0.1. */
 function gaussian(raw: Value, n: number): { readonly mean: Value; readonly std: Value } {
@@ -222,7 +225,7 @@ export function worldPass(
 }
 
 /** The actor's policy head at latent features. */
-export function actorHead(nets: DreamerNets, actor: Tree, feat: Value): PolicyHead {
+export function actorHead(nets: DreamerNets, actor: ParamTree, feat: Value): PolicyHead {
   const out = apply(nets.actor, actor, feat)
   if (nets.discrete) return categoricalPolicy(out)
   const n = nets.actionSize

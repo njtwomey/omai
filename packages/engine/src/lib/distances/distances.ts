@@ -8,8 +8,8 @@
 
 import { MdmlError } from '../base/index.ts'
 import {
+  type DistanceMetric,
   distanceBetween,
-  type Metric,
   type MetricOptions,
   metricFunction,
   type PointDistance,
@@ -119,7 +119,7 @@ function metricOptions(options: DistanceOptions): MetricOptions {
 
 function entry(
   name: DistanceName,
-  metric: Metric,
+  metric: DistanceMetric,
   description: string,
   isMetric: boolean,
   parameters: DictSpace,

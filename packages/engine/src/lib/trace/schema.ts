@@ -4,14 +4,14 @@
  * against recorded events by `validateAgainstSchema`.
  */
 
-import type { Direction, Json } from '../base/index.ts'
+import type { Json, MetricDirection } from '../base/index.ts'
 import type { TensorRole, TraceEvent } from './events.ts'
 
 /** A metric channel an algorithm can emit. */
 export interface MetricChannel {
   readonly description: string
   readonly unit?: string
-  readonly direction?: Direction
+  readonly direction?: MetricDirection
 }
 
 /**

@@ -172,7 +172,7 @@ export function realVectors(
 }
 
 /** How a genetic algorithm picks parents. */
-export type Selection = 'tournament' | 'roulette' | 'rank' | 'universal'
+export type ParentSelection = 'tournament' | 'roulette' | 'rank' | 'universal'
 
 /** Options of {@link geneticAlgorithm}. */
 export interface GeneticOptions extends SearchRunOptions {
@@ -185,7 +185,7 @@ export interface GeneticOptions extends SearchRunOptions {
   /** The number of best individuals copied unchanged into the next generation (default 1). */
   readonly elitism?: number
   /** Parent selection (default tournament). */
-  readonly selection?: Selection
+  readonly selection?: ParentSelection
   /** The tournament size (default 3). */
   readonly tournamentSize?: number
   /** Stop once a fitness reaches this value. */
@@ -232,7 +232,7 @@ function select(
   key: Key,
   fitness: readonly number[],
   n: number,
-  selection: Selection,
+  selection: ParentSelection,
   tournamentSize: number,
 ): number[] {
   if (selection === 'tournament') return tournamentSelection(key, fitness, n, tournamentSize)

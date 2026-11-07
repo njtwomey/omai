@@ -45,9 +45,9 @@ export function quantise(images: readonly Pixels[], size = 256): Palette {
   for (let b = 0; b < counts.length; b++) if ((counts[b] as number) > 0) bins.push(b)
   if (bins.length === 0) return [[0, 0, 0]]
   const channel = (b: number, c: number): number => (b >> (10 - 5 * c)) & 31
-  type Box = number[]
-  const boxes: Box[] = [bins]
-  const spread = (box: Box): [number, number] => {
+  type ColourBox = number[]
+  const boxes: ColourBox[] = [bins]
+  const spread = (box: ColourBox): [number, number] => {
     let best = 0
     let widest = -1
     for (let c = 0; c < 3; c++) {
@@ -70,7 +70,7 @@ export function quantise(images: readonly Pixels[], size = 256): Palette {
     let pick = -1
     let most = 0
     for (let k = 0; k < boxes.length; k++) {
-      const box = boxes[k] as Box
+      const box = boxes[k] as ColourBox
       if (box.length < 2) continue
       const weight = box.reduce((a, b) => a + (counts[b] as number), 0)
       if (weight > most) {
@@ -79,7 +79,7 @@ export function quantise(images: readonly Pixels[], size = 256): Palette {
       }
     }
     if (pick < 0) break
-    const box = boxes[pick] as Box
+    const box = boxes[pick] as ColourBox
     const [c] = spread(box)
     box.sort((a, b) => channel(a, c) - channel(b, c))
     let acc = 0

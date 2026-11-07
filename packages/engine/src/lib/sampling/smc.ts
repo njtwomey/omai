@@ -23,7 +23,7 @@ import {
 import { welfordCovariance, welfordInit, welfordUpdate } from './_mcmc.ts'
 import type { MCMCKernel, MCMCState } from './chains.ts'
 import { randomWalkMetropolis } from './metropolis.ts'
-import { type LogDensity, numericTarget, type Proposal } from './target.ts'
+import { type ChainProposal, type LogDensity, numericTarget } from './target.ts'
 
 function weightsOf(w: TensorLike, name: string): Float64Array {
   const v = Float64Array.from(toFlat(asTensor(w) as Tensor))
@@ -358,7 +358,11 @@ export interface SMCOptions extends TemperingOptions {
   readonly move?: MoveKernel
 }
 
-function temperedTarget(prior: Proposal, logLikelihood: (x: Float64Array) => number, temperature: number): LogDensity {
+function temperedTarget(
+  prior: ChainProposal,
+  logLikelihood: (x: Float64Array) => number,
+  temperature: number,
+): LogDensity {
   return numericTarget((x) => {
     const lp = prior.logProb(x)
     if (lp === Number.NEGATIVE_INFINITY) return lp
@@ -416,7 +420,7 @@ function moveParticles(
  * ```
  */
 export function smcAlgorithm(
-  prior: Proposal,
+  prior: ChainProposal,
   logLikelihood: (x: Float64Array) => number,
   options: SMCOptions = {},
 ): Algorithm<SMCState> {
@@ -535,7 +539,7 @@ export interface SMCResult {
  * ```
  */
 export function smcSampler(
-  prior: Proposal,
+  prior: ChainProposal,
   logLikelihood: (x: Float64Array) => number,
   options: SMCOptions & { readonly maxStages?: number } & Partial<Omit<RunOptions, 'maxSteps' | 'start'>> = {},
 ): SMCResult {
@@ -658,7 +662,7 @@ const effectiveSize = (logW: readonly number[]): number => {
  * ```
  */
 export function aisAlgorithm(
-  prior: Proposal,
+  prior: ChainProposal,
   logLikelihood: (x: Float64Array) => number,
   options: AISOptions,
 ): Algorithm<AISState, AISPath> {
@@ -724,7 +728,7 @@ export function aisAlgorithm(
  * ```
  */
 export function annealedImportanceSampling(
-  prior: Proposal,
+  prior: ChainProposal,
   logLikelihood: (x: Float64Array) => number,
   options: AISOptions,
 ): AISResult {

@@ -38,7 +38,7 @@ import { covarianceFactor, type GaussianSet, gaussianColour, gaussianCount, gaus
 export const SPLAT_DILATION = 0.3
 
 /** The Gaussians that survive culling, projected into an image. */
-export interface Projected {
+export interface ProjectedGaussians {
   /** The image size. */
   readonly width: number
   readonly height: number
@@ -120,7 +120,7 @@ export function projectGaussians(
   width: number,
   height: number,
   options: ProjectOptions = {},
-): Projected {
+): ProjectedGaussians {
   if (!(camera.near > 0)) throw new MdmlError('value', 'projectGaussians: the camera’s near plane must be positive')
   const { rotation, focal, tanX, tanY } = cameraFrame(camera, width, height)
   const R = fromStorage(Float64Array.from(rotation.flat()), [3, 3], 'float64')

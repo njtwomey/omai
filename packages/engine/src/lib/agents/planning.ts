@@ -9,7 +9,7 @@
 import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { crossEntropy, mse } from '../losses/index.ts'
 import { mlp } from '../nn/index.ts'
-import { adamw, type Tree } from '../optim/index.ts'
+import { adamw, type ParamTree } from '../optim/index.ts'
 import { categorical, dirichlet, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import {
   type AecEnv,
@@ -510,11 +510,11 @@ export function minimaxAgent<S, O>(
 
 /** A policy and value network for {@link alphaZero}: logits over every action and a value in [-1, 1]. */
 export interface PolicyValueNetwork {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly inputSize: number
   readonly nActions: number
   /** Logits `[B, nActions]` and values `[B, 1]` (tanh) for a batch of encoded positions `[B, inputSize]`. */
-  apply(params: Tree, x: Value): { readonly logits: Value; readonly value: Value }
+  apply(params: ParamTree, x: Value): { readonly logits: Value; readonly value: Value }
 }
 
 /**
@@ -595,7 +595,7 @@ export interface AlphaZeroOptions<S> {
 
 /** The state of {@link alphaZeroAlgorithm}. */
 export interface AlphaZeroState {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly optState: unknown
   readonly buffer: ReplayBuffer<AlphaZeroSample>
   readonly iteration: number
@@ -638,7 +638,7 @@ function resolve<S, O>(env: AecEnv<S, O, number>, options: AlphaZeroOptions<S>):
 function evaluator<S, O>(
   env: AecEnv<S, O, number>,
   r: Resolved<S>,
-  params: Tree,
+  params: ParamTree,
   noise?: { readonly root: S; readonly key: Key; readonly alpha: number; readonly fraction: number },
 ): {
   prior: (state: S, actions: readonly number[]) => readonly number[]
@@ -677,7 +677,7 @@ function evaluator<S, O>(
 function selfPlayGame<S, O>(
   env: AecEnv<S, O, number>,
   r: Resolved<S>,
-  params: Tree,
+  params: ParamTree,
   options: AlphaZeroOptions<S>,
   k: Key,
 ): { readonly samples: AlphaZeroSample[]; readonly returns: Readonly<Record<string, number>> } {
@@ -838,7 +838,7 @@ export function alphaZeroAlgorithm<S, O>(
 
 /** The result of {@link alphaZero}. */
 export interface AlphaZeroResult {
-  readonly params: Tree
+  readonly params: ParamTree
   readonly network: PolicyValueNetwork
   readonly state: AlphaZeroState
   readonly runId: string
@@ -905,12 +905,12 @@ export function alphaZero<S, O>(
  */
 export function alphaZeroAgent<S, O>(
   env: AecEnv<S, O, number>,
-  params: Tree,
+  params: ParamTree,
   options: AlphaZeroOptions<S> & { readonly toState?: (observation: O) => S } = {},
-): Agent<Tree, O | S, number> {
+): Agent<ParamTree, O | S, number> {
   const r = resolve(env, options)
   const toState = (o: O | S): S => (options.toState === undefined ? (o as S) : options.toState(o as O))
-  const choose = (p: Tree, o: O | S, k: Key): number => {
+  const choose = (p: ParamTree, o: O | S, k: Key): number => {
     const s = toState(o)
     const player = env.currentAgent(s)
     if (player === undefined) throw new MdmlError('value', 'alphaZeroAgent: the game is over')

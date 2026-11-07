@@ -11,7 +11,7 @@ const box = fc
     fc.double({ min: 1, max: 20, noNaN: true }),
     fc.double({ min: 1, max: 20, noNaN: true }),
   )
-  .map(([x, y, w, h]): V.Box => [x, y, x + w, y + h])
+  .map(([x, y, w, h]): V.BoxCoords => [x, y, x + w, y + h])
 
 const scored = fc.array(fc.tuple(box, fc.double({ min: 0, max: 1, noNaN: true })), { minLength: 1, maxLength: 20 })
 
@@ -73,11 +73,11 @@ describe('boxes', () => {
     fc.assert(
       fc.property(box, box, (b, ref) => {
         for (const f of ['xywh', 'cxcywh'] as const) {
-          const back = V.boxConvert(V.boxConvert([b], 'xyxy', f), f, 'xyxy')[0] as V.Box
+          const back = V.boxConvert(V.boxConvert([b], 'xyxy', f), f, 'xyxy')[0] as V.BoxCoords
           for (let k = 0; k < 4; k++) expect(back[k]).toBeCloseTo(b[k] ?? 0, 9)
         }
         const w = { weights: [10, 10, 5, 5] as [number, number, number, number] }
-        const dec = V.decodeBoxes(V.encodeBoxes([b], [ref], w), [ref], w)[0] as V.Box
+        const dec = V.decodeBoxes(V.encodeBoxes([b], [ref], w), [ref], w)[0] as V.BoxCoords
         for (let k = 0; k < 4; k++) expect(dec[k]).toBeCloseTo(b[k] ?? 0, 8)
       }),
       { numRuns: RUNS },

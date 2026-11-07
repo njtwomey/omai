@@ -28,7 +28,7 @@ import {
   identity,
   invert,
   logDeterminant,
-  type Matrix,
+  type MutableRows,
   multiply,
   residualsOn,
   transpose,
@@ -63,11 +63,11 @@ export interface VecmProblem {
   readonly yLag: readonly Float64Array[]
   /** The lagged differences and the deterministic terms outside the relation. */
   readonly dx: readonly Float64Array[]
-  readonly s00: Matrix
-  readonly s01: Matrix
-  readonly s11: Matrix
+  readonly s00: MutableRows
+  readonly s01: MutableRows
+  readonly s11: MutableRows
   /** The last `kArDiff + 1` levels, to start forecasts from. */
-  readonly last: Matrix
+  readonly last: MutableRows
 }
 
 function terms(det: VecmDeterministic): { co: boolean; ci: boolean; lo: boolean; li: boolean } {
@@ -117,7 +117,7 @@ export function vecmProblem(y: ArrayLike<ArrayLike<number>>, options: VecmOption
   if (t.lo) dx.push(Float64Array.from({ length: T }, (_, i) => i + p + 1))
   const r0 = residualsOn(dy, dx)
   const r1 = residualsOn(yLag, dx)
-  const mom = (a: readonly Float64Array[], b: readonly Float64Array[]): Matrix =>
+  const mom = (a: readonly Float64Array[], b: readonly Float64Array[]): MutableRows =>
     a.map((u) =>
       b.map((v) => {
         let s = 0
@@ -142,10 +142,10 @@ export function vecmProblem(y: ArrayLike<ArrayLike<number>>, options: VecmOption
 }
 
 /** beta from its free block B: the rows of the identity on top, B below (`m x r`). */
-function betaOf(p: VecmProblem, x: ArrayLike<number>): Matrix {
+function betaOf(p: VecmProblem, x: ArrayLike<number>): MutableRows {
   const m = p.yLag.length
   const r = p.rank
-  const out: Matrix = []
+  const out: MutableRows = []
   for (let i = 0; i < r; i++) out.push(Array.from({ length: r }, (_, j) => (i === j ? 1 : 0)))
   for (let i = r; i < m; i++) out.push(Array.from({ length: r }, (_, j) => x[(i - r) * r + j] ?? 0))
   return out
@@ -220,8 +220,8 @@ function johansenBeta(p: VecmProblem): Float64Array {
   const m = p.yLag.length
   // Eigenproblem S10 S00^-1 S01 v = lambda S11 v, by the Cholesky route of the cointegration tests.
   const { vectors } = reducedRankEigen(p.dy.length === 0 ? [] : residualsFor(p, 'dy'), residualsFor(p, 'yLag'))
-  const lead: Matrix = vectors.map((row) => row.slice(0, r))
-  const top: Matrix = lead.slice(0, r)
+  const lead: MutableRows = vectors.map((row) => row.slice(0, r))
+  const top: MutableRows = lead.slice(0, r)
   const beta = multiply(lead, invert(top))
   const x = new Float64Array((m - r) * r)
   for (let i = r; i < m; i++) for (let j = 0; j < r; j++) x[(i - r) * r + j] = beta[i]?.[j] ?? 0
@@ -278,21 +278,21 @@ export interface VecmFit {
   readonly kArDiff: number
   readonly deterministic: VecmDeterministic
   /** The adjustment coefficients, `nVars x rank`. */
-  readonly alpha: Matrix
+  readonly alpha: MutableRows
   /** The cointegrating vectors, `nVars x rank`, normalised so that the first `rank` rows are the identity. */
-  readonly beta: Matrix
+  readonly beta: MutableRows
   /** The short-run coefficients `Gamma_1 ... Gamma_kArDiff`, `nVars x (nVars kArDiff)`. */
-  readonly gamma: Matrix
+  readonly gamma: MutableRows
   /** The coefficients of the deterministic terms outside the relation (constant, then trend), `nVars x terms`. */
-  readonly detCoef: Matrix
+  readonly detCoef: MutableRows
   /** The coefficients of the deterministic terms inside the relation (constant, then trend), `terms x rank`. */
-  readonly detCoefCoint: Matrix
+  readonly detCoefCoint: MutableRows
   /** The maximum-likelihood innovation covariance. */
-  readonly sigma: Matrix
+  readonly sigma: MutableRows
   readonly logLikelihood: number
   readonly nobs: number
   /** The last `kArDiff + 1` observations. */
-  readonly last: Matrix
+  readonly last: MutableRows
   /** The solver that fitted it. */
   readonly solver: string
 }
@@ -312,8 +312,8 @@ function assemble(p: VecmProblem, x: ArrayLike<number>, solver: string): VecmFit
   const eq = multiply(multiply(yLagM, beta), transpose(alpha)) // T x K
   const resid1 = add(dyM, eq, -1) // T x K
   const q = p.dx.length
-  let gammaAll: Matrix = []
-  let resid: Matrix = resid1
+  let gammaAll: MutableRows = []
+  let resid: MutableRows = resid1
   if (q > 0) {
     const dxt = transpose(dxM)
     const coef = multiply(multiply(transpose(resid1), dxM), invert(multiply(dxt, dxM))) // K x q
@@ -430,21 +430,25 @@ export function vecmFit(y: ArrayLike<ArrayLike<number>>, options: VecmSolveOptio
 
 /** Forecasts of a VECM with normal intervals. */
 export interface VecmForecast {
-  readonly mean: Matrix
-  readonly lower: Matrix
-  readonly upper: Matrix
+  readonly mean: MutableRows
+  readonly lower: MutableRows
+  readonly upper: MutableRows
 }
 
 /** The VAR(p) matrices of the model (statsmodels' `var_rep`): A_1 ... A_p with p = kArDiff + 1. */
-export function vecmVarRepresentation(fit: Pick<VecmFit, 'nVars' | 'kArDiff' | 'alpha' | 'beta' | 'gamma'>): Matrix[] {
+export function vecmVarRepresentation(
+  fit: Pick<VecmFit, 'nVars' | 'kArDiff' | 'alpha' | 'beta' | 'gamma'>,
+): MutableRows[] {
   const K = fit.nVars
   const p = fit.kArDiff + 1
   const pi = multiply(fit.alpha, transpose(fit.beta))
-  const A: Matrix[] = Array.from({ length: p }, () => Array.from({ length: K }, () => new Array<number>(K).fill(0)))
+  const A: MutableRows[] = Array.from({ length: p }, () =>
+    Array.from({ length: K }, () => new Array<number>(K).fill(0)),
+  )
   A[0] = add(pi, identity(K))
   if (fit.kArDiff > 0) {
-    const g = (i: number): Matrix => fit.gamma.map((row) => row.slice(K * i, K * (i + 1)))
-    A[0] = add(A[0] as Matrix, g(0))
+    const g = (i: number): MutableRows => fit.gamma.map((row) => row.slice(K * i, K * (i + 1)))
+    A[0] = add(A[0] as MutableRows, g(0))
     A[p - 1] = g(p - 2).map((row) => row.map((v) => -v))
     for (let i = 1; i < p - 1; i++) A[i] = add(g(i), g(i - 1), -1)
   }
@@ -484,13 +488,13 @@ export function vecmForecast(fit: VecmFit, steps: number, alpha = 0.05): VecmFor
     fit.alpha.map((a) => a.reduce((s, x, j) => s + x * (v?.[j] ?? 0), 0))
   const cIn = constIn === undefined ? null : alphaTimes(constIn)
   const tIn = trendIn === undefined ? null : alphaTimes(trendIn)
-  const history: Matrix = fit.last.map((r) => r.slice())
-  const mean: Matrix = []
+  const history: MutableRows = fit.last.map((r) => r.slice())
+  const mean: MutableRows = []
   for (let h = 0; h < steps; h++) {
     const next = new Array<number>(K).fill(0)
     for (let i = 1; i <= p; i++) {
       const prev = h - i < 0 ? (history[history.length + h - i] ?? []) : (mean[h - i] ?? [])
-      const a = A[i - 1] as Matrix
+      const a = A[i - 1] as MutableRows
       for (let e = 0; e < K; e++)
         for (let j = 0; j < K; j++) next[e] = (next[e] ?? 0) + (a[e]?.[j] ?? 0) * (prev[j] ?? 0)
     }
@@ -500,18 +504,19 @@ export function vecmForecast(fit: VecmFit, steps: number, alpha = 0.05): VecmFor
     }
     mean.push(next)
   }
-  const phis: Matrix[] = [identity(K)]
+  const phis: MutableRows[] = [identity(K)]
   for (let i = 1; i < steps; i++) {
-    let acc: Matrix = Array.from({ length: K }, () => new Array<number>(K).fill(0))
-    for (let j = 1; j <= Math.min(i, p); j++) acc = add(acc, multiply(A[j - 1] as Matrix, phis[i - j] as Matrix))
+    let acc: MutableRows = Array.from({ length: K }, () => new Array<number>(K).fill(0))
+    for (let j = 1; j <= Math.min(i, p); j++)
+      acc = add(acc, multiply(A[j - 1] as MutableRows, phis[i - j] as MutableRows))
     phis.push(acc)
   }
   const q = item(ndtri(1 - alpha / 2))
-  let cov: Matrix = Array.from({ length: K }, () => new Array<number>(K).fill(0))
-  const lower: Matrix = []
-  const upper: Matrix = []
+  let cov: MutableRows = Array.from({ length: K }, () => new Array<number>(K).fill(0))
+  const lower: MutableRows = []
+  const upper: MutableRows = []
   for (let h = 0; h < steps; h++) {
-    const phi = phis[h] as Matrix
+    const phi = phis[h] as MutableRows
     cov = add(cov, multiply(multiply(phi, fit.sigma), transpose(phi)))
     lower.push((mean[h] as number[]).map((v, e) => v - q * Math.sqrt(cov[e]?.[e] ?? 0)))
     upper.push((mean[h] as number[]).map((v, e) => v + q * Math.sqrt(cov[e]?.[e] ?? 0)))

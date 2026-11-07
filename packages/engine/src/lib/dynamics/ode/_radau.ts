@@ -30,7 +30,7 @@ import {
   tolAt,
 } from './_vec.ts'
 import type { RadauState } from './implicit.ts'
-import { type DenseSegment, hermiteSegment, type StepAttempt, type VectorField } from './problem.ts'
+import { type DenseSegment, hermiteSegment, type OdeVectorField, type StepAttempt } from './problem.ts'
 
 const S6 = Math.sqrt(6)
 const RADAU_C = [(4 - S6) / 10, (4 + S6) / 10, 1]
@@ -253,7 +253,7 @@ function sliceRow(z: Value, i: number, n: number): Value {
 }
 
 function radauResidual(
-  f: VectorField,
+  f: OdeVectorField,
   t: number,
   y: Value,
   h: number,
@@ -272,7 +272,7 @@ function radauResidual(
 }
 
 function radauNewtonMatrix(
-  f: VectorField,
+  f: OdeVectorField,
   t: number,
   y: Float64Array,
   shape: readonly number[],
@@ -319,7 +319,7 @@ interface Collocation {
 }
 
 function solveCollocation(
-  f: VectorField,
+  f: OdeVectorField,
   t: number,
   y: Float64Array,
   shape: readonly number[],

@@ -18,10 +18,10 @@ import {
   type MetricFunction,
   type MetricInput,
   type MetricOptions,
-  matrix,
   metricResult,
   rowCount,
   selectRows,
+  shapedArray,
 } from './metric.ts'
 
 const phi = (x: number): number => item(ndtr(x))
@@ -411,7 +411,7 @@ function meanMatrix(
   options: MetricOptions & { readonly labels?: readonly Label[] },
 ): MetricResult {
   const e = encodeLabels(name, yTrue, yPred, options)
-  const c = matrix(m)
+  const c = shapedArray(m)
   const k = c.shape[1] ?? 0
   let total = 0
   let weight = 0
@@ -487,8 +487,8 @@ export const expectedUtility: MetricFunction<[MetricInput, MetricInput, TensorLi
  * ```
  */
 export function bayesDecision(probs: TensorLike, costs: TensorLike): number[] {
-  const p = matrix(probs)
-  const c = matrix(costs)
+  const p = shapedArray(probs)
+  const c = shapedArray(costs)
   const n = p.shape[0] ?? 0
   const k = p.shape[1] ?? 0
   const actions = c.shape[1] ?? 0

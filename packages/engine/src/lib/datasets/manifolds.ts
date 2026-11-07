@@ -4,7 +4,7 @@
  * intrinsic coordinates are exported too.
  */
 
-import { type DatasetGenerator, type Generated, type Knobs, type RegressionData, xy } from '../data/index.ts'
+import { type DatasetGenerator, type Generated, type GeneratorKnobs, type RegressionData, xy } from '../data/index.ts'
 import { foldIn, type Key, normal, randint, uniform } from '../random/index.ts'
 import { bool, dict, int, real } from '../space/index.ts'
 import { asTensor, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -57,7 +57,7 @@ export function sCurveEmbedding(t: TensorLike, height: TensorLike): Tensor {
 function manifoldData(
   name: string,
   description: string,
-  knobs: Knobs,
+  knobs: GeneratorKnobs,
   k: Key,
   clean: Tensor,
   colour: readonly number[],

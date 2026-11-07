@@ -29,7 +29,7 @@ import {
 } from '../trace/index.ts'
 import type { Criterion, RegressionCriterion } from '../trees/criteria.ts'
 import { type GrowOptions, growTree, type MaxFeatures, type TreeData, treeData } from '../trees/grow.ts'
-import { applyTree, leafCount, type Tree, treeFeatureImportances, treeOutputs } from '../trees/tree.ts'
+import { applyTree, type FittedTree, leafCount, treeFeatureImportances, treeOutputs } from '../trees/tree.ts'
 import { stagesFromRun } from './_stages.ts'
 import {
   type AveragingMember,
@@ -60,7 +60,7 @@ export interface ForestHyper {
 
 /** Parameters of a fitted forest. */
 export type ForestParams = {
-  readonly trees: Tree[]
+  readonly trees: FittedTree[]
   readonly classes: number[]
   readonly nFeatures: number
   /** The out-of-bag score (accuracy or R^2) when trees were sampled. */
@@ -95,7 +95,7 @@ export type ForestPath = AveragingPath | 'ensemble/importances' | 'model/proximi
 /** A forest estimator. */
 export type ForestEstimator = IterativeEstimator<
   ForestHyper,
-  AveragingState<Tree>,
+  AveragingState<FittedTree>,
   ForestParams,
   ForestVerbs,
   ForestPath
@@ -173,7 +173,7 @@ function forestVerbs(p: ForestParams): ForestVerbs {
 }
 
 /** The fraction of trees in which each pair of training rows share a leaf, `[n, n]`. */
-function proximityOf(trees: readonly Tree[], x: TensorLike): number[][] {
+function proximityOf(trees: readonly FittedTree[], x: TensorLike): number[][] {
   const leaves = trees.map((t) => applyTree(t, x))
   const n = leaves[0]?.length ?? 0
   return Array.from({ length: n }, (_, i) =>
@@ -196,7 +196,7 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
     minImpurityDecrease: h.minImpurityDecrease,
     record: 0,
   })
-  return iterative<ForestHyper, AveragingState<Tree>, ForestParams, ForestVerbs, ForestPath>(
+  return iterative<ForestHyper, AveragingState<FittedTree>, ForestParams, ForestVerbs, ForestPath>(
     {
       name,
       kind: classifier ? 'classifier' : 'regressor',
@@ -220,12 +220,12 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
             ? {}
             : { maxDepth: int(1, Math.max(30, h.maxDepth), { default: h.maxDepth, label: 'maximum depth' }) }),
         }),
-      algorithm: (learn, h): Algorithm<AveragingState<Tree>, ForestPath> => {
+      algorithm: (learn, h): Algorithm<AveragingState<FittedTree>, ForestPath> => {
         const data = prepare(learn)
         const n = data.x.n
         if (!(h.nEstimators >= 1)) throw new MdmlError('value', `${name}: nEstimators must be at least 1`)
         const options = growOf(h)
-        const member: AveragingMember<Tree, 'ensemble/importances'> = {
+        const member: AveragingMember<FittedTree, 'ensemble/importances'> = {
           fit: (counts, key) => {
             const rows = Array.from({ length: n }, (_, i) => i).filter((i) => (counts[i] ?? 0) > 0)
             const sub: TreeData =
@@ -271,7 +271,7 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
       },
       verbs: (p) => forestVerbs(p),
       maxSteps: (h) => h.nEstimators,
-      contract: (learn): Contract<AveragingState<Tree>, ForestPath> =>
+      contract: (learn): Contract<AveragingState<FittedTree>, ForestPath> =>
         defineContract({
           ...averagingSources(classifier),
           'ensemble/importances': tensor({
@@ -279,12 +279,12 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
             shape: ['features'],
             description: 'the impurity importance of each feature, averaged over the trees so far',
           }),
-          'model/proximity': derived<AveragingState<Tree>>({
+          'model/proximity': derived<AveragingState<FittedTree>>({
             description: 'the fraction of trees in which each pair of training rows share a leaf',
             cost: 'dear',
             compute: (state) => proximityOf(state.members, learn.x),
           }),
-          'model/importances': derived<AveragingState<Tree>>({
+          'model/importances': derived<AveragingState<FittedTree>>({
             description: 'the impurity importance of each feature over the trees so far',
             compute: (state) => {
               const total = new Array<number>(matrixView(learn.x, name, { allowNaN: true }).d).fill(0)
@@ -446,7 +446,7 @@ export interface EmbeddingHyper {
 
 /** The trees of a fitted embedding, and where each tree's leaves start in the embedding's columns. */
 export type EmbeddingParams = {
-  readonly trees: Tree[]
+  readonly trees: FittedTree[]
   /** `offsets[t]` is the first column of tree t's leaves; the last entry is the number of columns. */
   readonly offsets: number[]
   readonly nFeatures: number
@@ -454,7 +454,7 @@ export type EmbeddingParams = {
 
 /** The state of the embedding algorithm: the trees so far. */
 export interface EmbeddingState {
-  readonly trees: readonly Tree[]
+  readonly trees: readonly FittedTree[]
 }
 
 /** Verbs of a fitted embedding. */

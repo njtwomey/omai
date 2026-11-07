@@ -15,7 +15,7 @@ import {
   identity,
   invert,
   logDeterminant,
-  type Matrix,
+  type MutableRows,
   multiply,
   transpose,
 } from './_matrix.ts'
@@ -64,7 +64,7 @@ export interface VarOptions {
 const termsOf = (trend: VarTrend): number => (trend === 'n' ? 0 : trend === 'c' ? 1 : 2)
 
 /** Rows of a multivariate series as arrays; accepts rows or a tensor-like `[T, k]`. */
-function rowsOfSeries(y: ArrayLike<ArrayLike<number>>, who: string): Matrix {
+function rowsOfSeries(y: ArrayLike<ArrayLike<number>>, who: string): MutableRows {
   const rows = Array.from(y, (r) => Array.from(r))
   const k = rows[0]?.length ?? 0
   if (k < 1 || rows.some((r) => r.length !== k)) throw new MdmlError('shape', `${who}: expected rows of equal length`)
@@ -72,7 +72,7 @@ function rowsOfSeries(y: ArrayLike<ArrayLike<number>>, who: string): Matrix {
 }
 
 /** The Gaussian log-likelihood of a VAR from its residual covariance: -T K / 2 log 2 pi - T / 2 (log |S| + K). */
-function varLogLikelihood(sigmaMle: Matrix, nobs: number): number {
+function varLogLikelihood(sigmaMle: MutableRows, nobs: number): number {
   const k = sigmaMle.length
   return -((nobs * k) / 2) * Math.log(2 * Math.PI) - (nobs / 2) * (logDeterminant(sigmaMle) + k)
 }
@@ -104,14 +104,14 @@ export function varFit(y: ArrayLike<ArrayLike<number>>, options: VarOptions = {}
   if (!(Number.isInteger(p) && p >= 1) || nobs <= regressors)
     throw new MdmlError('value', 'varFit: the sample is too short for the model')
   // Regressors: the constant, the trend (statsmodels counts it from lags + 1), then lag 1 of all variables, lag 2, ...
-  const z: Matrix = Array.from({ length: nobs }, (_, t) => [
+  const z: MutableRows = Array.from({ length: nobs }, (_, t) => [
     ...(terms >= 1 ? [1] : []),
     ...(terms >= 2 ? [t + 1 + p] : []),
     ...Array.from({ length: p }, (_, lag) => rows[t + p - 1 - lag] ?? []).flat(),
   ])
   const columns = Array.from({ length: regressors }, (_, j) => z.map((row) => row[j] ?? 0))
-  const params: Matrix = Array.from({ length: regressors }, () => new Array<number>(k).fill(0))
-  const resid: Matrix = rows.slice(p).map((r) => [...r])
+  const params: MutableRows = Array.from({ length: regressors }, () => new Array<number>(k).fill(0))
+  const resid: MutableRows = rows.slice(p).map((r) => [...r])
   for (let eq = 0; eq < k; eq++) {
     const target = rows.slice(p).map((r) => r[eq] ?? 0)
     const beta = leastSquares(columns, target)
@@ -203,12 +203,12 @@ export function varSelectOrder(
 }
 
 /** The moving-average matrices Phi_0 = I, Phi_i = sum_j A_j Phi_(i-j), for i = 0..steps. */
-function maMatrices(fit: Pick<VarFit, 'coefficients' | 'nVars'>, steps: number): Matrix[] {
-  const phis: Matrix[] = [identity(fit.nVars)]
+function maMatrices(fit: Pick<VarFit, 'coefficients' | 'nVars'>, steps: number): MutableRows[] {
+  const phis: MutableRows[] = [identity(fit.nVars)]
   for (let i = 1; i <= steps; i++) {
-    let acc: Matrix = fit.coefficients[0]?.map((r) => r.map(() => 0)) ?? []
+    let acc: MutableRows = fit.coefficients[0]?.map((r) => r.map(() => 0)) ?? []
     for (let j = 1; j <= Math.min(i, fit.coefficients.length); j++)
-      acc = add(acc, multiply(fit.coefficients[j - 1] as Matrix, phis[i - j] as Matrix))
+      acc = add(acc, multiply(fit.coefficients[j - 1] as MutableRows, phis[i - j] as MutableRows))
     phis.push(acc)
   }
   return phis
@@ -235,7 +235,7 @@ export function varImpulseResponse(
   fit: Pick<VarFit, 'coefficients' | 'nVars' | 'sigma'>,
   steps: number,
   options: { readonly orthogonal?: boolean; readonly cumulative?: boolean } = {},
-): Matrix[] {
+): MutableRows[] {
   let phis = maMatrices(fit, steps)
   if (options.orthogonal === true) {
     const P = choleskyLower(fit.sigma)
@@ -288,11 +288,11 @@ export function varForecastErrorVarianceDecomposition(
 /** Forecasts of a VAR with normal intervals. */
 export interface VarForecast {
   /** `[steps][variable]`. */
-  readonly mean: Matrix
-  readonly lower: Matrix
-  readonly upper: Matrix
+  readonly mean: MutableRows
+  readonly lower: MutableRows
+  readonly upper: MutableRows
   /** The forecast error covariance at each horizon, `[steps][k][k]` (parameter uncertainty ignored, as statsmodels' `mse`). */
-  readonly covariance: Matrix[]
+  readonly covariance: MutableRows[]
 }
 
 /**
@@ -321,9 +321,9 @@ export function varForecast(
   const p = fit.lags
   const k = fit.nVars
   if (rows.length < p) throw new MdmlError('value', 'varForecast: need at least `lags` observations')
-  const history: Matrix = rows.slice(rows.length - p)
+  const history: MutableRows = rows.slice(rows.length - p)
   const total = rows.length
-  const mean: Matrix = []
+  const mean: MutableRows = []
   for (let h = 1; h <= steps; h++) {
     const point = new Array<number>(k).fill(0)
     const terms = fit.deterministic
@@ -341,11 +341,11 @@ export function varForecast(
     mean.push(point)
   }
   const phis = maMatrices(fit, steps)
-  const covariance: Matrix[] = []
-  let prior: Matrix = identity(k).map((r) => r.map(() => 0))
+  const covariance: MutableRows[] = []
+  let prior: MutableRows = identity(k).map((r) => r.map(() => 0))
   for (let h = 0; h < steps; h++) {
-    const phi = phis[h] as Matrix
-    prior = add(prior, multiply(multiply(phi, fit.sigma as Matrix), transpose(phi)))
+    const phi = phis[h] as MutableRows
+    prior = add(prior, multiply(multiply(phi, fit.sigma as MutableRows), transpose(phi)))
     covariance.push(prior)
   }
   const q = item(ndtri(1 - alpha / 2))
@@ -376,7 +376,7 @@ export function varStability(fit: Pick<VarFit, 'coefficients' | 'nVars'>): {
   const k = fit.nVars
   const p = fit.coefficients.length
   const n = k * p
-  const companion: Matrix = Array.from({ length: n }, () => new Array<number>(n).fill(0))
+  const companion: MutableRows = Array.from({ length: n }, () => new Array<number>(n).fill(0))
   for (let i = 0; i < p; i++)
     for (let r = 0; r < k; r++)
       for (let c = 0; c < k; c++) (companion[r] as number[])[i * k + c] = fit.coefficients[i]?.[r]?.[c] ?? 0

@@ -29,7 +29,7 @@ import { KNOWN_FUNCTIONS } from './_order.ts'
 import { rat } from './_rational.ts'
 import { cancel } from './_rational-functions.ts'
 import { type Derivation, type Expr, type ExprSym, type Step, substitute, sym } from './expr.ts'
-import type { Matrix } from './matrices.ts'
+import type { ExprMatrix } from './matrices.ts'
 
 /** A differentiation variable: a symbol (or its name), optionally with an order, as `[x, 2]`. */
 export type DiffSpec = ExprSym | string | readonly [ExprSym | string, number]
@@ -289,7 +289,7 @@ export function gradient(e: Expr, vars: readonly (ExprSym | string)[]): Expr[] {
  * jacobian([parse('x*y'), parse('x + y')], ['x', 'y']).map((r) => r.map(toText)) // => [['y', 'x'], ['1', '1']]
  * ```
  */
-export function jacobian(fs: readonly Expr[], vars: readonly (ExprSym | string)[]): Matrix {
+export function jacobian(fs: readonly Expr[], vars: readonly (ExprSym | string)[]): ExprMatrix {
   return bounded('jacobian', () => {
     return fs.map((f) => gradient(f, vars))
   })
@@ -307,7 +307,7 @@ export function jacobian(fs: readonly Expr[], vars: readonly (ExprSym | string)[
  * hessian(parse('x^2*y + y^3'), ['x', 'y']).map((r) => r.map(toText)) // => [['2*y', '2*x'], ['2*x', '6*y']]
  * ```
  */
-export function hessian(e: Expr, vars: readonly (ExprSym | string)[]): Matrix {
+export function hessian(e: Expr, vars: readonly (ExprSym | string)[]): ExprMatrix {
   return bounded('hessian', () => {
     const g = gradient(e, vars)
     return g.map((gi) => vars.map((v) => diff(gi, v)))

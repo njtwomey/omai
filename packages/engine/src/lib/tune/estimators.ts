@@ -19,7 +19,7 @@ import { checkCv, type Fold, type Splitter, splitIndices, splitInputOf } from '.
 import type { Metric } from '../metrics/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
-import { type Objective, type ObjectiveOptions, objectiveBase, type TrialContext } from './objectives.ts'
+import { type ObjectiveOptions, objectiveBase, type StudyObjective, type TrialContext } from './objectives.ts'
 import type { StudyDirection } from './study.ts'
 
 /** An estimator to re-create with each configuration (`estimator.with(params)`), or a function making one. */
@@ -140,7 +140,7 @@ export function estimatorObjective(
   estimator: EstimatorSource,
   data: LearnData,
   options: EstimatorObjectiveOptions,
-): Objective {
+): StudyObjective {
   const { scorer, sign, direction, name } = scorerOf(options)
   const space = options.space ?? (typeof estimator === 'function' ? undefined : estimator.hyperSpace)
   return {
@@ -195,7 +195,7 @@ export function holdoutObjective(
   train: LearnData,
   validation: LearnData,
   options: ObjectiveOptions & ScoringChoice,
-): Objective {
+): StudyObjective {
   const { scorer, sign, direction, name } = scorerOf(options)
   const space = options.space ?? (typeof estimator === 'function' ? undefined : estimator.hyperSpace)
   return {

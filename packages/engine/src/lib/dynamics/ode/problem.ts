@@ -9,7 +9,7 @@ import { stack, type TensorLike, type Value } from '../../tensor/index.ts'
 import { combine, floatState } from './_vec.ts'
 
 /** A vector field dy/dt = f(t, y). The state may have any shape; the output has the same shape. */
-export type VectorField = (t: number, y: Value) => Value
+export type OdeVectorField = (t: number, y: Value) => Value
 
 /** A vector field with explicit parameters, dy/dt = f(t, y, p) (the form the adjoint method differentiates). */
 export type ParametricField = (t: number, y: Value, params: Value) => Value
@@ -89,7 +89,7 @@ export function odeProblem(
  * toArray(fieldOf(p)(0, tensor([3]))) // => [-6]
  * ```
  */
-export function fieldOf(problem: OdeProblem, params?: Value): VectorField {
+export function fieldOf(problem: OdeProblem, params?: Value): OdeVectorField {
   const p = params ?? problem.params ?? floatState(0)
   return (t, y) => problem.f(t, y, p)
 }
@@ -307,7 +307,7 @@ export interface Stepper<S extends StepperState = StepperState> {
   readonly order: number
   /** Whether the method is meant for stiff problems. */
   readonly stiff: boolean
-  init(f: VectorField, t0: number, y0: Value, tBound: number): S
+  init(f: OdeVectorField, t0: number, y0: Value, tBound: number): S
   step(state: S): S
   dense(state: S): DenseSegment
 }

@@ -22,7 +22,7 @@ import {
   text,
 } from 'mdml-engine/scene'
 import { circularLayout, forceLayout } from '../layout/force.ts'
-import { type Box, boxBoundary, type EdgeRoute, type GraphLayout, type LayoutGraph } from '../layout/graph.ts'
+import { boxBoundary, type EdgeRoute, type GraphLayout, type LayoutBox, type LayoutGraph } from '../layout/graph.ts'
 import { bipartiteLayout } from '../layout/grids.ts'
 import { layered } from '../layout/layered.ts'
 import { tidyTree } from '../layout/trees.ts'
@@ -98,7 +98,7 @@ function nodeSize(look: NodeLook, content: readonly string[], size: number): { w
   }
 }
 
-function shapeNodes(look: NodeLook, b: Box, active: boolean): SceneNode[] {
+function shapeNodes(look: NodeLook, b: LayoutBox, active: boolean): SceneNode[] {
   const stroke = active ? 'accent' : look.stroke
   const style = {
     fill: look.fill,
@@ -137,7 +137,7 @@ function shapeNodes(look: NodeLook, b: Box, active: boolean): SceneNode[] {
   }
 }
 
-function labelNodes(look: NodeLook, content: readonly string[], b: Box, size: number): SceneNode[] {
+function labelNodes(look: NodeLook, content: readonly string[], b: LayoutBox, size: number): SceneNode[] {
   // Factors and dots carry their label outside, below.
   const outside = look.shape === 'square' || look.shape === 'dot'
   const top = outside ? b.y + b.height / 2 + size : b.y - ((content.length - 1) * (size + 2)) / 2
@@ -152,7 +152,7 @@ function labelNodes(look: NodeLook, content: readonly string[], b: Box, size: nu
 }
 
 /** The point where a ray from a node's centre at `angle` leaves its outline. */
-function outlineAt(look: NodeLook, b: Box, angle: number): [number, number] {
+function outlineAt(look: NodeLook, b: LayoutBox, angle: number): [number, number] {
   const [ux, uy] = [Math.cos(angle), Math.sin(angle)]
   if (look.shape === 'circle' || look.shape === 'dot') {
     const r = Math.min(b.width, b.height) / 2
@@ -172,7 +172,7 @@ function outlineAt(look: NodeLook, b: Box, angle: number): [number, number] {
  */
 function selfLoop(
   look: NodeLook,
-  b: Box,
+  b: LayoutBox,
   layout: GraphLayout,
   id: string,
 ): { points: [number, number][]; label: [number, number]; direction: [number, number] } {

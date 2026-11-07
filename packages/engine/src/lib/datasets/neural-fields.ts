@@ -7,7 +7,7 @@
  */
 
 import { maxOf, minOf } from '../base/index.ts'
-import { type DatasetGenerator, type Knobs, type RegressionData, type Truth, xy } from '../data/index.ts'
+import { type DatasetGenerator, type GeneratorKnobs, type RegressionData, type Truth, xy } from '../data/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, toFlat, type Value } from '../tensor/index.ts'
@@ -141,7 +141,7 @@ export const signedDistance: DatasetGenerator<RegressionData> = {
       default: 0.5,
     }),
   }),
-  generate: (k: Key, knobs: Knobs) => {
+  generate: (k: Key, knobs: GeneratorKnobs) => {
     const n = knobs['n'] as number
     const dim = knobs['dim'] as number
     const share = knobs['nearSurface'] as number
@@ -247,7 +247,7 @@ export const fieldImage: DatasetGenerator<RegressionData> = {
       default: 6,
     }),
   }),
-  generate: (_k: Key, knobs: Knobs) => {
+  generate: (_k: Key, knobs: GeneratorKnobs) => {
     const side = knobs['side'] as number
     const pattern = knobs['pattern'] as string
     const texture = knobs['texture'] as number

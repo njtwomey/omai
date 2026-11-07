@@ -16,7 +16,7 @@ import { f32, valuesOf } from './_image.ts'
 import type { GreedyPath } from './greedy-contract.ts'
 
 /** A box as [a, b, c, d] in some {@link BoxFormat}. */
-export type Box = [a: number, b: number, c: number, d: number]
+export type BoxCoords = [a: number, b: number, c: number, d: number]
 
 /** Box formats: corners (x1, y1, x2, y2), corner and size (x, y, w, h), centre and size (cx, cy, w, h). */
 export type BoxFormat = 'xyxy' | 'xywh' | 'cxcywh'
@@ -38,7 +38,7 @@ export type BoxesLike = TensorLike | readonly (readonly number[])[]
  * boxesOf([1, 2, 3, 4]) // => [[1, 2, 3, 4]]
  * ```
  */
-export function boxesOf(boxes: BoxesLike, name = 'boxes'): Box[] {
+export function boxesOf(boxes: BoxesLike, name = 'boxes'): BoxCoords[] {
   if (Array.isArray(boxes) && boxes.length === 0) return []
   const { data, shape } = valuesOf(boxes as TensorLike)
   const n = shape.length === 1 ? (data.length === 0 ? 0 : 1) : (shape[0] ?? 0)
@@ -52,14 +52,14 @@ export function boxesOf(boxes: BoxesLike, name = 'boxes'): Box[] {
   ])
 }
 
-const toXyxy = (b: Box, from: BoxFormat): Box => {
+const toXyxy = (b: BoxCoords, from: BoxFormat): BoxCoords => {
   const [a, c, d, e] = b
   if (from === 'xyxy') return [a, c, d, e]
   if (from === 'xywh') return [a, c, a + d, c + e]
   return [a - 0.5 * d, c - 0.5 * e, a + 0.5 * d, c + 0.5 * e]
 }
 
-const fromXyxy = (b: Box, to: BoxFormat): Box => {
+const fromXyxy = (b: BoxCoords, to: BoxFormat): BoxCoords => {
   const [x1, y1, x2, y2] = b
   if (to === 'xyxy') return [x1, y1, x2, y2]
   if (to === 'xywh') return [x1, y1, x2 - x1, y2 - y1]
@@ -80,7 +80,7 @@ const fromXyxy = (b: Box, to: BoxFormat): Box => {
  * boxConvert([[10, 20, 30, 60]], 'xyxy', 'cxcywh') // => [[20, 40, 20, 40]]
  * ```
  */
-export function boxConvert(boxes: BoxesLike, from: BoxFormat, to: BoxFormat): Box[] {
+export function boxConvert(boxes: BoxesLike, from: BoxFormat, to: BoxFormat): BoxCoords[] {
   for (const f of [from, to])
     if (f !== 'xyxy' && f !== 'xywh' && f !== 'cxcywh') throw new MdmlError('value', `boxConvert: unknown format ${f}`)
   return boxesOf(boxes, 'boxConvert').map((b) => fromXyxy(toXyxy(b, from), to))
@@ -115,7 +115,7 @@ export function boxArea(boxes: BoxesLike): number[] {
  * clipBoxes([[-5, 2, 30, 12]], [10, 20]) // => [[0, 2, 20, 10]]
  * ```
  */
-export function clipBoxes(boxes: BoxesLike, size: readonly [number, number]): Box[] {
+export function clipBoxes(boxes: BoxesLike, size: readonly [number, number]): BoxCoords[] {
   const [h, w] = size
   const cx = (v: number): number => Math.min(w, Math.max(0, v))
   const cy = (v: number): number => Math.min(h, Math.max(0, v))
@@ -136,7 +136,7 @@ export function clipBoxes(boxes: BoxesLike, size: readonly [number, number]): Bo
  * scaleBoxes([[1, 2, 3, 4]], 2, 0.5) // => [[2, 1, 6, 2]]
  * ```
  */
-export function scaleBoxes(boxes: BoxesLike, sx: number, sy: number = sx): Box[] {
+export function scaleBoxes(boxes: BoxesLike, sx: number, sy: number = sx): BoxCoords[] {
   return boxesOf(boxes, 'scaleBoxes').map(([x1, y1, x2, y2]) => [x1 * sx, y1 * sy, x2 * sx, y2 * sy])
 }
 
@@ -224,7 +224,7 @@ export function batchedNms(
   for (const c of new Set(classes)) {
     const idx = classes.flatMap((k, i) => (k === c ? [i] : []))
     for (const j of nms(
-      idx.map((i) => b[i] as Box),
+      idx.map((i) => b[i] as BoxCoords),
       idx.map((i) => s[i] ?? 0),
       iouThreshold,
     ))
@@ -394,8 +394,8 @@ export function softNms(
  * generateAnchors([32], [0.5, 1, 2]) // => [[-23, -11, 23, 11], [-16, -16, 16, 16], [-11, -23, 11, 23]]
  * ```
  */
-export function generateAnchors(sizes: readonly number[], aspectRatios: readonly number[]): Box[] {
-  const out: Box[] = []
+export function generateAnchors(sizes: readonly number[], aspectRatios: readonly number[]): BoxCoords[] {
+  const out: BoxCoords[] = []
   for (const r of aspectRatios) {
     const hr = f32(Math.sqrt(r))
     const wr = f32(1 / hr)
@@ -427,11 +427,11 @@ export function gridAnchors(
   base: BoxesLike,
   gridSize: readonly [number, number],
   stride: readonly [number, number],
-): Box[] {
+): BoxCoords[] {
   const b = boxesOf(base, 'gridAnchors')
   const [gh, gw] = gridSize
   const [sh, sw] = stride
-  const out: Box[] = []
+  const out: BoxCoords[] = []
   for (let r = 0; r < gh; r++)
     for (let c = 0; c < gw; c++) {
       const x = c * sw
@@ -464,13 +464,13 @@ export interface BoxCoderOptions {
  * encodeBoxes([[1, 0, 11, 20]], [[0, 0, 10, 10]]) // => [[0.1, 0.5, 0, 0.6931471805599453]]
  * ```
  */
-export function encodeBoxes(targets: BoxesLike, references: BoxesLike, options: BoxCoderOptions = {}): Box[] {
+export function encodeBoxes(targets: BoxesLike, references: BoxesLike, options: BoxCoderOptions = {}): BoxCoords[] {
   const t = boxesOf(targets, 'encodeBoxes')
   const r = boxesOf(references, 'encodeBoxes')
   if (t.length !== r.length) throw new MdmlError('shape', 'encodeBoxes: one reference per target')
   const [wx, wy, ww, wh] = options.weights ?? [1, 1, 1, 1]
   return t.map((g, i) => {
-    const e = r[i] as Box
+    const e = r[i] as BoxCoords
     const ew = e[2] - e[0]
     const eh = e[3] - e[1]
     const ex = e[0] + 0.5 * ew
@@ -498,14 +498,14 @@ export function encodeBoxes(targets: BoxesLike, references: BoxesLike, options: 
  * decodeBoxes([[0.1, 0.5, 0, 0.6931471805599453]], [[0, 0, 10, 10]]).map((b) => b.map((v) => Math.round(v * 1e9) / 1e9)) // => [[1, 0, 11, 20]]
  * ```
  */
-export function decodeBoxes(codes: BoxesLike, references: BoxesLike, options: BoxCoderOptions = {}): Box[] {
+export function decodeBoxes(codes: BoxesLike, references: BoxesLike, options: BoxCoderOptions = {}): BoxCoords[] {
   const d = boxesOf(codes, 'decodeBoxes')
   const r = boxesOf(references, 'decodeBoxes')
   if (d.length !== r.length) throw new MdmlError('shape', 'decodeBoxes: one reference per code')
   const [wx, wy, ww, wh] = options.weights ?? [1, 1, 1, 1]
   const clip = options.clip ?? Math.log(1000 / 16)
   return d.map((c, i) => {
-    const e = r[i] as Box
+    const e = r[i] as BoxCoords
     const w = e[2] - e[0]
     const h = e[3] - e[1]
     const cx = e[0] + 0.5 * w

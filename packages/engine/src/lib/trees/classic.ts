@@ -5,7 +5,7 @@
  * error pruning) and CHAID (Kass 1980: categories whose class distributions do not differ significantly are merged,
  * then the feature with the smallest Bonferroni-adjusted chi-square p-value splits the node, if it is significant).
  * The growth is a stepped algorithm, one node per step. Trees have any number of children per node, so they are their
- * own `ClassicTree` type rather than a `Tree`; ID3 and CHAID read continuous features through equal-frequency bins.
+ * own `ClassicTree` type rather than a `FittedTree`; ID3 and CHAID read continuous features through equal-frequency bins.
  */
 
 import { argmaxOf, MdmlError, maxOf } from '../base/index.ts'

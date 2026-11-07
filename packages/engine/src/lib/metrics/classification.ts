@@ -523,7 +523,7 @@ export const balancedAccuracyScore: Metric<MetricOptions & { readonly adjusted?:
   )
 
 /** A confusion matrix with the classes labelling its rows (true) and columns (predicted). */
-export interface ConfusionMatrix {
+export interface LabelledConfusionMatrix {
   readonly labels: readonly Label[]
   readonly matrix: readonly (readonly number[])[]
 }
@@ -547,7 +547,7 @@ export function confusionMatrix(
   yTrue: MetricInput,
   yPred: MetricInput,
   options: MetricOptions & { readonly labels?: readonly Label[]; readonly normalize?: 'true' | 'pred' | 'all' } = {},
-): ConfusionMatrix {
+): LabelledConfusionMatrix {
   const e = encodeLabels('confusionMatrix', yTrue, yPred, options)
   const k = e.classes.length
   const m = Array.from({ length: k }, () => new Array<number>(k).fill(0))

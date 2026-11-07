@@ -14,7 +14,7 @@ import { type Agent, cem, type Env, mppi, type Transition } from '../rl/index.ts
 import { eye, type TensorLike, toArray, toFlat, type Value } from '../tensor/index.ts'
 import { rowsTensor } from './_common.ts'
 
-type Matrix = readonly (readonly number[])[]
+type Rows = readonly (readonly number[])[]
 const asRows = (x: Value): number[][] => toArray(x) as number[][]
 
 // ------------------------------------------------------------------------------------------------------------ LQR
@@ -65,9 +65,9 @@ function toEnvAction<A>(model: ControlModel, u: readonly number[]): A {
 /** Options of {@link lqrAgent}. */
 export interface LqrAgentOptions {
   /** State cost (default the identity). */
-  readonly Q?: Matrix
+  readonly Q?: Rows
   /** Control cost (default the identity). */
-  readonly R?: Matrix
+  readonly R?: Rows
   /** The operating point to linearise at and regulate to (default the model's equilibrium). */
   readonly state?: readonly number[]
   readonly action?: readonly number[]
@@ -146,8 +146,8 @@ export interface SwingUpOptions {
   /** Hand over to LQR within this angle of upright (default 0.35 rad). */
   readonly switchAngle?: number
   /** LQR costs at upright (default `diag(1, 0.1)` and 0.1). */
-  readonly Q?: Matrix
-  readonly R?: Matrix
+  readonly Q?: Rows
+  readonly R?: Rows
   /** The torque limit (default 2). */
   readonly maxTorque?: number
 }

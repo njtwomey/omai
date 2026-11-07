@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { key, normal } from '../../random/index.ts'
 import { type Tensor, tensor, toFlat } from '../../tensor/index.ts'
-import type { Metric } from '../geometry/index.ts'
+import type { DistanceMetric } from '../geometry/index.ts'
 import { toDense } from '../sparse/index.ts'
 import * as S from './index.ts'
 
@@ -11,7 +11,7 @@ describe('neighbour search against sklearn', () => {
     it(c.name, () => {
       const t = c.inputs.map((v) => decode(v) as Tensor)
       const [a, b] = t as [Tensor, Tensor]
-      const metric = c.params['metric'] as Metric
+      const metric = c.params['metric'] as DistanceMetric
       const actual =
         c.fn === 'bruteIndices'
           ? S.kNearest(a, b, 5).indices

@@ -10,7 +10,7 @@ import { concat, reshape, sliceAxis, stack, type Tensor, type TensorLike, type V
 import type { JacobianOption } from './_newton.ts'
 import { floatState, fromNumbers, numbersOf } from './_vec.ts'
 import { bdf, radau } from './implicit.ts'
-import type { EventSpec, OdeSolution, VectorField } from './problem.ts'
+import type { EventSpec, OdeSolution, OdeVectorField } from './problem.ts'
 import { type IvpTraceOptions, solveIvp } from './solve-ivp.ts'
 
 /**
@@ -115,7 +115,7 @@ export function solveDae(
   const n = ny + nz
   const mass = new Float64Array(n * n)
   for (let i = 0; i < ny; i++) mass[i * n + i] = 1
-  const field: VectorField = (t, u) => {
+  const field: OdeVectorField = (t, u) => {
     const yy = sliceAxis(u, 0, 0, ny)
     const zz = sliceAxis(u, 0, ny, n)
     return concat([reshape(dae.f(t, yy, zz), [-1]), reshape(dae.g(t, yy, zz), [-1])], 0)

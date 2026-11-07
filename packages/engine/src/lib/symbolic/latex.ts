@@ -8,7 +8,7 @@ import { asCoeffMul, E, isNumeric, keepCoeff, MINUS_ONE, makeMul, makePow, numFr
 import { couldExtractMinus, orderedFactors, orderedTerms, sortBySympyKey } from './_order.ts'
 import { rat } from './_rational.ts'
 import type { Derivation, Expr, ExprFn, ExprMul, ExprPow, Step } from './expr.ts'
-import type { Matrix } from './matrices.ts'
+import type { ExprMatrix } from './matrices.ts'
 
 const PREC = { Lambda: 1, Or: 20, And: 30, Relational: 35, Add: 40, Mul: 50, Pow: 60, Func: 70, Not: 100, Atom: 1000 }
 
@@ -602,7 +602,7 @@ function collectSymbols(e: Expr): string[] {
   return []
 }
 
-function isMatrix(x: Expr | Matrix): x is Matrix {
+function isMatrix(x: Expr | ExprMatrix): x is ExprMatrix {
   return Array.isArray(x)
 }
 
@@ -620,7 +620,7 @@ function isMatrix(x: Expr | Matrix): x is Matrix {
  * toLatex(parse('x^2/2 + sin(x)')) // => '\\frac{x^{2}}{2} + \\sin{\\left(x \\right)}'
  * ```
  */
-export function toLatex(e: Expr | Matrix): string {
+export function toLatex(e: Expr | ExprMatrix): string {
   if (isMatrix(e)) {
     const rows = e.map((row) => row.map(tex).join(' & ')).join('\\\\')
     const cols = e[0]?.length ?? 0

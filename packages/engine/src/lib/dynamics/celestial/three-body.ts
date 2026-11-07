@@ -14,7 +14,7 @@ import { type Algorithm, type Contract, defineContract, scalar, tensor } from '.
 import { classifyFixedPoint, type FixedPointType, fieldJacobian } from '../fields.ts'
 import type { ButcherTableau } from '../ode/explicit.ts'
 import { type FlowState, flowAlgorithm } from '../ode/flow.ts'
-import type { VectorField } from '../ode/problem.ts'
+import type { OdeVectorField } from '../ode/problem.ts'
 
 /** The mass ratio beyond which the triangular Lagrange points L4 and L5 are unstable, (1 - sqrt(23 / 27)) / 2. */
 export const ROUTH_CRITICAL_MASS_RATIO: number = (1 - Math.sqrt(23 / 27)) / 2
@@ -44,7 +44,7 @@ function checkMu(mu: number): void {
  * Math.round(toFlat(restrictedThreeBodyField(0.01)(0, tensor([1000, 0, 0, 0])))[2] ?? 0) // => 1000
  * ```
  */
-export function restrictedThreeBodyField(mu: number, dim: 2 | 3 = 2): VectorField {
+export function restrictedThreeBodyField(mu: number, dim: 2 | 3 = 2): OdeVectorField {
   checkMu(mu)
   return (_t, s) => {
     const x = at(s, 0)

@@ -22,7 +22,7 @@ import {
 } from '../../trace/index.ts'
 import { floatState, fromNumbers, numbersOf } from '../ode/_vec.ts'
 import { RK4, rkStep } from '../ode/explicit.ts'
-import type { VectorField } from '../ode/problem.ts'
+import type { OdeVectorField } from '../ode/problem.ts'
 
 /** An optimal control problem x' = f(x, u), cost integral of L(x, u) dt, with the control that minimises H pointwise. */
 export interface ControlProblem {
@@ -83,7 +83,7 @@ const part = (y: Value, from: number, to: number): Value => sliceAxis(y, 0, from
  * toFlat(hamiltonianSystem(doubleIntegratorEnergy())(0, tensor([0, 0, 2, 3]))).map((v) => v + 0) // => [0, -3, 0, -2]
  * ```
  */
-export function hamiltonianSystem(problem: ControlProblem): VectorField {
+export function hamiltonianSystem(problem: ControlProblem): OdeVectorField {
   const n = problem.stateSize
   return (_t, y) => {
     const x = part(y, 0, n)

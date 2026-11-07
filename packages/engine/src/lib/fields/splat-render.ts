@@ -36,7 +36,7 @@ import {
   zeros,
 } from '../tensor/index.ts'
 import type { GaussianSet } from './gaussians.ts'
-import { type Projected, projectGaussians } from './splat-project.ts'
+import { type ProjectedGaussians, projectGaussians } from './splat-project.ts'
 
 /** Opacities below this are skipped (1/255), as in the reference rasteriser. */
 export const MIN_ALPHA: number = 1 / 255
@@ -84,7 +84,7 @@ export interface RasteriseSplatOptions {
  * ```
  */
 export function rasterise(
-  projected: Projected,
+  projected: ProjectedGaussians,
   xs: ArrayLike<number>,
   ys: ArrayLike<number>,
   options: RasteriseSplatOptions = {},

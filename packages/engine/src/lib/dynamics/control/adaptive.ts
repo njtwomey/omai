@@ -12,7 +12,7 @@ import { add, mul, sliceAxis, stack, sub, sum, type Value } from '../../tensor/i
 import type { Algorithm } from '../../trace/index.ts'
 import { type Contract, defineContract, scalar } from '../../trace/index.ts'
 import { type FlowState, flowAlgorithm } from '../ode/flow.ts'
-import type { VectorField } from '../ode/problem.ts'
+import type { OdeVectorField } from '../ode/problem.ts'
 
 /** The first-order plant y' = -a y + k u, with the gain k (and perhaps the pole a) unknown to the controller. */
 export interface FirstOrderPlant {
@@ -141,7 +141,7 @@ export function mracAlgorithm(options: MracOptions): Algorithm<FlowState, MracPa
   }
   const law = options.law ?? 'lyapunov'
   const truth = matchingParameters(plant, model)
-  const field: VectorField = (t, s) => {
+  const field: OdeVectorField = (t, s) => {
     const y = at(s, 0)
     const ym = at(s, 1)
     const t1 = at(s, 2)

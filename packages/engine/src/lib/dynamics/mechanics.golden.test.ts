@@ -4,13 +4,13 @@ import { fromStorage, type Tensor, toFlat, type Value } from '../tensor/index.ts
 import { doublePendulumField, doublePendulumFlipTime, doublePendulumLagrangian, lagrangianField } from './mechanics.ts'
 import { rosslerField, thomasField } from './named-systems.ts'
 import { type FlowState, flowAlgorithm } from './ode/flow.ts'
-import type { VectorField } from './ode/problem.ts'
+import type { OdeVectorField } from './ode/problem.ts'
 import { kuramotoField } from './synchronisation.ts'
 
 const quiet = { log: () => undefined, emit: () => undefined, wants: () => false } as never
 
 /** RK4 states at the given times (multiples of dt), one row each. */
-function states(field: VectorField, y0: Tensor, times: Tensor, dt: number): Value {
+function states(field: OdeVectorField, y0: Tensor, times: Tensor, dt: number): Value {
   const t = toFlat(times)
   const per = Math.round(((t[1] as number) - (t[0] as number)) / dt)
   const total = per * (t.length - 1)

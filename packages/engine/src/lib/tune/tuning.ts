@@ -15,10 +15,10 @@ import {
   type RunStatus,
   runAlgorithm,
 } from '../trace/index.ts'
-import type { Objective, ObjectiveResult, TrialContext } from './objectives.ts'
+import type { ObjectiveResult, StudyObjective, TrialContext } from './objectives.ts'
 import type { Pruner, RunningTrial } from './pruners.ts'
-import type { Sampler } from './samplers.ts'
-import { type Assignment, nextAssignment, type Schedule } from './schedules.ts'
+import type { StudySampler } from './samplers.ts'
+import { type Assignment, type FidelitySchedule, nextAssignment } from './schedules.ts'
 import {
   bestTrial,
   bestTrials,
@@ -40,11 +40,11 @@ export interface TuneOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'star
   /** Stop once the trials' budgets (resource units from a schedule, or reported steps) sum to this. */
   readonly budget?: number
   /** The sampler (default `tpeSampler()`, sequential model-based optimisation as Optuna's default). */
-  readonly sampler?: Sampler
+  readonly sampler?: StudySampler
   /** A pruner deciding, after each intermediate report, whether to stop a trial. */
   readonly pruner?: Pruner
   /** A multi-fidelity schedule assigning budgets, brackets and promotions. */
-  readonly schedule?: Schedule
+  readonly schedule?: FidelitySchedule
   /** The directions of the objective values (default the objective's). */
   readonly directions?: readonly StudyDirection[]
   /** Configurations to evaluate first, in order. */
@@ -123,7 +123,7 @@ interface Evaluated {
 }
 
 function evaluateTrial(
-  objective: Objective,
+  objective: StudyObjective,
   study: Study,
   params: SpaceValue,
   assignment: Omit<Trial, 'number' | 'params' | 'state' | 'values' | 'intermediate'>,
@@ -207,7 +207,7 @@ function evaluateTrial(
 
 function choose(
   study: Study,
-  sampler: Sampler,
+  sampler: StudySampler,
   options: TuneOptions,
   key: Key,
 ): { readonly params: SpaceValue; readonly assignment: Assignment | undefined; readonly source: string } | undefined {
@@ -263,7 +263,11 @@ function constantRun(study: Study, n: number): boolean {
  * studyAlgorithm(functionObjective((x) => (x as number) ** 2), real(-1, 1)).name // => 'study'
  * ```
  */
-export function studyAlgorithm(objective: Objective, space?: Space, options: TuneOptions = {}): Algorithm<StudyState> {
+export function studyAlgorithm(
+  objective: StudyObjective,
+  space?: Space,
+  options: TuneOptions = {},
+): Algorithm<StudyState> {
   const searchSpace = space ?? objective.space ?? options.study?.space
   if (searchSpace === undefined) throw new MdmlError('value', 'tune: give a space (the objective has none)')
   const directions = options.directions ?? options.study?.directions ?? objective.directions
@@ -361,7 +365,7 @@ export function studyAlgorithm(objective: Objective, space?: Space, options: Tun
  * Tune's `Tuner.fit`), traced as a run whose steps are trials. Pass `study` to resume a study: its trials are kept, new
  * ones continue the numbering, and the trials drawn are those an uninterrupted run would have drawn.
  *
- * @param objective - The objective (any `Objective`; see `functionObjective`, `estimatorObjective`,
+ * @param objective - The objective (any `StudyObjective`; see `functionObjective`, `estimatorObjective`,
  *   `trainingObjective`, `agentObjective`).
  * @param space - The search space (default the objective's, as an estimator's `hyperSpace`).
  * @param options - Trials, sampler, pruner, schedule, directions, enqueued configurations, a study to resume, stopping
@@ -379,7 +383,7 @@ export function studyAlgorithm(objective: Objective, space?: Space, options: Tun
  * result.study.trials.length // => 6
  * ```
  */
-export function tune(objective: Objective, space?: Space, options: TuneOptions = {}): TuneResult {
+export function tune(objective: StudyObjective, space?: Space, options: TuneOptions = {}): TuneResult {
   const algorithm = studyAlgorithm(objective, space, options)
   const nTrials = options.nTrials ?? 100
   const {

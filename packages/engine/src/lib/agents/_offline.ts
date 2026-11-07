@@ -2,7 +2,7 @@
 // small MLPs as pure functions of their parameters, and action encodings for discrete and box action spaces.
 import { MdmlError } from '../base/index.ts'
 import { mlp } from '../nn/index.ts'
-import type { Tree } from '../optim/index.ts'
+import type { ParamTree } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Transition } from '../rl/index.ts'
 import type { Space } from '../space/index.ts'
@@ -11,14 +11,14 @@ import { actionBox, rowsTensor, spaceFeatures, vectorTensor } from './_common.ts
 
 /** A network as a pure function of a parameter tree. */
 export interface Net {
-  readonly params: Tree
-  apply(params: Tree, x: Value): Value
+  readonly params: ParamTree
+  apply(params: ParamTree, x: Value): Value
 }
 
 /** An MLP with ReLUs between its layers (lib/nn's `mlp`) as a {@link Net}. */
 export function network(widths: readonly number[], key: Key): Net {
   const m = mlp(widths, { key })
-  return { params: m.params as Tree, apply: (p, x) => m.apply(p as never, x) }
+  return { params: m.params as ParamTree, apply: (p, x) => m.apply(p as never, x) }
 }
 
 /** How a method sees an environment's observations and actions. */

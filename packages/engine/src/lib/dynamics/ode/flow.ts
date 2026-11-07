@@ -11,7 +11,7 @@ import type { TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, type RunStatus, type StepContext, stateFromJson, stateToJson } from '../../trace/index.ts'
 import { floatState, fromNumbers, numbersOf } from './_vec.ts'
 import { type ButcherTableau, RK4, rkStep } from './explicit.ts'
-import type { VectorField } from './problem.ts'
+import type { OdeVectorField } from './problem.ts'
 
 /** The state of {@link flowAlgorithm}. */
 export interface FlowState {
@@ -65,7 +65,7 @@ export interface FlowOptions<K extends string> {
  * ```
  */
 export function flowAlgorithm<K extends string = string>(
-  field: VectorField,
+  field: OdeVectorField,
   y0: TensorLike,
   options: FlowOptions<K>,
 ): Algorithm<FlowState, K> {

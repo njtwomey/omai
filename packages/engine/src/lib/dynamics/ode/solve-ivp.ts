@@ -47,11 +47,11 @@ import {
   type EventSpec,
   type OdeSolution,
   type OdeStatus,
+  type OdeVectorField,
   type SolveCounts,
   type Stepper,
   type StepperOptions,
   type StepperState,
-  type VectorField,
 } from './problem.ts'
 
 /** The state of {@link lsoda}: which method is active and its state. */
@@ -113,7 +113,7 @@ export function lsoda(options: ImplicitOptions = {}): Stepper<LsodaState> {
     const first = firstFor(inner)
     if (!(first > 0)) return { ...s, inner, mode }
     const next = mode === 'adams' ? stiff(first) : nonstiff(first)
-    const fresh = next.init((inner as { f: VectorField } & StepperState).f, inner.t, inner.y, inner.tBound)
+    const fresh = next.init((inner as { f: OdeVectorField } & StepperState).f, inner.t, inner.y, inner.tBound)
     return {
       ...s,
       mode: mode === 'adams' ? 'bdf' : 'adams',
@@ -414,7 +414,7 @@ function maxEventsOf(e: EventSpec): number {
  * ```
  */
 export function solveIvpAlgorithm(
-  f: VectorField,
+  f: OdeVectorField,
   tspan: readonly [number, number],
   y0: TensorLike,
   options: SolveIvpOptions = {},
@@ -455,7 +455,7 @@ export function solveIvpAlgorithm(
     schema: SCHEMA,
     init: () => {
       const calls = { n: 0 }
-      const counted: VectorField = (t, y) => {
+      const counted: OdeVectorField = (t, y) => {
         calls.n += 1
         return f(t, y)
       }
@@ -670,7 +670,7 @@ export function solveIvpAlgorithm(
  * ```
  */
 export function solveIvp(
-  f: VectorField,
+  f: OdeVectorField,
   tspan: readonly [number, number],
   y0: TensorLike,
   options: SolveIvpOptions = {},
@@ -704,11 +704,16 @@ export interface OdeintOptions extends Omit<SolveIvpOptions, 'tEval' | 'events' 
  * odeint((_t, y) => neg(y), [1], [0, 1, 2]).shape // => [3, 1]
  * ```
  */
-export function odeint(f: VectorField, y0: TensorLike, times: readonly number[], options: OdeintOptions = {}): Value {
+export function odeint(
+  f: OdeVectorField,
+  y0: TensorLike,
+  times: readonly number[],
+  options: OdeintOptions = {},
+): Value {
   return stack(odeintStates(f, y0, times, options))
 }
 
-function odeintStates(f: VectorField, y0: TensorLike, times: readonly number[], options: OdeintOptions): Value[] {
+function odeintStates(f: OdeVectorField, y0: TensorLike, times: readonly number[], options: OdeintOptions): Value[] {
   const t0 = times[0]
   const t1 = times[times.length - 1]
   const y0v = floatState(y0)
@@ -819,7 +824,7 @@ export interface DiffeqSolution {
  * [s.result, s.ts] // => ['successful', [1]]
  * ```
  */
-export function diffeqsolve(f: VectorField, y0: TensorLike, options: DiffeqsolveOptions): DiffeqSolution {
+export function diffeqsolve(f: OdeVectorField, y0: TensorLike, options: DiffeqsolveOptions): DiffeqSolution {
   const controller = options.stepsizeController ?? { kind: 'constant' }
   const name = options.solver ?? 'Tsit5'
   let stepper: Stepper

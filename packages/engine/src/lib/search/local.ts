@@ -420,7 +420,7 @@ export function randomRestartHillClimbing<S>(
 }
 
 /** A cooling schedule: the temperature at iteration t (0 stops the search). */
-export type Schedule = (t: number) => number
+export type CoolingSchedule = (t: number) => number
 
 /**
  * aima-python's `exp_schedule`: T(t) = k exp(-lambda t) for t below the limit, then 0.
@@ -436,7 +436,7 @@ export type Schedule = (t: number) => number
  */
 export function exponentialSchedule(
   options: { readonly k?: number; readonly lambda?: number; readonly limit?: number } = {},
-): Schedule {
+): CoolingSchedule {
   const { k = 20, lambda = 0.005, limit = 100 } = options
   return (t) => (t < limit ? k * Math.exp(-lambda * t) : 0)
 }
@@ -455,7 +455,7 @@ export function exponentialSchedule(
  * geometricSchedule(10, 0.5)(2) // => 2.5
  * ```
  */
-export function geometricSchedule(t0: number, alpha: number, min = 1e-3): Schedule {
+export function geometricSchedule(t0: number, alpha: number, min = 1e-3): CoolingSchedule {
   if (!(alpha > 0 && alpha < 1) || !(t0 > 0)) {
     throw new MdmlError('value', 'geometricSchedule: need t0 > 0 and 0 < alpha < 1')
   }
@@ -478,7 +478,7 @@ export function geometricSchedule(t0: number, alpha: number, min = 1e-3): Schedu
  * logarithmicSchedule(2)(0).toFixed(4) // => '2.8854'
  * ```
  */
-export function logarithmicSchedule(c: number, limit = 10_000): Schedule {
+export function logarithmicSchedule(c: number, limit = 10_000): CoolingSchedule {
   return (t) => (t < limit ? c / Math.log(t + 2) : 0)
 }
 
@@ -500,7 +500,7 @@ export function logarithmicSchedule(c: number, limit = 10_000): Schedule {
  */
 export function simulatedAnnealingAlgorithm<S>(
   problem: LocalSearchProblem<S>,
-  options: { readonly schedule?: Schedule } = {},
+  options: { readonly schedule?: CoolingSchedule } = {},
 ): Algorithm<LocalSearchState<S>> {
   const schedule = options.schedule ?? exponentialSchedule()
   return localAlgorithm(
@@ -546,7 +546,7 @@ export function simulatedAnnealingAlgorithm<S>(
  */
 export function simulatedAnnealing<S>(
   problem: LocalSearchProblem<S>,
-  options: LocalSearchOptions & { readonly schedule?: Schedule } = {},
+  options: LocalSearchOptions & { readonly schedule?: CoolingSchedule } = {},
 ): LocalSearchResult<S> {
   const { schedule, ...rest } = options
   return runLocal(simulatedAnnealingAlgorithm(problem, schedule === undefined ? {} : { schedule }), rest)

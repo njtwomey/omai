@@ -8,7 +8,7 @@ import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, inv, solve } from '../../numerics/linalg/index.ts'
 import { fromStorage, toFlat, type Value } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
-import type { Tree } from '../transform.ts'
+import type { ParamTree } from '../transform.ts'
 import { boundArrays, constraintValues } from './_bounds.ts'
 import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
 import { trustStep } from './_trstlp.ts'
@@ -23,7 +23,7 @@ import {
 } from './objective.ts'
 
 /** An inequality constraint c(x) >= 0 (scipy's `'ineq'` convention): one value, or a vector of values, of the parameters. */
-export type InequalityConstraint = (params: Tree) => Value
+export type InequalityConstraint = (params: ParamTree) => Value
 
 /** Options of {@link cobyla}. */
 export interface CobylaOptions extends VectorMethodOptions {

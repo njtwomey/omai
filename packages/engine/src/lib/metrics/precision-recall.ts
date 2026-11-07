@@ -9,7 +9,7 @@ import type { TensorLike } from '../tensor/index.ts'
 import { isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
 import { averageBinary, binarise, positives, scoreSpec } from './_scores.ts'
 import { type CurveOptions, confusionMatrixAtThresholds } from './curves.ts'
-import { type Metric, type MetricInput, matrix, metricResult, sampleWeights } from './metric.ts'
+import { type Metric, type MetricInput, metricResult, sampleWeights, shapedArray } from './metric.ts'
 
 /** A precision-recall curve: precision and recall at increasing thresholds, ending at (recall 0, precision 1). */
 export interface PrecisionRecallCurve {
@@ -95,7 +95,7 @@ export interface AveragePrecisionOptions extends CurveOptions {
 export const averagePrecisionScore: Metric<AveragePrecisionOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yScore: MetricInput, options: AveragePrecisionOptions = {}): MetricResult => {
     const name = 'averagePrecisionScore'
-    const s = matrix(yScore as TensorLike)
+    const s = shapedArray(yScore as TensorLike)
     const n = s.shape[0] ?? 0
     const w = options.sampleWeight === undefined ? undefined : sampleWeights(name, n, options.sampleWeight)
     if (s.shape.length === 1) {
@@ -103,7 +103,7 @@ export const averagePrecisionScore: Metric<AveragePrecisionOptions, MetricInput>
     }
     const isIndicator = isMultilabel(yTrue)
     const t = isIndicator
-      ? matrix(yTrue as TensorLike)
+      ? shapedArray(yTrue as TensorLike)
       : binarise(labelValues(yTrue), options.labels ?? sortLabels(labelValues(yTrue)))
     const r = averageBinary(t, s, w, options.average ?? 'macro', binaryAveragePrecision)
     return metricResult(name, r.value, n, Object.fromEntries(r.perClass.map((v, j) => [String(j), v])))

@@ -29,15 +29,13 @@ import {
 import { ddot as dot, eigh, eigvals, dnrm2 as norm } from '../linalg/index.ts'
 import { asOperator, type CsrMatrix, type LinearOperator } from './csr.ts'
 
-type Vec = Float64Array
-
-function numeric(op: LinearOperator, transpose = false): (x: Vec) => Vec {
+function numeric(op: LinearOperator, transpose = false): (x: Float64Array) => Float64Array {
   const f = transpose ? op.rmatvec : op.matvec
   if (f === undefined) throw new MdmlError('value', 'the operator has no transpose product')
   return (x) => Float64Array.from(toFlat(primalOf(f(fromStorage(x, [x.length], 'float64')))))
 }
 
-function startVector(n: number, v0: TensorLike | undefined, key: Key | undefined): Vec {
+function startVector(n: number, v0: TensorLike | undefined, key: Key | undefined): Float64Array {
   if (v0 !== undefined) return Float64Array.from(toVector(v0, 'the start vector'))
   if (key !== undefined) return Float64Array.from(normal(key, [n]).data)
   // A fixed, non-degenerate default.
@@ -45,9 +43,10 @@ function startVector(n: number, v0: TensorLike | undefined, key: Key | undefined
 }
 
 /** The vectors to stay orthogonal to: the rows of a matrix, or a list of vectors. */
-function deflationRows(deflate: TensorLike | readonly Float64Array[] | undefined): readonly Vec[] {
+function deflationRows(deflate: TensorLike | readonly Float64Array[] | undefined): readonly Float64Array[] {
   if (deflate === undefined) return []
-  if (Array.isArray(deflate) && deflate.every((row) => row instanceof Float64Array)) return deflate as readonly Vec[]
+  if (Array.isArray(deflate) && deflate.every((row) => row instanceof Float64Array))
+    return deflate as readonly Float64Array[]
   const t = concreteOrThrow(asTensor(deflate as TensorLike) as Tensor, 'the deflation vectors')
   if (t.shape.length !== 2) throw new MdmlError('shape', 'the deflation vectors must be the rows of a matrix')
   const [k = 0, n = 0] = t.shape
@@ -55,7 +54,7 @@ function deflationRows(deflate: TensorLike | readonly Float64Array[] | undefined
 }
 
 /** Orthogonalise w against the basis twice (classical Gram-Schmidt with reorthogonalisation). */
-function orthogonalise(w: Vec, basis: readonly Vec[]): Vec {
+function orthogonalise(w: Float64Array, basis: readonly Float64Array[]): Float64Array {
   let v = w
   for (let pass = 0; pass < 2; pass++) {
     for (const q of basis) {
@@ -73,7 +72,7 @@ export interface LanczosResult {
   /** Off-diagonal of T (beta[j] couples q_j and q_{j+1}); the last is the residual coupling. */
   readonly beta: readonly number[]
   /** The orthonormal basis vectors. */
-  readonly basis: readonly Vec[]
+  readonly basis: readonly Float64Array[]
 }
 
 /**
@@ -116,12 +115,12 @@ export function lanczos(
       deflate,
     )
   q = q.map((v) => v / norm(q))
-  const basis: Vec[] = [q]
+  const basis: Float64Array[] = [q]
   const alpha: number[] = []
   const beta: number[] = []
   for (let j = 0; j < Math.min(m, n); j++) {
-    const w0 = apply(basis[j] as Vec)
-    alpha.push(dot(w0, basis[j] as Vec))
+    const w0 = apply(basis[j] as Float64Array)
+    alpha.push(dot(w0, basis[j] as Float64Array))
     const w = orthogonalise(w0, deflate.length === 0 ? basis : [...deflate, ...basis])
     const b = norm(w)
     beta.push(b)
@@ -135,7 +134,7 @@ export function lanczos(
 export interface ArnoldiResult {
   /** The (m + 1) x m upper Hessenberg matrix, row-major as rows of columns. */
   readonly hessenberg: Tensor
-  readonly basis: readonly Vec[]
+  readonly basis: readonly Float64Array[]
 }
 
 /** The paths the Krylov algorithms log, as a type. */
@@ -211,7 +210,7 @@ export function arnoldiAlgorithm(
     step: (s, ctx) => {
       const j = s.columns.length
       const col = new Array<number>(j + 2).fill(0)
-      let w = apply(s.basis[j] as Vec)
+      let w = apply(s.basis[j] as Float64Array)
       for (let pass = 0; pass < 2; pass++) {
         s.basis.forEach((b, i) => {
           const c = dot(w, b)
@@ -420,7 +419,7 @@ export function eigshAlgorithm(
       let lockedNow = 0
       for (let i = 0; i < vecs.length; i++) {
         if (!(exhausted || converged(residuals[i] ?? 0, lambdas[i] ?? 0))) break
-        locked.push(vecs[i] as Vec)
+        locked.push(vecs[i] as Float64Array)
         lockedValues.push(lambdas[i] ?? 0)
         lockedResiduals.push(residuals[i] ?? 0)
         lockedNow++
@@ -490,7 +489,7 @@ export function eigsh(a: CsrMatrix | TensorLike | LinearOperator, k: number, opt
   const order = lockedValues.map((_, i) => i).sort((p, q) => (lockedValues[p] ?? 0) - (lockedValues[q] ?? 0))
   const out = new Float64Array(n * k)
   order.forEach((src, col) => {
-    const v = locked[src] as Vec
+    const v = locked[src] as Float64Array
     // Sign convention: the largest-magnitude component positive.
     let big = 0
     for (let r = 0; r < n; r++) if (Math.abs(v[r] ?? 0) > Math.abs(v[big] ?? 0)) big = r
@@ -510,7 +509,12 @@ export function eigsh(a: CsrMatrix | TensorLike | LinearOperator, k: number, opt
 }
 
 /** The Gram operator A^T A of a matrix with a transpose product, and the products that build singular triplets. */
-function gramOf(op: LinearOperator): { gram: LinearOperator; apply: (x: Vec) => Vec; m: number; n: number } {
+function gramOf(op: LinearOperator): {
+  gram: LinearOperator
+  apply: (x: Float64Array) => Float64Array
+  m: number
+  n: number
+} {
   const [m, n] = op.shape
   const apply = numeric(op)
   const applyT = numeric(op, true)

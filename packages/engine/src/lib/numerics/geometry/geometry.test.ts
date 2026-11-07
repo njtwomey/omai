@@ -53,7 +53,7 @@ describe('distances against scipy.spatial.distance', () => {
     it(c.name, () => {
       const t = c.inputs.map((v) => decode(v) as Tensor)
       const p = c.params
-      const metric = p['metric'] as G.Metric
+      const metric = p['metric'] as G.DistanceMetric
       const actual =
         c.fn === 'cdist'
           ? G.cdist(t[0] as Tensor, t[1] as Tensor, metric, p['p'] === undefined ? {} : { p: p['p'] as number })

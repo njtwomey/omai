@@ -6,7 +6,7 @@
  */
 
 import { argmaxOf, type Json, meanOf, minOf } from '../base/index.ts'
-import { adam, type Tree } from '../optim/index.ts'
+import { adam, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'
 import {
   type Agent,
@@ -572,7 +572,7 @@ export function dreamer<A extends number | readonly number[] = readonly number[]
     const z0 = concat(filtered.z as Value[], 0)
     const ki = foldIn(k, 2)
     const opts = { gamma, lambda }
-    let actor: Tree
+    let actor: ParamTree
     let actorLoss: number
     let actorState: unknown
     if (!isDiscrete) {

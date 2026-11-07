@@ -4,7 +4,7 @@
  * and the log-cosh and Huber errors that mirror the corresponding losses.
  */
 
-import { type Direction, MdmlError, type MetricSpec, maxOf } from '../base/index.ts'
+import { MdmlError, type MetricDirection, type MetricSpec, maxOf } from '../base/index.ts'
 import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 
 const map = (n: number, f: (i: number) => number): Float64Array => Float64Array.from({ length: n }, (_, i) => f(i))
@@ -14,7 +14,7 @@ const residuals = (t: Float64Array, p: Float64Array): Float64Array => map(t.leng
 const median = (values: Float64Array, weight: Float64Array, weighted: boolean): number =>
   weighted ? weightedPercentile(values, weight, 50, false) : weightedPercentile(values, undefined, 50, true)
 
-const spec = (name: string, direction: Direction, range: readonly [number, number]): MetricSpec => ({
+const spec = (name: string, direction: MetricDirection, range: readonly [number, number]): MetricSpec => ({
   name,
   direction,
   range,

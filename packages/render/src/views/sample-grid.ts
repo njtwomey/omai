@@ -4,7 +4,7 @@
  * step, so the samples are seen to sharpen. The scene's size follows its content.
  */
 
-import { filmstripSteps, type Sample, type SampleGrid, type SampleStep, sampleStepAt } from 'mdml-engine/exposition'
+import { filmstripSteps, type GridSample, type SampleGrid, type SampleStep, sampleStepAt } from 'mdml-engine/exposition'
 import { image, rect, type Scene, type SceneNode, scene, text, toPixels } from 'mdml-engine/scene'
 
 /** Options of {@link sampleGridScene}. */
@@ -21,7 +21,7 @@ const GAP = 6
 const LABEL = 14
 
 // An image sample as nested rows, for the scene's image node.
-function rowsOf(record: SampleGrid, s: Sample): number[][][] {
+function rowsOf(record: SampleGrid, s: GridSample): number[][][] {
   const { height = 0, width = 0, channels = 1 } = record
   const v = s as readonly number[]
   return Array.from({ length: height }, (_, r) =>
@@ -34,7 +34,7 @@ function rowsOf(record: SampleGrid, s: Sample): number[][][] {
 // One sample as nodes in a cell: an image stretched to the cell, or text clipped to it.
 function cell(
   record: SampleGrid,
-  s: Sample,
+  s: GridSample,
   x: number,
   y: number,
   w: number,

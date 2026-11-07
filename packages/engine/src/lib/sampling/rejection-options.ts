@@ -26,7 +26,7 @@ import {
   ratioOfUniformsAlgorithm,
   rejectionAlgorithm,
 } from './rejection.ts'
-import type { LogDensity, Proposal } from './target.ts'
+import type { ChainProposal, LogDensity } from './target.ts'
 
 /** What an exact sampler is given: the key and number of draws, and the target in the form the method needs. */
 export interface RejectionProblem {
@@ -35,7 +35,7 @@ export interface RejectionProblem {
   /** The target as a log density (rejection sampling; adaptive rejection also needs its gradient). */
   readonly target?: LogDensity
   /** The proposal (rejection sampling). */
-  readonly proposal?: Proposal
+  readonly proposal?: ChainProposal
   /** The unnormalised density itself (ratio of uniforms). */
   readonly density?: (x: number) => number
   /** The support [low, high] (adaptive rejection; default the real line). */
@@ -98,7 +98,7 @@ export const rejectionSamplers: OptionTable<RejectionSampler, RejectionSamplerPr
       (k) => (p) => {
         needs('a target', p.target !== undefined, 'rejection')
         needs('a proposal', p.proposal !== undefined, 'rejection')
-        return rejectionAlgorithm(p.target as LogDensity, p.proposal as Proposal, {
+        return rejectionAlgorithm(p.target as LogDensity, p.proposal as ChainProposal, {
           key: p.key,
           n: p.n,
           logEnvelope: k('logEnvelope'),

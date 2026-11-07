@@ -5,7 +5,7 @@
  */
 
 import { maxOf } from 'mdml-engine/base'
-import { type ConfusionMatrix, confusionMargins, tableCost } from 'mdml-engine/metrics'
+import { confusionMargins, type LabelledConfusionMatrix, tableCost } from 'mdml-engine/metrics'
 import { type ReactNode, useMemo, useState } from 'react'
 import { formatNumber, formatPercent } from '../theme/format.ts'
 import { mixColours } from '../theme/palettes.ts'
@@ -14,7 +14,7 @@ import { useTokens } from './theme.tsx'
 /** Props of {@link ContingencyTable}. */
 export interface ContingencyTableProps {
   /** A confusion matrix of counts (`confusionMatrix` or `thresholdConfusion` from `mdml-engine/metrics`): rows actual, columns predicted. */
-  readonly table: ConfusionMatrix
+  readonly table: LabelledConfusionMatrix
   /** A name per class, in the table's order (default the labels). */
   readonly classNames?: readonly string[]
   /**

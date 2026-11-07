@@ -91,7 +91,7 @@ export interface PlantedDrift {
 }
 
 /** The concept in force at a step: the one before the transition under way, the one after, and how far it has gone. */
-export interface Transition {
+export interface ConceptTransition {
   readonly from: number
   readonly to: number
   /** 0 outside a transition; inside, the share of the way to `to`, in (0, 1). */
@@ -125,7 +125,7 @@ export interface StreamTruth {
   readonly changepoints: readonly number[]
   readonly drifts: readonly PlantedDrift[]
   /** The transition in force at a step. */
-  transitionAt(t: number): Transition
+  transitionAt(t: number): ConceptTransition
   /** The dominant concept at a step (the new one from the middle of a transition). */
   conceptAt(t: number): number
   /** The parameters of a concept. */
@@ -264,7 +264,7 @@ export function stream(k: Key, options: StreamOptions = {}): DataStream {
     return record
   })
 
-  const transitionAt = (t: number): Transition => {
+  const transitionAt = (t: number): ConceptTransition => {
     let segment = 0
     for (const [i, p] of points.entries()) {
       if (width > 0 && t > p - half && t < p + half) {

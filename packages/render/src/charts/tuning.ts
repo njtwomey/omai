@@ -8,9 +8,9 @@ import type { EChartsOption } from 'echarts'
 import { maxOf } from 'mdml-engine/base'
 import {
   contourData,
-  type Importances,
   intermediateValues,
   optimisationHistory,
+  type ParamImportances,
   type Study,
   sliceData,
   parallelCoordinates as studyAxes,
@@ -120,7 +120,7 @@ export function historyChart(study: Study, options: StudyChartOptions = {}): ECh
  * ```
  */
 export function importanceChart(
-  importances: Importances,
+  importances: ParamImportances,
   options: Pick<StudyChartOptions, 'mode' | 'figure' | 'title'> & { readonly top?: number } = {},
 ): EChartsOption {
   const mode = options.mode ?? options.figure?.mode ?? 'light'

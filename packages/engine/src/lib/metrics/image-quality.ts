@@ -8,7 +8,7 @@ import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { convNd } from '../numerics/convolution/index.ts'
 import { image as filters } from '../signal/index.ts'
 import { fromStorage, primalOf, reshape, type TensorLike, type Value } from '../tensor/index.ts'
-import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 // Images are handled as channel planes; the filtering itself is signal's (scipy.ndimage semantics).
 
@@ -21,7 +21,7 @@ interface Plane {
 
 /** The channel planes of an image `[H, W]` or `[H, W, C]` (channels last). */
 function planes(name: string, image: TensorLike): Plane[] {
-  const m = matrix(image)
+  const m = shapedArray(image)
   const [h = 0, w = 0, c = 1] = m.shape
   if (m.shape.length < 2 || m.shape.length > 3) throw new MdmlError('shape', `${name}: images are [H, W] or [H, W, C]`)
   return Array.from({ length: c }, (_, k) => ({
@@ -124,7 +124,7 @@ const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / 
 
 /** The value range of an image (max - min), the default data range. */
 function rangeOf(image: TensorLike): number {
-  const d = matrix(image).data
+  const d = shapedArray(image).data
   let lo = Number.POSITIVE_INFINITY
   let hi = Number.NEGATIVE_INFINITY
   for (const v of d) {
@@ -135,8 +135,8 @@ function rangeOf(image: TensorLike): number {
 }
 
 const mseOf = (a: TensorLike, b: TensorLike): number => {
-  const x = matrix(a).data
-  const y = matrix(b).data
+  const x = shapedArray(a).data
+  const y = shapedArray(b).data
   if (x.length !== y.length) throw new MdmlError('shape', 'images differ in size')
   let s = 0
   for (const [i, v] of x.entries()) s += (v - (y[i] ?? 0)) ** 2
@@ -159,7 +159,7 @@ const mseOf = (a: TensorLike, b: TensorLike): number => {
 export const imageMeanSquaredError: MetricFunction<[TensorLike, TensorLike]> = defineMetric(
   spec('imageMeanSquaredError', 'lower', [0, Infinity]),
   (imageTrue: TensorLike, imageTest: TensorLike): MetricResult =>
-    metricResult('imageMeanSquaredError', mseOf(imageTrue, imageTest), matrix(imageTrue).data.length),
+    metricResult('imageMeanSquaredError', mseOf(imageTrue, imageTest), shapedArray(imageTrue).data.length),
 )
 
 /**
@@ -519,7 +519,7 @@ export const universalImageQualityIndex: MetricFunction<
 
 /** Spectral vectors `[pixels][channels]` of an `[H, W, C]` image. */
 function spectra(image: TensorLike): { n: number; c: number; data: Float64Array } {
-  const m = matrix(image)
+  const m = shapedArray(image)
   const c = m.shape.length === 3 ? (m.shape[2] ?? 1) : 1
   return { n: m.data.length / c, c, data: m.data }
 }
@@ -665,7 +665,7 @@ export const lpipsFromFeatures: MetricFunction<[FeatureStack, FeatureStack, (rea
     for (const [l, fx] of featuresX.entries()) {
       const x = spectra(fx)
       const y = spectra(featuresY[l] as TensorLike)
-      const wl = weights?.[l] === undefined ? undefined : matrix(weights[l] as TensorLike).data
+      const wl = weights?.[l] === undefined ? undefined : shapedArray(weights[l] as TensorLike).data
       let layer = 0
       for (let i = 0; i < x.n; i++) {
         let nx = 0
@@ -721,8 +721,8 @@ export const distsFromFeatures: MetricFunction<
     for (const [l, fx] of featuresX.entries()) {
       const x = spectra(fx)
       const y = spectra(featuresY[l] as TensorLike)
-      const al = alpha?.[l] === undefined ? undefined : matrix(alpha[l] as TensorLike).data
-      const bl = beta?.[l] === undefined ? undefined : matrix(beta[l] as TensorLike).data
+      const al = alpha?.[l] === undefined ? undefined : shapedArray(alpha[l] as TensorLike).data
+      const bl = beta?.[l] === undefined ? undefined : shapedArray(beta[l] as TensorLike).data
       for (let k = 0; k < x.c; k++) {
         let mx = 0
         let my = 0

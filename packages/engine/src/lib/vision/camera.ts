@@ -35,7 +35,7 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { type PointsLike, pointsOf, rasterOf, valuesOf } from './_image.ts'
-import { det3, type Matrix, matMul, nullVector, points3Of, refine, svdOf, transposeOf } from './_refine.ts'
+import { det3, type MutableRows, matMul, nullVector, points3Of, refine, svdOf, transposeOf } from './_refine.ts'
 import { getPerspectiveTransform } from './geometry.ts'
 
 /** Distortion coefficients in OpenCV's order: k1, k2, p1, p2, then optionally k3, k4, k5, k6 (missing are 0). */
@@ -62,7 +62,7 @@ const coeffs = (d: Distortion | undefined): number[] => Array.from({ length: 8 }
  * rodrigues([0, 0, Math.PI / 2]).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
  * ```
  */
-export function rodrigues(rvec: readonly number[]): Matrix {
+export function rodrigues(rvec: readonly number[]): MutableRows {
   return rotationFromRotvec(rvec).asMatrix()
 }
 
@@ -253,7 +253,7 @@ export function undistortPoints(
   const fy = cameraMatrix[1]?.[1] ?? 1
   const cx = cameraMatrix[0]?.[2] ?? 0
   const cy = cameraMatrix[1]?.[2] ?? 0
-  let RR: Matrix | undefined = options.R?.map((r) => [...r])
+  let RR: MutableRows | undefined = options.R?.map((r) => [...r])
   if (options.P !== undefined) {
     const Vec3 = options.P.map((r) => [r[0] ?? 0, r[1] ?? 0, r[2] ?? 0])
     RR = matMul(
@@ -353,7 +353,7 @@ export function initUndistortRectifyMap(
 }
 
 /** The inverse of a 3 x 3 matrix by its adjugate. */
-function invertTo(m: Matrix): Matrix {
+function invertTo(m: MutableRows): MutableRows {
   const d = det3(m)
   if (d === 0) throw new MdmlError('value', 'singular 3 x 3 matrix')
   const a = (i: number, j: number): number => m[i]?.[j] ?? 0
@@ -475,7 +475,7 @@ export function reprojectionError(
 }
 
 /** The nearest rotation to a matrix (by its SVD, with the determinant made positive) and the scale it removed. */
-function nearestRotation(m: Matrix): { R: Matrix; scale: number } {
+function nearestRotation(m: MutableRows): { R: MutableRows; scale: number } {
   const { u, s, v } = svdOf(m)
   let R = matMul(u, transposeOf(v))
   if (det3(R) < 0) {
@@ -488,7 +488,7 @@ function nearestRotation(m: Matrix): { R: Matrix; scale: number } {
 /** A linear pose from correspondences in normalised camera coordinates: the planar homography or the 3-D DLT. */
 function linearPose(X: readonly Vec3[], x: readonly [number, number][]): Pose {
   const planar = X.every((p) => Math.abs(p[2]) < 1e-12)
-  let R: Matrix
+  let R: MutableRows
   let t: number[]
   if (planar) {
     const src = X.map(([a, b]) => [a, b] as [number, number])

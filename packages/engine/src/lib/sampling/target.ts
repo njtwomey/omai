@@ -1,7 +1,7 @@
 /**
  * What samplers sample: the `LogDensity` target (an unnormalised log density with its gradient and the map back to
  * constrained parameters), built from a differentiable function, plain number functions or a distribution sampled on
- * unconstrained reals, and the `Proposal` used by importance, independence and rejection samplers. Also the standard
+ * unconstrained reals, and the `ChainProposal` used by importance, independence and rejection samplers. Also the standard
  * test targets Neal's funnel and Haario's banana.
  *
  * @index structure Log-density targets that every sampler runs on.
@@ -331,7 +331,7 @@ function elementwise(supports: readonly Support[], dim: number): bijectors.Bijec
  *
  * @concept proposal-distribution
  */
-export interface Proposal {
+export interface ChainProposal {
   readonly dim: number
   sample(key: Key): Float64Array
   logProb(x: ArrayLike<number>): number
@@ -358,7 +358,7 @@ export function proposal(spec: {
   readonly dim: number
   readonly sample: (key: Key) => ArrayLike<number>
   readonly logProb: (x: Float64Array) => number
-}): Proposal {
+}): ChainProposal {
   checkDim(spec.dim, 'proposal')
   const { dim } = spec
   const sample = (k: Key): Float64Array => {
@@ -400,7 +400,7 @@ export function proposal(spec: {
  * Math.abs(q.logProb([0]) + 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
-export function proposalFromDistribution(dist: Distribution): Proposal {
+export function proposalFromDistribution(dist: Distribution): ChainProposal {
   if (dist.batchShape.length > 0) {
     throw new MdmlError('shape', `proposalFromDistribution: batch shape [${dist.batchShape.join(', ')}] must be empty`)
   }

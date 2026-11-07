@@ -16,7 +16,7 @@ export interface Rung {
 }
 
 /** A bracket of synchronous successive halving: rungs of shrinking size and growing resource. */
-export interface Bracket {
+export interface HalvingBracket {
   readonly bracket: number
   readonly rungs: readonly Rung[]
 }
@@ -27,7 +27,7 @@ export interface SynchronousSchedule {
   readonly reductionFactor: number
   readonly minResource: number
   readonly maxResource: number
-  readonly brackets: readonly Bracket[]
+  readonly brackets: readonly HalvingBracket[]
   /** Start again with the first bracket once the last is done (default false: the schedule then ends the study). */
   readonly repeat: boolean
 }
@@ -43,7 +43,7 @@ export interface AshaSchedule {
 }
 
 /** A multi-fidelity schedule. */
-export type Schedule = SynchronousSchedule | AshaSchedule
+export type FidelitySchedule = SynchronousSchedule | AshaSchedule
 
 /** What a schedule asks for next: a new configuration, or a promotion of an earlier one, with its resource. */
 export type Assignment =
@@ -151,7 +151,7 @@ export function hyperbandSchedule(options: {
   checkEta(eta, 'hyperbandSchedule')
   checkResources(min, max, 'hyperbandSchedule')
   const sMax = floorLog(max / min, eta)
-  const brackets: Bracket[] = []
+  const brackets: HalvingBracket[] = []
   for (let s = sMax; s >= 0; s--) {
     const n = Math.ceil(((sMax + 1) * eta ** s) / (s + 1))
     const r = max * eta ** -s
@@ -234,7 +234,7 @@ function promotion(trial: Trial, bracket: number, rung: number, budget: number):
 function nextSynchronous(schedule: SynchronousSchedule, study: Study): Assignment | undefined {
   const nb = schedule.brackets.length
   for (let k = 0; schedule.repeat || k < nb; k++) {
-    const bracket = schedule.brackets[k % nb] as Bracket
+    const bracket = schedule.brackets[k % nb] as HalvingBracket
     const inBracket = study.trials.filter((t) => t.bracket === k)
     // A repeated schedule visits each round's brackets in turn; stop scanning past the first unfinished one.
     for (const r of bracket.rungs) {
@@ -291,7 +291,7 @@ function nextAsha(schedule: AshaSchedule, study: Study): Assignment {
  * // => { kind: 'sample', bracket: 0, rung: 0, budget: 1 }
  * ```
  */
-export function nextAssignment(schedule: Schedule, study: Study): Assignment | undefined {
+export function nextAssignment(schedule: FidelitySchedule, study: Study): Assignment | undefined {
   if (study.directions.length !== 1) throw new MdmlError('value', 'schedules rank trials by a single objective')
   return schedule.kind === 'asha' ? nextAsha(schedule, study) : nextSynchronous(schedule, study)
 }

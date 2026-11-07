@@ -2,7 +2,14 @@
 // optimiser step on a loss of a parameter tree.
 import { valueAndGrad } from '../autodiff/index.ts'
 import { MdmlError } from '../base/index.ts'
-import { adam, applyUpdates, chain, clipByGlobalNorm, type GradientTransformation, type Tree } from '../optim/index.ts'
+import {
+  adam,
+  applyUpdates,
+  chain,
+  clipByGlobalNorm,
+  type GradientTransformation,
+  type ParamTree,
+} from '../optim/index.ts'
 import { flatDim, flatten, type Space, type SpaceValue } from '../space/index.ts'
 import { fromStorage, item, mul, primalOf, type Tensor, toFlat, treeMap, type Value } from '../tensor/index.ts'
 
@@ -52,11 +59,11 @@ export function vectorTensor(xs: readonly number[]): Tensor {
 
 /** One optimiser step: the loss and its gradient at `params`, and the transformed update applied. */
 export function gradientStep(
-  loss: (params: Tree) => Value,
-  params: Tree,
+  loss: (params: ParamTree) => Value,
+  params: ParamTree,
   transformation: GradientTransformation,
   optState: unknown,
-): { readonly params: Tree; readonly optState: unknown; readonly loss: number } {
+): { readonly params: ParamTree; readonly optState: unknown; readonly loss: number } {
   const { value, grad } = valueAndGrad(loss)(params)
   const { updates, state } = transformation.update(grad, optState, params)
   return { params: applyUpdates(params, updates), optState: state, loss: item(value) }
@@ -67,11 +74,11 @@ export function gradientStep(
  * forward pass (for replay priorities and statistics) instead of a second one.
  */
 export function gradientStepWithTerms(
-  loss: (params: Tree) => readonly [Value, Value],
-  params: Tree,
+  loss: (params: ParamTree) => readonly [Value, Value],
+  params: ParamTree,
   transformation: GradientTransformation,
   optState: unknown,
-): { readonly params: Tree; readonly optState: unknown; readonly loss: number; readonly terms: number[] } {
+): { readonly params: ParamTree; readonly optState: unknown; readonly loss: number; readonly terms: number[] } {
   const { value, grad, aux } = valueAndGrad(loss, { hasAux: true })(params)
   const { updates, state } = transformation.update(grad, optState, params)
   return {
@@ -117,12 +124,12 @@ export function spaceFeatures(space: Space): { readonly size: number; readonly o
  * optimiser: a factor of 1 leaves the optimiser's own step unchanged).
  */
 export function applyGradient(
-  grad: Tree,
-  params: Tree,
+  grad: ParamTree,
+  params: ParamTree,
   transformation: GradientTransformation,
   optState: unknown,
   scale = 1,
-): { readonly params: Tree; readonly optState: unknown } {
+): { readonly params: ParamTree; readonly optState: unknown } {
   const { updates, state } = transformation.update(grad, optState, params)
   const scaled = scale === 1 ? updates : treeMap((u) => mul(u, scale), updates)
   return { params: applyUpdates(params, scaled), optState: state }

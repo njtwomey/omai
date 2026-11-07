@@ -4,7 +4,7 @@
 import { stopGradient } from '../autodiff/index.ts'
 import { crossEntropy } from '../losses/index.ts'
 import { mlp, ReLU, type Sequential } from '../nn/index.ts'
-import type { Tree } from '../optim/index.ts'
+import type { ParamTree } from '../optim/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import { type Env, mcts } from '../rl/index.ts'
 import { scene } from '../scene/index.ts'
@@ -41,9 +41,9 @@ export interface MuZeroNets {
 
 /** The parameters of the three networks. */
 export interface MuZeroParams {
-  readonly representation: Tree
-  readonly dynamics: Tree
-  readonly prediction: Tree
+  readonly representation: ParamTree
+  readonly dynamics: ParamTree
+  readonly prediction: ParamTree
 }
 
 const net = (widths: readonly number[], key: Key): Sequential => mlp(widths, { activation: () => new ReLU(), key })
@@ -82,7 +82,7 @@ const scale = (s: Value): Value => {
   return div(sub(s, lo), add(sub(hi, lo), 1e-6))
 }
 
-const apply = (m: Sequential, p: Tree, x: Value): Value => m.apply(p as never, x)
+const apply = (m: Sequential, p: ParamTree, x: Value): Value => m.apply(p as never, x)
 
 /** The hidden state of observations `[B, d]`. */
 export function represent(nets: MuZeroNets, p: MuZeroParams, obs: Value): Value {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { toFlat } from '../tensor/index.ts'
-import type { Tree } from './tree.ts'
+import type { FittedTree } from './tree.ts'
 import {
   applyTree,
   decisionPath,
@@ -18,7 +18,7 @@ import {
 } from './tree.ts'
 
 // x0 <= 1 -> leaf 1; else x1 in {2, 5} -> leaf 3 else leaf 4; missing x1 goes left.
-const tree: Tree = {
+const tree: FittedTree = {
   task: 'classification',
   classes: [10, 20],
   nFeatures: 2,

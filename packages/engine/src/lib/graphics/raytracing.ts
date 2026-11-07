@@ -28,7 +28,7 @@ import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trac
 import { check3, dot3, madd3, mul3, normalise3, reflect3, refract3, scale3 } from './_vec3.ts'
 import { type Bvh, type BvhOptions, buildBvh, intersectBvh, occludedBvh } from './bvh.ts'
 import { cameraRays, type Ray, type RenderCamera } from './camera.ts'
-import { type Hit, intersect, RAY_EPSILON, type Shape } from './intersect.ts'
+import { type Hit, intersect, RAY_EPSILON, type RayShape } from './intersect.ts'
 import { type Light, type LightSample, shadePoints } from './lights.ts'
 import { fresnelSchlick, type Material } from './shading.ts'
 import { type FloatImage, sampleBilinear } from './textures.ts'
@@ -40,7 +40,7 @@ import { type FloatImage, sampleBilinear } from './textures.ts'
  * @concept ray-tracing
  */
 export interface SceneObject {
-  readonly shape: Shape
+  readonly shape: RayShape
   readonly material: Material
   readonly albedoMap?: FloatImage | ((u: number, v: number) => Vec3)
   readonly name?: string

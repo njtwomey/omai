@@ -25,7 +25,7 @@ export type ExprTree =
   | { readonly constant: number }
 
 /** A function of the primitive set: its name, arity and meaning. */
-export interface Primitive {
+export interface GpPrimitive {
   readonly name: string
   readonly arity: number
   readonly apply: (args: readonly number[]) => number
@@ -33,7 +33,7 @@ export interface Primitive {
 
 /** The language of a genetic program: functions, variables, and constants (a list, or a range for ephemeral ones). */
 export interface PrimitiveSet {
-  readonly functions: readonly Primitive[]
+  readonly functions: readonly GpPrimitive[]
   readonly variables: readonly string[]
   readonly constants?: readonly number[] | { readonly low: number; readonly high: number }
 }
@@ -50,7 +50,7 @@ export interface PrimitiveSet {
  * arithmeticPrimitives().map((p) => p.apply([6, 0])) // => [6, 6, 0, 1]
  * ```
  */
-export function arithmeticPrimitives(): Primitive[] {
+export function arithmeticPrimitives(): GpPrimitive[] {
   return [
     { name: 'add', arity: 2, apply: ([a = 0, b = 0]) => a + b },
     { name: 'sub', arity: 2, apply: ([a = 0, b = 0]) => a - b },
@@ -73,7 +73,7 @@ function grow(d: Draw, set: PrimitiveSet, depth: number, full: boolean): ExprTre
   const terminals = set.variables.length + (set.constants === undefined ? 0 : 1)
   const pickTerminal = depth <= 0 || (!full && d.uniform() < terminals / (terminals + set.functions.length))
   if (pickTerminal || set.functions.length === 0) return terminal(d, set)
-  const f = set.functions[d.int(set.functions.length)] as Primitive
+  const f = set.functions[d.int(set.functions.length)] as GpPrimitive
   return { op: f.name, children: Array.from({ length: f.arity }, () => grow(d, set, depth - 1, full)) }
 }
 
@@ -159,7 +159,7 @@ export function rampedHalfAndHalf(
  */
 export function evaluateTree(
   tree: ExprTree,
-  functions: readonly Primitive[],
+  functions: readonly GpPrimitive[],
   env: Readonly<Record<string, number>>,
 ): number {
   if ('constant' in tree) return tree.constant
@@ -344,7 +344,7 @@ export function pointMutation(
   const walk = (t: ExprTree): ExprTree => {
     if (!('op' in t)) return d.uniform() < rate ? terminal(d, set) : t
     const same = set.functions.filter((f) => f.arity === t.children.length)
-    const op = d.uniform() < rate && same.length > 0 ? (same[d.int(same.length)] as Primitive).name : t.op
+    const op = d.uniform() < rate && same.length > 0 ? (same[d.int(same.length)] as GpPrimitive).name : t.op
     return { op, children: t.children.map(walk) }
   }
   return walk(tree)
@@ -402,7 +402,7 @@ export function trees(
  * ```
  */
 export function regressionFitness(
-  functions: readonly Primitive[],
+  functions: readonly GpPrimitive[],
   inputs: readonly Readonly<Record<string, number>>[],
   targets: readonly number[],
   parsimony = 0,

@@ -39,7 +39,7 @@ export interface TestResult {
 }
 
 /** Which direction of a metric is better. */
-export type Direction = 'higher' | 'lower'
+export type MetricDirection = 'higher' | 'lower'
 
 /**
  * The declaration of a metric: what it consumes and which way is better, so tuners and reports can use any metric.
@@ -48,7 +48,7 @@ export type Direction = 'higher' | 'lower'
  */
 export interface MetricSpec {
   readonly name: string
-  readonly direction: Direction
+  readonly direction: MetricDirection
   readonly range: readonly [number, number]
   readonly inputs: 'labels' | 'scores' | 'probabilities' | 'distributions' | 'values' | 'rankings' | 'sets'
   readonly category: string

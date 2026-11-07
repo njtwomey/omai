@@ -8,7 +8,7 @@
 import { MdmlError } from '../base/index.ts'
 
 /** A learning-rate schedule: the rate at each step count (from 0). */
-export type Schedule = (step: number) => number
+export type LearningRateSchedule = (step: number) => number
 
 /**
  * A constant schedule (optax.constant_schedule).
@@ -21,7 +21,7 @@ export type Schedule = (step: number) => number
  * constantSchedule(0.1)(100) // => 0.1
  * ```
  */
-export function constantSchedule(value: number): Schedule {
+export function constantSchedule(value: number): LearningRateSchedule {
   return () => value
 }
 
@@ -38,7 +38,7 @@ export function constantSchedule(value: number): Schedule {
  * [constantFactor(1, 0.5, 2)(1), constantFactor(1, 0.5, 2)(2)] // => [0.5, 1]
  * ```
  */
-export function constantFactor(init: number, factor: number, steps: number): Schedule {
+export function constantFactor(init: number, factor: number, steps: number): LearningRateSchedule {
   return (t) => (t < steps ? init * factor : init)
 }
 
@@ -55,7 +55,7 @@ export function constantFactor(init: number, factor: number, steps: number): Sch
  * stepDecay(1, 10, 0.5)(25) // => 0.25
  * ```
  */
-export function stepDecay(init: number, stepSize: number, gamma = 0.1): Schedule {
+export function stepDecay(init: number, stepSize: number, gamma = 0.1): LearningRateSchedule {
   return (t) => init * gamma ** Math.floor(t / stepSize)
 }
 
@@ -72,7 +72,7 @@ export function stepDecay(init: number, stepSize: number, gamma = 0.1): Schedule
  * multiStepDecay(1, [5, 8], 0.5)(8) // => 0.25
  * ```
  */
-export function multiStepDecay(init: number, milestones: readonly number[], gamma = 0.1): Schedule {
+export function multiStepDecay(init: number, milestones: readonly number[], gamma = 0.1): LearningRateSchedule {
   return (t) => init * gamma ** milestones.filter((m) => t >= m).length
 }
 
@@ -106,7 +106,7 @@ export function exponentialDecay(
   steps: number,
   staircase = false,
   options: ExponentialDecayOptions = {},
-): Schedule {
+): LearningRateSchedule {
   const begin = options.transitionBegin ?? 0
   const end = options.endValue
   return (t) => {
@@ -133,7 +133,7 @@ export function exponentialDecay(
  * inverseTimeDecay(1, 0.5, 10)(20) // => 0.5
  * ```
  */
-export function inverseTimeDecay(init: number, decayRate: number, steps = 1, staircase = false): Schedule {
+export function inverseTimeDecay(init: number, decayRate: number, steps = 1, staircase = false): LearningRateSchedule {
   return (t) => init / (1 + decayRate * (staircase ? Math.floor(t / steps) : t / steps))
 }
 
@@ -152,7 +152,7 @@ export function inverseTimeDecay(init: number, decayRate: number, steps = 1, sta
  * cosineDecay(1, 100)(50) // => 0.5
  * ```
  */
-export function cosineDecay(init: number, decaySteps: number, alpha = 0, exponent = 1): Schedule {
+export function cosineDecay(init: number, decaySteps: number, alpha = 0, exponent = 1): LearningRateSchedule {
   return (t) => {
     const p = Math.min(t, decaySteps) / decaySteps
     return init * ((1 - alpha) * (0.5 * (1 + Math.cos(Math.PI * p))) ** exponent + alpha)
@@ -174,7 +174,7 @@ export function cosineDecay(init: number, decaySteps: number, alpha = 0, exponen
  * [cosineWarmRestarts(1, 10)(5), cosineWarmRestarts(1, 10)(10)] // => [0.5, 1]
  * ```
  */
-export function cosineWarmRestarts(init: number, t0: number, tMult = 1, etaMin = 0): Schedule {
+export function cosineWarmRestarts(init: number, t0: number, tMult = 1, etaMin = 0): LearningRateSchedule {
   return (t) => {
     let cur: number
     let length: number
@@ -213,7 +213,7 @@ export interface SgdrCycle {
  * [s(5), s(10)] // => [0.5, 0.5]
  * ```
  */
-export function sgdr(cycles: readonly SgdrCycle[]): Schedule {
+export function sgdr(cycles: readonly SgdrCycle[]): LearningRateSchedule {
   const boundaries: number[] = []
   let at = 0
   for (const c of cycles) {
@@ -241,7 +241,7 @@ export function sgdr(cycles: readonly SgdrCycle[]): Schedule {
  * linearSchedule(1, 0, 4)(1) // => 0.75
  * ```
  */
-export function linearSchedule(init: number, end: number, steps: number, begin = 0): Schedule {
+export function linearSchedule(init: number, end: number, steps: number, begin = 0): LearningRateSchedule {
   return (t) => init + (end - init) * Math.min(1, Math.max(0, t - begin) / steps)
 }
 
@@ -261,7 +261,13 @@ export function linearSchedule(init: number, end: number, steps: number, begin =
  * polynomialDecay(1, 0, 2, 10)(5) // => 0.25
  * ```
  */
-export function polynomialDecay(init: number, end: number, power: number, steps: number, begin = 0): Schedule {
+export function polynomialDecay(
+  init: number,
+  end: number,
+  power: number,
+  steps: number,
+  begin = 0,
+): LearningRateSchedule {
   return (t) => {
     const count = Math.min(Math.max(t - begin, 0), steps)
     return (init - end) * (1 - count / steps) ** power + end
@@ -287,7 +293,7 @@ export function warmupCosineDecay(options: {
   readonly warmupSteps: number
   readonly totalSteps: number
   readonly exponent?: number
-}): Schedule {
+}): LearningRateSchedule {
   const { start, peak, end, warmupSteps, totalSteps } = options
   const alpha = peak === 0 ? 0 : end / peak
   return joinSchedules(
@@ -319,7 +325,7 @@ export function warmupExponentialDecay(options: {
   readonly transitionBegin?: number
   readonly staircase?: boolean
   readonly endValue?: number
-}): Schedule {
+}): LearningRateSchedule {
   const decay = exponentialDecay(options.peak, options.decayRate, options.transitionSteps, options.staircase ?? false, {
     ...(options.transitionBegin === undefined ? {} : { transitionBegin: options.transitionBegin }),
     ...(options.endValue === undefined ? {} : { endValue: options.endValue }),
@@ -340,7 +346,7 @@ export function warmupExponentialDecay(options: {
  * [warmupConstant(0, 1, 4)(2), warmupConstant(0, 1, 4)(9)] // => [0.5, 1]
  * ```
  */
-export function warmupConstant(start: number, peak: number, warmupSteps: number): Schedule {
+export function warmupConstant(start: number, peak: number, warmupSteps: number): LearningRateSchedule {
   return linearSchedule(start, peak, warmupSteps)
 }
 
@@ -356,7 +362,7 @@ export function warmupConstant(start: number, peak: number, warmupSteps: number)
  * piecewiseConstant([10, 20], [1, 0.1, 0.01])(15) // => 0.1
  * ```
  */
-export function piecewiseConstant(boundaries: readonly number[], values: readonly number[]): Schedule {
+export function piecewiseConstant(boundaries: readonly number[], values: readonly number[]): LearningRateSchedule {
   return (t) => {
     let i = 0
     while (i < boundaries.length && t >= (boundaries[i] ?? Infinity)) i += 1
@@ -382,7 +388,7 @@ export function piecewiseInterpolate(
   kind: 'linear' | 'cosine',
   init: number,
   boundariesAndScales: readonly (readonly [number, number])[],
-): Schedule {
+): LearningRateSchedule {
   const pairs = [...boundariesAndScales].sort((a, b) => a[0] - b[0])
   const bounds = [0, ...pairs.map((p) => p[0])]
   const values: number[] = [init]
@@ -414,14 +420,17 @@ export function piecewiseInterpolate(
  * [s(5), s(10)] // => [0.5, 0.5]
  * ```
  */
-export function joinSchedules(schedules: readonly Schedule[], boundaries: readonly number[]): Schedule {
+export function joinSchedules(
+  schedules: readonly LearningRateSchedule[],
+  boundaries: readonly number[],
+): LearningRateSchedule {
   if (schedules.length !== boundaries.length + 1)
     throw new MdmlError('value', 'joinSchedules needs one more schedule than boundaries')
   return (t) => {
     let i = 0
     while (i < boundaries.length && t >= (boundaries[i] ?? Infinity)) i += 1
     const offset = i === 0 ? 0 : (boundaries[i - 1] ?? 0)
-    return (schedules[i] as Schedule)(t - offset)
+    return (schedules[i] as LearningRateSchedule)(t - offset)
   }
 }
 
@@ -453,7 +462,7 @@ export interface OneCycleOptions {
  * [s(0), Math.round(s(4.5) * 1e12) / 1e12] // => [0.1, 1]
  * ```
  */
-export function oneCycle(options: OneCycleOptions): Schedule {
+export function oneCycle(options: OneCycleOptions): LearningRateSchedule {
   const total = options.totalSteps
   const pct = options.pctStart ?? 0.3
   const initial = options.maxLr / (options.divFactor ?? 25)
@@ -509,7 +518,7 @@ export interface CyclicalOptions {
  * [s(2), s(4), s(6), s(8)] // => [0.5, 1, 0.5, 0]
  * ```
  */
-export function cyclical(options: CyclicalOptions): Schedule {
+export function cyclical(options: CyclicalOptions): LearningRateSchedule {
   const up = options.stepSizeUp ?? 2000
   const down = options.stepSizeDown ?? up
   const totalSize = up + down

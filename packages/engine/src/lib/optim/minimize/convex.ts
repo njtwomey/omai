@@ -34,9 +34,7 @@ import {
   type VectorMethodOptions,
 } from './objective.ts'
 
-type Vec = Float64Array
-
-const flat = (v: Value): Vec => Float64Array.from(toFlat(primalOf(v)))
+const flat = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
 
 /**
  * A step-size rule for the subgradient and mirror descent methods (Boyd's notes): `constant` a,
@@ -85,7 +83,7 @@ export interface SubgradientOptions extends VectorMethodOptions {
 
 /** State of {@link subgradientAlgorithm}: the iterate and the best point so far. */
 export interface SubgradientState extends VectorState {
-  readonly best: Vec
+  readonly best: Float64Array
   readonly bestValue: number
 }
 
@@ -116,11 +114,12 @@ export function subgradientAlgorithm(
   const tol = options.tol ?? 0
   const project = options.project
   const sub = options.subgradient
-  const evaluate = (x: Vec): { value: number; grad: Vec } => {
+  const evaluate = (x: Float64Array): { value: number; grad: Float64Array } => {
     if (sub === undefined) return obj.valueAndGrad(x)
     return { value: obj.value(x), grad: flat(sub(obj.unravel(x) as Value)) }
   }
-  const projected = (x: Vec): Vec => (project === undefined ? x : flat(project(obj.unravel(x) as Value)))
+  const projected = (x: Float64Array): Float64Array =>
+    project === undefined ? x : flat(project(obj.unravel(x) as Value))
   return {
     name: 'subgradient',
     config: configOf({ ...options, stepRule: typeof rule === 'string' ? rule : 'custom' }),
@@ -161,7 +160,12 @@ export function subgradientAlgorithm(
 }
 
 /** The best point of a subgradient-type run, reported as the result. */
-function bestResult(r: MinimizeResult, best: Vec, bestValue: number, unravel: (x: Vec) => unknown): MinimizeResult {
+function bestResult(
+  r: MinimizeResult,
+  best: Float64Array,
+  bestValue: number,
+  unravel: (x: Float64Array) => unknown,
+): MinimizeResult {
   return { ...r, x: unravel(best), fun: bestValue }
 }
 
@@ -206,8 +210,8 @@ export function subgradientMethod(f: Objective, x0: Parameters, options: Subgrad
  */
 export interface Mirror {
   readonly name: string
-  readonly toDual: (x: Vec) => Vec
-  readonly toPrimal: (theta: Vec) => Vec
+  readonly toDual: (x: Float64Array) => Float64Array
+  readonly toPrimal: (theta: Float64Array) => Float64Array
 }
 
 /**
@@ -249,7 +253,7 @@ export function entropicMirror(radius = 1): Mirror {
  * Array.from(euclideanMirror().toPrimal(new Float64Array([1, 2]))) // => [1, 2]
  * ```
  */
-export function euclideanMirror(project?: (x: Vec) => ArrayLike<number>): Mirror {
+export function euclideanMirror(project?: (x: Float64Array) => ArrayLike<number>): Mirror {
   return {
     name: 'euclidean',
     toDual: (x) => Float64Array.from(x),
@@ -273,7 +277,7 @@ export interface MirrorDescentOptions extends VectorMethodOptions {
 
 /** State of {@link mirrorDescentAlgorithm}. */
 export interface MirrorDescentState extends SubgradientState {
-  readonly average: Vec
+  readonly average: Float64Array
   readonly weight: number
 }
 
@@ -410,14 +414,14 @@ export interface DualAscentOptions extends VectorMethodOptions {
   /** Stop once |A x - b| falls to this (default 1e-9). */
   readonly tol?: number
   /** argmin_x of a Lagrangian from a warm start (default: {@link minimize} with its default method). */
-  readonly solve?: (lagrangian: Objective, start: Vec) => ArrayLike<number>
+  readonly solve?: (lagrangian: Objective, start: Float64Array) => ArrayLike<number>
   /** The inner minimiser in closed form, given the multipliers (takes precedence over `solve`). */
-  readonly argmin?: (y: Vec, start: Vec) => ArrayLike<number>
+  readonly argmin?: (y: Float64Array, start: Float64Array) => ArrayLike<number>
 }
 
 /** State of {@link dualAscentAlgorithm}. */
 export interface DualAscentState extends VectorState {
-  readonly y: Vec
+  readonly y: Float64Array
   readonly violation: number
   readonly dualValue: number
 }
@@ -430,10 +434,10 @@ export interface DualResult extends MinimizeResult {
   readonly violation: number
 }
 
-const defaultSolve = (lagrangian: Objective, start: Vec): Vec =>
+const defaultSolve = (lagrangian: Objective, start: Float64Array): Float64Array =>
   flat(minimize(lagrangian, fromStorage(Float64Array.from(start), [start.length], 'float64')).x as Value)
 
-function matrixOf(a: TensorLike): { data: Vec; rows: number; cols: number } {
+function matrixOf(a: TensorLike): { data: Float64Array; rows: number; cols: number } {
   const t = primalOf(asTensor(a)) as Tensor
   if (t.shape.length !== 2) throw new MdmlError('shape', 'dual ascent: A must be a matrix')
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0 }
@@ -475,7 +479,7 @@ export function dualAscentAlgorithm(
   const solve = options.solve ?? defaultSolve
   const Am = fromStorage(A.data, [A.rows, A.cols], 'float64')
   const lagrangian =
-    (y: Vec): Objective =>
+    (y: Float64Array): Objective =>
     (x) => {
       const xv = reshape(x as Value, [-1])
       const r = add(
@@ -490,7 +494,7 @@ export function dualAscentAlgorithm(
       const base = add(obj.ofValue(xv), linear)
       return rho > 0 ? add(base, mul(sum(mul(r, r)), rho / 2)) : base
     }
-  const residual = (x: Vec): Vec => daxpy(-1, bv, dgemv(A.data, A.rows, A.cols, x))
+  const residual = (x: Float64Array): Float64Array => daxpy(-1, bv, dgemv(A.data, A.rows, A.cols, x))
   return {
     name: rho > 0 ? 'methodOfMultipliers' : 'dualAscent',
     config: configOf({ stepSize: alpha, augmented: rho, tol }),
@@ -615,7 +619,7 @@ export interface DecompositionBlock {
   readonly a: TensorLike
   readonly x0: TensorLike
   /** argmin_x f_i(x) + c . x in closed form (c = A_i^T y); otherwise the block is minimised numerically. */
-  readonly argmin?: (c: Vec, start: Vec) => ArrayLike<number>
+  readonly argmin?: (c: Float64Array, start: Float64Array) => ArrayLike<number>
 }
 
 /**
@@ -672,7 +676,7 @@ export function dualDecomposition(
     argmin: (y, start) => {
       const out = new Float64Array(n)
       for (const [k, o] of objs.entries()) {
-        const mat = mats[k] as { data: Vec; rows: number; cols: number }
+        const mat = mats[k] as { data: Float64Array; rows: number; cols: number }
         const c = dgemv(mat.data, mat.rows, mat.cols, y, true)
         const piece = start.slice(offsets[k] ?? 0, (offsets[k] ?? 0) + (sizes[k] ?? 0))
         const closed = blocks[k]?.argmin

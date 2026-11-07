@@ -7,8 +7,7 @@
 import { argmaxOf, logSumExpOf, MdmlError, maxOf } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { nullTracer, type RunHandle, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
-
-type Matrix = readonly (readonly number[])[]
+import type { Rows } from '../_dense.ts'
 
 /**
  * A chain-structured model in log space: the potentials of a hidden Markov model (log initial, transition and emission
@@ -19,9 +18,9 @@ type Matrix = readonly (readonly number[])[]
  */
 export interface ChainModel {
   readonly logInitial: readonly number[]
-  readonly logTransition: Matrix | readonly Matrix[]
+  readonly logTransition: Rows | readonly Rows[]
   /** The log emission (or unary) potential of each state at each step, `[T][K]`. */
-  readonly logEmission: Matrix
+  readonly logEmission: Rows
 }
 
 /** Options of the chain algorithms. */
@@ -50,7 +49,7 @@ export interface ForwardBackwardResult {
 interface Checked {
   readonly T: number
   readonly K: number
-  readonly transitionAt: (t: number) => Matrix
+  readonly transitionAt: (t: number) => Rows
 }
 
 function check(chain: ChainModel, name: string): Checked {
@@ -61,7 +60,7 @@ function check(chain: ChainModel, name: string): Checked {
     if (row.length !== K) throw new MdmlError('shape', `${name}: every emission row needs ${K} entries`)
   const tr = chain.logTransition
   const perStep = Array.isArray(tr[0]?.[0])
-  const mats = (perStep ? tr : [tr]) as readonly Matrix[]
+  const mats = (perStep ? tr : [tr]) as readonly Rows[]
   for (const m of mats) {
     if (m.length !== K || m.some((r) => r.length !== K))
       throw new MdmlError('shape', `${name}: transitions must be ${K} x ${K}`)
@@ -137,7 +136,7 @@ function scaledRecursions(
   chain: ChainModel,
   T: number,
   K: number,
-  transitionAt: (t: number) => Matrix,
+  transitionAt: (t: number) => Rows,
 ): ForwardBackwardResult {
   const emission = chain.logEmission.map((r) => shifted(r))
   const init = shifted(chain.logInitial)
@@ -200,7 +199,7 @@ function logRecursions(
   chain: ChainModel,
   T: number,
   K: number,
-  transitionAt: (t: number) => Matrix,
+  transitionAt: (t: number) => Rows,
 ): ForwardBackwardResult {
   const E = chain.logEmission
   const logAlpha: number[][] = [chain.logInitial.map((l, k) => l + (E[0]?.[k] ?? 0))]

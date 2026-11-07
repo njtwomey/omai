@@ -27,10 +27,10 @@ import {
   chain,
   type GradientTransformation,
   type LearningRate,
+  type ParamTree,
   scaleByAdagrad,
   scaleByLearningRate,
   scaleByRms,
-  type Tree,
   traceMomentum,
 } from './transform.ts'
 
@@ -137,8 +137,8 @@ export function adagrad(options: AdagradOptions): GradientTransformation<unknown
 
 /** State of {@link scaleByAdadelta}. */
 export interface AdadeltaState {
-  readonly squareAvg: Tree
-  readonly accDelta: Tree
+  readonly squareAvg: ParamTree
+  readonly accDelta: ParamTree
 }
 
 /**
@@ -215,8 +215,8 @@ export interface RpropOptions {
 
 /** State of {@link rprop}. */
 export interface RpropState {
-  readonly prev: Tree
-  readonly stepSize: Tree
+  readonly prev: ParamTree
+  readonly stepSize: ParamTree
 }
 
 /**
@@ -277,7 +277,7 @@ export interface AsgdState {
   readonly eta: number
   readonly mu: number
   /** The averaged iterate (Polyak-Ruppert average once averaging has started). */
-  readonly ax: Tree
+  readonly ax: ParamTree
 }
 
 /**
@@ -322,7 +322,7 @@ export function asgd(options: AsgdOptions = {}): GradientTransformation<AsgdStat
 /** State of {@link ema}. */
 export interface EmaState {
   readonly count: number
-  readonly ema: Tree
+  readonly ema: ParamTree
 }
 
 /**

@@ -10,7 +10,7 @@ import { z } from 'zod'
 import { MdmlError } from '../base/index.ts'
 import { type Key, keyFromPath } from '../random/index.ts'
 import { contains, type DictSpace, defaults, type SpaceValue } from '../space/index.ts'
-import type { DatasetGenerator, Generated, Knobs } from './generator.ts'
+import type { DatasetGenerator, Generated, GeneratorKnobs } from './generator.ts'
 import {
   correlatedFeaturesModifier,
   missingModifier,
@@ -49,16 +49,16 @@ export interface Modifier {
   readonly name: string
   readonly description: string
   readonly knobs: DictSpace
-  apply(key: Key, input: Generated, knobs: Knobs): Generated
+  apply(key: Key, input: Generated, knobs: GeneratorKnobs): Generated
 }
 
 /** A generator plus modifiers with their knobs and the seed, as plain data: everything needed to remake a dataset. */
 export interface Recipe {
   readonly generator: string
-  readonly knobs?: Knobs
+  readonly knobs?: GeneratorKnobs
   /** The seed every key derives from (default 0). */
   readonly seed?: number
-  readonly modifiers?: readonly { readonly name: string; readonly knobs?: Knobs }[]
+  readonly modifiers?: readonly { readonly name: string; readonly knobs?: GeneratorKnobs }[]
 }
 
 /** Where {@link makeFromRecipe} finds generators and modifiers by name. */
@@ -102,14 +102,14 @@ export const builtinModifiers: Readonly<Record<string, Modifier>> = Object.fromE
   ].map((m) => [m.name, m]),
 )
 
-function resolveKnobs(space: DictSpace, given: Knobs | undefined, owner: string): Knobs {
+function resolveKnobs(space: DictSpace, given: GeneratorKnobs | undefined, owner: string): GeneratorKnobs {
   for (const [name, value] of Object.entries(given ?? {})) {
     const s = space.spaces[name]
     if (s === undefined) throw new MdmlError('value', `${owner}: unknown knob ${name}`)
     if (!contains(s, value))
       throw new MdmlError('value', `${owner}: knob ${name} = ${String(value)} is outside its space`)
   }
-  return { ...(defaults(space) as Knobs), ...(given ?? {}) }
+  return { ...(defaults(space) as GeneratorKnobs), ...(given ?? {}) }
 }
 
 /**
@@ -137,7 +137,7 @@ export function makeFromRecipe(recipe: Recipe, catalogue: RecipeCatalogue): Gene
   const knobs = resolveKnobs(generator.knobs, recipe.knobs, generator.name)
   let out = generator.generate(keyFromPath(seed, 'recipe', generator.name), knobs)
   const modifiers = catalogue.modifiers ?? builtinModifiers
-  const stamps: { name: string; knobs: Knobs }[] = []
+  const stamps: { name: string; knobs: GeneratorKnobs }[] = []
   for (const [i, m] of (recipe.modifiers ?? []).entries()) {
     const modifier = modifiers[m.name]
     if (modifier === undefined) throw new MdmlError('value', `makeFromRecipe: unknown modifier ${m.name}`)
@@ -149,7 +149,7 @@ export function makeFromRecipe(recipe: Recipe, catalogue: RecipeCatalogue): Gene
   return { data: { ...out.data, meta } as Generated['data'], truth: out.truth }
 }
 
-function knobText(knobs: Knobs | undefined): string {
+function knobText(knobs: GeneratorKnobs | undefined): string {
   const entries = Object.entries(knobs ?? {})
   return entries.length === 0 ? '' : ` (${entries.map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(', ')})`
 }

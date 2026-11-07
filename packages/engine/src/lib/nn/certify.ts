@@ -354,7 +354,7 @@ export function smoothingAlgorithm(
 }
 
 /** Lower and upper bounds on a tensor, elementwise. */
-export interface Bounds {
+export interface IntervalBounds {
   readonly lower: Tensor
   readonly upper: Tensor
 }
@@ -382,7 +382,7 @@ function layersOf(model: Sequential, params: Params): { layer: Sequential['layer
 const toT = (v: Value): Tensor => asTensor(v) as Tensor
 
 /** Interval arithmetic through a linear layer: the centre maps through, the radius through the absolute weights. */
-function linearBounds(layer: Linear, p: Params, b: Bounds): Bounds {
+function linearBounds(layer: Linear, p: Params, b: IntervalBounds): IntervalBounds {
   const w = p['weight'] as Value
   const mid = mul(add(b.lower, b.upper), 0.5)
   const rad = mul(sub(b.upper, b.lower), 0.5)
@@ -393,9 +393,9 @@ function linearBounds(layer: Linear, p: Params, b: Bounds): Bounds {
 
 /** The result of {@link intervalBoundPropagation}: bounds on the output and after each layer. */
 export interface IbpResult {
-  readonly output: Bounds
+  readonly output: IntervalBounds
   /** The bounds on the input of the network, then after each layer. */
-  readonly layers: readonly Bounds[]
+  readonly layers: readonly IntervalBounds[]
 }
 
 /**
@@ -425,8 +425,8 @@ export function intervalBoundPropagation(
   upper: TensorLike,
   params: Params = model.params,
 ): IbpResult {
-  let b: Bounds = { lower: toT(asTensor(lower)), upper: toT(asTensor(upper)) }
-  const layers: Bounds[] = [b]
+  let b: IntervalBounds = { lower: toT(asTensor(lower)), upper: toT(asTensor(upper)) }
+  const layers: IntervalBounds[] = [b]
   for (const { layer, params: p } of layersOf(model, params)) {
     if (layer instanceof Linear) b = linearBounds(layer, p, b)
     else if (MONOTONE.has(layer.kind))

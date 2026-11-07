@@ -3,9 +3,9 @@ import { sliceAxis, type Tensor } from '../tensor/index.ts'
 import type { Criterion } from './criteria.ts'
 import { decisionTreeClassifier, decisionTreeRegressor } from './decision-tree.ts'
 import { costComplexityPath } from './prune.ts'
-import { leafCount, type Tree, treeFeatureImportances } from './tree.ts'
+import { type FittedTree, leafCount, treeFeatureImportances } from './tree.ts'
 
-const arrays = (t: Tree, classifier: boolean) => ({
+const arrays = (t: FittedTree, classifier: boolean) => ({
   feature: t.feature,
   threshold: t.threshold,
   left: t.left,

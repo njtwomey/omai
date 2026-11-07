@@ -30,7 +30,7 @@ export interface LayoutGraph {
 }
 
 /** A placed box: its centre and size. */
-export interface Box {
+export interface LayoutBox {
   readonly x: number
   readonly y: number
   readonly width: number
@@ -50,9 +50,9 @@ export interface EdgeRoute {
  * @index structure What every layout returns: node boxes, edge routes and group boxes.
  */
 export interface GraphLayout {
-  readonly nodes: Readonly<Record<string, Box>>
+  readonly nodes: Readonly<Record<string, LayoutBox>>
   readonly edges: readonly EdgeRoute[]
-  readonly groups: Readonly<Record<string, Box>>
+  readonly groups: Readonly<Record<string, LayoutBox>>
   readonly width: number
   readonly height: number
 }
@@ -64,7 +64,7 @@ export interface GraphLayout {
  * @param towards - A point outside it.
  * @returns The boundary point.
  */
-export function boxBoundary(box: Box, towards: readonly [number, number]): [number, number] {
+export function boxBoundary(box: LayoutBox, towards: readonly [number, number]): [number, number] {
   const dx = towards[0] - box.x
   const dy = towards[1] - box.y
   if (dx === 0 && dy === 0) return [box.x, box.y]
@@ -81,7 +81,7 @@ export function boxBoundary(box: Box, towards: readonly [number, number]): [numb
  * @param edges - The edges.
  * @returns One route per edge whose ends are both placed.
  */
-export function straightRoutes(nodes: Readonly<Record<string, Box>>, edges: readonly LayoutEdge[]): EdgeRoute[] {
+export function straightRoutes(nodes: Readonly<Record<string, LayoutBox>>, edges: readonly LayoutEdge[]): EdgeRoute[] {
   return edges.flatMap((e) => {
     const a = nodes[e.from]
     const b = nodes[e.to]
@@ -100,9 +100,9 @@ export function straightRoutes(nodes: Readonly<Record<string, Box>>, edges: read
  */
 export function groupBoxes(
   graph: LayoutGraph,
-  nodes: Readonly<Record<string, Box>>,
+  nodes: Readonly<Record<string, LayoutBox>>,
   padding = 12,
-): Record<string, Box> {
+): Record<string, LayoutBox> {
   const extent = new Map<string, [number, number, number, number]>()
   for (const n of graph.nodes) {
     const b = nodes[n.id]
@@ -115,7 +115,7 @@ export function groupBoxes(
       Math.max(e[3], b.y + b.height / 2),
     ])
   }
-  const out: Record<string, Box> = {}
+  const out: Record<string, LayoutBox> = {}
   for (const [g, [x0, y0, x1, y1]] of extent) {
     const top = y0 - padding * 2
     const bottom = y1 + padding
@@ -135,13 +135,13 @@ export function groupBoxes(
  * @returns The normalised layout.
  */
 export function normaliseLayout(
-  nodes: Readonly<Record<string, Box>>,
+  nodes: Readonly<Record<string, LayoutBox>>,
   edges: readonly EdgeRoute[],
-  groups: Readonly<Record<string, Box>>,
+  groups: Readonly<Record<string, LayoutBox>>,
   margin = 16,
 ): GraphLayout {
   let [x0, y0, x1, y1] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, -Infinity, -Infinity]
-  const take = (b: Box): void => {
+  const take = (b: LayoutBox): void => {
     x0 = Math.min(x0, b.x - b.width / 2)
     y0 = Math.min(y0, b.y - b.height / 2)
     x1 = Math.max(x1, b.x + b.width / 2)
@@ -153,8 +153,8 @@ export function normaliseLayout(
   if (!Number.isFinite(x0)) return { nodes: {}, edges: [], groups: {}, width: 2 * margin, height: 2 * margin }
   const dx = margin - x0
   const dy = margin - y0
-  const move = (b: Box): Box => ({ ...b, x: b.x + dx, y: b.y + dy })
-  const map = (r: Readonly<Record<string, Box>>): Record<string, Box> =>
+  const move = (b: LayoutBox): LayoutBox => ({ ...b, x: b.x + dx, y: b.y + dy })
+  const map = (r: Readonly<Record<string, LayoutBox>>): Record<string, LayoutBox> =>
     Object.fromEntries(Object.entries(r).map(([k, b]) => [k, move(b)]))
   return {
     nodes: map(nodes),
