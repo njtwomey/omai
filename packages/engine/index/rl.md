@@ -10,10 +10,10 @@ Reinforcement learning infrastructure, gymnasium style: environment and agent co
 - function `gae`: Generalised advantage estimation. `src/lib/rl/returns.ts:215` `mdml-engine/rl`
 - function `make`: Make an environment by name with wrappers, like gymnasium.make. `src/lib/rl/gym.ts:74` `mdml-engine/rl`
 - function `trainAgent`: Train an agent in an environment, with periodic evaluation. `src/lib/rl/training.ts:282` `mdml-engine/rl`
-- function `valueIteration`: Exact value iteration on a tabular MDP. `src/lib/rl/mdp.ts:321` `mdml-engine/rl`
+- function `valueIteration`: Exact value iteration on a tabular MDP. `src/lib/rl/mdp.ts:318` `mdml-engine/rl`
 
 - algorithm `trainingAlgorithm`: The RL training loop: act, step, learn, evaluate. `src/lib/rl/training.ts:214` `mdml-engine/rl`
-- algorithm `valueIterationAlgorithm`: Value iteration, one sweep per step. `src/lib/rl/mdp.ts:257` `mdml-engine/rl`
+- algorithm `valueIterationAlgorithm`: Value iteration, one sweep per step. `src/lib/rl/mdp.ts:254` `mdml-engine/rl`
 
 - structure `replayBuffer`: Replay buffer for off-policy learners. `src/lib/rl/buffers.ts:49` `mdml-engine/rl`
 - structure `tabularMdp`: A tabular MDP from transitions and rewards. `src/lib/rl/mdp.ts:63` `mdml-engine/rl`

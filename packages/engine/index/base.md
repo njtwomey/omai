@@ -2,7 +2,7 @@
 
 # base
 
-The foundation every other domain builds on: the library's error type `MdmlError` and its codes, the `Registry` shape that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`, `MetricResult`), small scalar helpers (clamping, extrema, bit counts), the canonical small vectors (`Vec2`, `Vec3`, `Vec4`) and the version. It imports nothing else from the engine.
+The foundation every other domain builds on: the library's error type `MdmlError` and its codes, the `Registry` shape that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`, `MetricResult`), small scalar helpers (clamping, extrema, bit counts), the canonical small vectors (`Vec2`, `Vec3`, `Vec4`), complex numbers as pairs (`Complex`, `cmul`, `cdiv`...) and the version. It imports nothing else from the engine.
 
 - structure `json.ts` (file): Lossless JSON for anything that crosses a boundary. `src/lib/base/json.ts:1` `mdml-engine/base`
 - structure `registry.ts` (file): Registries of named entries, the shape dataset and environment registries share. `src/lib/base/registry.ts:1` `mdml-engine/base`

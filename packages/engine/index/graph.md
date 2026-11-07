@@ -6,7 +6,7 @@ Graphs and graph algorithms, NetworkX style: the `graph` data type and its const
 
 - structure `graph.ts` (file): The graph data type, NetworkX style, directed or not, weighted. `src/lib/graph/graph.ts:1` `mdml-engine/graph`
 
-- function `bfs`: Breadth-first search, also available as a traced algorithm. `src/lib/graph/traversal.ts:135` `mdml-engine/graph`
+- function `bfs`: Breadth-first search, also available as a traced algorithm. `src/lib/graph/traversal.ts:134` `mdml-engine/graph`
 - function `dijkstra`: Single-source shortest paths with non-negative weights. `src/lib/graph/paths.ts:78` `mdml-engine/graph`
 - function `graph`: Build a graph from an edge list. `src/lib/graph/graph.ts:112` `mdml-engine/graph`
 - function `louvain`: Louvain community detection. `src/lib/graph/community.ts:268` `mdml-engine/graph`

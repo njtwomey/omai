@@ -6,4 +6,4 @@ Embeddings learned from data: word vectors by prediction (word2vec's skip-gram a
 
 - function `knowledge-graph.ts` (file): Knowledge-graph embeddings: TransE, DistMult, ComplEx, RotatE. `src/lib/embedding/knowledge-graph.ts:1` `mdml-engine/embedding`
 
-- function `trainWord2vec`: Train skip-gram or CBOW word vectors with negative sampling. `src/lib/embedding/word2vec.ts:644` `mdml-engine/embedding`
+- function `trainWord2vec`: Train skip-gram or CBOW word vectors with negative sampling. `src/lib/embedding/word2vec.ts:643` `mdml-engine/embedding`

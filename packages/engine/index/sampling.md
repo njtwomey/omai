@@ -13,7 +13,7 @@ Monte Carlo, BlackJAX and ArviZ style: log-density targets, Metropolis, Hamilton
 - algorithm `samplerAlgorithm`: Run any MCMC kernel as a steppable Algorithm. `src/lib/sampling/chains.ts:181` `mdml-engine/sampling`
 - algorithm `smcAlgorithm`: Sequential Monte Carlo, one tempering step at a time. `src/lib/sampling/smc.ts:418` `mdml-engine/sampling`
 
-- table `rejectionSamplers`: The exact samplers as one slot. `src/lib/sampling/rejection-options.ts:97` `mdml-engine/sampling`
+- table `rejectionSamplers`: The exact samplers as one slot. `src/lib/sampling/rejection-options.ts:89` `mdml-engine/sampling`
 
 ## sampling/diagnostics
 

@@ -12,13 +12,13 @@ The toolkit around models, scikit-learn style: the estimator protocol, preproces
 
 - function `activeLearning`: Pool-based active learning with query strategies. `src/lib/learn/active-learning.ts:1086` `mdml-engine/learn`
 
-- estimator `calibratedClassifierCV`: Calibrate a classifier's probabilities by cross-validation. `src/lib/learn/calibration.ts:732` `mdml-engine/learn`
+- estimator `calibratedClassifierCV`: Calibrate a classifier's probabilities by cross-validation. `src/lib/learn/calibration.ts:730` `mdml-engine/learn`
 - estimator `columnTransformer`: Apply different transformers to different columns. `src/lib/learn/compose.ts:696` `mdml-engine/learn`
 - estimator `discriminantAnalysis`: Linear and quadratic discriminant analysis. `src/lib/learn/discriminant.ts:381` `mdml-engine/learn`
 - estimator `kNeighboursClassifier`: k-nearest-neighbour classifier under any distance. `src/lib/learn/neighbours.ts:452` `mdml-engine/learn`
-- estimator `labelPropagation`: Semi-supervised labelling by propagation over a neighbour graph. `src/lib/learn/semi-supervised.ts:1189` `mdml-engine/learn`
+- estimator `labelPropagation`: Semi-supervised labelling by propagation over a neighbour graph. `src/lib/learn/semi-supervised.ts:1187` `mdml-engine/learn`
 - estimator `naiveBayes`: Naive Bayes classifier with Gaussian, categorical or other likelihoods. `src/lib/learn/naive-bayes.ts:430` `mdml-engine/learn`
-- estimator `oneVsRest`: Turn a binary classifier into a multiclass one. `src/lib/learn/multiclass.ts:143` `mdml-engine/learn`
+- estimator `oneVsRest`: Turn a binary classifier into a multiclass one. `src/lib/learn/multiclass.ts:136` `mdml-engine/learn`
 - estimator `pipeline`: Chain of steps fitted in order, like sklearn Pipeline. `src/lib/learn/compose.ts:263` `mdml-engine/learn`
 - estimator `selectKBest`: Keep the k features with the best univariate scores. `src/lib/learn/feature-selection.ts:367` `mdml-engine/learn`
 

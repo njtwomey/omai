@@ -6,6 +6,6 @@ The reinforcement-learning environments, constructables over the contracts of `r
 
 - structure `models.ts` (file): Differentiable models of control environments for planners. `src/lib/environments/models.ts:1` `mdml-engine/environments`
 
-- structure `cartPole`: CartPole-v1 environment definition. `src/lib/environments/classic-control.ts:145` `mdml-engine/environments`
+- structure `cartPole`: CartPole-v1 environment definition. `src/lib/environments/classic-control.ts:141` `mdml-engine/environments`
 
 - table `environmentRegistry`: Tagged registry of every environment, with action and observation kinds. `src/lib/environments/registry.ts:319` `mdml-engine/environments`

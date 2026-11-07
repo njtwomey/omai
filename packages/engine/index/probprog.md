@@ -15,4 +15,4 @@ The inference engines, part of `mdml-engine/probprog`: exact ones (enumeration, 
 - function `mcmc`: Run MCMC on a program and return a posterior. `src/lib/probprog/engines/nuts.ts:480` `mdml-engine/probprog`
 - function `svi`: Stochastic variational inference for a model and a guide. `src/lib/probprog/engines/svi.ts:221` `mdml-engine/probprog`
 
-- table `mcmcKernels`: The MCMC kernels as one slot. `src/lib/probprog/engines/mcmc-options.ts:66` `mdml-engine/probprog`
+- table `mcmcKernels`: The MCMC kernels as one slot. `src/lib/probprog/engines/mcmc-options.ts:40` `mdml-engine/probprog`
