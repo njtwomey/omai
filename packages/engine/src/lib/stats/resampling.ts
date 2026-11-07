@@ -110,7 +110,10 @@ function arrangements(type: PermutationType, data: readonly Float64Array[]): num
     const n = sizes[0] ?? 0
     return data.length === 1 ? 2 ** n : factorialOf(data.length) ** n
   }
-  return sizes.reduce((s, n) => s * factorialOf(n), 1)
+  // Pairings: the first sample keeps its order and each other sample is permuted (scipy's count, n!^(k - 1)): permuting
+  // every sample would repeat each pairing n! times and push an enumerable test over `nResamples`. A single sample (an
+  // index vector that the statistic pairs with data of its own) is the one that is permuted.
+  return sizes.slice(sizes.length > 1 ? 1 : 0).reduce((s, n) => s * factorialOf(n), 1)
 }
 
 /** Build the samples of arrangement `rank` (exact) or of a random arrangement (key). */
@@ -167,6 +170,7 @@ function arrange(type: PermutationType, data: readonly Float64Array[], rank: num
   }
   let r = exact ? rank : 0
   return data.map((d, g) => {
+    if (g === 0 && data.length > 1) return Float64Array.from(d)
     const n = d.length
     const p = exact ? unrankPermutation(n, r % factorialOf(n)) : Array.from(permutation(foldIn(rank, g), n).data)
     if (exact) r = Math.floor(r / factorialOf(n))
