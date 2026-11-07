@@ -209,18 +209,28 @@ function spread(values: readonly number[]): number {
  *
  * @param rates - Each group's rates.
  * @param reference - The reference group for disparate impact.
+ * @param counts - Each group's number of rows; a group with none is left out of every gap (its rates are all 0 by the
+ *   convention of {@link tableRates}, which would otherwise count as a group that is never selected).
  * @returns The disparities.
  * @example
  * ```ts
  * import { groupDisparities, tableRates } from 'mdml-engine/exposition'
  * const d = groupDisparities([tableRates([[5, 5], [0, 10]]), tableRates([[6, 4], [4, 6]])], 0)
  * d[0]?.value // => 0.25
+ * const e = groupDisparities([tableRates([[5, 5], [0, 10]]), tableRates([[6, 4], [4, 6]]), tableRates([[0, 0], [0, 0]])], 0, [20, 20, 0])
+ * e[0]?.value // => 0.25
  * ```
  */
-export function groupDisparities(rates: readonly GroupRateValues[], reference: number): GroupDisparity[] {
-  const pick = (r: GroupRateName): number[] => rates.map((v) => v[r])
+export function groupDisparities(
+  rates: readonly GroupRateValues[],
+  reference: number,
+  counts?: readonly number[],
+): GroupDisparity[] {
+  // A group with no rows has every rate 0 by the table's convention, not a rate: it is left out of the gaps.
+  const live = (g: number): boolean => counts === undefined || (counts[g] ?? 0) > 0
+  const pick = (r: GroupRateName): number[] => rates.filter((_, g) => live(g)).map((v) => v[r])
   const ref = rates[reference]?.selectionRate ?? 0
-  const others = rates.filter((_, g) => g !== reference).map((v) => v.selectionRate)
+  const others = rates.filter((_, g) => g !== reference && live(g)).map((v) => v.selectionRate)
   const impact = ref === 0 ? Number.NaN : Math.min(minOf(others.map((v) => v / ref)), Number.POSITIVE_INFINITY)
   return [
     { name: 'demographic parity difference', value: spread(pick('selectionRate')), ideal: 0, kind: 'difference' },
@@ -269,7 +279,7 @@ export function groupReportFromTables(input: GroupTablesInput): Omit<GroupReport
     counts,
     rates,
     overall: tableRates(total),
-    disparities: groupDisparities(rates, reference),
+    disparities: groupDisparities(rates, reference, counts),
   }
 }
 
