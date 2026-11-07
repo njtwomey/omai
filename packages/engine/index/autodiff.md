@@ -6,7 +6,7 @@ Differentiation as function transforms, JAX style: reverse mode (`grad`, `vjp`, 
 
 - function `transforms.ts` (file): JAX-style grad, vjp, jvp, Jacobians and Hessians. `src/lib/autodiff/transforms.ts:1` `mdml-engine/autodiff`
 
-- function `checkPrimitive`: Conformance test every primitive's jvp and vjp must pass. `src/lib/autodiff/check.ts:220` `mdml-engine/autodiff`
+- function `checkPrimitive`: Conformance test every primitive's jvp and vjp must pass. `src/lib/autodiff/check.ts:276` `mdml-engine/autodiff`
 - function `checkpoint`: Gradient checkpointing: recompute the forward pass instead of storing it. `src/lib/autodiff/custom.ts:258` `mdml-engine/autodiff`
 - function `customVjp`: Define a function with a hand-written reverse rule. `src/lib/autodiff/custom.ts:62` `mdml-engine/autodiff`
 - function `grad`: Gradient of a scalar function of a pytree, like jax.grad. `src/lib/autodiff/transforms.ts:144` `mdml-engine/autodiff`

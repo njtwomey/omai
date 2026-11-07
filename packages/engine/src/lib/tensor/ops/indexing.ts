@@ -583,7 +583,7 @@ export function searchsorted(sorted: TensorLike, values: TensorLike, side: 'left
 }
 
 /**
- * Sorted unique values of a concrete array, with counts.
+ * Sorted unique values of a concrete array, with counts (NaNs count as one value and sort last, as in numpy).
  *
  * @param x - A concrete input.
  * @returns `{ values, counts }` as 1-D tensors.
@@ -597,7 +597,10 @@ export function unique(x: TensorLike): { readonly values: Tensor; readonly count
   const t = concreteOrThrow(val(x), 'unique')
   const counts = new Map<number, number>()
   for (const v of t.data) counts.set(v, (counts.get(v) ?? 0) + 1)
-  const keys = [...counts.keys()].sort((a, b) => a - b)
+  // NaN sorts last (as numpy), which the plain difference cannot say: it gives NaN against everything
+  const keys = [...counts.keys()].sort((a, b) =>
+    Number.isNaN(a) ? (Number.isNaN(b) ? 0 : 1) : Number.isNaN(b) ? -1 : a - b,
+  )
   const values = allocate(t.dtype, keys.length)
   keys.forEach((k, i) => {
     values[i] = k

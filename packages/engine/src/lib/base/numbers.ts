@@ -106,11 +106,12 @@ export function kahanSum(xs: ArrayLike<number>): number {
   for (let i = 0; i < xs.length; i++) {
     const x = xs[i] ?? 0
     const t = sum + x
-    // Neumaier's variant also handles terms larger than the running sum.
-    c += Math.abs(sum) >= Math.abs(x) ? sum - t + x : x - t + sum
+    // Neumaier's variant also handles terms larger than the running sum. An overflow or an infinity has no error to
+    // recover (and would turn the compensation into NaN), so the sum carries it on as it is.
+    if (Number.isFinite(t)) c += Math.abs(sum) >= Math.abs(x) ? sum - t + x : x - t + sum
     sum = t
   }
-  return sum + c
+  return Number.isFinite(sum) ? sum + c : sum
 }
 
 /**

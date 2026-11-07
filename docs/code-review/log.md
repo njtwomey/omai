@@ -390,3 +390,45 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   Tests added: 1 `it.each` (7 rows). Surface: 1 added (`tensor#toVector`), 11 changed.
 - **17:55 Gate.** The duplicate-cluster, failure-convention and native-array stage 1 merges passed the full local gate together: 26,438 tests, 9,613 examples, all static
   checks and all six tsc runs, no failure on the first run. 143 commits are ahead of `origin/main`; nothing is pushed (D-014).
+- **17:50 Wave D, core tests (`agent-ts02-core-tests`: P3.16 and P3.7).** A test file per gap, tables of references from one-off numpy 2.5 and scipy runs
+  (no oracle fixtures), +25 `it` blocks and about 400 table rows (rows are free). FD-32: `checkPrimitive` takes `order: 2`, which checks the Hessian-vector
+  product by forward over reverse and by reverse over forward against a five-point difference of the first-order gradient (each coordinate stepped in
+  proportion to its own size, so an input mixing 0.5 and 200 is differenced well); it is on in the elementwise and structural property tables, the
+  gather/scatter table and the special-function and linear-algebra conformance tables (a deliberately wrong second-order rule, one through a kernel and one
+  with a flipped sign, is caught in `check.test.ts`). No second-order rule was wrong; the Bessel and elliptic evaluators carry about 1e-9 of gradient error,
+  so their rows check second derivatives to 1e-2 beside the tight first-order check. FD-31: `tensor/dtype.test.ts` is a table of 52 one-operand and 16
+  two-operand rows over bool, int32, float32 and float64 (result dtype, storage class, values), plus `resultType`, `weakResultType`, `finfo`, `iinfo`,
+  `broadcastShapes` and `normaliseAxis` against numpy, and about 90 new numpy-referenced rows in `tensor/degenerate.test.ts` (empty and zero-size axes,
+  NaN and Infinity in reductions, comparisons, sorting and `unique`, signed zeros, int32 wraparound, float32 overflow, slicing and `take` at the edges,
+  empty `matmul`, an empty-shape table, and a table of calls that throw where numpy returns NaN). Bugs found by the new rows and fixed, each in its own
+  commit with the failing row first: `weakResultType(int32, -2147483648)` gave float64 (the bound was one too tight); `tril` and `triu` of a bool mask gave
+  int32 (a weak `0` in the `where`); `unique` put NaN first (its numeric comparator is NaN against everything; numpy collapses NaNs and sorts them last);
+  `kahanSum([1, Infinity])` and `kahanSum([1e308, 1e308])` were NaN (the Neumaier term became `Infinity - Infinity`); `wishart`, `inverseWishart` and `lkj`
+  `logProb` threw `cholesky: matrix is not positive definite` outside the support instead of answering -Infinity (the `where(inSupport, ...)` at the end was
+  there, the Cholesky factor of the argument came first). Deliberate differences from numpy that the tables now pin and that are not bugs: bool arithmetic is
+  int32 (numpy keeps bool for `+`, `*`, `max`, `min` and raises for `-` and `neg`), no float16 (a float function of a bool is float64), `floor`, `ceil`,
+  `round` and `pow` of integers and `reciprocal` of an integer are float64 (numpy 2.1 and later keep integer dtypes there and raise for a negative
+  integer power), `variance` of nothing or with no degrees of freedom throws `value` (numpy: NaN), `linspace(a, b, 0)` throws (numpy: empty), and float32
+  reductions accumulate in float64 (numpy accumulates in float32, so `sum([16777216, 1, 1, 1, 1])` is 16777220 here and 16777216 there). Noted, not changed:
+  `argmaxOf` of a list with a NaN after its first element skips the NaN (numpy returns the first NaN; `argmax` of the tensor module does). FD-34: `trace/drivers.test.ts`
+  runs one stochastic algorithm (state moves by a number drawn from its step key, `done` fires at step 9 with `diverged`, `observe` and checkpoints on)
+  through `runAlgorithm`, `iterate`, `runFor` in slices of 4 and `session` in eager and live mode and compares the keys of every step, every state, the
+  status and the recorded tape (metrics, checkpoints, end); the same file runs `replay`, `mergeRuns`, `isRun` and `filtered`. The smoke part of FD-34 is
+  in the domain files: `base/errors.test.ts` (`invariant`, `assertFinite`, `assertShape`, `isMdmlError`), `tensor/creation.test.ts` (`geomspace`, `logspace`,
+  `fullLike`, `onesLike`, `diag`, `meshgrid`, `flatten`, `chunk`), `tensor/dtype.test.ts` (`finfo`), the `custom.test.ts` rows (`linearize`, `stopGradient`)
+  and `indexing.test.ts` (`nonzero`, `maskedSelect` in `degenerate.test.ts`). FD-33 (goodness of fit of the samplers) waits: it is written against `random`
+  signatures that another agent is changing. P3.7: `exposition/subgroups.test.ts` (12 of 12 functions), `tensor/format.test.ts` (14.3% to 100%),
+  `tensor/ops/indexing.test.ts` (sort, argsort, topk, take-along-axis, one-hot, bincount, segment sum, every scatter mode against numpy's `ufunc.at`, vmap of
+  each), `base/numbers.test.ts` (38% to 98.8%, all 29 functions), `base/errors.test.ts` (28.6% to 100%), `autodiff/custom.test.ts` (`customVjp` in reverse, vmap
+  and with a jvp rule, `stopGradient`), `dists`: `compose/structure.test.ts` (truncated normal and binomial against `scipy.stats`, the lognormal as `exp` of a normal and
+  minus a lognormal through a decreasing map, a censored normal by quadrature, a weighted empirical, `deterministic`), `continuous/heavy-tailed.test.ts`
+  (Cauchy, half-Cauchy, sinh-arcsinh moments, entropy and mode by quadrature), `relaxed.test.ts` (the relaxed Bernoulli against the logistic density of its
+  logit, the two-category relaxed one-hot reducing to it, no closed form where documented), `multivariate/lkj.test.ts` (LKJ 2 by 2 as a beta, 3 by 3 uniform
+  with the volume pi^2 / 2); `data/archives.test.ts`: `parseNpy` against 21 files numpy wrote (every dtype, big-endian, Fortran order in 2-D and 3-D, scalars, empty arrays, formats 2
+  and 3), `parseCsv` against Python's `csv`, and `untar` of a tar.gz Python wrote (`parseNpy` was never tested; `archives.ts` is bytes in and text or floats out, so I
+  took it not to be in the native-array change of `random` and `data`; if that agent does change it, the tests move with it). Not done: `data/batching.ts` (8 of 33 functions, `data` signatures are changing), the
+  goodness-of-fit and key-independence tests (FD-33), and branch coverage of `tensor/_cpu` (still 60 to 68%: its branches are the dtype and layout cases the
+  matrix now runs, but a branch table per kernel was not written). Coverage of the 22 files named, statements and branches, before and after (the tests of
+  `tensor`, `autodiff`, `base`, `exposition`, `dists`, `trace`; `data` for `archives.ts`): see the `progress.md` row. The five domains and `trace` and `data`: 131 files, 2,720 tests passed;
+  the 10 caller domains of the fixed functions (197 files, 3,486 tests) passed. Surface: 0 added, 0 removed, 1 changed (`CheckOptions` gains `order`);
+  `docs/api-surface.txt` regenerated. Own checks only; the full gate was not run.

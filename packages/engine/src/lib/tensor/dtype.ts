@@ -102,7 +102,8 @@ export function resultType(a: DType, b: DType): DType {
  */
 export function weakResultType(dtype: DType, scalar: number): DType {
   if (isFloat(dtype)) return dtype
-  if (Number.isInteger(scalar) && Math.abs(scalar) <= 2147483647) return dtype === 'bool' ? 'int32' : dtype
+  if (Number.isInteger(scalar) && scalar >= -2147483648 && scalar <= 2147483647)
+    return dtype === 'bool' ? 'int32' : dtype
   return 'float64'
 }
 

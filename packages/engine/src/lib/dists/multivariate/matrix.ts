@@ -42,12 +42,24 @@ import {
   type Distribution,
   defineDistribution,
   inSupport,
+  type Support,
   unavailable,
   validateParams,
 } from '../distribution.ts'
 import { type CovarianceParams, scaleTrilOf } from './normal.ts'
 
 const transposeLast = (m: Value): Value => swapaxes(m, -1, -2)
+
+/**
+ * The matrix a density is evaluated on: the argument where it lies in the support and the identity where it does not
+ * (a matrix outside the support has no Cholesky factor, so the factor of the argument itself would throw instead of the
+ * density being -Infinity there).
+ */
+function insideOrIdentity(x: Value, support: Support): Value {
+  const ok = inSupport(support, x)
+  const p = x.shape[x.shape.length - 1] ?? 0
+  return where(expandDims(expandDims(ok, -1), -1), x, eye(p))
+}
 const logDetFromTril = (l: Value): Value => mul(sum(log(diagonal(l, 0, -2, -1)), -1), 2)
 
 /**
@@ -129,7 +141,7 @@ export function wishart(df: TensorLike, params: CovarianceParams): Distribution 
     batchShape,
     eventShape: [p, p],
     logProb: (x) => {
-      const lx = cholesky(x)
+      const lx = cholesky(insideOrIdentity(x, { kind: 'positiveDefinite' }))
       // tr(Sigma^{-1} X) = |L^{-1} L_X|_F^2.
       const m = solveTriangular(l, lx, { lower: true })
       const trace = sum(sum(square(m), -1), -1)
@@ -198,7 +210,7 @@ export function inverseWishart(df: TensorLike, scale: TensorLike): Distribution 
     batchShape,
     eventShape: [p, p],
     logProb: (x) => {
-      const lx = cholesky(x)
+      const lx = cholesky(insideOrIdentity(x, { kind: 'positiveDefinite' }))
       // tr(Psi X^{-1}) = |L_X^{-1} L_Psi|_F^2.
       const m = solveTriangular(lx, lp, { lower: true })
       const trace = sum(sum(square(m), -1), -1)
@@ -330,7 +342,7 @@ export function lkj(dim: number, concentration: TensorLike = 1): Distribution {
     batchShape,
     eventShape: [dim, dim],
     logProb: (c) => {
-      const l = cholesky(c)
+      const l = cholesky(insideOrIdentity(c, { kind: 'correlation' }))
       const value = sub(mul(sub(eta, 1), logDetFromTril(l)), logNorm)
       return where(inSupport({ kind: 'correlation' }, c), value, Number.NEGATIVE_INFINITY)
     },

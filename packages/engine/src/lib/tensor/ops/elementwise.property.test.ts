@@ -86,7 +86,7 @@ describe('elementwise unary primitives conform', () => {
     for (const shape of unaryShapes) {
       it(`${name} on [${shape.join(', ')}]`, () => {
         fc.assert(
-          fc.property(gen(shape), (x) => expectConformant(f, [x])),
+          fc.property(gen(shape), (x) => expectConformant(f, [x], { order: 2 })),
           { numRuns: RUNS },
         )
       })
@@ -111,7 +111,7 @@ describe('elementwise binary primitives conform, with broadcasting', () => {
     for (const [sa, sb] of binaryShapes) {
       it(`${name} on [${sa.join(', ')}] and [${sb.join(', ')}]`, () => {
         fc.assert(
-          fc.property(genA(sa), genB(sb), (a, b) => expectConformant(f, [a, b])),
+          fc.property(genA(sa), genB(sb), (a, b) => expectConformant(f, [a, b], { order: 2 })),
           { numRuns: RUNS },
         )
       })
