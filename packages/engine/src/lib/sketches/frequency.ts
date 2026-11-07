@@ -5,7 +5,7 @@
  * addition; each has its error guarantee stated in its documentation and checked in its property tests.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, minOf } from '../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 import { fmix32, hash32, itemFromKey, itemKey, type SketchItem, type SketchSeed, seedOf } from './hashing.ts'
 
@@ -457,7 +457,7 @@ export function spaceSavingTopK(k: number): SpaceSavingTopK {
     throw new MdmlError('value', `spaceSavingTopK: k must be a positive integer, got ${k}`)
   const entries: SpaceSavingEntry[] = []
   let total = 0
-  const smallest = (): number => (entries.length < k ? 0 : Math.min(...entries.map((e) => e.count)))
+  const smallest = (): number => (entries.length < k ? 0 : minOf(entries.map((e) => e.count)))
   return {
     k,
     get totalCount() {

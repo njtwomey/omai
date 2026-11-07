@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { GROUP_RATES, type GroupRateName, type GroupReport, groupReportAt } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -101,7 +102,7 @@ export function groupGapsPanel(
   const ref = record.rates[record.reference]
   const others = record.groups.flatMap((name, g) => (g === record.reference ? [] : [{ name, g }]))
   const gaps = others.flatMap(({ g }) => rates.map((r) => (record.rates[g]?.[r] ?? 0) - (ref?.[r] ?? 0)))
-  const top = Math.max(0.1, ...gaps.map(Math.abs))
+  const top = Math.max(0.1, maxOf(gaps.map(Math.abs)))
   return {
     layers: [
       bars(

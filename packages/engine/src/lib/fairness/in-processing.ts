@@ -5,7 +5,7 @@
  * and the grid search over multipliers that traces the accuracy-fairness trade-off.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type Estimator, type Fitted, requireVerb } from '../learn/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { linprog } from '../optim/index.ts'
@@ -52,7 +52,7 @@ interface Moments {
 
 function moments(constraint: ReductionConstraint, groups: readonly number[], labels: readonly number[]): Moments {
   const n = groups.length
-  const k = Math.max(...groups) + 1
+  const k = maxOf(groups) + 1
   const events = constraint === 'equalisedOdds' ? 2 : 1
   // Each row's event (-1 for rows outside every event: the negatives for TPR parity, the positives for FPR parity).
   const eventOf = (i: number): number => {
@@ -403,7 +403,7 @@ function exponentiatedGradientRun(
         )
         const projected = m.project(lambda)
         const L = error + projected.reduce((a, l, c) => a + l * ((gamma[c] ?? 0) - bound), 0)
-        const maxConstraint = Math.max(...gamma.map((g) => g - bound))
+        const maxConstraint = maxOf(gamma.map((g) => g - bound))
         return { L, high: error + (maxConstraint > 0 ? B * maxConstraint : 0), gamma, error }
       }
       const evalGap = (q: readonly number[], lambda: readonly number[], nuValue: number) => {
@@ -478,11 +478,11 @@ function exponentiatedGradientRun(
       const step: ReductionStep = {
         iteration: t + 1,
         error: h.error,
-        violation: Math.max(0, ...h.gamma),
+        violation: Math.max(0, maxOf(h.gamma)),
         averageError: errorOf(labels, mix),
-        averageViolation: Math.max(0, ...m.gamma(mix)),
+        averageViolation: Math.max(0, maxOf(m.gamma(mix))),
         gap,
-        lambdaTotal: Math.max(...lambda.slice(0, m.half).map((v, c) => Math.abs(v - (lambda[c + m.half] ?? 0)))),
+        lambdaTotal: maxOf(lambda.slice(0, m.half).map((v, c) => Math.abs(v - (lambda[c + m.half] ?? 0)))),
       }
       ctx.log('eg/classifier', hIdx)
       ctx.log('eg/error', step.averageError)
@@ -497,7 +497,7 @@ function exponentiatedGradientRun(
       const stopped = gap < nuValue && t >= MIN_ITER
       if (!stopped) {
         if (t >= lastRegretChecked * REGRET_CHECK_INCREASE_T) {
-          const bestGap = Math.min(...gapsEG)
+          const bestGap = minOf(gapsEG)
           if (bestGap > (lastGap ?? Number.POSITIVE_INFINITY) * SHRINK_REGRET) eta2 *= SHRINK_ETA
           lastRegretChecked = t
           lastGap = bestGap
@@ -531,7 +531,7 @@ function exponentiatedGradientRun(
   const finish = (s: ExponentiatedGradientState): ExponentiatedGradientReduction => {
     if (fits.length < s.hs.length || fits.slice(0, s.hs.length).some((f) => f === undefined))
       throw new MdmlError('value', 'exponentiatedGradientReduction: the classifiers of a resumed run were not kept')
-    const minGap = Math.min(...s.gaps)
+    const minGap = minOf(s.gaps)
     let bestIteration = 0
     for (const [t, g] of s.gaps.entries()) if (g <= minGap + PRECISION) bestIteration = t
     const chosen = s.qs[bestIteration] ?? []
@@ -552,7 +552,7 @@ function exponentiatedGradientRun(
       baseline: {
         scores,
         error: errorOf(labels, baseDecisions),
-        violation: Math.max(0, ...m.gamma(baseDecisions)),
+        violation: Math.max(0, maxOf(m.gamma(baseDecisions))),
       },
     }
   }
@@ -760,7 +760,7 @@ function gridReductionRun(
         lambda: coefs[0] ?? 0,
         lambdas: coefs,
         error: errorOf(labels, decisions),
-        violation: Math.max(...m.gamma(decisions)),
+        violation: maxOf(m.gamma(decisions)),
       }
       fits[index] = fitted
       const points = [...s.points, point]
@@ -769,7 +769,7 @@ function gridReductionRun(
       ctx.log('grid/error', point.error)
       ctx.log('grid/violation', point.violation)
       ctx.log('grid/loss', lossOf(point))
-      ctx.log('grid/best', losses.indexOf(Math.min(...losses)))
+      ctx.log('grid/best', losses.indexOf(minOf(losses)))
       return { points }
     },
     done: (s) => (s.points.length >= size ? 'completed' : undefined),
@@ -784,7 +784,7 @@ function gridReductionRun(
     if (fits.length < s.points.length)
       throw new MdmlError('value', 'gridReduction: the classifiers of a resumed run were not kept')
     const losses = s.points.map(lossOf)
-    const best = losses.indexOf(Math.min(...losses))
+    const best = losses.indexOf(minOf(losses))
     return s.points.map((p, i) => ({ ...p, fitted: fits[i] as Fitted, best: i === best }))
   }
   return { algorithm, fits, size, finish }

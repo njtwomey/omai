@@ -5,7 +5,7 @@
  * `cdf` and `rank`; the randomised one draws its coins from a `Key`.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import { type Key, uniformStream } from '../random/index.ts'
 import { type P2State, p2Estimate, p2Push, p2Quantile } from '../stats/index.ts'
 import {
@@ -753,7 +753,7 @@ export function p2Algorithm(options: {
       const next = p2Push(s, items[s.n] ?? Number.NaN)
       ctx.log('sketch/size', next.heights.length)
       ctx.log('sketch/compress', 0)
-      ctx.log('sketch/error', Math.max(...next.desired.map((d, i) => Math.abs(d - (next.positions[i] ?? 0)))))
+      ctx.log('sketch/error', maxOf(next.desired.map((d, i) => Math.abs(d - (next.positions[i] ?? 0)))))
       ctx.log('sketch/quantile', [p2Estimate(next)])
       return next
     },

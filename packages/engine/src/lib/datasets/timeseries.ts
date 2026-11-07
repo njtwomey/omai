@@ -4,7 +4,7 @@
  * an ECG record shipped with SciPy as a pinned remote asset.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import {
   type DatasetGenerator,
   type DatasetRef,
@@ -803,7 +803,7 @@ export const coupledSeries: DatasetGenerator<TimeSeriesData> = {
       }
     } else {
       // x_t = 0.5 x_{t-1} + coupling * (sum of parents at lag) / sqrt(max parents) + noise: stable by construction.
-      const maxParents = Math.max(1, ...adjacency.map((row) => row.reduce((a, b) => a + b, 0)))
+      const maxParents = Math.max(1, maxOf(adjacency.map((row) => row.reduce((a, b) => a + b, 0))))
       const eps = normal(foldIn(k, 2), [(n + burn) * d]).data
       const x = new Float64Array((n + burn) * d)
       for (let t = 1; t < n + burn; t++)

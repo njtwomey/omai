@@ -11,7 +11,7 @@
  * stated assumptions and are usually loose.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
 import { binomialExact } from '../foundations/combinatorics.ts'
 import { svd } from '../numerics/linalg/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
@@ -228,8 +228,8 @@ const interval: ConceptClass = {
   realises: (points, labels) => {
     const pos = points.flatMap((p, i) => (labels[i] === true ? [coordinate(p)] : []))
     if (pos.length === 0) return true
-    const lo = Math.min(...pos)
-    const hi = Math.max(...pos)
+    const lo = minOf(pos)
+    const hi = maxOf(pos)
     return points.every((p, i) => labels[i] === true || coordinate(p) < lo || coordinate(p) > hi)
   },
 }
@@ -243,8 +243,8 @@ function boxes(dimension: number): ConceptClass {
     realises: (points, labels) => {
       const pos = points.filter((_, i) => labels[i] === true)
       if (pos.length === 0) return true
-      const lo = Array.from({ length: dimension }, (_, j) => Math.min(...pos.map((p) => coordinate(p, j))))
-      const hi = Array.from({ length: dimension }, (_, j) => Math.max(...pos.map((p) => coordinate(p, j))))
+      const lo = Array.from({ length: dimension }, (_, j) => minOf(pos.map((p) => coordinate(p, j))))
+      const hi = Array.from({ length: dimension }, (_, j) => maxOf(pos.map((p) => coordinate(p, j))))
       return points.every(
         (p, i) =>
           labels[i] === true || lo.some((l, j) => coordinate(p, j) < l) || hi.some((h, j) => coordinate(p, j) > h),
@@ -1023,7 +1023,7 @@ export function catoniBound(empiricalRisk: number, kl: number, n: number, delta:
     return at(c, delta)
   }
   const grid = Array.from({ length: 10 }, (_, i) => 2 ** (i - 3))
-  return Math.min(...grid.map((cc) => at(cc, delta / grid.length)))
+  return minOf(grid.map((cc) => at(cc, delta / grid.length)))
 }
 
 /**

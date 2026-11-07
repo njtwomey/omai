@@ -8,7 +8,7 @@
  * information functions give the precision of those estimates at each ability. Missing responses are `null`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { gaussHermite } from '../numerics/quadrature/index.ts'
 import {
   analyticObjective,
@@ -165,7 +165,7 @@ function expectations(
       if (x === null || x === undefined) continue
       for (let q = 0; q < Q; q++) lp[q] = (lp[q] ?? 0) + (x === 1 ? (logP[j]?.[q] ?? 0) : (logQ[j]?.[q] ?? 0))
     }
-    const mx = Math.max(...lp)
+    const mx = maxOf(lp)
     let z = 0
     for (let q = 0; q < Q; q++) z += Math.exp((lp[q] ?? 0) - mx)
     ll += mx + Math.log(z)
@@ -272,7 +272,7 @@ function mStep(model: IrtModel, eta0: number[], n: Float64Array, r: Float64Array
   let q = Q(eta)
   for (let it = 0; it < 20; it++) {
     const g = itemGradient(model, eta, n, r, grid)
-    if (Math.max(...g.map(Math.abs)) < 1e-9) break
+    if (maxOf(g.map(Math.abs)) < 1e-9) break
     const H = finiteDifferenceHessian((x) => itemGradient(model, x, n, r, grid), Float64Array.from(eta))
     const m = eta.length
     let accepted = false
@@ -510,7 +510,7 @@ export function irtAbility(
     const nodes = 81
     const ts = Array.from({ length: nodes }, (_, i) => -6 + (12 * i) / (nodes - 1))
     const lw = ts.map((t) => logLik(t) - 0.5 * t * t)
-    const mx = Math.max(...lw)
+    const mx = maxOf(lw)
     const w = lw.map((v) => Math.exp(v - mx))
     const z = w.reduce((a, b) => a + b, 0)
     const mean = ts.reduce((a, t, i) => a + (t * (w[i] ?? 0)) / z, 0)

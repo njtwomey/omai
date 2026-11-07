@@ -7,8 +7,9 @@
  * the optimiser is a slot: the delta-bar-delta rule of the reference, or any optimiser of the `optim` table.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
+import { dnrm2 } from '../numerics/linalg/index.ts'
 import { analyticObjective, type OptimiserShape, optimisers, type SmoothProblem } from '../optim/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
@@ -133,7 +134,7 @@ export function trimapTriplets(x: TensorLike, key: Key, options: TrimapTripletOp
       logRatio.push(s(i, k) - s(i, j))
     }
   }
-  const top = Math.max(...logRatio)
+  const top = maxOf(logRatio)
   const weights = logRatio.map((l) => temperedLog(1 + adj * Math.exp(l - top), temp))
   return { triplets, weights }
 }
@@ -285,7 +286,7 @@ export function trimapAlgorithm(
   const zeros = (): number[][] => init.map((r) => r.map(() => 0))
   const evaluate = (y: number[][]): { loss: number; grad: number[]; gradNorm: number; violations: number } => {
     const r = trimapLoss(y.flat(), k, triplets, weights)
-    return { loss: r.loss, grad: Array.from(r.grad), gradNorm: Math.hypot(...r.grad), violations: r.violations }
+    return { loss: r.loss, grad: Array.from(r.grad), gradNorm: dnrm2(r.grad), violations: r.violations }
   }
   return {
     name: 'trimap',

@@ -5,7 +5,7 @@
  * default; every solver of `smoothSolvers` reaches the same weights) and as a logged algorithm.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import {
   analyticObjective,
   type GradientPath,
@@ -210,7 +210,7 @@ export function entropyBalancing(data: CausalData, options: EntropyBalancingOpti
       )
     coefficients[name] = Array.from(solved.x)
     const a = rows.map((r) => -solved.x.reduce((s, l, j) => s + l * ((z[r * q + j] ?? 0) - (target[j] ?? 0)), 0))
-    const top = Math.max(...a)
+    const top = maxOf(a)
     const e = a.map((v) => Math.exp(v - top))
     const s = e.reduce((u, v) => u + v, 0)
     rows.forEach((r, i) => {

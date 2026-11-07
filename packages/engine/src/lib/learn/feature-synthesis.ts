@@ -7,7 +7,7 @@
  * it can be inspected, counted and pruned, not a feature store.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
 import type { Estimator, LearnData } from './estimator.ts'
 import { crossValScore } from './model-selection/cross-validation.ts'
 import { fromView } from './validation.ts'
@@ -61,8 +61,8 @@ function aggregate(kind: Aggregation, values: readonly number[]): number {
   if (kind === 'sum') return sum
   const mean = sum / values.length
   if (kind === 'mean') return mean
-  if (kind === 'min') return Math.min(...values)
-  if (kind === 'max') return Math.max(...values)
+  if (kind === 'min') return minOf(values)
+  if (kind === 'max') return maxOf(values)
   let ss = 0
   for (const v of values) ss += (v - mean) ** 2
   return values.length > 1 ? Math.sqrt(ss / (values.length - 1)) : 0

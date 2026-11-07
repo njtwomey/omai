@@ -8,7 +8,7 @@
  * gradient) and Newton-step learners that these sit beside.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, minOf } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { add, toFlat, type Value } from '../tensor/index.ts'
@@ -165,7 +165,7 @@ export function hedgeRule(eta: number): ExpertsRule<WeightState> {
     config: { eta },
     init: (n) => initWeights(n),
     play: (s, round) => {
-      const lo = Math.min(...s.cumulative)
+      const lo = minOf(s.cumulative)
       const p = normalise(Float64Array.from(s.cumulative, (c) => Math.exp(-eta * (c - lo))))
       return { probabilities: p, loss: ddot(p, round.losses) }
     },
@@ -368,7 +368,7 @@ export function bestSwitchingLoss(losses: readonly (readonly number[])[], switch
   losses.forEach((row, t) => {
     const next = Array.from({ length: switches + 1 }, () => new Array<number>(n).fill(Number.POSITIVE_INFINITY))
     for (let s = 0; s <= switches; s++) {
-      const bestPrev = s > 0 ? Math.min(...(dp[s - 1] as number[])) : Number.POSITIVE_INFINITY
+      const bestPrev = s > 0 ? minOf(dp[s - 1] as number[]) : Number.POSITIVE_INFINITY
       for (let i = 0; i < n; i++) {
         const stay = t === 0 ? 0 : ((dp[s] as number[])[i] ?? Number.POSITIVE_INFINITY)
         const move = t === 0 ? Number.POSITIVE_INFINITY : bestPrev
@@ -376,7 +376,7 @@ export function bestSwitchingLoss(losses: readonly (readonly number[])[], switch
       }
     }
     dp = next
-    out.push(Math.min(...dp.map((r) => Math.min(...r))))
+    out.push(minOf(dp.map((r) => minOf(r))))
   })
   return out
 }
@@ -481,7 +481,7 @@ export function expertsAlgorithm<S>(
     },
     done: (s) => (s.t >= rounds ? 'completed' : undefined),
     observe: (s) => {
-      const best = Math.min(...s.expertLosses)
+      const best = minOf(s.expertLosses)
       return {
         metrics: {
           loss: s.loss,
@@ -531,12 +531,12 @@ export function runExperts<S>(rule: ExpertsRule<S>, problem: ExpertsProblem, key
     ...alg,
     step: (s, ctx) => {
       const next = alg.step(s, ctx)
-      curve.push(next.cumulativeLoss - Math.min(...next.expertLosses))
+      curve.push(next.cumulativeLoss - minOf(next.expertLosses))
       return next
     },
   }
   const r = runAlgorithm(recording, { maxSteps: problem.losses.length, key })
-  const best = Math.min(...r.state.expertLosses)
+  const best = minOf(r.state.expertLosses)
   return {
     cumulativeLoss: r.state.cumulativeLoss,
     bestExpertLoss: best,
@@ -629,7 +629,7 @@ export function exp4Algorithm(
     }),
     step: (s, ctx) => {
       const a = adviceAt(s.t)
-      const lo = Math.min(...s.estimated)
+      const lo = minOf(s.estimated)
       const q = normalise(Float64Array.from(s.estimated, (e) => Math.exp(-eta * (e - lo))))
       const p = new Float64Array(k)
       for (let i = 0; i < n; i++) for (let j = 0; j < k; j++) p[j] = (p[j] ?? 0) + (q[i] ?? 0) * (a[i]?.[j] ?? 0)

@@ -6,7 +6,7 @@
  * One step is Zellner's two-step estimator; iterating to convergence reaches the Gaussian maximum likelihood.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView, requireTargets } from '../learn/index.ts'
 import { dict, int } from '../space/index.ts'
@@ -70,7 +70,7 @@ function systemOf(data: LearnData, h: Pick<SurHyper, 'equations' | 'fitIntercept
     return a
   })
   const y = Array.from({ length: k }, (_, e) => Float64Array.from({ length: m.n }, (_, i) => flatY[i * k + e] ?? 0))
-  if (m.n <= Math.max(...widths)) throw new MdmlError('value', 'sur: needs more rows than coefficients per equation')
+  if (m.n <= maxOf(widths)) throw new MdmlError('value', 'sur: needs more rows than coefficients per equation')
   return { n: m.n, k, columns, designs, widths, y, fitIntercept: h.fitIntercept }
 }
 
@@ -211,7 +211,7 @@ export function surAlgorithm(
         beta,
         sigma: nested(sigma, k),
         iteration: s.iteration + 1,
-        change: Math.max(...beta.map((v, j) => Math.abs(v - (s.beta[j] ?? 0)))),
+        change: maxOf(beta.map((v, j) => Math.abs(v - (s.beta[j] ?? 0)))),
       }
     },
     done: (s) => (s.iteration > 0 && s.change <= tol ? 'converged' : undefined),

@@ -6,6 +6,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import { metricSeries, type Run } from 'mdml-engine/trace'
 import { band, type Curve, lines } from '../../charts/lines.ts'
 import { cartesian, type Layer, layer } from '../../charts/plot.ts'
@@ -273,7 +274,7 @@ export function sweepFamily(
 ): Layer[] {
   const finite = trials.x.filter(Number.isFinite)
   if (finite.length === 0) return []
-  const xr: [number, number] = [Math.min(...finite), Math.max(...finite)]
+  const xr: [number, number] = [minOf(finite), maxOf(finite)]
   const out: Layer[] = []
   const { truth, mode } = options
   if (truth?.value !== undefined)

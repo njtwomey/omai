@@ -6,7 +6,7 @@
  * for ensembles of detectors (Kriegel et al. 2011; Aggarwal and Sathe 2015).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type AnomalyScores, anomalyScores, type Exposition } from '../exposition/index.ts'
 import { decisionSurfaceOf, type Fitted, type LearnData, matrixView } from '../learn/index.ts'
 import { special } from '../numerics/index.ts'
@@ -276,8 +276,8 @@ export function zscoreNormalise(scores: readonly number[]): number[] {
 export function minmaxNormalise(scores: readonly number[]): number[] {
   const n = scores.length
   if (n === 0) return []
-  const lo = Math.min(...scores)
-  const hi = Math.max(...scores)
+  const lo = minOf(scores)
+  const hi = maxOf(scores)
   return scores.map((v) => (hi > lo ? (v - lo) / (hi - lo) : 0))
 }
 
@@ -392,7 +392,7 @@ export function averageScores(scores: readonly (readonly number[])[]): number[] 
  */
 export function maximizationScores(scores: readonly (readonly number[])[]): number[] {
   const n = checkScoreMatrix('maximizationScores', scores)
-  return Array.from({ length: n }, (_, i) => Math.max(...scores.map((s) => s[i] ?? Number.NEGATIVE_INFINITY)))
+  return Array.from({ length: n }, (_, i) => maxOf(scores.map((s) => s[i] ?? Number.NEGATIVE_INFINITY)))
 }
 
 /**

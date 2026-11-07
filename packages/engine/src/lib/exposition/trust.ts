@@ -4,7 +4,7 @@
  * rows, including intervals for regression and runs on a stream. `setSizes` summarises a conformal record's set sizes.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { sameLength } from './_check.ts'
 
 /** One reliability curve: per non-empty bin the mean forecast, the observed frequency and the count, with its errors. */
@@ -147,7 +147,7 @@ export function conformalRecord(record: Omit<ConformalRecord, 'kind'>): Conforma
  * ```
  */
 export function setSizes(record: ConformalRecord): { readonly counts: number[]; readonly coverage: number[] } {
-  const k = record.classes?.length ?? Math.max(0, ...(record.sets ?? []).map((s) => s.length))
+  const k = record.classes?.length ?? Math.max(0, maxOf((record.sets ?? []).map((s) => s.length)))
   const counts = new Array<number>(k + 1).fill(0)
   const covered = new Array<number>(k + 1).fill(0)
   for (const [i, s] of (record.sets ?? []).entries()) {

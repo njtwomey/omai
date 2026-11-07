@@ -4,6 +4,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { EpisodeRecord } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -147,7 +148,7 @@ export function episodeView(record: EpisodeRecord, options: EpisodeViewOptions =
         options: { title: `values and greedy policy, episode ${snap.episode}` },
       }
     } else {
-      const k = Math.max(0, ...(policy ?? [0])) + 1
+      const k = Math.max(0, maxOf(policy ?? [0])) + 1
       panels['snapshot'] = {
         layers: [
           bars(

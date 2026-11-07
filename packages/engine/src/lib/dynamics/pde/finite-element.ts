@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import { dnrm2 } from '../../numerics/linalg/index.ts'
 import { type CsrMatrix, fromCoo } from '../../numerics/sparse/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import {
@@ -445,7 +446,7 @@ export function heatFemAlgorithm(
       const keep = (ctx.t + 1) % every === 0 || ctx.t + 1 === steps
       if (ctx.wants('pde/t')) ctx.log('pde/t', t)
       if (ctx.wants('pde/u')) ctx.log('pde/u', u)
-      if (ctx.wants('pde/norm')) ctx.log('pde/norm', Math.hypot(...u))
+      if (ctx.wants('pde/norm')) ctx.log('pde/norm', dnrm2(u))
       return { step: s.step + 1, u, t, ts: keep ? [...s.ts, t] : s.ts, us: keep ? [...s.us, u] : s.us }
     },
     done: (s) => (s.step >= steps ? 'converged' : undefined),

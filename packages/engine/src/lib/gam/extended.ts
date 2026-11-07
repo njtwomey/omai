@@ -14,7 +14,7 @@
  * predictor-based families and the Cox partial likelihood implement.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import type { AuxParameter, ExtendedFamily, Link } from '../dists/families/index.ts'
 import { matrixView, targetVector } from '../learn/index.ts'
 import { ddot, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
@@ -479,7 +479,7 @@ export function invertSafely(A: Float64Array, p: number): Inverted {
     return { inverse, logDet, modified: false }
   }
   const { w, v } = dsyev(A, p)
-  const top = Math.max(1e-300, ...Array.from(w, Math.abs))
+  const top = Math.max(1e-300, maxOf(Array.from(w, Math.abs)))
   const floor = 1e-7 * top
   const clipped = Array.from(w, (x) => Math.max(Math.abs(x), floor))
   const inverse = new Float64Array(p * p)
@@ -580,7 +580,7 @@ export function innerExtendedFit(
       logLik: ev.logLik,
       penalty: ddot(beta, sb),
       iterations: result.steps,
-      gradNorm: Math.max(0, ...Array.from(ev.gradient, (g, i) => Math.abs(g - (sb[i] ?? 0)))),
+      gradNorm: Math.max(0, maxOf(Array.from(ev.gradient, (g, i) => Math.abs(g - (sb[i] ?? 0))))),
     }
   }
   let f = objective(beta)
@@ -592,7 +592,7 @@ export function innerExtendedFit(
     const ev = likelihood.evaluate(beta, aux)
     const sb = dgemv(S, p, p, beta)
     const g = Float64Array.from(ev.gradient, (v, i) => v - (sb[i] ?? 0))
-    gradNorm = Math.max(0, ...Array.from(g, Math.abs))
+    gradNorm = Math.max(0, maxOf(Array.from(g, Math.abs)))
     const A = Float64Array.from(ev.information, (v, i) => v + (S[i] ?? 0))
     const { inverse } = invertSafely(A, p)
     const delta = dgemv(inverse, p, p, g)
@@ -619,7 +619,7 @@ export function innerExtendedFit(
   }
   const ev = likelihood.evaluate(beta, aux)
   const sb = dgemv(S, p, p, beta)
-  gradNorm = Math.max(0, ...Array.from(ev.gradient, (v, i) => Math.abs(v - (sb[i] ?? 0))))
+  gradNorm = Math.max(0, maxOf(Array.from(ev.gradient, (v, i) => Math.abs(v - (sb[i] ?? 0)))))
   return { beta, logLik: ev.logLik, penalty: ddot(beta, sb), iterations, gradNorm }
 }
 
@@ -947,7 +947,7 @@ export function extendedAlgorithm(
     logLik: ev.fit.logLik,
     penalisedLogLik: ev.fit.logLik - 0.5 * ev.fit.penalty,
     criterion: ev.value,
-    gradNorm: ev.gradient === undefined ? Number.NaN : Math.max(0, ...Array.from(ev.gradient, Math.abs)),
+    gradNorm: ev.gradient === undefined ? Number.NaN : Math.max(0, maxOf(Array.from(ev.gradient, Math.abs))),
     edf: ev.edf,
     edfCoef: Array.from(ev.edfCoef),
     converged,
@@ -982,12 +982,12 @@ export function extendedAlgorithm(
         const g = ev0.gradient as Float64Array
         const d = g.length
         const gradTol = 1e-5 * Math.max(1, Math.abs(ev0.value) / 100)
-        if (d === 0 || Math.max(0, ...Array.from(g, Math.abs)) < gradTol) {
+        if (d === 0 || Math.max(0, maxOf(Array.from(g, Math.abs))) < gradTol) {
           next = stateAt(ev0, s.iteration + 1, true)
         } else {
           const H = extendedHessian(model, ev0, options)
           const { w, v } = dsyev(H, d)
-          const floor = Math.max(1e-8, 1e-8 * Math.max(...Array.from(w, Math.abs)))
+          const floor = Math.max(1e-8, 1e-8 * maxOf(Array.from(w, Math.abs)))
           const delta = new Float64Array(d)
           for (let k = 0; k < d; k++) {
             let a = 0
@@ -995,7 +995,7 @@ export function extendedAlgorithm(
             const c = -a / Math.max(Math.abs(w[k] ?? 0), floor)
             for (let r = 0; r < d; r++) delta[r] = (delta[r] ?? 0) + (v[r * d + k] ?? 0) * c
           }
-          const big = Math.max(0, ...Array.from(delta, Math.abs))
+          const big = Math.max(0, maxOf(Array.from(delta, Math.abs)))
           let a = big > 4 ? 4 / big : 1
           let best: ExtendedEvaluation | undefined
           for (let tries = 0; tries < 12; tries++) {
@@ -1013,7 +1013,7 @@ export function extendedAlgorithm(
             a /= 2
           }
           const gain = best === undefined ? 0 : ev0.value - best.value
-          const flat = gain <= 1e-9 * (Math.abs(ev0.value) + 1) && Math.max(0, ...Array.from(g, Math.abs)) < 1e-3
+          const flat = gain <= 1e-9 * (Math.abs(ev0.value) + 1) && Math.max(0, maxOf(Array.from(g, Math.abs))) < 1e-3
           next =
             best === undefined || gain <= 1e-12 * (Math.abs(ev0.value) + 1)
               ? stateAt(ev0, s.iteration + 1, true)

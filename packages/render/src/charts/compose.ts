@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
 import type { Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'
 import { type CellSpec, type GridSpec, layoutGrid, linkedGroups, sharedGroups } from '../figure/grid.ts'
@@ -128,7 +128,7 @@ export function subplots(
     const out = new Set<string>()
     for (const group of sharedGroups(grid, axis)) {
       const members = group.map((id) => cells.get(id)).filter((c): c is CellSpec => c !== undefined)
-      const keep = axis === 'x' ? Math.max(...members.map(bottomOf)) : Math.min(...members.map((c) => c.col))
+      const keep = axis === 'x' ? maxOf(members.map(bottomOf)) : minOf(members.map((c) => c.col))
       for (const c of members) if ((axis === 'x' ? bottomOf(c) : c.col) !== keep) out.add(c.id)
     }
     return out

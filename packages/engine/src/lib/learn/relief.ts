@@ -6,7 +6,7 @@
  * instance per step; k = 1 with two classes is the original Relief and larger k with class-prior weighted misses is ReliefF.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import { type Key, key as makeKey, permutation, randint } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -119,7 +119,7 @@ export function reliefAlgorithm(x: TensorLike, y: TensorLike, options: ReliefOpt
     },
     done: (s) => (s.t >= iterations ? 'completed' : undefined),
     observe: (s) => ({
-      metrics: { maxWeight: Math.max(...s.weights) },
+      metrics: { maxWeight: maxOf(s.weights) },
       tensors: { weights: { role: 'param', value: s.weights } },
     }),
     serialise: (s) => ({ t: s.t, weights: [...s.weights], order: [...s.order] }),

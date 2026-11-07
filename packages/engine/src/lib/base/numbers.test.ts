@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { quantileOf, range } from './index.ts'
+import { maxOf, minOf, quantileOf, range } from './index.ts'
 
 describe('numbers at degenerate arguments', () => {
   it('rejects a zero step and a quantile level outside [0, 1], as numpy and the tensor arange do', () => {
@@ -14,5 +14,21 @@ describe('numbers at degenerate arguments', () => {
     expect(range(5, 0, -2)).toEqual([5, 3, 1])
     expect(quantileOf([1, 2, 3, 4], 1)).toBe(4)
     expect(quantileOf([], 0.5)).toBeNaN()
+  })
+
+  it('maxOf and minOf take 200,000 values where Math.max(...xs) overflows the stack, and match it on short lists', () => {
+    const n = 200_000
+    const long = Array.from({ length: n }, (_, i) => ((i * 7919) % n) - 100_000)
+    const typed = Float64Array.from(long)
+    expect(() => Math.max(...long)).toThrow(RangeError)
+    for (const xs of [long, typed, [...long, Number.NaN]]) {
+      const hasNaN = xs.length > n
+      expect(maxOf(xs)).toBe(hasNaN ? Number.NaN : 99_999)
+      expect(minOf(xs)).toBe(hasNaN ? Number.NaN : -100_000)
+    }
+    for (const xs of [[], [3], [-1, 4, 2], [1, Number.NaN, 2]]) {
+      expect(maxOf(xs)).toBe(Math.max(...xs))
+      expect(minOf(xs)).toBe(Math.min(...xs))
+    }
   })
 })

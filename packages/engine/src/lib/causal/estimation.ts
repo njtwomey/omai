@@ -8,7 +8,7 @@
  * influence values of the estimator, or from the bootstrap where no influence is available.
  */
 
-import { type Estimate, estimate, MdmlError } from '../base/index.ts'
+import { type Estimate, estimate, MdmlError, maxOf, minOf } from '../base/index.ts'
 import { analyticObjective, type SmoothProblem } from '../optim/index.ts'
 import { bootstrapIndices, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -653,8 +653,8 @@ export interface TmleResult extends EffectEstimate {
 export function tmle(data: CausalData, options: TmleOptions = {}): TmleResult {
   const p = prepare(data.x, data.treatment, data.outcome, 'tmle')
   const nu = nuisancesFor(p, options)
-  const lo = Math.min(...p.y)
-  const hi = Math.max(...p.y)
+  const lo = minOf(p.y)
+  const hi = maxOf(p.y)
   const span = hi - lo || 1
   const linear = options.fluctuation === 'linear'
   const scale = (v: number): number => (linear ? v : (v - lo) / span)

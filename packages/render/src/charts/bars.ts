@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf } from 'mdml-engine/base'
 import { type HistogramOptions, histogram as histogramOf } from 'mdml-engine/stats'
 import { type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { extentOf } from '../figure/limits.ts'
@@ -313,7 +313,7 @@ export function histogram(values: TensorLike | readonly number[], options: Histo
           clip: true,
         } as unknown as SeriesOption)
   const span: [number, number] = [edges[0] ?? 0, edges[edges.length - 1] ?? 1]
-  const height: [number, number] = [0, Math.max(0, ...counts)]
+  const height: [number, number] = [0, Math.max(0, maxOf(counts))]
   return layer([series], horizontal ? { x: height, y: span, baseline: 'x' } : { x: span, y: height, baseline: 'y' })
 }
 

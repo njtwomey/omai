@@ -5,7 +5,7 @@
  * scored rows are kept, so `groupReportAt` can recompute the report at other thresholds.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { rowsOf, sameLength } from './_check.ts'
 
 /** The rates a group report gives for each group (and overall), each a probability. */
@@ -199,7 +199,7 @@ export function tableRates(table: readonly (readonly number[])[]): GroupRateValu
 
 /** The largest minus the smallest of some values. */
 function spread(values: readonly number[]): number {
-  return values.length === 0 ? 0 : Math.max(...values) - Math.min(...values)
+  return values.length === 0 ? 0 : maxOf(values) - minOf(values)
 }
 
 /**
@@ -221,7 +221,7 @@ export function groupDisparities(rates: readonly GroupRateValues[], reference: n
   const pick = (r: GroupRateName): number[] => rates.map((v) => v[r])
   const ref = rates[reference]?.selectionRate ?? 0
   const others = rates.filter((_, g) => g !== reference).map((v) => v.selectionRate)
-  const impact = ref === 0 ? Number.NaN : Math.min(...others.map((v) => v / ref), Number.POSITIVE_INFINITY)
+  const impact = ref === 0 ? Number.NaN : Math.min(minOf(others.map((v) => v / ref)), Number.POSITIVE_INFINITY)
   return [
     { name: 'demographic parity difference', value: spread(pick('selectionRate')), ideal: 0, kind: 'difference' },
     { name: 'equal opportunity difference', value: spread(pick('truePositiveRate')), ideal: 0, kind: 'difference' },

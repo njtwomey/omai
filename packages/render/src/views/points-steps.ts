@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { type PointsSteps, pointsAt } from 'mdml-engine/exposition'
 import {
   axes3d,
@@ -78,7 +79,7 @@ export function pointsStepsValueRange(record: PointsSteps): [number, number] {
  */
 export function trailOpacity(born: readonly number[], fade?: number): number[] {
   if (fade === undefined || !(fade > 0)) return born.map(() => 1)
-  const latest = Math.max(...born)
+  const latest = maxOf(born)
   return born.map((b) => 0.1 + 0.9 * Math.min(1, Math.max(0, 1 - (latest - b) / fade)))
 }
 

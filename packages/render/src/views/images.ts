@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { ImageSteps } from 'mdml-engine/exposition'
 import type { Pixels } from 'mdml-engine/scene'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -99,7 +100,7 @@ function mosaic(
 
 // The images drawn per group.
 function columnsOf(record: ImageSteps, columns: number | undefined): number {
-  const most = Math.max(1, ...record.steps.flatMap((s) => s.images.map((g) => g.length)))
+  const most = Math.max(1, maxOf(record.steps.flatMap((s) => s.images.map((g) => g.length))))
   return Math.max(1, Math.min(columns ?? 12, most))
 }
 

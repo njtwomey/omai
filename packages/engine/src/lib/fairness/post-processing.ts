@@ -7,7 +7,7 @@
  * group (both as AIF360).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 
 /** The fairness constraint a threshold optimiser equalises across groups. */
 export type ThresholdConstraint =
@@ -213,7 +213,7 @@ export function optimiseThresholds(
   const objective = options.objective ?? 'accuracy'
   const size = options.gridSize ?? 1000
   const grid = Array.from({ length: size + 1 }, (_, i) => i / size)
-  const k = Math.max(...groups) + 1
+  const k = maxOf(groups) + 1
   const members = Array.from({ length: k }, (): number[] => [])
   for (const [i, g] of groups.entries()) members[g]?.push(i)
   const n = scores.length
@@ -266,7 +266,7 @@ export function optimiseThresholds(
   }
   const pos = labels.reduce((s, v) => s + (v === 1 ? 1 : 0), 0)
   const neg = n - pos
-  const yMin = grid.map((_, j) => Math.min(...curves.map((c) => c.y[j] ?? 0)))
+  const yMin = grid.map((_, j) => minOf(curves.map((c) => c.y[j] ?? 0)))
   const overall = grid.map((x, j) => {
     const y = yMin[j] ?? 0
     const c = { tp: pos * y, fn: pos * (1 - y), fp: neg * x, tn: neg * (1 - x) }

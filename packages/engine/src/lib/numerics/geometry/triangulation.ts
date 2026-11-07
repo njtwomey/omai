@@ -4,7 +4,7 @@
  * alpha shapes, the boundary of the triangles below a circumradius.
  */
 
-import { MdmlError, type Vec2 } from '../../base/index.ts'
+import { MdmlError, minOf, type Vec2 } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 
 /**
@@ -48,7 +48,7 @@ function decompose(x: number): { readonly mantissa: bigint; readonly exponent: n
 /** The sign of the in-circle determinant, exactly (integer arithmetic on the doubles' own mantissas). */
 function inCircleSign(a: Point2, b: Point2, c: Point2, d: Point2): number {
   const parts = [a[0], a[1], b[0], b[1], c[0], c[1], d[0], d[1]].map(decompose)
-  const lowest = Math.min(...parts.map((p) => p.exponent))
+  const lowest = minOf(parts.map((p) => p.exponent))
   const [ax, ay, bx, by, cx, cy, dx, dy] = parts.map((p) => p.mantissa << BigInt(p.exponent - lowest)) as [
     bigint,
     bigint,

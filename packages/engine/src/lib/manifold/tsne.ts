@@ -5,7 +5,7 @@
  * or Barnes-Hut (a sparse P over the nearest neighbours, the repulsion summarised by a space-partitioning tree).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type DistanceAlias, type DistanceName, distanceMatrix } from '../distances/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { normal } from '../random/index.ts'
@@ -341,7 +341,7 @@ function buildTree(y: Float64Array, n: number, k: number): Tree {
       hi[a] = Math.max(hi[a] ?? 0, y[i * k + a] ?? 0)
     }
   const centre = lo.map((v, a) => (v + (hi[a] ?? 0)) / 2)
-  const half = Math.max(...lo.map((v, a) => ((hi[a] ?? 0) - v) / 2), 1e-12) * (1 + 1e-9)
+  const half = Math.max(maxOf(lo.map((v, a) => ((hi[a] ?? 0) - v) / 2)), 1e-12) * (1 + 1e-9)
   const t: Tree = { k, arity: 1 << k, count: [], centre: [], half: [], com: [], child: [], point: [] }
   const root = newNode(t, centre, half)
   for (let i = 0; i < n; i++) insert(t, root, i, y, 0)

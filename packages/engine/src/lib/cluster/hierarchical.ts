@@ -6,6 +6,7 @@
  * rows in a tree of clustering features before it clusters them, is here too.
  */
 
+import { maxOf } from '../base/index.ts'
 import { type DistanceAlias, type DistanceName, type DistanceOptions, distanceMatrix } from '../distances/index.ts'
 import { UnionFind } from '../graph/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
@@ -440,7 +441,7 @@ export const agglomerativeClustering: IterativeEstimator<
       m.n,
       h.distanceThreshold === null ? { nClusters: Math.min(h.nClusters, m.n) } : { height: h.distanceThreshold },
     )
-    const k = Math.max(...labels) + 1
+    const k = maxOf(labels) + 1
     const sums = Array.from({ length: k }, () => new Array<number>(m.d).fill(0))
     const counts = new Array<number>(k).fill(0)
     for (let i = 0; i < m.n; i++) {
@@ -713,7 +714,7 @@ export const birch: IterativeEstimator<BirchHyper, BirchState, BirchParams, Aggl
         : cutTree(linkageMatrix(centres, 'ward'), centres.length, { nClusters: k })
     const rows = toRows(m.data, m.n, m.d)
     const near = centres.length === 0 ? [] : nearestCentres(rows, centres).labels
-    const kk = Math.max(0, ...subclusterLabels) + 1
+    const kk = Math.max(0, maxOf(subclusterLabels)) + 1
     const groupCentres = Array.from({ length: kk }, (_, c) => {
       const members = leaves.flatMap((l, i) => ((subclusterLabels[i] ?? 0) === c ? [l] : []))
       const total = members.reduce((t, l) => t + l.n, 0)

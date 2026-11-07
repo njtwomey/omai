@@ -7,7 +7,7 @@
  * aligned genes. Networks are feedforward. XOR, which no network without a hidden unit solves, is the built-in truth.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { type Key, uniformStream } from '../../random/index.ts'
 import { type Algorithm, type Contract, defineContract, event, scalar, tensor } from '../../trace/index.ts'
 
@@ -256,8 +256,8 @@ export function neatAlgorithm(options: NeatOptions = {}): Algorithm<NeatState, N
   const distance = (a: NeatGenome, b: NeatGenome): number => {
     const mapA = new Map(a.connections.map((c) => [c.innovation, c]))
     const mapB = new Map(b.connections.map((c) => [c.innovation, c]))
-    const maxA = Math.max(-1, ...mapA.keys())
-    const maxB = Math.max(-1, ...mapB.keys())
+    const maxA = Math.max(-1, maxOf([...mapA.keys()]))
+    const maxB = Math.max(-1, maxOf([...mapB.keys()]))
     let excess = 0
     let disjoint = 0
     let matching = 0

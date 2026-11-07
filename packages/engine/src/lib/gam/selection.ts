@@ -6,7 +6,7 @@
  * penalty (`s(x, { select: true })`, in `terms.ts`), which adds a penalty on the null space of the smoothness penalty.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { dgemm, dsyev } from '../numerics/linalg/index.ts'
 import { betainc, gammaincc } from '../numerics/special/index.ts'
 import { key as makeKey } from '../random/index.ts'
@@ -72,7 +72,7 @@ export function smoothingCorrection(
   })
   const H = outerHessian(setup, at)
   const { w, v } = dsyev(H, m)
-  const floor = 1e-6 * Math.max(...Array.from(w, Math.abs), 1e-12)
+  const floor = 1e-6 * Math.max(maxOf(Array.from(w, Math.abs)), 1e-12)
   // Vrho = H^-1 on the eigenvalues above the floor.
   const vrho = new Float64Array(m * m)
   for (let k = 0; k < m; k++) {

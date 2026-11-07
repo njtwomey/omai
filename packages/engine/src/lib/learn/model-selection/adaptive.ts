@@ -7,7 +7,7 @@
  * analyst who combines whatever looks good on the answers) shows each mechanism against naive reuse.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, minOf } from '../../base/index.ts'
 import { foldIn, type Key, laplace, key as makeKey, randint } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
@@ -450,7 +450,7 @@ export function leaderboardAttack(mechanism: 'naive' | 'ladder', options: Attack
     // The plain leaderboard shows each submission's holdout error; the analyst keeps a feature for the side it favours.
     w = Float64Array.from(single, (e) => Math.sign(0.5 - e))
     const all = [...single, errorOf(ho, w)]
-    shown = all.map((_, i) => Math.min(0.5, ...all.slice(0, i + 1)))
+    shown = all.map((_, i) => Math.min(0.5, minOf(all.slice(0, i + 1))))
   } else {
     // The Ladder shows only the stepped running best; the analyst learns which submissions moved it.
     const first = ladderOf(single)

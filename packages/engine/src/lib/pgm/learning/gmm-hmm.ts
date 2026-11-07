@@ -7,7 +7,7 @@
  * decreases (with a zero covariance prior). With one component per state it is the Gaussian Baum-Welch exactly.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { initialCentres } from '../../cluster/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -80,7 +80,7 @@ function emissions(
 }
 
 function logsumexp(xs: readonly number[]): number {
-  const m = Math.max(...xs)
+  const m = maxOf(xs)
   if (m === NEG) return NEG
   return m + Math.log(xs.reduce((a, v) => a + Math.exp(v - m), 0))
 }

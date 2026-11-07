@@ -5,7 +5,7 @@
  * one epoch per step.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { spectralEmbedding as graphSpectralEmbedding } from '../graph/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { curveFit } from '../optim/index.ts'
@@ -208,7 +208,7 @@ export function umapAlgorithm(
   const all: [number, number, number][] = []
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++) if (i !== j && (weights[i]?.[j] ?? 0) > 0) all.push([i, j, weights[i]?.[j] ?? 0])
-  const wmax = Math.max(...all.map((e) => e[2]), 0)
+  const wmax = Math.max(maxOf(all.map((e) => e[2])), 0)
   const edges = all.filter((e) => e[2] >= wmax / nEpochs)
   const perSample = edges.map((e) => nEpochs / (nEpochs * (e[2] / wmax)))
   return {
@@ -320,8 +320,8 @@ export function umapSetup(
     ) as number[][]
   else start = toArray(uniform(foldIn(key, 0), [m.n, k], { low: -10, high: 10 })) as number[][]
   const noise = toFlat(uniform(foldIn(key, 2), [m.n * k], { low: -1e-4, high: 1e-4 }))
-  const lo = Array.from({ length: k }, (_, c) => Math.min(...start.map((r) => r[c] ?? 0)))
-  const hi = Array.from({ length: k }, (_, c) => Math.max(...start.map((r) => r[c] ?? 0)))
+  const lo = Array.from({ length: k }, (_, c) => minOf(start.map((r) => r[c] ?? 0)))
+  const hi = Array.from({ length: k }, (_, c) => maxOf(start.map((r) => r[c] ?? 0)))
   start = start.map((r, i) =>
     r.map((v, c) => (10 * (v - (lo[c] ?? 0))) / Math.max((hi[c] ?? 1) - (lo[c] ?? 0), 1e-12) + (noise[i * k + c] ?? 0)),
   )

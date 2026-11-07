@@ -6,7 +6,7 @@
  * decomposition of discrimination), by simulation with common random numbers.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { doIntervention, type Model, seed, traceOf } from '../probprog/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { toFlat, type Value } from '../tensor/index.ts'
@@ -108,7 +108,7 @@ export function counterfactualFairness(model: Model, options: CounterfactualFair
     factual,
     counterfactual,
     meanGap: gaps.reduce((s, v) => s + v, 0) / Math.max(1, n),
-    maxGap: Math.max(0, ...gaps),
+    maxGap: Math.max(0, maxOf(gaps)),
     flipRate: flips / Math.max(1, n),
   }
 }

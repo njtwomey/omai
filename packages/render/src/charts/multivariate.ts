@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf } from 'mdml-engine/base'
 import type { Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, type Rect } from '../figure/figure.ts'
 import { gridSpec } from '../figure/grid.ts'
@@ -383,7 +383,7 @@ export function radarChart(series: readonly RadarSeries[], options: RadarOptions
     if (s.values.length !== k) throw new MdmlError('shape', `radarChart: '${s.name}' needs ${k} values`)
   const indicator = options.indicators.map((ind, j) => {
     const spec = typeof ind === 'string' ? { name: ind } : ind
-    const top = Math.max(0, ...series.map((s) => s.values[j] ?? 0))
+    const top = Math.max(0, maxOf(series.map((s) => s.values[j] ?? 0)))
     const max = spec.max ?? (top > 0 ? niceRange([0, top])[1] : 1)
     return { name: spec.name, max, ...(spec.min === undefined ? {} : { min: spec.min }) }
   })

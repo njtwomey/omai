@@ -5,7 +5,7 @@
  * nested inside each other.
  */
 
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
 import type { BayesNet } from 'mdml-engine/pgm'
 import {
   type Paint,
@@ -108,7 +108,7 @@ export function uNet(levels: readonly UNetLevel[], options: UNetOptions = {}): S
   const active = new Set(options.active ?? [])
   const n = levels.length - 1
   const top = levels[0] as UNetLevel
-  const minC = Math.min(...levels.map((l) => l.channels))
+  const minC = minOf(levels.map((l) => l.channels))
   const sliceW = (c: number): number => 5 + 4 * Math.log2(c / minC + 1)
   const blockH = (s: number): number => Math.max(22, 150 * Math.sqrt(s / top.size))
   const blockW = (c: number): number => convs * sliceW(c) + (convs - 1) * 3
@@ -361,7 +361,7 @@ export function bayesNetCards(bn: BayesNet, options: BayesNetCardOptions = {}): 
     const marg = options.marginals?.[node.name]
     // Room on the left for the parents' assignments, or at least for the marginal's `P`.
     const labelW = Math.max(
-      node.parents.length === 0 ? 0 : Math.max(...labels.map((l) => textW(l, FONT - 1))) + 12,
+      node.parents.length === 0 ? 0 : maxOf(labels.map((l) => textW(l, FONT - 1))) + 12,
       marg === undefined ? 0 : 18,
     )
     const shown = Math.min(rows.length, maxRows)

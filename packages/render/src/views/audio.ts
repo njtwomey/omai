@@ -4,6 +4,7 @@
  * both at the time of the viewed step, as a scene. `spectrogramOf` and `waveformEnvelope` are the pure parts.
  */
 
+import { maxOf } from 'mdml-engine/base'
 import { type AudioClip, audioDuration, playheadAt, type Spectrogram } from 'mdml-engine/exposition'
 import { rfft } from 'mdml-engine/numerics/fourier'
 import { image, line, type Pixels, polygon, type Scene, scene, text } from 'mdml-engine/scene'
@@ -94,7 +95,7 @@ export function waveformEnvelope(samples: readonly number[], columns: number): [
 export function spectrogramPixels(s: Spectrogram, mode: ColourMode, range = 70): Pixels {
   const rows = s.frequencies.length
   const cols = s.times.length
-  const peak = Math.max(1e-12, ...s.magnitude.flat())
+  const peak = Math.max(1e-12, maxOf(s.magnitude.flat()))
   const lut = sampleRamp(sequentialRamp('magma', mode), 256).map(parseColour)
   const rgba = new Uint8ClampedArray(rows * cols * 4)
   for (let r = 0; r < rows; r++)

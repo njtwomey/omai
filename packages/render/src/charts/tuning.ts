@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import {
   contourData,
   type Importances,
@@ -136,7 +137,7 @@ export function importanceChart(
     mode,
     ...(options.figure === undefined ? {} : { figure: options.figure }),
     ...(options.title === undefined ? {} : { title: options.title }),
-    x: { label: 'importance', limits: [0, Math.max(0.05, ...ranked.map(([, v]) => v)) * 1.18], format: 'percent' },
+    x: { label: 'importance', limits: [0, Math.max(0.05, maxOf(ranked.map(([, v]) => v))) * 1.18], format: 'percent' },
     legend: false,
   }) as Record<string, unknown>
   // Each bar's share written at its end.

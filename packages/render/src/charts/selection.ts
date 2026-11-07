@@ -4,6 +4,7 @@
  * background, and the option update that redraws the selected layer.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { Pixels } from 'mdml-engine/scene'
 import { pngDataUrl } from '../svg/png.ts'
 
@@ -123,8 +124,8 @@ export function selectionFilter(
     const flags = selected as Readonly<Record<string, unknown>>
     const chosen = pieces.filter((_, i) => flags[String(i)] !== false)
     if (chosen.length === pieces.length) return undefined
-    const bottom = Math.min(...pieces.map((p) => p.min ?? Number.NEGATIVE_INFINITY))
-    const top = Math.max(...pieces.map((p) => p.max ?? Number.POSITIVE_INFINITY))
+    const bottom = minOf(pieces.map((p) => p.min ?? Number.NEGATIVE_INFINITY))
+    const top = maxOf(pieces.map((p) => p.max ?? Number.POSITIVE_INFINITY))
     intervals = []
     for (const p of [...chosen].sort((x, y) => (x.min ?? 0) - (y.min ?? 0))) {
       const lo = p.min === undefined || p.min <= bottom ? Number.NEGATIVE_INFINITY : p.min

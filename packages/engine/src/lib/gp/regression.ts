@@ -5,7 +5,7 @@
  * the fitted value predicts the posterior mean, standard deviation and covariance and draws posterior samples.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type Distribution, normal as normalDistribution } from '../dists/index.ts'
 import {
   type HyperparameterSurface,
@@ -406,8 +406,8 @@ export const gpRegression: IterativeEstimator<GpHyper, GpState, GpParams, GpVerb
       )
       const resolution = Math.max(2, Math.min(args?.resolution ?? 100, 400))
       const column = p.rows.map((r) => r[0] ?? 0)
-      const lo = Math.min(...column)
-      const hi = Math.max(...column)
+      const lo = minOf(column)
+      const hi = maxOf(column)
       const pad = 0.15 * (hi - lo || 1)
       const centre = Array.from({ length: p.d }, (_, j) => p.rows.reduce((a, r) => a + (r[j] ?? 0), 0) / p.n)
       const inputs = Array.from({ length: resolution }, (_, i) => {

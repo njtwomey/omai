@@ -6,6 +6,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { multivariateNormal } from 'mdml-engine/dists'
 import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'mdml-engine/exposition'
 import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
@@ -293,7 +294,7 @@ export function clusteringFrames(steps: ClusteringSteps, options: StepsViewOptio
         )
       }
     } else {
-      const k = Math.max(0, ...assignment) + 1
+      const k = Math.max(0, maxOf(assignment)) + 1
       const sizes = Array.from({ length: k }, (_, c) => assignment.filter((a) => a === c).length)
       main.push(
         bars(
@@ -450,7 +451,7 @@ export function dendrogramView(steps: ClusteringSteps, options: DendrogramViewOp
   const merges = steps.merges ?? []
   const n = merges.length + 1
   const final = steps.assignments[steps.assignments.length - 1] ?? []
-  const k = Math.max(1, Math.min(n, options.clusters ?? Math.max(0, ...final) + 1))
+  const k = Math.max(1, Math.min(n, options.clusters ?? Math.max(0, maxOf(final)) + 1))
   const { links } = dendrogramLayout(merges, n)
   const labels = cutClusters(merges, n, k)
   const cut = k > 1 && k <= n - 1 ? ((merges[n - k - 1]?.[2] ?? 0) + (merges[n - k]?.[2] ?? 0)) / 2 : undefined
@@ -522,7 +523,7 @@ export function reachabilityView(steps: ClusteringSteps, options: ReachabilityVi
   // Undefined reachability (the first row of each component) is infinite, or -1 as some records store it: a full bar.
   const defined = (r: number): boolean => Number.isFinite(r) && r >= 0
   const finite = reach.filter(defined)
-  const top = finite.length > 0 ? Math.max(...finite) * 1.08 : 1
+  const top = finite.length > 0 ? maxOf(finite) * 1.08 : 1
   const values = reach.map((r) => (defined(r) ? r : top))
   const clusters = [...new Set(order.map((i) => final[i] ?? -1))].sort((a, b) => a - b)
   const groups = clusters.map((c) => ({
@@ -616,7 +617,7 @@ export function mixtureAssignment(steps: MixtureSteps, t: number, rows: Rows): n
   const T = steps.objective.length
   const resp = steps.responsibilities
   const stored = resp === undefined ? undefined : resp[t - (T - resp.length)]
-  if (stored !== undefined && stored.length === rows.length) return stored.map((r) => r.indexOf(Math.max(...r)))
+  if (stored !== undefined && stored.length === rows.length) return stored.map((r) => r.indexOf(maxOf(r)))
   const scores = mixtureScores(steps, t, rows)
   if (scores === undefined) return rows.map(() => 0)
   return rows.map((_, i) => {

@@ -5,7 +5,7 @@
  * correlated), Owen values and partition SHAP over feature hierarchies, and SAGE's global importance.
  */
 
-import { MdmlError, popcount } from '../base/index.ts'
+import { MdmlError, minOf, popcount } from '../base/index.ts'
 import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import { type FitOptions, type LearnData, requireTargets } from '../learn/estimator.ts'
@@ -786,7 +786,7 @@ export function correlationHierarchy(x: TensorLike): FeatureHierarchy {
     // The smaller cluster first, ties by the lowest feature, so the result does not depend on the scan order.
     const [first, second] =
       A.members.length < B.members.length ||
-      (A.members.length === B.members.length && Math.min(...A.members) < Math.min(...B.members))
+      (A.members.length === B.members.length && minOf(A.members) < minOf(B.members))
         ? [A, B]
         : [B, A]
     const merged = { members: [...first.members, ...second.members], tree: [first.tree, second.tree] }

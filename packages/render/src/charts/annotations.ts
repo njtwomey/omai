@@ -4,6 +4,7 @@
  */
 
 import type { SeriesOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { colourFor } from './_data.ts'
 import { type Layer, layer } from './plot.ts'
@@ -86,7 +87,7 @@ export function annotations(
   ]
   const ys = [...arrows.flatMap((a) => [a.from[1], a.to[1]]), ...labels.map((l) => l.at[1])]
   return layer(series, {
-    ...(xs.length > 0 ? { x: [Math.min(...xs), Math.max(...xs)] as [number, number] } : {}),
-    ...(ys.length > 0 ? { y: [Math.min(...ys), Math.max(...ys)] as [number, number] } : {}),
+    ...(xs.length > 0 ? { x: [minOf(xs), maxOf(xs)] as [number, number] } : {}),
+    ...(ys.length > 0 ? { y: [minOf(ys), maxOf(ys)] as [number, number] } : {}),
   })
 }

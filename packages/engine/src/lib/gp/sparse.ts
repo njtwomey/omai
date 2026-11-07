@@ -7,7 +7,7 @@
  * step with the bound and the inducing points on the tape.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type PosteriorGrid, posteriorGrid } from '../exposition/index.ts'
 import {
   asRows,
@@ -532,8 +532,8 @@ function gridOf(h: SparseGpHyper, p: Prepared, s: SparseState, resolution: numbe
   const un = unpack(h, p, model.x)
   const verbs = verbsOf({ ...un, bound: -model.value, x: p.rows, y: Array.from(p.y), yMean: p.yMean, yStd: p.yStd }, h)
   const column = p.rows.map((r) => r[0] ?? 0)
-  const lo = Math.min(...column)
-  const hi = Math.max(...column)
+  const lo = minOf(column)
+  const hi = maxOf(column)
   const pad = 0.15 * (hi - lo || 1)
   const centre = Array.from({ length: p.d }, (_, j) => p.rows.reduce((a, r) => a + (r[j] ?? 0), 0) / p.n)
   const m = Math.max(2, Math.min(resolution, 400))

@@ -9,7 +9,7 @@
  * per site on the tape.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { uniformStream } from '../../random/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../../trace/index.ts'
 
@@ -96,7 +96,7 @@ export function pottsEnergyPerSite(c: PottsConfiguration): number {
 export function pottsMagnetisation(c: PottsConfiguration): number {
   const counts = new Array<number>(c.q).fill(0)
   for (const s of c.spins) counts[s] = (counts[s] ?? 0) + 1
-  return ((c.q * Math.max(...counts)) / (c.L * c.L) - 1) / (c.q - 1)
+  return ((c.q * maxOf(counts)) / (c.L * c.L) - 1) / (c.q - 1)
 }
 
 /**

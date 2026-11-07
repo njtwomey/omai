@@ -4,6 +4,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import { type Figure, figure as makeFigure } from '../figure/figure.ts'
 import { sequentialRamp } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
@@ -42,8 +43,8 @@ export function calendarHeatmap(
       { ...(options.title === undefined ? {} : { title: options.title }), legend: false },
     ),
     visualMap: {
-      min: Math.min(0, ...values),
-      max: Math.max(1, ...values),
+      min: Math.min(0, minOf(values)),
+      max: Math.max(1, maxOf(values)),
       calculable: true,
       orient: 'horizontal',
       left: 'center',

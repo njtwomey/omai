@@ -4,7 +4,7 @@
  * series of a curve, a morph or a shape descriptor needs.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 
 /** One stroke of a drawing: its points, and whether it closes on itself. */
@@ -272,7 +272,7 @@ export function stitchStrokes(strokes: readonly Stroke[]): Point2[] {
   const loops = strokes.filter((s) => s.points.length > 0).map(loop)
   if (loops.length === 0) return []
   const lengths = loops.map(pathLength)
-  let path = loops.splice(lengths.indexOf(Math.max(...lengths)), 1)[0] ?? []
+  let path = loops.splice(lengths.indexOf(maxOf(lengths)), 1)[0] ?? []
   while (loops.length > 0) {
     let best = { d: Number.POSITIVE_INFINITY, i: 0, j: 0, k: 0 }
     for (const [k, l] of loops.entries())
@@ -346,7 +346,7 @@ export function normaliseOutline(points: readonly Point2[], flipY = false): Poin
   const mx = points.reduce((s, p) => s + p[0], 0) / n
   const my = points.reduce((s, p) => s + sy * p[1], 0) / n
   const centred = points.map(([x, y]): Point2 => [x - mx, sy * y - my])
-  const r = Math.max(0, ...centred.map(([x, y]) => Math.hypot(x, y))) || 1
+  const r = Math.max(0, maxOf(centred.map(([x, y]) => Math.hypot(x, y)))) || 1
   return centred.map(([x, y]): Point2 => [x / r, y / r])
 }
 

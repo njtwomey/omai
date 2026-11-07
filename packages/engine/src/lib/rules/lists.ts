@@ -9,7 +9,7 @@
  * expanded, or one proposal, per step.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { eclat } from '../patterns/index.ts'
@@ -222,7 +222,7 @@ export function corelsAlgorithm(data: LearnData, options: CorelsOptions = {}): A
         m++
       }
     }
-    return { left, mistakes: w.mistakes + m - Math.max(...c), captured: m }
+    return { left, mistakes: w.mistakes + m - maxOf(c), captured: m }
   }
   const score = (w: Walk, length: number): { objective: number; bound: number } => {
     const rest = new Array<number>(rd.k).fill(0)
@@ -247,7 +247,7 @@ export function corelsAlgorithm(data: LearnData, options: CorelsOptions = {}): A
       unavoidable += total - top
     }
     return {
-      objective: (w.mistakes + restRows - Math.max(...rest)) / n + lambda * length,
+      objective: (w.mistakes + restRows - maxOf(rest)) / n + lambda * length,
       bound: (w.mistakes + unavoidable) / n + lambda * length,
     }
   }
@@ -323,7 +323,7 @@ export function corelsAlgorithm(data: LearnData, options: CorelsOptions = {}): A
       }
       const live = queue.filter((q) => q.bound + lambda < objective - 1e-12)
       pruned += queue.length - live.length
-      const lowerBound = live.length === 0 ? objective : Math.min(...live.map((q) => q.bound))
+      const lowerBound = live.length === 0 ? objective : minOf(live.map((q) => q.bound))
       const exhausted = evaluated >= maxNodes
       return {
         queue: exhausted ? [] : live,
@@ -475,7 +475,7 @@ function posteriorOf(
   if (!(lambda > 0 && eta > 0 && alpha > 0)) throw new MdmlError('value', 'bayesianRuleList: priors must be positive')
   const { antecedents } = mine(rd, options)
   const A = antecedents.masks.length
-  const maxCard = Math.max(1, ...antecedents.literals.map((l) => l.length))
+  const maxCard = Math.max(1, maxOf(antecedents.literals.map((l) => l.length)))
   // Truncated Poisson on the size, with the number of antecedents of each size for the uniform choice.
   const bySize = new Array<number>(maxCard + 1).fill(0)
   for (const l of antecedents.literals) bySize[l.length] = (bySize[l.length] ?? 0) + 1

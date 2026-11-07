@@ -7,7 +7,7 @@
  * the iterative ones are estimators on the iterative base, one EM or gradient step per step.
  */
 
-import { type Json, logSumExpOf, MdmlError } from '../base/index.ts'
+import { type Json, logSumExpOf, MdmlError, maxOf } from '../base/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type LbfgsState, lbfgsAlgorithm } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, permutation, uniform } from '../random/index.ts'
@@ -239,7 +239,7 @@ export function majorityVote(
       labels.push(ABSTAIN)
       continue
     }
-    const best = Math.max(...tally)
+    const best = maxOf(tally)
     const tied = tally.map((t, c) => (t === best ? c : -1)).filter((c) => c >= 0)
     if (tied.length === 1) labels.push(classes[tied[0] ?? 0] ?? ABSTAIN)
     else if (ties === 'abstain') labels.push(ABSTAIN)
@@ -834,7 +834,7 @@ export function labelModelAlgorithm(votes: TensorLike, hyper: LabelModelHyper): 
       }
     if (estimates.length === 0) {
       const direct = Array.from({ length: m }, (_, b) => (b === a ? 0 : Math.max(0, moment[a * m + b] ?? 0)))
-      return clampC(Math.sqrt(Math.max(...direct, 1e-6)))
+      return clampC(Math.sqrt(Math.max(maxOf(direct), 1e-6)))
     }
     estimates.sort((x, y) => x - y)
     return clampC(estimates[Math.floor(estimates.length / 2)] ?? 0.5)

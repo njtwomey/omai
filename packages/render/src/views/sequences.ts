@@ -4,6 +4,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { StateSequence } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { band, lines } from '../charts/lines.ts'
@@ -83,8 +84,8 @@ export function stateSequenceView(record: StateSequence, options: ViewOptions = 
     const obs = record.observations
     if (obs !== undefined) {
       // The observations scaled into the gap above the paths.
-      const lo = Math.min(...obs.values)
-      const hi = Math.max(...obs.values)
+      const lo = minOf(obs.values)
+      const hi = maxOf(obs.values)
       const y = obs.values.map((v) => paths.length - 0.5 + (hi > lo ? (v - lo) / (hi - lo) : 0.5) * 0.9)
       layers.push(points([{ x: t, y, name: obs.name, colour: 'fgSecondary', size: 3, outline: false }], { mode }))
     }

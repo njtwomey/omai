@@ -6,7 +6,7 @@
  * identifiable, and a term can be evaluated at new data from what it learned on the training data.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
 import { dgemm, dsyev } from '../numerics/linalg/index.ts'
 import {
@@ -339,7 +339,7 @@ function nullSpacePenalty(penalties: readonly Float64Array[], width: number): Fl
   const total = new Float64Array(width * width)
   for (const pen of penalties) for (let i = 0; i < total.length; i++) total[i] = (total[i] ?? 0) + (pen[i] ?? 0)
   const { w, v } = dsyev(total, width)
-  const top = Math.max(...Array.from(w), 1e-300)
+  const top = Math.max(maxOf(Array.from(w)), 1e-300)
   const out = new Float64Array(width * width)
   let any = false
   w.forEach((value, c) => {
@@ -404,8 +404,8 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
           )
         }
         const values = Array.from(toFlat(x))
-        const lo = Math.min(...values)
-        const hi = Math.max(...values)
+        const lo = minOf(values)
+        const hi = maxOf(values)
         const gridSize = Math.min(80, Math.max(30, 3 * kRaw))
         const gridData = new Float64Array(gridSize * m.d)
         for (let i = 0; i < gridSize; i++)

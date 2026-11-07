@@ -5,7 +5,7 @@
  * `truth.latents`, and moves bounding boxes and masks with the pixels where it can.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { beta, foldIn, type Key, permutation, uniform } from '../../random/index.ts'
 import { dict, int, real } from '../../space/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
@@ -293,7 +293,7 @@ function mixingDraws(
   const lambda = Float64Array.from(beta(foldIn(options.key, 0), [n], alpha, alpha).data)
   const partner = Int32Array.from(permutation(foldIn(options.key, 1), n).data)
   const labels = data.labels === undefined ? undefined : Int32Array.from(data.labels.data)
-  const k = data.classes?.length ?? (labels === undefined ? 0 : Math.max(...labels) + 1)
+  const k = data.classes?.length ?? (labels === undefined ? 0 : maxOf(labels) + 1)
   return { lambda, partner, labels, k }
 }
 

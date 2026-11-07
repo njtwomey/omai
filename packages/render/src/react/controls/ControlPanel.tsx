@@ -4,6 +4,7 @@
  * narrow screens) or in a bar above or below it.
  */
 
+import { maxOf } from 'mdml-engine/base'
 import { type CSSProperties, createContext, type ReactNode, useContext, useId, useState } from 'react'
 import { cx } from './classes.ts'
 import { ChevronDownIcon } from './icons.tsx'
@@ -49,7 +50,7 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
     areas !== undefined
       ? {
           gridTemplateAreas: areas.map((r) => `"${r}"`).join(' '),
-          gridTemplateColumns: `repeat(${Math.max(...areas.map((r) => r.trim().split(/\s+/).length))}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${maxOf(areas.map((r) => r.trim().split(/\s+/).length))}, minmax(0, 1fr))`,
         }
       : rows !== undefined
         ? {

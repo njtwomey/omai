@@ -5,7 +5,7 @@
  * in constant memory, and sparse PCA finds one sparse component per step by a thresholded power iteration.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type Fitted, type IterativeEstimator, iterative, type LearnData, matrixView } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
 import { normal } from '../random/index.ts'
@@ -615,7 +615,7 @@ export function sparsePcaAlgorithm(
       v = v.map((e) => e / (Math.hypot(...v) || 1))
       for (let it = 0; it < maxIter; it++) {
         const z = normalMatvec(r, m.n, m.d, v)
-        const top = Math.max(...Array.from(z, Math.abs))
+        const top = maxOf(Array.from(z, Math.abs))
         const cut = alpha * top
         const soft = z.map((e) => Math.sign(e) * Math.max(Math.abs(e) - cut, 0))
         const norm = Math.hypot(...soft)

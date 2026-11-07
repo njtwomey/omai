@@ -4,6 +4,7 @@
  * form that suits it, beside its data and fitted parameters.
  */
 
+import { maxOf } from 'mdml-engine/base'
 import type { EnsembleStages, PipelineStages, StageData, StageParameter } from 'mdml-engine/exposition'
 import { type CSSProperties, type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
@@ -299,7 +300,7 @@ function ParameterTables(props: { readonly parameters: readonly StageParameter[]
             : [value as readonly number[]]
           const width = rows[0]?.length ?? 0
           const columns = p.columns ?? Array.from({ length: width }, (_, j) => String(j))
-          const max = Math.max(0, ...rows.flat().map((v) => (Number.isFinite(v) ? Math.abs(v) : 0)))
+          const max = Math.max(0, maxOf(rows.flat().map((v) => (Number.isFinite(v) ? Math.abs(v) : 0))))
           return (
             <div key={p.name} style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '100%' }}>
               <span style={{ color: t.fgSecondary }}>{p.name}</span>

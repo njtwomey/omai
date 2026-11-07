@@ -4,6 +4,7 @@
  * Pure, and shared by the main-thread producer and the worker's.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { RunStatus, SliceBudget } from 'mdml-engine/trace'
 
 /**
@@ -17,7 +18,7 @@ import type { RunStatus, SliceBudget } from 'mdml-engine/trace'
 export function sharedHead(variants: readonly { readonly head: number; readonly done: boolean }[]): number {
   if (variants.length === 0) return 0
   const open = variants.filter((v) => !v.done)
-  return open.length > 0 ? Math.min(...open.map((v) => v.head)) : Math.max(...variants.map((v) => v.head))
+  return open.length > 0 ? minOf(open.map((v) => v.head)) : maxOf(variants.map((v) => v.head))
 }
 
 /** What advancing in step needs of a session: the step reached, the status once ended, and `advance`. */
@@ -46,7 +47,7 @@ export function advanceInStep(sessions: readonly Advancing[], budget: SliceBudge
   const clock = budget.clock
   if (budget.ms === undefined || clock === undefined) {
     const steps = budget.steps ?? Number.POSITIVE_INFINITY
-    const target = Math.min(...open.map((s) => s.t)) + steps
+    const target = minOf(open.map((s) => s.t)) + steps
     for (const s of open) if (s.t < target) s.advance({ steps: target - s.t })
     return
   }

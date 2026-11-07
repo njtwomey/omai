@@ -6,7 +6,7 @@
  * working response `z` with weights `w`, which is what one iteration of penalised IRLS presents.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { dgemm, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
 import { nelderMead, qpActiveSet, qpArrays, qpInteriorPoint } from '../optim/index.ts'
 import { constraintNullSpace } from '../stats/smoothing/index.ts'
@@ -70,7 +70,7 @@ export function penaltyStructure(design: GamDesign): PenaltyStructure {
       for (let i = 0; i < total.length; i++) total[i] = (total[i] ?? 0) + (pen.matrix[i] ?? 0)
     }
     const { w } = dsyev(total, t.width)
-    const top = Math.max(...Array.from(w), 0)
+    const top = Math.max(maxOf(Array.from(w)), 0)
     const rank = Array.from(w).filter((v) => v > 1e-9 * Math.max(top, 1e-300)).length
     terms.push({ offset: t.offset, size: t.width, blocks: mine, rank })
   })

@@ -4,6 +4,7 @@
  * prevalence and accuracy; hovering a rate outlines its numerator and denominator.
  */
 
+import { maxOf } from 'mdml-engine/base'
 import { type ConfusionMatrix, confusionMargins, tableCost } from 'mdml-engine/metrics'
 import { type ReactNode, useMemo, useState } from 'react'
 import { formatNumber, formatPercent } from '../theme/format.ts'
@@ -184,7 +185,7 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
   ]
 
   // Light shading by count, from the surface towards the accent, so text stays legible in both themes.
-  const max = Math.max(1, ...table.matrix.flat())
+  const max = Math.max(1, maxOf(table.matrix.flat()))
   const shade = (c: number): string => mixColours(t.surface, t.accent, 0.06 + 0.42 * (c / max))
   const inFocus = (cells: readonly Cell[] | undefined, j: number, i: number): boolean =>
     cells?.some(([a, b]) => a === j && b === i) ?? false

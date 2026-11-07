@@ -8,7 +8,7 @@
  * `optim` as their update rule, so the direction `delta z` can be fed to momentum or Adam instead of a plain step.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { applyUpdates, type GradientTransformation } from '../optim/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
@@ -711,7 +711,7 @@ export function semiGradientSarsa<O>(
   const bestAction = (w: ArrayLike<number>, o: O, k?: Key): number => {
     const q = qs(w, o)
     if (k === undefined) return argmaxOf(q)
-    const top = Math.max(...q)
+    const top = maxOf(q)
     const ties = q.flatMap((x, a) => (x === top ? [a] : []))
     return ties[Math.min(ties.length - 1, Math.floor(unit(k) * ties.length))] ?? 0
   }
@@ -786,7 +786,7 @@ export function semiGradientSarsa<O>(
           weightNorm: dnrm2(state.w),
         }
       }
-      const boot = t.terminated ? 0 : Math.max(...qs(state.w, t.nextObservation))
+      const boot = t.terminated ? 0 : maxOf(qs(state.w, t.nextObservation))
       const u = process(state, here, t.reward, boot)
       return {
         ...rest,

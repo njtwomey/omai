@@ -8,7 +8,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { crossEntropy } from '../losses/index.ts'
 import { rocAucScore, rocCurve } from '../metrics/index.ts'
 import type { LogitsFunction, Params } from '../nn/index.ts'
@@ -455,7 +455,7 @@ export function attributeInference(
   const accuracy = truth === undefined ? Number.NaN : predicted.filter((p, i) => p === truth[i]).length / Math.max(1, n)
   const counts = new Map<number, number>()
   for (const t of truth ?? []) counts.set(t, (counts.get(t) ?? 0) + 1)
-  const baseline = truth === undefined ? Number.NaN : Math.max(0, ...counts.values()) / Math.max(1, n)
+  const baseline = truth === undefined ? Number.NaN : Math.max(0, maxOf([...counts.values()])) / Math.max(1, n)
   return { predicted, accuracy, baseline }
 }
 

@@ -6,6 +6,7 @@
  */
 
 import type { Json } from 'mdml-engine/base'
+import { maxOf } from 'mdml-engine/base'
 import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
 import { type Tensor, toFlat } from 'mdml-engine/tensor'
 import type { Run } from 'mdml-engine/trace'
@@ -251,27 +252,28 @@ export function RowsPanel(props: {
     const layers: Layer[] =
       byExpert && labels !== undefined
         ? // One set per expert so that an expert keeps its colour whichever experts own rows.
-          Array.from({ length: Math.max(expertRows?.length ?? 0, Math.max(-1, ...labels) + 1) }, (_, k) => k).flatMap(
-            (k) => {
-              const own = labels.flatMap((l, i) => (l === k ? [i] : []))
-              return own.length === 0
-                ? []
-                : [
-                    points(
-                      [
-                        {
-                          x: own.map((i) => rowX[i] ?? 0),
-                          y: own.map((i) => rowY[i] ?? 0),
-                          name: `expert ${k}`,
-                          colour: categoricalColour(k),
-                          opacity: 0.7,
-                        },
-                      ],
-                      { mode },
-                    ),
-                  ]
-            },
-          )
+          Array.from(
+            { length: Math.max(expertRows?.length ?? 0, Math.max(-1, maxOf(labels)) + 1) },
+            (_, k) => k,
+          ).flatMap((k) => {
+            const own = labels.flatMap((l, i) => (l === k ? [i] : []))
+            return own.length === 0
+              ? []
+              : [
+                  points(
+                    [
+                      {
+                        x: own.map((i) => rowX[i] ?? 0),
+                        y: own.map((i) => rowY[i] ?? 0),
+                        name: `expert ${k}`,
+                        colour: categoricalColour(k),
+                        opacity: 0.7,
+                      },
+                    ],
+                    { mode },
+                  ),
+                ]
+          })
         : [points([{ x: rowX, y: rowY, ...(groups === undefined ? {} : { groups }), opacity: 0.7 }], { mode })]
     if (extra !== undefined) {
       if (extra.rows !== undefined) layers.splice(0, 1, extra.rows)

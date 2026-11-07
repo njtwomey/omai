@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { type Complex, type ComplexPlane, isStablePole } from 'mdml-engine/exposition'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
@@ -29,7 +30,7 @@ const CROSS = 'path://M-3,-2L-2,-3L0,-1L2,-3L3,-2L1,0L3,2L2,3L0,1L-2,3L-3,2L-1,0
  */
 export function complexPlaneLimits(record: ComplexPlane): { real: [number, number]; imaginary: [number, number] } {
   const all: Complex[] = [...record.poles, ...(record.zeros ?? []), ...(record.locus ?? []).flatMap((b) => b.path)]
-  const reach = Math.max(record.domain === 'z' ? 1 : 0.5, ...all.flatMap((p) => [Math.abs(p[0]), Math.abs(p[1])]))
+  const reach = Math.max(record.domain === 'z' ? 1 : 0.5, maxOf(all.flatMap((p) => [Math.abs(p[0]), Math.abs(p[1])])))
   const r = Math.ceil(reach * 1.25 * 10) / 10
   const [lo, hi] = spanOf(all.map((p) => p[0]))
   // On the s-plane the real axis is lopsided: poles sit mostly on the left.

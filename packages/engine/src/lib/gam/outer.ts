@@ -10,7 +10,7 @@
  * other mode (`iteration: 'performance'`).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { dgemm, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
 import { fitGlm, fminbound, glmSolvers, nelderMead } from '../optim/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
@@ -529,7 +529,7 @@ export function gamOuterAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key
       criterion: ev.value,
       scale: pearsonScale(problem, mu, sol.edfTotal),
       converged,
-      gradNorm: ev.gradient === undefined ? Number.NaN : Math.max(0, ...Array.from(ev.gradient, Math.abs)),
+      gradNorm: ev.gradient === undefined ? Number.NaN : Math.max(0, maxOf(Array.from(ev.gradient, Math.abs))),
     }
   }
   const clamp = (v: readonly number[]): number[] => v.map((x) => Math.min(Math.max(x, BOUNDS.lower), BOUNDS.upper))
@@ -583,12 +583,12 @@ export function gamOuterAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key
         const ev0 = evaluateOuter(setup, current, { warm })
         const g = ev0.gradient as Float64Array
         const gradTol = 1e-5 * Math.max(1, Math.abs(ev0.value) / 100)
-        if (Math.max(0, ...Array.from(g, Math.abs)) < gradTol) {
+        if (Math.max(0, maxOf(Array.from(g, Math.abs))) < gradTol) {
           next = stateAt(ev0, s.iteration + 1, true)
         } else {
           const H = outerHessian(setup, ev0)
           const { w, v } = dsyev(H, m)
-          const floor = Math.max(1e-8, 1e-8 * Math.max(...Array.from(w, Math.abs)))
+          const floor = Math.max(1e-8, 1e-8 * maxOf(Array.from(w, Math.abs)))
           const proj = new Float64Array(m)
           for (let k = 0; k < m; k++) {
             let a = 0
@@ -598,7 +598,7 @@ export function gamOuterAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key
           const delta = new Float64Array(m)
           for (let r = 0; r < m; r++)
             for (let k = 0; k < m; k++) delta[r] = (delta[r] ?? 0) + (v[r * m + k] ?? 0) * (proj[k] ?? 0)
-          const big = Math.max(0, ...Array.from(delta, Math.abs))
+          const big = Math.max(0, maxOf(Array.from(delta, Math.abs)))
           const cap = big > 4 ? 4 / big : 1
           let a = cap
           let best: OuterEvaluation | undefined
@@ -613,7 +613,7 @@ export function gamOuterAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key
           }
           // No step helps, or the criterion is flat to rounding (a term penalised towards its null space): done.
           const gain = best === undefined ? 0 : ev0.value - best.value
-          const flat = gain <= 1e-9 * (Math.abs(ev0.value) + 1) && Math.max(0, ...Array.from(g, Math.abs)) < 1e-3
+          const flat = gain <= 1e-9 * (Math.abs(ev0.value) + 1) && Math.max(0, maxOf(Array.from(g, Math.abs))) < 1e-3
           next =
             best === undefined || gain <= 1e-12 * (Math.abs(ev0.value) + 1)
               ? stateAt(ev0, s.iteration + 1, true)

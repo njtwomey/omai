@@ -8,7 +8,7 @@
  * @index function Conformal prediction: split, cross and adaptive prediction sets.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -309,7 +309,7 @@ function crossConformalRun(
       ctx.log('cross/fold', s.done)
       ctx.log('cross/trainSize', fold.train.length)
       ctx.log('cross/residual', meanOfRows(residuals, fold.test))
-      ctx.log('cross/maxResidual', Math.max(...residuals))
+      ctx.log('cross/maxResidual', maxOf(residuals))
       return { done: s.done + 1, foldOf, residuals }
     },
     done: (s) => (s.done >= folds.length ? 'completed' : undefined),

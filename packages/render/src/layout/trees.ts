@@ -4,6 +4,7 @@
  * hierarchical clustering is drawn.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /** Options of the tree layouts. */
@@ -100,7 +101,7 @@ export function tidyTree(graph: LayoutGraph, options: TreeOptions = {}): GraphLa
   }
   const offsets: number[] = []
   let acc = 0
-  for (let d = 0; d <= Math.max(0, ...depthSize.keys()); d++) {
+  for (let d = 0; d <= Math.max(0, maxOf([...depthSize.keys()])); d++) {
     const h = depthSize.get(d) ?? 0
     offsets.push(acc + h / 2)
     acc += h + levelSep
@@ -136,8 +137,8 @@ export function radialTree(graph: LayoutGraph, options: Omit<TreeOptions, 'direc
   const pos = tidyPositions(s, 1, false)
   // Breadth positions of the leaves span [min, max]; spread them over the full circle.
   const ats = [...pos.values()].map(([a]) => a)
-  const lo = Math.min(...ats)
-  const span = Math.max(...ats) - lo
+  const lo = minOf(ats)
+  const span = maxOf(ats) - lo
   const leaves = [...pos.keys()].filter((v) => (s.children.get(v) ?? []).length === 0).length
   const full = span === 0 ? 1 : (span * leaves) / Math.max(leaves - 1, 1)
   const boxes: Record<string, Box> = {}
@@ -180,7 +181,7 @@ export function dendrogram(
   const { siblingSep = 16, margin = 16, scale = 240 } = options
   const s = shape(graph, options.root)
   const pos = tidyPositions(s, siblingSep, false)
-  const top = Math.max(1e-12, ...[...pos.keys()].map((v) => heights[v] ?? 0))
+  const top = Math.max(1e-12, maxOf([...pos.keys()].map((v) => heights[v] ?? 0)))
   const boxes: Record<string, Box> = {}
   for (const [v, [at]] of pos) {
     const z = s.size.get(v) ?? { width: 0, height: 0 }

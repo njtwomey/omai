@@ -6,7 +6,7 @@
  * Sugeno rule bases, and the defuzzifiers centroid, bisector and the means, smallest and largest of the maxima).
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type Algorithm, channels, type TraceSchema } from '../trace/index.ts'
 
 // ------------------------------------------------------------------------------------------------ certainty factors
@@ -73,7 +73,7 @@ export function certaintyInference(
   for (let pass = 0; pass < 100; pass++) {
     const contributions = new Map<string, number[]>()
     for (const r of rules) {
-      const weakest = Math.min(...r.conditions.map((c) => cf[c] ?? 0))
+      const weakest = minOf(r.conditions.map((c) => cf[c] ?? 0))
       if (weakest > 0.2)
         contributions.set(r.conclusion, [...(contributions.get(r.conclusion) ?? []), r.factor * weakest])
     }
@@ -515,7 +515,7 @@ export function defuzzify(
     }
     return mid
   }
-  const top = Math.max(...membership)
+  const top = maxOf(membership)
   const at = universe.filter((_, i) => Math.abs((membership[i] ?? 0) - top) < 1e-12)
   return method === 'som'
     ? (at[0] as number)
@@ -659,20 +659,23 @@ export function possibilityMeasures(
   distribution: Readonly<Record<string, number>>,
   event: readonly string[],
 ): { readonly possibility: number; readonly necessity: number } {
-  if (Math.max(...Object.values(distribution)) !== 1)
-    throw new MdmlError('value', 'a possibility distribution has maximum 1')
+  if (maxOf(Object.values(distribution)) !== 1) throw new MdmlError('value', 'a possibility distribution has maximum 1')
   const inside = new Set(event)
   const pi = Math.max(
     0,
-    ...Object.entries(distribution)
-      .filter(([k]) => inside.has(k))
-      .map(([, v]) => v),
+    maxOf(
+      Object.entries(distribution)
+        .filter(([k]) => inside.has(k))
+        .map(([, v]) => v),
+    ),
   )
   const outside = Math.max(
     0,
-    ...Object.entries(distribution)
-      .filter(([k]) => !inside.has(k))
-      .map(([, v]) => v),
+    maxOf(
+      Object.entries(distribution)
+        .filter(([k]) => !inside.has(k))
+        .map(([, v]) => v),
+    ),
   )
   return { possibility: pi, necessity: 1 - outside }
 }

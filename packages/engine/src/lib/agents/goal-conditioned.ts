@@ -6,7 +6,7 @@
  * that replays every episode's transitions with their relabelled goals.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import type { Agent } from '../rl/index.ts'
 import type { Space } from '../space/index.ts'
@@ -183,7 +183,7 @@ export function goalConditionedQ(
   // One Q-learning update on a transition, in place on a copy of the weights; returns the TD error.
   const update = (w: Float64Array, s: GoalStep): number => {
     const phi: SparseFeatures = options.features.features(s.observation, s.action)
-    const next = s.terminated ? 0 : Math.max(...qs(w, s.nextObservation))
+    const next = s.terminated ? 0 : maxOf(qs(w, s.nextObservation))
     const delta = s.reward + gamma * next - featureValue(w, phi)
     for (const [j, i] of phi.indices.entries()) w[i] = (w[i] ?? 0) + alpha * delta * (phi.values?.[j] ?? 1)
     return delta

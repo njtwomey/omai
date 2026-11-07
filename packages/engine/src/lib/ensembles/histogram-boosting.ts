@@ -8,6 +8,7 @@
  * boosting loop, losses and logs are those of gradient boosting; only the tree grower is different.
  */
 
+import { maxOf } from '../base/index.ts'
 import type { MatrixView } from '../learn/validation.ts'
 import type { Tree } from '../trees/tree.ts'
 import {
@@ -307,7 +308,7 @@ function histogramGrower({ m, w, loss, h }: BoostEnv): StageGrower {
       }),
       categories: nodes.map(() => []),
     }
-    const bins = Math.max(...edges.map((e) => e.length + 1))
+    const bins = maxOf(edges.map((e) => e.length + 1))
     return { tree, leaves: leafOf, bins } satisfies StageTree
   }
 }

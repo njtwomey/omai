@@ -7,7 +7,7 @@
  * that score one candidate per step.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { lstsq } from '../numerics/linalg/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { fromStorage, item, toFlat } from '../tensor/index.ts'
@@ -262,8 +262,8 @@ export function polynomialMdl(x: ArrayLike<number>, y: ArrayLike<number>, maxDeg
   if (y.length !== n) throw new MdmlError('shape', 'polynomialMdl: x and y differ in length')
   if (!(Number.isInteger(maxDegree) && maxDegree >= 0 && maxDegree <= n - 2))
     throw new MdmlError('value', `polynomialMdl: maxDegree must be an integer in [0, ${n - 2}]`)
-  const lo = Math.min(...Array.from(x))
-  const hi = Math.max(...Array.from(x))
+  const lo = minOf(Array.from(x))
+  const hi = maxOf(Array.from(x))
   if (!(hi > lo)) throw new MdmlError('value', 'polynomialMdl: x is constant')
   const u = Array.from(x, (v) => (2 * (v - lo)) / (hi - lo) - 1)
   const my = Array.from(y).reduce((a, b) => a + b, 0) / n
@@ -318,8 +318,8 @@ export function polynomialMdl(x: ArrayLike<number>, y: ArrayLike<number>, maxDeg
 export function histogramMdl(data: ArrayLike<number>, maxBins: number, precision?: number): MdlRow[] {
   const n = data.length
   if (n < 2) throw new MdmlError('value', 'histogramMdl: need at least two observations')
-  const lo = Math.min(...Array.from(data))
-  const hi = Math.max(...Array.from(data))
+  const lo = minOf(Array.from(data))
+  const hi = maxOf(Array.from(data))
   if (!(hi > lo)) throw new MdmlError('value', 'histogramMdl: the data are constant')
   if (!(Number.isInteger(maxBins) && maxBins >= 1))
     throw new MdmlError('value', 'histogramMdl: maxBins must be a positive integer')

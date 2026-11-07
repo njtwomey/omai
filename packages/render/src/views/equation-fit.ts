@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { coefficientErrors, type EquationFit, fitResidual, type TermStatus } from 'mdml-engine/exposition'
 import { lines } from '../charts/lines.ts'
 import { cartesian } from '../charts/plot.ts'
@@ -167,7 +168,7 @@ export function equationFitView(record: EquationFit, options: ViewOptions = {}):
     lines([{ x: [...record.x], y: [...record.fit], name: 'fit', colour: 'tab0', width: 2 }], { mode }),
   ]
   const r = fitResidual(record)
-  const worst = Math.max(0, ...r.values.map(Math.abs))
+  const worst = Math.max(0, maxOf(r.values.map(Math.abs)))
   return {
     ...cartesian(layers, { mode, figure: fig, x: { label: xn }, y: { label: yn }, legend: true }),
     animation: false,

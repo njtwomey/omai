@@ -4,7 +4,7 @@
  * segment intersection, Sutherland-Hodgman clipping, and Minkowski sums of convex polygons.
  */
 
-import { MdmlError, type Vec3 } from '../../base/index.ts'
+import { MdmlError, maxOf, type Vec3 } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -121,7 +121,7 @@ export function convexHull3(points: TensorLike | readonly Vec3[]): ConvexHull3 {
   const at = (i: number): Vec3 => pts[i] as Vec3
   const volume6 = (a: number, b: number, c: number, d: number): number =>
     dot3(cross(sub3(at(b), at(a)), sub3(at(c), at(a))), sub3(at(d), at(a)))
-  const scale = Math.max(1e-300, ...pts.flatMap((p) => p.map(Math.abs)))
+  const scale = Math.max(1e-300, maxOf(pts.flatMap((p) => p.map(Math.abs))))
   const eps = 1e-12 * scale ** 3
   // An initial tetrahedron from extreme points.
   let i0 = 0

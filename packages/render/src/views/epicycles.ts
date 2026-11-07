@@ -6,6 +6,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { Epicycles } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { lines } from '../charts/lines.ts'
@@ -106,9 +107,9 @@ export function epicycleFrames(record: Epicycles, options: EpicycleViewOptions =
   const angular = record.chain.k.map((k) => 2 * Math.PI * k)
   // The spectrum: kept and dropped coefficients, on a log scale from five decades below the largest.
   const mags = record.spectrum.magnitude
-  const topMag = 10 ** Math.ceil(Math.log10(Math.max(1e-12, ...mags)))
+  const topMag = 10 ** Math.ceil(Math.log10(Math.max(1e-12, maxOf(mags))))
   const kmax = Math.min(
-    2 ** Math.ceil(Math.log2(Math.max(32, ...record.spectrum.k.map(Math.abs)))),
+    2 ** Math.ceil(Math.log2(Math.max(32, maxOf(record.spectrum.k.map(Math.abs))))),
     Math.max(32, Math.floor(record.target.x.length / 2)),
   )
   const pick = (kept: boolean): { x: number[]; y: number[] } => {
@@ -123,7 +124,7 @@ export function epicycleFrames(record: Epicycles, options: EpicycleViewOptions =
   }
   const on = pick(true)
   const off = pick(false)
-  const cutoff = Math.min(...on.y)
+  const cutoff = minOf(on.y)
   const spectrum: Panel = {
     layers: [
       points([{ x: off.x, y: off.y, name: 'dropped', colour: 'fgSecondary', size: 3, opacity: 0.5 }], { mode }),

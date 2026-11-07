@@ -5,7 +5,7 @@
  * exposes the log likelihood, how far it moved, and the responsibilities, means and weights.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { initialCentres, lloydAlgorithm } from '../cluster/index.ts'
 import { multivariateNormal } from '../dists/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
@@ -70,7 +70,7 @@ export function normaliseLogDensities(logJoint: readonly (readonly number[])[]):
   readonly logNorm: number[]
 } {
   const logNorm = logJoint.map((row) => {
-    const m = Math.max(...row)
+    const m = maxOf(row)
     return m + Math.log(row.reduce((a, v) => a + Math.exp(v - m), 0))
   })
   return { resp: logJoint.map((row, i) => row.map((v) => Math.exp(v - (logNorm[i] ?? 0)))), logNorm }
@@ -108,7 +108,7 @@ export function mixturePosterior(
  * ```
  */
 export function componentLabels(resp: readonly (readonly number[])[]): number[] {
-  return resp.map((r) => r.indexOf(Math.max(...r)))
+  return resp.map((r) => r.indexOf(maxOf(r)))
 }
 
 /**

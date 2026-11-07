@@ -8,7 +8,7 @@
  * method, so a trainer adds it to the loss.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import type { SpaceValue } from '../../space/index.ts'
 import {
@@ -168,7 +168,7 @@ export class SplineLayer extends Module {
     this.start = []
     for (let i = 0; i < d; i++) {
       const col = column(i)
-      let [lo, hi] = given(i) ?? (col === undefined ? [0, 1] : [Math.min(...col), Math.max(...col)])
+      let [lo, hi] = given(i) ?? (col === undefined ? [0, 1] : [minOf(col), maxOf(col)])
       if (!(hi > lo)) [lo, hi] = [lo - 0.5, lo + 0.5]
       this.lo.push(lo)
       this.hi.push(hi)

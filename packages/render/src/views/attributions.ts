@@ -6,6 +6,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { FeatureAttributions, Importances } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -62,7 +63,7 @@ function signed(v: number): string {
 
 // Room on the left for category labels of this many characters.
 function labelPadding(fig: Figure, labels: readonly string[]): Figure {
-  const longest = Math.max(4, ...labels.map((l) => l.length))
+  const longest = Math.max(4, maxOf(labels.map((l) => l.length)))
   const left = Math.min(220, Math.round(16 + longest * fig.fontSize * 0.6))
   return { ...fig, padding: { ...fig.padding, left: Math.max(fig.padding.left, left) } }
 }
@@ -343,7 +344,7 @@ function swarm(values: readonly number[], bins = 100, height = 0.4): number[] {
     layerIndex += 1
     last = quant[i] ?? 0
   }
-  const top = Math.max(1, ...ys.map((y) => Math.abs(y) + 1))
+  const top = Math.max(1, maxOf(ys.map((y) => Math.abs(y) + 1)))
   return ys.map((y) => (0.9 * height * y) / top)
 }
 

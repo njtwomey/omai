@@ -8,7 +8,7 @@
  * own `ClassicTree` type rather than a `Tree`; ID3 and CHAID read continuous features through equal-frequency bins.
  */
 
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, MdmlError, maxOf } from '../base/index.ts'
 import { type SplitCandidate, type TreeNode, type TreeRecord, treeRecord } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import type { FittedFacts, LearnData, Verbs } from '../learn/estimator.ts'
@@ -552,7 +552,7 @@ export function pessimisticPrune(tree: ClassicTree, confidence: number): Classic
   const errors = (node: number): number => {
     const v = tree.value[node] ?? []
     const total = v.reduce((a, b) => a + b, 0)
-    const e = total - Math.max(...v)
+    const e = total - maxOf(v)
     return e + pessimisticErrors(total, e, confidence)
   }
   const estimate = (node: number): number => {

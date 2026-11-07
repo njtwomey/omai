@@ -8,7 +8,7 @@
  * @index function Detection boxes: format conversions, IoU and non-maximum suppression.
  */
 
-import { MdmlError, roundHalfEven } from '../base/index.ts'
+import { MdmlError, maxOf, roundHalfEven } from '../base/index.ts'
 import { boxIou } from '../metrics/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -563,7 +563,7 @@ export function matchAnchors(
   if (options.allowLowQuality === true)
     for (let i = 0; i < t.length; i++) {
       const row = q[i] as number[]
-      const top = Math.max(...row)
+      const top = maxOf(row)
       for (let j = 0; j < a.length; j++) if (row[j] === top) matches[j] = best[j] ?? 0
     }
   return matches

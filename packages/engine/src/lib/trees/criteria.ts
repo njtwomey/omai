@@ -6,6 +6,7 @@
  * and sends missing values (NaN) to whichever side does better. The candidates evaluated are kept for explanation.
  */
 
+import { maxOf } from '../base/index.ts'
 import type { SplitCandidate } from '../exposition/index.ts'
 import type { MatrixView } from '../learn/validation.ts'
 import { weightedPercentile } from '../metrics/index.ts'
@@ -560,7 +561,7 @@ function searchCategorical(
     return
   }
   // Order by the mean response (regression), the share of the last class (binary) or of the node's majority class.
-  const majority = problem.k > 2 ? total.counts.indexOf(Math.max(...total.counts)) : problem.k - 1
+  const majority = problem.k > 2 ? total.counts.indexOf(maxOf(total.counts)) : problem.k - 1
   const response = stats.map((s) =>
     problem.k > 0 ? (s.counts[majority] ?? 0) / (s.weight || 1) : s.sum / (s.weight || 1),
   )

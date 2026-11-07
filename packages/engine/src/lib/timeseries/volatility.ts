@@ -6,7 +6,7 @@
  * on parameters mapped into the stationary region; variance forecasts and simulation complete it.
  */
 
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { MdmlError, maxOf, meanOf, varianceOf } from '../base/index.ts'
 import type { BfgsState } from '../optim/index.ts'
 import { type Key, normal, studentT } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -262,7 +262,7 @@ function layoutOf(r: Resolved): {
       // Shares of the persistence budget: a softmax over the m coefficients and one slack entry, so the weights sum below 1.
       const v = Array.from({ length: m }, (_, i) => u[k + i] ?? 0)
       k += m
-      const top = Math.max(0, ...v)
+      const top = Math.max(0, maxOf(v))
       const e = [...v.map((x) => Math.exp(x - top)), Math.exp(-top)]
       const total = e.reduce((a, b) => a + b, 0)
       const w = e.slice(0, m).map((x) => x / total)

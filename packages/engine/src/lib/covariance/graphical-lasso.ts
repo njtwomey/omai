@@ -5,7 +5,7 @@
  * estimator on the iterative base.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { regularisationPath } from '../exposition/index.ts'
 import {
   ExplainedEstimatorClass,
@@ -317,7 +317,7 @@ export function graphicalLassoEstimator(
       const names = featureNamesOf(data, m.d)
       const pairs: [number, number][] = []
       for (let a = 0; a < m.d; a++) for (let b = a + 1; b < m.d; b++) pairs.push([a, b])
-      const largest = Math.max(...pairs.map(([a, b]) => Math.abs(s[a]?.[b] ?? 0)), 1e-12)
+      const largest = Math.max(maxOf(pairs.map(([a, b]) => Math.abs(s[a]?.[b] ?? 0))), 1e-12)
       const penalties = h.pathPenalties ?? Array.from({ length: 8 }, (_, i) => largest * 10 ** (-2 * (i / 7)))
       const path = penalties.map((pen) => {
         const pState = runAlgorithm(graphicalLassoAlgorithm(s, pen, opts), { maxSteps: h.maxIter ?? 100 }).state

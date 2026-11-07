@@ -4,7 +4,7 @@
  * k matrix (the Rayleigh-Ritz values). One block product per step; the state serialises.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -161,10 +161,10 @@ export function subspaceIterationAlgorithm(
     step: (s) => stateOf(orthonormalise(Float64Array.from(s.aq)), s.iteration + 1),
     done: (s) => {
       const scale = Math.max(Math.abs(s.ritzValues[0] ?? 0), Number.MIN_VALUE)
-      return Math.max(...s.residuals) <= tol * scale ? 'converged' : undefined
+      return maxOf(s.residuals) <= tol * scale ? 'converged' : undefined
     },
     observe: (s) => ({
-      metrics: { maxResidual: Math.max(...s.residuals), leadingRitzValue: s.ritzValues[0] ?? Number.NaN },
+      metrics: { maxResidual: maxOf(s.residuals), leadingRitzValue: s.ritzValues[0] ?? Number.NaN },
       tensors: {
         ritzValues: { role: 'state' as const, value: s.ritzValues },
         residuals: { role: 'state' as const, value: s.residuals },
@@ -224,12 +224,12 @@ export function subspaceIteration(
     ...algorithm,
     init: (key) => {
       const s = algorithm.init(key)
-      history.push(Math.max(...s.residuals))
+      history.push(maxOf(s.residuals))
       return s
     },
     step: (s, ctx) => {
       const next = algorithm.step(s, ctx)
-      history.push(Math.max(...next.residuals))
+      history.push(maxOf(next.residuals))
       return next
     },
   }

@@ -7,7 +7,7 @@
  */
 
 import { customVjp, jvp as forward, jacobian, vjp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -501,7 +501,7 @@ export function fixedPointAlgorithm(
       if (ctx.wants('fixed-point/change'))
         ctx.log(
           'fixed-point/change',
-          Math.max(...next.map((v, i) => Math.abs((x[i] ?? 0) === 0 ? v : (v - (x[i] ?? 0)) / (x[i] ?? 1)))),
+          maxOf(next.map((v, i) => Math.abs((x[i] ?? 0) === 0 ? v : (v - (x[i] ?? 0)) / (x[i] ?? 1)))),
         )
       return {
         x: next,

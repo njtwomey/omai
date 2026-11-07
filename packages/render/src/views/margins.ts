@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { type DecisionSurface, type MarginRecord, surfaceAt } from 'mdml-engine/exposition'
 import { histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -68,7 +69,7 @@ export function marginFrames(record: MarginRecord, options: MarginViewOptions = 
     return steps <= 1 ? 0 : Math.round((f * (steps - 1)) / Math.max(1, count - 1))
   }
   const alpha = record.support.map((_, i) => Math.abs(record.dualCoefficients[i] ?? 0))
-  const top = Math.max(1e-12, ...alpha)
+  const top = Math.max(1e-12, maxOf(alpha))
   // y·f(x) per row at a frame: the recorded step's decision values when there are, the final margins otherwise.
   const marginsAt = (frame: number): readonly number[] => {
     const values = recorded?.[Math.min(Math.max(frame, 0), count - 1)]?.rowValues

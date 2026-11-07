@@ -6,6 +6,7 @@
  * gradient almost everywhere, which the eikonal loss uses). Both are coordinate-to-value regression data.
  */
 
+import { maxOf, minOf } from '../base/index.ts'
 import { type DatasetGenerator, type Knobs, type RegressionData, type Truth, xy } from '../data/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
@@ -48,7 +49,7 @@ export function sdfSphere(p: readonly number[], radius: number, centre: readonly
  */
 export function sdfBox(p: readonly number[], half: readonly number[], centre: readonly number[] = []): number {
   const q = p.map((v, i) => Math.abs(v - (centre[i] ?? 0)) - (half[i] ?? 0))
-  return norm(q.map((v) => Math.max(v, 0))) + Math.min(Math.max(...q), 0)
+  return norm(q.map((v) => Math.max(v, 0))) + Math.min(maxOf(q), 0)
 }
 
 /**
@@ -84,7 +85,7 @@ export function sdfTorus(p: readonly number[], major: number, minor: number): nu
  * ```
  */
 export function sdfUnion(distances: readonly number[]): number {
-  return Math.min(...distances)
+  return minOf(distances)
 }
 
 /** The analytic shapes of {@link signedDistance}, as functions of a point in two or three dimensions. */

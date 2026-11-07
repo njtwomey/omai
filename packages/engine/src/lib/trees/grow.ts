@@ -9,7 +9,7 @@
  * into a `Tree` and an exposition record.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type SplitCandidate, type TreeNode, type TreeRecord, treeRecord } from '../exposition/index.ts'
 import type { FitOptions, LearnData } from '../learn/estimator.ts'
 import { encodeLabels, type MatrixView, matrixView, sampleWeightsOf, targetVector } from '../learn/validation.ts'
@@ -243,7 +243,7 @@ export function growTreeAlgorithm(
       let right = 0
       let total = 0
       for (const n of leaves) {
-        right += Math.max(...n.value)
+        right += maxOf(n.value)
         total += n.weight
       }
       return total > 0 ? right / total : 0
@@ -334,7 +334,7 @@ export function growTreeAlgorithm(
           node.candidates.map((c) => [c.feature, c.threshold, c.impurityLeft, c.impurityRight, c.decrease]),
         )
       if (ctx.wants('tree/leaves')) ctx.log('tree/leaves', nodes.filter((n) => n.left < 0).length)
-      if (ctx.wants('tree/depth')) ctx.log('tree/depth', Math.max(...nodes.map((n) => n.depth)))
+      if (ctx.wants('tree/depth')) ctx.log('tree/depth', maxOf(nodes.map((n) => n.depth)))
       if (ctx.wants('tree/impurity')) {
         let total = 0
         for (const n of nodes) if (n.left < 0) total += (n.weight / problem.totalWeight) * n.impurity
