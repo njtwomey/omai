@@ -124,6 +124,7 @@ describe('NarrativeView', () => {
     expect([seen.at, tabs(m)[1], moment(m)]).toEqual([20, '*2. Middle', 'moment 1 of 1'])
     expect(m.text()).toContain('The middle page.')
 
+    const preventDefault = vi.fn()
     // Alt+Arrow does the same from the keyboard on the narrative; Arrow alone, or typing in an input, does not.
     const key = (event: object): Promise<void> =>
       invoke(
@@ -131,16 +132,39 @@ describe('NarrativeView', () => {
         'onKeyDown',
         event,
       )
-    await key({ key: 'ArrowLeft', altKey: false, target: {} })
+    await key({ key: 'ArrowLeft', altKey: false, target: {}, preventDefault })
     expect(seen.at).toBe(20)
     await key({
       key: 'ArrowLeft',
       altKey: true,
       target: new (globalThis as never as { HTMLInputElement: new () => object }).HTMLInputElement(),
+      preventDefault,
     })
     expect(seen.at).toBe(20)
-    await key({ key: 'ArrowLeft', altKey: true, target: {} })
+    expect(preventDefault).not.toHaveBeenCalled()
+    await key({ key: 'ArrowLeft', altKey: true, target: {}, preventDefault })
     expect([seen.at, tabs(m)[0]]).toEqual([10, '*1. Setup'])
+    // The browser is told not to take Alt+Arrow as history navigation.
+    expect(preventDefault).toHaveBeenCalledTimes(1)
+
+    // The tabs are one tab stop (the shown page's) and the arrows, Home and End move focus among them; the page is their panel.
+    const tabEls = (): ReturnType<typeof m.elements> => m.elements().filter((e) => e.props['role'] === 'tab')
+    expect(tabEls().map((e) => e.props['tabIndex'])).toEqual([0, -1, -1])
+    const list = el(m, (p) => p['role'] === 'tablist')
+    const arrow = async (key: string, from: number): Promise<string | undefined> => {
+      const target = tabEls()[from]?.node
+      await invoke(list, 'onKeyDown', { key, target, currentTarget: list?.node, preventDefault: vi.fn() })
+      return m.focused()?.text
+    }
+    expect([
+      await arrow('ArrowRight', 0),
+      await arrow('ArrowLeft', 0),
+      await arrow('End', 0),
+      await arrow('Home', 2),
+    ]).toEqual(['2. Middle', '3. Aside', '3. Aside', '1. Setup'])
+    const panel = el(m, (p) => p['role'] === 'tabpanel')
+    expect(panel?.props['aria-labelledby']).toBe(tabEls()[0]?.props['id'])
+    expect(tabEls()[0]?.props['aria-controls']).toBe(panel?.props['id'])
 
     // A page switch from the tabs keeps the cursor, and a page with no moments says so.
     await invoke(

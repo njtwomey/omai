@@ -6,7 +6,7 @@
  * none left.
  */
 
-import { type ReactElement, type ReactNode, useMemo, useState } from 'react'
+import { type KeyboardEvent, type ReactElement, type ReactNode, useId, useMemo, useState } from 'react'
 import { cx, iconButtonClass } from '../controls/classes.ts'
 import type { Narrative } from './layout.ts'
 import { inlinePieces, momentIndex, paragraphs, resolveMoments, stepThrough, switchPage } from './narrative.ts'
@@ -83,6 +83,19 @@ export function NarrativeView(props: NarrativeViewProps): ReactElement {
     const to = switchPage(narrative, { page, step: viewed }, p)
     ;(props.onPage ?? setOwn)(to.page)
   }
+  const uid = useId()
+  const tabId = (i: number): string => `${uid}-tab-${i}`
+  // Arrow keys, Home and End move focus between the tabs; Enter or Space on a focused tab shows its page.
+  const moveAmongTabs = (e: KeyboardEvent<HTMLElement>): void => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+    const tabs = [...e.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]')]
+    const from = tabs.indexOf(e.target as HTMLElement)
+    if (from < 0) return
+    const step = e.key === 'ArrowRight' ? 1 : -1
+    const to = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (from + step + tabs.length) % tabs.length
+    e.preventDefault()
+    tabs[to]?.focus()
+  }
   const hasPrev = stepThrough(moments, { page, step: viewed }, -1) !== undefined
   const hasNext = stepThrough(moments, { page, step: viewed }, 1) !== undefined
   const marked = here[index]
@@ -95,19 +108,24 @@ export function NarrativeView(props: NarrativeViewProps): ReactElement {
       tabIndex={-1}
       onKeyDown={(e) => {
         if (e.target instanceof HTMLInputElement) return
-        if (e.key === 'ArrowRight' && e.altKey) through(1)
-        else if (e.key === 'ArrowLeft' && e.altKey) through(-1)
+        if (!e.altKey || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return
+        // Alt+Arrow is also the browser's history; here it steps the moments, and the browser is told not to navigate.
+        e.preventDefault()
+        through(e.key === 'ArrowRight' ? 1 : -1)
       }}
     >
       <div className="flex flex-wrap items-center gap-2">
         {narrative.title === undefined ? null : <h3 className="mr-2 text-sm font-semibold">{narrative.title}</h3>}
-        <div role="tablist" className="flex">
+        <div role="tablist" className="flex" onKeyDown={moveAmongTabs}>
           {narrative.pages.map((p, i) => (
             <button
               key={p.id}
               type="button"
               role="tab"
+              id={tabId(i)}
               aria-selected={i === page}
+              aria-controls={`${uid}-panel`}
+              tabIndex={i === page ? 0 : -1}
               className={cx(
                 'border border-(--wb-grid) px-3 py-1 text-xs',
                 i === 0 ? 'rounded-l-md' : '-ml-px',
@@ -148,15 +166,17 @@ export function NarrativeView(props: NarrativeViewProps): ReactElement {
           </span>
         </div>
       </div>
-      <Prose text={current.text} />
-      <SessionPanels
-        key={current.id}
-        id={`${props.id}-${current.id}`}
-        live={live}
-        at={at}
-        onScrub={onScrub}
-        layout={current.layout}
-      />
+      <div role="tabpanel" id={`${uid}-panel`} aria-labelledby={tabId(page)} className="flex flex-col gap-3">
+        <Prose text={current.text} />
+        <SessionPanels
+          key={current.id}
+          id={`${props.id}-${current.id}`}
+          live={live}
+          at={at}
+          onScrub={onScrub}
+          layout={current.layout}
+        />
+      </div>
     </section>
   )
 }

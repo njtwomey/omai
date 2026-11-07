@@ -6,7 +6,7 @@
  */
 
 import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useId, useRef, useState } from 'react'
 import { categoricalColour } from '../../theme/palettes.ts'
 import { cx, labelClass } from './classes.ts'
 import { SlidersIcon } from './icons.tsx'
@@ -63,13 +63,18 @@ export function SlotVariants(props: SlotVariantsProps): ReactNode {
   const colours = variantColours(names, props.admissible)
   const [open, setOpen] = useState<string | undefined>(undefined)
   const anchors = useRef<Record<string, HTMLButtonElement | null>>({})
+  const labelId = useId()
   const knobsOf = (name: string): Readonly<Record<string, SpaceValue>> =>
     knobs[name] ?? asModeConfig(defaults(space.options[name] as Space))
   return (
     <div className={cx('flex w-full min-w-56 max-w-md flex-col gap-1.5', props.className)}>
-      {props.label === undefined ? null : <span className={cx(labelClass, 'truncate')}>{props.label}</span>}
+      {props.label === undefined ? null : (
+        <span id={labelId} className={cx(labelClass, 'truncate')}>
+          {props.label}
+        </span>
+      )}
       <ul
-        aria-label={typeof props.label === 'string' ? props.label : undefined}
+        aria-labelledby={props.label === undefined ? undefined : labelId}
         className="m-0 flex list-none flex-col gap-0.5 rounded-md border border-(--wb-grid) bg-(--wb-surface) p-0.5"
       >
         {names.map((name) => {

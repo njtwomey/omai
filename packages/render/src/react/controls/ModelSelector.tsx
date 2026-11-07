@@ -6,7 +6,7 @@
  */
 
 import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useId, useRef, useState } from 'react'
 import { cx, labelClass } from './classes.ts'
 import { SlidersIcon } from './icons.tsx'
 import { Popover } from './Popover.tsx'
@@ -52,6 +52,7 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
   const [memory, setMemory] = useState<Readonly<Record<string, Readonly<Record<string, SpaceValue>>>>>({})
   const [open, setOpen] = useState<string | undefined>(undefined)
   const anchors = useRef<Record<string, HTMLButtonElement | null>>({})
+  const labelId = useId()
   const knobsOf = (name: string): Readonly<Record<string, SpaceValue>> => {
     if (name === current) {
       const { [tag]: _tag, ...rest } = asModeConfig(value)
@@ -65,10 +66,16 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
   }
   return (
     <div className={cx('flex w-full min-w-44 max-w-sm flex-col gap-1.5', props.className)}>
-      {props.label === undefined ? null : <span className={cx(labelClass, 'truncate')}>{props.label}</span>}
+      {props.label === undefined ? null : (
+        <span id={labelId} className={cx(labelClass, 'truncate')}>
+          {props.label}
+        </span>
+      )}
+      {/* Buttons that show which is chosen (`aria-pressed`): a radio group would owe its readers arrow keys and one tab stop. */}
+      {/* biome-ignore lint/a11y/useSemanticElements: a styled box of rows; a fieldset draws differently */}
       <div
-        role="radiogroup"
-        aria-label={typeof props.label === 'string' ? props.label : undefined}
+        role="group"
+        aria-labelledby={props.label === undefined ? undefined : labelId}
         className="flex flex-col gap-0.5 rounded-md border border-(--wb-grid) bg-(--wb-surface) p-0.5"
       >
         {names.map((name) => {
@@ -80,11 +87,9 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
           const knobs = Object.keys((space.options[name] as { readonly spaces?: object }).spaces ?? {}).length
           return (
             <div key={name} className="flex items-stretch gap-0.5">
-              {/* biome-ignore lint/a11y/useSemanticElements: a row drawn as a button; native radios cannot be drawn as rows */}
               <button
                 type="button"
-                role="radio"
-                aria-checked={selected}
+                aria-pressed={selected}
                 title={reason}
                 disabled={disabled || !allowed}
                 onClick={() => choose(name)}

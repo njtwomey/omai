@@ -13,9 +13,12 @@ describe('ModelSelector', () => {
     const html = renderToString(
       <ModelSelector space={models} value={{ kind: 'tree', depth: 3 }} onChange={() => undefined} label="model" />,
     )
-    expect(html).toContain('aria-label="model"')
-    expect(html.match(/role="radio"/g)).toHaveLength(3)
-    expect(html).toMatch(/aria-checked="true"[^>]*>(?:<span[^>]*>)?tree/)
+    // The group is named by its visible label, and the chosen option is the one pressed (no radio roles without arrows).
+    const labelId = /aria-labelledby="([^"]+)"/.exec(html)?.[1]
+    expect(html).toContain(`id="${labelId}"`)
+    expect(html).not.toContain('role="radio"')
+    expect(html.match(/aria-pressed/g)).toHaveLength(3)
+    expect(html).toMatch(/aria-pressed="true"[^>]*>(?:<span[^>]*>)?tree/)
     expect(html).toContain('aria-label="Settings of ridge"')
     expect(html).toContain('baseline has no settings')
   })
