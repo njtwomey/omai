@@ -9,7 +9,7 @@
 import { type Json, MdmlError } from '../../base/index.ts'
 import { type Key, normal, permutation } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
 import { solveKernel, svdKernel } from './_kernels.ts'
 
 /** Observed entries of an `m x n` matrix in coordinate form: entry `k` is `values[k]` at `(rows[k], cols[k])`. */
@@ -615,6 +615,8 @@ export interface CompletionResult {
   readonly completed: Tensor
   readonly iterations: number
   readonly converged: boolean
+  /** How the run ended (`converged`, `completed` at the iteration cap, ...). */
+  readonly status: RunStatus
   /** The objective after each step (the first is the start's). */
   readonly history: readonly number[]
 }
@@ -660,6 +662,7 @@ export function softImpute(
     completed: fromStorage(Float64Array.from(result.state.z), [m, n], 'float64'),
     iterations: result.steps,
     converged: result.status === 'converged',
+    status: result.status,
     history,
   }
 }

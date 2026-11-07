@@ -7,7 +7,7 @@
 import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { RunOptions } from '../trace/index.ts'
-import { type Dense, expectLength, matrixFrom, vectorFrom } from './_programming.ts'
+import { type Dense, expectLength, finiteVectorFrom, matrixFrom } from './_programming.ts'
 import type { LinprogResult } from './linear-programming.ts'
 
 /** Bounds of one variable: `[lower, upper]`, with `null` (or an infinity) for none. */
@@ -70,6 +70,7 @@ function boundsOf(bounds: LinearProgram['bounds'], n: number): { lower: Float64A
     if (bj === undefined) throw new MdmlError('shape', `linprog: bounds must have one entry per variable (${n})`)
     lower[j] = bj[0] ?? -Infinity
     upper[j] = bj[1] ?? Infinity
+    if (Number.isNaN(lower[j]) || Number.isNaN(upper[j])) throw new MdmlError('value', `linprog: bounds[${j}] is NaN`)
   }
   return { lower, upper }
 }
@@ -82,6 +83,7 @@ function boundsOf(bounds: LinearProgram['bounds'], n: number): { lower: Float64A
  * @param problem - The program.
  * @returns The standard form with its maps back.
  * @throws MdmlError with code `shape` when the sizes disagree.
+ * @throws MdmlError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @example
  * ```ts
  * import { standardForm } from 'mdml-engine/optim'
@@ -90,12 +92,12 @@ function boundsOf(bounds: LinearProgram['bounds'], n: number): { lower: Float64A
  * ```
  */
 export function standardForm(problem: LinearProgram): StandardForm {
-  const c = vectorFrom(problem.c)
+  const c = finiteVectorFrom(problem.c, 'c')
   const n = c.length
   const aUb = matrixFrom(problem.aUb, n, 'aUb')
-  const bUb = vectorFrom(problem.bUb)
+  const bUb = finiteVectorFrom(problem.bUb, 'bUb')
   const aEq = matrixFrom(problem.aEq, n, 'aEq')
-  const bEq = vectorFrom(problem.bEq)
+  const bEq = finiteVectorFrom(problem.bEq, 'bEq')
   expectLength(bUb, aUb.rows, 'bUb')
   expectLength(bEq, aEq.rows, 'bEq')
   const { lower, upper } = boundsOf(problem.bounds, n)

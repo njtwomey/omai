@@ -244,6 +244,31 @@ options and otherwise use the context rules of section 3.2.
 **Inputs.** Every function that takes arrays accepts a `TensorLike` (a tensor, a typed array or nested arrays) and
 converts it once with `asTensor`; outputs are tensors.
 
+**Failure and status.** One convention for every numeric routine (decisions D-015; the table lives in the summary of
+`trace/events.ts`, which owns `RunStatus`). A routine that returns a result record says how it ended with `status:
+RunStatus` and `converged: boolean` (true exactly when the status is `converged`), and does not throw because it failed
+to converge. Invalid arguments (a shape, a NaN or infinity where a number is needed, crossed bounds, a negative
+tolerance) throw `MdmlError('value')` (`shape` for dimensions). A routine that returns a bare value (a matrix function,
+a fitted polynomial, a differentiable solve) has no place for a status and throws `MdmlError('convergence')`, which its
+`@throws` says; where a result-returning sibling exists, that is the one to use when failure is an expected outcome.
+Where a result already had a `status` field in an older vocabulary, the old field stays (additions only) and the
+`RunStatus` is beside it: `runStatus` in the programming results (`LinprogResult`, `QuadprogResult`, `ConicResult`,
+`MilpResult`: `status` keeps `optimal`, `infeasible`, ... and `success`; `converged` is added), `flag` beside `status`
+in `RootResult`. NaN rule: elementwise operations propagate NaN; anything that summarises or decides (tests, metrics,
+splits, solvers, running estimators) rejects non-finite input at its boundary with `value`. The mapping:
+
+| `RunStatus` | means                                                                                                      | older words                                                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `converged` | the convergence test was met, the optimum found                                                            | `optimal`, `converged`, `success: true` of a solver that iterates to a test                                                |
+| `completed` | the iteration, sweep, evaluation or node budget ran out with no verdict, or an integration reached its end | `iteration limit`, `node limit`, `maximum iterations`, `completed`, ODE and PDE `success`, BVP status 1                    |
+| `stopped`   | the algorithm ended itself early by a rule: a stall, an event, an early exit                               | a dependent atom in matching pursuit, a pruned trial, ODE `event`                                                          |
+| `diverged`  | the iterates left the finite numbers                                                                       | `NaN encountered`                                                                                                          |
+| `failed`    | no answer exists or the method cannot continue                                                             | `infeasible`, `unbounded`, `numerical difficulties`, `derivative was zero`, `sign error`, ODE `failed`, BVP status 2 and 3 |
+
+`runStatusOf(word)` (in `trace`) maps the string words. The ODE, PDE and BVP results (`OdeSolution.status` `'success'`,
+`'event'`, `'failed'`, `BvpSolution.status` 0 to 3, each with `success`) keep their own codes as public fields; they gain
+no field yet (the follow-ups are in `docs/code-review/findings/failure-convention.md`).
+
 **Docstrings.** Every export has a TSDoc block: summary, `@param` per parameter, `@returns`, `@throws` where relevant,
 and at least one `@example` with `// => value`, `// => figure`, `// => trace` or `// => throws Code` expectations that
 the build runs. `@concept` tags link to the concept taxonomy (section 7), `@see` and `@reference` cite sources.

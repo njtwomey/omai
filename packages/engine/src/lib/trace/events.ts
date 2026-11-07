@@ -3,6 +3,22 @@
  * configuration) and ends with an `end` event, and between them records metrics, tensors (full or summarised),
  * structured messages, episodes, frames for animation, checkpoints and log lines. A `Run` is the unit that is exported,
  * replayed and visualised.
+ *
+ * `RunStatus` is also the one status vocabulary of the numeric routines (the failure convention, `docs/structure.md`
+ * section 2). A routine that returns a result record reports how it ended in `status: RunStatus` and `converged:
+ * boolean` (true exactly when the status is `converged`) and does not throw because it failed to converge; invalid
+ * arguments throw `MdmlError('value')`; a routine that returns a bare value (a matrix function, a polynomial) has no
+ * place for a status and throws `MdmlError('convergence')`, which its `@throws` says. Where a result already had a
+ * `status` field with an older vocabulary (the mathematical-programming results) the older field stays and the
+ * `RunStatus` is `runStatus` beside it; {@link runStatusOf} is the table of the older words:
+ *
+ * | `RunStatus` | meaning | older words |
+ * | --- | --- | --- |
+ * | `converged` | the convergence test was met, or the optimum was found | `optimal`, `converged` |
+ * | `completed` | the iteration, evaluation or node budget ran out with no verdict, or an integration reached its end | `iteration limit`, `node limit`, `maximum iterations`, `success` (an ODE or PDE solve) |
+ * | `stopped` | the algorithm ended itself early by a rule, not by its budget: a stall, an event, an early exit | `event` (an ODE terminal event) |
+ * | `diverged` | the iterates left the finite numbers | |
+ * | `failed` | no answer exists or the method cannot continue: infeasible, unbounded, singular, breakdown | `infeasible`, `unbounded`, `numerical difficulties`, `derivative was zero`, `sign error`, `failed` |
  */
 
 import { z } from 'zod'
@@ -10,6 +26,64 @@ import { type Json, JsonSchema } from '../base/index.ts'
 
 /** How a run ended. */
 export type RunStatus = 'completed' | 'converged' | 'diverged' | 'stopped' | 'failed'
+
+/**
+ * The words the older result types use for how a solve ended: the verdicts of the mathematical-programming solvers
+ * (`optimal`, `infeasible`, `unbounded`, `iteration limit`, `node limit`, `numerical difficulties`), the flags of the
+ * scalar root finders (`converged`, `maximum iterations`, `derivative was zero`, `sign error`) and the status of the
+ * ODE and PDE solves (`success`, `event`, `failed`). They stay where they are public fields; {@link runStatusOf} maps
+ * each onto a {@link RunStatus}.
+ */
+export type OutcomeWord =
+  | 'optimal'
+  | 'infeasible'
+  | 'unbounded'
+  | 'iteration limit'
+  | 'node limit'
+  | 'numerical difficulties'
+  | 'converged'
+  | 'maximum iterations'
+  | 'derivative was zero'
+  | 'sign error'
+  | 'success'
+  | 'event'
+  | 'failed'
+
+const OUTCOME_STATUS: Readonly<Record<OutcomeWord, RunStatus>> = {
+  optimal: 'converged',
+  converged: 'converged',
+  'iteration limit': 'completed',
+  'node limit': 'completed',
+  'maximum iterations': 'completed',
+  infeasible: 'failed',
+  unbounded: 'failed',
+  'numerical difficulties': 'failed',
+  'derivative was zero': 'failed',
+  'sign error': 'failed',
+  success: 'completed',
+  event: 'stopped',
+  failed: 'failed',
+}
+
+/**
+ * The {@link RunStatus} of an older outcome word: the one table that says what `optimal`, `iteration limit`,
+ * `infeasible`, `maximum iterations` and the rest mean in the one vocabulary (`converged`: `optimal`, `converged`;
+ * `completed`: the budget words and `success`; `stopped`: `event`; `failed`: `infeasible`, `unbounded`,
+ * `numerical difficulties`, `derivative was zero`, `sign error`, `failed`).
+ *
+ * @param word - The older word.
+ * @returns The run status.
+ * @example
+ * ```ts
+ * import { runStatusOf } from 'mdml-engine/trace'
+ * runStatusOf('optimal') // => 'converged'
+ * runStatusOf('iteration limit') // => 'completed'
+ * runStatusOf('infeasible') // => 'failed'
+ * ```
+ */
+export function runStatusOf(word: OutcomeWord): RunStatus {
+  return OUTCOME_STATUS[word]
+}
 
 /** What a recorded tensor is: a parameter, a gradient, an algorithm state, an activation or an output. */
 export type TensorRole = 'param' | 'grad' | 'state' | 'activation' | 'output'

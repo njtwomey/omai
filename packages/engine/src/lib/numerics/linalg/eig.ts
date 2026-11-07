@@ -133,6 +133,8 @@ export interface EigenIterationResult {
   readonly vector: Tensor
   readonly iterations: number
   readonly converged: boolean
+  /** `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
   /** The eigenvalue estimate after each iteration. */
   readonly history: readonly number[]
 }
@@ -204,7 +206,7 @@ function logIterate(
 }
 
 const statusOfIteration = (s: EigenIterationState, max: number): RunStatus | undefined =>
-  s.converged ? 'converged' : s.iteration >= max ? 'stopped' : undefined
+  s.converged ? 'converged' : s.iteration >= max ? 'completed' : undefined
 
 function iterationResult(s: EigenIterationState, converged: boolean, iterations: number): EigenIterationResult {
   return {
@@ -212,6 +214,7 @@ function iterationResult(s: EigenIterationState, converged: boolean, iterations:
     vector: fromStorage(Float64Array.from(s.x), [s.x.length], 'float64'),
     iterations,
     converged,
+    status: converged ? 'converged' : 'completed',
     history: s.history,
   }
 }

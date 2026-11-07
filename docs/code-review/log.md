@@ -335,3 +335,39 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   tsc for engine and render, 1,059 engine test files of the 31 domains touched (18,240 tests: two timeouts of 5 s under a load average of 30 to 50, both pass alone;
   the files that changed during the run were run again), render 87 files, 535 `@example`s of the changed files, barrels, layers, lint, agent index and surface. Tests added: 4 `it`.
   Surface: 21 added, 1 removed (`exposition#Complex`, still re-exported by `exposition`), 1 changed (`LineSearchResult`).
+
+- **17:10 The failure convention and the remaining certain items of P3.30 (P3.20 second part, P3.30), `agent-fc02-convention`, seven commits, not pushed.**
+  Decision D-015 made the convention: numeric routines return a result with one `status`, never throw for non-convergence, invalid arguments throw `value`.
+  I took the inventory first (`findings/failure-convention.md`): 64 `throw convergence` sites, 108 `converged` declarations (results and states; about 70 results with no status), 25 `status: RunStatus`,
+  four programming results with an older `status` and `success`, `RootResult.flag`, `success` and a message for the line searches and the ODE, PDE and BVP
+  results, one `info` code, results with nothing, and the five shapes of the tests. The design is one `RunStatus`, no superset: `converged` (`optimal`),
+  `completed` (a budget ran out: `iteration limit`, `node limit`, `maximum iterations`, an integration reaching its end), `stopped` (an early exit by a rule),
+  `diverged`, `failed` (`infeasible`, `unbounded`, `numerical difficulties`, `derivative was zero`). It is a table in the summary of `trace/events.ts`, in
+  `docs/structure.md` section 2 and a function, `runStatusOf`. Two judgement calls, both in the findings: `infeasible` and `unbounded` are `failed` (the
+  finer word stays in `status`), and a cap on an algorithm's own iterations is `completed`, as the minimisers always had it. One reading of D-015 I had to
+  interpret: routines that return a bare value (`sqrtm`, `chebfun`, `sparseSolve`, 19 sites) have no place for a status and keep throwing `convergence`,
+  stated as rule 3 with `@throws`; making them return a record would change their return types. Implemented: `status` on 23 result types of numerics
+  and optim, `runStatus` and `converged` beside the finer `status` of `LinprogResult`, `QuadprogResult`, `ConicResult` and `MilpResult` (a field named
+  `status` already existed, and renaming is not allowed), `fixedPoint` and `homotopy` now return a result (they threw: `fsolve` and `fixedPoint` had the same
+  return type and opposite contracts; its one caller, `implicitFixedPoint`, throws itself), matching pursuit with a dependent atom and a residual left ends
+  `stopped` (it said `converged`), and a NaN or infinity in the data of the LP, QP, conic, MILP, SMO and `nnls` front ends, a NaN bound, crossed `boxQp`
+  bounds and a negative `admmLasso` lambda throw `value`. The tape moved in two places only: the scalar root finders, `fsolve`, `broyden`, `fixedPoint` and
+  the eigenvalue iterations end `completed` at their cap (they said `stopped`, a word the minimisers use for an early exit), `quad` ends `completed` at its
+  limit, and the LP, QP and conic algorithms end with `runStatusOf` of their verdict (`iteration limit` is `completed`, it was `failed`). P3.30: `p2Push`
+  rejects a non-finite observation, `mutualInformation`, `mutualInformationTest`, `gTestConditional` and `histogram2d` reject NaN (NaN was a category),
+  every label metric rejects a NaN label at `labelValues` (`accuracyScore` counted a NaN as a class), and `defineDistribution` answers -Infinity for `logProb`
+  of a univariate law at an infinite argument (the 11 combinations gave NaN). Skipped with a reason: `durbinWatson` of a constant (d = 0 is the true
+  statistic and the p-value is the documented asymptotic one), `littleMcarTest` (NaN is its missing marker), `vonMises(0, 1e6)` (not wrong: `cdf` and `ppf`
+  take 9.5 s from a 12,000-term series; the fix is scipy's normal approximation above a concentration). Tests: three table-driven files or tables
+  (`numerics/status.test.ts`: 21 solver families, each run to the end and out of budget; `optim/status.test.ts`: 10 programming results, 5 solvers, matching
+  pursuit, 10 invalid-data rows; the `runStatusOf` table in `trace/events.test.ts`) and rows added to the degenerate-input tables of stats, metrics and
+  dists; `it` blocks added: 4 + 4 + 1, rows 60 or so. Two existing tests moved, both on purpose: `adaptive.algorithm.test.ts` (the subinterval limit ends
+  `completed`, was `stopped`) and `systems-algorithms.test.ts` (`fixedPoint` at its cap is a result, it threw). The six domains I touched (257 files, 5,656
+  tests) and the 17 caller domains (451 files, 5,621 tests) passed; one test, `causal/heterogeneous.test.ts` (a causal forest), timed out at 5 s under a load
+  average of 46 in the 17-domain run and passed alone (11 of 11). Not changed and listed in the findings with reasons: the kernels' NaN policy (ND-11), the
+  singular Jacobian inside `fsolve`, the empty parameter vector, the ODE, PDE, BVP and line-search results, 55 `converged` results of other domains,
+  `TestResult.status` (DSM-4), the `domain` code sweep (KDES-17), `not-differentiable` (FD-16), tolerance and iteration options of the programming solvers.
+  Surface: 2 added, 0 removed, 24 changed (all additions of a field to a result, plus the `stop` status union of `PursuitState` widened by `stopped`);
+  `docs/api-surface.txt` and the agent index regenerated. Own checks only: engine and render tsc, 205 examples of the touched files, barrels, layers, lint,
+  agent index and surface checks. The full gate was not run. One more thing for whoever merges: the P3.30 row of `progress.md` had 7 cells (the `ended`
+  cell was missing, like the P3.14 row earlier); both rows now have the 8 cells of the table.

@@ -74,7 +74,7 @@ export interface PursuitState {
   readonly support: readonly number[]
   readonly residualNorm: number
   readonly history: readonly number[]
-  readonly stop?: { readonly status: 'converged' | 'failed'; readonly message: string }
+  readonly stop?: { readonly status: 'converged' | 'stopped' | 'failed'; readonly message: string }
 }
 
 const PURSUIT_SCHEMA = channels({
@@ -230,6 +230,12 @@ export function orthogonalMatchingPursuitAlgorithm(
   )
   const atom = (j: number): Vec => atoms.subarray(j * d.rows, (j + 1) * d.rows)
   const yy = ddot(yv, yv)
+  // An early exit is convergence only when nothing is left to explain; with a residual left, the atoms are dependent
+  // (a repeated column) and the run stops short of what was asked.
+  const early = (s: PursuitState, message: string): PursuitState => ({
+    ...s,
+    stop: { status: s.residualNorm ** 2 <= eps * yy ? 'converged' : 'stopped', message },
+  })
   return {
     name: 'orthogonalMatchingPursuit',
     config: { nNonzeroCoefs: maxFeatures, tol: tol ?? null } as Json,
@@ -245,10 +251,7 @@ export function orthogonalMatchingPursuitAlgorithm(
       const lam = argmaxOf(Float64Array.from(c, Math.abs))
       // An atom is negligible when its cosine with the signal is: relative to |y| and |atom|, so the data's scale is free.
       if (s.support.includes(lam) || (alpha[lam] ?? 0) ** 2 <= eps * yy * ddot(atom(lam), atom(lam)))
-        return {
-          ...s,
-          stop: { status: 'converged', message: 'ended early: atom already selected (linear dependence)' },
-        }
+        return early(s, 'ended early: atom already selected (linear dependence)')
       const support = [...s.support, lam]
       const ds = columns(d, support)
       const gram = new Float64Array(support.length * support.length)
@@ -274,10 +277,9 @@ export function orthogonalMatchingPursuitAlgorithm(
           ),
         )
       } catch {
-        return { ...s, stop: { status: 'converged', message: 'ended early: selected atoms are linearly dependent' } }
+        return early(s, 'ended early: selected atoms are linearly dependent')
       }
-      if (coefs.some((v) => !Number.isFinite(v)))
-        return { ...s, stop: { status: 'converged', message: 'ended early: selected atoms are linearly dependent' } }
+      if (coefs.some((v) => !Number.isFinite(v))) return early(s, 'ended early: selected atoms are linearly dependent')
       const x = new Float64Array(d.cols)
       for (const [k, j] of support.entries()) x[j] = coefs[k] ?? 0
       const fitted = dgemv(ds.data as Vec, d.rows, support.length, Float64Array.from(coefs))
@@ -533,6 +535,8 @@ export interface L1Result {
   readonly objective: number
   readonly iterations: number
   readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
 }
 
 /**
@@ -595,6 +599,7 @@ export function basisPursuit(
     objective: x.reduce((a, b) => a + Math.abs(b), 0),
     iterations: result.steps,
     converged: result.status === 'converged',
+    status: result.status,
   }
 }
 
@@ -750,6 +755,7 @@ export function lassoCoordinateDescent(
     objective: s.objective,
     iterations: result.steps,
     converged: result.status === 'converged',
+    status: result.status,
   }
 }
 

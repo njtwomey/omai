@@ -190,7 +190,10 @@ export function defineDistribution(spec: DistributionSpec): Distribution {
   // `atMinus` below every value and `atPlus` above them.
   const limit = (x: Value, out: Value, atMinus: number, atPlus: number): Value =>
     eventRank === 0 ? where(isfinite(x), out, where(greater(x, 0), atPlus, atMinus)) : out
-  const logProb = (x: Value): Value => keep(x, spec.logProb(x))
+  // The density of a univariate law is zero at an infinite argument, whatever the family's formula gives there (some give
+  // NaN from an Infinity - Infinity): the log density is -Infinity.
+  const logProb = (x: Value): Value =>
+    keep(x, eventRank === 0 ? where(isfinite(x), spec.logProb(x), Number.NEGATIVE_INFINITY) : spec.logProb(x))
   const cdf = (x: Value): Value => keep(x, limit(x, spec.cdf ? spec.cdf(x) : unavailable(spec.name, 'cdf'), 0, 1))
   const ppf = (q: Value): Value => keep(q, spec.ppf ? spec.ppf(q) : unavailable(spec.name, 'ppf'), 0)
   const rsample = (key: Key, shape: readonly number[] = []): Value =>

@@ -46,7 +46,7 @@ describe('the system solvers give the numbers they gave before, exactly', () => 
     expect(R.broyden(system, [1, -1]).history.at(-1)).toBe(9.557639587076201e-12)
   })
 
-  it('fixedPoint in its three methods, and the error when it does not converge', () => {
+  it('fixedPoint in its three methods, and the result when it does not converge', () => {
     expect(brief(R.fixedPoint((x) => cos(x), [1]))).toEqual({
       x: [0.7390851332151607],
       it: 4,
@@ -69,9 +69,14 @@ describe('the system solvers give the numbers they gave before, exactly', () => 
       n: 9,
     })
     expect(brief(R.root(system, [1, -1], { method: 'anderson' })).it).toBe(14)
-    expect(() => R.fixedPoint((x) => cos(x), [1], { method: 'iteration', maxIterations: 3 })).toThrow(
-      'fixedPoint: no convergence after 3 iterations',
-    )
+    // Out of iterations is a result, as for fsolve and broyden (it used to throw `convergence`).
+    const capped = R.fixedPoint((x) => cos(x), [1], { method: 'iteration', maxIterations: 3 })
+    expect([capped.converged, capped.status, capped.iterations, capped.message]).toEqual([
+      false,
+      'completed',
+      3,
+      'maximum iterations',
+    ])
   })
 })
 

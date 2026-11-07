@@ -70,6 +70,8 @@ export interface QuadResult {
   readonly intervals: readonly QuadInterval[]
   readonly evaluations: number
   readonly converged: boolean
+  /** `converged`; `stopped` when bisecting made no progress; `completed` when the subinterval limit was reached. */
+  readonly status: RunStatus
 }
 
 /** Options of {@link quad}. */
@@ -244,7 +246,7 @@ export function quadAlgorithm(f: (x: Value) => Value, a: number, b: number, opti
       return next
     },
     done: (s): RunStatus | undefined =>
-      s.converged ? 'converged' : s.stalled || s.intervals.length >= limit ? 'stopped' : undefined,
+      s.converged ? 'converged' : s.stalled ? 'stopped' : s.intervals.length >= limit ? 'completed' : undefined,
     serialise: (s) => stateToJson(s),
     deserialise: (j) => stateFromJson(j) as QuadState,
     value: (s) => s.intervals.map((iv) => rule(iv.a, iv.b).value).reduce((x, y) => add(x, y)),
@@ -280,19 +282,22 @@ export function quad(f: (x: Value) => Value, a: number, b: number, options: Quad
       intervals: [],
       evaluations: 0,
       converged: true,
+      status: 'converged',
     }
   if (a > b) {
     const r = quad(f, b, a, options)
     return { ...r, value: neg(r.value) }
   }
   const algorithm = quadAlgorithm(f, a, b, options)
-  const s = runAlgorithm(algorithm, { maxSteps: options.limit ?? 50 }).state
+  const run = runAlgorithm(algorithm, { maxSteps: options.limit ?? 50 })
+  const s = run.state
   return {
     value: algorithm.value(s),
     error: s.error,
     intervals: s.intervals,
     evaluations: s.evaluations,
     converged: s.converged,
+    status: run.status,
   }
 }
 
@@ -309,7 +314,8 @@ const SIMPSON_EVALUATION_CAP = 1_000_000
  * @param a - Lower limit.
  * @param b - Upper limit.
  * @param options - Tolerance (default 1e-10) and maximum depth (default 50).
- * @returns The estimate and the number of evaluations.
+ * @returns The estimate and the number of evaluations; `converged` is false (status `completed`) when some panel was
+ *   accepted at the depth limit or the evaluation cap without meeting the tolerance.
  * @throws MdmlError with code `value` when a limit is not finite or the integrand is not finite at a point it is
  * evaluated at (a NaN or an infinity anywhere would otherwise refine every panel down to the depth limit).
  * @example
@@ -324,10 +330,11 @@ export function adaptiveSimpson(
   a: number,
   b: number,
   options: { readonly tol?: number; readonly maxDepth?: number } = {},
-): { readonly value: number; readonly evaluations: number } {
+): { readonly value: number; readonly evaluations: number; readonly converged: boolean; readonly status: RunStatus } {
   if (!Number.isFinite(a) || !Number.isFinite(b))
     throw new MdmlError('value', 'adaptiveSimpson: the limits must be finite')
   let evaluations = 0
+  let resolved = true
   const at = (x: number): number => {
     evaluations += 1
     const fx = toFlat(primalOf(f(promoteFloat([x])[0] as Value)))[0] ?? Number.NaN
@@ -354,15 +361,18 @@ export function adaptiveSimpson(
     const left = simpsonPanel(l, m, fl, flm, fm)
     const right = simpsonPanel(m, r, fm, frm, fr)
     const delta = left + right - whole
-    if (depth <= 0 || evaluations >= SIMPSON_EVALUATION_CAP || Math.abs(delta) <= 15 * tol)
+    if (depth <= 0 || evaluations >= SIMPSON_EVALUATION_CAP || Math.abs(delta) <= 15 * tol) {
+      // A panel accepted at the depth limit or the evaluation cap was not resolved to the tolerance.
+      if (Math.abs(delta) > 15 * tol) resolved = false
       return left + right + delta / 15
+    }
     return recurse(l, m, fl, flm, fm, left, tol / 2, depth - 1) + recurse(m, r, fm, frm, fr, right, tol / 2, depth - 1)
   }
   const fa = at(a)
   const fb = at(b)
   const fm = at((a + b) / 2)
   const value = recurse(a, b, fa, fm, fb, simpsonPanel(a, b, fa, fm, fb), options.tol ?? 1e-10, options.maxDepth ?? 50)
-  return { value, evaluations }
+  return { value, evaluations, converged: resolved, status: resolved ? 'converged' : 'completed' }
 }
 
 /**
@@ -374,7 +384,8 @@ export function adaptiveSimpson(
  * @param a - Lower limit.
  * @param b - Upper limit.
  * @param options - Tolerance (default 1e-12) and maximum level (default 8).
- * @returns The value (differentiable in f's parameters) and the levels used.
+ * @returns The value (differentiable in f's parameters) and the levels used; `converged` is false (status `completed`)
+ *   when two levels never agreed within the maximum level.
  * @example
  * ```ts
  * import { tanhSinh } from 'mdml-engine/numerics/quadrature'
@@ -387,7 +398,7 @@ export function tanhSinh(
   a: number,
   b: number,
   options: { readonly tol?: number; readonly maxLevel?: number } = {},
-): { readonly value: Value; readonly levels: number } {
+): { readonly value: Value; readonly levels: number; readonly converged: boolean; readonly status: RunStatus } {
   const half = (b - a) / 2
   const mid = (a + b) / 2
   const estimate = (h: number): Value => {
@@ -416,9 +427,9 @@ export function tanhSinh(
       Math.abs(item(primalOf(next)) - item(primalOf(previous))) <=
       (options.tol ?? 1e-12) * Math.max(1, Math.abs(item(primalOf(next))))
     ) {
-      return { value: next, levels: level }
+      return { value: next, levels: level, converged: true, status: 'converged' }
     }
     previous = next
   }
-  return { value: previous, levels: options.maxLevel ?? 8 }
+  return { value: previous, levels: options.maxLevel ?? 8, converged: false, status: 'completed' }
 }

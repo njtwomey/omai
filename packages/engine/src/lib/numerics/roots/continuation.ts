@@ -5,7 +5,6 @@
  */
 
 import { jacobian } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
 import {
   concat,
   fromStorage,
@@ -36,7 +35,9 @@ export interface HomotopyResult extends SystemResult {
  * @param f - The system.
  * @param x0 - Starting point.
  * @param options - Number of t steps (default 20).
- * @returns The solution and the path.
+ * @returns The solution and the path. When the corrector fails at some t the path stops there: `converged` is false,
+ *   `status` is `failed`, the message names t, and `x` is the last point that solved the deformed system (the
+ *   function does not throw).
  * @concept continuation
  * @example
  * ```ts
@@ -54,8 +55,21 @@ export function homotopy(f: VectorFunction, x0: TensorLike, options: { readonly 
   let last: SystemResult | undefined
   for (let k = 1; k <= steps; k++) {
     const t = k / steps
-    last = fsolve((v) => sub(f(v), mul(f0, 1 - t)), x)
-    if (!last.converged) throw new MdmlError('convergence', `homotopy: the corrector failed at t = ${t}`)
+    const corrected = fsolve((v) => sub(f(v), mul(f0, 1 - t)), x)
+    if (!corrected.converged) {
+      // The corrector failed: return the path followed so far, from the last point that was a solution of H(., t).
+      const at = promoteFloat(x)[0] as Tensor
+      return {
+        ...corrected,
+        x: at,
+        residual: f(at) as Tensor,
+        converged: false,
+        status: 'failed',
+        message: `homotopy: the corrector failed at t = ${t}`,
+        path,
+      }
+    }
+    last = corrected
     x = last.x
     path.push({ t, x: toFlat(last.x) })
   }

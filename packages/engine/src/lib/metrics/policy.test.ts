@@ -64,12 +64,13 @@ describe('sample weights', () => {
 })
 
 describe('non-finite and empty input', () => {
-  it('is rejected with value: a NaN score, and no samples', () => {
+  it('is rejected with value: a NaN score or label, and no samples', () => {
     const nan = [0.1, Number.NaN, 0.3, 0.9]
     const calls: readonly (readonly [string, () => unknown])[] = [
       ['rocAucScore with a NaN score', () => M.rocAucScore([0, 1, 0, 1], nan)],
       ['averagePrecisionScore with a NaN score', () => M.averagePrecisionScore([0, 1, 0, 1], nan)],
       ['fprAtTpr with a NaN score', () => M.fprAtTpr([0, 1, 0, 1], nan, { min: 0.5 })],
+      ['accuracyScore with a NaN label', () => M.accuracyScore([0, 1, Number.NaN, 1], [0, 1, Number.NaN, 0])],
       ['accuracyScore of nothing', () => M.accuracyScore([], [])],
       ['informedness of nothing', () => M.informedness([], [])],
       ['adjustedRandScore of nothing', () => M.adjustedRandScore([], [])],

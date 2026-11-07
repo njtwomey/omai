@@ -6,7 +6,7 @@
 
 import { type Json, MdmlError } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
 
 /** Options of the one-sided Jacobi iteration. */
 export interface JacobiSvdOptions {
@@ -192,6 +192,8 @@ export interface JacobiSvdResult {
   readonly vt: Tensor
   readonly sweeps: number
   readonly converged: boolean
+  /** How the run ended (`converged`, `completed` at the sweep cap, ...). */
+  readonly status: RunStatus
   /** The largest column cosine after each step (the first is the start's). */
   readonly history: readonly number[]
 }
@@ -253,6 +255,7 @@ export function jacobiSvd(
     vt: fromStorage(vt, [n, n], 'float64'),
     sweeps: state.sweeps,
     converged: result.status === 'converged',
+    status: result.status,
     history,
   }
 }

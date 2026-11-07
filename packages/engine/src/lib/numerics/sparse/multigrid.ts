@@ -505,6 +505,7 @@ export function multigridSolve(
     x: fromStorage(Float64Array.from(result.state.x), [n], 'float64'),
     iterations: result.steps,
     converged: result.status === 'converged',
+    status: result.status,
     residualNorm: result.state.residualNorm,
     history: result.state.history,
   }

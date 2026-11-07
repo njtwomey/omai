@@ -287,6 +287,7 @@ function axisEdges(a: Float64Array, bins: number | TensorLike, range?: readonly 
  * @param options - bins (a count, a pair of counts, or a pair of edge arrays; default 10), range per axis, weights and
  *   density.
  * @returns The counts and both edge arrays.
+ * @throws MdmlError with code `value` when a coordinate is NaN.
  * @example
  * ```ts
  * import { histogram2d } from 'mdml-engine/stats'
@@ -303,8 +304,8 @@ export function histogram2d(
     readonly density?: boolean
   } = {},
 ): Histogram2d {
-  const a = sample('histogram2d', x, 0)
-  const b = sample('histogram2d', y, 0)
+  const a = sample('histogram2d', x, 0, true)
+  const b = sample('histogram2d', y, 0, true)
   if (a.length !== b.length) throw new MdmlError('shape', 'histogram2d: x and y differ in length')
   const w = options.weights === undefined ? undefined : sample('histogram2d', options.weights)
   const bins = options.bins ?? 10

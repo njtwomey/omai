@@ -425,6 +425,7 @@ export interface AccuracyOptions extends MetricOptions {
  * @param yPred - Predicted labels, the same form.
  * @param options - normalize and sample weights.
  * @returns The metric result.
+ * @throws MdmlError with code `value` when there are no samples or a label is NaN.
  * @concept classification-metrics
  * @index function Classification accuracy, optionally weighted.
  * @example

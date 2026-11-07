@@ -15,6 +15,7 @@ import {
   message,
   type RunStatus,
   runAlgorithm,
+  runStatusOf,
   type StepContext,
   scalar,
   stateFromJson,
@@ -36,6 +37,8 @@ export interface RootResult {
   readonly iterations: number
   readonly functionCalls: number
   readonly converged: boolean
+  /** How the finder ended in the one vocabulary: `flag` mapped by {@link runStatusOf}. */
+  readonly status: RunStatus
   readonly flag: 'converged' | 'sign error' | 'maximum iterations' | 'derivative was zero'
   readonly history: readonly RootStep[]
 }
@@ -200,7 +203,7 @@ function assemble(
         : s.flag !== null
           ? 'failed'
           : s.iteration >= maxIterations
-            ? 'stopped'
+            ? 'completed'
             : undefined,
     serialise: (s) => stateToJson(s),
     deserialise: (j) => stateFromJson(j) as RootState,
@@ -228,6 +231,7 @@ export function rootResultOf(s: RootState): RootResult {
     iterations: s.iteration,
     functionCalls: s.history.length,
     converged: flag === 'converged',
+    status: runStatusOf(flag),
     flag,
     history: s.history,
   }

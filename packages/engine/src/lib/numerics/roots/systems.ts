@@ -7,7 +7,7 @@
  */
 
 import { customVjp, jvp as forward, jacobian, vjp } from '../../autodiff/index.ts'
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -49,6 +49,8 @@ export interface SystemResult {
   readonly iterations: number
   readonly functionCalls: number
   readonly converged: boolean
+  /** How the solver ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
   readonly message: string
   /** The residual norm after each iteration. */
   readonly history: readonly number[]
@@ -116,16 +118,20 @@ function logSystem(ctx: StepContext<SystemPath>, s: SystemState): void {
   if (ctx.wants('system/jacobian-age')) ctx.log('system/jacobian-age', s.jacobianAge)
 }
 
-const statusOfSystem = (s: SystemState, max: number): RunStatus | undefined =>
-  s.converged ? 'converged' : s.iteration >= max ? 'stopped' : undefined
+const statusOfSystem = (s: Pick<SystemState, 'converged' | 'iteration'>, max: number): RunStatus | undefined =>
+  s.converged ? 'converged' : s.iteration >= max ? 'completed' : undefined
 
-function systemResult(s: SystemState, max: number): SystemResult {
+function systemResult(
+  s: Pick<SystemState, 'x' | 'residual' | 'converged' | 'iteration' | 'functionCalls' | 'history'>,
+  max: number,
+): SystemResult {
   return {
     x: asVector(s.x),
     residual: asVector(s.residual),
     iterations: s.converged ? s.iteration : max,
     functionCalls: s.functionCalls,
     converged: s.converged,
+    status: s.converged ? 'converged' : 'completed',
     message: s.converged ? 'converged' : 'maximum iterations',
     history: s.history,
   }
@@ -514,7 +520,7 @@ export function fixedPointAlgorithm(
         converged: close(next, x),
       }
     },
-    done: (s): RunStatus | undefined => (s.converged ? 'converged' : s.iteration >= max ? 'stopped' : undefined),
+    done: (s): RunStatus | undefined => statusOfSystem(s, max),
     serialise: (s) => stateToJson(s),
     deserialise: (j) => stateFromJson(j) as FixedPointState,
   }
@@ -527,7 +533,9 @@ export function fixedPointAlgorithm(
  * @param g - The map.
  * @param x0 - Starting point `[n]`.
  * @param options - Method, tolerance, iteration cap and Anderson memory.
- * @returns The fixed point; the residual is x - g(x), and the history holds its norms.
+ * @returns The fixed point; the residual is x - g(x), and the history holds its norms. As {@link fsolve} and
+ *   {@link broyden}, a run that reaches the iteration cap returns `converged: false` with status `completed` (it does
+ *   not throw).
  * @concept fixed-points
  * @example
  * ```ts
@@ -538,17 +546,7 @@ export function fixedPointAlgorithm(
  */
 export function fixedPoint(g: VectorFunction, x0: TensorLike, options: FixedPointOptions = {}): SystemResult {
   const max = options.maxIterations ?? 500
-  const s = runAlgorithm(fixedPointAlgorithm(g, x0, options), { maxSteps: max }).state
-  if (!s.converged) throw new MdmlError('convergence', `fixedPoint: no convergence after ${max} iterations`)
-  return {
-    x: asVector(s.x),
-    residual: asVector(s.residual),
-    iterations: s.iteration,
-    functionCalls: s.functionCalls,
-    converged: true,
-    message: 'converged',
-    history: s.history,
-  }
+  return systemResult(runAlgorithm(fixedPointAlgorithm(g, x0, options), { maxSteps: max }).state, max)
 }
 
 /**

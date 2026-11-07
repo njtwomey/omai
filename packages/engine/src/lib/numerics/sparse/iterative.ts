@@ -20,7 +20,7 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
 import { daxpy, ddot as dot, dnrm2 as norm } from '../linalg/index.ts'
 import { asOperator, type CsrMatrix, csr, type LinearOperator, primalValues, spmv, transposeCsr } from './csr.ts'
 
@@ -54,6 +54,8 @@ export interface KrylovResult {
   readonly x: Tensor
   readonly iterations: number
   readonly converged: boolean
+  /** How the solve ended: `converged`, `completed` (the iteration cap), or `diverged` (a non-finite residual). */
+  readonly status: RunStatus
   readonly residualNorm: number
   /** The residual norm after each iteration (the semi-log convergence plot). */
   readonly history: readonly number[]
@@ -88,6 +90,7 @@ function finish(
     x: fromStorage(Float64Array.from(s.x), [s.x.length], 'float64'),
     iterations: result.steps,
     converged: result.status === 'converged',
+    status: result.status,
     residualNorm: s.residualNorm,
     history: s.history,
   }
@@ -646,6 +649,8 @@ export type SolveMethod = 'cg' | 'bicgstab' | 'gmres' | 'minres'
  * @param b - Right-hand side.
  * @param options - Method (default gmres, or cg for symmetric positive definite A) and tolerances (default rtol 1e-12).
  * @returns The solution.
+ * @throws MdmlError with code `convergence` when the iteration does not converge: the return is a bare value, with no
+ *   place for a status (the Krylov solvers `cg`, `gmres`, `minres` and `bicgstab` return one).
  * @concept implicit-differentiation
  * @example
  * ```ts

@@ -36,6 +36,7 @@ import {
   type ModeTable,
   modes,
   type RunOptions,
+  type RunStatus,
   runAlgorithm,
   stateFromJson,
   stateToJson,
@@ -529,6 +530,8 @@ export interface GlmFit {
   readonly path: readonly Float64Array[]
   readonly steps: number
   readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
   /** The mode that ran. */
   readonly solver: string
 }
@@ -586,6 +589,7 @@ export function fitGlm(
     path,
     steps: result.steps,
     converged: result.status === 'converged',
+    status: result.status,
     solver: kind,
   }
 }

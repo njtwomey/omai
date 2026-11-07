@@ -7,7 +7,16 @@
 import { heap, MdmlError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm, type StepContext, subRun } from '../trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  type RunOptions,
+  type RunStatus,
+  runAlgorithm,
+  runStatusOf,
+  type StepContext,
+  subRun,
+} from '../trace/index.ts'
 import { vectorFrom, vectorTensor } from './_programming.ts'
 import { lpInteriorPointAlgorithm } from './lp-interior-point.ts'
 import { simplexAlgorithm } from './lp-simplex.ts'
@@ -58,6 +67,10 @@ export interface MilpResult {
   readonly fun: number
   readonly status: 'optimal' | 'infeasible' | 'unbounded' | 'node limit'
   readonly success: boolean
+  /** `success` as a synonym of `converged` in the one vocabulary shared with the vector methods. */
+  readonly converged: boolean
+  /** The run in the one vocabulary (`optimal` is `converged`, a limit is `completed`, the rest `failed`): `runStatusOf(status)`. */
+  readonly runStatus: RunStatus
   readonly message: string
   /** The best bound on the optimum (equal to fun when optimal). */
   readonly bound: number
@@ -476,6 +489,8 @@ export function milp(problem: MixedIntegerProgram, options: MilpOptions = {}): M
     fun,
     status,
     success: status === 'optimal',
+    converged: status === 'optimal',
+    runStatus: runStatusOf(status),
     message: messages[status],
     bound,
     gap: s.incumbent === undefined ? Infinity : (fun - bound) / Math.max(1, Math.abs(fun)),

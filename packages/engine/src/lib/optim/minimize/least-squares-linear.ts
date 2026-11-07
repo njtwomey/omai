@@ -7,7 +7,7 @@
 import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../../numerics/linalg/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
 import { jtv, jv, lstsqSvd } from './_least-squares.ts'
 import { type Bounds, boxOf } from './objective.ts'
 
@@ -26,6 +26,8 @@ export interface LinearLeastSquaresResult {
   readonly activeMask: readonly number[]
   readonly iterations: number
   readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
   readonly message: string
 }
 
@@ -53,7 +55,10 @@ function matrix(a: TensorLike, b: TensorLike): { A: Float64Array; bv: Float64Arr
   const [m, n] = At.shape as [number, number]
   const bv = Float64Array.from(toFlat(asTensor(b)))
   if (bv.length !== m) throw new MdmlError('shape', `b has ${bv.length} entries for ${m} rows`)
-  return { A: Float64Array.from(toFlat(At)), bv, m, n }
+  const A = Float64Array.from(toFlat(At))
+  if (A.some((v) => !Number.isFinite(v))) throw new MdmlError('value', 'A must be finite')
+  if (bv.some((v) => !Number.isFinite(v))) throw new MdmlError('value', 'b must be finite')
+  return { A, bv, m, n }
 }
 
 /** The least-squares solution over the columns in `cols`, with the other variables fixed at x. */
@@ -223,6 +228,7 @@ function finish(
     activeMask: Array.from(s.onBound),
     iterations: r.steps,
     converged: r.status === 'converged',
+    status: r.status,
     message:
       r.status === 'converged' ? 'the KKT conditions hold to the tolerance' : 'maximum number of iterations reached',
   }

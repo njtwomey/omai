@@ -18,11 +18,35 @@ export function vectorFrom(x: TensorLike | undefined): Float64Array {
   return Float64Array.from(toFlat(primalOf(asTensor(x))))
 }
 
-/** A matrix with `cols` columns from anything tensor-like (0 rows when undefined); a 1-D input is one row. */
+/**
+ * A vector of program data (costs, right-hand sides, targets): empty when undefined, and a NaN or infinite entry throws
+ * `value` naming the argument, because every solver would read it as a violation that never fires and answer `optimal`.
+ */
+export function finiteVectorFrom(x: TensorLike | undefined, name: string): Float64Array {
+  const v = vectorFrom(x)
+  const bad = v.findIndex((entry) => !Number.isFinite(entry))
+  if (bad >= 0) throw new MdmlError('value', `${name} must be finite, got ${v[bad]} at ${bad}`)
+  return v
+}
+
+/** A vector of bounds: infinite entries mean no bound, a NaN entry throws `value` naming the argument. */
+export function boundVectorFrom(x: TensorLike | undefined, name: string): Float64Array {
+  const v = vectorFrom(x)
+  const bad = v.findIndex((entry) => Number.isNaN(entry))
+  if (bad >= 0) throw new MdmlError('value', `${name} must not contain NaN (found one at ${bad})`)
+  return v
+}
+
+/**
+ * A matrix with `cols` columns from anything tensor-like (0 rows when undefined); a 1-D input is one row. A NaN or
+ * infinite entry throws `value` naming the argument.
+ */
 export function matrixFrom(x: TensorLike | undefined, cols: number, name: string): Dense {
   if (x === undefined) return { data: new Float64Array(0), rows: 0, cols }
   const t = primalOf(asTensor(x))
   const data = Float64Array.from(toFlat(t))
+  const bad = data.findIndex((entry) => !Number.isFinite(entry))
+  if (bad >= 0) throw new MdmlError('value', `${name} must be finite, got ${data[bad]} at flat index ${bad}`)
   if (data.length === 0) return { data, rows: 0, cols }
   const c = t.shape.length === 1 ? (t.shape[0] ?? 0) : (t.shape[t.shape.length - 1] ?? 0)
   if (c !== cols || t.shape.length > 2)

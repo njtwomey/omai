@@ -6,7 +6,7 @@
 
 import { ddot } from '../numerics/linalg/index.ts'
 import { asTensor, type Tensor, toArray, toFlat } from '../tensor/index.ts'
-import { type Algorithm, runAlgorithm } from '../trace/index.ts'
+import { type Algorithm, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
 import { basisMatrix } from './_lp.ts'
 import { matVec, solveDense, vectorTensor } from './_programming.ts'
 import { lpInteriorPointAlgorithm } from './lp-interior-point.ts'
@@ -54,6 +54,10 @@ export interface LinprogResult {
   readonly con: Tensor
   readonly status: 'optimal' | 'infeasible' | 'unbounded' | 'iteration limit' | 'numerical difficulties'
   readonly success: boolean
+  /** `success` as a synonym of `converged` in the one vocabulary shared with the vector methods. */
+  readonly converged: boolean
+  /** The run in the one vocabulary (`optimal` is `converged`, a limit is `completed`, the rest `failed`): `runStatusOf(status)`. */
+  readonly runStatus: RunStatus
   readonly message: string
   readonly iterations: number
   readonly marginals: Marginals
@@ -105,6 +109,8 @@ function assembleResult(form: StandardForm, sol: StandardSolution): LinprogResul
     con: vectorTensor(con),
     status: sol.status,
     success: ok,
+    converged: ok,
+    runStatus: runStatusOf(sol.status),
     message: messages[sol.status],
     iterations: sol.iterations,
     marginals: {
@@ -317,6 +323,7 @@ function run<S extends { readonly solution: StandardSolution; readonly finished:
  * @param problem - The program.
  * @param options - Pivot rule, tolerance, iteration cap and run options.
  * @returns The result.
+ * @throws MdmlError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @concept linear-programming
  * @example
  * ```ts
@@ -339,6 +346,7 @@ export function linprogSimplex(problem: LinearProgram, options: LinprogOptions =
  * @param problem - The program.
  * @param options - Tolerance, iteration cap and run options.
  * @returns The result (no basis or ranging).
+ * @throws MdmlError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @concept linear-programming
  * @example
  * ```ts
@@ -369,6 +377,7 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
  * @param options - The method and its options.
  * @returns x, the optimal value, slacks, residuals, status, marginals (duals), and for the simplex the basis,
  * sensitivity ranges and visited vertices.
+ * @throws MdmlError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @concept linear-programming
  * @index function Linear programming by simplex or interior point, scipy form.
  * @example
@@ -395,6 +404,8 @@ export function linprog(problem: LinearProgram, options: LinprogOptions = {}): L
     ...ip,
     status: 'numerical difficulties',
     success: false,
+    converged: false,
+    runStatus: 'failed',
     message: `numerical difficulties: the simplex (${simplex.status}, then ${plain.status}) and the interior point (${ip.status}) disagree`,
   }
 }

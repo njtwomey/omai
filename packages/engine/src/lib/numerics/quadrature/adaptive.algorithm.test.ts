@@ -93,7 +93,7 @@ describe('quadAlgorithm', () => {
       { maxSteps: 100 },
     )
     expect(r.state.intervals).toHaveLength(5)
-    expect(r.status).toBe('stopped')
+    expect(r.status).toBe('completed')
     expect(() => quadAlgorithm((x) => x, 1, 0)).toThrow()
   })
 })

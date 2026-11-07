@@ -5,7 +5,7 @@
 
 import { maxOf } from '../base/index.ts'
 import { ddot, dgesv } from '../numerics/linalg/index.ts'
-import type { Algorithm } from '../trace/index.ts'
+import { type Algorithm, runStatusOf } from '../trace/index.ts'
 import { basisDuals, LP_SCHEMA, lpConfig } from './_lp.ts'
 import {
   fromStandard,
@@ -405,7 +405,7 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
       const next = { ...s, tableau, basis, iterations: s.iterations + 1, pivot: { entering: e, leaving, ratio } }
       return ongoing({ ...next, path: [...s.path, vertex(next)] })
     },
-    done: (s) => (s.finished ? (s.solution.status === 'optimal' ? 'converged' : 'failed') : undefined),
+    done: (s) => (s.finished ? runStatusOf(s.solution.status) : undefined),
     observe: (s) => {
       const width = s.cols + 1
       const last = s.path[s.path.length - 1]

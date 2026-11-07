@@ -11,6 +11,7 @@ import {
   numberFromJson,
   numberToJson,
   type RunOptions,
+  type RunStatus,
   runAlgorithm,
 } from '../trace/index.ts'
 import type { LineSearchPath } from './line-search-algorithms.ts'
@@ -247,6 +248,8 @@ export interface ScalarResult {
   readonly iterations: number
   readonly nfev: number
   readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
   readonly message: string
 }
 
@@ -318,6 +321,7 @@ function finish(alg: Algorithm<ScalarState>, options: ScalarOptions, steps: numb
     iterations: r.steps,
     nfev: s.nfev,
     converged: ok,
+    status: ok ? 'converged' : Number.isNaN(s.fx) ? 'diverged' : 'completed',
     message: ok ? 'solution found' : Number.isNaN(s.fx) ? 'NaN encountered' : 'maximum number of iterations reached',
   }
 }
