@@ -23,17 +23,19 @@ describe('boxes', () => {
         const scores = items.map(([, s]) => s)
         const keep = V.nms(boxes, scores, thr)
         expect(scores[keep[0] ?? -1]).toBe(Math.max(...scores))
-        const iou = boxIou(boxes, boxes)
+        const overlap = boxIou(boxes, boxes)
+        const iou = (i: number, j: number): number => overlap.data[i * boxes.length + j] ?? 0
         // The suppression and the matrix compute the overlap with different arithmetic, so a pair whose overlap is the
         // threshold to within rounding may fall on either side: compare with a tolerance (fast-check found such pairs).
         const eps = 1e-9
-        for (const i of keep) for (const j of keep) if (i !== j) expect(iou[i]?.[j] ?? 0).toBeLessThanOrEqual(thr + eps)
+        for (const i of keep)
+          for (const j of keep) if (i !== j) expect(iou(i, j)).toBeLessThanOrEqual(thr + eps)
         for (let k = 1; k < keep.length; k++)
           expect(scores[keep[k] ?? 0] ?? 0).toBeLessThanOrEqual(scores[keep[k - 1] ?? 0] ?? 0)
         // Every box is either kept or overlaps a kept box with a score at least its own.
         for (const [i] of boxes.entries())
           if (!keep.includes(i))
-            expect(keep.some((k) => (iou[i]?.[k] ?? 0) > thr - eps && (scores[k] ?? 0) >= (scores[i] ?? 0))).toBe(true)
+            expect(keep.some((k) => iou(i, k) > thr - eps && (scores[k] ?? 0) >= (scores[i] ?? 0))).toBe(true)
         const classes = boxes.map((_, i) => i % 2)
         // Per class: the best box of each class is kept, and no two kept boxes of a class overlap beyond the threshold.
         // (The count is not comparable with the plain suppression's: a box that a box of another class suppressed there
@@ -47,7 +49,7 @@ describe('boxes', () => {
           for (const i of batched)
             for (const j of batched)
               if (i !== j && classes[i] === c && classes[j] === c)
-                expect(iou[i]?.[j] ?? 0).toBeLessThanOrEqual(thr + eps)
+                expect(iou(i, j)).toBeLessThanOrEqual(thr + eps)
         }
         const soft = V.softNms(boxes, scores, { scoreThreshold: 0 })
         expect(soft.indices.length).toBe(boxes.length)
@@ -59,8 +61,8 @@ describe('boxes', () => {
   it('IoU is symmetric and in [0, 1]', () => {
     fc.assert(
       fc.property(box, box, (a, b) => {
-        const ab = boxIou([a], [b])[0]?.[0] ?? -1
-        const ba = boxIou([b], [a])[0]?.[0] ?? -1
+        const ab = boxIou([a], [b]).data[0] ?? -1
+        const ba = boxIou([b], [a]).data[0] ?? -1
         expect(ab).toBeCloseTo(ba, 12)
         expect(ab).toBeGreaterThanOrEqual(0)
         expect(ab).toBeLessThanOrEqual(1)

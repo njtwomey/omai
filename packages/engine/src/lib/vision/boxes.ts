@@ -183,14 +183,13 @@ export function nms(boxes: BoxesLike, scores: TensorLike, iouThreshold: number):
   const s = Array.from(valuesOf(scores).data)
   if (s.length !== b.length) throw new MdmlError('shape', 'nms: one score per box')
   if (b.length === 0) return []
-  const iou = boxIou(b, b)
+  const iou = boxIou(b, b).data
   const removed = new Uint8Array(b.length)
   const keep: number[] = []
   for (const i of byScore(s)) {
     if (removed[i] === 1) continue
     keep.push(i)
-    const row = iou[i] as number[]
-    for (let j = 0; j < b.length; j++) if ((row[j] ?? 0) > iouThreshold) removed[j] = 1
+    for (let j = 0; j < b.length; j++) if ((iou[i * b.length + j] ?? 0) > iouThreshold) removed[j] = 1
   }
   return keep
 }
@@ -296,7 +295,7 @@ export function softNmsAlgorithm(
   const thr = f32(options.iouThreshold ?? 0.3)
   const scoreThr = f32(options.scoreThreshold ?? 0.001)
   const topK = options.topK === undefined || options.topK === 0 ? b.length : Math.min(options.topK, b.length)
-  const iou = boxIou(b, b)
+  const iou = boxIou(b, b).data
   return {
     name: 'vision/soft-nms',
     config: { method, sigma, iouThreshold: thr, scoreThreshold: scoreThr, topK },
@@ -328,7 +327,7 @@ export function softNmsAlgorithm(
         const e = order[i] as [number, number]
         if (e[0] < scoreThr) continue
         // OpenCV's overlap: 1 - (float)(1 - IoU), the Jaccard distance taken through single precision.
-        const overlap = f32(1 - f32(1 - (iou[bidx]?.[e[1]] ?? 0)))
+        const overlap = f32(1 - f32(1 - (iou[bidx * b.length + e[1]] ?? 0)))
         if (method === 'linear') {
           if (overlap > thr) {
             e[0] = f32(e[0] * f32(1 - overlap))
@@ -550,19 +549,20 @@ export function matchAnchors(
   if (t.length === 0 || a.length === 0) throw new MdmlError('value', 'matchAnchors: no targets or no anchors')
   const high = options.highThreshold ?? 0.7
   const low = options.lowThreshold ?? 0.3
-  const q = boxIou(t, a)
+  const q = boxIou(t, a).data
+  const at = (i: number, j: number): number => q[i * a.length + j] ?? 0
   const best = a.map((_, j) => {
     let k = 0
-    for (let i = 1; i < t.length; i++) if ((q[i]?.[j] ?? 0) > (q[k]?.[j] ?? 0)) k = i
+    for (let i = 1; i < t.length; i++) if (at(i, j) > at(k, j)) k = i
     return k
   })
   const matches = best.map((k, j) => {
-    const v = q[k]?.[j] ?? 0
+    const v = at(k, j)
     return v < low ? BELOW_LOW_THRESHOLD : v < high ? BETWEEN_THRESHOLDS : k
   })
   if (options.allowLowQuality === true)
     for (let i = 0; i < t.length; i++) {
-      const row = q[i] as number[]
+      const row = q.subarray(i * a.length, (i + 1) * a.length)
       const top = maxOf(row)
       for (let j = 0; j < a.length; j++) if (row[j] === top) matches[j] = best[j] ?? 0
     }

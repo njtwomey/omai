@@ -5,7 +5,7 @@
  */
 
 import { MdmlError, type MetricResult, type MetricSpec, toRows } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
 
 /** Boxes as rows [x1, y1, x2, y2] (corner format, x2 > x1, y2 > y1). */
@@ -28,11 +28,17 @@ function geometry(a: readonly number[], b: readonly number[]): { inter: number; 
   return { inter, union, encl: [Math.min(ax1, bx1), Math.min(ay1, by1), Math.max(ax2, bx2), Math.max(ay2, by2)] }
 }
 
-/** A pairwise box measure `[N, M]` of two sets of boxes. */
-function pairwise(a: Boxes, b: Boxes, f: (p: readonly number[], q: readonly number[]) => number): number[][] {
+/** A pairwise box measure `[N, M]` of two sets of boxes, as a float64 tensor. */
+function pairwise(
+  a: Boxes,
+  b: Boxes,
+  f: (p: readonly number[], q: readonly number[]) => number,
+): Tensor<'float64'> {
   const ra = rowsOf(a)
   const rb = rowsOf(b)
-  return ra.map((p) => rb.map((q) => f(p, q)))
+  const out = new Float64Array(ra.length * rb.length)
+  ra.forEach((p, i) => rb.forEach((q, j) => (out[i * rb.length + j] = f(p, q))))
+  return fromStorage(out, [ra.length, rb.length], 'float64')
 }
 
 const iouOf = (p: readonly number[], q: readonly number[]): number => {
@@ -41,11 +47,12 @@ const iouOf = (p: readonly number[], q: readonly number[]): number => {
 }
 
 /**
- * Pairwise intersection over union of two sets of boxes (torchvision.ops.box_iou).
+ * Pairwise intersection over union of two sets of boxes (torchvision.ops.box_iou). The four box measures return tensors
+ * (migration, D-009: were `number[][]`).
  *
  * @param boxesA - Boxes `[N, 4]` as [x1, y1, x2, y2].
  * @param boxesB - Boxes `[M, 4]`.
- * @returns The IoU matrix `[N][M]`.
+ * @returns A float64 tensor of shape `[N, M]`: the IoU of every pair.
  * @concept object-detection
  * @example
  * ```ts
@@ -53,24 +60,25 @@ const iouOf = (p: readonly number[], q: readonly number[]): number => {
  * boxIou([[0, 0, 2, 2]], [[1, 1, 3, 3]]) // => [[0.14285714285714285]]
  * ```
  */
-export function boxIou(boxesA: Boxes, boxesB: Boxes): number[][] {
+export function boxIou(boxesA: Boxes, boxesB: Boxes): Tensor<'float64'> {
   return pairwise(boxesA, boxesB, iouOf)
 }
 
 /**
  * Pairwise generalised IoU (Rezatofighi et al., 2019; torchvision.ops.generalized_box_iou):
- * IoU - |C \ (A u B)| / |C| with C the smallest enclosing box, in [-1, 1].
+ * IoU - |C \ (A u B)| / |C| with C the smallest enclosing box, in [-1, 1]. Returns a tensor (migration, D-009: was
+ * `number[][]`).
  *
  * @param boxesA - Boxes `[N, 4]`.
  * @param boxesB - Boxes `[M, 4]`.
- * @returns The GIoU matrix.
+ * @returns A float64 tensor of shape `[N, M]`: the GIoU of every pair.
  * @example
  * ```ts
  * import { generalizedBoxIou } from 'mdml-engine/metrics'
  * generalizedBoxIou([[0, 0, 1, 1]], [[2, 0, 3, 1]]) // => [[-0.3333333333333333]]
  * ```
  */
-export function generalizedBoxIou(boxesA: Boxes, boxesB: Boxes): number[][] {
+export function generalizedBoxIou(boxesA: Boxes, boxesB: Boxes): Tensor<'float64'> {
   return pairwise(boxesA, boxesB, (p, q) => {
     const g = geometry(p, q)
     const [x1 = 0, y1 = 0, x2 = 0, y2 = 0] = g.encl
@@ -90,19 +98,19 @@ function centrePenalty(p: readonly number[], q: readonly number[], encl: readonl
 
 /**
  * Pairwise distance IoU (Zheng et al., 2020; torchvision.ops.distance_box_iou): IoU - rho^2(centres) / c^2 with c the
- * diagonal of the enclosing box.
+ * diagonal of the enclosing box. Returns a tensor (migration, D-009: was `number[][]`).
  *
  * @param boxesA - Boxes `[N, 4]`.
  * @param boxesB - Boxes `[M, 4]`.
  * @param options - eps added to the squared diagonal (default 1e-7, torchvision's).
- * @returns The DIoU matrix.
+ * @returns A float64 tensor of shape `[N, M]`: the DIoU of every pair.
  * @example
  * ```ts
  * import { distanceBoxIou } from 'mdml-engine/metrics'
  * distanceBoxIou([[0, 0, 1, 1]], [[0, 0, 1, 1]]) // => [[1]]
  * ```
  */
-export function distanceBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly eps?: number } = {}): number[][] {
+export function distanceBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly eps?: number } = {}): Tensor<'float64'> {
   const eps = options.eps ?? 1e-7
   return pairwise(boxesA, boxesB, (p, q) => {
     const g = geometry(p, q)
@@ -112,19 +120,20 @@ export function distanceBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly
 
 /**
  * Pairwise complete IoU (Zheng et al., 2020; torchvision.ops.complete_box_iou): DIoU minus alpha v, with v the aspect
- * ratio consistency (4 / pi^2)(atan(w_b / h_b) - atan(w_a / h_a))^2 and alpha = v / (1 - IoU + v).
+ * ratio consistency (4 / pi^2)(atan(w_b / h_b) - atan(w_a / h_a))^2 and alpha = v / (1 - IoU + v). Returns a tensor
+ * (migration, D-009: was `number[][]`).
  *
  * @param boxesA - Boxes `[N, 4]`.
  * @param boxesB - Boxes `[M, 4]`.
  * @param options - eps (default 1e-7).
- * @returns The CIoU matrix.
+ * @returns A float64 tensor of shape `[N, M]`: the CIoU of every pair.
  * @example
  * ```ts
  * import { completeBoxIou } from 'mdml-engine/metrics'
  * completeBoxIou([[0, 0, 1, 1]], [[0, 0, 1, 1]]) // => [[1]]
  * ```
  */
-export function completeBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly eps?: number } = {}): number[][] {
+export function completeBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly eps?: number } = {}): Tensor<'float64'> {
   const eps = options.eps ?? 1e-7
   return pairwise(boxesA, boxesB, (p, q) => {
     const g = geometry(p, q)
