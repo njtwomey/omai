@@ -17,11 +17,27 @@ function pageMode(): ColourMode {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 }
 
+// One observer of the root element's class for every hook on the page (a page of figures has hundreds of them): made by
+// the first subscriber, disconnected by the last.
+const pageListeners = new Set<() => void>()
+let pageObserver: MutationObserver | undefined
+
 function subscribePage(listener: () => void): () => void {
   if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return () => {}
-  const observer = new MutationObserver(listener)
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-  return () => observer.disconnect()
+  pageListeners.add(listener)
+  if (pageObserver === undefined) {
+    pageObserver = new MutationObserver(() => {
+      for (const l of [...pageListeners]) l()
+    })
+    pageObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+  }
+  return () => {
+    pageListeners.delete(listener)
+    if (pageListeners.size === 0) {
+      pageObserver?.disconnect()
+      pageObserver = undefined
+    }
+  }
 }
 
 /**

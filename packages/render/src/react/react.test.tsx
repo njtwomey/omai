@@ -1,14 +1,23 @@
+import { structure } from 'mdml-engine/scene'
+import { type ReactElement, useState } from 'react'
 import { renderToString } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { lineChart } from '../charts/lines.ts'
 import { figure } from '../figure/figure.ts'
+import { inAct, mountElement, resetGlobals } from './_harness.tsx'
 import { Chart } from './Chart.tsx'
 import { loadEcharts } from './echarts.ts'
+import { StructureView } from './StructureView.tsx'
 import { ThemeProvider, useColourMode, useTokens } from './theme.tsx'
 
 function ModeProbe(): string {
   return `${useColourMode()}:${useTokens().bg}`
 }
+
+afterEach(() => {
+  resetGlobals()
+  vi.unstubAllGlobals()
+})
 
 describe('react bindings', () => {
   it('render a chart container of the figure size on the server', () => {
@@ -27,6 +36,52 @@ describe('react bindings', () => {
         </ThemeProvider>,
       ),
     ).toBe('light:#ffffff')
+  })
+  it('observe the page class with one observer however many figures ask, and disconnect with the last', async () => {
+    const made: { disconnected: boolean }[] = []
+    vi.stubGlobal(
+      'MutationObserver',
+      class {
+        disconnected = false
+        constructor() {
+          made.push(this)
+        }
+        observe(): void {}
+        disconnect(): void {
+          this.disconnected = true
+        }
+      },
+    )
+    const many = (
+      <>
+        <ModeProbe />
+        <ModeProbe />
+        <ModeProbe />
+      </>
+    )
+    const first = await mountElement(many, { browser: true })
+    const second = await mountElement(<ModeProbe />, { browser: true })
+    expect(made).toHaveLength(1)
+    await first.unmount()
+    expect(made[0]?.disconnected).toBe(false)
+    await second.unmount()
+    expect(made[0]?.disconnected).toBe(true)
+  })
+  it('gives a structure view one stable ref callback, so a render does not set state twice', async () => {
+    const s = structure('bayes-net', [{ id: 'a', label: 'a', role: 'latent' }], [])
+    let bump = (): void => {}
+    const Host = (): ReactElement => {
+      const [n, setN] = useState(0)
+      bump = () => setN(n + 1)
+      return <StructureView structure={s} width={300 + n} />
+    }
+    const mounted = await mountElement(<Host />, { browser: true })
+    const refOf = (): unknown => mounted.elements().find((e) => e.props['onPointerDown'] !== undefined)?.props['ref']
+    const before = refOf()
+    expect(typeof before).toBe('function')
+    await inAct(bump)
+    expect(refOf()).toBe(before)
+    await mounted.unmount()
   })
   it('loads ECharts with the mdml themes', () => {
     expect(typeof loadEcharts().init).toBe('function')

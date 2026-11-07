@@ -4,7 +4,7 @@
  */
 
 import type { Structure, StructureNode, StructureOverlay } from 'mdml-engine/scene'
-import { type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactElement, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type DiagramOptions, diagram } from '../structures/diagram.ts'
 import { cx, iconButtonClass } from './controls/classes.ts'
 import { FigureFrame, type FigureFrameProps } from './FigureFrame.tsx'
@@ -59,6 +59,11 @@ export function StructureView(props: StructureViewProps): ReactElement {
   // The drawing's box: a state as well as a ref, so the wheel listener follows it into and out of an expanded frame.
   const box = useRef<HTMLDivElement | null>(null)
   const [boxEl, setBoxEl] = useState<HTMLDivElement | null>(null)
+  // Stable, so React calls it when the box mounts or unmounts and not (with null, then the element) on every render.
+  const boxRef = useCallback((el: HTMLDivElement | null): void => {
+    box.current = el
+    setBoxEl(el)
+  }, [])
   const byId = useMemo(() => new Map(structure.nodes.map((n) => [n.id, n])), [structure])
   const zoom = (factor: number, cxFrac = 0.5, cyFrac = 0.5): void => {
     const [x, y, w, h] = shown
@@ -93,10 +98,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
   const drawnHeight = Math.round((drawnWidth * drawing.height) / Math.max(1, drawing.width)) + 2
   const drawingBox = (
     <div
-      ref={(el) => {
-        box.current = el
-        setBoxEl(el)
-      }}
+      ref={boxRef}
       className="cursor-grab touch-none overflow-hidden rounded-lg border border-(--wb-grid) active:cursor-grabbing"
       style={{ width: drawnWidth, maxWidth: '100%' }}
       onPointerDown={(e) => {
