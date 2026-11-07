@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { minEigenvalue } from '../../testing/kernels.ts'
-import { toFlat, type Value } from '../tensor/index.ts'
+import { grad, numericalGradient } from '../autodiff/index.ts'
+import { sum, tensor, toFlat, type Value, zeros } from '../tensor/index.ts'
 import {
   additiveChi2Kernel,
   arcCosineKernel,
@@ -29,7 +30,9 @@ import {
   skewedChi2Kernel,
   spectralMixtureKernel,
   sumKernel,
+  theta,
   whiteNoiseKernel,
+  withTheta,
 } from './index.ts'
 
 /** Deterministic points in [-2, 2]^d (a linear congruential sequence, so that the table is reproducible). */
@@ -139,5 +142,43 @@ describe('the kernel catalogue', () => {
     expect([1, 2, 3].map((d) => negative(sigmoidKernel(), d))).toContain(true)
     // The flag survives rebuilding the kernel from new hyperparameters.
     expect(periodicKernel().withParams(periodicKernel({ period: 2 }).params).psd).toBe('conditional')
+  })
+  it('has a finite gradient in the points and in theta at coincident points, equal to a central difference', () => {
+    for (const [name, kernel, , nonNegative] of [...CATALOGUE, ['spectral mixture', SM, 1] as const]) {
+      const p = pointsOf(3, 2, nonNegative === true) as [number[], number[], number[]]
+      const x = tensor([p[0], p[0], p[1], p[2]])
+      const objectives: [string, (v: Value) => Value, Value][] = [['x', (v) => sum(kernel.k(v)), x]]
+      if (toFlat(theta(kernel)).length > 0)
+        objectives.push(['theta', (t) => sum(withTheta(kernel, t).k(x)), theta(kernel)])
+      for (const [what, f, at] of objectives) {
+        const got = toFlat(grad(f)(at) as Value)
+        const want = toFlat(numericalGradient(f, at))
+        expect(got.every(Number.isFinite), `${name}: gradient in ${what} is finite`).toBe(true)
+        got.forEach((g, i) => {
+          expect(Math.abs(g - (want[i] ?? Number.NaN)), `${name}: d/d${what}[${i}]`).toBeLessThan(1e-5)
+        })
+      }
+    }
+  })
+  it('gives [0, 0] for no points, [1, 1] for one, and a NaN only where the NaN point enters', () => {
+    // Kernels that never read the coordinates (white noise, constant) have no NaN to show; the zero-order arc-cosine
+    // kernel is 1 on the diagonal whatever the point is, so its own entry stays finite.
+    const blind = new Set(['white', 'constant'])
+    for (const [name, kernel, , nonNegative] of [...CATALOGUE, ['spectral mixture', SM, 1] as const]) {
+      const d = 2
+      expect(gram(kernel, zeros([0, d])).shape, `${name}: no points`).toEqual([0, 0])
+      expect(gram(kernel, pointsOf(1, d, nonNegative === true)).shape, `${name}: one point`).toEqual([1, 1])
+      const rows = pointsOf(3, d, nonNegative === true)
+      const column = ((kernel.config['dims'] ?? [0]) as readonly number[])[0] ?? 0
+      ;(rows[1] as number[])[column] = Number.NaN
+      const k = toFlat(gram(kernel, rows))
+      for (let i = 0; i < 3; i++)
+        for (let j = 0; j < 3; j++) {
+          const touched = i === 1 || j === 1
+          const poisoned = touched && !blind.has(name) && !(name === 'arc-cosine 0' && i === j)
+          const v = k[i * 3 + j] ?? 0
+          expect(poisoned ? Number.isNaN(v) : Number.isFinite(v), `${name}: entry (${i}, ${j}) is ${v}`).toBe(true)
+        }
+    }
   })
 })
