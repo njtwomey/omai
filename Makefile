@@ -44,7 +44,7 @@ api-surface-check: ## Fail if the public surface differs from docs/api-surface.t
 	$(NODE) scripts/api-surface.ts --check
 
 .PHONY: layers
-layers: ## Check layering: no import cycles between core domains, and the package rules
+layers: ## Check layering: no import cycles between domains, the tiers of the core, no new file cycles, the package rules
 	$(NODE) scripts/layers.ts
 
 .PHONY: lint

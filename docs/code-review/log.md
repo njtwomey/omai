@@ -274,3 +274,17 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `RecordBoundaryProps`) and 2 changed (`groupDisparities`, `SessionExportProps`, each one optional parameter or field), 0 removed. Test count: 9 `it` blocks added, none
   removed. Own checks only (the full gate was not run): the 422 test files of the 18 record-building domains, 465 of the scene-building ones, the 48 sibling tests of
   the other touched files, all 87 render test files, 989 examples, tsc of engine and render, barrels, layers, lint, agent index and surface.
+- **16:15 Wave C, layering and `tensor` structure (P3.6, P3.15), `agent-ly02-layers`, two commits, not pushed.** The review's "core imports a
+  constructed domain" and "against the order" findings were two readings of a guessed order, so the check is a table of the facts, not an order
+  (D-015): nine foundation domains with the short set each may import (the corrected facts: `context` above `trace`, `scene` beside `base`, `autodiff`
+  takes `scene`; the real graph satisfied them with no change), a machinery tier (`numerics`, `dists`, `information`, `optim`, `losses`, `kernels`,
+  `stats`, `metrics`, `data`) that imports the foundation and itself, and four listed exceptions (`metrics/audio.ts` and `image-quality.ts` into `signal`,
+  `metrics/text.ts` into `text`, `kernels/structured.ts` into `graph`). Putting `information` in the machinery tier removed two of the six findings
+  (`losses` and `stats` building on entropy is right). A listed exception that nothing uses any more fails, so the table stays true. File-level
+  cycles are found on value imports only (`import type` is erased): 5 exist, written out as an allowlist, 2 of them the `tensor` ones of the review
+  (6 files: `cpu.ts` with `_cpu/*`; 9 files: `batching.ts` with eight `ops` modules, which are in fact one cluster of mutually recursive operations,
+  so removing `batching.ts` would leave an 8-file cycle) and 3 the review had not seen (`symbolic` twice, `search/planning` once). Neither `tensor` cycle
+  was small, so neither was broken. The backend removal (FD-22) and the constructor options (FD-23) were skipped: each changes exported names, members
+  of exported unions or signatures. FD-25: only `matmulPrimitive`, which is exported, is imported instead of found by running `matmul`; the rest of the
+  rules' primitives are not exported. The rules are pure functions in `scripts/layers-rules.ts` with a test (3 `it`) in a new Vitest project `scripts`.
+  Own checks only (the full gate was not run). Surface 0 added, 0 removed, 0 changed.

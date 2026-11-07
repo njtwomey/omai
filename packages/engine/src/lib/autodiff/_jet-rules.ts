@@ -28,7 +28,7 @@ import {
   log2,
   log10,
   type MaybeZero,
-  matmul,
+  matmulPrimitive,
   mul,
   neg,
   type Primitive,
@@ -245,7 +245,6 @@ const i2: Aval = { shape: [2], dtype: 'int32' }
 const i21: Aval = { shape: [2, 1], dtype: 'int32' }
 const unary = (op: (x: Value) => Value): Primitive<unknown> => primitiveOf(op, [f2])
 const binary = (op: (a: Value, b: Value) => Value): Primitive<unknown> => primitiveOf(op, [f2, f2])
-const matmulPrimitive = primitiveOf(matmul, [f22, f22]) as Primitive<null>
 
 /** Primitives that are linear (or affine) in their inputs jointly: each coefficient maps through the jvp rule. */
 export const LINEAR: ReadonlySet<Primitive<unknown>> = new Set([

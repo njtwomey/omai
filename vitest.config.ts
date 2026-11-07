@@ -47,6 +47,15 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: 'scripts',
+          root: 'scripts',
+          include: ['*.test.ts'],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: 'render',
           ...keepIsolation,
           root: 'packages/render',
