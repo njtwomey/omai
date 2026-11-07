@@ -11,9 +11,10 @@
 import { type Json, MdmlError, minOf } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key, key as makeKey } from '../random/index.ts'
-import { add, toFlat, type Value } from '../tensor/index.ts'
+import { add, asTensor, type Tensor, type TensorLike, toArray, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { lbfgsb } from './minimize/lbfgsb.ts'
+import { rowsOf, vectorOf } from './_vector.ts'
 import type { OnlineLearner, OnlineLoss } from './online.ts'
 
 /** The rounds of a prediction-with-expert-advice problem. */
@@ -348,24 +349,29 @@ export function variableShare(options: ShareOptions): ExpertsRule<WeightState> {
 
 /**
  * The smallest total loss of any sequence of experts with at most `switches` changes, by dynamic programming over (round,
- * switches used, current expert). Used as the comparator for tracking.
+ * switches used, current expert). Used as the comparator for tracking. Takes the losses as a tensor-like and returns a
+ * tensor (migration, D-009: was `readonly (readonly number[])[]` in, `number[]` out).
  *
- * @param losses - T x N losses.
+ * @param losses - T x N losses, a matrix.
  * @param switches - The number of times the chosen expert may change.
- * @returns For each prefix length t = 1..T, the best loss of a sequence with at most `switches` switches over the first t rounds.
+ * @returns For each prefix length t = 1..T, the best loss of a sequence with at most `switches` switches over the first t
+ *   rounds, a `[T]` tensor.
+ * @throws MdmlError with code `shape` unless `losses` is a matrix, and `not-differentiable` for a traced one.
  * @concept online-learning
  * @example
  * ```ts
  * import { bestSwitchingLoss } from 'mdml-engine/optim'
- * bestSwitchingLoss([[0, 1], [0, 1], [1, 0], [1, 0]], 1) // => [0, 0, 0, 0]
+ * import { toFlat } from 'mdml-engine/tensor'
+ * toFlat(bestSwitchingLoss([[0, 1], [0, 1], [1, 0], [1, 0]], 1)) // => [0, 0, 0, 0]
  * ```
  */
-export function bestSwitchingLoss(losses: readonly (readonly number[])[], switches: number): number[] {
-  const n = losses[0]?.length ?? 0
+export function bestSwitchingLoss(losses: TensorLike, switches: number): Tensor<'float64', [number]> {
+  const rows = rowsOf(losses, 'bestSwitchingLoss')
+  const n = rows[0]?.length ?? 0
   const out: number[] = []
   // dp[s][i]: best loss so far with s switches used, currently on expert i.
   let dp: number[][] = Array.from({ length: switches + 1 }, () => new Array<number>(n).fill(Number.POSITIVE_INFINITY))
-  losses.forEach((row, t) => {
+  rows.forEach((row, t) => {
     const next = Array.from({ length: switches + 1 }, () => new Array<number>(n).fill(Number.POSITIVE_INFINITY))
     for (let s = 0; s <= switches; s++) {
       const bestPrev = s > 0 ? minOf(dp[s - 1] as number[]) : Number.POSITIVE_INFINITY
@@ -378,7 +384,7 @@ export function bestSwitchingLoss(losses: readonly (readonly number[])[], switch
     dp = next
     out.push(minOf(dp.map((r) => minOf(r))))
   })
-  return out
+  return vectorOf(out)
 }
 
 /** State of {@link expertsAlgorithm}: the rule's state and the regret record. */
@@ -576,12 +582,15 @@ export interface Exp4Options {
  * for expert weights q, sees only the loss of the arm it pulled, and updates each expert's cumulative loss by the importance
  * weighted estimate xi_i(a) l_a / p_a. The pseudo-regret against the best expert is at most sqrt(2 K T ln N) at
  * eta = sqrt(2 ln N / (K T)) (gamma = 0, losses in [0, 1]). Exp3 is the case where expert i always recommends arm i
- * (`advice` the identity). The tape records the expected loss and the pseudo-regret.
+ * (`advice` the identity). The tape records the expected loss and the pseudo-regret. Takes the advice and the losses as
+ * tensor-likes (migration, D-009: they were nested `readonly number[]` arrays).
  *
- * @param advice - Either `[N][K]` advice that is the same every round, or `[T][N][K]`.
- * @param losses - The T x K loss of every arm in every round (the learner sees only the pulled arm's).
+ * @param advice - Either `[N, K]` advice that is the same every round, or `[T, N, K]`.
+ * @param losses - The `[T, K]` loss of every arm in every round (the learner sees only the pulled arm's).
  * @param options - eta and gamma.
  * @returns The algorithm over {@link Exp4State}.
+ * @throws MdmlError with code `shape` unless `advice` has rank 2 or 3 and `losses` rank 2, and `not-differentiable` for a
+ *   traced one.
  * @concept online-learning
  * @example
  * ```ts
@@ -590,17 +599,23 @@ export interface Exp4Options {
  * ```
  */
 export function exp4Algorithm(
-  advice: readonly (readonly number[])[] | readonly (readonly (readonly number[])[])[],
-  losses: readonly (readonly number[])[],
+  adviceLike: TensorLike,
+  lossesLike: TensorLike,
   options: Exp4Options = {},
 ): Algorithm<Exp4State> {
+  const losses = rowsOf(lossesLike, 'exp4Algorithm')
+  const advice = asTensor(adviceLike)
+  if (advice.shape.length !== 2 && advice.shape.length !== 3 && !(advice.shape.length === 1 && advice.shape[0] === 0))
+    throw new MdmlError(
+      'shape',
+      `exp4Algorithm: advice must be [N, K] or [T, N, K], got shape [${advice.shape.join(', ')}]`,
+    )
+  const adviceRows = toArray(advice) as number[][] | number[][][]
   const rounds = losses.length
   const k = losses[0]?.length ?? 0
-  const perRound = Array.isArray((advice[0] as unknown[] | undefined)?.[0])
+  const perRound = advice.shape.length === 3
   const adviceAt = (t: number): readonly (readonly number[])[] =>
-    (perRound
-      ? (advice as readonly (readonly (readonly number[])[])[])[t]
-      : (advice as readonly (readonly number[])[])) as readonly (readonly number[])[]
+    (perRound ? (adviceRows as number[][][])[t] : (adviceRows as number[][])) as readonly (readonly number[])[]
   const n = adviceAt(0).length
   if (rounds === 0 || k < 2 || n < 1)
     throw new MdmlError('value', 'exp4: needs rounds, at least two arms and an expert')
@@ -789,11 +804,13 @@ export function onlineAdagrad(
 /**
  * AdaGrad's regret bound for a box of width D_inf (twice the radius) at eta = D_inf / sqrt(2): sqrt(2) D_inf sum_j |g_{1:T,j}|_2,
  * the sum over coordinates of the Euclidean norm of that coordinate's gradients over the rounds. It is data dependent and
- * much smaller than the worst case D G sqrt(T) when the gradients are sparse.
+ * much smaller than the worst case D G sqrt(T) when the gradients are sparse. Takes the gradients as a tensor-like
+ * (migration, D-009: was `readonly (readonly number[])[]`).
  *
- * @param gradients - The T gradients, each of dimension d.
+ * @param gradients - The T gradients, each of dimension d: a `[T, d]` matrix.
  * @param width - D_inf, the width of the box in each coordinate (2 radius).
  * @returns The bound.
+ * @throws MdmlError with code `shape` unless `gradients` is a matrix, and `not-differentiable` for a traced one.
  * @concept online-learning
  * @example
  * ```ts
@@ -801,7 +818,8 @@ export function onlineAdagrad(
  * adagradRegretBound([[3, 0], [4, 0]], 2) // => 14.1421
  * ```
  */
-export function adagradRegretBound(gradients: readonly (readonly number[])[], width: number): number {
+export function adagradRegretBound(gradientsLike: TensorLike, width: number): number {
+  const gradients = rowsOf(gradientsLike, 'adagradRegretBound')
   const d = gradients[0]?.length ?? 0
   let total = 0
   for (let j = 0; j < d; j++) {
@@ -821,29 +839,30 @@ export interface HindsightOptions {
 /**
  * The best fixed point in hindsight, argmin_u sum_t f_t(u), for smooth convex losses, by L-BFGS(-B) on the summed loss
  * (gradients by automatic differentiation): the comparator that an online learner's regret is measured against when it is
- * not available in closed form. For linear losses over a ball or box the comparator is explicit and cheaper.
+ * not available in closed form. For linear losses over a ball or box the comparator is explicit and cheaper. The point
+ * is a tensor (migration, D-009: was a `Float64Array`).
  *
  * @param losses - The T losses, each a function of the point.
  * @param dim - The dimension.
  * @param options - An optional box.
- * @returns The minimiser and the total loss there.
+ * @returns The minimiser, a `[dim]` tensor, and the total loss there.
  * @concept online-learning
  * @example
  * ```ts
  * import { hindsightComparator } from 'mdml-engine/optim'
- * import { square, sub, sum, toArray } from 'mdml-engine/tensor'
+ * import { square, sub, sum, toFlat } from 'mdml-engine/tensor'
  * const f = (c: number) => (x: any) => sum(square(sub(x, c)))
- * Math.round(hindsightComparator([f(1), f(3)], 1).point[0] * 1e6) / 1e6 // => 2
+ * Math.round(toFlat(hindsightComparator([f(1), f(3)], 1).point)[0] * 1e6) / 1e6 // => 2
  * ```
  */
 export function hindsightComparator(
   losses: readonly OnlineLoss[],
   dim: number,
   options: HindsightOptions = {},
-): { readonly point: Float64Array; readonly loss: number } {
+): { readonly point: Tensor<'float64', [number]>; readonly loss: number } {
   const total = (x: Value): Value => losses.map((f) => f(x)).reduce((a, b) => add(a, b))
   const x0 = new Float64Array(dim)
   const bounds = options.box === undefined ? {} : { bounds: { lower: -options.box, upper: options.box } }
   const r = lbfgsb(total, x0, { ...bounds, gradTol: 1e-10, ftol: 1e-15 })
-  return { point: Float64Array.from(toFlat(r.x as Value)), loss: r.fun }
+  return { point: vectorOf(toFlat(r.x as Value)), loss: r.fun }
 }
