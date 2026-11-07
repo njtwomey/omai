@@ -8,7 +8,7 @@ Numerical methods, scipy and numpy.linalg style, one subfolder per topic with an
 
 Approximating functions and sequences: Chebyshev expansions and adaptive chebfun-style approximation, minimax approximation by the Remez algorithm, Pade approximants and continued fractions, convergence acceleration of sequences and series, and floating-point arithmetic itself (ulps, error-free sums and products, conditioning).
 
-- function `chebfun`: Adaptive Chebyshev approximation of a smooth function. `src/lib/numerics/approximation/chebyshev.ts:332` `mdml-engine/numerics/approximation`
+- function `chebfun`: Adaptive Chebyshev approximation of a smooth function. `src/lib/numerics/approximation/chebyshev.ts:333` `mdml-engine/numerics/approximation`
 
 ## numerics/convolution
 
@@ -59,16 +59,16 @@ Dense linear algebra, numpy.linalg and scipy.linalg style: determinants and norm
 - function `blas.ts` (file): BLAS-style vector kernels on plain arrays: ddot, dnrm2, daxpy, dgemv. `src/lib/numerics/linalg/blas.ts:1` `mdml-engine/numerics/linalg`
 - function `randomized.ts` (file): Randomised SVD, range finder and random projections. `src/lib/numerics/linalg/randomized.ts:1` `mdml-engine/numerics/linalg`
 
-- function `cholesky`: Cholesky factor of a symmetric positive-definite matrix. `src/lib/numerics/linalg/cholesky.ts:96` `mdml-engine/numerics/linalg`
-- function `eig`: Eigenvalues and eigenvectors of a general real matrix. `src/lib/numerics/linalg/eig.ts:116` `mdml-engine/numerics/linalg`
-- function `eigh`: Symmetric eigendecomposition with derivatives. `src/lib/numerics/linalg/eigh.ts:134` `mdml-engine/numerics/linalg`
+- function `cholesky`: Cholesky factor of a symmetric positive-definite matrix. `src/lib/numerics/linalg/cholesky.ts:100` `mdml-engine/numerics/linalg`
+- function `eig`: Eigenvalues and eigenvectors of a general real matrix. `src/lib/numerics/linalg/eig.ts:120` `mdml-engine/numerics/linalg`
+- function `eigh`: Symmetric eigendecomposition with derivatives. `src/lib/numerics/linalg/eigh.ts:140` `mdml-engine/numerics/linalg`
 - function `expm`: Matrix exponential by Pade scaling and squaring. `src/lib/numerics/linalg/functions.ts:73` `mdml-engine/numerics/linalg`
-- function `inv`: Matrix inverse, batched and differentiable. `src/lib/numerics/linalg/lu.ts:106` `mdml-engine/numerics/linalg`
-- function `lstsq`: Least-squares solution of A x = b. `src/lib/numerics/linalg/qr.ts:176` `mdml-engine/numerics/linalg`
+- function `inv`: Matrix inverse, batched and differentiable. `src/lib/numerics/linalg/lu.ts:118` `mdml-engine/numerics/linalg`
+- function `lstsq`: Least-squares solution of A x = b. `src/lib/numerics/linalg/qr.ts:179` `mdml-engine/numerics/linalg`
 - function `norm`: Vector and matrix norms, like numpy.linalg.norm. `src/lib/numerics/linalg/basics.ts:154` `mdml-engine/numerics/linalg`
-- function `qr`: Reduced QR factorisation by Householder reflections. `src/lib/numerics/linalg/qr.ts:130` `mdml-engine/numerics/linalg`
-- function `solve`: Solve a square linear system by LU, like numpy.linalg.solve. `src/lib/numerics/linalg/lu.ts:85` `mdml-engine/numerics/linalg`
-- function `svd`: Reduced singular value decomposition, differentiable. `src/lib/numerics/linalg/svd.ts:174` `mdml-engine/numerics/linalg`
+- function `qr`: Reduced QR factorisation by Householder reflections. `src/lib/numerics/linalg/qr.ts:132` `mdml-engine/numerics/linalg`
+- function `solve`: Solve a square linear system by LU, like numpy.linalg.solve. `src/lib/numerics/linalg/lu.ts:96` `mdml-engine/numerics/linalg`
+- function `svd`: Reduced singular value decomposition, differentiable. `src/lib/numerics/linalg/svd.ts:187` `mdml-engine/numerics/linalg`
 
 ## numerics/polynomial
 
@@ -88,7 +88,7 @@ Numerical integration, scipy.integrate style: adaptive quadrature (Gauss-Kronrod
 Root finding: scalar methods with brackets or derivatives, solvers for systems of nonlinear equations with Jacobians from autodiff, continuation methods that follow solutions along a parameter, and roots that are differentiable in their parameters through the implicit function theorem.
 
 - function `brentq`: Brent's bracketing root finder for a scalar function. `src/lib/numerics/roots/scalar.ts:58` `mdml-engine/numerics/roots`
-- function `root`: Solve F(x) = 0 with newton, broyden or other methods. `src/lib/numerics/roots/systems.ts:568` `mdml-engine/numerics/roots`
+- function `root`: Solve F(x) = 0 with newton, broyden or other methods. `src/lib/numerics/roots/systems.ts:599` `mdml-engine/numerics/roots`
 
 - table `rootFinders`: The scalar root finders as one named slot. `src/lib/numerics/roots/scalar-options.ts:116` `mdml-engine/numerics/roots`
 
@@ -98,8 +98,8 @@ Sparse linear algebra, scipy.sparse style: compressed sparse row matrices and li
 
 - function `iterative.ts` (file): Krylov solvers: CG, BiCGSTAB, GMRES and MINRES with preconditioners. `src/lib/numerics/sparse/iterative.ts:1` `mdml-engine/numerics/sparse`
 
-- function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:164` `mdml-engine/numerics/sparse`
-- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:522` `mdml-engine/numerics/sparse`
+- function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:179` `mdml-engine/numerics/sparse`
+- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:532` `mdml-engine/numerics/sparse`
 
 - structure `csr`: Compressed sparse row matrix from a dense matrix or its arrays. `src/lib/numerics/sparse/csr.ts:67` `mdml-engine/numerics/sparse`
 
@@ -107,9 +107,9 @@ Sparse linear algebra, scipy.sparse style: compressed sparse row matrices and li
 
 Nearest-neighbour search: exact brute force and spatial trees (KD, ball, vantage-point), and approximate indexes for large or high-dimensional data, namely graph search (HNSW, NN-descent), locality-sensitive hashing and MinHash, and vector quantisation (product quantisation, IVF).
 
-- function `kNearest`: Exact k nearest neighbours by brute force. `src/lib/numerics/spatial/brute.ts:126` `mdml-engine/numerics/spatial`
+- function `kNearest`: Exact k nearest neighbours by brute force. `src/lib/numerics/spatial/brute.ts:136` `mdml-engine/numerics/spatial`
 
-- structure `kdTree`: KD tree for nearest-neighbour and radius queries. `src/lib/numerics/spatial/trees.ts:390` `mdml-engine/numerics/spatial`
+- structure `kdTree`: KD tree for nearest-neighbour and radius queries. `src/lib/numerics/spatial/trees.ts:398` `mdml-engine/numerics/spatial`
 
 ## numerics/special
 
