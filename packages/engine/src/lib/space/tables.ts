@@ -2,7 +2,8 @@
  * An option table: the shape every option set shares when its options are values rather than algorithms (a loss, a
  * penalty, a schedule, a kernel). Each option has its own knobs (a dict space), properties the validity rules and the
  * selectors read, and a `make` that binds the knobs into the value; the table is one `union` space over the knobs
- * and the dispatch from a configuration to its option. The modes of `trace/modes.ts` are the same idea for algorithms.
+ * and the dispatch from a configuration to its option. It is the one builder of such tables: the modes of `trace/modes.ts`
+ * (options whose value builds an algorithm) are made with it.
  *
  * @index table optionTable and modeTable: slots filled from named options.
  */

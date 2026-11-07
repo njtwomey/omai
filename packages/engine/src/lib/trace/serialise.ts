@@ -1,34 +1,49 @@
 /**
  * Generic state serialisation for checkpoints: `stateToJson` turns an algorithm state made of plain objects, arrays,
  * numbers, strings, keys, tensors and typed arrays into JSON, and `stateFromJson` turns it back, so an algorithm's
- * `serialise` and `deserialise` are one line each. Maps, sets, functions and class instances are refused.
+ * `serialise` and `deserialise` are one line each. Maps, sets, functions and class instances are refused. The codec is
+ * the engine's one, `toJson` and `fromJson` of `base/json.ts` (non-finite numbers and -0 survive a trip through JSON
+ * text, typed arrays are `{ $typed, values }`); the only thing added here is the tensor, which `base` does not know.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { decodeNumber, type Encodable, encodeNumber, fromJson, type Json, toJson } from '../base/index.ts'
 import { isTensor, type TensorJson, tensorFromJson, tensorToJson } from '../tensor/index.ts'
 
-const TYPED = {
-  Float64Array,
-  Float32Array,
-  Int32Array,
-  Int16Array,
-  Int8Array,
-  Uint32Array,
-  Uint16Array,
-  Uint8Array,
-  Uint8ClampedArray,
-} as const
+function isPlain(x: unknown): x is Readonly<Record<string, unknown>> {
+  if (typeof x !== 'object' || x === null) return false
+  const proto = Object.getPrototypeOf(x) as object | null
+  return proto === null || proto === Object.prototype
+}
 
-type TypedName = keyof typeof TYPED
+const isTag = (x: unknown): boolean => isPlain(x) && Object.keys(x).length === 1 && Object.hasOwn(x, '$tensor')
 
-function typedName(x: ArrayBufferView): TypedName | undefined {
-  for (const name of Object.keys(TYPED) as TypedName[]) if (x instanceof TYPED[name]) return name
-  return undefined
+/** Whether a state holds a tensor (`found`) or a `$tensor` object (`isTag`) anywhere: a walk that allocates nothing. */
+function holds(x: unknown, found: (x: unknown) => boolean): boolean {
+  if (found(x)) return true
+  if (Array.isArray(x)) return x.some((v) => holds(v, found))
+  return isPlain(x) && Object.values(x).some((v) => holds(v, found))
+}
+
+/** Tensors as `{ $tensor: ... }` objects, anywhere in a state. */
+function tensorsToTags(x: unknown): unknown {
+  if (isTensor(x)) return { $tensor: tensorToJson(x) }
+  if (Array.isArray(x)) return x.map(tensorsToTags)
+  if (isPlain(x)) return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, tensorsToTags(v)]))
+  return x
+}
+
+/** The inverse of {@link tensorsToTags}, over what `fromJson` returns. */
+function tagsToTensors(x: unknown): unknown {
+  if (isTag(x)) return tensorFromJson((x as { readonly $tensor: TensorJson }).$tensor)
+  if (Array.isArray(x)) return x.map(tagsToTensors)
+  if (isPlain(x)) return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, tagsToTensors(v)]))
+  return x
 }
 
 /**
- * An algorithm state as JSON: tensors become `{ "$tensor": ... }`, typed arrays `{ "$typed": name, data }`, and plain
- * objects and arrays recurse; `undefined` fields are dropped.
+ * An algorithm state as JSON, in the encoding of `toJson`: non-finite numbers and -0 are tagged, typed arrays become
+ * `{ $typed, values }`, plain objects and arrays recurse, `undefined` fields are dropped, and tensors become
+ * `{ $tensor: ... }` objects (carried, like any object with a `$` key, under `$object`).
  *
  * @param x - The state.
  * @returns Its JSON.
@@ -37,28 +52,11 @@ function typedName(x: ArrayBufferView): TypedName | undefined {
  * @example
  * ```ts
  * import { stateToJson } from 'mdml-engine/trace'
- * stateToJson({ n: 2, q: Float64Array.of(1, 2) }) // => { n: 2, q: { $typed: 'Float64Array', data: [1, 2] } }
+ * stateToJson({ n: 2, q: Float64Array.of(1, 2) }) // => { n: 2, q: { $typed: 'Float64Array', values: [1, 2] } }
  * ```
  */
 export function stateToJson(x: unknown): Json {
-  if (x === null || typeof x === 'number' || typeof x === 'string' || typeof x === 'boolean') return x
-  if (x === undefined) return null
-  if (isTensor(x)) return { $tensor: tensorToJson(x) as unknown as Json }
-  if (ArrayBuffer.isView(x) && !(x instanceof DataView)) {
-    const name = typedName(x)
-    if (name === undefined) throw new MdmlError('value', 'stateToJson: unsupported typed array')
-    return { $typed: name, data: Array.from(x as unknown as ArrayLike<number>) }
-  }
-  if (Array.isArray(x)) return x.map((v) => stateToJson(v))
-  if (typeof x === 'object') {
-    const proto = Object.getPrototypeOf(x) as object | null
-    if (proto !== null && proto !== Object.prototype)
-      throw new MdmlError('value', `stateToJson: cannot serialise a ${x.constructor?.name ?? 'class'} instance`)
-    const out: Record<string, Json> = {}
-    for (const [k, v] of Object.entries(x as Record<string, unknown>)) if (v !== undefined) out[k] = stateToJson(v)
-    return out
-  }
-  throw new MdmlError('value', `stateToJson: cannot serialise a ${typeof x}`)
+  return toJson((holds(x, isTensor) ? tensorsToTags(x) : x) as Encodable)
 }
 
 /**
@@ -66,6 +64,7 @@ export function stateToJson(x: unknown): Json {
  *
  * @param json - The JSON.
  * @returns The state.
+ * @throws MdmlError with code `schema` for a malformed tag.
  * @concept algorithm-protocol
  * @example
  * ```ts
@@ -75,51 +74,43 @@ export function stateToJson(x: unknown): Json {
  * ```
  */
 export function stateFromJson(json: Json): unknown {
-  if (json === null || typeof json !== 'object') return json
-  if (Array.isArray(json)) return json.map((v) => stateFromJson(v))
-  const o = json as { readonly [key: string]: Json }
-  if ('$tensor' in o && Object.keys(o).length === 1) return tensorFromJson(o['$tensor'] as unknown as TensorJson)
-  if ('$typed' in o && 'data' in o && Object.keys(o).length === 2) {
-    const name = o['$typed'] as TypedName
-    const ctor = TYPED[name] as { from(data: readonly number[]): ArrayBufferView } | undefined
-    if (ctor === undefined) throw new MdmlError('value', `stateFromJson: unknown typed array '${String(name)}'`)
-    return ctor.from(o['data'] as readonly number[])
-  }
-  const out: Record<string, unknown> = {}
-  for (const [k, v] of Object.entries(o)) out[k] = stateFromJson(v)
-  return out
+  const state = fromJson(json)
+  return holds(state, isTag) ? tagsToTensors(state) : state
 }
 
 /**
  * A number as JSON that survives a round trip through `JSON.stringify`: finite numbers stay numbers, `NaN` and the
- * infinities become the strings `'NaN'`, `'Infinity'` and `'-Infinity'` (plain `JSON.stringify` turns all three into
- * `null`). For the fields of an algorithm state that may be unset or unbounded.
+ * infinities become the strings of `encodeNumber` (`'nan'`, `'inf'`, `'-inf'`; plain `JSON.stringify` turns all three
+ * into `null`). For the fields of an algorithm state that may be unset or unbounded.
  *
  * @param x - The number.
  * @returns A number or one of the three strings.
  * @example
  * ```ts
  * import { numberToJson } from 'mdml-engine/trace'
- * [numberToJson(1.5), numberToJson(Number.NaN), numberToJson(-Infinity)] // => [1.5, 'NaN', '-Infinity']
+ * [numberToJson(1.5), numberToJson(Number.NaN), numberToJson(-Infinity)] // => [1.5, 'nan', '-inf']
  * ```
  */
 export function numberToJson(x: number): Json {
-  return Number.isFinite(x) ? x : Number.isNaN(x) ? 'NaN' : x > 0 ? 'Infinity' : '-Infinity'
+  return encodeNumber(x)
 }
 
 /**
- * The inverse of {@link numberToJson}; `null` (what a plain `JSON.stringify` makes of `NaN`) reads as `NaN`.
+ * The inverse of {@link numberToJson}; `null` (what a plain `JSON.stringify` makes of `NaN`) reads as `NaN`, and the
+ * spellings `'Infinity'`, `'-Infinity'` and `'NaN'`, which some states still write themselves, read as what they say.
  *
- * @param j - A number, one of the three strings, or `null`.
+ * @param j - A number, one of the strings, or `null`.
  * @returns The number.
  * @example
  * ```ts
  * import { numberFromJson } from 'mdml-engine/trace'
- * [numberFromJson('Infinity'), numberFromJson(2), Number.isNaN(numberFromJson(null))] // => [Infinity, 2, true]
+ * [numberFromJson('inf'), numberFromJson(2), Number.isNaN(numberFromJson(null))] // => [Infinity, 2, true]
  * ```
  */
 export function numberFromJson(j: Json | undefined): number {
-  return typeof j === 'number' ? j : j === null || j === undefined ? Number.NaN : Number(j)
+  if (typeof j === 'number') return j
+  if (j === null || j === undefined) return Number.NaN
+  return j === 'inf' || j === '-inf' || j === 'nan' ? decodeNumber(j) : Number(j)
 }
 
 /**
@@ -130,7 +121,7 @@ export function numberFromJson(j: Json | undefined): number {
  * @example
  * ```ts
  * import { numbersToJson } from 'mdml-engine/trace'
- * numbersToJson([1, Infinity]) // => [1, 'Infinity']
+ * numbersToJson([1, Infinity]) // => [1, 'inf']
  * ```
  */
 export function numbersToJson(xs: ArrayLike<number>): Json {
@@ -145,7 +136,7 @@ export function numbersToJson(xs: ArrayLike<number>): Json {
  * @example
  * ```ts
  * import { numbersFromJson } from 'mdml-engine/trace'
- * numbersFromJson([1, 'Infinity']) // => [1, Infinity]
+ * numbersFromJson([1, 'inf']) // => [1, Infinity]
  * ```
  */
 export function numbersFromJson(j: Json | undefined): number[] {

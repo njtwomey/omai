@@ -92,13 +92,15 @@ export type Encodable =
   | { readonly [key: string]: Encodable }
 
 function typedArrayName(x: object): TypedArrayName | undefined {
+  if (!ArrayBuffer.isView(x)) return undefined
   for (const name of Object.keys(TYPED_ARRAYS) as TypedArrayName[]) if (x instanceof TYPED_ARRAYS[name]) return name
   return undefined
 }
 
-// Own-property writes, so a '__proto__' key is data rather than a prototype change.
+// Own-property writes, so a '__proto__' key is data rather than a prototype change (a plain assignment does for the rest).
 function setOwn<T>(o: Record<string, T>, k: string, v: T): void {
-  Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true })
+  if (k === '__proto__') Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true })
+  else o[k] = v
 }
 
 function encodeTagged(x: number): Json {

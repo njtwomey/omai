@@ -10,6 +10,7 @@
 import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { contains, type DictSpace, defaults, type SpaceValue } from '../space/index.ts'
+import { keyTags } from './_keys.ts'
 import { type Algorithm, initialSlice, runFor, type Slice, type SliceBudget } from './algorithm.ts'
 import { seek } from './checkpoint.ts'
 import {
@@ -205,7 +206,7 @@ export function session<S, C extends Config, K extends string = string>(
   const root: Key = options.key ?? makeKey(seed)
   const total = options.steps ?? 1000
   const checkpointEvery = options.checkpointEvery ?? Math.max(1, Math.floor(total / 100))
-  const makeKeyOf = foldIn(root, 7)
+  const makeKeyOf = foldIn(root, keyTags.make)
   const contract = contractOf(method, config, makeKeyOf)
   const resolved: Resolved<S> = resolve<S, K>(contract, options.logs ?? 'defaults', {
     ...(method.defaults === undefined ? {} : { defaults: method.defaults }),

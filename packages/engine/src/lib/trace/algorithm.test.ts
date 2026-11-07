@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { type Algorithm, runAlgorithm, runFor } from './algorithm.ts'
+import { type Algorithm, iterate, runAlgorithm, runFor } from './algorithm.ts'
 import { checkpointEvery, resume, seek } from './checkpoint.ts'
-import type { CheckpointEvent } from './events.ts'
+import type { CheckpointEvent, RunStatus } from './events.ts'
 import { policies } from './policy.ts'
 import { recorder, startRun } from './tracer.ts'
 
@@ -14,6 +14,40 @@ const count: Algorithm<number> = {
   serialise: (s) => s,
   deserialise: (j) => j as number,
 }
+
+describe('the three drivers end every run the same way', () => {
+  // `done` is asked at every step, the limit included; a run that reaches the limit with no verdict is `completed`.
+  const stopAt = (t: number, status: RunStatus): Algorithm<number> => ({
+    ...count,
+    done: (_s, at) => (at === t ? status : undefined),
+  })
+  const cases: readonly [string, Algorithm<number>, number, number, RunStatus][] = [
+    ['verdict before the limit', stopAt(3, 'diverged'), 10, 3, 'diverged'],
+    ['verdict at the limit', stopAt(3, 'converged'), 3, 3, 'converged'],
+    ['no verdict at the limit', stopAt(99, 'converged'), 3, 3, 'completed'],
+    ['verdict after the limit', stopAt(4, 'failed'), 3, 3, 'completed'],
+    ['stopped at the start', stopAt(0, 'stopped'), 5, 0, 'stopped'],
+    ['an empty budget', stopAt(99, 'converged'), 0, 0, 'completed'],
+  ]
+  it.each(cases)('%s', (_name, algorithm, maxSteps, steps, status) => {
+    const states = Array.from(iterate(algorithm, { seed: 0, maxSteps }))
+    expect(runAlgorithm(algorithm, { seed: 0, maxSteps })).toMatchObject({ steps, status, state: steps })
+    expect(states.at(-1)).toEqual({ t: steps, state: steps, status })
+    expect(states.length).toBe(steps + 1)
+    expect(states.slice(0, -1).every((x) => x.status === undefined)).toBe(true)
+    expect(runFor(algorithm, {}, { seed: 0, maxSteps })).toMatchObject({ t: steps, state: steps, status })
+    // resumed from a stored state, the budget counts from there
+    const rec = recorder()
+    const resumed = runAlgorithm(algorithm, {
+      seed: 0,
+      maxSteps,
+      tracer: rec,
+      start: { state: 0, step: 0 },
+    })
+    expect(resumed).toMatchObject({ steps, status })
+    expect(rec.events.at(-1)).toMatchObject({ type: 'end', status, steps })
+  })
+})
 
 describe('runFor budgets', () => {
   it('stops on an injected clock, always taking at least one step', () => {

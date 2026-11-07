@@ -2,7 +2,12 @@
  * The `Algorithm` protocol, the one shape for iterative methods (optimisers, training loops, samplers, EM, message
  * passing, solvers, searches, agents): an `init` and a `step` over an explicit state. `runAlgorithm` runs one to
  * completion while recording a traced run, `iterate` steps through it lazily, and `runFor` advances it in time-budgeted
- * slices for interactive pages.
+ * slices for interactive pages. The three are loops over one stepper, which owns the keys of a run (init, steps), the
+ * order of observing and checkpointing, and the rule that ends it, so a run ends the same way whichever way it is
+ * driven. `done` is asked at every step, the last included, and its verdict ends the run with that `RunStatus`
+ * (`converged`, `diverged`, `stopped`, `failed`); a run that reaches its step budget with no verdict ends `completed`.
+ * So `completed` means the budget ran out, and an algorithm whose `done` fires at the budget's last step ends with its
+ * own status, not `completed`, in all three.
  *
  * @index structure The Algorithm protocol (init and step) every iterative method implements.
  */
@@ -10,6 +15,7 @@
 import { type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'
+import { keyTags } from './_keys.ts'
 import type { RunStatus, TensorRole } from './events.ts'
 import { defaultLogContext, type LogContext } from './logging.ts'
 import { shouldRecord, type TracePolicy } from './policy.ts'
@@ -119,24 +125,80 @@ function rootKey(options: Pick<RunOptions, 'key' | 'seed'>): Key {
   return options.key ?? makeKey(options.seed ?? 0)
 }
 
-function record<S>(algorithm: Algorithm<S>, run: RunHandle, state: S, t: number): Readonly<Record<string, number>> {
-  if (algorithm.observe === undefined) return {}
-  const o = algorithm.observe(state, t)
-  for (const [name, value] of Object.entries(o.metrics ?? {})) run.metric(t, name, value)
-  for (const [name, x] of Object.entries(o.tensors ?? {})) run.tensor(t, name, x.role, x.value, x.shape)
-  for (const m of o.messages ?? []) {
-    run.message(t, m.kind, m.payload, {
-      ...(m.from === undefined ? {} : { from: m.from }),
-      ...(m.to === undefined ? {} : { to: m.to }),
-    })
-  }
-  if (o.frame !== undefined) run.frame(t, o.frame)
-  return o.metrics ?? {}
+/** A run that records nothing, for the drivers that are given no run to record into. */
+function quietRun<S>(algorithm: Algorithm<S>, options: Pick<RunOptions, 'seed'>): RunHandle {
+  return startRun(nullTracer, { name: algorithm.name, seed: options.seed ?? null, config: algorithm.config })
 }
 
-function checkpoint<S>(algorithm: Algorithm<S>, run: RunHandle, state: S, t: number): void {
-  if (run.enabled && algorithm.serialise !== undefined && shouldRecord(run.policy, { kind: 'checkpoint' }, t)) {
-    run.checkpoint(t, algorithm.serialise(state))
+/**
+ * The one stepper behind the three drivers: it owns the keys of a run, the rule that ends it and the order of observing
+ * and checkpointing, so that however a run is driven (to the end, lazily, in slices) it computes, ends and records the
+ * same. The drivers differ only in where they stop to look.
+ */
+interface Stepper<S> {
+  /** The initial state, from the run's init key. */
+  init(): S
+  /**
+   * The status of the run at `(state, t)`, or `undefined` to continue: the algorithm's `done` is asked at every step,
+   * the limit included, and a run that reaches the limit with no verdict is `completed`.
+   */
+  verdict(state: S, t: number): RunStatus | undefined
+  /** Take step `t` with its derived key; the state at `t + 1` is observed if due and checkpointed. */
+  advance(state: S, t: number): S
+  /** Observe the state at `t` when the policy's schedule says so. */
+  open(state: S, t: number): void
+  /** Store a checkpoint of the state at `t` when the policy records them. */
+  mark(state: S, t: number): void
+  /** Observe the state at `t` unless it was just observed (the last state is always recorded); the last metrics. */
+  close(state: S, t: number): Readonly<Record<string, number>>
+  /** The last step whose state was observed, `-1` before any. */
+  readonly observedAt: number
+}
+
+function stepper<S>(algorithm: Algorithm<S>, root: Key, run: RunHandle, limit: number, observedAt = -1): Stepper<S> {
+  const stepsKey = foldIn(root, keyTags.steps)
+  let seen = observedAt
+  let last: Readonly<Record<string, number>> = {}
+  const observe = (state: S, t: number): void => {
+    if (!run.enabled) return
+    const o = algorithm.observe?.(state, t) ?? {}
+    for (const [name, value] of Object.entries(o.metrics ?? {})) run.metric(t, name, value)
+    for (const [name, x] of Object.entries(o.tensors ?? {})) run.tensor(t, name, x.role, x.value, x.shape)
+    for (const m of o.messages ?? []) {
+      run.message(t, m.kind, m.payload, {
+        ...(m.from === undefined ? {} : { from: m.from }),
+        ...(m.to === undefined ? {} : { to: m.to }),
+      })
+    }
+    if (o.frame !== undefined) run.frame(t, o.frame)
+    last = o.metrics ?? {}
+    seen = t
+  }
+  const mark = (state: S, t: number): void => {
+    if (run.enabled && algorithm.serialise !== undefined && shouldRecord(run.policy, { kind: 'checkpoint' }, t)) {
+      run.checkpoint(t, algorithm.serialise(state))
+    }
+  }
+  return {
+    init: () => algorithm.init(foldIn(root, keyTags.init)),
+    verdict: (state, t) => algorithm.done?.(state, t) ?? (t >= limit ? 'completed' : undefined),
+    advance: (state, t) => {
+      const next = algorithm.step(state, stepContext(t, foldIn(stepsKey, t), run))
+      if (run.due(t + 1)) observe(next, t + 1)
+      mark(next, t + 1)
+      return next
+    },
+    open: (state, t) => {
+      if (run.due(t)) observe(state, t)
+    },
+    mark,
+    close: (state, t) => {
+      if (seen !== t) observe(state, t)
+      return last
+    },
+    get observedAt() {
+      return seen
+    },
   }
 }
 
@@ -184,41 +246,25 @@ export function runAlgorithm<S>(algorithm: Algorithm<S>, options: RunOptions): R
           ...info,
           ...(options.policy === undefined ? {} : { policy: options.policy }),
         })
-  const root = rootKey(options)
-  const stepsKey = foldIn(root, 1)
   const restore = options.start
+  const t0 = restore?.step ?? 0
+  const steps = stepper(algorithm, rootKey(options), run, t0 + options.maxSteps)
   let state: S =
     restore === undefined
-      ? algorithm.init(foldIn(root, 0))
+      ? steps.init()
       : restore.serialised === true && algorithm.deserialise !== undefined
         ? algorithm.deserialise(restore.state as Json)
         : (restore.state as S)
-  let t = restore?.step ?? 0
-  let last: Readonly<Record<string, number>> = {}
-  let observedAt = -1
-  const observe = (): void => {
-    if (!run.enabled) return
-    last = record(algorithm, run, state, t)
-    observedAt = t
-  }
-  if (run.due(t)) observe()
-  if (restore === undefined) checkpoint(algorithm, run, state, t)
-  let status: RunStatus = 'completed'
-  const limit = (restore?.step ?? 0) + options.maxSteps
-  while (t < limit) {
-    const stop = algorithm.done?.(state, t)
-    if (stop !== undefined) {
-      status = stop
-      break
-    }
-    state = algorithm.step(state, stepContext(t, foldIn(stepsKey, t), run))
+  let t = t0
+  steps.open(state, t)
+  if (restore === undefined) steps.mark(state, t)
+  let status = steps.verdict(state, t)
+  while (status === undefined) {
+    state = steps.advance(state, t)
     t += 1
-    if (run.due(t)) observe()
-    checkpoint(algorithm, run, state, t)
+    status = steps.verdict(state, t)
   }
-  if (status === 'completed') status = algorithm.done?.(state, t) ?? 'completed'
-  if (observedAt !== t) observe()
-  run.end(status, t, last)
+  run.end(status, t, steps.close(state, t))
   return { state, steps: t, status, runId: run.runId }
 }
 
@@ -228,7 +274,8 @@ export function runAlgorithm<S>(algorithm: Algorithm<S>, options: RunOptions): R
  *
  * @param algorithm - The algorithm.
  * @param options - Seed or key and a step budget.
- * @returns A generator of `{ t, state, status }`; `status` is set on the last item.
+ * @returns A generator of `{ t, state, status }`; `status` is set on the last item and is what `runAlgorithm` ends with
+ *   (the algorithm's own verdict, `completed` when the budget ran out first).
  * @example
  * ```ts
  * import { iterate } from 'mdml-engine/trace'
@@ -240,19 +287,18 @@ export function* iterate<S>(
   algorithm: Algorithm<S>,
   options: Pick<RunOptions, 'seed' | 'key' | 'maxSteps'>,
 ): Generator<{ readonly t: number; readonly state: S; readonly status?: RunStatus }> {
-  const root = rootKey(options)
-  const stepsKey = foldIn(root, 1)
-  const run = startRun(nullTracer, { name: algorithm.name, seed: options.seed ?? null, config: algorithm.config })
-  let state = algorithm.init(foldIn(root, 0))
+  const run = quietRun(algorithm, options)
+  const steps = stepper(algorithm, rootKey(options), run, options.maxSteps)
+  let state = steps.init()
   let t = 0
   for (;;) {
-    const stop = t >= options.maxSteps ? 'completed' : algorithm.done?.(state, t)
-    if (stop !== undefined) {
-      yield { t, state, status: stop }
+    const status = steps.verdict(state, t)
+    if (status !== undefined) {
+      yield { t, state, status }
       return
     }
     yield { t, state }
-    state = algorithm.step(state, stepContext(t, foldIn(stepsKey, t), run))
+    state = steps.advance(state, t)
     t += 1
   }
 }
@@ -296,16 +342,12 @@ export function initialSlice<S>(
   algorithm: Algorithm<S>,
   options: Pick<RunOptions, 'seed' | 'key'> & { readonly run?: RunHandle },
 ): Slice<S> {
-  const root = rootKey(options)
-  const run = options.run ?? startRun(nullTracer, { name: algorithm.name, seed: null, config: algorithm.config })
-  const state = algorithm.init(foldIn(root, 0))
-  let observedAt = -1
-  if (run.enabled && run.due(0)) {
-    record(algorithm, run, state, 0)
-    observedAt = 0
-  }
-  checkpoint(algorithm, run, state, 0)
-  return { state, t: 0, observedAt }
+  const run = options.run ?? quietRun(algorithm, options)
+  const steps = stepper(algorithm, rootKey(options), run, Number.POSITIVE_INFINITY)
+  const state = steps.init()
+  steps.open(state, 0)
+  steps.mark(state, 0)
+  return { state, t: 0, observedAt: steps.observedAt }
 }
 
 /**
@@ -337,41 +379,27 @@ export function runFor<S>(
   budget: SliceBudget,
   options: Pick<RunOptions, 'seed' | 'key' | 'maxSteps'> & { readonly from?: Slice<S>; readonly run?: RunHandle },
 ): Slice<S> {
-  const steps = budget.steps ?? Number.POSITIVE_INFINITY
-  if (!(steps > 0) || (budget.ms !== undefined && !(budget.ms > 0))) {
+  const limit = budget.steps ?? Number.POSITIVE_INFINITY
+  if (!(limit > 0) || (budget.ms !== undefined && !(budget.ms > 0))) {
     throw new MdmlError('value', 'runFor: the step and time budgets must be positive')
   }
-  const root = rootKey(options)
-  const stepsKey = foldIn(root, 1)
-  const run = options.run ?? startRun(nullTracer, { name: algorithm.name, seed: null, config: algorithm.config })
-  const from = options.from
-  if (from?.status !== undefined) return from
-  let state = from === undefined ? algorithm.init(foldIn(root, 0)) : from.state
-  let t = from?.t ?? 0
-  let observedAt = from?.observedAt ?? -1
-  const observe = (): void => {
-    if (!run.enabled) return
-    record(algorithm, run, state, t)
-    observedAt = t
-  }
-  if (from === undefined) {
-    if (run.due(t)) observe()
-    checkpoint(algorithm, run, state, t)
-  }
+  const run = options.run ?? quietRun(algorithm, options)
+  if (options.from?.status !== undefined) return options.from
+  const from = options.from ?? initialSlice(algorithm, { ...options, run })
+  const steps = stepper(algorithm, rootKey(options), run, options.maxSteps, from.observedAt)
   const started = budget.clock?.()
   const outOfTime = (): boolean =>
     budget.clock !== undefined && budget.ms !== undefined && budget.clock() - (started ?? 0) >= budget.ms
+  let state = from.state
+  let t = from.t
   let taken = 0
-  let status: RunStatus | undefined
-  for (;;) {
-    status = t >= options.maxSteps ? (algorithm.done?.(state, t) ?? 'completed') : algorithm.done?.(state, t)
-    if (status !== undefined || taken >= steps || (taken > 0 && outOfTime())) break
-    state = algorithm.step(state, stepContext(t, foldIn(stepsKey, t), run))
+  let status = steps.verdict(state, t)
+  while (status === undefined && taken < limit && !(taken > 0 && outOfTime())) {
+    state = steps.advance(state, t)
     t += 1
     taken += 1
-    if (run.due(t)) observe()
-    checkpoint(algorithm, run, state, t)
+    status = steps.verdict(state, t)
   }
-  if (status !== undefined && observedAt !== t) observe()
-  return { state, t, observedAt, ...(status === undefined ? {} : { status }) }
+  if (status !== undefined) steps.close(state, t)
+  return { state, t, observedAt: steps.observedAt, ...(status === undefined ? {} : { status }) }
 }
