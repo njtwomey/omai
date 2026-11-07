@@ -7,16 +7,18 @@
 import { MdmlError } from '../../base/index.ts'
 import {
   add,
+  allocate,
+  arg,
+  bind1,
   cMul,
+  definePrimitive,
   flip,
-  fromStorage,
-  matmul,
+  type MaybeZero,
+  type Primitive,
   pad,
   promoteFloat,
-  reshape,
   sliceAxis,
   type TensorLike,
-  take,
   type Value,
   zeros,
 } from '../../tensor/index.ts'
@@ -47,9 +49,66 @@ function cropRange(n1: number, n2: number, mode: ConvolutionMode): [number, numb
   return [start, start + size]
 }
 
+/** The slice `[start, stop)` of the full linear convolution of two vectors, by a direct loop. */
+interface ConvolveParams {
+  readonly start: number
+  readonly stop: number
+}
+
 /**
- * Discrete linear convolution of two 1-D arrays (numpy.convolve): (a * v)_k = sum_j a_j v_(k - j), by sliding windows
- * and a matrix product, so differentiable in both inputs.
+ * The direct convolution y_t = sum_i x_i k_(t - i) for t in `[start, stop)`, with i ascending (the order of the
+ * matrix product of sliding windows this replaced, so the results are bit-identical). Time O(n m), memory O(n + m). Linear in each input, so its derivative rules are
+ * convolutions of the same kind: the cotangent is embedded in the full-length output and correlated with the other input.
+ */
+const convolvePrimitive: Primitive<ConvolveParams> = definePrimitive<ConvolveParams>({
+  name: 'convolve',
+  abstractEval: (xs, { start, stop }) => [{ shape: [stop - start], dtype: arg(xs, 0).dtype }],
+  impl: ([x, k], { start, stop }) => {
+    const xt = x as NonNullable<typeof x>
+    const kt = k as NonNullable<typeof k>
+    const xd = xt.data
+    const kd = kt.data
+    const n = xd.length
+    const m = kd.length
+    const out = allocate(xt.dtype, stop - start)
+    for (let t = start; t < stop; t++) {
+      let s = 0
+      const lo = Math.max(0, t - m + 1)
+      const hi = Math.min(n - 1, t)
+      for (let i = lo; i <= hi; i++) s += (xd[i] ?? 0) * (kd[t - i] ?? 0)
+      out[t - start] = s
+    }
+    return [xt.backend.wrap(xt.dtype, [stop - start], out)]
+  },
+  jvp: ([x, k], [tx, tk], p) => [
+    sumOf(
+      tx === null || tx === undefined ? null : bind1(convolvePrimitive, [tx, k as Value], p),
+      tk === null || tk === undefined ? null : bind1(convolvePrimitive, [x as Value, tk], p),
+    ),
+  ],
+  // With g embedded at [start, stop) of the full output, dx_i = sum_t g_t k_(t - i) and dk_j = sum_t g_t x_(t - j):
+  // full convolutions of g with the reversed other input, cropped.
+  vjp: ([g], [x, k], { start, stop }) => {
+    if (g === null || g === undefined) return [null, null]
+    const xv = x as Value
+    const kv = k as Value
+    const n = xv.shape[0] ?? 0
+    const m = kv.shape[0] ?? 0
+    const embedded = pad(g, [[start, n + m - 1 - stop]])
+    return [
+      bind1(convolvePrimitive, [embedded, flip(kv, 0)], { start: m - 1, stop: m - 1 + n }),
+      bind1(convolvePrimitive, [embedded, flip(xv, 0)], { start: n - 1, stop: n - 1 + m }),
+    ]
+  },
+})
+
+function sumOf(a: MaybeZero, b: MaybeZero): MaybeZero {
+  return a === null ? b : b === null ? a : add(a, b)
+}
+
+/**
+ * Discrete linear convolution of two 1-D arrays (numpy.convolve): (a * v)_k = sum_j a_j v_(k - j), by a direct loop
+ * (O(n m) time, O(n + m) memory), differentiable in both inputs.
  *
  * @param a - First input.
  * @param v - Second input.
@@ -65,18 +124,11 @@ function cropRange(n1: number, n2: number, mode: ConvolutionMode): [number, numb
  * ```
  */
 export function convolve(a: TensorLike, v: TensorLike, mode: ConvolutionMode = 'full'): Value {
-  const x = vector(a, 'convolve')
-  const k = vector(v, 'convolve')
-  const n = x.shape[0] ?? 0
-  const m = k.shape[0] ?? 0
-  const [start, stop] = cropRange(n, m, mode)
-  // Windows of the zero-padded signal times the reversed kernel.
-  const padded = pad(x, [[m - 1, m - 1]])
-  const count = stop - start
-  const idx = new Int32Array(count * m)
-  for (let r = 0; r < count; r++) for (let j = 0; j < m; j++) idx[r * m + j] = start + r + j
-  const windows = reshape(take(padded, fromStorage(idx, [count * m], 'int32'), 0), [count, m])
-  return matmul(windows, flip(k, 0))
+  vector(a, 'convolve')
+  vector(v, 'convolve')
+  const [x, k] = promoteFloat(a, v) as [Value, Value]
+  const [start, stop] = cropRange(x.shape[0] ?? 0, k.shape[0] ?? 0, mode)
+  return bind1(convolvePrimitive, [x, k], { start, stop })
 }
 
 /**
