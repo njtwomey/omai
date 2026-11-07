@@ -7,7 +7,7 @@
  * @index function Solvers of the penalised GLM core: Cholesky, QR, SVD, coordinate descent.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, toRows } from '../base/index.ts'
 import type { DispersionFamily, Link } from '../dists/families/index.ts'
 import { collecting, type MatrixView } from '../learn/index.ts'
 import { cholesky, choSolve, ddot, lstsq, svd } from '../numerics/linalg/index.ts'
@@ -199,15 +199,17 @@ export function solveGlmWith(problem: GlmDesignProblem, config: SpaceValue, opti
     factory.start === undefined
       ? new Float64Array(d + (problem.fitIntercept ? 1 : 0))
       : toVector(factory.start, 'solveGlmWith')
+  const history = toFlat(fit.history)
+  const steps = toRows(toFlat(fit.path), history.length, fit.x.shape[0] ?? 0)
   return {
-    coef: fit.coef,
+    coef: Float64Array.from(toFlat(fit.coef)),
     intercept: fit.intercept,
     solver: fit.solver,
     iterations: fit.steps,
     converged: fit.converged,
     objective: fit.objective,
-    history: fit.history,
-    path: [at(start, Number.POSITIVE_INFINITY), ...fit.path.map((x, i) => at(x, fit.history[i] ?? Number.NaN))],
+    history,
+    path: [at(start, Number.POSITIVE_INFINITY), ...steps.map((x, i) => at(x, history[i] ?? Number.NaN))],
   }
 }
 

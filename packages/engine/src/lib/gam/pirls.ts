@@ -378,13 +378,14 @@ export function gamAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key = ma
       inner as SpaceValue,
       { key },
     )
+    const beta = Float64Array.from(toFlat(fit.x))
     const eta = new Float64Array(n)
     for (let i = 0; i < n; i++) {
       let t = 0
-      for (let j = 0; j < p; j++) t += (design.X[i * p + j] ?? 0) * (fit.x[j] ?? 0)
+      for (let j = 0; j < p; j++) t += (design.X[i * p + j] ?? 0) * (beta[j] ?? 0)
       eta[i] = t
     }
-    return { beta: fit.x, eta }
+    return { beta, eta }
   }
   return {
     name: 'gam-pirls',

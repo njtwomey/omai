@@ -65,7 +65,7 @@ describe('glmSolvers', () => {
     for (const config of SOLVERS) {
       const fit = fitGlm(problem, config, { maxSteps: 500 })
       expect(fit.converged, config.kind).toBe(true)
-      for (let j = 0; j <= d; j++) expect(fit.x[j], `${config.kind} ${j}`).toBeCloseTo(reference.x[j] ?? 0, 5)
+      for (let j = 0; j <= d; j++) expect(toFlat(fit.x)[j], `${config.kind} ${j}`).toBeCloseTo(toFlat(reference.x)[j] ?? 0, 5)
       expect(fit.objective, config.kind).toBeCloseTo(reference.objective, 10)
     }
   })
@@ -78,14 +78,14 @@ describe('glmSolvers', () => {
       { kind: 'gradient', optimiser: { kind: 'adam' }, learningRate: 0.05, gradTol: 1e-6 },
       { maxSteps: 4000 },
     )
-    for (let j = 0; j <= d; j++) expect(whole.x[j]).toBeCloseTo(reference.x[j] ?? 0, 3)
+    for (let j = 0; j <= d; j++) expect(toFlat(whole.x)[j]).toBeCloseTo(toFlat(reference.x)[j] ?? 0, 3)
     const batched = fitGlm(
       problem,
       { kind: 'gradient', optimiser: { kind: 'adam' }, learningRate: 0.02, batch: 20, schedule: { kind: 'cosine' } },
       { maxSteps: 3000 },
     )
     // A batch is a noisy estimate of the gradient: near the optimum, not on it.
-    for (let j = 0; j <= d; j++) expect(batched.x[j]).toBeCloseTo(reference.x[j] ?? 0, 0)
+    for (let j = 0; j <= d; j++) expect(toFlat(batched.x)[j]).toBeCloseTo(toFlat(reference.x)[j] ?? 0, 0)
     expect(batched.objective).toBeLessThan(reference.objective + 1e-2)
   })
 
@@ -108,7 +108,7 @@ describe('glmSolvers', () => {
       { kind: 'lbfgs', gradTol: 1e-10 },
     ] as const) {
       const fit = fitGlm(problem, config, { maxSteps: 500 })
-      for (let j = 0; j <= d; j++) expect(fit.x[j], config.kind).toBeCloseTo(reference.x[j] ?? 0, 5)
+      for (let j = 0; j <= d; j++) expect(toFlat(fit.x)[j], config.kind).toBeCloseTo(toFlat(reference.x)[j] ?? 0, 5)
     }
   })
 
@@ -123,7 +123,7 @@ describe('glmSolvers', () => {
     }
     const fisher = fitGlm(problem, { kind: 'irls' })
     const observed = fitGlm(problem, { kind: 'newton', gradTol: 1e-10 }, { maxSteps: 200 })
-    for (let j = 0; j <= d; j++) expect(observed.x[j]).toBeCloseTo(fisher.x[j] ?? 0, 6)
+    for (let j = 0; j <= d; j++) expect(toFlat(observed.x)[j]).toBeCloseTo(toFlat(fisher.x)[j] ?? 0, 6)
   })
 
   it('takes a general penalty matrix, as an additive model needs: IRLS and Newton agree', () => {
@@ -135,7 +135,7 @@ describe('glmSolvers', () => {
     const problem = logistic({ penalty: { matrix: fromStorage(S, [p, p], 'float64') }, normalise: false })
     const a = fitGlm(problem, { kind: 'irls' })
     const b = fitGlm(problem, { kind: 'newton', gradTol: 1e-10 }, { maxSteps: 200 })
-    for (let j = 0; j < p; j++) expect(b.x[j]).toBeCloseTo(a.x[j] ?? 0, 6)
+    for (let j = 0; j < p; j++) expect(toFlat(b.x)[j]).toBeCloseTo(toFlat(a.x)[j] ?? 0, 6)
     expect(glmValue(problem, a.x)).toBeCloseTo(a.objective, 12)
   })
 
