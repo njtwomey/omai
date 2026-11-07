@@ -111,6 +111,20 @@ interface Cursor {
  * @param flags - The constants the logged tests use: sufficient decrease at `phi0` with slope `d0` and constant `c1`,
  * curvature with `c2`.
  * @returns The algorithm and its result reader.
+ * @example
+ * ```ts
+ * import { type LineProcedure, steppedLineSearch } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * // A procedure that accepts the unit step after one evaluation.
+ * function* procedure(): LineProcedure {
+ *   const point = yield { alpha: 1, valueOnly: false, interval: [0, 1] }
+ *   return { alpha: 1, value: point.value, slope: point.slope, message: 'accepted' }
+ * }
+ * const phi = { at: (a: number) => ({ value: (a - 0.5) ** 2, slope: 2 * (a - 0.5) }) }
+ * const search = steppedLineSearch('unit', {}, procedure, phi, { phi0: 0.25, d0: -1, c1: 1e-4, c2: 0.9 })
+ * const run = runAlgorithm(search.algorithm, { maxSteps: 5 })
+ * [run.status, search.result(run.state).alpha] // => ['converged', 1]
+ * ```
  */
 export function steppedLineSearch(
   name: string,
@@ -335,7 +349,23 @@ export function backtrackingAlgorithm(
   return backtrackingSearch(phi, start, options).algorithm
 }
 
-/** {@link backtrackingAlgorithm} with the reader of its result (what `backtracking` runs). */
+/**
+ * {@link backtrackingAlgorithm} with the reader of its result (what `backtracking` runs).
+ *
+ * @param phi - The line function.
+ * @param start - phi(0), phi'(0) < 0 and the first step.
+ * @param options - c1, smallest step, interpolation, contraction, evaluation cap and safeguard.
+ * @returns The algorithm and the reader of a finished state as a line-search result.
+ * @example
+ * ```ts
+ * import { backtrackingSearch } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const phi = { at: (a: number) => ({ value: (a - 0.3) ** 2, slope: 2 * (a - 0.3) }) }
+ * const search = backtrackingSearch(phi, { value: 0.09, slope: -0.6 }, { interpolation: 'halving' })
+ * const run = runAlgorithm(search.algorithm, { maxSteps: 60 })
+ * search.result(run.state).alpha // => 0.5
+ * ```
+ */
 export function backtrackingSearch(
   phi: LineFunction,
   start: LineStart,
@@ -518,7 +548,24 @@ export function hagerZhangAlgorithm(
   return hagerZhangSearch(phi, start, options).algorithm
 }
 
-/** {@link hagerZhangAlgorithm} with the reader of its result (what `hagerZhang` runs). */
+/**
+ * {@link hagerZhangAlgorithm} with the reader of its result (what `hagerZhang` runs).
+ *
+ * @param phi - The line function.
+ * @param start - phi(0), phi'(0) < 0 and the first step.
+ * @param options - delta, sigma, epsilon, gamma, rho, the largest step and the evaluation cap.
+ * @returns The algorithm and the reader of a finished state as a line-search result.
+ * @throws MdmlError with code `value` unless 0 < delta < sigma < 1.
+ * @example
+ * ```ts
+ * import { hagerZhangSearch } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
+ * const search = hagerZhangSearch(phi, { value: 0.0625, slope: -0.5 })
+ * const run = runAlgorithm(search.algorithm, { maxSteps: 60 })
+ * search.result(run.state).alpha // => 0.25
+ * ```
+ */
 export function hagerZhangSearch(
   phi: LineFunction,
   start: LineStart,

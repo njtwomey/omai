@@ -36,7 +36,17 @@ export interface SlotState {
   readonly solver: unknown
 }
 
-/** The Newton solver at a gradient tolerance: the default of the models whose goldens it reproduces. */
+/**
+ * The Newton solver at a gradient tolerance: the default of the models whose goldens it reproduces.
+ *
+ * @param gradTol - The absolute gradient tolerance, on the infinity norm.
+ * @returns A complete configuration of `smoothSolvers`: Newton with its other knobs at their defaults.
+ * @example
+ * ```ts
+ * import { newtonAt } from 'mdml-engine/optim'
+ * newtonAt(1e-9) // => { modification: 'cholesky', beta: 0.001, gradTol: 1e-9, kind: 'newton' }
+ * ```
+ */
 export const newtonAt = (gradTol: number): SpaceValue => smoothSolverConfig({ kind: 'newton', gradTol })
 
 /**
@@ -105,6 +115,23 @@ export interface SlotSpec<S extends SlotState, Problem = SmoothProblem> {
  *
  * @param spec - The model's objective, solver, state view and channels.
  * @returns The algorithm, whose state is the model's fields and the solver's state.
+ * @example
+ * ```ts
+ * import { type SlotState, slotAlgorithm } from 'mdml-engine/optim'
+ * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * const algorithm = slotAlgorithm<SlotState>({
+ *   name: 'bowl',
+ *   config: {},
+ *   schema: { metrics: {}, tensors: {} },
+ *   problem: { objective: (x: Value) => sum(square(x)), x0: [3, 4] },
+ *   solver: { kind: 'lbfgs' },
+ *   tol: 1e-6,
+ *   view: () => ({}),
+ *   observe: () => ({ metrics: {} }),
+ * })
+ * [algorithm.name, runAlgorithm(algorithm, { seed: 0, maxSteps: 100 }).status] // => ['bowl', 'converged']
+ * ```
  */
 export function slotAlgorithm<S extends SlotState, Problem = SmoothProblem>(spec: SlotSpec<S, Problem>): Algorithm<S> {
   const table = (spec.table ?? smoothSolvers) as unknown as ModeTable<Problem, VectorParams>
@@ -120,7 +147,10 @@ export function slotAlgorithm<S extends SlotState, Problem = SmoothProblem>(spec
     schema: channels({
       metrics: {
         ...spec.schema.metrics,
-        gradNorm: { description: 'the norm of the gradient at the iterate', direction: 'lower' },
+        gradNorm: {
+          description: 'the Euclidean norm of the gradient at the iterate (the stop is on its infinity norm, `tol`)',
+          direction: 'lower',
+        },
         step: { description: 'the length of the last step' },
       },
       tensors: spec.schema.tensors,

@@ -9,7 +9,9 @@ import { daxpy, idamax } from '../numerics/linalg/index.ts'
 import { randint } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import { flatOf, vectorOf } from './_vector.ts'
 import { type FlatObjective, flatObjective, type MinimizeResult, type Parameters } from './minimize/objective.ts'
+import type { Prox } from './proximal.ts'
 import type { ParamTree } from './transform.ts'
 
 /** A finite sum f(x) = (1/n) sum_i f_i(x): the empirical risk of a model on n examples. */
@@ -20,8 +22,28 @@ export interface FiniteSum {
   readonly term: (params: ParamTree, i: number) => Value
 }
 
-/** A proximal operator: argmin_z h(z) + |z - x|^2 / (2 step), for a non-smooth penalty h such as an L1 norm. */
+/**
+ * A proximal operator: argmin_z h(z) + |z - x|^2 / (2 step), for a non-smooth penalty h such as an L1 norm, on a flat
+ * vector of plain numbers. It is the `Prox` of the proximal methods (`proxL1` and the rest, on tensors) in the form the
+ * per-example loops of SAGA and SVRG use; {@link flatProx} turns one into the other.
+ */
 export type ProximalStep = (x: Float64Array, step: number) => Float64Array
+
+/**
+ * A tensor proximal operator as the flat one the variance-reduced methods take: the vector is read as a tensor, the
+ * operator applied, and the result read back.
+ *
+ * @param prox - A proximal operator on values, such as `proxL1`.
+ * @returns The same operator on a flat vector of numbers.
+ * @example
+ * ```ts
+ * import { flatProx, proxL1 } from 'mdml-engine/optim'
+ * Array.from(flatProx(proxL1)(Float64Array.of(3, -0.5, 1), 1)) // => [2, 0, 0]
+ * ```
+ */
+export function flatProx(prox: Prox): ProximalStep {
+  return (x, step) => flatOf(prox(vectorOf(x), step))
+}
 
 /** Options of the variance-reduced methods. */
 export interface VarianceReducedOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
@@ -35,6 +57,8 @@ export interface VarianceReducedOptions extends Partial<Omit<RunOptions, 'maxSte
   readonly tol?: number
   /** The epoch cap (default 1000). */
   readonly maxEpochs?: number
+  /** A spelling of `maxEpochs` that the other methods of the folder share (`maxEpochs` wins when both are given). */
+  readonly maxIterations?: number
 }
 
 /** The state of a variance-reduced method: the iterate, a gradient table or snapshot, and per-epoch progress. */
@@ -136,8 +160,8 @@ function finish(
   options: VarianceReducedOptions,
   n: number,
 ): MinimizeResult {
-  const { learningRate: _l, lipschitz: _c, prox: _p, tol: _t, maxEpochs, ...run } = options
-  const result = runAlgorithm(alg, { ...run, maxSteps: maxEpochs ?? 1000 })
+  const { learningRate: _l, lipschitz: _c, prox: _p, tol: _t, maxEpochs, maxIterations, ...run } = options
+  const result = runAlgorithm(alg, { ...run, maxSteps: maxEpochs ?? maxIterations ?? 1000 })
   const x = result.state.x
   const full = new Float64Array(x.length)
   for (let i = 0; i < n; i++) {

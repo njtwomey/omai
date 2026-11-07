@@ -162,6 +162,19 @@ describe('sharpness', () => {
     expect(O.sharpness(q, tensor([0.5, 0.5]), { method: 'power' }).value).toBeCloseTo(6, 8)
   })
 
+  // `sharpness` was the one iterative routine of the folder with no verdict (OL-29): power iteration that ran out of
+  // iterations looked the same as one that converged.
+  it('says whether the eigenvalue converged: always for Lanczos and one parameter, not for a short power iteration', () => {
+    const q = (v: unknown): Value => sum(mul(mul(v as Value, v as Value), tensor([1, 3])))
+    expect(O.sharpness(q, tensor([0.5, 0.5]))).toMatchObject({ converged: true, status: 'converged' })
+    expect(O.sharpness((v) => mul(square(v as Value), 2.5), tensor([3]))).toMatchObject({ converged: true })
+    expect(O.sharpness(q, tensor([0.5, 0.5]), { method: 'power', iterations: 1, tol: 1e-14 })).toMatchObject({
+      converged: false,
+      status: 'completed',
+    })
+    expect(O.sharpness(q, tensor([0.5, 0.5]), { method: 'power' })).toMatchObject({ converged: true })
+  })
+
   it('a single parameter’s sharpness is its second derivative', () => {
     expect(O.sharpness((v) => mul(square(v as Value), 2.5), tensor([3])).value).toBeCloseTo(5, 10)
   })
