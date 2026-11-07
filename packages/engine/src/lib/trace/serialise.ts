@@ -74,8 +74,35 @@ export function stateToJson(x: unknown): Json {
  * ```
  */
 export function stateFromJson(json: Json): unknown {
-  const state = fromJson(json)
+  const state = fromJson(hasLegacy(json) ? fromLegacy(json) : json)
   return holds(state, isTag) ? tagsToTensors(state) : state
+}
+
+type JsonObject = { readonly [key: string]: Json }
+
+/** Whether a JSON holds a state written before the codec was shared: a bare `{ $tensor }` or `{ $typed, data }`. */
+function hasLegacy(j: Json): boolean {
+  if (j === null || typeof j !== 'object') return false
+  if (Array.isArray(j)) return j.some(hasLegacy)
+  const o = j as JsonObject
+  const keys = Object.keys(o)
+  if (keys.length === 1 && keys[0] === '$object') return false
+  if (keys.length === 1 && keys[0] === '$tensor') return true
+  if (keys.length === 2 && '$typed' in o && 'data' in o) return true
+  return Object.values(o).some(hasLegacy)
+}
+
+/** The current spelling of a state written before the codec was shared (tapes saved earlier still load). */
+function fromLegacy(j: Json): Json {
+  if (j === null || typeof j !== 'object') return j
+  if (Array.isArray(j)) return j.map(fromLegacy)
+  const o = j as JsonObject
+  const keys = Object.keys(o)
+  if (keys.length === 1 && keys[0] === '$object') return o
+  if (keys.length === 1 && keys[0] === '$tensor') return { $object: o }
+  if (keys.length === 2 && '$typed' in o && 'data' in o)
+    return { $typed: o['$typed'] as Json, values: o['data'] as Json }
+  return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, fromLegacy(v)]))
 }
 
 /**

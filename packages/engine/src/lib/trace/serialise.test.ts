@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { encodeNumber, fromJson, type Json, toJson } from '../base/index.ts'
-import { tensor, toArray } from '../tensor/index.ts'
+import { tensor, tensorToJson, toArray } from '../tensor/index.ts'
 import {
   numberFromJson,
   numbersFromJson,
@@ -65,6 +65,28 @@ describe('state serialisation', () => {
     ]) {
       expect(() => stateToJson({ bad })).toThrow(expect.objectContaining({ code: 'value' }))
     }
+  })
+
+  it('reads the spellings written before the codec was shared, so tapes saved earlier still load', () => {
+    const t = tensor([[1, 2]], { dtype: 'float64' })
+    const old: Json = {
+      n: 2,
+      q: { $typed: 'Float64Array', data: [1, 2] },
+      w: { $tensor: tensorToJson(t) as unknown as Json },
+      nested: [{ $typed: 'Int32Array', data: [3] }],
+    }
+    const back = stateFromJson(old) as { n: number; q: Float64Array; w: typeof t; nested: [Int32Array] }
+    expect([back.n, Array.from(back.q), toArray(back.w), Array.from(back.nested[0])]).toEqual([
+      2,
+      [1, 2],
+      [[1, 2]],
+      [3],
+    ])
+    expect(back.q).toBeInstanceOf(Float64Array)
+    // The current spelling is untouched.
+    expect(viaText({ q: Float64Array.of(1, 2), w: t })).toEqual(
+      stateFromJson(stateToJson({ q: Float64Array.of(1, 2), w: t })),
+    )
   })
 
   it('numbers: finite stay numbers, the three non-finite ones are strings, the earlier spellings and null still read', () => {
