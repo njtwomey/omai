@@ -182,7 +182,7 @@ export function vonMisesFisher(meanDirection: TensorLike, concentration: TensorL
         for (let i = 0; i < size; i++) out[i] = woodDraw(foldIn(key, i), ks[i % Math.max(1, ks.length)] ?? 1, d)
         return fromStorage(out, full, 'float64')
       })
-      const v = uniformDirections(foldIn(key, -1), full, d - 1)
+      const v = uniformDirections(foldIn(key, -1 >>> 0), full, d - 1)
       const y = concat([expandDims(w, -1), mul(expandDims(sqrt(sub(1, square(w))), -1), v)], -1)
       return reflectFromFirstAxis(mu, y)
     },

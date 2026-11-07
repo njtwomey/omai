@@ -102,11 +102,11 @@ export function poissonOne(lambda: number, next: () => number): number {
 /** Binomial by geometric waiting times between successes, for `n min(p, 1 - p) < 30` (expected cost below 31). */
 function binomialWaiting(n: number, q: number, next: () => number): number {
   if (q === 0) return 0
-  const logq = Math.log(1 - q)
+  const logq = Math.log1p(-q)
   let count = 0
   let position = 0
   for (;;) {
-    position += Math.floor(Math.log(1 - next()) / logq) + 1
+    position += Math.floor(Math.log1p(-next()) / logq) + 1
     if (position > n) return count
     count += 1
   }

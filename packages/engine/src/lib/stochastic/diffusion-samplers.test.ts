@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { foldIn, key } from '../random/index.ts'
-import { item, tensor, toArray } from '../tensor/index.ts'
+import { full, item, tensor, toArray } from '../tensor/index.ts'
 import { nullTracer, runAlgorithm, startRun, stepContext } from '../trace/index.ts'
 import * as D from './index.ts'
 
@@ -268,5 +268,18 @@ describe('the sampler as an algorithm', () => {
   it('lists the samplers with their properties', () => {
     expect(D.samplerProperties.heun.order).toBe(2)
     expect(D.samplerProperties.ddpm.stochastic).toBe(true)
+  })
+
+  it('clips an infinite clean-sample estimate to the bound instead of producing NaN', () => {
+    const algorithm = D.diffusionSampler({
+      schedule,
+      model: () => full([4, 1], Number.POSITIVE_INFINITY),
+      prediction: 'x0',
+      shape: [4, 1],
+      steps: 2,
+      clipX0: [-1, 1],
+    })
+    const { state } = runAlgorithm(algorithm, { maxSteps: 3, seed: 0 })
+    expect((toArray(state.x) as number[][]).every(([v]) => Number.isFinite(v))).toBe(true)
   })
 })

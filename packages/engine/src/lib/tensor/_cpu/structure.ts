@@ -28,8 +28,8 @@ export function matmul<D extends DType>(a: Tensor<D>, b: Tensor<D>): Tensor<D> {
     const offC = t * m * n
     for (let i = 0; i < m; i++) {
       for (let p = 0; p < k; p++) {
+        // No zero skipping: 0 * Infinity and 0 * NaN are NaN, as in IEEE and numpy.
         const aip = a.data[offA + i * k + p] ?? 0
-        if (aip === 0) continue
         const rowB = offB + p * n
         const rowC = offC + i * n
         for (let j = 0; j < n; j++) out[rowC + j] = (out[rowC + j] ?? 0) + aip * (b.data[rowB + j] ?? 0)

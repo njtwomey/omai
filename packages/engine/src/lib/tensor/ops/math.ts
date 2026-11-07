@@ -19,6 +19,8 @@ const prims = {
   expm1: unaryPrimitive('expm1', (t, _x, out) => mul(t, add(out, 1))),
   log: unaryPrimitive('log', (t, x) => div(t, x)),
   log1p: unaryPrimitive('log1p', (t, x) => div(t, add(x, 1))),
+  log2: unaryPrimitive('log2', (t, x) => div(t, mul(x, Math.LN2))),
+  log10: unaryPrimitive('log10', (t, x) => div(t, mul(x, Math.LN10))),
   sqrt: unaryPrimitive('sqrt', (t, _x, out) => div(t, mul(out, 2))),
   sin: unaryPrimitive('sin', (t, x) => mul(t, cos(x))),
   cos: unaryPrimitive('cos', (t, x) => neg(mul(t, sin(x)))),
@@ -130,7 +132,7 @@ export function log1p(x: TensorLike): Value {
  * ```
  */
 export function log2(x: TensorLike): Value {
-  return div(log(x), Math.LN2)
+  return apply(prims.log2, x)
 }
 
 /**
@@ -145,7 +147,7 @@ export function log2(x: TensorLike): Value {
  * ```
  */
 export function log10(x: TensorLike): Value {
-  return div(log(x), Math.LN10)
+  return apply(prims.log10, x)
 }
 
 /**

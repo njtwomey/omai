@@ -81,7 +81,8 @@ export function optionTable<T, Props>(
       : {}
   const optionOf = (config: SpaceValue | undefined): NamedOption<T, Props> => {
     const name = asRecord(config)[tag]
-    const chosen = typeof name === 'string' && name in table ? name : (options.default ?? (names[0] as string))
+    const chosen =
+      typeof name === 'string' && Object.hasOwn(table, name) ? name : (options.default ?? (names[0] as string))
     return { ...(table[chosen] as Option<T, Props>), name: chosen }
   }
   return {

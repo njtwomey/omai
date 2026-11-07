@@ -8,6 +8,8 @@ import {
   beta,
   binomial,
   categorical,
+  cauchy,
+  chisquare,
   choice,
   defaultRng,
   dirichlet,
@@ -16,10 +18,13 @@ import {
   Generator,
   gamma,
   gammaVariates,
+  geometric,
+  gumbel,
   halton,
   key,
   keyFromPath,
   laplace,
+  logistic,
   multinomial,
   normal,
   permutation,
@@ -29,6 +34,7 @@ import {
   randomBits,
   randomSplit,
   split,
+  studentT,
   truncatedNormal,
   uniform,
   vonMises,
@@ -237,5 +243,40 @@ describe('bits and generators', () => {
         .data.every((v) => v >= 0 && v < 5),
     ).toBe(true)
     expect(Array.from(defaultRng(1).permutation(5).data).sort()).toEqual([0, 1, 2, 3, 4])
+  })
+})
+
+describe('degenerate parameters', () => {
+  it('never alias key path parts: a part that would wrap or truncate is an error', () => {
+    for (const part of [-1, 1.5, Number.NaN, 2 ** 32, Number.POSITIVE_INFINITY])
+      expect(() => keyFromPath(0, 'a', part), String(part)).toThrow(expect.objectContaining({ code: 'value' }))
+    expect(() => foldIn(key(0), -1)).toThrow(/integer in/)
+    expect(keyFromPath(0, 'a', 0xffffffff).words).not.toEqual(keyFromPath(0, 'a', 0).words)
+  })
+
+  it('reject parameters that are invalid or non-finite, and draws that do not fit an int32', () => {
+    const k = key(3)
+    const invalid: [string, () => unknown][] = [
+      ['normal with a negative scale', () => normal(k, [2], { scale: -1 })],
+      ['normal with an infinite scale', () => normal(k, [2], { scale: Number.POSITIVE_INFINITY })],
+      ['exponential with rate 0', () => exponential(k, [2], 0)],
+      ['laplace with a negative scale', () => laplace(k, [2], 0, -1)],
+      ['logistic with a NaN scale', () => logistic(k, [2], 0, Number.NaN)],
+      ['gumbel with a negative scale', () => gumbel(k, [2], 0, -1)],
+      ['cauchy with a negative scale', () => cauchy(k, [2], 0, -1)],
+      ['uniform with high below low', () => uniform(k, [2], { low: 1, high: 0 })],
+      ['studentT with df 0', () => studentT(k, [2], 0)],
+      ['chisquare with a negative df', () => chisquare(k, [2], -1)],
+      ['vonMises with a negative kappa', () => vonMises(k, [2], 0, -1)],
+      ['bernoulli with p above 1', () => bernoulli(k, 1.5, [2])],
+      ['poisson with an infinite rate', () => poisson(k, Number.POSITIVE_INFINITY, [1])],
+      ['geometric with p so small the draw wraps', () => geometric(k, 1e-18, [3])],
+    ]
+    for (const [name, draw] of invalid) expect(draw, name).toThrow(expect.objectContaining({ code: 'value' }))
+    // a zero scale is a point mass, and an ordinary p keeps its values
+    expect(Array.from(normal(k, [2], { loc: 3, scale: 0 }).data)).toEqual([3, 3])
+    expect(Array.from(geometric(k, 1, [2]).data)).toEqual([1, 1])
+    // log1p keeps the digits of a small p: the mean of the geometric is 1 / p
+    expect(mean(geometric(k, 1e-4, [20000]).data) / 1e4).toBeCloseTo(1, 1)
   })
 })

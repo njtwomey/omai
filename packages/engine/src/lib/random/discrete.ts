@@ -11,9 +11,16 @@ import { binomialOne, poissonOne } from './_variates.ts'
 import { uniformStream } from './continuous.ts'
 import type { Key } from './key.ts'
 
-function ints(shape: Shape, draw: (i: number) => number): Tensor<'int32'> {
+const INT32_MAX = 2147483647
+
+/** Fill an int32 tensor from a draw; a draw that does not fit throws instead of wrapping around. */
+function ints(name: string, shape: Shape, draw: (i: number) => number): Tensor<'int32'> {
   const out = new Int32Array(sizeOf(shape))
-  for (let i = 0; i < out.length; i++) out[i] = draw(i)
+  for (let i = 0; i < out.length; i++) {
+    const v = draw(i)
+    if (!(v <= INT32_MAX)) throw new MdmlError('value', `${name}: a draw of ${v} does not fit an int32`)
+    out[i] = v
+  }
   return fromStorage(out, [...shape], 'int32')
 }
 
@@ -35,7 +42,7 @@ function ints(shape: Shape, draw: (i: number) => number): Tensor<'int32'> {
 export function randint(k: Key, shape: Shape, low: number, high: number): Tensor<'int32'> {
   if (!(high > low)) throw new MdmlError('value', `randint: need high > low, got [${low}, ${high})`)
   const u = unitDoubles(k, sizeOf(shape))
-  return ints(shape, (i) => low + Math.floor((u[i] ?? 0) * (high - low)))
+  return ints('randint', shape, (i) => low + Math.floor((u[i] ?? 0) * (high - low)))
 }
 
 /**
@@ -45,6 +52,7 @@ export function randint(k: Key, shape: Shape, low: number, high: number): Tensor
  * @param p - Success probability in [0, 1].
  * @param shape - Output shape.
  * @returns A bool tensor.
+ * @throws MdmlError with code `value` unless `p` is in [0, 1].
  * @example
  * ```ts
  * import { key, bernoulli } from 'mdml-engine/random'
@@ -52,6 +60,7 @@ export function randint(k: Key, shape: Shape, low: number, high: number): Tensor
  * ```
  */
 export function bernoulli(k: Key, p: number, shape: Shape): Tensor<'bool'> {
+  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', `bernoulli: p must be in [0, 1], got ${p}`)
   const u = unitDoubles(k, sizeOf(shape))
   const out = new Uint8Array(u.length)
   for (let i = 0; i < u.length; i++) out[i] = (u[i] ?? 0) < p ? 1 : 0
@@ -114,7 +123,7 @@ export function categorical(
   }
   const cdf = cumulative(w, 'categorical')
   const u = unitDoubles(k, sizeOf(shape))
-  return ints(shape, (i) => invert(cdf, w, u[i] ?? 0))
+  return ints('categorical', shape, (i) => invert(cdf, w, u[i] ?? 0))
 }
 
 /**
@@ -163,7 +172,7 @@ export function multinomial(k: Key, n: number, probs: readonly number[], samples
  * @param lambda - The rate (non-negative).
  * @param shape - Output shape.
  * @returns An int32 tensor.
- * @throws MdmlError with code `value` for a negative rate.
+ * @throws MdmlError with code `value` for a negative or non-finite rate, or a draw beyond the int32 range.
  * @reference Hormann (1993), The transformed rejection method for generating Poisson random variables.
  * @example
  * ```ts
@@ -172,9 +181,11 @@ export function multinomial(k: Key, n: number, probs: readonly number[], samples
  * ```
  */
 export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
-  if (!(lambda >= 0)) throw new MdmlError('value', `poisson: rate must be non-negative, got ${lambda}`)
+  if (!(lambda >= 0 && lambda < Infinity)) {
+    throw new MdmlError('value', `poisson: rate must be finite and non-negative, got ${lambda}`)
+  }
   const next = uniformStream(k)
-  return ints(shape, () => poissonOne(lambda, next))
+  return ints('poisson', shape, () => poissonOne(lambda, next))
 }
 
 /**
@@ -200,7 +211,7 @@ export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'in
     throw new MdmlError('value', 'binomial: need an integer n >= 0 and p in [0, 1]')
   }
   const next = uniformStream(k)
-  return ints(shape, () => binomialOne(n, p, next))
+  return ints('binomial', shape, () => binomialOne(n, p, next))
 }
 
 /**
@@ -210,6 +221,7 @@ export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'in
  * @param p - Success probability in (0, 1].
  * @param shape - Output shape.
  * @returns An int32 tensor of values at least 1.
+ * @throws MdmlError with code `value` unless `p` is in (0, 1], or when a draw does not fit an int32 (tiny `p`).
  * @example
  * ```ts
  * import { key, geometric } from 'mdml-engine/random'
@@ -219,7 +231,7 @@ export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'in
 export function geometric(k: Key, p: number, shape: Shape): Tensor<'int32'> {
   if (!(p > 0 && p <= 1)) throw new MdmlError('value', `geometric: p must be in (0, 1], got ${p}`)
   const u = unitDoubles(k, sizeOf(shape))
-  return ints(shape, (i) => (p === 1 ? 1 : Math.floor(Math.log(1 - (u[i] ?? 0)) / Math.log(1 - p)) + 1))
+  return ints('geometric', shape, (i) => (p === 1 ? 1 : Math.floor(Math.log1p(-(u[i] ?? 0)) / Math.log1p(-p)) + 1))
 }
 
 /** A Vose alias table for O(1) sampling from a fixed discrete distribution. */
@@ -282,7 +294,7 @@ export function aliasTable(weights: readonly number[]): AliasTable {
 export function aliasSample(k: Key, table: AliasTable, shape: Shape): Tensor<'int32'> {
   const n = table.probability.length
   const u = unitDoubles(k, 2 * sizeOf(shape))
-  return ints(shape, (i) => {
+  return ints('aliasSample', shape, (i) => {
     const column = Math.floor((u[2 * i] ?? 0) * n)
     return (u[2 * i + 1] ?? 0) < (table.probability[column] ?? 1) ? column : (table.alias[column] ?? column)
   })

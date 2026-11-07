@@ -117,7 +117,7 @@ function shapeMatches(declared: readonly (number | string)[], actual: readonly n
 export function validateAgainstSchema(events: readonly TraceEvent[], schema: TraceSchema): string[] {
   const problems = new Set<string>()
   for (const e of events) {
-    if (e.type === 'metric' && !(e.name in schema.metrics)) problems.add(`undeclared metric ${e.name}`)
+    if (e.type === 'metric' && !Object.hasOwn(schema.metrics, e.name)) problems.add(`undeclared metric ${e.name}`)
     if (e.type === 'tensor') {
       const declared = schema.tensors[e.name]
       if (declared === undefined) problems.add(`undeclared tensor ${e.name}`)
@@ -128,7 +128,7 @@ export function validateAgainstSchema(events: readonly TraceEvent[], schema: Tra
         }
       }
     }
-    if (e.type === 'message' && !(e.kind in schema.messages)) problems.add(`undeclared message ${e.kind}`)
+    if (e.type === 'message' && !Object.hasOwn(schema.messages, e.kind)) problems.add(`undeclared message ${e.kind}`)
     if (e.type === 'episode' && !schema.episodes) problems.add('undeclared episodes')
     if (e.type === 'frame' && !schema.frames) problems.add('undeclared frames')
   }

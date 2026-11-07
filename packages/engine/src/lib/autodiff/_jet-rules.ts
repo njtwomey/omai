@@ -25,6 +25,8 @@ import {
   isTensor,
   log,
   log1p,
+  log2,
+  log10,
   type MaybeZero,
   matmul,
   mul,
@@ -134,6 +136,12 @@ function logSeries(x: Series, y0: Value, order: number): MaybeZero[] {
     y.push(acc === null ? null : div(acc, primal(x)))
   }
   return y
+}
+
+/** y = log_b(x) from the natural-log series, scaled by 1 / ln b (`y0` is the primal of the base-b logarithm). */
+function logBase(x: Series, y0: Value, lnBase: number, order: number): MaybeZero[] {
+  const ln = logSeries(x, log(primal(x)), order)
+  return ln.map((c, k) => (k === 0 ? y0 : c === null ? null : div(c, lnBase)))
 }
 
 /** sin and cos (sign -1), or sinh and cosh (sign 1), together: s' = c x', c' = sign s x'. */
@@ -306,6 +314,9 @@ export const RULES: ReadonlyMap<Primitive<unknown>, JetRule> = new Map<Primitive
   [unary(expm1), one((x, y0, order) => ode(x, y0, order, (y, m) => (m === 0 ? add(y0, 1) : at(y, m))))],
   [unary(log), one(logSeries)],
   [unary(log1p), one((x, y0, order) => logSeries([add(primal(x), 1), ...x.slice(1)], y0, order))],
+  // log_b x = ln x / ln b: the logarithm's series scaled, with the exact primal.
+  [unary(log2), one((x, y0, order) => logBase(x, y0, Math.LN2, order))],
+  [unary(log10), one((x, y0, order) => logBase(x, y0, Math.LN10, order))],
   [unary(sqrt), one(sqrtSeries)],
   [unary(sin), one((x, y0, order) => sinCos(x, y0, cos(primal(x)), order, -1)[0])],
   [unary(cos), one((x, y0, order) => sinCos(x, sin(primal(x)), y0, order, -1)[1])],

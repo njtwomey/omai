@@ -4,6 +4,8 @@
  * `Math.max`, stable log-sum-exp and softmax, ranges, quantiles, means and variances, and bit counts, with the few constants that more than one domain needs.
  */
 
+import { MdmlError } from './errors.ts'
+
 /** The Euler-Mascheroni constant, the limit of the harmonic sum minus the logarithm. */
 export const EULER_GAMMA: number = 0.5772156649015329
 
@@ -35,8 +37,8 @@ export function roundHalfEven(x: number): number {
  *
  * @param a - First number.
  * @param b - Second number (the reference).
- * @param rtol - Relative tolerance (default 1e-9).
- * @param atol - Absolute tolerance (default 0).
+ * @param rtol - Relative tolerance (default 1e-9; the tensor `allclose` follows numpy with 1e-5 and an `atol` of 1e-8).
+ * @param atol - Absolute tolerance (default 0, so a number is never close to 0 unless it is 0).
  * @returns `true` when close.
  * @example
  * ```ts
@@ -253,6 +255,7 @@ export function argminOf(xs: ArrayLike<number>): number {
  * @param stop - Exclusive end.
  * @param step - Spacing (default 1).
  * @returns The list.
+ * @throws MdmlError with code `value` for a zero or NaN `step` (the tensor `arange` does the same).
  * @example
  * ```ts
  * import { range } from 'mdml-engine/base'
@@ -261,6 +264,7 @@ export function argminOf(xs: ArrayLike<number>): number {
  * ```
  */
 export function range(start: number, stop?: number, step = 1): number[] {
+  if (step === 0 || Number.isNaN(step)) throw new MdmlError('value', `range: step must be non-zero, got ${step}`)
   const [lo, hi] = stop === undefined ? [0, start] : [start, stop]
   const out: number[] = []
   if (step > 0) for (let i = lo; i < hi; i += step) out.push(i)
@@ -289,7 +293,8 @@ export function linspaceNumbers(start: number, stop: number, n = 50): number[] {
 }
 
 /**
- * The softmax of a list of log-weights: `exp(xs) / sum(exp(xs))`, computed stably.
+ * The softmax of a list of log-weights: `exp(xs) / sum(exp(xs))`, computed stably. A list of all `-Infinity` gives
+ * NaN, as the tensor `softmax` does.
  *
  * @param xs - Unnormalised log probabilities.
  * @returns Probabilities summing to one.
@@ -311,6 +316,7 @@ export function softmaxOf(xs: ArrayLike<number>): number[] {
  * @param xs - The numbers (NaN entries make the result NaN).
  * @param q - The level in [0, 1].
  * @returns The quantile, `NaN` for an empty list.
+ * @throws MdmlError with code `value` unless `q` is in [0, 1].
  * @example
  * ```ts
  * import { quantileOf } from 'mdml-engine/base'
@@ -319,12 +325,13 @@ export function softmaxOf(xs: ArrayLike<number>): number[] {
  * ```
  */
 export function quantileOf(xs: ArrayLike<number>, q: number): number {
+  if (!(q >= 0 && q <= 1)) throw new MdmlError('value', `quantileOf: q must be in [0, 1], got ${q}`)
   const n = xs.length
   if (n === 0) return Number.NaN
   const sorted = Float64Array.from(xs as ArrayLike<number>)
   for (const v of sorted) if (Number.isNaN(v)) return Number.NaN
   sorted.sort()
-  const h = (n - 1) * Math.min(1, Math.max(0, q))
+  const h = (n - 1) * q
   const lo = Math.floor(h)
   const hi = Math.min(n - 1, lo + 1)
   const a = sorted[lo] ?? Number.NaN
@@ -369,7 +376,8 @@ export function meanOf(xs: ArrayLike<number>): number {
 }
 
 /**
- * Variance of a list about its mean, dividing by `n - ddof` (numpy's `var`), `NaN` when `n <= ddof`.
+ * Variance of a list about its mean, dividing by `n - ddof` (numpy's `var`), `NaN` when `n <= ddof` (the kernels on
+ * plain numbers return `NaN` for degenerate input; the tensor `variance` throws).
  *
  * @param xs - The numbers.
  * @param ddof - Delta degrees of freedom (default 0, the population variance; 1 for the sample variance).

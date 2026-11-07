@@ -14,6 +14,8 @@ const unaryKernels: Record<UnaryKernel, (x: number) => number> = {
   expm1: Math.expm1,
   log: Math.log,
   log1p: Math.log1p,
+  log2: Math.log2,
+  log10: Math.log10,
   sqrt: Math.sqrt,
   sin: Math.sin,
   cos: Math.cos,
@@ -36,18 +38,36 @@ const unaryKernels: Record<UnaryKernel, (x: number) => number> = {
   not: (x) => (x ? 0 : 1),
 }
 
+/** Python's `%`: the exact remainder of `a % b` moved to the sign of the divisor (numpy `mod`, no `a / b` rounding). */
+function pyMod(a: number, b: number): number {
+  const r = a % b
+  return r !== 0 && r < 0 !== b < 0 ? r + b : r
+}
+
+/** Python's `//` as numpy computes it: `(a - fmod(a, b)) / b`, corrected for the sign and rounded to the nearest whole. */
+function floorDivide(a: number, b: number): number {
+  if (b === 0) return a / b
+  const r = a % b
+  let div = (a - r) / b
+  if (r !== 0 && r < 0 !== b < 0) div -= 1
+  if (div === 0) return a / b < 0 ? -0 : 0
+  const floor = Math.floor(div)
+  return div - floor > 0.5 ? floor + 1 : floor
+}
+
 const binaryKernels: Record<BinaryKernel, (a: number, b: number) => number> = {
   add: (a, b) => a + b,
   sub: (a, b) => a - b,
   mul: (a, b) => a * b,
   div: (a, b) => a / b,
-  pow: (a, b) => a ** b,
+  // C99 and numpy: 1 ** y and x ** 0 are 1 even for NaN and Infinity (JavaScript's `**` gives NaN).
+  pow: (a, b) => (a === 1 || b === 0 || (a === -1 && Math.abs(b) === Infinity) ? 1 : a ** b),
   max: (a, b) => (Number.isNaN(a) || Number.isNaN(b) ? Number.NaN : Math.max(a, b)),
   min: (a, b) => (Number.isNaN(a) || Number.isNaN(b) ? Number.NaN : Math.min(a, b)),
   atan2: Math.atan2,
-  floorDiv: (a, b) => Math.floor(a / b),
+  floorDiv: (a, b) => floorDivide(a, b),
   // Python semantics: the result takes the sign of the divisor.
-  mod: (a, b) => a - b * Math.floor(a / b),
+  mod: pyMod,
   and: (a, b) => (a && b ? 1 : 0),
   or: (a, b) => (a || b ? 1 : 0),
   xor: (a, b) => (a ? 1 : 0) ^ (b ? 1 : 0),
@@ -123,7 +143,7 @@ export function where<D extends DType>(condition: Tensor<'bool'>, a: Tensor<D>, 
 export function cast<D extends DType>(x: Tensor, dtype: D): Tensor<D> {
   const out = allocate(dtype, x.data.length)
   if (dtype === 'int32') for (let i = 0; i < out.length; i++) out[i] = Math.trunc(x.data[i] ?? 0)
-  else if (dtype === 'bool') for (let i = 0; i < out.length; i++) out[i] = x.data[i] ? 1 : 0
+  else if (dtype === 'bool') for (let i = 0; i < out.length; i++) out[i] = x.data[i] !== 0 ? 1 : 0
   else out.set(x.data)
   return wrap(dtype, x.shape, out)
 }

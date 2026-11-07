@@ -8,12 +8,12 @@ import type { CompareKernel, PredicateKernel } from '../backend.ts'
 import { batchElementwise } from '../batching.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { broadcastShapes } from '../shape.ts'
-import { isTensor, type TensorLike, toFlat } from '../tensor.ts'
-import type { Value } from '../traced.ts'
+import { type TensorLike, toFlat } from '../tensor.ts'
+import { concreteOrThrow, type Value } from '../traced.ts'
 import { asDtype, coerce2, val } from './_coerce.ts'
 import { toShape } from './_factories.ts'
 import { abs, add, cast, mul, sub } from './arithmetic.ts'
-import { max, min } from './reduce.ts'
+import { sum } from './reduce.ts'
 import { sumToShape } from './shape.ts'
 
 function comparePrimitive(op: CompareKernel): Primitive<null> {
@@ -312,7 +312,7 @@ export function where(condition: TensorLike, a: TensorLike, b: TensorLike): Valu
 }
 
 /**
- * Whether any element is non-zero, over axes (all by default).
+ * Whether any element is non-zero, over axes (all by default); false for an empty axis.
  *
  * @param x - Input.
  * @param axis - An axis or axes.
@@ -324,11 +324,11 @@ export function where(condition: TensorLike, a: TensorLike, b: TensorLike): Valu
  * ```
  */
 export function any(x: TensorLike, axis?: number | readonly number[]): Value {
-  return greater(max(cast(notEqual(x, 0), 'int32'), axis), 0)
+  return greater(sum(notEqual(x, 0), axis), 0)
 }
 
 /**
- * Whether every element is non-zero, over axes (all by default).
+ * Whether every element is non-zero, over axes (all by default); true for an empty axis (numpy).
  *
  * @param x - Input.
  * @param axis - An axis or axes.
@@ -340,17 +340,19 @@ export function any(x: TensorLike, axis?: number | readonly number[]): Value {
  * ```
  */
 export function all(x: TensorLike, axis?: number | readonly number[]): Value {
-  return greater(min(cast(notEqual(x, 0), 'int32'), axis), 0)
+  return equal(sum(equal(x, 0), axis), 0)
 }
 
 /**
  * Whether two concrete arrays are elementwise close (numpy `allclose`: `|a - b| <= atol + rtol |b|`, shapes broadcast).
+ * The defaults are numpy's; the plain-number `isClose` in `base` defaults to a tighter `rtol` and no `atol`.
  *
  * @param a - First array.
  * @param b - Second array (the reference).
  * @param rtol - Relative tolerance (default 1e-5).
  * @param atol - Absolute tolerance (default 1e-8).
  * @returns `true` when every element is close.
+ * @throws MdmlError with code `not-differentiable` for a traced input (the answer is a plain boolean).
  * @example
  * ```ts
  * import { allclose, tensor } from 'mdml-engine/tensor'
@@ -362,5 +364,5 @@ export function allclose(a: TensorLike, b: TensorLike, rtol = 1e-5, atol = 1e-8)
   const close = lessEqual(abs(sub(x, y)), add(mul(abs(y), rtol), atol))
   // Equal infinities are close even though their difference is NaN.
   const ok = logicalOr(close, equal(x, y))
-  return isTensor(ok) && toFlat(ok).every((v) => v === 1)
+  return toFlat(concreteOrThrow(ok, 'allclose')).every((v) => v === 1)
 }

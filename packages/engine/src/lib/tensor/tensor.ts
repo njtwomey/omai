@@ -71,7 +71,8 @@ function inferDType(values: NestedArray): DType {
 }
 
 /**
- * Create a tensor from a number or nested arrays (like `numpy.array`). Numbers give float64, booleans give bool.
+ * Create a tensor from a number or nested arrays (like `numpy.array`). Numbers give float64, booleans give bool; a
+ * `bool` dtype stores 0 or 1 whatever the numbers (nonzero and NaN are true).
  *
  * @param values - A scalar or rectangular nested array.
  * @param options - The dtype (inferred by default) and backend (default the CPU backend).
@@ -93,12 +94,17 @@ export function tensor<D extends DType = 'float64'>(values: NestedArray, options
   const flat: number[] = []
   flatten(values, shape, 0, flat)
   const data = allocate(dtype, flat.length)
-  for (let i = 0; i < flat.length; i++) data[i] = dtype === 'int32' ? Math.trunc(flat[i] ?? 0) : (flat[i] ?? 0)
+  for (let i = 0; i < flat.length; i++) {
+    const v = flat[i] ?? 0
+    // Bool storage is 0 or 1 (nonzero and NaN are true, as numpy and `cast`), never a raw byte.
+    data[i] = dtype === 'int32' ? Math.trunc(v) : dtype === 'bool' ? (v !== 0 ? 1 : 0) : v
+  }
   return (options.backend ?? cpu).wrap(dtype, shape, data)
 }
 
 /**
- * Wrap existing storage as a tensor without copying. The caller hands over `data` and must not mutate it afterwards.
+ * Wrap existing storage as a tensor without copying. The caller hands over `data` and must not mutate it afterwards,
+ * and is trusted: bool storage must already hold only 0 and 1.
  *
  * @param data - Row-major storage of the dtype's class.
  * @param shape - The shape; its size must equal `data.length`.
@@ -171,7 +177,12 @@ export function asTensor(x: TensorLike, dtype?: DType): Value {
   if (x instanceof Float64Array) return cpu.wrap('float64', [x.length], x.slice())
   if (x instanceof Float32Array) return cpu.wrap('float32', [x.length], x.slice())
   if (x instanceof Int32Array) return cpu.wrap('int32', [x.length], x.slice())
-  if (x instanceof Uint8Array) return cpu.wrap('bool', [x.length], x.slice())
+  if (x instanceof Uint8Array)
+    return cpu.wrap(
+      'bool',
+      [x.length],
+      x.map((v) => (v === 0 ? 0 : 1)),
+    )
   return dtype === undefined ? tensor(x as NestedArray) : tensor(x as NestedArray, { dtype })
 }
 

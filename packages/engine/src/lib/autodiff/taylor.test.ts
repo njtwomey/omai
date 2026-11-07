@@ -23,6 +23,8 @@ import {
   greater,
   log,
   log1p,
+  log2,
+  log10,
   logsumexp,
   matmul,
   max,
@@ -151,7 +153,10 @@ describe('Taylor coefficients against nested forward mode', () => {
   const x = tensor([0.3, -0.8, 1.4])
   const v = tensor([1, 0.5, -2])
   const cases: [string, (x: Value) => Value][] = [
-    ['elementwise chain', (u) => mul(exp(sin(u)), log(add(mul(u, u), 1)))],
+    [
+      'elementwise chain',
+      (u) => add(mul(exp(sin(u)), log(add(mul(u, u), 1))), add(log2(add(mul(u, u), 1)), log10(add(mul(u, u), 2)))),
+    ],
     ['powers', (u) => add(pow(add(abs(u), 0.5), 2.5), pow(2, u))],
     ['inverse functions', (u) => add(arccosh(add(mul(u, u), 1.5)), arctan(u))],
     ['quotients', (u) => div(sin(u), add(cosh(u), 1))],

@@ -91,7 +91,7 @@ mdml-engine/survival	59	8973e49dca01
 mdml-engine/svm	30	99c345780711
 mdml-engine/symbolic	171	df04ff25288f
 mdml-engine/systems	123	3e51af121593
-mdml-engine/tensor	241	00c3844b62dc
+mdml-engine/tensor	241	403b5bd0c5c6
 mdml-engine/text	347	3d5d026cf09e
 mdml-engine/text/subword	32	e5aabb70e6a6
 mdml-engine/timeseries	304	28d788a16f8e
@@ -119,4 +119,4 @@ mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17918	8881b97ca09c
+total	17918	488d94752bbc
