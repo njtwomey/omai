@@ -650,7 +650,9 @@ describe('eigh, expm, sqrtm and logm against scipy on clustered, defective and l
       // the symmetry and definiteness tests, choFactor, invTriangular, the Jacobi sweeps and the jittered Cholesky.
       const x = [3, 4, 12]
       const { v, tau, alpha } = L.householderReflector(x)
-      const reflected = x.map((xi, i) => xi - tau * v[i] * v.reduce((acc, vj, j) => acc + vj * (x[j] ?? 0), 0))
+      const reflected = x.map(
+        (xi, i) => xi - tau * (v[i] ?? 0) * v.reduce((acc: number, vj: number, j: number) => acc + vj * (x[j] ?? 0), 0),
+      )
       expect([alpha, ...reflected.slice(1)].map((e) => Math.abs(e))).toEqual(
         [13, 0, 0].map((e) => expect.closeTo(e, 12)),
       )

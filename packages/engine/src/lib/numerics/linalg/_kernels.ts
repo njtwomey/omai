@@ -800,7 +800,8 @@ function scaleByPow2(x: number, k: number): number {
  */
 export function scaleExponent(a: ArrayLike<number>): number {
   let largest = 0
-  for (const x of a) {
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i] ?? 0
     if (!Number.isFinite(x)) return 0
     largest = Math.max(largest, Math.abs(x))
   }

@@ -110,11 +110,10 @@ describe('adaptive and tanh-sinh quadrature against closed forms', () => {
 describe('Gauss rules, sampled-data rules and cubature on integrands they integrate exactly', () => {
   it('the Gauss rules, sampled-data rules and cubature are exact where theory says', () => {
     {
-      const moments = (rule: Q.QuadratureRule, power: number): number =>
-        toArray(rule.nodes as Value).reduce(
-          (s, x, i) => s + (toArray(rule.weights as Value) as number[])[i]! * (x as number) ** power,
-          0,
-        )
+      const moments = (rule: Q.QuadratureRule, power: number): number => {
+        const [nodes, weights] = [toArray(rule.nodes as Value) as number[], toArray(rule.weights as Value) as number[]]
+        return nodes.reduce((s, x, i) => s + (weights[i] ?? 0) * x ** power, 0)
+      }
       const factorial = (k: number): number => (k <= 1 ? 1 : k * factorial(k - 1))
       // The double factorial (2m - 1)!! / (2m)!! of the Chebyshev moments, Gamma(k + 1/2) = sqrt(pi) (2k - 1)!! / 2^k.
       const halfGamma = (k: number): number => (k === 0 ? Math.sqrt(PI) : (k - 0.5) * halfGamma(k - 1))

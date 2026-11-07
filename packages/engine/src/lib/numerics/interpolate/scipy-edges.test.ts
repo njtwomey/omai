@@ -313,9 +313,9 @@ describe('interpolation against scipy.interpolate', () => {
       compare('akima', I.akima(x1, y1, 'akima', false).evaluate(q1))
       compare('makima', I.akima(x1, y1, 'makima', false).evaluate(q1))
       compare('akima flat', I.akima(xm, ym, 'akima', false).evaluate(qm))
-      const outside = (kind: I.Interp1dOptions['kind']): I.Interp1dOptions => ({
+      const outside = (kind: I.GridMethod): I.Interp1dOptions => ({
         kind,
-        fillValue: ['linear', 'slinear', 'quadratic', 'cubic'].includes(kind ?? '') ? 'extrapolate' : Number.NaN,
+        fillValue: ['linear', 'slinear', 'quadratic', 'cubic'].includes(kind) ? 'extrapolate' : Number.NaN,
       })
       for (const kind of ['linear', 'nearest', 'previous', 'next', 'zero', 'slinear', 'quadratic', 'cubic'] as const) {
         compare(`interp1d ${kind}`, I.interp1d(x1, y1, outside(kind))(q1))

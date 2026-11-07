@@ -126,7 +126,7 @@ describe('newton, secant and halley', () => {
     expect([halley.root, halley.functionCalls]).toEqual([expect.closeTo(1.2599210498948732, 12), 4])
     const multiple = R.newton((x) => (x - 1) ** 3, 3, { fprime: (x) => 3 * (x - 1) ** 2, tol: 1e-6 })
     expect([multiple.root, multiple.iterations]).toEqual([expect.closeTo(1.0000013735229765, 10), 35])
-    expect(R.secant((x) => x * x * x - 2, 1).root).toBeCloseTo(2 ** (1 / 3), 8)
+    expect(R.secant((x) => x * x * x - 2, 1, 1.5).root).toBeCloseTo(2 ** (1 / 3), 8)
     // A zero derivative at the start (x^3 - 1 at 0), a step that leaves the double range (atan from 2), the limit.
     const flat = R.newton((x) => x * x * x - 1, 0, { fprime: (x) => 3 * x * x })
     expect([flat.flag, flat.converged, flat.status]).toEqual(['derivative was zero', false, 'failed'])
