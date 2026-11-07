@@ -4,8 +4,7 @@
  * compute an expression's value as a real number or as a complex pair on principal branches.
  */
 
-import { MdmlError } from '../base/index.ts'
-import type { Complex } from '../exposition/index.ts'
+import { type Complex, MdmlError } from '../base/index.ts'
 import {
   abs,
   add,

@@ -4,8 +4,7 @@
  * term, l'Hopital, numeric check).
  */
 
-import { MdmlError } from '../base/index.ts'
-import type { Complex } from '../exposition/index.ts'
+import { type Complex, MdmlError } from '../base/index.ts'
 import { attempt, bounded } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeMul, makePow, NAN, NEG_INF, OO, ZERO, ZOO } from './_canon.ts'
 import { makeFn } from './_functions.ts'

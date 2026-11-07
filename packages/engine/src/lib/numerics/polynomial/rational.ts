@@ -4,20 +4,10 @@
  * `invres` rebuilds the rational function from its expansion.
  */
 
-import { MdmlError } from '../../base/index.ts'
-import type { Complex } from '../../exposition/index.ts'
+import { type Complex, cabs, cadd, cdiv, cmul, csub, MdmlError } from '../../base/index.ts'
 import { polydiv, polyroots } from './power.ts'
 
 // Rational functions follow scipy.signal: coefficients highest degree first (in s for residue, in z^-1 for residuez).
-
-const cadd = (a: Complex, b: Complex): Complex => [a[0] + b[0], a[1] + b[1]]
-const csub = (a: Complex, b: Complex): Complex => [a[0] - b[0], a[1] - b[1]]
-const cmul = (a: Complex, b: Complex): Complex => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]
-const cdiv = (a: Complex, b: Complex): Complex => {
-  const d = b[0] * b[0] + b[1] * b[1]
-  return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]
-}
-const cabs = (a: Complex): number => Math.hypot(a[0], a[1])
 
 /** Complex values as parallel real and imaginary parts. */
 export interface ComplexArray {

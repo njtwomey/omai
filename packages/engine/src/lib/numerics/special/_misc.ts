@@ -2,22 +2,12 @@
 // or asymptotic series for large ones, after Numerical Recipes cisi and frenel); Owen's T function by Gauss-Legendre
 // quadrature; the Kolmogorov and Smirnov distributions of the Kolmogorov-Smirnov statistic.
 
-import { EULER_GAMMA } from '../../base/index.ts'
+import { type Complex, cadd, cdiv, cmul, EULER_GAMMA } from '../../base/index.ts'
 import { EPS, lbinom, ndtr, SQRT_2PI } from './_kernels.ts'
 
 const FPMIN = 1e-300
 
-interface Complex {
-  re: number
-  im: number
-}
-const cmul = (a: Complex, b: Complex): Complex => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re })
-const cdiv = (a: Complex, b: Complex): Complex => {
-  const den = b.re * b.re + b.im * b.im
-  return { re: (a.re * b.re + a.im * b.im) / den, im: (a.im * b.re - a.re * b.im) / den }
-}
-const cadd = (a: Complex, b: Complex): Complex => ({ re: a.re + b.re, im: a.im + b.im })
-const ONE: Complex = { re: 1, im: 0 }
+const ONE: Complex = [1, 0]
 
 /** Si(x) and Ci(|x|) (the real part of Ci for negative x, as scipy returns). */
 export function sici(x: number): { si: number; ci: number } {
@@ -29,22 +19,22 @@ export function sici(x: number): { si: number; ci: number } {
   let ci: number
   if (t > 2) {
     // Continued fraction for E1(i t).
-    let b: Complex = { re: 1, im: t }
-    let c: Complex = { re: 1 / FPMIN, im: 0 }
+    let b: Complex = [1, t]
+    let c: Complex = [1 / FPMIN, 0]
     let d = cdiv(ONE, b)
     let h = d
     for (let i = 2; i <= 1000; i++) {
       const a = -(i - 1) * (i - 1)
-      b = cadd(b, { re: 2, im: 0 })
-      d = cdiv(ONE, cadd({ re: a * d.re, im: a * d.im }, b))
-      c = cadd(b, cdiv({ re: a, im: 0 }, c))
+      b = cadd(b, [2, 0])
+      d = cdiv(ONE, cadd([a * d[0], a * d[1]], b))
+      c = cadd(b, cdiv([a, 0], c))
       const del = cmul(c, d)
       h = cmul(h, del)
-      if (Math.abs(del.re - 1) + Math.abs(del.im) < EPS) break
+      if (Math.abs(del[0] - 1) + Math.abs(del[1]) < EPS) break
     }
-    h = cmul({ re: Math.cos(t), im: -Math.sin(t) }, h)
-    ci = -h.re
-    si = Math.PI / 2 + h.im
+    h = cmul([Math.cos(t), -Math.sin(t)], h)
+    ci = -h[0]
+    si = Math.PI / 2 + h[1]
   } else {
     let sum = 0
     let sums = 0
@@ -115,30 +105,30 @@ export function fresnel(x: number): { s: number; c: number } {
     c = sumc
   } else {
     const pix2 = Math.PI * ax * ax
-    let b: Complex = { re: 1, im: -pix2 }
-    let cc: Complex = { re: 1 / FPMIN, im: 0 }
+    let b: Complex = [1, -pix2]
+    let cc: Complex = [1 / FPMIN, 0]
     let d = cdiv(ONE, b)
     let h = d
     let n = -1
     for (let k = 2; k <= 1000; k++) {
       n += 2
       const a = -n * (n + 1)
-      b = cadd(b, { re: 4, im: 0 })
-      d = cdiv(ONE, cadd({ re: a * d.re, im: a * d.im }, b))
-      cc = cadd(b, cdiv({ re: a, im: 0 }, cc))
+      b = cadd(b, [4, 0])
+      d = cdiv(ONE, cadd([a * d[0], a * d[1]], b))
+      cc = cadd(b, cdiv([a, 0], cc))
       const del = cmul(cc, d)
       h = cmul(h, del)
-      if (Math.abs(del.re - 1) + Math.abs(del.im) < EPS) break
+      if (Math.abs(del[0] - 1) + Math.abs(del[1]) < EPS) break
     }
-    h = cmul({ re: ax, im: -ax }, h)
+    h = cmul([ax, -ax], h)
     // cos and sin of pi x^2 / 2, reduced exactly: x^2 / 2 mod 2 in units of pi.
     const half = (ax * ax) / 2
     const r = half - 2 * Math.floor(half / 2)
-    const phase: Complex = { re: Math.cos(Math.PI * r), im: Math.sin(Math.PI * r) }
+    const phase: Complex = [Math.cos(Math.PI * r), Math.sin(Math.PI * r)]
     const t = cmul(phase, h)
-    const cs = cmul({ re: 0.5, im: 0.5 }, { re: 1 - t.re, im: -t.im })
-    c = cs.re
-    s = cs.im
+    const cs = cmul([0.5, 0.5], [1 - t[0], -t[1]])
+    c = cs[0]
+    s = cs[1]
   }
   return x < 0 ? { s: -s, c: -c } : { s, c }
 }

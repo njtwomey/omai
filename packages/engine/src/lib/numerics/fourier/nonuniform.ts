@@ -4,8 +4,7 @@
  * evaluating a spectrum on a chosen band (scipy.signal `czt` and `zoom_fft`).
  */
 
-import { MdmlError } from '../../base/index.ts'
-import type { Complex } from '../../exposition/index.ts'
+import { type Complex, MdmlError } from '../../base/index.ts'
 import {
   add,
   type ComplexLike,

@@ -4,8 +4,7 @@
  * (scipy.signal.gammatone), with a bank of them that turns a signal into a cochleagram.
  */
 
-import { MdmlError } from '../../base/index.ts'
-import type { Complex } from '../../exposition/index.ts'
+import { type Complex, cadd, cexp, cmul, MdmlError } from '../../base/index.ts'
 import { stack, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'
 import { lfilter } from '../filters/index.ts'
@@ -210,15 +209,12 @@ export function gammatone(
   const fr = 2 * freq * Math.PI * T
   const bwT = bw * T
   // Complex arithmetic of Slaney's gain computation.
-  const cmul = (p: Complex, q: Complex): Complex => [p[0] * q[0] - p[1] * q[1], p[0] * q[1] + p[1] * q[0]]
-  const cexp = (re: number, im: number): Complex => [Math.exp(re) * Math.cos(im), Math.exp(re) * Math.sin(im)]
-  const cadd = (p: Complex, q: Complex): Complex => [p[0] + q[0], p[1] + q[1]]
   const cscale = (p: Complex, s: number): Complex => [p[0] * s, p[1] * s]
-  const g1 = cscale(cexp(0, 2 * fr), -2 * T)
-  const g2 = cscale(cexp(-bwT, fr), 2 * T)
+  const g1 = cscale(cexp([0, 2 * fr]), -2 * T)
+  const g2 = cscale(cexp([-bwT, fr]), 2 * T)
   const g3 = Math.sqrt(3 + 2 ** 1.5) * Math.sin(fr)
   const g4 = Math.sqrt(3 - 2 ** 1.5) * Math.sin(fr)
-  const g5 = cexp(0, 2 * fr)
+  const g5 = cexp([0, 2 * fr])
   let g = cadd(g1, cscale(g2, Math.cos(fr) - g4))
   g = cmul(g, cadd(g1, cscale(g2, Math.cos(fr) + g4)))
   g = cmul(g, cadd(g1, cscale(g2, Math.cos(fr) - g3)))
