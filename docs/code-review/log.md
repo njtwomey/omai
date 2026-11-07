@@ -69,7 +69,6 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `converged: false`, a flag, or nothing; `fixedPoint` and `fsolve` have the same return type and opposite behaviour). The
   approximate-nearest-neighbour code in `spatial` (about 1,850 lines) looks like a retrieval domain, filed as a placement
   question. The reader ran no Python: every quoted scipy or numpy value needs the oracle.
-  ||||||| 02ab5f59
 - **10:58 Result (P3.3, `agent-dd01-helpers`, `f1e64336`..`e651ebc0`).** Duplicated helpers replaced by shared ones, one
   commit per family; behaviour preserved, the test directories of every touched domain run (1,098 tests next to the touched
   files, then 18,614 by domain, all green; 556 `@example`s of the touched files pass). Replaced: `dot` x8 by `ddot` (blas), `matmul` of the
@@ -152,7 +151,6 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
 - **13:20 Pushing.** The maintainer said "i never said push" and then "don't push until we're done locally". Four pushes had gone out on 2026-11-07
   on the strength of "carry on autonomously" (a51124be, 1fb92fb5, cf5f1ae1, aaf3c87f); `origin/main` is at aaf3c87f and nothing is unpushed. From now on
   commits, agent merges and the full local gate stay local (D-014). The CI run already started for aaf3c87f is left to finish; no more are started.
-  ||||||| cf5f1ae1
 - **13:10 Result.** Wave A performance fixes P3.21 (worktree `agent-pn01-numerics`, commits `e016de15`, `6b338589`, `9f6f7781`,
   `803f8395`, `c0ad8718`). `convolve` is a primitive with a direct loop and rules that are convolutions of itself (ND-8): 4096 x 4096
   2027 ms to 15.7 ms, values and gradients bit-identical to the window-matrix version on 27 cases; the FFT route was not taken because
