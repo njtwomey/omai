@@ -88,7 +88,7 @@ describe('scalar root finders on hard functions', () => {
     }
   })
 
-  it('refuse a bracket without a sign change, with a value error that names the finder', () => {
+  it('refuse a bracket without a sign change and an infinite bracket, with a value error that names the finder', () => {
     for (const finder of ['bisect', 'brentq', 'ridder', 'toms748'] as const) {
       expect(() => R[finder]((x) => x * x + 1, -1, 1), `${finder} same signs`).toThrow(
         expect.objectContaining({
@@ -96,6 +96,14 @@ describe('scalar root finders on hard functions', () => {
           message: expect.stringContaining(`${finder}: f(a) and f(b) must have different signs`),
         }),
       )
+      for (const [a, b] of [
+        [0, Number.POSITIVE_INFINITY],
+        [Number.NEGATIVE_INFINITY, 1],
+      ] as const) {
+        expect(() => R[finder]((x) => x - 0.3, a, b), `${finder} on [${a}, ${b}]`).toThrow(
+          expect.objectContaining({ code: 'value', message: `${finder}: the bracket must be finite` }),
+        )
+      }
     }
   })
 })
