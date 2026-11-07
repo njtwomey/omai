@@ -69,7 +69,7 @@ const W = sub(outer(a, a), choSolve(L, eye(4)))
 mul(matmul(reshape(W, [1, 16]), reshape(dK, [16, 1])), 0.5) // => [-0.1209288]
 ```
 
-The library already has that, for any kernel and any number of hyperparameters, and it agrees to the last digit:
+The library already has that, for any kernel and any number of hyperparameters, and it agrees to twelve digits:
 
 ```ts
 import { logMarginalLikelihood } from 'mdml-engine/gp'
