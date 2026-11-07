@@ -6,6 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { daxpy, ddot } from '../numerics/linalg/index.ts'
+import { type TensorLike, toVector } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
 import { checkConstants, firstStep, probe } from './_line-search.ts'
 import { backtrackingSearch } from './line-search-algorithms.ts'
@@ -377,8 +378,8 @@ export interface LineSearchOptions {
   readonly method?: LineSearch
   /** f(x), if known. */
   readonly value?: number
-  /** The gradient at x, if known. */
-  readonly grad?: ArrayLike<number>
+  /** The gradient at x, if known: a vector (migration, D-009: was `ArrayLike<number>`). */
+  readonly grad?: TensorLike
   /** The objective at the previous iterate, for the first-step heuristic. */
   readonly previousValue?: number
   /** The first trial step. */
@@ -420,7 +421,7 @@ export function lineSearch(
   const p = flatObjective(f, direction as Parameters).x0
   const start =
     options.value !== undefined && options.grad !== undefined
-      ? { value: options.value, grad: Float64Array.from(options.grad) }
+      ? { value: options.value, grad: Float64Array.from(toVector(options.grad, 'lineSearch')) }
       : obj.valueAndGrad(obj.x0)
   const slope = ddot(start.grad, p)
   if (!(slope < 0)) throw new MdmlError('value', `lineSearch: direction is not a descent direction (slope ${slope})`)

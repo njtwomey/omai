@@ -18,6 +18,7 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
@@ -27,7 +28,9 @@ type Vec = Float64Array
 
 /**
  * The problem min f(x) + g(z) subject to A x + B z = c, given by its two partial minimisations (scaled form, u the
- * scaled dual variable). A defaults to the identity, B to minus the identity and c to zero (the splitting x = z).
+ * scaled dual variable). A defaults to the identity, B to minus the identity and c to zero (the splitting x = z). The
+ * two updates are callbacks on plain arrays, run once per iteration (D-009 keeps them native; `admmProx` and `admmLasso`
+ * hand them tensors); `c` takes a tensor-like (migration, D-009: was `ArrayLike<number>`).
  */
 export interface AdmmProblem {
   /** argmin_x f(x) + (rho / 2) |A x + B z - c + u|^2. */
@@ -37,16 +40,19 @@ export interface AdmmProblem {
   /** The constraint matrices `[p, n]` and `[p, m]`, and c `[p]`. */
   readonly A?: TensorLike
   readonly B?: TensorLike
-  readonly c?: ArrayLike<number>
+  readonly c?: TensorLike
   /** f(x) + g(z), for the trace. */
   readonly objective?: (x: Vec, z: Vec) => number
 }
 
-/** Options of {@link admmAlgorithm}. */
+/**
+ * Options of {@link admmAlgorithm}. The starting points are tensor-likes (migration, D-009: they were
+ * `ArrayLike<number>`).
+ */
 export interface AdmmOptions {
-  readonly x0?: ArrayLike<number>
-  readonly z0?: ArrayLike<number>
-  readonly u0?: ArrayLike<number>
+  readonly x0?: TensorLike
+  readonly z0?: TensorLike
+  readonly u0?: TensorLike
   /** The penalty (default 1). */
   readonly rho?: number
   /** Residual balancing (He et al. 2000): scale rho by `tauIncr` when one residual exceeds `mu` times the other. */
@@ -102,6 +108,10 @@ function dense(a: TensorLike | undefined, rows: number, cols: number, scale: num
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0, scale: 1 }
 }
 
+/** A starting vector as a fresh array: the tensor-like when given, else the fallback. */
+const startOf = (v: TensorLike | undefined, fallback: ArrayLike<number>): Vec =>
+  Float64Array.from(v === undefined ? fallback : toVector(v, 'admm'))
+
 const apply = (m: Dense, x: Vec, transpose = false): Vec =>
   m.data === null ? dscal(m.scale, x) : dgemv(m.data, m.rows, m.cols, x, transpose)
 
@@ -125,8 +135,9 @@ const SCHEMA = channels({
  * residual-balancing penalty updates, stopping on Boyd's primal and dual residual tests.
  *
  * @param problem - The partial minimisations and the constraint.
- * @param options - Starting points (sizes from x0 and z0), penalty, adaptation, relaxation and tolerances.
+ * @param options - Starting points (vectors; sizes from x0 and z0), penalty, adaptation, relaxation and tolerances.
  * @returns The algorithm.
+ * @throws MdmlError with code `shape` unless a starting point or `c` has rank 1, and `not-differentiable` for a traced one.
  * @concept admm
  * @example
  * ```ts
@@ -136,13 +147,13 @@ const SCHEMA = channels({
  * ```
  */
 export function admmAlgorithm(problem: AdmmProblem, options: AdmmOptions = {}): Algorithm<AdmmState> {
-  const x0 = Float64Array.from(options.x0 ?? options.z0 ?? [])
-  const z0 = Float64Array.from(options.z0 ?? x0)
+  const x0 = startOf(options.x0 ?? options.z0, [])
+  const z0 = startOf(options.z0, x0)
   const A = dense(problem.A, z0.length, x0.length, 1)
   const B = dense(problem.B, A.rows, z0.length, -1)
   const p = A.data === null ? (B.data === null ? x0.length : B.rows) : A.rows
-  const c = Float64Array.from(problem.c ?? new Float64Array(p))
-  const u0 = Float64Array.from(options.u0 ?? new Float64Array(p))
+  const c = startOf(problem.c, new Float64Array(p))
+  const u0 = startOf(options.u0, new Float64Array(p))
   const absTol = options.absTol ?? 1e-9
   const relTol = options.relTol ?? 1e-9
   const alpha = options.relaxation ?? 1
@@ -279,8 +290,8 @@ function splitRun(options: AdmmRunOptions): {
  */
 export function admm(problem: AdmmProblem, options: AdmmRunOptions = {}): AdmmResult {
   const { admm: o, run } = splitRun(options)
-  const n = (options.x0 ?? options.z0 ?? []).length
-  const m = (options.z0 ?? options.x0 ?? []).length
+  const n = startOf(options.x0 ?? options.z0, []).length
+  const m = startOf(options.z0 ?? options.x0, []).length
   return finish(admmAlgorithm(problem, o), run, [n], [m])
 }
 

@@ -7,7 +7,7 @@
 
 import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { cholesky, choSolve, daxpy, ddot, dgemv, dnrm2, lstsq } from '../numerics/linalg/index.ts'
-import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
 import { admmAlgorithm } from './admm.ts'
 
@@ -608,8 +608,8 @@ export interface LassoCoordinateDescentOptions extends Partial<Omit<RunOptions, 
   /** sklearn's tol: stop once the duality gap falls to tol |y|^2 (checked when the largest update is small). */
   readonly tol?: number
   readonly maxIterations?: number
-  /** A starting point (warm start). */
-  readonly x0?: ArrayLike<number>
+  /** A starting point, a vector (warm start; migration, D-009: was `ArrayLike<number>`). */
+  readonly x0?: TensorLike
   /** The L2 weight of the elastic net (default 0, the lasso). */
   readonly l2?: number
 }
@@ -686,7 +686,7 @@ export function lassoCoordinateDescentAlgorithm(
       tensors: { x: { role: 'param', description: 'coefficients' } },
     }),
     init: () => {
-      const x = Float64Array.from(options.x0 ?? new Float64Array(d.cols))
+      const x = Float64Array.from(options.x0 === undefined ? new Float64Array(d.cols) : toVector(options.x0, 'lasso'))
       const r = daxpy(-1, dgemv(d.data, d.rows, d.cols, x), yv)
       return { x, residual: r, gap: Infinity, maxUpdate: Infinity, objective: objective(x, r) }
     },

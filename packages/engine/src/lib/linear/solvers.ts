@@ -342,7 +342,7 @@ export function coordinateDescentSolve(
   const algorithm = lassoCoordinateDescentAlgorithm(matrixTensor(c.x, n, d), vectorTensor(c.y), alpha * l1Ratio * s, {
     tol: options.tol ?? 1e-4,
     l2: alpha * (1 - l1Ratio) * s,
-    ...(options.start === undefined ? {} : { x0: options.start.coef }),
+    ...(options.start === undefined ? {} : { x0: Float64Array.from(options.start.coef) }),
   })
   const tracked = collecting(algorithm, (state) => state.objective / s)
   const r = runAlgorithm(tracked.algorithm, { ...runOf(options), maxSteps: options.maxIter ?? 1000 })
