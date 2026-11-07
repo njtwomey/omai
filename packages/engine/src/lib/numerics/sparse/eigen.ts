@@ -103,7 +103,7 @@ interface LanczosRows {
  * @example
  * ```ts
  * import { lanczos } from 'mdml-engine/numerics/sparse'
- * lanczos([[2, 1], [1, 2]], 2).alpha.length // => 2
+ * lanczos([[2, 1], [1, 2]], 2).alpha.shape[0] // => 2
  * ```
  */
 export function lanczos(
