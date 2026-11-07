@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
-import { abs, exp, mul, sin, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { grad } from '../../autodiff/index.ts'
+import {
+  abs,
+  exp,
+  mul,
+  sin,
+  sum,
+  type Tensor,
+  type TensorLike,
+  tensor,
+  toFlat,
+  type Value,
+} from '../../tensor/index.ts'
 import * as A from './index.ts'
 
 const smooth = (x: Value): Value => mul(exp(x), sin(mul(x, 5)))
@@ -27,7 +39,7 @@ describe('approximation against numpy and closed forms', () => {
                     : c.fn === 'chebfunRoots'
                       ? f.roots()
                       : c.fn === 'pade'
-                        ? (({ numerator, denominator }) => [...numerator, ...denominator])(
+                        ? (({ numerator, denominator }) => [...toFlat(numerator), ...toFlat(denominator)])(
                             A.pade(xs(), c.params['m'] as number),
                           )
                         : c.fn === 'nextAfterUp'
@@ -84,13 +96,41 @@ describe('approximation properties', () => {
       s.push(acc)
     }
     expect(Math.abs(A.wynnEpsilon(s).value - Math.LN2)).toBeLessThan(1e-7)
-    expect(Math.abs((A.aitken(s).at(-1) ?? 0) - Math.LN2)).toBeLessThan(Math.abs((s.at(-1) ?? 0) - Math.LN2) / 50)
+    expect(Math.abs((toFlat(A.aitken(s)).at(-1) ?? 0) - Math.LN2)).toBeLessThan(
+      Math.abs((s.at(-1) ?? 0) - Math.LN2) / 50,
+    )
     // tan(1) = 1 / (1 - 1 / (3 - 1 / (5 - ...))).
     const tan = A.continuedFraction(
       (j) => (j === 1 ? 1 : -1),
       (j) => (j === 0 ? 0 : 2 * j - 1),
     )
     expect(tan.value).toBeCloseTo(Math.tan(1), 14)
+  })
+
+  it('the sequence functions take tensor-likes (migration, D-009): the same for a tensor, a typed array and an array', () => {
+    const calls: [string, (v: TensorLike) => number[]][] = [
+      ['richardson', (v) => [A.richardson(v).value]],
+      ['aitken', (v) => toFlat(A.aitken(v))],
+      ['wynnEpsilon', (v) => [A.wynnEpsilon(v).value]],
+      ['shanks', (v) => toFlat(A.shanks(v))],
+      ['eulerTransform', (v) => [A.eulerTransform(v)]],
+      ['compensatedSum', (v) => [A.compensatedSum(v, 'kahan')]],
+      ['chebyshev', (v) => [...A.chebyshev(v).coefficients]],
+      ['chebyshevCoefficients', (v) => toFlat(A.chebyshevCoefficients(v))],
+      ['chebyshevSeries', (v) => toFlat(A.chebyshevSeries(v, [0.5, -0.25]))],
+      ['pade', (v) => toFlat(A.pade(v, 1).denominator)],
+      ['propagateError', (v) => [A.propagateError((x) => sum(mul(x, x)), v, [0.1, 0.1, 0.1])]],
+    ]
+    const v = [1, 0.5, 0.25, 0.125]
+    for (const [name, f] of calls) {
+      const expected = f(v)
+      expect(f(Float64Array.from(v)), name).toEqual(expected)
+      expect(f(tensor(v)), name).toEqual(expected)
+      expect(() => f(tensor([v, v])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(() => grad((x: Value) => sum(tensor(f(x as TensorLike))))(tensor(v)), name).toThrow(
+        expect.objectContaining({ code: 'not-differentiable' }),
+      )
+    }
   })
 
   it('error-free transformations and compensated sums', () => {

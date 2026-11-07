@@ -7,7 +7,7 @@
 
 import { grad } from '../../autodiff/index.ts'
 import { kahanSum, MdmlError, pairwiseSum, roundHalfEven } from '../../base/index.ts'
-import { item, tensor, type Value } from '../../tensor/index.ts'
+import { item, type TensorLike, tensor, toVector, type Value } from '../../tensor/index.ts'
 
 const buffer = new DataView(new ArrayBuffer(8))
 
@@ -233,11 +233,13 @@ export type SumMethod = 'naive' | 'kahan' | 'neumaier' | 'pairwise'
 /**
  * Sum with a chosen algorithm, to compare their rounding errors: naive left-to-right; Kahan's compensated summation
  * (each addition's rounding error carried into the next); Neumaier's variant (also correct when a term exceeds the
- * running sum; base's kahanSum); pairwise (cascade) summation as numpy (base's pairwiseSum).
+ * running sum; base's kahanSum); pairwise (cascade) summation as numpy (base's pairwiseSum). Takes a tensor-like
+ * (migration, D-009: was `ArrayLike<number>`).
  *
- * @param xs - Terms.
+ * @param terms - The terms `[n]`.
  * @param method - The algorithm (default neumaier).
  * @returns The sum.
+ * @throws MdmlError with code `shape` unless `terms` is a vector, and `not-differentiable` for a traced value.
  * @concept floating-point
  * @example
  * ```ts
@@ -246,7 +248,8 @@ export type SumMethod = 'naive' | 'kahan' | 'neumaier' | 'pairwise'
  * compensatedSum([1, 1e100, 1, -1e100], 'kahan') // => 0
  * ```
  */
-export function compensatedSum(xs: ArrayLike<number>, method: SumMethod = 'neumaier'): number {
+export function compensatedSum(terms: TensorLike, method: SumMethod = 'neumaier'): number {
+  const xs = toVector(terms, 'compensatedSum')
   switch (method) {
     case 'naive': {
       let s = 0
@@ -298,9 +301,11 @@ export function conditionNumber(f: (x: Value) => Value, x: number): number {
  * sigma_i)^2), with the gradient from autodiff.
  *
  * @param f - A differentiable scalar function of a vector.
- * @param x - The point.
- * @param sigma - Input standard deviations.
+ * @param x - The point `[n]`.
+ * @param sigma - Input standard deviations `[n]`.
  * @returns The propagated standard deviation.
+ * @throws MdmlError with code `shape` unless `x` and `sigma` are vectors, and `not-differentiable` for a traced
+ *   value.
  * @example
  * ```ts
  * import { propagateError } from 'mdml-engine/numerics/approximation'
@@ -309,9 +314,10 @@ export function conditionNumber(f: (x: Value) => Value, x: number): number {
  * Math.abs(propagateError((v) => prod(v), [2, 3], [0.1, 0.1]) - Math.sqrt(0.13)) < 1e-12 // => true
  * ```
  */
-export function propagateError(f: (x: Value) => Value, x: readonly number[], sigma: readonly number[]): number {
-  const g = Array.from((grad(f)(tensor([...x])) as { data: ArrayLike<number> }).data)
-  return Math.sqrt(g.reduce((s, gi, i) => s + (gi * (sigma[i] ?? 0)) ** 2, 0))
+export function propagateError(f: (x: Value) => Value, x: TensorLike, sigma: TensorLike): number {
+  const g = Array.from((grad(f)(tensor([...toVector(x, 'propagateError')])) as { data: ArrayLike<number> }).data)
+  const spread = toVector(sigma, 'propagateError')
+  return Math.sqrt(g.reduce((s, gi, i) => s + (gi * (spread[i] ?? 0)) ** 2, 0))
 }
 
 /**

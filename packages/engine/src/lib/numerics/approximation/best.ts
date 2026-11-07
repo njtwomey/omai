@@ -5,7 +5,7 @@
  */
 
 import { type Json, MdmlError, maxOf } from '../../base/index.ts'
-import { fromStorage, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
 import {
   type Algorithm,
   numberFromJson,
@@ -15,6 +15,7 @@ import {
   type RunStatus,
   runAlgorithm,
 } from '../../trace/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { solve } from '../linalg/index.ts'
 import type { ApproximationPath } from './approximation-contract.ts'
 
@@ -252,18 +253,21 @@ export function remez(f: (x: number) => number, m: number, options: RemezOptions
 }
 
 /**
- * The Chebyshev-basis evaluation used by {@link remez}, on values: sum_k c_k T_k(t).
+ * The Chebyshev-basis evaluation used by {@link remez}, on values: sum_k c_k T_k(t). Takes and returns tensors
+ * (migration, D-009: `c` was `readonly number[]`, `t` a `readonly number[]` or a value, the result `number[]`); a traced
+ * `t` is rejected where it used to be read at its primal.
  *
- * @param c - Coefficients.
- * @param t - Points in [-1, 1].
- * @returns Values.
+ * @param c - Coefficients `[k]`.
+ * @param t - Points `[m]` in [-1, 1].
+ * @returns Values `[m]`.
+ * @throws MdmlError with code `shape` unless `c` and `t` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { chebyshevSeries } from 'mdml-engine/numerics/approximation'
  * chebyshevSeries([0, 0, 1], [0.5]) // => [-0.5]
  * ```
  */
-export function chebyshevSeries(c: readonly number[], t: readonly number[] | Value): number[] {
-  const ts = Array.isArray(t) ? (t as readonly number[]) : toFlat(primalOf(t as Value))
-  return ts.map((v) => series(c, v))
+export function chebyshevSeries(c: TensorLike, t: TensorLike): Tensor<'float64', [number]> {
+  const coefficients = toVector(c, 'chebyshevSeries')
+  return vectorOf(toVector(t, 'chebyshevSeries').map((v) => series(coefficients, v)))
 }

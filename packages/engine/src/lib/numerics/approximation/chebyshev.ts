@@ -11,8 +11,10 @@ import {
   mul,
   primalOf,
   promoteFloat,
+  type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../../tensor/index.ts'
 import {
@@ -23,6 +25,7 @@ import {
   numberToJson,
   runAlgorithm,
 } from '../../trace/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { dct } from '../fourier/index.ts'
 import { eigvals } from '../linalg/index.ts'
 import { orthoval } from '../polynomial/index.ts'
@@ -50,11 +53,14 @@ export interface Chebyshev {
 }
 
 /**
- * A Chebyshev expansion from coefficients on a domain.
+ * A Chebyshev expansion from coefficients on a domain. Takes the coefficients as a tensor-like (migration, D-009: was
+ * `readonly number[]`); the record keeps its plain-array fields until it is staged.
  *
- * @param coefficients - c_0, c_1, ... in the Chebyshev basis.
+ * @param coefficients - c_0, c_1, ... in the Chebyshev basis `[k]`.
  * @param domain - The interval (default [-1, 1]).
  * @returns The expansion.
+ * @throws MdmlError with code `value` for an empty domain, `shape` unless the coefficients are a vector, and
+ *   `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { chebyshev } from 'mdml-engine/numerics/approximation'
@@ -62,10 +68,11 @@ export interface Chebyshev {
  * item(chebyshev([0, 0, 1]).evaluate(0.5)) // => -0.5
  * ```
  */
-export function chebyshev(coefficients: readonly number[], domain: readonly [number, number] = [-1, 1]): Chebyshev {
+export function chebyshev(coefficients: TensorLike, domain: readonly [number, number] = [-1, 1]): Chebyshev {
   const [a, b] = domain
   if (!(b > a)) throw new MdmlError('value', 'chebyshev: the domain must be an increasing interval')
-  const c = coefficients.length === 0 ? [0] : [...coefficients]
+  const entries = toVector(coefficients, 'chebyshev')
+  const c = entries.length === 0 ? [0] : [...entries]
   const toT = (x: Value): Value => mul(add(mul(x, 2), -(a + b)), 1 / (b - a))
   const evaluate = (x: TensorLike): Value => {
     const [xv] = promoteFloat(x) as [Value]
@@ -190,16 +197,22 @@ function trimCoefficients(c: readonly number[]): number[] {
  * Chebyshev coefficients of the interpolant at n Chebyshev points of the second kind (numpy's chebinterpolate uses the
  * first kind): c_k = (2 / (n - 1)) sum'' f_j T_k(x_j), by a type-1 DCT.
  *
- * @param values - f at x_j = cos(j pi / (n - 1)), j = 0..n - 1 (from 1 down to -1).
- * @returns The coefficients.
+ * @param values - f at x_j = cos(j pi / (n - 1)), j = 0..n - 1 (from 1 down to -1), a vector `[n]`.
+ * @returns The coefficients `[n]`.
+ * @throws MdmlError with code `shape` unless `values` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { chebyshevCoefficients } from 'mdml-engine/numerics/approximation'
+ * import { toFlat } from 'mdml-engine/tensor'
  * // x^2 = (T_0 + T_2) / 2.
- * chebyshevCoefficients([1, 0, 1]).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0, 0.5]
+ * toFlat(chebyshevCoefficients([1, 0, 1])).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0, 0.5]
  * ```
  */
-export function chebyshevCoefficients(values: readonly number[]): number[] {
+export function chebyshevCoefficients(values: TensorLike): Tensor<'float64', [number]> {
+  return vectorOf(coefficientsOf(toVector(values, 'chebyshevCoefficients')))
+}
+
+function coefficientsOf(values: readonly number[]): number[] {
   const n = values.length
   if (n === 1) return [values[0] ?? 0]
   const d = toFlat(dct(values, 1)).map((v) => v / (n - 1))
@@ -266,7 +279,7 @@ export function chebfunAlgorithm(
       const values = toFlat(primalOf(f(fromStorage(Float64Array.from(xs), [n], 'float64'))))
       if (values.some((v) => !Number.isFinite(v)))
         throw new MdmlError('value', 'chebfun: the function is not finite on the domain')
-      const c = chebyshevCoefficients(values)
+      const c = coefficientsOf(values)
       const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
       // Converged when the last few coefficients (an eighth of them, at least 4) are all negligible.
       const tailCount = Math.max(4, Math.floor(n / 8))
