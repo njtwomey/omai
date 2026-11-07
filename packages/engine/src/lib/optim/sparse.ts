@@ -9,7 +9,8 @@ import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { cholesky, choSolve, daxpy, ddot, dgemv, dnrm2, lstsq } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
-import type { DenseMatrix } from './_vector.ts'
+import { rethrowUnless } from './_catch.ts'
+import { type DenseMatrix, flatOf } from './_vector.ts'
 import { admmAlgorithm } from './admm.ts'
 
 function matrix(a: TensorLike, name: string): DenseMatrix {
@@ -18,7 +19,7 @@ function matrix(a: TensorLike, name: string): DenseMatrix {
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0 }
 }
 
-const vector = (y: TensorLike): Float64Array => Float64Array.from(toFlat(primalOf(asTensor(y))))
+const vector = (y: TensorLike): Float64Array => flatOf(asTensor(y))
 const column = (d: DenseMatrix, j: number): Float64Array =>
   Float64Array.from({ length: d.rows }, (_, i) => d.data[i * d.cols + j] ?? 0)
 const columns = (d: DenseMatrix, idx: readonly number[]): Tensor => {
@@ -268,7 +269,8 @@ export function orthogonalMatchingPursuitAlgorithm(
             ),
           ),
         )
-      } catch {
+      } catch (error) {
+        rethrowUnless(error, 'value', 'singular')
         return early(s, 'ended early: selected atoms are linearly dependent')
       }
       if (coefs.some((v) => !Number.isFinite(v))) return early(s, 'ended early: selected atoms are linearly dependent')
@@ -567,7 +569,7 @@ export function basisPursuit(
   const l = cholesky(fromStorage(ddt, [d.rows, d.rows], 'float64'))
   const project = (v: Float64Array): Float64Array => {
     const r = daxpy(-1, yv, dgemv(d.data, d.rows, d.cols, v))
-    const w = Float64Array.from(toFlat(primalOf(choSolve(l, fromStorage(r, [r.length], 'float64')))))
+    const w = flatOf(choSolve(l, fromStorage(r, [r.length], 'float64')))
     return daxpy(-1, dgemv(d.data, d.rows, d.cols, w, true), v)
   }
   const soft = (v: Float64Array, t: number): Float64Array =>

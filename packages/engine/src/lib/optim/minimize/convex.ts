@@ -19,10 +19,10 @@ import {
   sum,
   type Tensor,
   type TensorLike,
-  toFlat,
   type Value,
 } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
+import { flatOf } from '../_vector.ts'
 import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
 import { minimize } from './minimizer.ts'
 import {
@@ -33,8 +33,6 @@ import {
   type Parameters,
   type VectorMethodOptions,
 } from './objective.ts'
-
-const flat = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
 
 /**
  * A step-size rule for the subgradient and mirror descent methods (Boyd's notes): `constant` a,
@@ -116,10 +114,10 @@ export function subgradientAlgorithm(
   const sub = options.subgradient
   const evaluate = (x: Float64Array): { value: number; grad: Float64Array } => {
     if (sub === undefined) return obj.valueAndGrad(x)
-    return { value: obj.value(x), grad: flat(sub(obj.unravel(x) as Value)) }
+    return { value: obj.value(x), grad: flatOf(sub(obj.unravel(x) as Value)) }
   }
   const projected = (x: Float64Array): Float64Array =>
-    project === undefined ? x : flat(project(obj.unravel(x) as Value))
+    project === undefined ? x : flatOf(project(obj.unravel(x) as Value))
   return {
     name: 'subgradient',
     config: configOf({ ...options, stepRule: typeof rule === 'string' ? rule : 'custom' }),
@@ -435,7 +433,7 @@ export interface DualResult extends MinimizeResult {
 }
 
 const defaultSolve = (lagrangian: Objective, start: Float64Array): Float64Array =>
-  flat(minimize(lagrangian, fromStorage(Float64Array.from(start), [start.length], 'float64')).x as Value)
+  flatOf(minimize(lagrangian, fromStorage(Float64Array.from(start), [start.length], 'float64')).x as Value)
 
 function matrixOf(a: TensorLike): { data: Float64Array; rows: number; cols: number } {
   const t = primalOf(asTensor(a)) as Tensor
@@ -470,7 +468,7 @@ export function dualAscentAlgorithm(
   options: DualAscentOptions = {},
 ): Algorithm<DualAscentState> {
   const A = matrixOf(a)
-  const bv = flat(asTensor(b))
+  const bv = flatOf(asTensor(b))
   const obj = flatObjective(f, x0)
   if (A.cols !== obj.n || A.rows !== bv.length) throw new MdmlError('shape', 'dual ascent: A, b and x0 disagree')
   const rho = options.augmented ?? 0
@@ -651,7 +649,7 @@ export function dualDecomposition(
 ): DualResult {
   if (blocks.length === 0) throw new MdmlError('value', 'dualDecomposition: give at least one block')
   const mats = blocks.map((bl) => matrixOf(bl.a))
-  const starts = blocks.map((bl) => flat(asTensor(bl.x0)))
+  const starts = blocks.map((bl) => flatOf(asTensor(bl.x0)))
   const sizes = starts.map((s) => s.length)
   const offsets = sizes.map((_, i) => sizes.slice(0, i).reduce((p, q) => p + q, 0))
   const n = sizes.reduce((p, q) => p + q, 0)

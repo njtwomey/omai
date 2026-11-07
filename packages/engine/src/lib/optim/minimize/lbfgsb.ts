@@ -6,6 +6,8 @@
 
 import { daxpy, ddot, dgemv, dgesv, dnrm2 } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
+import { rethrowUnless } from '../_catch.ts'
+import { defaultFtol } from '../_knobs.ts'
 import { type LineSearchResult, lineFunction } from '../line-search.ts'
 import { moreThuente } from '../line-search-interval.ts'
 import {
@@ -294,7 +296,8 @@ function subspaceMin(
   let v: Float64Array
   try {
     v = dgesv(N, v0, c.k)
-  } catch {
+  } catch (error) {
+    rethrowUnless(error, 'value', 'singular')
     return xcp
   }
   const du = new Float64Array(ind.length)
@@ -376,7 +379,7 @@ function lbfgsbOn(obj: FlatObjective, options: LbfgsbOptions): Algorithm<LbfgsbS
   const box = boxOf(options.bounds, n)
   const memory = options.memory ?? 10
   const pgtol = options.gradTol ?? 1e-5
-  const ftol = options.ftol ?? 2.220446049250313e-9
+  const ftol = options.ftol ?? defaultFtol
   const maxls = options.maxLineSearch ?? 20
   const maxfun = options.maxEvaluations ?? 15000
   let constrained = false

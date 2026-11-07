@@ -10,7 +10,15 @@ import type { Algorithm } from '../../trace/index.ts'
 import { brent, fminbound } from '../scalar.ts'
 import { type BoundArrays, boundArrays } from './_bounds.ts'
 import { counted, isBudget } from './_budget.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import type { Bounds } from './objective.ts'
 import {
   flatObjective,
@@ -295,5 +303,6 @@ export function powellAlgorithm(f: Objective, x0: Parameters, options: PowellOpt
  */
 export function powell(f: Objective, x0: Parameters, options: PowellOptions = {}): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(powellAlgorithm(f, x0, options), obj, options, 1000 * obj.n)
 }

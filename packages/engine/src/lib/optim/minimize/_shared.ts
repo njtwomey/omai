@@ -1,6 +1,6 @@
 // Shared machinery of the vector methods (not exported from the barrel): the common state, trace schema, observation
 // and the runner that turns a final state into a MinimizeResult.
-import type { Json } from '../../base/index.ts'
+import { type Json, MdmlError } from '../../base/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import {
   type Algorithm,
@@ -74,6 +74,50 @@ export function observeVector(s: VectorState, extra: Observation = {}): Observat
   }
 }
 
+/**
+ * The gradient tolerance a vector method stops at: `gradTol` (or the method's default), and with `gradTolRel` the
+ * smaller of that and `gradTolRel` times the infinity norm of the gradient at the start. Without `gradTolRel` nothing
+ * is evaluated and the result is the absolute tolerance.
+ *
+ * @param obj - The flat objective, whose gradient at the start is the reference.
+ * @param options - The method's options.
+ * @param fallback - The method's default absolute tolerance.
+ * @returns The threshold the infinity norm of the gradient is compared with.
+ * @throws MdmlError with code `value` unless `gradTolRel` is positive and finite.
+ */
+export function gradientThreshold(obj: FlatObjective, options: VectorMethodOptions, fallback: number): number {
+  const absolute = options.gradTol ?? fallback
+  const relative = options.gradTolRel
+  if (relative === undefined) return absolute
+  if (!(relative > 0) || !Number.isFinite(relative))
+    throw new MdmlError('value', `gradTolRel must be positive and finite, got ${relative}`)
+  const reference = infNorm(obj.valueAndGrad(obj.x0).grad)
+  return Number.isFinite(reference) ? Math.min(absolute, relative * reference) : absolute
+}
+
+/**
+ * The result of a method over no parameters at all: nothing to minimise, so `converged` after no steps with the
+ * objective's one value, the same answer the gradient-based methods give.
+ *
+ * @param obj - The flat objective, with `n === 0`.
+ * @returns The result.
+ */
+export function noParametersResult(obj: FlatObjective): MinimizeResult {
+  const empty = new Float64Array(0)
+  return {
+    x: obj.unravel(empty),
+    fun: obj.value(empty),
+    gradNorm: Number.NaN,
+    steps: 0,
+    nfev: 1,
+    ngev: 0,
+    nhev: 0,
+    status: 'converged',
+    converged: true,
+    message: 'no parameters: nothing to minimise',
+  }
+}
+
 /** The `done` test shared by the vector methods: a decided stop, or a non-finite objective. */
 export function vectorDone(s: VectorState): 'converged' | 'failed' | 'diverged' | undefined {
   if (s.stop !== undefined) return s.stop.status
@@ -97,7 +141,7 @@ export function runVectorState<S extends VectorState>(
   options: VectorMethodOptions,
   defaultIterations: number,
 ): { readonly result: MinimizeResult; readonly state: S } {
-  const { maxIterations, gradTol: _g, ...run } = options
+  const { maxIterations, gradTol: _g, gradTolRel: _r, ...run } = options
   const out = runAlgorithm(algorithm, { ...run, maxSteps: maxIterations ?? defaultIterations })
   const s = out.state
   const hasGrad = s.grad.length > 0

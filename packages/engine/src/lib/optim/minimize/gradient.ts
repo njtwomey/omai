@@ -9,11 +9,14 @@ import { daxpy, ddot, dnrm2, dscal, idamax } from '../../numerics/linalg/index.t
 import { permutation } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
+import { rethrowUnless } from '../_catch.ts'
+import { defaultGradTol } from '../_knobs.ts'
 import { backtracking, type LineSearch, type LineSearchResult, lineFunction } from '../line-search.ts'
 import { wolfe12 } from '../line-search-interval.ts'
 import { brent } from '../scalar.ts'
 import {
   configOf,
+  gradientThreshold,
   LINE_SEARCH_CHANNEL,
   lineSearchMessage,
   observeVector,
@@ -80,7 +83,7 @@ export function gradientDescentAlgorithm(
 function gradientDescentOn(obj: FlatObjective, options: GradientDescentOptions): Algorithm<GradientDescentState> {
   const rule = options.step ?? 'line-search'
   const lr = options.learningRate ?? 1e-3
-  const gtol = options.gradTol ?? 1e-5
+  const gtol = gradientThreshold(obj, options, defaultGradTol)
   const search = options.lineSearch ?? backtracking({ safeguard: [0.1, 0.5] })
   return {
     name: 'gradientDescent',
@@ -258,7 +261,7 @@ export function conjugateGradientAlgorithm(
 }
 
 function conjugateGradientOn(obj: FlatObjective, options: ConjugateGradientOptions): Algorithm<ConjugateGradientState> {
-  const gtol = options.gradTol ?? 1e-5
+  const gtol = gradientThreshold(obj, options, defaultGradTol)
   const kind = options.beta ?? 'polak-ribiere'
   const c1 = options.c1 ?? 1e-4
   const c2 = options.c2 ?? 0.4
@@ -428,7 +431,7 @@ function coordinateDescentOn(obj: FlatObjective, options: CoordinateDescentOptio
   const order = options.order ?? 'cyclic'
   const update = options.update ?? 'exact'
   const lr = options.learningRate ?? 1e-2
-  const gtol = options.gradTol ?? 1e-5
+  const gtol = gradientThreshold(obj, options, defaultGradTol)
   const ftol = options.ftol ?? 1e-12
   if (update === 'gradient' && !(lr > 0))
     throw new MdmlError('value', 'coordinateDescent: learningRate must be positive')
@@ -480,8 +483,10 @@ function coordinateDescentOn(obj: FlatObjective, options: CoordinateDescentOptio
             })
             nfev += r.nfev
             next = r.fun <= value ? r.x : xi
-          } catch {
-            // No bracket along this coordinate (unbounded below, or flat): leave it for this sweep.
+          } catch (error) {
+            // No bracket along this coordinate (unbounded below, or flat): leave it for this sweep. An error of the
+            // user's objective is not this and reaches the caller.
+            rethrowUnless(error, 'convergence')
             next = xi
           }
         } else if (update === 'newton') {

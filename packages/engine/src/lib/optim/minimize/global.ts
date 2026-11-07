@@ -10,7 +10,15 @@ import { Generator } from '../../random/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { asPairs, type BoundArrays, boundArrays, clipInto } from './_bounds.ts'
 import { defaultLocal, localSearch } from './_local.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import type { Bounds } from './objective.ts'
 import {
   flatObjective,
@@ -253,6 +261,7 @@ export function simulatedAnnealing(
   options: SimulatedAnnealingOptions = {},
 ): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   return runVector(simulatedAnnealingAlgorithm(f, x0, options), obj, options, 1000)
 }
 
@@ -446,6 +455,7 @@ export function basinHoppingAlgorithm(
  */
 export function basinHopping(f: Objective, x0: Parameters, options: BasinHoppingOptions = {}): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   const { maxIterations, ...rest } = options
   // One extra step for the initial local minimisation.
   return runVector(basinHoppingAlgorithm(f, x0, rest), obj, { ...rest, maxIterations: (maxIterations ?? 100) + 1 }, 101)

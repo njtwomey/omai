@@ -28,6 +28,7 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import type { RunOptions, RunStatus } from '../../trace/index.ts'
+import { flatOf } from '../_vector.ts'
 import type { ParamTree } from '../transform.ts'
 
 /**
@@ -42,6 +43,14 @@ export interface VectorMethodOptions extends Partial<Omit<RunOptions, 'maxSteps'
   readonly maxIterations?: number
   /** Stop once the infinity norm of the gradient (or projected gradient) falls to this (scipy's gtol). */
   readonly gradTol?: number
+  /**
+   * A relative gradient tolerance, off by default: with it a method of the gradient, Newton and quasi-Newton families
+   * stops at `min(gradTol, gradTolRel * |g0|)`, where `g0` is the infinity norm of the gradient at the start, so an
+   * objective whose gradients are everywhere below the absolute `gradTol` (data in very small units) is still
+   * minimised, and the absolute test is never loosened. The gradient at the start is evaluated once more, when the
+   * algorithm is built (it is not counted in `ngev`).
+   */
+  readonly gradTolRel?: number
 }
 
 /** A minimisation method as a function value: `minimize(f, x0, { method: bfgs })` calls `bfgs(f, x0, options)`. */
@@ -91,8 +100,6 @@ function asTree(x0: unknown): ParamTree {
 }
 
 const vectorOf = (x: ArrayLike<number>): Value => fromStorage(Float64Array.from(x), [x.length], 'float64')
-
-const flatOf = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
 
 /**
  * View an objective of a parameter tree as a function of one flat vector, with derivatives by autodiff.

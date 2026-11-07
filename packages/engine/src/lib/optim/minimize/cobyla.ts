@@ -8,9 +8,18 @@ import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, inv, solve } from '../../numerics/linalg/index.ts'
 import { fromStorage, toFlat, type Value } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
+import { rethrowUnless } from '../_catch.ts'
 import type { ParamTree } from '../transform.ts'
 import { boundArrays, constraintValues } from './_bounds.ts'
-import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
+import {
+  configOf,
+  noParametersResult,
+  observeVector,
+  runVector,
+  type VectorState,
+  vectorDone,
+  vectorSchema,
+} from './_shared.ts'
 import { trustStep } from './_trstlp.ts'
 import type { Bounds } from './objective.ts'
 import {
@@ -123,7 +132,8 @@ function models(vertices: readonly Vertex[], n: number, m: number) {
     )
     if (![...g, ...w].every(Number.isFinite)) return undefined
     return { d, w, g, a }
-  } catch {
+  } catch (error) {
+    rethrowUnless(error, 'value', 'singular')
     return undefined
   }
 }
@@ -439,6 +449,7 @@ export function cobylaAlgorithm(f: Objective, x0: Parameters, options: CobylaOpt
  */
 export function cobyla(f: Objective, x0: Parameters, options: CobylaOptions = {}): MinimizeResult {
   const obj = flatObjective(f, x0)
+  if (obj.n === 0) return noParametersResult(obj)
   const { maxIterations, ...rest } = options
   return runVector(cobylaAlgorithm(f, x0, rest), obj, { ...rest, maxIterations: maxIterations ?? 100_000 }, 100_000)
 }

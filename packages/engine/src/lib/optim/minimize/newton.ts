@@ -7,10 +7,12 @@
 import { MdmlError } from '../../base/index.ts'
 import { dasum, daxpy, ddot, dgemv, dnrm2, dpotrf, dpotrs, dscal, dsyev } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
+import { defaultGradTol } from '../_knobs.ts'
 import { backtracking, type LineSearch, type LineSearchResult, lineFunction } from '../line-search.ts'
 import { wolfe12 } from '../line-search-interval.ts'
 import {
   configOf,
+  gradientThreshold,
   LINE_SEARCH_CHANNEL,
   lineSearchMessage,
   observeVector,
@@ -139,7 +141,7 @@ export function newtonAlgorithm(f: Objective, x0: Parameters, options: NewtonOpt
 }
 
 function newtonOn(obj: FlatObjective, options: NewtonOptions): Algorithm<NewtonState> {
-  const gtol = options.gradTol ?? 1e-5
+  const gtol = gradientThreshold(obj, options, defaultGradTol)
   const search = options.lineSearch ?? backtracking({ safeguard: [0.1, 0.5] })
   const n = obj.n
   return {

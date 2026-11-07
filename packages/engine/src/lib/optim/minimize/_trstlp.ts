@@ -1,6 +1,7 @@
 // The trust-region subproblem of COBYLA (Powell's TRSTLP strategy; not exported from the barrel).
 import { daxpy, ddot, dnrm2, solve } from '../../numerics/linalg/index.ts'
 import { fromStorage, toFlat } from '../../tensor/index.ts'
+import { rethrowUnless } from '../_catch.ts'
 
 /**
  * Minimise a linear function q.z subject to rows.z >= rhs and |z[0..ballDims)| <= radius, from a feasible z, by an
@@ -40,7 +41,8 @@ function linearInBall(
       let lambda: number[]
       try {
         lambda = toFlat(solve(fromStorage(gram, [k, k], 'float64'), fromStorage(aq, [k], 'float64')))
-      } catch {
+      } catch (error) {
+        rethrowUnless(error, 'value', 'singular')
         active.pop()
         continue
       }

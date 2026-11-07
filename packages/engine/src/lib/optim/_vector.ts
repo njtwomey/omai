@@ -1,12 +1,12 @@
 /**
- * The two readers the public functions of `optim` share to take their numbers from a tensor-like once, at the boundary
- * (a matrix as rows of plain numbers, a float64 vector built from a list), so the loops stay on plain arrays and the
+ * The readers the public functions of `optim` share to take their numbers from a tensor-like once, at the boundary
+ * (a matrix as rows of plain numbers, the elements of a value as a float64 array, a float64 vector built from a list), so the loops stay on plain arrays and the
  * tensor is built or read only at entry and exit; and `DenseMatrix`, the row-major record the dictionary and pursuit
  * routines read a matrix into. Private to the domain, as `numerics/_vector.ts` is.
  */
 
 import { MdmlError } from '../base/index.ts'
-import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
+import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
 /** A dense matrix as row-major data with its dimensions, read once from a tensor-like. */
 export interface DenseMatrix {
@@ -31,6 +31,17 @@ export function rowsOf(x: TensorLike, name: string): number[][] {
   const [n = 0, m = 0] = t.shape
   const flat = toFlat(t)
   return Array.from({ length: n }, (_, i) => flat.slice(i * m, (i + 1) * m))
+}
+
+/**
+ * The elements of a value as a float64 array, copied once (the value's primal, so a traced value reads its number).
+ *
+ * @param x - A tensor or a traced value with a concrete primal.
+ * @returns A copy of the elements, row-major.
+ * @throws MdmlError with code `not-differentiable` for a trace that holds no concrete value.
+ */
+export function flatOf(x: Value): Float64Array {
+  return Float64Array.from(primalOf(x).data)
 }
 
 /**

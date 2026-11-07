@@ -6,6 +6,7 @@
 import { maxOf } from '../base/index.ts'
 import { ddot, dgesv } from '../numerics/linalg/index.ts'
 import { type Algorithm, runStatusOf } from '../trace/index.ts'
+import { rethrowUnless } from './_catch.ts'
 import { basisDuals, LP_SCHEMA, lpConfig } from './_lp.ts'
 import {
   fromStandard,
@@ -143,7 +144,8 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
     let x: Float64Array
     try {
       x = dgesv(basisMatrix, rhs, rows, width)
-    } catch {
+    } catch (error) {
+      rethrowUnless(error, 'value', 'singular')
       return undefined
     }
     const t = new Float64Array((rows + 1) * width)
