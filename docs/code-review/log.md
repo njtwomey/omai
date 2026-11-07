@@ -201,3 +201,17 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
 - **14:30 Decisions.** Asked whether the work was complete, I answered with a list of decisions I needed; the maintainer had already told me to carry on without
   asking. I should have taken my own recommendations and gone on. D-015 records them as adopted, D-013's wait is lifted, and D-014 (no push) stands. Wave B
   starts in two worktrees (foundations; numerics), one heavy run at a time.
+- **14:45 Fix, P3.13 (`agent-fd02-degenerate`).** The certain bugs of the foundations, each first as a probe or test that fails on main, then the fix, the
+  test kept as a table row (ten new `it` blocks, no new file besides `tensor/degenerate.test.ts` and `base/numbers.test.ts`). `matmul` no longer skips zero
+  entries and `tril`/`triu` use `where`, so 0 x NaN and Infinity above the diagonal behave as in numpy (and `einsum` with them). Max, min, argmax and argmin of a
+  zero-length axis throw `MdmlError('value')` (the code `variance` and `take` already use; the register said `shape`) unless no output element needs an
+  identity; `all([])` is true. Bool: `cumsum`/`cumprod` count as int32 (300 trues no longer wrap at 256), `tensor` and `asTensor(Uint8Array)` store 0 or 1, and
+  `cast` to bool now makes NaN true, which its own doc (`x != 0`) already said; `unique` keeps the storage class. `scatterAdd` and `segmentSum` range-check and wrap
+  negatives like `take`. Derivative rules: `prod` through the product of the others (no 0/0, still differentiable), 2-norm and `std` with a zero gradient at zero, `pow`
+  with the base rule 0 at an exponent of 0; `cumprod` still divides and was left. `pow`, `mod` and `floorDiv` follow C99 and numpy (`1 // 0.1` is 9);
+  `log10(1000)` is 3 through new `log2`/`log10` kernels with derivative and Taylor rules, the only surface change (`UnaryKernel`). `foldIn` throws for a part
+  outside [0, 2^32); the suites found one caller with -1 (von Mises-Fisher), now `-1 >>> 0`, the same key. Samplers validate their parameters (a zero scale stays a
+  point mass), `geometric` uses `log1p`, and a discrete draw beyond int32 throws instead of wrapping. Option lookups use `Object.hasOwn`; `int`, `box`,
+  `multiDiscrete` and `multiBinary` validate; `range` rejects a zero step, `quantileOf` a level outside [0, 1], `allclose` a traced input; `clipTo` in the diffusion
+  samplers is the tensor `clip` (F-042). Skipped: FD-16 (a convention), the tolerance defaults of `isClose`/`allclose`, `cumprod` at zero. Own checks only: all
+  engine test directories (about 25,900 tests in five niced runs, one worker), 207 examples, tsc, barrels, layers, lint; the full gate was not run.
