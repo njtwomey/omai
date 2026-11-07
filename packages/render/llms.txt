@@ -81,7 +81,7 @@ below are the folders of `src`; `react` is large and its index is nested by its 
 
 ## Domains
 
-- [animation](index/animation.md): Animation: building timelines of frames from runs, sweeps and structure overlays (`sweepTimeline`, `runTimeline`, `structureTimeline`), easing and tweening between frames (`tweenTimeline`), and exporting a timeline as a self-playing SVG (`animatedSvg`) ... (9 entries)
+- [animation](index/animation.md): Animation: building timelines of frames from runs, sweeps and structure overlays (`sweepTimeline`, `runTimeline`, `structureTimeline`), easing and tweening between frames (`tweenTimeline`), and exporting a timeline as a self-playing SVG (`animatedSvg`) ... (10 entries)
 - [charts](index/charts.md): ECharts option builders. (22 entries)
 - [figure](index/figure.md): The headless figure model: `figure` gives a fixed size, box aspect, padding and type size per medium, `gridSpec`, `withMarginals` and `bento` lay out panels (with `layoutGrid` placing them in pixels) ... (10 entries)
 - [gym](index/gym.md): Pictures of environments and worlds: `worldView` draws a grid world from above (with a policy, path or search overlays), `raycastViews` gives the first-person view beside the map, `pathFrames` animates a path ... (4 entries)
