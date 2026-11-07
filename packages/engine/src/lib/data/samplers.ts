@@ -46,7 +46,8 @@ export interface RandomSamplerOptions {
  * @param key - The base key; epoch `e` uses `foldIn(key, e)`.
  * @param options - Replacement and samples per epoch.
  * @returns The sampler.
- * @throws MdmlError with code `value` when more samples than rows are asked for without replacement.
+ * @throws MdmlError with code `value` when more samples than rows are asked for without replacement, or the number of
+ *   samples is not a whole number.
  * @example
  * ```ts
  * import { randomSampler } from 'mdml-engine/data'
@@ -56,6 +57,8 @@ export interface RandomSamplerOptions {
  */
 export function randomSampler(n: number, key: Key, options: RandomSamplerOptions = {}): Sampler {
   const m = options.numSamples ?? n
+  if (!Number.isInteger(m) || m < 0)
+    throw new MdmlError('value', `randomSampler: the number of samples must be a whole number, got ${m}`)
   if (options.replacement !== true && m > n)
     throw new MdmlError('value', `randomSampler: ${m} samples from ${n} rows need replacement`)
   return (epoch) => {
@@ -158,6 +161,7 @@ export function balancedWeights(labels: TensorLike): Tensor<'float64'> {
  * @param batchSize - Rows per batch.
  * @param dropLast - Drop a final batch smaller than `batchSize` (default false).
  * @returns A function from the epoch to its batches of indices.
+ * @throws MdmlError with code `value` unless `batchSize` is a whole number of at least 1.
  * @example
  * ```ts
  * import { batchSampler, sequentialSampler } from 'mdml-engine/data'
@@ -165,7 +169,8 @@ export function balancedWeights(labels: TensorLike): Tensor<'float64'> {
  * ```
  */
 export function batchSampler(sampler: Sampler, batchSize: number, dropLast = false): (epoch: number) => Int32Array[] {
-  if (!(batchSize >= 1)) throw new MdmlError('value', `batchSampler: batch size ${batchSize} must be at least 1`)
+  if (!(Number.isInteger(batchSize) && batchSize >= 1))
+    throw new MdmlError('value', `batchSampler: the batch size must be a whole number of at least 1, got ${batchSize}`)
   return (epoch) => {
     const order = sampler(epoch)
     const out: Int32Array[] = []
