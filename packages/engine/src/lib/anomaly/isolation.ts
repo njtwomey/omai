@@ -6,7 +6,7 @@
  * path lengths as per-point evidence.
  */
 
-import type { Json } from '../base/index.ts'
+import { EULER_GAMMA, type Json } from '../base/index.ts'
 import {
   ExplainedEstimatorClass,
   type Fitted,

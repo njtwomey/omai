@@ -5,7 +5,7 @@
  * `GPSampler`.
  */
 
-import type { Json } from '../base/index.ts'
+import { type Json, LOG_SQRT_2PI } from '../base/index.ts'
 import { erfc, erfcx, logNdtr, ndtr, normalPdf } from '../numerics/special/index.ts'
 import { lbfgsb } from '../optim/index.ts'
 import { foldIn, type Key, scrambledSobol } from '../random/index.ts'
