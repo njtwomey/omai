@@ -530,3 +530,52 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   Surface: 1 added (`PolynomialDivision`), 0 removed, 63 changed.
 - **19:50 Gate.** The data, kernels and render test merge (P3.39, P3.18) and native-array stage 3 (`numerics`) passed the full local gate: 26,490 tests, 9,613 examples, all static
   checks and all six tsc runs, first run. 204 commits ahead of `origin/main`; nothing pushed (D-014).
+- **19:55 Native arrays, stage 4 (P3.8, D-009, D-015: `optim`, `losses`).** Branch `agent-na05-optim`, 10 commits (`9abf2b62`,
+  `91c89f0a`, `e59151a1`, `178b0294`, `3fff0c4e`, `8f243af0`, `0d38d4a8`, `d7e5dfdd`, `86ed0eae` and a lint fix), local only
+  (D-014). The sorting counted 34 public vectors and matrices in `optim` (two of them in `losses`); this stage migrated 28 of
+  them and the input-record vectors it could see (the six online learners stay native, below), family by family, smallest
+  caller count first. Inputs take `TensorLike`
+  (`toVector`, and the private `optim/_vector.ts` with `rowsOf`, `matrixOf`, `vectorOf`), so old calls still compile; only
+  returns and `GlmProblem` break callers. Migrated: `landscape` `slice1d`, `slice2d`, `randomSlice`, `interpolationSlice`,
+  `bezierSlice` (grids), `sharpness` (`v0`); `multiobjective` `hypervolume`, `hypervolumeContributions` (reference; the
+  contributions are a tensor), `crowdingDistance` (tensor), `epsilonConstraint` (`epsilons`); `nsga2` `sbxCrossover`,
+  `polynomialMutation` (individuals in, tensors out); `online` `OnlineOptions.comparator`; `online-experts`
+  `bestSwitchingLoss` (matrix in, tensor out), `exp4Algorithm` (`advice` `[N, K]` or `[T, N, K]`, `losses`),
+  `adagradRegretBound`, `hindsightComparator` (`point` is a tensor); `glm` `GlmProblem` (`x` is the `[n, d]` matrix and `n`,
+  `d` are gone; `y`, `weights`, `offset`, `start` and `GlmPenalty.matrix` are tensor-likes), `glmValue`, `glmGradient`
+  (tensor out); `bounded-solvers` `boxMap` and `BoundedProblem.lower`, `upper`; `quadratic` `boxQp`, `boxQpAlgorithm` (`x0`);
+  `analytic` `finiteDifferenceHessian` (point in, `[m, m]` tensor out; `analyticObjective` keeps a private kernel);
+  `preconditioned` `preconditionBy` (the function form takes the flat gradient as a tensor and returns a tensor-like);
+  `line-search` `lineSearch` (`direction` is a `Parameters`), `LineSearchOptions.grad`; `minimize` `augmentedLagrangian`,
+  `slsqp` (`multipliers` is a tensor); `admm` `AdmmProblem.c` and `AdmmOptions` `x0`, `z0`, `u0`; `wasserstein`
+  `BarycenterOptions.weights`, `FreeSupportOptions` `b`, `weights`; `sparse` `LassoCoordinateDescentOptions.x0`; `losses`
+  `gradientNormWeights` (`previous` in, tensor out), `ntkWeights` (tensor out). Callers updated: `gam` 2 files (`outer`,
+  `pirls`: the design and the penalty matrix go in as tensors over the same storage, no copy), `linear` 1 (`factoryProblem`,
+  the lasso warm start), `pgm` 1 (`irt`: the Hessian from `.data`), `tune` 1 (`samplers`: the crowding distances from
+  `.data`), no site, pocs, render or meta caller, and 10 test files of `optim` and `losses`. Kept native, with the reason:
+  the `OnlineLearner` contract (`init`, `play`, `update` on typed arrays: a kernel run once per round on explicit states, the
+  four learners of `online.ts`, `pNormMirrorDescent` and `onlineAdagrad`; `onlineAlgorithm` puts the play on the tape as a
+  tensor), the ADMM callbacks `xUpdate` and `zUpdate` (one call per iteration; `admmProx` and `admmLasso` already hand them
+  tensors), `Lmo`, `Mirror`, `ProximalStep` and the `BoxMap` methods `toFree` and `fromFree` (kernels the solver slots call
+  per iteration), `finiteDifferenceHessian`'s gradient callback and `AnalyticObjective` (the adapter for plain-number
+  models), `SmoothProblem.x0` (the slot's design); the kernels the sorting lists (`bfgsInverseUpdate`, `twoLoopRecursion`,
+  `modifiedCholesky`, `clipToBox`, `infNorm`, `fromStandard`, `kktResiduals`, `lineFunction`, `smoRho`, `nuRho`, ...); the
+  index and combinatorial ones (`multiStepDecay`, `piecewiseConstant`, `joinSchedules`, the assignment preferences, `setCover`
+  and `knapsack`, `dominates`, `nonDominatedSort`, `paretoFront`, `proxGroupLasso`, `groupLasso`, the CTC and large-output
+  label lists); and the records: `Slice1d` and `Slice2d` (grids, and `barrier` reads them literally), `GlmFit` and `GlmState`
+  (gam and linear read them as plain arrays), `OnlineResult`, `ExpertsProblem`, `ExpertsRule`, `BoxQpState` and every
+  algorithm state. Remaining in `optim`: those records and the states, the `QpOptions.x0` of the active-set kernel and
+  `SmoothProblem.x0`. Differentiability: none of the migrated functions is differentiable in the vector it now reads; a
+  traced value is rejected with `not-differentiable` (`toVector`, `toFlat`), a matrix where a vector is expected is a `shape`
+  error. Bit-identical: no golden, iteration count or `@example` output moved; examples changed only where a tensor's printed
+  form differs (`toFlat` added in `crowdingDistance`, `hypervolumeContributions`, `bestSwitchingLoss`, `gradientNormWeights`,
+  `ntkWeights`, `sbxCrossover`, `polynomialMutation`, `hindsightComparator`, `glmGradient`, `finiteDifferenceHessian`, and the
+  `GlmProblem` examples now give `x` as a matrix). Hot paths measured before and after (niced throwaway script, per call):
+  `hypervolume` 3-D 60 points 159 / 140 us and 2-D 43 / 44 us, `crowdingDistance` 60 points 30 / 29 us,
+  `hypervolumeContributions` 20 points 183 / 95 us (the reference is read once), `fitGlm` IRLS 200 rows 26.4 / 26.1 ms,
+  `glmValue` 119 / 111 us, `boxMap` 50 17.4 / 16.4 us, `finiteDifferenceHessian` 10 21.5 / 29.3 us (the boxing); nothing
+  stayed native for speed. Own checks only (the full gate was not run): engine, render, meta, site, pocs and scripts tsc;
+  241 files, 2,819 tests of `optim`, `losses`, `gam`, `linear`, `pgm`, `tune` and `gp`; 148 `@example`s of the touched files;
+  barrels, layers, lint, agent index, surface. Tests added: 8 `it` (one table per family: `landscape`, `multiobjective`,
+  `online-experts`, `glm`, `bounded-solvers`, `quadratic`, `analytic`, and one new file `tensor-inputs.test.ts` for the option
+  vectors). Surface: 0 added, 0 removed, 38 changed.

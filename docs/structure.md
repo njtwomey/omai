@@ -321,6 +321,26 @@ on purpose: `primalValues` (the sparse solvers read it), `csr` and `fromCoo` (in
 records are staged (`ComplexArray`, `PartialFractions`, `Chebyshev`, `MinimaxResult`, `LanczosResult`, `NormalisedPoints.transform`,
 `Rotation.asMatrix`, `AffineMap.homogeneous`).
 
+Stage 4 (`optim`, `losses`): `optim` `landscape` `slice1d`, `slice2d`, `randomSlice`, `interpolationSlice`, `bezierSlice` (the grids) and
+`sharpness` (`v0`); `multiobjective` `hypervolume`, `hypervolumeContributions` (`reference`; the contributions are a tensor),
+`crowdingDistance` (returns a tensor), `epsilonConstraint` (`epsilons`); `nsga2` `sbxCrossover`, `polynomialMutation` (individuals in, tensors
+out); `online` `OnlineOptions.comparator`; `online-experts` `bestSwitchingLoss`, `exp4Algorithm` (`advice` `[N, K]` or `[T, N, K]`, `losses`),
+`adagradRegretBound`, `hindsightComparator` (`point` is a tensor); `glm` `GlmProblem` (`x` is the `[n, d]` matrix, `n` and `d` are gone; `y`,
+`weights`, `offset`, `start`, `GlmPenalty.matrix` take tensor-likes), `glmValue`, `glmGradient` (returns a tensor); `boxMap` and
+`BoundedProblem.lower`, `upper`; `boxQp`, `boxQpAlgorithm` (`x0`); `finiteDifferenceHessian` (the point; returns the `[m, m]` tensor);
+`preconditionBy` (the function form takes the flat gradient as a tensor); `lineSearch` (`direction`, `LineSearchOptions.grad`);
+`augmentedLagrangian`, `slsqp` (`multipliers` is a tensor); `AdmmProblem.c`, `AdmmOptions` `x0`, `z0`, `u0`, `BarycenterOptions.weights`,
+`FreeSupportOptions` `b`, `weights`, `LassoCoordinateDescentOptions.x0`; `losses` `gradientNormWeights` (`previous`; returns a tensor) and
+`ntkWeights` (returns a tensor). The private `optim/_vector.ts` holds the readers (`rowsOf`, `matrixOf`, `vectorOf`). Kept native on
+purpose: the `OnlineLearner` contract (`init`, `play`, `update` on typed arrays, a kernel run once per round: `onlineGradientDescent`,
+`ftrl`, `hedge`, `exponentiatedGradient`, `pNormMirrorDescent`, `onlineAdagrad`), the callbacks that run once per iteration
+(`AdmmProblem.xUpdate` and `zUpdate`, `Lmo`, `Mirror`, `ProximalStep`, the `BoxMap` methods `toFree` and `fromFree`, the gradient of
+`finiteDifferenceHessian` and `AnalyticObjective`), `SmoothProblem.x0`, the kernels the sorting lists (`bfgsInverseUpdate`,
+`twoLoopRecursion`, `modifiedCholesky`, `clipToBox`, `infNorm`, `kktResiduals`, `lineFunction`, `smoRho`, `nuRho`, ...), the index and
+combinatorial lists (the schedule boundaries, the assignment preferences, `setCover`, `knapsack`, `dominates`, `nonDominatedSort`,
+`paretoFront`, the group indices, the CTC and large-output label lists), and the records until they are staged (`Slice1d`, `Slice2d`,
+`GlmFit`, `GlmState`, `OnlineResult`, `ExpertsProblem`, `BoxQpState` and the algorithm states).
+
 **Docstrings.** Every export has a TSDoc block: summary, `@param` per parameter, `@returns`, `@throws` where relevant,
 and at least one `@example` with `// => value`, `// => figure`, `// => trace` or `// => throws Code` expectations that
 the build runs. `@concept` tags link to the concept taxonomy (section 7), `@see` and `@reference` cite sources.
