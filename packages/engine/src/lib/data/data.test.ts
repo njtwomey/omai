@@ -283,6 +283,21 @@ group('invalid arguments at the data boundary', () => {
     expect(rowCount(trainTestSplit(d, { testSize: 3 }).test)).toBe(3)
     expect(rowCount(take(d, tensor([0, 7])))).toBe(2)
   })
+  it('choose an integer dtype from the range of the values, and a bool one from every item', () => {
+    // 3e9 and epoch milliseconds do not fit 32 bits: they stay exact in float64 instead of wrapping.
+    const big = [3e9, 1]
+    const epoch = [1.7e12, 5]
+    expect(Array.from(padSequences([big]).values.data)).toEqual(big)
+    expect(padSequences([big]).values.dtype).toBe('float64')
+    expect(padSequences([[2 ** 31 - 1, -(2 ** 31 - 1)]]).values.dtype).toBe('int32')
+    expect(padSequences([[1, 2]], { dtype: 'int32' }).values.dtype).toBe('int32')
+    const stacked = collate([{ a: epoch[0] ?? 0 }, { a: epoch[1] ?? 0 }])['a']
+    expect([stacked?.dtype, Array.from(stacked?.data ?? [])]).toEqual(['float64', epoch])
+    expect(collate([{ a: 1 }, { a: 2 }])['a']?.dtype).toBe('int32')
+    expect(collate([{ a: false }, { a: true }])['a']?.dtype).toBe('bool')
+    expect(codeOf(() => collate([{ a: true }, { a: 2 }]))).toBe('value')
+    expect(codeOf(() => collate([{ a: 2 }, { a: true }]))).toBe('value')
+  })
 })
 
 group('batching and samplers', () => {
