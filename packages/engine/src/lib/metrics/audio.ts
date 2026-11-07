@@ -10,8 +10,8 @@ import { ddot, solveToeplitz } from '../numerics/linalg/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
 import { dtw, firwin, hann, resamplePoly, stft } from '../signal/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
-import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 /** A mono signal as a Float64Array. */
 function signal(name: string, x: TensorLike): Float64Array {

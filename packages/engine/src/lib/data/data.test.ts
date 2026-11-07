@@ -387,7 +387,9 @@ group('batching and samplers', () => {
     expect(() => randomSampler(2, key(0), { numSamples: 3 })).toThrow(/replacement/)
     // A message that names the sampler, not the draw underneath it.
     expect(() => randomSampler(0, key(0), { replacement: true, numSamples: 2 })).toThrow(/randomSampler/)
-    expect(() => weightedRandomSampler([0, 0], 2, key(0))).toThrow(/weightedRandomSampler: the weights have no positive/)
+    expect(() => weightedRandomSampler([0, 0], 2, key(0))).toThrow(
+      /weightedRandomSampler: the weights have no positive/,
+    )
     const w = weightedRandomSampler([1, 0, 3], 4000, key(3))(0)
     const share = Array.from(w).filter((v) => v === 2).length / 4000
     expect(Math.abs(share - 0.75)).toBeLessThan(4 * Math.sqrt((0.75 * 0.25) / 4000))

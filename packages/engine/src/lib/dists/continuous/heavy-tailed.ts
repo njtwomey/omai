@@ -141,11 +141,7 @@ export function cauchy(loc: TensorLike = 0, scale: TensorLike = 1): Distribution
     where(
       less(q, 0.25),
       neg(div(1, tan(mul(q, Math.PI)))),
-      where(
-        less(0.75, q),
-        div(1, tan(mul(sub(1, q), Math.PI))),
-        tan(mul(sub(q, 0.5), Math.PI)),
-      ),
+      where(less(0.75, q), div(1, tan(mul(sub(1, q), Math.PI))), tan(mul(sub(q, 0.5), Math.PI))),
     )
   const ppf = (q: Value): Value => add(mu, mul(sigma, standardPpf(q)))
   return defineDistribution({

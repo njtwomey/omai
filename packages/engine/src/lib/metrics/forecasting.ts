@@ -8,6 +8,7 @@ import { MdmlError, type MetricResult } from '../base/index.ts'
 import { normal } from '../dists/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { rejectSampleWeight } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import {
   defineMetric,
   flat,
@@ -22,7 +23,6 @@ import {
 } from './metric.ts'
 import { meanAbsolutePercentageError } from './regression.ts'
 import { crps } from './scoring-rules.ts'
-import { specOf } from './_spec.ts'
 
 const spec = specOf('forecasting', 'values', 'forecast-evaluation', {
   direction: 'lower',

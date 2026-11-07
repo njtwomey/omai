@@ -6,8 +6,8 @@
 import { MdmlError, type MetricResult } from '../base/index.ts'
 import { cdist, metricFunction, procrustes } from '../numerics/geometry/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
-import { defineMetric, flat, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { defineMetric, flat, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 const spec = specOf('distance', 'values', 'distances', { direction: 'lower', range: [0, Infinity] })
 

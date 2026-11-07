@@ -8,6 +8,7 @@ import { MdmlError, type MetricResult } from '../base/index.ts'
 import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, rejectSampleWeight, sortLabels } from './_labels.ts'
 import { binarise, type Grid } from './_scores.ts'
+import { specOf } from './_spec.ts'
 import {
   type Metric,
   type MetricInput,
@@ -17,7 +18,6 @@ import {
   shapedArray,
   weightedMean,
 } from './metric.ts'
-import { specOf } from './_spec.ts'
 
 const spec = specOf('probabilistic', 'probabilities', 'proper-scoring-rules')
 

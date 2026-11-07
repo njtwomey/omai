@@ -8,6 +8,7 @@
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { Grid } from './_scores.ts'
+import { specOf } from './_spec.ts'
 import {
   defineMetric,
   type Metric,
@@ -18,7 +19,6 @@ import {
   shapedArray,
   weightedMean,
 } from './metric.ts'
-import { specOf } from './_spec.ts'
 
 const spec = specOf('ranking', 'rankings', 'ranking-metrics', { range: [0, 1] })
 

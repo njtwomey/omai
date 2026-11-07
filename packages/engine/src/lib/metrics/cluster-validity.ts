@@ -8,8 +8,8 @@ import { MdmlError, type MetricResult } from '../base/index.ts'
 import { cdist, type DistanceMetric as DistanceName } from '../numerics/geometry/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { labelValues, sortLabels } from './_labels.ts'
-import { defineMetric, type MetricFunction, type MetricInput, metricResult, shapedArray } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { defineMetric, type MetricFunction, type MetricInput, metricResult, shapedArray } from './metric.ts'
 
 const spec = specOf('clustering', 'values', 'cluster-validity')
 

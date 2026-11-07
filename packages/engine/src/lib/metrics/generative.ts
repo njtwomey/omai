@@ -8,8 +8,8 @@ import { MdmlError, type MetricResult } from '../base/index.ts'
 import { eigvalsh, funmSymmetric } from '../numerics/linalg/index.ts'
 import { type Key, key as makeKey, permutation, split } from '../random/index.ts'
 import { matmul, relu, sqrt, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
-import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 const spec = specOf('generative', 'values', 'generative-evaluation', { range: [0, Infinity] })
 

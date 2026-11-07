@@ -8,9 +8,9 @@ import { MdmlError, type MetricResult } from '../base/index.ts'
 import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { precisionRecallRows, rocRows, thresholdRows } from './_curves.ts'
 import { labelValues } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import type { CurveOptions } from './curves.ts'
 import { type Metric, type MetricInput, metricResult } from './metric.ts'
-import { specOf } from './_spec.ts'
 
 const spec = specOf('classification', 'scores', 'operating-points', { range: [0, 1] })
 

@@ -17,8 +17,8 @@ import {
   multilabelCounts,
   ratio,
 } from './_labels.ts'
-import { type Metric, type MetricInput, type MetricOptions, metricResult, rowCount, sampleWeights } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { type Metric, type MetricInput, type MetricOptions, metricResult, rowCount, sampleWeights } from './metric.ts'
 
 /**
  * How per-class scores combine: 'binary' (the positive class only), 'micro' (pooled counts), 'macro' (unweighted mean

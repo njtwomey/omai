@@ -46,7 +46,12 @@ describe('hypothesis tests on degenerate input', () => {
       expect(T.rejects(r, 1), name).toBe(false)
     }
     // A defined test carries no status, and the variance check of constants is undefined rather than p = 1.
-    expect(T.fOneway([[1, 2, 3], [2, 3, 5]]).status).toBeUndefined()
+    expect(
+      T.fOneway([
+        [1, 2, 3],
+        [2, 3, 5],
+      ]).status,
+    ).toBeUndefined()
     const same = T.checkEqualVariances([c, c])
     expect([same.equal, same.pValue]).toEqual([true, Number.NaN])
   })

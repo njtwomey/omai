@@ -34,8 +34,8 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { defineMetric, flat, type MetricFunction, metricResult, sampleWeights, weightedMean } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { defineMetric, flat, type MetricFunction, metricResult, sampleWeights, weightedMean } from './metric.ts'
 
 const scoreRule = specOf('probabilistic', 'distributions', 'proper-scoring-rules')
 const spec = (name: string, direction: 'higher' | 'lower'): MetricSpec =>

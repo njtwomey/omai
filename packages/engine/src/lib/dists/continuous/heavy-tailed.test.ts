@@ -77,7 +77,11 @@ describe('heavy-tailed distributions against scipy', () => {
     ['cauchy ppf(1e-17)', () => D.cauchy(0, 1).ppf(1e-17), -3.1830988618379064e16],
     ['cauchy isf(1e-14) is the mirror image', () => D.cauchy(0, 1).isf(1e-14), 31830988618379.066],
     ['cauchy ppf in the middle: 0.25, 0.5, 0.75', () => D.cauchy(0, 1).ppf(T.tensor([0.25, 0.5, 0.75])), [-1, 0, 1]],
-    ['cauchy(2, 3) ppf(0) and ppf(1)', () => T.stack([D.cauchy(2, 3).ppf(0), D.cauchy(2, 3).ppf(1)]), [-Infinity, Infinity]],
+    [
+      'cauchy(2, 3) ppf(0) and ppf(1)',
+      () => T.stack([D.cauchy(2, 3).ppf(0), D.cauchy(2, 3).ppf(1)]),
+      [-Infinity, Infinity],
+    ],
   ]
   it('keep the relative precision of the Cauchy quantile and tails', () => {
     expectRows(tails, 1e-12)

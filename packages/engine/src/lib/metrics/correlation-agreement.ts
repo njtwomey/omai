@@ -9,6 +9,7 @@ import { ndtri } from '../numerics/special/index.ts'
 import { cov, kendallTau as kendallTest, spearman } from '../stats/index.ts'
 import { item, type TensorLike, toFlat } from '../tensor/index.ts'
 import { rejectSampleWeight, sortLabels } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import { cohenKappaScore, type KappaOptions } from './classification-summary.ts'
 import { contingencyMatrix } from './clustering.ts'
 import {
@@ -22,7 +23,6 @@ import {
   sampleWeights,
   shapedArray,
 } from './metric.ts'
-import { specOf } from './_spec.ts'
 
 const agreementSpec = specOf('agreement', 'values', 'correlation-agreement', { range: [-1, 1] })
 const spec = (

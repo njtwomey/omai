@@ -7,8 +7,8 @@
 import { MdmlError, type MetricResult } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { classCounts, encodeLabels, labelValues } from './_labels.ts'
-import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 const spec = specOf('segmentation', 'labels', 'segmentation-evaluation', { range: [0, 1] })
 

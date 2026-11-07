@@ -9,6 +9,7 @@ import { MdmlError, type MetricResult, type MetricSpec, maxOf, minOf, toRows } f
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { fixed, right } from './_format.ts'
 import { classCounts, encodeLabels, indicator, isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import { type Average, accuracyScore, confusionMatrix, precisionRecallFscoreSupport } from './classification.ts'
 import {
   type Metric,
@@ -20,7 +21,6 @@ import {
   shapedArray,
   weightedMean,
 } from './metric.ts'
-import { specOf } from './_spec.ts'
 
 /** The counts of {@link confusionMatrix} as rows of plain numbers, the form the loops of this file read. */
 function confusionRows(yTrue: MetricInput, yPred: MetricInput, options: MetricOptions): number[][] {

@@ -5,8 +5,8 @@
  */
 
 import { MdmlError, maxOf } from '../base/index.ts'
-import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
 
 const map = (n: number, f: (i: number) => number): Float64Array => Float64Array.from({ length: n }, (_, i) => f(i))
 const residuals = (t: Float64Array, p: Float64Array): Float64Array => map(t.length, (i) => (t[i] ?? 0) - (p[i] ?? 0))

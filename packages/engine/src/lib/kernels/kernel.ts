@@ -416,7 +416,10 @@ export function powerKernel(kernel: Kernel, exponent: number): Kernel {
  */
 export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
   if (dims.length === 0 || !dims.every((d) => Number.isInteger(d) && d >= 0))
-    throw new MdmlError('value', `onDimensions: dims must be a non-empty list of non-negative whole numbers, got [${dims}]`)
+    throw new MdmlError(
+      'value',
+      `onDimensions: dims must be a non-empty list of non-negative whole numbers, got [${dims}]`,
+    )
   const index = fromStorage(Int32Array.from(dims), [dims.length], 'int32')
   const widest = Math.max(...dims)
   const pick = (x: Value): Value => {

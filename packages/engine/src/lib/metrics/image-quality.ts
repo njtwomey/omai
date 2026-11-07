@@ -8,8 +8,8 @@ import { MdmlError, type MetricResult } from '../base/index.ts'
 import { convNd } from '../numerics/convolution/index.ts'
 import { image as filters } from '../signal/index.ts'
 import { fromStorage, primalOf, reshape, type TensorLike, type Value } from '../tensor/index.ts'
-import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 import { specOf } from './_spec.ts'
+import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
 
 // Images are handled as channel planes; the filtering itself is signal's (scipy.ndimage semantics).
 

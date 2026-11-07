@@ -30,13 +30,7 @@ import type { Modifier } from '../recipes.ts'
 import { splitSize, stratifiedIndices, take } from '../rows.ts'
 import { type Dataset, rowCount } from '../schema/common.ts'
 import type { ClassificationData, TabularData } from '../schema/tabular.ts'
-import {
-  columnStats,
-  composedFunctions,
-  requireClassification,
-  requireTabular,
-  withoutProgram,
-} from './_shared.ts'
+import { columnStats, composedFunctions, requireClassification, requireTabular, withoutProgram } from './_shared.ts'
 
 /** A standardised projection `z(x) = (x - mean) . direction / sd` of the rows of a feature matrix. */
 function projection(
