@@ -72,4 +72,76 @@ describe('network heads', () => {
     const het = C.distributionalConditional(D.families.gamlssNormal(), [(x) => x, (x) => x])
     expect(item(het.condition(Math.log(3)).stddev())).toBeCloseTo(3, 12)
   })
+  it('builds each family from a raw network output by the formulas of its link', () => {
+    const softplus = (x: number): number => Math.log1p(Math.exp(x))
+    const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x))
+    const [a, b] = [0.4, -0.7]
+    const rows: readonly (readonly [string, () => number, number])[] = [
+      ['bernoulli: mean is sigmoid(logit)', () => item(C.bernoulliFromOutput(2).mean()), sigmoid(2)],
+      [
+        'categorical: probability is softmax',
+        () => item(C.categoricalFromOutput([0, 1, 2]).prob(2)),
+        Math.exp(2) / (1 + Math.E + Math.exp(2)),
+      ],
+      ['poisson: rate is exp(output)', () => item(C.poissonFromOutput(Math.log(3)).mean()), 3],
+      [
+        'negative binomial: mean is exp of the first entry',
+        () => item(C.negativeBinomialFromOutput([Math.log(4), 0.3]).mean()),
+        4,
+      ],
+      [
+        'beta: mean is the share of the two softplus parameters',
+        () => item(C.betaFromOutput([a, b]).mean()),
+        (softplus(a) + 1e-6) / (softplus(a) + softplus(b) + 2e-6),
+      ],
+      [
+        'gamma: mean is concentration over rate',
+        () => item(C.gammaFromOutput([a, b]).mean()),
+        (softplus(a) + 1e-6) / (softplus(b) + 1e-6),
+      ],
+      [
+        'beta: variance',
+        () => item(C.betaFromOutput([a, b]).variance()),
+        (() => {
+          const p = softplus(a) + 1e-6
+          const q = softplus(b) + 1e-6
+          return (p * q) / ((p + q) ** 2 * (p + q + 1))
+        })(),
+      ],
+      [
+        'gamma: variance is concentration over rate squared',
+        () => item(C.gammaFromOutput([a, b]).variance()),
+        (softplus(a) + 1e-6) / (softplus(b) + 1e-6) ** 2,
+      ],
+    ]
+    for (const [name, value, expected] of rows) expect(value(), name).toBeCloseTo(expected, 10)
+    // A batch of outputs gives a batch of distributions, and a wrong last axis is refused.
+    expect(
+      C.betaFromOutput(
+        tensor([
+          [a, b],
+          [b, a],
+          [a, a],
+        ]),
+      ).batchShape,
+    ).toEqual([3])
+    expect(
+      C.gammaFromOutput(
+        tensor([
+          [a, b],
+          [b, a],
+        ]),
+      ).batchShape,
+    ).toEqual([2])
+    expect(
+      C.categoricalFromOutput(
+        tensor([
+          [0, 1, 2],
+          [2, 1, 0],
+        ]),
+      ).batchShape,
+    ).toEqual([2])
+    for (const make of [C.betaFromOutput, C.gammaFromOutput, C.negativeBinomialFromOutput])
+      expect(() => make([1, 2, 3]), make.name).toThrow(/last axis/)
+  })
 })
