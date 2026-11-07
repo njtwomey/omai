@@ -117,6 +117,11 @@ export interface GroupReport {
   readonly intervals?: GroupReportIntervals
   /** Warnings about the groups (too small to measure). */
   readonly warnings?: readonly string[]
+  /**
+   * Groups with fewer rows than this are left out of the disparities, as `SubgroupReport.minSize` does (default 1: only
+   * an empty group, whose rates are 0 by the convention of {@link tableRates}, is left out).
+   */
+  readonly minSize?: number
 }
 
 /**
@@ -125,7 +130,7 @@ export interface GroupReport {
  * @param record - The record without its `kind`.
  * @returns The record.
  * @throws MdmlError `shape` when a per-group field does not have one entry per group, a table is not 2 by 2, or
- *   the rows' columns differ in length; `value` when the reference is not a group.
+ *   the rows' columns differ in length; `value` when the reference is not a group or `minSize` is below 1.
  * @example
  * ```ts
  * import { groupReport, groupReportFromTables } from 'mdml-engine/exposition'
@@ -150,6 +155,8 @@ export function groupReport(record: Omit<GroupReport, 'kind'>): GroupReport {
       sameLength('groupReport', `roc[${g}].thresholds`, c.thresholds.length, c.fpr.length)
     }
   }
+  if (record.minSize !== undefined && !(record.minSize >= 1 && Number.isFinite(record.minSize)))
+    throw new MdmlError('value', `groupReport: minSize must be a finite number of rows >= 1, got ${record.minSize}`)
   if (record.operatingPoints !== undefined)
     sameLength('groupReport', 'operatingPoints', record.operatingPoints.length, k)
   if (record.scored !== undefined) {
@@ -209,8 +216,9 @@ function spread(values: readonly number[]): number {
  *
  * @param rates - Each group's rates.
  * @param reference - The reference group for disparate impact.
- * @param counts - Each group's number of rows; a group with none is left out of every gap (its rates are all 0 by the
- *   convention of {@link tableRates}, which would otherwise count as a group that is never selected).
+ * @param counts - Each group's number of rows; a group with fewer than `minSize` is left out of every gap (an empty group
+ *   has all rates 0 by the convention of {@link tableRates}, which would otherwise count as a group never selected).
+ * @param minSize - The fewest rows a group needs to count in the gaps (default 1).
  * @returns The disparities.
  * @example
  * ```ts
@@ -225,9 +233,11 @@ export function groupDisparities(
   rates: readonly GroupRateValues[],
   reference: number,
   counts?: readonly number[],
+  minSize = 1,
 ): GroupDisparity[] {
-  // A group with no rows has every rate 0 by the table's convention, not a rate: it is left out of the gaps.
-  const live = (g: number): boolean => counts === undefined || (counts[g] ?? 0) > 0
+  // A group with no rows has every rate 0 by the table's convention, not a rate: it is left out of the gaps, and so is
+  // a group too small to measure.
+  const live = (g: number): boolean => counts === undefined || (counts[g] ?? 0) >= Math.max(minSize, Number.MIN_VALUE)
   const pick = (r: GroupRateName): number[] => rates.filter((_, g) => live(g)).map((v) => v[r])
   const ref = rates[reference]?.selectionRate ?? 0
   const others = rates.filter((_, g) => g !== reference && live(g)).map((v) => v.selectionRate)
@@ -279,7 +289,7 @@ export function groupReportFromTables(input: GroupTablesInput): Omit<GroupReport
     counts,
     rates,
     overall: tableRates(total),
-    disparities: groupDisparities(rates, reference, counts),
+    disparities: groupDisparities(rates, reference, counts, input.minSize),
   }
 }
 
