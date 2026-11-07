@@ -717,6 +717,8 @@ oracle: jax and torch for derivative values; finite differences in property test
 - `events.ts`: event types `run`, `metric`, `tensor` (role: param, grad, state, activation, output, with full values,
   a summary, or a summary plus an indexed subsample), `message`, `episode`, `frame`, `checkpoint`, `log`, `end`; `Run`;
   zod schemas.
+  The interfaces and the zod schema are joined by a cast (`exactOptionalPropertyTypes`), so `events.test.ts` is what
+  keeps them one vocabulary: it fails when a field, a kind, a status or a role is on one side only.
 - `schema.ts`: `TraceSchema` (declared channels with descriptions, units and directions; tensor roles and shapes with
   named sizes; message payload fields), `channels` builder, `schemaToJson`, `validateAgainstSchema`.
 - `policy.ts`: `TracePolicy` (channel selection, frequency: every n, log-spaced, on change with a tolerance, first and
@@ -731,6 +733,10 @@ oracle: jax and torch for derivative values; finite differences in property test
 - `algorithm.ts`: `Algorithm<S, K>` (`init`, `step`, `done`, `observe`, `schema`, `serialise`), `StepContext<K>`,
   `runAlgorithm`, `iterate` (a generator for live views), `runFor` (budgeted slices that continue exactly; the budget
   is a step count or milliseconds of an injected clock, since published code reads no clocks).
+  The three drivers are loops over one internal stepper (keys, the rule that ends a run, observe and checkpoint order):
+  `done` is asked at every step, the last included, and a run that reaches its budget with no verdict is `completed`,
+  whichever driver runs it. `_keys.ts` holds the key tags under a run's root key (init, steps, a session's make), read
+  by the drivers and the session and nowhere else.
 - `nesting.ts`: child runs (`subRun`, keyed from the outer step, with the policy `childPolicy` derives); run trees are
   read back with `runTree` in `query.ts`; `mountContext` (the step context of an inner method mounted under a prefix,
   typed `StepContext<K>` over an outer `StepContext<Prefixed<P, K>>`).
@@ -774,8 +780,9 @@ oracle: jax and torch for derivative values; finite differences in property test
   projections; `K` inferred from the contract), `Session` (`advance`, `stateAt`, `fork`, `probe`, `project`, `run`,
   `stepsOf`) and `session` with its modes (eager, live, eager to a point).
 - `serialise.ts`: `stateToJson` and `stateFromJson`, generic checkpoint serialisation of states made of tensors, typed
-  arrays, keys and plain trees; `numberToJson`/`numbersToJson` and their inverses keep `NaN` and infinities through a
-  JSON round trip (as strings).
+  arrays, keys and plain trees, in the one codec of `base/json.ts` (`toJson`/`fromJson`; the tensor is the only thing
+  added here); `numberToJson`/`numbersToJson` and their inverses keep `NaN` and infinities through a JSON round trip
+  (as the strings of `encodeNumber`; the strings `Infinity`, `-Infinity` and `NaN` still read).
 - `replay.ts`: `exportRun`, `parseRun`, `replay`, `mergeRuns`, `isRun`.
 - `query.ts`: `metricSeries`, `tensorSeries`, `messages`, `episodes`, `frames`, `runTree`, `summary`, `diffRuns`.
 
@@ -5658,7 +5665,7 @@ the encyclopedia's purview. What such a page needs is in the engine (a `Method` 
 (`react/session/`: the hook, the player, the settings and the panels); the gallery's `animation/` section shows the
 player on a toy method.
 
-**Where the shared pieces live.** There is no `methods/shared/`: what methods share is library code (`methods/README.md`, `LIB.md`). `lib/trace/modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters, `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible`). `lib/space/tables.ts`: `optionTable`, the same shape for options that are values (knobs, properties, `make`). `lib/optim/solvers.ts`: `smoothSolvers` (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent as one slot) and `loggedSolver`; `lib/optim/schedule-table.ts`: `schedules`; `lib/losses/tables.ts`: `regressionLosses`, `classificationLosses` (with focal and a label-smoothed logistic), `multiclassLosses` (cross-entropy, label smoothing, focal and the noisy-label losses, with `bounded`, `noiseRobust`, `proper` and `needsTransition` among their properties) and `penalties` with their properties.
+**Where the shared pieces live.** There is no `methods/shared/`: what methods share is library code (`methods/README.md`, `LIB.md`). `lib/trace/modes.ts`: a table of modes for one slot, one `union` space over the modes' knobs and one dispatcher from a configuration to the mode it names (`make` for the library algorithm, `params` for the common fitted parameters, `extras` for the paths only that mode can say, `needs` as the validity table beside the mode, `admissible`). `lib/space/tables.ts`: `optionTable`, the same shape for options that are values (knobs, properties, `make`); `modes` is built on it (a mode is an option whose value builds an algorithm). `lib/optim/solvers.ts`: `smoothSolvers` (gradient descent with its step rules, conjugate gradient, Newton, BFGS, L-BFGS, coordinate descent as one slot) and `loggedSolver`; `lib/optim/schedule-table.ts`: `schedules`; `lib/losses/tables.ts`: `regressionLosses`, `classificationLosses` (with focal and a label-smoothed logistic), `multiclassLosses` (cross-entropy, label smoothing, focal and the noisy-label losses, with `bounded`, `noiseRobust`, `proper` and `needsTransition` among their properties) and `penalties` with their properties.
 
 **Datasets live in the core.** The generators, vendored real datasets and themed dataset collections of 5.18 are the
 core domain `lib/datasets/` (at the top of the core's import graph, so exact truths can come from any core domain, such as

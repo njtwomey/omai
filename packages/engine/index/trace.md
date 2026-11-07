@@ -10,9 +10,9 @@ Recording what algorithms do and running them as sessions: the `Algorithm` contr
 - structure `session.ts` (file): Methods and sessions: drive, seek and fork a run step by step. `src/lib/trace/session.ts:1` `mdml-engine/trace`
 
 - function `defineContract`: Declare a contract so its paths keep literal types. `src/lib/trace/contract.ts:178` `mdml-engine/trace`
-- function `defineMethod`: Declare how to build a run from its configuration and contract. `src/lib/trace/session.ts:81` `mdml-engine/trace`
-- function `modes`: Build the table of modes for one slot, with each mode's knobs. `src/lib/trace/modes.ts:123` `mdml-engine/trace`
+- function `defineMethod`: Declare how to build a run from its configuration and contract. `src/lib/trace/session.ts:82` `mdml-engine/trace`
+- function `modes`: Build the table of modes for one slot, with each mode's knobs. `src/lib/trace/modes.ts:133` `mdml-engine/trace`
 - function `recorder`: A tracer that keeps events in memory to replay or plot. `src/lib/trace/tracer.ts:64` `mdml-engine/trace`
 - function `resume`: Continue a run exactly from a stored checkpoint. `src/lib/trace/checkpoint.ts:57` `mdml-engine/trace`
-- function `runAlgorithm`: Run an Algorithm and record a traced run. `src/lib/trace/algorithm.ts:172` `mdml-engine/trace`
-- function `session`: Open a session on a method to step, seek and fork. `src/lib/trace/session.ts:199` `mdml-engine/trace`
+- function `runAlgorithm`: Run an Algorithm and record a traced run. `src/lib/trace/algorithm.ts:234` `mdml-engine/trace`
+- function `session`: Open a session on a method to step, seek and fork. `src/lib/trace/session.ts:200` `mdml-engine/trace`
