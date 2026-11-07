@@ -3,7 +3,9 @@
  * examples: the loop of every stochastic learner. Each step applies the optimiser's update at the scheduled learning
  * rate, then draws the next batch from the step's key (without replacement, so the same run draws the same batches
  * however it was paused or sought) and evaluates the objective and gradient there. The state is the iterate, its
- * objective and gradient, the optimiser's own state and the step count, all of which serialise.
+ * objective and gradient, the optimiser's own state and the step count, all of which serialise. The gradient tolerance
+ * is tested on the gradient of the whole objective, which with a batch is evaluated once per epoch (never on the
+ * batch's gradient, which is exactly zero whenever the examples it drew have no loss).
  */
 
 import type { Json } from '../base/index.ts'
@@ -45,10 +47,7 @@ export interface GradientOptions {
   readonly batch?: number | null
   /** How many examples the objective sums over; required with a `batch`. */
   readonly batches?: Batches
-  /**
-   * Stop with status `converged` once the infinity norm of the gradient of the whole objective falls to this (default
-   * 1e-5); with a batch it is tested on the whole gradient once per epoch, never on the batch's.
-   */
+  /** Stop with status `converged` once the infinity norm of the gradient falls to this (default 1e-5). */
   readonly gradTol?: number
 }
 

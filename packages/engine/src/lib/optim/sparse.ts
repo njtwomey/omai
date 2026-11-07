@@ -198,7 +198,7 @@ export function matchingPursuit(dictionary: TensorLike, y: TensorLike, options: 
 
 /**
  * Orthogonal matching pursuit (Pati et al. 1993; sklearn's Cholesky OMP) as a traced algorithm: pick the atom most
- * correlated with the residual, then refit all selected atoms by least squares (an updated Cholesky factor of their
+ * correlated with the residual, then refit all selected atoms by least squares (a Cholesky solve of their
  * Gram matrix). Stops after `nNonzeroCoefs` atoms or once the squared residual falls to `tol`.
  *
  * @param dictionary - The dictionary `[m, k]`, atoms as columns.
@@ -223,6 +223,13 @@ export function orthogonalMatchingPursuitAlgorithm(
   const maxFeatures = tol !== undefined ? d.cols : (options.nNonzeroCoefs ?? Math.max(Math.floor(d.cols / 10), 1))
   const alpha = correlations(d, yv)
   const eps = 2.220446049250313e-16
+  // The atoms as contiguous rows, so a Gram entry is a dot product of two views and not of two fresh copies.
+  const atoms = Float64Array.from(
+    { length: d.cols * d.rows },
+    (_, q) => d.data[(q % d.rows) * d.cols + Math.floor(q / d.rows)] ?? 0,
+  )
+  const atom = (j: number): Vec => atoms.subarray(j * d.rows, (j + 1) * d.rows)
+  const yy = ddot(yv, yv)
   return {
     name: 'orthogonalMatchingPursuit',
     config: { nNonzeroCoefs: maxFeatures, tol: tol ?? null } as Json,
@@ -236,7 +243,8 @@ export function orthogonalMatchingPursuitAlgorithm(
     step: (s) => {
       const c = correlations(d, s.residual)
       const lam = argmaxOf(Float64Array.from(c, Math.abs))
-      if (s.support.includes(lam) || (alpha[lam] ?? 0) ** 2 < eps)
+      // An atom is negligible when its cosine with the signal is: relative to |y| and |atom|, so the data's scale is free.
+      if (s.support.includes(lam) || (alpha[lam] ?? 0) ** 2 <= eps * yy * ddot(atom(lam), atom(lam)))
         return {
           ...s,
           stop: { status: 'converged', message: 'ended early: atom already selected (linear dependence)' },
@@ -245,7 +253,11 @@ export function orthogonalMatchingPursuitAlgorithm(
       const ds = columns(d, support)
       const gram = new Float64Array(support.length * support.length)
       for (const [a, i] of support.entries())
-        for (const [b, j] of support.entries()) gram[a * support.length + b] = ddot(column(d, i), column(d, j))
+        for (let b = 0; b <= a; b++) {
+          const g = ddot(atom(i), atom(support[b] ?? 0))
+          gram[a * support.length + b] = g
+          gram[b * support.length + a] = g
+        }
       let coefs: number[]
       try {
         const l = cholesky(fromStorage(gram, [support.length, support.length], 'float64'))
