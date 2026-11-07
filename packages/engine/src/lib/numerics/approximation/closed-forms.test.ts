@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { exp, item, log, mul, sin, sqrt, square, sum, toArray, type Value } from '../../tensor/index.ts'
+import { exp, item, log, mul, sin, sqrt, square, sum, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import { monicFromNodes, polysub } from '../polynomial/index.ts'
 import { iv } from '../special/index.ts'
 import * as A from './index.ts'
@@ -117,7 +117,7 @@ describe('approximation against closed forms', () => {
       for (const x of [-2, -1.3, 0, 0.2, 1.7, 3])
         expect(item(f.evaluate(x)), `chebfun at ${x}`).toBeCloseTo(Math.sin(5 * x), 12)
       expect(f.sum()).toBeCloseTo((Math.cos(-10) - Math.cos(15)) / 5, 11)
-      expect(f.roots().filter((r) => Math.abs(r) < 1e-9)).toHaveLength(1)
+      expect(toFlat(f.roots()).filter((r) => Math.abs(r) < 1e-9)).toHaveLength(1)
       expect(() => A.chebfun((x) => exp(mul(sqrt(square(x)), 1)), [-1, 1], { maxPoints: 5 })).toThrow(
         expect.objectContaining({ code: 'convergence' }),
       )
