@@ -7,11 +7,17 @@
 
 import { MdmlError } from '../../base/index.ts'
 import {
+  add,
+  allocate,
+  arg,
+  bind1,
   concat,
   concreteOrThrow,
+  definePrimitive,
   fromStorage,
   matmul,
   mul,
+  type Primitive,
   primalOf,
   promoteFloat,
   reshape,
@@ -169,9 +175,51 @@ export function toDense(a: CsrMatrix): Value {
   return reshape(dense, [m, n])
 }
 
+/** The fixed structure of a CSR matrix, the static parameters of {@link spmvPrimitive}. */
+interface SpmvParams {
+  readonly indptr: Int32Array
+  readonly indices: Int32Array
+  readonly rows: Int32Array
+  readonly cols: number
+}
+
 /**
- * The sparse matrix-vector product y = A x (differentiable in A's values and in x): gather x at the stored columns,
- * multiply, and sum each row.
+ * y = A x for a CSR structure, with the stored values and x as inputs: a loop over the typed arrays, summing each row in
+ * stored order. Bilinear in (values, x), so its derivative rules are the same product and the gather/scatter pair.
+ */
+const spmvPrimitive: Primitive<SpmvParams> = definePrimitive<SpmvParams>({
+  name: 'spmv',
+  abstractEval: (xs, p) => [{ shape: [p.indptr.length - 1], dtype: arg(xs, 0).dtype }],
+  impl: ([values, x], { indptr, indices }) => {
+    const vt = values as NonNullable<typeof values>
+    const xt = x as NonNullable<typeof x>
+    const v = vt.data
+    const xd = xt.data
+    const m = indptr.length - 1
+    const out = allocate(vt.dtype, m)
+    for (let i = 0; i < m; i++) {
+      let s = 0
+      for (let k = indptr[i] ?? 0, end = indptr[i + 1] ?? 0; k < end; k++) s += (v[k] ?? 0) * (xd[indices[k] ?? 0] ?? 0)
+      out[i] = s
+    }
+    return [vt.backend.wrap(vt.dtype, [m], out)]
+  },
+  jvp: ([values, x], [tv, tx], p) => {
+    const dv = tv === null || tv === undefined ? null : bind1(spmvPrimitive, [tv, x as Value], p)
+    const dx = tx === null || tx === undefined ? null : bind1(spmvPrimitive, [values as Value, tx], p)
+    return [dv === null ? dx : dx === null ? dv : add(dv, dx)]
+  },
+  vjp: ([g], [values, x], p) => {
+    if (g === null || g === undefined) return [null, null]
+    const gRows = take(g, fromStorage(p.rows, [p.rows.length], 'int32'), 0)
+    const idx = fromStorage(p.indices, [p.indices.length], 'int32')
+    return [mul(gRows, take(x as Value, idx, 0)), segmentSum(mul(values as Value, gRows), idx, p.cols)]
+  },
+})
+
+/**
+ * The sparse matrix-vector product y = A x (differentiable in A's values and in x): a loop over the stored entries
+ * that sums each row in stored order.
  *
  * @param a - The matrix `[m, n]`.
  * @param x - Vector `[n]`.
@@ -184,11 +232,10 @@ export function toDense(a: CsrMatrix): Value {
  * ```
  */
 export function spmv(a: CsrMatrix, x: TensorLike): Value {
-  const [xv] = promoteFloat(x) as [Value]
+  const [vals, xv] = promoteFloat(a.values, x) as [Value, Value]
   if (xv.shape.length !== 1 || xv.shape[0] !== a.shape[1])
     throw new MdmlError('shape', 'spmv: x must have one entry per column')
-  const gathered = take(xv, fromStorage(a.indices, [a.indices.length], 'int32'), 0)
-  return segmentSum(mul(a.values, gathered), fromStorage(a.rows, [a.rows.length], 'int32'), a.shape[0])
+  return bind1(spmvPrimitive, [vals, xv], { indptr: a.indptr, indices: a.indices, rows: a.rows, cols: a.shape[1] })
 }
 
 /**
