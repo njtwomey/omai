@@ -25,7 +25,7 @@ export interface Context {
   readonly policy: TracePolicy
   readonly backend: Backend
   readonly dtype: Extract<DType, 'float64' | 'float32'>
-  /** A key for a named purpose: the same names always give the same key. */
+  /** A key for a named purpose: the same names always give the same key (numeric names are integers in `[0, 2^32)`). */
   key(...names: readonly (string | number)[]): Key
 }
 

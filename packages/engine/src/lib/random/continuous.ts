@@ -19,6 +19,7 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { bitsBlock } from './_bits.ts'
+import { assertPositive, assertScale } from './_check.ts'
 import { unitDouble, unitDoubles } from './_unit.ts'
 import { gammaOne, logGammaOne, truncatedOne } from './_variates.ts'
 import { foldIn, type Key, split } from './key.ts'
@@ -36,6 +37,7 @@ function fill(shape: Shape, draw: (i: number) => number): Tensor<'float64'> {
  * @param shape - Output shape.
  * @param options - `low` (default 0) and `high` (default 1).
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` unless `low` and `high` are finite with `low <= high`.
  * @concept counter-based-rng
  * @index function Uniform samples from a key and a shape.
  * @example
@@ -51,6 +53,9 @@ export function uniform(
 ): Tensor<'float64'> {
   const low = options.low ?? 0
   const high = options.high ?? 1
+  if (!(Number.isFinite(low) && Number.isFinite(high) && high >= low)) {
+    throw new MdmlError('value', `uniform: need finite low <= high, got [${low}, ${high}]`)
+  }
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => low + (high - low) * (u[i] ?? 0))
 }
@@ -116,6 +121,7 @@ export function uniformStream(k: Key, block = 256, from = 0): () => number {
  * @param shape - Output shape.
  * @param options - `loc` (default 0) and `scale` (default 1).
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` for a negative or non-finite `scale`.
  * @concept normal-distribution
  * @index function Normal samples from a key and a shape, like jax.random.normal.
  * @example
@@ -132,6 +138,7 @@ export function normal(
 ): Tensor<'float64'> {
   const loc = options.loc ?? 0
   const scale = options.scale ?? 1
+  assertScale('normal', 'scale', scale)
   const n = sizeOf(shape)
   const u = unitDoubles(k, 2 * Math.ceil(n / 2))
   const out = new Float64Array(n)
@@ -177,6 +184,7 @@ export function truncatedNormal(k: Key, shape: Shape, lower: number, upper: numb
  * @param shape - Output shape.
  * @param rate - The rate (default 1).
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` unless `rate` is finite and positive.
  * @example
  * ```ts
  * import { key, exponential } from 'mdml-engine/random'
@@ -184,6 +192,7 @@ export function truncatedNormal(k: Key, shape: Shape, lower: number, upper: numb
  * ```
  */
 export function exponential(k: Key, shape: Shape, rate = 1): Tensor<'float64'> {
+  assertPositive('exponential', 'rate', rate)
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => -Math.log(1 - (u[i] ?? 0)) / rate)
 }
@@ -196,6 +205,7 @@ export function exponential(k: Key, shape: Shape, rate = 1): Tensor<'float64'> {
  * @param loc - Location.
  * @param scale - Scale.
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` for a negative or non-finite `scale`.
  * @example
  * ```ts
  * import { key, laplace } from 'mdml-engine/random'
@@ -203,6 +213,7 @@ export function exponential(k: Key, shape: Shape, rate = 1): Tensor<'float64'> {
  * ```
  */
 export function laplace(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float64'> {
+  assertScale('laplace', 'scale', scale)
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => {
     // Shift by half an ulp of the grid so v lies in (-0.5, 0.5) and the logarithm is finite.
@@ -219,6 +230,7 @@ export function laplace(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float
  * @param loc - Location.
  * @param scale - Scale.
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` for a negative or non-finite `scale`.
  * @example
  * ```ts
  * import { key, logistic } from 'mdml-engine/random'
@@ -226,6 +238,7 @@ export function laplace(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float
  * ```
  */
 export function logistic(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float64'> {
+  assertScale('logistic', 'scale', scale)
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => {
     const v = Math.min(Math.max(u[i] ?? 0, 1e-300), 1 - 1e-16)
@@ -241,6 +254,7 @@ export function logistic(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'floa
  * @param loc - Location.
  * @param scale - Scale.
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` for a negative or non-finite `scale`.
  * @example
  * ```ts
  * import { key, gumbel } from 'mdml-engine/random'
@@ -248,6 +262,7 @@ export function logistic(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'floa
  * ```
  */
 export function gumbel(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float64'> {
+  assertScale('gumbel', 'scale', scale)
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => loc - scale * Math.log(-Math.log(Math.max(u[i] ?? 0, 1e-300))))
 }
@@ -260,6 +275,7 @@ export function gumbel(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float6
  * @param loc - Location.
  * @param scale - Scale.
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` for a negative or non-finite `scale`.
  * @example
  * ```ts
  * import { key, cauchy } from 'mdml-engine/random'
@@ -267,6 +283,7 @@ export function gumbel(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float6
  * ```
  */
 export function cauchy(k: Key, shape: Shape, loc = 0, scale = 1): Tensor<'float64'> {
+  assertScale('cauchy', 'scale', scale)
   const u = unitDoubles(k, sizeOf(shape))
   return fill(shape, (i) => loc + scale * Math.tan(Math.PI * ((u[i] ?? 0) - 0.5)))
 }
@@ -348,6 +365,7 @@ export function beta(k: Key, shape: Shape, a: number, b: number): Tensor<'float6
  * @param shape - Output shape.
  * @param df - Degrees of freedom.
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` unless `df` is finite and positive.
  * @example
  * ```ts
  * import { key, chisquare } from 'mdml-engine/random'
@@ -355,6 +373,7 @@ export function beta(k: Key, shape: Shape, a: number, b: number): Tensor<'float6
  * ```
  */
 export function chisquare(k: Key, shape: Shape, df: number): Tensor<'float64'> {
+  assertPositive('chisquare', 'df', df)
   const g = gamma(k, shape, df / 2)
   return fill(shape, (i) => 2 * (g.data[i] ?? 0))
 }
@@ -366,6 +385,7 @@ export function chisquare(k: Key, shape: Shape, df: number): Tensor<'float64'> {
  * @param shape - Output shape.
  * @param df - Degrees of freedom.
  * @returns A float64 tensor.
+ * @throws MdmlError with code `value` unless `df` is finite and positive.
  * @example
  * ```ts
  * import { key, studentT } from 'mdml-engine/random'
@@ -373,6 +393,7 @@ export function chisquare(k: Key, shape: Shape, df: number): Tensor<'float64'> {
  * ```
  */
 export function studentT(k: Key, shape: Shape, df: number): Tensor<'float64'> {
+  assertPositive('studentT', 'df', df)
   const [kz, kc] = split(k) as [Key, Key]
   const z = normal(kz, shape)
   const c = chisquare(kc, shape, df)
@@ -448,6 +469,7 @@ export function multivariateNormal(k: Key, mean: TensorLike, scaleTril: TensorLi
  * @param mu - Mean direction.
  * @param kappa - Concentration (non-negative).
  * @returns A float64 tensor of angles in (-pi, pi].
+ * @throws MdmlError with code `value` for a negative or non-finite `kappa`.
  * @example
  * ```ts
  * import { key, vonMises } from 'mdml-engine/random'
@@ -455,6 +477,7 @@ export function multivariateNormal(k: Key, mean: TensorLike, scaleTril: TensorLi
  * ```
  */
 export function vonMises(k: Key, shape: Shape, mu: number, kappa: number): Tensor<'float64'> {
+  assertScale('vonMises', 'kappa', kappa)
   const next = uniformStream(k)
   if (kappa < 1e-8) return fill(shape, () => Math.PI * (2 * next() - 1))
   const tau = 1 + Math.sqrt(1 + 4 * kappa * kappa)

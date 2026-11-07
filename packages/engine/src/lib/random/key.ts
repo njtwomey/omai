@@ -77,6 +77,8 @@ export function split(k: Key, n = 2): Key[] {
  * @param k - The parent key.
  * @param data - An unsigned 32-bit integer.
  * @returns The derived key; the same inputs always give the same key.
+ * @throws MdmlError with code `value` unless `data` is an integer in `[0, 2^32)` (a wrapped or truncated part would
+ *   share its key with another).
  * @index function Derive a key from a parent key and an integer (a step).
  * @example
  * ```ts
@@ -85,6 +87,9 @@ export function split(k: Key, n = 2): Key[] {
  * ```
  */
 export function foldIn(k: Key, data: number): Key {
+  if (!Number.isInteger(data) || data < 0 || data > 0xffffffff) {
+    throw new MdmlError('value', `foldIn: data must be an integer in [0, 2^32), got ${data}`)
+  }
   const [w0, w1] = philox4x32([data >>> 0, 0, 0, FOLD_TAG], k.words)
   return { kind: 'key', words: [w0, w1] }
 }
@@ -140,8 +145,9 @@ function hashName(name: string): number {
  * has been drawn, which is how contexts give every part of a program its own reproducible randomness.
  *
  * @param seed - The root seed.
- * @param path - Names (hashed) and non-negative integers (folded in directly).
+ * @param path - Names (hashed) and non-negative integers below 2^32 (folded in directly).
  * @returns The derived key.
+ * @throws MdmlError with code `value` for a numeric part that is not an integer in `[0, 2^32)`.
  * @concept counter-based-rng
  * @example
  * ```ts
