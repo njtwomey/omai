@@ -289,7 +289,11 @@ export function linearSeries<P>(
   order: number,
 ): MaybeZero[][] {
   const rule = primitive.jvp
-  if (rule === undefined) throw new MdmlError('not-differentiable', `primitive ${primitive.name} has no jvp rule`)
+  if (rule === undefined) {
+    throw new MdmlError('not-differentiable', `primitive ${primitive.name} has no jvp rule`, {
+      primitive: primitive.name,
+    })
+  }
   const primals = series.map(primal)
   const out: MaybeZero[][] = outputs.map((o) => [o])
   for (let k = 1; k <= order; k++) {
