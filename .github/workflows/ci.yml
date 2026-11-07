@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   static:
-    name: barrels, layers, lint
+    name: barrels, layers, API surface, lint
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -31,8 +31,8 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           uv sync --group dev
-      - name: Barrels, agent index, layers and lint
-        run: make barrels-check agent-index-check layers lint
+      - name: Barrels, agent index, layers, API surface and lint
+        run: make barrels-check agent-index-check layers api-surface-check lint
 
   types:
     name: type-check

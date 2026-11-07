@@ -127,7 +127,7 @@ verify: ## Checks scoped to what changed against BASE (default main): the gate f
 	$(NODE) scripts/verify.ts --base $(or $(BASE),main)
 
 .PHONY: check
-check: barrels-check agent-index-check layers lint typecheck test examples ## Everything, every test (periodic full run; `verify` is the per-change gate)
+check: barrels-check agent-index-check layers api-surface-check lint typecheck test examples ## Everything, every test (periodic full run; `verify` is the per-change gate)
 
 .PHONY: clean
 clean: ## Remove build outputs

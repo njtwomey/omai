@@ -5,7 +5,8 @@
  *
  * The change is everything that differs from the merge base with `--base` (default `main`), plus staged, unstaged and
  * untracked files. Then:
- * - Always, because they take seconds over the whole repo: barrels, the agent index, layers, Biome, banned globals, ruff and tsc.
+ * - Always, because they take seconds over the whole repo: barrels, the agent index, layers, the public API surface digest, Biome,
+ *   banned globals, ruff and tsc.
  * - Tests: `vitest related` on the changed TypeScript, which runs every test that imports a changed file directly or
  *   transitively (so a change to a shared module tests its dependents), plus the golden tests that load a changed
  *   fixture.
@@ -106,6 +107,7 @@ function plan(files: readonly string[]): Step[] {
     { label: 'barrels', command: ['node', 'scripts/barrels.ts', '--check'] },
     { label: 'agent index', command: ['node', 'scripts/agent-index.ts', '--check'] },
     { label: 'layers', command: ['node', 'scripts/layers.ts'] },
+    { label: 'api surface', command: ['node', 'scripts/api-surface.ts', '--check'] },
     { label: 'biome', command: ['pnpm', 'exec', 'biome', 'check', '.'] },
     { label: 'banned globals', command: ['node', 'scripts/banned.ts'] },
     { label: 'ruff', command: ['uv', 'run', '--group', 'dev', 'ruff', 'check', 'oracle', 'scripts'] },

@@ -7679,7 +7679,9 @@ library for the same computation. They do not set a higher bar than that library
 - `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `docs-catalogue`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
   `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
-- Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, then only the tests,
+- Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, among them the public API
+  surface digest `make api-surface-check`, which fails on any export added, removed or retyped until `make api-surface`
+  is run on purpose, then only the tests,
   examples, type checks and fixtures related to the change; everything when shared infrastructure changes) and
   `make check` (which includes `make examples`) with `make fixtures-check` as the periodic full run after a batch of
   merges and before a release.
