@@ -12,4 +12,4 @@ Evaluation metrics, scikit-learn and torchmetrics style: classification, regress
 - function `f1Score`: F1 score, with precision, recall and F-beta beside it. `src/lib/metrics/classification.ts:341` `mdml-engine/metrics`
 - function `meanSquaredError`: Mean squared error; R2, MAE and the rest sit beside it. `src/lib/metrics/regression.ts:41` `mdml-engine/metrics`
 - function `r2Score`: Coefficient of determination. `src/lib/metrics/regression.ts:151` `mdml-engine/metrics`
-- function `rocAucScore`: Area under the ROC curve; rocCurve gives the curve. `src/lib/metrics/curves.ts:207` `mdml-engine/metrics`
+- function `rocAucScore`: Area under the ROC curve; rocCurve gives the curve. `src/lib/metrics/curves.ts:211` `mdml-engine/metrics`

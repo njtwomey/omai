@@ -7,12 +7,12 @@ Statistics, scipy.stats and statsmodels style: descriptive statistics, hypothesi
 - function `correlation.ts` (file): Pearson, Spearman and Kendall correlations with tests. `src/lib/stats/correlation.ts:1` `mdml-engine/stats`
 - function `descriptive.ts` (file): Mean, variance, skewness, kurtosis, mode and describe, with weights. `src/lib/stats/descriptive.ts:1` `mdml-engine/stats`
 
-- function `bootstrap`: Bootstrap confidence intervals for any statistic. `src/lib/stats/resampling.ts:462` `mdml-engine/stats`
+- function `bootstrap`: Bootstrap confidence intervals for any statistic. `src/lib/stats/resampling.ts:466` `mdml-engine/stats`
 - function `gaussianKde`: Gaussian kernel density estimate with bandwidth rules. `src/lib/stats/density.ts:236` `mdml-engine/stats`
 - function `permutationTest`: Permutation test of any statistic, exact when feasible. `src/lib/stats/resampling.ts:275` `mdml-engine/stats`
 - function `quantile`: Sample quantiles by any of the nine Hyndman-Fan definitions. `src/lib/stats/quantiles.ts:125` `mdml-engine/stats`
 
-- table `mleSolvers`: Solvers of the maximum-likelihood slot. `src/lib/stats/fit.ts:232` `mdml-engine/stats`
+- table `mleSolvers`: Solvers of the maximum-likelihood slot. `src/lib/stats/fit.ts:237` `mdml-engine/stats`
 
 ## stats/tests
 
@@ -23,6 +23,6 @@ Hypothesis tests, scipy.stats, statsmodels and pingouin style, available as `mdm
 
 - function `chi2Contingency`: Chi-square test of independence on a contingency table. `src/lib/stats/tests/contingency.ts:87` `mdml-engine/stats/tests`
 - function `ks2samp`: Two-sample Kolmogorov-Smirnov test. `src/lib/stats/tests/two-sample.ts:36` `mdml-engine/stats/tests`
-- function `mannWhitneyU`: Mann-Whitney U rank test. `src/lib/stats/tests/nonparametric.ts:79` `mdml-engine/stats/tests`
+- function `mannWhitneyU`: Mann-Whitney U rank test. `src/lib/stats/tests/nonparametric.ts:80` `mdml-engine/stats/tests`
 - function `shapiro`: Shapiro-Wilk normality test. `src/lib/stats/tests/distribution.ts:373` `mdml-engine/stats/tests`
 - function `ttestInd`: Independent two-sample t test. `src/lib/stats/tests/means.ts:109` `mdml-engine/stats/tests`

@@ -47,7 +47,7 @@ mdml-engine/logic	403	1c864801b15e
 mdml-engine/logic/ilp	65	6145f87e08f3
 mdml-engine/losses	194	b3ecd280cb73
 mdml-engine/manifold	80	e5aa7b4a6d19
-mdml-engine/metrics	334	a3bb009a2d6b
+mdml-engine/metrics	334	ac88eccb759b
 mdml-engine/mixture	33	21b4ec24ba19
 mdml-engine/nn	791	8227f0b0bbe8
 mdml-engine/nn/blocks	256	21f1496937b6
@@ -83,9 +83,9 @@ mdml-engine/signal/audio	86	1a4a68259aeb
 mdml-engine/signal/image	103	c4af8b3c017e
 mdml-engine/sketches	105	ff5b4079c6f6
 mdml-engine/space	52	2d1bcd52100f
-mdml-engine/stats	270	194dd3a3bd24
-mdml-engine/stats/smoothing	44	8bd769dc4e6a
-mdml-engine/stats/tests	168	7284d88ec4b4
+mdml-engine/stats	270	c1c25c76846e
+mdml-engine/stats/smoothing	44	e0556d2ccd75
+mdml-engine/stats/tests	168	165357a3a7a7
 mdml-engine/stochastic	347	76b425fba1b9
 mdml-engine/survival	59	8973e49dca01
 mdml-engine/svm	30	99c345780711
@@ -119,4 +119,4 @@ mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17945	103b15d1fd77
+total	17945	6fb020ef574c
