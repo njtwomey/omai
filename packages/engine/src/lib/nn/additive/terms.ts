@@ -8,7 +8,7 @@
  * the output penalty and weight decay of networks.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, numberOr } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   choice,
@@ -273,11 +273,6 @@ const columnsOf = (sample: Value | undefined, features: readonly number[]): Valu
   )
 }
 
-const num = (knobs: Readonly<Record<string, SpaceValue>>, name: string, fallback: number): number => {
-  const v = knobs[name]
-  return typeof v === 'number' ? v : fallback
-}
-
 const NONE_SMOOTHNESS: BuiltTerm['smoothness'] = () => undefined
 const NONE_REGULARISATION: BuiltTerm['regularisation'] = () => undefined
 const NONE_DESIGN: BuiltTerm['design'] = () => undefined
@@ -348,16 +343,16 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
         inFeatures: 1,
         outFeatures: 1,
         bias: false,
-        interiorKnots: num(k, 'interiorKnots', 8),
-        degree: num(k, 'degree', 3),
+        interiorKnots: numberOr(k, 'interiorKnots', 8),
+        degree: numberOr(k, 'degree', 3),
         key: ctx.key,
         ...(k['knots'] === undefined ? {} : { knots: k['knots'] }),
         ...(k['shape'] === undefined ? {} : { shape: k['shape'] }),
         ...(k['boundary'] === 'extended' ? { boundary: 'extended' as const } : {}),
         ...(sample === undefined ? {} : { sample }),
       })
-      const lambda = num(k, 'lambda', ctx.lambda)
-      const order = num(k, 'order', 2)
+      const lambda = numberOr(k, 'lambda', ctx.lambda)
+      const order = numberOr(k, 'order', 2)
       return {
         module: layer,
         kind: 'spline',
@@ -395,21 +390,21 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
     (k) => (features, label, ctx) => {
       const net = featureNet(
         features.length,
-        num(k, 'width', 16),
-        num(k, 'depth', 2),
+        numberOr(k, 'width', 16),
+        numberOr(k, 'depth', 2),
         typeof k['unit'] === 'string' ? k['unit'] : 'relu',
-        num(k, 'dropout', 0),
-        num(k, 'initMean', 3),
+        numberOr(k, 'dropout', 0),
+        numberOr(k, 'initMean', 3),
         ctx.key,
       )
-      const outputPenalty = num(k, 'outputPenalty', 0)
-      const weightDecay = num(k, 'weightDecay', 0)
+      const outputPenalty = numberOr(k, 'outputPenalty', 0)
+      const weightDecay = numberOr(k, 'weightDecay', 0)
       return {
         module: net,
         kind: 'net',
         features,
         label,
-        featureDropout: num(k, 'featureDropout', 0),
+        featureDropout: numberOr(k, 'featureDropout', 0),
         smoothness: NONE_SMOOTHNESS,
         regularisation:
           outputPenalty === 0 && weightDecay === 0
@@ -466,14 +461,14 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
       if (features.length !== 2) throw new MdmlError('value', `tensorSpline term ${label}: takes two features`)
       const sample = columnsOf(ctx.sample, features)
       const surface = new TensorSpline2d({
-        interiorKnots: num(k, 'interiorKnots', 5),
-        degree: num(k, 'degree', 3),
+        interiorKnots: numberOr(k, 'interiorKnots', 5),
+        degree: numberOr(k, 'degree', 3),
         key: ctx.key,
         ...(k['knots'] === undefined ? {} : { knots: k['knots'] }),
         ...(sample === undefined ? {} : { sample }),
       })
-      const lambda = num(k, 'lambda', ctx.lambda)
-      const order = num(k, 'order', 2)
+      const lambda = numberOr(k, 'lambda', ctx.lambda)
+      const order = numberOr(k, 'order', 2)
       return {
         module: surface,
         kind: 'tensorSpline',

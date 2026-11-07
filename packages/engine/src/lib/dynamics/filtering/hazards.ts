@@ -9,11 +9,8 @@
 import { MdmlError } from '../../base/index.ts'
 import { betainc, gammaincc } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
+import { positive } from './_check.ts'
 import { survivalHazard } from './changepoint.ts'
-
-function positive(who: string, name: string, v: number): void {
-  if (!(v > 0 && Number.isFinite(v))) throw new MdmlError('value', `${who}: ${name} must be positive`)
-}
 
 /**
  * A geometric prior on the length beyond a minimum: no segment ends before it has `minSegment` observations, then each

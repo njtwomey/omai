@@ -5,7 +5,7 @@
  * physics step it runs on.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, numberOr } from '../base/index.ts'
 import {
   matchingPennies,
   type NormalFormGame,
@@ -34,10 +34,6 @@ export interface ParallelDefinition<S, O, A> {
   create(options?: Readonly<Record<string, unknown>>): ParallelEnv<S, O, A>
 }
 
-const num = (options: Readonly<Record<string, unknown>> | undefined, name: string, fallback: number): number => {
-  const v = options?.[name]
-  return typeof v === 'number' ? v : fallback
-}
 const u1 = (k: Key): number => uniform(k, []).data[0] ?? 0
 const noInfos = (agents: readonly string[]): PerAgent<Readonly<Record<string, never>>> =>
   Object.fromEntries(agents.map((a) => [a, {}]))
@@ -569,10 +565,10 @@ export const cooperativeNavigation: ParallelDefinition<NavigationState, readonly
       maxCycles: int(1, 1000, { default: 25 }),
     }),
     create: (options) => {
-      const n = num(options, 'agents', 3)
+      const n = numberOr(options, 'agents', 3)
       const continuous = options?.['continuous'] === true
-      const localRatio = num(options, 'localRatio', 0.5)
-      const maxCycles = num(options, 'maxCycles', 25)
+      const localRatio = numberOr(options, 'localRatio', 0.5)
+      const maxCycles = numberOr(options, 'maxCycles', 25)
       const names = Array.from({ length: n }, (_, i) => `agent_${i}`)
       const obsSize = 4 + 2 * n + 4 * (n - 1)
       const obsSpace = box(-Infinity, Infinity, [obsSize])

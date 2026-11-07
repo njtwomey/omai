@@ -102,3 +102,27 @@ export function resolveConfidenceLevel(level: ConfidenceLevel = defaultConfidenc
   if (!(level > 0 && level < 1)) throw new MdmlError('value', `confidence level must lie in (0, 1), got ${level}`)
   return level
 }
+
+/**
+ * A numeric option read from a record that may hold anything, or be missing: the number when it is one, else the
+ * fallback.
+ *
+ * @param options - The record of options, if any.
+ * @param name - The option's name.
+ * @param fallback - The value when the option is missing or not a number.
+ * @returns The option.
+ * @example
+ * ```ts
+ * import { numberOr } from 'mdml-engine/base'
+ * numberOr({ g: 9.8, label: 'earth' }, 'g', 10) // => 9.8
+ * numberOr({ g: 'high' }, 'g', 10) // => 10
+ * ```
+ */
+export function numberOr(
+  options: Readonly<Record<string, unknown>> | undefined,
+  name: string,
+  fallback: number,
+): number {
+  const v = options?.[name]
+  return typeof v === 'number' ? v : fallback
+}
