@@ -119,7 +119,7 @@ describe('constrained methods', () => {
     const p = PROBLEMS['sphere'] as Constrained
     const r = O.slsqp(p.f, [1, 1, 1], { constraints: p.constraints, ftol: 1e-12 })
     // grad f = 2x = lambda * 1 + mu * e0 at (0.5, 0.25, 0.25): lambda = 0.5, mu = 0.5.
-    expect(Array.from(r.multipliers).map((v) => Math.round(v * 1e6) / 1e6)).toEqual([0.5, 0.5])
+    expect(toFlat(r.multipliers).map((v) => Math.round(v * 1e6) / 1e6)).toEqual([0.5, 0.5])
   })
   it('outer loops run their inner solves as child runs and trace the violation', () => {
     const rec = recorder()

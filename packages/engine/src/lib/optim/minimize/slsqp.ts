@@ -5,6 +5,7 @@
  */
 
 import { daxpy, ddot, dgemv, dnrm2, dscal } from '../../numerics/linalg/index.ts'
+import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { qpActiveSet, qpArrays } from '../quadratic.ts'
 import { configOf, observeVector, runVectorState, type VectorState, vectorDone, vectorSchema } from './_shared.ts'
@@ -312,13 +313,14 @@ export function slsqpAlgorithm(f: Objective, x0: Parameters, options: SlsqpOptio
 
 /**
  * Minimise subject to equality and inequality constraints and bounds by SLSQP (scipy.optimize.minimize with method
- * 'SLSQP'; gradients and constraint Jacobians by autodiff). The result carries the Lagrange multipliers.
+ * 'SLSQP'; gradients and constraint Jacobians by autodiff). The result carries the Lagrange multipliers, as a tensor
+ * (migration, D-009: a `Float64Array`).
  *
  * @param f - The objective.
  * @param x0 - The start (any parameter tree; constraints and bounds apply to the flattened parameters).
  * @param options - Constraints, bounds, ftol (default 1e-6), line-search cap, iteration cap (default 100) and run
  * options.
- * @returns The result with the multipliers.
+ * @returns The result with the multipliers, a `[me + mi]` tensor (equalities first).
  * @concept constrained-optimisation
  * @example
  * ```ts
@@ -336,8 +338,8 @@ export function slsqp(
   f: Objective,
   x0: Parameters,
   options: SlsqpOptions = {},
-): MinimizeResult & { readonly multipliers: Float64Array } {
+): MinimizeResult & { readonly multipliers: Tensor<'float64', [number]> } {
   const obj = flatObjective(f, x0)
   const { result, state } = runVectorState(slsqpAlgorithm(f, x0, options), obj, options, 100)
-  return { ...result, multipliers: state.multipliers }
+  return { ...result, multipliers: fromStorage(state.multipliers, [state.multipliers.length], 'float64') }
 }
