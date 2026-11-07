@@ -81,14 +81,14 @@ Polynomials as coefficient arrays, numpy.polynomial style: the power basis (eval
 Numerical integration, scipy.integrate style: adaptive quadrature (Gauss-Kronrod, Simpson, tanh-sinh), Gaussian rules for the classical weights, rules for sampled data (trapezoid, Simpson, Romberg), iterated and cubature methods in several dimensions, and Monte Carlo and quasi-Monte Carlo integration.
 
 - function `nquad`: Iterated adaptive integration over several variables. `src/lib/numerics/quadrature/multidim.ts:44` `mdml-engine/numerics/quadrature`
-- function `quad`: Adaptive Gauss-Kronrod integration, like scipy.integrate.quad. `src/lib/numerics/quadrature/adaptive.ts:275` `mdml-engine/numerics/quadrature`
+- function `quad`: Adaptive Gauss-Kronrod integration, like scipy.integrate.quad. `src/lib/numerics/quadrature/adaptive.ts:277` `mdml-engine/numerics/quadrature`
 
 ## numerics/roots
 
 Root finding: scalar methods with brackets or derivatives, solvers for systems of nonlinear equations with Jacobians from autodiff, continuation methods that follow solutions along a parameter, and roots that are differentiable in their parameters through the implicit function theorem.
 
 - function `brentq`: Brent's bracketing root finder for a scalar function. `src/lib/numerics/roots/scalar.ts:58` `mdml-engine/numerics/roots`
-- function `root`: Solve F(x) = 0 with newton, broyden or other methods. `src/lib/numerics/roots/systems.ts:570` `mdml-engine/numerics/roots`
+- function `root`: Solve F(x) = 0 with newton, broyden or other methods. `src/lib/numerics/roots/systems.ts:568` `mdml-engine/numerics/roots`
 
 - table `rootFinders`: The scalar root finders as one named slot. `src/lib/numerics/roots/scalar-options.ts:121` `mdml-engine/numerics/roots`
 
@@ -98,7 +98,7 @@ Sparse linear algebra, scipy.sparse style: compressed sparse row matrices and li
 
 - function `iterative.ts` (file): Krylov solvers: CG, BiCGSTAB, GMRES and MINRES with preconditioners. `src/lib/numerics/sparse/iterative.ts:1` `mdml-engine/numerics/sparse`
 
-- function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:163` `mdml-engine/numerics/sparse`
+- function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:166` `mdml-engine/numerics/sparse`
 - function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:455` `mdml-engine/numerics/sparse`
 
 - structure `csr`: Compressed sparse row matrix from a dense matrix or its arrays. `src/lib/numerics/sparse/csr.ts:67` `mdml-engine/numerics/sparse`

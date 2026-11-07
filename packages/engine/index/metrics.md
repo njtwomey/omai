@@ -6,8 +6,8 @@ Evaluation metrics, scikit-learn and torchmetrics style: classification, regress
 
 - structure `metric.ts` (file): The metric contract: a spec plus a function returning a MetricResult. `src/lib/metrics/metric.ts:1` `mdml-engine/metrics`
 
-- function `accuracyScore`: Classification accuracy, optionally weighted. `src/lib/metrics/classification.ts:436` `mdml-engine/metrics`
-- function `confusionMatrix`: Confusion matrix of labels and predictions. `src/lib/metrics/classification.ts:545` `mdml-engine/metrics`
+- function `accuracyScore`: Classification accuracy, optionally weighted. `src/lib/metrics/classification.ts:437` `mdml-engine/metrics`
+- function `confusionMatrix`: Confusion matrix of labels and predictions. `src/lib/metrics/classification.ts:546` `mdml-engine/metrics`
 - function `evaluate`: Compute many metrics of the same predictions in one pass. `src/lib/metrics/foundations.ts:381` `mdml-engine/metrics`
 - function `f1Score`: F1 score, with precision, recall and F-beta beside it. `src/lib/metrics/classification.ts:341` `mdml-engine/metrics`
 - function `meanSquaredError`: Mean squared error; R2, MAE and the rest sit beside it. `src/lib/metrics/regression.ts:41` `mdml-engine/metrics`
