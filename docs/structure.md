@@ -7358,7 +7358,7 @@ Design rules:
 - `tape.ts`: the tape as a file, `mdml.tape/1`: method name, seed, per variant the label, configuration, head, status, the run's
   events, the kind of each path, event firings and the probes (`TapeProbe`: step, path, arguments, value as `stateToJson`) at a
   spread of steps (`probeSteps`); `tapeOf`, `parseTape`, `ReplaySession` (nearest stored step when a step was not stored),
-  `replaySessions`. `_fake.ts`: an in-memory worker wire for tests.
+  `replaySessions`. `_fake.ts`: an in-memory worker wire for tests (left out of the published package).
 
 `react/` (React 19; React and ECharts are peer dependencies)
 - `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events); its container is an image
@@ -7375,7 +7375,7 @@ Design rules:
   `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over precomputed frames and
   live algorithm steps, and `useTicker`, the animation-frame ticker every player shares), `playhead.ts` (frame
   timing, the pure part), `start.ts` (`StartPolicy`, `PlayStatus`, `startOf`, `statusOf`, `progressOf`) and `ring.ts`
-  (`RingBuffer`, the history of a live run). `_harness.tsx` is the test harness for hooks with no DOM library. The
+  (`RingBuffer`, the history of a live run). `_harness.tsx` is the test harness for hooks with no DOM library (left out of the published package). The
   player's keys act only from its own scrubber, not from a button, option or field inside it; nothing here starts
   playing by itself for a reader who prefers reduced motion (`_motion.ts`, `prefersReducedMotion`). Private helpers
   of `react/`: `_download.ts` (`saveUrl`, `saveBlob`, which revokes its object URL, and `nextPaint`: the one place a

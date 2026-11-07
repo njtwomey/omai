@@ -18,7 +18,9 @@
     "llms.txt",
     "index",
     "!src/**/*.test.ts",
-    "!src/**/*.test.tsx"
+    "!src/**/*.test.tsx",
+    "!src/**/_fake.ts",
+    "!src/**/_harness.tsx"
   ],
   "exports": {
     ".": {
