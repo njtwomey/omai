@@ -8,7 +8,7 @@ Numerical methods, scipy and numpy.linalg style, one subfolder per topic with an
 
 Approximating functions and sequences: Chebyshev expansions and adaptive chebfun-style approximation, minimax approximation by the Remez algorithm, Pade approximants and continued fractions, convergence acceleration of sequences and series, and floating-point arithmetic itself (ulps, error-free sums and products, conditioning).
 
-- function `chebfun`: Adaptive Chebyshev approximation of a smooth function. `src/lib/numerics/approximation/chebyshev.ts:333` `mdml-engine/numerics/approximation`
+- function `chebfun`: Adaptive Chebyshev approximation of a smooth function. `src/lib/numerics/approximation/chebyshev.ts:332` `mdml-engine/numerics/approximation`
 
 ## numerics/convolution
 
@@ -99,7 +99,7 @@ Sparse linear algebra, scipy.sparse style: compressed sparse row matrices and li
 - function `iterative.ts` (file): Krylov solvers: CG, BiCGSTAB, GMRES and MINRES with preconditioners. `src/lib/numerics/sparse/iterative.ts:1` `mdml-engine/numerics/sparse`
 
 - function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:164` `mdml-engine/numerics/sparse`
-- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:484` `mdml-engine/numerics/sparse`
+- function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:522` `mdml-engine/numerics/sparse`
 
 - structure `csr`: Compressed sparse row matrix from a dense matrix or its arrays. `src/lib/numerics/sparse/csr.ts:67` `mdml-engine/numerics/sparse`
 

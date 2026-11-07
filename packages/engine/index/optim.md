@@ -11,7 +11,7 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - function `fista`: Accelerated proximal gradient for composite objectives. `src/lib/optim/splitting.ts:246` `mdml-engine/optim`
 - function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:392` `mdml-engine/optim`
 - function `milp`: Mixed-integer linear programming by branch and bound. `src/lib/optim/integer.ts:464` `mdml-engine/optim`
-- function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:303` `mdml-engine/optim`
+- function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:306` `mdml-engine/optim`
 - function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:67` `mdml-engine/optim`
 - function `sinkhorn`: Entropic optimal transport by Sinkhorn iterations. `src/lib/optim/transport.ts:491` `mdml-engine/optim`
 
