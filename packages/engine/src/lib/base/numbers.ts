@@ -287,6 +287,39 @@ export function gcdOf(a: number, b: number): number {
 }
 
 /**
+ * The logistic function 1 / (1 + exp(-x)), evaluated from the side where the exponential cannot overflow, so it is
+ * accurate in both tails.
+ *
+ * @param x - The argument.
+ * @returns The logistic of `x`, in [0, 1].
+ * @example
+ * ```ts
+ * import { sigmoidOf } from 'mdml-engine/base'
+ * sigmoidOf(0) // => 0.5
+ * ```
+ */
+export function sigmoidOf(x: number): number {
+  return x >= 0 ? 1 / (1 + Math.exp(-x)) : Math.exp(x) / (1 + Math.exp(x))
+}
+
+/**
+ * Whether every entry of a list is finite (a missing entry is not).
+ *
+ * @param xs - The numbers.
+ * @returns `true` for an empty list and when no entry is NaN or infinite.
+ * @example
+ * ```ts
+ * import { allFinite } from 'mdml-engine/base'
+ * allFinite([1, 2, 3]) // => true
+ * allFinite([1, Infinity]) // => false
+ * ```
+ */
+export function allFinite(xs: ArrayLike<number>): boolean {
+  for (let i = 0; i < xs.length; i++) if (!Number.isFinite(xs[i] ?? Number.NaN)) return false
+  return true
+}
+
+/**
  * The integers `start, start + step, ...` below `stop`.
  *
  * @param start - First value (or the stop when it is the only argument).

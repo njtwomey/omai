@@ -6,7 +6,7 @@
  * integral transform and its histogram, and Kuleshov's quantile recalibration with its curve.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, sigmoidOf } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
@@ -167,8 +167,6 @@ export function isotonicCalibration(
 /** Parameters of a Platt map p = 1 / (1 + exp(a s + b)). */
 export type PlattParams = { readonly a: number; readonly b: number }
 
-const sigmoid = (z: number): number => (z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z)))
-
 /** Newton's method for a weighted logistic fit of targets t on features (with an intercept as the last column). */
 function logisticNewton(
   features: readonly Float64Array[],
@@ -185,7 +183,7 @@ function logisticNewton(
     for (let i = 0; i < t.length; i++) {
       let z = 0
       for (let a = 0; a < p; a++) z += (beta[a] ?? 0) * (features[a]?.[i] ?? 0)
-      const q = sigmoid(z)
+      const q = sigmoidOf(z)
       const r = (w[i] ?? 0) * (q - (t[i] ?? 0))
       const s = (w[i] ?? 0) * q * (1 - q)
       for (let a = 0; a < p; a++) {
@@ -240,7 +238,7 @@ export function plattScaling(
     else prior0 += w[i] ?? 0
   })
   const t = y.map((v) => (v > 0 ? (prior1 + 1) / (prior1 + 2) : 1 / (prior0 + 2)))
-  // Fit p = sigmoid(-(a s + b)) as a logistic model in (-s, -1).
+  // Fit p = sigmoidOf(-(a s + b)) as a logistic model in (-s, -1).
   const [na = 0, nb = 0] = logisticNewton(
     [s.map((v) => -v), new Float64Array(s.length).fill(-1)],
     t,
@@ -514,13 +512,13 @@ function predictorFor(method: CalibrationMethod, params: Json): (scores: TensorL
     }
   if (method === 'sigmoid') {
     const { a, b } = p as PlattParams
-    return elementwise((z) => sigmoid(-(a * z + b)), 'plattScaling')
+    return elementwise((z) => sigmoidOf(-(a * z + b)), 'plattScaling')
   }
   if (method === 'isotonic') return isotonicPredict(p as IsotonicParams)
   if (method === 'beta') {
     const { a, b, c } = p as BetaParams
     return elementwise(
-      (q) => sigmoid(a * Math.log(clipProbability(q)) - b * Math.log1p(-clipProbability(q)) + c),
+      (q) => sigmoidOf(a * Math.log(clipProbability(q)) - b * Math.log1p(-clipProbability(q)) + c),
       'betaCalibration',
     )
   }

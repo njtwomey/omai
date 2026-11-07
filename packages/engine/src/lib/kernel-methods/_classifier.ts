@@ -1,7 +1,7 @@
 // Private: what the kernel classifiers of this folder share: the kernel options as the estimators take them, the
 // training setup (rows, Gram matrix, encoded labels), cross-kernels against the stored rows, and the classifier verbs
 // built from per-class decision values.
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, MdmlError, sigmoidOf } from '../base/index.ts'
 import {
   type Kernel,
   type KernelChoice,
@@ -70,7 +70,7 @@ export function crossKernel(
 }
 
 /** The sigmoid, stable in both tails. */
-export const sigmoid = (f: number): number => (f >= 0 ? 1 / (1 + Math.exp(-f)) : Math.exp(f) / (1 + Math.exp(f)))
+export const sigmoid: (f: number) => number = sigmoidOf
 
 /** `log(1 + exp(f))`, stable. */
 export const softplus = (f: number): number => (f > 0 ? f + Math.log1p(Math.exp(-f)) : Math.log1p(Math.exp(f)))

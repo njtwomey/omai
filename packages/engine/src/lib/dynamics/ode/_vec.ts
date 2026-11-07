@@ -91,11 +91,7 @@ export function scaledRms(x: ArrayLike<number>, scale: ArrayLike<number>): numbe
   return rms(r)
 }
 
-/** Every number finite? */
-export function allFinite(x: ArrayLike<number>): boolean {
-  for (let i = 0; i < x.length; i++) if (!Number.isFinite(x[i] ?? Number.NaN)) return false
-  return true
-}
+export { allFinite } from '../../base/index.ts'
 
 /** The smallest step scipy allows at `t`: ten units in the last place. */
 export function minStep(t: number, direction: number): number {

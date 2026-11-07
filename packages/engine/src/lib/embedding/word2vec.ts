@@ -8,7 +8,7 @@
  * `word2vecSgd` beside the library's generic solvers.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, MdmlError, maxOf, sigmoidOf } from '../base/index.ts'
 import { type HuffmanCoding, hierarchicalSoftmax, huffmanCoding } from '../losses/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type BatchObjective, type SmoothProblem, smoothSolvers, type VectorParams } from '../optim/index.ts'
@@ -199,7 +199,7 @@ function rowsOfWords(vocabulary: Word2vecVocabulary, options: Word2vecOptions): 
 
 /**
  * The word2vec loss as a {@link SmoothProblem} over the flat vector `[input matrix, output matrix]` (row-major,
- * input rows first): the mean over examples of `-log sigmoid(h . o_target) - sum_j log sigmoid(-h . o_j)` for
+ * input rows first): the mean over examples of `-log sigmoidOf(h . o_target) - sum_j log sigmoidOf(-h . o_j)` for
  * negative sampling, or the hierarchical softmax's path loss, with `h` the mean of the input rows (the centre word and,
  * for fastText, its n-gram buckets; the context words for CBOW). The start is word2vec's: input rows uniform in
  * `[-0.5 / d, 0.5 / d]`, output rows zero. The examples are the batches the stochastic `gradient` mode draws.
@@ -306,7 +306,6 @@ export function word2vecProblem(
   }
 }
 
-const sigmoid = (z: number): number => (z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z)))
 const logSigmoidNumber = (z: number): number => (z >= 0 ? -Math.log1p(Math.exp(-z)) : z - Math.log1p(Math.exp(z)))
 
 /** The state of word2vec's own SGD: the flat parameters (updated in place), the step and what the step saw. */
@@ -420,14 +419,14 @@ export function word2vecSgdAlgorithm(
         grad.fill(0)
         const target = targets[e] as number
         const touch = (row: number, label: number, sign: number): void => {
-          // The logistic unit on output row `row`: z = h . o, loss -log sigmoid(sign z), gradient factor sign (sigmoid(sign z) - 1).
+          // The logistic unit on output row `row`: z = h . o, loss -log sigmoidOf(sign z), gradient factor sign (sigmoidOf(sign z) - 1).
           let z = 0
           const base = outOff + row * d
           for (let c = 0; c < d; c++) z += (hs[c] ?? 0) * (x[base + c] ?? 0)
           void label
           const sz = sign * z
           loss -= logSigmoidNumber(sz)
-          const g = sign * (sigmoid(sz) - 1)
+          const g = sign * (sigmoidOf(sz) - 1)
           for (let c = 0; c < d; c++) {
             grad[c] = (grad[c] ?? 0) + g * (x[base + c] ?? 0)
             const u = lr * g * (hs[c] ?? 0)
