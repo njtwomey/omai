@@ -4,7 +4,7 @@
  * surface or its genome.
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** One generation of an evolving population. */
 export interface Generation {
@@ -80,5 +80,5 @@ export function populationSteps(record: Omit<PopulationSteps, 'kind'>): Populati
     if (g.best.curve !== undefined && d !== undefined)
       sameLength('populationSteps', `generations[${t}].best.curve`, g.best.curve.length, d.grid.length)
   }
-  return { kind: 'populationSteps', ...record }
+  return seal({ kind: 'populationSteps', ...record })
 }

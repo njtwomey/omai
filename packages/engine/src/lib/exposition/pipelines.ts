@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 import type { DecisionSurface, SurfaceGrid } from './surfaces.ts'
 
 /** Summary statistics of one column over all of a stage's rows (the standard deviation divides by n). */
@@ -177,5 +177,5 @@ export function pipelineStages(record: Omit<PipelineStages, 'kind'>): PipelineSt
   }
   for (const [i, s] of record.stages.entries()) checkStage(i, s)
   if (record.input !== undefined) checkData('input', record.input, record.stages[0]?.inputShape)
-  return { kind: 'pipelineStages', ...record }
+  return seal({ kind: 'pipelineStages', ...record })
 }

@@ -4,7 +4,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** A reinforcement-learning run: returns per episode, steps of chosen episodes, and value or policy snapshots. */
 export interface EpisodeRecord {
@@ -54,5 +54,5 @@ export function episodeRecord(record: Omit<EpisodeRecord, 'kind'>): EpisodeRecor
     sameLength('episodes', `recorded[${r.episode}].actions`, r.actions.length, r.rewards.length)
     sameLength('episodes', `recorded[${r.episode}].states`, r.states.length, r.rewards.length + 1)
   }
-  return { kind: 'episodes', ...record }
+  return seal({ kind: 'episodes', ...record })
 }

@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** One family of candidates: their violations, accuracies, labels and the indices of its front. */
 export interface FrontFamily {
@@ -62,5 +62,5 @@ export function paretoFront(record: Omit<ParetoFront, 'kind'>): ParetoFront {
     if (fam === undefined || !(c.index >= 0 && c.index < fam.violation.length))
       throw new MdmlError('value', 'paretoFront: the chosen candidate is not a candidate')
   }
-  return { kind: 'paretoFront', ...record }
+  return seal({ kind: 'paretoFront', ...record })
 }

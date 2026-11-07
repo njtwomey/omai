@@ -4,7 +4,7 @@
  * discriminant analysis).
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 import type { InputRows } from './rows.ts'
 
 /** The neighbours found for each query point (k-NN, radius neighbours, LOF). */
@@ -36,7 +36,7 @@ export function neighbourRecord(record: Omit<NeighbourRecord, 'kind'>): Neighbou
   sameLength('neighbours', 'distances', record.distances.length, record.indices.length)
   for (const [q, row] of record.indices.entries())
     rowsOf('neighbours', `distances[${q}]`, [record.distances[q] ?? []], row.length)
-  return { kind: 'neighbours', ...record }
+  return seal({ kind: 'neighbours', ...record })
 }
 
 /** How each feature contributes to each class's score (naive Bayes, discriminant analysis). */
@@ -69,5 +69,5 @@ export function likelihoodTable(table: Omit<LikelihoodTable, 'kind'>): Likelihoo
   sameLength('likelihoodTable', 'logPriors', table.logPriors.length, table.classes.length)
   sameLength('likelihoodTable', 'contributions', table.contributions.length, table.classes.length)
   rowsOf('likelihoodTable', 'contributions', table.contributions, table.features.length)
-  return { kind: 'likelihoodTable', ...table }
+  return seal({ kind: 'likelihoodTable', ...table })
 }

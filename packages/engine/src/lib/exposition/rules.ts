@@ -4,6 +4,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** One condition of a rule: feature `op` value, or the feature within [lower, upper]. */
 export interface RuleClause {
@@ -66,7 +67,7 @@ export function ruleSet(record: Omit<RuleSet, 'kind'>): RuleSet {
     for (const c of r.clauses) named(c.feature)
     if (r.linear !== undefined) named(r.linear)
   }
-  return { kind: 'rules', ...record }
+  return seal({ kind: 'rules', ...record })
 }
 
 /**

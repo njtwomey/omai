@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** One grid of values drawn as cells: values[i][j] in row i (row 0 at the top, as an image) and column j. */
 export interface ValueGrid {
@@ -75,5 +75,5 @@ export function valueGrids(record: Omit<ValueGrids, 'kind'>): ValueGrids {
   }
   if (record.columns !== undefined && !(Number.isInteger(record.columns) && record.columns >= 1))
     throw new MdmlError('value', 'valueGrids: columns must be a positive integer')
-  return { kind: 'valueGrids', ...record }
+  return seal({ kind: 'valueGrids', ...record })
 }

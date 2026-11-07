@@ -4,7 +4,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** A hidden-state model's reading of a sequence: each state's posterior at each time, the decoded path, the truth. */
 export interface StateSequence {
@@ -45,5 +45,5 @@ export function stateSequence(record: Omit<StateSequence, 'kind'>): StateSequenc
   }
   if (record.observations !== undefined)
     sameLength('stateSequence', 'observations', record.observations.values.length, t)
-  return { kind: 'stateSequence', ...record }
+  return seal({ kind: 'stateSequence', ...record })
 }

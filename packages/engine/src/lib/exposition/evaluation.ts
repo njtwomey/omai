@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** The confusion counts at one recorded step of training (an epoch). */
 export interface ConfusionStep {
@@ -49,7 +49,7 @@ export function confusionMatrix(record: Omit<ConfusionMatrix, 'kind'>): Confusio
   }
   check('counts', record.counts)
   for (const [t, s] of (record.steps ?? []).entries()) check(`steps[${t}].counts`, s.counts)
-  return { kind: 'confusionMatrix', ...record }
+  return seal({ kind: 'confusionMatrix', ...record })
 }
 
 /**

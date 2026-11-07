@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /**
  * How a sampled attribution estimate settled as samples accrued (sampling SHAP's running means): the samples taken at
@@ -141,7 +141,7 @@ export function featureAttributions(record: Omit<FeatureAttributions, 'kind'>): 
       rowsOf(k, 'convergence.standardErrors', c.standardErrors, d)
     }
   }
-  return { kind: k, ...record }
+  return seal({ kind: k, ...record })
 }
 
 /**
@@ -191,5 +191,5 @@ export function importances(record: Omit<Importances, 'kind'>): Importances {
     sameLength(k, 'repeats', record.repeats.length, d)
     rowsOf(k, 'repeats', record.repeats, record.repeats[0]?.length ?? 0)
   }
-  return { kind: k, ...record }
+  return seal({ kind: k, ...record })
 }

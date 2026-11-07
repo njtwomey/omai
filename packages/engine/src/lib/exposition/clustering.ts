@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 import type { InputRows } from './rows.ts'
 
 /** How a clustering developed: assignments and centres per iteration, merges for hierarchies, density labels. */
@@ -87,7 +87,7 @@ export function clusteringSteps(steps: Omit<ClusteringSteps, 'kind'>): Clusterin
         if (!(j >= 0 && j < pairs.length))
           throw new MdmlError('shape', `clusteringSteps: constraints.${field} names a pair outside its list`)
   }
-  return { kind: 'clusteringSteps', ...steps }
+  return seal({ kind: 'clusteringSteps', ...steps })
 }
 
 /** EM (or variational) steps of a mixture model: parameters, responsibilities and the objective per step. */
@@ -127,5 +127,5 @@ export function mixtureSteps(steps: Omit<MixtureSteps, 'kind'>): MixtureSteps {
   if (steps.covariances !== undefined) sameLength('mixtureSteps', 'covariances', steps.covariances.length, t)
   if (steps.responsibilities !== undefined && steps.responsibilities.length > t)
     throw new MdmlError('shape', 'mixtureSteps: more responsibility steps than objective values')
-  return { kind: 'mixtureSteps', ...steps }
+  return seal({ kind: 'mixtureSteps', ...steps })
 }

@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** One series of a {@link CurveSet}: values along x, an optional band, and which axis and group it belongs to. */
 export interface CurveSeries {
@@ -73,5 +73,5 @@ export function curveSet(record: Omit<CurveSet, 'kind'>): CurveSet {
       if (column !== undefined) sameLength('curves', `${s.name}.${field}`, column.length, x.length)
     }
   }
-  return { kind: 'curves', ...record }
+  return seal({ kind: 'curves', ...record })
 }

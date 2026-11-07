@@ -6,6 +6,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** A sample: an image as flat row-major pixel values (grey, or interleaved red, green and blue), or a string. */
 export type Sample = readonly number[] | string
@@ -84,7 +85,7 @@ export function sampleGrid(record: Omit<SampleGrid, 'kind'>): SampleGrid {
         `sampleGrid: steps[${t}].labels has ${s.labels.length} entries, expected ${s.samples.length}`,
       )
   }
-  return { kind: 'sampleGrid', ...record }
+  return seal({ kind: 'sampleGrid', ...record })
 }
 
 /**

@@ -4,7 +4,7 @@
  * self-organising maps) from its start to the end.
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 import type { RowColours } from './rows.ts'
 
 /** A linear decomposition (PCA, factor analysis, ICA, NMF, PLS): components, variance explained, scores. */
@@ -51,7 +51,7 @@ export function componentsRecord(record: Omit<ComponentsRecord, 'kind'>): Compon
     if (column !== undefined) sameLength('components', field, column.length, k)
   }
   if (record.scores !== undefined) rowsOf('components', 'scores', record.scores, k)
-  return { kind: 'components', ...record }
+  return seal({ kind: 'components', ...record })
 }
 
 /** How a nonlinear embedding (t-SNE, UMAP, MDS, Isomap, SOM) moved from its start to the end. */
@@ -88,5 +88,5 @@ export function embeddingSteps(steps: Omit<EmbeddingSteps, 'kind'>): EmbeddingSt
   const t = steps.positions.length
   sameLength('embeddingSteps', 'iterations', steps.iterations.length, t)
   if (steps.objective !== undefined) sameLength('embeddingSteps', 'objective', steps.objective.length, t)
-  return { kind: 'embeddingSteps', ...steps }
+  return seal({ kind: 'embeddingSteps', ...steps })
 }

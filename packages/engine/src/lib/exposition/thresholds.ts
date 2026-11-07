@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /**
  * A binary classifier's scores cut at every distinct threshold (predict positive when the score is at least the
@@ -91,7 +91,7 @@ export function thresholdSweep(record: Omit<ThresholdSweep, 'kind'>): ThresholdS
     throw new MdmlError('value', `thresholdSweep: the cheapest index ${record.cheapest} is not one of ${k}`)
   if (record.scored !== undefined)
     sameLength('thresholdSweep', 'scored.labels', record.scored.labels.length, record.scored.scores.length)
-  return { kind: 'thresholdSweep', ...record }
+  return seal({ kind: 'thresholdSweep', ...record })
 }
 
 /**

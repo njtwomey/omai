@@ -5,7 +5,7 @@
  * `DependenceView`.
  */
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** One feature's effect: the averaged curve over a grid, and optionally every row's curve (ICE). */
 export interface DependenceCurve {
@@ -99,5 +99,5 @@ export function dependence(record: Omit<Dependence, 'kind'>): Dependence {
       rowsOf(k, `surfaces[${i}].counts`, s.counts, Math.max(0, s.gridY.length - 1))
     }
   }
-  return { kind: k, ...record }
+  return seal({ kind: k, ...record })
 }

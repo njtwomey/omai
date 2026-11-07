@@ -7,6 +7,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** One term of the model: `estimate * tex`. */
 export interface EquationTerm {
@@ -85,7 +86,7 @@ export function equationFit(record: Omit<EquationFit, 'kind'>): EquationFit {
   for (const [k, t] of (record.terms ?? []).entries())
     if (!(Number.isFinite(t.estimate) && (t.truth === undefined || Number.isFinite(t.truth))))
       throw new MdmlError('value', `equationFit: terms[${k}] is not finite`)
-  return { kind: 'equationFit', ...record }
+  return seal({ kind: 'equationFit', ...record })
 }
 
 /**

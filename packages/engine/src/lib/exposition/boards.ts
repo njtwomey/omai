@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /**
  * Where a board's cells sit: a grid of `rows` by `columns` cells (cell `r * columns + c`, row 0 at the top), or the
@@ -98,5 +98,5 @@ export function boardSteps(record: Omit<BoardSteps, 'kind'>): BoardSteps {
   }
   for (const m of record.metrics ?? [])
     sameLength('boardSteps', `metrics.${m.name}`, m.values.length, record.steps.length)
-  return { kind: 'boardSteps', ...record }
+  return seal({ kind: 'boardSteps', ...record })
 }

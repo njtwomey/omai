@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** A curve: its points' x and y. */
 export interface PlaneCurve {
@@ -76,5 +76,5 @@ export function epicycles(record: Omit<Epicycles, 'kind'>): Epicycles {
   sameLength('epicycles', 'spectrum.kept', record.spectrum.kept.length, record.spectrum.k.length)
   if (!(Number.isInteger(record.steps) && record.steps >= 2))
     throw new MdmlError('value', 'epicycles: at least 2 frames per cycle')
-  return { kind: 'epicycles', ...record }
+  return seal({ kind: 'epicycles', ...record })
 }

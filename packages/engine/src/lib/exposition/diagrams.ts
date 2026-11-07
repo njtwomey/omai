@@ -5,6 +5,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { Structure, StructureOverlay } from '../scene/index.ts'
+import { seal } from './_check.ts'
 
 /** One state laid over a diagram: the active nodes and edges and the badges, with what happened in a line. */
 export interface DiagramStep {
@@ -47,5 +48,5 @@ export function diagramRecord(record: Omit<DiagramRecord, 'kind'>): DiagramRecor
     if (unknown !== undefined)
       throw new MdmlError('value', `diagram: steps[${t}] names the node ${unknown}, which the structure lacks`)
   }
-  return { kind: 'diagram', ...record }
+  return seal({ kind: 'diagram', ...record })
 }

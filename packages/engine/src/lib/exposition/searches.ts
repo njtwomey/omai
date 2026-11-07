@@ -5,7 +5,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** Every trial of a search (grid, random, halving, Bayesian, TPE): its parameters, scores and fate. */
 export interface SearchTrials {
@@ -40,7 +40,7 @@ export interface SearchTrials {
 export function searchTrials(record: Omit<SearchTrials, 'kind'>): SearchTrials {
   if (record.best !== undefined && !(record.best >= 0 && record.best < record.trials.length))
     sameLength('searchTrials', 'best (index)', record.best, record.trials.length - 1)
-  return { kind: 'searchTrials', ...record }
+  return seal({ kind: 'searchTrials', ...record })
 }
 
 /**
@@ -84,5 +84,5 @@ export function learningCurve(curve: Omit<LearningCurve, 'kind'>): LearningCurve
     const column = curve[field]
     if (column !== undefined) sameLength('learningCurve', field, column.length, n)
   }
-  return { kind: 'learningCurve', ...curve }
+  return seal({ kind: 'learningCurve', ...curve })
 }

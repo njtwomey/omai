@@ -4,7 +4,7 @@
  * marginal likelihood, with the optimiser's path across it.
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** A predictive distribution on a grid of inputs (GPs, Bayesian regression), with samples. */
 export interface PosteriorGrid {
@@ -64,7 +64,7 @@ export function posteriorGrid(grid: Omit<PosteriorGrid, 'kind'>): PosteriorGrid 
     sameLength('posteriorGrid', `series[${i}].mean`, s.mean.length, n)
     sameLength('posteriorGrid', `series[${i}].variance`, s.variance.length, n)
   }
-  return { kind: 'posteriorGrid', ...grid }
+  return seal({ kind: 'posteriorGrid', ...grid })
 }
 
 /** An objective over a grid of two hyperparameters (a marginal likelihood, a validation score), with the optimiser's path. */
@@ -99,5 +99,5 @@ export interface HyperparameterSurface {
 export function hyperparameterSurface(surface: Omit<HyperparameterSurface, 'kind'>): HyperparameterSurface {
   sameLength('hyperparameterSurface', 'values', surface.values.length, surface.y.length)
   rowsOf('hyperparameterSurface', 'values', surface.values, surface.x.length)
-  return { kind: 'hyperparameterSurface', ...surface }
+  return seal({ kind: 'hyperparameterSurface', ...surface })
 }

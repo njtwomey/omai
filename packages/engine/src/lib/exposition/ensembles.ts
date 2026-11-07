@@ -3,7 +3,7 @@
  * boosting, stacking), with a decision surface per stage where the inputs allow one.
  */
 
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 import type { DecisionSurface } from './surfaces.ts'
 
 /** The members of an ensemble and how its prediction builds up stage by stage. */
@@ -48,5 +48,5 @@ export function ensembleStages(stages: Omit<EnsembleStages, 'kind'>): EnsembleSt
     const column = stages[field]
     if (column !== undefined) sameLength('ensembleStages', field, column.length, n)
   }
-  return { kind: 'ensembleStages', ...stages }
+  return seal({ kind: 'ensembleStages', ...stages })
 }

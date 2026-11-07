@@ -4,7 +4,7 @@
  * the explainers agree with one another.
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** One metric of an explanation-quality record, a value per explainer. */
 export interface ExplanationMetric {
@@ -53,5 +53,5 @@ export function explanationQuality(record: Omit<ExplanationQuality, 'kind'>): Ex
     sameLength(k, 'agreement.matrix', record.agreement.matrix.length, e)
     rowsOf(k, 'agreement.matrix', record.agreement.matrix, e)
   }
-  return { kind: k, ...record }
+  return seal({ kind: k, ...record })
 }

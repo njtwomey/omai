@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 import type { FixedPointClass } from './fields.ts'
 
 /** A named path of states over the simplex. */
@@ -86,5 +87,5 @@ export function simplexRecord(record: Omit<Simplex, 'kind'>): Simplex {
     for (const [i, b] of record.field.by.entries())
       if (b.length !== d) throw new MdmlError('shape', `simplex: field.by[${i}] has ${b.length} entries, expected ${d}`)
   }
-  return { kind: 'simplex', ...record }
+  return seal({ kind: 'simplex', ...record })
 }

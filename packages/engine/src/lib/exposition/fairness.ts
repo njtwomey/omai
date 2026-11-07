@@ -6,7 +6,7 @@
  */
 
 import { MdmlError, maxOf, minOf } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** The rates a group report gives for each group (and overall), each a probability. */
 export type GroupRateName =
@@ -166,7 +166,7 @@ export function groupReport(record: Omit<GroupReport, 'kind'>): GroupReport {
       sameLength('groupReport', `sweep.${field}`, record.sweep[field].length, k)
       rowsOf('groupReport', `sweep.${field}`, record.sweep[field], record.sweep.thresholds.length)
     }
-  return { kind: 'groupReport', ...record }
+  return seal({ kind: 'groupReport', ...record })
 }
 
 const ratio = (a: number, b: number): number => (b === 0 ? 0 : a / b)

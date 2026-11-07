@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** The points of one recorded step. */
 export interface PointsStep {
@@ -90,7 +91,7 @@ export function pointsSteps(record: Omit<PointsSteps, 'kind'>): PointsSteps {
         `pointsSteps: steps[${t}].groups has ${s.groups.length} entries, expected ${s.points.length}`,
       )
   }
-  return { kind: 'pointsSteps', ...record }
+  return seal({ kind: 'pointsSteps', ...record })
 }
 
 /**

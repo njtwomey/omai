@@ -3,7 +3,7 @@
  * evidence, with the input rows so a view can draw them. `anomalyScores` builds one and checks its shapes.
  */
 
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 import type { InputRows } from './rows.ts'
 
 /** Anomaly scores with the threshold that flags outliers, and per-point evidence. */
@@ -35,5 +35,5 @@ export function anomalyScores(record: Omit<AnomalyScores, 'kind'>): AnomalyScore
   if (record.evidence !== undefined)
     sameLength('anomalyScores', 'evidence.values', record.evidence.values.length, record.scores.length)
   if (record.rows !== undefined) sameLength('anomalyScores', 'rows', record.rows.points.length, record.scores.length)
-  return { kind: 'anomalyScores', ...record }
+  return seal({ kind: 'anomalyScores', ...record })
 }
