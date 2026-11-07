@@ -19,6 +19,7 @@ import { FigureFrame } from '../FigureFrame.tsx'
 import { SceneView } from '../SceneView.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
+import { Note } from './RowsPanel.tsx'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import type { LiveSession } from './useSession.ts'
@@ -164,12 +165,16 @@ export function TapeChannels<S, C extends Config>(
           )
         })}
         {Object.keys(s.method.projections ?? {}).map((name) => {
-          // A projection of the tape so far; it may have nothing to project yet.
+          // A projection of the tape so far; it may have nothing to project yet, and says why when it throws.
           let record: unknown
           try {
             record = s.project(name)
-          } catch {
-            return null
+          } catch (e) {
+            return (
+              <Note key={name}>
+                projection {name} unavailable: {e instanceof Error ? e.message : String(e)}
+              </Note>
+            )
           }
           return record !== undefined && isExposition(record) ? (
             <div key={name} className="flex flex-col gap-1">

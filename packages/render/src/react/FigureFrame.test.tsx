@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { invoke, type Mounted, mountElement, resetGlobals } from './_harness.tsx'
+import { inAct, invoke, type Mounted, mountElement, resetGlobals } from './_harness.tsx'
 import { FigureFrame, type FrameSize } from './FigureFrame.tsx'
 
 afterEach(() => {
@@ -75,6 +75,40 @@ describe('FigureFrame', () => {
     // Closing removes both listeners, and the page content is back at its own size.
     expect([m.window.count('keydown'), m.window.count('resize')]).toEqual([0, 0])
     expect(sizes.at(-1)).toEqual({ width: 200, height: 100, expanded: false })
+    await m.unmount()
+  })
+
+  it('says why an export gave nothing, beside the export button, instead of doing nothing, and keeps the figure alive', async () => {
+    const playback = { count: 0, fps: 10, frame: 0, seek: () => undefined, pause: () => undefined }
+    const m = await mountElement(
+      <FigureFrame title="Loss" width={200} height={100} exportFormats={['png', 'gif', 'mp4']} playback={playback}>
+        <span>drawn</span>
+      </FigureFrame>,
+      { browser: true },
+    )
+    const choose = async (format: string): Promise<void> => {
+      await press(m, 'Export')
+      await invoke(
+        m.elements().find((e) => e.props['role'] === 'menuitem' && e.text === format),
+        'onClick',
+      )
+      // The recording runs as a chain of promises: let it settle.
+      await inAct(() => undefined)
+      await inAct(() => undefined)
+    }
+    const alerts = (): string[] => m.elements().flatMap((e) => (e.props['role'] === 'alert' ? [e.text] : []))
+    expect(alerts()).toEqual([])
+    // A figure with nothing to draw (no chart, scene or overlay in the stand-in tree) used to do nothing.
+    await choose('PNG')
+    expect(alerts()).toEqual(['export failed: the figure holds nothing to export'])
+    // A recording that produced no frame fails in the encoder; its message is shown, and the readout is not left busy.
+    await choose('GIF')
+    expect(alerts()).toEqual(['export failed: encodeGif: need at least one frame'])
+    expect(m.text()).not.toContain('encoding')
+    // A format the frame cannot make without a handler says so; the next choice clears the old note first.
+    await choose('MP4')
+    expect(alerts()).toEqual(['export failed: mp4 needs an export handler or a playback'])
+    expect(labels(m)).toContain('Export')
     await m.unmount()
   })
 })

@@ -718,7 +718,7 @@ function ProbeView(
   )
 }
 
-// A projection of the tape so far; hidden while it has nothing to project.
+// A projection of the tape so far; hidden while it has nothing to project, and a note with the reason when it throws.
 function ProjectionView(props: {
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   readonly live: LiveSession<any, any>
@@ -730,18 +730,20 @@ function ProjectionView(props: {
 }): ReactNode {
   const { live, name, t } = props
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
-  const record = useMemo((): unknown => {
+  const projected = useMemo((): { readonly record?: unknown; readonly error?: string } => {
     try {
       const s = live.session
       const p = s.method.projections?.[name]
-      if (t === undefined || p === undefined) return s.project(name)
+      if (t === undefined || p === undefined) return { record: s.project(name) }
       const run = s.run()
-      return p({ ...run, events: run.events.filter((e) => !('step' in e) || e.step <= t) })
-    } catch {
-      return undefined
+      return { record: p({ ...run, events: run.events.filter((e) => !('step' in e) || e.step <= t) }) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
     }
   }, [live.session, live.version, name, t])
+  if (projected.error !== undefined) return <Note>projection {name} unavailable: {projected.error}</Note>
   // The record up to the viewed step is a still: views that would play it are told not to.
+  const record = projected.record
   return record !== undefined && isExposition(record) ? (
     <ExpositionView record={record} figure={FIG} title={props.title} filename={props.filename} play={false} />
   ) : null
