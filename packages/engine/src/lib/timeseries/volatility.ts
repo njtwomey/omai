@@ -7,11 +7,10 @@
  */
 
 import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
-import { lgamma } from '../numerics/special/index.ts'
 import type { BfgsState } from '../optim/index.ts'
 import { type Key, normal, studentT } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
-import { item, toFlat } from '../tensor/index.ts'
+import { toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import {
   inverseDiagonalRoots,
@@ -21,6 +20,7 @@ import {
   numericalHessian,
 } from './_ml.ts'
 import { asSeries } from './_series.ts'
+import { backcastOf, studentConstant } from './_volatility.ts'
 
 /** The structure of a GARCH model; the names are the `arch` package's. */
 export interface GarchSpec {
@@ -63,19 +63,6 @@ function resolve(spec: GarchSpec): Resolved {
     if (!(Number.isInteger(v) && v >= 0)) throw new MdmlError('value', 'garch: lags must be non-negative integers')
   if (p + o === 0) throw new MdmlError('value', 'garch: need at least one lag of the residual (p + o > 0)')
   return { p, o, q, constantMean: spec.mean !== 'zero', student: spec.distribution === 't' }
-}
-
-/** The pre-sample value of the squared residuals: an exponentially weighted mean of the first 75 (as `arch`). */
-function backcastOf(eps: ArrayLike<number>): number {
-  const tau = Math.min(75, eps.length)
-  let total = 0
-  let s = 0
-  for (let i = 0; i < tau; i++) {
-    const w = 0.94 ** i
-    total += w
-    s += w * (eps[i] ?? 0) ** 2
-  }
-  return s / total
 }
 
 /** One step of the variance recursion given the lags (most recent first). */
@@ -135,11 +122,6 @@ export function garchVariance(eps: ArrayLike<number>, spec: GarchSpec, params: G
 function logDensity(student: boolean, nu: number, lgammaTerm: number, e: number, v: number): number {
   if (!student) return -0.5 * (Math.log(2 * Math.PI) + Math.log(v) + (e * e) / v)
   return lgammaTerm - 0.5 * Math.log(v) - ((nu + 1) / 2) * Math.log(1 + (e * e) / (v * (nu - 2)))
-}
-
-/** The constant part of the Student-t log-density: lgamma((nu + 1) / 2) - lgamma(nu / 2) - log(pi (nu - 2)) / 2. */
-function studentConstant(nu: number): number {
-  return item(lgamma((nu + 1) / 2)) - item(lgamma(nu / 2)) - 0.5 * Math.log(Math.PI * (nu - 2))
 }
 
 /**
