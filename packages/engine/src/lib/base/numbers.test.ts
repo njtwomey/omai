@@ -206,7 +206,7 @@ describe('the number helpers agree with numpy and scipy', () => {
         logAddExp(-1000, -1001),
         logAddExp(0, 0),
       ],
-      [-Infinity, Infinity, 1000.6931471805599, Infinity, NaN, -999.6867383124818, 0.6931471805599453],
+      [-Infinity, Infinity, 1000.6931471805599, Infinity, NaN, -999.6867383124818, Math.LN2],
     ],
     [
       'meanOf and varianceOf: numpy mean and var, NaN when there is nothing left',
