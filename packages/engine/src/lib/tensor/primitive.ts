@@ -27,7 +27,10 @@ export interface BatchResult {
  * - `abstractEval` gives output shapes and dtypes without computing anything.
  * - `impl` computes on concrete tensors (through the inputs' backend).
  * - `jvp` maps input tangents to output tangents; `vjp` maps output cotangents to input cotangents. Both are written
- *   with operations, so they are themselves differentiable (higher-order derivatives work).
+ *   with operations, so they are themselves differentiable (higher-order derivatives work). Reverse mode passes `vjp` a
+ *   fifth argument, `needs`: `needs[j]` is `false` when nothing tracked depends on input `j` (a constant, or data), so
+ *   its cotangent would be dropped; a rule may return `null` for those inputs without computing them, or ignore `needs`
+ *   (a cotangent returned for an input that needs none is discarded).
  * - A primitive without `jvp`/`vjp` is not differentiable: differentiating through it raises `not-differentiable`,
  *   unless `zeroDerivative` says its derivative is zero everywhere it exists (comparisons, rounding, argmax).
  * - `batch` applies the primitive to a whole batch at once inside `vmap`: it receives the underlying inputs, the batch
@@ -51,6 +54,7 @@ export interface Primitive<P> {
     inputs: readonly Value[],
     params: P,
     outputs: readonly Value[],
+    needs?: readonly boolean[],
   ) => readonly MaybeZero[]
   readonly batch?: (inputs: readonly Value[], dims: readonly BatchDim[], params: P, size: number) => BatchResult
   readonly zeroDerivative?: boolean

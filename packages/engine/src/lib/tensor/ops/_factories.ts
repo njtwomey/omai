@@ -44,7 +44,8 @@ export function unaryPrimitive(kernel: UnaryKernel, rule?: (t: Value, x: Value, 
 /** The rules of an elementwise binary primitive, on broadcast operands. */
 export interface BinaryRules {
   jvp(a: Value, b: Value, ta: MaybeZero, tb: MaybeZero, out: Value): MaybeZero
-  vjp(g: Value, a: Value, b: Value, out: Value): readonly [MaybeZero, MaybeZero]
+  /** `needs[j]` is `false` when the cotangent of operand `j` would be dropped: return `null` for it without computing it. */
+  vjp(g: Value, a: Value, b: Value, out: Value, needs: readonly [boolean, boolean]): readonly [MaybeZero, MaybeZero]
 }
 
 /** An elementwise binary primitive with broadcasting; cotangents are summed back to each input's shape. */
@@ -69,13 +70,18 @@ export function binaryPrimitive(kernel: BinaryKernel, rules?: BinaryRules): Prim
         if (ta === null && tb === null) return [null]
         return [rules.jvp(arg(xs, 0), arg(xs, 1), ta, tb, arg(outs, 0))]
       },
-      vjp: (gs, xs, _p, outs) => {
+      vjp: (gs, xs, _p, outs, needs) => {
         const g = arg(gs, 0)
         if (g === null) return [null, null]
         const a = arg(xs, 0)
         const b = arg(xs, 1)
-        const [ga, gb] = rules.vjp(g, a, b, arg(outs, 0))
-        return [ga === null ? null : sumToShape(ga, a.shape), gb === null ? null : sumToShape(gb, b.shape)]
+        const na = needs?.[0] !== false
+        const nb = needs?.[1] !== false
+        const [ga, gb] = rules.vjp(g, a, b, arg(outs, 0), [na, nb])
+        return [
+          ga === null || !na ? null : sumToShape(ga, a.shape),
+          gb === null || !nb ? null : sumToShape(gb, b.shape),
+        ]
       },
     })
   }

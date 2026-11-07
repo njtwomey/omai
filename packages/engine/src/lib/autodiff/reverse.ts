@@ -145,15 +145,18 @@ export function backward(
         primitive: node.primitive.name,
       })
     }
+    // Only tracked inputs (leaves and results of recorded nodes) take a cotangent; rules may skip the others.
+    const needs = node.inputs.map((x) => x.node !== null || x.leaf)
     const ins = rule(
       gs,
       node.inputs.map((x) => x.primal),
       node.params,
       node.outputs,
+      needs,
     )
     node.inputs.forEach((x, j) => {
       const g = ins[j] ?? null
-      if (g !== null && (x.node !== null || x.leaf)) accumulate(x, g)
+      if (g !== null && needs[j] === true) accumulate(x, g)
     })
   }
   return leaves.map((leaf) => cts.get(leaf) ?? zeros(leaf.shape, { dtype: leaf.dtype }))

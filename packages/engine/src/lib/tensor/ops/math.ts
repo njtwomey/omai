@@ -50,9 +50,9 @@ const atan2Primitive: Primitive<null> = binaryPrimitive('atan2', {
     const b = tx === null ? null : mul(tx, y)
     return div(a === null ? neg(b as Value) : b === null ? a : sub(a, b), r2)
   },
-  vjp: (g, y, x) => {
+  vjp: (g, y, x, _out, [ny, nx]) => {
     const r2 = add(square(x), square(y))
-    return [div(mul(g, x), r2), neg(div(mul(g, y), r2))]
+    return [ny ? div(mul(g, x), r2) : null, nx ? neg(div(mul(g, y), r2)) : null]
   },
 })
 
