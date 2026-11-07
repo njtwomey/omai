@@ -23,8 +23,7 @@ group('data against numpy, scikit-learn and torch', () => {
   for (const c of loadFixture('data/batching').cases) {
     it(c.name, () => {
       if (c.fn === 'balancedWeights') {
-        const y = Array.from((decode(c.inputs[0]) as Tensor).data)
-        expectMatches(tensor(balancedWeights(y)), c.output, 1e-12, 1e-12, c.name)
+        expectMatches(balancedWeights(decode(c.inputs[0]) as Tensor), c.output, 1e-12, 1e-12, c.name)
         return
       }
       const seqs =

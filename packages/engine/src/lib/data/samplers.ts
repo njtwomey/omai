@@ -6,6 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { categorical, foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
+import { asTensor, concreteOrThrow, fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 
 /**
  * The order in which rows are visited in one epoch (a torch `Sampler`): a function of the epoch number, so each epoch
@@ -64,16 +65,26 @@ export function randomSampler(n: number, key: Key, options: RandomSamplerOptions
   }
 }
 
+/** The numbers of a rank-1 tensor-like read at the entry of a function of this file (a traced value is rejected). */
+function vectorOf(name: string, what: string, x: TensorLike): number[] {
+  const t = concreteOrThrow(asTensor(x), name)
+  if (t.shape.length !== 1)
+    throw new MdmlError('shape', `${name}: ${what} must be a vector, got [${t.shape.join(', ')}]`)
+  return Array.from(t.data)
+}
+
 /**
  * Draw rows with probability proportional to their weights (torch `WeightedRandomSampler`), for example inverse class
- * frequencies to balance classes.
+ * frequencies to balance classes. Takes tensors (migration, D-009: `weights` was `readonly number[]`; nested arrays
+ * still work, and so does the tensor {@link balancedWeights} returns).
  *
- * @param weights - A non-negative weight per row.
+ * @param weights - A non-negative weight per row: a vector (a tensor, a typed array or a nested array).
  * @param numSamples - Rows per epoch.
  * @param key - The base key.
  * @param options - Whether to draw with replacement (default true).
  * @returns The sampler.
- * @throws MdmlError with code `value` when too few rows have positive weight for sampling without replacement.
+ * @throws MdmlError with code `value` when too few rows have positive weight for sampling without replacement, and
+ * `shape` unless `weights` is a vector.
  * @example
  * ```ts
  * import { weightedRandomSampler } from 'mdml-engine/data'
@@ -82,11 +93,12 @@ export function randomSampler(n: number, key: Key, options: RandomSamplerOptions
  * ```
  */
 export function weightedRandomSampler(
-  weights: readonly number[],
+  weightVector: TensorLike,
   numSamples: number,
   key: Key,
   options: { readonly replacement?: boolean } = {},
 ): Sampler {
+  const weights = vectorOf('weightedRandomSampler', 'the weights', weightVector)
   const positive = weights.filter((w) => w > 0).length
   if (options.replacement === false && numSamples > positive)
     throw new MdmlError('value', `weightedRandomSampler: ${numSamples} draws from ${positive} rows without replacement`)
@@ -123,21 +135,28 @@ export function subsetRandomSampler(indices: readonly number[], key: Key): Sampl
 
 /**
  * Inverse-frequency weights per row, `n / (k * count(class))` (sklearn's `compute_sample_weight('balanced')`), for
- * class-balanced sampling or weighting.
+ * class-balanced sampling or weighting. Takes and returns tensors (migration, D-009: `labels` was `readonly number[]` and
+ * the weights a `number[]`; nested arrays still work as input, and the result feeds {@link weightedRandomSampler}).
  *
- * @param labels - The class of each row.
- * @returns A weight per row.
+ * @param labels - The class of each row: a vector (a tensor such as a dataset's `y`, a typed array or a nested array).
+ * @returns A float64 tensor of shape `[n]`, a weight per row.
+ * @throws MdmlError with code `shape` unless `labels` is a vector.
  * @example
  * ```ts
  * import { balancedWeights } from 'mdml-engine/data'
- * balancedWeights([0, 0, 0, 1]) // => [0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 2]
+ * Array.from(balancedWeights([0, 0, 0, 1]).data) // => [0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 2]
  * ```
  */
-export function balancedWeights(labels: readonly number[]): number[] {
+export function balancedWeights(labels: TensorLike): Tensor<'float64'> {
+  const classes = vectorOf('balancedWeights', 'the labels', labels)
   const counts = new Map<number, number>()
-  for (const c of labels) counts.set(c, (counts.get(c) ?? 0) + 1)
+  for (const c of classes) counts.set(c, (counts.get(c) ?? 0) + 1)
   const k = counts.size
-  return labels.map((c) => labels.length / (k * (counts.get(c) ?? 1)))
+  return fromStorage(
+    Float64Array.from(classes, (c) => classes.length / (k * (counts.get(c) ?? 1))),
+    [classes.length],
+    'float64',
+  )
 }
 
 /**
