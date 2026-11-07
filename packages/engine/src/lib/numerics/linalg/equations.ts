@@ -38,7 +38,7 @@ import {
   stateToJson,
   tensor,
 } from '../../trace/index.ts'
-import { identity, mT, squareSize, sym } from './_matrix.ts'
+import { identity, mT, namingSingular, squareSize, sym } from './_matrix.ts'
 import { slogdet } from './basics.ts'
 import { inv, solve } from './lu.ts'
 import { lstsq } from './qr.ts'
@@ -129,15 +129,17 @@ export function signm(a: TensorLike): Value {
   const [z0] = promoteFloat(a) as [Value]
   const n = squareSize(z0.shape, 'signm')
   let z = z0
-  for (let i = 0; i < 100; i++) {
-    // Determinant scaling c = |det Z|^{-1/n} speeds the early iterations.
-    const c = Math.exp(-item(primalOf(slogdet(z).logabsdet)) / n)
-    const next = mul(add(mul(z, c), div(inv(z), c)), 0.5)
-    const change = norm1(sub(next, z)) / Math.max(norm1(next), 1e-300)
-    z = next
-    if (change <= 1e-14) return z
-  }
-  throw new MdmlError('convergence', 'signm: the Newton iteration did not converge')
+  return namingSingular('signm', 'A is singular (it has an eigenvalue on the imaginary axis)', () => {
+    for (let i = 0; i < 100; i++) {
+      // Determinant scaling c = |det Z|^{-1/n} speeds the early iterations.
+      const c = Math.exp(-item(primalOf(slogdet(z).logabsdet)) / n)
+      const next = mul(add(mul(z, c), div(inv(z), c)), 0.5)
+      const change = norm1(sub(next, z)) / Math.max(norm1(next), 1e-300)
+      z = next
+      if (change <= 1e-14) return z
+    }
+    throw new MdmlError('convergence', 'signm: the Newton iteration did not converge')
+  })
 }
 
 /**

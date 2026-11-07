@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { grad } from '../../autodiff/index.ts'
-import { sum, tensor, toArray, type Value } from '../../tensor/index.ts'
+import { sum, tensor, toArray, type Value, zeros } from '../../tensor/index.ts'
 import * as L from './index.ts'
 
 // Singular values of [[1, 2], [3, 4], [5, 6]] (numpy.linalg.svd).
@@ -59,5 +59,30 @@ describe('lstsq of a rank-deficient system is the minimum-norm least-squares sol
     expect(toArray(L.lstsq([[1, 0], [0, 1], [0, 0]], [1, 2, 3]))).toEqual([1, 2])
     const g = toArray(grad((b: Value) => sum(L.lstsq([[1, 2], [2, 4], [3, 6]], b)))(tensor([1, 2, 3]))) as number[]
     expect(g).toEqual([3 / 70, 6 / 70, 9 / 70].map((e) => expect.closeTo(e, 12)))
+  })
+})
+
+describe('singular systems and the matrix functions that sit on them', () => {
+  const zeroDiagonal = [
+    [0, 0],
+    [1, 1],
+  ]
+  it.each([
+    ['solveTriangular with a zero on the diagonal', () => L.solveTriangular(zeroDiagonal, [1, 1], { lower: true }), /singular/],
+    ['solveTriangular, transposed', () => L.solveTriangular(zeroDiagonal, [1, 1], { transpose: true }), /singular/],
+    ['choSolve of a zero Cholesky factor', () => L.choSolve(zeroDiagonal, [1, 1]), /singular/],
+    ['luSolve of the factors of a singular matrix', () => L.luSolve(L.luFactor([[1, 2], [2, 4]]), [1, 2]), /singular/],
+    ['sqrtm of a matrix with a negative eigenvalue', () => L.sqrtm([[-1, 0], [0, 1]]), /^sqrtm:/],
+    ['logm of a matrix with a negative eigenvalue', () => L.logm([[-1, 0], [0, 1]]), /^logm:/],
+    ['signm of a singular matrix', () => L.signm([[0, 0], [0, 1]]), /^signm:/],
+  ])('%s throws a value error that names the cause', (_name, call, message) => {
+    expect(call).toThrow(expect.objectContaining({ code: 'value', message: expect.stringMatching(message) }))
+  })
+
+  it('takes a unit diagonal as it is, the square root of zero as zero, and the determinant of 0 x 0 as 1', () => {
+    expect(toArray(L.solveTriangular(zeroDiagonal, [1, 1], { lower: true, unitDiagonal: true }))).toEqual([1, 0])
+    expect(toArray(L.sqrtm([[0, 0], [0, 0]]))).toEqual([[0, 0], [0, 0]])
+    expect(toArray(L.det(zeros([0, 0])))).toBe(1)
+    expect(toArray(L.slogdet(zeros([2, 0, 0])).sign)).toEqual([1, 1])
   })
 })

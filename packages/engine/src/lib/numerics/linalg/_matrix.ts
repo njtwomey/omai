@@ -24,6 +24,20 @@ export function matrixShape(shape: readonly number[], name: string): { batch: nu
   return { batch: shape.slice(0, -2), m: shape[shape.length - 2] ?? 0, n: shape[shape.length - 1] ?? 0 }
 }
 
+/**
+ * Run an iteration built on `inv` and `solve` for the matrix function `name`: a singular matrix inside it is reported as
+ * `name: <reason>` (a `value` error), not as the message of the inner solve, which names neither the function nor the cause.
+ */
+export function namingSingular<T>(name: string, reason: string, run: () => T): T {
+  try {
+    return run()
+  } catch (error) {
+    if (error instanceof MdmlError && error.code === 'value' && error.message.includes('singular'))
+      throw new MdmlError('value', `${name}: ${reason}`)
+    throw error
+  }
+}
+
 /** Require a square matrix (or batch of them) and return its size. */
 export function squareSize(shape: readonly number[], name: string): number {
   const { m, n } = matrixShape(shape, name)

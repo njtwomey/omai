@@ -43,7 +43,7 @@ export interface TriangularOptions {
   readonly unitDiagonal: boolean
 }
 
-/** X with op(T) X = B, T the given triangle of an n x n matrix, B n x k. */
+/** X with op(T) X = B, T the given triangle of an n x n matrix, B n x k; throws when a diagonal entry (not taken as 1) is 0. */
 export function triangularKernel(
   t: Float64Array,
   b: Float64Array,
@@ -55,6 +55,10 @@ export function triangularKernel(
   const at = (i: number, j: number): number => (o.transpose ? (t[j * n + i] ?? 0) : (t[i * n + j] ?? 0))
   // Solving with the transpose of a lower triangle is an upper-triangular solve, and vice versa.
   const forward = o.lower !== o.transpose
+  if (!o.unitDiagonal)
+    for (let i = 0; i < n; i++)
+      if (at(i, i) === 0)
+        throw new MdmlError('value', `solveTriangular: the triangular factor is singular (zero on the diagonal at ${i})`)
   for (let c = 0; c < k; c++) {
     for (let step = 0; step < n; step++) {
       const i = forward ? step : n - 1 - step

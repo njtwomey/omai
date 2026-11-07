@@ -47,8 +47,12 @@ const slogdetPrimitive: Primitive<null> = definePrimitive<null>({
   impl: ([a]) => {
     const av = a as NonNullable<typeof a>
     const n = squareSize(av.shape, 'slogdet')
-    const results = matrices(av).map((m) => slogdetKernel(m, n))
     const batch = av.shape.slice(0, -2)
+    // The determinant of a 0 x 0 matrix is 1 (numpy), and `matrices` yields no matrices for it.
+    const results =
+      n === 0
+        ? Array.from({ length: batch.reduce((p, d) => p * d, 1) }, () => ({ sign: 1, logabsdet: 0 }))
+        : matrices(av).map((m) => slogdetKernel(m, n))
     const dtype = av.dtype as FloatDType
     return [
       assemble(
