@@ -463,3 +463,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   (the full gate was not run): engine, render, meta, site and pocs tsc; 301 files, 4,482 tests of `stats`, `metrics`, `vision`, `gam`,
   `anomaly`, `trees`, `ensembles`, `probprog` and `learn`; render's `smoke.test.tsx`; 229 `@example`s of the touched files; barrels,
   layers, lint, agent index, surface. Tests added: 1 `it` (a table). Surface: 0 added, 0 removed, 26 changed.
+- **18:40 Gate.** The core-test-gap merge (P3.7, P3.16) and native-array stage 2 (`stats`, `metrics`) passed the full local gate: 26,464 tests, 9,613 examples, all static checks and
+  all six tsc runs, first run. 178 commits ahead of `origin/main`; nothing pushed (D-014).
