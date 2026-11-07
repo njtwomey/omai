@@ -233,13 +233,12 @@ export type SumMethod = 'naive' | 'kahan' | 'neumaier' | 'pairwise'
 /**
  * Sum with a chosen algorithm, to compare their rounding errors: naive left-to-right; Kahan's compensated summation
  * (each addition's rounding error carried into the next); Neumaier's variant (also correct when a term exceeds the
- * running sum; base's kahanSum); pairwise (cascade) summation as numpy (base's pairwiseSum). Takes a tensor-like
- * (migration, D-009: was `ArrayLike<number>`).
+ * running sum; base's kahanSum); pairwise (cascade) summation as numpy (base's pairwiseSum). A kernel on plain numbers
+ * (migration, D-009: kept native, because reading a long list as a tensor-like made it five times slower).
  *
- * @param terms - The terms `[n]`.
+ * @param xs - Terms.
  * @param method - The algorithm (default neumaier).
  * @returns The sum.
- * @throws MdmlError with code `shape` unless `terms` is a vector, and `not-differentiable` for a traced value.
  * @concept floating-point
  * @example
  * ```ts
@@ -248,8 +247,7 @@ export type SumMethod = 'naive' | 'kahan' | 'neumaier' | 'pairwise'
  * compensatedSum([1, 1e100, 1, -1e100], 'kahan') // => 0
  * ```
  */
-export function compensatedSum(terms: TensorLike, method: SumMethod = 'neumaier'): number {
-  const xs = toVector(terms, 'compensatedSum')
+export function compensatedSum(xs: ArrayLike<number>, method: SumMethod = 'neumaier'): number {
   switch (method) {
     case 'naive': {
       let s = 0

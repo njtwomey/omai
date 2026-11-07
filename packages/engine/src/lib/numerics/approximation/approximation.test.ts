@@ -114,7 +114,6 @@ describe('approximation properties', () => {
       ['wynnEpsilon', (v) => [A.wynnEpsilon(v).value]],
       ['shanks', (v) => toFlat(A.shanks(v))],
       ['eulerTransform', (v) => [A.eulerTransform(v)]],
-      ['compensatedSum', (v) => [A.compensatedSum(v, 'kahan')]],
       ['chebyshev', (v) => [...A.chebyshev(v).coefficients]],
       ['chebyshevCoefficients', (v) => toFlat(A.chebyshevCoefficients(v))],
       ['chebyshevSeries', (v) => toFlat(A.chebyshevSeries(v, [0.5, -0.25]))],
