@@ -5,6 +5,7 @@
  */
 
 import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
+import { toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, runStatusOf } from '../trace/index.ts'
 import { matVec, quadraticValue, solveDense } from './_programming.ts'
 import { linprogSimplex } from './linear-programming.ts'
@@ -64,6 +65,7 @@ function independent(rows: readonly Float64Array[], basis: Float64Array[]): bool
  */
 export function qpActiveSetAlgorithm(qp: QpArrays, options: QpOptions = {}): Algorithm<QpActiveSetState> {
   const tol = options.tol ?? 1e-10
+  const start = options.x0 === undefined ? undefined : toVector(options.x0, 'qpActiveSet')
   const { n, G, h, A, b } = qp
   const mi = G.rows
   const scaleP = Math.max(1, Math.sqrt(ddot(qp.P, qp.P)))
@@ -153,7 +155,7 @@ export function qpActiveSetAlgorithm(qp: QpArrays, options: QpOptions = {}): Alg
     }),
     init: () => {
       let x: Float64Array
-      if (options.x0 !== undefined && feasible(options.x0)) x = Float64Array.from(options.x0)
+      if (start !== undefined && feasible(start)) x = Float64Array.from(start)
       else {
         const lp = linprogSimplex({
           c: new Float64Array(n),

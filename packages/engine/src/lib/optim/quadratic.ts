@@ -79,8 +79,11 @@ export interface QpOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'
   readonly maxIterations?: number
   /** Optimality and feasibility tolerance (default 1e-10 active set, 1e-9 interior point). */
   readonly tol?: number
-  /** A feasible starting point for the active-set method (otherwise found by a phase-1 linear program). */
-  readonly x0?: ArrayLike<number>
+  /**
+   * A feasible starting point for the active-set method (otherwise found by a phase-1 linear program): a vector
+   * (migration, D-009: was `ArrayLike<number>`; a tensor, a typed array or a list).
+   */
+  readonly x0?: TensorLike
 }
 
 /**
