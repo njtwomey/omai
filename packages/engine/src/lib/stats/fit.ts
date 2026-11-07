@@ -43,6 +43,7 @@ import {
   type TensorLike,
   take,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 import {
@@ -86,12 +87,14 @@ export interface NewtonMleOptions extends Partial<Omit<RunOptions, 'maxSteps' | 
 /**
  * Maximum likelihood by Newton's method as a traced algorithm: the score and Hessian of the log-likelihood come from
  * reverse- and forward-mode differentiation; a Hessian that is not negative definite is regularised (Levenberg) and
- * every step is halved until the log-likelihood increases.
+ * every step is halved until the log-likelihood increases. Takes tensors (migration, D-009: `eta0` was
+ * `readonly number[]`; nested arrays still work).
  *
  * @param logLikelihood - The log-likelihood of an unconstrained parameter vector (a differentiable tensor function).
- * @param eta0 - The starting point.
+ * @param eta0 - The starting point: a vector (a tensor, a typed array or a flat array).
  * @param options - tol.
  * @returns The algorithm.
+ * @throws MdmlError with code `shape` unless `eta0` is a vector.
  * @example
  * ```ts
  * import { newtonMleAlgorithm } from 'mdml-engine/stats'
@@ -103,10 +106,11 @@ export interface NewtonMleOptions extends Partial<Omit<RunOptions, 'maxSteps' | 
  */
 export function newtonMleAlgorithm(
   logLikelihood: (eta: Value) => Value,
-  eta0: readonly number[],
+  eta0: TensorLike,
   options: { readonly tol?: number } = {},
 ): Algorithm<NewtonMleState> {
-  const p = eta0.length
+  const start = toVector(eta0, 'newtonMleAlgorithm')
+  const p = start.length
   const tol = options.tol ?? 1e-10
   const value = (eta: Float64Array): number => {
     const v = item(logLikelihood(asTensor(eta)) as Tensor)
@@ -114,7 +118,7 @@ export function newtonMleAlgorithm(
   }
   const score = grad(logLikelihood)
   const hess = hessian(logLikelihood)
-  const initial = Float64Array.from(eta0)
+  const initial = Float64Array.from(start)
   return {
     name: 'newtonMle',
     config: { parameters: p, tol },
@@ -187,7 +191,8 @@ export function newtonMleAlgorithm(
 /** A maximum-likelihood problem: a log-likelihood of unconstrained parameters and where to start. */
 export interface MleProblem {
   readonly logLikelihood: (eta: Value) => Value
-  readonly eta0: readonly number[]
+  /** The starting point: a vector (a tensor, a typed array or a flat array). */
+  readonly eta0: TensorLike
 }
 
 /**
@@ -205,7 +210,7 @@ export interface MleProblem {
 export function mleSmoothProblem(problem: MleProblem): SmoothProblem {
   return {
     objective: (eta) => neg(problem.logLikelihood(eta as Value)),
-    x0: Float64Array.from(problem.eta0),
+    x0: Float64Array.from(toVector(problem.eta0, 'mleSmoothProblem')),
   }
 }
 
@@ -247,13 +252,15 @@ export interface NewtonMleResult {
 }
 
 /**
- * Maximise a log-likelihood by Newton's method ({@link newtonMleAlgorithm}, traced).
+ * Maximise a log-likelihood by Newton's method ({@link newtonMleAlgorithm}, traced). Takes tensors (migration, D-009:
+ * `eta0` was `readonly number[]`; nested arrays still work).
  *
  * @param logLikelihood - The log-likelihood of an unconstrained parameter vector.
- * @param eta0 - The starting point.
+ * @param eta0 - The starting point: a vector (a tensor, a typed array or a flat array).
  * @param options - maxIterations, tol, tracer, policy, and `solver` (a value of `mleSolvers.space`: the default
  *   Levenberg Newton or any generic solver of `smoothSolvers`).
  * @returns The maximiser and its log-likelihood.
+ * @throws MdmlError with code `shape` unless `eta0` is a vector.
  * @example
  * ```ts
  * import { newtonMle } from 'mdml-engine/stats'
@@ -263,7 +270,7 @@ export interface NewtonMleResult {
  */
 export function newtonMle(
   logLikelihood: (eta: Value) => Value,
-  eta0: readonly number[],
+  eta0: TensorLike,
   options: NewtonMleOptions = {},
 ): NewtonMleResult {
   const { maxIterations, tol, solver, ...run } = options
@@ -295,11 +302,13 @@ export function newtonMle(
 
 /**
  * The observed information -d^2 l / d theta^2 of a log-likelihood at a point (by automatic differentiation), whose
- * inverse is the asymptotic covariance of the maximum-likelihood estimate.
+ * inverse is the asymptotic covariance of the maximum-likelihood estimate. Takes tensors (migration, D-009: `theta` was
+ * `readonly number[]`; nested arrays still work).
  *
  * @param logLikelihood - The log-likelihood of a parameter vector.
- * @param theta - The point (usually the MLE).
+ * @param theta - The point (usually the MLE): a vector (a tensor, a typed array or a flat array).
  * @returns The p x p observed information.
+ * @throws MdmlError with code `shape` unless `theta` is a vector.
  * @example
  * ```ts
  * import { observedInformation } from 'mdml-engine/stats'
@@ -307,9 +316,10 @@ export function newtonMle(
  * observedInformation((t: Value): Value => neg(sum(mul(square(t), 2))), [1]) // => [[4]]
  * ```
  */
-export function observedInformation(logLikelihood: (theta: Value) => Value, theta: readonly number[]): Tensor {
-  const p = theta.length
-  const H = toFlat(hessian(logLikelihood)(asTensor(Float64Array.from(theta))))
+export function observedInformation(logLikelihood: (theta: Value) => Value, theta: TensorLike): Tensor {
+  const point = toVector(theta, 'observedInformation')
+  const p = point.length
+  const H = toFlat(hessian(logLikelihood)(asTensor(Float64Array.from(point))))
   return mat(
     H.map((v) => -v),
     p,
