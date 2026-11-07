@@ -8,6 +8,7 @@ import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
+import { nuSvcProblem, nuSvrProblem } from './_smo-problems.ts'
 import { TAU, updatePair } from './_smo-update.ts'
 import type { SmoOptions, SmoState, SvmDualResult } from './smo.ts'
 
@@ -344,10 +345,7 @@ export function nuSvcDual(kernel: TensorLike, labels: TensorLike, nu: number, op
   const y = vectorFrom(labels)
   const n = y.length
   const K = matrixFrom(kernel, n, 'kernel').data
-  const Q = Array.from({ length: n }, (_, i) =>
-    Array.from({ length: n }, (_, j) => (y[i] ?? 1) * (y[j] ?? 1) * (K[i * n + j] ?? 0)),
-  )
-  const s = solveNu({ Q, p: new Float64Array(n), y, C: 1, alpha0: nuSvcStart(y, nu) }, options)
+  const s = solveNu(nuSvcProblem(K, y, nuSvcStart(y, nu)), options)
   const { rho, margin } = nuRho(s.alpha, s.grad, y, 1)
   const alpha = s.alpha.map((a) => a / margin)
   let objective = 0
@@ -395,14 +393,11 @@ export function nuSvrDual(
   const t = vectorFrom(targets)
   const n = t.length
   const K = matrixFrom(kernel, n, 'kernel').data
+  const problem = nuSvrProblem(K, t, C, nuSvrStart(n, C, nu))
+  const s = solveNu(problem, options)
   const m = 2 * n
-  const y = Float64Array.from({ length: m }, (_, i) => (i < n ? 1 : -1))
-  const Q = Array.from({ length: m }, (_, i) =>
-    Array.from({ length: m }, (_, j) => (y[i] ?? 1) * (y[j] ?? 1) * (K[(i % n) * n + (j % n)] ?? 0)),
-  )
-  const p = Float64Array.from({ length: m }, (_, i) => (i < n ? -(t[i] ?? 0) : (t[i - n] ?? 0)))
-  const s = solveNu({ Q, p, y, C, alpha0: nuSvrStart(n, C, nu) }, options)
-  const { rho, margin } = nuRho(s.alpha, s.grad, y, C)
+  const p = vectorFrom(problem.p)
+  const { rho, margin } = nuRho(s.alpha, s.grad, s.y, C)
   let objective = 0
   for (let i = 0; i < m; i++) objective += 0.5 * (s.alpha[i] ?? 0) * ((s.grad[i] ?? 0) + (p[i] ?? 0))
   return {
