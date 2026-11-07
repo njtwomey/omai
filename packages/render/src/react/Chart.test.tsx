@@ -100,3 +100,30 @@ describe('Chart', () => {
     expect(last.handlers.size).toBe(0)
   })
 })
+
+describe('Chart text alternative', () => {
+  it('is an image labelled by the reader\'s text, else the option\'s own description, else its title, else "Chart"', async () => {
+    const labelOf = (m: Awaited<ReturnType<typeof mountElement>>): unknown =>
+      m.elements().find((e) => e.props['data-mdml-chart'] !== undefined)?.props
+    const cases: readonly [ChartProps, string][] = [
+      [{ option: {}, label: 'Loss over steps' }, 'Loss over steps'],
+      [
+        { option: { aria: { label: { description: 'A vector field' } }, title: { text: 'ignored' } } },
+        'A vector field',
+      ],
+      [{ option: { title: [{ text: 'Loss' }] } }, 'Loss'],
+      [{ option: {} }, 'Chart'],
+    ]
+    for (const [props, want] of cases) {
+      const m = await mountElement(<Chart {...props} />)
+      expect(labelOf(m)).toMatchObject({ role: 'img', 'aria-label': want })
+      await m.unmount()
+    }
+    // A label of the reader's own is also the description ECharts writes to the element, in place of a generated one.
+    host.props = { option: { series: [] }, label: 'Loss over steps' }
+    const m = await mountElement(<Host />)
+    const drawn = setOptions(made.at(-1) as FakeChart).at(-1)?.[0] as { aria: unknown }
+    expect(drawn.aria).toEqual({ enabled: true, label: { description: 'Loss over steps' } })
+    await m.unmount()
+  })
+})

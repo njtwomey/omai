@@ -44,6 +44,30 @@ function forRenderer(option: EChartsCoreOption, renderer: 'canvas' | 'svg'): ECh
   return { ...option, series: reencodeImages(series as SeriesOption[], canvasImage) } as EChartsCoreOption
 }
 
+interface AriaParts {
+  readonly aria?: { readonly label?: { readonly description?: unknown } }
+  readonly title?: unknown
+}
+
+// A text for a screen reader: the option's own description (`ariaOf` in the views), else the text of its title.
+function textOf(option: EChartsCoreOption): string | undefined {
+  const { aria, title } = option as AriaParts
+  const description = aria?.label?.description
+  if (typeof description === 'string' && description !== '') return description
+  const texts = (Array.isArray(title) ? title : [title]).map((t) => (t as { text?: unknown } | undefined)?.text)
+  return texts.find((t): t is string => typeof t === 'string' && t !== '')
+}
+
+// The option with the reader's own text as its description (ECharts writes the description to the chart's element).
+function labelled(option: EChartsCoreOption, label: string | undefined): EChartsCoreOption {
+  if (label === undefined) return option
+  const { aria } = option as AriaParts
+  return {
+    ...option,
+    aria: { enabled: true, ...aria, label: { ...aria?.label, description: label } },
+  } as EChartsCoreOption
+}
+
 /** Props of {@link Chart}. */
 export interface ChartProps {
   /** The option, from a `mdml-render/charts` builder or written by hand. */
@@ -62,6 +86,11 @@ export interface ChartProps {
   readonly onEvents?: Readonly<Record<string, ChartEventHandler>>
   /** Called with the instance after it is created (for `dispatchAction`, export and the like). */
   readonly onInit?: (chart: EChartsInstance) => void
+  /**
+   * What a screen reader says of the chart (default: the option's own description, else its title, else "Chart"). The
+   * container is an image with this label; ECharts is told the same text, so it does not replace it with a generated one.
+   */
+  readonly label?: string
   /** Charts with the same group are connected: hover, tooltips and zoom are shared (`echarts.connect`). */
   readonly group?: string
   /** Merge new options into the old one instead of replacing it (default false: replace). */
@@ -82,7 +111,7 @@ export interface ChartProps {
  * @index function React component: draw an ECharts option, themed and resized: `<Chart option={option} />`
  */
 export function Chart(props: ChartProps): ReactElement {
-  const { option, figure, renderer = 'canvas', onEvents, onInit, group, merge = false } = props
+  const { option, figure, renderer = 'canvas', onEvents, onInit, group, merge = false, label } = props
   const contextMode = useColourMode()
   const frame = useFrameSize()
   const mode = props.mode ?? contextMode
@@ -91,6 +120,8 @@ export function Chart(props: ChartProps): ReactElement {
   const [chart, setChart] = useState<EChartsInstance | null>(null)
   const optionRef = useRef(option)
   optionRef.current = option
+  const labelRef = useRef(label)
+  labelRef.current = label
   const onInitRef = useRef(onInit)
   onInitRef.current = onInit
 
@@ -104,7 +135,7 @@ export function Chart(props: ChartProps): ReactElement {
       renderer,
       ...(ratio === undefined ? {} : { devicePixelRatio: (globalThis.devicePixelRatio || 1) * ratio }),
     })
-    instance.setOption(forRenderer(optionRef.current, renderer), { notMerge: true })
+    instance.setOption(forRenderer(labelled(optionRef.current, labelRef.current), renderer), { notMerge: true })
     onInitRef.current?.(instance)
     setChart(instance)
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => instance.resize())
@@ -117,8 +148,8 @@ export function Chart(props: ChartProps): ReactElement {
   }, [mode, renderer, ratio])
 
   useEffect(() => {
-    chart?.setOption(forRenderer(option, renderer), { notMerge: !merge, lazyUpdate: true })
-  }, [chart, option, merge, renderer])
+    chart?.setOption(forRenderer(labelled(option, label), renderer), { notMerge: !merge, lazyUpdate: true })
+  }, [chart, option, merge, renderer, label])
 
   // Colour bar selections: layers ECharts cannot recolour (images, baked cells) are repainted with the values outside
   // the selection dimmed, at most once per animation frame while a handle is dragged.
@@ -167,6 +198,8 @@ export function Chart(props: ChartProps): ReactElement {
   return (
     <div
       ref={ref}
+      role="img"
+      aria-label={label ?? textOf(option) ?? 'Chart'}
       className={props.className}
       style={{ width, height, maxWidth: '100%', ...props.style }}
       data-mdml-chart=""

@@ -117,6 +117,8 @@ export function echartsTheme(mode: ColourMode): {
       handleStyle: { color: t.surface, borderColor: t.muted },
     },
     markLine: { lineStyle: { color: t.muted }, label: { color: t.fgSecondary } },
+    // ECharts describes a chart to a screen reader from its title, series and axes (a view's `ariaOf` text wins).
+    aria: { enabled: true },
     animation: false,
   }
 }

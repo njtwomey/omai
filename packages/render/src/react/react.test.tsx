@@ -96,6 +96,8 @@ describe('FigureFrame', () => {
         <Chart option={lineChart([{ y: [1, 2] }])} />
       </FigureFrame>,
     )
+    expect(html).toMatch(/<figure[^>]*aria-labelledby="([^"]+)"/)
+    expect(html).toContain(`id="${html.match(/aria-labelledby="([^"]+)"/)?.[1]}"`)
     expect(html).toContain('aria-label="Expand"')
     expect(html).toContain('aria-label="Export"')
     expect(html).toContain('<figcaption')

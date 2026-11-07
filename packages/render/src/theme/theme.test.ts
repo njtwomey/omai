@@ -139,5 +139,7 @@ describe('echarts theme', () => {
     expect(echartsTheme('dark').backgroundColor).toBe('transparent')
     expect(axisStyle('dark', 14).nameTextStyle.fontSize).toBe(14)
     expect(baseOption('light').color).toEqual(tab10)
+    // ECharts describes every chart to a screen reader unless a view gives its own text.
+    expect(echartsTheme('light')['aria']).toEqual({ enabled: true })
   })
 })

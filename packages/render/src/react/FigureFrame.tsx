@@ -13,6 +13,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react'
@@ -235,6 +236,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const width = props.width ?? props.figure?.width ?? 640
   const height = props.height ?? props.figure?.height ?? 400
   const aspect = width / height
+  const titleId = useId()
   const [expanded, setExpanded] = useState(false)
   const [menu, setMenu] = useState(false)
   const [viewport, setViewport] = useState({ width: 1200, height: 800 })
@@ -412,11 +414,19 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
     </div>
   )
   return (
-    <figure className={props.className} style={{ margin: 0, width, maxWidth: '100%', ...props.style }}>
+    <figure
+      className={props.className}
+      style={{ margin: 0, width, maxWidth: '100%', ...props.style }}
+      {...(props.title === undefined ? {} : { 'aria-labelledby': titleId })}
+    >
       {(props.title !== undefined || hasTools) && (
         // The title and the buttons sit above the figure area, so they never cover a legend or data.
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, minHeight: 28 }}>
-          {props.title !== undefined && <div style={{ font: `600 13px ${t.font}`, color: t.fg }}>{props.title}</div>}
+          {props.title !== undefined && (
+            <div id={titleId} style={{ font: `600 13px ${t.font}`, color: t.fg }}>
+              {props.title}
+            </div>
+          )}
           {hasTools && toolbar(false)}
         </div>
       )}
