@@ -1,5 +1,5 @@
 import { expect, describe as group, it } from 'vitest'
-import { quantileOf } from '../base/index.ts'
+import { isMdmlError, quantileOf } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { add, mul, reshape, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
@@ -58,6 +58,7 @@ import {
   sequentialSampler,
   sha256Hex,
   shuffleRows,
+  stratifiedIndices,
   stratifiedSplit,
   subsetRandomSampler,
   TableDataSchema,
@@ -233,6 +234,54 @@ group('rows and splits', () => {
     const r = fromTensors(d, { x: mul(d.x, 2) })
     expect(toFlat(r.x)[1]).toBe(2)
     expect(() => fromTensors(d, { classes: tensor([1]) })).toThrow(/per-row/)
+  })
+})
+
+/** The error code a call fails with, or `undefined` when it returns. */
+function codeOf(f: () => unknown): string | undefined {
+  try {
+    f()
+  } catch (e) {
+    return isMdmlError(e) ? e.code : `not an MdmlError: ${String(e)}`
+  }
+  return undefined
+}
+
+group('invalid arguments at the data boundary', () => {
+  const d = xyClasses(
+    Array.from({ length: 8 }, (_, i) => [i]),
+    [0, 0, 0, 0, 0, 0, 1, 1],
+  )
+  const k = key(0)
+  it('refuse sizes and indices that are not whole numbers in range, in every row operation', () => {
+    const rows: [string, () => unknown][] = [
+      ['testSize NaN', () => trainTestSplit(d, { testSize: Number.NaN })],
+      ['testSize Infinity', () => trainTestSplit(d, { testSize: Number.POSITIVE_INFINITY })],
+      ['testSize negative', () => trainTestSplit(d, { testSize: -0.2 })],
+      ['testSize 2.5 rows', () => trainTestSplit(d, { testSize: 2.5 })],
+      ['testSize larger than the rows', () => trainTestSplit(d, { testSize: 9 })],
+      ['valSize NaN', () => trainValTestSplit(d, { valSize: Number.NaN })],
+      ['stratified testSize NaN', () => stratifiedSplit(d, { testSize: Number.NaN, key: k })],
+      ['stratifiedIndices more test rows than rows', () => stratifiedIndices([0, 1], 5, k)],
+      ['stratifiedIndices negative test rows', () => stratifiedIndices([0, 1], -1, k)],
+      ['stratifiedIndices fractional test rows', () => stratifiedIndices([0, 1], 0.5, k)],
+      ['stratifiedIndices NaN label', () => stratifiedIndices([0, Number.NaN], 1, k)],
+      ['take NaN', () => take(d, [Number.NaN])],
+      ['take a fraction', () => take(d, [1.7])],
+      ['take Infinity', () => take(d, [Number.POSITIVE_INFINITY])],
+      ['take a float tensor with a fraction', () => take(d, tensor([0.5]))],
+      ['take negative', () => take(d, [-1])],
+      ['take past the end', () => take(d, [8])],
+      ['bootstrap negative size', () => bootstrap(d, k, -1)],
+      ['bootstrap fractional size', () => bootstrap(d, k, 2.5)],
+      ['bootstrap size 0', () => bootstrap(d, k, 0)],
+      ['bootstrap of no rows', () => bootstrap(take(d, []), k)],
+    ]
+    for (const [name, f] of rows) expect(codeOf(f), name).toBe('value')
+    // Valid arguments still work: a fraction, a count, an exact count of every row but one.
+    expect(rowCount(trainTestSplit(d, { testSize: 0.25 }).test)).toBe(2)
+    expect(rowCount(trainTestSplit(d, { testSize: 3 }).test)).toBe(3)
+    expect(rowCount(take(d, tensor([0, 7])))).toBe(2)
   })
 })
 
