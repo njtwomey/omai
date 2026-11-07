@@ -251,3 +251,25 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   9,570 examples, all static checks and all six tsc runs. The test count is 165 above the last gate (26,208) because each table row of an `it.each` counts as
   a test: the count of `it` blocks rose by 45 since the start of this session's fixes (none removed), inside the review's estimate of +40 to +60. Two existing tests pinned bugs and were changed by the agents
   (`knowledge-graph.test.ts`: bound 4x to 3x chance after the stochastic mode stopped converging early; `kernel-quantile.test.ts`: the LP support count is not monotone in the penalty).
+- **16:05 Wave B, exposition, scene and render (P3.37, P3.41, P3.43), `agent-ex02-exposition`, eight commits, not pushed.** P3.43 first, because it is
+  mechanical: `base` already had `maxOf` and `minOf` (the finding had missed it), so one rewrite replaced every `Math.max(...x)` and `Math.min(...x)` of
+  engine and render that was not in a doc comment (376 sites, not 65: the register counted only the data-length ones in render; tsc found the
+  `Map.keys()` ones) and the `Math.hypot(...grad)` of `causal/_solve.ts`, pacmap, trimap, the finite-element solver and render's tensor summary by `dnrm2`. Same
+  results (NaN propagates, an empty list gives plus or minus Infinity); a `RangeError` at 200,000 values on main, passing now in `maxOf`, `minmaxNormalise`,
+  `wantsLog` and `limitsOf`. Not done: `Math.hypot(...v)` over a dimension-sized vector (about 50 sites) and `allX.push(...x)` in `charts/points.ts`, which has the
+  same limit. P3.37: `seal` in `exposition/_check.ts` ends all 61 constructors: a deep copy (no array shared with the caller), NaN and infinities rejected
+  with `MdmlError('value')` except the fields a table lists per kind (`SEAL_OPTIONS`). The table was found, not designed: I ran the 422 test files of the 18
+  domains that build records, and the gaps are `coefficientTable` standard errors, intervals and p-values, `decisionSurface` decision and values (a log-probability can
+  be minus infinity; a surface can have NaN cells) and `thresholdSweep` (rates and areas undefined with one class, an infinite first threshold). Scenes and
+  structures inside `sceneSteps`, `structureSteps` and `diagram` are kept by reference: their own builders check them, and a test pinned their identity. `KINDS` is
+  a `Record<ExpositionKind, true>`; `expositionSamples` is a valid record of each kind, the fixtures of `records.contract.test.ts` (3 `it`) and of render's smoke
+  tests. The scene builders check finite coordinates and sizes >= 0, grid columns, fps, step and duplicate ids. One design call: `structure()` does not reject an
+  edge to a missing id, because `mergeStructures` is documented to join parts whose edges name nodes of another part and `structure.test.ts` pinned it; the check
+  is on the merged result. Fairness: a group with no rows is left out of the disparity gaps (`groupDisparities` takes the counts); `tableRates` keeps 0 for an empty
+  denominator because the fairness optimisers compare rates. Not done: paths, polygons, groups, `validateScene` and the camera table (KDES-14, 22 in part). P3.41:
+  `viewFor` names an unknown kind (it was a `TypeError`), `ExpositionView` wraps every view in the new `RecordBoundary` and draws a note for a kind with no view,
+  `SessionExport` takes an optional `registry` and refuses a tape for a method the page does not have, `parseTape` checks head, path kinds, firing steps and
+  probes; smoke tests draw a sample of each of the 61 kinds (the `audio` sample needed a second of tone). Surface: 3 added (`expositionSamples`, `RecordBoundary`,
+  `RecordBoundaryProps`) and 2 changed (`groupDisparities`, `SessionExportProps`, each one optional parameter or field), 0 removed. Test count: 9 `it` blocks added, none
+  removed. Own checks only (the full gate was not run): the 422 test files of the 18 record-building domains, 465 of the scene-building ones, the 48 sibling tests of
+  the other touched files, all 87 render test files, 989 examples, tsc of engine and render, barrels, layers, lint, agent index and surface.

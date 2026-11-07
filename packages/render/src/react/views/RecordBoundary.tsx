@@ -21,7 +21,7 @@ interface RecordBoundaryState {
  * Catches an error thrown while a record's view renders and draws "this record could not be drawn" with the message
  * instead. A different `record` clears the failure.
  *
- * @index function React component: a boundary around a record view, so one bad record does not blank the page: `<RecordBoundary record={record}>`
+ * @index function React component: error boundary around a record view: `<RecordBoundary record={r}>`
  */
 export class RecordBoundary extends Component<RecordBoundaryProps, RecordBoundaryState> {
   override state: RecordBoundaryState = { error: null }
