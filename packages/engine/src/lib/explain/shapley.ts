@@ -5,7 +5,7 @@
  * correlated), Owen values and partition SHAP over feature hierarchies, and SAGE's global importance.
  */
 
-import { MdmlError, minOf, popcount } from '../base/index.ts'
+import { factorialOf, MdmlError, minOf, popcount } from '../base/index.ts'
 import { type CoalitionalGame, coalitionalGame, shapleyInteractionIndex, shapleyValue } from '../games/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import { type FitOptions, type LearnData, requireTargets } from '../learn/estimator.ts'
@@ -620,12 +620,6 @@ function leavesOf(h: FeatureHierarchy): number[] {
   return typeof h === 'number' ? [h] : h.flatMap(leavesOf)
 }
 
-function factorial(k: number): number {
-  let r = 1
-  for (let i = 2; i <= k; i++) r *= i
-  return r
-}
-
 /**
  * Owen values (Owen 1977; Winter 1989 for nested levels): the Shapley value of a game with a coalition structure.
  * Groups are first ordered among their siblings, then players within their group, so a player's value averages its
@@ -691,7 +685,7 @@ export function owenValues(value: CoalitionValue, hierarchy: FeatureHierarchy): 
             size += 1
           }
         })
-        go(level + 1, b, (weight * factorial(size) * factorial(c - size - 1)) / factorial(c))
+        go(level + 1, b, (weight * factorialOf(size) * factorialOf(c - size - 1)) / factorialOf(c))
       }
     }
     go(0, 0, 1)

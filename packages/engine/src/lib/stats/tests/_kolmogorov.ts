@@ -3,6 +3,7 @@
 // Ruben-Gambino and Smirnov tails, Pelz and Good's asymptotic series for large n, and the exact two-sample
 // distribution by counting lattice paths through the band the statistic allows.
 
+import { gcdOf } from '../../base/index.ts'
 import { smirnov } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import { matmul } from '../_linear.ts'
@@ -159,20 +160,13 @@ export function kolmogn(n: number, x: number, sf: boolean): number {
   return pick(cdf, 1 - cdf)
 }
 
-function gcd(a: number, b: number): number {
-  let x = a
-  let y = b
-  while (y) [x, y] = [y, x % y]
-  return x
-}
-
 /**
  * The exact null tail of the two-sample Kolmogorov-Smirnov statistic for sizes n1, n2: P(D >= d) (two-sided) or P(D+ >=
  * d) (one-sided), by the probability mass of a random lattice path from (0, 0) to (n1, n2) that leaves the band the
  * statistic allows. Returns the rounded statistic h / lcm as scipy does.
  */
 export function ks2Exact(n1: number, n2: number, d: number, twoSided: boolean): { d: number; p: number } {
-  const g = gcd(n1, n2)
+  const g = gcdOf(n1, n2)
   const lcm = (n1 / g) * n2
   const h = Math.round(d * lcm)
   const dr = h / lcm

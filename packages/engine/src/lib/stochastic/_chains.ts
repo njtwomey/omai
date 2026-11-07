@@ -1,5 +1,5 @@
 // Internal helpers of the Markov chain modules: validation, classification and linear-algebra blocks.
-import { MdmlError } from '../base/index.ts'
+import { gcdOf, MdmlError } from '../base/index.ts'
 import { digraph, stronglyConnectedComponents } from '../graph/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import {
@@ -109,13 +109,6 @@ export interface RawClassification {
   readonly absorbing: number[]
 }
 
-function gcd(a: number, b: number): number {
-  let x = Math.abs(a)
-  let y = Math.abs(b)
-  while (y !== 0) [x, y] = [y, x % y]
-  return x
-}
-
 /** Communicating classes, closedness, periods and absorbing states of a chain given by its rows. */
 export function classify(n: number, rows: readonly (readonly number[])[]): RawClassification {
   const edges: [number, number][] = []
@@ -140,7 +133,7 @@ export function classify(n: number, rows: readonly (readonly number[])[]): RawCl
     }
     let d = 0
     for (const u of c) {
-      for (const v of c) if ((rows[u]?.[v] ?? 0) > 0) d = gcd(d, (level.get(u) ?? 0) + 1 - (level.get(v) ?? 0))
+      for (const v of c) if ((rows[u]?.[v] ?? 0) > 0) d = gcdOf(d, (level.get(u) ?? 0) + 1 - (level.get(v) ?? 0))
     }
     return d === 0 ? 1 : d
   })

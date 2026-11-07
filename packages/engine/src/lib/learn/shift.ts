@@ -4,7 +4,7 @@
  * `emPriorAdjustment`), and the posteriors adjusted to them (`adjustPriors`). Covariate shift is in `density-ratio.ts`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { argmaxOf, MdmlError } from '../base/index.ts'
 import { dgemm, dgemv, pinv, solve } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -79,12 +79,6 @@ export interface BbseResult {
   readonly weights: readonly number[]
   /** Source joint confusion matrix `C[yhat, y]` `[k, k]`, where `C * w = mu_T`. */
   readonly confusionMatrix: Tensor<'float64'>
-}
-
-function argmaxRow(row: Float64Array): number {
-  let best = 0
-  for (let c = 1; c < row.length; c++) if ((row[c] ?? 0) > (row[best] ?? 0)) best = c
-  return best
 }
 
 /**
@@ -165,7 +159,7 @@ export function blackBoxShiftEstimate(
       if (expectedN !== undefined && m.n !== expectedN) {
         throw new MdmlError('shape', 'blackBoxShiftEstimate: sourcePred and sourceTrue row counts differ')
       }
-      return Int32Array.from({ length: m.n }, (_, i) => argmaxRow(m.data.subarray(i * k, (i + 1) * k)))
+      return Int32Array.from({ length: m.n }, (_, i) => argmaxOf(m.data.subarray(i * k, (i + 1) * k)))
     }
     const v = targetVector(pred, 'blackBoxShiftEstimate', expectedN)
     return Int32Array.from(v, (lbl) => {

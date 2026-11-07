@@ -5,7 +5,7 @@
  * decomposition of a filter.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { gcdOf, MdmlError } from '../base/index.ts'
 import { fftConvolve } from '../numerics/convolution/index.ts'
 import { fftshift, irfft, rfft } from '../numerics/fourier/index.ts'
 import type { Lti } from '../systems/index.ts'
@@ -31,7 +31,7 @@ import {
   zeros,
 } from '../tensor/index.ts'
 import { extendRows } from './_extend.ts'
-import { constant, float, gcd, indexTensor, positiveInt, rowsOf } from './_shared.ts'
+import { constant, float, indexTensor, positiveInt, rowsOf } from './_shared.ts'
 import { filtfilt, lfilter, sosfilt, sosfiltfilt } from './filters/apply.ts'
 import { firwin } from './filters/fir.ts'
 import { cheby1 } from './filters/iir.ts'
@@ -168,7 +168,7 @@ export interface ResamplePolyOptions {
 export function resamplePoly(x: TensorLike, up: number, down: number, options: ResamplePolyOptions = {}): Value {
   positiveInt(up, 'resamplePoly: up')
   positiveInt(down, 'resamplePoly: down')
-  const g = gcd(up, down)
+  const g = gcdOf(up, down)
   const u = up / g
   const d = down / g
   const v = float(x)

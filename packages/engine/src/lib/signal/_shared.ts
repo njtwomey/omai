@@ -81,18 +81,6 @@ export function rowsOf(
   }
 }
 
-/** Greatest common divisor of two non-negative integers. */
-export function gcd(a: number, b: number): number {
-  let x = Math.abs(a)
-  let y = Math.abs(b)
-  while (y !== 0) {
-    const t = x % y
-    x = y
-    y = t
-  }
-  return x
-}
-
 /** numpy.sinc: sin(pi x) / (pi x), 1 at 0 and exactly 0 at the other integers. */
 export function sinc(x: number): number {
   if (x === 0) return 1

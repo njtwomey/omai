@@ -248,6 +248,44 @@ export function argminOf(xs: ArrayLike<number>): number {
   return best
 }
 
+const FACTORIALS: number[] = [1]
+for (let i = 1; i <= 170; i++) FACTORIALS.push((FACTORIALS[i - 1] ?? 1) * i)
+
+/**
+ * n! as a double, by the running product (exact up to 22!, rounded after that).
+ *
+ * @param n - A non-negative integer.
+ * @returns n!, `Infinity` above 170 and `NaN` for a negative or non-integer argument.
+ * @example
+ * ```ts
+ * import { factorialOf } from 'mdml-engine/base'
+ * factorialOf(5) // => 120
+ * ```
+ */
+export function factorialOf(n: number): number {
+  if (!Number.isInteger(n) || n < 0) return Number.NaN
+  return n > 170 ? Infinity : (FACTORIALS[n] ?? Infinity)
+}
+
+/**
+ * The greatest common divisor of two integers, by Euclid's algorithm (non-negative; the gcd of 0 and 0 is 0).
+ *
+ * @param a - An integer.
+ * @param b - An integer.
+ * @returns The gcd.
+ * @example
+ * ```ts
+ * import { gcdOf } from 'mdml-engine/base'
+ * gcdOf(12, -18) // => 6
+ * ```
+ */
+export function gcdOf(a: number, b: number): number {
+  let x = Math.abs(a)
+  let y = Math.abs(b)
+  while (y) [x, y] = [y, x % y]
+  return x
+}
+
 /**
  * The integers `start, start + step, ...` below `stop`.
  *

@@ -1,7 +1,7 @@
 // Scalar kernels for the special functions. Each is a standard published method; accuracy targets are about 1e-14
 // relative unless noted, and every kernel is checked against scipy fixtures.
 
-import { EULER_GAMMA } from '../../base/index.ts'
+import { EULER_GAMMA, factorialOf } from '../../base/index.ts'
 
 export const SQRT_PI = 1.7724538509055159
 export const SQRT_2PI = 2.5066282746310002
@@ -253,13 +253,7 @@ export function lgamma(x: number): number {
   return LOG_SQRT_2PI + (z + 0.5) * Math.log(t) - t + Math.log(lanczosSum(z))
 }
 
-const FACTORIALS: number[] = [1]
-for (let i = 1; i <= 170; i++) FACTORIALS.push((FACTORIALS[i - 1] ?? 1) * i)
-
-export function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) return Number.NaN
-  return n > 170 ? Infinity : (FACTORIALS[n] ?? Infinity)
-}
+export const factorial: (n: number) => number = factorialOf
 
 export function gamma(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
