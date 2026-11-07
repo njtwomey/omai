@@ -121,3 +121,9 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   gives `optimal`; `b = Infinity` gives `x = [Infinity, 0]`) and there are two status vocabularies; the default Bland rule needs 223 pivots
   at 40 by 80 against 16 for Dantzig, and `linprog` runs up to five solves on plain packing programs. The `optim` to `dists` import is
   type-only: the real order is `dists < optim < losses`.
+- **12:00 Result.** Dists, stats and metrics read (30 findings, `findings/dists-stats-metrics.md`; about 45 files). The common distributions
+  are in good shape. No policy for NaN, Infinity or empty input: the special functions `chdtr`/`chdtrc`/`fdtr`/`fdtrc` turn NaN into 0 or
+  1 (`chi2Sf(1, NaN)` is 1, so every chi-square or F test gives `p = 1` for a NaN statistic); `spearman` and `kendallTau` return 1 for NaN data
+  in both stats and metrics; `cdf(NaN)` depends on the family. `sampleWeight` is accepted by `MetricOptions` but ignored by 33 of 99 numeric
+  metrics; for empty input 156 metrics split 60 NaN, 52 a number, 39 throw. Sampling is about 100 times slower than the batch sampler in `random`
+  (the per-draw uniform block, foundations FD-2). The right input type of a metric under the tensor rule: `TensorLike | string[]` in.
