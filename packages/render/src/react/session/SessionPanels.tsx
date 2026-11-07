@@ -19,7 +19,7 @@ import { categoricalColour } from '../../theme/palettes.ts'
 import { parameterTrajectories, stepPositions } from '../../trace/tensors.ts'
 import { type MatrixMark, matrixMarksView } from '../../views/matrix-marks.ts'
 import { saveBlob } from '../_download.ts'
-import { Chart } from '../Chart.tsx'
+import { Chart, type ChartProps } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
@@ -371,6 +371,26 @@ function useRuns(variants: readonly LiveVariant<any, any>[]): readonly Run[] {
   return useMemo(() => variants.map((v) => v.live.session.run()), [first, version, variants.length])
 }
 
+// The shell the chart panels of the tape share: one chart in a fixed-size figure frame, with a caption when it has one.
+function ChartPanel(props: {
+  readonly title: string
+  readonly filename: string
+  readonly option: ChartProps['option']
+  readonly onInit?: ChartProps['onInit']
+  readonly caption?: ReactNode
+}): ReactNode {
+  return (
+    <FigureFrame
+      figure={FIG}
+      title={props.title}
+      filename={props.filename}
+      {...(props.caption === undefined ? {} : { caption: props.caption })}
+    >
+      <Chart figure={FIG} option={props.option} {...(props.onInit === undefined ? {} : { onInit: props.onInit })} />
+    </FigureFrame>
+  )
+}
+
 function CurvesView(props: {
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   readonly variants: readonly LiveVariant<any, any>[]
@@ -411,11 +431,7 @@ function CurvesView(props: {
     [runs, paths],
   )
   const onInit = useScrubClick(steps, props.head, props.onScrub)
-  return (
-    <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
-      <Chart figure={FIG} option={option} onInit={onInit} />
-    </FigureFrame>
-  )
+  return <ChartPanel title={props.title} filename={props.filename} option={option} onInit={onInit} />
 }
 
 // The trials of a sweep: the metric against the knob (or the step), one point set per variant, those after the
@@ -534,11 +550,7 @@ function SweepView(props: {
     [trials, panel.intervals],
   )
   const onInit = useScrubClick(steps, props.head, props.onScrub, xs)
-  return (
-    <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
-      <Chart figure={FIG} option={option} onInit={onInit} />
-    </FigureFrame>
-  )
+  return <ChartPanel title={props.title} filename={props.filename} option={option} onInit={onInit} />
 }
 
 // Each element of a tensor path as a curve against the step or a scalar path; a click scrubs to the nearest step.
@@ -572,11 +584,7 @@ function SeriesView(props: {
     })
   }, [run, steps, xs, t, mode, panel])
   const onInit = useScrubClick(steps, live.head, props.onScrub, panel.x === undefined ? undefined : xs)
-  return (
-    <FigureFrame figure={FIG} title={props.title} filename={props.filename}>
-      <Chart figure={FIG} option={option} onInit={onInit} />
-    </FigureFrame>
-  )
+  return <ChartPanel title={props.title} filename={props.filename} option={option} onInit={onInit} />
 }
 
 // Two elements of tensor paths as paths in the plane up to the viewed step, over a probed surface if asked.
@@ -623,14 +631,12 @@ function TrajectoryView(props: {
     return { ...cartesian(layers, { mode, figure: FIG, legend: panel.paths.length > 1 }), animation: false }
   }, [run, over.value, panel, t, i, j, mode])
   return (
-    <FigureFrame
-      figure={FIG}
+    <ChartPanel
       title={props.title}
       filename={props.filename}
+      option={option}
       {...(over.error === undefined ? {} : { caption: <Note>surface unavailable: {over.error}</Note> })}
-    >
-      <Chart figure={FIG} option={option} />
-    </FigureFrame>
+    />
   )
 }
 
@@ -741,7 +747,12 @@ function ProjectionView(props: {
       return { error: e instanceof Error ? e.message : String(e) }
     }
   }, [live.session, live.version, name, t])
-  if (projected.error !== undefined) return <Note>projection {name} unavailable: {projected.error}</Note>
+  if (projected.error !== undefined)
+    return (
+      <Note>
+        projection {name} unavailable: {projected.error}
+      </Note>
+    )
   // The record up to the viewed step is a still: views that would play it are told not to.
   const record = projected.record
   return record !== undefined && isExposition(record) ? (

@@ -9,6 +9,7 @@
 import type { Json } from 'mdml-engine/base'
 import { type Config, type Method, type Session, type SessionOptions, session } from 'mdml-engine/trace'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { useByContent } from '../_content.ts'
 import { staticLive } from './parts.tsx'
 import type { LiveSession } from './useSession.ts'
 
@@ -79,21 +80,20 @@ export function InnerPanel(props: {
   const { spec, live, follow = 'own' } = props
   // Following the outer cursor, the one inner run is made at the outer head; on its own, at the viewed step.
   const at = follow === 'outer' ? props.head : props.t
-  const argsKey = JSON.stringify(props.args ?? null)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the arguments are keyed by their text
+  const args = useByContent(props.args)
   const made = useMemo(() => {
     if (spec === undefined) return { error: `no inner session named “${props.name}” is registered` }
     try {
       const options = spec.options({
         session: live.session,
         t: at,
-        ...(props.args === undefined ? {} : { args: props.args }),
+        ...(args === undefined ? {} : { args }),
       })
       return { inner: session(spec.method, { ...options, mode: 'eager' }) }
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) }
     }
-  }, [spec, props.name, live.session, at, argsKey])
+  }, [spec, props.name, live.session, at, args])
   const [own, setOwn] = useState<number | null>(null)
   // A new inner run starts at its end again.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the inner run is remade

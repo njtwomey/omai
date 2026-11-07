@@ -17,6 +17,7 @@ import {
 } from 'mdml-engine/environments'
 import type { SpaceValue } from 'mdml-engine/space'
 import { type ReactNode, useMemo } from 'react'
+import { useByContent } from '../_content.ts'
 import { cx, labelClass } from './classes.ts'
 import { EntryList, tagLabel } from './EntryList.tsx'
 import {
@@ -169,7 +170,8 @@ function EnvironmentReadout(props: { readonly entry: EnvironmentEntry }): ReactN
  * @returns The environment.
  */
 export function useEnvironment(registry: EnvironmentRegistry, selection: EnvironmentSelection): AnyEnvironment {
-  const options = JSON.stringify(selection.options)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the selection is compared by content, not identity
-  return useMemo(() => makeSelection(registry, selection), [registry, selection.name, options])
+  // The selection is compared by content, not identity: a page may rebuild it on every render.
+  const options = useByContent(selection.options)
+  const { name } = selection
+  return useMemo(() => makeSelection(registry, { name, options }), [registry, name, options])
 }

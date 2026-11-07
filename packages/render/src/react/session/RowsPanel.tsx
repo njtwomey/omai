@@ -16,6 +16,7 @@ import { cartesian, type Layer } from '../../charts/plot.ts'
 import { points } from '../../charts/points.ts'
 import { type Figure, figure } from '../../figure/index.ts'
 import { categoricalColour } from '../../theme/index.ts'
+import { useByContent } from '../_content.ts'
 import { Chart } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
@@ -84,16 +85,19 @@ export function useProbe(
   path: string | undefined,
   args?: Json,
 ): Probed {
-  const argsKey = JSON.stringify(args ?? null)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the viewed step, not on every tape version
+  const held = useByContent(args)
   return useMemo(() => {
     if (path === undefined) return {}
     try {
-      return { value: remembered(live.session, t, `${path}|${t}|${argsKey}`, () => live.session.probe(t, path, args)) }
+      return {
+        value: remembered(live.session, t, `${path}|${t}|${JSON.stringify(held ?? null)}`, () =>
+          live.session.probe(t, path, held),
+        ),
+      }
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) }
     }
-  }, [live.session, t, path, argsKey])
+  }, [live.session, t, path, held])
 }
 
 /** The tape of a session, re-read whenever it grows. */

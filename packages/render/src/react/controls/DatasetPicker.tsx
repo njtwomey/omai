@@ -7,6 +7,7 @@
 import type { Dataset, Generated } from 'mdml-engine/data'
 import type { DatasetCollection } from 'mdml-engine/datasets'
 import { type ReactNode, useMemo } from 'react'
+import { useByContent } from '../_content.ts'
 import {
   collectionOf,
   type DatasetSelection,
@@ -120,7 +121,8 @@ export function useDataset(
   source: DatasetSource,
   selection: DatasetSelection,
 ): { readonly data: Dataset } & Partial<Generated> {
-  const knobs = JSON.stringify(selection.knobs)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the selection is compared by content, not identity
-  return useMemo(() => loadSelection(source, selection), [source, selection.name, selection.seed, knobs])
+  // The selection is compared by content, not identity: a page may rebuild it on every render.
+  const knobs = useByContent(selection.knobs)
+  const { name, seed } = selection
+  return useMemo(() => loadSelection(source, { name, seed, knobs }), [source, name, seed, knobs])
 }
