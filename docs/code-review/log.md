@@ -528,3 +528,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   and render's `charts`; 216 `@example`s of the touched files; barrels, layers, lint, agent index, surface. Tests added: 7 `it`
   (one table per family: `polynomial`, `geometry`, `inverse`, `approximation`, `interpolate`, `differentiate`, `sparse`).
   Surface: 1 added (`PolynomialDivision`), 0 removed, 63 changed.
+- **19:50 Gate.** The data, kernels and render test merge (P3.39, P3.18) and native-array stage 3 (`numerics`) passed the full local gate: 26,490 tests, 9,613 examples, all static
+  checks and all six tsc runs, first run. 204 commits ahead of `origin/main`; nothing pushed (D-014).
