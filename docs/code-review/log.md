@@ -127,3 +127,8 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   in both stats and metrics; `cdf(NaN)` depends on the family. `sampleWeight` is accepted by `MetricOptions` but ignored by 33 of 99 numeric
   metrics; for empty input 156 metrics split 60 NaN, 52 a number, 39 throw. Sampling is about 100 times slower than the batch sampler in `random`
   (the per-draw uniform block, foundations FD-2). The right input type of a metric under the tensor rule: `TensorLike | string[]` in.
+- **12:35 Result.** Kernels, data, exposition and scene read (36 findings, `findings/kernels-data-exposition-scene.md`; about 55 files). Kernels
+  are healthy (all 32 probed are exactly symmetric and the documented PSD ones are within -1.4e-13); `data` is deterministic with Keys and fast. The data
+  boundary casts silently, no exposition record or scene builder checks finiteness (7 of 54 exposition files do), and the layering review says `scene`
+  needs only `base` and `exposition` only `base` plus scene types, so both belong right above `base`, not between `optim` and `losses` (this fixes the rank
+  order used by `scripts/review/scan.mjs` and the proposed rank check in `make layers`).
