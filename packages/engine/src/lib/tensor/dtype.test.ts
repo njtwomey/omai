@@ -106,7 +106,7 @@ function sameValues(got: Value, want: NestedArray, rtol: number): boolean {
 // arithmetic is int32 (numpy: bool stays bool for + * max, and `-` and `neg` raise), there is no float16 (a float
 // function of bool is float64), and powers, reciprocals and floor/ceil/round of integers are float64 (numpy keeps
 // integers for floor/ceil/round since 2.1, and raises on a negative integer power).
-const unary: [string, (x: Tensor) => Value, string, number[]][] = [
+const unary: [string, (x: Value) => Value, string, number[]][] = [
   ['neg', (x) => neg(x), 'iifd', [-3, 2, -5]],
   ['abs', (x) => abs(x), 'bifd', [3, 2, 5]],
   ['square', (x) => square(x), 'iifd', [9, 4, 25]],

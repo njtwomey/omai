@@ -83,9 +83,9 @@ describe('the four drivers compute one run', () => {
     run.end(slice.status, slice.t)
 
     const kinds = (events: readonly TraceEvent[]): string[] =>
-      events.filter((e) => e.type !== 'run').map((e) => `${e.type}@${e.step ?? ''}`)
+      events.filter((e) => e.type !== 'run').map((e) => `${e.type}@${'step' in e ? e.step : ''}`)
     const checkpoints = (events: readonly TraceEvent[]): number[] =>
-      events.filter((e) => e.type === 'checkpoint').map((e) => e.step)
+      events.flatMap((e) => (e.type === 'checkpoint' ? [e.step] : []))
     // one metric per observed step (every step up to the verdict), checkpoints at the interval and the last step
     expect(metricsOf(rec.events)).toHaveLength(10)
     expect(checkpoints(rec.events)).toEqual([0, 4, 8])
