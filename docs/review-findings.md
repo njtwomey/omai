@@ -142,6 +142,31 @@ Caveat: this counts the vitest tests, not the `@example` blocks (run by `scripts
 here may be exercised by an example; a function that neither runs is the finding. Many unrun functions are anonymous
 closures (the listing cannot name them).
 
+## Native arrays in public numeric signatures
+
+The maintainer's rule: in a numerics library built on tensors, plain `number[]`, `number[][]` and `Float64Array` belong
+only in the primitives (kernels, `blas.ts`, private `_` modules); public numeric code takes `TensorLike` and returns
+`Tensor` or `Value`, so it reaches the gradient tapes and reuses the tested ops. `node scripts/review/signatures.mjs`
+reads the declared signature of every exported function of the core (2,352; 2,344 outside private or kernel modules) and
+checks its parameters and return type separately.
+- **310 of 2,344 (13%) have a native array in a signature; 1,257 (54%) mention a tensor type.** So the raw mentions in
+  source (11,720 `number[]`, 10,940 `Float64Array`) are mostly inside bodies and private helpers, and the public surface is
+  mostly tensor-typed.
+- By domain (functions with a native array in a signature, share of the domain's functions): `numerics` 92 of 492 (19%),
+  `optim` 65 of 404 (16%), `metrics` 21 of 64 (33%), `stats` 28 of 301 (9%), `tensor` 25 of 206 (12%), `data` 17 of 97
+  (18%), `base` 15 of 36 (42%), `exposition` 11, `losses` 8, `random` 7, `dists` 6, `space` 6, `trace` 6, `kernels` 2,
+  `scene` 1, `autodiff` 0, `context` 0.
+- Files with the most: `base/numbers.ts` (14: `allClose`, `kahanSum`, `pairwiseSum`, `maxOf`, `minOf`),
+  `numerics/polynomial/power.ts` (10: `polytrim`, `polyder`, `polyint`, `polyadd`, `polysub`), `numerics/linalg/lapack.ts`
+  (7), `optim/multiobjective.ts` (7), `numerics/geometry/transforms.ts` (6), `numerics/interpolate/polynomial.ts` (6),
+  `optim/landscape.ts` (6), `optim/online-experts.ts` (6), `metrics/metric.ts` (6), `data/rows.ts` (5),
+  `numerics/approximation/acceleration.ts` (5), `stats/design.ts` (5), `metrics/detection.ts` (4).
+- **Upper bound, not a defect count.** `number[]` also means a shape, an axis list, indices, lengths or labels, which are
+  not vectors in the tensor sense: `tensor/ops/reduce.ts` and `shape.ts` (`sum(x, axis)`, `transpose(x, axes)`) are in the
+  list for that reason. The cluster review sorts the rest into kernel (allowed), shape or index (not a vector) and public
+  vector or matrix (to migrate). Migrating a public signature changes the public surface, so it is the one deliberate,
+  reviewed break, staged by domain.
+
 ## Not yet done
 
 The CPU profile for the hot paths, the cluster reading (Phase 1), and the
