@@ -98,3 +98,118 @@ sklearn, jiwer, torchmetrics ports) or the documented entry of a family; kept.
   are the 3 (b) and 3 (c) above.
 - The 757 types are the number to watch if the surface is thinned: an `XOptions` or `XState` is only as public as its
   function.
+
+
+# Render: the same triage for `mdml-render` (RD-19, F19)
+
+The engine's triage above reads the core only. This is the same sort for the 1,127 exports of `packages/render` (the
+`--full` surface, the `mdml-render/...` rows), by the same signals and the same classes, with the script adapted to the
+render package (`scripts/review/unused.mjs` filters on `mdml-engine`; the copy used here filters on `mdml-render` and
+takes the declarations from `packages/render/src`; `_shared.mjs` already has `--package=render`). Unused means: the name
+occurs in no other source file of the packages and apps (barrels and generated data excluded, tests not counted).
+Taken on 2026-11-07 on the tree after the render accessibility, record-boundary and RD-21 to RD-27 changes.
+
+## Counts
+
+| domain       | unused | (a) public API | (b) building block | (c) dead | (a) by tests | (a) by @index | (a) by docs | (a) a type its file uses | functions | constants | interfaces | types |
+| ------------ | -----: | -------------: | -----------------: | -------: | -----------: | ------------: | ----------: | -----------------------: | --------: | --------: | ---------: | ----: |
+| `react` | 109 | 96 | 13 | 0 | 23 | 0 | 3 | 70 | 33 | 2 | 65 | 9 |
+| `views` | 93 | 76 | 17 | 0 | 35 | 1 | 0 | 40 | 51 | 1 | 35 | 6 |
+| `charts` | 41 | 37 | 4 | 0 | 11 | 0 | 1 | 25 | 14 | 1 | 25 | 1 |
+| `animation` | 15 | 15 | 0 | 0 | 8 | 0 | 0 | 7 | 7 | 1 | 5 | 2 |
+| `producer` | 13 | 13 | 0 | 0 | 3 | 0 | 2 | 8 | 2 | 0 | 9 | 1 |
+| `theme` | 12 | 12 | 0 | 0 | 11 | 0 | 0 | 1 | 11 | 0 | 1 | 0 |
+| `trace` | 9 | 9 | 0 | 0 | 7 | 0 | 0 | 2 | 7 | 0 | 2 | 0 |
+| `maths` | 7 | 6 | 1 | 0 | 4 | 0 | 0 | 2 | 5 | 0 | 2 | 0 |
+| `structures` | 7 | 7 | 0 | 0 | 1 | 0 | 0 | 6 | 1 | 0 | 5 | 1 |
+| `figure` | 6 | 6 | 0 | 0 | 4 | 0 | 0 | 2 | 3 | 1 | 1 | 1 |
+| `layout` | 6 | 6 | 0 | 0 | 1 | 0 | 0 | 5 | 1 | 0 | 5 | 0 |
+| `svg` | 5 | 4 | 1 | 0 | 3 | 0 | 0 | 1 | 4 | 0 | 1 | 0 |
+| `gym` | 3 | 3 | 0 | 0 | 1 | 0 | 0 | 2 | 1 | 0 | 2 | 0 |
+| **total** | **326** | 290 | 36 | 0 | 112 | 1 | 6 | 171 | 140 | 6 | 158 | 21 |
+
+`react` is the folder `src/react` with its subfolders (`controls`, `session`, `views`, `interaction`). The review's
+count was 300 of 1,154 exports; the method here is the engine's (one source file mentioning the name, tests not
+counted), which also counts the interfaces and types of a signature (171 here), so the totals differ in method, not in
+substance.
+
+## (a) Deliberate public API (290)
+
+- **112 are named by a test.** Among them the register's fourteen candidates (`episodeChart`, `messageTimeline`,
+  `smoothEma`, `runsChart`, `runTable`, `histogramsOverTime`, `normHeatmap`, `easings`, `tweenTimeline`,
+  `sweepTimeline`, `runTimeline`, `structureTimeline`, `interpolateScene`, `rasteriseScene`): each is defined in
+  `trace/` or `animation/`, tested, exported from its barrel, and is the documented "traced run to figure" and
+  "timeline to GIF" API of `llms.header.md`; none has a consumer in the repository (the site's recipes use other
+  functions), which is what a library's API looks like. Thirteen carry `@index` or `@example` now; `easings` carried
+  neither and got an `@index` in this change.
+- **6 are named in the docs** (`docs/structure.md`, the methods catalogue), 1 carries `@index`.
+- **171 are interfaces and types that their own file uses** (the props, option and record types of exported
+  components and functions: an export that a public signature needs). 65 of the 158 interfaces are in `react`.
+- 77 of the 290 are functions or constants named only by a test (no doc, no `@index`); 60 of them are also used inside
+  their own file. A unit-tested helper is not dead: if the surface is ever thinned, this is where to look first.
+
+## (b) Building blocks only their own file uses (36)
+
+Candidates to become module-private (`export` dropped, or a move to a `_` module): no test, no doc, no `@index`, a use
+only inside the declaring file. Not done: each is exported through its folder barrel (`export *`), so unexporting is a
+surface removal the maintainer approves with `make api-surface`, and none is dead.
+
+| export | file | uses in its own file | note |
+| ------ | ---- | -------------------: | ---- |
+| `barOffset` | `charts/bars.ts` | 1 | has an `@example`; no test, no doc |
+| `distributionRange` | `charts/distributions.ts` | 5 | has an `@example`; no test, no doc |
+| `reorderColumns` | `charts/multivariate.ts` | 1 | has an `@example`; no test, no doc |
+| `MARKERS` | `charts/points.ts` | 2 | no test, no doc |
+| `texErrorMarker` | `maths/tex.ts` | 1 | no test, no doc |
+| `datasetTags` | `react/controls/DatasetSelector.tsx` | 1 | no test, no doc |
+| `environmentTags` | `react/controls/EnvironmentSelector.tsx` | 1 | no test, no doc |
+| `validateNumber` | `react/controls/number.ts` | 1 | no test, no doc |
+| `useChannel` | `react/session/RowsPanel.tsx` | 5 | no test, no doc |
+| `DEFAULT_PREFERENCES` | `react/session/preferences.ts` | 2 | no test, no doc |
+| `fullTensors` | `react/session/trajectory.ts` | 2 | no test, no doc |
+| `isComparison` | `react/session/useSession.ts` | 1 | no test, no doc |
+| `replayLive` | `react/session/useTape.ts` | 1 | no test, no doc |
+| `DEFAULT_COLOUR_MODE` | `react/theme.tsx` | 2 | no test, no doc |
+| `usePageColourMode` | `react/theme.tsx` | 2 | no test, no doc |
+| `GroupContingencyTables` | `react/views/fairness.tsx` | 1 | no test, no doc |
+| `GroupDisparityTable` | `react/views/fairness.tsx` | 1 | no test, no doc |
+| `GroupReportWarnings` | `react/views/fairness.tsx` | 1 | no test, no doc |
+| `svgToCanvas` | `svg/export.ts` | 5 | no test, no doc |
+| `FEATURE_VALUE_RAMP` | `views/attributions.ts` | 2 | no test, no doc |
+| `screePanel` | `views/components.ts` | 1 | no test, no doc |
+| `loadingsPanel` | `views/components.ts` | 1 | no test, no doc |
+| `biplotPanel` | `views/components.ts` | 1 | no test, no doc |
+| `topicsView` | `views/components.ts` | 1 | no test, no doc |
+| `groupColour` | `views/fairness.ts` | 5 | no test, no doc |
+| `groupRatesPanel` | `views/fairness.ts` | 1 | no test, no doc |
+| `groupGapsPanel` | `views/fairness.ts` | 1 | no test, no doc |
+| `groupRocPanel` | `views/fairness.ts` | 1 | no test, no doc |
+| `activeCounts` | `views/paths.ts` | 1 | no test, no doc |
+| `regularisationPathPanels` | `views/paths.ts` | 1 | no test, no doc |
+| `crossValidationPanel` | `views/paths.ts` | 1 | no test, no doc |
+| `learningCurvePanel` | `views/paths.ts` | 1 | no test, no doc |
+| `mixtureScores` | `views/steps.ts` | 2 | no test, no doc |
+| `surfaceObjective` | `views/surfaces.ts` | 1 | no test, no doc |
+| `coefficientIntervals` | `views/tables.ts` | 2 | no test, no doc |
+| `nodePrediction` | `views/trees.ts` | 1 | no test, no doc |
+
+The view panel builders (`screePanel`, `loadingsPanel`, `biplotPanel`, `topicsView`, `groupRatesPanel`, `groupGapsPanel`,
+`groupRocPanel`, `regularisationPathPanels`, `crossValidationPanel`, `learningCurvePanel`) are pieces of the view that
+`views/registry.ts` reaches through the view function. The three `react/views/fairness.tsx` components
+(`GroupContingencyTables`, `GroupDisparityTable`, `GroupReportWarnings`) are parts of `GroupReportView` in the same
+file, reached through it (no test names them).
+
+## (c) Dead (0)
+
+None: every export without a test, a doc or an `@index` is used by its own file. Nothing in render was deleted and the
+public surface did not move for this row (`node scripts/api-surface.ts --compare` shows only what the other rows of the
+change did).
+
+## What this says
+
+- Render's surface carries no dead code either: 290 of 326 are public by a signal, the other 36 are building blocks
+  that their file uses.
+- The review's "37 helpers named nowhere" are the (b) list above (36 now); the register's candidates are public API, as
+  `findings/render.md` F19 said.
+- The decision left for the maintainer is the one the engine's triage left: whether to drop `export` on the 36 and on the
+  roughly 60 helpers only a test names. It is a removal from the digest, so it is not done here.

@@ -20,7 +20,11 @@ import { frames as frameEvents, type Run } from 'mdml-engine/trace'
 /** An easing curve: progress in [0, 1] to eased progress in [0, 1]. */
 export type Easing = (t: number) => number
 
-/** The standard easings. */
+/**
+ * The standard easings: `linear`, `easeIn`, `easeOut` and `easeInOut` (cubic).
+ *
+ * @index table The easing curves of a timeline's tweens, by name: `easings.easeInOut`
+ */
 export const easings: Readonly<Record<'linear' | 'easeIn' | 'easeOut' | 'easeInOut', Easing>> = {
   linear: (t) => t,
   easeIn: (t) => t * t * t,
