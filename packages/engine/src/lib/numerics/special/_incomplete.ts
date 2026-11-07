@@ -104,6 +104,7 @@ function invalidGamma(a: number, x: number): boolean {
 
 /** P(a, x), the regularised lower incomplete gamma function. */
 export function gammainc(a: number, x: number): number {
+  if (a === 0 && x > 0) return 1
   if (invalidGamma(a, x)) return Number.NaN
   if (x === 0) return 0
   if (x === Infinity) return 1
@@ -113,6 +114,7 @@ export function gammainc(a: number, x: number): number {
 
 /** Q(a, x) = 1 - P(a, x). */
 export function gammaincc(a: number, x: number): number {
+  if (a === 0 && x > 0) return 0
   if (invalidGamma(a, x)) return Number.NaN
   if (x === 0) return 1
   if (x === Infinity) return 0
@@ -122,6 +124,7 @@ export function gammaincc(a: number, x: number): number {
 
 /** log P(a, x), accurate where P underflows. */
 export function logGammainc(a: number, x: number): number {
+  if (a === 0 && x > 0) return 0
   if (invalidGamma(a, x)) return Number.NaN
   if (x === 0) return -Infinity
   if (x <= 1 || x <= a) return gammaPSeries(a, x).logP

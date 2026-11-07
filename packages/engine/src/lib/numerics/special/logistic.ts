@@ -145,7 +145,8 @@ export function log1mexp(x: TensorLike): Value {
  */
 export function logaddexp(a: TensorLike, b: TensorLike): Value {
   const [x, y] = promoteFloat(a, b) as [Value, Value]
-  return add(maximum(x, y), log1p(exp(neg(abs(sub(x, y))))))
+  // x - y is NaN for two equal infinities, whose log-sum is the infinity itself: the gap is 0 whenever x equals y.
+  return add(maximum(x, y), log1p(exp(neg(abs(where(equal(x, y), 0, sub(x, y)))))))
 }
 
 /**

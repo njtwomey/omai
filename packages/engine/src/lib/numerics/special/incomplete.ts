@@ -60,7 +60,7 @@ const betaincinvP = special('betaincinv', inc.betaincinv, [
  * continued fraction term by term, so it stays accurate in both tails (it drives implicit reparameterisation of gamma
  * samples).
  *
- * @param a - Shape (positive).
+ * @param a - Shape (positive; at a = 0 the value is 1 for x > 0, as scipy).
  * @param x - Argument (non-negative).
  * @returns P(a, x).
  * @concept special-functions

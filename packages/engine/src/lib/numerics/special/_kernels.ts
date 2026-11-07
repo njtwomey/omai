@@ -66,6 +66,7 @@ const CF_THRESHOLD = 1.5
 export function erf(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
   const a = Math.abs(x)
+  if (a === Infinity) return x < 0 ? -1 : 1
   const v = a < CF_THRESHOLD ? erfSeries(a) : 1 - expMinusSquare(a) / (SQRT_PI * erfcFraction(a))
   return x < 0 ? -v : v
 }
@@ -85,6 +86,7 @@ export function erfc(x: number): number {
 /** Scaled complementary error function e^{x^2} erfc(x), stable for large positive x. */
 export function erfcx(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
+  if (x === Infinity) return 0
   if (x >= ERFC_THRESHOLD) return 1 / (SQRT_PI * erfcFraction(x))
   if (x < -26.7) return Infinity
   return Math.exp(x * x) * erfc(x)
@@ -137,6 +139,8 @@ function acklamTail(q: number): number {
   return (((((c0 * q + c1) * q + c2) * q + c3) * q + c4) * q + c5) / ((((d0 * q + d1) * q + d2) * q + d3) * q + 1)
 }
 
+const MIN_NORMAL = 2.2250738585072014e-308
+
 export function ndtri(p: number): number {
   if (Number.isNaN(p) || p < 0 || p > 1) return Number.NaN
   if (p === 0) return -Infinity
@@ -152,6 +156,13 @@ export function ndtri(p: number): number {
     x =
       ((((((a0 * r + a1) * r + a2) * r + a3) * r + a4) * r + a5) * q) /
       (((((b0 * r + b1) * r + b2) * r + b3) * r + b4) * r + 1)
+  }
+  // Denormal p has too few bits for the residual ndtr(x) - p (and exp(x^2 / 2) overflows): Newton steps on log ndtr(x) -
+  // log p instead, whose slope is the Mills-ratio form sqrt(2 / pi) / erfcx(-x / sqrt 2).
+  if (p < MIN_NORMAL) {
+    const logP = Math.log(p)
+    for (let i = 0; i < 2; i++) x -= (logNdtr(x) - logP) / (Math.sqrt(2 / Math.PI) / erfcx(-x / Math.SQRT2))
+    return x
   }
   // Halley steps on the residual in the tail that is computed accurately.
   for (let i = 0; i < 2; i++) {
@@ -228,6 +239,9 @@ function lgamma1p(z: number): number {
 /** log |Gamma(x)| (Lanczos, g = 7, Taylor series near 1 and 2, reflection below 0.5). */
 export function lgamma(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
+  if (x === Infinity) return Infinity
+  // |Gamma| tends to 0 towards -Infinity (scipy.special.gammaln gives -inf).
+  if (x === -Infinity) return -Infinity
   if (x <= 0 && Number.isInteger(x)) return Infinity
   if (x < 0.5) return Math.log(Math.PI / Math.abs(sinpi(x))) - lgamma(1 - x)
   if (x === 1 || x === 2) return 0
@@ -250,7 +264,9 @@ export function factorial(n: number): number {
 export function gamma(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
   if (Number.isInteger(x)) {
-    if (x <= 0) return Number.NaN
+    // The pole at zero is signed by the zero (scipy: gamma(0) = inf, gamma(-0) = -inf).
+    if (x === 0) return Object.is(x, -0) ? -Infinity : Infinity
+    if (x < 0) return Number.NaN
     return x <= 171 ? factorial(x - 1) : Infinity
   }
   if (x < 0.5) return Math.PI / (sinpi(x) * gamma(1 - x))
@@ -286,6 +302,8 @@ const BERNOULLI = [
 
 export function digamma(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
+  // The pole at zero is signed by the zero (scipy: digamma(0) = -inf, digamma(-0) = inf).
+  if (x === 0) return Object.is(x, -0) ? Infinity : -Infinity
   if (x <= 0 && Number.isInteger(x)) return Number.NaN
   if (x < 0) return digamma(1 - x) - (Math.PI * cospi(x)) / sinpi(x)
   let acc = 0
@@ -311,6 +329,9 @@ const ZETA_A: number[] = BERNOULLI.map((b, k) => factorial(2 * k + 2) / b)
 /** Hurwitz zeta function zeta(s, q) = sum_{k >= 0} (k + q)^{-s}, for s > 1 and q > 0 (Euler-Maclaurin). */
 export function hurwitzZeta(s: number, q: number): number {
   if (s === 1) return Infinity
+  // The poles of the first term, and the limit of the sum as s grows (its smallest term q^-s wins).
+  if (s > 1 && q <= 0 && Number.isInteger(q)) return Infinity
+  if (s === Infinity) return q > 1 ? 0 : q === 1 ? 1 : q > 0 ? Infinity : Number.NaN
   if (s < 1 || q <= 0) return Number.NaN
   let sum = q ** -s
   let a = q
@@ -388,7 +409,8 @@ export function hurwitzZetaDs(s: number, q: number): number {
 export function polygamma(n: number, x: number): number {
   if (!Number.isInteger(n) || n < 0) return Number.NaN
   if (n === 0) return digamma(x)
-  if (x <= 0 && Number.isInteger(x)) return Number.NaN
+  // At the poles: +Infinity from both sides for odd n; for even n only the limit from the right (x = 0) exists.
+  if (x <= 0 && Number.isInteger(x)) return n % 2 === 1 ? Infinity : x === 0 ? -Infinity : Number.NaN
   // psi^(n)(x) = psi^(n)(x + 1) - (-1)^n n! / x^(n+1), applied until the argument is positive.
   let shift = 0
   let y = x
@@ -490,6 +512,7 @@ export function zeta(s: number): number {
 /** Lambert W on the principal branch (W >= -1), by Halley iteration. */
 export function lambertW(x: number): number {
   if (x < -1 / Math.E) return Number.NaN
+  if (x === Infinity) return Infinity
   if (x === -1 / Math.E) return -1
   if (x === 0) return 0
   let w = x < 1 ? (x < -0.25 ? -1 + Math.sqrt(2 * (1 + Math.E * x)) : x) : Math.log(x) - Math.log(Math.log(x) + 1)
@@ -505,7 +528,7 @@ export function lambertW(x: number): number {
 
 /** Exponential integral E_n(x) (Numerical Recipes expint). */
 export function expn(n: number, x: number): number {
-  if (n < 0 || x < 0 || (x === 0 && n <= 1)) return n === 1 && x === 0 ? Infinity : Number.NaN
+  if (n < 0 || x < 0 || (x === 0 && n <= 1)) return n >= 0 && x === 0 ? Infinity : Number.NaN
   if (n === 0) return Math.exp(-x) / x
   if (x === 0) return 1 / (n - 1)
   const nm1 = n - 1
