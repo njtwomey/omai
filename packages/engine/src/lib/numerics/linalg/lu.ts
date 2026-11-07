@@ -27,8 +27,8 @@ import {
   triu,
   type Value,
 } from '../../tensor/index.ts'
-import { luKernel, solveKernel, triangularKernel } from './_kernels.ts'
 import { assertFinite } from '../_vector.ts'
+import { luKernel, solveKernel, triangularKernel } from './_kernels.ts'
 import {
   asColumns,
   assemble,

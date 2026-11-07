@@ -22,8 +22,8 @@ import {
   tril,
   type Value,
 } from '../../tensor/index.ts'
-import { qrKernel } from './_kernels.ts'
 import { assertFinite } from '../_vector.ts'
+import { qrKernel } from './_kernels.ts'
 import { asColumns, assemble, broadcastBatch, matrices, matrixShape, mT, namingNonFinite } from './_matrix.ts'
 import { pinv } from './svd.ts'
 import { triangularSolve } from './triangular.ts'

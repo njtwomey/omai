@@ -5,8 +5,8 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { assertFinite } from '../_vector.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { assertFinite } from '../_vector.ts'
 import {
   type DistanceMetric,
   type MetricOptions,

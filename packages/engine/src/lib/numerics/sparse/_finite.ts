@@ -4,7 +4,7 @@
  * non-finite result of its product shows as a `diverged` run). Private to the folder.
  */
 
-import { type TensorLike, primalOf, promoteFloat, toFlat, type Value } from '../../tensor/index.ts'
+import { primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import { assertFinite } from '../_vector.ts'
 import { type CsrMatrix, type LinearOperator, primalValues } from './csr.ts'
 

@@ -4,7 +4,7 @@
  * to the error's extrema until it equioscillates.
  */
 
-import { type Json, MdmlError, maxOf } from '../../base/index.ts'
+import { type Json, maxOf } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
 import {
   type Algorithm,
