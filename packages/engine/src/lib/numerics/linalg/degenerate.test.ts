@@ -234,6 +234,21 @@ describe('singular systems and the matrix functions that sit on them', () => {
     expect(call).toThrow(expect.objectContaining({ code: 'value', message: expect.stringMatching(message) }))
   })
 
+  it('solveCare reports no stabilising solution (a deficient stable subspace) instead of a spurious answer', () => {
+    // 2 X + 3 X^2 + 1 = 0 has no real root: the Hamiltonian has imaginary eigenvalues.
+    const call = (): unknown =>
+      L.solveCare(
+        [[1]],
+        [[1, 1]],
+        [[1]],
+        [
+          [1, 0],
+          [0, -0.25],
+        ],
+      )
+    expect(call).toThrow(expect.objectContaining({ code: 'convergence' }))
+  })
+
   it('takes a unit diagonal as it is, the square root of zero as zero, and the determinant of 0 x 0 as 1', () => {
     expect(toArray(L.solveTriangular(zeroDiagonal, [1, 1], { lower: true, unitDiagonal: true }))).toEqual([1, 0])
     expect(

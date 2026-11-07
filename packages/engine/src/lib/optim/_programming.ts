@@ -41,14 +41,26 @@ export function solveDense(a: Float64Array, b: Float64Array, n: number, k = 1): 
   const f = luFactor(fromStorage(Float64Array.from(a), [n, n], 'float64'))
   const rhs =
     k === 1 ? fromStorage(Float64Array.from(b), [n], 'float64') : fromStorage(Float64Array.from(b), [n, k], 'float64')
-  return Float64Array.from(luSolve(f, rhs).data)
+  return singularAsNaN(n * k, () => Float64Array.from(luSolve(f, rhs).data))
+}
+
+/** The result of a dense solve, or NaN throughout when the matrix is singular (the solvers read non-finite as singular). */
+function singularAsNaN(length: number, solve: () => Float64Array): Float64Array {
+  try {
+    return solve()
+  } catch (error) {
+    if (error instanceof MdmlError && error.code === 'value') return new Float64Array(length).fill(Number.NaN)
+    throw error
+  }
 }
 
 /** Solve A^T x = b for a square n x n A by LU. */
 export function solveDenseTransposed(a: Float64Array, b: Float64Array, n: number): Float64Array {
   if (n === 0) return new Float64Array(0)
   const f = luFactor(fromStorage(Float64Array.from(a), [n, n], 'float64'))
-  return Float64Array.from(luSolve(f, fromStorage(Float64Array.from(b), [n], 'float64'), { transpose: true }).data)
+  return singularAsNaN(n, () =>
+    Float64Array.from(luSolve(f, fromStorage(Float64Array.from(b), [n], 'float64'), { transpose: true }).data),
+  )
 }
 
 /** Solve S x = b for a symmetric positive (semi)definite S, by Cholesky with a jitter ladder for near-singular S. */

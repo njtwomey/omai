@@ -42,6 +42,7 @@ import { identity, mT, namingSingular, squareSize, sym } from './_matrix.ts'
 import { slogdet } from './basics.ts'
 import { inv, solve } from './lu.ts'
 import { lstsq } from './qr.ts'
+import { svdvals } from './svd.ts'
 
 const norm1 = (a: Value): number => item(primalOf(max(sum(abs(a), 0))))
 
@@ -152,6 +153,7 @@ export function signm(a: TensorLike): Value {
  * @param q - `[n, n]` (symmetric).
  * @param r - `[m, m]` (symmetric positive definite).
  * @returns X (symmetric).
+ * @throws MdmlError with code `convergence` when the sign iteration does not settle or there is no stabilising solution.
  * @concept matrix-equations
  * @example
  * ```ts
@@ -178,7 +180,21 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
   // [W12; W22 + I] X = -[W11 + I; W21].
   const lhs = concat([block(0, n), add(block(n, n), eye)], 0)
   const rhs = neg(concat([add(block(0, 0), eye), block(n, 0)], 0))
-  return sym(lstsq(lhs, rhs))
+  // Without a stabilising solution the stable invariant subspace has fewer than n dimensions: lhs then lacks full column
+  // rank (its singular values are those of the sign matrix's stable projector), and any least-squares answer is spurious.
+  const sv = toFlat(primalOf(svdvals(lhs)))
+  if (!((sv[n - 1] ?? 0) > (sv[0] ?? 0) * 2 * n * Number.EPSILON))
+    throw new MdmlError(
+      'convergence',
+      'solveCare: no stabilising solution (the stable invariant subspace is deficient)',
+    )
+  const x = lstsq(lhs, rhs)
+  if (!(norm1(sub(matmul(lhs, x), rhs)) <= 1e-6 * Math.max(1, norm1(rhs))))
+    throw new MdmlError(
+      'convergence',
+      'solveCare: no stabilising solution (the stable invariant subspace is deficient)',
+    )
+  return sym(x)
 }
 
 /** The paths the Riccati and spline algorithms log, as a type. */
