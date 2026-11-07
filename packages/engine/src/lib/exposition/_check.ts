@@ -88,7 +88,10 @@ export function seal<T extends { readonly kind: string }>(record: T): T {
  */
 export const SEAL_OPTIONS: Readonly<Record<string, SealOptions>> = {
   coefficientTable: { gaps: ['standardErrors', 'intervals', 'pValues'] },
-  decisionSurface: { gaps: ['decision'], unbounded: ['decision'] },
+  decisionSurface: { gaps: ['decision', 'values'], unbounded: ['decision'] },
+  sceneSteps: { opaque: ['scene'] },
+  structureSteps: { opaque: ['structure'] },
+  diagram: { opaque: ['structure'] },
   thresholdSweep: {
     gaps: ['tpr', 'fpr', 'precision', 'selectionRate', 'accuracy', 'rocAuc', 'averagePrecision', 'costs', 'cost'],
     unbounded: ['thresholds'],

@@ -493,7 +493,12 @@ export const expositionSamples: { readonly [K in ExpositionKind]: () => Extract<
     }),
   equationFit: () =>
     equationFit({ terms: [{ tex: 'x', estimate: 2, truth: 2 }], x: [0, 1], fit: [0, 2], truth: [0, 2] }),
-  audio: () => audioClip({ sampleRate: 4, samples: [0, 1, 0, -1] }),
+  // A second of a 100 Hz tone: long enough for the view's spectrogram to have a window.
+  audio: () =>
+    audioClip({
+      sampleRate: 1024,
+      samples: Array.from({ length: 1024 }, (_, i) => Math.sin((2 * Math.PI * 100 * i) / 1024)),
+    }),
   transcript: () =>
     transcript({
       tokens: [{ text: 'Hi' }, { text: ' there' }],

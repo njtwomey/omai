@@ -9,7 +9,11 @@ import { thresholdSweep } from './thresholds.ts'
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 
 /** The paths of the numbers of a value, with the property name each sits under. */
-function leaves(value: unknown, path: (string | number)[] = [], key = ''): { path: (string | number)[]; key: string }[] {
+function leaves(
+  value: unknown,
+  path: (string | number)[] = [],
+  key = '',
+): { path: (string | number)[]; key: string }[] {
   if (typeof value === 'number') return [{ path, key }]
   if (Array.isArray(value)) return value.flatMap((v, i) => leaves(v, [...path, i], key))
   if (typeof value === 'object' && value !== null)
@@ -46,7 +50,9 @@ describe('the contract of the exposition records', () => {
       const record = expositionSamples[kind]()
       const options = SEAL_OPTIONS[kind] ?? {}
       let rejected = 0
-      for (const { path, key } of leaves(record)) {
+      // What a kind keeps by reference (a scene or structure, checked by its own builder) is not looked into.
+      const owned = (path: (string | number)[]): boolean => !path.some((step) => options.opaque?.includes(String(step)))
+      for (const { path, key } of leaves(record).filter((l) => owned(l.path))) {
         for (const [bad, allowed] of [
           [Number.NaN, options.gaps],
           [Number.POSITIVE_INFINITY, options.unbounded],
@@ -59,7 +65,7 @@ describe('the contract of the exposition records', () => {
           }
         }
       }
-      if (leaves(record).length > 0) expect(rejected, kind).toBeGreaterThan(0)
+      if (leaves(record).some((l) => owned(l.path))) expect(rejected, kind).toBeGreaterThan(0)
     }
   })
 
@@ -69,7 +75,10 @@ describe('the contract of the exposition records', () => {
     const curves = curveSet({ x, xLabel: 'epoch', series: [{ name: 'a', y }] })
     y[0] = 99
     x[1] = 7
-    expect([curves.series[0]?.y, curves.x]).toEqual([[1, 0.5], [0, 1]])
+    expect([curves.series[0]?.y, curves.x]).toEqual([
+      [1, 0.5],
+      [0, 1],
+    ])
     for (const make of [
       () => curveSet({ x: [0, Number.POSITIVE_INFINITY], xLabel: 'e', series: [{ name: 'a', y: [1, 2] }] }),
       () => curveSet({ x: [0, 1], xLabel: 'e', series: [{ name: 'a', y: [Number.NaN, 2] }] }),
