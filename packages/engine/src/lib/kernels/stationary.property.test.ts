@@ -33,6 +33,7 @@ const KERNELS: readonly (readonly [string, Kernel])[] = [
   ['laplacian', laplacianKernel({ lengthScale: [0.5, 1.5] })],
   ['periodic', periodicKernel({ lengthScale: 0.9, period: 1.7 })],
   ['locally periodic', locallyPeriodicKernel({ lengthScale: 0.8, period: 1.4, decay: 1.9 })],
+  ['cosine', cosineKernel({ period: 1.3 })],
   [
     'spectral mixture',
     spectralMixtureKernel({
@@ -61,14 +62,10 @@ const Y = tensor([
   [0.2, -0.9],
 ])
 
-// Exp-sine-squared kernels of the Euclidean distance are positive semi-definite in one dimension only (as scikit-learn's
-// ExpSineSquared): in two or more, near-duplicate points can give eigenvalues just below zero, so their laws are
-// checked on the line, where they are theorems.
-const PSD_IN_ONE_DIMENSION = new Set(['periodic', 'locally periodic'])
-
 describe('stationary kernels (properties)', () => {
   for (const [name, kernel] of KERNELS) {
-    const d = PSD_IN_ONE_DIMENSION.has(name) ? 1 : 2
+    // The laws are theorems in the dimensions the kernel guarantees (the periodic and cosine kernels: one).
+    const d = kernel.psd === 'always' ? 2 : (kernel.psdDimension ?? 1)
     it(`${name}: PSD, symmetric, diagonal and shift-invariant on random points`, () => {
       fc.assert(
         fc.property(points(7, d), points(3, d), (x, y) => {
@@ -83,16 +80,6 @@ describe('stationary kernels (properties)', () => {
       expectConformant((t: Value) => withTheta(kernel, t).k(X, Y), [theta(kernel)])
     })
   }
-  it('cosine: PSD in one dimension, and conformant', () => {
-    const k = cosineKernel({ period: 1.3 })
-    fc.assert(
-      fc.property(points(6, 1), points(3, 1), (x, y) => {
-        expectKernelLaws(k, x, y)
-      }),
-      { numRuns: RUNS },
-    )
-    expectConformant((x: Value, t: Value) => withTheta(k, t).k(x, [[0.4], [-1.2]]), [[[0.1], [0.9]], theta(k)])
-  })
   it('the Bessel form of Matérn approaches the closed forms', () => {
     for (const nu of [0.5, 1.5, 2.5]) {
       const closed = toFlat(maternKernel({ nu, lengthScale: 0.7 }).k(X, Y))

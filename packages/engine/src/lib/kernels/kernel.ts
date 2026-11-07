@@ -42,13 +42,19 @@ import {
  */
 export type Constraint = 'positive' | 'real' | 'fixed'
 
+/**
+ * Whether a kernel's Gram matrices are positive semi-definite: `always` for any points and any valid hyperparameters,
+ * `conditional` when it holds only for some inputs or settings (the kernel says which in `psdDimension`).
+ */
+export type KernelPsd = 'always' | 'conditional'
+
 /** Kernel hyperparameters as a pytree: records of values, nested records and arrays of records (one per part). */
 export interface KernelParams {
   readonly [name: string]: Value | KernelParams | readonly KernelParams[]
 }
 
 /**
- * A positive semi-definite kernel with its hyperparameters as data: `k(x, y)` evaluates it, `diag(x)` gives k(x_i, x_i)
+ * A kernel (positive semi-definite where `psd` says so) with its hyperparameters as data: `k(x, y)` evaluates it, `diag(x)` gives k(x_i, x_i)
  * without forming the matrix, and `withParams` rebuilds it from a pytree of the same structure, so gradients with
  * respect to hyperparameters are ordinary `grad` calls. Points are rows: `[d]` is one point, `[n, d]` are n points.
  */
@@ -61,6 +67,17 @@ export interface Kernel {
   readonly constraints: Readonly<Record<string, Constraint>>
   /** Whether k(x, y) depends on x - y only. */
   readonly stationary: boolean
+  /**
+   * Whether every Gram matrix of the kernel is positive semi-definite (`always`), or only in some cases
+   * (`conditional`: the periodic and cosine kernels of several dimensions, the sigmoid kernel). Consumers that factorise
+   * a Gram matrix can add jitter or warn for a `conditional` kernel.
+   */
+  readonly psd: KernelPsd
+  /**
+   * For a `conditional` kernel, the largest input dimension in which it is guaranteed positive semi-definite (1 for the
+   * periodic and cosine kernels); absent when there is no such guarantee (the sigmoid kernel) and for `always`.
+   */
+  readonly psdDimension?: number
   /** Settings that are not hyperparameters (orders, degrees, exponents). */
   readonly config: Readonly<Record<string, Json>>
   /** The kernels this one combines (empty for a base kernel). */
@@ -84,6 +101,10 @@ export interface KernelSpec<P extends KernelParams> {
   /** Constraints by pytree path (default `positive` for every hyperparameter). */
   readonly constraints?: Readonly<Record<string, Constraint>>
   readonly stationary?: boolean
+  /** Positive semi-definiteness (default `always`), see {@link Kernel.psd}. */
+  readonly psd?: KernelPsd
+  /** The largest dimension a `conditional` kernel is guaranteed positive semi-definite in, see {@link Kernel.psdDimension}. */
+  readonly psdDimension?: number
   readonly config?: Readonly<Record<string, Json>>
   /** The parts of a combination, rebuilt from the hyperparameters. */
   readonly parts?: (params: P) => readonly Kernel[]
@@ -193,6 +214,8 @@ export function defineKernel<P extends KernelParams>(spec: KernelSpec<P>): Kerne
     params,
     constraints,
     stationary: spec.stationary ?? false,
+    psd: spec.psd ?? 'always',
+    ...(spec.psd === 'conditional' && spec.psdDimension !== undefined ? { psdDimension: spec.psdDimension } : {}),
     config: spec.config ?? {},
     parts,
     k(x: TensorLike, y?: TensorLike): Value {
@@ -239,6 +262,16 @@ function baseOf(p: KernelParams): KernelParams {
   return p['base'] as KernelParams
 }
 
+/** The positive semi-definiteness of a sum or product of kernels: PSD in the dimensions where every part is. */
+function combinedPsd(kernels: readonly Kernel[]): Pick<KernelSpec<KernelParams>, 'psd' | 'psdDimension'> {
+  const weak = kernels.filter((k) => k.psd === 'conditional')
+  if (weak.length === 0) return { psd: 'always' }
+  const dims = weak.map((k) => k.psdDimension)
+  return dims.some((d) => d === undefined)
+    ? { psd: 'conditional' }
+    : { psd: 'conditional', psdDimension: Math.min(...(dims as number[])) }
+}
+
 function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
   if (kernels.length === 0) throw new MdmlError('value', `${name}Kernel needs at least one kernel`)
   const join = name === 'sum' ? add : mul
@@ -249,6 +282,7 @@ function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
     params: { terms: kernels.map((k) => k.params) },
     constraints: prefixed('terms', kernels, true),
     stationary: kernels.every((k) => k.stationary),
+    ...combinedPsd(kernels),
     parts: (p) => kernels.map((k, i) => k.withParams(termsOf(p)[i] as KernelParams)),
     matrix: (_p, x, y, parts) => fold(parts.map((k) => k.k(x, y))),
     diag: (_p, x, parts) => fold(parts.map((k) => k.diag(x))),
@@ -313,6 +347,7 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
     params: { outputScale: s, base: kernel.params },
     constraints: { outputScale: 'positive', ...prefixed('base', [kernel], false) },
     stationary: kernel.stationary,
+    ...combinedPsd([kernel]),
     parts: (p) => [kernel.withParams(baseOf(p))],
     matrix: (p, x, y, parts) => mul(p.outputScale as Value, (parts[0] as Kernel).k(x, y)),
     diag: (p, x, parts) => mul(p.outputScale as Value, (parts[0] as Kernel).diag(x)),
@@ -344,6 +379,8 @@ export function powerKernel(kernel: Kernel, exponent: number): Kernel {
     params: { base: kernel.params },
     constraints: prefixed('base', [kernel], false),
     stationary: kernel.stationary,
+    // A non-negative integer power of a PSD kernel is PSD (Schur); other powers are only for special kernels.
+    ...(Number.isInteger(exponent) && exponent >= 0 ? combinedPsd([kernel]) : { psd: 'conditional' as const }),
     config: { exponent },
     parts: (p) => [kernel.withParams(baseOf(p))],
     matrix: (_p, x, y, parts) => pow((parts[0] as Kernel).k(x, y), exponent),
@@ -375,6 +412,10 @@ export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
     params: kernel.params,
     constraints: kernel.constraints,
     stationary: kernel.stationary,
+    // The base sees only the selected columns, so it matters whether it is PSD in that many dimensions.
+    ...(kernel.psd === 'always' || (kernel.psdDimension ?? 0) >= dims.length
+      ? { psd: 'always' as const }
+      : { psd: 'conditional' as const }),
     config: { dims: [...dims] },
     parts: (p) => [kernel.withParams(p)],
     matrix: (_p, x, y, parts) => (parts[0] as Kernel).k(pick(x), y === undefined ? undefined : pick(y)),

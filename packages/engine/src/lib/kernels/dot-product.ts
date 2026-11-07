@@ -164,6 +164,7 @@ export function sigmoidKernel(options: SigmoidOptions = {}): Kernel {
     name: 'sigmoid',
     params: { coef0: param(options.coef0 ?? 1), gamma: param(options.gamma ?? 1) },
     constraints: { coef0: 'real', gamma: 'positive' },
+    psd: 'conditional',
     matrix: (p, x, y) => tanh(add(mul(dots(x, y), p.gamma), p.coef0)),
     diag: (p, x) => tanh(add(mul(squaredNorms(x), p.gamma), p.coef0)),
   })
