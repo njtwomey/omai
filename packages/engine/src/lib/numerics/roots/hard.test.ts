@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { exp, sub, tensor, type Value } from '../../tensor/index.ts'
 import * as R from './index.ts'
 
 const finders = { bisect: R.bisect, brentq: R.brentq, ridder: R.ridder, toms748: R.toms748 } as const
@@ -136,5 +137,31 @@ describe('newton, secant and halley', () => {
       'maximum iterations',
       'completed',
     ])
+  })
+
+  it('fsolve and broyden end `diverged`, they do not throw, when the residual or the Jacobian leaves the finite numbers', () => {
+    // A residual that is NaN from the start gives a NaN Jacobian: both ran on into `solve`, which now rejects non-finite
+    // input (ND-11), so the solvers stop themselves with the status of the convention (ND-28). (exp(x) - 1e6 overflows after
+    // the first step instead: the norm of two infinities was NaN, so the line search took it; it now backtracks and converges.)
+    const rows: readonly (readonly [string, (v: Value) => Value, readonly number[]])[] = [
+      ['NaN from exp', (v) => sub(exp(v), Number.NaN), [0, 0]],
+      ['NaN residual', (v) => sub(v, Number.NaN), [1, 1]],
+    ]
+    for (const [name, f, x0] of rows)
+      for (const solver of [R.fsolve, R.broyden]) {
+        const r = solver(f, x0, { maxIterations: 20 })
+        expect([name, r.converged, r.status]).toEqual([name, false, 'diverged'])
+      }
+    const nan = R.fsolve((v) => sub(v, Number.NaN), [1, 1])
+    expect([nan.status, nan.iterations]).toEqual(['diverged', 0])
+    // A finite residual with a Jacobian that is not (a user-supplied one): the step is refused, not handed to `solve`.
+    const badJacobian = R.fsolve((v) => sub(v, 3), [0, 0], {
+      jacobian: () =>
+        tensor([
+          [Number.NaN, 0],
+          [0, 1],
+        ]),
+    })
+    expect([badJacobian.status, badJacobian.iterations, badJacobian.converged]).toEqual(['diverged', 1, false])
   })
 })

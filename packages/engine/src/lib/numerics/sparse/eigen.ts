@@ -518,7 +518,9 @@ export function eigshAlgorithm(
  *   cap and start vector.
  * @returns Eigenvalues (ascending), eigenvectors and residuals.
  * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
- * @throws MdmlError with code `convergence` past the restart limit.
+ * @throws MdmlError with code `convergence` past the restart limit. The pairs are a bare result of k columns, so a run
+ *   that cannot finish has nothing to return; where failure is an expected outcome use {@link eigshAlgorithm}, whose run
+ *   ends with status `failed` and the pairs locked so far in its state.
  * @concept lanczos
  * @index function Extreme eigenpairs of a symmetric operator by Lanczos.
  * @example

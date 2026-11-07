@@ -172,6 +172,9 @@ export interface SvdResult {
  * @param options - The method.
  * @returns `{ u, s, vh }`, differentiable (singular vectors only where singular values are distinct and non-zero).
  * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws MdmlError with code `convergence` for `method: 'golub-kahan'` when the implicit QR sweeps do not deflate
+ *   within 75 iterations of one singular value. The result is a bare value of a differentiable primitive, with no
+ *   place for a status; the default `jacobi` method has no such limit, and `jacobiSvd` returns a record with `status`.
  * @concept linear-algebra
  * @index function Reduced singular value decomposition, differentiable.
  * @example

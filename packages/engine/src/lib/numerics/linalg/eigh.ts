@@ -124,6 +124,10 @@ export interface EighResult {
  * @returns `{ eigenvalues, eigenvectors }`, differentiable (eigenvectors only where eigenvalues are distinct).
  * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (a routine that decides rejects it at
  *   its boundary; elementwise operations propagate).
+ * @throws MdmlError with code `convergence` when the implicit QL iteration of the default method needs more than 60
+ *   sweeps for one eigenvalue (it does not happen on finite symmetric input in practice). The result is a bare value of
+ *   a differentiable primitive, with no place for a status; `method: 'jacobi'` is the sibling with no such limit, and for
+ *   a run that reports how it ended use `jacobiEigenSteps` or the traced `eigshAlgorithm`.
  * @concept linear-algebra
  * @index function Symmetric eigendecomposition with derivatives.
  * @example

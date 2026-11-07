@@ -69,7 +69,8 @@ export function dasum(x: ArrayLike<number>): number {
 }
 
 /**
- * The Euclidean norm |x| (BLAS dnrm2), accumulated with scaling so that it neither overflows nor underflows.
+ * The Euclidean norm |x| (BLAS dnrm2), accumulated with scaling so that it neither overflows nor underflows. An infinite
+ * entry gives Infinity and a NaN gives NaN (it propagates; the scaled sum used to turn two infinite entries into NaN).
  *
  * @param x - The vector.
  * @returns |x|.
@@ -77,20 +78,27 @@ export function dasum(x: ArrayLike<number>): number {
  * ```ts
  * import { dnrm2 } from 'mdml-engine/numerics/linalg'
  * dnrm2([3e200, 4e200]) // => 5e200
+ * dnrm2([Infinity, -Infinity]) // => Infinity
  * ```
  */
 export function dnrm2(x: ArrayLike<number>): number {
   let scale = 0
   let ssq = 1
+  let infinite = false
   for (let i = 0; i < x.length; i++) {
     const a = Math.abs(x[i] ?? 0)
     if (a === 0) continue
+    // An infinite entry would make the scaled sum Infinity / Infinity: the norm is Infinity (NaN if any entry is NaN).
+    if (a === Number.POSITIVE_INFINITY) {
+      infinite = true
+      continue
+    }
     if (scale < a) {
       ssq = 1 + ssq * (scale / a) ** 2
       scale = a
     } else ssq += (a / scale) ** 2
   }
-  return scale * Math.sqrt(ssq)
+  return infinite ? (Number.isNaN(ssq) ? Number.NaN : Number.POSITIVE_INFINITY) : scale * Math.sqrt(ssq)
 }
 
 /**

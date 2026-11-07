@@ -31,7 +31,7 @@ export interface MinimaxResult {
   readonly reference: Tensor<'float64'>
   readonly iterations: number
   readonly converged: boolean
-  /** `converged`, or `completed` when the iteration cap was reached. */
+  /** `converged`, `completed` when the iteration cap was reached, or `failed` when the error has too few alternations. */
   readonly status: RunStatus
   /** Evaluate the approximation at numbers. */
   readonly evaluate: (x: number) => number
@@ -75,6 +75,11 @@ export interface RemezState {
   /** Exchanges done. */
   readonly iterations: number
   readonly converged: boolean
+  /**
+   * True when the exchange could not continue: the error of the current approximation has fewer alternations than the
+   * reference needs (the degree does not suit the function). The state then holds the last good approximation.
+   */
+  readonly failed?: boolean
 }
 
 /**
@@ -82,14 +87,13 @@ export interface RemezState {
  * magnitude E on the reference (m + n + 2 points, iterating the linearisation for rational types), finds the
  * alternating extrema of the error on a fine grid, and moves the reference to them. It logs the reference, E, the
  * largest error and the alternations found, and is done (`converged`) when the largest error is within `tol` of |E|
- * (the equioscillation theorem), `completed` after `maxIterations` exchanges. The state serialises; the step throws
- * when the error has too few alternations.
+ * (the equioscillation theorem), `completed` after `maxIterations` exchanges, `failed` when the error has too few
+ * alternations (the state keeps the last good approximation). The state serialises.
  *
  * @param f - The function on numbers.
  * @param m - Numerator degree.
  * @param options - Denominator degree, interval, tolerance and iteration cap.
  * @returns The algorithm.
- * @throws MdmlError with code `convergence` (while stepping) when the error has too few alternations.
  * @concept minimax-approximation
  * @example
  * ```ts
@@ -180,8 +184,9 @@ export function remezAlgorithm(
         const last = Math.abs(chosen[chosen.length - 1]?.v ?? 0)
         chosen = first < last ? chosen.slice(1) : chosen.slice(0, -1)
       }
-      if (chosen.length < size)
-        throw new MdmlError('convergence', 'remez: the error has too few alternations (try a different degree)')
+      if (chosen.length < size) {
+        return { ...s, iterations: s.iterations + 1, failed: true }
+      }
       const maxError = maxOf(chosen.map((p) => Math.abs(p.v)))
       const reference = chosen.map((p) => p.t)
       const converged = maxError - Math.abs(error) <= (options.tol ?? 1e-10) * Math.max(Math.abs(error), 1e-300)
@@ -190,7 +195,14 @@ export function remezAlgorithm(
       if (ctx.wants('remez/reference')) ctx.log('remez/reference', reference.map(toX))
       return { reference, numerator, denominator, error, maxError, iterations: s.iterations + 1, converged }
     },
-    done: (s) => (s.converged ? 'converged' : s.iterations >= maxIterations ? 'completed' : undefined),
+    done: (s) =>
+      s.converged
+        ? 'converged'
+        : s.failed === true
+          ? 'failed'
+          : s.iterations >= maxIterations
+            ? 'completed'
+            : undefined,
     serialise: (s) => ({
       reference: s.reference,
       numerator: numbersToJson(s.numerator),
@@ -199,6 +211,7 @@ export function remezAlgorithm(
       maxError: numberToJson(s.maxError),
       iterations: s.iterations,
       converged: s.converged,
+      ...(s.failed === true ? { failed: true } : {}),
     }),
     deserialise: (j) => {
       const o = j as unknown as Record<string, Json>
@@ -210,6 +223,7 @@ export function remezAlgorithm(
         maxError: numberFromJson(o['maxError']),
         iterations: o['iterations'] as number,
         converged: o['converged'] as boolean,
+        ...(o['failed'] === true ? { failed: true } : {}),
       }
     },
   }
@@ -226,7 +240,9 @@ export function remezAlgorithm(
  * @param f - The function on numbers.
  * @param m - Numerator degree.
  * @param options - Denominator degree n (default 0), interval (default [-1, 1]), tolerance (1e-10) and iteration cap.
- * @returns Coefficients, the levelled error and the reference (the vectors are tensors; they were `number[]`).
+ * @returns Coefficients, the levelled error and the reference (the vectors are tensors; they were `number[]`). A degree
+ *   that does not suit the function (the error has too few alternations) ends with status `failed` and the last good
+ *   approximation, instead of throwing.
  * @concept minimax-approximation
  * @example
  * ```ts
@@ -245,9 +261,9 @@ export function remez(f: (x: number) => number, m: number, options: RemezOptions
     denominator: vectorOf(s.denominator),
     error: s.error,
     reference: vectorOf(s.reference.map((t) => (a + b) / 2 + ((b - a) / 2) * t)),
-    iterations: s.converged ? s.iterations : (options.maxIterations ?? 60),
+    iterations: s.converged || s.failed === true ? s.iterations : (options.maxIterations ?? 60),
     converged: s.converged,
-    status: s.converged ? 'converged' : 'completed',
+    status: s.converged ? 'converged' : s.failed === true ? 'failed' : 'completed',
     evaluate: (x) => r((2 * x - a - b) / (b - a)),
   }
 }
