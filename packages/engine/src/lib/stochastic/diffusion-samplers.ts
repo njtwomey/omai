@@ -10,7 +10,7 @@ import type { Json } from '../base/index.ts'
 import { MdmlError } from '../base/index.ts'
 import { pointsSteps } from '../exposition/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
-import { add, div, maximum, minimum, mul, sub, type Tensor, toArray, type Value } from '../tensor/index.ts'
+import { add, clip as clamp, div, mul, sub, type Tensor, toArray, type Value } from '../tensor/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -259,9 +259,7 @@ export function diffusionSampler(options: DiffusionSamplerOptions): Algorithm<Sa
 
 /** Clip a value to a range (a smooth-free clamp, with zero gradient outside). */
 function clipTo(x: Value, range: readonly [number, number]): Value {
-  const lower = mul(add(mul(x, 0), 1), range[0])
-  const upper = mul(add(mul(x, 0), 1), range[1])
-  return minimum(maximum(x, lower), upper)
+  return clamp(x, range[0], range[1])
 }
 
 /**
