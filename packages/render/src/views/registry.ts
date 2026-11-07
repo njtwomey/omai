@@ -8,6 +8,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { MdmlError } from 'mdml-engine/base'
 import type { Exposition, ExpositionKind } from 'mdml-engine/exposition'
 import type { Scene } from 'mdml-engine/scene'
 import type { ViewOptions } from './_view.ts'
@@ -632,6 +633,8 @@ const REGISTRY: Registry = {
  *
  * @param kind - The record kind.
  * @returns The view.
+ * @throws MdmlError `value` naming the known kinds when the kind has no standard view (a record from a newer engine,
+ *   a value that is not a record).
  * @index function The standard view of a record kind: `viewFor('regularisationPath')`.
  * @example
  * ```ts
@@ -640,6 +643,11 @@ const REGISTRY: Registry = {
  * ```
  */
 export function viewFor<K extends ExpositionKind>(kind: K): StandardView<K> {
+  if (!Object.hasOwn(REGISTRY, kind))
+    throw new MdmlError(
+      'value',
+      `no standard view for record kind '${String(kind)}' (known: ${Object.keys(REGISTRY).join(', ')})`,
+    )
   return REGISTRY[kind] as StandardView<K>
 }
 

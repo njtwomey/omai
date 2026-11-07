@@ -9,6 +9,7 @@
 import { type ReactElement, type RefObject, useRef, useState } from 'react'
 import { encodeGif } from '../../animation/gif.ts'
 import { canEncodeVideo, encodeWebm } from '../../animation/video.ts'
+import type { MethodRegistry } from '../../producer/registry.ts'
 import { canProbeAsync } from '../../producer/remote.ts'
 import { parseTape, type TapeFile, tapeOf } from '../../producer/tape.ts'
 import { svgDataUrl, svgToPixels, svgToPng } from '../../svg/export.ts'
@@ -38,6 +39,11 @@ export interface SessionExportProps {
   readonly layout?: readonly Panel[] | Narrative
   /** Called with a tape file chosen from disk; the page plays it back (see `useTape`). Without it, no load item. */
   readonly onLoadTape?: (file: TapeFile) => void
+  /**
+   * The methods the page can replay (the registry it gives `useTape`). Given, a file naming another method is refused
+   * with a note in the menu instead of being handed to `onLoadTape` and failing when the page renders.
+   */
+  readonly registry?: MethodRegistry
 }
 
 /** The most frames of a recording. */
@@ -187,7 +193,9 @@ export function SessionExport(props: SessionExportProps): ReactElement {
     file
       .text()
       .then((text) => {
-        props.onLoadTape?.(parseTape(text))
+        const tape = parseTape(text)
+        props.registry?.need(tape.method)
+        props.onLoadTape?.(tape)
         setNote(null)
       })
       .catch((e: unknown) => setNote(e instanceof Error ? e.message : String(e)))

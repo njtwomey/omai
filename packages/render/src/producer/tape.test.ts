@@ -136,6 +136,25 @@ describe('the tape as a file', () => {
     expect(() =>
       replaySessions(parseTape({ schema: 'mdml.tape/1', method: 'nope', seed: 0, variants: [] }), registry),
     ).toThrow(/no method called/)
+    // The parts of a variant that were cast unchecked: a step, a path's kind, the firing steps and a probe.
+    const run = { schema: 'mdml.run/1', events: [] }
+    const variant = { label: '', head: 3, kinds: { r: 'scalar' }, run }
+    for (const [bad, message] of [
+      [{ head: 1.5 }, /non-negative integer/],
+      [{ head: -1 }, /non-negative integer/],
+      [{ kinds: { r: 'nonsense' } }, /unknown kind/],
+      [{ kinds: { r: 3 } }, /unknown kind/],
+      [{ fired: { lap: ['a'] } }, /not numbers/],
+      [{ probes: [1] }, /probe 0/],
+      [{ probes: [{ t: 1 }] }, /probe 0/],
+    ] as const)
+      expect(
+        () => parseTape({ schema: 'mdml.tape/1', method: 'orbit', seed: 0, variants: [{ ...variant, ...bad }] }),
+        JSON.stringify(bad),
+      ).toThrow(message)
+    expect(parseTape({ schema: 'mdml.tape/1', method: 'orbit', seed: 0, variants: [variant] }).variants[0]?.head).toBe(
+      3,
+    )
   })
 
   it('writes the tape of a session computed in a worker, with its probes asked of the worker', async () => {

@@ -169,6 +169,9 @@ export async function tapeOf(
   }
 }
 
+// The kinds a contract path can have (`Contract` in the engine's trace).
+const PATH_KINDS: readonly string[] = ['scalar', 'tensor', 'message', 'frame', 'derived', 'event']
+
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
 
 /**
@@ -176,7 +179,8 @@ const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'obj
  *
  * @param input - The text or value.
  * @returns The file.
- * @throws MdmlError with code `schema` when it is not a tape file (or its events are not a valid run).
+ * @throws MdmlError with code `schema` when it is not a tape file (or its events are not a valid run, a head is not a
+ *   non-negative integer, a path has an unknown kind, or a probe has no step and path).
  * @index function Validate a tape file read back from JSON: `parseTape(json)`.
  */
 export function parseTape(input: unknown): TapeFile {
@@ -193,15 +197,33 @@ export function parseTape(input: unknown): TapeFile {
   const variants = (value['variants'] as unknown[]).map((v, i): TapeVariant => {
     if (!isObject(v) || typeof v['label'] !== 'string' || typeof v['head'] !== 'number' || !isObject(v['kinds']))
       throw new MdmlError('schema', `variant ${i} of the tape file is malformed`)
+    const head = v['head']
+    if (!Number.isInteger(head) || head < 0)
+      throw new MdmlError('schema', `variant ${i} of the tape file has head ${head}, a step is a non-negative integer`)
+    const kinds = v['kinds']
+    for (const [path, kind] of Object.entries(kinds))
+      if (typeof kind !== 'string' || !PATH_KINDS.includes(kind))
+        throw new MdmlError(
+          'schema',
+          `variant ${i} of the tape file: path '${path}' has the unknown kind ${String(kind)}`,
+        )
+    const fired = isObject(v['fired']) ? v['fired'] : {}
+    for (const [path, steps] of Object.entries(fired))
+      if (!Array.isArray(steps) || !steps.every((t) => typeof t === 'number'))
+        throw new MdmlError('schema', `variant ${i} of the tape file: the steps of '${path}' are not numbers`)
+    const probes = Array.isArray(v['probes']) ? v['probes'] : []
+    for (const [k, probe] of probes.entries())
+      if (!isObject(probe) || typeof probe['t'] !== 'number' || typeof probe['path'] !== 'string')
+        throw new MdmlError('schema', `variant ${i} of the tape file: probe ${k} needs a step t and a path`)
     return {
       label: v['label'],
       config: (v['config'] ?? {}) as Json,
-      head: v['head'],
+      head,
       status: (v['status'] ?? null) as RunStatus | null,
       run: parseRun(v['run']),
-      kinds: v['kinds'] as Record<string, string>,
-      fired: (isObject(v['fired']) ? v['fired'] : {}) as Record<string, number[]>,
-      probes: (Array.isArray(v['probes']) ? v['probes'] : []) as TapeProbe[],
+      kinds: kinds as Record<string, string>,
+      fired: fired as Record<string, number[]>,
+      probes: probes as TapeProbe[],
     }
   })
   return {
