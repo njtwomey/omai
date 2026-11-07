@@ -17,6 +17,7 @@ import {
   sum,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -28,7 +29,9 @@ const rateAt = (r: OnlineRate, t: number): number => (typeof r === 'number' ? r 
 
 /**
  * An online learner (online convex optimisation): it plays a point, sees the gradient of that round's loss at the
- * point, and updates. Learners are plain functions over explicit states, like every algorithm here.
+ * point, and updates. Learners are plain functions over explicit states, like every algorithm here. The contract is a
+ * kernel: `play` and `update` run once per round on typed arrays (D-009 keeps them native; the point is read from `play`,
+ * and `onlineAlgorithm` puts it on the tape as a tensor).
  */
 export interface OnlineLearner<S> {
   readonly name: string
@@ -329,8 +332,8 @@ export interface OnlineState<S> {
 export interface OnlineOptions {
   /** The dimension of the plays (the number of experts for simplex learners). */
   readonly dim: number
-  /** A fixed comparator u: regret is against sum_t f_t(u). */
-  readonly comparator?: ArrayLike<number>
+  /** A fixed comparator u, a vector (a tensor-like; migration, D-009: was `ArrayLike<number>`): regret is against sum_t f_t(u). */
+  readonly comparator?: TensorLike
   /** Linear losses over experts: regret is against the best single expert in hindsight (the default comparator). */
   readonly experts?: boolean
 }
@@ -368,7 +371,7 @@ export function onlineAlgorithm<S>(
   const u =
     options.comparator === undefined
       ? undefined
-      : fromStorage(Float64Array.from(options.comparator), [options.dim], 'float64')
+      : fromStorage(Float64Array.from(toVector(options.comparator, 'onlineAlgorithm')), [options.dim], 'float64')
   const basis = (i: number): Value => {
     const e = new Float64Array(options.dim)
     e[i] = 1

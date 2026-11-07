@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { grad } from '../autodiff/index.ts'
 import { eigvalsh } from '../numerics/linalg/index.ts'
 import { key, normal } from '../random/index.ts'
 import {
@@ -12,6 +13,7 @@ import {
   sub,
   sum,
   type Tensor,
+  type TensorLike,
   tensor,
   toFlat,
   transpose,
@@ -162,5 +164,35 @@ describe('sharpness', () => {
 
   it('a single parameter’s sharpness is its second derivative', () => {
     expect(O.sharpness((v) => mul(square(v as Value), 2.5), tensor([3])).value).toBeCloseTo(5, 10)
+  })
+
+  it('the grids and the start vector take tensor-likes (migration, D-009): tensor, typed array and list agree, rank 2 is a shape error, a traced one is not differentiable', () => {
+    const q = (v: unknown): Value => sum(mul(square(v as Value), tensor([1, 4])))
+    const p = tensor([1, 1])
+    const d = tensor([1, 0])
+    const rules: [string, (g: TensorLike) => unknown][] = [
+      ['slice1d', (g) => O.slice1d(q, p, d, g)],
+      ['slice2d', (g) => O.slice2d(q, p, d, tensor([0, 1]), g, g).losses],
+      ['randomSlice', (g) => O.randomSlice(q, p, key(0), { alphas: g, betas: g }).slice],
+      ['interpolationSlice', (g) => O.interpolationSlice(q, p, tensor([2, 2]), g)],
+      ['bezierSlice', (g) => O.bezierSlice(q, p, tensor([0, 0]), tensor([2, 2]), g)],
+      ['sharpness', (g) => O.sharpness(q, p, { method: 'power', v0: g }).value],
+    ]
+    const grid = [0, 0.5, 1]
+    for (const [name, f] of rules) {
+      const g = name === 'sharpness' ? [1, 0.5] : grid
+      const expected = JSON.stringify(f(g))
+      expect(JSON.stringify(f(Float64Array.from(g))), name).toBe(expected)
+      expect(JSON.stringify(f(tensor(g))), name).toBe(expected)
+      expect(() => f(tensor([g, g])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(
+        () =>
+          grad((a: Value) => {
+            f(a as TensorLike)
+            return sum(a)
+          })(tensor(g)),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
+    }
   })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
-import { type Tensor, toFlat } from '../tensor/index.ts'
+import { grad } from '../autodiff/index.ts'
+import { sum, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { messages, metricSeries, recorder, runAlgorithm, tracePolicy } from '../trace/index.ts'
 import * as O from './index.ts'
 
@@ -155,5 +156,33 @@ describe('interior point and box QP', () => {
     const rec = recorder()
     O.boxQp([[1]], [-3], [0], [1], { tracer: rec })
     expect(metricSeries(rec.run(), 'active').values.at(-1)).toBe(1)
+  })
+})
+
+describe('tensor-like start (migration, D-009)', () => {
+  it('the start of boxQp takes a tensor, a typed array or a list; a matrix is a shape error; a traced one is not differentiable', () => {
+    const at = (x0: TensorLike): number[] =>
+      toFlat(
+        O.boxQp(
+          [
+            [2, 0],
+            [0, 2],
+          ],
+          [-4, 2],
+          [0, 0],
+          [1, 1],
+          { x0 },
+        ).x,
+      )
+    const expected = at([0.5, 0.5])
+    expect(at(Float64Array.of(0.5, 0.5))).toEqual(expected)
+    expect(at(tensor([0.5, 0.5]))).toEqual(expected)
+    expect(() => at(tensor([[0.5, 0.5]]))).toThrow(expect.objectContaining({ code: 'shape' }))
+    expect(() =>
+      grad((a: Value) => {
+        at(a as TensorLike)
+        return sum(a)
+      })(tensor([0.5, 0.5])),
+    ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
   })
 })

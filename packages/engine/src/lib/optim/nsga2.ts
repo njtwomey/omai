@@ -6,7 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { Generator, type Key, latinHypercube } from '../random/index.ts'
-import { fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
 import { crowdingRows, dominatesRow, hv, sortRows } from './_pareto.ts'
 import { type BoundArrays, finiteBounds } from './minimize/_bounds.ts'
@@ -29,32 +29,37 @@ export interface SbxOptions {
 
 /**
  * Simulated binary crossover (Deb and Agrawal 1995) with bounds, as in Deb's NSGA-II code: each variable of a crossed
- * pair is recombined with a spread factor drawn from a polynomial distribution that respects the box.
+ * pair is recombined with a spread factor drawn from a polynomial distribution that respects the box. Takes the parents
+ * as tensor-likes and returns tensors (migration, D-009: they were `ArrayLike<number>` and `Float64Array`s).
  *
  * @param key - The random key.
- * @param a - First parent.
- * @param b - Second parent.
+ * @param a - First parent: a vector.
+ * @param b - Second parent: a vector.
  * @param bounds - Box bounds of the variables.
  * @param options - Distribution index and probabilities.
- * @returns The two children.
+ * @returns The two children, `[n]` tensors.
+ * @throws MdmlError with code `shape` unless a parent has rank 1, and `not-differentiable` for a traced one.
  * @concept genetic-operators
  * @example
  * ```ts
  * import { sbxCrossover } from 'mdml-engine/optim'
  * import { key } from 'mdml-engine/random'
+ * import { toFlat } from 'mdml-engine/tensor'
  * const [c1, c2] = sbxCrossover(key(0), [0, 1], [1, 0], [[0, 1], [0, 1]], { probability: 1 })
- * c1.every((v) => v >= 0 && v <= 1) && c2.every((v) => v >= 0 && v <= 1) // => true
+ * toFlat(c1).every((v) => v >= 0 && v <= 1) && toFlat(c2).every((v) => v >= 0 && v <= 1) // => true
  * ```
  */
 export function sbxCrossover(
   key: Key,
-  a: ArrayLike<number>,
-  b: ArrayLike<number>,
+  a: TensorLike,
+  b: TensorLike,
   bounds: Bounds,
   options: SbxOptions = {},
-): [Float64Array, Float64Array] {
-  const n = a.length
-  return sbx(new Generator(key), a, b, finiteBounds(bounds, n, 'sbxCrossover'), options)
+): [Tensor<'float64', [number]>, Tensor<'float64', [number]>] {
+  const pa = toVector(a, 'sbxCrossover')
+  const pb = toVector(b, 'sbxCrossover')
+  const [c1, c2] = sbx(new Generator(key), pa, pb, finiteBounds(bounds, pa.length, 'sbxCrossover'), options)
+  return [fromStorage(c1, [c1.length], 'float64'), fromStorage(c2, [c2.length], 'float64')]
 }
 
 function sbx(
@@ -111,29 +116,39 @@ export interface PolynomialMutationOptions {
 
 /**
  * Polynomial mutation with bounds (Deb and Goyal 1996, the bounded form of Deb's NSGA-II code): each variable moves by a
- * polynomially distributed fraction of its range, never leaving the box.
+ * polynomially distributed fraction of its range, never leaving the box. Takes the individual as a tensor-like and
+ * returns a tensor (migration, D-009: was `ArrayLike<number>` in, `Float64Array` out).
  *
  * @param key - The random key.
- * @param x - The individual.
+ * @param x - The individual: a vector.
  * @param bounds - Box bounds.
  * @param options - Distribution index and per-variable probability.
- * @returns The mutated individual.
+ * @returns The mutated individual, an `[n]` tensor.
+ * @throws MdmlError with code `shape` unless `x` has rank 1, and `not-differentiable` for a traced one.
  * @concept genetic-operators
  * @example
  * ```ts
  * import { polynomialMutation } from 'mdml-engine/optim'
  * import { key } from 'mdml-engine/random'
- * const y = polynomialMutation(key(1), [0.5, 0.5], [[0, 1], [0, 1]], { probability: 1 })
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const y = toFlat(polynomialMutation(key(1), [0.5, 0.5], [[0, 1], [0, 1]], { probability: 1 }))
  * y.every((v) => v >= 0 && v <= 1) && (y[0] !== 0.5 || y[1] !== 0.5) // => true
  * ```
  */
 export function polynomialMutation(
   key: Key,
-  x: ArrayLike<number>,
+  x: TensorLike,
   bounds: Bounds,
   options: PolynomialMutationOptions = {},
-): Float64Array {
-  return mutate(new Generator(key), x, finiteBounds(bounds, x.length, 'polynomialMutation'), options)
+): Tensor<'float64', [number]> {
+  const individual = toVector(x, 'polynomialMutation')
+  const y = mutate(
+    new Generator(key),
+    individual,
+    finiteBounds(bounds, individual.length, 'polynomialMutation'),
+    options,
+  )
+  return fromStorage(y, [y.length], 'float64')
 }
 
 function mutate(

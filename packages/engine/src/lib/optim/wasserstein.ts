@@ -27,6 +27,7 @@ import {
   type TensorLike,
   take,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
@@ -180,8 +181,8 @@ const reshapeColumn = (c: Value): Value => reshape(c, [-1])
 
 /** Options of {@link sinkhornBarycenter}. */
 export interface BarycenterOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
-  /** Barycentric weights (default uniform). */
-  readonly weights?: ArrayLike<number>
+  /** Barycentric weights, a vector (default uniform; migration, D-009: was `ArrayLike<number>`). */
+  readonly weights?: TensorLike
   /** Stop once sum_j std_k(the k-th plan's barycentre marginal at j) falls to this (default 1e-9). */
   readonly tol?: number
   readonly maxIterations?: number
@@ -221,7 +222,9 @@ export function sinkhornBarycenterAlgorithm(
   const n = A.shape[0] ?? 0
   const N = A.shape[1] ?? 0
   if (M.shape[0] !== n || M.shape[1] !== n) throw new MdmlError('shape', 'sinkhornBarycenter: cost must be [n, n]')
-  const w = Float64Array.from(options.weights ?? new Float64Array(N).fill(1 / N))
+  const w = Float64Array.from(
+    options.weights === undefined ? new Float64Array(N).fill(1 / N) : toVector(options.weights, 'sinkhornBarycenter'),
+  )
   const tol = options.tol ?? 1e-9
   const logA = Float64Array.from(A.data, (v) => Math.log(v))
   const logK = Float64Array.from(M.data, (v) => -v / reg)
@@ -329,7 +332,9 @@ export function sinkhornBarycenter(
   const A = primalOf(promoteFloat(histograms)[0] as Value)
   const n = A.shape[0] ?? 0
   const N = A.shape[1] ?? 0
-  const w = Float64Array.from(weights ?? new Float64Array(N).fill(1 / N))
+  const w = Float64Array.from(
+    weights === undefined ? new Float64Array(N).fill(1 / N) : toVector(weights, 'sinkhornBarycenter'),
+  )
   return {
     barycenter: fromStorage(barycentreOf(result.state, w, n, N), [n], 'float64'),
     iterations: result.steps,
@@ -340,10 +345,10 @@ export function sinkhornBarycenter(
 
 /** Options of {@link freeSupportBarycenter}. */
 export interface FreeSupportOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'>> {
-  /** The barycentre's weights (default uniform). */
-  readonly b?: ArrayLike<number>
-  /** Barycentric weights of the inputs (default uniform). */
-  readonly weights?: ArrayLike<number>
+  /** The barycentre's weights, a vector (default uniform; migration, D-009: was `ArrayLike<number>`). */
+  readonly b?: TensorLike
+  /** Barycentric weights of the inputs, a vector (default uniform; migration, D-009: was `ArrayLike<number>`). */
+  readonly weights?: TensorLike
   /** Stop once the squared displacement of the support falls to this (default 1e-7, POT's). */
   readonly tol?: number
   readonly maxIterations?: number
@@ -384,8 +389,14 @@ export function freeSupportBarycenterAlgorithm(
   const inputs = locations.map((l) => primalOf(promoteFloat(l)[0] as Value) as Tensor)
   const weights = masses.map((m) => Float64Array.from(toFlat(primalOf(asTensor(m)))))
   const N = inputs.length
-  const b = Float64Array.from(options.b ?? new Float64Array(k).fill(1 / k))
-  const lambdas = Float64Array.from(options.weights ?? new Float64Array(N).fill(1 / N))
+  const b = Float64Array.from(
+    options.b === undefined ? new Float64Array(k).fill(1 / k) : toVector(options.b, 'freeSupportBarycenter'),
+  )
+  const lambdas = Float64Array.from(
+    options.weights === undefined
+      ? new Float64Array(N).fill(1 / N)
+      : toVector(options.weights, 'freeSupportBarycenter'),
+  )
   const tol = options.tol ?? 1e-7
   return {
     name: 'freeSupportBarycenter',

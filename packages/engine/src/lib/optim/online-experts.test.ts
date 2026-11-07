@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { grad } from '../autodiff/index.ts'
 import { hedgeRegretBound, ogdRegretBound } from '../learn/theory.ts'
 import { foldIn, key, normal, uniform } from '../random/index.ts'
-import { square, sub, sum, toFlat, type Value } from '../tensor/index.ts'
+import { square, sub, sum, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { recorder, runAlgorithm } from '../trace/index.ts'
 import { linearLosses, onlineGradientDescent, runOnline } from './online.ts'
 import {
@@ -155,7 +156,7 @@ describe('tracking: fixed share and variable share', () => {
           }
         }
         rec(0)
-        expect(dp[t - 1]).toBeCloseTo(best, 12)
+        expect(dp.data[t - 1]).toBeCloseTo(best, 12)
       }
     }
   })
@@ -166,7 +167,7 @@ describe('tracking: fixed share and variable share', () => {
       const rec = recorder()
       const r = runAlgorithm(alg, { maxSteps: T, tracer: rec })
       const comparator = bestSwitchingLoss(losses, 4)
-      return r.state.cumulativeLoss - (comparator[T - 1] ?? 0)
+      return r.state.cumulativeLoss - (comparator.data[T - 1] ?? 0)
     }
     const hedge = switching(hedgeRule(1))
     const fixed = switching(fixedShare({ eta: 1, alpha: 0.005 }))
@@ -312,7 +313,62 @@ describe('online mirror descent, AdaGrad and the comparator in hindsight', () =>
 
   it('finds the best fixed point in hindsight (quadratics: the mean; with a box: clipped)', () => {
     const f = (c: number) => (x: Value) => sum(square(sub(x, c)))
-    expect(hindsightComparator([f(1), f(3), f(8)], 1).point[0]).toBeCloseTo(4, 5)
-    expect(hindsightComparator([f(1), f(3), f(8)], 1, { box: 2 }).point[0]).toBeCloseTo(2, 5)
+    expect(hindsightComparator([f(1), f(3), f(8)], 1).point.data[0]).toBeCloseTo(4, 5)
+    expect(hindsightComparator([f(1), f(3), f(8)], 1, { box: 2 }).point.data[0]).toBeCloseTo(2, 5)
+  })
+})
+
+describe('tensor-like inputs (migration, D-009)', () => {
+  it('the loss, advice and gradient matrices take a tensor or nested lists; a vector is a shape error; a traced one is not differentiable', () => {
+    const m = [
+      [0.2, 0.9],
+      [0.8, 0.1],
+      [0.3, 0.7],
+    ]
+    const rules: [string, (x: TensorLike) => unknown][] = [
+      ['bestSwitchingLoss', (x) => toFlat(bestSwitchingLoss(x, 1))],
+      ['adagradRegretBound', (x) => adagradRegretBound(x, 2)],
+      [
+        'exp4Algorithm',
+        (x) =>
+          exp4Algorithm(
+            [
+              [1, 0],
+              [0, 1],
+            ],
+            x,
+          ).config,
+      ],
+      ['exp4Algorithm advice', (x) => exp4Algorithm(x, m).config],
+    ]
+    for (const [name, f] of rules) {
+      const values =
+        name === 'exp4Algorithm advice'
+          ? [
+              [1, 0],
+              [0, 1],
+            ]
+          : m
+      const expected = f(values)
+      expect(f(tensor(values)), name).toEqual(expected)
+      expect(() => f(tensor(values[0] as number[])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(
+        () =>
+          grad((a: Value) => {
+            f(a as TensorLike)
+            return sum(a)
+          })(tensor(values)),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
+    }
+    // Advice that changes every round is a rank-3 tensor.
+    const perRound = [m.slice(0, 2), m.slice(1, 3), m.slice(0, 2)]
+    expect(exp4Algorithm(perRound, m).config).toEqual(exp4Algorithm(tensor(perRound), m).config)
+    expect(hindsightComparator([(x: Value) => sum(square(x))], 2).point.shape).toEqual([2])
+    // The comparator of a run is a vector too.
+    const losses = linearLosses(m)
+    expect(
+      runOnline(onlineGradientDescent({ radius: 1 }), losses, { dim: 2, comparator: tensor([0, 0]) }).regret,
+    ).toEqual(runOnline(onlineGradientDescent({ radius: 1 }), losses, { dim: 2, comparator: [0, 0] }).regret)
   })
 })

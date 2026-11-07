@@ -366,16 +366,14 @@ export function gamAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key = ma
     const p = design.p
     const fit = fitGlm(
       {
-        x: design.X,
-        n,
-        d: p,
+        x: fromStorage(design.X, [n, p], 'float64'),
         y: problem.y,
         weights: problem.prior,
         family: problem.family,
         link: problem.link,
-        penalty: { matrix: S },
+        penalty: { matrix: fromStorage(S, [p, p], 'float64') },
         normalise: false,
-        start,
+        start: Float64Array.from(start),
       },
       inner as SpaceValue,
       { key },

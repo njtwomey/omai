@@ -45,7 +45,7 @@ mdml-engine/learn/preprocessing	96	e034477b3b86
 mdml-engine/linear	298	cd06a93860e6
 mdml-engine/logic	403	1c864801b15e
 mdml-engine/logic/ilp	65	6145f87e08f3
-mdml-engine/losses	194	b3ecd280cb73
+mdml-engine/losses	194	fd51997a151d
 mdml-engine/manifold	80	e5aa7b4a6d19
 mdml-engine/metrics	334	ac88eccb759b
 mdml-engine/mixture	33	21b4ec24ba19
@@ -65,7 +65,7 @@ mdml-engine/numerics/roots	55	b0baeaac43bc
 mdml-engine/numerics/sparse	72	4ca5a06418b7
 mdml-engine/numerics/spatial	45	2d1f523c78a3
 mdml-engine/numerics/special	77	7e725fa94aed
-mdml-engine/optim	789	aa9c921fdd44
+mdml-engine/optim	789	f385d8835249
 mdml-engine/patterns	63	0b5726ab1f1c
 mdml-engine/pgm	370	eaa0b419761b
 mdml-engine/pgm/causal	59	eef13c834f1f
@@ -119,4 +119,4 @@ mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17946	6ff9f8f40e0e
+total	17946	2ddcba65357c

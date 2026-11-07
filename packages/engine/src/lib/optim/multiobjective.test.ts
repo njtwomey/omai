@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { zdt1 } from '../../testing/optim-problems.ts'
 import { grad } from '../autodiff/index.ts'
 import { key } from '../random/index.ts'
-import { item, square, stack, sub, sum, tensor, toArray, toFlat, type Value } from '../tensor/index.ts'
+import { item, square, stack, sub, sum, type TensorLike, tensor, toArray, toFlat, type Value } from '../tensor/index.ts'
 import { metricSeries, recorder, tensorSeries, tracePolicy } from '../trace/index.ts'
 import { nelderMead } from './minimize/derivative-free.ts'
 import {
@@ -42,7 +42,7 @@ describe('dominance, fronts and crowding', () => {
       ]),
     ).toEqual([[0, 1], [2]])
     expect(
-      Array.from(
+      toFlat(
         crowdingDistance([
           [0, 1],
           [1, 0],
@@ -50,7 +50,7 @@ describe('dominance, fronts and crowding', () => {
       ),
     ).toEqual([Infinity, Infinity])
     expect(
-      Array.from(
+      toFlat(
         crowdingDistance([
           [1, 1],
           [1, 1],
@@ -97,7 +97,7 @@ describe('dominance, fronts and crowding', () => {
       ],
       [4, 4],
     )
-    expect(Array.from(c)).toEqual([1, 1, 1, 0])
+    expect(toFlat(c)).toEqual([1, 1, 1, 0])
   })
 })
 
@@ -137,7 +137,7 @@ describe('genetic operators', () => {
         ],
         { probability: 1, variableProbability: 1, eta: 5 },
       )
-      for (let i = 0; i < 2; i++) expect((a[i] ?? 0) + (b[i] ?? 0)).toBeCloseTo([1, 0.95][i] ?? 0, 9)
+      for (let i = 0; i < 2; i++) expect((a.data[i] ?? 0) + (b.data[i] ?? 0)).toBeCloseTo([1, 0.95][i] ?? 0, 9)
     }
     const [c, d] = sbxCrossover(
       key(1),
@@ -149,7 +149,7 @@ describe('genetic operators', () => {
       ],
       { probability: 0 },
     )
-    expect([Array.from(c), Array.from(d)]).toEqual([
+    expect([toFlat(c), toFlat(d)]).toEqual([
       [0, 1],
       [1, 0],
     ])
@@ -157,7 +157,7 @@ describe('genetic operators', () => {
 
   it('polynomial mutation respects its probability and the bounds', () => {
     expect(
-      Array.from(
+      toFlat(
         polynomialMutation(
           key(0),
           [0.3, 0.7],
@@ -179,7 +179,7 @@ describe('genetic operators', () => {
         ],
         { probability: 1, eta: 1 },
       )
-      for (const vi of y) expect(vi >= 0 && vi <= 1).toBe(true)
+      for (const vi of toFlat(y)) expect(vi >= 0 && vi <= 1).toBe(true)
     }
   })
 })
@@ -247,5 +247,43 @@ describe('NSGA-II', () => {
     expect(tensorSeries(rec.run(), 'objectives')[0]?.shape).toEqual([8, 2])
     expect(() => nsga2Algorithm(schaffer, [0], { bounds: [[-5, 5]], popSize: 2 })).toThrow()
     expect(() => nsga2Algorithm(schaffer, [0], { bounds: [[-5, Infinity]] })).toThrow()
+  })
+})
+
+describe('tensor-like inputs (migration, D-009)', () => {
+  it('the reference, the bounds and the individuals take a tensor, a typed array or a list; a matrix is a shape error; a traced one is not differentiable', () => {
+    const front = [
+      [1, 3],
+      [2, 2],
+      [3, 1],
+    ]
+    const box: [number, number][] = [
+      [0, 1],
+      [0, 1],
+    ]
+    const rules: [string, (v: TensorLike) => unknown][] = [
+      ['hypervolume', (v) => hypervolume(front, v)],
+      ['hypervolumeContributions', (v) => toFlat(hypervolumeContributions(front, v))],
+      ['epsilonConstraint', (v) => epsilonConstraint(schaffer, 0, v).constraints.length],
+      ['sbxCrossover', (v) => sbxCrossover(key(0), v, [0.5, 0.5], box, { probability: 1 }).map(toFlat)],
+      ['polynomialMutation', (v) => toFlat(polynomialMutation(key(0), v, box, { probability: 1 }))],
+    ]
+    for (const [name, f] of rules) {
+      const values = name === 'hypervolume' || name === 'hypervolumeContributions' ? [4, 4] : [0.25, 0.75]
+      const expected = f(values)
+      expect(f(Float64Array.from(values)), name).toEqual(expected)
+      expect(f(tensor(values)), name).toEqual(expected)
+      expect(() => f(tensor([values, values])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(
+        () =>
+          grad((a: Value) => {
+            f(a as TensorLike)
+            return sum(a)
+          })(tensor(values)),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
+    }
+    expect(crowdingDistance(front).shape).toEqual([3])
+    expect(hypervolumeContributions(front, [4, 4]).shape).toEqual([3])
   })
 })

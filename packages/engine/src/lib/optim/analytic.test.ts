@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { grad } from '../autodiff/index.ts'
 import { key } from '../random/index.ts'
+import { sum, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
 import { analyticObjective, finiteDifferenceHessian } from './analytic.ts'
 import { flatObjective } from './minimize/objective.ts'
@@ -30,7 +32,7 @@ describe('analyticObjective', () => {
   })
 
   it('differences the gradient when there is no Hessian', () => {
-    const h = finiteDifferenceHessian((x) => spec.gradient(x), Float64Array.from([0.3, -1]))
+    const h = finiteDifferenceHessian((x) => spec.gradient(x), [0.3, -1]).data
     const exact = spec.hessian(Float64Array.from([0.3, -1]))
     for (let k = 0; k < 4; k++) expect(h[k]).toBeCloseTo(exact[k] ?? 0, 6)
     const { hessian: _drop, ...without } = spec
@@ -56,5 +58,23 @@ describe('analyticObjective', () => {
       expect(y[0], config.kind).toBeCloseTo(x[0] ?? 0, 5)
       expect(y[1], config.kind).toBeCloseTo(x[1] ?? 0, 5)
     }
+  })
+})
+
+describe('tensor-like inputs (migration, D-009)', () => {
+  it('the point takes a tensor, a typed array or a list and the Hessian is an [m, m] tensor; a matrix is a shape error; a traced one is not differentiable', () => {
+    const at = (x: TensorLike): number[] =>
+      toFlat(finiteDifferenceHessian((v) => [2 * (v[0] ?? 0), 6 * (v[1] ?? 0)], x))
+    const expected = at([1, 1])
+    expect(at(Float64Array.of(1, 1))).toEqual(expected)
+    expect(at(tensor([1, 1]))).toEqual(expected)
+    expect(finiteDifferenceHessian((v) => v, [1, 1, 1]).shape).toEqual([3, 3])
+    expect(() => at(tensor([[1, 1]]))).toThrow(expect.objectContaining({ code: 'shape' }))
+    expect(() =>
+      grad((a: Value) => {
+        at(a as TensorLike)
+        return sum(a)
+      })(tensor([1, 1])),
+    ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
   })
 })

@@ -122,16 +122,14 @@ export function innerFit(
   if (slot) {
     const fit = fitGlm(
       {
-        x: design.X,
-        n,
-        d: p,
+        x: fromStorage(design.X, [n, p], 'float64'),
         y: problem.y,
         weights: problem.prior,
         family: problem.family,
         link: problem.link,
-        penalty: { matrix: S },
+        penalty: { matrix: fromStorage(S, [p, p], 'float64') },
         normalise: false,
-        ...(options.warm === undefined ? {} : { start: options.warm.beta }),
+        ...(options.warm === undefined ? {} : { start: Float64Array.from(options.warm.beta) }),
       },
       options.solver as SpaceValue,
       { key: options.key ?? makeKey(0) },

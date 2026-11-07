@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
 import { VECTOR_PROBLEMS } from '../../testing/optim-problems.ts'
-import { fromStorage, type Tensor, tensor, type Value } from '../tensor/index.ts'
+import { type Tensor, tensor, type Value } from '../tensor/index.ts'
 import { crowdingDistance, hypervolume, hypervolumeContributions, nonDominatedSort } from './multiobjective.ts'
 import { nsga2 } from './nsga2.ts'
 
@@ -19,29 +19,13 @@ describe('multiobjective against pymoo and moocore', () => {
           break
         }
         case 'crowdingDistance':
-          expectMatches(
-            fromStorage(crowdingDistance(points as Tensor), [points?.shape[0] ?? 0], 'float64'),
-            c.output,
-            c.rtol,
-            c.atol,
-            c.name,
-          )
+          expectMatches(crowdingDistance(points as Tensor), c.output, c.rtol, c.atol, c.name)
           break
         case 'hypervolume':
           expectMatches(tensor(hypervolume(points as Tensor, reference ?? [])), c.output, c.rtol, c.atol, c.name)
           break
         case 'hypervolumeContributions':
-          expectMatches(
-            fromStorage(
-              hypervolumeContributions(points as Tensor, reference ?? []),
-              [points?.shape[0] ?? 0],
-              'float64',
-            ),
-            c.output,
-            c.rtol,
-            c.atol,
-            c.name,
-          )
+          expectMatches(hypervolumeContributions(points as Tensor, reference ?? []), c.output, c.rtol, c.atol, c.name)
           break
         default: {
           const f = VECTOR_PROBLEMS[c.params['problem'] as string] as (x: Value) => Value

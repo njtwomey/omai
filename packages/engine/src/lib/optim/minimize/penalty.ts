@@ -6,7 +6,21 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../../numerics/linalg/index.ts'
-import { add, log, maximum, mul, neg, square, sub, sum, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  add,
+  fromStorage,
+  log,
+  maximum,
+  mul,
+  neg,
+  square,
+  sub,
+  sum,
+  type Tensor,
+  tensor,
+  toFlat,
+  type Value,
+} from '../../tensor/index.ts'
 import type { Algorithm, StepContext } from '../../trace/index.ts'
 import {
   configOf,
@@ -444,28 +458,28 @@ export function augmentedLagrangianAlgorithm(
 
 /**
  * Minimise subject to constraints by the augmented Lagrangian method (multipliers reported in scipy's sign
- * convention for c(x) >= 0: nu >= 0).
+ * convention for c(x) >= 0: nu >= 0). The multipliers are a tensor (migration, D-009: a `Float64Array`).
  *
  * @param f - The objective.
  * @param x0 - The start.
  * @param options - Constraints, bounds, mu (default 10), growth (default 10), tolerance (default 1e-6), inner method,
  * outer iteration cap (default 50) and run options.
- * @returns The result with the final multipliers.
+ * @returns The result with the final multipliers, a `[me + mi]` tensor (equalities first).
  * @concept constrained-optimisation
  * @example
  * ```ts
  * import { augmentedLagrangian } from 'mdml-engine/optim'
  * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
  * const r = augmentedLagrangian((x: Value) => sum(square(x)), [1, 1], { constraints: [{ type: 'eq', fun: (x: Value) => sub(sum(x), 1) }] })
- * [toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6), Math.round(r.multipliers[0] * 1e4) / 1e4] // => [[0.5, 0.5], -1]
+ * [toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6), Math.round(toFlat(r.multipliers)[0] * 1e4) / 1e4] // => [[0.5, 0.5], -1]
  * ```
  */
 export function augmentedLagrangian(
   f: Objective,
   x0: Parameters,
   options: PenaltyOptions = {},
-): MinimizeResult & { readonly multipliers: Float64Array } {
+): MinimizeResult & { readonly multipliers: Tensor<'float64', [number]> } {
   const obj = flatObjective(f, x0)
   const { result, state } = runVectorState(augmentedLagrangianAlgorithm(f, x0, options), obj, options, 50)
-  return { ...result, multipliers: state.multipliers }
+  return { ...result, multipliers: fromStorage(state.multipliers, [state.multipliers.length], 'float64') }
 }

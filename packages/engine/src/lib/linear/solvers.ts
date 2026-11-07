@@ -32,6 +32,7 @@ import {
   sum,
   type Tensor,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -159,9 +160,7 @@ export function factoryProblem(problem: GlmProblem, start?: SolveOptions['start'
     throw new MdmlError('value', 'a penalty with an L1 part is non-smooth: use the elastic-net solvers, not glmSolvers')
   const { x, y, w } = problem.design
   return {
-    x: x.data,
-    n: x.n,
-    d: x.d,
+    x: fromStorage(x.data, [x.n, x.d], 'float64'),
     y,
     weights: w,
     family: problem.family,
@@ -196,7 +195,10 @@ export function solveGlmWith(problem: GlmProblem, config: SpaceValue, options: S
     intercept: problem.fitIntercept ? (x[d] ?? 0) : 0,
     objective,
   })
-  const start = factory.start ?? new Float64Array(d + (problem.fitIntercept ? 1 : 0))
+  const start =
+    factory.start === undefined
+      ? new Float64Array(d + (problem.fitIntercept ? 1 : 0))
+      : toVector(factory.start, 'solveGlmWith')
   return {
     coef: fit.coef,
     intercept: fit.intercept,
@@ -340,7 +342,7 @@ export function coordinateDescentSolve(
   const algorithm = lassoCoordinateDescentAlgorithm(matrixTensor(c.x, n, d), vectorTensor(c.y), alpha * l1Ratio * s, {
     tol: options.tol ?? 1e-4,
     l2: alpha * (1 - l1Ratio) * s,
-    ...(options.start === undefined ? {} : { x0: options.start.coef }),
+    ...(options.start === undefined ? {} : { x0: Float64Array.from(options.start.coef) }),
   })
   const tracked = collecting(algorithm, (state) => state.objective / s)
   const r = runAlgorithm(tracked.algorithm, { ...runOf(options), maxSteps: options.maxIter ?? 1000 })

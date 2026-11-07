@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
+import { grad } from '../autodiff/index.ts'
 import { key } from '../random/index.ts'
-import { asTensor, square, sub, sum, type Tensor, toFlat, type Value } from '../tensor/index.ts'
+import {
+  asTensor,
+  square,
+  sub,
+  sum,
+  type Tensor,
+  type TensorLike,
+  tensor,
+  toFlat,
+  type Value,
+} from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
 import { type BoundedProblem, boundedSolvers, boxMap } from './bounded-solvers.ts'
 import { solverConfigOf } from './solvers.ts'
@@ -66,4 +77,28 @@ describe('boundedSolvers', () => {
       expect(x[1] ?? 0, name).toBeGreaterThanOrEqual(-1e-9)
     }
   }, 60_000)
+})
+
+describe('tensor-like bounds (migration, D-009)', () => {
+  it('the bounds of boxMap take a tensor, a typed array or a list; a matrix is a shape error; a traced one is not differentiable', () => {
+    const at = (lower: TensorLike): number[] => Array.from(boxMap(lower, [2, Infinity]).fromFree([0.3, 0.3]))
+    const expected = at([0, 1])
+    expect(at(Float64Array.of(0, 1))).toEqual(expected)
+    expect(at(tensor([0, 1]))).toEqual(expected)
+    expect(() => at(tensor([[0, 1]]))).toThrow(expect.objectContaining({ code: 'shape' }))
+    expect(() =>
+      grad((a: Value) => {
+        at(a as TensorLike)
+        return sum(a)
+      })(tensor([0, 1])),
+    ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
+    const p: BoundedProblem = {
+      objective: (x) => sum(square(sub(x as Value, 0.4))),
+      x0: [1],
+      lower: tensor([0]),
+      upper: Float64Array.of(3),
+    }
+    const out = runAlgorithm(boundedSolvers.make(p, { kind: 'lbfgsb' }, key(0)), { maxSteps: 100 })
+    expect(boundedSolvers.params({ kind: 'lbfgsb' }, out.state).x[0]).toBeCloseTo(0.4, 6)
+  })
 })

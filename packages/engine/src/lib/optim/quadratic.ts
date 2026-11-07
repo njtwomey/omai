@@ -6,7 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
-import type { Tensor, TensorLike } from '../tensor/index.ts'
+import { type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
 import {
   boundVectorFrom,
@@ -356,9 +356,11 @@ const project = (x: ArrayLike<number>, lb: Float64Array, ub: Float64Array): Floa
  * @param q - Linear term.
  * @param lb - Lower bounds (-Infinity allowed).
  * @param ub - Upper bounds (Infinity allowed).
- * @param options - Tolerance (default 1e-10) and starting point (default the projection of 0).
+ * @param options - Tolerance (default 1e-10) and starting point `x0`, a vector (default the projection of 0; takes a
+ *   tensor-like, migration, D-009: was `ArrayLike<number>`).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when q or P is NaN or infinite (bounds may be infinite, not NaN); or when lb exceeds ub.
+ * @throws MdmlError with code `value` when q or P is NaN or infinite (bounds may be infinite, not NaN); or when lb exceeds ub;
+ *   `shape` unless `x0` has rank 1.
  * @concept quadratic-programming
  * @reference D. P. Bertsekas, Projected Newton methods for optimization problems with simple constraints (1982).
  * @example
@@ -374,8 +376,9 @@ export function boxQpAlgorithm(
   q: TensorLike,
   lb: TensorLike,
   ub: TensorLike,
-  options: { readonly tol?: number; readonly x0?: ArrayLike<number> } = {},
+  options: { readonly tol?: number; readonly x0?: TensorLike } = {},
 ): Algorithm<BoxQpState> {
+  const x0 = options.x0 === undefined ? undefined : toVector(options.x0, 'boxQp')
   const qv = finiteVectorFrom(q, 'q')
   const n = qv.length
   const pm = matrixFrom(P, n, 'P')
@@ -417,7 +420,7 @@ export function boxQpAlgorithm(
       },
       tensors: { x: { role: 'param', description: 'current iterate' } },
     }),
-    init: () => stateAt(project(options.x0 ?? new Float64Array(n), lo, hi), [], 0, 1),
+    init: () => stateAt(project(x0 ?? new Float64Array(n), lo, hi), [], 0, 1),
     step: (s) => {
       const eps = Math.min(1e-3, s.projectedGradient)
       const fixed = new Uint8Array(n)
@@ -502,7 +505,8 @@ export interface BoxQpResult {
  * @param q - Linear term.
  * @param lb - Lower bounds.
  * @param ub - Upper bounds.
- * @param options - Tolerance, start, iteration cap (default 100 + 10 n) and run options.
+ * @param options - Tolerance, start `x0` (a tensor-like vector; migration, D-009: was `ArrayLike<number>`), iteration cap
+ *   (default 100 + 10 n) and run options.
  * @returns The solution and its bound multipliers.
  * @throws MdmlError with code `value` when q or P is NaN or infinite (bounds may be infinite, not NaN); or when lb exceeds ub.
  * @concept quadratic-programming
@@ -518,7 +522,7 @@ export function boxQp(
   q: TensorLike,
   lb: TensorLike,
   ub: TensorLike,
-  options: { readonly tol?: number; readonly x0?: ArrayLike<number>; readonly maxIterations?: number } & Partial<
+  options: { readonly tol?: number; readonly x0?: TensorLike; readonly maxIterations?: number } & Partial<
     Omit<RunOptions, 'maxSteps' | 'start'>
   > = {},
 ): BoxQpResult {

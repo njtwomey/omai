@@ -8,17 +8,20 @@
 
 import { MdmlError } from '../base/index.ts'
 import { dict, real } from '../space/index.ts'
-import { add, asTensor, exp, mul, sigmoid, toFlat, type Value } from '../tensor/index.ts'
+import { add, asTensor, exp, mul, sigmoid, type TensorLike, toFlat, toVector, type Value } from '../tensor/index.ts'
 import { type Algorithm, type ModeSpec, type ModeTable, modes, stateFromJson, stateToJson } from '../trace/index.ts'
 import { lbfgsbAlgorithm } from './minimize/lbfgsb.ts'
 import type { Parameters } from './minimize/objective.ts'
 import { slsqpAlgorithm } from './minimize/slsqp.ts'
 import { type SmoothProblem, smoothSolvers, type VectorParams } from './solvers.ts'
 
-/** A smooth problem on a box: the objective, a start inside it, and the bounds (infinities for none). */
+/**
+ * A smooth problem on a box: the objective, a start inside it, and the bounds, vectors of tensor-likes (infinities for
+ * none; migration, D-009: they were `ArrayLike<number>`).
+ */
 export interface BoundedProblem extends SmoothProblem {
-  readonly lower: ArrayLike<number>
-  readonly upper: ArrayLike<number>
+  readonly lower: TensorLike
+  readonly upper: TensorLike
 }
 
 /** The reparametrisation of a box by unconstrained variables: the map and its inverse, as numbers and as tensors. */
@@ -35,12 +38,14 @@ const sigmoidOf = (z: number): number => (z >= 0 ? 1 / (1 + Math.exp(-z)) : Math
 
 /**
  * The smooth map from unconstrained variables onto a box: `lower + (upper - lower) sigmoid(u)` where both bounds are
- * finite, `lower + exp(u)` or `upper - exp(u)` where one is, and `u` itself where neither is.
+ * finite, `lower + exp(u)` or `upper - exp(u)` where one is, and `u` itself where neither is. Takes the bounds as
+ * tensor-likes (migration, D-009: they were `ArrayLike<number>`); the returned map is a kernel on plain arrays, as the
+ * generic solvers of the slot call it on every iteration.
  *
- * @param lower - Lower bounds (`-Infinity` for none).
- * @param upper - Upper bounds (`Infinity` for none).
+ * @param lower - Lower bounds, a vector (`-Infinity` for none).
+ * @param upper - Upper bounds, a vector (`Infinity` for none).
  * @returns The map, its inverse and the map on differentiable values.
- * @throws MdmlError `shape` when the bounds differ in length and `value` when a lower bound exceeds its upper bound.
+ * @throws MdmlError `shape` when the bounds differ in length or are not vectors, and `value` when a lower bound exceeds its upper bound.
  * @example
  * ```ts
  * import { boxMap } from 'mdml-engine/optim'
@@ -48,7 +53,9 @@ const sigmoidOf = (z: number): number => (z >= 0 ? 1 / (1 + Math.exp(-z)) : Math
  * Array.from(map.fromFree(map.toFree([0.25, 3]))) // => [0.25, 3]
  * ```
  */
-export function boxMap(lower: ArrayLike<number>, upper: ArrayLike<number>): BoxMap {
+export function boxMap(lowerBounds: TensorLike, upperBounds: TensorLike): BoxMap {
+  const lower = toVector(lowerBounds, 'boxMap')
+  const upper = toVector(upperBounds, 'boxMap')
   const n = lower.length
   if (upper.length !== n) throw new MdmlError('shape', 'boxMap: lower and upper must have the same length')
   // Per coordinate: 0 free, 1 two-sided, 2 lower only, 3 upper only.
@@ -115,7 +122,7 @@ const lbfgsb: ModeSpec<BoundedProblem, { readonly x: Float64Array }, VectorParam
   }),
   make: (p, k) =>
     lbfgsbAlgorithm(p.objective, p.x0, {
-      bounds: { lower: p.lower, upper: p.upper },
+      bounds: { lower: toVector(p.lower, 'boundedSolvers'), upper: toVector(p.upper, 'boundedSolvers') },
       memory: Math.round(k['memory'] as number),
       ftol: k['ftol'] as number,
       gradTol: k['gradTol'] as number,
@@ -128,7 +135,7 @@ const slsqp: ModeSpec<BoundedProblem, { readonly x: Float64Array }, VectorParams
   space: dict({ ftol: real(1e-14, 1e-2, { log: true, default: 1e-6, label: 'objective change tolerance' }), gradTol }),
   make: (p, k) =>
     slsqpAlgorithm(p.objective, p.x0, {
-      bounds: { lower: p.lower, upper: p.upper },
+      bounds: { lower: toVector(p.lower, 'boundedSolvers'), upper: toVector(p.upper, 'boundedSolvers') },
       ftol: k['ftol'] as number,
       gradTol: k['gradTol'] as number,
     }),
