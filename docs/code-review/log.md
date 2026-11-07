@@ -304,4 +304,4 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   this tie rule (Beale under 300 row and column permutations, 20,000 random degenerate programs), so the fallback is exercised by Beale (5 pivots instead of 6)
   and not shown to be necessary. Test count: 2 `it` added (the pin table, the pivot-rule table), the either-or assertions of the retry tests tightened to
   `optimal`. The `simplexAlgorithm` example path changed from `[[0, 0], [4, 0], [3, 1]]` to `[[0, 0], [0, 2], [3, 1]]` (Dantzig takes the larger
-  reduced cost first). Own checks only (the full gate was not run). Surface 0 added, 0 removed, 0 changed.
+  reduced cost first). Own checks only (the full gate was not run). Surface 0 added, 0 removed, 1 changed (`LinprogOptions`: only the doc comment of `pivotRule`, which says the new default; `docs/api-surface.txt` regenerated).
