@@ -35,7 +35,13 @@ function yLabel(record: Dependence): string {
   return `partial dependence of ${record.output}`
 }
 
-/** The rows an ICE plot draws: at most `max`, evenly spread. */
+/**
+ * The rows an ICE plot draws: at most `max`, evenly spread.
+ *
+ * @param n - The number of rows there are.
+ * @param max - The most to draw.
+ * @returns The indices of the rows to draw.
+ */
 export function iceRows(n: number, max: number): number[] {
   if (n <= max) return Array.from({ length: n }, (_, i) => i)
   return Array.from({ length: max }, (_, i) => Math.round((i * (n - 1)) / Math.max(1, max - 1)))

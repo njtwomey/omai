@@ -70,7 +70,13 @@ export function readChannel(
   return event?.values === undefined ? undefined : Array.from(event.values)
 }
 
-/** Whether a source is read by probing (so it depends on the step only), not from the growing tape. */
+/**
+ * Whether a source is read by probing (so it depends on the step only), not from the growing tape.
+ *
+ * @param session - The session, whose contract says what a path is.
+ * @param source - The channel's path and arguments.
+ * @returns True for a derived path (or no source): its value depends on the viewed step only.
+ */
 export function isProbed(
   // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
   session: Session<any, any>,
@@ -148,7 +154,13 @@ export function channelFocus(value: unknown): Focus | undefined {
   return typeof row === 'number' && Number.isInteger(row) && row >= 0 ? (value as Focus) : undefined
 }
 
-/** The vertices of a region, with open box bounds filled from `bounds` (`[x0, x1, y0, y1]`). */
+/**
+ * The vertices of a region, with open box bounds filled from `bounds` (`[x0, x1, y0, y1]`).
+ *
+ * @param region - The region.
+ * @param bounds - The plot bounds `[x0, x1, y0, y1]` that open box edges extend to.
+ * @returns The vertices as `[x, y]` pairs.
+ */
 export function regionPoints(region: Region, bounds: readonly [number, number, number, number]): [number, number][] {
   const [bx0, bx1, by0, by1] = bounds
   if ('lower' in region) {

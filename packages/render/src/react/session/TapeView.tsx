@@ -58,7 +58,10 @@ function groupByPrefix(names: readonly string[]): Map<string, string[]> {
 /**
  * The player over the session, then its tape's channel panels.
  *
+ * @param props - The session, the scrubbed step and its setter, and extra panels.
+ * @returns The player and the channel panels.
  * @index function React component: draw whatever a session logged: `<TapeView live={live} at={at} onScrub={setAt} />`
+ *
  */
 export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): ReactElement {
   return (
@@ -69,7 +72,12 @@ export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): React
   )
 }
 
-/** Every channel of the tape drawn by its kind (curves, tensors, frames, messages, projections), without a player. */
+/**
+ * Every channel of the tape drawn by its kind (curves, tensors, frames, messages, projections), without a player.
+ *
+ * @param props - The session and the scrubbed step, as for {@link TapeView}; the setter is optional here.
+ * @returns The channel panels.
+ */
 export function TapeChannels<S, C extends Config>(
   props: Omit<TapeViewProps<S, C>, 'onScrub'> & { readonly onScrub?: (t: number | null) => void },
 ): ReactElement {

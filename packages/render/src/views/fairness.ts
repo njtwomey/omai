@@ -35,13 +35,24 @@ export interface GroupReportViewOptions extends ViewOptions {
   readonly rates?: readonly GroupRateName[]
 }
 
-/** The report at the asked thresholds, or as it is. */
+/**
+ * The report at the asked thresholds, or as it is.
+ *
+ * @param record - The group report.
+ * @param thresholds - The thresholds to recompute it at (default as it is).
+ * @returns The report.
+ */
 export function reportAt(record: GroupReport, thresholds?: readonly number[]): GroupReport {
   if (thresholds === undefined || record.scored === undefined) return record
   return groupReportAt(record, thresholds)
 }
 
-/** The group's colour: the categorical slot of its index. */
+/**
+ * The group's colour: the categorical slot of its index.
+ *
+ * @param g - The group's index.
+ * @returns The colour.
+ */
 export function groupColour(g: number): string {
   return `tab${g % 10}`
 }

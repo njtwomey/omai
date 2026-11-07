@@ -11,7 +11,12 @@ import { matrix } from '../charts/matrices.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { type ViewOptions, viewFigure } from './_view.ts'
 
-/** The rows and columns of a quality view's panels (metrics, then the agreement matrix). */
+/**
+ * The rows and columns of a quality view's panels (metrics, then the agreement matrix).
+ *
+ * @param record - The quality record.
+ * @returns The number of rows and columns of panels.
+ */
 export function qualityLayout(record: ExplanationQuality): { readonly rows: number; readonly cols: number } {
   const panels = record.metrics.length + (record.agreement === undefined ? 0 : 1)
   const cols = Math.min(3, Math.max(1, panels))

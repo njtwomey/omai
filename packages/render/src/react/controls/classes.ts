@@ -4,7 +4,12 @@
  * drawn in its colours, light or dark.
  */
 
-/** Join class names, skipping empty ones. */
+/**
+ * Join class names, skipping empty ones.
+ *
+ * @param parts - Class names; `false`, `null`, `undefined` and empty strings are skipped.
+ * @returns The names joined by spaces.
+ */
 export function cx(...parts: readonly (string | false | null | undefined)[]): string {
   return parts.filter((p) => typeof p === 'string' && p !== '').join(' ')
 }

@@ -28,7 +28,12 @@ function Svg({ size = 16, children, ...props }: IconProps): ReactNode {
   )
 }
 
-/** A chevron pointing left (previous, decrease). */
+/**
+ * A chevron pointing left (previous, decrease).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function ChevronLeftIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -37,7 +42,12 @@ export function ChevronLeftIcon(props: IconProps): ReactNode {
   )
 }
 
-/** A chevron pointing right (next, increase). */
+/**
+ * A chevron pointing right (next, increase).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function ChevronRightIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -46,7 +56,12 @@ export function ChevronRightIcon(props: IconProps): ReactNode {
   )
 }
 
-/** A chevron pointing down (open a menu). */
+/**
+ * A chevron pointing down (open a menu).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function ChevronDownIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -55,7 +70,12 @@ export function ChevronDownIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Play. */
+/**
+ * Play.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function PlayIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -64,7 +84,12 @@ export function PlayIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Pause. */
+/**
+ * Pause.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function PauseIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -74,7 +99,12 @@ export function PauseIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Step back one frame: a double chevron pointing left. */
+/**
+ * Step back one frame: a double chevron pointing left.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function StepBackIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -84,7 +114,12 @@ export function StepBackIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Step forward one frame: a double chevron pointing right. */
+/**
+ * Step forward one frame: a double chevron pointing right.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function StepForwardIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -94,7 +129,12 @@ export function StepForwardIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Back to the start. */
+/**
+ * Back to the start.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function RewindIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -104,7 +144,12 @@ export function RewindIcon(props: IconProps): ReactNode {
   )
 }
 
-/** A die (a new random seed). */
+/**
+ * A die (a new random seed).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function DiceIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -117,7 +162,12 @@ export function DiceIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Copy. */
+/**
+ * Copy.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function CopyIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -127,7 +177,12 @@ export function CopyIcon(props: IconProps): ReactNode {
   )
 }
 
-/** A tick (done). */
+/**
+ * A tick (done).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function CheckIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -136,7 +191,12 @@ export function CheckIcon(props: IconProps): ReactNode {
   )
 }
 
-/** A cross (close). */
+/**
+ * A cross (close).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function CloseIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -145,7 +205,12 @@ export function CloseIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Sliders (a control panel). */
+/**
+ * Sliders (a control panel).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function SlidersIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -154,7 +219,12 @@ export function SlidersIcon(props: IconProps): ReactNode {
   )
 }
 
-/** A gear (settings). */
+/**
+ * A gear (settings).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function SettingsIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -164,7 +234,12 @@ export function SettingsIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Skip to the start. */
+/**
+ * Skip to the start.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function SkipBackIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -175,7 +250,12 @@ export function SkipBackIcon(props: IconProps): ReactNode {
   )
 }
 
-/** Skip to the end. */
+/**
+ * Skip to the end.
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function SkipForwardIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>
@@ -186,7 +266,12 @@ export function SkipForwardIcon(props: IconProps): ReactNode {
   )
 }
 
-/** A bolt (eager: all at once). */
+/**
+ * A bolt (eager: all at once).
+ *
+ * @param props - Any SVG attribute, and `size` in pixels (default 16).
+ * @returns The icon.
+ */
 export function ZapIcon(props: IconProps): ReactNode {
   return (
     <Svg {...props}>

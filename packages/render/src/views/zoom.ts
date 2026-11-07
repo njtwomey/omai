@@ -231,7 +231,12 @@ export function surfaceViewport(surface: DecisionSurface): Viewport {
   return { x: ends(surface.x), y: ends(surface.y) }
 }
 
-/** The finite minimum and maximum of a grid. */
+/**
+ * The finite minimum and maximum of a grid.
+ *
+ * @param values - The grid, one array per row.
+ * @returns The minimum and maximum.
+ */
 export function gridRange(values: readonly (readonly number[])[]): [number, number] {
   let lo = Number.POSITIVE_INFINITY
   let hi = Number.NEGATIVE_INFINITY

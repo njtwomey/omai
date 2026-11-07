@@ -39,7 +39,12 @@ const paramsOf = (n: StructureNode): number => {
   return typeof p === 'number' ? p : 0
 }
 
-/** The nodes in the order data flows (each after the nodes feeding it; ties in the structure's order). */
+/**
+ * The nodes in the order data flows (each after the nodes feeding it; ties in the structure's order).
+ *
+ * @param s - The structure.
+ * @returns The nodes in flow order.
+ */
 export function flowOrder(s: Structure): StructureNode[] {
   const preds = new Map<string, string[]>()
   for (const e of s.edges) if (e.kind !== 'skip') preds.set(e.to, [...(preds.get(e.to) ?? []), e.from])

@@ -18,7 +18,12 @@ export type ValueGridViewOptions = ViewOptions
 
 type Grid = readonly (readonly number[])[]
 
-/** The grids across and down of a value-grid record. */
+/**
+ * The grids across and down of a value-grid record.
+ *
+ * @param record - The value-grid record.
+ * @returns The number of columns and rows of grids.
+ */
 export function cellsLayout(record: ValueGrids): { readonly columns: number; readonly rows: number } {
   const g = Math.max(1, record.grids.length)
   const columns = Math.min(g, record.columns ?? Math.ceil(Math.sqrt(g)))
@@ -134,7 +139,12 @@ export interface ConfusionViewOptions extends ViewOptions {
   readonly normalise?: boolean
 }
 
-/** The share of rows on the diagonal of confusion counts. */
+/**
+ * The share of rows on the diagonal of confusion counts.
+ *
+ * @param counts - Confusion counts, true class by row.
+ * @returns The share of the total that lies on the diagonal.
+ */
 export function accuracyOf(counts: Grid): number {
   let right = 0
   let all = 0

@@ -48,7 +48,13 @@ export interface SurfaceViewOptions extends ViewOptions {
   readonly rowWeights?: readonly number[]
 }
 
-/** The class index of each label: numbers as given, names looked up in the classes (unknown names give -1). */
+/**
+ * The class index of each label: numbers as given, names looked up in the classes (unknown names give -1).
+ *
+ * @param labels - Class labels, as numbers or names.
+ * @param classes - The class names, which name labels are looked up in.
+ * @returns The class index of each label.
+ */
 export function classIndices(labels: readonly (number | string)[], classes: readonly string[] | undefined): number[] {
   return labels.map((l) => (typeof l === 'number' ? l : (classes?.indexOf(l) ?? -1)))
 }
@@ -295,7 +301,13 @@ export function surfaceBoxAspect(surface: DecisionSurface, aspect: DataAspect | 
   return Math.min(2.2, Math.max(0.7, (dx / dy) * 1.12))
 }
 
-/** The axes of a surface panel: its features, limited to the grid when it spans two features. */
+/**
+ * The axes of a surface panel: its features, limited to the grid when it spans two features.
+ *
+ * @param surface - The decision surface.
+ * @param axes - The panel's axes, as asked.
+ * @returns The axes, with limits set to the grid when the surface spans two features.
+ */
 export function surfaceAxes(
   surface: DecisionSurface,
   axes: { readonly x: AxisSpec; readonly y: AxisSpec },

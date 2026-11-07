@@ -32,7 +32,13 @@ const LEAF_W = 92
 const CARD_H = 58
 const FONT = 11
 
-/** The text of a node's split, e.g. `petal width ≤ 0.8`. */
+/**
+ * The text of a node's split, e.g. `petal width ≤ 0.8`.
+ *
+ * @param tree - The tree.
+ * @param node - The node.
+ * @returns The text, or `undefined` for a leaf.
+ */
 export function splitText(tree: TreeRecord, node: TreeNode): string | undefined {
   if (node.split === undefined) return undefined
   const name = tree.features[node.split.feature] ?? `x${node.split.feature}`
@@ -42,7 +48,13 @@ export function splitText(tree: TreeRecord, node: TreeNode): string | undefined 
   return `${shortName} ≤ ${short(node.split.threshold)}`
 }
 
-/** What a node predicts: its majority class (classification) or its mean (regression). */
+/**
+ * What a node predicts: its majority class (classification) or its mean (regression).
+ *
+ * @param tree - The tree.
+ * @param node - The node.
+ * @returns The class name or the mean as text.
+ */
 export function nodePrediction(tree: TreeRecord, node: TreeNode): string {
   if (tree.classes === undefined || node.value.length < 2) return `ŷ = ${short(node.value[0] ?? 0)}`
   const k = node.value.indexOf(maxOf(node.value))
@@ -180,13 +192,23 @@ function describeNode(tree: TreeRecord, n: TreeNode): string {
   return `node ${n.id} (depth ${n.depth}): ${n.rows.length} rows, ${value}${split === undefined ? '' : `; split ${split}`}`
 }
 
-/** The node id of a scene id from {@link treeScene} (`node:3` gives 3), or `undefined`. */
+/**
+ * The node id of a scene id from {@link treeScene} (`node:3` gives 3), or `undefined`.
+ *
+ * @param sceneId - A scene element id.
+ * @returns The node id, or `undefined` for any other id.
+ */
 export function treeNodeOf(sceneId: string): number | undefined {
   const m = /^node:(\d+)$/.exec(sceneId)
   return m === null ? undefined : Number(m[1])
 }
 
-/** The number of growth steps of a tree (one per node, in growth order). */
+/**
+ * The number of growth steps of a tree (one per node, in growth order).
+ *
+ * @param tree - The tree.
+ * @returns The number of steps.
+ */
 export function growthSteps(tree: TreeRecord): number {
   return Math.max(0, maxOf(tree.nodes.map((n) => n.order))) + 1
 }

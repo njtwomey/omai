@@ -100,7 +100,12 @@ export function useProbe(
   }, [live.session, t, path, held])
 }
 
-/** The tape of a session, re-read whenever it grows. */
+/**
+ * The tape of a session, re-read whenever it grows.
+ *
+ * @param live - The session.
+ * @returns The tape, a new one each time the session's version changes.
+ */
 // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
 export function useRun(live: LiveSession<any, any>): Run {
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
@@ -165,6 +170,10 @@ export const Note = (props: { readonly children: ReactNode }): ReactNode => (
  * assignments and centres, `components` those with each component's 1σ and 2σ ellipses, `fit` the 1-D fit, `band`
  * the 1-D fit with its predictive band, `surface` the decision surface, `experts` the rows by expert with each expert's
  * line and the mixture's. Each probe is independent and the chart stays mounted across frames.
+ *
+ * @param props - The overlay, title and file name, the session, the viewed step, the training rows and the per-row
+ *   channels.
+ * @returns The framed chart.
  */
 export function RowsPanel(props: {
   readonly overlay: NonNullable<Extract<Panel, { kind: 'rows' }>['overlay']> | undefined

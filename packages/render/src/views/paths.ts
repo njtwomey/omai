@@ -26,7 +26,13 @@ function penaltyAxis(penalties: readonly number[], label: string): AxisSpec {
   return { label, scale: log ? 'log' : 'linear', limits: limitsOf(penalties, log), inverse: true }
 }
 
-/** The coefficients at a penalty, interpolated between the path's penalties (in log penalty when the grid is). */
+/**
+ * The coefficients at a penalty, interpolated between the path's penalties (in log penalty when the grid is).
+ *
+ * @param path - The regularisation path.
+ * @param penalty - The penalty.
+ * @returns One coefficient per feature.
+ */
 export function coefficientsAt(path: RegularisationPath, penalty: number): number[] {
   const p = path.penalties
   const log = wantsLog(p)
@@ -48,7 +54,12 @@ export function coefficientsAt(path: RegularisationPath, penalty: number): numbe
   return [...(path.coefficients[nearestIndex(p, penalty, log)] ?? path.features.map(() => 0))]
 }
 
-/** The number of non-zero coefficients at each penalty (the record's active sets when given). */
+/**
+ * The number of non-zero coefficients at each penalty (the record's active sets when given).
+ *
+ * @param path - The regularisation path.
+ * @returns One count per penalty.
+ */
 export function activeCounts(path: RegularisationPath): number[] {
   return path.penalties.map(
     (_, i) => path.active?.[i]?.length ?? (path.coefficients[i] ?? []).filter((c) => Math.abs(c) > 1e-12).length,
