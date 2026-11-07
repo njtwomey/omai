@@ -6,7 +6,7 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
-import { float } from '../_shared.ts'
+import { type Plane, planeOf } from './_plane.ts'
 import type { BorderOptions } from './correlate.ts'
 import { gaussianFilter, maximumFilter } from './filters.ts'
 import { label } from './morphology.ts'
@@ -15,19 +15,6 @@ import { label } from './morphology.ts'
 // Canny edges, local binary patterns, histograms of oriented gradients and Hough transforms for lines and circles.
 // TODO: Laplacian- and difference-of-Gaussian blob detection (blob_log, blob_dog with overlap pruning) and Hough peak
 // extraction.
-
-interface Plane {
-  readonly h: number
-  readonly w: number
-  readonly data: Float64Array
-}
-
-function planeOf(x: TensorLike, name: string): Plane {
-  const v = primalOf(float(x))
-  if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: images are [H, W]`)
-  return { h: v.shape[0] ?? 0, w: v.shape[1] ?? 0, data: Float64Array.from(v.data, Number) }
-}
-
 const tensorOf = (p: Plane): Tensor => fromStorage(p.data, [p.h, p.w], 'float64')
 
 /** scipy.ndimage.sobel (unnormalised [-1, 0, 1] along axis, [1, 2, 1] across). */

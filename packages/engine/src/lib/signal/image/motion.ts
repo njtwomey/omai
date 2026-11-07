@@ -8,25 +8,13 @@ import { type Json, MdmlError } from '../../base/index.ts'
 import { fft2, ifft2 } from '../../numerics/fourier/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, type RunOptions, runAlgorithm } from '../../trace/index.ts'
-import { float } from '../_shared.ts'
+import { type Plane, planeOf } from './_plane.ts'
 import { gaussianFilter, uniformFilter } from './filters.ts'
 
 // Motion and matching: template matching by normalised cross-correlation and translation by phase correlation (as
 // scikit-image), exhaustive block matching, and dense optical flow by Lucas-Kanade (windowed least squares) and
 // Horn-Schunck (a traced iterative smoothness-regularised solve). TODO: pyramidal iterative Lucas-Kanade and TV-L1
 // (skimage.registration.optical_flow_ilk and optical_flow_tvl1).
-
-interface Plane {
-  readonly h: number
-  readonly w: number
-  readonly data: Float64Array
-}
-
-function planeOf(x: TensorLike, name: string): Plane {
-  const v = primalOf(float(x))
-  if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: images are [H, W]`)
-  return { h: v.shape[0] ?? 0, w: v.shape[1] ?? 0, data: Float64Array.from(v.data, Number) }
-}
 
 /**
  * Template matching by normalised cross-correlation (skimage.feature.match_template): the Pearson correlation of the
