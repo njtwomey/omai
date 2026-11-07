@@ -168,11 +168,7 @@ export function chebyshev(coefficients: TensorLike, domain: readonly [number, nu
   }
   const roots = (): Tensor<'float64'> => vectorOf(rootList())
   const extrema = () => {
-    const points = [
-      a,
-      ...toFlat(derivative().roots()).filter((x) => x > a && x < b),
-      b,
-    ]
+    const points = [a, ...toFlat(derivative().roots()).filter((x) => x > a && x < b), b]
     const values = toFlat(primalOf(evaluate(points)))
     let iMax = 0
     let iMin = 0

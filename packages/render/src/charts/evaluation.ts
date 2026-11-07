@@ -78,7 +78,9 @@ export function rocChart(
  * ```
  */
 export function precisionRecallChart(
-  curves: Loose<PrecisionRecallCurve> | readonly { readonly name?: string; readonly curve: Loose<PrecisionRecallCurve> }[],
+  curves:
+    | Loose<PrecisionRecallCurve>
+    | readonly { readonly name?: string; readonly curve: Loose<PrecisionRecallCurve> }[],
   options: PlotOptions & { readonly prevalence?: number } = {},
 ): EChartsOption {
   const mode = modeOf(options)
@@ -164,7 +166,12 @@ export function calibrationChart(
     { mode },
   )
   const p = points(
-    list.map((c) => ({ x: c.curve.probPred, y: c.curve.probTrue, sizes: numbers(c.curve.counts), sizeRange: [4, 16] as const })),
+    list.map((c) => ({
+      x: c.curve.probPred,
+      y: c.curve.probTrue,
+      sizes: numbers(c.curve.counts),
+      sizeRange: [4, 16] as const,
+    })),
     { mode },
   )
   return cartesian([diagonal(mode, [0, 0], [1, 1], '__perfect'), l, p], {

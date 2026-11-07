@@ -1,6 +1,6 @@
 import { metricArgs, metricValue } from '../../testing/metrics.ts'
 import { type CaseFn, goldenSuite } from '../../testing/suite.ts'
-import { type Tensor, tensor, toFlat } from '../tensor/index.ts'
+import { type Tensor, toFlat } from '../tensor/index.ts'
 import * as M from './index.ts'
 
 /** A curve case: one array field of a curve computed from (yTrue, yScore[, weights]) and the options. */

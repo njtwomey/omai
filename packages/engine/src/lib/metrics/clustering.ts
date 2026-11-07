@@ -64,7 +64,11 @@ export function contingencyMatrix(
     const j = cj.get(p[k] ?? 0) ?? 0
     if (row !== undefined) row[j] = (row[j] ?? 0) + (w[k] ?? 0)
   }
-  return { classes, clusters, matrix: fromStorage(Float64Array.from(m.flat()), [classes.length, clusters.length], 'float64') }
+  return {
+    classes,
+    clusters,
+    matrix: fromStorage(Float64Array.from(m.flat()), [classes.length, clusters.length], 'float64'),
+  }
 }
 
 /** Row sums, column sums and the total of a table. */

@@ -6,8 +6,8 @@
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { labelValues } from './_labels.ts'
 import { precisionRecallRows, rocRows, thresholdRows } from './_curves.ts'
+import { labelValues } from './_labels.ts'
 import type { CurveOptions } from './curves.ts'
 import { type Metric, type MetricInput, metricResult } from './metric.ts'
 

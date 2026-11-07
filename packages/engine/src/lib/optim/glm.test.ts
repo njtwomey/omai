@@ -65,7 +65,8 @@ describe('glmSolvers', () => {
     for (const config of SOLVERS) {
       const fit = fitGlm(problem, config, { maxSteps: 500 })
       expect(fit.converged, config.kind).toBe(true)
-      for (let j = 0; j <= d; j++) expect(toFlat(fit.x)[j], `${config.kind} ${j}`).toBeCloseTo(toFlat(reference.x)[j] ?? 0, 5)
+      for (let j = 0; j <= d; j++)
+        expect(toFlat(fit.x)[j], `${config.kind} ${j}`).toBeCloseTo(toFlat(reference.x)[j] ?? 0, 5)
       expect(fit.objective, config.kind).toBeCloseTo(reference.objective, 10)
     }
   })

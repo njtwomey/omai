@@ -305,7 +305,10 @@ export function arnoldi(
   basis.forEach((row, i) => {
     q.set(row, i * n)
   })
-  return { hessenberg: fromStorage(h, [steps + 1, steps], 'float64'), basis: fromStorage(q, [basis.length, n], 'float64') }
+  return {
+    hessenberg: fromStorage(h, [steps + 1, steps], 'float64'),
+    basis: fromStorage(q, [basis.length, n], 'float64'),
+  }
 }
 
 /** Which eigenvalues {@link eigsh} returns: largest magnitude, largest algebraic or smallest algebraic. */

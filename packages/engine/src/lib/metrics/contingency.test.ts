@@ -243,7 +243,8 @@ describe('threshold analysis', () => {
           const tablesAgree = r.thresholds.every(
             (t, i) =>
               JSON.stringify(sweepAt(r, t).table) ===
-                JSON.stringify(toArray(thresholdConfusion(y, s, t, { sampleWeight: w }).matrix)) && sweepAt(r, t).index === i,
+                JSON.stringify(toArray(thresholdConfusion(y, s, t, { sampleWeight: w }).matrix)) &&
+              sweepAt(r, t).index === i,
           )
           const close = (a: number, b: number): boolean => Math.abs(a - b) < 1e-9
           return (

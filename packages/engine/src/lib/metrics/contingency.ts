@@ -185,7 +185,11 @@ export function tableCost(table: ConfusionTable, costs: TensorLike): TableCost {
   const cells = rows.map((row, i) => row.map((n, j) => n * (c[i]?.[j] ?? 0)))
   const total = cells.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
   const n = rows.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
-  return { cells: fromStorage(Float64Array.from(cells.flat()), [k, k], 'float64'), total, perCase: n === 0 ? Number.NaN : total / n }
+  return {
+    cells: fromStorage(Float64Array.from(cells.flat()), [k, k], 'float64'),
+    total,
+    perCase: n === 0 ? Number.NaN : total / n,
+  }
 }
 
 /**

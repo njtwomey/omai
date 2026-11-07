@@ -6,7 +6,8 @@ import { metricSeries, recorder } from '../trace/index.ts'
 import * as O from './index.ts'
 
 /** The plays of a run as rows of plain numbers. */
-const playRows = (r: O.OnlineResult): number[][] => toRows(toFlat(r.plays), r.plays.shape[0] ?? 0, r.plays.shape[1] ?? 0)
+const playRows = (r: O.OnlineResult): number[][] =>
+  toRows(toFlat(r.plays), r.plays.shape[0] ?? 0, r.plays.shape[1] ?? 0)
 
 const T = 200
 const n = 5

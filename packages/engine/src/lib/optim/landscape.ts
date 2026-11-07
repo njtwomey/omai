@@ -31,8 +31,8 @@ import {
   treeUnflatten,
   type Value,
 } from '../tensor/index.ts'
-import { flatObjective, type Objective } from './minimize/objective.ts'
 import { vectorOf } from './_vector.ts'
+import { flatObjective, type Objective } from './minimize/objective.ts'
 import type { ParamTree } from './transform.ts'
 
 /** A loss as a function of a parameter tree: a scalar. */

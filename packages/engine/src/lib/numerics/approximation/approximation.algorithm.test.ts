@@ -20,7 +20,8 @@ describe('remezAlgorithm', () => {
     expect(result.converged).toBe(true)
     // The equioscillation theorem: the reference has m + n + 2 points where the error is +-E.
     expect(run.state.reference).toHaveLength(5)
-    for (const x of toFlat(result.reference)) expect(Math.abs(f(x) - result.evaluate(x))).toBeCloseTo(Math.abs(result.error), 8)
+    for (const x of toFlat(result.reference))
+      expect(Math.abs(f(x) - result.evaluate(x))).toBeCloseTo(Math.abs(result.error), 8)
   })
 
   it('finds a rational approximation of type (2, 1)', () => {

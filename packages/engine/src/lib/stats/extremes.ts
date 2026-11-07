@@ -86,15 +86,7 @@ export function fitGev(x: TensorLike, options: NewtonMleOptions = {}): ExtremeFi
     sum(generalisedExtremeValue(take(eta, [0]), exp(take(eta, [1])), take(eta, [2])).logProb(data))
   const r = newtonMle(ll, [m0, Math.log(s0), 0.05], options)
   const eta = toFlat(r.eta)
-  return finish(
-    generalisedExtremeValue,
-    data,
-    eta[0] ?? 0,
-    Math.exp(eta[1] ?? 0),
-    eta[2] ?? 0,
-    false,
-    r.converged,
-  )
+  return finish(generalisedExtremeValue, data, eta[0] ?? 0, Math.exp(eta[1] ?? 0), eta[2] ?? 0, false, r.converged)
 }
 
 /**
