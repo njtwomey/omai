@@ -6,12 +6,10 @@
  */
 
 import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
-import { type ReactNode, useId, useRef, useState } from 'react'
+import { type ReactNode, useId, useState } from 'react'
 import { categoricalColour } from '../../theme/palettes.ts'
+import { OptionSettings } from './_OptionSettings.tsx'
 import { cx, labelClass } from './classes.ts'
-import { SlidersIcon } from './icons.tsx'
-import { Popover } from './Popover.tsx'
-import { SpaceControls } from './SpaceControls.tsx'
 
 /** The knobs held for each option of a slot: option name to the option's own knob values. */
 export type SlotKnobs = Readonly<Record<string, Readonly<Record<string, SpaceValue>>>>
@@ -62,7 +60,6 @@ export function SlotVariants(props: SlotVariantsProps): ReactNode {
   const names = Object.keys(space.options)
   const colours = variantColours(names, props.admissible)
   const [open, setOpen] = useState<string | undefined>(undefined)
-  const anchors = useRef<Record<string, HTMLButtonElement | null>>({})
   const labelId = useId()
   const knobsOf = (name: string): Readonly<Record<string, SpaceValue>> =>
     knobs[name] ?? asModeConfig(defaults(space.options[name] as Space))
@@ -83,7 +80,6 @@ export function SlotVariants(props: SlotVariantsProps): ReactNode {
           const title = allowed
             ? props.descriptions?.[name]
             : (props.why?.(name) ?? 'not available with the current settings')
-          const count = Object.keys((space.options[name] as { readonly spaces?: object }).spaces ?? {}).length
           return (
             <li key={name} className="flex items-stretch gap-0.5" data-variant={name} data-allowed={allowed}>
               <div
@@ -108,40 +104,16 @@ export function SlotVariants(props: SlotVariantsProps): ReactNode {
                   )}
                 </span>
               </div>
-              <button
-                type="button"
-                ref={(el) => {
-                  anchors.current[name] = el
-                }}
-                aria-label={`Settings of ${name}`}
-                title={count === 0 ? `${name} has no settings` : `Settings of ${name}`}
-                disabled={disabled || !allowed || count === 0}
-                onClick={() => setOpen(open === name ? undefined : name)}
-                className={cx(
-                  'inline-flex size-8 shrink-0 items-center justify-center rounded-[5px] text-(--wb-muted) outline-none hover:bg-(--wb-bg) hover:text-(--wb-fg) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:pointer-events-none disabled:opacity-30',
-                  open === name && 'bg-(--wb-bg) text-(--wb-accent)',
-                )}
-              >
-                <SlidersIcon size={14} />
-              </button>
-              <Popover
-                anchor={{ current: anchors.current[name] ?? null }}
+              <OptionSettings
+                name={name}
+                space={space.options[name] as Space}
+                value={knobsOf(name)}
+                onChange={(next) => onChange({ ...knobs, [name]: next })}
                 open={open === name}
+                onToggle={() => setOpen(open === name ? undefined : name)}
                 onClose={() => setOpen(undefined)}
-                align="end"
-                role="dialog"
-                label={`Settings of ${name}`}
-                className="w-64 p-3"
-              >
-                <div className="flex flex-col gap-2">
-                  <SpaceControls
-                    space={space.options[name] as Space}
-                    value={knobsOf(name)}
-                    onChange={(next) => onChange({ ...knobs, [name]: asModeConfig(next) })}
-                    disabled={disabled}
-                  />
-                </div>
-              </Popover>
+                disabled={disabled || !allowed}
+              />
             </li>
           )
         })}

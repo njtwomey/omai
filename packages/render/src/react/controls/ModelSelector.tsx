@@ -6,11 +6,9 @@
  */
 
 import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
-import { type ReactNode, useId, useRef, useState } from 'react'
+import { type ReactNode, useId, useState } from 'react'
+import { OptionSettings } from './_OptionSettings.tsx'
 import { cx, labelClass } from './classes.ts'
-import { SlidersIcon } from './icons.tsx'
-import { Popover } from './Popover.tsx'
-import { SpaceControls } from './SpaceControls.tsx'
 import { settleValue } from './space-controls.ts'
 
 /** Props of {@link ModelSelector}. */
@@ -51,7 +49,6 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
   // The knobs last set for each option, so that coming back to one finds its settings as they were.
   const [memory, setMemory] = useState<Readonly<Record<string, Readonly<Record<string, SpaceValue>>>>>({})
   const [open, setOpen] = useState<string | undefined>(undefined)
-  const anchors = useRef<Record<string, HTMLButtonElement | null>>({})
   const labelId = useId()
   const knobsOf = (name: string): Readonly<Record<string, SpaceValue>> => {
     if (name === current) {
@@ -84,7 +81,6 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
           const reason = allowed
             ? props.descriptions?.[name]
             : (props.why?.(name) ?? 'not available with the current settings')
-          const knobs = Object.keys((space.options[name] as { readonly spaces?: object }).spaces ?? {}).length
           return (
             <div key={name} className="flex items-stretch gap-0.5">
               <button
@@ -105,43 +101,19 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
                   <span className="truncate text-[10px] font-normal text-(--wb-muted)">{props.descriptions[name]}</span>
                 )}
               </button>
-              <button
-                type="button"
-                ref={(el) => {
-                  anchors.current[name] = el
-                }}
-                aria-label={`Settings of ${name}`}
-                title={knobs === 0 ? `${name} has no settings` : `Settings of ${name}`}
-                disabled={disabled || !allowed || knobs === 0}
-                onClick={() => {
+              <OptionSettings
+                name={name}
+                space={space.options[name] as Space}
+                value={knobsOf(name)}
+                onChange={(next) => choose(name, next)}
+                open={open === name}
+                onToggle={() => {
                   if (!selected) choose(name)
                   setOpen(open === name ? undefined : name)
                 }}
-                className={cx(
-                  'inline-flex size-8 shrink-0 items-center justify-center rounded-[5px] text-(--wb-muted) outline-none hover:bg-(--wb-bg) hover:text-(--wb-fg) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:pointer-events-none disabled:opacity-30',
-                  open === name && 'bg-(--wb-bg) text-(--wb-accent)',
-                )}
-              >
-                <SlidersIcon size={14} />
-              </button>
-              <Popover
-                anchor={{ current: anchors.current[name] ?? null }}
-                open={open === name}
                 onClose={() => setOpen(undefined)}
-                align="end"
-                role="dialog"
-                label={`Settings of ${name}`}
-                className="w-64 p-3"
-              >
-                <div className="flex flex-col gap-2">
-                  <SpaceControls
-                    space={space.options[name] as Space}
-                    value={knobsOf(name)}
-                    onChange={(knobs) => choose(name, asModeConfig(knobs))}
-                    disabled={disabled}
-                  />
-                </div>
-              </Popover>
+                disabled={disabled || !allowed}
+              />
             </div>
           )
         })}
