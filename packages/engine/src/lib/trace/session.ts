@@ -277,7 +277,8 @@ export function session<S, C extends Config, K extends string = string>(
     if (t === now.t) return now.state
     if (t > now.t || t < 0) throw new MdmlError('value', `${method.name}: step ${t} has not been reached`)
     if (rec === undefined) throw new MdmlError('value', `${method.name}: a session without a past keeps no checkpoints`)
-    return seek(raw, rec.run(), t, { key: root })
+    // `seek` only reads the tape: hand it the live events, not a copy of all of them.
+    return seek(raw, { schema: 'mdml.run/1', events: rec.events }, t, { key: root })
   }
   const self: Session<S, C, K> = {
     method,

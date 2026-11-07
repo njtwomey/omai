@@ -21,19 +21,18 @@ import type { TensorSummary } from './events.ts'
  * ```
  */
 export function summarise(values: ArrayLike<number>, bins = 10): TensorSummary {
-  const finite: number[] = []
+  // Passes over the array itself, no copy of the finite values: totals, then deviations, then the histogram.
   let zeros = 0
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i] ?? Number.NaN
-    if (v === 0) zeros += 1
-    if (Number.isFinite(v)) finite.push(v)
-  }
-  const n = finite.length
+  let n = 0
   let sum = 0
   let min = Infinity
   let max = -Infinity
   let sq = 0
-  for (const v of finite) {
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i] ?? Number.NaN
+    if (v === 0) zeros += 1
+    if (!Number.isFinite(v)) continue
+    n += 1
     sum += v
     sq += v * v
     if (v < min) min = v
@@ -41,11 +40,16 @@ export function summarise(values: ArrayLike<number>, bins = 10): TensorSummary {
   }
   const mean = n === 0 ? Number.NaN : sum / n
   let dev = 0
-  for (const v of finite) dev += (v - mean) ** 2
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i] ?? Number.NaN
+    if (Number.isFinite(v)) dev += (v - mean) ** 2
+  }
   const width = max > min ? (max - min) / bins : 1
   const edges = Array.from({ length: bins + 1 }, (_, i) => (n === 0 ? 0 : min + i * width))
   const counts = new Array<number>(bins).fill(0)
-  for (const v of finite) {
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i] ?? Number.NaN
+    if (!Number.isFinite(v)) continue
     const b = max > min ? Math.min(bins - 1, Math.floor((v - min) / width)) : 0
     counts[b] = (counts[b] ?? 0) + 1
   }
