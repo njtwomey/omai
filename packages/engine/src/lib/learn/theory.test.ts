@@ -473,7 +473,7 @@ describe('regret bounds', () => {
         ),
       )
       const r = runOnline(hedge({ learningRate: eta }), linearLosses(losses), { dim: N, experts: true })
-      const regret = r.regret[r.regret.length - 1] ?? 0
+      const regret = toFlat(r.regret).at(-1) ?? 0
       expect(regret).toBeLessThanOrEqual(hedgeRegretBound(T, N, eta))
     }
     // The tuned rate gives sqrt(T ln N / 2).
@@ -497,7 +497,7 @@ describe('regret bounds', () => {
       dim: 3,
       comparator,
     })
-    const regret = r.regret[r.regret.length - 1] ?? 0
+    const regret = toFlat(r.regret).at(-1) ?? 0
     expect(regret).toBeLessThanOrEqual(ogdRegretBound(T, D, 1))
     expect(regret).toBeGreaterThan(0)
     expect(ogdRegretBound(10000, 2, 1)).toBeCloseTo(200, 12)

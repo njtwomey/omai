@@ -7,13 +7,17 @@
 import type { EChartsOption, SeriesOption } from 'echarts'
 import type { Estimate, MetricResult } from 'mdml-engine/base'
 import type { CalibrationCurve, PrecisionRecallCurve, PrGainCurve, RocCurve } from 'mdml-engine/metrics'
+import type { Tensor, TensorLike } from 'mdml-engine/tensor'
 import { extentOf } from '../figure/limits.ts'
 import { formatNumber } from '../theme/format.ts'
-import { colourFor, modeOf } from './_data.ts'
+import { colourFor, modeOf, numbers } from './_data.ts'
 import { bars } from './bars.ts'
 import { band, lines } from './lines.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
 import { points } from './points.ts'
+
+/** A curve of the engine with its tensor vectors given as tensor-likes, so plain arrays draw as well. */
+type Loose<T> = { readonly [K in keyof T]: T[K] extends Tensor<'float64'> ? TensorLike : T[K] }
 
 function named<T>(items: T | readonly { readonly name?: string; readonly curve: T }[]): { name?: string; curve: T }[] {
   return Array.isArray(items)
@@ -43,7 +47,7 @@ function diagonal(mode: PlotOptions['mode'], from: [number, number], to: [number
  * ```
  */
 export function rocChart(
-  curves: RocCurve | readonly { readonly name?: string; readonly curve: RocCurve }[],
+  curves: Loose<RocCurve> | readonly { readonly name?: string; readonly curve: Loose<RocCurve> }[],
   options: PlotOptions = {},
 ): EChartsOption {
   const mode = modeOf(options)
@@ -74,7 +78,9 @@ export function rocChart(
  * ```
  */
 export function precisionRecallChart(
-  curves: PrecisionRecallCurve | readonly { readonly name?: string; readonly curve: PrecisionRecallCurve }[],
+  curves:
+    | Loose<PrecisionRecallCurve>
+    | readonly { readonly name?: string; readonly curve: Loose<PrecisionRecallCurve> }[],
   options: PlotOptions & { readonly prevalence?: number } = {},
 ): EChartsOption {
   const mode = modeOf(options)
@@ -112,17 +118,18 @@ export function precisionRecallChart(
  * ```
  */
 export function prGainChart(
-  curves: PrGainCurve | readonly { readonly name?: string; readonly curve: PrGainCurve }[],
+  curves: Loose<PrGainCurve> | readonly { readonly name?: string; readonly curve: Loose<PrGainCurve> }[],
   options: PlotOptions = {},
 ): EChartsOption {
   const mode = modeOf(options)
   // The curve on the unit square: points with negative recall gain lie off to the left and are left out.
   const l = lines(
     named(curves).map((c) => {
-      const keep = c.curve.recallGain.map((r) => r >= 0)
+      const recallGain = numbers(c.curve.recallGain)
+      const keep = recallGain.map((r) => r >= 0)
       return {
-        x: c.curve.recallGain.filter((_, i) => keep[i]),
-        y: c.curve.precisionGain.filter((_, i) => keep[i]),
+        x: recallGain.filter((_, i) => keep[i]),
+        y: numbers(c.curve.precisionGain).filter((_, i) => keep[i]),
         ...(c.name === undefined ? {} : { name: c.name }),
       }
     }),
@@ -149,7 +156,7 @@ export function prGainChart(
  * ```
  */
 export function calibrationChart(
-  curves: CalibrationCurve | readonly { readonly name?: string; readonly curve: CalibrationCurve }[],
+  curves: Loose<CalibrationCurve> | readonly { readonly name?: string; readonly curve: Loose<CalibrationCurve> }[],
   options: PlotOptions = {},
 ): EChartsOption {
   const mode = modeOf(options)
@@ -159,7 +166,12 @@ export function calibrationChart(
     { mode },
   )
   const p = points(
-    list.map((c) => ({ x: c.curve.probPred, y: c.curve.probTrue, sizes: c.curve.counts, sizeRange: [4, 16] as const })),
+    list.map((c) => ({
+      x: c.curve.probPred,
+      y: c.curve.probTrue,
+      sizes: numbers(c.curve.counts),
+      sizeRange: [4, 16] as const,
+    })),
     { mode },
   )
   return cartesian([diagonal(mode, [0, 0], [1, 1], '__perfect'), l, p], {

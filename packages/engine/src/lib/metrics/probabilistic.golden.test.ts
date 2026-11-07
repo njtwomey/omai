@@ -1,14 +1,14 @@
 import { metricArgs, metricValue } from '../../testing/metrics.ts'
 import { type CaseFn, goldenSuite } from '../../testing/suite.ts'
 import { exponential, gamma, laplace, logistic, normal, uniform } from '../dists/index.ts'
-import { type Tensor, tensor } from '../tensor/index.ts'
+import type { Tensor } from '../tensor/index.ts'
 import * as M from './index.ts'
 
 const curve =
-  (pick: (c: M.CalibrationCurve) => readonly number[]): CaseFn =>
+  (pick: (c: M.CalibrationCurve) => Tensor): CaseFn =>
   (inputs, params) => {
     const [t, , o] = metricArgs(inputs, params)
-    return tensor([...pick(M.calibrationCurve(t, inputs[1], o))])
+    return pick(M.calibrationCurve(t, inputs[1], o))
   }
 const part =
   (key: string): CaseFn =>

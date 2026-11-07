@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { maxOf } from '../base/index.ts'
+import { maxOf, toRows } from '../base/index.ts'
 import { key, uniform } from '../random/index.ts'
-import { square, sub, sum, type Tensor, tensor, toArray, type Value } from '../tensor/index.ts'
+import { square, sub, sum, type Tensor, tensor, toArray, toFlat, type Value } from '../tensor/index.ts'
 import { metricSeries, recorder } from '../trace/index.ts'
 import * as O from './index.ts'
+
+/** The plays of a run as rows of plain numbers. */
+const playRows = (r: O.OnlineResult): number[][] =>
+  toRows(toFlat(r.plays), r.plays.shape[0] ?? 0, r.plays.shape[1] ?? 0)
 
 const T = 200
 const n = 5
@@ -17,11 +21,11 @@ describe('prediction with expert advice', () => {
     const eta = Math.sqrt((8 * Math.log(n)) / T)
     const r = O.runOnline(O.hedge({ learningRate: eta }), O.linearLosses(biased), { dim: n, experts: true })
     const bound = Math.log(n) / eta + (eta * T) / 8
-    expect(maxOf(r.regret)).toBeLessThanOrEqual(bound)
-    expect(r.regret.at(-1)).toBeCloseTo(r.cumulativeLoss - r.comparatorLoss, 12)
+    expect(maxOf(toFlat(r.regret))).toBeLessThanOrEqual(bound)
+    expect(toFlat(r.regret).at(-1)).toBeCloseTo(r.cumulativeLoss - r.comparatorLoss, 12)
     // the anytime rate also has sublinear regret
     const anytime = O.runOnline(O.hedge(), O.linearLosses(biased), { dim: n, experts: true })
-    expect((anytime.regret.at(-1) ?? Infinity) / T).toBeLessThan(0.15)
+    expect((toFlat(anytime.regret).at(-1) ?? Infinity) / T).toBeLessThan(0.15)
   })
 
   it('Hedge and exponentiated gradient agree on linear losses with a constant rate', () => {
@@ -29,8 +33,9 @@ describe('prediction with expert advice', () => {
     const b = O.runOnline(O.exponentiatedGradient({ learningRate: 0.3 }), O.linearLosses(biased.slice(0, 30)), {
       dim: n,
     })
-    for (const [t, p] of a.plays.entries())
-      for (const [i, v] of p.entries()) expect(v).toBeCloseTo(b.plays[t]?.[i] ?? 0, 12)
+    const other = playRows(b)
+    for (const [t, p] of playRows(a).entries())
+      for (const [i, v] of p.entries()) expect(v).toBeCloseTo(other[t]?.[i] ?? 0, 12)
   })
 
   it('records the regret in the trace', () => {
@@ -59,8 +64,8 @@ describe('online convex optimisation', () => {
       dim: 2,
       comparator: mean,
     })
-    expect(r.regret.at(-1) ?? Infinity).toBeLessThanOrEqual((D * D) / (2 * eta) + (eta * G * G * T) / 2)
-    for (const p of r.plays) expect(Math.hypot(p[0] ?? 0, p[1] ?? 0)).toBeLessThanOrEqual(Math.SQRT2 + 1e-12)
+    expect(toFlat(r.regret).at(-1) ?? Infinity).toBeLessThanOrEqual((D * D) / (2 * eta) + (eta * G * G * T) / 2)
+    for (const p of playRows(r)) expect(Math.hypot(p[0] ?? 0, p[1] ?? 0)).toBeLessThanOrEqual(Math.SQRT2 + 1e-12)
   })
 
   it('online Newton step has logarithmic-order regret on exp-concave losses', () => {
@@ -68,8 +73,8 @@ describe('online convex optimisation', () => {
       dim: 2,
       comparator: mean,
     })
-    expect(r.regret.at(-1) ?? Infinity).toBeLessThan(10 * Math.log(T))
-    for (const p of r.plays) expect(Math.hypot(p[0] ?? 0, p[1] ?? 0)).toBeLessThanOrEqual(Math.SQRT2 + 1e-9)
+    expect(toFlat(r.regret).at(-1) ?? Infinity).toBeLessThan(10 * Math.log(T))
+    for (const p of playRows(r)) expect(Math.hypot(p[0] ?? 0, p[1] ?? 0)).toBeLessThanOrEqual(Math.SQRT2 + 1e-9)
   })
 
   it('FTRL with a quadratic regulariser plays the scaled negative gradient sum', () => {
@@ -82,15 +87,15 @@ describe('online convex optimisation', () => {
       dim: 2,
       comparator: mean,
     })
-    expect((r.regret.at(-1) ?? Infinity) / T).toBeLessThan(0.1)
+    expect((toFlat(r.regret).at(-1) ?? Infinity) / T).toBeLessThan(0.1)
   })
 
   it('exponentiated gradient optimises a convex loss over the simplex', () => {
     const target = tensor([0.2, 0.5, 0.3])
     const f: O.OnlineLoss = (x) => sum(square(sub(x, target)))
     const r = O.runOnline(O.exponentiatedGradient({ learningRate: 0.5 }), Array(300).fill(f), { dim: 3 })
-    const last = r.plays.at(-1) ?? new Float64Array(3)
+    const last = playRows(r).at(-1) ?? [0, 0, 0]
     for (const [i, v] of [0.2, 0.5, 0.3].entries()) expect(last[i]).toBeCloseTo(v, 4)
-    expect(Number.isNaN(r.regret[0])).toBe(true)
+    expect(Number.isNaN(toFlat(r.regret)[0])).toBe(true)
   })
 })

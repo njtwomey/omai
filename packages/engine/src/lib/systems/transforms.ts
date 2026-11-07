@@ -7,7 +7,7 @@
 import { MdmlError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type PartialFractions, residue, residuez } from '../numerics/polynomial/index.ts'
-import { pad, type TensorLike, type Value } from '../tensor/index.ts'
+import { pad, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 import { choose, factorial, float, numbers, toList, trimLeading } from './_shared.ts'
 import { isDiscrete, type Lti, type TransferFunction, tf, toTf } from './representations.ts'
 
@@ -165,8 +165,8 @@ export interface InverseTransform {
 }
 
 function termsOf(pf: PartialFractions): InverseTerm[] {
-  const ps = toList(pf.poles)
-  const rs = toList(pf.residues)
+  const ps = toList({ re: toFlat(pf.poles.re), im: toFlat(pf.poles.im) })
+  const rs = toList({ re: toFlat(pf.residues.re), im: toFlat(pf.residues.im) })
   return ps.map((pole, i) => {
     let power = 1
     for (let j = i - 1; j >= 0; j--) {
@@ -205,7 +205,7 @@ export function inverseLaplace(num: TensorLike, den: TensorLike): InverseTransfo
     }
     return acc.re
   }
-  return { terms, direct: pf.direct, at }
+  return { terms, direct: toFlat(pf.direct), at }
 }
 
 /**
@@ -226,10 +226,11 @@ export function inverseLaplace(num: TensorLike, den: TensorLike): InverseTransfo
  */
 export function inverseZ(b: TensorLike, a: TensorLike): InverseTransform {
   const pf = residuez(numbers(float(b)), numbers(float(a)))
+  const direct = toFlat(pf.direct)
   const terms = termsOf(pf)
   const at = (n: number): number => {
     if (!Number.isInteger(n) || n < 0) return 0
-    let acc = C.of(pf.direct[n] ?? 0)
+    let acc = C.of(direct[n] ?? 0)
     for (const { residue: r, pole, power } of terms) {
       let pn = C.of(1)
       for (let i = 0; i < n; i++) pn = C.mul(pn, pole)
@@ -237,5 +238,5 @@ export function inverseZ(b: TensorLike, a: TensorLike): InverseTransform {
     }
     return acc.re
   }
-  return { terms, direct: pf.direct, at }
+  return { terms, direct, at }
 }

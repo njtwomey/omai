@@ -646,3 +646,22 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   run. Nothing pushed (D-014).
 - **22:00 Gate.** The type-name renames and unused-export triage (P3.10, P3.9) and the numerics test tables (P3.23) passed the full local gate: 26,525 tests, 9,613 examples,
   all static checks and all six tsc runs, first run. 256 commits ahead of `origin/main`; nothing pushed (D-014). Completion about 77% by effort, 33 of 44 work items.
+
+- **P3.8 stage 5: the result records (`agent-na06-records`).** The records the earlier stages left plain (`cd727e12`, `c2bd536d`, `f53dca16`, `2cf48cc5`, `9a28bf35`, `a8d11430`,
+  `e5420379`, `8ff8aad2`, `259f3a24`, one commit per family) hold tensors now. `metrics`: the confusion matrix, the contingency matrix, `ConfusionMargins`, `TableCost.cells`,
+  `ThresholdCosts`, `PrecisionRecallFscoreSupport`, and the eight curve records (`ThresholdCounts`, `RocCurve`, `DetCurve`, `PrecisionRecallCurve`, `PrGainCurve`, `CostCurve`,
+  `UpliftCurve`, `CalibrationCurve`); the loops of the curves moved to a private `metrics/_curves.ts` (`thresholdRows`, `rocRows`, `precisionRecallRows`) that the areas and the
+  operating points call, so nothing is converted twice; `confusionMargins`, `tableCost` and render's `ContingencyTable` take a `ConfusionTable` (a tensor-like matrix, so a literal
+  still works), render's four chart functions take `Loose<Curve>` (tensor-likes), `learn.membershipReport` and two site recipes read the tensors. `stats`: `NewtonMleResult.eta`,
+  `GroupSequentialDesign` `times` and `spent`. `numerics`: `Rotation.asMatrix`, `AffineMap.homogeneous`, `NormalisedPoints.transform`, `LanczosResult` and `ArnoldiResult` (the
+  restarted eigensolver keeps a plain-number `lanczosRows`), `MinimaxResult`, `Chebyshev`, `PartialFractions` and the `invres` result (as `ComplexRoots`). `optim`: `Slice1d`,
+  `Slice2d`, `GlmFit` (`linear` and `gam` read it once), `OnlineResult`, `ExpertsProblem` (tensor-likes), `QpOptions.x0`. New: `tensor/fromVector`. Kept native, with the reason in the register
+  rows and `docs/structure.md`: the plain-data records of `exposition` (`ConfusionMatrix`, the `thresholdSweep` rows, `GroupRoc`); `ComplexArray` (the zeros and poles of every
+  `systems` record, about 190 `.re`/`.im` reads in 27 files: it moves with `systems`); the algorithm states (`GlmState`, `BoxQpState`, `NewtonMleState`, `ArnoldiState`), touched every
+  iteration in plain-number loops; `QpArrays`/`QpSolution`; `ExpertsResult`. Timings (niced throwaway script, main against branch, ms per call): `rocCurve` 10.05 / 9.98, `rocAucScore`
+  13.8 / 14.4, `precisionRecallCurve` 10.2 / 10.2, `confusionMatrix` 4.9 / 5.3, `calibrationCurve` 4.3 / 4.2, `upliftCurve` 8.0 / 8.0, `runOnline` 4.1 / 4.1, `lanczos` 1.76 / 1.78,
+  `eigsh` 85 / 88, `fitGlm` 38.5 / 38.7: no constructor is slower beyond noise. Results are bit-identical (every existing test, golden and `@example` passes unchanged except
+  the printed forms that changed: the `lanczos` example reads `.alpha.shape[0]`, `prGainCurve`, `residue` and `slice`/`randomSlice` examples read through `toFlat`). Public surface against
+  `surface-before-waveb16.tsv`: 2 added (`metrics#ConfusionTable`, `tensor#fromVector`), 0 removed, 39 changed (34 engine, 5 render). Checks (own, the full gate was not
+  run): six tsc runs; 478 engine test files with 7,723 tests of `metrics`, `stats`, `numerics`, `optim`, `systems`, `vision`, `linear`, `gam`, `learn`, `tensor`, `exposition`; render 93 files, 510 tests; 384
+  `@example`s of the touched files and of `metrics`; barrels, layers, lint, agent index, surface. Nothing pushed (D-014).

@@ -7,20 +7,33 @@
  */
 
 import { MdmlError, type MetricResult } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { flat, metricResult } from './metric.ts'
 
-/** A cumulative gain curve over the number of units targeted, from the highest score down. */
+/**
+ * A cumulative gain curve over the number of units targeted, from the highest score down. The vectors are `[n + 1]`
+ * tensors (migration, D-009: they were `Float64Array` and `Int32Array`).
+ */
 export interface UpliftCurve {
   /** Units targeted at each point, `0..n`. */
-  readonly targeted: Float64Array
+  readonly targeted: Tensor<'float64'>
   /** The same as a fraction of the population. */
-  readonly fraction: Float64Array
+  readonly fraction: Tensor<'float64'>
   /** The curve's value at each point. */
-  readonly value: Float64Array
+  readonly value: Tensor<'float64'>
   /** The straight line from the origin to the curve's end: the value of targeting at random. */
+  readonly random: Tensor<'float64'>
+  /** Treated and control units among those targeted (int32). */
+  readonly treated: Tensor<'int32'>
+  readonly control: Tensor<'int32'>
+}
+
+/** The points of an {@link UpliftCurve} as typed arrays, the form the area metrics read. */
+interface UpliftRows {
+  readonly targeted: Float64Array
+  readonly fraction: Float64Array
+  readonly value: Float64Array
   readonly random: Float64Array
-  /** Treated and control units among those targeted. */
   readonly treated: Int32Array
   readonly control: Int32Array
 }
@@ -56,12 +69,12 @@ function rank(score: TensorLike, treatment: TensorLike, outcome: TensorLike, who
  * @param treatment - The 0/1 treatment received.
  * @param outcome - The outcome (a 0/1 response, or any quantity whose sum is the gain).
  * @param kind - `'qini'` (default) or `'uplift'`.
- * @returns The curve and its random baseline.
+ * @returns The curve and its random baseline, as `[n + 1]` tensors (was typed arrays).
  * @example
  * ```ts
  * import { upliftCurve } from 'mdml-engine/metrics'
  * const c = upliftCurve([4, 3, 2, 1], [1, 0, 1, 0], [1, 0, 0, 0], 'qini')
- * Array.from(c.value) // => [0, 0, 1, 1, 1]
+ * c.value // => [0, 0, 1, 1, 1]
  * ```
  */
 export function upliftCurve(
@@ -70,6 +83,19 @@ export function upliftCurve(
   outcome: TensorLike,
   kind: CurveKind = 'qini',
 ): UpliftCurve {
+  const c = upliftRows(score, treatment, outcome, kind)
+  const shape: [number] = [c.targeted.length]
+  return {
+    targeted: fromStorage(c.targeted, shape, 'float64'),
+    fraction: fromStorage(c.fraction, shape, 'float64'),
+    value: fromStorage(c.value, shape, 'float64'),
+    random: fromStorage(c.random, shape, 'float64'),
+    treated: fromStorage(c.treated, shape, 'int32'),
+    control: fromStorage(c.control, shape, 'int32'),
+  }
+}
+
+function upliftRows(score: TensorLike, treatment: TensorLike, outcome: TensorLike, kind: CurveKind): UpliftRows {
   const { order, t, y } = rank(score, treatment, outcome, 'upliftCurve')
   const n = order.length
   const targeted = new Float64Array(n + 1)
@@ -137,7 +163,7 @@ export function qiniCoefficient(
   outcome: TensorLike,
   options: AreaOptions = {},
 ): MetricResult {
-  const c = upliftCurve(score, treatment, outcome, options.kind ?? 'qini')
+  const c = upliftRows(score, treatment, outcome, options.kind ?? 'qini')
   const total = area(c.fraction, c.value)
   const v = options.subtractRandom === false ? total : total - area(c.fraction, c.random)
   return metricResult('qini-coefficient', v, c.value.length - 1)
@@ -165,7 +191,7 @@ export function auuc(
   outcome: TensorLike,
   options: AreaOptions = {},
 ): MetricResult {
-  const c = upliftCurve(score, treatment, outcome, options.kind ?? 'uplift')
+  const c = upliftRows(score, treatment, outcome, options.kind ?? 'uplift')
   const total = area(c.fraction, c.value)
   const v = options.subtractRandom === false ? total : total - area(c.fraction, c.random)
   return metricResult('auuc', v, c.value.length - 1)

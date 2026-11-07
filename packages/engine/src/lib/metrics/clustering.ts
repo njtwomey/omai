@@ -4,7 +4,7 @@
  * and chance-adjusted forms, homogeneity, completeness and V-measure, purity and B-cubed precision, recall and F1.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec, toRows } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { arange, fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
@@ -19,11 +19,15 @@ const spec = (name: string, range: readonly [number, number] = [0, 1]): MetricSp
   concept: 'clustering-evaluation',
 })
 
-/** A contingency table: counts of samples by true class (rows) and cluster (columns). */
+/**
+ * A contingency table: counts of samples by true class (rows) and cluster (columns). Holds a tensor (migration,
+ * D-009: `matrix` was `readonly (readonly number[])[]`).
+ */
 export interface ContingencyMatrix {
   readonly classes: readonly Label[]
   readonly clusters: readonly Label[]
-  readonly matrix: readonly (readonly number[])[]
+  /** The counts, `[classes, clusters]`. */
+  readonly matrix: Tensor<'float64'>
 }
 
 /**
@@ -33,7 +37,7 @@ export interface ContingencyMatrix {
  * @param labelsTrue - Reference labels `[N]`.
  * @param labelsPred - Cluster labels `[N]`.
  * @param options - Sample weights (counts per sample).
- * @returns The table with its row and column labels.
+ * @returns The table with its row and column labels; the matrix is a `[classes, clusters]` tensor (was `number[][]`).
  * @concept clustering-evaluation
  * @example
  * ```ts
@@ -60,7 +64,11 @@ export function contingencyMatrix(
     const j = cj.get(p[k] ?? 0) ?? 0
     if (row !== undefined) row[j] = (row[j] ?? 0) + (w[k] ?? 0)
   }
-  return { classes, clusters, matrix: m }
+  return {
+    classes,
+    clusters,
+    matrix: fromStorage(Float64Array.from(m.flat()), [classes.length, clusters.length], 'float64'),
+  }
 }
 
 /** Row sums, column sums and the total of a table. */
@@ -70,8 +78,10 @@ function margins(m: readonly (readonly number[])[]): { rows: number[]; cols: num
   return { rows, cols, n: rows.reduce((a, b) => a + b, 0) }
 }
 
-const table = (t: MetricInput, p: MetricInput, o: MetricOptions): readonly (readonly number[])[] =>
-  contingencyMatrix(t, p, o).matrix
+const table = (t: MetricInput, p: MetricInput, o: MetricOptions): number[][] => {
+  const c = contingencyMatrix(t, p, o)
+  return toRows(c.matrix.data, c.classes.length, c.clusters.length)
+}
 
 /**
  * The pair confusion matrix (sklearn.metrics.cluster.pair_confusion_matrix): over ordered pairs of distinct samples,

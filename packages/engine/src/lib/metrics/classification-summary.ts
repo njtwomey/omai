@@ -5,8 +5,8 @@
  * `classificationReport`.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec, maxOf, minOf } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec, maxOf, minOf, toRows } from '../base/index.ts'
+import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { fixed, right } from './_format.ts'
 import { classCounts, encodeLabels, indicator, isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
 import { type Average, accuracyScore, confusionMatrix, precisionRecallFscoreSupport } from './classification.ts'
@@ -20,6 +20,12 @@ import {
   shapedArray,
   weightedMean,
 } from './metric.ts'
+
+/** The counts of {@link confusionMatrix} as rows of plain numbers, the form the loops of this file read. */
+function confusionRows(yTrue: MetricInput, yPred: MetricInput, options: MetricOptions): number[][] {
+  const { labels, matrix } = confusionMatrix(yTrue, yPred, options)
+  return toRows(matrix.data, labels.length, labels.length)
+}
 
 const spec = (
   name: string,
@@ -45,7 +51,7 @@ const spec = (
  */
 export const matthewsCorrcoef: Metric<MetricOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yPred: MetricInput, options: MetricOptions = {}): MetricResult => {
-    const { matrix: c } = confusionMatrix(yTrue, yPred, options)
+    const c = confusionRows(yTrue, yPred, options)
     const k = c.length
     const t = c.map((row) => row.reduce((a, b) => a + b, 0))
     const p = Array.from({ length: k }, (_, j) => c.reduce((a, row) => a + (row[j] ?? 0), 0))
@@ -84,7 +90,7 @@ export interface KappaOptions extends MetricOptions {
  */
 export const cohenKappaScore: Metric<KappaOptions, MetricInput> = Object.assign(
   (y1: MetricInput, y2: MetricInput, options: KappaOptions = {}): MetricResult => {
-    const { matrix: c } = confusionMatrix(y1, y2, options)
+    const c = confusionRows(y1, y2, options)
     const k = c.length
     const rows = c.map((row) => row.reduce((a, b) => a + b, 0))
     const cols = Array.from({ length: k }, (_, j) => c.reduce((a, row) => a + (row[j] ?? 0), 0))
@@ -521,16 +527,17 @@ export function classificationReport(
   const base = { ...options, average: 'none' as const }
   const prfs = precisionRecallFscoreSupport(yTrue, yPred, base)
   const names = options.targetNames ?? prfs.labels.map(String)
+  const [precision, recall, fscore, support] = [prfs.precision, prfs.recall, prfs.fscore, prfs.support].map(toFlat)
   const classes: Record<string, ReportRow> = {}
   for (const [i, name] of names.entries()) {
     classes[name] = {
-      precision: prfs.precision[i] ?? 0,
-      recall: prfs.recall[i] ?? 0,
-      f1: prfs.fscore[i] ?? 0,
-      support: prfs.support[i] ?? 0,
+      precision: precision?.[i] ?? 0,
+      recall: recall?.[i] ?? 0,
+      f1: fscore?.[i] ?? 0,
+      support: support?.[i] ?? 0,
     }
   }
-  const totalSupport = prfs.support.reduce((a, b) => a + b, 0)
+  const totalSupport = (support ?? []).reduce((a, b) => a + b, 0)
   const seen = multilabel ? [] : sortLabels(labelValues(yTrue).concat(labelValues(yPred)))
   const microIsAccuracy =
     !multilabel && (options.labels === undefined || seen.every((l) => (options.labels ?? []).includes(l)))

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { abs, exp, sin, type Value } from '../../tensor/index.ts'
+import { abs, exp, sin, toFlat, type Value } from '../../tensor/index.ts'
 import { policies, recorder, runAlgorithm } from '../../trace/index.ts'
 import { approximationContract } from './approximation-contract.ts'
 import { chebyshevResolutions, minimaxTypes } from './approximation-options.ts'
@@ -20,7 +20,8 @@ describe('remezAlgorithm', () => {
     expect(result.converged).toBe(true)
     // The equioscillation theorem: the reference has m + n + 2 points where the error is +-E.
     expect(run.state.reference).toHaveLength(5)
-    for (const x of result.reference) expect(Math.abs(f(x) - result.evaluate(x))).toBeCloseTo(Math.abs(result.error), 8)
+    for (const x of toFlat(result.reference))
+      expect(Math.abs(f(x) - result.evaluate(x))).toBeCloseTo(Math.abs(result.error), 8)
   })
 
   it('finds a rational approximation of type (2, 1)', () => {
@@ -67,8 +68,9 @@ describe('chebfunAlgorithm', () => {
     expect(run.steps).toBeGreaterThan(1)
     expect(run.state.points).toBe(2 ** (run.steps + 3) + 1)
     const f = chebfun((x) => sin(x), [0, 20])
-    expect(f.coefficients.length).toBeLessThanOrEqual(run.state.coefficients.length)
-    expect(f.coefficients).toEqual(run.state.coefficients.slice(0, f.coefficients.length))
+    const kept = toFlat(f.coefficients)
+    expect(kept.length).toBeLessThanOrEqual(run.state.coefficients.length)
+    expect(kept).toEqual(run.state.coefficients.slice(0, kept.length))
   })
 
   it('fails when the sample would pass the cap, and rejects non-finite values', () => {

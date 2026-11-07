@@ -5,17 +5,21 @@
  */
 
 import type { MetricResult } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
+import { precisionRecallRows, thresholdRows } from './_curves.ts'
 import { isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
 import { averageBinary, binarise, positives, scoreSpec } from './_scores.ts'
-import { type CurveOptions, confusionMatrixAtThresholds } from './curves.ts'
+import type { CurveOptions } from './curves.ts'
 import { type Metric, type MetricInput, metricResult, sampleWeights, shapedArray } from './metric.ts'
 
-/** A precision-recall curve: precision and recall at increasing thresholds, ending at (recall 0, precision 1). */
+/**
+ * A precision-recall curve: precision and recall at increasing thresholds, ending at (recall 0, precision 1). The
+ * vectors are tensors (migration, D-009: they were `readonly number[]`); there is one threshold fewer than points.
+ */
 export interface PrecisionRecallCurve {
-  readonly precision: readonly number[]
-  readonly recall: readonly number[]
-  readonly thresholds: readonly number[]
+  readonly precision: Tensor<'float64'>
+  readonly recall: Tensor<'float64'>
+  readonly thresholds: Tensor<'float64'>
 }
 
 /**
@@ -25,7 +29,7 @@ export interface PrecisionRecallCurve {
  * @param yTrue - True labels `[N]`.
  * @param yScore - Scores `[N]`.
  * @param options - posLabel, dropIntermediate (default false) and sample weights.
- * @returns The curve.
+ * @returns The curve, `[T]` tensors (was `number[]`).
  * @concept precision-recall
  * @example
  * ```ts
@@ -38,32 +42,13 @@ export function precisionRecallCurve(
   yScore: TensorLike,
   options: CurveOptions & { readonly dropIntermediate?: boolean } = {},
 ): PrecisionRecallCurve {
-  const c = confusionMatrixAtThresholds(yTrue, yScore, options)
-  let keep = c.thresholds.map((_, i) => i)
-  if (options.dropIntermediate === true && c.tps.length > 2) {
-    keep = keep.filter(
-      (i) =>
-        i === 0 ||
-        i === c.tps.length - 1 ||
-        (c.tps[i] ?? 0) !== (c.tps[i - 1] ?? 0) ||
-        (c.tps[i + 1] ?? 0) !== (c.tps[i] ?? 0),
-    )
-  }
-  const tps = keep.map((i) => c.tps[i] ?? 0)
-  const fps = keep.map((i) => c.fps[i] ?? 0)
-  const total = tps[tps.length - 1] ?? 0
-  const precision = tps.map((tp, i) => (tp + (fps[i] ?? 0) === 0 ? 0 : tp / (tp + (fps[i] ?? 0))))
-  const recall = tps.map((tp) => (total === 0 ? 1 : tp / total))
-  return {
-    precision: [...precision.reverse(), 1],
-    recall: [...recall.reverse(), 0],
-    thresholds: keep.map((i) => c.thresholds[i] ?? 0).reverse(),
-  }
+  const r = precisionRecallRows(yTrue, yScore, options)
+  return { precision: fromVector(r.precision), recall: fromVector(r.recall), thresholds: fromVector(r.thresholds) }
 }
 
 /** The step-wise average precision of binary targets: sum over thresholds of (R_n - R_{n-1}) P_n. */
 function binaryAveragePrecision(y: Float64Array, s: Float64Array, w: Float64Array | undefined): number {
-  const pr = precisionRecallCurve(Array.from(y), s, { posLabel: 1, ...(w === undefined ? {} : { sampleWeight: w }) })
+  const pr = precisionRecallRows(Array.from(y), s, { posLabel: 1, ...(w === undefined ? {} : { sampleWeight: w }) })
   let ap = 0
   for (let i = 0; i < pr.recall.length - 1; i++) {
     ap -= ((pr.recall[i + 1] ?? 0) - (pr.recall[i] ?? 0)) * (pr.precision[i] ?? 0)
@@ -111,11 +96,14 @@ export const averagePrecisionScore: Metric<AveragePrecisionOptions, MetricInput>
   { spec: scoreSpec('averagePrecisionScore', 'higher', 'precision-recall') },
 )
 
-/** A precision-recall-gain curve: points sorted by recall gain, with the crossing points marked. */
+/**
+ * A precision-recall-gain curve: points sorted by recall gain, with the crossing points marked. The numeric vectors are
+ * tensors (migration, D-009: they were `readonly number[]`); `isCrossing` stays a list of flags.
+ */
 export interface PrGainCurve {
-  readonly precisionGain: readonly number[]
-  readonly recallGain: readonly number[]
-  readonly thresholds: readonly number[]
+  readonly precisionGain: Tensor<'float64'>
+  readonly recallGain: Tensor<'float64'>
+  readonly thresholds: Tensor<'float64'>
   /** Whether each point is an interpolated crossing of an axis rather than a threshold. */
   readonly isCrossing: readonly boolean[]
 }
@@ -161,7 +149,7 @@ function sortPoints(points: PrgPoint[]): PrgPoint[] {
 
 /** The points of the precision-recall-gain curve with its crossing points (the authors' create_prg_curve). */
 function prgPoints(yTrue: MetricInput, yScore: TensorLike, options: CurveOptions): PrgPoint[] {
-  const c = confusionMatrixAtThresholds(yTrue, yScore, options)
+  const c = thresholdRows(yTrue, yScore, options)
   const nPos = c.tps[c.tps.length - 1] ?? 0
   const nNeg = c.fps[c.fps.length - 1] ?? 0
   const n = nPos + nNeg
@@ -214,20 +202,22 @@ function prgPoints(yTrue: MetricInput, yScore: TensorLike, options: CurveOptions
  * @param yTrue - True labels `[N]`.
  * @param yScore - Scores `[N]`.
  * @param options - posLabel and sample weights.
- * @returns The curve, by increasing recall gain (points with recall gain below 0 come first).
+ * @returns The curve, by increasing recall gain (points with recall gain below 0 come first); the vectors are
+ *   tensors (was `number[]`).
  * @concept precision-recall
  * @example
  * ```ts
  * import { prGainCurve } from 'mdml-engine/metrics'
- * prGainCurve([0, 1, 1, 0, 1], [0.1, 0.9, 0.8, 0.7, 0.3]).recallGain.at(-1) // => 1
+ * import { toFlat } from 'mdml-engine/tensor'
+ * toFlat(prGainCurve([0, 1, 1, 0, 1], [0.1, 0.9, 0.8, 0.7, 0.3]).recallGain).at(-1) // => 1
  * ```
  */
 export function prGainCurve(yTrue: MetricInput, yScore: TensorLike, options: CurveOptions = {}): PrGainCurve {
   const points = prgPoints(yTrue, yScore, options)
   return {
-    precisionGain: points.map((p) => p.pg),
-    recallGain: points.map((p) => p.rg),
-    thresholds: points.map((p) => p.score),
+    precisionGain: fromVector(points.map((p) => p.pg)),
+    recallGain: fromVector(points.map((p) => p.rg)),
+    thresholds: fromVector(points.map((p) => p.score)),
     isCrossing: points.map((p) => p.crossing),
   }
 }

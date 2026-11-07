@@ -5,7 +5,7 @@
 React 19 bindings of mdml-render. Figures: `Chart` (an ECharts option), `SceneView`, `Scene3DView` and `StructureView`, in a `FigureFrame` (fixed size, expand, export) or a `FigureGrid`; typeset and live maths (`Tex`, `Equation`, `Derivation`); `ContingencyTable` and `ThresholdExplorer`; playback (`usePlayback`, `useLiveRun` and the `Player` over their controller); and the colour-mode theme (`ThemeProvider`, `useColourMode`). Subfolders: `session` (`useSession`, `SessionPlayer`, `SessionPanels`: run a method live and draw it), `controls` (inputs and controls generated from a `Space`), `interaction` (draggable overlays on a figure) and `views` (`ExpositionView` and one view per exposition record kind).
 
 - function `Chart`: React component: draw an ECharts option, themed and resized: `<Chart option={option} />` `src/react/Chart.tsx:84` `mdml-render/react`
-- function `ContingencyTable`: React component: confusion matrix with margins and rates: `<ContingencyTable table={cm} positive={1} />` `src/react/ContingencyTable.tsx:85` `mdml-render/react`
+- function `ContingencyTable`: React component: confusion matrix with margins and rates: `<ContingencyTable table={cm} positive={1} />` `src/react/ContingencyTable.tsx:86` `mdml-render/react`
 - function `Derivation`: React component: aligned derivation steps with notes: `<Derivation steps={steps} />` `src/react/MathView.tsx:106` `mdml-render/react`
 - function `Equation`: React component: an equation that re-typesets as values change: `<Equation>{eq}</Equation>` `src/react/MathView.tsx:81` `mdml-render/react`
 - function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:243` `mdml-render/react`

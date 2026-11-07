@@ -103,7 +103,8 @@ export interface Rotation {
   readonly apply: (vectors: TensorLike, inverse?: boolean) => Value
   /** The quaternion [x, y, z, w]; canonical puts w >= 0. */
   readonly asQuat: (canonical?: boolean) => [number, number, number, number]
-  readonly asMatrix: () => number[][]
+  /** The `[3, 3]` rotation matrix, a tensor (migration, D-009: it was `number[][]`). */
+  readonly asMatrix: () => Tensor<'float64', [number, number]>
   /** The rotation vector: axis times angle (radians, or degrees). */
   readonly asRotvec: (degrees?: boolean) => [number, number, number]
   /** Euler angles for a sequence of three axes: lowercase extrinsic ('xyz'), uppercase intrinsic ('XYZ'). */
@@ -150,7 +151,7 @@ export function rotationFromQuat(q: TensorLike): Rotation {
           (quat[3] === 0 && (quat[0] < 0 || (quat[0] === 0 && (quat[1] < 0 || (quat[1] === 0 && quat[2] < 0))))))
       return flip ? [-quat[0], -quat[1], -quat[2], -quat[3]] : [quat[0], quat[1], quat[2], quat[3]]
     },
-    asMatrix: () => [matrix.slice(0, 3), matrix.slice(3, 6), matrix.slice(6, 9)],
+    asMatrix: () => matrixOf(Float64Array.from(matrix.slice(0, 9)), 3, 3),
     asRotvec: (degrees = false) => {
       const q2 = quat[3] < 0 ? quat.map((v) => -v) : [...quat]
       const s = Math.hypot(q2[0] ?? 0, q2[1] ?? 0, q2[2] ?? 0)
@@ -331,8 +332,8 @@ export interface AffineMap {
   /** this after other. */
   readonly compose: (other: AffineMap) => AffineMap
   readonly inverse: () => AffineMap
-  /** The (d + 1) x (d + 1) homogeneous matrix. */
-  readonly homogeneous: () => number[][]
+  /** The `[d + 1, d + 1]` homogeneous matrix, a tensor (migration, D-009: it was `number[][]`). */
+  readonly homogeneous: () => Tensor<'float64', [number, number]>
 }
 
 /**
@@ -371,20 +372,21 @@ export function affine(matrix: TensorLike, translation?: TensorLike): AffineMap 
     homogeneous: () => {
       const mv = toFlat(m as Tensor)
       const tv = toFlat(t as Tensor)
-      return [
+      const rows = [
         ...Array.from({ length: d }, (_, i) => [...mv.slice(i * d, i * d + d), tv[i] ?? 0]),
         [...new Array<number>(d).fill(0), 1],
       ]
+      return matrixOf(Float64Array.from(rows.flat()), d + 1, d + 1)
     },
   }
   return self
 }
 
-/** Points with their Hartley normalisation. */
+/** Points with their Hartley normalisation. Holds a tensor (migration, D-009: `transform` was `number[][]`). */
 export interface NormalisedPoints {
   readonly points: Tensor
-  /** The 3 x 3 similarity T with normalised = T [x, y, 1]. */
-  readonly transform: number[][]
+  /** The `[3, 3]` similarity T with normalised = T [x, y, 1]. */
+  readonly transform: Tensor<'float64', [number, number]>
 }
 
 /**
@@ -393,14 +395,21 @@ export interface NormalisedPoints {
  * eight-point algorithms.
  *
  * @param points - Points `[n, 2]`.
- * @returns The normalised points and the transform.
+ * @returns The normalised points and the transform (a `[3, 3]` tensor; was `number[][]`).
  * @example
  * ```ts
  * import { normalisePoints } from 'mdml-engine/numerics/geometry'
- * normalisePoints([[0, 0], [2, 0], [0, 2], [2, 2]]).transform[0][0] // => 1
+ * import { toArray } from 'mdml-engine/tensor'
+ * toArray(normalisePoints([[0, 0], [2, 0], [0, 2], [2, 2]]).transform)[0][0] // => 1
  * ```
  */
 export function normalisePoints(points: TensorLike): NormalisedPoints {
+  const { points: normalised, transform } = normalisedRows(points)
+  return { points: normalised, transform: matrixOf(Float64Array.from(transform.flat()), 3, 3) }
+}
+
+/** {@link normalisePoints} with the similarity as rows of plain numbers, the form the estimators below multiply. */
+function normalisedRows(points: TensorLike): { readonly points: Tensor; readonly transform: number[][] } {
   const t = concreteOrThrow(promoteFloat(points)[0] as Tensor, 'normalisePoints')
   const f = toFlat(t)
   const n = t.shape[0] ?? 0
@@ -474,8 +483,8 @@ function nullVector(rows: readonly number[][]): number[] {
  * ```
  */
 export function homography(src: TensorLike, dst: TensorLike): Tensor<'float64', [number, number]> {
-  const a = normalisePoints(src)
-  const b = normalisePoints(dst)
+  const a = normalisedRows(src)
+  const b = normalisedRows(dst)
   const n = a.points.shape[0] ?? 0
   if (n < 4 || b.points.shape[0] !== n)
     throw new MdmlError('value', 'homography: at least four correspondences are needed')
@@ -540,8 +549,8 @@ export function applyHomography(h: TensorLike, points: TensorLike): Value {
  * ```
  */
 export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): Tensor<'float64', [number, number]> {
-  const a = normalisePoints(x1)
-  const b = normalisePoints(x2)
+  const a = normalisedRows(x1)
+  const b = normalisedRows(x2)
   const n = a.points.shape[0] ?? 0
   if (n < 8 || b.points.shape[0] !== n)
     throw new MdmlError('value', 'fundamentalMatrix: at least eight correspondences are needed')
@@ -567,7 +576,7 @@ export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): Tensor<'float
     [0, 0, 0],
   ]
   const f1 = mat3mul(mat3mul(uv, sdiag), vv)
-  const bt = (b.transform as number[][]).map((_, i) => [0, 1, 2].map((j) => b.transform[j]?.[i] ?? 0))
+  const bt = b.transform.map((_, i) => [0, 1, 2].map((j) => b.transform[j]?.[i] ?? 0))
   const full = mat3mul(mat3mul(bt, f1), a.transform)
   const norm = Math.hypot(...full.flat())
   const sign = (full[2]?.[2] ?? 0) < 0 ? -1 : 1

@@ -355,6 +355,25 @@ combinatorial lists (the schedule boundaries, the assignment preferences, `setCo
 `paretoFront`, the group indices, the CTC and large-output label lists), and the records until they are staged (`Slice1d`, `Slice2d`,
 `GlmFit`, `GlmState`, `OnlineResult`, `ExpertsProblem`, `BoxQpState` and the algorithm states).
 
+Stage 5 (the result records of `numerics`, `optim`, `stats` and `metrics`): a record built by one constructor in its own file holds tensors, and every
+reader reads them once at its boundary. `metrics` `LabelledConfusionMatrix.matrix`, `ContingencyMatrix.matrix`, `ConfusionMargins` (the seven vectors),
+`TableCost.cells`, `ThresholdCosts`, `PrecisionRecallFscoreSupport`, `ThresholdCounts`, `RocCurve`, `DetCurve`, `PrecisionRecallCurve`, `PrGainCurve` (not
+`isCrossing`), `CostCurve`, `UpliftCurve` (float64 and int32 tensors) and `CalibrationCurve`; the functions that take a confusion table (`confusionMargins`, `tableCost`,
+`ContingencyTable`) take `ConfusionTable`, whose `matrix` is a tensor-like (a nested array still works); `stats` `NewtonMleResult.eta` and
+`GroupSequentialDesign` (`times`, `spent`); `numerics` `Rotation.asMatrix`, `AffineMap.homogeneous` and `NormalisedPoints.transform` (`[3, 3]` and
+`[d + 1, d + 1]` tensors), `LanczosResult` (`alpha`, `beta`, the basis as a `[m, n]` matrix) and `ArnoldiResult.basis`, `MinimaxResult`, `Chebyshev`
+(`coefficients`, `roots()`, `extrema().points`), `PartialFractions` and the `invres` result (`ComplexRoots` parts and tensors); `optim` `Slice1d`, `Slice2d`
+(`barrier` takes tensor-likes), `GlmFit` (`x`, `coef`, `history`, the `path` as a `[steps, p]` matrix), `OnlineResult` (the `plays` as a `[T, dim]`
+matrix), `ExpertsProblem` (`losses`, `predictions`, `outcomes` are tensor-likes) and `QpOptions.x0`. The loops of a migrated record sit in private kernels
+(`metrics/_curves.ts`, the `lanczosRows` of `sparse/eigen.ts`, `normalisedRows` of `geometry/transforms.ts`) that the restarted eigensolver, the areas and the operating points
+call, so no curve is converted twice; `tensor/fromVector` is the shared way to hand a list back as a `[n]` tensor. Render's chart functions take the curves with
+tensor-likes (`Loose<RocCurve>`), so a plain literal still draws. Kept native on purpose: the plain-data records of `exposition` (`ConfusionMatrix`,
+`ThresholdSweep` and its rows, `GroupRoc`: tagged, JSON-round-trippable, read by the views); `ComplexArray` (the zeros and poles of every `systems` record, about 190 `.re` and
+`.im` reads in 27 files of `systems` and `signal/filters`: it moves with the stage of `systems`); the states of the algorithms, which are touched per iteration in plain-number
+loops and cross the checkpoint through the shared codec (`GlmState`, `BoxQpState`, `NewtonMleState`, `ArnoldiState`, `ExpertsRunState`, `LanczosStepsState`; measured: the
+records above cost the same before and after, the states would be rebuilt every step); `QpArrays` and `QpSolution` (kernel arrays); `ExpertsResult` (per-round curves of `online-experts`, read only by tests as numbers);
+and the options and inputs of the four domains that no stage has listed.
+
 **Docstrings.** Every export has a TSDoc block: summary, `@param` per parameter, `@returns`, `@throws` where relevant,
 and at least one `@example` with `// => value`, `// => figure`, `// => trace` or `// => throws Code` expectations that
 the build runs. `@concept` tags link to the concept taxonomy (section 7), `@see` and `@reference` cite sources.

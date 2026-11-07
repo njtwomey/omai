@@ -11,20 +11,23 @@
 import { type Json, MdmlError, minOf } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key, key as makeKey } from '../random/index.ts'
-import { add, asTensor, type Tensor, type TensorLike, toArray, toFlat, type Value } from '../tensor/index.ts'
+import { add, asTensor, type Tensor, type TensorLike, toArray, toFlat, toVector, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { rowsOf, vectorOf } from './_vector.ts'
 import { lbfgsb } from './minimize/lbfgsb.ts'
 import type { OnlineLearner, OnlineLoss } from './online.ts'
 
-/** The rounds of a prediction-with-expert-advice problem. */
+/**
+ * The rounds of a prediction-with-expert-advice problem. The fields take tensor-likes (migration, D-009: they were
+ * `readonly (readonly number[])[]` and `readonly number[]`, which still work), read once when the algorithm is built.
+ */
 export interface ExpertsProblem {
-  /** T x N losses in [0, 1]: `losses[t][i]` is expert i's loss in round t. */
-  readonly losses: readonly (readonly number[])[]
-  /** For binary prediction (weighted majority): T x N predictions in {0, 1}. */
-  readonly predictions?: readonly (readonly number[])[]
-  /** For binary prediction: the T outcomes in {0, 1}. */
-  readonly outcomes?: readonly number[]
+  /** The `[T, N]` losses in [0, 1]: entry `[t, i]` is expert i's loss in round t. */
+  readonly losses: TensorLike
+  /** For binary prediction (weighted majority): the `[T, N]` predictions in {0, 1}. */
+  readonly predictions?: TensorLike
+  /** For binary prediction: the `[T]` outcomes in {0, 1}. */
+  readonly outcomes?: TensorLike
 }
 
 /** What a rule plays in a round: the distribution over experts and the loss it suffers. */
@@ -426,10 +429,13 @@ export function expertsAlgorithm<S>(
   problem: ExpertsProblem,
   options: ExpertsRunOptions = {},
 ): Algorithm<ExpertsRunState<S>> {
-  const rounds = problem.losses.length
-  const n = problem.losses[0]?.length ?? 0
+  const lossRows = rowsOf(problem.losses, 'expertsAlgorithm')
+  const predictionRows = problem.predictions === undefined ? undefined : rowsOf(problem.predictions, 'expertsAlgorithm')
+  const outcomes = problem.outcomes === undefined ? undefined : toVector(problem.outcomes, 'expertsAlgorithm')
+  const rounds = lossRows.length
+  const n = lossRows[0]?.length ?? 0
   if (rounds === 0 || n < 2) throw new MdmlError('value', 'expertsAlgorithm: needs at least one round and two experts')
-  const comparator = options.switches === undefined ? undefined : bestSwitchingLoss(problem.losses, options.switches)
+  const comparator = options.switches === undefined ? undefined : bestSwitchingLoss(lossRows, options.switches)
   return {
     name: `experts(${rule.name})`,
     config: {
@@ -465,14 +471,14 @@ export function expertsAlgorithm<S>(
       expertLosses: new Array<number>(n).fill(0),
     }),
     step: (s, ctx) => {
-      const losses = problem.losses[s.t] as readonly number[]
+      const losses = lossRows[s.t] as readonly number[]
       const play = rule.play(
         s.rule,
         {
           t: s.t + 1,
           losses,
-          ...(problem.predictions === undefined ? {} : { predictions: problem.predictions[s.t] as readonly number[] }),
-          ...(problem.outcomes === undefined ? {} : { outcome: problem.outcomes[s.t] as number }),
+          ...(predictionRows === undefined ? {} : { predictions: predictionRows[s.t] as readonly number[] }),
+          ...(outcomes === undefined ? {} : { outcome: outcomes[s.t] as number }),
         },
         foldIn(ctx.key, 0),
       )
@@ -541,7 +547,7 @@ export function runExperts<S>(rule: ExpertsRule<S>, problem: ExpertsProblem, key
       return next
     },
   }
-  const r = runAlgorithm(recording, { maxSteps: problem.losses.length, key })
+  const r = runAlgorithm(recording, { maxSteps: rowsOf(problem.losses, 'runExperts').length, key })
   const best = minOf(r.state.expertLosses)
   return {
     cumulativeLoss: r.state.cumulativeLoss,

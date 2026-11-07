@@ -27,9 +27,9 @@ describe('approximation against numpy and closed forms', () => {
         c.fn === 'coefficients'
           ? A.chebyshevCoefficients(xs())
           : c.fn === 'derivative'
-            ? [...A.chebyshev(xs()).derivative(2).coefficients]
+            ? A.chebyshev(xs()).derivative(2).coefficients
             : c.fn === 'cumsum'
-              ? [...A.chebyshev(xs()).cumsum().coefficients]
+              ? A.chebyshev(xs()).cumsum().coefficients
               : c.fn === 'roots'
                 ? A.chebyshev(xs()).roots()
                 : c.fn === 'chebfunSum'
@@ -67,18 +67,18 @@ describe('approximation against numpy and closed forms', () => {
 describe('approximation properties', () => {
   it('Chebyshev coefficients decay geometrically for analytic functions and slowly for |x|', () => {
     const analytic = A.chebfun((x) => exp(x))
-    expect(analytic.coefficients.length).toBeLessThan(20)
+    expect(analytic.coefficients.shape[0]).toBeLessThan(20)
     const kink = A.chebfun((x) => abs(x), [-1, 1], { tol: 1e-6, maxPoints: 4097 })
-    expect(kink.coefficients.length).toBeGreaterThan(200)
+    expect(kink.coefficients.shape[0]).toBeGreaterThan(200)
     const ex = A.chebfun(smooth, [0, 2]).extrema()
-    expect(ex.points.length).toBeGreaterThan(3)
+    expect(ex.points.shape[0]).toBeGreaterThan(3)
   })
 
   it('Remez solutions equioscillate and beat Chebyshev interpolation', () => {
     const r = A.remez(Math.exp, 3, { interval: [0, 1] })
     expect(r.converged).toBe(true)
     // The error alternates in sign with magnitude |E| at the reference points.
-    const errs = r.reference.map((x) => Math.exp(x) - r.evaluate(x))
+    const errs = toFlat(r.reference).map((x) => Math.exp(x) - r.evaluate(x))
     for (let i = 0; i < errs.length; i++) {
       expect(Math.abs(Math.abs(errs[i] ?? 0) - Math.abs(r.error))).toBeLessThan(1e-9 * Math.abs(r.error) + 1e-14)
       if (i > 0) expect(Math.sign(errs[i] ?? 0)).toBe(-Math.sign(errs[i - 1] ?? 0))
@@ -114,7 +114,7 @@ describe('approximation properties', () => {
       ['wynnEpsilon', (v) => [A.wynnEpsilon(v).value]],
       ['shanks', (v) => toFlat(A.shanks(v))],
       ['eulerTransform', (v) => [A.eulerTransform(v)]],
-      ['chebyshev', (v) => [...A.chebyshev(v).coefficients]],
+      ['chebyshev', (v) => toFlat(A.chebyshev(v).coefficients)],
       ['chebyshevCoefficients', (v) => toFlat(A.chebyshevCoefficients(v))],
       ['chebyshevSeries', (v) => toFlat(A.chebyshevSeries(v, [0.5, -0.25]))],
       ['pade', (v) => toFlat(A.pade(v, 1).denominator)],

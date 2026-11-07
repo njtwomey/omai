@@ -5,11 +5,11 @@
  */
 
 import { MdmlError, type MetricResult } from '../base/index.ts'
-import { type TensorLike, toVector } from '../tensor/index.ts'
+import { fromVector, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
+import { rocRows, thresholdRows } from './_curves.ts'
 import { isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
 import { averageBinary, binarise, column, positives, scoreSpec } from './_scores.ts'
 import {
-  flat,
   type Metric,
   type MetricInput,
   type MetricOptions,
@@ -24,13 +24,16 @@ export interface CurveOptions extends MetricOptions {
   readonly posLabel?: Label
 }
 
-/** Weighted counts of a binary scorer at each distinct threshold, from the highest score down. */
+/**
+ * Weighted counts of a binary scorer at each distinct threshold, from the highest score down. The vectors are tensors
+ * of shape `[T]` (migration, D-009: they were `readonly number[]`).
+ */
 export interface ThresholdCounts {
-  readonly thresholds: readonly number[]
-  readonly tps: readonly number[]
-  readonly fps: readonly number[]
-  readonly tns: readonly number[]
-  readonly fns: readonly number[]
+  readonly thresholds: Tensor<'float64'>
+  readonly tps: Tensor<'float64'>
+  readonly fps: Tensor<'float64'>
+  readonly tns: Tensor<'float64'>
+  readonly fns: Tensor<'float64'>
 }
 
 /**
@@ -40,7 +43,8 @@ export interface ThresholdCounts {
  * @param yTrue - True labels `[N]`.
  * @param yScore - Scores `[N]` (higher means more positive).
  * @param options - posLabel and sample weights.
- * @returns The thresholds (decreasing) with true and false positives and negatives at each.
+ * @returns The thresholds (decreasing) with true and false positives and negatives at each, as `[T]` tensors (was
+ *   `number[]`).
  * @example
  * ```ts
  * import { confusionMatrixAtThresholds } from 'mdml-engine/metrics'
@@ -52,41 +56,24 @@ export function confusionMatrixAtThresholds(
   yScore: TensorLike,
   options: CurveOptions = {},
 ): ThresholdCounts {
-  const y = positives(yTrue, options.posLabel)
-  const s = flat(yScore)
-  if (s.length !== y.length) throw new MdmlError('shape', 'yTrue and yScore have different lengths')
-  // A NaN score ties with every other in the sort and would be placed by the order of the data.
-  if (s.some(Number.isNaN)) throw new MdmlError('value', 'confusionMatrixAtThresholds: scores must not be NaN')
-  const w = sampleWeights('confusionMatrixAtThresholds', y.length, options.sampleWeight)
-  // A stable ascending sort, reversed (sklearn's mergesort[::-1]): decreasing scores.
-  const order = Array.from(s.keys())
-    .sort((a, b) => (s[a] ?? 0) - (s[b] ?? 0) || a - b)
-    .reverse()
-  const thresholds: number[] = []
-  const tps: number[] = []
-  const fps: number[] = []
-  let tp = 0
-  let fp = 0
-  for (const [k, i] of order.entries()) {
-    tp += (y[i] ?? 0) * (w[i] ?? 0)
-    fp += (1 - (y[i] ?? 0)) * (w[i] ?? 0)
-    const next = order[k + 1]
-    if (next === undefined || (s[next] ?? 0) !== (s[i] ?? 0)) {
-      thresholds.push(s[i] ?? 0)
-      tps.push(tp)
-      fps.push(fp)
-    }
+  const c = thresholdRows(yTrue, yScore, options)
+  return {
+    thresholds: fromVector(c.thresholds),
+    tps: fromVector(c.tps),
+    fps: fromVector(c.fps),
+    tns: fromVector(c.tns),
+    fns: fromVector(c.fns),
   }
-  const totalTp = tps[tps.length - 1] ?? 0
-  const totalFp = fps[fps.length - 1] ?? 0
-  return { thresholds, tps, fps, tns: fps.map((v) => totalFp - v), fns: tps.map((v) => totalTp - v) }
 }
 
-/** A ROC curve: false and true positive rates at decreasing thresholds (the first is +inf). */
+/**
+ * A ROC curve: false and true positive rates at decreasing thresholds (the first is +inf), as `[T]` tensors
+ * (migration, D-009: they were `readonly number[]`).
+ */
 export interface RocCurve {
-  readonly fpr: readonly number[]
-  readonly tpr: readonly number[]
-  readonly thresholds: readonly number[]
+  readonly fpr: Tensor<'float64'>
+  readonly tpr: Tensor<'float64'>
+  readonly thresholds: Tensor<'float64'>
 }
 
 /**
@@ -96,7 +83,7 @@ export interface RocCurve {
  * @param yTrue - True labels `[N]`.
  * @param yScore - Scores `[N]`.
  * @param options - posLabel, dropIntermediate (default true) and sample weights.
- * @returns The curve.
+ * @returns The curve, `[T]` tensors (was `number[]`).
  * @concept roc-curve
  * @example
  * ```ts
@@ -109,21 +96,8 @@ export function rocCurve(
   yScore: TensorLike,
   options: CurveOptions & { readonly dropIntermediate?: boolean } = {},
 ): RocCurve {
-  const c = confusionMatrixAtThresholds(yTrue, yScore, options)
-  let keep = c.thresholds.map((_, i) => i)
-  if ((options.dropIntermediate ?? true) && c.fps.length > 2) {
-    const second = (a: readonly number[], i: number): number => (a[i + 1] ?? 0) - 2 * (a[i] ?? 0) + (a[i - 1] ?? 0)
-    keep = keep.filter((i) => i === 0 || i === c.fps.length - 1 || second(c.fps, i) !== 0 || second(c.tps, i) !== 0)
-  }
-  const tps = [0, ...keep.map((i) => c.tps[i] ?? 0)]
-  const fps = [0, ...keep.map((i) => c.fps[i] ?? 0)]
-  const nP = tps[tps.length - 1] ?? 0
-  const nN = fps[fps.length - 1] ?? 0
-  return {
-    fpr: fps.map((v) => (nN > 0 ? v / nN : Number.NaN)),
-    tpr: tps.map((v) => (nP > 0 ? v / nP : Number.NaN)),
-    thresholds: [Number.POSITIVE_INFINITY, ...keep.map((i) => c.thresholds[i] ?? 0)],
-  }
+  const r = rocRows(yTrue, yScore, options)
+  return { fpr: fromVector(r.fpr), tpr: fromVector(r.tpr), thresholds: fromVector(r.thresholds) }
 }
 
 /**
@@ -165,8 +139,8 @@ function binaryRocAuc(y: Float64Array, s: Float64Array, w: Float64Array | undefi
   let pos = 0
   for (const v of y) pos += v
   if (pos === 0 || pos === y.length) return Number.NaN
-  const r = rocCurve(Array.from(y), s, w === undefined ? {} : { sampleWeight: w })
-  if (maxFpr === undefined || maxFpr === 1) return auc(r.fpr as number[], r.tpr as number[])
+  const r = rocRows(Array.from(y), s, w === undefined ? {} : { sampleWeight: w })
+  if (maxFpr === undefined || maxFpr === 1) return auc(r.fpr, r.tpr)
   if (!(maxFpr > 0 && maxFpr <= 1)) throw new MdmlError('value', `maxFpr must be in (0, 1], got ${maxFpr}`)
   let stop = 0
   while (stop < r.fpr.length && (r.fpr[stop] ?? 0) <= maxFpr) stop++
@@ -275,11 +249,14 @@ export const rocAucScore: Metric<RocAucOptions, MetricInput> = Object.assign(
   { spec: scoreSpec('rocAucScore') },
 )
 
-/** A detection error tradeoff curve: false positive and false negative rates at increasing thresholds. */
+/**
+ * A detection error tradeoff curve: false positive and false negative rates at increasing thresholds, as tensors
+ * (migration, D-009: they were `readonly number[]`).
+ */
 export interface DetCurve {
-  readonly fpr: readonly number[]
-  readonly fnr: readonly number[]
-  readonly thresholds: readonly number[]
+  readonly fpr: Tensor<'float64'>
+  readonly fnr: Tensor<'float64'>
+  readonly thresholds: Tensor<'float64'>
 }
 
 /**
@@ -289,7 +266,7 @@ export interface DetCurve {
  * @param yTrue - True labels `[N]`.
  * @param yScore - Scores `[N]`.
  * @param options - posLabel, dropIntermediate (default false) and sample weights.
- * @returns The curve (FPR decreasing).
+ * @returns The curve (FPR decreasing), `[T]` tensors (was `number[]`).
  * @throws MdmlError with code `value` when only one class is present.
  * @example
  * ```ts
@@ -302,7 +279,7 @@ export function detCurve(
   yScore: TensorLike,
   options: CurveOptions & { readonly dropIntermediate?: boolean } = {},
 ): DetCurve {
-  const c = confusionMatrixAtThresholds(yTrue, yScore, options)
+  const c = thresholdRows(yTrue, yScore, options)
   let tps = [0, ...c.tps]
   let fps = [0, ...c.fps]
   let thresholds = [Number.POSITIVE_INFINITY, ...c.thresholds]
@@ -324,8 +301,8 @@ export function detCurve(
   while (last < tps.length && (tps[last] ?? 0) < pCount) last++
   const idx = Array.from({ length: last + 1 - first }, (_, k) => first + k).reverse()
   return {
-    fpr: idx.map((i) => (fps[i] ?? 0) / nCount),
-    fnr: idx.map((i) => (pCount - (tps[i] ?? 0)) / pCount),
-    thresholds: idx.map((i) => thresholds[i] ?? 0),
+    fpr: fromVector(idx.map((i) => (fps[i] ?? 0) / nCount)),
+    fnr: fromVector(idx.map((i) => (pCount - (tps[i] ?? 0)) / pCount)),
+    thresholds: fromVector(idx.map((i) => thresholds[i] ?? 0)),
   }
 }

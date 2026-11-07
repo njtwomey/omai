@@ -26,6 +26,7 @@ import {
   stateToJson,
   tensor,
 } from '../../trace/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { ddot as dot, eigh, eigvals, dnrm2 as norm } from '../linalg/index.ts'
 import { asOperator, type CsrMatrix, type LinearOperator } from './csr.ts'
 
@@ -65,34 +66,44 @@ function orthogonalise(w: Float64Array, basis: readonly Float64Array[]): Float64
   return v
 }
 
-/** A Lanczos factorisation A Q_m = Q_m T_m + beta_m q_{m+1} e_m^T. */
+/**
+ * A Lanczos factorisation A Q_m = Q_m T_m + beta_m q_{m+1} e_m^T. Holds tensors (migration, D-009: `alpha` and `beta`
+ * were `readonly number[]`, `basis` a list of `Float64Array`s).
+ */
 export interface LanczosResult {
-  /** Diagonal of T. */
-  readonly alpha: readonly number[]
-  /** Off-diagonal of T (beta[j] couples q_j and q_{j+1}); the last is the residual coupling. */
-  readonly beta: readonly number[]
-  /** The orthonormal basis vectors. */
-  readonly basis: readonly Float64Array[]
+  /** Diagonal of T, `[m]`. */
+  readonly alpha: Tensor<'float64'>
+  /** Off-diagonal of T, `[m]` (beta[j] couples q_j and q_{j+1}); the last is the residual coupling. */
+  readonly beta: Tensor<'float64'>
+  /** The orthonormal basis vectors as the rows of a `[m, n]` matrix. */
+  readonly basis: Tensor<'float64'>
+}
+
+/** A Lanczos factorisation as plain numbers: the form the restarted eigensolver loops on. */
+interface LanczosRows {
+  readonly alpha: number[]
+  readonly beta: number[]
+  readonly basis: Float64Array[]
 }
 
 /**
  * The Lanczos process for a symmetric operator, with full reorthogonalisation (so the basis stays orthonormal in
  * floating point): m steps produce the tridiagonal T whose eigenvalues (Ritz values) approximate A's extremes. Takes the
  * start vector as a tensor-like and the deflation vectors as the rows of a matrix (migration, D-009: `v0` was
- * `ArrayLike<number>`, `deflate` a list of `Float64Array`s, which is still accepted); the result keeps its plain
- * arrays, which are the internal state of the iteration.
+ * `ArrayLike<number>`, `deflate` a list of `Float64Array`s, which is still accepted); the result holds tensors (it
+ * was plain arrays); the restarted eigensolvers run on the plain-number kernel.
  *
  * @param a - Symmetric matrix or operator.
  * @param m - Number of steps.
  * @param options - Start vector `[n]` or key, and vectors to stay orthogonal to (deflation) as `[k, n]` rows.
- * @returns T's diagonals and the basis.
+ * @returns T's diagonals (`[m]` tensors) and the basis (an `[m, n]` matrix).
  * @throws MdmlError with code `shape` unless the start vector is a vector and the deflation vectors a matrix, and
  *   `not-differentiable` for a traced value.
  * @concept lanczos
  * @example
  * ```ts
  * import { lanczos } from 'mdml-engine/numerics/sparse'
- * lanczos([[2, 1], [1, 2]], 2).alpha.length // => 2
+ * lanczos([[2, 1], [1, 2]], 2).alpha.shape[0] // => 2
  * ```
  */
 export function lanczos(
@@ -104,6 +115,25 @@ export function lanczos(
     readonly deflate?: TensorLike | readonly Float64Array[]
   } = {},
 ): LanczosResult {
+  const { alpha, beta, basis } = lanczosRows(a, m, options)
+  const n = basis[0]?.length ?? 0
+  const q = new Float64Array(basis.length * n)
+  basis.forEach((row, i) => {
+    q.set(row, i * n)
+  })
+  return { alpha: vectorOf(alpha), beta: vectorOf(beta), basis: fromStorage(q, [basis.length, n], 'float64') }
+}
+
+/** The Lanczos process of {@link lanczos} on plain numbers. */
+function lanczosRows(
+  a: CsrMatrix | TensorLike | LinearOperator,
+  m: number,
+  options: {
+    readonly v0?: TensorLike
+    readonly key?: Key
+    readonly deflate?: TensorLike | readonly Float64Array[]
+  },
+): LanczosRows {
   const op = asOperator(a)
   const apply = numeric(op)
   const n = op.shape[0]
@@ -134,7 +164,8 @@ export function lanczos(
 export interface ArnoldiResult {
   /** The (m + 1) x m upper Hessenberg matrix, row-major as rows of columns. */
   readonly hessenberg: Tensor
-  readonly basis: readonly Float64Array[]
+  /** The orthonormal basis vectors as the rows of a `[k, n]` matrix (migration, D-009: a list of `Float64Array`s). */
+  readonly basis: Tensor<'float64'>
 }
 
 /** The paths the Krylov algorithms log, as a type. */
@@ -248,7 +279,7 @@ export function arnoldiAlgorithm(
  * @param a - Matrix or operator.
  * @param m - Number of steps.
  * @param options - Start vector `[n]` (a tensor-like; migration, D-009: was `ArrayLike<number>`) or key.
- * @returns The Hessenberg matrix `[m + 1, m]` and the basis.
+ * @returns The Hessenberg matrix `[m + 1, m]` and the basis (a `[k, n]` matrix, was a list of `Float64Array`s).
  * @throws MdmlError with code `shape` unless the start vector is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
@@ -270,7 +301,14 @@ export function arnoldi(
       h[i * steps + j] = v
     })
   })
-  return { hessenberg: fromStorage(h, [steps + 1, steps], 'float64'), basis }
+  const q = new Float64Array(basis.length * n)
+  basis.forEach((row, i) => {
+    q.set(row, i * n)
+  })
+  return {
+    hessenberg: fromStorage(h, [steps + 1, steps], 'float64'),
+    basis: fromStorage(q, [basis.length, n], 'float64'),
+  }
 }
 
 /** Which eigenvalues {@link eigsh} returns: largest magnitude, largest algebraic or smallest algebraic. */
@@ -287,7 +325,7 @@ export interface EigshResult {
   readonly residuals: readonly number[]
 }
 
-function ritz(a: LanczosResult): { values: number[]; vectors: number[][] } {
+function ritz(a: LanczosRows): { values: number[]; vectors: number[][] } {
   const m = a.alpha.length
   const t = new Float64Array(m * m)
   for (let i = 0; i < m; i++) {
@@ -396,7 +434,7 @@ export function eigshAlgorithm(
       const locked = [...s.locked]
       const lockedValues = [...s.lockedValues]
       const lockedResiduals = [...s.lockedResiduals]
-      const fact = lanczos(op, Math.min(m, n - locked.length), {
+      const fact = lanczosRows(op, Math.min(m, n - locked.length), {
         ...(s.start === null ? {} : { v0: s.start }),
         deflate: locked,
       })

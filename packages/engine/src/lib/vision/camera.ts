@@ -63,7 +63,8 @@ const coeffs = (d: Distortion | undefined): number[] => Array.from({ length: 8 }
  * ```
  */
 export function rodrigues(rvec: readonly number[]): MutableRows {
-  return rotationFromRotvec(rvec).asMatrix()
+  const m = toFlat(rotationFromRotvec(rvec).asMatrix())
+  return [m.slice(0, 3), m.slice(3, 6), m.slice(6, 9)]
 }
 
 /**

@@ -85,15 +85,8 @@ export function fitGev(x: TensorLike, options: NewtonMleOptions = {}): ExtremeFi
   const ll = (eta: Value): Value =>
     sum(generalisedExtremeValue(take(eta, [0]), exp(take(eta, [1])), take(eta, [2])).logProb(data))
   const r = newtonMle(ll, [m0, Math.log(s0), 0.05], options)
-  return finish(
-    generalisedExtremeValue,
-    data,
-    r.eta[0] ?? 0,
-    Math.exp(r.eta[1] ?? 0),
-    r.eta[2] ?? 0,
-    false,
-    r.converged,
-  )
+  const eta = toFlat(r.eta)
+  return finish(generalisedExtremeValue, data, eta[0] ?? 0, Math.exp(eta[1] ?? 0), eta[2] ?? 0, false, r.converged)
 }
 
 /**
@@ -123,7 +116,8 @@ export function fitGpd(x: TensorLike, options: NewtonMleOptions & { readonly thr
   const ll = (eta: Value): Value =>
     sum(generalisedPareto(asTensor([u]), exp(take(eta, [0])), take(eta, [1])).logProb(data))
   const r = newtonMle(ll, [Math.log(s0), xi0], run)
-  return finish(generalisedPareto, data, u, Math.exp(r.eta[0] ?? 0), r.eta[1] ?? 0, true, r.converged)
+  const eta = toFlat(r.eta)
+  return finish(generalisedPareto, data, u, Math.exp(eta[0] ?? 0), eta[1] ?? 0, true, r.converged)
 }
 
 /** The result of {@link peaksOverThreshold}. */

@@ -31,9 +31,13 @@ import { eigvals } from '../linalg/index.ts'
 import { orthoval } from '../polynomial/index.ts'
 import type { ApproximationPath } from './approximation-contract.ts'
 
-/** A Chebyshev expansion sum_k c_k T_k(t) of a function on [a, b], with t = (2x - a - b) / (b - a). */
+/**
+ * A Chebyshev expansion sum_k c_k T_k(t) of a function on [a, b], with t = (2x - a - b) / (b - a). Holds tensors
+ * (migration, D-009: `coefficients`, the roots and the extrema points were plain arrays).
+ */
 export interface Chebyshev {
-  readonly coefficients: readonly number[]
+  /** The coefficients c_0, c_1, ..., `[k]`. */
+  readonly coefficients: Tensor<'float64'>
   readonly domain: readonly [number, number]
   /** Values at points (Clenshaw by operations: differentiable in the points). */
   readonly evaluate: (x: TensorLike) => Value
@@ -42,11 +46,11 @@ export interface Chebyshev {
   readonly cumsum: () => Chebyshev
   /** The definite integral over the domain (Clenshaw-Curtis). */
   readonly sum: () => number
-  /** Real roots in the domain, sorted. */
-  readonly roots: () => number[]
-  /** Local extrema and the endpoints, with the global maximum and minimum. */
+  /** Real roots in the domain, sorted, as a `[r]` tensor. */
+  readonly roots: () => Tensor<'float64'>
+  /** Local extrema and the endpoints (`points`, a `[p]` tensor), with the global maximum and minimum. */
   readonly extrema: () => {
-    readonly points: number[]
+    readonly points: Tensor<'float64'>
     readonly max: readonly [number, number]
     readonly min: readonly [number, number]
   }
@@ -54,7 +58,7 @@ export interface Chebyshev {
 
 /**
  * A Chebyshev expansion from coefficients on a domain. Takes the coefficients as a tensor-like (migration, D-009: was
- * `readonly number[]`); the record keeps its plain-array fields until it is staged.
+ * `readonly number[]`); the record holds tensors (it kept plain arrays).
  *
  * @param coefficients - c_0, c_1, ... in the Chebyshev basis `[k]`.
  * @param domain - The interval (default [-1, 1]).
@@ -116,7 +120,7 @@ export function chebyshev(coefficients: TensorLike, domain: readonly [number, nu
     })
     return (s * (b - a)) / 2
   }
-  const roots = (): number[] => {
+  const rootList = (): number[] => {
     const trimmed = trimCoefficients(c)
     const n = trimmed.length - 1
     if (n < 1) return []
@@ -127,7 +131,7 @@ export function chebyshev(coefficients: TensorLike, domain: readonly [number, nu
       const mid = (a + b) / 2
       const left = chebfun((x) => evaluate(x), [a, mid])
       const right = chebfun((x) => evaluate(x), [mid, b])
-      const all = [...left.roots(), ...right.roots()].sort((p, q) => p - q)
+      const all = [...toFlat(left.roots()), ...toFlat(right.roots())].sort((p, q) => p - q)
       return all.filter((r, i) => i === 0 || Math.abs(r - (all[i - 1] ?? 0)) > 1e-10 * (b - a))
     } else {
       // The colleague matrix: its eigenvalues are the roots of sum c_k T_k.
@@ -162,14 +166,9 @@ export function chebyshev(coefficients: TensorLike, domain: readonly [number, nu
     polished.sort((p, q) => p - q)
     return polished.filter((r, i) => i === 0 || Math.abs(r - (polished[i - 1] ?? 0)) > 1e-10 * (b - a))
   }
+  const roots = (): Tensor<'float64'> => vectorOf(rootList())
   const extrema = () => {
-    const points = [
-      a,
-      ...derivative()
-        .roots()
-        .filter((x) => x > a && x < b),
-      b,
-    ]
+    const points = [a, ...toFlat(derivative().roots()).filter((x) => x > a && x < b), b]
     const values = toFlat(primalOf(evaluate(points)))
     let iMax = 0
     let iMin = 0
@@ -178,12 +177,12 @@ export function chebyshev(coefficients: TensorLike, domain: readonly [number, nu
       if (v < (values[iMin] ?? 0)) iMin = i
     })
     return {
-      points,
+      points: vectorOf(points),
       max: [points[iMax] ?? a, values[iMax] ?? 0] as const,
       min: [points[iMin] ?? a, values[iMin] ?? 0] as const,
     }
   }
-  return { coefficients: c, domain, evaluate, derivative, cumsum, sum, roots, extrema }
+  return { coefficients: vectorOf(c), domain, evaluate, derivative, cumsum, sum, roots, extrema }
 }
 
 function trimCoefficients(c: readonly number[]): number[] {
@@ -318,7 +317,7 @@ export function chebfunAlgorithm(
  * @param f - The function, vectorised over a 1-D value.
  * @param domain - The interval (default [-1, 1]).
  * @param options - Tolerance (default 2^-52 times 10) and the largest sample size (default 2^16 + 1).
- * @returns The expansion; its coefficients show the decay.
+ * @returns The expansion (a record of tensors); its coefficients show the decay.
  * @throws MdmlError with code `convergence` when the coefficients do not decay within the largest sample size.
  * @concept chebyshev-approximation
  * @index function Adaptive Chebyshev approximation of a smooth function.
@@ -327,7 +326,7 @@ export function chebfunAlgorithm(
  * import { chebfun } from 'mdml-engine/numerics/approximation'
  * import { exp } from 'mdml-engine/tensor'
  * const f = chebfun((x) => exp(x))
- * f.coefficients.length < 20 && Math.abs(f.sum() - (Math.E - 1 / Math.E)) < 1e-14 // => true
+ * f.coefficients.shape[0] < 20 && Math.abs(f.sum() - (Math.E - 1 / Math.E)) < 1e-14 // => true
  * ```
  */
 export function chebfun(

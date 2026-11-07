@@ -134,9 +134,10 @@ export function innerFit(
       options.solver as SpaceValue,
       { key: options.key ?? makeKey(0) },
     )
-    const eta = dgemv(design.X, n, p, fit.x)
+    const fitted = Float64Array.from(toFlat(fit.x))
+    const eta = dgemv(design.X, n, p, fitted)
     const d = deviance(problem, eta)
-    return { beta: fit.x, eta, deviance: d, penalisedDeviance: d + quadratic(S, fit.x, p), iterations: fit.steps }
+    return { beta: fitted, eta, deviance: d, penalisedDeviance: d + quadratic(S, fitted, p), iterations: fit.steps }
   }
   let eta: ArrayLike<number> = options.warm?.eta ?? startingPredictor(problem)
   let beta: ArrayLike<number> = options.warm?.beta ?? new Float64Array(p)

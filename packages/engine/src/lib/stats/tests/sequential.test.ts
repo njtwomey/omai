@@ -15,7 +15,7 @@ describe('sequential tests', () => {
     const pocock = toFlat(T.alphaSpending(t, { alpha: 0.025, sides: 1, kind: 'pocock' }).boundaries)
     expect(pocock[0]).toBeCloseTo(2.438, 2)
     expect(toFlat(T.alphaSpending(t, { sides: 2 }).boundaries)[0]).toBeCloseTo(4.8769, 3)
-    const spent = T.alphaSpending(t, { kind: 'power', rho: 2 }).spent
+    const spent = toFlat(T.alphaSpending(t, { kind: 'power', rho: 2 }).spent)
     expect(spent.at(-1)).toBeCloseTo(0.05, 12)
     expect(() => T.alphaSpending([0.5, 0.4])).toThrow()
   })

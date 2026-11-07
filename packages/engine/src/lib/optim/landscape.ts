@@ -31,6 +31,7 @@ import {
   treeUnflatten,
   type Value,
 } from '../tensor/index.ts'
+import { vectorOf } from './_vector.ts'
 import { flatObjective, type Objective } from './minimize/objective.ts'
 import type { ParamTree } from './transform.ts'
 
@@ -137,10 +138,12 @@ export function randomDirection<P extends ParamTree>(params: P, key: Key, option
 const along = (params: ParamTree, direction: ParamTree, alpha: number): ParamTree =>
   treeMap((p, d) => add(p, mul(d, alpha)), asTree(params), asTree(direction))
 
-/** The loss along a line through the parameters. */
+/** The loss along a line through the parameters. Holds tensors (migration, D-009: both were `readonly number[]`). */
 export interface Slice1d {
-  readonly alphas: readonly number[]
-  readonly losses: readonly number[]
+  /** The positions, `[n]`. */
+  readonly alphas: Tensor<'float64'>
+  /** The loss at each position, `[n]`. */
+  readonly losses: Tensor<'float64'>
 }
 
 /**
@@ -151,7 +154,7 @@ export interface Slice1d {
  * @param params - The centre.
  * @param direction - The direction (for example from {@link randomDirection}).
  * @param alphas - Where to evaluate: a vector (a tensor, a typed array or a list).
- * @returns The alphas and losses.
+ * @returns The alphas and losses, `[n]` tensors (they were `number[]`).
  * @throws MdmlError with code `shape` unless `alphas` has rank 1, and `not-differentiable` for a traced one.
  * @concept loss-landscape
  * @example
@@ -163,13 +166,15 @@ export interface Slice1d {
  */
 export function slice1d(loss: LossFunction, params: ParamTree, direction: ParamTree, alphas: TensorLike): Slice1d {
   const grid = toVector(alphas, 'slice1d')
-  return { alphas: grid, losses: grid.map((a) => lossAt(loss, along(params, direction, a))) }
+  return { alphas: vectorOf(grid), losses: vectorOf(grid.map((a) => lossAt(loss, along(params, direction, a)))) }
 }
 
-/** A grid of losses over two directions. */
+/** A grid of losses over two directions. Holds tensors (migration, D-009: `alphas` and `betas` were `readonly number[]`). */
 export interface Slice2d {
-  readonly alphas: readonly number[]
-  readonly betas: readonly number[]
+  /** The positions along the first direction, `[n]`. */
+  readonly alphas: Tensor<'float64'>
+  /** The positions along the second direction, `[m]`. */
+  readonly betas: Tensor<'float64'>
   /** Losses `[alphas.length, betas.length]`: entry `[i, j]` is L(theta + alphas[i] d1 + betas[j] d2). */
   readonly losses: Tensor
 }
@@ -185,7 +190,7 @@ export interface Slice2d {
  * @param d2 - Second direction.
  * @param alphas - Grid along `d1`: a vector (a tensor, a typed array or a list).
  * @param betas - Grid along `d2`: the same.
- * @returns The grid of losses.
+ * @returns The grid of losses with its two grids as tensors (the grids were `number[]`).
  * @throws MdmlError with code `shape` unless a grid has rank 1, and `not-differentiable` for a traced one.
  * @concept loss-landscape
  * @example
@@ -212,7 +217,7 @@ export function slice2d(
       data[i * bs.length + j] = lossAt(loss, along(row, d2, b))
     })
   })
-  return { alphas: as, betas: bs, losses: fromStorage(data, [as.length, bs.length], 'float64') }
+  return { alphas: vectorOf(as), betas: vectorOf(bs), losses: fromStorage(data, [as.length, bs.length], 'float64') }
 }
 
 /**
@@ -232,8 +237,8 @@ export function slice2d(
  * ```ts
  * import { randomSlice } from 'mdml-engine/optim'
  * import { key } from 'mdml-engine/random'
- * import { square, sum, tensor, type Value } from 'mdml-engine/tensor'
- * randomSlice((x: Value) => sum(square(x)), tensor([[1, 2], [3, 4]]), key(0), { alphas: [0, 0.5] }).slice.losses[0] // => 30
+ * import { square, sum, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * toFlat(randomSlice((x: Value) => sum(square(x)), tensor([[1, 2], [3, 4]]), key(0), { alphas: [0, 0.5] }).slice.losses)[0] // => 30
  * ```
  */
 export function randomSlice(
@@ -258,7 +263,7 @@ export function randomSlice(
  * @param a - One endpoint.
  * @param b - The other.
  * @param ts - Where to evaluate: a vector (a tensor, a typed array or a list).
- * @returns The positions and losses.
+ * @returns The positions and losses, `[n]` tensors (they were `number[]`).
  * @throws MdmlError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
  * @concept mode-connectivity
  * @example
@@ -271,7 +276,7 @@ export function randomSlice(
 export function interpolationSlice(loss: LossFunction, a: ParamTree, b: ParamTree, ts: TensorLike): Slice1d {
   const grid = toVector(ts, 'interpolationSlice')
   const diff = treeMap((x, y) => add(y, mul(x, -1)), asTree(a), asTree(b))
-  return { alphas: grid, losses: grid.map((t) => lossAt(loss, along(a, diff, t))) }
+  return { alphas: vectorOf(grid), losses: vectorOf(grid.map((t) => lossAt(loss, along(a, diff, t)))) }
 }
 
 /**
@@ -279,7 +284,8 @@ export function interpolationSlice(loss: LossFunction, a: ParamTree, b: ParamTre
  * straight line between its end losses, max_t [L(t) - ((1 - t) L(0) + t L(1))] (zero when the path is no higher than
  * the chord). Evaluate it on {@link interpolationSlice} for the linear path, or on {@link bezierSlice} for a bent one.
  *
- * @param slice - A path slice with positions in [0, 1].
+ * @param slice - A path slice with positions in [0, 1]; the positions and losses take tensor-likes (migration, D-009:
+ *   they were `readonly number[]`).
  * @returns The barrier height (at least 0).
  * @concept mode-connectivity
  * @example
@@ -288,14 +294,16 @@ export function interpolationSlice(loss: LossFunction, a: ParamTree, b: ParamTre
  * barrier({ alphas: [0, 0.5, 1], losses: [1, 3, 1] }) // => 2
  * ```
  */
-export function barrier(slice: Slice1d): number {
-  const n = slice.losses.length
+export function barrier(slice: { readonly alphas: TensorLike; readonly losses: TensorLike }): number {
+  const alphas = toVector(slice.alphas, 'barrier')
+  const losses = toVector(slice.losses, 'barrier')
+  const n = losses.length
   if (n < 2) return 0
-  const [t0, t1] = [slice.alphas[0] as number, slice.alphas[n - 1] as number]
-  const [l0, l1] = [slice.losses[0] as number, slice.losses[n - 1] as number]
+  const [t0, t1] = [alphas[0] as number, alphas[n - 1] as number]
+  const [l0, l1] = [losses[0] as number, losses[n - 1] as number]
   let worst = 0
-  slice.losses.forEach((l, i) => {
-    const t = ((slice.alphas[i] as number) - t0) / (t1 - t0)
+  losses.forEach((l, i) => {
+    const t = ((alphas[i] as number) - t0) / (t1 - t0)
     worst = Math.max(worst, l - ((1 - t) * l0 + t * l1))
   })
   return worst
@@ -312,7 +320,7 @@ export function barrier(slice: Slice1d): number {
  * @param c - Control point.
  * @param b - End.
  * @param ts - Positions in [0, 1]: a vector (a tensor, a typed array or a list).
- * @returns The positions and losses.
+ * @returns The positions and losses, `[n]` tensors (they were `number[]`).
  * @throws MdmlError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
  * @concept mode-connectivity
  * @example
@@ -331,7 +339,7 @@ export function bezierSlice(loss: LossFunction, a: ParamTree, c: ParamTree, b: P
       asTree(c),
       asTree(b),
     )
-  return { alphas: grid, losses: grid.map((t) => lossAt(loss, point(t))) }
+  return { alphas: vectorOf(grid), losses: vectorOf(grid.map((t) => lossAt(loss, point(t)))) }
 }
 
 /** The top Hessian eigenvalue and its eigenvector. */

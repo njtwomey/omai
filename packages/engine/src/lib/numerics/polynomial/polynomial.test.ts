@@ -5,11 +5,12 @@ import { item, sum, type Tensor, type TensorLike, tensor, toFlat, type Value } f
 import * as P from './index.ts'
 
 const canonical = (f: P.PartialFractions): number[][] => {
-  const rows = f.poles.re.map((re, i) => {
-    const im = f.poles.im[i] ?? 0
+  const [pre, pim, rre, rim] = [f.poles.re, f.poles.im, f.residues.re, f.residues.im].map(toFlat)
+  const rows = (pre ?? []).map((re, i) => {
+    const im = pim?.[i] ?? 0
     let power = 1
-    for (let j = i - 1; j >= 0 && f.poles.re[j] === re && f.poles.im[j] === im; j--) power++
-    return [re, im, power, f.residues.re[i] ?? 0, f.residues.im[i] ?? 0]
+    for (let j = i - 1; j >= 0 && pre?.[j] === re && pim?.[j] === im; j--) power++
+    return [re, im, power, rre?.[i] ?? 0, rim?.[i] ?? 0]
   })
   return rows.sort((a, b) => (a[0] ?? 0) - (b[0] ?? 0) || (a[1] ?? 0) - (b[1] ?? 0) || (a[2] ?? 0) - (b[2] ?? 0))
 }
@@ -50,7 +51,7 @@ describe('polynomials against numpy and scipy', () => {
                                 : c.fn === 'residue'
                                   ? canonical(P.residue(f(0), f(1)))
                                   : c.fn === 'residueDirect'
-                                    ? P.residue(f(0), f(1)).direct.length === 0
+                                    ? P.residue(f(0), f(1)).direct.shape[0] === 0
                                       ? []
                                       : P.residue(f(0), f(1)).direct
                                     : c.fn === 'residuez'
@@ -60,7 +61,7 @@ describe('polynomials against numpy and scipy', () => {
                                         : (() => {
                                             const r = P.residue(f(0), f(1))
                                             const back = P.invres(r.residues, r.poles, r.direct)
-                                            return [...back.numerator.re, ...back.denominator.re]
+                                            return [...toFlat(back.numerator.re), ...toFlat(back.denominator.re)]
                                           })()
       expectMatches(Array.isArray(actual) ? tensor(actual as number[]) : actual, c.output, c.rtol, c.atol, c.name)
     })
@@ -121,9 +122,9 @@ describe('the power-basis functions take tensor-likes and return tensors (migrat
     ['polyFromRoots', (c) => P.polyFromRoots(c)],
     ['orthoToPower', (c) => P.orthoToPower('legendre', c)],
     ['powerToOrtho', (c) => P.powerToOrtho('legendre', c)],
-    ['residue', (c) => tensor(P.residue(c, [1, 3, 2]).residues.re)],
-    ['residuez', (c) => tensor(P.residuez(c, [1, -0.5, 0.25]).residues.re)],
-    ['invres', (c) => tensor(P.invres({ re: c, im: [0, 0, 0] }, { re: [-1, -2, -3], im: [0, 0, 0] }, []).numerator.re)],
+    ['residue', (c) => P.residue(c, [1, 3, 2]).residues.re],
+    ['residuez', (c) => P.residuez(c, [1, -0.5, 0.25]).residues.re],
+    ['invres', (c) => P.invres({ re: c, im: [0, 0, 0] }, { re: [-1, -2, -3], im: [0, 0, 0] }, []).numerator.re],
   ]
   it('a tensor, a typed array and an array agree; wrong rank is a shape error; traced is rejected', () => {
     for (const [name, f] of calls) {

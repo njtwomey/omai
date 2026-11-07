@@ -6,7 +6,7 @@
  */
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
-import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
+import { fromStorage, fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
   type ClassCounts,
   classCounts,
@@ -359,13 +359,16 @@ export const jaccardScore: Metric<AveragingOptions, MetricInput> = rateMetric(
   () => (tp, fp, fn, _tn, zd) => ratio(tp, tp + fp + fn, zd),
 )
 
-/** Per-class precision, recall, F-score and support, with the requested average. */
+/**
+ * Per-class precision, recall, F-score and support, with the requested average. The per-class vectors are `[k]`
+ * tensors (migration, D-009: they were `readonly number[]`).
+ */
 export interface PrecisionRecallFscoreSupport {
   readonly labels: readonly Label[]
-  readonly precision: readonly number[]
-  readonly recall: readonly number[]
-  readonly fscore: readonly number[]
-  readonly support: readonly number[]
+  readonly precision: Tensor<'float64'>
+  readonly recall: Tensor<'float64'>
+  readonly fscore: Tensor<'float64'>
+  readonly support: Tensor<'float64'>
   /** The averaged precision, recall and F-score (absent for average 'none'). */
   readonly averaged?: { readonly precision: number; readonly recall: number; readonly fscore: number }
 }
@@ -376,7 +379,7 @@ export interface PrecisionRecallFscoreSupport {
  * @param yTrue - True labels or a multilabel indicator.
  * @param yPred - Predicted labels, the same form.
  * @param options - beta, average (default 'none'), labels, posLabel, zeroDivision and sample weights.
- * @returns Per-class arrays and the averages.
+ * @returns Per-class `[k]` tensors (were `number[]`) and the averages.
  * @example
  * ```ts
  * import { precisionRecallFscoreSupport } from 'mdml-engine/metrics'
@@ -397,10 +400,10 @@ export function precisionRecallFscoreSupport(
   const average = options.average ?? 'none'
   const base = {
     labels: c.classes,
-    precision: at(precisionRate),
-    recall: at(recallRate),
-    fscore: at(fbetaRate(options.beta ?? 1)),
-    support: Array.from({ length: k }, (_, i) => (c.tp[i] ?? 0) + (c.fn[i] ?? 0)),
+    precision: fromVector(at(precisionRate)),
+    recall: fromVector(at(recallRate)),
+    fscore: fromVector(at(fbetaRate(options.beta ?? 1))),
+    support: fromVector(Array.from({ length: k }, (_, i) => (c.tp[i] ?? 0) + (c.fn[i] ?? 0))),
   }
   if (average === 'none') return base
   const opts = { ...options, average }
@@ -522,10 +525,14 @@ export const balancedAccuracyScore: Metric<MetricOptions & { readonly adjusted?:
     { spec: spec('balancedAccuracyScore', 'higher', [0, 1]) },
   )
 
-/** A confusion matrix with the classes labelling its rows (true) and columns (predicted). */
+/**
+ * A confusion matrix with the classes labelling its rows (true) and columns (predicted). Holds a tensor (migration,
+ * D-009: `matrix` was `readonly (readonly number[])[]`).
+ */
 export interface LabelledConfusionMatrix {
   readonly labels: readonly Label[]
-  readonly matrix: readonly (readonly number[])[]
+  /** The counts, `[k, k]`: row `i` is true class `i`, column `j` predicted class `j`. */
+  readonly matrix: Tensor<'float64'>
 }
 
 /**
@@ -535,7 +542,7 @@ export interface LabelledConfusionMatrix {
  * @param yTrue - True labels.
  * @param yPred - Predicted labels.
  * @param options - labels (order and subset), normalize ('true' rows, 'pred' columns or 'all') and sample weights.
- * @returns The matrix and its class labels.
+ * @returns The `[k, k]` matrix, a tensor (migration, D-009: was `number[][]`), and its class labels.
  * @index function Confusion matrix of labels and predictions.
  * @example
  * ```ts
@@ -572,7 +579,7 @@ export function confusionMatrix(
     const s = m.reduce((x, row) => x + row.reduce((a, b) => a + b, 0), 0)
     for (const row of m) for (let j = 0; j < k; j++) row[j] = safe(row[j] ?? 0, s)
   }
-  return { labels: e.classes, matrix: m }
+  return { labels: e.classes, matrix: fromStorage(Float64Array.from(m.flat()), [k, k], 'float64') }
 }
 
 /**

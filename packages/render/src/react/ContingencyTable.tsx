@@ -5,7 +5,8 @@
  */
 
 import { maxOf } from 'mdml-engine/base'
-import { confusionMargins, type LabelledConfusionMatrix, tableCost } from 'mdml-engine/metrics'
+import { type ConfusionTable, confusionMargins, tableCost } from 'mdml-engine/metrics'
+import { asTensor, type TensorLike, toFlat } from 'mdml-engine/tensor'
 import { type ReactNode, useMemo, useState } from 'react'
 import { formatNumber, formatPercent } from '../theme/format.ts'
 import { mixColours } from '../theme/palettes.ts'
@@ -14,7 +15,7 @@ import { useTokens } from './theme.tsx'
 /** Props of {@link ContingencyTable}. */
 export interface ContingencyTableProps {
   /** A confusion matrix of counts (`confusionMatrix` or `thresholdConfusion` from `mdml-engine/metrics`): rows actual, columns predicted. */
-  readonly table: LabelledConfusionMatrix
+  readonly table: ConfusionTable
   /** A name per class, in the table's order (default the labels). */
   readonly classNames?: readonly string[]
   /**
@@ -33,7 +34,7 @@ export interface ContingencyTableProps {
    * negative to count as benefits): each cell then shows its count times its cost, and the corner the total cost and
    * the cost per case (`tableCost` from `mdml-engine/metrics`).
    */
-  readonly costs?: readonly (readonly number[])[]
+  readonly costs?: TensorLike
   /** The names of the two axes (default "actual" and "predicted"). */
   readonly rowLabel?: string
   readonly columnLabel?: string
@@ -91,13 +92,17 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
   const m = useMemo(() => confusionMargins(table), [table])
   const costs = props.costs
   const cost = useMemo(() => (costs === undefined ? undefined : tableCost(table, costs)), [table, costs])
+  const counts = useMemo(() => toFlat(asTensor(table.matrix)), [table])
+  const costFlat = useMemo(() => (costs === undefined ? undefined : toFlat(asTensor(costs))), [costs])
+  const costAt = (j: number, i: number): number => costFlat?.[j * k + i] ?? 0
+  const costed = useMemo(() => (cost === undefined ? undefined : toFlat(cost.cells)), [cost])
   const binary = k === 2 && (positive === 0 || positive === 1)
   const names = classNames ?? table.labels.map(String)
-  const at = (j: number, i: number): number => table.matrix[j]?.[i] ?? 0
+  const at = (j: number, i: number): number => counts[j * k + i] ?? 0
   const row = (j: number): Cell[] => Array.from({ length: k }, (_, i): Cell => [j, i])
   const col = (i: number): Cell[] => Array.from({ length: k }, (_, j): Cell => [j, i])
   const every: Cell[] = Array.from({ length: k * k }, (_, c): Cell => [Math.floor(c / k), c % k])
-  const v = (xs: readonly number[], i: number): number => xs[i] ?? Number.NaN
+  const v = (xs: { readonly data: ArrayLike<number> }, i: number): number => xs.data[i] ?? Number.NaN
 
   const cellName = (j: number, i: number): string =>
     binary ? `${j === i ? 'T' : 'F'}${i === positive ? 'P' : 'N'}` : j === i ? 'correct' : ''
@@ -171,7 +176,7 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
             name: 'total misclassification cost',
             value: cost.total,
             formula: 'Σ count × cost',
-            focus: { numerator: every.filter(([a, b]) => (costs?.[a]?.[b] ?? 0) !== 0), denominator: [] },
+            focus: { numerator: every.filter(([a, b]) => costAt(a, b) !== 0), denominator: [] },
             format: count,
           },
           {
@@ -179,13 +184,13 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
             name: 'expected cost of one case',
             value: cost.perCase,
             formula: 'total cost / n',
-            focus: { numerator: every.filter(([a, b]) => (costs?.[a]?.[b] ?? 0) !== 0), denominator: every },
+            focus: { numerator: every.filter(([a, b]) => costAt(a, b) !== 0), denominator: every },
           },
         ]),
   ]
 
   // Light shading by count, from the surface towards the accent, so text stays legible in both themes.
-  const max = Math.max(1, maxOf(table.matrix.flat()))
+  const max = Math.max(1, maxOf(counts))
   const shade = (c: number): string => mixColours(t.surface, t.accent, 0.06 + 0.42 * (c / max))
   const inFocus = (cells: readonly Cell[] | undefined, j: number, i: number): boolean =>
     cells?.some(([a, b]) => a === j && b === i) ?? false
@@ -294,13 +299,13 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
                     {mode !== 'none' && (
                       <div className="font-mono text-[10px] text-(--wb-muted) tabular-nums">{share(shareOf(j, i))}</div>
                     )}
-                    {cost !== undefined && (costs?.[j]?.[i] ?? 0) !== 0 && (
+                    {cost !== undefined && costAt(j, i) !== 0 && (
                       <div
                         className="font-mono text-[10px] tabular-nums"
-                        style={{ color: (costs?.[j]?.[i] ?? 0) > 0 ? t.danger : t.success }}
-                        title={`${count(at(j, i))} × ${formatNumber(costs?.[j]?.[i] ?? 0)}`}
+                        style={{ color: costAt(j, i) > 0 ? t.danger : t.success }}
+                        title={`${count(at(j, i))} × ${formatNumber(costAt(j, i))}`}
                       >
-                        cost {count(cost.cells[j]?.[i] ?? 0)}
+                        cost {count(costed?.[j * k + i] ?? 0)}
                       </div>
                     )}
                   </td>

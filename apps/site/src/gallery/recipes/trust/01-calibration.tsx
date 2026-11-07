@@ -1,5 +1,6 @@
 import { calibrationRecord, type ReliabilityCurve } from 'mdml-engine/exposition'
 import { calibrationCurve } from 'mdml-engine/metrics'
+import { toFlat } from 'mdml-engine/tensor'
 import { Choice, ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
@@ -32,13 +33,14 @@ export default function CalibrationRecipe(): ReactNode {
       const yy = idx.map((i) => y[i] ?? 0)
       const pp = idx.map((i) => p[i] ?? 0)
       const c = calibrationCurve(yy, pp, { nBins: bins, strategy })
-      const ece = c.counts.reduce(
-        (a, k, j) => a + (k * Math.abs((c.probTrue[j] ?? 0) - (c.probPred[j] ?? 0))) / idx.length,
+      const [counts, probTrue, probPred] = [c.counts, c.probTrue, c.probPred].map(toFlat)
+      const ece = (counts ?? []).reduce(
+        (a, k, j) => a + (k * Math.abs((probTrue?.[j] ?? 0) - (probPred?.[j] ?? 0))) / idx.length,
         0,
       )
-      const mce = Math.max(...c.probTrue.map((v, j) => Math.abs(v - (c.probPred[j] ?? 0))))
+      const mce = Math.max(...(probTrue ?? []).map((v, j) => Math.abs(v - (probPred?.[j] ?? 0))))
       const brier = pp.reduce((a, v, i) => a + (v - (yy[i] ?? 0)) ** 2, 0) / idx.length
-      return { name, meanPredicted: [...c.probPred], observed: [...c.probTrue], counts: [...c.counts], ece, mce, brier }
+      return { name, meanPredicted: probPred ?? [], observed: probTrue ?? [], counts: counts ?? [], ece, mce, brier }
     }
     const calibrated = forecast(() => 1)
     const model = forecast((g) => (g === 0 ? 1 : temperature))

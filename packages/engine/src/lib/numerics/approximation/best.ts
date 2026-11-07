@@ -19,16 +19,16 @@ import { vectorOf } from '../_vector.ts'
 import { solve } from '../linalg/index.ts'
 import type { ApproximationPath } from './approximation-contract.ts'
 
-/** Result of the Remez algorithm. */
+/** Result of the Remez algorithm. Holds tensors (migration, D-009: the three vectors were `readonly number[]`). */
 export interface MinimaxResult {
-  /** Numerator coefficients in the Chebyshev basis of the mapped variable t in [-1, 1]. */
-  readonly numerator: readonly number[]
-  /** Denominator coefficients (Chebyshev basis, constant term 1); [1] for polynomials. */
-  readonly denominator: readonly number[]
+  /** Numerator coefficients in the Chebyshev basis of the mapped variable t in [-1, 1], `[m + 1]`. */
+  readonly numerator: Tensor<'float64'>
+  /** Denominator coefficients (Chebyshev basis, constant term 1), `[n + 1]`; `[1]` for polynomials. */
+  readonly denominator: Tensor<'float64'>
   /** The levelled error E (the minimax error at convergence). */
   readonly error: number
-  /** The final reference points, where the error equioscillates. */
-  readonly reference: readonly number[]
+  /** The final reference points, where the error equioscillates, `[m + n + 2]`. */
+  readonly reference: Tensor<'float64'>
   readonly iterations: number
   readonly converged: boolean
   /** `converged`, or `completed` when the iteration cap was reached. */
@@ -226,7 +226,7 @@ export function remezAlgorithm(
  * @param f - The function on numbers.
  * @param m - Numerator degree.
  * @param options - Denominator degree n (default 0), interval (default [-1, 1]), tolerance (1e-10) and iteration cap.
- * @returns Coefficients, the levelled error and the reference.
+ * @returns Coefficients, the levelled error and the reference (the vectors are tensors; they were `number[]`).
  * @concept minimax-approximation
  * @example
  * ```ts
@@ -241,10 +241,10 @@ export function remez(f: (x: number) => number, m: number, options: RemezOptions
   const s = run.state
   const r = (t: number): number => series(s.numerator, t) / series(s.denominator, t)
   return {
-    numerator: s.numerator,
-    denominator: s.denominator,
+    numerator: vectorOf(s.numerator),
+    denominator: vectorOf(s.denominator),
     error: s.error,
-    reference: s.reference.map((t) => (a + b) / 2 + ((b - a) / 2) * t),
+    reference: vectorOf(s.reference.map((t) => (a + b) / 2 + ((b - a) / 2) * t)),
     iterations: s.converged ? s.iterations : (options.maxIterations ?? 60),
     converged: s.converged,
     status: s.converged ? 'converged' : 'completed',

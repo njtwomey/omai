@@ -527,20 +527,23 @@ export const glmSolvers: ModeTable<GlmProblem, VectorParams> = modes(
   { label: 'solver', description: 'how the penalised GLM objective is minimised', default: 'irls' },
 )
 
-/** A fitted GLM problem. */
+/**
+ * A fitted GLM problem. Holds tensors (migration, D-009: `x` and `coef` were `Float64Array`s, `history` a
+ * `readonly number[]` and `path` a list of `Float64Array`s).
+ */
 export interface GlmFit {
-  /** The coefficient vector: slopes then the intercept. */
-  readonly x: Float64Array
-  /** The slopes. */
-  readonly coef: Float64Array
+  /** The coefficient vector: slopes then the intercept, `[p]`. */
+  readonly x: Tensor<'float64'>
+  /** The slopes, `[d]`. */
+  readonly coef: Tensor<'float64'>
   /** The intercept (zero when the problem fits none). */
   readonly intercept: number
   /** The penalised objective at the solution. */
   readonly objective: number
-  /** The objective after each step. */
-  readonly history: readonly number[]
-  /** The iterate after each step. */
-  readonly path: readonly Float64Array[]
+  /** The objective after each step, `[steps]`. */
+  readonly history: Tensor<'float64'>
+  /** The iterate after each step, the rows of a `[steps, p]` matrix. */
+  readonly path: Tensor<'float64'>
   readonly steps: number
   readonly converged: boolean
   /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
@@ -555,15 +558,16 @@ export interface GlmFit {
  * @param problem - The problem.
  * @param config - A value of `glmSolvers.space` (default IRLS).
  * @param options - Steps (default 100 for `irls` and `newton`, else 1000), the key and run options.
- * @returns The fit.
+ * @returns The fit, with the coefficients, the objective history and the path as tensors (they were plain arrays).
  * @example
  * ```ts
  * import { families } from 'mdml-engine/dists'
  * import { fitGlm } from 'mdml-engine/optim'
+ * import { item } from 'mdml-engine/tensor'
  * const problem = { x: [[0], [1], [2], [3], [4], [5]], y: [0, 0, 1, 0, 1, 1], family: families.binomial(), link: families.logit(), fitIntercept: true }
  * const irls = fitGlm(problem, { kind: 'irls' })
  * const lbfgs = fitGlm(problem, { kind: 'lbfgs', gradTol: 1e-10 })
- * Math.abs(irls.coef[0] - lbfgs.coef[0]) < 1e-4 // => true
+ * Math.abs(item(irls.coef) - item(lbfgs.coef)) < 1e-4 // => true
  * ```
  */
 export function fitGlm(
@@ -593,13 +597,17 @@ export function fitGlm(
     maxSteps: options.maxSteps ?? (['irls', 'newton'].includes(kind) ? 100 : 1000),
   })
   const x = Float64Array.from((result.state as { readonly x: Float64Array }).x)
+  const stacked = new Float64Array(path.length * P.p)
+  path.forEach((row, i) => {
+    stacked.set(row, i * P.p)
+  })
   return {
-    x,
-    coef: x.slice(0, P.d),
+    x: vectorOf(x),
+    coef: vectorOf(x.slice(0, P.d)),
     intercept: P.p > P.d ? (x[P.d] ?? 0) : 0,
     objective: valueAt(P, x),
-    history,
-    path,
+    history: vectorOf(history),
+    path: fromStorage(stacked, [path.length, P.p], 'float64'),
     steps: result.steps,
     converged: result.status === 'converged',
     status: result.status,

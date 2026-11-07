@@ -10,12 +10,12 @@ describe('uplift curves on a hand-made experiment', () => {
   const t = [1, 0, 1, 0]
   const y = [1, 0, 0, 0]
   it('the Qini and uplift curves follow their definitions', () => {
-    expect(Array.from(upliftCurve(score, t, y, 'qini').value)).toEqual([0, 0, 1, 1, 1])
+    expect(toFlat(upliftCurve(score, t, y, 'qini').value)).toEqual([0, 0, 1, 1, 1])
     // (R_t/N_t - R_c/N_c) k: k = 2 gives (1 - 0) * 2, k = 3 gives (1/2 - 0) * 3, k = 4 gives (1/2 - 0) * 4
-    expect(Array.from(upliftCurve(score, t, y, 'uplift').value)).toEqual([0, 0, 2, 1.5, 2])
+    expect(toFlat(upliftCurve(score, t, y, 'uplift').value)).toEqual([0, 0, 2, 1.5, 2])
     const c = upliftCurve(score, t, y, 'qini')
-    expect(Array.from(c.random)).toEqual([0, 0.25, 0.5, 0.75, 1])
-    expect(Array.from(c.treated)).toEqual([0, 1, 1, 2, 2])
+    expect(toFlat(c.random)).toEqual([0, 0.25, 0.5, 0.75, 1])
+    expect(toFlat(c.treated)).toEqual([0, 1, 1, 2, 2])
   })
 
   it('the coefficients are areas against the random line', () => {
@@ -33,7 +33,7 @@ describe('uplift curves on a hand-made experiment', () => {
       t,
       y,
     ).value
-    expect(Array.from(b)).toEqual(Array.from(a))
+    expect(toFlat(b)).toEqual(toFlat(a))
   })
 
   it('uplift at k, deciles and the policy value', () => {

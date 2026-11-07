@@ -4,7 +4,7 @@
  * intraclass correlations, weighted Cohen's kappa, Fleiss' kappa for many raters and Krippendorff's alpha.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec, toRows } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { cov, kendallTau as kendallTest, spearman } from '../stats/index.ts'
 import { item, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -41,6 +41,12 @@ const pair = (name: string, x: TensorLike, y: TensorLike): [Float64Array, Float6
   const b = flat(y)
   if (a.length !== b.length) throw new MdmlError('shape', `${name}: inputs differ in length`)
   return [a, b]
+}
+
+/** The counts of a contingency table as rows of plain numbers, the form the loops of this file read. */
+function contingencyRows(x: MetricInput, y: MetricInput, options: MetricOptions): number[][] {
+  const c = contingencyMatrix(x, y, options)
+  return toRows(c.matrix.data, c.classes.length, c.clusters.length)
 }
 
 /**
@@ -210,7 +216,7 @@ export function blandAltman(x: TensorLike, y: TensorLike, options: { readonly le
  */
 export const cramersV: Metric<MetricOptions, MetricInput> = Object.assign(
   (x: MetricInput, y: MetricInput, options: MetricOptions = {}): MetricResult => {
-    const m = contingencyMatrix(x, y, options).matrix
+    const m = contingencyRows(x, y, options)
     const rows = m.map((r) => r.reduce((a, b) => a + b, 0))
     const cols = Array.from({ length: m[0]?.length ?? 0 }, (_, j) => m.reduce((a, r) => a + (r[j] ?? 0), 0))
     const n = rows.reduce((a, b) => a + b, 0)
@@ -247,7 +253,7 @@ const entropyOf = (counts: readonly number[]): number => {
  */
 export const theilsU: Metric<MetricOptions, MetricInput> = Object.assign(
   (x: MetricInput, y: MetricInput, options: MetricOptions = {}): MetricResult => {
-    const m = contingencyMatrix(x, y, options).matrix
+    const m = contingencyRows(x, y, options)
     const rows = m.map((r) => r.reduce((a, b) => a + b, 0))
     const n = rows.reduce((a, b) => a + b, 0)
     const hx = entropyOf(rows)

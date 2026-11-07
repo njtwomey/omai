@@ -27,7 +27,7 @@ describe('maximum likelihood fitting', () => {
     fc.assert(
       fc.property(fc.double({ min: -3, max: 3, noNaN: true }), fc.double({ min: 0.5, max: 4, noNaN: true }), (m, c) => {
         const ll = (t: Value): Value => neg(sum(mul(square(sub(t, m)), c)))
-        expect(newtonMle(ll, [0]).eta[0] ?? 0).toBeCloseTo(m, 8)
+        expect(toFlat(newtonMle(ll, [0]).eta)[0] ?? 0).toBeCloseTo(m, 8)
         expect(toFlat(observedInformation(ll, [m]))[0]).toBeCloseTo(2 * c, 10)
       }),
       { numRuns: 20 },
@@ -68,7 +68,7 @@ describe('maximum likelihood fitting', () => {
     it('takes a partial configuration and a generic solver in newtonMle', () => {
       const ll = (t: Value): Value => neg(sum(mul(square(sub(t, 1.5)), 2)))
       const r = newtonMle(ll, [0], { solver: { kind: 'lbfgs' } })
-      expect(r.eta[0] ?? 0).toBeCloseTo(1.5, 5)
+      expect(toFlat(r.eta)[0] ?? 0).toBeCloseTo(1.5, 5)
       expect(r.logLikelihood).toBeCloseTo(0, 8)
     })
   })
