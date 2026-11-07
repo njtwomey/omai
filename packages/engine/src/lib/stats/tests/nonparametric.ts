@@ -414,7 +414,7 @@ export function nemenyi(groups: readonly TensorLike[]): PosthocResult {
  */
 export function signTest(x: TensorLike, mu0 = 0, options: TestOptions = {}): TestResult {
   const { alternative } = resolveTestOptions(options)
-  const a = sample('signTest', x)
+  const a = sample('signTest', x, 1, true)
   let pos = 0
   let neg = 0
   for (const v of a) {

@@ -100,7 +100,8 @@ export function testResult(input: TestResultInput): TestResult {
   return {
     test: input.test,
     statistic: input.statistic,
-    pValue: input.pValue,
+    // A p-value of an undefined statistic is undefined, never a number.
+    pValue: Number.isNaN(input.statistic) ? Number.NaN : input.pValue,
     alternative: input.alternative ?? 'two-sided',
     ...(input.df === undefined ? {} : { df: input.df }),
     ...(input.effectSize === undefined ? {} : { effectSize: input.effectSize }),
@@ -333,6 +334,9 @@ export function fligner(groups: readonly TensorLike[], options: { readonly cente
     s += g.length * (meanOf(part) - abar) ** 2
     offset += g.length
   }
+  // Every deviation tied: the scores are one value, their variance is rounding noise and the ratio is not a statistic.
+  if (ranks.every((r) => r === ranks[0]))
+    return testResult({ test: 'Fligner-Killeen test', statistic: Number.NaN, pValue: Number.NaN, df: k - 1 })
   const statistic = s / varsq
   return testResult({ test: 'Fligner-Killeen test', statistic, pValue: chi2Sf(k - 1, statistic), df: k - 1 })
 }

@@ -107,6 +107,8 @@ export function powerDivergence(
   const e =
     options.expected === undefined ? new Float64Array(k).fill(total / k) : sample('powerDivergence', options.expected)
   if (e.length !== k) throw new MdmlError('shape', 'powerDivergence: expected must match observed')
+  if (!(o.every((v) => v >= 0) && e.every((v) => v >= 0)))
+    throw new MdmlError('value', 'powerDivergence: counts must be non-negative')
   const te = e.reduce((s, v) => s + v, 0)
   if (Math.abs(te - total) > 1e-8 * Math.max(Math.abs(total), Math.abs(te)))
     throw new MdmlError('value', 'powerDivergence: observed and expected totals differ')
@@ -162,7 +164,7 @@ export function kstest(
   options: TestOptions & { readonly method?: KsMethod } = {},
 ): TestResult {
   const alternative = resolveAlternative(options.alternative)
-  const s = sortedCopy(sample('kstest', x))
+  const s = sortedCopy(sample('kstest', x, 1, true))
   const n = s.length
   const F = cdfValues(cdf, s)
   let dplus = Number.NEGATIVE_INFINITY
@@ -496,7 +498,7 @@ export function lilliefors(x: TensorLike, options: LillieforsOptions = {}): Test
  * ```
  */
 export function cramervonmises(x: TensorLike, cdf: CdfLike): TestResult {
-  const s = sortedCopy(sample('cramervonmises', x, 2))
+  const s = sortedCopy(sample('cramervonmises', x, 2, true))
   const n = s.length
   const F = cdfValues(cdf, s)
   let w = 1 / (12 * n)

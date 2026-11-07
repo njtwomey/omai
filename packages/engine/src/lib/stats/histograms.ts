@@ -229,7 +229,7 @@ export interface Histogram {
  * ```
  */
 export function histogram(x: TensorLike, options: HistogramOptions & { readonly density?: boolean } = {}): Histogram {
-  const a = sample('histogram', x, 0)
+  const a = sample('histogram', x, 0, true)
   const w = options.weights === undefined ? undefined : sample('histogram', options.weights)
   if (w !== undefined && w.length !== a.length) throw new MdmlError('shape', 'histogram: weights must match the data')
   const { edges, uniform } = edgesOf(a, options)

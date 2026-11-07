@@ -23,6 +23,7 @@ function order(x: ArrayLike<number>): number[] {
  * @param x - The values (no NaN).
  * @param method - Tie handling (default `'average'`).
  * @returns The ranks.
+ * @throws MdmlError with code `value` for NaN entries.
  * @example
  * ```ts
  * import { ranksOf } from 'mdml-engine/stats'
@@ -32,6 +33,8 @@ function order(x: ArrayLike<number>): number[] {
  */
 export function ranksOf(x: ArrayLike<number>, method: RankMethod = 'average'): Float64Array {
   const n = x.length
+  for (let k = 0; k < n; k++)
+    if (Number.isNaN(x[k])) throw new MdmlError('value', 'ranksOf: NaN values cannot be ranked')
   const idx = order(x)
   const ranks = new Float64Array(n)
   let dense = 0
@@ -70,8 +73,7 @@ export function ranksOf(x: ArrayLike<number>, method: RankMethod = 'average'): F
  * ```
  */
 export function rankdata(x: TensorLike, options: { readonly method?: RankMethod } = {}): Tensor {
-  const a = sample('rankdata', x, 0)
-  for (const v of a) if (Number.isNaN(v)) throw new MdmlError('value', 'rankdata: NaN values cannot be ranked')
+  const a = sample('rankdata', x, 0, true)
   return vec(ranksOf(a, options.method ?? 'average'))
 }
 
