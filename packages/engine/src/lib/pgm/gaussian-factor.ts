@@ -5,7 +5,7 @@
  * node.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { LOG_2PI, MdmlError } from '../base/index.ts'
 import {
   checkSquare,
   dotVec,
@@ -43,8 +43,6 @@ export interface GaussianMoments {
   /** log of the total mass of the factor it came from (0 for a normalised density). */
   readonly logMass: number
 }
-
-const LOG_2PI = Math.log(2 * Math.PI)
 
 /**
  * A Gaussian factor from its canonical parameters.

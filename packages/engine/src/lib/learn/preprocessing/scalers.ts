@@ -15,7 +15,7 @@ import { handleZeros, inputNames, keyFor, mapColumns, mapEntries, present } from
 import { defineEstimator, type Estimator, type Fitted } from '../estimator.ts'
 import { columnOf, fromView, type MatrixView, matrixView, sampleWeightsOf, takeRows } from '../validation.ts'
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** The verbs every scaler offers. */
 export interface ScalerVerbs {

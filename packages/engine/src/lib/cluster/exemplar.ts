@@ -24,7 +24,7 @@ export interface AffinityPropagationState {
   readonly labels: number[]
 }
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 /** 100 times the smallest normal double, sklearn's additive noise scale. */
 const TINY_100 = 100 * 2.2250738585072014e-308
 

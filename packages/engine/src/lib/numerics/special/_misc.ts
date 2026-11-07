@@ -1,9 +1,10 @@
 // Sine and cosine integrals, Fresnel integrals and Dawson's integral (series for small arguments, continued fractions
 // or asymptotic series for large ones, after Numerical Recipes cisi and frenel); Owen's T function by Gauss-Legendre
 // quadrature; the Kolmogorov and Smirnov distributions of the Kolmogorov-Smirnov statistic.
+
+import { EULER_GAMMA } from '../../base/index.ts'
 import { EPS, lbinom, ndtr, SQRT_2PI } from './_kernels.ts'
 
-const EULER = 0.5772156649015329
 const FPMIN = 1e-300
 
 interface Complex {
@@ -68,7 +69,7 @@ export function sici(x: number): { si: number; ci: number } {
       odd = !odd
     }
     si = sums
-    ci = sumc + Math.log(t) + EULER
+    ci = sumc + Math.log(t) + EULER_GAMMA
   }
   return { si: x < 0 ? -si : si, ci }
 }

@@ -8,7 +8,7 @@
  */
 
 import { hessian } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { LOG_SQRT_2PI, MdmlError } from '../base/index.ts'
 import { logNdtr } from '../numerics/special/index.ts'
 import { loggedSolver, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
@@ -97,8 +97,6 @@ export interface AftProblem extends SmoothProblem {
   /** The observed information (minus the Hessian of the log-likelihood), row-major. */
   information(theta: ArrayLike<number>): Float64Array
 }
-
-const LOG_SQRT_2PI = 0.5 * Math.log(2 * Math.PI)
 
 /** Least squares of log time on the covariates (all treated as events): the starting point of the fit. */
 function startingPoint(data: AftData, intercept: boolean, scale: boolean): number[] {

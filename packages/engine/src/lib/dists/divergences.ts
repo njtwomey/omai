@@ -6,7 +6,7 @@
  * @index function KL and other divergences between distributions.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { EULER_GAMMA, MdmlError } from '../base/index.ts'
 import { cholesky, funmSymmetric, solveTriangular } from '../numerics/linalg/index.ts'
 import { digamma, gamma as gammaFn, ive, lbeta, lgamma, logIv, logSigmoid } from '../numerics/special/index.ts'
 import type { Key } from '../random/index.ts'
@@ -45,7 +45,6 @@ import type { Independent, Transformed } from './compose/structure.ts'
 import { type Distribution, sumRightmost } from './distribution.ts'
 import { exponentialFamily } from './exponential-family.ts'
 
-const EULER = 0.5772156649015329
 const P = (d: Distribution, name: string): Value => {
   const v = d.params[name]
   if (v === undefined) throw new MdmlError('value', `divergences: ${d.name} has no parameter ${name}`)
@@ -158,7 +157,7 @@ const RULES: Readonly<Record<string, Rule>> = {
     const ct3 = div(P(p, 'loc'), P(q, 'scale'))
     const t1 = add(sub(neg(log(ct1)), ct2), ct3)
     const t3 = exp(sub(add(ct2, lgamma(add(ct1, 1))), ct3))
-    return sub(add(add(t1, mul(ct1, EULER)), t3), 1 + EULER)
+    return sub(add(add(t1, mul(ct1, EULER_GAMMA)), t3), 1 + EULER_GAMMA)
   },
   'uniform/uniform': (p, q) => {
     const [ap, bp, aq, bq] = [P(p, 'low'), P(p, 'high'), P(q, 'low'), P(q, 'high')]
@@ -175,7 +174,7 @@ const RULES: Readonly<Record<string, Rule>> = {
     const [kp, lp, kq, lq] = [P(p, 'concentration'), P(p, 'scale'), P(q, 'concentration'), P(q, 'scale')]
     // log(kp / lp^kp) - log(kq / lq^kq) + (kp - kq)(log lp - gamma / kp) + (lp / lq)^kq Gamma(kq / kp + 1) - 1.
     const first = sub(sub(log(kp), mul(kp, log(lp))), sub(log(kq), mul(kq, log(lq))))
-    const second = mul(sub(kp, kq), sub(log(lp), div(EULER, kp)))
+    const second = mul(sub(kp, kq), sub(log(lp), div(EULER_GAMMA, kp)))
     const third = mul(pow(div(lp, lq), kq), gammaFn(add(div(kq, kp), 1)))
     return sub(add(add(first, second), third), 1)
   },

@@ -8,7 +8,7 @@
  * closure for one-off use.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { LOG_2PI, MdmlError } from '../../base/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 
@@ -87,7 +87,6 @@ export interface SegmentOps {
   update(run: RunStats, y: number, at: RunInput): RunStats
 }
 
-const LOG_2PI = Math.log(2 * Math.PI)
 const lg = (x: number): number => item(lgamma(x))
 
 function studentLog(y: number, nu: number, loc: number, scale2: number): number {

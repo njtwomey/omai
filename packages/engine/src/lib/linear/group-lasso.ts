@@ -120,7 +120,7 @@ export type GroupLassoState = {
   readonly sweeps: number
 }
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 function maxEigenvalue(gram: ArrayLike<number>, n: number): number {
   if (n === 1) return gram[0] ?? 0

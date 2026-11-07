@@ -67,7 +67,7 @@ export type LarsPath = {
   readonly events: LarsEvent[]
 }
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 const TINY = 1e-30
 
 /**

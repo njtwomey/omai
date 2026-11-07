@@ -2,7 +2,7 @@
 // and 7.5.2), on single row-major matrices.
 import { MdmlError } from '../../base/index.ts'
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** A Householder vector v (unit norm) with (I - 2 v v^T) x = -sign(x0) |x| e1, or null when x needs no reflection. */
 function reflector(x: readonly number[]): number[] | null {

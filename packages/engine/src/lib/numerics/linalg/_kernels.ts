@@ -3,7 +3,7 @@
 import { MdmlError } from '../../base/index.ts'
 import { dnrm2 } from './blas.ts'
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** (A + A^T) / 2 of an n x n matrix: the factorisations of symmetric matrices read A through this. */
 function symmetrised(a: Float64Array, n: number): Float64Array {

@@ -1,13 +1,13 @@
 // Bessel functions of real order: Temme's series for small arguments, Steed's continued fractions otherwise
 // (Numerical Recipes bessjy and bessik), and the large-argument asymptotic expansions. Every routine returns the
 // order-v value together with the order-(v+1) value, which the derivative rules need.
+
+import { EULER_GAMMA } from '../../base/index.ts'
 import { cospi, EPS, gamma, hurwitzZeta, sinpi } from './_kernels.ts'
 
 const MAXIT = 1_000_000
 const FPMIN = 1e-300
 const XMIN = 2
-const EULER = 0.5772156649015329
-
 // zeta(k) for odd k, for the odd part of lgamma(1 + mu) used in gam1 (computed on first use).
 let oddZeta: number[] | undefined
 
@@ -20,7 +20,7 @@ function temmeGammas(mu: number): { gam1: number; gam2: number; gampl: number; g
   const gampl = 1 / gamma(1 + mu)
   const gammi = 1 / gamma(1 - mu)
   oddZeta ??= Array.from({ length: 60 }, (_, k) => (k >= 3 && k % 2 === 1 ? hurwitzZeta(k, 1) : 0))
-  let odd = EULER * mu
+  let odd = EULER_GAMMA * mu
   let pow = mu
   for (let k = 3; k < 60; k += 2) {
     pow *= mu * mu
@@ -29,7 +29,7 @@ function temmeGammas(mu: number): { gam1: number; gam2: number; gampl: number; g
     if (Math.abs(term) <= EPS * Math.abs(odd)) break
   }
   // gammi / gampl = exp(lgamma(1+mu) - lgamma(1-mu)) = exp(-2 odd).
-  const ratio = mu === 0 ? -EULER : (gampl * Math.expm1(-2 * odd)) / (2 * mu)
+  const ratio = mu === 0 ? -EULER_GAMMA : (gampl * Math.expm1(-2 * odd)) / (2 * mu)
   return { gam1: ratio, gam2: (gammi + gampl) / 2, gampl, gammi }
 }
 

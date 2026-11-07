@@ -4,6 +4,7 @@
  * piecewise-linear functions and additive (GAM) data with known components.
  */
 
+import { EULER_GAMMA } from '../base/index.ts'
 import type { DatasetGenerator, Generated, Knobs, RegressionData, Truth } from '../data/index.ts'
 import { xy } from '../data/index.ts'
 import { type Distribution, gumbel, laplace, normal as normalDist, studentT } from '../dists/index.ts'
@@ -51,7 +52,7 @@ function noiseDistribution(name: string): Distribution {
       return studentT(3, 0, 1 / Math.sqrt(3))
     case 'gumbel':
       // Centred and scaled to unit variance: mean euler * beta, variance (pi beta)^2 / 6.
-      return gumbel(-0.5772156649015329 * (Math.sqrt(6) / Math.PI), Math.sqrt(6) / Math.PI)
+      return gumbel(-EULER_GAMMA * (Math.sqrt(6) / Math.PI), Math.sqrt(6) / Math.PI)
     default:
       return normalDist(0, 1)
   }

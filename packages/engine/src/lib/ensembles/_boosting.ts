@@ -109,7 +109,7 @@ export interface BoostingState {
 }
 
 const expit = (z: number): number => (z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z)))
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** The probabilities of raw predictions `[m * k]`: expit for one output (binary), softmax otherwise. */
 function probabilities(f: ArrayLike<number>, m: number, k: number, classes: number, loss: string): Float64Array {

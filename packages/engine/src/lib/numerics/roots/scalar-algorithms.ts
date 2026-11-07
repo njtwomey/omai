@@ -22,7 +22,7 @@ import {
   tensor,
 } from '../../trace/index.ts'
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** One evaluation of a root finder, for convergence figures. */
 export interface RootStep {

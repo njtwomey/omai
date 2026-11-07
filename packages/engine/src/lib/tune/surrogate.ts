@@ -4,7 +4,7 @@
  * observations as Optuna's `GPSampler` does, with the posterior mean and standard deviation at new points.
  */
 
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { LOG_SQRT_2PI, MdmlError, meanOf, varianceOf } from '../base/index.ts'
 import { maternKernel } from '../kernels/index.ts'
 import { choleskyJitter, choSolve, solveTriangular } from '../numerics/linalg/index.ts'
 import { lbfgsb } from '../optim/index.ts'
@@ -34,7 +34,6 @@ import {
 } from '../tensor/index.ts'
 
 const SQRT_HALF = Math.SQRT1_2
-const LOG_SQRT_2PI = 0.5 * Math.log(2 * Math.PI)
 const MIN_NOISE = 1e-6
 
 /** Hyperparameters of the surrogate's kernel s Matern-5/2(r), r^2 = sum_j d_j^2 / l_j^2, plus observation noise. */

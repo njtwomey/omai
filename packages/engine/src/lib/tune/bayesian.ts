@@ -33,8 +33,6 @@ import { lossOf, type StudyDirection } from './study.ts'
 import { fitGpSurrogate, type GpSurrogate } from './surrogate.ts'
 
 const SQRT_HALF = Math.SQRT1_2
-const LOG_SQRT_2PI = 0.5 * Math.log(2 * Math.PI)
-
 // ---------------------------------------------------------------------------------------------------------------
 // Acquisition functions (minimisation: smaller objective values are better)
 

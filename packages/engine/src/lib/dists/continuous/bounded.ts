@@ -4,6 +4,7 @@
  * scipy.stats and torch.distributions.
  */
 
+import { EULER_GAMMA } from '../../base/index.ts'
 import {
   betainc,
   betaincinv,
@@ -47,8 +48,6 @@ import {
 import { concreteTwin, integrate, numericMode } from '../_numeric.ts'
 import { gammaSample, uniformOpen } from '../_sampling.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
-
-const EULER = 0.5772156649015329
 
 /**
  * The continuous uniform distribution on [low, high] (scipy.stats.uniform with loc = low, scale = high - low).
@@ -195,7 +194,7 @@ export function kumaraswamy(a: TensorLike, b: TensorLike): Distribution {
       )
     },
     entropy: () => {
-      const harmonic = add(digamma(add(q, 1)), EULER)
+      const harmonic = add(digamma(add(q, 1)), EULER_GAMMA)
       return bb(sub(add(sub(1, div(1, q)), mul(sub(1, div(1, p)), harmonic)), log(mul(p, q))))
     },
   })

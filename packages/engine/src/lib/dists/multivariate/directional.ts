@@ -4,7 +4,7 @@
  * with a simple reparameterised sampler.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { LOG_2PI, MdmlError, maxOf } from '../../base/index.ts'
 import { digamma, ive, lgamma, logIv } from '../../numerics/special/index.ts'
 import {
   beta as betaDraw,
@@ -47,8 +47,6 @@ import { concreteTwin, numericPpf } from '../_numeric.ts'
 import { discreteSample, elementwiseSample, implicitReparam } from '../_sampling.ts'
 import { beta } from '../continuous/bounded.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
-
-const LOG_2PI = Math.log(2 * Math.PI)
 
 /**
  * The von Mises distribution on the circle (scipy.stats.vonmises, torch.distributions.VonMises): density

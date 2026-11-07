@@ -4,6 +4,7 @@
  * torch.distributions.
  */
 
+import { LOG_SQRT_2PI } from '../../base/index.ts'
 import {
   erf,
   erfc,
@@ -45,7 +46,6 @@ import { concreteTwin, numericEntropy, numericMode, numericPpf, tailProbability 
 import { uniformOpen } from '../_sampling.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
 
-const LOG_SQRT_2PI = 0.5 * Math.log(2 * Math.PI)
 const noise = (key: Key, shape: readonly number[], batch: readonly number[]): Value =>
   normalNoise(key, [...shape, ...batch])
 

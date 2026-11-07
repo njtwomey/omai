@@ -49,7 +49,7 @@ import { negativeBinomial as negativeBinomialDistribution, poisson as poissonDis
 import { type Distribution, defineDistribution, unavailable, validateParams } from '../distribution.ts'
 import { identity, inverse, inverseSquared, type Link, logit, log as logLink } from './links.ts'
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /**
  * An exponential dispersion family for generalised linear models (statsmodels.genmod.families): the variance function

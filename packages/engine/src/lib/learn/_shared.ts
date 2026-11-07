@@ -8,7 +8,7 @@ import type { FitOptions } from './estimator.ts'
 import { fitRunOptions } from './explained.ts'
 import type { MatrixView } from './validation.ts'
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** Default input feature names `x0, x1, ...` (sklearn's), or the given ones checked for length. */
 export function inputNames(d: number, input: readonly string[] | undefined, who: string): string[] {
