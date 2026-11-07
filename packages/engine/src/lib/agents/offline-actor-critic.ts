@@ -32,6 +32,7 @@ import {
 import type { RunOptions } from '../trace/index.ts'
 import { gradientStepWithTerms, optimiserOf, rowsTensor, type Spaces, vectorTensor } from './_common.ts'
 import {
+  clipToBox,
   type Net,
   network,
   type OfflineBatch,
@@ -225,19 +226,15 @@ export function iqlLearner<O, A>(env: Spaces, options: IqlOptions = {}): Offline
     }),
     greedy: (s, o) => {
       const out = toFlat(forward(s, o))
-      return (sp.discrete ? argmaxOf(out) : clipBox(sp, out)) as A
+      return (sp.discrete ? argmaxOf(out) : clipToBox(sp, out)) as A
     },
     act: (s, o, k) => {
       const out = forward(s, o)
       if (sp.discrete) return toFlat(categoricalPolicy(out).sample(k))[0] as A
       const head = gaussianPolicy(out, (s.params as P).logStd as Value)
-      return clipBox(sp, toFlat(head.sample(k))) as A
+      return clipToBox(sp, toFlat(head.sample(k))) as A
     },
   }
-}
-
-function clipBox(sp: OfflineSpaces, a: readonly number[]): number[] {
-  return a.map((x, i) => Math.min(sp.high[i] ?? x, Math.max(sp.low[i] ?? x, x)))
 }
 
 /**
@@ -451,7 +448,7 @@ export function td3bcLearner<O>(
       return next
     },
     stats: (s) => ({ criticLoss: s.criticLoss, actorLoss: s.actorLoss, lambda: s.lambda, qValue: s.qValue }),
-    greedy: (s, o) => clipBox(sp, toFlat(pi(s.actor, rowsTensor([norm(s)(sp.features(o))], sp.obsSize)))),
+    greedy: (s, o) => clipToBox(sp, toFlat(pi(s.actor, rowsTensor([norm(s)(sp.features(o))], sp.obsSize)))),
   }
 }
 

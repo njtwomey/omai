@@ -43,7 +43,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../trace/index.ts'
-import { cSvcDual, type Dual, nuSvcDual, submatrix } from './_dual.ts'
+import { cSvcDual, type Dual, nuSvcDual, submatrix, toLive } from './_dual.ts'
 import {
   checkSolver,
   type SvcLoss,
@@ -439,11 +439,6 @@ function prepare(
   }
   return { layout, K, C, dualOf }
 }
-
-const toLive = (e: { readonly coef: Float64Array; readonly rho: number }): SvcState['live'] => ({
-  coef: Array.from(e.coef),
-  rho: e.rho,
-})
 
 /**
  * Support vector classification (scikit-learn `SVC`, libsvm's C-SVC; `form: 'nu'` is `NuSVC`). The dual is solved by

@@ -6,7 +6,7 @@
  */
 
 import { argmaxOf, MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
-import { solveToeplitz } from '../numerics/linalg/index.ts'
+import { ddot, solveToeplitz } from '../numerics/linalg/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
 import { dtw, firwin, hann, resamplePoly, stft } from '../signal/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -81,12 +81,6 @@ const centred = (x: Float64Array): Float64Array => {
   return Float64Array.from(x, (v) => v - m)
 }
 
-const dot = (a: ArrayLike<number>, b: ArrayLike<number>): number => {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
-
 /** The mean of a per-signal value over a batch `[T]` or `[B, T]`. */
 function batched(
   name: string,
@@ -122,7 +116,7 @@ export const signalNoiseRatio: MetricFunction<[TensorLike, TensorLike, { readonl
         const t = options.zeroMean === true ? centred(t0) : t0
         const p = options.zeroMean === true ? centred(p0) : p0
         const noise = Float64Array.from(t, (v, i) => v - (p[i] ?? 0))
-        return 10 * Math.log10((dot(t, t) + EPS) / (dot(noise, noise) + EPS))
+        return 10 * Math.log10((ddot(t, t) + EPS) / (ddot(noise, noise) + EPS))
       }),
   )
 
@@ -215,7 +209,7 @@ export const signalDistortionRatio: MetricFunction<[TensorLike, TensorLike, SdrO
     batched('signalDistortionRatio', target, preds, (t0, p0) => {
       const length = options.filterLength ?? 512
       const normalise = (x: Float64Array): Float64Array => {
-        const n = Math.max(Math.sqrt(dot(x, x)), 1e-6)
+        const n = Math.max(Math.sqrt(ddot(x, x)), 1e-6)
         return Float64Array.from(x, (v) => v / n)
       }
       const t = normalise(options.zeroMean === true ? centred(t0) : t0)
@@ -234,7 +228,7 @@ export const signalDistortionRatio: MetricFunction<[TensorLike, TensorLike, SdrO
       }
       if (options.loadDiag !== undefined) r[0] = (r[0] ?? 0) + options.loadDiag
       const sol = toFlat(solveToeplitz(r, undefined, b))
-      const coh = dot(b, sol)
+      const coh = ddot(b, sol)
       return 10 * Math.log10(coh / (1 - coh))
     }),
 )
@@ -242,10 +236,10 @@ export const signalDistortionRatio: MetricFunction<[TensorLike, TensorLike, SdrO
 function siSdr(t0: Float64Array, p0: Float64Array, zeroMean: boolean): number {
   const t = zeroMean ? centred(t0) : t0
   const p = zeroMean ? centred(p0) : p0
-  const alpha = (dot(p, t) + EPS) / (dot(t, t) + EPS)
+  const alpha = (ddot(p, t) + EPS) / (ddot(t, t) + EPS)
   const scaled = Float64Array.from(t, (v) => alpha * v)
   const noise = Float64Array.from(scaled, (v, i) => v - (p[i] ?? 0))
-  return 10 * Math.log10((dot(scaled, scaled) + EPS) / (dot(noise, noise) + EPS))
+  return 10 * Math.log10((ddot(scaled, scaled) + EPS) / (ddot(noise, noise) + EPS))
 }
 
 /**
@@ -403,7 +397,7 @@ function removeSilentFrames(x: Float64Array, y: Float64Array): [Float64Array, Fl
 /** One-third octave band envelopes sqrt(OBM |X|^2): bands by frames. */
 function bandEnvelopes(x: Float64Array, obm: readonly Float64Array[]): Float64Array[] {
   const powers = framePowers(x, stoiWindow(), STOI_NFFT, STOI_FRAME / 2, true)
-  return obm.map((band) => Float64Array.from(powers, (pw) => Math.sqrt(dot(band, pw))))
+  return obm.map((band) => Float64Array.from(powers, (pw) => Math.sqrt(ddot(band, pw))))
 }
 
 const meanOf = (x: ArrayLike<number>): number => {
@@ -411,7 +405,7 @@ const meanOf = (x: ArrayLike<number>): number => {
   for (let i = 0; i < x.length; i++) s += x[i] ?? 0
   return s / x.length
 }
-const norm = (x: ArrayLike<number>): number => Math.sqrt(dot(x, x))
+const norm = (x: ArrayLike<number>): number => Math.sqrt(ddot(x, x))
 
 /**
  * The short-time objective intelligibility (Taal et al., 2011) and its extended form ESTOI (Jensen and Taal, 2016), as
@@ -477,7 +471,7 @@ export const shortTimeObjectiveIntelligibility: MetricFunction<
         }
         const xn = normalise(xs)
         const yn = normalise(ys)
-        for (const [b, r] of xn.entries()) total += dot(r, yn[b] ?? []) / STOI_N
+        for (const [b, r] of xn.entries()) total += ddot(r, yn[b] ?? []) / STOI_N
       } else {
         for (const [b, xr] of xs.entries()) {
           const yr = ys[b] ?? new Float64Array(STOI_N)
@@ -487,7 +481,7 @@ export const shortTimeObjectiveIntelligibility: MetricFunction<
           const xm = meanOf(xr)
           const yc = Float64Array.from(yp, (v) => v - ym)
           const xc = Float64Array.from(xr, (v) => v - xm)
-          total += dot(yc, xc) / ((norm(yc) + EPS) * (norm(xc) + EPS))
+          total += ddot(yc, xc) / ((norm(yc) + EPS) * (norm(xc) + EPS))
         }
       }
     }

@@ -8,7 +8,7 @@
  * without the steps before it, and `streamAlgorithm` runs the same stream as an `Algorithm` that serialises.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, normal, split, uniform } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
@@ -176,14 +176,6 @@ const blend = (base: Float64Array, fresh: Float64Array, s: number): Float64Array
 
 const lerp = (a: Float64Array, b: Float64Array, m: number): Float64Array =>
   Float64Array.from(a, (x, i) => (1 - m) * x + m * (b[i] ?? 0))
-
-const argmax = (xs: ArrayLike<number>): number => {
-  let best = 0
-  for (let i = 1; i < xs.length; i++)
-    if ((xs[i] ?? Number.NEGATIVE_INFINITY) > (xs[best] ?? Number.NEGATIVE_INFINITY)) best = i
-  return best
-}
-
 /** The class means of a label-shift classification stream: fixed, well apart, the same in every concept. */
 const SEPARATION = 2
 
@@ -344,9 +336,9 @@ export function stream(k: Key, options: StreamOptions = {}): DataStream {
         for (let j = 0; j < dim; j++) d += ((x[j] ?? 0) - (classMeans[c * dim + j] ?? 0)) ** 2
         return Math.log(p.priors[c] ?? 1e-300) - d / 2
       })
-      return argmax(scores)
+      return argmaxOf(scores)
     }
-    return argmax(
+    return argmaxOf(
       Array.from({ length: classes }, (_, c) => {
         let s = 0
         for (let j = 0; j < dim; j++) s += (p.weights[c * dim + j] ?? 0) * (x[j] ?? 0)

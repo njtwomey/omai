@@ -32,7 +32,7 @@ The functional layer library, torch.nn.functional style and part of `mdml-engine
 
 Kolmogorov-Arnold networks, part of `mdml-engine/nn`: layers whose edges carry learnable univariate functions (splines, or radial, Chebyshev and Fourier bases) and whose nodes sum, networks of them, and the machinery of the paper around them: refitting the grid, sparsity regularisation, pruning, and symbolic regression on the edges.
 
-- module `KAN`: Kolmogorov-Arnold network of learnable spline edges. `src/lib/nn/kan/kan.ts:131` `mdml-engine/nn`
+- module `KAN`: Kolmogorov-Arnold network of learnable spline edges. `src/lib/nn/kan/kan.ts:124` `mdml-engine/nn`
 
 ## nn/module
 

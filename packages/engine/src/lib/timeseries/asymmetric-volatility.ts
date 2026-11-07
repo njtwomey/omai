@@ -17,6 +17,7 @@ import { item, toFlat } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../trace/index.ts'
 import { type LikelihoodState, likelihoodSlot } from './_ml.ts'
 import { asSeries } from './_series.ts'
+import { backcastOf, studentConstant } from './_volatility.ts'
 import type { GarchFit, GarchParameters, GarchSpec } from './volatility.ts'
 
 /** Which asymmetric model. */
@@ -77,18 +78,6 @@ function expectedAbs(student: boolean, nu: number): number {
   )
 }
 
-function backcastOf(eps: ArrayLike<number>): number {
-  const tau = Math.min(75, eps.length)
-  let total = 0
-  let s = 0
-  for (let i = 0; i < tau; i++) {
-    const w = 0.94 ** i
-    total += w
-    s += w * (eps[i] ?? 0) ** 2
-  }
-  return s / total
-}
-
 /**
  * The conditional variances of residuals under an EGARCH or APARCH model. The pre-sample log variance (EGARCH) or
  * variance power (APARCH) is the `arch` backcast, and the pre-sample shocks are at their expectation.
@@ -146,10 +135,6 @@ export function asymmetricVariance(
     out[t] = (sd[t] ?? 0) ** (2 / delta)
   }
   return out
-}
-
-function studentConstant(nu: number): number {
-  return item(lgamma((nu + 1) / 2)) - item(lgamma(nu / 2)) - 0.5 * Math.log(Math.PI * (nu - 2))
 }
 
 /**

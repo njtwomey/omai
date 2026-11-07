@@ -4,7 +4,7 @@
  * densities cost O(d r^2) and the matrix normal distribution with separate row and column covariances.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { LOG_2PI, MdmlError } from '../../base/index.ts'
 import { cholesky, choSolve, inv, solve, solveTriangular } from '../../numerics/linalg/index.ts'
 import { foldIn, normal as normalNoise } from '../../random/index.ts'
 import {
@@ -30,9 +30,6 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { broadcastBatch, type Distribution, defineDistribution } from '../distribution.ts'
-
-const LOG_2PI = Math.log(2 * Math.PI)
-
 /** How a multivariate normal's covariance is given. */
 export type CovarianceParams =
   | { readonly covariance: TensorLike }

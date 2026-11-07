@@ -9,6 +9,7 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
+import { ddot } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { add, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -50,12 +51,6 @@ export interface ExpertsRule<S> {
   ): RoundPlay
   /** Fold in the round's losses. */
   update(state: S, round: { readonly t: number; readonly losses: ArrayLike<number> }, key: Key): S
-}
-
-const dot = (p: ArrayLike<number>, l: ArrayLike<number>): number => {
-  let s = 0
-  for (let i = 0; i < p.length; i++) s += (p[i] ?? 0) * (l[i] ?? 0)
-  return s
 }
 
 const normalise = (w: Float64Array): Float64Array => {
@@ -172,7 +167,7 @@ export function hedgeRule(eta: number): ExpertsRule<WeightState> {
     play: (s, round) => {
       const lo = Math.min(...s.cumulative)
       const p = normalise(Float64Array.from(s.cumulative, (c) => Math.exp(-eta * (c - lo))))
-      return { probabilities: p, loss: dot(p, round.losses) }
+      return { probabilities: p, loss: ddot(p, round.losses) }
     },
     update: (s, round) => ({ ...s, cumulative: addLoss(s.cumulative, round.losses) }),
   }
@@ -216,7 +211,7 @@ export function weightedMajority(options: WeightedMajorityOptions = {}): Experts
         throw new MdmlError('value', 'weightedMajority: the problem needs predictions and outcomes')
       // The randomised rule draws an expert in proportion to the weights; the loss recorded is its expectation p . l, which
       // is what the bound is on and keeps the regret curve free of sampling noise.
-      if (randomised) return { probabilities: p, loss: dot(p, round.losses) }
+      if (randomised) return { probabilities: p, loss: ddot(p, round.losses) }
       let vote = 0
       for (let i = 0; i < p.length; i++) vote += (p[i] ?? 0) * (round.predictions[i] ?? 0)
       const prediction = vote >= 0.5 ? 1 : 0
@@ -299,7 +294,7 @@ export function fixedShare(options: ShareOptions): ExpertsRule<WeightState> {
     init: (n) => initWeights(n),
     play: (s, round) => {
       const p = Float64Array.from(s.weights)
-      return { probabilities: p, loss: dot(p, round.losses) }
+      return { probabilities: p, loss: ddot(p, round.losses) }
     },
     update: (s, round) => {
       const n = s.weights.length
@@ -337,7 +332,7 @@ export function variableShare(options: ShareOptions): ExpertsRule<WeightState> {
     init: (n) => initWeights(n),
     play: (s, round) => {
       const p = Float64Array.from(s.weights)
-      return { probabilities: p, loss: dot(p, round.losses) }
+      return { probabilities: p, loss: ddot(p, round.losses) }
     },
     update: (s, round) => {
       const n = s.weights.length
@@ -648,7 +643,7 @@ export function exp4Algorithm(
         estimated,
         armProbabilities: Array.from(p),
         arm,
-        expectedLoss: s.expectedLoss + dot(p, row),
+        expectedLoss: s.expectedLoss + ddot(p, row),
         realisedLoss: s.realisedLoss + lossArm,
       }
     },
@@ -658,7 +653,7 @@ export function exp4Algorithm(
       let best = Number.POSITIVE_INFINITY
       for (let i = 0; i < n; i++) {
         let total = 0
-        for (let t = 0; t < s.t; t++) total += dot(adviceAt(t)[i] ?? [], losses[t] ?? [])
+        for (let t = 0; t < s.t; t++) total += ddot(adviceAt(t)[i] ?? [], losses[t] ?? [])
         best = Math.min(best, total)
       }
       return {

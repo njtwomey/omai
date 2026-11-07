@@ -6,7 +6,7 @@
  */
 
 import { jacobian } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { LOG_2PI, MdmlError } from '../../base/index.ts'
 import { type Distribution, multivariateNormal, normal } from '../../dists/index.ts'
 import { kalmanUpdate, rtsStep } from '../../dynamics/filtering/index.ts'
 import { cholesky, slogdet, solve } from '../../numerics/linalg/index.ts'
@@ -43,7 +43,6 @@ import { definePosterior, type Posterior } from '../posterior.ts'
 import type { Message, Model } from '../primitives.ts'
 import { type EngineRunOptions, feasibility, type InferenceEngine } from './engine.ts'
 
-const LOG_2PI = Math.log(2 * Math.PI)
 const product = (shape: readonly number[]): number => shape.reduce((a, b) => a * b, 1)
 
 /** One site's coordinates in the stacked vector of a linear-Gaussian program. */

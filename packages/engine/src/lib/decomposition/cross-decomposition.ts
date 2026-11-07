@@ -17,6 +17,7 @@ import {
   requireTargets,
 } from '../learn/index.ts'
 import { r2Score } from '../metrics/index.ts'
+import { ddot } from '../numerics/linalg/index.ts'
 import { dict, int } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -26,9 +27,8 @@ import { mm, pinvRows, thinSvd, tr } from './_linear.ts'
 export type PlsVariant = 'regression' | 'canonical' | 'cca' | 'svd'
 
 const EPS = Number.EPSILON
-const dot = (a: readonly number[], b: readonly number[]): number => a.reduce((s, v, i) => s + v * (b[i] ?? 0), 0)
 const column = (m: readonly (readonly number[])[], j: number): number[] => m.map((r) => r[j] ?? 0)
-const matVec = (m: readonly (readonly number[])[], v: readonly number[]): number[] => m.map((r) => dot(r, v))
+const matVec = (m: readonly (readonly number[])[], v: readonly number[]): number[] => m.map((r) => ddot(r, v))
 const tMatVec = (m: readonly (readonly number[])[], v: readonly number[]): number[] =>
   (m[0] ?? []).map((_, j) => m.reduce((s, r, i) => s + (r[j] ?? 0) * (v[i] ?? 0), 0))
 
@@ -66,16 +66,16 @@ function powerMethod(
     xw =
       xPinv !== undefined
         ? matVec(xPinv, yScore)
-        : tMatVec(x, yScore).map((v) => v / dot(yScore as number[], yScore as number[]))
-    const xn = Math.sqrt(dot(xw, xw)) + EPS
+        : tMatVec(x, yScore).map((v) => v / ddot(yScore as number[], yScore as number[]))
+    const xn = Math.sqrt(ddot(xw, xw)) + EPS
     xw = xw.map((v) => v / xn)
     const xScore = matVec(x, xw)
-    yw = yPinv !== undefined ? matVec(yPinv, xScore) : tMatVec(y, xScore).map((v) => v / dot(xScore, xScore))
+    yw = yPinv !== undefined ? matVec(yPinv, xScore) : tMatVec(y, xScore).map((v) => v / ddot(xScore, xScore))
     if (normYWeights) {
-      const yn = Math.sqrt(dot(yw, yw)) + EPS
+      const yn = Math.sqrt(ddot(yw, yw)) + EPS
       yw = yw.map((v) => v / yn)
     }
-    const yss = dot(yw, yw) + EPS
+    const yss = ddot(yw, yw) + EPS
     yScore = matVec(y, yw).map((v) => v / yss)
     const diff =
       old === undefined ? Number.POSITIVE_INFINITY : xw.reduce((s, v, i) => s + (v - (old?.[i] ?? 0)) ** 2, 0)
@@ -193,17 +193,17 @@ export function plsAlgorithm(
       xw = xw.map((v) => v * sign)
       yw = yw.map((v) => v * sign)
       const xs = matVec(s.xResidual, xw)
-      const yss = normY ? 1 : dot(yw, yw)
+      const yss = normY ? 1 : ddot(yw, yw)
       const ys = matVec(yk, yw).map((v) => v / yss)
-      const xl = tMatVec(s.xResidual, xs).map((v) => v / dot(xs, xs))
+      const xl = tMatVec(s.xResidual, xs).map((v) => v / ddot(xs, xs))
       const xResidual = s.xResidual.map((r, i) => r.map((v, f) => v - (xs[i] ?? 0) * (xl[f] ?? 0)))
       const yl =
         variant === 'regression'
-          ? tMatVec(yk, xs).map((v) => v / dot(xs, xs))
-          : tMatVec(yk, ys).map((v) => v / dot(ys, ys))
+          ? tMatVec(yk, xs).map((v) => v / ddot(xs, xs))
+          : tMatVec(yk, ys).map((v) => v / ddot(ys, ys))
       const by = variant === 'regression' ? xs : ys
       const yResidual = yk.map((r, i) => r.map((v, t) => v - (by[i] ?? 0) * (yl[t] ?? 0)))
-      const correlation = dot(xs, ys) / (Math.sqrt(dot(xs, xs) * dot(ys, ys)) || 1)
+      const correlation = ddot(xs, ys) / (Math.sqrt(ddot(xs, xs) * ddot(ys, ys)) || 1)
       return {
         xResidual,
         yResidual,
@@ -303,7 +303,7 @@ function plsVerbs(p: PlsParams): PlsVerbs {
         (mu, t) =>
           (p.coef[t] === undefined
             ? 0
-            : dot(
+            : ddot(
                 p.coef[t],
                 r.map((v, f) => v - (p.xMean[f] ?? 0)),
               )) + mu,

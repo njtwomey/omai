@@ -13,6 +13,7 @@ import {
   type Fitted,
   type IterativeEstimator,
   type IterativeFitted,
+  isMatrixView,
   iterative,
   type MatrixView,
   matrixView,
@@ -39,12 +40,6 @@ export interface CStepState {
   readonly covariance: number[][]
   readonly logdet: number
   readonly previous: number
-}
-
-function isMatrixView(x: TensorLike | MatrixView): x is MatrixView {
-  if (typeof x !== 'object' || x === null) return false
-  const v = x as Partial<MatrixView>
-  return v.data instanceof Float64Array && typeof v.n === 'number' && typeof v.d === 'number'
 }
 
 function toView(x: TensorLike | MatrixView, who: string): MatrixView {

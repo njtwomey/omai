@@ -8,7 +8,7 @@
  */
 
 import { type IterativeEstimator, iterative, type LearnData, targetVector } from '../learn/index.ts'
-import { dgemm, dgemv, solve } from '../numerics/linalg/index.ts'
+import { ddot, dgemm, dgemv, solve } from '../numerics/linalg/index.ts'
 import { dict, real } from '../space/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, Log, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -67,14 +67,8 @@ export type LarsPath = {
   readonly events: LarsEvent[]
 }
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 const TINY = 1e-30
-
-const dot = (a: ArrayLike<number>, b: ArrayLike<number>): number => {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
 
 /**
  * The LARS path as a traced algorithm, one knot per step. It logs the metrics `alpha` (the penalty at the knot),
@@ -180,7 +174,7 @@ export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algori
         for (let q = 0; q < m; q++) sub[p * m + q] = gram[(active[p] ?? 0) * d + (active[q] ?? 0)] ?? 0
       const sA = Float64Array.from(signs)
       const z = toFlat(primalOf(solve(fromStorage(sub, [m, m], 'float64'), fromStorage(sA, [m], 'float64'))))
-      const aa = 1 / Math.sqrt(dot(sA, z))
+      const aa = 1 / Math.sqrt(ddot(sA, z))
       const w = Float64Array.from(z, (v) => v * aa)
       const u = new Float64Array(n)
       for (let p = 0; p < m; p++) {
@@ -266,7 +260,7 @@ function independent(gram: Float64Array, d: number, active: readonly number[], j
   } catch {
     return false
   }
-  return self - dot(b, projected) > Math.sqrt(EPS) * self
+  return self - ddot(b, projected) > Math.sqrt(EPS) * self
 }
 
 /**
@@ -429,7 +423,7 @@ export function lars(
       verbs: (p, h) => {
         const centreOf = (a: number): { readonly coef: number[]; readonly intercept: number } => {
           const coef = coefficientsAt(p.path, a)
-          return { coef, intercept: h.fitIntercept ? p.yMean - dot(p.xMean, coef) : 0 }
+          return { coef, intercept: h.fitIntercept ? p.yMean - ddot(p.xMean, coef) : 0 }
         }
         const predict = (x: TensorLike): Tensor => vectorTensor(linearPredictor(x, p.coef, p.intercept, 'lars'))
         return {

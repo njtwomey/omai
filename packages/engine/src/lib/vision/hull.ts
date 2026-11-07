@@ -4,9 +4,9 @@
  * for each hull edge, the contour point deepest inside it and its depth.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, roundHalfEven } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
-import { f32, type PointsLike, pointsOf, roundHalfEven } from './_image.ts'
+import { f32, type PointsLike, pointsOf } from './_image.ts'
 
 /** OpenCV's Sklansky scan of one quarter of the hull (from start towards end), into `stack`; returns its size. */
 function sklansky(

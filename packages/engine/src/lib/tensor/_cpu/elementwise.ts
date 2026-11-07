@@ -1,3 +1,4 @@
+import { roundHalfEven } from '../../base/index.ts'
 import type { BinaryKernel, CompareKernel, PredicateKernel, UnaryKernel } from '../backend.ts'
 import { allocate, type DType } from '../dtype.ts'
 import { broadcastShapes, sizeOf } from '../shape.ts'
@@ -5,11 +6,6 @@ import type { Tensor } from '../tensor.ts'
 import { assertSameDtype, broadcastIndex, wrap } from './_util.ts'
 
 // Round half to even, as numpy does.
-function roundHalfEven(x: number): number {
-  const r = Math.round(x)
-  return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r
-}
-
 const unaryKernels: Record<UnaryKernel, (x: number) => number> = {
   neg: (x) => -x,
   abs: Math.abs,

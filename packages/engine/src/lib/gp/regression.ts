@@ -51,7 +51,7 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { currentOf, defaultSearchSolver, gradNormOf, lbfgsbSearch, type SearchState } from './_search.ts'
+import { currentOf, defaultSearchSolver, gradNormOf, lbfgsbSearch, type SearchState, thetaBox } from './_search.ts'
 import { logMarginalLikelihood, negativeLogMarginalLikelihood } from './likelihood.ts'
 
 /** The hyperparameters of {@link gpRegression}. */
@@ -144,19 +144,6 @@ function prepare(data: LearnData, h: GpHyper): Prepared {
 }
 
 const DEFAULT_KERNEL: Kernel = scaleKernel(rbfKernel(), 1)
-
-/** The box of the free hyperparameters in theta (log) coordinates: positive ones within `bounds`, real ones free. */
-function thetaBox(kernel: Kernel, bounds: readonly [number, number]): { lower: number[]; upper: number[] } {
-  const lower: number[] = []
-  const upper: number[] = []
-  for (const hp of hyperparameters(kernel)) {
-    for (let i = 0; i < hp.size; i++) {
-      lower.push(hp.constraint === 'positive' ? Math.log(bounds[0]) : -Infinity)
-      upper.push(hp.constraint === 'positive' ? Math.log(bounds[1]) : Infinity)
-    }
-  }
-  return { lower, upper }
-}
 
 /** The best theta so far and its negative log marginal likelihood. */
 function modelOf(s: GpState): { readonly theta: number[]; readonly value: number } {

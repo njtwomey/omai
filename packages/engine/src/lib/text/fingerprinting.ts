@@ -8,6 +8,7 @@
 import { MdmlError } from '../base/index.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
 import { type Key, randomBits } from '../random/index.ts'
+import { fmix32 } from '../sketches/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import { murmurhash3, utf8Bytes } from './hashing.ts'
 import { shingles } from './shingles.ts'
@@ -234,17 +235,6 @@ export function minhashPermutations(key: Key, numPerm = 128): MinhashPermutation
     a: Uint32Array.from({ length: numPerm }, (_, i) => ((bits[2 * i] ?? 0) | 1) >>> 0),
     b: Uint32Array.from({ length: numPerm }, (_, i) => (bits[2 * i + 1] ?? 0) >>> 0),
   }
-}
-
-/** MurmurHash3's 32-bit finalizer (datasketch's `_fmix`). */
-function fmix32(h0: number): number {
-  let h = h0 >>> 0
-  h ^= h >>> 16
-  h = Math.imul(h, 0x85ebca6b)
-  h ^= h >>> 13
-  h = Math.imul(h, 0xc2b2ae35)
-  h ^= h >>> 16
-  return h >>> 0
 }
 
 /**

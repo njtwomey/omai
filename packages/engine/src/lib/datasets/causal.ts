@@ -5,24 +5,11 @@
  */
 
 import { type DatasetGenerator, type RegressionData, type Truth, xy } from '../data/index.ts'
+import { logit } from '../numerics/special/index.ts'
 import { foldIn, type Key, laplace, normal, permutation, uniform } from '../random/index.ts'
 import { structure } from '../scene/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
-import {
-  add,
-  cos,
-  div,
-  log,
-  mul,
-  sigmoid,
-  sin,
-  sliceAxis,
-  square,
-  sub,
-  type Tensor,
-  tanh,
-  type Value,
-} from '../tensor/index.ts'
+import { add, cos, mul, sigmoid, sin, sliceAxis, square, sub, type Tensor, tanh, type Value } from '../tensor/index.ts'
 import { column, matrix, stamp, vector } from './_util.ts'
 
 /** Noise draws for structural equations: Gaussian, uniform or Laplace with unit variance. */
@@ -732,7 +719,7 @@ export const upliftData: DatasetGenerator<RegressionData> = {
     const x = normal(foldIn(k, 0), [n, d])
     const p0 = (v: Value): Value =>
       sigmoid(add(add(mul(column(v, 0), 0.4), mul(d > 1 ? column(v, 1) : mul(column(v, 0), 0), -0.3)), base))
-    const p1 = (v: Value): Value => sigmoid(add(logitOf(p0(v)), mul(sub(column(v, 0), shift), strength)))
+    const p1 = (v: Value): Value => sigmoid(add(logit(p0(v)), mul(sub(column(v, 0), shift), strength)))
     const a0 = Float64Array.from((p0(x) as Tensor).data as ArrayLike<number>)
     const a1 = Float64Array.from((p1(x) as Tensor).data as ArrayLike<number>)
     const u = uniform(foldIn(k, 1), [n]).data
@@ -773,8 +760,4 @@ export const upliftData: DatasetGenerator<RegressionData> = {
       },
     }
   },
-}
-
-function logitOf(p: Value): Value {
-  return log(div(p, sub(1, p)))
 }

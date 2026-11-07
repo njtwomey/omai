@@ -1,7 +1,8 @@
 // The two-variable subproblem of libsvm's solvers (SMO and its nu variant), shared by `smo.ts` and `smo-nu.ts`: the
 // closed-form step on a working pair, clipped to the box and the equality. Not exported from the barrel.
 
-const TAU = 1e-12
+/** libsvm's floor on the curvature of the pair subproblem, for a non-positive-definite kernel. */
+export const TAU: number = 1e-12
 
 /**
  * Optimise the pair (i, j) of `a` in place: the closed-form minimiser of the dual along the direction that keeps the

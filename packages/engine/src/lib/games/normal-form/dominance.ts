@@ -7,6 +7,7 @@
 import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { linprog } from '../../optim/index.ts'
 import { dict, type Option, type OptionTable, optionTable } from '../../space/index.ts'
+import { stridesOf } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -17,7 +18,7 @@ import {
   stateToJson,
   tensor,
 } from '../../trace/index.ts'
-import { actionRows, decodeProfile, profileCount, stridesOf } from './_profiles.ts'
+import { actionRows, decodeProfile, profileCount } from './_profiles.ts'
 import type { NormalFormGame } from './game.ts'
 
 /** Options for the dominance tests. */

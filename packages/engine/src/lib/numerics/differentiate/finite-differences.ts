@@ -23,7 +23,7 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** Result of {@link derivative}. */
 export interface DerivativeResult {

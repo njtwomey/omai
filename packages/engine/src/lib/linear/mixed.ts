@@ -7,7 +7,7 @@
  * estimator on the iterative base, with the fixed-effects table, the group effects (BLUPs) and group-aware prediction.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, LOG_2PI, MdmlError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
   type IterativeEstimator,
@@ -171,8 +171,6 @@ export interface MixedProfile {
   /** `X' M X` summed over groups, row-major `[p, p]`: the fixed effects' covariance is `sigma2` times its inverse. */
   readonly information: Float64Array
 }
-
-const LOG_2PI = Math.log(2 * Math.PI)
 
 /** Solve `A x = b` for several right-hand sides with a Cholesky factor `u` of `A = u'u`. */
 function choleskySolveColumns(u: Float64Array, b: Float64Array, n: number, cols: number): Float64Array {

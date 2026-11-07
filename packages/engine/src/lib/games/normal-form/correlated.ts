@@ -6,8 +6,8 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { type LinprogOptions, linprog } from '../../optim/index.ts'
-import { toFlat } from '../../tensor/index.ts'
-import { decodeProfile, profileCount, stridesOf } from './_profiles.ts'
+import { stridesOf, toFlat } from '../../tensor/index.ts'
+import { decodeProfile, profileCount } from './_profiles.ts'
 import type { NormalFormGame } from './game.ts'
 
 /** Options for {@link correlatedEquilibrium}. */

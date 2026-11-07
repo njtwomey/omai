@@ -8,10 +8,8 @@ import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
-import { updatePair } from './_smo-update.ts'
+import { TAU, updatePair } from './_smo-update.ts'
 import type { SmoOptions, SmoState, SvmDualResult } from './smo.ts'
-
-const TAU = 1e-12
 
 /**
  * The program Solver_NU solves: minimise 1/2 alpha^T Q alpha + p^T alpha subject to 0 <= alpha_i <= C, y^T alpha = delta

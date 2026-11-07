@@ -4,7 +4,7 @@
  * and the conversions between them and tensors. Private to vision.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, roundHalfEven } from '../base/index.ts'
 import { type Point2, toPoints } from '../numerics/geometry/index.ts'
 import { fromStorage, primalOf, promoteFloat, type Tensor, type TensorLike, type Value } from '../tensor/index.ts'
 
@@ -71,13 +71,6 @@ export function pointsOf(points: PointsLike, name: string): Point2[] {
 
 /** Single-precision rounding, for agreement with OpenCV's float32 arithmetic. */
 export const f32: (x: number) => number = Math.fround
-
-/** Round half to even (cvRound under the default rounding mode). */
-export function roundHalfEven(x: number): number {
-  const r = Math.round(x)
-  return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r
-}
-
 /** Clamp to [lo, hi]. */
 export const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x))
 

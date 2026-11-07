@@ -42,7 +42,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../trace/index.ts'
-import { type Dual, nuSvrDual, svrDual } from './_dual.ts'
+import { type Dual, nuSvrDual, svrDual, toLive } from './_dual.ts'
 import { checkSmoothSolver, type SvrLoss, squaredSvrDualFor, squaredSvrPrimal, svrSolvers } from './_squared-slack.ts'
 import type { SvmPath } from './classifier.ts'
 
@@ -152,11 +152,6 @@ function prepare(
   }
   return { n: m.n, kernel, t, dualOf }
 }
-
-const toLive = (e: { readonly coef: Float64Array; readonly rho: number }): SvrState['live'] => ({
-  coef: Array.from(e.coef),
-  rho: e.rho,
-})
 
 const snapshot = (dual: Dual, smo: SmoState): Pick<SvrState, 'smo' | 'live' | 'residuals' | 'tube'> => ({
   smo,

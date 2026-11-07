@@ -7,7 +7,7 @@
 import { MdmlError, meanOf, type TestResult } from '../../base/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { ols } from '../_linear.ts'
-import { chi2Sf, normCdf, normSf, sample } from '../_util.ts'
+import { chi2Sf, normCdf, normSf, poly, sample } from '../_util.ts'
 import { median } from '../quantiles.ts'
 import { TAU_CRIT, TAU_LARGE, TAU_MAX, TAU_MIN, TAU_SMALL, TAU_STAR, type TrendTerms } from './_mackinnon.ts'
 import { testResult } from './result.ts'
@@ -103,12 +103,6 @@ export function durbinWatson(residuals: TensorLike): TestResult {
 }
 
 export type { TrendTerms }
-
-const poly = (c: readonly number[], x: number): number => {
-  let r = 0
-  for (let i = c.length - 1; i >= 0; i--) r = r * x + (c[i] ?? 0)
-  return r
-}
 
 /**
  * MacKinnon's approximate p-value of a Dickey-Fuller (or Engle-Granger) t statistic (statsmodels mackinnonp).

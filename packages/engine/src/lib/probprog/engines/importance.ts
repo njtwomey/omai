@@ -7,8 +7,8 @@
 import { type Json, MdmlError } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import { importanceEss, logEvidence, paretoSmoothedWeights } from '../../sampling/index.ts'
-import { fromStorage, item, mul, primalOf, sum, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
-import { maskedLogProb } from '../_contract.ts'
+import { fromStorage, item, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { observedLogProb } from '../_contract.ts'
 import type { ProgramAnalysis } from '../analysis.ts'
 import { particle } from '../elbo.ts'
 import { type ProgramTrace, seed, traceOf } from '../handlers.ts'
@@ -58,15 +58,6 @@ export function stackSiteValues(traces: readonly ProgramTrace[], names: readonly
     out[name] = fromStorage(Float64Array.from(rows), [n, ...shape], 'float64')
   }
   return out
-}
-
-function observedLogProb(t: ProgramTrace): number {
-  let total = 0
-  for (const s of t.sites.values()) {
-    if (s.type !== 'sample' || !s.isObserved) continue
-    total += item(primalOf(mul(sum(maskedLogProb(s)), s.scale)))
-  }
-  return total
 }
 
 /**

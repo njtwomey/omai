@@ -60,6 +60,13 @@ export function mat(data: ArrayLike<number>, rows: number, cols: number): Tensor
   return fromStorage(Float64Array.from(data), [rows, cols], 'float64')
 }
 
+/** A polynomial with coefficients in ascending order at `x`, by Horner's rule. */
+export function poly(c: readonly number[], x: number): number {
+  let r = 0
+  for (let i = c.length - 1; i >= 0; i--) r = r * x + (c[i] ?? 0)
+  return r
+}
+
 /** An ascending copy. */
 export function sortedCopy(xs: ArrayLike<number>): Float64Array {
   return Float64Array.from(xs).sort()

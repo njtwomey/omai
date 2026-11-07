@@ -10,7 +10,7 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
-import { defaults, type ModeConfig, type OptionTable, type SpaceValue } from '../../space/index.ts'
+import { completeOption, type SpaceValue } from '../../space/index.ts'
 import { abs, asTensor, mean, type Tensor, type TensorLike, transpose, type Value } from '../../tensor/index.ts'
 import { type ApplyContext, assemble, childScope, initKey, Module, type Params } from '../module/module.ts'
 import { kanBases } from './edge-bases.ts'
@@ -62,13 +62,6 @@ export interface KanOptions extends Partial<Omit<KanSpec, 'widths'>> {
   readonly key?: Key
 }
 
-/** A configuration of an option table with the knobs it leaves out at their defaults. */
-function complete<T, P>(table: OptionTable<T, P>, config: SpaceValue | undefined): SpaceValue {
-  const given = (typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}) as ModeConfig
-  const chosen = table.optionOf(given)
-  return { ...(defaults(chosen.space) as ModeConfig), ...given, [table.tag]: chosen.name }
-}
-
 /**
  * A structure with every default filled in.
  *
@@ -90,8 +83,8 @@ export function kanSpec(widths: readonly number[], options: Partial<Omit<KanSpec
     widths: [...widths],
     grid: options.grid ?? 5,
     degree: options.degree ?? 3,
-    basis: complete(kanBases, options.basis),
-    base: complete(kanBaseFunctions, options.base),
+    basis: completeOption(kanBases, options.basis),
+    base: completeOption(kanBaseFunctions, options.base),
     knots: options.knots ?? { kind: 'uniform' },
     outside: options.outside ?? 'linear',
     bias: options.bias ?? false,

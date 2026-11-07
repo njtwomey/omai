@@ -6,12 +6,13 @@
  * path lengths as per-point evidence.
  */
 
-import type { Json } from '../base/index.ts'
+import { EULER_GAMMA, type Json } from '../base/index.ts'
 import {
   ExplainedEstimatorClass,
   type Fitted,
   type IterativeEstimator,
   type IterativeFitted,
+  isMatrixView,
   iterative,
   type MatrixView,
   matrixView,
@@ -64,14 +65,6 @@ export interface IsolationPathStep {
   readonly size: number
 }
 
-const EULER = 0.5772156649015329
-
-function isMatrixView(x: TensorLike | MatrixView): x is MatrixView {
-  if (typeof x !== 'object' || x === null) return false
-  const v = x as Partial<MatrixView>
-  return v.data instanceof Float64Array && typeof v.n === 'number' && typeof v.d === 'number'
-}
-
 function toView(x: TensorLike | MatrixView, who: string): MatrixView {
   return isMatrixView(x) ? x : matrixView(x, who, { minSamples: 2 })
 }
@@ -91,7 +84,7 @@ function toView(x: TensorLike | MatrixView, who: string): MatrixView {
 export function averagePathLength(n: number): number {
   if (n <= 1) return 0
   if (n === 2) return 1
-  return 2 * (Math.log(n - 1) + EULER) - (2 * (n - 1)) / n
+  return 2 * (Math.log(n - 1) + EULER_GAMMA) - (2 * (n - 1)) / n
 }
 
 /**

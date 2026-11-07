@@ -33,7 +33,7 @@ import {
 } from '../../tensor/index.ts'
 
 /** The machine epsilon statsmodels clips probabilities and means with. */
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /**
  * A GLM link function g with eta = g(mu) (statsmodels.genmod.families.links): the link, its inverse, and first and

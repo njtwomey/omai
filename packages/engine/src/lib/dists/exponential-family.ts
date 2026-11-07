@@ -5,7 +5,7 @@
  */
 
 import { grad, jvp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { LOG_2PI, MdmlError } from '../base/index.ts'
 import { cholesky, inv, solveTriangular } from '../numerics/linalg/index.ts'
 import { lbeta, lbinom, lgamma, log1mexp, logIv } from '../numerics/special/index.ts'
 import {
@@ -149,7 +149,6 @@ const param = (dist: Distribution, name: string): Value => {
   return p
 }
 const zeroMeasure = (x: Value): Value => mul(x, 0)
-const LOG_2PI = Math.log(2 * Math.PI)
 
 /**
  * The exponential-family form of a distribution (normal, log-normal, half-normal, exponential, gamma, chi-square,

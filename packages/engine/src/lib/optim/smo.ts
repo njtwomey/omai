@@ -9,7 +9,7 @@ import { MdmlError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
-import { updatePair } from './_smo-update.ts'
+import { TAU, updatePair } from './_smo-update.ts'
 
 /**
  * The quadratic program SMO solves (libsvm's general form): minimise 1/2 alpha^T Q alpha + p^T alpha subject to
@@ -56,8 +56,6 @@ export interface SmoState {
   readonly pair?: readonly [number, number]
   readonly finished: boolean
 }
-
-const TAU = 1e-12
 
 function squareFrom(x: TensorLike, name: string): { readonly data: Float64Array; readonly n: number } {
   const t = vectorFrom(x)

@@ -1,8 +1,33 @@
 /**
  * Small helpers on plain numbers and number lists, used where tensors would be overkill: closeness tests in the numpy
  * sense, clamping, accurate summation (Kahan and pairwise), loop-based extrema and argmax that never spread into
- * `Math.max`, stable log-sum-exp and softmax, ranges, quantiles, means and variances, and bit counts.
+ * `Math.max`, stable log-sum-exp and softmax, ranges, quantiles, means and variances, and bit counts, with the few constants that more than one domain needs.
  */
+
+/** The Euler-Mascheroni constant, the limit of the harmonic sum minus the logarithm. */
+export const EULER_GAMMA: number = 0.5772156649015329
+
+/** The natural logarithm of 2 pi, the constant of the Gaussian log density (as `Math.log(2 * Math.PI)`). */
+export const LOG_2PI: number = Math.log(2 * Math.PI)
+
+/** Half the natural logarithm of 2 pi (as `0.5 * Math.log(2 * Math.PI)`): the standard normal log density at 0 is minus this. */
+export const LOG_SQRT_2PI: number = 0.5 * Math.log(2 * Math.PI)
+
+/**
+ * Round to the nearest integer, halves to the even neighbour (numpy's `round`; `Math.round` takes halves up).
+ *
+ * @param x - The number.
+ * @returns The rounded number (NaN and infinities pass through).
+ * @example
+ * ```ts
+ * import { roundHalfEven } from 'mdml-engine/base'
+ * [roundHalfEven(0.5), roundHalfEven(1.5), roundHalfEven(2.5), roundHalfEven(-2.5)] // => [0, 2, 2, -2]
+ * ```
+ */
+export function roundHalfEven(x: number): number {
+  const r = Math.round(x)
+  return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r
+}
 
 /**
  * Whether two numbers are close in the numpy sense: `|a - b| <= atol + rtol * |b|`. NaNs are never close; equal

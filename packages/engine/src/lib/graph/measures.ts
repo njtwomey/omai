@@ -7,6 +7,7 @@
 import { MdmlError, maxOf, meanOf, minOf } from '../base/index.ts'
 import { ddot, eigvalsh } from '../numerics/linalg/index.ts'
 import { concreteOrThrow, type Tensor, toFlat } from '../tensor/index.ts'
+import { neighbourSets } from './_neighbours.ts'
 import { degree, type Graph, inDegree, type NodeId, nodeIndex, outDegree } from './graph.ts'
 import { laplacian, normalisedLaplacian } from './matrices.ts'
 import { dijkstra } from './paths.ts'
@@ -129,17 +130,6 @@ export function periphery(g: Graph, options: { readonly weighted?: boolean } = {
   const e = eccentricity(g, options)
   const d = diameter(g, options)
   return Array.from({ length: g.n }, (_, v) => v).filter((v) => e[v] === d)
-}
-
-/** Neighbour sets without self-loops (successors and predecessors together for a directed graph). */
-function neighbourSets(g: Graph): Set<number>[] {
-  return Array.from({ length: g.n }, (_, u) => {
-    const s = new Set<number>()
-    for (const a of g.directed ? [g.out, g.in] : [g.out]) {
-      for (let k = a.indptr[u] ?? 0; k < (a.indptr[u + 1] ?? 0); k++) if (a.indices[k] !== u) s.add(a.indices[k] ?? 0)
-    }
-    return s
-  })
 }
 
 /**

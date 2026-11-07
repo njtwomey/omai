@@ -4,6 +4,7 @@
  * over a high threshold, and the Frechet, as scipy.stats.
  */
 
+import { EULER_GAMMA } from '../../base/index.ts'
 import { gamma as gammaFn, log1mexp } from '../../numerics/special/index.ts'
 import {
   abs,
@@ -41,7 +42,6 @@ import {
   validateParams,
 } from '../distribution.ts'
 
-const EULER = 0.5772156649015329
 // Below this |shape| the shape-zero (Gumbel or exponential) limits are used.
 const SMALL = 1e-12
 
@@ -98,10 +98,10 @@ export function gumbel(loc: TensorLike = 0, scale: TensorLike = 1): Distribution
     ppf,
     isf: (q) => sub(mu, mul(beta, log(neg(log1p(neg(q)))))),
     rsample: (key, shape) => ppf(uniformOpen(key, [...shape, ...batchShape])),
-    mean: () => b(add(mu, mul(beta, EULER))),
+    mean: () => b(add(mu, mul(beta, EULER_GAMMA))),
     variance: () => b(mul(square(beta), (Math.PI * Math.PI) / 6)),
     mode: () => b(mu),
-    entropy: () => b(add(log(beta), EULER + 1)),
+    entropy: () => b(add(log(beta), EULER_GAMMA + 1)),
   })
 }
 
@@ -165,7 +165,7 @@ export function generalisedExtremeValue(
       b(
         where(
           zero,
-          add(mu, mul(sigma, EULER)),
+          add(mu, mul(sigma, EULER_GAMMA)),
           where(less(xi, 1), add(mu, div(mul(sigma, sub(g(1), 1)), safeXi)), Number.POSITIVE_INFINITY),
         ),
       ),
@@ -182,7 +182,7 @@ export function generalisedExtremeValue(
         ),
       ),
     mode: () => b(add(mu, mul(sigma, where(zero, 0, div(expm1(mul(neg(xi), log1p(xi))), safeXi))))),
-    entropy: () => b(add(add(log(sigma), mul(xi, EULER)), EULER + 1)),
+    entropy: () => b(add(add(log(sigma), mul(xi, EULER_GAMMA)), EULER_GAMMA + 1)),
   })
   return self
 }
@@ -293,6 +293,6 @@ export function frechet(alpha: TensorLike, loc: TensorLike = 0, scale: TensorLik
     mean: () => b(where(greater(a, 1), add(mu, mul(s, g(1))), Number.POSITIVE_INFINITY)),
     variance: () => b(where(greater(a, 2), mul(square(s), sub(g(2), square(g(1)))), Number.POSITIVE_INFINITY)),
     mode: () => b(add(mu, mul(s, pow(div(a, add(a, 1)), div(1, a))))),
-    entropy: () => b(sub(add(add(log(s), 1 + EULER), div(EULER, a)), log(a))),
+    entropy: () => b(sub(add(add(log(s), 1 + EULER_GAMMA), div(EULER_GAMMA, a)), log(a))),
   })
 }

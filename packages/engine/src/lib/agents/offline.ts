@@ -14,7 +14,7 @@ import { type Agent, categoricalPolicy, type Env, type Policy, runEpisode, type 
 import { exp, mul, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, type MetricChannel, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { gradientStepWithTerms, optimiserOf, rowsTensor, type Spaces, vectorTensor } from './_common.ts'
-import { network, type OfflineSpaces, offlineBatch, offlineSpaces, squashToBox } from './_offline.ts'
+import { clipToBox, network, type OfflineSpaces, offlineBatch, offlineSpaces, squashToBox } from './_offline.ts'
 
 // ------------------------------------------------------------------------------------------------- datasets
 
@@ -362,10 +362,6 @@ export function behaviourCloningLearner<O, A>(
       ) as A
     },
   }
-}
-
-function clipToBox(sp: OfflineSpaces, a: readonly number[]): number[] {
-  return a.map((v, i) => Math.min(sp.high[i] ?? v, Math.max(sp.low[i] ?? v, v)))
 }
 
 /**

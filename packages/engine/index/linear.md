@@ -10,8 +10,8 @@ Linear and generalised linear models as library pieces: the design matrix, the s
 - function `solvers.ts` (file): Solvers of the penalised GLM core: Cholesky, QR, SVD, coordinate descent. `src/lib/linear/solvers.ts:1` `mdml-engine/linear`
 
 - estimator `huber`: Huber regression, robust to outliers. `src/lib/linear/robust.ts:501` `mdml-engine/linear`
-- estimator `lars`: Least angle regression: the lasso path one knot per step. `src/lib/linear/lars.ts:393` `mdml-engine/linear`
+- estimator `lars`: Least angle regression: the lasso path one knot per step. `src/lib/linear/lars.ts:387` `mdml-engine/linear`
 - estimator `linearModel`: One penalised GLM estimator; logistic, ridge and lasso are configurations of it. `src/lib/linear/model.ts:269` `mdml-engine/linear`
-- estimator `mixedModel`: Linear mixed-effects model for grouped data. `src/lib/linear/mixed.ts:627` `mdml-engine/linear`
+- estimator `mixedModel`: Linear mixed-effects model for grouped data. `src/lib/linear/mixed.ts:625` `mdml-engine/linear`
 - estimator `multinomial`: Multinomial logistic (softmax) regression. `src/lib/linear/multinomial.ts:405` `mdml-engine/linear`
 - estimator `ordinal`: Ordinal regression with cumulative-link families. `src/lib/linear/ordinal.ts:520` `mdml-engine/linear`

@@ -15,6 +15,24 @@ export interface MatrixView {
   readonly data: Float64Array
 }
 
+/**
+ * Whether a value is a matrix view (a `Float64Array` of data with its `n` rows and `d` columns), as opposed to a tensor
+ * or nested array.
+ *
+ * @param x - A tensor-like value or a view.
+ * @returns True for a view.
+ * @example
+ * ```ts
+ * import { isMatrixView, matrixView } from 'mdml-engine/learn'
+ * [isMatrixView(matrixView([[1, 2]], 'demo')), isMatrixView([[1, 2]])] // => [true, false]
+ * ```
+ */
+export function isMatrixView(x: TensorLike | MatrixView): x is MatrixView {
+  if (typeof x !== 'object' || x === null) return false
+  const v = x as Partial<MatrixView>
+  return v.data instanceof Float64Array && typeof v.n === 'number' && typeof v.d === 'number'
+}
+
 /** Options of {@link asFloatMatrix} and {@link matrixView}. */
 export interface MatrixCheckOptions {
   /** Accept NaN entries (missing values), as imputers and NaN-aware scalers do (default false). */

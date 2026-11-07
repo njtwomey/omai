@@ -69,3 +69,39 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `converged: false`, a flag, or nothing; `fixedPoint` and `fsolve` have the same return type and opposite behaviour). The
   approximate-nearest-neighbour code in `spatial` (about 1,850 lines) looks like a retrieval domain, filed as a placement
   question. The reader ran no Python: every quoted scipy or numpy value needs the oracle.
+||||||| 02ab5f59
+- **10:58 Result (P3.3, `agent-dd01-helpers`, `f1e64336`..`e651ebc0`).** Duplicated helpers replaced by shared ones, one
+  commit per family; behaviour preserved, the test directories of every touched domain run (1,098 tests next to the touched
+  files, then 18,614 by domain, all green; 556 `@example`s of the touched files pass). Replaced: `dot` x8 by `ddot` (blas), `matmul` of the
+  Kolmogorov tables by `stats/_linear`, two local `transpose`s by the tensor op, `nextAfter` x2 by `numerics/approximation`,
+  `neighbourSets`, `backcastOf` and `studentConstant` (new `timeseries/_volatility.ts`), `stridesOf`/`strides` by the tensor
+  one, `complete` x2 by `completeOption` (moved to `space/tables.ts` beside `OptionTable`; `learn` still re-exports it),
+  `poly`, `planeOf` (`signal/image/_plane.ts`), `toLive`, `clipToBox`, `observedLogProb`, `thetaBox`, `isMatrixView` (now
+  exported from `learn/validation.ts`), `fmix32` of text by the one of sketches, `roundHalfEven` x4 (new in `base/numbers.ts`),
+  `logitOf` by `numerics/special` `logit`, `argmax` of the stream generator by `argmaxOf`, `norm` x2 by `dnrm2`.
+  Constants: `EULER_GAMMA`, `LOG_2PI`, `LOG_SQRT_2PI` in `base/numbers.ts` (replacing 7 + 9 + 4 local definitions);
+  `EPS = 2.220446049250313e-16` (15 files) is now `Number.EPSILON`, the same double; the libsvm `TAU` of the three SMO
+  files is defined once in `optim/_smo-update.ts`.
+- **10:58 Noted: not bit-identical.** `norm` to `dnrm2` (scaled accumulation) and `logitOf` to `logit`
+  (`log p - log1p(-p)`) agree to the last ulp or so, not exactly; no test moved.
+- **10:58 Noted: surface.** `--compare` gives 6 added (`base#EULER_GAMMA`, `LOG_2PI`, `LOG_SQRT_2PI`, `roundHalfEven`,
+  `learn#isMatrixView`, `space#completeOption`) and 1 removed (`learn#completeOption`): the extractor lists a re-export of a
+  public declaration under its declaring module only, so `learn#completeOption` is gone from the digest although
+  `import { completeOption } from 'mdml-engine/learn'` still works (an `@example` and a test use it). Digest regenerated.
+- **10:58 Left, with the reason.** Same name, different meaning: `entropy` (nats) against `entropyOf` (bits) in
+  `metrics/clustering.ts` and `timeseries/shapelets.ts`; `concrete` x5 (different error codes and messages, two convert to
+  float64); `columnOf`/`column`/`columns` (different record types); `sampleWeightsOf` against `sampleWeights` (one checks
+  sign and finiteness); `distance`, `defaultNames`, `asColumns` (different signatures); `softplus` (the nn one has beta and a
+  threshold); `solverConfig` of `learn/density-ratio.ts` against `solverConfigOf` (the latter also fills the `gradient`
+  mode's optimiser and schedule, which would change configurations); `clipTo` of `stochastic/diffusion-samplers.ts`
+  against the tensor `clip` (it broadcasts the bounds through `x * 0`, so NaN for infinite `x`); `mean`/`variance` against
+  `meanOf`/`varianceOf` (pairwise summation, NaN for empty); `klBernoulli` (clamps 1e-12 against 1e-15); `isZero` x3 (tolerances
+  and normal forms differ); `startingLogLambda`, `tableOf` x2 (differ in a clamp or an option); `isMatrixView` of
+  `linear/bayesian.ts` (a looser structural test); `LOG_SQRT_2PI` of `numerics/special/_kernels.ts` (a literal one ulp from
+  the expression); `EPS = 1e-12` in `graph` (two meanings), `tune/*`, `EPS = 1e-9` x3 (local tolerances).
+  Needing a public home or a design: `cadd`/`cmul`/`cdiv` (`symbolic` keeps its own so it does not depend on `numerics`),
+  `blank`/`basisRows`/`scatterColumn` (and the whole of `trajectoryDerivatives` against `stepDerivatives`, in `environments`
+  and `dynamics/control`, which import each other's neither: `ControlModel` satisfies `DiscreteModel`, so one could call the
+  other once `stepDerivatives` is exported), `allFinite` (`dynamics/ode`, `sampling`), `codec` (`dynamics/automata`, `graph`;
+  the pattern is inline in dozens of places), `minorOf`, `toRows`/`rowsOf` coercions across domains, scalar `sigmoid` x4
+  (`learn/calibration`, `embedding`, `logic`, `kernel-methods`), `knobsOf` and `option` (P3.4).

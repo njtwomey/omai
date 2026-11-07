@@ -330,6 +330,16 @@ export function maskedLogProb(site: SampleSite): Value {
   return where(cast(site.mask, 'bool'), lp, 0)
 }
 
+/** The log density of a trace's observed sites: masked, summed and scaled, as one number. */
+export function observedLogProb(t: ProgramTrace): number {
+  let total = 0
+  for (const s of t.sites.values()) {
+    if (s.type !== 'sample' || !s.isObserved) continue
+    total += item(primalOf(mul(sum(maskedLogProb(s)), s.scale)))
+  }
+  return total
+}
+
 /**
  * The named log factors of a trace: one per sample site (latent or observed), with axes named by enumerated sites and
  * plates; the handler scale (beyond plate subsampling) multiplies the factor.

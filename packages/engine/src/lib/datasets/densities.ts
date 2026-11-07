@@ -4,7 +4,7 @@
  * the FFJORD checkerboard. `densitySamples` turns any of them into a labelled dataset.
  */
 
-import { maxOf } from '../base/index.ts'
+import { LOG_2PI, maxOf } from '../base/index.ts'
 import { type ClassificationData, type DatasetGenerator, xyClasses } from '../data/index.ts'
 import { erf } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
@@ -36,8 +36,6 @@ import {
   where,
 } from '../tensor/index.ts'
 import { column, labels, matrix, stamp } from './_util.ts'
-
-const LOG_2PI = Math.log(2 * Math.PI)
 
 /**
  * A density with an exact, differentiable log density and a sampler, for testing samplers, normalising flows and

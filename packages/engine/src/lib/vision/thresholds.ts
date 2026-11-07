@@ -4,11 +4,11 @@
  * and Gaussian thresholds, multi-level Otsu, and the local Niblack and Sauvola thresholds for documents.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, roundHalfEven } from '../base/index.ts'
 import { image } from '../signal/index.ts'
 import { histogram } from '../stats/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { clamp, greyOf, imageTensor, level, rasterOf, rasterTensor, roundHalfEven, valuesOf } from './_image.ts'
+import { clamp, greyOf, imageTensor, level, rasterOf, rasterTensor, valuesOf } from './_image.ts'
 import { gaussianBlur } from './blur.ts'
 
 /** The rules of {@link threshold} (cv2.THRESH_*): pixels above the threshold t versus the rest. */

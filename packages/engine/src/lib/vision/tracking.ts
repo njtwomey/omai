@@ -7,7 +7,7 @@
  * @index function SORT tracking, mean shift and pyramidal point tracking over frames.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, roundHalfEven } from '../base/index.ts'
 import { filtering } from '../dynamics/index.ts'
 import { boxIou } from '../metrics/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
@@ -25,7 +25,7 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { greyOf, roundHalfEven } from './_image.ts'
+import { greyOf } from './_image.ts'
 import { type Box, type BoxesLike, boxesOf } from './boxes.ts'
 import type { RotatedRect } from './fitting.ts'
 import { imageMoments } from './moments.ts'

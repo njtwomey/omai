@@ -1,10 +1,12 @@
 // Scalar kernels for the special functions. Each is a standard published method; accuracy targets are about 1e-14
 // relative unless noted, and every kernel is checked against scipy fixtures.
 
+import { EULER_GAMMA } from '../../base/index.ts'
+
 export const SQRT_PI = 1.7724538509055159
 export const SQRT_2PI = 2.5066282746310002
 export const LOG_SQRT_2PI = 0.9189385332046728
-export const EPS = 2.220446049250313e-16
+export const EPS: number = Number.EPSILON
 export const TINY = 1e-300
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -212,7 +214,7 @@ function zetaInt(k: number): number {
 
 /** log Gamma(1 + z) for |z| <= 0.25 by its Taylor series (keeps relative accuracy at the zeros 1 and 2). */
 function lgamma1p(z: number): number {
-  let sum = -0.5772156649015329 * z
+  let sum = -EULER_GAMMA * z
   let pow = -z
   for (let k = 2; k < 64; k++) {
     pow *= -z
@@ -523,14 +525,14 @@ export function expn(n: number, x: number): number {
     }
     return h * Math.exp(-x)
   }
-  let ans = nm1 !== 0 ? 1 / nm1 : -Math.log(x) - 0.5772156649015329
+  let ans = nm1 !== 0 ? 1 / nm1 : -Math.log(x) - EULER_GAMMA
   let fact = 1
   for (let i = 1; i < 100000; i++) {
     fact *= -x / i
     let del: number
     if (i !== nm1) del = -fact / (i - nm1)
     else {
-      let psi = -0.5772156649015329
+      let psi = -EULER_GAMMA
       for (let ii = 1; ii <= nm1; ii++) psi += 1 / ii
       del = fact * (-Math.log(x) + psi)
     }
@@ -553,7 +555,7 @@ export function expi(x: number): number {
       sum += term
       if (term < EPS * sum) break
     }
-    return sum + Math.log(x) + 0.5772156649015329
+    return sum + Math.log(x) + EULER_GAMMA
   }
   let sum = 0
   let term = 1

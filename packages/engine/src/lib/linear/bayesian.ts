@@ -7,7 +7,7 @@
  * batch posterior of the rows seen so far, in any order.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { LOG_2PI, MdmlError } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
 import { type MinMaxScalerParams, minMaxScaler, polynomialFeatures } from '../learn/preprocessing/index.ts'
 import { cholesky, choleskyLogdet, choSolve, ddot, dgemv, eigvalsh } from '../numerics/linalg/index.ts'
@@ -55,9 +55,6 @@ export interface BayesianPosterior {
 
 /** The inputs of a regression: features `x` and targets `y` (weights are not used). */
 export type BayesianDesign = Pick<Design, 'x' | 'y'>
-
-const LOG_2PI = Math.log(2 * Math.PI)
-
 const flatten = (m: readonly (readonly number[])[]): Float64Array => Float64Array.from(m.flat())
 
 const nest = (flat: ArrayLike<number>, p: number): number[][] =>

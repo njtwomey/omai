@@ -20,6 +20,7 @@ import {
 } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView, targetVector } from '../learn/index.ts'
 import { r2Score } from '../metrics/index.ts'
+import { ddot } from '../numerics/linalg/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
@@ -136,15 +137,8 @@ const KRLS_DEFAULTS: OnlineKernelHyper = {
 }
 
 const TINY = 1e-12
-
-const dot = (a: readonly number[], b: readonly number[]): number => {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
-
 /** `M v` for a square matrix of rows. */
-const matVec = (m: readonly (readonly number[])[], v: readonly number[]): number[] => m.map((row) => dot(row, v))
+const matVec = (m: readonly (readonly number[])[], v: readonly number[]): number[] => m.map((row) => ddot(row, v))
 
 function validate(h: OnlineKernelHyper, who: string): void {
   if (!Number.isInteger(h.budget) || h.budget < 1)
@@ -233,7 +227,7 @@ export function krlsStep(
   const m = state.dictionary.length
   const kxx = kernelMatrix(hyper, kernel, [point])[0] ?? 0
   const kv = m === 0 ? [] : Array.from(kernelMatrix(hyper, kernel, state.dictionary, [point]))
-  const prior = dot(kv, state.alpha)
+  const prior = ddot(kv, state.alpha)
   const error = y - prior
   const sse = state.sse + error * error
   const next = (patch: Partial<KrlsState>): KrlsState => ({
@@ -265,7 +259,7 @@ export function krlsStep(
     const w = dictionary.length
     // Border with the new point: g = 1 / (d - b' A^(-1) b), the standard block inverse.
     const ab = matVec(inv, b)
-    const schur = kxx + lam - dot(b, ab)
+    const schur = kxx + lam - ddot(b, ab)
     const g = 1 / schur
     const grown: number[][] = Array.from({ length: w + 1 }, (_, i) =>
       Array.from({ length: w + 1 }, (_, j) => {
@@ -304,7 +298,7 @@ export function krlsStep(
 
   // The projection of phi(x) on the span of the dictionary, and the squared residual of the projection.
   const a = matVec(state.kInv, kv)
-  const delta = Math.max(0, kxx - dot(kv, a))
+  const delta = Math.max(0, kxx - ddot(kv, a))
   let novelty = delta
   let novel = false
   if (m < hyper.budget && delta > TINY * Math.max(1, kxx)) {
@@ -347,7 +341,7 @@ export function krlsStep(
 
   // Reduced-order recursive least squares on the projection a: q = P a / (1 + a' P a).
   const pa = matVec(state.p, a)
-  const denom = 1 + dot(a, pa)
+  const denom = 1 + ddot(a, pa)
   const q = pa.map((v) => v / denom)
   const p = state.p.map((row, i) => row.map((v, j) => v - (q[i] ?? 0) * (pa[j] ?? 0)))
   const kq = matVec(state.kInv, q)
@@ -664,7 +658,7 @@ export function normaAlgorithm(data: LearnData, hyper: NormaHyper): Algorithm<No
       const point = row(i)
       const t = s.step + 1
       const eta = hyper.eta / Math.sqrt(t)
-      const f = s.centres.length === 0 ? 0 : dot(Array.from(kernelMatrix(hyper, kernel, s.centres, [point])), s.coef)
+      const f = s.centres.length === 0 ? 0 : ddot(Array.from(kernelMatrix(hyper, kernel, s.centres, [point])), s.coef)
       const error = f - (y[i] ?? 0)
       const loss = hyper.loss === 'squared' ? 0.5 * error * error : Math.max(0, Math.abs(error) - hyper.epsilon)
       const grad = hyper.loss === 'squared' ? error : Math.abs(error) > hyper.epsilon ? Math.sign(error) : 0

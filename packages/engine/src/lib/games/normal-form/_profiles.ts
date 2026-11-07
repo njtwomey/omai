@@ -1,11 +1,5 @@
 // Joint action profiles of a normal-form game: row-major indices over the players' action counts (player 0 slowest).
-
-/** The row-major strides of a shape. */
-export function stridesOf(shape: readonly number[]): number[] {
-  const out = new Array<number>(shape.length).fill(1)
-  for (let i = shape.length - 2; i >= 0; i--) out[i] = (out[i + 1] ?? 1) * (shape[i + 1] ?? 1)
-  return out
-}
+import { stridesOf } from '../../tensor/index.ts'
 
 /** The number of joint profiles. */
 export function profileCount(shape: readonly number[]): number {

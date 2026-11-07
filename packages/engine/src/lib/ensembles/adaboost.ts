@@ -200,7 +200,7 @@ export type AdaBoostEstimator = IterativeEstimator<
   AdaBoostPath
 >
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** SAMME.R's per-class contribution of one member's class probabilities: (K - 1) (log p_c - mean log p). */
 function realDecision(proba: Float64Array, k: number): Float64Array {

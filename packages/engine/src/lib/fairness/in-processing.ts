@@ -7,6 +7,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { type Estimator, type Fitted, requireVerb } from '../learn/index.ts'
+import { ddot } from '../numerics/linalg/index.ts'
 import { linprog } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { asTensor, fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -175,8 +176,6 @@ function callOracle(
 
 const errorOf = (labels: readonly number[], h: readonly number[]): number =>
   labels.reduce((s, y, i) => s + Math.abs(y - (h[i] ?? 0)), 0) / Math.max(1, labels.length)
-
-const dot = (a: readonly number[], b: readonly number[]): number => a.reduce((s, v, i) => s + v * (b[i] ?? 0), 0)
 
 /** The rows a reduction learns from: features, binary labels and each row's group index. */
 export interface ReductionData {
@@ -379,11 +378,11 @@ function exponentiatedGradientRun(
         const decisions = predict(fitted)
         const error = errorOf(labels, decisions)
         const gamma = m.gamma(decisions)
-        const value = error + dot(gamma, lambda)
+        const value = error + ddot(gamma, lambda)
         let best = -1
         let bestValue = Number.POSITIVE_INFINITY
         for (const [j, h] of hs.entries()) {
-          const v = h.error + dot(h.gamma, lambda)
+          const v = h.error + ddot(h.gamma, lambda)
           if (v < bestValue) {
             bestValue = v
             best = j

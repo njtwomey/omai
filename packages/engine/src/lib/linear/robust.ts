@@ -55,7 +55,7 @@ export type TheilSenState = {
   readonly iterations: number
 }
 
-const EPS = 2.220446049250313e-16
+const EPS = Number.EPSILON
 
 /** The number of subsets of size k out of n, capped at `cap + 1` (so a comparison with `cap` is exact). */
 function combinationCount(n: number, k: number, cap: number): number {

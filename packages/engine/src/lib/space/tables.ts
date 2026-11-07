@@ -8,6 +8,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { defaults } from './operations.ts'
 import type { DictSpace, SpaceValue, UnionSpace } from './types.ts'
 import { union } from './types.ts'
 
@@ -92,4 +93,25 @@ export function optionTable<T, Props>(
     properties: (config) => optionOf(config).properties,
     where: (predicate) => names.filter((n) => predicate((table[n] as Option<T, Props>).properties, n)),
   }
+}
+
+/**
+ * A configuration of an option table with the knobs it leaves out at their defaults (a union value must be whole): the
+ * chosen option's defaults, overridden by what the configuration gives, with the tag naming the option.
+ *
+ * @param table - The option table.
+ * @param config - A configuration, possibly partial (only a name, or only some knobs), or none for the default option.
+ * @returns The whole configuration.
+ * @example
+ * ```ts
+ * import { dict, int, optionTable, completeOption } from 'mdml-engine/space'
+ * const k = dict({ k: int(0, 9, { default: 3 }) })
+ * const table = optionTable({ a: { space: k, properties: null, make: () => 0 } })
+ * completeOption(table, { kind: 'a' }) // => { k: 3, kind: 'a' }
+ * ```
+ */
+export function completeOption<T, P>(table: OptionTable<T, P>, config: SpaceValue | undefined): SpaceValue {
+  const given = (typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}) as ModeConfig
+  const chosen = table.optionOf(given)
+  return { ...(defaults(chosen.space) as ModeConfig), ...given, [table.tag]: chosen.name }
 }

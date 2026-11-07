@@ -113,7 +113,7 @@ export type GrowPath =
   | 'eval/accuracy'
   | 'eval/r2'
 
-const EPSILON = 2.220446049250313e-16
+const EPSILON = Number.EPSILON
 
 function featureCount(m: MaxFeatures, d: number): number {
   if (m === 'all') return d

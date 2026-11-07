@@ -8,6 +8,7 @@
  */
 
 import { type Json, logSumExpOf, MdmlError } from '../base/index.ts'
+import { stridesOf } from '../tensor/index.ts'
 
 /**
  * A discrete variable: a name and the names of its states.
@@ -34,16 +35,9 @@ export interface Factor {
 const NEG = Number.NEGATIVE_INFINITY
 const size = (card: readonly number[]): number => card.reduce((a, b) => a * b, 1)
 
-/** Row-major strides of a cardinality vector. */
-function strides(card: readonly number[]): number[] {
-  const s = new Array<number>(card.length).fill(1)
-  for (let i = card.length - 2; i >= 0; i--) s[i] = (s[i + 1] ?? 1) * (card[i + 1] ?? 1)
-  return s
-}
-
 /** The strides of `f` laid out along `variables` (zero for the variables `f` does not mention). */
 function aligned(f: Factor, variables: readonly string[]): number[] {
-  const s = strides(f.cardinality)
+  const s = stridesOf(f.cardinality)
   return variables.map((v) => {
     const i = f.variables.indexOf(v)
     return i < 0 ? 0 : (s[i] ?? 0)
@@ -313,7 +307,7 @@ function eliminate(f: Factor, variables: readonly string[], mode: 'sum' | 'max',
     if (!f.variables.includes(v)) throw new MdmlError('value', `${name}: ${v} is not in the factor`)
   const keep = f.variables.filter((v) => !variables.includes(v))
   const card = keep.map((v) => f.cardinality[f.variables.indexOf(v)] ?? 1)
-  const s = strides(card)
+  const s = stridesOf(card)
   const out: Factor = { variables: keep, cardinality: card, logValues: new Float64Array(size(card)) }
   const into = f.variables.map((v) => {
     const k = keep.indexOf(v)
@@ -436,7 +430,7 @@ export function factorMarginal(f: Factor, variables: readonly string[], mode: 's
 export function reduceFactor(f: Factor, evidence: Readonly<Record<string, number>>): Factor {
   const fixed = f.variables.filter((v) => v in evidence)
   if (fixed.length === 0) return f
-  const s = strides(f.cardinality)
+  const s = stridesOf(f.cardinality)
   let offset = 0
   for (const v of fixed) {
     const k = f.variables.indexOf(v)

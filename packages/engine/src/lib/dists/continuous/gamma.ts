@@ -3,6 +3,7 @@
  * Weibull and inverse Gaussian (Wald), with scipy.stats parameterisations noted on each.
  */
 
+import { EULER_GAMMA } from '../../base/index.ts'
 import {
   digamma,
   gamma as gammaFn,
@@ -51,8 +52,6 @@ import {
 import { concreteTwin, numericEntropy, numericPpf } from '../_numeric.ts'
 import { gammaSample, implicitReparam, uniformOpen } from '../_sampling.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
-
-const EULER = 0.5772156649015329
 
 /**
  * The gamma distribution with shape `concentration` and inverse scale `rate` (scipy.stats.gamma with scale = 1 / rate,
@@ -280,7 +279,7 @@ export function weibull(concentration: TensorLike, scale: TensorLike = 1): Distr
     mean: () => b(mul(lambda, g1)),
     variance: () => b(mul(square(lambda), sub(gammaFn(add(div(2, k), 1)), square(g1)))),
     mode: () => b(where(greater(k, 1), mul(lambda, pow(div(sub(k, 1), k), div(1, k))), mul(lambda, 0))),
-    entropy: () => b(add(add(mul(sub(1, div(1, k)), EULER), log(div(lambda, k))), 1)),
+    entropy: () => b(add(add(mul(sub(1, div(1, k)), EULER_GAMMA), log(div(lambda, k))), 1)),
   })
 }
 

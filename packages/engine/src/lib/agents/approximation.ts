@@ -9,6 +9,7 @@
  */
 
 import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { dnrm2 } from '../numerics/linalg/index.ts'
 import { applyUpdates, type GradientTransformation } from '../optim/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import type { Agent, Transition } from '../rl/index.ts'
@@ -280,12 +281,6 @@ export interface LinearTdState {
   readonly tdError: number
   /** The Euclidean norm of the weights. */
   readonly weightNorm: number
-}
-
-const norm = (w: ArrayLike<number>): number => {
-  let s = 0
-  for (let i = 0; i < w.length; i++) s += (w[i] ?? 0) ** 2
-  return Math.sqrt(s)
 }
 
 /** Options shared by the linear prediction agents. */
@@ -599,7 +594,7 @@ function linearPrediction<O>(
       steps: 0,
       episodes: 0,
       tdError: 0,
-      weightNorm: norm(w0),
+      weightNorm: dnrm2(w0),
     }),
     act: (_, o, k) => sample(behaviour(o), k),
     greedy: (_, o) => argmaxOf((options.target ?? behaviour)(o)),
@@ -630,7 +625,7 @@ function linearPrediction<O>(
         steps: s.steps + 1,
         episodes: s.episodes + (ended ? 1 : 0),
         tdError: delta,
-        weightNorm: norm(next.w),
+        weightNorm: dnrm2(next.w),
       }
     },
     stats: (s) => ({ tdError: s.tdError, weightNorm: s.weightNorm }),
@@ -788,7 +783,7 @@ export function semiGradientSarsa<O>(
           previous: { ...here, reward: t.reward },
           steps: s.steps + 1,
           tdError: delta,
-          weightNorm: norm(state.w),
+          weightNorm: dnrm2(state.w),
         }
       }
       const boot = t.terminated ? 0 : Math.max(...qs(state.w, t.nextObservation))
@@ -801,7 +796,7 @@ export function semiGradientSarsa<O>(
         steps: s.steps + 1,
         episodes: s.episodes + 1,
         tdError: u.tdError,
-        weightNorm: norm(u.w),
+        weightNorm: dnrm2(u.w),
       }
     },
     stats: (s) => ({ tdError: s.tdError, weightNorm: s.weightNorm }),

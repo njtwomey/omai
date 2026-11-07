@@ -10,7 +10,7 @@ import { foldIn, type Key } from '../../random/index.ts'
 import { proposal, type ResamplingScheme, resample, smcSampler } from '../../sampling/index.ts'
 import { fromStorage, item, mul, primalOf, reshape, sliceAxis, sum, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
-import { maskedLogProb } from '../_contract.ts'
+import { maskedLogProb, observedLogProb } from '../_contract.ts'
 import type { ProgramAnalysis } from '../analysis.ts'
 import { constrainDraws, latentLayout, potentialEnergy } from '../density.ts'
 import { handle, type ProgramTrace, seed, traceOf } from '../handlers.ts'
@@ -18,15 +18,6 @@ import { type Posterior, samplePosterior, weightedPosterior } from '../posterior
 import type { Message, Model } from '../primitives.ts'
 import { type EngineRunOptions, feasibility, type InferenceEngine } from './engine.ts'
 import { stackSiteValues } from './importance.ts'
-
-function observedLogProb(t: ProgramTrace): number {
-  let total = 0
-  for (const s of t.sites.values()) {
-    if (s.type !== 'sample' || !s.isObserved) continue
-    total += item(primalOf(mul(sum(maskedLogProb(s)), s.scale)))
-  }
-  return total
-}
 
 /** The state of {@link particleFilterAlgorithm}. */
 export interface ParticleFilterState {

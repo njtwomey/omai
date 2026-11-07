@@ -25,15 +25,8 @@ import {
   resamplers,
   stateSpaceModels,
 } from '../dynamics/filtering/index.ts'
-import {
-  completeOption,
-  type FittedFacts,
-  type IterativeEstimator,
-  iterative,
-  type LearnData,
-  type Verbs,
-} from '../learn/index.ts'
-import { dict, int, type SpaceValue } from '../space/index.ts'
+import { type FittedFacts, type IterativeEstimator, iterative, type LearnData, type Verbs } from '../learn/index.ts'
+import { completeOption, dict, int, type SpaceValue } from '../space/index.ts'
 import { asTensor, reshape, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Contract, defineContract, Log, tensor } from '../trace/index.ts'
 
@@ -91,7 +84,7 @@ function rmse(means: readonly (readonly number[])[], states: TensorLike | undefi
 
 /**
  * The hyperparameters of {@link nonlinearFilter}. A slot's value is whole (the option and every knob of it); fill one
- * from a name and some knobs with `completeOption(table, { kind, ...knobs })` from `mdml-engine/learn`.
+ * from a name and some knobs with `completeOption(table, { kind, ...knobs })` from `mdml-engine/space`.
  */
 export interface NonlinearFilterHyper {
   /** The state-space model, a value of `stateSpaceModels.space` (ignored when the data carries a model). */
@@ -150,8 +143,8 @@ const filterContract = (): Contract<NonlinearFilterState, AnyNonlinearFilterPath
  * @example
  * ```ts
  * import { filtering } from 'mdml-engine/dynamics'
- * import { completeOption } from 'mdml-engine/learn'
  * import { key } from 'mdml-engine/random'
+ * import { completeOption } from 'mdml-engine/space'
  * import { nonlinearFilter, stateSpaceData } from 'mdml-engine/timeseries'
  * const model = filtering.stateSpaceModels.make({ kind: 'range' })
  * const { observations } = filtering.simulateStateSpace(model, 6, key(0))
