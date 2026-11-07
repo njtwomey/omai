@@ -2,16 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { grad } from '../autodiff/index.ts'
 import {
   constantKernel,
-  gramGradient,
+  gram,
   maternKernel,
   productKernel,
   rbfKernel,
   sumKernel,
   theta,
   whiteNoiseKernel,
+  withTheta,
 } from '../kernels/index.ts'
 import { cholesky, choSolve } from '../numerics/linalg/index.ts'
-import { add, eye, matmul, mul, outer, reshape, sub, tensor, toFlat } from '../tensor/index.ts'
+import { add, diagonal, eye, log, mul, sum, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { hyperparameterCount, logMarginalLikelihood, negativeLogMarginalLikelihood } from './likelihood.ts'
 
 const x = [[0], [0.7], [1.5], [2.2], [3.1]]
@@ -36,24 +37,25 @@ describe('logMarginalLikelihood', () => {
     expect(Number.isFinite(value)).toBe(true)
   })
 
-  it('is the textbook gradient written by hand (the example in the README), the library gradient and a finite difference', () => {
+  it('is the gradient of a plainly written likelihood through grad (the example in the README), the library gradient and a finite difference', () => {
     const xs = tensor([[0], [0.7], [1.5], [2.2]])
     const ys = tensor([0.1, 0.9, 0.8, -0.2])
     const kernel = rbfKernel({ lengthScale: 1 })
-    // d/dtheta log p(y | X, theta) = 1/2 tr((a a^T - K^-1) dK/dtheta), with a = K^-1 y
-    const { gram, gradient: dK } = gramGradient(kernel, xs)
-    const L = cholesky(add(gram, mul(eye(4), 0.1)))
-    const a = choSolve(L, ys)
-    const W = sub(outer(a, a), choSolve(L, eye(4)))
-    const byHand = toFlat(mul(matmul(reshape(W, [1, 16]), reshape(dK, [16, 1])), 0.5))[0] ?? Number.NaN
+    // The negative log marginal likelihood, up to a constant, written as an ordinary function of theta.
+    const nll = (t: Value): Value => {
+      const L = cholesky(add(gram(withTheta(kernel, t), xs), mul(eye(4), 0.1)))
+      const a = choSolve(L, ys)
+      return add(mul(sum(mul(ys, a)), 0.5), sum(log(diagonal(L))))
+    }
+    const viaGrad = toFlat(grad(nll)(tensor([0])))[0] ?? Number.NaN
     const library = logMarginalLikelihood(kernel, xs, ys, { alpha: 0.1 }).gradient[0] ?? Number.NaN
     const at = (t: number): number => logMarginalLikelihood(kernel, xs, ys, { alpha: 0.1, theta: [t] }).value
     const h = 1e-5
-    expect(byHand).toBeCloseTo(-0.1209288, 6)
-    expect(library).toBeCloseTo(byHand, 12)
-    expect(byHand).toBeCloseTo((at(h) - at(-h)) / (2 * h), 8)
-    const viaGrad = toFlat(grad(negativeLogMarginalLikelihood(kernel, xs, ys, { alpha: 0.1 }))(tensor([0])))[0]
-    expect(viaGrad).toBeCloseTo(-byHand, 12)
+    expect(viaGrad).toBeCloseTo(0.1209288, 6)
+    expect(viaGrad).toBeCloseTo(-library, 10)
+    expect(viaGrad).toBeCloseTo(-(at(h) - at(-h)) / (2 * h), 8)
+    const dedicated = toFlat(grad(negativeLogMarginalLikelihood(kernel, xs, ys, { alpha: 0.1 }))(tensor([0])))[0]
+    expect(dedicated).toBeCloseTo(viaGrad, 10)
   })
 
   it('is the Gaussian log density of y under K + alpha I', () => {
