@@ -65,7 +65,7 @@ mdml-engine/numerics/roots	55	5a9309ee78ae
 mdml-engine/numerics/sparse	72	2d8e9f0befde
 mdml-engine/numerics/spatial	45	2d1f523c78a3
 mdml-engine/numerics/special	77	7e725fa94aed
-mdml-engine/optim	788	c4c722b566a8
+mdml-engine/optim	788	9d830592b434
 mdml-engine/patterns	63	0b5726ab1f1c
 mdml-engine/pgm	370	eaa0b419761b
 mdml-engine/pgm/causal	59	eef13c834f1f
@@ -119,4 +119,4 @@ mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17922	3de2cd600ebf
+total	17922	8bf712746c3c

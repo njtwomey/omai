@@ -309,8 +309,9 @@ function run<S extends { readonly solution: StandardSolution; readonly finished:
 }
 
 /**
- * Solve a linear program by the two-phase simplex method on the standard form (Bland's rule by default, so it never
- * cycles), with duals, sensitivity ranges and the path of vertices.
+ * Solve a linear program by the two-phase simplex method on the standard form (Dantzig's most-negative-reduced-cost
+ * rule, with Bland's rule taking over after a run of degenerate pivots so it cannot cycle; `pivotRule: 'bland'` for
+ * Bland's rule throughout), with duals, sensitivity ranges and the path of vertices.
  *
  * @param problem - The program.
  * @param options - Pivot rule, tolerance, iteration cap and run options.
@@ -354,12 +355,14 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
 
 /**
  * Solve a linear program in scipy's form (scipy.optimize.linprog): minimise c^T x subject to A_ub x <= b_ub,
- * A_eq x = b_eq and bounds. The method is a function value; by default {@link linprogSimplex},
- * retrying without the simplex's pivot floor and then falling back to {@link linprogInteriorPoint} when the simplex
- * reports numerical difficulties (or reaches the default
- * iteration limit, which on a badly conditioned program is cycling; a limit set in the options is returned as it is),
- * and returning an infeasible or unbounded verdict only when two methods (the simplex with Bland's and Dantzig's rules,
- * the interior point) agree; otherwise the status is `numerical difficulties`.
+ * A_eq x = b_eq and bounds. The method is a function value; by default {@link linprogSimplex}. One rule gives the
+ * verdict: a method's optimal answer is a feasible point and is taken, and an infeasible or unbounded verdict, which
+ * rounding on near-tied coefficients can fake, is returned only when two methods agree. The methods are tried in
+ * order, each only when the rule is not yet met: the simplex (an iteration limit set in the options is returned as it
+ * is), the simplex in its most conservative form, Bland's rule throughout and no pivot floor (which rescues some
+ * near-tied programs the default path loses), then
+ * {@link linprogInteriorPoint}. Where nothing is optimal and the interior point does not agree with the simplex the
+ * status is `numerical difficulties`.
  *
  * @param problem - The program.
  * @param options - The method and its options.
@@ -378,25 +381,19 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
  */
 export function linprog(problem: LinearProgram, options: LinprogOptions = {}): LinprogResult {
   if (options.method !== undefined) return options.method(problem, options)
-  const r = linprogSimplex(problem, options)
-  if (r.status === 'optimal' || (r.status === 'iteration limit' && options.maxIterations !== undefined)) return r
-  // Programs the simplex cannot settle numerically (near-tied coefficients, or cycling to the default iteration
-  // limit) are retried without its pivot floor (which helps some programs and hurts others), then go to the
-  // interior-point method, and infeasible or unbounded verdicts are cross-checked: one is returned only when two
-  // methods agree.
-  const plain = linprogSimplex(problem, { ...options, pivotFloor: 0 })
+  const simplex = linprogSimplex(problem, options)
+  if (simplex.status === 'optimal' || (simplex.status === 'iteration limit' && options.maxIterations !== undefined))
+    return simplex
+  const plain = linprogSimplex(problem, { ...options, pivotRule: 'bland', pivotFloor: 0 })
   if (plain.status === 'optimal') return plain
   const ip = linprogInteriorPoint(problem, options)
-  if (ip.status === 'optimal' || (ip.status === r.status && r.status !== 'numerical difficulties')) return ip
-  const dantzig = linprogSimplex(problem, { ...options, pivotRule: 'dantzig' })
-  if (dantzig.status === 'optimal') return dantzig
-  const dantzigPlain = linprogSimplex(problem, { ...options, pivotRule: 'dantzig', pivotFloor: 0 })
-  if (dantzigPlain.status === 'optimal') return dantzigPlain
-  if (dantzig.status === ip.status && ip.status !== 'iteration limit') return dantzig
+  const agrees = (other: LinprogResult): boolean =>
+    other.status === ip.status && other.status !== 'numerical difficulties'
+  if (ip.status === 'optimal' || agrees(simplex) || agrees(plain)) return ip
   return {
     ...ip,
     status: 'numerical difficulties',
     success: false,
-    message: `numerical difficulties: the simplex (${r.status}, then ${dantzig.status}) and the interior point (${ip.status}) disagree`,
+    message: `numerical difficulties: the simplex (${simplex.status}, then ${plain.status}) and the interior point (${ip.status}) disagree`,
   }
 }

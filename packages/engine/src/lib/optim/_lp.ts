@@ -40,5 +40,5 @@ export const LP_SCHEMA: TraceSchema = channels({
 
 /** JSON configuration of a run. */
 export function lpConfig(options: LinprogOptions): Json {
-  return { tol: options.tol ?? null, pivotRule: options.pivotRule ?? 'bland', pivotFloor: options.pivotFloor ?? 1e-7 }
+  return { tol: options.tol ?? null, pivotRule: options.pivotRule ?? 'dantzig', pivotFloor: options.pivotFloor ?? 1e-7 }
 }

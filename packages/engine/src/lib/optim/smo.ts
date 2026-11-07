@@ -9,6 +9,7 @@ import { MdmlError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
+import { oneClassProblem, svcProblem, svddProblem, svrProblem } from './_smo-problems.ts'
 import { TAU, updatePair } from './_smo-update.ts'
 
 /**
@@ -62,10 +63,6 @@ function squareFrom(x: TensorLike, name: string): { readonly data: Float64Array;
   const n = Math.round(Math.sqrt(t.length))
   if (n * n !== t.length) throw new MdmlError('shape', `${name} must be square`)
   return { data: t, n }
-}
-
-function toRows(m: { readonly data: Float64Array; readonly n: number }): number[][] {
-  return Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.n, (i + 1) * m.n)))
 }
 
 /** Result of {@link smo}. */
@@ -397,10 +394,7 @@ export function svcDual(
   const y = vectorFrom(labels)
   const n = y.length
   const K = matrixFrom(kernel, n, 'kernel').data
-  const Q = Array.from({ length: n }, (_, i) =>
-    Array.from({ length: n }, (_, j) => (y[i] ?? 1) * (y[j] ?? 1) * (K[i * n + j] ?? 0)),
-  )
-  const r = smo({ Q, p: new Float64Array(n).fill(-1), y, C }, options)
+  const r = smo(svcProblem(K, y, C), options)
   return { ...r, coef: vectorTensor(Float64Array.from(r.alpha.data, (a, i) => a * (y[i] ?? 1))) }
 }
 
@@ -433,13 +427,7 @@ export function svrDual(
   const t = vectorFrom(targets)
   const n = t.length
   const K = matrixFrom(kernel, n, 'kernel').data
-  const m = 2 * n
-  const y = Float64Array.from({ length: m }, (_, i) => (i < n ? 1 : -1))
-  const Q = Array.from({ length: m }, (_, i) =>
-    Array.from({ length: m }, (_, j) => (y[i] ?? 1) * (y[j] ?? 1) * (K[(i % n) * n + (j % n)] ?? 0)),
-  )
-  const p = Float64Array.from({ length: m }, (_, i) => (i < n ? epsilon - (t[i] ?? 0) : epsilon + (t[i - n] ?? 0)))
-  const r = smo({ Q, p, y, C }, options)
+  const r = smo(svrProblem(K, t, C, epsilon), options)
   const a = r.alpha.data
   return { ...r, coef: vectorTensor(Float64Array.from({ length: n }, (_, i) => (a[i] ?? 0) - (a[i + n] ?? 0))) }
 }
@@ -468,16 +456,8 @@ export function svrDual(
  */
 export function oneClassDual(kernel: TensorLike, nu: number, options: SmoOptions = {}): SvmDualResult {
   const K = squareFrom(kernel, 'kernel')
-  const n = K.n
   if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `oneClassDual: nu must be in (0, 1], got ${nu}`)
-  const alpha0 = new Float64Array(n)
-  let remaining = nu * n
-  for (let i = 0; i < n && remaining > 0; i++) {
-    alpha0[i] = Math.min(1, remaining)
-    remaining -= alpha0[i] ?? 0
-  }
-  const ones = new Float64Array(n).fill(1)
-  const r = smo({ Q: toRows(K), p: new Float64Array(n), y: ones, C: 1, alpha0 }, options)
+  const r = smo(oneClassProblem(K.data, nu), options)
   return { ...r, coef: r.alpha }
 }
 
@@ -511,15 +491,7 @@ export function svddDual(kernel: TensorLike, C: number, options: SmoOptions = {}
   const K = squareFrom(kernel, 'kernel')
   const n = K.n
   if (!(C * n >= 1 - 1e-12)) throw new MdmlError('domain', `svddDual: C must be at least 1/n = ${1 / n}, got ${C}`)
-  const alpha0 = new Float64Array(n)
-  let remaining = 1
-  for (let i = 0; i < n && remaining > 0; i++) {
-    alpha0[i] = Math.min(C, remaining)
-    remaining -= alpha0[i] ?? 0
-  }
-  const Q = Float64Array.from(K.data, (v) => 2 * v)
-  const p = Float64Array.from({ length: n }, (_, i) => -(K.data[i * n + i] ?? 0))
-  const r = smo({ Q: toRows({ data: Q, n }), p, y: new Float64Array(n).fill(1), C, alpha0 }, options)
+  const r = smo(svddProblem(K.data, C), options)
   let quad = 0
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++) quad += (r.alpha.data[i] ?? 0) * (K.data[i * n + j] ?? 0) * (r.alpha.data[j] ?? 0)
