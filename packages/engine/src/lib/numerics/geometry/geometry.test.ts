@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
-import { checkPrimitive } from '../../autodiff/index.ts'
-import { item, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { checkPrimitive, grad } from '../../autodiff/index.ts'
+import { item, sum, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as G from './index.ts'
 
 const arr = (t: Tensor): number[][] => {
@@ -165,6 +165,78 @@ describe('geometry properties', () => {
     expect(G.rotationFromRotvec(r.asRotvec()).compose(r.inv()).magnitude()).toBeCloseTo(0, 12)
   })
 
+  it('the rotation constructors and applyHomography take tensor-likes (migration, D-009)', () => {
+    const quat: [string, (c: TensorLike) => number[]][] = [
+      ['rotationFromQuat', (c) => G.rotationFromQuat(c).asQuat()],
+      ['rotationFromRotvec', (c) => G.rotationFromRotvec(c).asQuat()],
+      ['rotationFromEuler', (c) => G.rotationFromEuler('xyz', c).asQuat()],
+    ]
+    for (const [name, f] of quat) {
+      const v = name === 'rotationFromQuat' ? [0.1, 0.2, 0.3, 0.9] : [0.1, 0.2, 0.3]
+      const expected = f(v)
+      expect(f(Float64Array.from(v)), name).toEqual(expected)
+      expect(f(tensor(v)), name).toEqual(expected)
+      expect(() => f(tensor([v, v])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(() => grad((c: Value) => sum(tensor(f(c as TensorLike))))(tensor(v)), name).toThrow(
+        expect.objectContaining({ code: 'not-differentiable' }),
+      )
+    }
+    expect(() => G.rotationFromQuat([1, 0, 0])).toThrow(expect.objectContaining({ code: 'shape' }))
+    // Levels are a tensor-like; the winding number and the point classification are int32 tensors.
+    const z = [
+      [0, 1],
+      [2, 3],
+    ]
+    expect(G.isolines(z, tensor([1.5]))[0]?.level).toBe(1.5)
+    expect(() => G.isolines(z, tensor([[1.5]]))).toThrow(expect.objectContaining({ code: 'shape' }))
+    const square = [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ]
+    expect(G.windingNumber([[0.5, 0.5]], square).dtype).toBe('int32')
+    expect(
+      toFlat(
+        G.pointInPolygon(
+          [
+            [0.5, 0.5],
+            [1, 0.5],
+            [3, 3],
+          ],
+          square,
+        ),
+      ),
+    ).toEqual([1, 0, -1])
+    const h = tensor([
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 1, 1],
+    ])
+    expect(toFlat(G.applyHomography(h, [[2, 1]]))).toEqual(toFlat(G.applyHomography(arr(h), [[2, 1]])))
+    expect(() =>
+      G.applyHomography(
+        [
+          [1, 0],
+          [0, 1],
+        ],
+        [[2, 1]],
+      ),
+    ).toThrow(expect.objectContaining({ code: 'shape' }))
+    // Differentiable in the matrix as well as in the points: d x' / d h02 = 1 / w at the identity.
+    expect(
+      toFlat(
+        grad((m: Value) => sum(G.applyHomography(m, [[2, 1]])))(
+          tensor([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+          ]),
+        ) as Value,
+      )[2],
+    ).toBe(1)
+  })
+
   it('homographies and affine maps invert; Kabsch recovers a rigid motion exactly', () => {
     const src = [
       [0, 0],
@@ -179,7 +251,7 @@ describe('geometry properties', () => {
       [0.02, 0.01, 1],
     ]
     const estimate = G.homography(src, G.applyHomography(h, src))
-    for (const [i, row] of estimate.entries())
+    for (const [i, row] of arr(estimate).entries())
       for (const [j, v] of row.entries()) expect(v).toBeCloseTo(h[i]?.[j] ?? 0, 10)
     // Exactly four points (an 8 x 9 system): the null vector is the ninth right singular vector, which the reduced
     // SVD leaves out unless the system is padded (regression: this returned three near-identical rows).
@@ -193,7 +265,7 @@ describe('geometry properties', () => {
       [0, 2, 0],
       [0, 0, 1],
     ]
-    for (const [i, row] of scaled.entries())
+    for (const [i, row] of arr(scaled).entries())
       for (const [j, v] of row.entries()) expect(v).toBeCloseTo(diag[i]?.[j] ?? 0, 10)
     const map = G.affine(
       [
@@ -217,8 +289,8 @@ describe('geometry properties', () => {
   })
 
   it('contour levels are nice and ellipses hold their probability', () => {
-    expect(G.contourLevels([[-1.3, 4.2]], 5)).toEqual([0, 2, 4])
-    expect(G.contourLevels([[-1.3, 4.2]], 6)).toEqual([-1, 0, 1, 2, 3, 4])
+    expect(toFlat(G.contourLevels([[-1.3, 4.2]], 5))).toEqual([0, 2, 4])
+    expect(toFlat(G.contourLevels([[-1.3, 4.2]], 6))).toEqual([-1, 0, 1, 2, 3, 4])
     const e = G.covarianceEllipse(
       [1, 2],
       [

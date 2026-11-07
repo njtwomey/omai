@@ -5,7 +5,8 @@
  */
 
 import { type Complex, cabs, cadd, cdiv, cmul, csub, MdmlError } from '../../base/index.ts'
-import { polydiv, polyroots } from './power.ts'
+import { type TensorLike, toVector } from '../../tensor/index.ts'
+import { divKernel, rootsKernel } from './_power.ts'
 
 // Rational functions follow scipy.signal: coefficients highest degree first (in s for residue, in z^-1 for residuez).
 
@@ -113,12 +114,15 @@ export interface PartialFractions {
 /**
  * The partial-fraction expansion of b(s) / a(s) (scipy.signal.residue): sum_i r_i / (s - p_i)^j + k(s), with poles
  * closer than tol treated as one repeated pole. Residues of repeated poles come from the Taylor expansion of
- * b / (the rest of a) about the pole.
+ * b / (the rest of a) about the pole. Takes tensors (migration, D-009: `b` and `a` were `readonly number[]`); the result
+ * record keeps its plain arrays, as {@link ComplexArray} is built literally by `systems`.
  *
- * @param b - Numerator, highest degree first.
- * @param a - Denominator, highest degree first.
+ * @param b - Numerator `[p]`, highest degree first.
+ * @param a - Denominator `[q]`, highest degree first.
  * @param tol - Tolerance for repeated poles (default 1e-3).
  * @returns Residues, poles and the direct term.
+ * @throws MdmlError with code `value` for a zero denominator, `shape` unless `b` and `a` are vectors, and
+ *   `not-differentiable` for a traced value.
  * @concept partial-fractions
  * @example
  * ```ts
@@ -127,18 +131,18 @@ export interface PartialFractions {
  * residue([1], [1, 3, 2]).residues.re.map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
  * ```
  */
-export function residue(b: readonly number[], a: readonly number[], tol = 1e-3): PartialFractions {
-  const bt = trimLeading(b)
-  const at = trimLeading(a)
+export function residue(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFractions {
+  const bt = trimLeading(toVector(b, 'residue'))
+  const at = trimLeading(toVector(a, 'residue'))
   if (at.length === 0 || at[0] === 0) throw new MdmlError('value', 'residue: the denominator is zero')
   let numerator = bt
   let direct: number[] = []
   if (bt.length >= at.length) {
-    const { quotient, remainder } = polydiv([...bt].reverse(), [...at].reverse())
+    const { quotient, remainder } = divKernel([...bt].reverse(), [...at].reverse())
     direct = quotient.reverse()
     numerator = remainder.reverse()
   }
-  const roots = polyroots([...at].reverse())
+  const roots = rootsKernel([...at].reverse())
   const poles: Complex[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
   const { unique, multiplicity } = groupPoles(poles, tol)
   const lead = at[0] as number
@@ -153,12 +157,15 @@ export function residue(b: readonly number[], a: readonly number[], tol = 1e-3):
 
 /**
  * The partial-fraction expansion of a discrete-time transfer function in z^-1 (scipy.signal.residuez):
- * b(z) / a(z) = sum_i r_i / (1 - p_i z^-1)^j + k(z^-1).
+ * b(z) / a(z) = sum_i r_i / (1 - p_i z^-1)^j + k(z^-1). Takes tensors (migration, D-009: `b` and `a` were
+ * `readonly number[]`); the result record keeps its plain arrays.
  *
- * @param b - Numerator coefficients of z^0, z^-1, ...
- * @param a - Denominator coefficients of z^0, z^-1, ... (a[0] != 0).
+ * @param b - Numerator coefficients `[p]` of z^0, z^-1, ...
+ * @param a - Denominator coefficients `[q]` of z^0, z^-1, ... (a[0] != 0).
  * @param tol - Tolerance for repeated poles (default 1e-3).
  * @returns Residues, poles and the direct term (in z^-1, lowest power first).
+ * @throws MdmlError with code `value` when a[0] is zero, `shape` unless `b` and `a` are vectors, and
+ *   `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { residuez } from 'mdml-engine/numerics/polynomial'
@@ -166,21 +173,21 @@ export function residue(b: readonly number[], a: readonly number[], tol = 1e-3):
  * residuez([1], [1, -0.5]).poles.re // => [0.5]
  * ```
  */
-export function residuez(b: readonly number[], a: readonly number[], tol = 1e-3): PartialFractions {
+export function residuez(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFractions {
   const trimEnd = (c: readonly number[]): number[] => [...trimLeading([...c].reverse())].reverse()
-  const bt = trimEnd(b)
-  const at = trimEnd(a)
+  const bt = trimEnd(toVector(b, 'residuez'))
+  const at = trimEnd(toVector(a, 'residuez'))
   if (at.length === 0 || at[0] === 0) throw new MdmlError('value', 'residuez: a[0] must be non-zero')
   // In w = z^-1: b(w) = sum b_i w^i, so the arrays are already lowest first in w.
   let numerator = bt
   let direct: number[] = []
   if (bt.length >= at.length) {
-    const { quotient, remainder } = polydiv(bt, at)
+    const { quotient, remainder } = divKernel(bt, at)
     direct = quotient
     numerator = remainder
   }
   // Poles in z are the roots of a_0 z^N + a_1 z^(N-1) + ... + a_N.
-  const roots = polyroots([...at].reverse())
+  const roots = rootsKernel([...at].reverse())
   const poles: Complex[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
   const { unique, multiplicity } = groupPoles(poles, tol)
   // In w the poles are 1 / p; a(w) = a_N prod (w - 1/p).
@@ -208,13 +215,16 @@ export function residuez(b: readonly number[], a: readonly number[], tol = 1e-3)
 
 /**
  * Rebuild b(s) / a(s) from a partial-fraction expansion (scipy.signal.invres): consecutive poles closer than tol form
- * one repeated pole, whose residues are for powers 1, 2, ...
+ * one repeated pole, whose residues are for powers 1, 2, ... Takes tensor-likes (migration, D-009: the parts and `k`
+ * were `number[]`); the result record keeps its plain arrays.
  *
- * @param r - Residues.
- * @param p - Poles (repeated poles adjacent).
- * @param k - Direct term (highest first).
+ * @param r - Residues, as real and imaginary parts (each a vector).
+ * @param p - Poles (repeated poles adjacent), likewise.
+ * @param k - Direct term `[m]` (highest first).
  * @param tol - Tolerance for grouping (default 1e-3).
  * @returns Numerator and denominator, highest first, complex in general.
+ * @throws MdmlError with code `shape` unless the parts and `k` are vectors, and `not-differentiable` for a traced
+ *   value.
  * @example
  * ```ts
  * import { invres } from 'mdml-engine/numerics/polynomial'
@@ -222,13 +232,16 @@ export function residuez(b: readonly number[], a: readonly number[], tol = 1e-3)
  * ```
  */
 export function invres(
-  r: ComplexArray,
-  p: ComplexArray,
-  k: readonly number[],
+  r: { readonly re: TensorLike; readonly im: TensorLike },
+  p: { readonly re: TensorLike; readonly im: TensorLike },
+  k: TensorLike,
   tol = 1e-3,
 ): { readonly numerator: ComplexArray; readonly denominator: ComplexArray } {
-  const poles: Complex[] = p.re.map((v, i) => [v, p.im[i] ?? 0])
-  const residues: Complex[] = r.re.map((v, i) => [v, r.im[i] ?? 0])
+  const pim = toVector(p.im, 'invres')
+  const rim = toVector(r.im, 'invres')
+  const direct = toVector(k, 'invres')
+  const poles: Complex[] = toVector(p.re, 'invres').map((v, i) => [v, pim[i] ?? 0])
+  const residues: Complex[] = toVector(r.re, 'invres').map((v, i) => [v, rim[i] ?? 0])
   // Group consecutive poles, as scipy's _group_poles.
   const unique: Complex[] = []
   const multiplicity: number[] = []
@@ -269,8 +282,8 @@ export function invres(
     return out
   }
   let numerator: Complex[] = [[0, 0]]
-  if (k.length > 0) {
-    const kc: Complex[] = k.map((v) => [v, 0])
+  if (direct.length > 0) {
+    const kc: Complex[] = direct.map((v) => [v, 0])
     // k * denominator.
     const prod: Complex[] = Array.from({ length: kc.length + denominator.length - 1 }, () => [0, 0] as Complex)
     kc.forEach((x, i) => {

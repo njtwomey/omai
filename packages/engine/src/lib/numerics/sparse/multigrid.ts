@@ -6,8 +6,17 @@
  */
 
 import { type Json, MdmlError } from '../../base/index.ts'
-import { fromStorage, primalOf, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import {
+  fromStorage,
+  primalOf,
+  promoteFloat,
+  type Tensor,
+  type TensorLike,
+  toFlat,
+  toVector,
+} from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { solveKernel } from '../linalg/_kernels.ts'
 import { dnrm2 as norm } from '../linalg/blas.ts'
 import { csrOf, type Rows, residualNormOf, rowsOf, sweep } from './_rows.ts'
@@ -447,28 +456,35 @@ export function multigridAlgorithm(
 
 /**
  * One multigrid cycle from an iterate, with the iterate after each of its three stages (for the error by frequency
- * after the smoothing and after the coarse-grid correction).
+ * after the smoothing and after the coarse-grid correction). Takes the iterate as a tensor-like and returns the three
+ * iterates as tensors (migration, D-009: `x` was `ArrayLike<number>`, the iterates `number[]`).
  *
  * @param a - The matrix of the finest grid.
- * @param b - The right-hand side.
- * @param x - The iterate to start from.
+ * @param b - The right-hand side `[n]`.
+ * @param x - The iterate to start from `[n]`.
  * @param options - The grids, smoother, sweeps and cycle shape.
  * @returns The iterate after pre-smoothing, after the coarse-grid correction, and after post-smoothing.
+ * @throws MdmlError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { multigridCycle, poisson1d } from 'mdml-engine/numerics/sparse'
- * multigridCycle(poisson1d(7), new Array(7).fill(1), new Array(7).fill(0), { shape: [7] }).post.length // => 7
+ * multigridCycle(poisson1d(7), new Array(7).fill(1), new Array(7).fill(0), { shape: [7] }).post.shape // => [7]
  * ```
  */
 export function multigridCycle(
   a: CsrMatrix | TensorLike,
   b: TensorLike,
-  x: ArrayLike<number>,
+  x: TensorLike,
   options: MultigridOptions = {},
-): { readonly pre: number[]; readonly corrected: number[]; readonly post: number[] } {
+): {
+  readonly pre: Tensor<'float64', [number]>
+  readonly corrected: Tensor<'float64', [number]>
+  readonly post: Tensor<'float64', [number]>
+} {
   const levels = hierarchy(a, options)
   const bv = Float64Array.from(toFlat(primalOf(promoteFloat(b)[0] as Tensor)))
-  return cycleFrom(levels, 0, bv, x, settingsOf(options))
+  const { pre, corrected, post } = cycleFrom(levels, 0, bv, toVector(x, 'multigridCycle'), settingsOf(options))
+  return { pre: vectorOf(pre), corrected: vectorOf(corrected), post: vectorOf(post) }
 }
 
 /**

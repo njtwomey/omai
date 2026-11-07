@@ -24,10 +24,12 @@ import {
   take,
   tensor,
   toFlat,
+  toVector,
   type Value,
   where,
   zeros,
 } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { eigvals } from '../linalg/index.ts'
 
 /**
@@ -175,7 +177,7 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
       const lo = xs[i] ?? 0
       const hi = xs[i + 1] ?? 0
       const coeffs = Array.from({ length: k + 1 }, (_, j) => cs[j * m + i] ?? 0)
-      for (const t of realRoots(coeffs)) {
+      for (const t of realRootsKernel(coeffs)) {
         const r = lo + t
         if (r >= lo - 1e-12 * Math.max(1, Math.abs(lo)) && r <= hi + 1e-12 * Math.max(1, Math.abs(hi)))
           found.push(Math.min(Math.max(r, lo), hi))
@@ -200,17 +202,24 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
 }
 
 /**
- * Real roots of sum_j a_j t^(n - j) (highest first), by companion-matrix eigenvalues polished with Newton steps.
+ * Real roots of sum_j a_j t^(n - j) (highest first), by companion-matrix eigenvalues polished with Newton steps. Takes
+ * and returns tensors (migration, D-009: was `readonly number[]` to `number[]`).
  *
- * @param coefficients - Coefficients, highest power first.
- * @returns The real roots (none for a constant).
+ * @param coefficients - Coefficients `[k]`, highest power first.
+ * @returns The real roots `[r]` (none for a constant).
+ * @throws MdmlError with code `shape` unless `coefficients` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { realRoots } from 'mdml-engine/numerics/interpolate'
- * realRoots([1, -3, 2]).map((r) => Math.round(r * 1e9) / 1e9).sort((a, b) => a - b) // => [1, 2]
+ * import { toFlat } from 'mdml-engine/tensor'
+ * toFlat(realRoots([1, -3, 2])).map((r) => Math.round(r * 1e9) / 1e9).sort((a, b) => a - b) // => [1, 2]
  * ```
  */
-export function realRoots(coefficients: readonly number[]): number[] {
+export function realRoots(coefficients: TensorLike): Tensor<'float64', [number]> {
+  return vectorOf(realRootsKernel(toVector(coefficients, 'realRoots')))
+}
+
+function realRootsKernel(coefficients: readonly number[]): number[] {
   let a = [...coefficients]
   const scale = maxOf(a.map(Math.abs))
   if (scale === 0) return []

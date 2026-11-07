@@ -553,7 +553,7 @@ export function rationalSeries(numerator: readonly number[], denominator: readon
  * ```
  */
 export function seriesProduct(a: readonly number[], b: readonly number[], n?: number): number[] {
-  const full = polymul(a, b)
+  const full = toFlat(polymul(a, b))
   return full.slice(0, n ?? full.length)
 }
 

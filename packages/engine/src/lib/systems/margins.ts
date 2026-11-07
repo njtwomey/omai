@@ -6,8 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
-import { polyder, polymul } from '../numerics/polynomial/index.ts'
-import { evalAt, numbers, polyAddHf, rootsOf, toList, trimLeading } from './_shared.ts'
+import { evalAt, numbers, polyAddHf, polyDerHf, polyMulHf, rootsOf, toList, trimLeading } from './_shared.ts'
 import { dimensions, isDiscrete, type Lti, toTf } from './representations.ts'
 
 // Stability margins by python-control's polynomial method: crossover frequencies are the real roots of polynomials in
@@ -75,9 +74,8 @@ function loopOf(sys: Lti): Loop {
   return { num, den, dt, at }
 }
 
-const lowestFirst = (c: readonly number[]): number[] => [...c].reverse()
 const derivative = (c: readonly number[]): number[] => {
-  const d = lowestFirst(polyder(lowestFirst(c)))
+  const d = polyDerHf(c)
   return d.length > 0 ? d : [0]
 }
 const realRoots = (c: readonly number[]): number[] =>
@@ -102,21 +100,21 @@ function partsInW(c: readonly number[]): { re: number[]; im: number[] } {
 
 /** |p(jw)|^2 as a real polynomial in w. */
 function squared(p: { re: number[]; im: number[] }): number[] {
-  return polyAddHf(polymul(p.re, p.re), polymul(p.im, p.im))
+  return polyAddHf(polyMulHf(p.re, p.re), polyMulHf(p.im, p.im))
 }
 
 function continuousCrossings(loop: Loop): { w180: number[]; wc: number[]; wstab: number[] } {
   const n = partsInW(loop.num)
   const d = partsInW(loop.den)
   // Im H(jw) = 0: Im(num) Re(den) - Re(num) Im(den) = 0.
-  const imag = polyAddHf(polymul(n.im, d.re), negate(polymul(n.re, d.im)))
+  const imag = polyAddHf(polyMulHf(n.im, d.re), negate(polyMulHf(n.re, d.im)))
   const w180 = realRoots(imag).filter((w) => w >= 0)
   const wc = realRoots(polyAddHf(squared(n), negate(squared(d)))).filter((w) => w > 0)
   // Extrema of |1 + H|^2 = |num + den|^2 / |den|^2 with a positive second derivative.
   const sumParts = { re: polyAddHf(n.re, d.re), im: polyAddHf(n.im, d.im) }
   const top = squared(sumParts)
   const bottom = squared(d)
-  const test = polyAddHf(polymul(derivative(top), bottom), negate(polymul(derivative(bottom), top)))
+  const test = polyAddHf(polyMulHf(derivative(top), bottom), negate(polyMulHf(derivative(bottom), top)))
   const slope = derivative(test)
   const wstab = realRoots(test).filter((w) => w > 0 && evalAt(slope, C.of(w)).re > 0)
   return { w180, wc, wstab }
@@ -138,14 +136,14 @@ function discreteCrossings(loop: Loop): { w180: number[]; wc: number[]; wstab: n
   const denInv = [...den].reverse()
   const shift = [1, ...new Array<number>(-pq).fill(0)]
   // H(z) = H(1/z) on the unit circle: num(z) den(1/z) z^q = num(1/z) z^p den(z) (times z^-pq).
-  const p1 = polymul(num, denInv)
-  let p2 = polymul(numInv, den)
-  if (pq < 0) p2 = polymul(p2, shift)
+  const p1 = polyMulHf(num, denInv)
+  let p2 = polyMulHf(numInv, den)
+  if (pq < 0) p2 = polyMulHf(p2, shift)
   const eps = Number.EPSILON ** (1 / p2.length)
   const w180 = onUnitCircle(toList(rootsOf(trimLeading(polyAddHf(p1, negate(p2))))), dt, eps)
-  let m1 = polymul(num, numInv)
-  const m2 = polymul(den, denInv)
-  if (pq < 0) m1 = polymul(m1, shift)
+  let m1 = polyMulHf(num, numInv)
+  const m2 = polyMulHf(den, denInv)
+  if (pq < 0) m1 = polyMulHf(m1, shift)
   const eps2 = Number.EPSILON ** (1 / m2.length)
   const wc = onUnitCircle(toList(rootsOf(trimLeading(polyAddHf(m1, negate(m2))))), dt, eps2).filter((w) => w > 0)
   // The closest approach to -1, by a grid then golden-section refinement (python-control minimises from the grid).

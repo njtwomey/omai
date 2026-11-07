@@ -6,7 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { polymul } from '../numerics/polynomial/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { asSeries } from './_series.ts'
 
 /**
@@ -52,9 +52,9 @@ export function differencePolynomial(d: number, seasonal = 0, period = 1): numbe
   if (!(Number.isInteger(d) && d >= 0 && Number.isInteger(seasonal) && seasonal >= 0 && Number.isInteger(period)))
     throw new MdmlError('value', 'differencePolynomial: orders must be non-negative integers')
   let poly = [1]
-  for (let i = 0; i < d; i++) poly = polymul(poly, [1, -1])
+  for (let i = 0; i < d; i++) poly = toFlat(polymul(poly, [1, -1]))
   for (let i = 0; i < seasonal; i++)
-    poly = polymul(poly, [1, ...new Array<number>(Math.max(period - 1, 0)).fill(0), -1])
+    poly = toFlat(polymul(poly, [1, ...new Array<number>(Math.max(period - 1, 0)).fill(0), -1]))
   return poly
 }
 

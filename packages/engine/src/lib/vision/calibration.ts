@@ -12,7 +12,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { homography } from '../numerics/geometry/index.ts'
-import { concat, reshape, sliceAxis, sub, tensor, type Value } from '../tensor/index.ts'
+import { concat, reshape, sliceAxis, sub, tensor, toArray, type Value } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
 import { invOf, type Matrix, matMul, nullVector, points3Of, refine, transposeOf } from './_refine.ts'
@@ -154,11 +154,14 @@ function calibrationProblem(
       throw new MdmlError('value', 'calibrateCamera: the target must be planar (z = 0)')
     if (o.length !== x[v]?.length) throw new MdmlError('shape', 'calibrateCamera: one image point per target point')
   }
-  const hs = X.map((o, v) =>
-    homography(
-      o.map(([a, b]) => [a, b] as [number, number]),
-      x[v] as [number, number][],
-    ),
+  const hs = X.map(
+    (o, v) =>
+      toArray(
+        homography(
+          o.map(([a, b]) => [a, b] as [number, number]),
+          x[v] as [number, number][],
+        ),
+      ) as Matrix,
   )
   const K0 = zhangIntrinsics(hs)
   const poses0 = hs.map((h) => zhangPose(h, K0))

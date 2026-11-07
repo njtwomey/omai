@@ -8,9 +8,20 @@ import { MdmlError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { chebyshevNodes } from '../numerics/interpolate/index.ts'
 import { det, eigvals, norm } from '../numerics/linalg/index.ts'
-import { type ComplexArray, orthofit, orthoToPower, polyder, polymul } from '../numerics/polynomial/index.ts'
+import { type ComplexArray, orthofit, orthoToPower } from '../numerics/polynomial/index.ts'
 import { concat, eye, mul, primalOf, sub, type TensorLike, toFlat } from '../tensor/index.ts'
-import { evalAt, float, fromList, numbers, polyAddHf, rootsOf, toList, trimLeading } from './_shared.ts'
+import {
+  evalAt,
+  float,
+  fromList,
+  numbers,
+  polyAddHf,
+  polyDerHf,
+  polyMulHf,
+  rootsOf,
+  toList,
+  trimLeading,
+} from './_shared.ts'
 import { isDiscrete, type Lti, toTf, toZpk } from './representations.ts'
 
 const sorted = (z: ComplexArray): ComplexArray => {
@@ -75,14 +86,14 @@ export function zeros(sys: Lti): ComplexArray {
   if (n === 0) return { re: [], im: [] }
   // det [[sI - A, -B], [C, D]] is a real polynomial of degree at most n: interpolate it at n + 1 Chebyshev points.
   const scale = Math.max(1, numbers(norm(sys.a)).at(0) ?? 1)
-  const nodes = chebyshevNodes(n + 1)
+  const nodes = toFlat(chebyshevNodes(n + 1))
   const values = nodes.map((x) => {
     const s = x * scale
     const top = concat([sub(mul(eye(n), s), sys.a), mul(sys.b, -1)], 1)
     return numbers(det(concat([top, concat([sys.c, sys.d], 1)], 0))).at(0) ?? 0
   })
   const cheb = numbers(orthofit('chebyshev', nodes, values, n))
-  const lowest = orthoToPower('chebyshev', cheb)
+  const lowest = toFlat(orthoToPower('chebyshev', cheb))
   const big = lowest.reduce((acc, v) => Math.max(acc, Math.abs(v)), 0)
   const highest = trimLeading([...lowest].reverse(), 1e-9 * big)
   const roots = toList(rootsOf(highest)).map((z) => C.mul(z, scale))
@@ -282,12 +293,11 @@ export function rootLocus(sys: Lti, gains?: readonly number[]): RootLocus {
     excess > 0 ? (ps.reduce((s, p) => s + p.re, 0) - zs.reduce((s, z) => s + z.re, 0)) / excess : Number.NaN
   const angles = Array.from({ length: Math.max(excess, 0) }, (_, k) => ((2 * k + 1) * Math.PI) / excess)
   // Break points: real roots of D N' - N D' with k = -D / N >= 0.
-  const lowest = (c: readonly number[]): number[] => [...c].reverse()
-  const dn = lowest(polyder(lowest(num)))
-  const dd = lowest(polyder(lowest(den)))
+  const dn = polyDerHf(num)
+  const dd = polyDerHf(den)
   const condition = polyAddHf(
-    polymul(den, dn.length > 0 ? dn : [0]),
-    polymul(num, dd.length > 0 ? dd : [0]).map((v) => -v),
+    polyMulHf(den, dn.length > 0 ? dn : [0]),
+    polyMulHf(num, dd.length > 0 ? dd : [0]).map((v) => -v),
   )
   const points: number[] = []
   const breakGains: number[] = []

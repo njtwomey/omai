@@ -1,6 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { polyFromRoots } from '../numerics/polynomial/index.ts'
+import { toFlat } from '../tensor/index.ts'
 import * as S from './index.ts'
 
 // Polynomials built from chosen roots, kept away from the stability boundary so the verdicts are unambiguous.
@@ -16,7 +17,7 @@ const rootsArb = fc
 const polyOf = (r: { reals: number[]; pairs: { re: number; im: number }[] }): number[] => {
   const re = [...r.reals, ...r.pairs.flatMap((q) => [q.re, q.re])]
   const im = [...r.reals.map(() => 0), ...r.pairs.flatMap((q) => [q.im, -q.im])]
-  return polyFromRoots({ re, im }).reverse()
+  return toFlat(polyFromRoots({ re, im })).reverse()
 }
 
 describe('stability tests agree with the pole locations', () => {

@@ -5,7 +5,8 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { primalOf, toFlat } from '../../tensor/index.ts'
+import { primalOf, type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import type { SpectralData } from './tikhonov.ts'
 
 function arrays(data: SpectralData): { s: number[]; beta: number[] } {
@@ -13,25 +14,35 @@ function arrays(data: SpectralData): { s: number[]; beta: number[] } {
 }
 
 /**
- * A geometric grid of n parameters from the largest to a small fraction of the singular values.
+ * A geometric grid of n parameters from the largest to a small fraction of the singular values. Returns a tensor
+ * (migration, D-009: was `number[]`).
  *
  * @param data - The SVD of the problem (see `spectralData`).
  * @param n - Number of parameters (default 100).
- * @returns The grid, decreasing, starting at the largest singular value.
+ * @returns The grid `[n]`, decreasing, starting at the largest singular value.
  * @throws MdmlError with code `value` when the singular values are all zero.
  * @example
  * ```ts
  * import { lambdaGrid, spectralData } from 'mdml-engine/numerics/inverse'
- * const grid = lambdaGrid(spectralData([[2, 0], [0, 1]], [1, 1]), 3)
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const grid = toFlat(lambdaGrid(spectralData([[2, 0], [0, 1]], [1, 1]), 3))
  * [grid.length, grid[0]] // => [3, 2]
  * ```
  */
-export function lambdaGrid(data: SpectralData, n = 100): number[] {
-  const { s } = arrays(data)
+export function lambdaGrid(data: SpectralData, n = 100): Tensor<'float64', [number]> {
+  return vectorOf(gridOf(arrays(data).s, n, 'lambdaGrid'))
+}
+
+function gridOf(s: readonly number[], n: number, name: string): number[] {
   const hi = s[0] ?? 1
-  if (!(hi > 0)) throw new MdmlError('value', 'lambdaGrid: the singular values are all zero')
+  if (!(hi > 0)) throw new MdmlError('value', `${name}: the singular values are all zero`)
   const lo = Math.max((s[s.length - 1] ?? hi * 1e-16) / 10, hi * 1e-16)
   return Array.from({ length: n }, (_, i) => hi * (lo / hi) ** (i / (n - 1)))
+}
+
+/** The parameters to scan: the given vector, or the default geometric grid. */
+function scan(lambdas: TensorLike | undefined, s: readonly number[], rule: string): readonly number[] {
+  return lambdas === undefined ? gridOf(s, 100, 'lambdaGrid') : toVector(lambdas, rule)
 }
 
 /** Residual and solution norms of the Tikhonov solution, from the SVD. */
@@ -54,18 +65,22 @@ function norms(
 /** Result of a parameter-choice rule. */
 export interface ParameterChoice {
   readonly lambda: number
-  readonly lambdas: readonly number[]
-  /** The rule's criterion at each parameter (curvature, GCV function, ...). */
-  readonly criterion: readonly number[]
+  /** The parameters scanned `[k]`. */
+  readonly lambdas: Tensor<'float64', [number]>
+  /** The rule's criterion at each parameter `[k]` (curvature, GCV function, ...). */
+  readonly criterion: Tensor<'float64', [number]>
 }
 
 /**
  * The L-curve corner (Hansen): the parameter of maximum curvature of (log |A x - b|, log |x|) over the Tikhonov
- * solutions, with the curvature from the closed form in terms of the SVD.
+ * solutions, with the curvature from the closed form in terms of the SVD. Takes the parameters as a tensor-like and
+ * returns them and the curvature as tensors (migration, D-009: were `readonly number[]`).
  *
  * @param data - From spectralData.
- * @param options - The parameters to scan (default 100 geometric) and |b|^2 (to include the part outside range(A)).
+ * @param options - The parameters to scan `[k]` (default 100 geometric) and |b|^2 (to include the part outside
+ *   range(A)).
  * @returns The corner parameter and the curvature curve.
+ * @throws MdmlError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
  * @concept l-curve
  * @example
  * ```ts
@@ -75,10 +90,10 @@ export interface ParameterChoice {
  */
 export function lCurve(
   data: SpectralData,
-  options: { readonly lambdas?: readonly number[]; readonly bNormSquared?: number } = {},
+  options: { readonly lambdas?: TensorLike; readonly bNormSquared?: number } = {},
 ): ParameterChoice {
   const { s, beta } = arrays(data)
-  const lambdas = options.lambdas ?? lambdaGrid(data)
+  const lambdas = scan(options.lambdas, s, 'lCurve')
   const outside = Math.max(
     0,
     (options.bNormSquared ?? beta.reduce((acc, v) => acc + v * v, 0)) - beta.reduce((acc, v) => acc + v * v, 0),
@@ -121,17 +136,19 @@ export function lCurve(
   criterion.forEach((k, i) => {
     if (k > (criterion[best] ?? Number.NEGATIVE_INFINITY)) best = i
   })
-  return { lambda: lambdas[best] ?? Number.NaN, lambdas, criterion }
+  return { lambda: lambdas[best] ?? Number.NaN, lambdas: vectorOf(lambdas), criterion: vectorOf(criterion) }
 }
 
 /**
  * Generalised cross-validation (Golub, Heath and Wahba): minimise G(lambda) = |A x_lambda - b|^2 / (m - sum f_i)^2,
- * which estimates the predictive error without knowing the noise level.
+ * which estimates the predictive error without knowing the noise level. Takes the parameters as a tensor-like and
+ * returns them and G as tensors (migration, D-009: were `readonly number[]`).
  *
  * @param data - From spectralData.
  * @param m - Number of data points.
- * @param options - Parameters to scan and |b|^2.
+ * @param options - Parameters to scan `[k]` and |b|^2.
  * @returns The minimiser and G along the scan.
+ * @throws MdmlError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { gcv, spectralData } from 'mdml-engine/numerics/inverse'
@@ -141,10 +158,10 @@ export function lCurve(
 export function gcv(
   data: SpectralData,
   m: number,
-  options: { readonly lambdas?: readonly number[]; readonly bNormSquared?: number } = {},
+  options: { readonly lambdas?: TensorLike; readonly bNormSquared?: number } = {},
 ): ParameterChoice {
   const { s, beta } = arrays(data)
-  const lambdas = options.lambdas ?? lambdaGrid(data)
+  const lambdas = scan(options.lambdas, s, 'gcv')
   const outside = Math.max(
     0,
     (options.bNormSquared ?? beta.reduce((acc, v) => acc + v * v, 0)) - beta.reduce((acc, v) => acc + v * v, 0),
@@ -158,7 +175,7 @@ export function gcv(
   criterion.forEach((g, i) => {
     if (g < (criterion[best] ?? Number.POSITIVE_INFINITY)) best = i
   })
-  return { lambda: lambdas[best] ?? Number.NaN, lambdas, criterion }
+  return { lambda: lambdas[best] ?? Number.NaN, lambdas: vectorOf(lambdas), criterion: vectorOf(criterion) }
 }
 
 /**
@@ -201,23 +218,22 @@ export function discrepancyPrinciple(
 
 /**
  * The quasi-optimality criterion: on a geometric grid lambda_k, choose the k minimising |x_{k+1} - x_k| (computed
- * from the SVD), a heuristic rule that needs no noise level.
+ * from the SVD), a heuristic rule that needs no noise level. Takes the grid as a tensor-like and returns the grid and
+ * the criterion as tensors (migration, D-009: were `readonly number[]`).
  *
  * @param data - From spectralData.
- * @param options - The grid (default 100 geometric parameters).
- * @returns The choice and the criterion.
+ * @param options - The grid `[k]` (default 100 geometric parameters).
+ * @returns The choice and the criterion (the grid without its last point, `[k - 1]`).
+ * @throws MdmlError with code `shape` unless the grid is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { quasiOptimality, spectralData } from 'mdml-engine/numerics/inverse'
  * quasiOptimality(spectralData([[1, 0], [0, 0.01]], [1, 0.02])).lambda > 0 // => true
  * ```
  */
-export function quasiOptimality(
-  data: SpectralData,
-  options: { readonly lambdas?: readonly number[] } = {},
-): ParameterChoice {
+export function quasiOptimality(data: SpectralData, options: { readonly lambdas?: TensorLike } = {}): ParameterChoice {
   const { s, beta } = arrays(data)
-  const lambdas = options.lambdas ?? lambdaGrid(data)
+  const lambdas = scan(options.lambdas, s, 'quasiOptimality')
   const coefficients = (lambda: number): number[] =>
     s.map((si, i) => ((si * si) / (si * si + lambda * lambda)) * ((beta[i] ?? 0) / si))
   const criterion = lambdas.slice(0, -1).map((lambda, k) => {
@@ -229,5 +245,9 @@ export function quasiOptimality(
   criterion.forEach((q, i) => {
     if (q < (criterion[best] ?? Number.POSITIVE_INFINITY)) best = i
   })
-  return { lambda: lambdas[best] ?? Number.NaN, lambdas: lambdas.slice(0, -1), criterion }
+  return {
+    lambda: lambdas[best] ?? Number.NaN,
+    lambdas: vectorOf(lambdas.slice(0, -1)),
+    criterion: vectorOf(criterion),
+  }
 }

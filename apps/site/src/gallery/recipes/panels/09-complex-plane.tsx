@@ -1,6 +1,7 @@
 import { complexPlane } from 'mdml-engine/exposition'
 import { polyroots } from 'mdml-engine/numerics/polynomial'
 import { type DictSpace, defaults, dict, real } from 'mdml-engine/space'
+import { toFlat } from 'mdml-engine/tensor'
 import {
   type Config,
   defineMethod,
@@ -43,7 +44,8 @@ const gainAt = (s: State): number => (s.maxGain * s.k) / STEPS
 // The closed-loop poles at gain K, as [real, imaginary].
 const polesAt = (gain: number): [number, number][] => {
   const r = polyroots([gain, 2, 3, 1])
-  return r.re.map((re, i) => [re, r.im[i] ?? 0])
+  const im = toFlat(r.im)
+  return toFlat(r.re).map((re, i) => [re, im[i] ?? 0])
 }
 
 // The locus: the poles at a rising gain, each pole followed to its nearest successor so that branches stay whole.

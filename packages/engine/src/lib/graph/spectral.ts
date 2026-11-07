@@ -279,7 +279,7 @@ export function chebyshevFilterCoefficients(
   const values = Array.from({ length: order + 1 }, (_, j) =>
     response((lambdaMax / 2) * (1 + Math.cos((j * Math.PI) / order))),
   )
-  return chebyshevCoefficients(values)
+  return toFlat(chebyshevCoefficients(values))
 }
 
 /** The kernel of {@link graphWavelets}: a band-pass g with g(0) = 0. */

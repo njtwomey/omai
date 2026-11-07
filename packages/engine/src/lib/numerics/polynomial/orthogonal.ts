@@ -13,9 +13,12 @@ import {
   reshape,
   sliceAxis,
   sub,
+  type Tensor,
   type TensorLike,
+  toVector,
   type Value,
 } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { gaussHermite, gaussJacobi, gaussLaguerre, gaussLegendre, type QuadratureRule } from '../quadrature/index.ts'
 import { polyFromRoots, weightedFit } from './power.ts'
 
@@ -188,48 +191,62 @@ export function orthogauss(family: Family, n: number, params: JacobiParameters =
 
 /**
  * Convert series coefficients to power-basis coefficients (numpy's leg2poly, cheb2poly, herm2poly, herme2poly,
- * lag2poly).
+ * lag2poly). Takes and returns tensors (migration, D-009: `c` was `readonly number[]`, the result `number[]`); not
+ * differentiable (a traced `c` is rejected).
  *
  * @param family - The family.
- * @param c - Series coefficients, lowest first.
+ * @param c - Series coefficients `[k]`, lowest first.
  * @param params - Jacobi parameters.
- * @returns Power coefficients, lowest first.
+ * @returns Power coefficients `[k]`, lowest first.
+ * @throws MdmlError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { orthoToPower } from 'mdml-engine/numerics/polynomial'
  * orthoToPower('chebyshev', [0, 0, 0, 1]) // => [0, -3, 0, 4]
  * ```
  */
-export function orthoToPower(family: Family, c: readonly number[], params: JacobiParameters = {}): number[] {
-  const basis = basisInPower(family, c.length - 1, params)
-  const out = new Array<number>(c.length).fill(0)
-  c.forEach((ck, k) => {
+export function orthoToPower(
+  family: Family,
+  c: TensorLike,
+  params: JacobiParameters = {},
+): Tensor<'float64', [number]> {
+  const series = toVector(c, 'orthoToPower')
+  const basis = basisInPower(family, series.length - 1, params)
+  const out = new Array<number>(series.length).fill(0)
+  series.forEach((ck, k) => {
     ;(basis[k] as number[]).forEach((v, j) => {
       out[j] = (out[j] ?? 0) + ck * v
     })
   })
-  return out
+  return vectorOf(out)
 }
 
 /**
  * Convert power-basis coefficients to series coefficients (numpy's poly2leg, poly2cheb, ...), by back substitution
- * against the triangular change of basis.
+ * against the triangular change of basis. Takes and returns tensors (migration, D-009: `c` was `readonly number[]`,
+ * the result `number[]`); not differentiable (a traced `c` is rejected).
  *
  * @param family - The family.
- * @param c - Power coefficients, lowest first.
+ * @param c - Power coefficients `[k]`, lowest first.
  * @param params - Jacobi parameters.
- * @returns Series coefficients, lowest first.
+ * @returns Series coefficients `[k]`, lowest first.
+ * @throws MdmlError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { powerToOrtho } from 'mdml-engine/numerics/polynomial'
  * powerToOrtho('chebyshev', [0, -3, 0, 4]) // => [0, 0, 0, 1]
  * ```
  */
-export function powerToOrtho(family: Family, c: readonly number[], params: JacobiParameters = {}): number[] {
-  const deg = c.length - 1
+export function powerToOrtho(
+  family: Family,
+  c: TensorLike,
+  params: JacobiParameters = {},
+): Tensor<'float64', [number]> {
+  const power = toVector(c, 'powerToOrtho')
+  const deg = power.length - 1
   const basis = basisInPower(family, deg, params)
-  const rest = [...c]
-  const out = new Array<number>(c.length).fill(0)
+  const rest = [...power]
+  const out = new Array<number>(power.length).fill(0)
   for (let k = deg; k >= 0; k--) {
     const pk = basis[k] as number[]
     const coefficient = (rest[k] ?? 0) / (pk[k] ?? 1)
@@ -238,7 +255,7 @@ export function powerToOrtho(family: Family, c: readonly number[], params: Jacob
       rest[j] = (rest[j] ?? 0) - coefficient * v
     })
   }
-  return out.map((v) => (Math.abs(v) < 1e-14 ? 0 : v))
+  return vectorOf(out.map((v) => (Math.abs(v) < 1e-14 ? 0 : v)))
 }
 
 /** P_0..P_deg in power coefficients, by the recurrence. */
@@ -263,18 +280,20 @@ function basisInPower(family: Family, deg: number, params: JacobiParameters): nu
 }
 
 /**
- * The degree-n polynomial of a family with roots at the Gauss nodes, as a check of the rule: monic up to scale.
+ * The degree-n polynomial of a family with roots at the Gauss nodes, as a check of the rule: monic up to scale. Returns
+ * a tensor (migration, D-009: was `number[]`).
  *
  * @param family - The family.
  * @param n - Degree.
  * @param params - Jacobi parameters.
- * @returns Power coefficients of the monic polynomial with the Gauss nodes as roots.
+ * @returns Power coefficients `[n + 1]` of the monic polynomial with the Gauss nodes as roots.
  * @example
  * ```ts
  * import { monicFromNodes } from 'mdml-engine/numerics/polynomial'
- * monicFromNodes('chebyshev', 2).map((v) => Math.round(v * 1e12) / 1e12) // => [-0.5, 0, 1]
+ * import { toFlat } from 'mdml-engine/tensor'
+ * toFlat(monicFromNodes('chebyshev', 2)).map((v) => Math.round(v * 1e12) / 1e12) // => [-0.5, 0, 1]
  * ```
  */
-export function monicFromNodes(family: Family, n: number, params: JacobiParameters = {}): number[] {
-  return polyFromRoots(Array.from(orthogauss(family, n, params).nodes.data))
+export function monicFromNodes(family: Family, n: number, params: JacobiParameters = {}): Tensor<'float64', [number]> {
+  return polyFromRoots(orthogauss(family, n, params).nodes)
 }

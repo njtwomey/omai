@@ -5,14 +5,19 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import { type Tensor, type TensorLike, toVector } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 
 /**
  * Richardson extrapolation of estimates A(h), A(h / r), A(h / r^2), ... whose error expands in powers h^p, h^2p, ...:
- * the tableau R[i][j] = R[i][j-1] + (R[i][j-1] - R[i-1][j-1]) / (r^(p j) - 1).
+ * the tableau R[i][j] = R[i][j-1] + (R[i][j-1] - R[i-1][j-1]) / (r^(p j) - 1). Takes the estimates as a tensor-like
+ * (migration, D-009: was `readonly number[]`); the tableau is a ragged triangle and stays a list of lists.
  *
- * @param estimates - Estimates at successively smaller steps.
+ * @param estimates - Estimates `[k]` at successively smaller steps.
  * @param options - Step ratio r (default 2) and leading error order p (default 2, as for the trapezoid rule).
  * @returns The extrapolated value and the tableau.
+ * @throws MdmlError with code `value` for no estimates, `shape` unless `estimates` is a vector, and
+ *   `not-differentiable` for a traced value.
  * @concept extrapolation
  * @example
  * ```ts
@@ -23,14 +28,15 @@ import { MdmlError } from '../../base/index.ts'
  * ```
  */
 export function richardson(
-  estimates: readonly number[],
+  estimates: TensorLike,
   options: { readonly ratio?: number; readonly order?: number } = {},
 ): { value: number; table: number[][] } {
-  if (estimates.length === 0) throw new MdmlError('value', 'richardson: no estimates')
+  const values = toVector(estimates, 'richardson')
+  if (values.length === 0) throw new MdmlError('value', 'richardson: no estimates')
   const r = options.ratio ?? 2
   const p = options.order ?? 2
   const table: number[][] = []
-  estimates.forEach((e, i) => {
+  values.forEach((e, i) => {
     const row = [e]
     for (let j = 1; j <= i; j++) {
       const prev = table[i - 1]?.[j - 1] ?? 0
@@ -43,10 +49,11 @@ export function richardson(
 
 /**
  * Aitken's delta-squared transformation: s'_n = s_n - (s_{n+1} - s_n)^2 / (s_{n+2} - 2 s_{n+1} + s_n), which removes a
- * geometric error term.
+ * geometric error term. Takes and returns tensors (migration, D-009: was `readonly number[]` to `number[]`).
  *
- * @param s - A convergent sequence.
- * @returns The accelerated sequence (two shorter).
+ * @param s - A convergent sequence `[k]`.
+ * @returns The accelerated sequence `[k - 2]` (two shorter).
+ * @throws MdmlError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { aitken } from 'mdml-engine/numerics/approximation'
@@ -54,24 +61,28 @@ export function richardson(
  * aitken([1, 1.5, 1.75]) // => [2]
  * ```
  */
-export function aitken(s: readonly number[]): number[] {
+export function aitken(s: TensorLike): Tensor<'float64', [number]> {
+  const seq = toVector(s, 'aitken')
   const out: number[] = []
-  for (let n = 0; n + 2 < s.length; n++) {
-    const a = s[n] ?? 0
-    const b = s[n + 1] ?? 0
-    const c = s[n + 2] ?? 0
+  for (let n = 0; n + 2 < seq.length; n++) {
+    const a = seq[n] ?? 0
+    const b = seq[n + 1] ?? 0
+    const c = seq[n + 2] ?? 0
     const d = c - 2 * b + a
     out.push(d === 0 ? c : a - ((b - a) * (b - a)) / d)
   }
-  return out
+  return vectorOf(out)
 }
 
 /**
  * Wynn's epsilon algorithm: the epsilon table eps_{k+1}^(n) = eps_{k-1}^(n+1) + 1 / (eps_k^(n+1) - eps_k^(n)); its even
- * columns are Shanks transforms of the sequence. The best estimate is the last even-column entry.
+ * columns are Shanks transforms of the sequence. The best estimate is the last even-column entry. Takes the sequence as
+ * a tensor-like (migration, D-009: was `readonly number[]`); the columns shrink by one entry each and stay a list of
+ * lists.
  *
- * @param s - A sequence (partial sums).
+ * @param s - A sequence `[k]` (partial sums).
  * @returns The estimate and the even columns (column 0 is s).
+ * @throws MdmlError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { wynnEpsilon } from 'mdml-engine/numerics/approximation'
@@ -81,7 +92,11 @@ export function aitken(s: readonly number[]): number[] {
  * Math.abs(wynnEpsilon(s).value - Math.LN2) < 1e-8 // => true
  * ```
  */
-export function wynnEpsilon(s: readonly number[]): { value: number; columns: number[][] } {
+export function wynnEpsilon(sequence: TensorLike): { value: number; columns: number[][] } {
+  return wynnKernel(toVector(sequence, 'wynnEpsilon'))
+}
+
+function wynnKernel(s: readonly number[]): { value: number; columns: number[][] } {
   let prev: number[] = new Array<number>(s.length + 1).fill(0)
   let curr: number[] = [...s]
   const columns: number[][] = [[...s]]
@@ -107,27 +122,30 @@ export function wynnEpsilon(s: readonly number[]): { value: number; columns: num
 }
 
 /**
- * The Shanks transformation of order k (column 2k of Wynn's table).
+ * The Shanks transformation of order k (column 2k of Wynn's table). Takes and returns tensors (migration, D-009: was
+ * `readonly number[]` to `number[]`).
  *
- * @param s - A sequence.
+ * @param s - A sequence `[n]`.
  * @param k - Order (default 1).
  * @returns The transformed sequence.
+ * @throws MdmlError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { shanks } from 'mdml-engine/numerics/approximation'
  * shanks([1, 1.5, 1.75, 1.875]) // => [2, 2]
  * ```
  */
-export function shanks(s: readonly number[], k = 1): number[] {
-  return wynnEpsilon(s).columns[k] ?? []
+export function shanks(s: TensorLike, k = 1): Tensor<'float64', [number]> {
+  return vectorOf(wynnKernel(toVector(s, 'shanks')).columns[k] ?? [])
 }
 
 /**
  * The Euler transform of an alternating series sum (-1)^n a_n: sum_k (-1)^k Delta^k a_0 / 2^(k+1), which converges
- * much faster when a_n is smooth and decreasing.
+ * much faster when a_n is smooth and decreasing. Takes a tensor-like (migration, D-009: was `readonly number[]`).
  *
- * @param a - The magnitudes a_0, a_1, ... of the alternating terms.
+ * @param a - The magnitudes `[k]` a_0, a_1, ... of the alternating terms.
  * @returns The accelerated sum.
+ * @throws MdmlError with code `shape` unless `a` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { eulerTransform } from 'mdml-engine/numerics/approximation'
@@ -135,10 +153,11 @@ export function shanks(s: readonly number[], k = 1): number[] {
  * Math.abs(eulerTransform(Array.from({ length: 30 }, (_, n) => 1 / (2 * n + 1))) - Math.PI / 4) < 1e-9 // => true
  * ```
  */
-export function eulerTransform(a: readonly number[]): number {
-  let diffs = [...a]
+export function eulerTransform(a: TensorLike): number {
+  const magnitudes = toVector(a, 'eulerTransform')
+  let diffs = [...magnitudes]
   let sum = 0
-  for (let k = 0; k < a.length; k++) {
+  for (let k = 0; k < magnitudes.length; k++) {
     sum += ((k % 2 === 0 ? 1 : -1) * (diffs[0] ?? 0)) / 2 ** (k + 1)
     diffs = diffs.slice(1).map((v, i) => v - (diffs[i] ?? 0))
   }

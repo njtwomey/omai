@@ -20,10 +20,12 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
   where,
   zeros,
 } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { lstsq, svd } from '../linalg/index.ts'
 
 /** The SVD of a matrix with the data's coefficients, the pieces every spectral regularisation needs. */
@@ -192,28 +194,32 @@ export interface PathPoint {
   readonly lambda: number
   readonly residualNorm: number
   readonly solutionNorm: number
-  readonly x: readonly number[]
+  /** The solution `[n]`. */
+  readonly x: Tensor<'float64', [number]>
 }
 
 /**
  * Tikhonov solutions along a range of parameters, with residual and solution norms (the data of an L-curve figure).
+ * Takes the parameters as a tensor-like and returns each solution as a tensor (migration, D-009: `lambdas` was
+ * `readonly number[]` and `x` a `number[]`).
  *
  * @param data - From {@link spectralData}.
  * @param b - The data vector (for residual norms including the part outside the range of A).
- * @param lambdas - The parameters.
+ * @param lambdas - The parameters `[k]`.
  * @returns One point per parameter.
+ * @throws MdmlError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { spectralData, tikhonovPath } from 'mdml-engine/numerics/inverse'
  * tikhonovPath(spectralData([[1, 0], [0, 0.1]], [1, 1]), [1, 1], [0.01, 1]).length // => 2
  * ```
  */
-export function tikhonovPath(data: SpectralData, b: TensorLike, lambdas: readonly number[]): PathPoint[] {
+export function tikhonovPath(data: SpectralData, b: TensorLike, lambdas: TensorLike): PathPoint[] {
   const s = toFlat(primalOf(data.s))
   const beta = toFlat(primalOf(data.beta))
   const bn2 = toFlat(primalOf(promoteFloat(b)[0] as Value)).reduce((acc, v) => acc + v * v, 0)
   const outside = Math.max(0, bn2 - beta.reduce((acc, v) => acc + v * v, 0))
-  return lambdas.map((lambda) => {
+  return toVector(lambdas, 'tikhonovPath').map((lambda) => {
     let res = outside
     let sol = 0
     s.forEach((si, i) => {
@@ -225,7 +231,7 @@ export function tikhonovPath(data: SpectralData, b: TensorLike, lambdas: readonl
       lambda,
       residualNorm: Math.sqrt(res),
       solutionNorm: Math.sqrt(sol),
-      x: toFlat(primalOf(tikhonov(data, lambda))),
+      x: vectorOf(toFlat(primalOf(tikhonov(data, lambda)))),
     }
   })
 }

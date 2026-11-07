@@ -20,8 +20,10 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 
 const EPS = Number.EPSILON
 
@@ -188,12 +190,15 @@ function steps(x: readonly number[], relative: number): number[] {
 
 /**
  * The Jacobian of f: R^n -> R^m by finite differences (scipy.optimize's approx_derivative): forward or central
- * differences with steps scaled to |x|. For checking autodiff and for black-box functions.
+ * differences with steps scaled to |x|. For checking autodiff and for black-box functions. Takes the point as a
+ * tensor-like (migration, D-009: was `readonly number[]`); the callback stays on flat number arrays, by design, since
+ * the function is a black box.
  *
  * @param f - The function on flat number arrays.
- * @param x - The point.
+ * @param x - The point `[n]`.
  * @param options - Method and relative step.
  * @returns The Jacobian `[m, n]`.
+ * @throws MdmlError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { jacobianFd } from 'mdml-engine/numerics/differentiate'
@@ -201,11 +206,8 @@ function steps(x: readonly number[], relative: number): number[] {
  * toArray(jacobianFd(([a, b]) => [a * b, a + b], [2, 3])).flat().map((v) => Math.round(v * 1e8) / 1e8) // => [3, 2, 1, 1]
  * ```
  */
-export function jacobianFd(
-  f: (x: number[]) => readonly number[],
-  x: readonly number[],
-  options: FdOptions = {},
-): Tensor {
+export function jacobianFd(f: (x: number[]) => readonly number[], point: TensorLike, options: FdOptions = {}): Tensor {
+  const x = toVector(point, 'jacobianFd')
   const central = (options.method ?? 'central') === 'central'
   const h = steps(x, options.relativeStep ?? (central ? EPS ** (1 / 3) : EPS ** 0.5))
   const f0 = central ? [] : f([...x])
@@ -227,12 +229,14 @@ export function jacobianFd(
 }
 
 /**
- * The Hessian of a scalar function by central second differences, with steps eps^(1/4) max(1, |x|), symmetrised.
+ * The Hessian of a scalar function by central second differences, with steps eps^(1/4) max(1, |x|), symmetrised. Takes
+ * the point as a tensor-like (migration, D-009: was `readonly number[]`); the callback stays on flat number arrays.
  *
  * @param f - The function on flat number arrays.
- * @param x - The point.
+ * @param x - The point `[n]`.
  * @param options - Relative step.
  * @returns The Hessian `[n, n]`.
+ * @throws MdmlError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { hessianFd } from 'mdml-engine/numerics/differentiate'
@@ -242,9 +246,10 @@ export function jacobianFd(
  */
 export function hessianFd(
   f: (x: number[]) => number,
-  x: readonly number[],
+  point: TensorLike,
   options: { readonly relativeStep?: number } = {},
 ): Tensor {
+  const x = toVector(point, 'hessianFd')
   const n = x.length
   const h = steps(x, options.relativeStep ?? EPS ** 0.25)
   const at = (di: number, si: number, dj: number, sj: number): number => {
@@ -271,13 +276,15 @@ export function hessianFd(
 
 /**
  * Finite-difference weights for the m-th derivative at x0 from values at arbitrary stencil points (Fornberg 1988):
- * the weights c with f^(m)(x0) ~ sum_k c_k f(x_k), exact for polynomials of degree below the stencil size.
+ * the weights c with f^(m)(x0) ~ sum_k c_k f(x_k), exact for polynomials of degree below the stencil size. Takes and
+ * returns tensors (migration, D-009: `stencil` was `readonly number[]`, the weights `number[]`).
  *
  * @param order - The derivative order m (< number of points).
- * @param stencil - The sample points (distinct).
+ * @param stencil - The sample points `[n]` (distinct).
  * @param x0 - Where the derivative is wanted (default 0).
- * @returns The weights, one per stencil point.
- * @throws MdmlError with code `value` when the order is not below the number of points or a point is repeated.
+ * @returns The weights `[n]`, one per stencil point.
+ * @throws MdmlError with code `value` when the order is not below the number of points or a point is repeated, `shape`
+ *   unless `stencil` is a vector, and `not-differentiable` for a traced value.
  * @concept finite-differences
  * @example
  * ```ts
@@ -285,7 +292,8 @@ export function hessianFd(
  * finiteDifferenceWeights(2, [-1, 0, 1]) // => [1, -2, 1]
  * ```
  */
-export function finiteDifferenceWeights(order: number, stencil: readonly number[], x0 = 0): number[] {
+export function finiteDifferenceWeights(order: number, points: TensorLike, x0 = 0): Tensor<'float64', [number]> {
+  const stencil = toVector(points, 'finiteDifferenceWeights')
   const n = stencil.length
   if (order >= n) throw new MdmlError('value', 'finiteDifferenceWeights: need more points than the derivative order')
   if (new Set(stencil).size !== n)
@@ -315,10 +323,12 @@ export function finiteDifferenceWeights(order: number, stencil: readonly number[
     }
     c1 = c2
   }
-  return c.map((row) => {
-    const w = row[order] ?? 0
-    return Math.abs(w) < 1e-14 * n ? 0 : w
-  })
+  return vectorOf(
+    c.map((row) => {
+      const w = row[order] ?? 0
+      return Math.abs(w) < 1e-14 * n ? 0 : w
+    }),
+  )
 }
 
 /** A complex number for complex-step differentiation. */

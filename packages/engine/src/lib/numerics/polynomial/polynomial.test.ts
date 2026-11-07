@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { checkPrimitive, grad } from '../../autodiff/index.ts'
-import { item, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { item, sum, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as P from './index.ts'
 
 const canonical = (f: P.PartialFractions): number[][] => {
@@ -34,9 +34,9 @@ describe('polynomials against numpy and scipy', () => {
                 : c.fn === 'polymul'
                   ? P.polymul(f(0), f(1))
                   : c.fn === 'polydiv'
-                    ? (({ quotient, remainder }) => [...quotient, ...remainder])(P.polydiv(f(0), f(1)))
+                    ? (({ quotient, remainder }) => [...toFlat(quotient), ...toFlat(remainder)])(P.polydiv(f(0), f(1)))
                     : c.fn === 'polyroots'
-                      ? (({ re, im }) => [re, im])(P.polyroots(f(0)))
+                      ? (({ re, im }) => [toFlat(re), toFlat(im)])(P.polyroots(f(0)))
                       : c.fn === 'polyfromroots'
                         ? P.polyFromRoots(f(0))
                         : c.fn === 'orthoval'
@@ -78,7 +78,7 @@ describe('polynomial properties', () => {
   it('conversions round-trip and Gauss nodes are the roots of the degree-n member', () => {
     for (const family of ['legendre', 'chebyshev', 'hermite', 'hermite_e', 'laguerre'] as const) {
       const c = [0.3, -1, 2, 0.5, -0.7]
-      for (const [i, v] of P.powerToOrtho(family, P.orthoToPower(family, c)).entries())
+      for (const [i, v] of toFlat(P.powerToOrtho(family, P.orthoToPower(family, c))).entries())
         expect(v).toBeCloseTo(c[i] ?? 0, 10)
       const nodes = Array.from(P.orthogauss(family, 5).nodes.data)
       const member = toFlat(P.orthoval(family, nodes, [0, 0, 0, 0, 0, 1]))
@@ -99,9 +99,52 @@ describe('polynomial properties', () => {
     const a = [3, -1, 0, 2, 5]
     const b = [1, 2]
     const { quotient, remainder } = P.polydiv(a, b)
-    for (const [i, v] of P.polyadd(P.polymul(quotient, b), remainder).entries()) expect(v).toBeCloseTo(a[i] ?? 0, 12)
-    const rebuilt = P.polyFromRoots(P.polyroots(a)).map((v) => v * 5)
+    for (const [i, v] of toFlat(P.polyadd(P.polymul(quotient, b), remainder)).entries()) {
+      expect(v).toBeCloseTo(a[i] ?? 0, 12)
+    }
+    const rebuilt = toFlat(P.polyFromRoots(P.polyroots(a))).map((v) => v * 5)
     for (const [i, v] of rebuilt.entries()) expect(v).toBeCloseTo(a[i] ?? 0, 9)
+  })
+})
+
+describe('the power-basis functions take tensor-likes and return tensors (migration, D-009)', () => {
+  const calls: [string, (c: TensorLike) => Value | number[]][] = [
+    ['polytrim', (c) => P.polytrim(c)],
+    ['polyder', (c) => P.polyder(c)],
+    ['polyint', (c) => P.polyint(c, 1, [2])],
+    ['polyadd', (c) => P.polyadd(c, [1, 1])],
+    ['polysub', (c) => P.polysub(c, [1, 1])],
+    ['polymul', (c) => P.polymul(c, [1, 1])],
+    ['polydiv', (c) => P.polydiv(c, [1, 1]).remainder],
+    ['companion', (c) => P.companion(c)],
+    ['polyroots', (c) => P.polyroots(c).re],
+    ['polyFromRoots', (c) => P.polyFromRoots(c)],
+    ['orthoToPower', (c) => P.orthoToPower('legendre', c)],
+    ['powerToOrtho', (c) => P.powerToOrtho('legendre', c)],
+    ['residue', (c) => tensor(P.residue(c, [1, 3, 2]).residues.re)],
+    ['residuez', (c) => tensor(P.residuez(c, [1, -0.5, 0.25]).residues.re)],
+    ['invres', (c) => tensor(P.invres({ re: c, im: [0, 0, 0] }, { re: [-1, -2, -3], im: [0, 0, 0] }, []).numerator.re)],
+  ]
+  it('a tensor, a typed array and an array agree; wrong rank is a shape error; traced is rejected', () => {
+    for (const [name, f] of calls) {
+      const typed = Float64Array.from([2, 1, 3])
+      const expected = toFlat(f([2, 1, 3]) as Value)
+      expect(toFlat(f(typed) as Value), name).toEqual(expected)
+      expect(toFlat(f(tensor([2, 1, 3])) as Value), name).toEqual(expected)
+      expect(
+        () =>
+          f(
+            tensor([
+              [1, 2],
+              [3, 4],
+            ]),
+          ),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(() => grad((c: Value) => sum(f(c as TensorLike) as Value))(tensor([2, 1, 3])), name).toThrow(
+        expect.objectContaining({ code: 'not-differentiable' }),
+      )
+    }
   })
 })
 

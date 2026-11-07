@@ -5,17 +5,21 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { solve } from '../linalg/index.ts'
 
 /**
  * The Pade approximant [n/m] of a power series (scipy.interpolate.pade): p / q with deg p = n, deg q = m, q(0) = 1,
- * matching the first n + m + 1 Taylor coefficients. Coefficients lowest degree first.
+ * matching the first n + m + 1 Taylor coefficients. Coefficients lowest degree first. Takes and returns tensors
+ * (migration, D-009: `an` was `readonly number[]`, the coefficients `number[]`).
  *
- * @param an - Taylor coefficients a_0, a_1, ...
+ * @param an - Taylor coefficients `[k]` a_0, a_1, ...
  * @param m - Denominator degree.
  * @param n - Numerator degree (default len(an) - 1 - m).
- * @returns Numerator and denominator coefficients, lowest first.
+ * @returns Numerator `[n + 1]` and denominator `[m + 1]` coefficients, lowest first.
+ * @throws MdmlError with code `value` without enough coefficients, `shape` unless `an` is a vector, and
+ *   `not-differentiable` for a traced value.
  * @concept pade-approximation
  * @example
  * ```ts
@@ -24,7 +28,12 @@ import { solve } from '../linalg/index.ts'
  * pade([1, 1, 0.5], 1) // => { numerator: [1, 0.5], denominator: [1, -0.5] }
  * ```
  */
-export function pade(an: readonly number[], m: number, n?: number): { numerator: number[]; denominator: number[] } {
+export function pade(
+  taylor: TensorLike,
+  m: number,
+  n?: number,
+): { numerator: Tensor<'float64', [number]>; denominator: Tensor<'float64', [number]> } {
+  const an = toVector(taylor, 'pade')
   const num = n ?? an.length - 1 - m
   if (num < 0 || num + m + 1 > an.length) throw new MdmlError('value', 'pade: not enough Taylor coefficients')
   const a = (k: number): number => (k < 0 ? 0 : (an[k] ?? 0))
@@ -45,7 +54,7 @@ export function pade(an: readonly number[], m: number, n?: number): { numerator:
     for (let j = 0; j <= Math.min(k, m); j++) s += (q[j] ?? 0) * a(k - j)
     return s
   })
-  return { numerator: p, denominator: q }
+  return { numerator: vectorOf(p), denominator: vectorOf(q) }
 }
 
 /**
