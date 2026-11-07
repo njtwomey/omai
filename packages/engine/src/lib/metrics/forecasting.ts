@@ -7,6 +7,7 @@
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { normal } from '../dists/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
+import { rejectSampleWeight } from './_labels.ts'
 import {
   defineMetric,
   flat,
@@ -406,7 +407,8 @@ export const crpsNormal: MetricFunction<[TensorLike, TensorLike, TensorLike]> = 
  * ```
  */
 export const theilsU2: Metric = Object.assign(
-  (yTrue: TensorLike, yPred: TensorLike): MetricResult => {
+  (yTrue: TensorLike, yPred: TensorLike, options?: MetricOptions): MetricResult => {
+    rejectSampleWeight('theilsU2', options)
     const t = flat(yTrue)
     const p = flat(yPred)
     let num = 0

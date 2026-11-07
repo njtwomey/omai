@@ -7,8 +7,15 @@ export type Label = number | string
 
 /** The values of a label input: numbers or strings. */
 export function labelValues(x: MetricInput): Label[] {
-  if (isStringInput(x)) return [...x]
-  return toFlat(asTensor(x as TensorLike))
+  const values = isStringInput(x) ? [...x] : toFlat(asTensor(x as TensorLike))
+  if (values.length === 0) throw new MdmlError('value', 'a metric of labels needs at least one sample')
+  return values
+}
+
+/** Reject `sampleWeight` for a metric that has no weighted definition (silently ignoring it would be a wrong answer). */
+export function rejectSampleWeight(name: string, options: { readonly sampleWeight?: TensorLike } | undefined): void {
+  if (options?.sampleWeight !== undefined)
+    throw new MdmlError('value', `${name}: sampleWeight is not supported by this metric`)
 }
 
 /** Sort labels as sklearn's unique_labels does: numbers numerically, strings lexicographically. */

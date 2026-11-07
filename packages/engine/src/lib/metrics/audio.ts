@@ -152,10 +152,14 @@ export const segmentalSnr: MetricFunction<[TensorLike, TensorLike, SegmentalSnrO
   (target: TensorLike, preds: TensorLike, options: SegmentalSnrOptions): MetricResult => {
     const t = signal('segmentalSnr', target)
     const p = signal('segmentalSnr', preds)
+    if (!(Number.isFinite(options?.fs) && options.fs > 0))
+      throw new MdmlError('value', 'segmentalSnr: fs must be a positive finite number')
     const frame = options.frameLength ?? 0.03
     const overlap = options.overlap ?? 0.75
     const m = Math.round(frame * options.fs)
     const skip = Math.floor((1 - overlap) * frame * options.fs)
+    if (!(m >= 1 && skip >= 1))
+      throw new MdmlError('value', 'segmentalSnr: the frame and its hop must be at least 1 sample')
     const w = Float64Array.from({ length: m }, (_, i) => 0.5 * (1 - Math.cos((2 * Math.PI * (i + 1)) / (m + 1))))
     const lo = options.minSnr ?? -10
     const hi = options.maxSnr ?? 35
@@ -433,6 +437,9 @@ export const shortTimeObjectiveIntelligibility: MetricFunction<
     processed: TensorLike,
     options: { readonly fs: number; readonly extended?: boolean },
   ): MetricResult => {
+    // The resampler takes integer rates: a NaN or missing fs used to loop forever in its gcd.
+    if (!(Number.isInteger(options?.fs) && options.fs > 0))
+      throw new MdmlError('value', 'shortTimeObjectiveIntelligibility: fs must be a positive integer')
     let x = signal('shortTimeObjectiveIntelligibility', clean)
     let y = signal('shortTimeObjectiveIntelligibility', processed)
     if (x.length !== y.length) throw new MdmlError('shape', 'shortTimeObjectiveIntelligibility: lengths differ')

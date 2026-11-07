@@ -6,7 +6,7 @@
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
-import { type Label, labelValues, sortLabels } from './_labels.ts'
+import { type Label, labelValues, rejectSampleWeight, sortLabels } from './_labels.ts'
 import { binarise, type Grid } from './_scores.ts'
 import {
   type Metric,
@@ -296,6 +296,7 @@ export function calibrationCurve(
  */
 export const brierDecomposition: Metric<BinningOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yProb: MetricInput, options: BinningOptions = {}): MetricResult => {
+    rejectSampleWeight('brierDecomposition', options)
     const { y, p } = binaryForecast(yTrue, yProb as TensorLike, options.posLabel)
     const n = y.length
     const curve = calibrationCurve(yTrue, yProb as TensorLike, { ...options, nBins: options.nBins ?? 10 })

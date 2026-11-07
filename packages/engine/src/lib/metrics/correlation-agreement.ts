@@ -8,7 +8,7 @@ import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { cov, kendallTau as kendallTest, spearman } from '../stats/index.ts'
 import { item, type TensorLike, toFlat } from '../tensor/index.ts'
-import { sortLabels } from './_labels.ts'
+import { rejectSampleWeight, sortLabels } from './_labels.ts'
 import { cohenKappaScore, type KappaOptions } from './classification-summary.ts'
 import { contingencyMatrix } from './clustering.ts'
 import {
@@ -86,7 +86,8 @@ export const pearsonCorrelation: Metric = Object.assign(
  * ```
  */
 export const spearmanCorrelation: Metric = Object.assign(
-  (x: TensorLike, y: TensorLike): MetricResult => {
+  (x: TensorLike, y: TensorLike, options?: MetricOptions): MetricResult => {
+    rejectSampleWeight('spearmanCorrelation', options)
     const [a, b] = pair('spearmanCorrelation', x, y)
     return metricResult('spearmanCorrelation', spearman(a, b).statistic, a.length)
   },
@@ -109,6 +110,7 @@ export const spearmanCorrelation: Metric = Object.assign(
  */
 export const kendallTau: Metric<MetricOptions & { readonly variant?: 'b' | 'c' }> = Object.assign(
   (x: TensorLike, y: TensorLike, options: MetricOptions & { readonly variant?: 'b' | 'c' } = {}): MetricResult => {
+    rejectSampleWeight('kendallTau', options)
     const [a, b] = pair('kendallTau', x, y)
     const n = a.length
     const value = kendallTest(a, b, { variant: options.variant ?? 'b', method: 'asymptotic' }).statistic
@@ -136,17 +138,21 @@ export const concordanceCorrelation: Metric<MetricOptions & { readonly ddof?: nu
   (x: TensorLike, y: TensorLike, options: MetricOptions & { readonly ddof?: number } = {}): MetricResult => {
     const [a, b] = pair('concordanceCorrelation', x, y)
     const n = a.length
-    const ma = a.reduce((s, v) => s + v, 0) / n
-    const mb = b.reduce((s, v) => s + v, 0) / n
+    // Weights count repeated samples: the total weight takes the place of n.
+    const w = sampleWeights('concordanceCorrelation', n, options.sampleWeight)
+    const total = w.reduce((s, v) => s + v, 0)
+    const ma = a.reduce((s, v, i) => s + v * (w[i] ?? 0), 0) / total
+    const mb = b.reduce((s, v, i) => s + v * (w[i] ?? 0), 0) / total
     let sab = 0
     let saa = 0
     let sbb = 0
     for (let i = 0; i < n; i++) {
-      sab += ((a[i] ?? 0) - ma) * ((b[i] ?? 0) - mb)
-      saa += ((a[i] ?? 0) - ma) ** 2
-      sbb += ((b[i] ?? 0) - mb) ** 2
+      const wi = w[i] ?? 0
+      sab += wi * ((a[i] ?? 0) - ma) * ((b[i] ?? 0) - mb)
+      saa += wi * ((a[i] ?? 0) - ma) ** 2
+      sbb += wi * ((b[i] ?? 0) - mb) ** 2
     }
-    const d = n - (options.ddof ?? 1)
+    const d = total - (options.ddof ?? 1)
     const value = (2 * (sab / d)) / (saa / d + sbb / d + (ma - mb) ** 2)
     return metricResult('concordanceCorrelation', value, n)
   },
@@ -203,8 +209,8 @@ export function blandAltman(x: TensorLike, y: TensorLike, options: { readonly le
  * ```
  */
 export const cramersV: Metric<MetricOptions, MetricInput> = Object.assign(
-  (x: MetricInput, y: MetricInput): MetricResult => {
-    const m = contingencyMatrix(x, y).matrix
+  (x: MetricInput, y: MetricInput, options: MetricOptions = {}): MetricResult => {
+    const m = contingencyMatrix(x, y, options).matrix
     const rows = m.map((r) => r.reduce((a, b) => a + b, 0))
     const cols = Array.from({ length: m[0]?.length ?? 0 }, (_, j) => m.reduce((a, r) => a + (r[j] ?? 0), 0))
     const n = rows.reduce((a, b) => a + b, 0)
@@ -240,8 +246,8 @@ const entropyOf = (counts: readonly number[]): number => {
  * ```
  */
 export const theilsU: Metric<MetricOptions, MetricInput> = Object.assign(
-  (x: MetricInput, y: MetricInput): MetricResult => {
-    const m = contingencyMatrix(x, y).matrix
+  (x: MetricInput, y: MetricInput, options: MetricOptions = {}): MetricResult => {
+    const m = contingencyMatrix(x, y, options).matrix
     const rows = m.map((r) => r.reduce((a, b) => a + b, 0))
     const n = rows.reduce((a, b) => a + b, 0)
     const hx = entropyOf(rows)
