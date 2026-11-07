@@ -94,6 +94,13 @@ export function Player(props: PlayerProps): ReactNode {
     }, RECENT_MS)
     return () => clearTimeout(timer)
   }, [c.playing, id])
+  // A player that goes away no longer holds the page's arrow keys (it would otherwise stay the last one to have played).
+  useEffect(
+    () => () => {
+      if (lastPlayed === id) lastPlayed = undefined
+    },
+    [id],
+  )
   const step = useRef(c.step)
   step.current = c.step
   useEffect(() => {
