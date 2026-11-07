@@ -6,7 +6,9 @@
  * smooth solver of `smoothSolvers` (Newton with the observed information, BFGS, L-BFGS, conjugate gradient, gradient
  * descent and the stochastic `gradient` mode with its optimisers, schedules and batches) applied to the same objective.
  * A model that is a GLM states its objective once and takes the solver as a hyperparameter; the fitted coefficients
- * are the same whichever mode runs, so the modes are compared on one problem and the tuners see all their knobs.
+ * are the same whichever mode runs, so the modes are compared on one problem and the tuners see all their knobs (at
+ * the scale the generic modes assume: their gradient tolerance is absolute, IRLS stops on the relative change of the
+ * coefficients, so a design in very small units ends differently under the two).
  */
 
 import type { Json } from '../base/index.ts'

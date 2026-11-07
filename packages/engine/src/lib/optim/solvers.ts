@@ -75,8 +75,16 @@ interface WithVector {
 
 const vector = (s: WithVector): VectorParams => ({ x: Array.from(s.x) })
 
-/** The gradient tolerance every gradient-based solver stops at (scipy's gtol). */
-const gradTol = real(1e-12, 1e-2, { log: true, default: 1e-5, label: 'gradient tolerance' })
+/**
+ * The gradient tolerance every gradient-based solver stops at (scipy's gtol): absolute, on the infinity norm, so an
+ * objective whose gradients are everywhere below it (data in very small units) stops at its start: rescale such a
+ * problem, or lower the tolerance.
+ */
+const gradTol = real(1e-12, 1e-2, {
+  log: true,
+  default: 1e-5,
+  label: 'gradient tolerance (absolute, on the infinity norm)',
+})
 
 const gradientDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'gradient descent: a line search along the negative gradient, a fixed step, or Barzilai-Borwein steps',
