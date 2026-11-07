@@ -6,8 +6,11 @@
 import { clamp, MdmlError } from '../base/index.ts'
 import type { Paint, ThemeToken } from './types.ts'
 
-/** A colour: red, green and blue from 0 to 255 and alpha from 0 to 1. */
-export type Rgba = readonly [number, number, number, number]
+/**
+ * A colour with alpha, `[r, g, b, a]`. From `parsePaint` red, green and blue run from 0 to 255 and alpha from 0 to 1;
+ * the texture samplers of `graphics` return linear values from 0 to 1.
+ */
+export type Rgba = readonly [r: number, g: number, b: number, a: number]
 
 const TAB10 = {
   tab0: '#1f77b4',

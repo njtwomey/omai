@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import type { Complex } from '../../exposition/index.ts'
 import { stack, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'
 import { lfilter } from '../filters/index.ts'
@@ -209,7 +210,7 @@ export function gammatone(
   const fr = 2 * freq * Math.PI * T
   const bwT = bw * T
   // Complex arithmetic of Slaney's gain computation.
-  type C = readonly [number, number]
+  type C = Complex
   const cmul = (p: C, q: C): C => [p[0] * q[0] - p[1] * q[1], p[0] * q[1] + p[1] * q[0]]
   const cexp = (re: number, im: number): C => [Math.exp(re) * Math.cos(im), Math.exp(re) * Math.sin(im)]
   const cadd = (p: C, q: C): C => [p[0] + q[0], p[1] + q[1]]

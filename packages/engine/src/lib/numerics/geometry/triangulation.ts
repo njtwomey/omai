@@ -4,11 +4,11 @@
  * alpha shapes, the boundary of the triangles below a circumradius.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, type Vec2 } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 
-/** A point in the plane. */
-export type Point2 = readonly [number, number]
+/** A point in the plane: a `Vec2` of `base`. */
+export type Point2 = Vec2
 
 /** A Delaunay triangulation of planar points. */
 export interface Delaunay {

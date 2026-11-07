@@ -7,7 +7,7 @@
  *
  * @index function Structure from motion in steps: RANSAC two-view start, bundle adjustment.
  */
-import type { Json } from '../base/index.ts'
+import type { Json, Vec2 } from '../base/index.ts'
 import { MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { type RansacState, ransacAlgorithm } from '../stats/index.ts'
@@ -19,7 +19,7 @@ import { type Pose, projectPoints, projectValue, solvePnP } from './camera.ts'
 import { findEssentialMat, recoverPose, triangulatePoints } from './epipolar.ts'
 import { type RefinementPath, type RefinementState, steppedRefinement } from './refinement.ts'
 
-type P = readonly [number, number]
+type P = Vec2
 
 /** Pixels to normalised camera coordinates. */
 function normalise(points: readonly P[], k: readonly (readonly number[])[]): P[] {

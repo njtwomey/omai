@@ -6,7 +6,7 @@
  * is out of scope.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec2 } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Raster, rasterOf, rasterTensor } from './_image.ts'
 import type { Contour } from './contours.ts'
@@ -24,7 +24,7 @@ export interface StrokeOptions {
   readonly lineType?: 4 | 8 | 'aa'
 }
 
-type P = readonly [number, number]
+type P = Vec2
 
 /** A mutable canvas over a copy of the image's samples. */
 class Canvas {

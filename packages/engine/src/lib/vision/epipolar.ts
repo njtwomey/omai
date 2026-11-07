@@ -5,7 +5,7 @@
  * and linear (DLT) triangulation of points seen by two projection matrices.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec2 } from '../base/index.ts'
 import { fundamentalMatrix } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
 import { ransac } from '../stats/index.ts'
@@ -13,7 +13,7 @@ import { type PointsLike, pointsOf } from './_image.ts'
 import { det3, invOf, type Matrix, matMul, nullVector, svdOf, transposeOf } from './_refine.ts'
 import type { RobustFit } from './geometry.ts'
 
-type P = readonly [number, number]
+type P = Vec2
 
 /** Pixel points to normalised camera coordinates K^-1 [u, v, 1]. */
 function normalised(points: readonly P[], k: readonly (readonly number[])[]): P[] {

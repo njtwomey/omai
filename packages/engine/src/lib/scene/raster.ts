@@ -3,12 +3,12 @@
  * reinforcement learning, animation frames in Node and image tests.
  */
 
-import { clamp, MdmlError } from '../base/index.ts'
+import { clamp, MdmlError, type Vec2 } from '../base/index.ts'
 import { palettes, parsePaint, type Rgba } from './paint.ts'
 import { projectLayers } from './projection.ts'
 import type { Paint, Pixels, Scene, SceneNode, Style, ThemeToken, Transform } from './types.ts'
 
-type Point = readonly [number, number]
+type Point = Vec2
 /** A 2-D affine map `[a, b, c, d, e, f]`: `(x, y) -> (a x + c y + e, b x + d y + f)`. */
 type Affine = readonly [number, number, number, number, number, number]
 

@@ -7,7 +7,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
-import { type Pixels, toPixels, type Vec3 } from '../scene/index.ts'
+import { type Pixels, type Rgba as SceneRgba, toPixels, type Vec3 } from '../scene/index.ts'
 import { concreteOrThrow, fromStorage, type Value } from '../tensor/index.ts'
 import { type NoiseOptions, perlinNoise, valueNoise } from '../worlds/index.ts'
 import { dot3, sub3 } from './_vec3.ts'
@@ -26,8 +26,8 @@ export interface FloatImage {
   readonly alpha?: Float64Array
 }
 
-/** A colour with alpha, as the samplers return it. */
-export type Rgba = readonly [number, number, number, number]
+/** A colour with alpha, as the samplers return it (linear, from 0 to 1): the `Rgba` of `scene`. */
+export type Rgba = SceneRgba
 
 const size = (n: number, what: string): number => {
   if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', `graphics: ${what} must be a positive integer`)

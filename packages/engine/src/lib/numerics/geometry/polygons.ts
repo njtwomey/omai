@@ -4,7 +4,7 @@
  * segment intersection, Sutherland-Hodgman clipping, and Minkowski sums of convex polygons.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, type Vec3 } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -26,7 +26,7 @@ import {
 import { orient, type Point2, toPoints } from './triangulation.ts'
 
 /** A point in space. */
-export type Point3 = readonly [number, number, number]
+export type Point3 = Vec3
 
 /**
  * The convex hull of planar points by Andrew's monotone chain (scipy.spatial.ConvexHull in 2-D): vertex indices in

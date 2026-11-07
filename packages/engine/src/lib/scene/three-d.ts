@@ -3,11 +3,11 @@
  * constructors for each, surfaces `z = f(x, y)` as grids of faces, and labelled coordinate axes.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Vec3 as BaseVec3, MdmlError } from '../base/index.ts'
 import type { NodeBase, Paint, Style } from './types.ts'
 
-/** A point or vector in 3-D, `[x, y, z]`, with z up. */
-export type Vec3 = readonly [number, number, number]
+/** A point or vector in 3-D, `[x, y, z]`, with z up: the `Vec3` of `base`. */
+export type Vec3 = BaseVec3
 
 /** A dot drawn at a point, `r` scene units across the projected image (default 3). */
 export interface Point3D extends Style, NodeBase {

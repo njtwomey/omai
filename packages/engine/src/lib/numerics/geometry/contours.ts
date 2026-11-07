@@ -24,8 +24,9 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { eigh } from '../linalg/index.ts'
+import type { Point2 } from './triangulation.ts'
 
-type Pt = readonly [number, number]
+type Pt = Point2
 
 /** Options of {@link contourLines}. */
 export interface ContourOptions {

@@ -5,11 +5,12 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import type { Complex } from '../../exposition/index.ts'
 import { polydiv, polyroots } from './power.ts'
 
 // Rational functions follow scipy.signal: coefficients highest degree first (in s for residue, in z^-1 for residuez).
 
-type C = readonly [number, number]
+type C = Complex
 const cadd = (a: C, b: C): C => [a[0] + b[0], a[1] + b[1]]
 const csub = (a: C, b: C): C => [a[0] - b[0], a[1] - b[1]]
 const cmul = (a: C, b: C): C => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]

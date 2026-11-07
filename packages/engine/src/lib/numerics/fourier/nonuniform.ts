@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import type { Complex } from '../../exposition/index.ts'
 import {
   add,
   type ComplexLike,
@@ -254,8 +255,8 @@ function transpose(m: Tensor): Tensor {
   return fromStorage(out, [c, r], 'float64')
 }
 
-/** A complex number as a pair. */
-export type ComplexNumber = readonly [number, number]
+/** A complex number as a pair `[re, im]`: the `Complex` of `exposition`. */
+export type ComplexNumber = Complex
 
 const cpow = (z: ComplexNumber, p: number): ComplexNumber => {
   const r = Math.hypot(z[0], z[1]) ** p

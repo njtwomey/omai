@@ -8,7 +8,7 @@
  * @index function Pinhole camera with lens distortion: project, undistort, Rodrigues.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { rotationFromMatrix, rotationFromRotvec } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
 import { image } from '../signal/index.ts'
@@ -47,7 +47,7 @@ export interface Pose {
   readonly tvec: [number, number, number]
 }
 
-type P3 = readonly [number, number, number]
+type P3 = Vec3
 
 /** Distortion coefficients padded to OpenCV's eight. */
 const coeffs = (d: Distortion | undefined): number[] => Array.from({ length: 8 }, (_, i) => d?.[i] ?? 0)

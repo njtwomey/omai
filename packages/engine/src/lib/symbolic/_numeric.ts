@@ -6,12 +6,13 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import type { Complex } from '../exposition/index.ts'
 import { children } from './_node.ts'
 import { KNOWN_FUNCTIONS } from './_order.ts'
 import type { Expr } from './expr.ts'
 
 /** A complex number as [re, im]. @internal */
-export type C = readonly [number, number]
+export type C = Complex
 
 /** Numeric implementations supplied by the caller for functions symbolic cannot evaluate itself (erf, gamma, f). */
 export type NumericFunctions = Readonly<Record<string, (...args: number[]) => number>>

@@ -7,7 +7,7 @@
 
 // TODO: fitEllipseDirect and fitEllipseAMS.
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec2 } from '../base/index.ts'
 import { dgesvd } from '../numerics/linalg/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { f32, type PointsLike, pointsOf } from './_image.ts'
@@ -21,7 +21,7 @@ export interface RotatedRect {
   readonly angle: number
 }
 
-type P = readonly [number, number]
+type P = Vec2
 
 /** OpenCV's rotating calipers for the minimum-area rectangle of a counter-clockwise hull, in single precision. */
 function calipers(points: readonly P[]): [number, number, number, number, number, number] {

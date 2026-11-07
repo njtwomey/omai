@@ -6,7 +6,7 @@
  * (x, y) pixels; RANSAC draws its samples from an explicit key.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec2 } from '../base/index.ts'
 import { applyHomography, fundamentalMatrix, homography } from '../numerics/geometry/index.ts'
 import { dgesv, lstsq } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
@@ -28,7 +28,7 @@ import {
 import { type PointsLike, pointsOf } from './_image.ts'
 import { type Matrix, refine } from './_refine.ts'
 
-type P = readonly [number, number]
+type P = Vec2
 
 /** Options of the RANSAC estimators. */
 export interface RansacEstimateOptions {

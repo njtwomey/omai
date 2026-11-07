@@ -1,8 +1,8 @@
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import { broadcastShapes, broadcastTo, div, mean, mul, sum, type Value } from '../tensor/index.ts'
 
 /** How a loss combines its elementwise terms: averaged, summed, or returned as they are. */
-export type Reduction = 'mean' | 'sum' | 'none'
+export type { Reduction }
 
 /** Options every loss accepts. */
 export interface LossOptions {
