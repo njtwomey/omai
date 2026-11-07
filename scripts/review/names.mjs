@@ -1,93 +1,15 @@
+/**
+ * Names the function definitions of the engine, clusters them by name, and verifies each cluster by comparing bodies.
+ *
+ *   node scripts/review/names.mjs <report file> [similarity = 0.6] [minimum tokens = 12]
+ */
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { CORE, domainOf, engineSource, overlap, relOf, shingles, tokens } from './_shared.mjs'
 
-const R = join(import.meta.dirname, '..', '..')
-const lib = join(R, 'packages/engine/src/lib')
-const CORE = new Set([
-  'base',
-  'tensor',
-  'random',
-  'space',
-  'trace',
-  'autodiff',
-  'context',
-  'numerics',
-  'optim',
-  'losses',
-  'dists',
-  'stats',
-  'metrics',
-  'kernels',
-  'data',
-  'exposition',
-  'scene',
-])
-const walk = (d, out = []) => {
-  for (const e of readdirSync(d)) {
-    const p = join(d, e)
-    statSync(p).isDirectory() ? walk(p, out) : /\.tsx?$/.test(e) && out.push(p)
-  }
-  return out
-}
-const skip = (f) =>
-  /\.(test|property\.test|golden\.test|test-d)\.tsx?$/.test(f) ||
-  /examples\.test/.test(f) ||
-  /\.data\.ts$/.test(f) ||
-  /\/_data\//.test(f) ||
-  /\/index\.ts$/.test(f)
-const files = walk(lib).filter((f) => !skip(f))
-const dom = (f) => relative(lib, f).split('/')[0]
-const rel = (f) => relative(lib, f)
-const KW = new Set([
-  'const',
-  'let',
-  'return',
-  'if',
-  'else',
-  'for',
-  'of',
-  'in',
-  'while',
-  'new',
-  'function',
-  'throw',
-  'true',
-  'false',
-  'null',
-  'undefined',
-  'number',
-  'string',
-  'boolean',
-  'void',
-  'readonly',
-  'as',
-  'typeof',
-  'export',
-  'type',
-  'interface',
-  'extends',
-])
-const toks = (body) =>
-  (
-    body
-      .replace(/\/\*[\s\S]*?\*\//g, ' ')
-      .replace(/\/\/[^\n]*/g, ' ')
-      .replace(/'[^']*'|`[^`]*`/g, 'S')
-      .replace(/\b\d[\d_.e+-]*\b/g, 'N')
-      .match(/[A-Za-z_]\w*|[^\sA-Za-z_0-9]/g) ?? []
-  ).map((t) => (/^[A-Za-z_]/.test(t) && !KW.has(t) ? 'I' : t))
-const shingles = (t) => {
-  const s = new Set()
-  for (let k = 0; k + 5 <= t.length; k++)
-    s.add(
-      createHash('md5')
-        .update(t.slice(k, k + 5).join(' '))
-        .digest('hex')
-        .slice(0, 8),
-    )
-  return s
-}
+const files = engineSource()
+const dom = domainOf
+const rel = relOf
 // ---- definitions: top-level functions and arrow/const functions ----
 const defs = []
 for (const f of files) {
@@ -106,7 +28,7 @@ for (const f of files) {
       while (j < lines.length && !/^[})]/.test(lines[j])) j++
     }
     const body = lines.slice(i, j + 1).join('\n')
-    const t = toks(body.slice(Math.max(0, body.indexOf('{'))))
+    const t = tokens(body.slice(Math.max(0, body.indexOf('{'))))
     if (t.length < 12) continue
     defs.push({
       name,
@@ -165,12 +87,7 @@ for (const [k, ds] of byKey) {
   ;(clusters.get(r) ?? clusters.set(r, []).get(r)).push(...ds)
 }
 // ---- verify: body similarity inside clusters with 2+ files ----
-const sim = (a, b) => {
-  let c = 0
-  const [s, l] = a.sh.size < b.sh.size ? [a.sh, b.sh] : [b.sh, a.sh]
-  for (const h of s) if (l.has(h)) c++
-  return c / Math.max(1, s.size)
-}
+const sim = (a, b) => overlap(a.sh, b.sh)
 const SIM = Number(process.argv[3] ?? 0.6),
   MINTOK = Number(process.argv[4] ?? 12)
 const verified = []
