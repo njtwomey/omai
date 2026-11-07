@@ -5,7 +5,18 @@
  */
 
 import { type Json, MdmlError } from '../../base/index.ts'
-import { det, eigvals, lstsq, matrixPower, matrixRank, nullSpace, qr, solve, svd } from '../../numerics/linalg/index.ts'
+import {
+  det,
+  dnrm2,
+  eigvals,
+  lstsq,
+  matrixPower,
+  matrixRank,
+  nullSpace,
+  qr,
+  solve,
+  svd,
+} from '../../numerics/linalg/index.ts'
 import { ctrb } from '../../systems/index.ts'
 import {
   add,
@@ -88,12 +99,6 @@ function complement(m: Mat, n: number, k: number): { basis: Mat; cols: number } 
   return { basis: Float64Array.from(ns.data), cols: ns.shape[1] ?? 0 }
 }
 
-function norm(v: ArrayLike<number>): number {
-  let s = 0
-  for (let i = 0; i < v.length; i++) s += (v[i] ?? 0) ** 2
-  return Math.sqrt(s)
-}
-
 function allClose(v: ArrayLike<number>): boolean {
   for (let i = 0; i < v.length; i++) if (Math.abs(v[i] ?? 0) > 1e-8) return false
   return true
@@ -172,7 +177,7 @@ function knv0(X: Mat, n: number, ker: Mat, d: number, j: number): void {
       X,
       n,
       j,
-      Float64Array.from(y, (v) => v / norm(y)),
+      Float64Array.from(y, (v) => v / dnrm2(y)),
     )
 }
 
@@ -218,7 +223,7 @@ function ytReal(X: Mat, n: number, Ki: Mat, di: number, Kj: Mat, dj: number, i: 
     for (let a = 0; a < 2 * n; a++) s += (w[a] ?? 0) * (stackedX[a] ?? 0)
     for (let a = 0; a < 2 * n; a++) t[a] = (t[a] ?? 0) + (w[a] ?? 0) * s
   }
-  const src = allClose(t) ? (kmn[0] as Float64Array) : Float64Array.from(t, (v) => (Math.SQRT2 * v) / norm(t))
+  const src = allClose(t) ? (kmn[0] as Float64Array) : Float64Array.from(t, (v) => (Math.SQRT2 * v) / dnrm2(t))
   setCol(X, n, i, src.slice(0, n))
   setCol(X, n, j, src.slice(n))
 }
@@ -368,7 +373,7 @@ function placementSetup(a: TensorLike, b: TensorLike, poles: readonly Pole[], op
         sim[i] = (sim[i] ?? 0) + (k.im[i * k.d + c] ?? 0)
       }
     }
-    const nr = Math.sqrt(norm(sre) ** 2 + norm(sim) ** 2)
+    const nr = Math.sqrt(dnrm2(sre) ** 2 + dnrm2(sim) ** 2)
     setCol(
       X,
       n,
