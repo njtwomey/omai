@@ -8,11 +8,15 @@
 import { z } from 'zod'
 import { type Json, JsonSchema } from '../base/index.ts'
 
+// The statuses and roles are written once, here, and the type and the schema both read them.
+const RUN_STATUSES = ['completed', 'converged', 'diverged', 'stopped', 'failed'] as const
+const TENSOR_ROLES = ['param', 'grad', 'state', 'activation', 'output'] as const
+
 /** How a run ended. */
-export type RunStatus = 'completed' | 'converged' | 'diverged' | 'stopped' | 'failed'
+export type RunStatus = (typeof RUN_STATUSES)[number]
 
 /** What a recorded tensor is: a parameter, a gradient, an algorithm state, an activation or an output. */
-export type TensorRole = 'param' | 'grad' | 'state' | 'activation' | 'output'
+export type TensorRole = (typeof TENSOR_ROLES)[number]
 
 /** Summary statistics recorded instead of full values at `summary` detail. */
 export interface TensorSummary {
@@ -181,7 +185,7 @@ export const TraceEventSchema: z.ZodType<TraceEvent> = z.discriminatedUnion('typ
     runId: id,
     step,
     name: z.string(),
-    role: z.enum(['param', 'grad', 'state', 'activation', 'output']),
+    role: z.enum(TENSOR_ROLES),
     shape: z.array(z.number().int()),
     values: z.array(z.number()).optional(),
     indices: z.array(z.number().int()).optional(),
@@ -210,10 +214,12 @@ export const TraceEventSchema: z.ZodType<TraceEvent> = z.discriminatedUnion('typ
   z.object({
     type: z.literal('end'),
     runId: id,
-    status: z.enum(['completed', 'converged', 'diverged', 'stopped', 'failed']),
+    status: z.enum(RUN_STATUSES),
     steps: z.number().int(),
     summary: z.record(z.string(), z.number()),
   }),
+  // The cast is for `exactOptionalPropertyTypes` (zod reads `parent?: string | undefined`); `events.test.ts` is what
+  // checks that this schema and the interfaces above name the same fields, kinds, statuses and roles.
 ]) as z.ZodType<TraceEvent>
 
 /**
