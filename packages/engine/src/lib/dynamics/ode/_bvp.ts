@@ -1,5 +1,7 @@
 // The collocation machinery of scipy's solve_bvp (Kierzenka and Shampine's fourth-order Lobatto IIIA method with
 // residual control), on row-major [n, m] arrays of numbers.
+
+import { ddot } from '../../numerics/linalg/index.ts'
 import { type SparseLu, sparseLu, sparseLuSolve } from './_sparse-lu.ts'
 
 const EPS = Number.EPSILON
@@ -203,12 +205,6 @@ function residualVector(colRes: Float64Array, bcRes: Float64Array, n: number, m:
   return out
 }
 
-function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
-
 /** Damped Newton on the collocation system (scipy's solve_newton). */
 export function solveNewton(
   fun: NumField,
@@ -249,7 +245,7 @@ export function solveNewton(
         break
       }
       step = sparseLuSolve(lu, res)
-      cost = dot(step, step)
+      cost = ddot(step, step)
     }
     if (lu === undefined) break
     let alpha = 1
@@ -274,7 +270,7 @@ export function solveNewton(
       bcRes = bc(column(yNew, n, m, 0), column(yNew, n, m, m - 1), pNew)
       res = residualVector(colRes, bcRes, n, m)
       stepNew = sparseLuSolve(lu, res)
-      costNew = dot(stepNew, stepNew)
+      costNew = ddot(stepNew, stepNew)
       if (costNew < (1 - 2 * alpha * sigma) * cost) break
       if (trial < nTrial) alpha *= tau
     }

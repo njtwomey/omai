@@ -17,7 +17,7 @@
 import { MdmlError } from '../base/index.ts'
 import type { AuxParameter, ExtendedFamily, Link } from '../dists/families/index.ts'
 import { matrixView, targetVector } from '../learn/index.ts'
-import { dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
+import { ddot, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
 import { analyticObjective, smoothSolvers } from '../optim/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -98,12 +98,6 @@ export interface ExtendedModel {
   readonly start: Float64Array
   readonly aux: readonly AuxParameter[]
   readonly family?: ExtendedFamily
-}
-
-const dot = (a: ArrayLike<number>, b: ArrayLike<number>): number => {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
 }
 
 /** `X_k' diag(d) X_l` as a `[pk, pl]` block written into `out` at `(r0, c0)` of a matrix with `P` columns. */
@@ -499,7 +493,7 @@ export function invertSafely(A: Float64Array, p: number): Inverted {
   return { inverse, logDet, modified: true }
 }
 
-const quadratic = (S: Float64Array, beta: ArrayLike<number>, p: number): number => dot(beta, dgemv(S, p, p, beta))
+const quadratic = (S: Float64Array, beta: ArrayLike<number>, p: number): number => ddot(beta, dgemv(S, p, p, beta))
 
 /** A penalised fit at fixed smoothing parameters and aux parameters. */
 export interface ExtendedInnerFit {
@@ -584,7 +578,7 @@ export function innerExtendedFit(
     return {
       beta,
       logLik: ev.logLik,
-      penalty: dot(beta, sb),
+      penalty: ddot(beta, sb),
       iterations: result.steps,
       gradNorm: Math.max(0, ...Array.from(ev.gradient, (g, i) => Math.abs(g - (sb[i] ?? 0)))),
     }
@@ -602,7 +596,7 @@ export function innerExtendedFit(
     const A = Float64Array.from(ev.information, (v, i) => v + (S[i] ?? 0))
     const { inverse } = invertSafely(A, p)
     const delta = dgemv(inverse, p, p, g)
-    const decrement = dot(g, delta)
+    const decrement = ddot(g, delta)
     if (decrement <= tol * (1 + Math.abs(f)) && gradNorm < 1e-9 * (1 + Math.abs(f))) break
     let a = 1
     let next = beta
@@ -626,7 +620,7 @@ export function innerExtendedFit(
   const ev = likelihood.evaluate(beta, aux)
   const sb = dgemv(S, p, p, beta)
   gradNorm = Math.max(0, ...Array.from(ev.gradient, (v, i) => Math.abs(v - (sb[i] ?? 0))))
-  return { beta, logLik: ev.logLik, penalty: dot(beta, sb), iterations, gradNorm }
+  return { beta, logLik: ev.logLik, penalty: ddot(beta, sb), iterations, gradNorm }
 }
 
 /** The criterion of the outer iteration at one point, with its gradient and the quantities inference needs. */
@@ -742,7 +736,7 @@ export function evaluateExtended(
       for (let j = 0; j < blk.size; j++) a += (blk.matrix[i * blk.size + j] ?? 0) * (fit.beta[blk.offset + j] ?? 0)
       sb[blk.offset + i] = lam * a
     }
-    const betaSb = dot(fit.beta, sb)
+    const betaSb = ddot(fit.beta, sb)
     const direction = dgemv(inverse, p, p, sb).map((v) => -v)
     const dInfo = likelihood.informationDerivative(fit.beta, aux, direction)
     let tr = 0
