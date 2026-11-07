@@ -667,3 +667,14 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `@example`s of the touched files and of `metrics`; barrels, layers, lint, agent index, surface. Nothing pushed (D-014).
 - **22:40 Gate.** Native-array stage 5 (result and state records) passed the full local gate: 26,525 tests, 9,614 examples, all static checks and all six tsc runs, first run.
   Completion about 80% by effort. Nothing pushed (D-014).
+- **21:15 Render performance, accessibility and the export path (`agent-rd02-render`, P3.40, P3.42, P3.44).** Eleven commits (`34f254a2`, `5cf4efc0`, `8f93b405`, `58df3a86`,
+  `b62093bf`, `f543b4ae`, `0fe0bfaa`, `39eaacdd`, `4c4e5314`, `0732d40a`, `ded64bb5`), no browser. Performance: a decision-surface frame went from 29.3 to 5.1 ms (niced node script,
+  64x64 grid, 3 classes, 200x200 image, median after warm-up; `resample` bicubic 6.06 to 0.55 ms), by encoding the PNG only when an item is drawn and by two 1-D bicubic passes that give
+  the same numbers as the 2-D kernel (checked against a copy of it). The 2 MB 'option' of F1 turned out to be `JSON.stringify` of the typed array of pixels the series carries, not memory.
+  Also RD-13 (probe answers kept per session), RD-23 and RD-26; RD-12 and RD-14 are not done (medium risk, only a browser and the React profiler can show what they buy). Accessibility:
+  the player's keys, labelled charts, focus handling of the modal, the export menu (now a `Popover`) and every popover, reduced motion, tab and button patterns, a dash per run in a
+  one-path comparison; the palette order, symbols and decals are left as a visual decision. Export and tape: one download helper (two object-URL leaks gone), a recording that pauses the
+  page and stops on unmount, `useTape` with an `onError` instead of a throw. Gotcha found while testing: `Popover`'s focus effect must wait until the popup is placed (it is `visibility:
+  hidden` for its first frame and a hidden element cannot take focus). Ten new `it` blocks (tables and loops inside), `render` 520 tests in 100 files, all passing; tsc for render, site and
+  pocs; barrels, layers, lint, agent index and surface (3 changed: `ChartProps` gets `label`, `PlaybackOptions`' documentation, `useTape` an optional parameter). Everything that needs a
+  browser is listed in the P3.40, P3.42 and P3.44 rows. The full gate was not run. Nothing pushed (D-014).
