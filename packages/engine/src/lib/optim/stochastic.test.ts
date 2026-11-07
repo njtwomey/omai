@@ -6,6 +6,7 @@ import {
   matmul,
   mean,
   mul,
+  relu,
   softplus,
   square,
   sub,
@@ -155,6 +156,40 @@ describe('the gradient mode', () => {
     })
     expect(Array.from(resumed.state.x)).toEqual(Array.from(straight.state.x))
     expect(resumed.state.t).toBe(30)
+  })
+
+  // A batch whose examples all have zero loss has an exactly zero gradient far from the minimum: the tolerance is a
+  // statement about the whole gradient, so a lucky batch must not end the run as `converged`.
+  it('declares convergence from the whole gradient, never from the gradient of a batch', () => {
+    const xs = tensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    const labels = tensor([1, 1, 1, 1, 1, -1, -1, -1, -1, -1])
+    const squaredHinge = (w: Value, batch?: readonly number[]): Value => {
+      const s = batch === undefined ? xs : take(xs, batch)
+      const y = batch === undefined ? labels : take(labels, batch)
+      return mean(square(relu(sub(1, mul(y, mul(s, w))))))
+    }
+    const run = (batch: number | null, seed: number): { status: string; steps: number; w: number } => {
+      const alg = gradientAlgorithm(squaredHinge, tensor([0.5]), {
+        learningRate: 0.01,
+        batch,
+        batches: { n: 10 },
+        gradTol: 1e-5,
+      })
+      const r = runAlgorithm(alg, { seed, maxSteps: 60 })
+      return { status: r.status, steps: r.steps, w: r.state.x[0] ?? 0 }
+    }
+    // Start 0.5, optimum -0.065: the examples with y s w >= 1 have no loss, so batches of one or two often see no gradient.
+    for (const seed of [0, 1, 2, 3, 4, 5]) {
+      for (const batch of [1, 2]) {
+        const r = run(batch, seed)
+        expect(r.status, `batch ${batch} seed ${seed}`).toBe('completed')
+        expect(r.steps, `batch ${batch} seed ${seed}`).toBe(60)
+      }
+    }
+    // The whole set, with the whole gradient in hand, still stops at the minimum.
+    const whole = run(null, 0)
+    expect(whole.status).toBe('converged')
+    expect(whole.w).toBeCloseTo(-0.065, 2)
   })
 
   it('refuses a batch for a problem that cannot be batched', () => {

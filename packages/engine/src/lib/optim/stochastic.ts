@@ -45,7 +45,10 @@ export interface GradientOptions {
   readonly batch?: number | null
   /** How many examples the objective sums over; required with a `batch`. */
   readonly batches?: Batches
-  /** Stop with status `converged` once the infinity norm of the gradient falls to this (default 1e-5). */
+  /**
+   * Stop with status `converged` once the infinity norm of the gradient of the whole objective falls to this (default
+   * 1e-5); with a batch it is tested on the whole gradient once per epoch, never on the batch's.
+   */
   readonly gradTol?: number
 }
 
@@ -102,8 +105,22 @@ export function gradientAlgorithm(
     const indices = Array.from(subsample(k, n as number, batch as number).data)
     return flatObjective((p) => objective(p, indices), x0).valueAndGrad(x)
   }
-  const stopped = (grad: Float64Array): Pick<GradientState, 'stop'> =>
-    infNorm(grad) <= gtol ? { stop: { status: 'converged', message: 'gradient norm below tolerance' } } : {}
+  // The tolerance is a statement about the gradient of the whole objective: a batch whose examples all have zero loss
+  // (a satisfied margin, a dead unit) has an exactly zero gradient at a point that is far from a minimum. Without a
+  // batch the gradient in hand is the whole one; with one the whole gradient is evaluated once per epoch.
+  const epoch = stochastic ? Math.ceil((n as number) / (batch as number)) : 1
+  const stopped = (
+    x: Float64Array,
+    grad: Float64Array,
+    t: number,
+  ): Pick<GradientState, 'stop'> & { readonly evals: number } => {
+    if (stochastic && t % epoch !== 0) return { evals: 0 }
+    const whole = stochastic ? full.valueAndGrad(x).grad : grad
+    const evals = stochastic ? 1 : 0
+    return infNorm(whole) <= gtol
+      ? { stop: { status: 'converged', message: 'gradient norm below tolerance' }, evals }
+      : { evals }
+  }
   return {
     name: 'gradient',
     config: {
@@ -115,18 +132,19 @@ export function gradientAlgorithm(
     schema: vectorSchema({ metrics: { lr: { description: 'learning rate of the last step' } } }),
     init: (k) => {
       const { value, grad } = evaluate(full.x0, k)
+      const { evals, ...stop } = stopped(full.x0, grad, 0)
       return {
         x: full.x0,
         value,
         grad,
-        nfev: 1,
-        ngev: 1,
+        nfev: 1 + evals,
+        ngev: 1 + evals,
         nhev: 0,
         step: 0,
         t: 0,
         lr: schedule(0),
         opt: optimiser.init(asTensor(full.x0)),
-        ...stopped(grad),
+        ...stop,
       }
     },
     step: (s, ctx) => {
@@ -134,18 +152,19 @@ export function gradientAlgorithm(
       const update = toFlat(primalOf(updates as Value))
       const x = daxpy(1, update, s.x)
       const { value, grad } = evaluate(x, ctx.key)
+      const { evals, ...stop } = stopped(x, grad, s.t + 1)
       return {
         x,
         value,
         grad,
-        nfev: s.nfev + 1,
-        ngev: s.ngev + 1,
+        nfev: s.nfev + 1 + evals,
+        ngev: s.ngev + 1 + evals,
         nhev: 0,
         step: dnrm2(update),
         t: s.t + 1,
         lr: schedule(s.t),
         opt: state,
-        ...stopped(grad),
+        ...stop,
       }
     },
     done: vectorDone,
