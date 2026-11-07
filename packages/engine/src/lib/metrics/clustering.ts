@@ -6,7 +6,7 @@
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
-import { arange, toFlat } from '../tensor/index.ts'
+import { arange, fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
 import { type Metric, type MetricInput, type MetricOptions, metricResult, sampleWeights } from './metric.ts'
 
@@ -76,12 +76,12 @@ const table = (t: MetricInput, p: MetricInput, o: MetricOptions): readonly (read
 /**
  * The pair confusion matrix (sklearn.metrics.cluster.pair_confusion_matrix): over ordered pairs of distinct samples,
  * [[pairs apart in both, apart in reference but together in clusters], [together in reference but apart in clusters,
- * together in both]].
+ * together in both]]. Returns a tensor (migration, D-009: was `number[][]`).
  *
  * @param labelsTrue - Reference labels `[N]`.
  * @param labelsPred - Cluster labels `[N]`.
  * @param options - Sample weights.
- * @returns The 2 x 2 matrix.
+ * @returns A float64 tensor of shape `[2, 2]`.
  * @example
  * ```ts
  * import { pairConfusionMatrix } from 'mdml-engine/metrics'
@@ -92,7 +92,17 @@ export function pairConfusionMatrix(
   labelsTrue: MetricInput,
   labelsPred: MetricInput,
   options: MetricOptions = {},
-): number[][] {
+): Tensor<'float64'> {
+  const [[tn, predOnly], [trueOnly, both]] = pairCounts(labelsTrue, labelsPred, options)
+  return fromStorage(Float64Array.of(tn, predOnly, trueOnly, both), [2, 2], 'float64')
+}
+
+/** The counts of {@link pairConfusionMatrix} as rows, the plain-number kernel of the pair-counting indices. */
+function pairCounts(
+  labelsTrue: MetricInput,
+  labelsPred: MetricInput,
+  options: MetricOptions,
+): [[number, number], [number, number]] {
   const m = table(labelsTrue, labelsPred, options)
   const { rows, cols, n } = margins(m)
   let sumSq = 0
@@ -126,7 +136,7 @@ const _pairs = (x: number): number => (x * (x - 1)) / 2
  */
 export const randScore: Metric<MetricOptions, MetricInput> = Object.assign(
   (labelsTrue: MetricInput, labelsPred: MetricInput, options: MetricOptions = {}): MetricResult => {
-    const c = pairConfusionMatrix(labelsTrue, labelsPred, options)
+    const c = pairCounts(labelsTrue, labelsPred, options)
     const agree = (c[0]?.[0] ?? 0) + (c[1]?.[1] ?? 0)
     const total = agree + (c[0]?.[1] ?? 0) + (c[1]?.[0] ?? 0)
     return metricResult('randScore', total === 0 ? 1 : agree / total, labelValues(labelsTrue).length)
@@ -150,7 +160,7 @@ export const randScore: Metric<MetricOptions, MetricInput> = Object.assign(
  */
 export const adjustedRandScore: Metric<MetricOptions, MetricInput> = Object.assign(
   (labelsTrue: MetricInput, labelsPred: MetricInput, options: MetricOptions = {}): MetricResult => {
-    const c = pairConfusionMatrix(labelsTrue, labelsPred, options)
+    const c = pairCounts(labelsTrue, labelsPred, options)
     const tn = c[0]?.[0] ?? 0
     const fp = c[0]?.[1] ?? 0
     const fn = c[1]?.[0] ?? 0

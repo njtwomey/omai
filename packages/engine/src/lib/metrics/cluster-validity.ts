@@ -6,7 +6,7 @@
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
 import { cdist, type Metric as DistanceName } from '../numerics/geometry/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { labelValues, sortLabels } from './_labels.ts'
 import { defineMetric, type MetricFunction, type MetricInput, matrix, metricResult } from './metric.ts'
 
@@ -51,26 +51,36 @@ function distances(x: TensorLike, n: number, metric: DistanceName | 'precomputed
 /**
  * Silhouette coefficient of each sample (sklearn.metrics.silhouette_samples): (b - a) / max(a, b) with a the mean
  * distance to the other members of its cluster and b the smallest mean distance to another cluster; 0 for samples
- * alone in their cluster.
+ * alone in their cluster. Returns a tensor (migration, D-009: was `number[]`).
  *
  * @param x - Samples `[N, D]` (or a distance matrix with metric 'precomputed').
  * @param labels - Cluster labels `[N]` (between 2 and N - 1 clusters).
  * @param options - The distance metric.
- * @returns One coefficient per sample.
+ * @returns A float64 tensor of shape `[N]`: one coefficient per sample.
  * @throws MdmlError with code `value` for fewer than 2 or more than N - 1 clusters.
  * @example
  * ```ts
  * import { silhouetteSamples } from 'mdml-engine/metrics'
- * silhouetteSamples([[0], [1], [10], [11]], [0, 0, 1, 1])[0] // => 0.9047619047619048
+ * silhouetteSamples([[0], [1], [10], [11]], [0, 0, 1, 1]).data[0] // => 0.9047619047619048
  * ```
  */
-export function silhouetteSamples(x: TensorLike, labels: MetricInput, options: ValidityOptions = {}): number[] {
+export function silhouetteSamples(
+  x: TensorLike,
+  labels: MetricInput,
+  options: ValidityOptions = {},
+): Tensor<'float64'> {
+  const s = silhouettes(x, labels, options)
+  return fromStorage(s, [s.length], 'float64')
+}
+
+/** The silhouette coefficient of each sample, the plain-number kernel of {@link silhouetteSamples}. */
+function silhouettes(x: TensorLike, labels: MetricInput, options: ValidityOptions): Float64Array {
   const c = clusters('silhouetteSamples', x, labels)
   if (c.k < 2 || c.k > c.n - 1) throw new MdmlError('value', `silhouette: ${c.k} clusters; needs 2 to n_samples - 1`)
   const d = distances(x, c.n, options.metric)
   const sizes = new Float64Array(c.k)
   for (const i of c.idx) sizes[i] = (sizes[i] ?? 0) + 1
-  return Array.from({ length: c.n }, (_, i) => {
+  return Float64Array.from({ length: c.n }, (_, i) => {
     const sums = new Float64Array(c.k)
     for (let j = 0; j < c.n; j++) sums[c.idx[j] ?? 0] = (sums[c.idx[j] ?? 0] ?? 0) + (d[i * c.n + j] ?? 0)
     const own = c.idx[i] ?? 0
@@ -101,7 +111,7 @@ export function silhouetteSamples(x: TensorLike, labels: MetricInput, options: V
 export const silhouetteScore: MetricFunction<[TensorLike, MetricInput, ValidityOptions?]> = defineMetric(
   spec('silhouetteScore', 'higher', [-1, 1]),
   (x: TensorLike, labels: MetricInput, options: ValidityOptions = {}): MetricResult => {
-    const s = silhouetteSamples(x, labels, options)
+    const s = silhouettes(x, labels, options)
     return metricResult('silhouetteScore', s.reduce((a, b) => a + b, 0) / s.length, s.length)
   },
 )
