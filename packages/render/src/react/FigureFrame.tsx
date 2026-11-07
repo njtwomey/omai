@@ -25,6 +25,9 @@ import { chartToSvg, composeSvg, type FigurePart, svgDataUrl, svgToPixels, svgTo
 import { escapeXml } from '../svg/svg.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { nextPaint, saveBlob, saveUrl } from './_download.ts'
+import { useFocusTrap } from './controls/_focus.ts'
+import { menuItemClass } from './controls/classes.ts'
+import { Popover } from './controls/Popover.tsx'
 import { loadEcharts } from './echarts.ts'
 import { useColourMode } from './theme.tsx'
 
@@ -238,10 +241,15 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const aspect = width / height
   const titleId = useId()
   const [expanded, setExpanded] = useState(false)
-  const [menu, setMenu] = useState(false)
+  // The export menu is open from the page's toolbar or from the modal's (never both).
+  const [menu, setMenu] = useState<'page' | 'modal' | null>(null)
   const [viewport, setViewport] = useState({ width: 1200, height: 800 })
   const frameRef = useRef<HTMLDivElement | null>(null)
   const modalRef = useRef<HTMLDivElement | null>(null)
+  const dialogRef = useRef<HTMLDivElement | null>(null)
+  const expandRef = useRef<HTMLButtonElement | null>(null)
+  const pageExportRef = useRef<HTMLButtonElement | null>(null)
+  const modalExportRef = useRef<HTMLButtonElement | null>(null)
   const scaledRef = useRef<HTMLDivElement | null>(null)
   const playback = props.playback
   const formats =
@@ -269,9 +277,17 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
     }
   }, [expanded])
 
+  // Focus stays in the expanded figure and goes back to its Expand button when it closes.
+  useFocusTrap(expanded, dialogRef)
+  const wasExpanded = useRef(false)
+  useEffect(() => {
+    if (wasExpanded.current && !expanded) expandRef.current?.focus()
+    wasExpanded.current = expanded
+  }, [expanded])
+
   const onExport = useCallback(
     (format: ExportFormat) => {
-      setMenu(false)
+      setMenu(null)
       const root = (expanded ? (scaledRef.current ?? modalRef.current) : frameRef.current) ?? frameRef.current
       if (root === null) return
       if (props.onExport !== undefined) {
@@ -346,65 +362,46 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       {busy !== null && <span style={{ font: `11px ${t.monoFont}`, color: t.muted, marginRight: 4 }}>{busy}</span>}
       {props.settings}
       {formats.length > 0 && (
-        <div style={{ position: 'relative' }}>
+        <>
           <button
+            ref={inModal ? modalExportRef : pageExportRef}
             type="button"
             style={{ ...button, opacity: busy === null ? 1 : 0.5 }}
             aria-label="Export"
+            aria-haspopup="menu"
+            aria-expanded={menu === (inModal ? 'modal' : 'page')}
             title="Export"
             disabled={busy !== null}
-            onClick={() => setMenu((m) => !m)}
+            onClick={() => setMenu((m) => (m === null ? (inModal ? 'modal' : 'page') : null))}
           >
             <Icon path={ICON_DOWNLOAD} />
           </button>
-          {menu && (
-            <div
-              role="menu"
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: 32,
-                minWidth: 96,
-                background: t.tooltip,
-                border: `1px solid ${t.grid}`,
-                borderRadius: 6,
-                padding: 4,
-                boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
-              }}
-            >
-              {formats.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => onExport(f)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '4px 8px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: t.fg,
-                    font: `12px ${t.font}`,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {f.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+          <Popover
+            anchor={inModal ? modalExportRef : pageExportRef}
+            open={menu === (inModal ? 'modal' : 'page')}
+            onClose={() => setMenu(null)}
+            align="end"
+            role="menu"
+            label="Export"
+            className="min-w-24 p-1"
+          >
+            {formats.map((f) => (
+              <button key={f} type="button" role="menuitem" className={menuItemClass} onClick={() => onExport(f)}>
+                {f.toUpperCase()}
+              </button>
+            ))}
+          </Popover>
+        </>
       )}
       {(props.expandable ?? true) && (
         <button
+          ref={inModal ? undefined : expandRef}
           type="button"
           style={button}
           aria-label={inModal ? 'Close' : 'Expand'}
           title={inModal ? 'Close' : 'Expand'}
           onClick={() => {
-            setMenu(false)
+            setMenu(null)
             setExpanded(!inModal)
           }}
         >
@@ -441,17 +438,21 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
         <figcaption style={{ font: `12px ${t.font}`, color: t.muted, marginTop: 6 }}>{props.caption}</figcaption>
       )}
       {expanded && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape closes it (a window listener); the backdrop click is an extra
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
+          {...(props.title === undefined ? { 'aria-label': 'Expanded figure' } : { 'aria-labelledby': titleId })}
+          tabIndex={-1}
           onClick={(e) => {
             if (e.target === e.currentTarget) setExpanded(false)
           }}
-          onKeyDown={() => {}}
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 1000,
+            outline: 'none',
             background: mode === 'dark' ? 'rgba(1,4,9,0.8)' : 'rgba(31,35,40,0.5)',
             display: 'flex',
             alignItems: 'center',

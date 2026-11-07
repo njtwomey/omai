@@ -8,6 +8,7 @@
 import { type Space, type SpaceValue, defaults as spaceDefaults } from 'mdml-engine/space'
 import { type ReactNode, useCallback, useEffect, useId, useReducer, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useFocusTrap } from './_focus.ts'
 import { ControlPanel } from './ControlPanel.tsx'
 import { cx, iconButtonClass } from './classes.ts'
 import { CloseIcon, SettingsIcon } from './icons.tsx'
@@ -41,9 +42,6 @@ const toolbarButtonClass: string =
 
 const dialogButtonClass: string =
   'inline-flex h-8 cursor-pointer items-center rounded-md border border-(--wb-grid) bg-(--wb-bg) px-3 text-xs font-medium text-(--wb-fg) outline-none hover:bg-(--wb-surface) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:pointer-events-none disabled:opacity-40'
-
-const FOCUSABLE =
-  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
 /**
  * A gear button that opens a modal of settings and changes nothing until the modal is confirmed: the dialog edits a
@@ -85,29 +83,15 @@ export function SettingsButton<T>(props: SettingsButtonProps<T>): ReactNode {
     dispatch({ type: 'apply' })
     trigger.current?.focus()
   }
+  // Focus goes into the dialog, stays inside it and comes back to the button.
+  useFocusTrap(state.open, dialog)
   useEffect(() => {
     if (!state.open) return
-    dialog.current?.focus()
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        // Only this dialog closes: a figure's expanded view behind it stays.
-        e.stopPropagation()
-        close()
-        return
-      }
-      if (e.key !== 'Tab' || dialog.current === null) return
-      const items = [...dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
-      const first = items[0]
-      const last = items[items.length - 1]
-      if (first === undefined || last === undefined) return
-      const active = document.activeElement
-      if (e.shiftKey && (active === first || active === dialog.current)) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      if (e.key !== 'Escape') return
+      // Only this dialog closes: a figure's expanded view behind it stays.
+      e.stopPropagation()
+      close()
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)

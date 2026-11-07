@@ -1,6 +1,6 @@
 import { type ReactElement, useRef, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { inAct, mountElement, resetGlobals } from '../_harness.tsx'
+import { inAct, invoke, mountElement, resetGlobals } from '../_harness.tsx'
 import { Popover } from './Popover.tsx'
 
 afterEach(() => {
@@ -19,7 +19,12 @@ function Host(): ReactElement {
         anchor
       </button>
       <Popover anchor={anchor} open={open} onClose={onClose} role="menu" label="Actions">
-        <span>inside</span>
+        <button type="button" role="menuitem">
+          one
+        </button>
+        <button type="button" role="menuitem">
+          two
+        </button>
       </Popover>
     </>
   )
@@ -42,8 +47,24 @@ describe('Popover', () => {
     // Open: the labelled menu is in the body, hidden for its first measurement then placed, and four listeners are on.
     await inAct(host.toggle)
     expect(menu()?.props['aria-label']).toBe('Actions')
-    expect(menu()?.text).toBe('inside')
+    expect(menu()?.text).toBe('onetwo')
     expect(listening()).toEqual([1, 1, 1, 1])
+
+    // Focus went into the menu, to its first item; the arrows move among the items and wrap, Home and End jump.
+    expect(m.focused()?.text).toBe('one')
+    const arrow = async (key: string): Promise<string | undefined> => {
+      const keys = { key, preventDefault: vi.fn() }
+      await invoke(menu(), 'onKeyDown', keys)
+      expect(keys.preventDefault).toHaveBeenCalled()
+      return m.focused()?.text
+    }
+    expect([await arrow('ArrowDown'), await arrow('ArrowDown'), await arrow('ArrowUp'), await arrow('End')]).toEqual([
+      'two',
+      'one',
+      'two',
+      'two',
+    ])
+    expect(await arrow('Home')).toBe('one')
 
     // A press inside the menu or on the anchor, and any other key, leave it open; a press elsewhere and Escape close it.
     const anchor = m.elements().find((e) => e.text === 'anchor')
@@ -53,13 +74,18 @@ describe('Popover', () => {
     expect(onClose).not.toHaveBeenCalled()
     await m.document.fire('pointerdown', { target: {} })
     expect(onClose).toHaveBeenCalledTimes(1)
-    await m.document.fire('keydown', { key: 'Escape' })
+    const esc = { key: 'Escape', stopPropagation: vi.fn() }
+    await m.document.fire('keydown', esc)
     expect(onClose).toHaveBeenCalledTimes(2)
+    // Escape stops there: a dialog the popup was raised from does not close with it.
+    expect(esc.stopPropagation).toHaveBeenCalled()
 
     // Closed again: the content leaves the body and all four listeners are removed.
     await inAct(host.toggle)
     expect(menu()).toBeUndefined()
     expect(listening()).toEqual([0, 0, 0, 0])
+    // Closing gives the anchor its focus back.
+    expect(m.focused()?.text).toBe('anchor')
     await m.unmount()
   })
 })

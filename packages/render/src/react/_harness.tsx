@@ -5,7 +5,8 @@
  * every run. A test mounts a hook (`mountHook`) or an element (`mountElement`), steps frames, and reads what the hook
  * returned most recently. The mounted tree can be read (`elements`, `text`: React keeps each element's props on its
  * node, so a test finds a button by its label and calls its `onClick`) and `window` records the listeners an effect
- * adds (`count`) and fires them (`fire`).
+ * adds (`count`) and fires them (`fire`). Elements take focus (`focus()`; `focused()` says which has it) and answer
+ * `querySelectorAll` and `getAttribute` from the props React gave them, so focus management can be tested.
  */
 
 import { act, type ReactElement, StrictMode } from 'react'
@@ -66,6 +67,41 @@ class FakeNode {
   }
   setAttribute(): void {}
   removeAttribute(): void {}
+  /** The props React gave this element (the stand-in keeps no attributes of its own). */
+  get props(): Record<string, unknown> {
+    const key = Object.keys(this).find((k) => k.startsWith('__reactProps$'))
+    return key === undefined ? {} : ((this as unknown as Record<string, Record<string, unknown>>)[key] ?? {})
+  }
+  getAttribute(name: string): string | null {
+    const v = this.props[name === 'tabindex' ? 'tabIndex' : name]
+    return v === undefined || v === null || v === false ? null : String(v)
+  }
+  /** Whether the element matches a comma list of simple selectors: a tag, `[attr]`, `[attr="v"]`, `:not([disabled])`. */
+  matches(selector: string): boolean {
+    return selector.split(',').some((part) => {
+      const m = /^\s*([a-z]*)((?:\[[^\]]+\])*)(:not\(\[disabled\]\))?\s*$/.exec(part)
+      if (m === null || (m[1] !== '' && m[1]?.toUpperCase() !== this.tagName)) return false
+      if (m[3] !== undefined && this.props['disabled'] === true) return false
+      return [...(m[2] ?? '').matchAll(/\[([^\]=]+)(?:="([^"]*)")?\]/g)].every(([, name, value]) => {
+        const got = this.getAttribute(name as string)
+        return value === undefined ? got !== null : got === value
+      })
+    })
+  }
+  querySelectorAll(selector: string): FakeNode[] {
+    return this.childNodes.flatMap((c) =>
+      c.nodeType === 1 ? [...(c.matches(selector) ? [c] : []), ...c.querySelectorAll(selector)] : [],
+    )
+  }
+  get isConnected(): boolean {
+    return true
+  }
+  /** Take focus: the document's `activeElement`, and a count a test can read. */
+  focused = 0
+  focus(): void {
+    this.focused++
+    this.ownerDocument.activeElement = this
+  }
   readonly listeners = new Map<string, Set<(e: object) => void>>()
   addEventListener(type: string, fn: (e: object) => void): void {
     const set = this.listeners.get(type) ?? new Set()
@@ -84,7 +120,7 @@ class FakeNode {
 }
 
 class FakeDocument extends FakeNode {
-  activeElement = null
+  activeElement: FakeNode | null = null
   body: FakeNode | undefined
   documentElement: unknown
   readonly defaultView: unknown = undefined
@@ -195,6 +231,8 @@ export interface Mounted<T> {
   readonly renders: number
   /** The elements of the tree, in document order, with their props and text. */
   elements(): readonly FoundElement[]
+  /** The element that has focus (it called `focus()` last), if it is in the tree. */
+  focused(): FoundElement | undefined
   /** The text of the whole tree. */
   text(): string
   /** The stand-in window of the tree. */
@@ -334,6 +372,7 @@ async function mount(
       return renders
     },
     elements,
+    focused: () => elements().find((e) => e.node === doc.activeElement),
     text: () => textOf(container),
     window: listenerApi(listeners),
     document: listenerApi(doc.listeners),

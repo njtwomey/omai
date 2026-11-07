@@ -1,4 +1,4 @@
-import { structure } from 'mdml-engine/scene'
+import { type Structure, structure } from 'mdml-engine/scene'
 import { type ReactElement, useState } from 'react'
 import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -12,6 +12,14 @@ import { ThemeProvider, useColourMode, useTokens } from './theme.tsx'
 
 function ModeProbe(): string {
   return `${useColourMode()}:${useTokens().bg}`
+}
+
+// A structure view whose parent can render it again with other props.
+const widthHost = { bump: (): void => {} }
+function WidthHost(props: { readonly structure: Structure }): ReactElement {
+  const [n, setN] = useState(0)
+  widthHost.bump = () => setN(n + 1)
+  return <StructureView structure={props.structure} width={300 + n} />
 }
 
 afterEach(() => {
@@ -69,17 +77,11 @@ describe('react bindings', () => {
   })
   it('gives a structure view one stable ref callback, so a render does not set state twice', async () => {
     const s = structure('bayes-net', [{ id: 'a', label: 'a', role: 'latent' }], [])
-    let bump = (): void => {}
-    const Host = (): ReactElement => {
-      const [n, setN] = useState(0)
-      bump = () => setN(n + 1)
-      return <StructureView structure={s} width={300 + n} />
-    }
-    const mounted = await mountElement(<Host />, { browser: true })
+    const mounted = await mountElement(<WidthHost structure={s} />, { browser: true })
     const refOf = (): unknown => mounted.elements().find((e) => e.props['onPointerDown'] !== undefined)?.props['ref']
     const before = refOf()
     expect(typeof before).toBe('function')
-    await inAct(bump)
+    await inAct(widthHost.bump)
     expect(refOf()).toBe(before)
     await mounted.unmount()
   })
