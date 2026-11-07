@@ -9,7 +9,17 @@ import { MdmlError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { dsyev } from '../../numerics/linalg/index.ts'
 import { gaussLegendre } from '../../numerics/quadrature/index.ts'
-import { asTensor, exp, matmul, type Tensor, type TensorLike, toFlat, type Value, where } from '../../tensor/index.ts'
+import {
+  asTensor,
+  concreteOrThrow,
+  exp,
+  matmul,
+  type Tensor,
+  type TensorLike,
+  toFlat,
+  type Value,
+  where,
+} from '../../tensor/index.ts'
 import { mat, rowsOf } from '../_util.ts'
 
 /**
@@ -177,23 +187,39 @@ export function sumToZeroConstraint(X: TensorLike): Tensor {
   const c = new Float64Array(m.cols)
   for (let i = 0; i < m.rows; i++)
     for (let j = 0; j < m.cols; j++) c[j] = (c[j] ?? 0) + (m.data[i * m.cols + j] ?? 0) / m.rows
-  return constraintNullSpace(c, m.cols)
+  return nullSpaceOf(c, m.cols)
 }
 
 /**
  * The orthogonal complement of the row space of linear constraints C beta = 0, from the full Householder QR of C^T
  * (LAPACK's reflector convention): the last k - r columns of Q.
  *
- * @param C - The constraints, r x k (one row per constraint), row-major.
- * @param k - The number of coefficients.
+ * Takes tensors (migration, D-009: `C` was a flat `ArrayLike<number>` with the width `k` as a second argument; the width
+ * is now the matrix's own, and a flat array of numbers is one constraint).
+ *
+ * @param C - The constraints, `[r, k]` (one row per constraint), or a vector of length `k` for a single constraint.
  * @returns Z, k x (k - r), with C Z = 0 and orthonormal columns.
+ * @throws MdmlError with code `shape` unless `C` has rank 1 or 2.
  * @example
  * ```ts
  * import { constraintNullSpace } from 'mdml-engine/stats/smoothing'
- * constraintNullSpace([1, 1], 2) // => [[-0.707107], [0.707107]]
+ * constraintNullSpace([1, 1]) // => [[-0.707107], [0.707107]]
+ * constraintNullSpace([[1, 1]]) // => [[-0.707107], [0.707107]]
  * ```
  */
-export function constraintNullSpace(C: ArrayLike<number>, k: number): Tensor {
+export function constraintNullSpace(C: TensorLike): Tensor {
+  const t = concreteOrThrow(asTensor(C), 'constraintNullSpace')
+  if (t.shape.length !== 1 && t.shape.length !== 2)
+    throw new MdmlError(
+      'shape',
+      `constraintNullSpace: expected a [r, k] matrix or a vector, got rank ${t.shape.length}`,
+    )
+  const k = t.shape.length === 1 ? (t.shape[0] ?? 0) : (t.shape[1] ?? 0)
+  return nullSpaceOf(t.data, k)
+}
+
+/** The kernel of {@link constraintNullSpace} on a flat row-major `r x k` matrix. */
+function nullSpaceOf(C: ArrayLike<number>, k: number): Tensor {
   const r = Math.round(C.length / k)
   // A = C^T (k x r); apply Householder reflections H_1..H_r and accumulate Q = H_1 ... H_r.
   const A = Float64Array.from({ length: k * r }, (_, idx) => C[(idx % r) * k + Math.floor(idx / r)] ?? 0)

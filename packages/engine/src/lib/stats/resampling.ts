@@ -15,7 +15,7 @@ import {
   varianceOf,
 } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation, randint } from '../random/index.ts'
-import type { Tensor, TensorLike } from '../tensor/index.ts'
+import { type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { normCdf, normPpf, sample, vec } from './_util.ts'
 import { quantile } from './quantiles.ts'
@@ -298,19 +298,23 @@ export function permutationTest(
 }
 
 /**
- * The difference of sample means, mean(x) - mean(y): the usual permutation-test statistic.
+ * The difference of sample means, mean(x) - mean(y): the usual permutation-test statistic. Takes tensors (migration,
+ * D-009: `x` and `y` were `Float64Array`; the permutation loops still hand it typed arrays, which are read in place).
  *
- * @param x - First sample.
+ * @param x - First sample: a vector (a tensor, a typed array or a flat array).
  * @param y - Second sample.
  * @returns mean(x) - mean(y).
+ * @throws MdmlError with code `shape` unless both are vectors.
  * @example
  * ```ts
  * import { meanDifference } from 'mdml-engine/stats'
  * meanDifference(Float64Array.of(3, 5), Float64Array.of(1, 2)) // => 2.5
  * ```
  */
-export function meanDifference(x: Float64Array, y: Float64Array): number {
-  return meanOf(x) - meanOf(y)
+export function meanDifference(x: TensorLike, y: TensorLike): number {
+  const a = x instanceof Float64Array ? x : toVector(x, 'meanDifference')
+  const b = y instanceof Float64Array ? y : toVector(y, 'meanDifference')
+  return meanOf(a) - meanOf(b)
 }
 
 /** A method for {@link bootstrap} intervals. */

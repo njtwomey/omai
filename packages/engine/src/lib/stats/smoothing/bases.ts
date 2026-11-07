@@ -86,6 +86,17 @@ function designOf(
   return { data: Float64Array.from(toFlat(spline.designMatrix(Array.from(x)) as Tensor)), cols: n }
 }
 
+/** The derivatives of the basis at the points as flat row-major data and the number of basis functions. */
+function derivativeDesign(
+  knots: readonly number[],
+  degree: number,
+  x: ArrayLike<number>,
+  order: 1 | 2,
+): { data: Float64Array; cols: number } {
+  const D = bsplineDerivativeDesign(knots, degree, Array.from(x), order)
+  return { data: D.data, cols: D.shape[1] ?? 0 }
+}
+
 function dropFirstColumn(d: Float64Array, rows: number, cols: number): Float64Array {
   const out = new Float64Array(rows * (cols - 1))
   for (let i = 0; i < rows; i++) for (let j = 1; j < cols; j++) out[i * (cols - 1) + (j - 1)] = d[i * cols + j] ?? 0
@@ -172,7 +183,7 @@ export function bs(x: TensorLike, options: BsOptions = {}): SmoothBasis {
   }
   const derivative = (q: TensorLike, order: 1 | 2): Tensor => {
     const v = sample('bs', q, 0)
-    const { data, cols } = bsplineDerivativeDesign(knots, degree, v, order)
+    const { data, cols } = derivativeDesign(knots, degree, v, order)
     return intercept ? mat(data, v.length, cols) : mat(dropFirstColumn(data, v.length, cols), v.length, cols - 1)
   }
   return {
@@ -229,7 +240,7 @@ export function ns(x: TensorLike, options: Omit<BsOptions, 'degree'> = {}): Smoo
   const kk = k - k0
   const C = new Float64Array(2 * kk)
   for (let r = 0; r < 2; r++) for (let j = 0; j < kk; j++) C[r * kk + j] = second[r * k + j + k0] ?? 0
-  const Z = Float64Array.from(toFlat(constraintNullSpace(C, kk)))
+  const Z = Float64Array.from(toFlat(constraintNullSpace(mat(C, 2, kk))))
   const m = kk - 2
   const evaluate = (q: TensorLike): Tensor => {
     const v = sample('ns', q, 0)
@@ -305,7 +316,7 @@ export function ps(x: TensorLike, options: PsOptions = {}): SmoothBasis {
   }
   const derivative = (q: TensorLike, d: 1 | 2): Tensor => {
     const v = sample('ps', q, 0)
-    const { data, cols } = bsplineDerivativeDesign(knots, degree, v, d)
+    const { data, cols } = derivativeDesign(knots, degree, v, d)
     return mat(data, v.length, cols)
   }
   return {
@@ -597,7 +608,7 @@ function radialBasis(
   })
   // Absorb T^T Uk delta = 0: Z is the null space of (Uk^T T)^T.
   const UtT = matmul(transpose(Uk, n, k), T, k, n, M)
-  const Z = Float64Array.from(toFlat(constraintNullSpace(transpose(UtT, k, M), k)))
+  const Z = Float64Array.from(toFlat(constraintNullSpace(mat(transpose(UtT, k, M), M, k))))
   const q = k - M
   const UkZ = matmul(Uk, Z, n, k, q)
   const DZ = Float64Array.from({ length: k * q }, (_, idx) => (Dk[Math.floor(idx / q)] ?? 0) * (Z[idx] ?? 0))

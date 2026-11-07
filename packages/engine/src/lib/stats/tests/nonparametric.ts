@@ -7,9 +7,10 @@
 import { MdmlError, type TestResult } from '../../base/index.ts'
 import { studentisedRange } from '../../dists/index.ts'
 import { item, type Tensor, type TensorLike } from '../../tensor/index.ts'
+import { rankKernel } from '../_ranks.ts'
 import { chi2Sf, groupsOf, mat, normCdf, normSf, paired, rowsOf, sample, tCdf, tSf } from '../_util.ts'
 import { median } from '../quantiles.ts'
-import { ranksOf, tieCorrection, tieTerm } from '../ranks.ts'
+import { tieCorrection, tieTerm } from '../ranks.ts'
 import { permutationTest } from '../resampling.ts'
 import { binomTest } from './proportions.ts'
 import { pValueFromTails, resolveTestOptions, type TestOptions, testResult } from './result.ts'
@@ -83,7 +84,7 @@ export function mannWhitneyU(x: TensorLike, y: TensorLike, options: MannWhitneyO
   const n1 = a.length
   const n2 = b.length
   const all = Float64Array.from([...a, ...b])
-  const ranks = ranksOf(all)
+  const ranks = rankKernel(all)
   let R1 = 0
   for (let i = 0; i < n1; i++) R1 += ranks[i] ?? 0
   const U1 = R1 - (n1 * (n1 + 1)) / 2
@@ -137,7 +138,7 @@ export interface WilcoxonOptions extends TestOptions {
 
 function signedRankStatistic(d: Float64Array, zeroMethod: ZeroMethod): { rPlus: number; rMinus: number } {
   const kept = zeroMethod === 'wilcox' ? d.filter((v) => v !== 0) : d
-  const r = ranksOf(Float64Array.from(kept, Math.abs))
+  const r = rankKernel(Float64Array.from(kept, Math.abs))
   let rPlus = 0
   let rMinus = 0
   let rZero = 0
@@ -252,7 +253,7 @@ export function kruskal(groups: readonly TensorLike[]): TestResult {
   const gs = groupsOf('kruskal', groups, 1)
   const all = Float64Array.from(gs.flatMap((g) => Array.from(g)))
   const N = all.length
-  const ranks = ranksOf(all)
+  const ranks = rankKernel(all)
   let s = 0
   let offset = 0
   for (const g of gs) {
@@ -279,7 +280,7 @@ function rowRanks(name: string, data: TensorLike): { n: number; k: number; ranks
   let ties = 0
   for (let i = 0; i < n; i++) {
     const row = x.subarray(i * k, (i + 1) * k)
-    ranks.set(ranksOf(row), i * k)
+    ranks.set(rankKernel(row), i * k)
     ties += tieTerm(row)
   }
   return { n, k, ranks, ties }
@@ -375,7 +376,7 @@ export function nemenyi(groups: readonly TensorLike[]): PosthocResult {
   const gs = groupsOf('nemenyi', groups, 1)
   const all = Float64Array.from(gs.flatMap((g) => Array.from(g)))
   const N = all.length
-  const ranks = ranksOf(all)
+  const ranks = rankKernel(all)
   const k = gs.length
   const mean = new Float64Array(k)
   let offset = 0
@@ -461,9 +462,9 @@ export function brunnerMunzel(
   const b = sample('brunnerMunzel', y, 2)
   const nx = a.length
   const ny = b.length
-  const rc = ranksOf(Float64Array.from([...a, ...b]))
-  const rx = ranksOf(a)
-  const ry = ranksOf(b)
+  const rc = rankKernel(Float64Array.from([...a, ...b]))
+  const rx = rankKernel(a)
+  const ry = rankKernel(b)
   const mean = (v: ArrayLike<number>, from: number, to: number): number => {
     let s = 0
     for (let i = from; i < to; i++) s += v[i] ?? 0

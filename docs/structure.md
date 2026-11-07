@@ -282,6 +282,26 @@ Accepting widens (a nested array still works), so only returns break callers. Mi
 (a kernel for `dists` and the bandits), the index and label lists of `data` (`take`, `bootstrap`, `stratifiedIndices`,
 `labelsOf`, the splits, `subsetRandomSampler`) and `parseNpy` (a decoder).
 
+Stage 2 (`stats`, `metrics`): `stats` `ranksOf` (takes a tensor-like, returns a float64 tensor; the loops of the domain keep
+the private kernel `_ranks.ts`), `tieCounts` (returns an int32 tensor), `newtonMle`, `newtonMleAlgorithm`,
+`observedInformation` (start vector; also `MleProblem.eta0`), `smoothing.bsplineDerivativeDesign` (takes tensors, returns
+the `[n, k]` matrix instead of `{ data, cols }`), `smoothing.constraintNullSpace` (takes the `[r, k]` constraint matrix,
+no separate `k`), `smoothingSpline` (`weights`), `meanDifference`, `tests.proportionsZtest`, `tests.checkExpectedCounts`,
+`tests.alphaSpending` (`times`), `tests.eppsSingleton` (`t`); `metrics` `weightedPercentile`, `auc`, `tableCost`,
+`thresholdCosts` and the `costs` option of `analyseThresholds` (take tensor-likes), `silhouetteSamples`,
+`pairConfusionMatrix`, `multilabelConfusionMatrix` and the four box measures `boxIou`, `generalizedBoxIou`,
+`distanceBoxIou`, `completeBoxIou` (return float64 tensors). Kept native on purpose: the record fields of results
+(`NewtonMleResult.eta`, `GroupSequentialDesign.spent`, `ConfusionMatrix.matrix`, `TableCost.cells`, the curve records and
+the `thresholdSweep` rows) until the records themselves are staged; the callbacks of the resampling loops
+(`SampleStatistic` takes `Float64Array`s, which `meanDifference` reads in place); the level, index and generator lists of
+`stats.design` and the conditioning column indices of the independence tests; the plain-number kernels
+(`stats.centreGram`, `centredDistances`, `distanceCorrelationOf`, `powerDivergenceStatistic`, `jackknife` and
+`runningStatistic` callbacks; `metrics.flat`, `sampleWeights`, `weightedMean`, `perOutputMetric` and
+`permutationInvariant` callbacks); the id and position lists of `metrics` (`selectRows`, `bayesDecision`,
+`teamDraftInterleave`, `interleavingCredit`, `bioViolations`); and `exposition.sliceCoordinates`, because `exposition`
+imports only `base` and `scene` (section 3, layering): a tensor-like input would need `tensor` below the records, and the
+record data is plain JSON by contract.
+
 **Docstrings.** Every export has a TSDoc block: summary, `@param` per parameter, `@returns`, `@throws` where relevant,
 and at least one `@example` with `// => value`, `// => figure`, `// => trace` or `// => throws Code` expectations that
 the build runs. `@concept` tags link to the concept taxonomy (section 7), `@see` and `@reference` cite sources.
@@ -1566,7 +1586,8 @@ Every test in `tests/` returns a `TestResult` with the statistic, p-value, effec
 the method name and the assumptions it checked. Iterative procedures (permutation and bootstrap resampling, Newton
 maximum likelihood, RANSAC, SPRT) are traced `Algorithm`s; randomness comes from explicit `Key`s. Private helpers:
 `_util.ts` (input coercion, normal/t/chi-square/F tails, quadrature), `_linear.ts` (least squares and small symmetric
-linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisation); `tests/_shapiro.ts`,
+linear algebra over LAPACK), `_optimise.ts` (bounded one-dimensional maximisation), `_ranks.ts` (the plain-number ranking and tie-count kernels
+of the rank tests); `tests/_shapiro.ts`,
 `tests/_kolmogorov.ts`, `tests/_cvm.ts` (null distributions).
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, weighted versions,
   `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`, `gini`.

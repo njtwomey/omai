@@ -5,7 +5,7 @@
  */
 
 import { MdmlError, type MetricResult } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { type TensorLike, toVector } from '../tensor/index.ts'
 import { isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
 import { averageBinary, binarise, column, positives, scoreSpec } from './_scores.ts'
 import {
@@ -127,32 +127,36 @@ export function rocCurve(
 }
 
 /**
- * The area under a curve by the trapezoidal rule (sklearn.metrics.auc); x must be monotonic (either direction).
+ * The area under a curve by the trapezoidal rule (sklearn.metrics.auc); x must be monotonic (either direction). Takes
+ * tensors (migration, D-009: `x` and `y` were `readonly number[]`; nested arrays still work).
  *
- * @param x - Abscissae, monotonic.
- * @param y - Ordinates.
+ * @param x - Abscissae, monotonic: a vector (a tensor, a typed array or a flat array).
+ * @param y - Ordinates: a vector.
  * @returns The area.
- * @throws MdmlError with code `value` when x is not monotonic.
+ * @throws MdmlError with code `value` when x is not monotonic, and `shape` unless both are vectors.
  * @example
  * ```ts
  * import { auc } from 'mdml-engine/metrics'
  * auc([0, 0.5, 1], [0, 1, 1]) // => 0.75
  * ```
  */
-export function auc(x: readonly number[], y: readonly number[]): number {
+export function auc(x: TensorLike, y: TensorLike): number {
+  const xs = toVector(x, 'auc')
+  const ys = toVector(y, 'auc')
   let direction = 1
   let increasing = true
   let decreasing = true
-  for (let i = 1; i < x.length; i++) {
-    if ((x[i] ?? 0) < (x[i - 1] ?? 0)) increasing = false
-    if ((x[i] ?? 0) > (x[i - 1] ?? 0)) decreasing = false
+  for (let i = 1; i < xs.length; i++) {
+    if ((xs[i] ?? 0) < (xs[i - 1] ?? 0)) increasing = false
+    if ((xs[i] ?? 0) > (xs[i - 1] ?? 0)) decreasing = false
   }
   if (!increasing) {
     if (!decreasing) throw new MdmlError('value', 'auc: x is neither increasing nor decreasing')
     direction = -1
   }
   let area = 0
-  for (let i = 1; i < x.length; i++) area += (((x[i] ?? 0) - (x[i - 1] ?? 0)) * ((y[i] ?? 0) + (y[i - 1] ?? 0))) / 2
+  for (let i = 1; i < xs.length; i++)
+    area += (((xs[i] ?? 0) - (xs[i - 1] ?? 0)) * ((ys[i] ?? 0) + (ys[i - 1] ?? 0))) / 2
   return direction * area
 }
 

@@ -18,10 +18,10 @@ import {
   type TestResult,
   varianceOf,
 } from '../../base/index.ts'
-import type { TensorLike } from '../../tensor/index.ts'
+import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { rankKernel } from '../_ranks.ts'
 import { chi2Sf, fSf, groupsOf, normPpf } from '../_util.ts'
 import { median } from '../quantiles.ts'
-import { ranksOf } from '../ranks.ts'
 import { shapiroWilk } from './_shapiro.ts'
 
 /** Options shared by tests: the alternative hypothesis and the confidence level of reported intervals. */
@@ -323,7 +323,7 @@ export function fligner(groups: readonly TensorLike[], options: { readonly cente
     for (const v of g) all.push(Math.abs(v - c))
   }
   const N = all.length
-  const ranks = ranksOf(all)
+  const ranks = rankKernel(all)
   const a = Float64Array.from(ranks, (r) => normPpf(r / (2 * (N + 1)) + 0.5))
   const abar = meanOf(a)
   const varsq = varianceOf(a, 1)
@@ -390,9 +390,10 @@ export function checkEqualVariances(
 
 /**
  * The expected-count assumption of chi-square approximations (Cochran's rule): every expected count at least
- * `minimum` (default 5).
+ * `minimum` (default 5). Takes tensors (migration, D-009: `expected` was `ArrayLike<number>`; a table of any rank is read
+ * in row-major order).
  *
- * @param expected - The expected counts.
+ * @param expected - The expected counts: a vector or a table (a tensor, a typed array or a nested array).
  * @param minimum - The smallest acceptable expected count (default 5).
  * @returns Whether the rule holds and the smallest expected count.
  * @example
@@ -402,11 +403,12 @@ export function checkEqualVariances(
  * ```
  */
 export function checkExpectedCounts(
-  expected: ArrayLike<number>,
+  expected: TensorLike,
   minimum = 5,
 ): { readonly adequate: boolean; readonly minExpected: number } {
+  const counts = expected instanceof Float64Array ? expected : toFlat(asTensor(expected))
   let m = Number.POSITIVE_INFINITY
-  for (let i = 0; i < expected.length; i++) m = Math.min(m, expected[i] ?? 0)
+  for (let i = 0; i < counts.length; i++) m = Math.min(m, counts[i] ?? 0)
   return { adequate: m >= minimum, minExpected: m }
 }
 

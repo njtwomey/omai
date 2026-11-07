@@ -432,3 +432,34 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `tensor`, `autodiff`, `base`, `exposition`, `dists`, `trace`; `data` for `archives.ts`): see the `progress.md` row. The five domains and `trace` and `data`: 131 files, 2,720 tests passed;
   the 10 caller domains of the fixed functions (197 files, 3,486 tests) passed. Surface: 0 added, 0 removed, 1 changed (`CheckOptions` gains `order`);
   `docs/api-surface.txt` regenerated. Own checks only; the full gate was not run.
+- **18:20 Native arrays, stage 2 (P3.8, D-009, D-015: `stats` and `metrics`).** Branch `agent-na03-stats`, 13 commits, nothing pushed (D-014).
+  Migrated: `stats` `ranksOf` (takes a tensor-like, returns a float64 tensor; the rank tests keep a private plain-number kernel in
+  `stats/_ranks.ts`), `tieCounts` (int32 tensor), `newtonMle`, `newtonMleAlgorithm`, `observedInformation` and `MleProblem.eta0`
+  (start vector), `smoothing.bsplineDerivativeDesign` (takes tensors, returns the `[n, k]` matrix instead of `{ data, cols }`),
+  `smoothing.constraintNullSpace` (takes the `[r, k]` constraint matrix, so the separate width `k` is gone), `smoothingSpline`
+  (`weights`), `meanDifference`, `tests.proportionsZtest`, `tests.checkExpectedCounts`, `tests.alphaSpending` (`times`),
+  `tests.eppsSingleton` (`t`); `metrics` `weightedPercentile`, `auc`, `tableCost`, `thresholdCosts` and the `costs` option of
+  `analyseThresholds` (tensor-likes in), `silhouetteSamples`, `pairConfusionMatrix`, `multilabelConfusionMatrix` and the four box
+  measures (tensors out; `vision` `nms`, `softNms`, `matchAnchors` and the tracker read the `[N, M]` data in place). Inputs
+  accept nested arrays, typed arrays and tensors, so only the ten returns (and the dropped width of `constraintNullSpace`) break callers; callers updated: `anomaly` 1,
+  `learn` 2, `gam` 1, `vision` 4 sites, the `stats` loops 6 files, 6 test files, none in render, meta, site, pocs or docs
+  (render's `ContingencyTable.costs` prop still takes a nested array). Draws, statistics and p-values are bit-identical: no
+  golden changed, and the examples differ only where a tensor prints (`constraintNullSpace` drops its width, `bsplineDerivativeDesign`,
+  `multilabelConfusionMatrix` and `silhouetteSamples` index `.data`). Measured before and after with a niced throwaway script
+  (median of 5): permutation test 2000 x n = 200 with `meanDifference` 107.7 / 111.3 ms, `ranksOf` 1e5 29.6 / 31.8 ms,
+  `auc` 5000 points x 2000 17.6 / 25.5 ms (the flat-array check of `toVector`; 4 us per call more), `weightedPercentile`
+  1e4 x 200 462 / 507 ms, `rocAucScore` 1e5 73.4 / 76.5 ms, `boxIou` 300 x 300 x 20 136.6 / 142.4 ms, `silhouetteScore` and
+  `adjustedRandScore` unchanged (they use the kernels): nothing stayed native for speed. `meanDifference` reads a `Float64Array` in place because
+  the permutation loops hand it typed arrays. Kept native, with reasons in the register rows (DSM-23, DSM-24, KDES-33):
+  the 9 shape and index functions and 6 kernels of `stats`, the 5 kernels and 5 id lists of `metrics`, the result-record
+  fields the sorting could not see (`ConfusionMatrix.matrix`, `TableCost.cells`, the curve records, `NewtonMleResult.eta`,
+  `GroupSequentialDesign.spent`: records with literal callers and render consumers, for a later stage), and
+  `exposition.sliceCoordinates` (`exposition` imports only `base` and `scene`, so a `TensorLike` input would need `tensor` below
+  the records; the layering rule decides, and the record is plain JSON). Gotchas: a parameter renamed to be read under a
+  tensor-like name must keep the name its `@param` uses; and `toVector` rejects a matrix with a `shape` error where `tieCounts`
+  and `checkExpectedCounts` deliberately flatten any rank, so those two read with `sample`/`toFlat`. No function here is
+  differentiable (they summarise or decide), so no gradient row; a traced input is rejected with `not-differentiable`, in one
+  table test (`metrics/tensor-inputs.test.ts`, 13 rows x three input forms, the wrong rank and a traced value). Own checks only
+  (the full gate was not run): engine, render, meta, site and pocs tsc; 301 files, 4,482 tests of `stats`, `metrics`, `vision`, `gam`,
+  `anomaly`, `trees`, `ensembles`, `probprog` and `learn`; render's `smoke.test.tsx`; 229 `@example`s of the touched files; barrels,
+  layers, lint, agent index, surface. Tests added: 1 `it` (a table). Surface: 0 added, 0 removed, 26 changed.

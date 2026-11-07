@@ -44,7 +44,7 @@ export interface MrmrState {
 function binCodes(v: ArrayLike<number>, bins: number): number[] {
   const distinct = new Set(Array.from(v))
   if (distinct.size <= bins) return Array.from(v)
-  const r = ranksOf(v, 'ordinal')
+  const r = ranksOf(Array.from(v), 'ordinal').data
   return Array.from(r, (rank) => Math.min(bins - 1, Math.floor(((rank - 1) * bins) / v.length)))
 }
 

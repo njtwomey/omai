@@ -11,11 +11,11 @@ import { dsyev } from '../../numerics/linalg/index.ts'
 import { gammainc } from '../../numerics/special/index.ts'
 import { fromStorage, item, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { matmul, pinvSym } from '../_linear.ts'
+import { rankKernel } from '../_ranks.ts'
 import { chi2Sf, normSf, paired, type Rows, rowsOf } from '../_util.ts'
 import { centredDistances, corrcoef, distanceCorrelationOf } from '../correlation.ts'
 import { mean, std } from '../descriptive.ts'
 import { histogram2d } from '../histograms.ts'
-import { ranksOf } from '../ranks.ts'
 import { permutationTest, type ResamplingRunOptions } from '../resampling.ts'
 import { centreGram, gaussianKernel, type Kernel } from './kernel.ts'
 import { testResult } from './result.ts'
@@ -70,8 +70,8 @@ export function distanceCovarianceTest(x: TensorLike, y: TensorLike, options: In
 /** Hoeffding's D from midranks and bivariate ranks (Hollander and Wolfe's formula with Hmisc's tie handling). */
 function hoeffdingStatistic(x: Float64Array, y: Float64Array): number {
   const n = x.length
-  const R = ranksOf(x)
-  const S = ranksOf(y)
+  const R = rankKernel(x)
+  const S = rankKernel(y)
   let D1 = 0
   let D2 = 0
   let D3 = 0

@@ -72,7 +72,7 @@ describe('ranks', () => {
   it('tie corrections are 1 without ties and below 1 with them', () => {
     expect(S.tieCorrection([3, 1, 2])).toBe(1)
     expect(S.tieCorrection([1, 1, 2])).toBeLessThan(1)
-    expect(S.tieCounts([2, 2, 2])).toEqual([3])
+    expect(Array.from(S.tieCounts([2, 2, 2]).data)).toEqual([3])
     expect(() => S.rankdata([1, Number.NaN])).toThrow()
   })
 })

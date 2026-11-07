@@ -5,13 +5,13 @@
  * every distinct threshold in one sorted pass into a thresholdSweep exposition record.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import { type ThresholdSweep, thresholdSweep } from '../exposition/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
 import type { ConfusionMatrix } from './classification.ts'
 import { auc } from './curves.ts'
-import { flat, type MetricInput, type MetricOptions, sampleWeights } from './metric.ts'
+import { flat, type MetricInput, type MetricOptions, matrix, sampleWeights } from './metric.ts'
 
 /**
  * The margins of a contingency table (a confusion matrix with actual classes as rows and predicted classes as
@@ -143,10 +143,11 @@ export interface TableCost {
 
 /**
  * The cost of a contingency table: each cell's count times the cost of that decision (`costs[actual][predicted]`, in
- * the table's class order; correct decisions usually cost 0 and may be negative to count as benefits), summed.
+ * the table's class order; correct decisions usually cost 0 and may be negative to count as benefits), summed. Takes
+ * tensors (migration, D-009: `costs` was `readonly (readonly number[])[]`; nested arrays still work).
  *
  * @param table - A confusion matrix of counts.
- * @param costs - The cost matrix, one row per actual class and one column per predicted class.
+ * @param costs - The cost matrix `[k, k]`, one row per actual class and one column per predicted class.
  * @returns Each cell's cost, the total and the cost per case.
  * @throws MdmlError `shape` when the cost matrix does not match the table.
  * @concept classification-metrics
@@ -159,11 +160,10 @@ export interface TableCost {
  * c.perCase // => 0.47
  * ```
  */
-export function tableCost(table: ConfusionMatrix, costs: readonly (readonly number[])[]): TableCost {
+export function tableCost(table: ConfusionMatrix, costs: TensorLike): TableCost {
   const k = table.labels.length
-  if (costs.length !== k || costs.some((row) => row.length !== k))
-    throw new MdmlError('shape', `tableCost: the cost matrix must be ${k} by ${k}, like the table`)
-  const cells = table.matrix.map((row, i) => row.map((n, j) => n * (costs[i]?.[j] ?? 0)))
+  const c = costRows('tableCost', costs, k, `${k} by ${k}, like the table`)
+  const cells = table.matrix.map((row, i) => row.map((n, j) => n * (c[i]?.[j] ?? 0)))
   const total = cells.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
   const n = table.matrix.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
   return { cells, total, perCase: n === 0 ? Number.NaN : total / n }
@@ -182,11 +182,12 @@ export interface ThresholdCosts {
 /**
  * The total misclassification cost of cutting scores at each threshold (positive when the score is at least the
  * threshold), under a 2 by 2 cost matrix in `thresholdConfusion`'s order (`[[TN, FP], [FN, TP]]` costs), and the
- * cheapest threshold. One sorted sweep, so every threshold costs O(1) after sorting.
+ * cheapest threshold. One sorted sweep, so every threshold costs O(1) after sorting. Takes tensors (migration, D-009:
+ * `costs` was `readonly (readonly number[])[]`; nested arrays still work).
  *
  * @param yTrue - Binary labels.
  * @param yScore - Scores, higher meaning more positive.
- * @param costs - `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`.
+ * @param costs - `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`, a `[2, 2]` matrix.
  * @param options - posLabel and sample weights.
  * @returns The thresholds, their totals and the cheapest.
  * @throws MdmlError `shape` for a cost matrix that is not 2 by 2 or lengths that differ; `value` with more than two
@@ -202,12 +203,12 @@ export interface ThresholdCosts {
 export function thresholdCosts(
   yTrue: MetricInput,
   yScore: TensorLike,
-  costs: readonly (readonly number[])[],
+  costs: TensorLike,
   options: ThresholdConfusionOptions = {},
 ): ThresholdCosts {
-  checkCosts('thresholdCosts', costs)
+  const c = costRows('thresholdCosts', costs, 2, '2 by 2')
   const sweep = sweepScores('thresholdCosts', yTrue, yScore, options)
-  const totals = sweepCost(sweep, costs)
+  const totals = sweepCost(sweep, c)
   const best = cheapestIndex(totals)
   return {
     thresholds: sweep.thresholds,
@@ -216,9 +217,12 @@ export function thresholdCosts(
   }
 }
 
-function checkCosts(name: string, costs: readonly (readonly number[])[]): void {
-  if (costs.length !== 2 || costs.some((row) => row.length !== 2))
-    throw new MdmlError('shape', `${name}: the cost matrix must be 2 by 2`)
+/** The rows of a cost matrix that must be `k` by `k` (`what` names the size in the error). */
+function costRows(name: string, costs: TensorLike, k: number, what: string): number[][] {
+  const m = matrix(costs)
+  if (m.shape.length !== 2 || m.shape[0] !== k || m.shape[1] !== k)
+    throw new MdmlError('shape', `${name}: the cost matrix must be ${what}`)
+  return toRows(m.data, k, k)
 }
 
 /** The counts of scores cut at every distinct threshold, from one sorted pass. */
@@ -302,7 +306,7 @@ function cheapestIndex(totals: readonly number[]): number {
 /** Options of {@link analyseThresholds}. */
 export interface AnalyseThresholdsOptions extends ThresholdConfusionOptions {
   /** A 2 by 2 cost matrix, `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`: adds the cost and the cheapest. */
-  readonly costs?: readonly (readonly number[])[]
+  readonly costs?: TensorLike
   /** Names of the negative and positive class (default the labels as text). */
   readonly classNames?: readonly [string, string]
   /** Keep the scored rows in the record, for score-distribution views (default true). */
@@ -313,7 +317,8 @@ export interface AnalyseThresholdsOptions extends ThresholdConfusionOptions {
  * Every threshold of a binary classifier's scores at once, as a `thresholdSweep` exposition record: at each distinct
  * score (and +Infinity) the four counts, the true- and false-positive rates, precision, selection rate and accuracy,
  * the total cost and the cheapest threshold when costs are given, and the areas under the ROC and precision-recall
- * curves. One sorted pass, so every threshold costs O(1) after sorting; `sweepAt` reads any threshold back.
+ * curves. One sorted pass, so every threshold costs O(1) after sorting; `sweepAt` reads any threshold back. Takes
+ * tensors (migration, D-009: the `costs` option was `readonly (readonly number[])[]`; nested arrays still work).
  *
  * @param yTrue - Binary labels.
  * @param yScore - Scores, higher meaning more positive.
@@ -338,7 +343,7 @@ export function analyseThresholds(
   yScore: TensorLike,
   options: AnalyseThresholdsOptions = {},
 ): ThresholdSweep {
-  if (options.costs !== undefined) checkCosts('analyseThresholds', options.costs)
+  const costs = options.costs === undefined ? undefined : costRows('analyseThresholds', options.costs, 2, '2 by 2')
   const sweep = sweepScores('analyseThresholds', yTrue, yScore, options)
   const { positives: P, negatives: N } = sweep
   const ratio = (a: number, b: number): number => (b === 0 ? Number.NaN : a / b)
@@ -353,7 +358,7 @@ export function analyseThresholds(
       const step = (tpr[i] ?? 0) - (tpr[i + 1] ?? 0)
       if (step > 0) averagePrecision += step * (precision[i] ?? 0)
     }
-  const cost = options.costs === undefined ? undefined : sweepCost(sweep, options.costs)
+  const cost = costs === undefined ? undefined : sweepCost(sweep, costs)
   return thresholdSweep({
     classes: options.classNames ?? [String(sweep.negative), String(sweep.positive)],
     thresholds: sweep.thresholds,
@@ -368,9 +373,7 @@ export function analyseThresholds(
     accuracy: sweep.tp.map((tp, i) => ratio(tp + (tn[i] ?? 0), P + N)),
     positives: P,
     negatives: N,
-    ...(options.costs === undefined || cost === undefined
-      ? {}
-      : { costs: options.costs.map((row) => [...row]), cost, cheapest: cheapestIndex(cost) }),
+    ...(costs === undefined || cost === undefined ? {} : { costs, cost, cheapest: cheapestIndex(cost) }),
     rocAuc: P === 0 || N === 0 ? Number.NaN : auc(fpr, tpr),
     averagePrecision,
     ...(options.keepRows === false

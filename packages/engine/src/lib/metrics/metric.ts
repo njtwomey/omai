@@ -8,7 +8,7 @@
  */
 
 import { estimate, MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
-import { asTensor, isValue, type TensorLike, toFlat } from '../tensor/index.ts'
+import { asTensor, isValue, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 
 /** Options every metric accepts. */
 export interface MetricOptions {
@@ -202,13 +202,15 @@ export function weightedMean(values: ArrayLike<number>, weight: ArrayLike<number
 /**
  * scikit-learn's weighted percentile (sklearn.utils.stats._weighted_percentile): the first sorted value whose
  * cumulative weight reaches the rank, or with `average` the mean of it and the next value when the rank falls exactly
- * on a cumulative weight (so that unit weights give the usual median).
+ * on a cumulative weight (so that unit weights give the usual median). Takes tensors (migration, D-009: `values` and
+ * `weights` were `ArrayLike<number>`; nested arrays still work).
  *
- * @param values - The values.
- * @param weights - Their weights (default all ones).
+ * @param values - The values: a vector (a tensor, a typed array or a flat array).
+ * @param weights - Their weights, a vector of the same length (default all ones).
  * @param percentile - The rank in [0, 100].
  * @param average - Average at exact ties (default true).
  * @returns The percentile (NaN when every weight is zero).
+ * @throws MdmlError with code `shape` unless `values` and `weights` are vectors.
  * @example
  * ```ts
  * import { weightedPercentile } from 'mdml-engine/metrics'
@@ -216,14 +218,16 @@ export function weightedMean(values: ArrayLike<number>, weight: ArrayLike<number
  * ```
  */
 export function weightedPercentile(
-  values: ArrayLike<number>,
-  weights: ArrayLike<number> | undefined,
+  values: TensorLike,
+  weights: TensorLike | undefined,
   percentile: number,
   average = true,
 ): number {
-  const n = values.length
-  const w = (i: number): number => (weights === undefined ? 1 : (weights[i] ?? 0))
-  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (values[a] ?? 0) - (values[b] ?? 0))
+  const xs = toVector(values, 'weightedPercentile')
+  const given = weights === undefined ? undefined : toVector(weights, 'weightedPercentile')
+  const n = xs.length
+  const w = (i: number): number => (given === undefined ? 1 : (given[i] ?? 0))
+  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (xs[a] ?? 0) - (xs[b] ?? 0))
   const cdf: number[] = []
   let acc = 0
   for (const i of order) {
@@ -235,13 +239,13 @@ export function weightedPercentile(
   if (rank === 0) rank = Number.MIN_VALUE
   let idx = 0
   while (idx < n - 1 && (cdf[idx] ?? 0) < rank) idx++
-  const at = values[order[idx] ?? 0] ?? 0
+  const at = xs[order[idx] ?? 0] ?? 0
   if (!average || (cdf[idx] ?? 0) - rank > Number.EPSILON) return at
   // The next value with positive weight.
   let next = idx + 1
   while (next < n && w(order[next] ?? 0) === 0) next++
   if (next >= n) return at
-  return (at + (values[order[next] ?? 0] ?? 0)) / 2
+  return (at + (xs[order[next] ?? 0] ?? 0)) / 2
 }
 
 /** The number of samples (rows) of a metric input. */

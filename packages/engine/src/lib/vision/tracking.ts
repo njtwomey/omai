@@ -146,7 +146,7 @@ export function sortAlgorithm(frames: readonly BoxesLike[], options: SortOptions
         const { rowInd, colInd } = linearSumAssignment(iou, { maximize: true })
         rowInd.forEach((d, k) => {
           const t = colInd[k] ?? -1
-          if ((iou[d]?.[t] ?? 0) >= thr) matched.set(d, t)
+          if ((iou.data[d * trkBoxes.length + t] ?? 0) >= thr) matched.set(d, t)
         })
       }
       const updated = live.map((t, ti) => {

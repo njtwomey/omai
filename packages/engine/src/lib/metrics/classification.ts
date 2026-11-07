@@ -6,7 +6,7 @@
  */
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
   type ClassCounts,
   classCounts,
@@ -577,30 +577,34 @@ export function confusionMatrix(
 
 /**
  * One-vs-rest 2 x 2 confusion matrices [[tn, fp], [fn, tp]] for every class or label
- * (sklearn.metrics.multilabel_confusion_matrix), or for every sample of multilabel data with `samplewise`.
+ * (sklearn.metrics.multilabel_confusion_matrix), or for every sample of multilabel data with `samplewise`. Returns a
+ * tensor (migration, D-009: was `number[][][]`).
  *
  * @param yTrue - True labels or a multilabel indicator.
  * @param yPred - Predicted labels, the same form.
  * @param options - labels, samplewise and sample weights.
- * @returns One matrix per class (or sample).
+ * @returns A float64 tensor of shape `[L, 2, 2]`: one matrix per class (or sample).
  * @example
  * ```ts
  * import { multilabelConfusionMatrix } from 'mdml-engine/metrics'
- * multilabelConfusionMatrix([0, 1, 1], [0, 1, 0])[1] // => [[1, 0], [1, 1]]
+ * const m = multilabelConfusionMatrix([0, 1, 1], [0, 1, 0])
+ * m.shape // => [2, 2, 2]
+ * Array.from(m.data).slice(4) // => [1, 0, 1, 1]
  * ```
  */
 export function multilabelConfusionMatrix(
   yTrue: MetricInput,
   yPred: MetricInput,
   options: MetricOptions & { readonly labels?: readonly Label[]; readonly samplewise?: boolean } = {},
-): number[][][] {
+): Tensor<'float64'> {
   const name = 'multilabelConfusionMatrix'
   if (options.samplewise === true) {
     if (!isMultilabel(yTrue)) throw new MdmlError('value', `${name}: samplewise needs multilabel targets`)
     const t = indicator(name, yTrue as TensorLike)
     const p = indicator(name, yPred as TensorLike)
     const w = sampleWeights(name, t.n, options.sampleWeight)
-    return Array.from({ length: t.n }, (_, i) => {
+    const out = new Float64Array(t.n * 4)
+    for (let i = 0; i < t.n; i++) {
       const counts = multilabelCounts(
         { n: 1, l: t.l, data: t.data.subarray(i * t.l, (i + 1) * t.l) },
         { n: 1, l: p.l, data: p.data.subarray(i * p.l, (i + 1) * p.l) },
@@ -608,15 +612,12 @@ export function multilabelConfusionMatrix(
         options.labels as readonly number[] | undefined,
       )
       const sum = (a: Float64Array): number => a.reduce((s, v) => s + v, 0)
-      return [
-        [sum(counts.tn), sum(counts.fp)],
-        [sum(counts.fn), sum(counts.tp)],
-      ]
-    })
+      out.set([sum(counts.tn), sum(counts.fp), sum(counts.fn), sum(counts.tp)], i * 4)
+    }
+    return fromStorage(out, [t.n, 2, 2], 'float64')
   }
   const c = countsOf(name, yTrue, yPred, options)
-  return c.classes.map((_, i) => [
-    [c.tn[i] ?? 0, c.fp[i] ?? 0],
-    [c.fn[i] ?? 0, c.tp[i] ?? 0],
-  ])
+  const out = new Float64Array(c.classes.length * 4)
+  for (let i = 0; i < c.classes.length; i++) out.set([c.tn[i] ?? 0, c.fp[i] ?? 0, c.fn[i] ?? 0, c.tp[i] ?? 0], i * 4)
+  return fromStorage(out, [c.classes.length, 2, 2], 'float64')
 }

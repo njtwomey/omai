@@ -1,29 +1,25 @@
 /**
  * Ranking with ties, the basis of rank-based tests: `rankdata` (scipy.stats.rankdata) with average, minimum, maximum,
- * dense or ordinal ties, a plain-number kernel for use in loops, and the tie counts and tie corrections that rank-test
+ * dense or ordinal ties, the same for a vector (`ranksOf`), and the tie counts and tie corrections that rank-test
  * variances need.
  */
 
-import { MdmlError } from '../base/index.ts'
-import type { Tensor, TensorLike } from '../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
+import { rankKernel, tieCountKernel } from './_ranks.ts'
 import { sample, vec } from './_util.ts'
 
 /** How {@link rankdata} ranks tied values. */
 export type RankMethod = 'average' | 'min' | 'max' | 'dense' | 'ordinal'
 
-/** The stable ascending order of a list (indices). */
-function order(x: ArrayLike<number>): number[] {
-  return Array.from({ length: x.length }, (_, i) => i).sort((a, b) => (x[a] ?? 0) - (x[b] ?? 0) || a - b)
-}
-
 /**
- * Ranks of a list of numbers, 1-based (scipy.stats.rankdata on plain numbers): the kernel behind {@link rankdata},
- * for code that ranks inside loops.
+ * Ranks of a vector, 1-based (scipy.stats.rankdata on a flat sample), for code that wants the ranks of a list it holds
+ * as a tensor, a typed array or a plain array. Takes and returns tensors (migration, D-009: `x` was `ArrayLike<number>`
+ * and the ranks a `Float64Array`; the plain-number kernel the loops of this domain use is private).
  *
- * @param x - The values (no NaN).
+ * @param x - The values (no NaN): a vector (a tensor, a typed array or a flat array).
  * @param method - Tie handling (default `'average'`).
- * @returns The ranks.
- * @throws MdmlError with code `value` for NaN entries.
+ * @returns A float64 tensor of shape `[n]`, the ranks.
+ * @throws MdmlError with code `value` for NaN entries and `shape` unless `x` is a vector.
  * @example
  * ```ts
  * import { ranksOf } from 'mdml-engine/stats'
@@ -31,29 +27,9 @@ function order(x: ArrayLike<number>): number[] {
  * ranksOf([10, 20, 10], 'min') // => [1, 3, 1]
  * ```
  */
-export function ranksOf(x: ArrayLike<number>, method: RankMethod = 'average'): Float64Array {
-  const n = x.length
-  for (let k = 0; k < n; k++)
-    if (Number.isNaN(x[k])) throw new MdmlError('value', 'ranksOf: NaN values cannot be ranked')
-  const idx = order(x)
-  const ranks = new Float64Array(n)
-  let dense = 0
-  let i = 0
-  while (i < n) {
-    let j = i
-    while (j + 1 < n && x[idx[j + 1] ?? 0] === x[idx[i] ?? 0]) j++
-    dense++
-    for (let k = i; k <= j; k++) {
-      const at = idx[k] ?? 0
-      if (method === 'average') ranks[at] = (i + j) / 2 + 1
-      else if (method === 'min') ranks[at] = i + 1
-      else if (method === 'max') ranks[at] = j + 1
-      else if (method === 'dense') ranks[at] = dense
-      else ranks[at] = k + 1
-    }
-    i = j + 1
-  }
-  return ranks
+export function ranksOf(x: TensorLike, method: RankMethod = 'average'): Tensor<'float64'> {
+  const ranks = rankKernel(toVector(x, 'ranksOf'), method)
+  return fromStorage(ranks, [ranks.length], 'float64')
 }
 
 /**
@@ -74,32 +50,24 @@ export function ranksOf(x: ArrayLike<number>, method: RankMethod = 'average'): F
  */
 export function rankdata(x: TensorLike, options: { readonly method?: RankMethod } = {}): Tensor {
   const a = sample('rankdata', x, 0, true)
-  return vec(ranksOf(a, options.method ?? 'average'))
+  return vec(rankKernel(a, options.method ?? 'average'))
 }
 
 /**
- * The sizes of the groups of tied values (every group, including singletons, in ascending order of value).
+ * The sizes of the groups of tied values (every group, including singletons, in ascending order of value). Returns a
+ * tensor (migration, D-009: was `number[]`).
  *
  * @param x - The values.
- * @returns One count per distinct value.
+ * @returns An int32 tensor of shape `[k]`: one count per distinct value.
  * @example
  * ```ts
  * import { tieCounts } from 'mdml-engine/stats'
  * tieCounts([3, 1, 3, 2, 3]) // => [1, 1, 3]
  * ```
  */
-export function tieCounts(x: TensorLike): number[] {
-  const a = sample('tieCounts', x, 0)
-  a.sort()
-  const out: number[] = []
-  let i = 0
-  while (i < a.length) {
-    let j = i
-    while (j + 1 < a.length && a[j + 1] === a[i]) j++
-    out.push(j - i + 1)
-    i = j + 1
-  }
-  return out
+export function tieCounts(x: TensorLike): Tensor<'int32'> {
+  const counts = tieCountKernel(sample('tieCounts', x, 0))
+  return fromStorage(Int32Array.from(counts), [counts.length], 'int32')
 }
 
 /**
@@ -116,7 +84,7 @@ export function tieCounts(x: TensorLike): number[] {
  * ```
  */
 export function tieCorrection(x: TensorLike): number {
-  const counts = tieCounts(x)
+  const counts = tieCountKernel(sample('tieCorrection', x, 0))
   const n = counts.reduce((s, t) => s + t, 0)
   if (n < 2) return 1
   let s = 0
@@ -137,6 +105,6 @@ export function tieCorrection(x: TensorLike): number {
  */
 export function tieTerm(x: TensorLike): number {
   let s = 0
-  for (const t of tieCounts(x)) s += t ** 3 - t
+  for (const t of tieCountKernel(sample('tieTerm', x, 0))) s += t ** 3 - t
   return s
 }

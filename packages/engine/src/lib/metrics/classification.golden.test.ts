@@ -19,6 +19,6 @@ goldenSuite('classification metrics against sklearn', 'metrics/classification', 
   },
   multilabelConfusionMatrix: (inputs, params) => {
     const [t, p, o] = metricArgs(inputs, params)
-    return tensor(M.multilabelConfusionMatrix(t, p, o))
+    return M.multilabelConfusionMatrix(t, p, o)
   },
 })
