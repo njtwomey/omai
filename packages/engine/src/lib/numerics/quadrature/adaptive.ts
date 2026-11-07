@@ -296,15 +296,22 @@ export function quad(f: (x: Value) => Value, a: number, b: number, options: Quad
   }
 }
 
+/** The evaluations after which `adaptiveSimpson` stops subdividing (as `limit` bounds `quad`): about a second of work. */
+const SIMPSON_EVALUATION_CAP = 1_000_000
+
 /**
  * Adaptive Simpson quadrature with Richardson correction (Lyness): recursively halve intervals whose two-panel and
- * one-panel Simpson estimates disagree by more than 15 tol.
+ * one-panel Simpson estimates disagree by more than 15 tol. A panel that is still not resolved after
+ * 1,000,000 evaluations in all is accepted as it stands, as one at the maximum depth is, so the
+ * routine always returns; compare `evaluations` with 1,000,000 to see that it did.
  *
  * @param f - The integrand (vectorised over a 1-D value).
  * @param a - Lower limit.
  * @param b - Upper limit.
  * @param options - Tolerance (default 1e-10) and maximum depth (default 50).
  * @returns The estimate and the number of evaluations.
+ * @throws MdmlError with code `value` when a limit is not finite or the integrand is not finite at a point it is
+ * evaluated at (a NaN or an infinity anywhere would otherwise refine every panel down to the depth limit).
  * @example
  * ```ts
  * import { adaptiveSimpson } from 'mdml-engine/numerics/quadrature'
@@ -318,10 +325,14 @@ export function adaptiveSimpson(
   b: number,
   options: { readonly tol?: number; readonly maxDepth?: number } = {},
 ): { readonly value: number; readonly evaluations: number } {
+  if (!Number.isFinite(a) || !Number.isFinite(b))
+    throw new MdmlError('value', 'adaptiveSimpson: the limits must be finite')
   let evaluations = 0
   const at = (x: number): number => {
     evaluations += 1
-    return toFlat(primalOf(f(promoteFloat([x])[0] as Value)))[0] ?? Number.NaN
+    const fx = toFlat(primalOf(f(promoteFloat([x])[0] as Value)))[0] ?? Number.NaN
+    if (!Number.isFinite(fx)) throw new MdmlError('value', `adaptiveSimpson: the integrand is not finite at ${x}`)
+    return fx
   }
   const simpsonPanel = (l: number, r: number, fl: number, fm: number, fr: number): number =>
     ((r - l) / 6) * (fl + 4 * fm + fr)
@@ -343,7 +354,8 @@ export function adaptiveSimpson(
     const left = simpsonPanel(l, m, fl, flm, fm)
     const right = simpsonPanel(m, r, fm, frm, fr)
     const delta = left + right - whole
-    if (depth <= 0 || Math.abs(delta) <= 15 * tol) return left + right + delta / 15
+    if (depth <= 0 || evaluations >= SIMPSON_EVALUATION_CAP || Math.abs(delta) <= 15 * tol)
+      return left + right + delta / 15
     return recurse(l, m, fl, flm, fm, left, tol / 2, depth - 1) + recurse(m, r, fm, frm, fr, right, tol / 2, depth - 1)
   }
   const fa = at(a)

@@ -63,7 +63,8 @@ export function zeta(s: TensorLike): Value {
 }
 
 /**
- * The Hurwitz zeta function zeta(s, q) = sum_{k >= 0} (k + q)^{-s}, for s > 1 and q > 0.
+ * The Hurwitz zeta function zeta(s, q) = sum_{k >= 0} (k + q)^{-s}, for s > 1 and q > 0 (Infinity for q a non-positive
+ * integer; for s = Infinity the limit: 0 for q > 1, 1 for q = 1, Infinity for q < 1).
  *
  * @param s - Exponent.
  * @param q - Shift.

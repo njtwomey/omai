@@ -77,3 +77,53 @@ describe('triangulation properties', () => {
     expect(toFlat(G.simplexTensor(G.delaunay(lshape))).length % 3).toBe(0)
   })
 })
+
+describe('delaunay of exactly cocircular points is a valid triangulation', () => {
+  const ring = (n: number, radius: number, centre: G.Point2 = [0, 0]): G.Point2[] =>
+    Array.from(
+      { length: n },
+      (_, i): G.Point2 => [
+        centre[0] + radius * Math.cos((2 * Math.PI * i) / n),
+        centre[1] + radius * Math.sin((2 * Math.PI * i) / n),
+      ],
+    )
+  const polygonArea = (n: number, radius: number): number => 0.5 * n * radius * radius * Math.sin((2 * Math.PI) / n)
+  const area = (pts: readonly G.Point2[], t: readonly [number, number, number]): number =>
+    G.orient(pts[t[0]] as G.Point2, pts[t[1]] as G.Point2, pts[t[2]] as G.Point2) / 2
+
+  // Each of these gave overlapping triangles (n = 8 gave 10 triangles for the 6 of an octagon).
+  it.each([
+    ['a regular octagon', ring(8, 1), 6, polygonArea(8, 1)],
+    ['a regular 12-gon, radius 3, off the origin', ring(12, 3, [5, -2]), 10, polygonArea(12, 3)],
+    ['a regular 16-gon', ring(16, 1), 14, polygonArea(16, 1)],
+    ['a regular 24-gon, radius 0.01', ring(24, 0.01), 22, polygonArea(24, 0.01)],
+    ['a regular 12-gon and its centre', [...ring(12, 1), [0, 0] as G.Point2], 12, polygonArea(12, 1)],
+    ['two concentric regular octagons', [...ring(8, 1), ...ring(8, 2)], 22, polygonArea(8, 2)],
+  ] as const)('%s', (_name, pts, triangles, hullArea) => {
+    const tri = G.delaunay(pts)
+    expect(tri.simplices.length).toBe(triangles)
+    const total = tri.simplices.reduce((sum, t) => sum + area(pts, t), 0)
+    expect(total / hullArea).toBeCloseTo(1, 12)
+    expect(tri.simplices.every((t) => area(pts, t) > 0)).toBe(true)
+    tri.neighbors.forEach((ns, t) => {
+      for (const n of ns) if (n >= 0) expect(tri.neighbors[n]).toContain(t)
+    })
+  })
+
+  it('has an exact in-circle sign, and rejects non-finite points', () => {
+    // (1, 0), (0, 1), (-1, 0) and (0, -1) are cocircular; points 2^-52 off the circle are decided by the exact sign, not by rounding noise.
+    const a: G.Point2 = [1, 0]
+    const b: G.Point2 = [0, 1]
+    const c: G.Point2 = [-1, 0]
+    expect(G.inCircle(a, b, c, [0, -1])).toBe(0)
+    expect(G.inCircle(a, b, c, [0, -1 + 2 ** -52])).toBeGreaterThan(0)
+    expect(G.inCircle(a, b, c, [0, -1 - 2 ** -52])).toBeLessThan(0)
+    expect(() =>
+      G.delaunay([
+        [0, 0],
+        [1, 0],
+        [0, Number.NaN],
+      ]),
+    ).toThrow(expect.objectContaining({ code: 'value' }))
+  })
+})

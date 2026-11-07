@@ -37,7 +37,8 @@ const factorialP = special('factorial', factorialKernel, [([n], out) => mul(out,
 const lfactorialP = special('lfactorial', (n) => k.lgamma(n + 1), [([n]) => digamma(add(n as Value, 1))])
 
 /**
- * The gamma function, with poles at the non-positive integers (NaN there).
+ * The gamma function, with poles at the non-positive integers: infinite at zero (signed by the zero, as scipy) and NaN
+ * at the negative integers.
  *
  * @param x - Input.
  * @returns Gamma(x), differentiable (Gamma' = Gamma psi).
@@ -87,7 +88,8 @@ export function rgamma(x: TensorLike): Value {
 }
 
 /**
- * The digamma function psi(x) = d/dx log Gamma(x).
+ * The digamma function psi(x) = d/dx log Gamma(x); at zero -Infinity (+Infinity at -0, as scipy), NaN at the negative
+ * integers.
  *
  * @param x - Input.
  * @returns psi(x), differentiable (derivative trigamma).

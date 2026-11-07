@@ -103,20 +103,28 @@ export const rootContract: Contract<RootState, RootPath> = defineContract({
   }),
 })
 
+/** True when a and b are both non-zero with the same sign (compared by sign: a product of two small values underflows). */
+const sameSign = (a: number, b: number): boolean => a !== 0 && b !== 0 && Math.sign(a) === Math.sign(b)
+
 function checkBracket(fa: number, fb: number, name: string): void {
-  if (fa * fb > 0) throw new MdmlError('value', `${name}: f(a) and f(b) must have different signs`)
+  if (sameSign(fa, fb)) throw new MdmlError('value', `${name}: f(a) and f(b) must have different signs`)
 }
 
-/** Evaluate f, appending to a copy of the history. */
+/**
+ * Evaluate f, appending to a copy of the history. With a `name` (the bracketing methods), a NaN value throws: no sign
+ * test can decide on it, and carrying on would report a root of a function that has none.
+ */
 function evaluator(
   f: (x: number) => number,
   past: readonly RootStep[],
+  name?: string,
 ): { call: (x: number) => number; history: RootStep[] } {
   const history = [...past]
   return {
     history,
     call: (x) => {
       const fx = f(x)
+      if (name !== undefined && Number.isNaN(fx)) throw new MdmlError('value', `${name}: f(${x}) is NaN`)
       history.push({ x, fx })
       return fx
     },
@@ -251,7 +259,7 @@ export function solveRoot(algorithm: Algorithm<RootState, RootPath>, maxIteratio
  * @param b - The other end (f(a) and f(b) of opposite signs).
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign.
+ * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @concept root-finding
  * @example
  * ```ts
@@ -274,7 +282,7 @@ export function bisectAlgorithm(
     { xtol, rtol, maxIterations: max },
     max,
     () => {
-      const { call, history } = evaluator(f, [])
+      const { call, history } = evaluator(f, [], 'bisect')
       const fa = call(a)
       const fb = call(b)
       checkBracket(fa, fb, 'bisect')
@@ -283,12 +291,12 @@ export function bisectAlgorithm(
       return first(history, { x: a + (b - a), fx: fb, lo: a, hi: b, rule: 'start', internal: { lo: a, dm: b - a, fa } })
     },
     (s) => {
-      const { call, history } = evaluator(f, s.history)
+      const { call, history } = evaluator(f, s.history, 'bisect')
       let { lo, dm, fa } = s.internal as Record<'lo' | 'dm' | 'fa', number>
       dm *= 0.5
       const xm = lo + dm
       const fm = call(xm)
-      if (fm * fa >= 0) {
+      if (fm === 0 || Math.sign(fm) === Math.sign(fa)) {
         lo = xm
         fa = fm
       }
@@ -316,7 +324,7 @@ export function bisectAlgorithm(
  * @param b - The other end.
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign.
+ * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @concept root-finding
  * @example
  * ```ts
@@ -339,7 +347,7 @@ export function brentqAlgorithm(
     { xtol, rtol, maxIterations: max },
     max,
     () => {
-      const { call, history } = evaluator(f, [])
+      const { call, history } = evaluator(f, [], 'brentq')
       const fpre = call(a)
       const fcur = call(b)
       checkBracket(fpre, fcur, 'brentq')
@@ -355,7 +363,7 @@ export function brentqAlgorithm(
       })
     },
     (s) => {
-      const { call, history } = evaluator(f, s.history)
+      const { call, history } = evaluator(f, s.history, 'brentq')
       let { xpre, xcur, fpre, fcur, xblk, fblk, spre, scur } = s.internal as Record<
         'xpre' | 'xcur' | 'fpre' | 'fcur' | 'xblk' | 'fblk' | 'spre' | 'scur',
         number
@@ -434,7 +442,7 @@ export function brentqAlgorithm(
  * @param b - The other end.
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign.
+ * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @example
  * ```ts
  * import { ridderAlgorithm } from 'mdml-engine/numerics/roots'
@@ -456,7 +464,7 @@ export function ridderAlgorithm(
     { xtol, rtol, maxIterations: max },
     max,
     () => {
-      const { call, history } = evaluator(f, [])
+      const { call, history } = evaluator(f, [], 'ridder')
       const fa = call(a)
       const fb = call(b)
       checkBracket(fa, fb, 'ridder')
@@ -472,20 +480,23 @@ export function ridderAlgorithm(
       })
     },
     (s) => {
-      const { call, history } = evaluator(f, s.history)
+      const { call, history } = evaluator(f, s.history, 'ridder')
       let { xa, xb, fa, fb, tol } = s.internal as Record<'xa' | 'xb' | 'fa' | 'fb' | 'tol', number>
       const dm = 0.5 * (xb - xa)
       const xm = xa + dm
       const fm = call(xm)
-      const dn = (Math.sign(fb - fa) * dm * fm) / Math.sqrt(fm * fm - fa * fb)
+      // The root of the square is taken of values scaled to at most 1 once they are far from unit scale, where fm * fm underflows.
+      const unit = Math.max(Math.abs(fa), Math.abs(fb), Math.abs(fm))
+      const k = unit > 1e-100 && unit < 1e100 ? 1 : unit
+      const dn = (Math.sign(fb - fa) * dm * (fm / k)) / Math.sqrt((fm / k) * (fm / k) - (fa / k) * (fb / k))
       const xn = xm - Math.sign(dn) * Math.min(Math.abs(dn), Math.abs(dm) - 0.5 * tol)
       const fn = call(xn)
-      if (fn * fm < 0) {
+      if (Math.sign(fn) * Math.sign(fm) < 0) {
         xa = xn
         fa = fn
         xb = xm
         fb = fm
-      } else if (fn * fa < 0) {
+      } else if (Math.sign(fn) * Math.sign(fa) < 0) {
         xb = xn
         fb = fn
       } else {
@@ -521,7 +532,7 @@ const present = (v: number): number => (Number.isNaN(v) ? 0 : v)
  * @param b0 - The other end.
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign.
+ * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @example
  * ```ts
  * import { toms748Algorithm } from 'mdml-engine/numerics/roots'
@@ -544,7 +555,7 @@ export function toms748Algorithm(
     { xtol, rtol, maxIterations: max },
     max,
     () => {
-      const { call, history } = evaluator(f, [])
+      const { call, history } = evaluator(f, [], 'toms748')
       const a = Math.min(a0, b0)
       const b = Math.max(a0, b0)
       const fa = call(a)
@@ -562,7 +573,7 @@ export function toms748Algorithm(
       })
     },
     (s) => {
-      const { call, history } = evaluator(f, s.history)
+      const { call, history } = evaluator(f, s.history, 'toms748')
       const m = s.internal as Record<'a' | 'b' | 'fa' | 'fb' | 'd' | 'fd' | 'e' | 'fe' | 'hasD' | 'hasE', number>
       let { a, b, fa, fb } = m
       let d = m.hasD === 1 ? m.d : Number.NaN
@@ -603,7 +614,7 @@ export function toms748Algorithm(
         const B = (fb - fa) / (b - a)
         const A = ((fd - fb) / (d - b) - B) / (d - a)
         if (!Number.isFinite(A) || A === 0) return secantPoint()
-        let r = A * fa > 0 ? a : b
+        let r = Math.sign(A) === Math.sign(fa) ? a : b
         for (let i = 0; i < steps; i++) r -= (fa + (B + A * (r - b)) * (r - a)) / (B + A * (2 * r - a - b))
         return inside(r) ? r : secantPoint()
       }

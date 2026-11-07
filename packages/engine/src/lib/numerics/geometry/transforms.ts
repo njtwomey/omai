@@ -451,6 +451,8 @@ function nullVector(rows: readonly number[][]): number[] {
  * @param src - Source points `[n, 2]`, n >= 4.
  * @param dst - Destination points `[n, 2]`.
  * @returns The 3 x 3 homography.
+ * @throws MdmlError with code `value` when fewer than four correspondences are given or they are degenerate (the
+ * homography would not be finite).
  * @concept homography
  * @example
  * ```ts
@@ -478,7 +480,10 @@ export function homography(src: TensorLike, dst: TensorLike): number[][] {
   const h = toNested(nullVector(rows), 3)
   const full = mat3mul(mat3mul(invert3(b.transform), h), a.transform)
   const s = full[2]?.[2] ?? 1
-  return full.map((r) => r.map((v) => v / s))
+  const h33 = full.map((r) => r.map((v) => v / s))
+  if (!h33.every((r) => r.every(Number.isFinite)))
+    throw new MdmlError('value', 'homography: the correspondences are degenerate (collinear points, or H[2][2] = 0)')
+  return h33
 }
 
 /**

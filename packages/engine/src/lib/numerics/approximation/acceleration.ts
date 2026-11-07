@@ -89,8 +89,11 @@ export function wynnEpsilon(s: readonly number[]): { value: number; columns: num
   for (let k = 1; curr.length > 1; k++) {
     const next: number[] = []
     for (let n = 0; n + 1 < curr.length; n++) {
-      const diff = (curr[n + 1] ?? 0) - (curr[n] ?? 0)
-      next.push((prev[n + 1] ?? 0) + (diff === 0 ? Number.POSITIVE_INFINITY : 1 / diff))
+      const lo = curr[n] ?? 0
+      const hi = curr[n + 1] ?? 0
+      // Equal finite entries make the next one infinite; two equal infinities (a constant sequence) make no contribution.
+      const reciprocal = lo === hi ? (Number.isFinite(lo) ? Number.POSITIVE_INFINITY : 0) : 1 / (hi - lo)
+      next.push((prev[n + 1] ?? 0) + reciprocal)
     }
     prev = curr
     curr = next

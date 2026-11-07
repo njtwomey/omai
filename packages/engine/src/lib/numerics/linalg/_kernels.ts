@@ -43,7 +43,7 @@ export interface TriangularOptions {
   readonly unitDiagonal: boolean
 }
 
-/** X with op(T) X = B, T the given triangle of an n x n matrix, B n x k. */
+/** X with op(T) X = B, T the given triangle of an n x n matrix, B n x k; throws when a diagonal entry (not taken as 1) is 0. */
 export function triangularKernel(
   t: Float64Array,
   b: Float64Array,
@@ -55,6 +55,13 @@ export function triangularKernel(
   const at = (i: number, j: number): number => (o.transpose ? (t[j * n + i] ?? 0) : (t[i * n + j] ?? 0))
   // Solving with the transpose of a lower triangle is an upper-triangular solve, and vice versa.
   const forward = o.lower !== o.transpose
+  if (!o.unitDiagonal)
+    for (let i = 0; i < n; i++)
+      if (at(i, i) === 0)
+        throw new MdmlError(
+          'value',
+          `solveTriangular: the triangular factor is singular (zero on the diagonal at ${i})`,
+        )
   for (let c = 0; c < k; c++) {
     for (let step = 0; step < n; step++) {
       const i = forward ? step : n - 1 - step
@@ -727,20 +734,49 @@ function svdGolubKahan(
   return { u: uo, s: sv, v: vo }
 }
 
+/** x * 2^k exactly, in two halves so that neither factor overflows (k reaches +-1074 for denormals). */
+function scaleByPow2(x: number, k: number): number {
+  const half = Math.trunc(k / 2)
+  return x * 2 ** half * 2 ** (k - half)
+}
+
+/**
+ * The exponent e whose power 2^-e brings the largest finite magnitude of the matrix into [1, 2), or 0 when the matrix is
+ * of ordinary scale (largest magnitude within [2^-100, 2^100]), is zero, or has a non-finite entry: the Jacobi test
+ * multiplies two squared column norms (a fourth power of the entries), which leaves the double range outside that band.
+ */
+function scaleExponent(a: Float64Array): number {
+  let largest = 0
+  for (const x of a) {
+    if (!Number.isFinite(x)) return 0
+    largest = Math.max(largest, Math.abs(x))
+  }
+  if (largest === 0 || (largest >= 2 ** -100 && largest <= 2 ** 100)) return 0
+  return Math.floor(Math.log2(largest))
+}
+
 /** Reduced SVD A = U diag(s) V^T: U (m x k), s (k, descending), V (n x k), k = min(m, n). */
 export function svdKernel(
-  a: Float64Array,
+  input: Float64Array,
   m: number,
   n: number,
   method: 'jacobi' | 'golub-kahan' = 'jacobi',
 ): { u: Float64Array; s: Float64Array; v: Float64Array } {
+  // A matrix far from unit scale is scaled by an exact power of two and the singular values scaled back: U and V do not move.
+  const e = scaleExponent(input)
+  const a = e === 0 ? input : input.map((x) => scaleByPow2(x, -e))
   const tall = method === 'jacobi' ? svdTall : svdGolubKahan
-  if (m >= n) return tall(a, m, n)
-  // A^T = U' S V'^T, so A = V' S U'^T.
-  const at = new Float64Array(n * m)
-  for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) at[j * m + i] = a[i * n + j] ?? 0
-  const t = tall(at, n, m)
-  // The same sign convention as the tall case: each column of U has its largest entry positive.
-  normaliseColumns(t.v, m, m, t.u, n)
-  return { u: t.v, s: t.s, v: t.u }
+  let out: { u: Float64Array; s: Float64Array; v: Float64Array }
+  if (m >= n) out = tall(a, m, n)
+  else {
+    // A^T = U' S V'^T, so A = V' S U'^T.
+    const at = new Float64Array(n * m)
+    for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) at[j * m + i] = a[i * n + j] ?? 0
+    const t = tall(at, n, m)
+    // The same sign convention as the tall case: each column of U has its largest entry positive.
+    normaliseColumns(t.v, m, m, t.u, n)
+    out = { u: t.v, s: t.s, v: t.u }
+  }
+  if (e !== 0) for (let i = 0; i < out.s.length; i++) out.s[i] = scaleByPow2(out.s[i] ?? 0, e)
+  return out
 }

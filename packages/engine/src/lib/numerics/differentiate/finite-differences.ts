@@ -43,7 +43,8 @@ export interface DerivativeResult {
  *
  * @param f - The function.
  * @param x - The point.
- * @param options - Initial step (default 0.5), step factor (default 2) and maximum levels (default 12).
+ * @param options - Initial step (default 0.5, or |x| / 256 where 0.5 is lost in the rounding of x, beyond about 4e15),
+ * step factor (default 2) and maximum levels (default 12).
  * @returns The derivative, its error estimate and the tableau.
  * @concept finite-differences
  * @index function Derivative of a scalar function by Richardson-extrapolated differences.
@@ -60,7 +61,7 @@ export function derivative(
 ): DerivativeResult {
   const c = options.stepFactor ?? 2
   const c2 = c * c
-  let h = options.initialStep ?? 0.5
+  let h = options.initialStep ?? (x + 0.5 === x - 0.5 ? Math.abs(x) / 256 : 0.5)
   const levels = options.maxLevels ?? 12
   const table: number[][] = [[(f(x + h) - f(x - h)) / (2 * h)]]
   let best = table[0]?.[0] ?? Number.NaN
@@ -273,9 +274,10 @@ export function hessianFd(
  * the weights c with f^(m)(x0) ~ sum_k c_k f(x_k), exact for polynomials of degree below the stencil size.
  *
  * @param order - The derivative order m (< number of points).
- * @param stencil - The sample points.
+ * @param stencil - The sample points (distinct).
  * @param x0 - Where the derivative is wanted (default 0).
  * @returns The weights, one per stencil point.
+ * @throws MdmlError with code `value` when the order is not below the number of points or a point is repeated.
  * @concept finite-differences
  * @example
  * ```ts
@@ -286,6 +288,8 @@ export function hessianFd(
 export function finiteDifferenceWeights(order: number, stencil: readonly number[], x0 = 0): number[] {
   const n = stencil.length
   if (order >= n) throw new MdmlError('value', 'finiteDifferenceWeights: need more points than the derivative order')
+  if (new Set(stencil).size !== n)
+    throw new MdmlError('value', 'finiteDifferenceWeights: the stencil points must be distinct')
   // c[j][k]: weight of point j for derivative k, built point by point.
   const c: number[][] = Array.from({ length: n }, () => new Array<number>(order + 1).fill(0))
   let c1 = 1

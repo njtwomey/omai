@@ -38,10 +38,11 @@ import {
   stateToJson,
   tensor,
 } from '../../trace/index.ts'
-import { identity, mT, squareSize, sym } from './_matrix.ts'
+import { identity, mT, namingSingular, squareSize, sym } from './_matrix.ts'
 import { slogdet } from './basics.ts'
 import { inv, solve } from './lu.ts'
 import { lstsq } from './qr.ts'
+import { svdvals } from './svd.ts'
 
 const norm1 = (a: Value): number => item(primalOf(max(sum(abs(a), 0))))
 
@@ -129,15 +130,17 @@ export function signm(a: TensorLike): Value {
   const [z0] = promoteFloat(a) as [Value]
   const n = squareSize(z0.shape, 'signm')
   let z = z0
-  for (let i = 0; i < 100; i++) {
-    // Determinant scaling c = |det Z|^{-1/n} speeds the early iterations.
-    const c = Math.exp(-item(primalOf(slogdet(z).logabsdet)) / n)
-    const next = mul(add(mul(z, c), div(inv(z), c)), 0.5)
-    const change = norm1(sub(next, z)) / Math.max(norm1(next), 1e-300)
-    z = next
-    if (change <= 1e-14) return z
-  }
-  throw new MdmlError('convergence', 'signm: the Newton iteration did not converge')
+  return namingSingular('signm', 'A is singular (it has an eigenvalue on the imaginary axis)', () => {
+    for (let i = 0; i < 100; i++) {
+      // Determinant scaling c = |det Z|^{-1/n} speeds the early iterations.
+      const c = Math.exp(-item(primalOf(slogdet(z).logabsdet)) / n)
+      const next = mul(add(mul(z, c), div(inv(z), c)), 0.5)
+      const change = norm1(sub(next, z)) / Math.max(norm1(next), 1e-300)
+      z = next
+      if (change <= 1e-14) return z
+    }
+    throw new MdmlError('convergence', 'signm: the Newton iteration did not converge')
+  })
 }
 
 /**
@@ -150,6 +153,7 @@ export function signm(a: TensorLike): Value {
  * @param q - `[n, n]` (symmetric).
  * @param r - `[m, m]` (symmetric positive definite).
  * @returns X (symmetric).
+ * @throws MdmlError with code `convergence` when the sign iteration does not settle or there is no stabilising solution.
  * @concept matrix-equations
  * @example
  * ```ts
@@ -176,7 +180,21 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
   // [W12; W22 + I] X = -[W11 + I; W21].
   const lhs = concat([block(0, n), add(block(n, n), eye)], 0)
   const rhs = neg(concat([add(block(0, 0), eye), block(n, 0)], 0))
-  return sym(lstsq(lhs, rhs))
+  // Without a stabilising solution the stable invariant subspace has fewer than n dimensions: lhs then lacks full column
+  // rank (its singular values are those of the sign matrix's stable projector), and any least-squares answer is spurious.
+  const sv = toFlat(primalOf(svdvals(lhs)))
+  if (!((sv[n - 1] ?? 0) > (sv[0] ?? 0) * 2 * n * Number.EPSILON))
+    throw new MdmlError(
+      'convergence',
+      'solveCare: no stabilising solution (the stable invariant subspace is deficient)',
+    )
+  const x = lstsq(lhs, rhs)
+  if (!(norm1(sub(matmul(lhs, x), rhs)) <= 1e-6 * Math.max(1, norm1(rhs))))
+    throw new MdmlError(
+      'convergence',
+      'solveCare: no stabilising solution (the stable invariant subspace is deficient)',
+    )
+  return sym(x)
 }
 
 /** The paths the Riccati and spline algorithms log, as a type. */

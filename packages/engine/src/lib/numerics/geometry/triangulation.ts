@@ -31,7 +31,53 @@ export function orient(a: Point2, b: Point2, c: Point2): number {
   return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
 }
 
-/** Positive when d lies strictly inside the circumcircle of the counter-clockwise triangle (a, b, c). */
+const IN_CIRCLE_BOUND = (10 + 96 * 2 ** -53) * 2 ** -53
+
+const bits = new DataView(new ArrayBuffer(8))
+
+/** A finite double as `mantissa * 2^exponent`, the mantissa an integer. */
+function decompose(x: number): { readonly mantissa: bigint; readonly exponent: number } {
+  bits.setFloat64(0, x)
+  const raw = bits.getBigUint64(0)
+  const biased = Number((raw >> 52n) & 0x7ffn)
+  const fraction = raw & 0xfffffffffffffn
+  const magnitude = biased === 0 ? fraction : fraction | (1n << 52n)
+  return { mantissa: raw >> 63n === 1n ? -magnitude : magnitude, exponent: (biased === 0 ? 1 : biased) - 1075 }
+}
+
+/** The sign of the in-circle determinant, exactly (integer arithmetic on the doubles' own mantissas). */
+function inCircleSign(a: Point2, b: Point2, c: Point2, d: Point2): number {
+  const parts = [a[0], a[1], b[0], b[1], c[0], c[1], d[0], d[1]].map(decompose)
+  const lowest = Math.min(...parts.map((p) => p.exponent))
+  const [ax, ay, bx, by, cx, cy, dx, dy] = parts.map((p) => p.mantissa << BigInt(p.exponent - lowest)) as [
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+  ]
+  const adx = ax - dx
+  const ady = ay - dy
+  const bdx = bx - dx
+  const bdy = by - dy
+  const cdx = cx - dx
+  const cdy = cy - dy
+  const ad = adx * adx + ady * ady
+  const bd = bdx * bdx + bdy * bdy
+  const cd = cdx * cdx + cdy * cdy
+  const det = adx * (bdy * cd - bd * cdy) - ady * (bdx * cd - bd * cdx) + ad * (bdx * cdy - bdy * cdx)
+  return det > 0n ? 1 : det < 0n ? -1 : 0
+}
+
+/**
+ * Positive when d lies strictly inside the circumcircle of the counter-clockwise triangle (a, b, c), negative when
+ * outside, zero when on it, with the sign exact for any finite points: the determinant is evaluated in floating point
+ * and, when it is within Shewchuk's error bound of zero, again in integers, so that cocircular points (a regular polygon)
+ * are never decided by rounding noise.
+ */
 export function inCircle(a: Point2, b: Point2, c: Point2, d: Point2): number {
   const adx = a[0] - d[0]
   const ady = a[1] - d[1]
@@ -42,7 +88,13 @@ export function inCircle(a: Point2, b: Point2, c: Point2, d: Point2): number {
   const ad = adx * adx + ady * ady
   const bd = bdx * bdx + bdy * bdy
   const cd = cdx * cdx + cdy * cdy
-  return adx * (bdy * cd - bd * cdy) - ady * (bdx * cd - bd * cdx) + ad * (bdx * cdy - bdy * cdx)
+  const det = adx * (bdy * cd - bd * cdy) - ady * (bdx * cd - bd * cdx) + ad * (bdx * cdy - bdy * cdx)
+  const permanent =
+    (Math.abs(bdx * cdy) + Math.abs(cdx * bdy)) * ad +
+    (Math.abs(cdx * ady) + Math.abs(adx * cdy)) * bd +
+    (Math.abs(adx * bdy) + Math.abs(bdx * ady)) * cd
+  if (Math.abs(det) > IN_CIRCLE_BOUND * permanent) return det
+  return inCircleSign(a, b, c, d) * (Math.abs(det) || Number.MIN_VALUE)
 }
 
 /** The circumcentre of a triangle. */
@@ -86,6 +138,8 @@ export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
   const pts = toPoints(points)
   const n = pts.length
   if (n < 3) throw new MdmlError('value', 'delaunay: at least three points are needed')
+  if (pts.some(([x, y]) => !Number.isFinite(x) || !Number.isFinite(y)))
+    throw new MdmlError('value', 'delaunay: the points must be finite')
   let minX = Number.POSITIVE_INFINITY
   let minY = Number.POSITIVE_INFINITY
   let maxX = Number.NEGATIVE_INFINITY

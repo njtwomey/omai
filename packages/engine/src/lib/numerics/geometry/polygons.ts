@@ -32,6 +32,7 @@ import { orient, type Point2, toPoints } from './triangulation.ts'
  *
  * @param points - Points `[n, 2]`.
  * @returns Hull vertex indices.
+ * @throws MdmlError with code `value` when a coordinate is not finite.
  * @concept convex-hull
  * @example
  * ```ts
@@ -41,6 +42,8 @@ import { orient, type Point2, toPoints } from './triangulation.ts'
  */
 export function convexHull(points: TensorLike | readonly Point2[]): number[] {
   const pts = toPoints(points)
+  if (pts.some(([x, y]) => !Number.isFinite(x) || !Number.isFinite(y)))
+    throw new MdmlError('value', 'convexHull: the points must be finite')
   if (pts.length < 3) return pts.map((_, i) => i)
   const order = pts
     .map((_, i) => i)

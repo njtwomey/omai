@@ -21,7 +21,7 @@ Convolution and padding: 1-D convolution and correlation (direct, FFT and overla
 
 Numerical differentiation by finite differences: extrapolated derivatives with error estimates, gradients of sampled data, finite-difference Jacobians and Hessians, stencil weights, complex-step derivatives and difference matrices. Exact derivatives come from `autodiff`; these are for references, sampled data and checks.
 
-- function `derivative`: Derivative of a scalar function by Richardson-extrapolated differences. `src/lib/numerics/differentiate/finite-differences.ts:56` `mdml-engine/numerics/differentiate`
+- function `derivative`: Derivative of a scalar function by Richardson-extrapolated differences. `src/lib/numerics/differentiate/finite-differences.ts:57` `mdml-engine/numerics/differentiate`
 
 ## numerics/fourier
 
@@ -36,7 +36,7 @@ Fourier transforms, numpy.fft and scipy.fft style: the FFT for every length (rea
 Computational geometry: distances and metrics (scipy.spatial.distance), convex hulls, polygons and clipping, Delaunay triangulations and Voronoi diagrams, segment collision primitives, contours and confidence ellipses, and rotations, homographies and point-set alignment.
 
 - function `cdist`: Pairwise distances between two sets of points, scipy metrics. `src/lib/numerics/geometry/distances.ts:275` `mdml-engine/numerics/geometry`
-- function `delaunay`: Delaunay triangulation of planar points. `src/lib/numerics/geometry/triangulation.ts:85` `mdml-engine/numerics/geometry`
+- function `delaunay`: Delaunay triangulation of planar points. `src/lib/numerics/geometry/triangulation.ts:137` `mdml-engine/numerics/geometry`
 
 ## numerics/interpolate
 
@@ -50,7 +50,7 @@ Interpolation, scipy.interpolate style: polynomial interpolation in barycentric 
 
 Ill-posed inverse problems, where small noise in the data makes the plain solution useless: spectral regularisation (Tikhonov, truncated SVD), regularising iterations (Landweber, CGLS, LSQR) and the rules for choosing the regularisation parameter (L-curve, GCV, discrepancy principle).
 
-- function `tikhonov`: Tikhonov-regularised solution of an ill-posed linear problem. `src/lib/numerics/inverse/tikhonov.ts:95` `mdml-engine/numerics/inverse`
+- function `tikhonov`: Tikhonov-regularised solution of an ill-posed linear problem. `src/lib/numerics/inverse/tikhonov.ts:100` `mdml-engine/numerics/inverse`
 
 ## numerics/linalg
 
@@ -62,17 +62,17 @@ Dense linear algebra, numpy.linalg and scipy.linalg style: determinants and norm
 - function `cholesky`: Cholesky factor of a symmetric positive-definite matrix. `src/lib/numerics/linalg/cholesky.ts:96` `mdml-engine/numerics/linalg`
 - function `eig`: Eigenvalues and eigenvectors of a general real matrix. `src/lib/numerics/linalg/eig.ts:116` `mdml-engine/numerics/linalg`
 - function `eigh`: Symmetric eigendecomposition with derivatives. `src/lib/numerics/linalg/eigh.ts:122` `mdml-engine/numerics/linalg`
-- function `expm`: Matrix exponential by Pade scaling and squaring. `src/lib/numerics/linalg/functions.ts:72` `mdml-engine/numerics/linalg`
+- function `expm`: Matrix exponential by Pade scaling and squaring. `src/lib/numerics/linalg/functions.ts:73` `mdml-engine/numerics/linalg`
 - function `inv`: Matrix inverse, batched and differentiable. `src/lib/numerics/linalg/lu.ts:106` `mdml-engine/numerics/linalg`
-- function `lstsq`: Least-squares solution of A x = b. `src/lib/numerics/linalg/qr.ts:148` `mdml-engine/numerics/linalg`
-- function `norm`: Vector and matrix norms, like numpy.linalg.norm. `src/lib/numerics/linalg/basics.ts:148` `mdml-engine/numerics/linalg`
-- function `qr`: Reduced QR factorisation by Householder reflections. `src/lib/numerics/linalg/qr.ts:127` `mdml-engine/numerics/linalg`
+- function `lstsq`: Least-squares solution of A x = b. `src/lib/numerics/linalg/qr.ts:176` `mdml-engine/numerics/linalg`
+- function `norm`: Vector and matrix norms, like numpy.linalg.norm. `src/lib/numerics/linalg/basics.ts:152` `mdml-engine/numerics/linalg`
+- function `qr`: Reduced QR factorisation by Householder reflections. `src/lib/numerics/linalg/qr.ts:130` `mdml-engine/numerics/linalg`
 - function `solve`: Solve a square linear system by LU, like numpy.linalg.solve. `src/lib/numerics/linalg/lu.ts:85` `mdml-engine/numerics/linalg`
 - function `svd`: Reduced singular value decomposition, differentiable. `src/lib/numerics/linalg/svd.ts:174` `mdml-engine/numerics/linalg`
 
 ## numerics/polynomial
 
-Polynomials as coefficient arrays, numpy.polynomial style: the power basis (evaluation, fitting, arithmetic, roots), orthogonal families with their Gauss rules, and partial fractions of rational functions.
+Polynomials as coefficient arrays, numpy.polynomial style: the power basis (evaluation, fitting, arithmetic, roots), orthogonal families with their Gauss rules, and partial fractions of rational functions. Coefficients are lowest degree first (numpy.polynomial), except in `residue`, `residuez` and `invres`, which follow scipy.signal and take highest degree first.
 
 - function `polyfit`: Least-squares polynomial fit in the power basis. `src/lib/numerics/polynomial/power.ts:104` `mdml-engine/numerics/polynomial`
 
@@ -117,6 +117,6 @@ Special functions as differentiable elementwise operations, scipy.special style:
 
 - function `betainc`: Regularised incomplete beta function, the CDF of a beta distribution. `src/lib/numerics/special/incomplete.ts:180` `mdml-engine/numerics/special`
 - function `erf`: Error function family: erf, erfc, erfinv. `src/lib/numerics/special/erf.ts:38` `mdml-engine/numerics/special`
-- function `gamma`: Gamma function, differentiable; its log, digamma and beta live beside it. `src/lib/numerics/special/gamma.ts:53` `mdml-engine/numerics/special`
+- function `gamma`: Gamma function, differentiable; its log, digamma and beta live beside it. `src/lib/numerics/special/gamma.ts:54` `mdml-engine/numerics/special`
 - function `gammainc`: Regularised lower incomplete gamma function. `src/lib/numerics/special/incomplete.ts:75` `mdml-engine/numerics/special`
 - function `ndtr`: Standard normal CDF; ndtri is its quantile. `src/lib/numerics/special/normal.ts:58` `mdml-engine/numerics/special`

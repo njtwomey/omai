@@ -1,8 +1,9 @@
 /**
  * Dense LAPACK-style routines on plain row-major number arrays (`dpotrf`, `dgesv`, `dsyev`, `dgeqrf`, `dgesvd` and
  * friends), for algorithms that iterate on primal values, such as Newton and trust-region methods, quasi-Newton updates
- * and active-set solvers. They report failure instead of throwing where LAPACK does; differentiable code uses the
- * tensor routines of this folder instead.
+ * and active-set solvers. `dpotrf` reports failure through `info` as LAPACK does; `dgesv`, `dpotrs` and `dtrsv` throw a
+ * `value` error for a singular matrix (where LAPACK sets `info`); differentiable code uses the tensor routines of this
+ * folder instead.
  */
 
 import { eighQlKernel, qrKernel, solveKernel, svdKernel, triangularKernel } from './_kernels.ts'
@@ -66,6 +67,7 @@ export function dpotrs(u: ArrayLike<number>, b: ArrayLike<number>, n: number): F
  * @param n - The order.
  * @param options - `lower` (default false: upper), `transpose` and `unitDiagonal`.
  * @returns x.
+ * @throws MdmlError with code `value` when the diagonal (not taken as 1) has a zero.
  * @example
  * ```ts
  * import { dtrsv } from 'mdml-engine/numerics/linalg'
