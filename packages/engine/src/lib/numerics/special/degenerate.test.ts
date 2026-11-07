@@ -55,6 +55,10 @@ describe('special functions at infinity, at poles and in the denormal tails', ()
     ['digamma(-1)', () => S.digamma(-1)],
     ['gamma(-inf)', () => S.gamma(-INF)],
     ['polygamma(2, -1)', () => S.polygamma(2, -1)],
+    ['chdtr(2, nan)', () => S.chdtr(2, Number.NaN)],
+    ['chdtrc(2, nan)', () => S.chdtrc(2, Number.NaN)],
+    ['fdtr(2, 3, nan)', () => S.fdtr(2, 3, Number.NaN)],
+    ['fdtrc(2, 3, nan)', () => S.fdtrc(2, 3, Number.NaN)],
   ])('%s stays NaN (undefined, as in scipy)', (_name, call) => {
     expect(item(call())).toBeNaN()
   })

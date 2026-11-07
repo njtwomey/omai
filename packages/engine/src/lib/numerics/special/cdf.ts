@@ -14,6 +14,7 @@ import {
   full,
   greater,
   less,
+  lessEqual,
   log,
   log1p,
   mul,
@@ -134,8 +135,8 @@ export function stdtrit(df: TensorLike, p: TensorLike): Value {
  */
 export function chdtr(k: TensorLike, x: TensorLike): Value {
   const [kk, xx] = promoteFloat(k, x) as [Value, Value]
-  const pos = greater(xx, 0)
-  return where(pos, gammainc(mul(kk, 0.5), mul(where(pos, xx, 1), 0.5)), 0)
+  const edge = lessEqual(xx, 0)
+  return where(edge, 0, gammainc(mul(kk, 0.5), mul(where(edge, 1, xx), 0.5)))
 }
 
 /**
@@ -153,8 +154,8 @@ export function chdtr(k: TensorLike, x: TensorLike): Value {
  */
 export function chdtrc(k: TensorLike, x: TensorLike): Value {
   const [kk, xx] = promoteFloat(k, x) as [Value, Value]
-  const pos = greater(xx, 0)
-  return where(pos, gammaincc(mul(kk, 0.5), mul(where(pos, xx, 1), 0.5)), 1)
+  const edge = lessEqual(xx, 0)
+  return where(edge, 1, gammaincc(mul(kk, 0.5), mul(where(edge, 1, xx), 0.5)))
 }
 
 /**
@@ -173,9 +174,9 @@ export function chdtrc(k: TensorLike, x: TensorLike): Value {
  */
 export function fdtr(d1: TensorLike, d2: TensorLike, x: TensorLike): Value {
   const [a, b, xx] = promoteFloat(d1, d2, x) as [Value, Value, Value]
-  const pos = greater(xx, 0)
-  const s = where(pos, xx, 1)
-  return where(pos, betainc(mul(a, 0.5), mul(b, 0.5), div(mul(a, s), add(mul(a, s), b))), 0)
+  const edge = lessEqual(xx, 0)
+  const s = where(edge, 1, xx)
+  return where(edge, 0, betainc(mul(a, 0.5), mul(b, 0.5), div(mul(a, s), add(mul(a, s), b))))
 }
 
 /**
@@ -194,9 +195,9 @@ export function fdtr(d1: TensorLike, d2: TensorLike, x: TensorLike): Value {
  */
 export function fdtrc(d1: TensorLike, d2: TensorLike, x: TensorLike): Value {
   const [a, b, xx] = promoteFloat(d1, d2, x) as [Value, Value, Value]
-  const pos = greater(xx, 0)
-  const s = where(pos, xx, 1)
-  return where(pos, betainc(mul(b, 0.5), mul(a, 0.5), div(b, add(b, mul(a, s)))), 1)
+  const edge = lessEqual(xx, 0)
+  const s = where(edge, 1, xx)
+  return where(edge, 1, betainc(mul(b, 0.5), mul(a, 0.5), div(b, add(b, mul(a, s)))))
 }
 
 const kolmogorovPdfP = special('kolmogorovPdf', misc.kolmogorovPdf, [null])
