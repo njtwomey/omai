@@ -8,10 +8,11 @@ understanding, not for being the fastest.
 
 ## The ideas
 
-**1. One library for all of ML.** Things that are usually separate packages share one set of tools: tensors,
-random numbers, datasets, optimisers and metrics. A model is a small configuration you can read. Logistic, ridge and
-lasso regression are settings of one linear model, and a choice like the solver is a slot you fill from a list of
-options, so a model is never tied to one solver.
+They build on each other, and there are more than these. `docs/structure.md` has the full set.
+
+**1. One library for all of ML.** This is the goal. Things that are usually separate packages share one set of tools:
+tensors, random numbers, datasets, optimisers and metrics. Everything in the library is a library: a demonstration of a
+method is a short page that combines an estimator with a dataset.
 
 **2. Everything leaves a trace.** This is the key idea. Every routine that runs in steps (an optimiser, a sampler, a
 trainer, an agent) records what it did as it went: the state, the metrics and how it ended. You can pause a run, replay it,
@@ -24,14 +25,27 @@ import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
 toArray(grad((x: Value) => mul(x, x))(tensor(3))) // => 6
 ```
 
-**3. Simple, explicit foundations.**
+**3. Models are configurations.** A model is a small setting you can read, not a class to subclass. Logistic, ridge and
+lasso regression are settings of one linear model. A choice like the solver is a slot you fill from a list of options, so
+a model is never tied to one solver.
 
-- Tensors are plain arrays until you ask for a gradient. Then `grad`, `vmap`, `jvp` and `hessian` work on that call, as
-  in JAX.
-- Randomness is explicit. You pass in a key, and the same key gives the same numbers. The library never uses a clock or
-  hidden state.
-- Results explain themselves. They come back as plain typed records that the render package can draw.
-- The code documents itself. Every folder, file and export is described, and every example in the docs is run by the build.
+**4. Data knows the truth.** Every dataset generator carries the ground truth it was made from (the true parameters, the
+true labels, the true shift), so you can check what a method found against what was really there.
+
+**5. Results explain themselves.** What a method found comes back with plain, typed records of what is worth showing. The
+render package turns those records into figures, and nothing in the library has to know about drawing.
+
+**6. Tensors, with gradients when you ask.** Tensors are plain arrays until you want a gradient. Then `grad`, `vmap`,
+`jvp` and `hessian` work on that call, as in JAX.
+
+**7. Randomness is explicit.** You pass in a key, and the same key gives the same numbers. The library never uses a clock
+or hidden state, so any run can be repeated exactly.
+
+**8. Checked against the standard libraries.** The numerical code is tested against results from numpy, scipy, torch and
+others, so you can trust that it agrees with what you already know.
+
+**9. The code documents itself.** Every folder, file and export is described, and every example in the docs is run by the
+build. A generated index of the main things (`llms.txt`) helps people and tools find their way.
 
 ## Packages
 
