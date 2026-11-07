@@ -388,3 +388,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   gate was not run): engine, render, meta, site and pocs tsc; 665 files, 10,984 tests of the 17 caller domains and 57 files,
   1,161 tests of `random`, `data`, `tensor` and `sampling/exact`; 65 `@example`s; barrels, layers, lint, agent index, surface.
   Tests added: 1 `it.each` (7 rows). Surface: 1 added (`tensor#toVector`), 11 changed.
+- **17:55 Gate.** The duplicate-cluster, failure-convention and native-array stage 1 merges passed the full local gate together: 26,438 tests, 9,613 examples, all static
+  checks and all six tsc runs, no failure on the first run. 143 commits are ahead of `origin/main`; nothing is pushed (D-014).
