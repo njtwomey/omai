@@ -17,7 +17,7 @@ const flat = (v: Value): number[] => Array.from(toFlat(v))
 // `n` is the sample size where it is not `N`: the distribution functions of the skew normal and the noncentral t are slow.
 const wrapped = (x: number[], mu: number): number[] => x.map((t) => Math.atan2(Math.sin(t - mu), Math.cos(t - mu)))
 
-type Row = readonly [name: string, draw: (k: R.Key, n: number) => number[], law: D.Distribution, n?: number]
+type Row = readonly [name: string, draw: (k: R.Key, n: number) => number[], law: D.Distribution, n?: number | undefined]
 
 // The samplers of `random`, each against the `dists` distribution of the same law.
 const randomRows: readonly Row[] = [
@@ -142,11 +142,11 @@ describe('the samplers draw from the distribution they claim', () => {
     const bins = values.map((_, i) => [observed[i] ?? 0, (probs[i] ?? 0) * draws.length] as [number, number])
     // Pool from the left and from the right until every bin expects at least 5 draws.
     while (bins.length > 2 && (bins[0]?.[1] ?? 0) < 5) {
-      const [a, b] = [bins.shift() ?? [0, 0], bins.shift() ?? [0, 0]]
+      const [a, b] = [bins.shift() ?? [0, 0], bins.shift() ?? [0, 0]] as [[number, number], [number, number]]
       bins.unshift([a[0] + b[0], a[1] + b[1]])
     }
     while (bins.length > 2 && (bins[bins.length - 1]?.[1] ?? 0) < 5) {
-      const [a, b] = [bins.pop() ?? [0, 0], bins.pop() ?? [0, 0]]
+      const [a, b] = [bins.pop() ?? [0, 0], bins.pop() ?? [0, 0]] as [[number, number], [number, number]]
       bins.push([a[0] + b[0], a[1] + b[1]])
     }
     const total = bins.reduce((s, b) => s + b[1], 0)
