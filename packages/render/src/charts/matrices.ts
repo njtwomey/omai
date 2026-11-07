@@ -118,7 +118,8 @@ export function imageSeries(
     data: [[x[0], y[0], x[1], y[1]]],
     // A PNG data URL draws anywhere (SVG, export, server rendering) but a browser decodes it before it can paint, so a
     // chart that updates often shows blank frames; `reencodeImages` swaps the pixels in for a canvas, which paints at once.
-    renderItem: imageRenderer(pngDataUrl(pixels), x, y, opacity),
+    // The PNG is encoded when the item is first drawn, so a chart drawn from canvases never pays for it.
+    renderItem: imageRenderer(() => pngDataUrl(pixels), x, y, opacity),
     mdmlImage: { pixels, x, y, opacity },
     clip: true,
     silent: true,
@@ -157,19 +158,26 @@ export function reencodeImages(series: readonly SeriesOption[], encode: ImageEnc
     if (source === undefined) return s
     return {
       ...s,
-      renderItem: imageRenderer(encode(source.pixels), source.x, source.y, source.opacity),
+      renderItem: imageRenderer(() => encode(source.pixels), source.x, source.y, source.opacity),
     } as unknown as SeriesOption
   })
 }
 
-// The renderItem of an image series: the image (a data URL, or a canvas) stretched over a data rectangle.
+// The renderItem of an image series: the image (a data URL, or a canvas) stretched over a data rectangle. The image is
+// made on the first draw and kept, so a series that is never drawn never encodes its pixels.
 function imageRenderer(
-  image: unknown,
+  make: () => unknown,
   x: Range,
   y: Range,
   opacity: number,
 ): (params: unknown, api: ImageApi) => Record<string, unknown> {
+  let made = false
+  let image: unknown
   return (_params, api) => {
+    if (!made) {
+      image = make()
+      made = true
+    }
     const [x0 = 0, y1 = 0] = api.coord([x[0], y[0]])
     const [x1 = 0, y0 = 0] = api.coord([x[1], y[1]])
     return {
@@ -320,7 +328,7 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
   ]
   // A selection on the colour bar repaints the image with the values outside it dimmed.
   const recolour = (keep: ValueFilter | undefined, encode: ImageEncoder): Record<string, unknown> => ({
-    renderItem: imageRenderer(encode(paint(keep)), xr, yr, opacity),
+    renderItem: imageRenderer(() => encode(paint(keep)), xr, yr, opacity),
   })
   const showBar = options.colourBar ?? true
   if (showBar) series.push({ type: 'scatter', name: '__colourbar', data: [], silent: true } as SeriesOption)

@@ -37,6 +37,53 @@ describe('resample', () => {
   })
 })
 
+// The 2-D kernel the separable bicubic replaced: four rows of four taps per output pixel.
+function bicubic2d(g: { rows: number; cols: number; values: Float64Array }, rows: number, cols: number): Float64Array {
+  const cubic = (p0: number, p1: number, p2: number, p3: number, t: number): number =>
+    p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)))
+  const at = (r: number, c: number): number =>
+    g.values[Math.min(g.rows - 1, Math.max(0, r)) * g.cols + Math.min(g.cols - 1, Math.max(0, c))] ?? Number.NaN
+  const finite = Array.from(g.values).filter(Number.isFinite)
+  const lo = Math.min(...finite)
+  const hi = Math.max(...finite)
+  const out = new Float64Array(rows * cols)
+  for (let i = 0; i < rows; i++) {
+    const u = rows === 1 ? 0 : (i * (g.rows - 1)) / (rows - 1)
+    for (let j = 0; j < cols; j++) {
+      const w = cols === 1 ? 0 : (j * (g.cols - 1)) / (cols - 1)
+      const [r0, c0] = [Math.floor(u), Math.floor(w)]
+      const row = (r: number): number => cubic(at(r, c0 - 1), at(r, c0), at(r, c0 + 1), at(r, c0 + 2), w - c0)
+      const v = cubic(row(r0 - 1), row(r0), row(r0 + 1), row(r0 + 2), u - r0)
+      out[i * cols + j] = Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : v
+    }
+  }
+  return out
+}
+
+describe('separable bicubic', () => {
+  const surface = (rows: number, cols: number, f: (i: number, j: number) => number) => ({
+    rows,
+    cols,
+    values: Float64Array.from({ length: rows * cols }, (_, k) => f(Math.floor(k / cols), k % cols)),
+  })
+  it.each([
+    ['a smooth square surface up to 3x', surface(24, 24, (i, j) => Math.sin(i / 5) * Math.cos(j / 4)), 70, 70],
+    ['a wide grid, down-sampled in one axis', surface(9, 31, (i, j) => (i * 7 + j * 3) % 5), 5, 63],
+    ['a single row', surface(1, 6, (_, j) => j * j), 4, 20],
+    [
+      'a grid with a NaN node (it spreads to the pixels it touches)',
+      surface(6, 6, (i, j) => (i === 2 && j === 3 ? Number.NaN : i - j)),
+      17,
+      19,
+    ],
+  ])('equals the 2-D kernel on %s', (_name, g, rows, cols) => {
+    const got = resample(g, rows, cols, 'bicubic')
+    const want = bicubic2d(g, rows, cols)
+    for (let k = 0; k < want.length; k++)
+      expect(Math.abs((got[k] as number) - (want[k] as number)) < 1e-12 || Object.is(got[k], want[k])).toBe(true)
+  })
+})
+
 describe('heatmap', () => {
   it('draws one smooth image with a colour bar', () => {
     const l = heatmap(
@@ -149,8 +196,11 @@ describe('reencodeImages', () => {
     })
     expect(out).toHaveLength(2)
     expect(out[1]).toBe(plain)
-    expect(seen).toHaveLength(1)
+    // Lazy: nothing is encoded until the item is drawn, and then once however often it is drawn.
+    expect(seen).toHaveLength(0)
     const item = opt(out[0]).renderItem({}, api)
+    opt(out[0]).renderItem({}, api)
+    expect(seen).toHaveLength(1)
     expect(item.style.image).toBe('the-encoded-image')
     // The same rectangle as the data-URL version.
     const original = opt(first).renderItem({}, api)
