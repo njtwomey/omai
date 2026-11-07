@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
+import { grad } from '../../autodiff/index.ts'
 import { minOf } from '../../base/index.ts'
 import { key, normal } from '../../random/index.ts'
-import { type Tensor, tensor, toFlat } from '../../tensor/index.ts'
+import { sum, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as I from './index.ts'
 
 /** A Gaussian blurring problem (the fixture's has width 0.03; the behaviour tests use the more ill-posed 0.06). */
@@ -30,7 +31,7 @@ describe('regularisation against numpy and scipy', () => {
               : c.fn === 'tsvd'
                 ? I.tsvd(data, p['k'] as number)
                 : c.fn === 'gcvFunction'
-                  ? tensor([...I.gcv(data, 40, { lambdas: toFlat(t[2] as Tensor) }).criterion])
+                  ? I.gcv(data, 40, { lambdas: t[2] as Tensor }).criterion
                   : tensor(I.regularise(I.lsqrAlgorithm(t[0] as Tensor, t[1] as Tensor), p['iterations'] as number).x)
       expectMatches(actual, c.output, c.rtol, c.atol, c.name)
     })
@@ -58,7 +59,7 @@ describe('regularisation behaviour', () => {
   })
 
   it('the L-curve corner matches the discrete curvature maximum', () => {
-    const lambdas = I.lambdaGrid(data, 200)
+    const lambdas = toFlat(I.lambdaGrid(data, 200))
     const path = I.tikhonovPath(data, b, lambdas)
     const lr = path.map((q) => Math.log(q.residualNorm))
     const le = path.map((q) => Math.log(q.solutionNorm))
@@ -78,6 +79,26 @@ describe('regularisation behaviour', () => {
     }
     const corner = I.lCurve(data, { lambdas }).lambda
     expect(Math.abs(Math.log10(corner) - Math.log10(lambdas[best] ?? 1))).toBeLessThan(0.3)
+  })
+
+  it('the parameter-choice rules and the path take the parameters as tensor-likes and return tensors (migration, D-009)', () => {
+    const grid = toFlat(I.lambdaGrid(data, 12))
+    const rules: [string, (l: TensorLike) => Tensor][] = [
+      ['lCurve', (l) => I.lCurve(data, { lambdas: l }).criterion as Tensor],
+      ['gcv', (l) => I.gcv(data, 40, { lambdas: l }).criterion as Tensor],
+      ['quasiOptimality', (l) => I.quasiOptimality(data, { lambdas: l }).criterion as Tensor],
+      ['tikhonovPath', (l) => I.tikhonovPath(data, b, l)[3]?.x as Tensor],
+    ]
+    for (const [name, f] of rules) {
+      const expected = toFlat(f(grid))
+      expect(toFlat(f(Float64Array.from(grid))), name).toEqual(expected)
+      expect(toFlat(f(tensor(grid))), name).toEqual(expected)
+      expect(() => f(tensor([grid, grid])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(() => grad((l: Value) => sum(f(l as TensorLike)))(tensor(grid)), name).toThrow(
+        expect.objectContaining({ code: 'not-differentiable' }),
+      )
+    }
+    expect(I.lambdaGrid(data, 12).shape).toEqual([12])
   })
 
   it('iterative methods semi-converge: the error falls and then rises', () => {
