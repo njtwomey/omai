@@ -23,6 +23,7 @@ import {
   mul,
   type Primitive,
   pow,
+  primalOf,
   promoteFloat,
   sqrt,
   square,
@@ -31,7 +32,7 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
-import { slogdetKernel } from './_kernels.ts'
+import { scaleExponent, slogdetKernel } from './_kernels.ts'
 import { assemble, identity, matrices, matrixShape, mT, squareSize, sym } from './_matrix.ts'
 import { cholesky } from './cholesky.ts'
 import { inv } from './lu.ts'
@@ -134,7 +135,8 @@ export type NormOrder = 'fro' | 'nuc' | number
 /**
  * Vector or matrix norm (numpy.linalg.norm). A 1-D input is a vector (`ord`: any p, Infinity, -Infinity, 0 for the
  * count of non-zeros; default 2); otherwise the last two axes are a matrix (`ord`: 'fro' (default), 'nuc', 1, -1, 2,
- * -2, Infinity, -Infinity).
+ * -2, Infinity, -Infinity). The Euclidean and Frobenius norms neither overflow nor underflow (entries of 1e200 or 1e-200
+ * give 5e200 for [3, 4] times that scale, where numpy gives Infinity or 0).
  *
  * @param x - Vector or matrix (or batch of matrices).
  * @param ord - The norm.
@@ -154,7 +156,7 @@ export function norm(x: TensorLike, ord?: NormOrder): Value {
   if (v.shape.length === 1) return vectorNorm(v, ord === undefined ? 2 : ord)
   matrixShape(v.shape, 'norm')
   const o = ord ?? 'fro'
-  if (o === 'fro') return sqrt(sum(sum(square(v), -1), -1))
+  if (o === 'fro') return euclidean(v, 2)
   if (o === 'nuc') return sum(svdvals(v), -1)
   if (o === 2) return max(svdvals(v), -1)
   if (o === -2) return min(svdvals(v), -1)
@@ -165,8 +167,22 @@ export function norm(x: TensorLike, ord?: NormOrder): Value {
   throw new MdmlError('value', `norm: unsupported matrix norm ${String(o)}`)
 }
 
+/**
+ * sqrt of the sum of squares over the last `axes` axes. The squares of entries beyond about 1e154 or below 1e-154 leave the
+ * double range, so such a tensor is scaled by an exact power of two first (the largest entry into [1, 2)) and the result
+ * scaled back; at ordinary scale nothing is scaled and the bits are those of the plain sum.
+ */
+function euclidean(v: Value, axes: 1 | 2): Value {
+  const rootSumSquares = (x: Value): Value => sqrt(axes === 1 ? sum(square(x), -1) : sum(sum(square(x), -1), -1))
+  const e = scaleExponent(toFlat(primalOf(v)))
+  if (e === 0) return rootSumSquares(v)
+  // Two factors, so that neither 2^-e nor 2^e overflows when the exponent reaches +-1074.
+  const half = Math.trunc(e / 2)
+  return mul(mul(rootSumSquares(mul(mul(v, 2 ** -half), 2 ** (half - e))), 2 ** half), 2 ** (e - half))
+}
+
 function vectorNorm(v: Value, ord: NormOrder): Value {
-  if (ord === 'fro' || ord === 2) return sqrt(sum(square(v), -1))
+  if (ord === 'fro' || ord === 2) return euclidean(v, 1)
   if (ord === Number.POSITIVE_INFINITY) return max(abs(v), -1)
   if (ord === Number.NEGATIVE_INFINITY) return min(abs(v), -1)
   if (ord === 0) return sum(greater(abs(v), 0), -1)

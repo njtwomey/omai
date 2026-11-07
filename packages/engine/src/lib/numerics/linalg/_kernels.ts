@@ -744,8 +744,9 @@ function scaleByPow2(x: number, k: number): number {
  * The exponent e whose power 2^-e brings the largest finite magnitude of the matrix into [1, 2), or 0 when the matrix is
  * of ordinary scale (largest magnitude within [2^-100, 2^100]), is zero, or has a non-finite entry: the Jacobi test
  * multiplies two squared column norms (a fourth power of the entries), which leaves the double range outside that band.
+ * The Euclidean norm of `norm` squares the entries and needs less, so it takes the same exponent.
  */
-function scaleExponent(a: Float64Array): number {
+export function scaleExponent(a: ArrayLike<number>): number {
   let largest = 0
   for (const x of a) {
     if (!Number.isFinite(x)) return 0

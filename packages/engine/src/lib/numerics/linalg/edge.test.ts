@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { toArray, type Value } from '../../tensor/index.ts'
+import { grad } from '../../autodiff/index.ts'
+import { tensor, toArray, type Value } from '../../tensor/index.ts'
 import * as L from './index.ts'
 
 // Matrices at the awkward places of the factorisations (rank deficiency, ill conditioning, clustered or repeated
@@ -244,11 +245,19 @@ describe('linear systems, determinants and the other factorisations at their lim
         [1, 7],
         [Number.POSITIVE_INFINITY, 7],
         [2, 6.669079088282289],
+        ['fro', 7.745966692414834],
         ['nuc', 12],
       ] as const) {
         expect(num(L.norm(a, ord)) / s / expected - 1, `norm ${ord} at scale ${s}`).toBeCloseTo(0, 12)
       }
       expect(num(L.cond(a)) / num(L.cond(spd3)) - 1, `cond at scale ${s}`).toBeCloseTo(0, 9)
+      // The Euclidean norm of a vector: 3-4-5 at scale s (squares leave the double range beyond about 1e154).
+      expect(num(L.norm([3 * s, 4 * s])) / s, `vector norm at scale ${s}`).toBeCloseTo(5, 12)
+      // Its gradient is the unit vector, scaled path included.
+      expect(vec(grad((x: Value) => L.norm(x))(tensor([3 * s, 4 * s]))), `grad of the norm at scale ${s}`).toEqual([
+        expect.closeTo(0.6, 12),
+        expect.closeTo(0.8, 12),
+      ])
     }
   })
 
