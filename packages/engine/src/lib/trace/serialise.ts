@@ -15,7 +15,16 @@ function isPlain(x: unknown): x is Readonly<Record<string, unknown>> {
   return proto === null || proto === Object.prototype
 }
 
-/** Tensors as `{ $tensor: ... }` objects, anywhere in a state; everything else as it is (`toJson` judges it). */
+const isTag = (x: unknown): boolean => isPlain(x) && Object.keys(x).length === 1 && Object.hasOwn(x, '$tensor')
+
+/** Whether a state holds a tensor (`found`) or a `$tensor` object (`isTag`) anywhere: a walk that allocates nothing. */
+function holds(x: unknown, found: (x: unknown) => boolean): boolean {
+  if (found(x)) return true
+  if (Array.isArray(x)) return x.some((v) => holds(v, found))
+  return isPlain(x) && Object.values(x).some((v) => holds(v, found))
+}
+
+/** Tensors as `{ $tensor: ... }` objects, anywhere in a state. */
 function tensorsToTags(x: unknown): unknown {
   if (isTensor(x)) return { $tensor: tensorToJson(x) }
   if (Array.isArray(x)) return x.map(tensorsToTags)
@@ -25,11 +34,10 @@ function tensorsToTags(x: unknown): unknown {
 
 /** The inverse of {@link tensorsToTags}, over what `fromJson` returns. */
 function tagsToTensors(x: unknown): unknown {
+  if (isTag(x)) return tensorFromJson((x as { readonly $tensor: TensorJson }).$tensor)
   if (Array.isArray(x)) return x.map(tagsToTensors)
-  if (!isPlain(x)) return x
-  const keys = Object.keys(x)
-  if (keys.length === 1 && keys[0] === '$tensor') return tensorFromJson(x['$tensor'] as TensorJson)
-  return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, tagsToTensors(v)]))
+  if (isPlain(x)) return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, tagsToTensors(v)]))
+  return x
 }
 
 /**
@@ -48,7 +56,7 @@ function tagsToTensors(x: unknown): unknown {
  * ```
  */
 export function stateToJson(x: unknown): Json {
-  return toJson(tensorsToTags(x) as Encodable)
+  return toJson((holds(x, isTensor) ? tensorsToTags(x) : x) as Encodable)
 }
 
 /**
@@ -66,7 +74,8 @@ export function stateToJson(x: unknown): Json {
  * ```
  */
 export function stateFromJson(json: Json): unknown {
-  return tagsToTensors(fromJson(json))
+  const state = fromJson(json)
+  return holds(state, isTag) ? tagsToTensors(state) : state
 }
 
 /**
