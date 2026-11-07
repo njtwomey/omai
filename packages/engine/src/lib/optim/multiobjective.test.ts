@@ -257,7 +257,7 @@ describe('tensor-like inputs (migration, D-009)', () => {
       [2, 2],
       [3, 1],
     ]
-    const box = [
+    const box: [number, number][] = [
       [0, 1],
       [0, 1],
     ]

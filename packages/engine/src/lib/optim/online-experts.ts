@@ -494,7 +494,7 @@ export function expertsAlgorithm<S>(
           cumulativeLoss: s.cumulativeLoss,
           bestExpertLoss: best,
           regret: s.cumulativeLoss - best,
-          ...(comparator === undefined ? {} : { switchingRegret: s.cumulativeLoss - (comparator[s.t - 1] ?? 0) }),
+          ...(comparator === undefined ? {} : { switchingRegret: s.cumulativeLoss - (comparator.data[s.t - 1] ?? 0) }),
         },
         tensors: { probabilities: { role: 'state', value: s.probabilities } },
       }
