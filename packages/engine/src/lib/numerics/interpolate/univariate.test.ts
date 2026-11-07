@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { grad } from '../../autodiff/index.ts'
 import { maxOf } from '../../base/index.ts'
-import { exp, item, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { exp, item, sum, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as I from './index.ts'
 
 const BOUNDARIES: Readonly<Record<string, I.SplineBoundary>> = {
@@ -149,10 +149,28 @@ describe('interpolant properties', () => {
     expect(u.interiorKnots.length).toBeLessThan(x.length - 4)
   })
 
+  it('the node and weight functions take tensor-likes and return tensors (migration, D-009)', () => {
+    const calls: [string, (v: TensorLike) => number[]][] = [
+      ['barycentricWeights', (v) => toFlat(I.barycentricWeights(v))],
+      ['barycentric weights', (v) => toFlat(I.barycentric([0, 1, 2, 3], [1, 2, 4, 8], v).weights)],
+      ['lagrange', (v) => toFlat(I.lagrange(v, [1, 2, 4, 8]))],
+      ['lebesgueConstant', (v) => [I.lebesgueConstant(v, 50)]],
+    ]
+    const v = [0, 1, 2, 4]
+    for (const [name, f] of calls) {
+      const expected = f(v)
+      expect(f(Float64Array.from(v)), name).toEqual(expected)
+      expect(f(tensor(v)), name).toEqual(expected)
+      expect(() => f(tensor([v, v])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+    }
+    expect(I.chebyshevNodes(5).shape).toEqual([5])
+    expect(I.equispacedNodes(5).shape).toEqual([5])
+  })
+
   it('Chebyshev nodes tame the Runge phenomenon; equispaced nodes do not', () => {
     const fine = Array.from({ length: 401 }, (_, i) => -1 + i / 200)
     const truth = toFlat(I.runge(fine))
-    const error = (nodes: number[]): number => {
+    const error = (nodes: TensorLike): number => {
       const p = toFlat(I.barycentric(nodes, I.runge(nodes)).evaluate(fine))
       return maxOf(p.map((v, i) => Math.abs(v - (truth[i] ?? 0))))
     }

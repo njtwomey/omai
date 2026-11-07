@@ -86,7 +86,7 @@ export function zeros(sys: Lti): ComplexArray {
   if (n === 0) return { re: [], im: [] }
   // det [[sI - A, -B], [C, D]] is a real polynomial of degree at most n: interpolate it at n + 1 Chebyshev points.
   const scale = Math.max(1, numbers(norm(sys.a)).at(0) ?? 1)
-  const nodes = chebyshevNodes(n + 1)
+  const nodes = toFlat(chebyshevNodes(n + 1))
   const values = nodes.map((x) => {
     const s = x * scale
     const top = concat([sub(mul(eye(n), s), sys.a), mul(sys.b, -1)], 1)

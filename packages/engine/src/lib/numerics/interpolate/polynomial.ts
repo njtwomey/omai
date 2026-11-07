@@ -19,9 +19,11 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
   where,
 } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 
 /** A barycentric polynomial interpolant. */
 export interface Barycentric {
@@ -35,11 +37,12 @@ export interface Barycentric {
 /**
  * Polynomial interpolation in the second (true) barycentric form (scipy.interpolate.BarycentricInterpolator):
  * p(x) = sum_j (w_j y_j / (x - x_j)) / sum_j (w_j / (x - x_j)), stable and O(n) per point. Differentiable in the values
- * and the query points; exact at the nodes.
+ * and the query points; exact at the nodes. Takes the weights as a tensor-like (migration, D-009: were
+ * `readonly number[]`).
  *
  * @param x - Distinct nodes `[n]`.
  * @param y - Values `[n]`.
- * @param weights - Optional precomputed weights (for example Chebyshev weights).
+ * @param weights - Optional precomputed weights `[n]` (for example Chebyshev weights).
  * @returns The interpolant.
  * @concept polynomial-interpolation
  * @example
@@ -49,12 +52,12 @@ export interface Barycentric {
  * item(barycentric([0, 1, 2], [1, 3, 7]).evaluate(1.5)) // => 4.75
  * ```
  */
-export function barycentric(x: TensorLike, y: TensorLike, weights?: readonly number[]): Barycentric {
+export function barycentric(x: TensorLike, y: TensorLike, weights?: TensorLike): Barycentric {
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'barycentric'))
   const [yv] = promoteFloat(y) as [Value]
   const n = xs.length
   if (yv.shape[0] !== n) throw new MdmlError('shape', 'barycentric: x and y must have the same length')
-  let w = weights === undefined ? barycentricWeights(xs) : [...weights]
+  let w = weights === undefined ? weightsKernel(xs) : [...toVector(weights, 'barycentric')]
   const scale = maxOf(w.map(Math.abs))
   w = w.map((v) => v / scale)
   const nodes = fromStorage(Float64Array.from(xs), [n], 'float64')
@@ -92,19 +95,26 @@ export function barycentric(x: TensorLike, y: TensorLike, weights?: readonly num
 
 /**
  * Barycentric weights 1 / prod_{k != j} (x_j - x_k), computed with a scaling that avoids overflow (a common factor, so
- * the ratios of the weights are exact).
+ * the ratios of the weights are exact). Takes and returns tensors (migration, D-009: was `readonly number[]` to
+ * `number[]`).
  *
- * @param x - Distinct nodes.
- * @returns The weights, up to one common positive factor.
- * @throws MdmlError with code `value` for repeated nodes.
+ * @param x - Distinct nodes `[n]`.
+ * @returns The weights `[n]`, up to one common positive factor.
+ * @throws MdmlError with code `value` for repeated nodes, `shape` unless `x` is a vector, and `not-differentiable` for
+ *   a traced value.
  * @example
  * ```ts
  * import { barycentricWeights } from 'mdml-engine/numerics/interpolate'
- * const w = barycentricWeights([0, 1, 2])
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const w = toFlat(barycentricWeights([0, 1, 2]))
  * w.map((v) => v / (w[0] ?? 1)) // => [1, -2, 1]
  * ```
  */
-export function barycentricWeights(x: readonly number[]): number[] {
+export function barycentricWeights(nodes: TensorLike): Tensor<'float64', [number]> {
+  return vectorOf(weightsKernel(toVector(nodes, 'barycentricWeights')))
+}
+
+function weightsKernel(x: readonly number[]): number[] {
   const n = x.length
   const span = maxOf(x) - minOf(x) || 1
   // Dividing each difference by span / 4 keeps the products in range (the capacity of the interval).
@@ -119,18 +129,22 @@ export function barycentricWeights(x: readonly number[]): number[] {
 
 /**
  * The Lagrange interpolating polynomial's power-basis coefficients, highest first (scipy.interpolate.lagrange):
- * numerically unstable beyond about 20 points, kept for teaching.
+ * numerically unstable beyond about 20 points, kept for teaching. Takes and returns tensors (migration, D-009: was
+ * `readonly number[]` to `number[]`).
  *
- * @param x - Distinct nodes.
- * @param y - Values.
- * @returns Coefficients, highest power first.
+ * @param x - Distinct nodes `[n]`.
+ * @param y - Values `[n]`.
+ * @returns Coefficients `[n]`, highest power first.
+ * @throws MdmlError with code `shape` unless `x` and `y` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { lagrange } from 'mdml-engine/numerics/interpolate'
  * lagrange([0, 1, 2], [1, 3, 7]) // => [1, 1, 1]
  * ```
  */
-export function lagrange(x: readonly number[], y: readonly number[]): number[] {
+export function lagrange(nodes: TensorLike, values: TensorLike): Tensor<'float64', [number]> {
+  const x = toVector(nodes, 'lagrange')
+  const y = toVector(values, 'lagrange')
   const n = x.length
   let total = new Array<number>(n).fill(0)
   for (let j = 0; j < n; j++) {
@@ -150,24 +164,34 @@ export function lagrange(x: readonly number[], y: readonly number[]): number[] {
     const scale = (y[j] ?? 0) / denom
     total = total.map((t, i) => t + scale * (basis[i] ?? 0))
   }
-  return total.map((v) => (Math.abs(v) < 1e-13 * Math.max(1, maxOf(total.map(Math.abs))) ? 0 : v))
+  return vectorOf(total.map((v) => (Math.abs(v) < 1e-13 * Math.max(1, maxOf(total.map(Math.abs))) ? 0 : v)))
 }
 
 /**
  * Chebyshev nodes on [a, b]: of the first kind cos((2j + 1) pi / 2n) (roots of T_n), or of the second kind
- * cos(j pi / (n - 1)) (extrema, including the ends), in increasing order.
+ * cos(j pi / (n - 1)) (extrema, including the ends), in increasing order. Returns a tensor (migration, D-009: was
+ * `number[]`).
  *
  * @param n - Number of nodes.
  * @param interval - The interval (default [-1, 1]).
  * @param kind - 1 or 2 (default 2).
- * @returns The nodes.
+ * @returns The nodes `[n]`.
  * @example
  * ```ts
  * import { chebyshevNodes } from 'mdml-engine/numerics/interpolate'
- * chebyshevNodes(3).map((v) => Math.round(v * 1e12) / 1e12) // => [-1, 0, 1]
+ * import { toFlat } from 'mdml-engine/tensor'
+ * toFlat(chebyshevNodes(3)).map((v) => Math.round(v * 1e12) / 1e12) // => [-1, 0, 1]
  * ```
  */
-export function chebyshevNodes(n: number, interval: readonly [number, number] = [-1, 1], kind: 1 | 2 = 2): number[] {
+export function chebyshevNodes(
+  n: number,
+  interval: readonly [number, number] = [-1, 1],
+  kind: 1 | 2 = 2,
+): Tensor<'float64', [number]> {
+  return vectorOf(chebyshevNodesKernel(n, interval, kind))
+}
+
+function chebyshevNodesKernel(n: number, interval: readonly [number, number], kind: 1 | 2): number[] {
   const [a, b] = interval
   const nodes = Array.from({ length: n }, (_, j) =>
     kind === 1 ? Math.cos(((2 * j + 1) * Math.PI) / (2 * n)) : n === 1 ? 0 : Math.cos((j * Math.PI) / (n - 1)),
@@ -176,20 +200,20 @@ export function chebyshevNodes(n: number, interval: readonly [number, number] = 
 }
 
 /**
- * Equally spaced nodes on [a, b], including the ends.
+ * Equally spaced nodes on [a, b], including the ends. Returns a tensor (migration, D-009: was `number[]`).
  *
  * @param n - Number of nodes.
  * @param interval - The interval (default [-1, 1]).
- * @returns The nodes, increasing (the midpoint for n = 1).
+ * @returns The nodes `[n]`, increasing (the midpoint for n = 1).
  * @example
  * ```ts
  * import { equispacedNodes } from 'mdml-engine/numerics/interpolate'
  * equispacedNodes(5) // => [-1, -0.5, 0, 0.5, 1]
  * ```
  */
-export function equispacedNodes(n: number, interval: readonly [number, number] = [-1, 1]): number[] {
+export function equispacedNodes(n: number, interval: readonly [number, number] = [-1, 1]): Tensor<'float64', [number]> {
   const [a, b] = interval
-  return Array.from({ length: n }, (_, j) => (n === 1 ? (a + b) / 2 : a + ((b - a) * j) / (n - 1)))
+  return vectorOf(Array.from({ length: n }, (_, j) => (n === 1 ? (a + b) / 2 : a + ((b - a) * j) / (n - 1))))
 }
 
 /**
@@ -212,7 +236,7 @@ export function chebyshevInterpolant(
   n: number,
   interval: readonly [number, number] = [-1, 1],
 ): Barycentric {
-  const nodes = chebyshevNodes(n, interval, 2)
+  const nodes = chebyshevNodesKernel(n, interval, 2)
   const weights = nodes.map((_, j) => (j % 2 === 0 ? 1 : -1) * (j === 0 || j === n - 1 ? 0.5 : 1))
   return barycentric(nodes, f(fromStorage(Float64Array.from(nodes), [n], 'float64')), weights)
 }
@@ -220,19 +244,21 @@ export function chebyshevInterpolant(
 /**
  * The Lebesgue constant of a node set, max over x of sum_j |l_j(x)|, estimated on a fine grid: interpolation error is
  * at most (1 + Lambda) times the best approximation error. It grows like 2^n / (e n log n) for equispaced nodes and like
- * (2 / pi) log n for Chebyshev nodes.
+ * (2 / pi) log n for Chebyshev nodes. Takes the nodes as a tensor-like (migration, D-009: was `readonly number[]`).
  *
- * @param nodes - The nodes.
+ * @param nodes - The nodes `[n]`.
  * @param samples - Grid size for the maximum (default 2000).
  * @returns The estimate.
+ * @throws MdmlError with code `shape` unless `nodes` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { chebyshevNodes, lebesgueConstant } from 'mdml-engine/numerics/interpolate'
  * lebesgueConstant(chebyshevNodes(10)) < 2.5 // => true
  * ```
  */
-export function lebesgueConstant(nodes: readonly number[], samples = 2000): number {
-  const w = barycentricWeights(nodes)
+export function lebesgueConstant(points: TensorLike, samples = 2000): number {
+  const nodes = toVector(points, 'lebesgueConstant')
+  const w = weightsKernel(nodes)
   const a = minOf(nodes)
   const b = maxOf(nodes)
   let best = 0
