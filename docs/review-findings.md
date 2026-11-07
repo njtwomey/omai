@@ -118,7 +118,31 @@ reports; that is the intended, reviewed change.
 The hot-path vector spellings (`Float64Array` against `number[]` against `TensorLike`) are a design question, not a
 restatement, and are left to the cluster review.
 
+## Coverage of the core
+
+`node scripts/review/coverage.mjs <coverage-final.json>` (the engine's whole suite in CI mode with v8 coverage over the
+core: `vitest run --project engine --coverage` with `--coverage.include="src/lib/<domain>/**"`; the engine suite passed,
+25,466 tests, in 565 s). 498 core files: **93.9% of statements, 94.4% of functions, 73.5% of branches**; 642 functions
+never run. Branches are the weak dimension everywhere. By domain (statements / functions / branches): `exposition`
+76.0 / 80.3 / 68.6 (the lowest), `base` 85.0 / 85.7 / 73.3, `tensor` 89.8 / 92.5 / 71.4, `data` 91.4 / 88.2 / 74.2,
+`dists` 92.4 / 90.6 / 68.1 (177 functions never run, the most), `numerics` 94.0 / 95.0 / 71.1 (110), `optim` 95.1 / 95.3 /
+75.0 (108); `losses`, `random`, `kernels`, `scene`, `space` are at 97 or more.
+
+Where the gaps are:
+- **No test reaches** `exposition/subgroups.ts` (43 statements, 12 functions: `subgroupReport`, `subgroupGrid`, ...).
+- **Mostly unrun functions:** `dists/compose/structure.ts` (25 of 113), `dists/continuous/heavy-tailed.ts` (18 of 122),
+  `tensor/ops/indexing.ts` (15 of 86, among them `nonzero`), `data/archives.ts` (14 of 28), `dists/relaxed.ts` (12 of
+  32), `dists/continuous/bounded.ts` (11 of 78), `dists/multivariate/matrix.ts` (10 of 39), `autodiff/custom.ts` (9 of 60),
+  `dists/multivariate/simplex.ts` and `copulas.ts`, `data/batching.ts` (8 of 33).
+- **Low statement coverage in a sizeable file:** `tensor/format.ts` 14.3% of 42, `stats/shrinkage.ts` 76.2% of 151,
+  `data/archives.ts` 77.1% of 153, `base/numbers.ts` 77.2% of 136, `dists/distribution.ts` 73.4% of 128,
+  `numerics/special/_incomplete.ts` 78.0% of 354, `numerics/special/_elliptic.ts` 81.1% of 148.
+
+Caveat: this counts the vitest tests, not the `@example` blocks (run by `scripts/examples.ts`), so some functions listed
+here may be exercised by an example; a function that neither runs is the finding. Many unrun functions are anonymous
+closures (the listing cannot name them).
+
 ## Not yet done
 
-Coverage per file for the core (running), the CPU profile for the hot paths, the cluster reading (Phase 1), and the
+The CPU profile for the hot paths, the cluster reading (Phase 1), and the
 ranking (Phase 2).
