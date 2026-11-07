@@ -47,6 +47,48 @@ others, so you can trust that it agrees with what you already know.
 **9. The code documents itself.** Every folder, file and export is described, and every example in the docs is run by the
 build. A generated index of the main things (`llms.txt`) helps people and tools find their way.
 
+## A closer look: tuning a Gaussian process
+
+A Gaussian process fits a curve through noisy points using a kernel, and the kernel has hyperparameters such as a length
+scale. You usually choose them by maximising the marginal likelihood, which needs its gradient. Here is how you would
+write that gradient by hand from the textbook formula, `1/2 tr((a aᵀ − K⁻¹) ∂K/∂θ)` with `a = K⁻¹ y`:
+
+```ts
+import { gramGradient, rbfKernel } from 'mdml-engine/kernels'
+import { choSolve, cholesky } from 'mdml-engine/numerics/linalg'
+import { add, eye, matmul, mul, outer, reshape, sub, tensor } from 'mdml-engine/tensor'
+
+const x = tensor([[0], [0.7], [1.5], [2.2]])
+const y = tensor([0.1, 0.9, 0.8, -0.2])
+const kernel = rbfKernel({ lengthScale: 1 })
+
+const { gram, gradient: dK } = gramGradient(kernel, x) // K, and how K changes with each hyperparameter
+const L = cholesky(add(gram, mul(eye(4), 0.1))) // add the noise, then factor
+const a = choSolve(L, y)
+const W = sub(outer(a, a), choSolve(L, eye(4)))
+mul(matmul(reshape(W, [1, 16]), reshape(dK, [16, 1])), 0.5) // => [-0.1209288]
+```
+
+The library already has that, for any kernel and any number of hyperparameters, and it agrees to the last digit:
+
+```ts
+import { logMarginalLikelihood } from 'mdml-engine/gp'
+
+logMarginalLikelihood(kernel, x, y, { alpha: 0.1 }).gradient // => [-0.1209288]
+```
+
+And because the gradient is a derivative rule of an ordinary function, `grad` can differentiate through it, so any
+optimiser can tune the kernel:
+
+```ts
+import { grad } from 'mdml-engine/autodiff'
+import { negativeLogMarginalLikelihood } from 'mdml-engine/gp'
+
+grad(negativeLogMarginalLikelihood(kernel, x, y, { alpha: 0.1 }))(tensor([0])) // => [0.1209288]
+```
+
+A finite difference of the likelihood gives the same number, and a test in the repository checks all of them.
+
 ## Packages
 
 | package | what it is |
