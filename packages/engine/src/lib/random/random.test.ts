@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { minOf } from '../base/index.ts'
-import { toFlat } from '../tensor/index.ts'
+import { grad, sum } from '../autodiff/index.ts'
+import { tensor, toFlat, type TensorLike, type Value } from '../tensor/index.ts'
 import {
   aliasSample,
   aliasTable,
@@ -279,4 +280,33 @@ describe('degenerate parameters', () => {
     // log1p keeps the digits of a small p: the mean of the geometric is 1 / p
     expect(mean(geometric(k, 1e-4, [20000]).data) / 1e4).toBeCloseTo(1, 1)
   })
+})
+
+describe('tensor-in samplers (D-009: were number[])', () => {
+  const w = [1, 2, 7]
+  const rules: readonly [string, (x: TensorLike) => readonly number[]][] = [
+    ['dirichlet', (x) => toFlat(dirichlet(key(1), x, 3))],
+    ['categorical', (x) => toFlat(categorical(key(2), x, [20]))],
+    ['multinomial', (x) => toFlat(multinomial(key(3), 50, x, 4))],
+    ['aliasTable', (x) => toFlat(aliasSample(key(4), aliasTable(x), [20]))],
+    ['aliasTable.probability', (x) => toFlat(aliasTable(x).probability)],
+    ['choice', (x) => toFlat(choice(key(5), 3, 2, { replace: false, weights: x }))],
+    ['randomSplit', (x) => randomSplit(key(6), 10, x).flatMap((p) => toFlat(p))],
+  ]
+
+  it.each(rules)(
+    '%s: a tensor, a typed array and a nested array give the same draws; a matrix is a shape error; a traced weight is rejected',
+    (name, run) => {
+      const frac = name === 'randomSplit' ? [0.5, 0.25, 0.25] : w
+      const same = run(frac)
+      expect(run(tensor(frac))).toEqual(same)
+      expect(run(Float64Array.from(frac))).toEqual(same)
+      expect(() => run([frac, frac])).toThrow(expect.objectContaining({ code: 'shape' }))
+      const traced = (x: Value): Value => {
+        run(x)
+        return sum(x)
+      }
+      expect(() => grad(traced)(tensor(frac))).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
+    },
+  )
 })

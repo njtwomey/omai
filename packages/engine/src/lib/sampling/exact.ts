@@ -326,7 +326,7 @@ export interface AliasStep {
  * import { aliasMethod } from 'mdml-engine/sampling'
  * import { key } from 'mdml-engine/random'
  * const r = aliasMethod(key(0), 10, [1, 3], { steps: true })
- * Array.from(r.table.alias) // => [1, 1]
+ * Array.from(r.table.alias.data) // => [1, 1]
  * r.steps?.length // => 1
  * ```
  */
@@ -364,7 +364,10 @@ export function aliasMethod(
     probability[i] = 1
     alias[i] = i
   }
-  const table: AliasTable = { probability, alias }
+  const table: AliasTable = {
+    probability: fromStorage(probability, [k], 'float64'),
+    alias: fromStorage(alias, [k], 'int32'),
+  }
   const draws = Float64Array.from(aliasSample(key, table, [n]).data)
   return { samples: fromStorage(draws, [n], 'float64'), table, ...(options.steps === true ? { steps } : {}) }
 }
