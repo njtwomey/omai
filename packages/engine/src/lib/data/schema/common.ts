@@ -94,9 +94,6 @@ export type Dataset =
   | ImageData
   | TrajectoryData
 
-/** A per-row field: a tensor whose first axis is the row, or a plain array with one entry per row. */
-export type RowColumn = Tensor | readonly unknown[]
-
 const ROW_FIELDS: Readonly<Record<DatasetKind, readonly string[]>> = {
   regression: ['x', 'y', 'weights'],
   classification: ['x', 'y', 'weights'],
