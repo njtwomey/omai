@@ -6,39 +6,37 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import type { Complex } from '../exposition/index.ts'
 import { children } from './_node.ts'
 import { KNOWN_FUNCTIONS } from './_order.ts'
 import type { Expr } from './expr.ts'
 
-/** A complex number as [re, im]. @internal */
-export type C = readonly [number, number]
-
 /** Numeric implementations supplied by the caller for functions symbolic cannot evaluate itself (erf, gamma, f). */
 export type NumericFunctions = Readonly<Record<string, (...args: number[]) => number>>
 
-const cadd = (a: C, b: C): C => [a[0] + b[0], a[1] + b[1]]
-const cmul = (a: C, b: C): C => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]
-function cdiv(a: C, b: C): C {
+const cadd = (a: Complex, b: Complex): Complex => [a[0] + b[0], a[1] + b[1]]
+const cmul = (a: Complex, b: Complex): Complex => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]
+function cdiv(a: Complex, b: Complex): Complex {
   const d = b[0] * b[0] + b[1] * b[1]
   return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]
 }
-const cexp = (a: C): C => {
+const cexp = (a: Complex): Complex => {
   const r = Math.exp(a[0])
   return [r * Math.cos(a[1]), r * Math.sin(a[1])]
 }
-const clog = (a: C): C => [Math.log(Math.hypot(a[0], a[1])), Math.atan2(a[1], a[0])]
-function csqrt(a: C): C {
+const clog = (a: Complex): Complex => [Math.log(Math.hypot(a[0], a[1])), Math.atan2(a[1], a[0])]
+function csqrt(a: Complex): Complex {
   const r = Math.hypot(a[0], a[1])
   const re = Math.sqrt((r + a[0]) / 2)
   const im = Math.sqrt(Math.max(0, (r - a[0]) / 2))
   // A negative zero imaginary part selects the lower side of the branch cut, as numpy's csqrt.
   return [re, a[1] < 0 || Object.is(a[1], -0) ? -im : im]
 }
-function cpow(a: C, b: C): C {
+function cpow(a: Complex, b: Complex): Complex {
   if (b[1] === 0 && Number.isInteger(b[0]) && Math.abs(b[0]) <= 64) {
     let k = Math.abs(b[0])
     let base = a
-    let out: C = [1, 0]
+    let out: Complex = [1, 0]
     while (k > 0) {
       if (k & 1) out = cmul(out, base)
       base = cmul(base, base)
@@ -50,15 +48,15 @@ function cpow(a: C, b: C): C {
   if (b[1] === 0 && b[0] === 0.5) return csqrt(a)
   return cexp(cmul(b, clog(a)))
 }
-const csin = (a: C): C => [Math.sin(a[0]) * Math.cosh(a[1]), Math.cos(a[0]) * Math.sinh(a[1])]
-const ccos = (a: C): C => [Math.cos(a[0]) * Math.cosh(a[1]), -Math.sin(a[0]) * Math.sinh(a[1])]
-const csinh = (a: C): C => [Math.sinh(a[0]) * Math.cos(a[1]), Math.cosh(a[0]) * Math.sin(a[1])]
-const ccosh = (a: C): C => [Math.cosh(a[0]) * Math.cos(a[1]), Math.sinh(a[0]) * Math.sin(a[1])]
-const I1: C = [0, 1]
-const ONE_C: C = [1, 0]
-const neg = (a: C): C => [-a[0], -a[1]]
+const csin = (a: Complex): Complex => [Math.sin(a[0]) * Math.cosh(a[1]), Math.cos(a[0]) * Math.sinh(a[1])]
+const ccos = (a: Complex): Complex => [Math.cos(a[0]) * Math.cosh(a[1]), -Math.sin(a[0]) * Math.sinh(a[1])]
+const csinh = (a: Complex): Complex => [Math.sinh(a[0]) * Math.cos(a[1]), Math.cosh(a[0]) * Math.sin(a[1])]
+const ccosh = (a: Complex): Complex => [Math.cosh(a[0]) * Math.cos(a[1]), Math.sinh(a[0]) * Math.sin(a[1])]
+const I1: Complex = [0, 1]
+const ONE_C: Complex = [1, 0]
+const neg = (a: Complex): Complex => [-a[0], -a[1]]
 
-function complexFn(name: string, z: C): C | undefined {
+function complexFn(name: string, z: Complex): Complex | undefined {
   switch (name) {
     case 'exp':
       return cexp(z)
@@ -87,7 +85,7 @@ function complexFn(name: string, z: C): C | undefined {
     case 'asin':
       return cmul(neg(I1), clog(cadd(cmul(I1, z), csqrt(cadd(ONE_C, neg(cmul(z, z)))))))
     case 'acos': {
-      const s = complexFn('asin', z) as C
+      const s = complexFn('asin', z) as Complex
       return [Math.PI / 2 - s[0], -s[1]]
     }
     case 'atan':
@@ -128,7 +126,11 @@ function complexFn(name: string, z: C): C | undefined {
  * evaluated (an unbound symbol, an undefined function, a relation).
  * @internal
  */
-export function evalComplex(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFunctions = {}): C | undefined {
+export function evalComplex(
+  e: Expr,
+  env: ReadonlyMap<string, Complex>,
+  fns: NumericFunctions = {},
+): Complex | undefined {
   switch (e.kind) {
     case 'num':
       return [Number(e.n) / Number(e.d), 0]
@@ -144,7 +146,7 @@ export function evalComplex(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFu
       if (e.name === '-oo') return [Number.NEGATIVE_INFINITY, 0]
       return undefined
     case 'add': {
-      let s: C = [0, 0]
+      let s: Complex = [0, 0]
       for (const a of e.args) {
         const v = evalComplex(a, env, fns)
         if (v === undefined) return undefined
@@ -154,7 +156,7 @@ export function evalComplex(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFu
     }
     case 'mul': {
       // A real coefficient scales both parts (so -x of a real x has a negative zero imaginary part, as in numpy).
-      let s: C = ONE_C
+      let s: Complex = ONE_C
       let scale = 1
       for (const a of e.args) {
         if (a.kind === 'num' || a.kind === 'float') {
@@ -173,7 +175,7 @@ export function evalComplex(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFu
       return b === undefined || x === undefined ? undefined : cpow(b, x)
     }
     case 'fn': {
-      const args: C[] = []
+      const args: Complex[] = []
       for (const a of e.args) {
         const v = evalComplex(a, env, fns)
         if (v === undefined) return undefined
@@ -185,7 +187,7 @@ export function evalComplex(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFu
         return [user(...args.map((z) => z[0])), 0]
       }
       if (e.name === 'atan2' && args.length === 2) {
-        const [y, x] = args as [C, C]
+        const [y, x] = args as [Complex, Complex]
         return y[1] === 0 && x[1] === 0 ? [Math.atan2(y[0], x[0]), 0] : undefined
       }
       const z = args[0]
@@ -204,7 +206,7 @@ export function evalComplex(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFu
   }
 }
 
-function evalCondition(c: Expr, env: ReadonlyMap<string, C>, fns: NumericFunctions): boolean | undefined {
+function evalCondition(c: Expr, env: ReadonlyMap<string, Complex>, fns: NumericFunctions): boolean | undefined {
   if (c.kind === 'const') return c.name === 'true' ? true : c.name === 'false' ? false : undefined
   if (c.kind === 'rel') {
     const a = evalComplex(c.lhs, env, fns)
@@ -233,7 +235,7 @@ function isConstant(e: Expr): boolean {
 }
 
 /** The complex value of a constant expression (SymPy's `is_number` and `complex()`), or undefined. @internal */
-export function evalComplexConstant(e: Expr): C | undefined {
+export function evalComplexConstant(e: Expr): Complex | undefined {
   if (!isConstant(e)) return undefined
   if (e.kind === 'const' && (e.name === 'zoo' || e.name === 'nan')) return undefined
   const v = evalComplex(e, new Map())
@@ -245,7 +247,7 @@ export function evalComplexConstant(e: Expr): C | undefined {
  * @internal
  */
 export function evalReal(e: Expr, env: Readonly<Record<string, number>>, fns: NumericFunctions = {}): number {
-  const m = new Map<string, C>()
+  const m = new Map<string, Complex>()
   for (const [k, v] of Object.entries(env)) m.set(k, [v, 0])
   const missing = freeNames(e).filter((n) => !m.has(n))
   if (missing.length > 0) throw new MdmlError('value', `evaluate: no value for ${missing.join(', ')}`)
@@ -253,7 +255,7 @@ export function evalReal(e: Expr, env: Readonly<Record<string, number>>, fns: Nu
   return v
 }
 
-function evalReal1(e: Expr, env: ReadonlyMap<string, C>, fns: NumericFunctions): number {
+function evalReal1(e: Expr, env: ReadonlyMap<string, Complex>, fns: NumericFunctions): number {
   // Real arithmetic where possible (exact branch cuts as numpy), complex only for intermediate values.
   switch (e.kind) {
     case 'pow': {

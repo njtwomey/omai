@@ -28,8 +28,6 @@ import {
   type Value,
 } from '../tensor/index.ts'
 
-type Bijector = bijectors.Bijector
-
 /**
  * A target for Monte Carlo: an unnormalised log density on R^dim with its gradient, the map back to the model's
  * constrained space, and (when it was built from a differentiable function) that function, for samplers that need
@@ -194,7 +192,7 @@ export function numericTarget(
  * log p(f(u)) + log |det df/du| as one scalar: the bijector's log-Jacobian is summed over every axis, so elementwise
  * (rank-0) bijectors on a vector work as well as vector bijectors (the target has no batch axes).
  */
-function changeOfVariables(logDensity: (y: Value) => Value, bijector: Bijector): (u: Value) => Value {
+function changeOfVariables(logDensity: (y: Value) => Value, bijector: bijectors.Bijector): (u: Value) => Value {
   return (u) => add(sum(logDensity(bijector.forward(u))), sum(bijector.forwardLogDetJacobian(u)))
 }
 
@@ -283,14 +281,14 @@ export function targetFromDistribution(
  */
 export function unconstrainedTarget(
   fn: (y: Value) => Value,
-  transform: readonly Support[] | Bijector,
+  transform: readonly Support[] | bijectors.Bijector,
   dim: number,
   options: TargetOptions = {},
 ): LogDensity {
   checkDim(dim, 'unconstrainedTarget')
   const bijector = Array.isArray(transform)
     ? elementwise(transform as readonly Support[], dim)
-    : (transform as Bijector)
+    : (transform as bijectors.Bijector)
   const density = changeOfVariables(fn, bijector)
   const base = target((x) => density(x), dim, options)
   return {
@@ -304,7 +302,7 @@ export function unconstrainedTarget(
 const ELEMENTWISE = new Set(['real', 'positive', 'nonNegative', 'interval', 'greaterThan', 'lessThan', 'unitInterval'])
 
 /** One rank-0 bijector per coordinate, applied to the split vector. */
-function elementwise(supports: readonly Support[], dim: number): Bijector {
+function elementwise(supports: readonly Support[], dim: number): bijectors.Bijector {
   if (supports.length !== dim) {
     throw new MdmlError('shape', `unconstrainedTarget: ${supports.length} supports for ${dim} coordinates`)
   }
@@ -314,8 +312,8 @@ function elementwise(supports: readonly Support[], dim: number): Bijector {
     }
   }
   const parts = supports.map((s) => bijectors.bijectorForSupport(s))
-  const each = (x: TensorLike, f: (b: Bijector, xi: Value) => Value): Value =>
-    concat(split(x, dim).map((xi, i) => f(parts[i] as Bijector, xi)))
+  const each = (x: TensorLike, f: (b: bijectors.Bijector, xi: Value) => Value): Value =>
+    concat(split(x, dim).map((xi, i) => f(parts[i] as bijectors.Bijector, xi)))
   return bijectors.defineBijector({
     name: 'elementwise',
     inputRank: 1,

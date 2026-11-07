@@ -5,10 +5,9 @@
  * single ray for figures.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, type Vec3 } from '../base/index.ts'
 import { dotProduct } from '../foundations/index.ts'
 import type { Key } from '../random/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import {
   add,
   div,

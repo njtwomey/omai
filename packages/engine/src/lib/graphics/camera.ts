@@ -5,11 +5,11 @@
  * and box culling tests.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { applyHomogeneous } from '../foundations/index.ts'
 import { ddot } from '../numerics/linalg/blas.ts'
 import { type Key, uniform } from '../random/index.ts'
-import type { Camera as SceneCamera, Vec3 } from '../scene/index.ts'
+import type { Camera as SceneCamera } from '../scene/index.ts'
 import { add, mul, promoteFloat, sliceAxis, squeeze, stack, sub, type TensorLike, type Value } from '../tensor/index.ts'
 import { check3, cross3, dot3, madd3, normalise3, sub3 } from './_vec3.ts'
 
@@ -509,7 +509,7 @@ export function cameraRays(
 // ------------------------------------------------------------------------------------------------- frustum tests
 
 /** A plane `a x + b y + c z + d = 0` with unit normal `(a, b, c)` pointing into the frustum. */
-export type Plane4 = readonly [number, number, number, number]
+export type Plane4 = readonly [a: number, b: number, c: number, d: number]
 
 /**
  * The six planes of the view frustum of a view-projection matrix (Gribb and Hartmann's extraction: rows of the

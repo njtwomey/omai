@@ -12,6 +12,6 @@ Classical computer vision, OpenCV-shaped, available as `mdml-engine/vision`: col
 
 - function `cvtColor`: Convert between colour spaces, like cv2.cvtColor. `src/lib/vision/colour.ts:361` `mdml-engine/vision`
 - function `fast`: FAST-9 corner detector. `src/lib/vision/fast.ts:92` `mdml-engine/vision`
-- function `findHomography`: Robust homography from point correspondences. `src/lib/vision/geometry.ts:258` `mdml-engine/vision`
+- function `findHomography`: Robust homography from point correspondences. `src/lib/vision/geometry.ts:257` `mdml-engine/vision`
 - function `orb`: ORB keypoint descriptors; matchDescriptors in matching.ts. `src/lib/vision/descriptors.ts:230` `mdml-engine/vision`
 - function `threshold`: Global thresholding: binary, truncate, to-zero and inverse variants. `src/lib/vision/thresholds.ts:40` `mdml-engine/vision`

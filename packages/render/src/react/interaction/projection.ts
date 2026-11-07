@@ -4,8 +4,7 @@
  * ECharts chart.
  */
 
-/** A point, in data or pixel coordinates. */
-export type Point2 = readonly [number, number]
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 
 /**
  * The map between a figure's data coordinates and the pixels of its drawing area (origin top left, y down), which

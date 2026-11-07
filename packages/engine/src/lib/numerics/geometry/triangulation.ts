@@ -4,11 +4,14 @@
  * alpha shapes, the boundary of the triangles below a circumradius.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, type Vec2 } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 
-/** A point in the plane. */
-export type Point2 = readonly [number, number]
+/**
+ * A point in the plane, `[x, y]`: the position type of polygons, triangulations, contours, outlines, rasterisation and
+ * the interaction overlays of mdml-render, so a signature says it takes a place and not any pair. A `Vec2` of `base`.
+ */
+export type Point2 = Vec2
 
 /** A Delaunay triangulation of planar points. */
 export interface Delaunay {
@@ -103,7 +106,7 @@ export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
   const s0 = n
   const s1 = n + 1
   const s2 = n + 2
-  type Tri = [number, number, number]
+  type Tri = [a: number, b: number, c: number]
   let tris: Tri[] = [[s0, s1, s2]]
   let alive: boolean[] = [true]
   const at = (i: number): Point2 => work[i] as Point2

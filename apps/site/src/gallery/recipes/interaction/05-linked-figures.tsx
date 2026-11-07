@@ -1,4 +1,5 @@
 import { iris } from 'mdml-engine/datasets'
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 import { toArray } from 'mdml-engine/tensor'
 import { cartesian, points } from 'mdml-render/charts'
 import { brushSelection, figure, linkStore } from 'mdml-render/figure'
@@ -9,7 +10,6 @@ import {
   InteractionOverlay,
   NearestHover,
   Overlaid,
-  type Point2,
   useChartProjection,
   useColourMode,
   useLinkState,

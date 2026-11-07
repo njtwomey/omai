@@ -4,8 +4,8 @@
  * (shadow) traversal with statistics of the work done, and the hierarchy as a drawable tree.
  */
 
-import { MdmlError } from '../base/index.ts'
-import { type Structure, type StructureEdge, type StructureNode, structure, type Vec3 } from '../scene/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
+import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import type { Ray } from './camera.ts'
 import { bounds, type Hit, intersect, RAY_EPSILON, type Shape, slabs } from './intersect.ts'
 

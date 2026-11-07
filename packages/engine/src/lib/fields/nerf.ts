@@ -7,9 +7,9 @@
  * with a second (fine) network, and composites by `volumeRender`.
  */
 
+import type { Vec3 } from '../base/index.ts'
 import { type ApplyContext, Composite, initKey, Linear, mlp, type Params, ReLU, Sequential } from '../nn/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { concat, fromStorage, primalOf, relu, reshape, sigmoid, softplus, type Value } from '../tensor/index.ts'
 import { hierarchicalSamples, type Planes, stratifiedSamples } from './sampling.ts'

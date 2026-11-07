@@ -96,7 +96,7 @@ const SHAPES: Readonly<Record<string, (p: readonly number[]) => number>> = {
 }
 
 /** Apply a pointwise function of a coordinate row to a matrix value `[m, d]`, giving `[m, k]` (or `[m]` for k = 1 and `flat`). */
-function pointwise(points: Value, k: number, f: (p: number[]) => number[]): Value {
+function pointwise(points: Value, k: number, f: (p: number[]) => readonly number[]): Value {
   const m = points.shape[0] ?? 0
   const d = points.shape[1] ?? 1
   const flat = toFlat(points)
@@ -170,7 +170,7 @@ export const signedDistance: DatasetGenerator<RegressionData> = {
   },
 }
 
-type Rgb = [number, number, number]
+type Rgb = readonly [r: number, g: number, b: number]
 
 const BACKGROUND: Rgb = [0.1, 0.14, 0.32]
 

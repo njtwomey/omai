@@ -7,7 +7,7 @@
  * prediction with its aleatoric and epistemic uncertainty.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { digamma, lgamma, log1mexp } from '../numerics/special/index.ts'
 import {
@@ -38,7 +38,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
+import { type LossOptions, reduce } from './_reduce.ts'
 
 /**
  * Negative log-likelihood of observations under any distribution: -log p(x), reduced. Gradients flow to the

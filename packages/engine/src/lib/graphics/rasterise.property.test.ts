@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
+import type { Vec3 } from '../base/index.ts'
 import { barycentric } from '../foundations/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import { toArray } from '../tensor/index.ts'
 import {
   clipPolygon,

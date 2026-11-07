@@ -1,7 +1,8 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
+import type { Vec3 } from '../base/index.ts'
 import { camera, project, projectPoint } from './projection.ts'
-import { face3d, point3d, scene3d, segment3d, type Vec3 } from './three-d.ts'
+import { face3d, point3d, scene3d, segment3d } from './three-d.ts'
 
 const coord = fc.double({ min: -3, max: 3, noNaN: true, noDefaultInfinity: true })
 const vec: fc.Arbitrary<Vec3> = fc.tuple(coord, coord, coord)

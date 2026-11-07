@@ -5,9 +5,7 @@
  */
 
 import { MdmlError } from 'mdml-engine/base'
-
-/** A point `[x, y]`. */
-export type XY = readonly [number, number]
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 
 /**
  * Largest-triangle-three-buckets downsampling (Steinarsson, 2013, "Downsampling time series for visual
@@ -24,11 +22,11 @@ export type XY = readonly [number, number]
  * lttb([[0, 0], [1, 5], [2, 0], [3, 1], [4, 0]], 3) // => [[0, 0], [1, 5], [4, 0]]
  * ```
  */
-export function lttb(points: readonly XY[], threshold: number): XY[] {
+export function lttb(points: readonly Point2[], threshold: number): Point2[] {
   const n = points.length
   if (threshold >= n) return [...points]
   if (!(threshold >= 3)) throw new MdmlError('value', 'lttb: keep at least 3 points')
-  const out: XY[] = [points[0] as XY]
+  const out: Point2[] = [points[0] as Point2]
   const every = (n - 2) / (threshold - 2)
   let a = 0
   for (let i = 0; i < threshold - 2; i++) {
@@ -56,10 +54,10 @@ export function lttb(points: readonly XY[], threshold: number): XY[] {
         chosen = j
       }
     }
-    out.push(points[chosen] as XY)
+    out.push(points[chosen] as Point2)
     a = chosen
   }
-  out.push(points[n - 1] as XY)
+  out.push(points[n - 1] as Point2)
   return out
 }
 
@@ -76,10 +74,10 @@ export function lttb(points: readonly XY[], threshold: number): XY[] {
  * minMaxDecimate([[0, 1], [1, 3], [2, 2], [3, 0], [4, 1], [5, 2]], 1) // => [[0, 1], [1, 3], [3, 0], [5, 2]]
  * ```
  */
-export function minMaxDecimate(points: readonly XY[], buckets: number): XY[] {
+export function minMaxDecimate(points: readonly Point2[], buckets: number): Point2[] {
   const n = points.length
   if (buckets <= 0 || 2 * buckets + 2 >= n) return [...points]
-  const out: XY[] = []
+  const out: Point2[] = []
   const size = n / buckets
   for (let b = 0; b < buckets; b++) {
     const start = Math.floor(b * size)
@@ -90,10 +88,10 @@ export function minMaxDecimate(points: readonly XY[], buckets: number): XY[] {
       if ((points[j]?.[1] ?? 0) < (points[lo]?.[1] ?? 0)) lo = j
       if ((points[j]?.[1] ?? 0) > (points[hi]?.[1] ?? 0)) hi = j
     }
-    for (const j of lo === hi ? [lo] : [Math.min(lo, hi), Math.max(lo, hi)]) out.push(points[j] as XY)
+    for (const j of lo === hi ? [lo] : [Math.min(lo, hi), Math.max(lo, hi)]) out.push(points[j] as Point2)
   }
-  const first = points[0] as XY
-  const last = points[n - 1] as XY
+  const first = points[0] as Point2
+  const last = points[n - 1] as Point2
   if (out[0] !== first) out.unshift(first)
   if (out[out.length - 1] !== last) out.push(last)
   return out
@@ -117,7 +115,7 @@ export function decimate(
   target = 1000,
   x?: readonly number[],
 ): { readonly x: number[]; readonly y: number[] } {
-  const pts: XY[] = y.map((v, i) => [x?.[i] ?? i, v])
+  const pts: Point2[] = y.map((v, i) => [x?.[i] ?? i, v])
   const kept = lttb(pts, Math.max(3, target))
   return { x: kept.map((p) => p[0]), y: kept.map((p) => p[1]) }
 }

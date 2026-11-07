@@ -7,7 +7,7 @@
  * off a classifier's outputs.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import {
   add,
   asTensor,
@@ -27,7 +27,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type Reduction, reduce } from './_reduce.ts'
+import { reduce } from './_reduce.ts'
 
 /** A log-probability low enough to vanish from every sum and high enough not to overflow when added to. */
 const NEG = -1e30

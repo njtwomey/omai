@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import type { Point2 } from './rasterise.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 
 /** One stroke of a drawing: its points, and whether it closes on itself. */
 export interface Stroke {

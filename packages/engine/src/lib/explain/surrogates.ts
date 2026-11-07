@@ -447,8 +447,7 @@ function anchorsRun(
     for (let i = 0; i < tr.n; i++) if (rule.every((j) => inBin(j, tr.data[i * d + j] ?? 0))) c++
     return c / tr.n
   }
-  type Arm = AnchorArm
-  const pull = (arm: Arm, k: Key): void => {
+  const pull = (arm: AnchorArm, k: Key): void => {
     const rows = toFlat(randint(foldIn(k, 0), [batch], 0, tr.n))
     const data = new Float64Array(batch * d)
     rows.forEach((r, s) => {
@@ -463,7 +462,7 @@ function anchorsRun(
     arm.hits += out.filter((v) => v === target).length
     arm.pulls += batch
   }
-  const level = (arm: Arm, t: number): number => Math.log((1.1 * d * t ** 1.1) / delta) / Math.max(arm.pulls, 1)
+  const level = (arm: AnchorArm, t: number): number => Math.log((1.1 * d * t ** 1.1) / delta) / Math.max(arm.pulls, 1)
   const algorithm: Algorithm<AnchorState, AnchorPath> = {
     name: 'anchors',
     config: { features: d, threshold: tau, beamSize: beam },
@@ -477,7 +476,7 @@ function anchorsRun(
     step: (s, ctx) => {
       // Candidates: each beam rule extended by one new feature.
       const seen = new Set<string>()
-      const arms: Arm[] = []
+      const arms: AnchorArm[] = []
       for (const b of s.beam) {
         for (let j = 0; j < d; j++) {
           if (b.rule.includes(j)) continue

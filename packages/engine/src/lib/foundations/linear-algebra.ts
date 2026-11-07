@@ -5,7 +5,7 @@
  * characteristic polynomials, small eigenproblems and diagonalisation, quadratic forms, and the geometry of the SVD.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { MdmlError, maxOf, type Vec3 } from '../base/index.ts'
 import { eigh, eigvals, eigvalsh, lstsq, nullSpace, pinv, svd } from '../numerics/linalg/index.ts'
 import {
   arrow,
@@ -19,7 +19,6 @@ import {
   scene,
   scene3d,
   segment3d,
-  type Vec3,
 } from '../scene/index.ts'
 import { matmul, mul, promoteFloat, sum, type TensorLike, toArray, toFlat, type Value } from '../tensor/index.ts'
 

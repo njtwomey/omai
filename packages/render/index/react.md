@@ -54,8 +54,8 @@ Interaction overlays laid over any figure through a projection between data and 
 - function `Brush`: React component: drag out a data-space rectangle: `<Brush value={rect} onChange={setRect} />` `src/react/interaction/Brush.tsx:20` `mdml-render/react`
 - function `DraggableLine`: React component: a threshold line dragged across a figure: `<DraggableLine axis="x" value={t} onChange={setT} />` `src/react/interaction/DraggableLine.tsx:43` `mdml-render/react`
 - function `DraggablePoints`: React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />` `src/react/interaction/DraggablePoints.tsx:45` `mdml-render/react`
-- function `InteractionOverlay`: React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...` `src/react/interaction/InteractionOverlay.tsx:45` `mdml-render/react`
-- function `Overlaid`: React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>` `src/react/interaction/InteractionOverlay.tsx:91` `mdml-render/react`
+- function `InteractionOverlay`: React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...` `src/react/interaction/InteractionOverlay.tsx:46` `mdml-render/react`
+- function `Overlaid`: React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>` `src/react/interaction/InteractionOverlay.tsx:92` `mdml-render/react`
 - function `Probe`: React component: a crosshair reporting the data point under the pointer: `<Probe onProbe={setPoint} />` `src/react/interaction/Probe.tsx:19` `mdml-render/react`
 - function `useChartProjection`: React hook: projection of a live Chart for overlays: `useChartProjection()` `src/react/interaction/useChartProjection.ts:18` `mdml-render/react`
 - function `useLinkState`: React hook: read hover, selection and brush shared by linked figures: `useLinkState(store)` `src/react/interaction/useLinkState.ts:17` `mdml-render/react`

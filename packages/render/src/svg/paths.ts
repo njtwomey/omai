@@ -3,8 +3,7 @@
  * (Catmull-Rom splines as cubic Bézier segments), and arrow-head triangles.
  */
 
-/** A point `[x, y]`. */
-type Pt = readonly [number, number]
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 
 /**
  * SVG path data of a polyline or polygon through points.
@@ -18,7 +17,7 @@ type Pt = readonly [number, number]
  * straightPathData([[0, 0], [1, 2]], true) // => 'M0,0L1,2Z'
  * ```
  */
-export function straightPathData(points: readonly Pt[], closed = false): string {
+export function straightPathData(points: readonly Point2[], closed = false): string {
   const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join('')
   return closed && points.length > 0 ? `${d}Z` : d
 }
@@ -36,10 +35,10 @@ export function straightPathData(points: readonly Pt[], closed = false): string 
  * smoothPathData([[0, 0], [1, 1], [2, 0]]).startsWith('M0,0C') // => true
  * ```
  */
-export function smoothPathData(points: readonly Pt[], closed = false): string {
+export function smoothPathData(points: readonly Point2[], closed = false): string {
   const n = points.length
   if (n < 3) return straightPathData(points, closed)
-  const at = (i: number): Pt => points[closed ? (i + n) % n : Math.min(Math.max(i, 0), n - 1)] as Pt
+  const at = (i: number): Point2 => points[closed ? (i + n) % n : Math.min(Math.max(i, 0), n - 1)] as Point2
   const first = at(0)
   let d = `M${first[0]},${first[1]}`
   const segments = closed ? n : n - 1
@@ -65,7 +64,7 @@ export function smoothPathData(points: readonly Pt[], closed = false): string {
  * arrowHeadPoints([0, 0], [10, 0], 4) // => '10,0 6,1.8 6,-1.8'
  * ```
  */
-export function arrowHeadPoints(from: Pt, to: Pt, size: number): string {
+export function arrowHeadPoints(from: Point2, to: Point2, size: number): string {
   const dx = to[0] - from[0]
   const dy = to[1] - from[1]
   const len = Math.hypot(dx, dy) || 1

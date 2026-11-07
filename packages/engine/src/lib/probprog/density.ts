@@ -61,8 +61,6 @@ import {
 } from './handlers.ts'
 import type { Message, Model } from './primitives.ts'
 
-type Bijector = bijectors.Bijector
-
 const PLATE_GUESS = 8
 
 /** Options of {@link logJoint}. */
@@ -191,7 +189,7 @@ export interface LatentLayout {
   readonly unconstrainedShape: readonly number[]
   readonly support: Support
   /** From the unconstrained to the constrained value (at the prototype trace). */
-  readonly bijector: Bijector
+  readonly bijector: bijectors.Bijector
   readonly offset: number
   readonly size: number
 }

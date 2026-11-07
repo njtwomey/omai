@@ -228,7 +228,7 @@ export function sortTrack(
 }
 
 /** A window [x, y, width, height]. */
-export type Rect = [number, number, number, number]
+export type Rect = [x: number, y: number, width: number, height: number]
 
 const intersect = (a: Rect, w: number, h: number): Rect => {
   const x1 = Math.max(a[0], 0)

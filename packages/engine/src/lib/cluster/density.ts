@@ -460,7 +460,7 @@ export const optics: IterativeEstimator<OpticsHyper, OpticsState, OpticsParams, 
 // HDBSCAN
 
 /** One row of HDBSCAN's condensed tree: a parent cluster, a child (a point below n, a cluster above), lambda, size. */
-export type CondensedRow = [number, number, number, number]
+export type CondensedRow = [parent: number, child: number, lambda: number, size: number]
 
 /** The edges of the complete graph on n points weighted by mutual reachability, in the order Kruskal takes them. */
 interface MutualReachabilityEdges {

@@ -36,7 +36,7 @@ Fourier transforms, numpy.fft and scipy.fft style: the FFT for every length (rea
 Computational geometry: distances and metrics (scipy.spatial.distance), convex hulls, polygons and clipping, Delaunay triangulations and Voronoi diagrams, segment collision primitives, contours and confidence ellipses, and rotations, homographies and point-set alignment.
 
 - function `cdist`: Pairwise distances between two sets of points, scipy metrics. `src/lib/numerics/geometry/distances.ts:275` `mdml-engine/numerics/geometry`
-- function `delaunay`: Delaunay triangulation of planar points. `src/lib/numerics/geometry/triangulation.ts:82` `mdml-engine/numerics/geometry`
+- function `delaunay`: Delaunay triangulation of planar points. `src/lib/numerics/geometry/triangulation.ts:85` `mdml-engine/numerics/geometry`
 
 ## numerics/interpolate
 

@@ -5,6 +5,7 @@
  * data, can be rendered exactly (`renderMultiView`) and a fitted model judged on views it never saw.
  */
 
+import type { Vec3 } from '../base/index.ts'
 import { type DatasetGenerator, type ImageData, images, type Knobs, type Truth } from '../data/index.ts'
 import {
   box,
@@ -20,7 +21,6 @@ import {
   sphere,
 } from '../graphics/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { stamp } from './_util.ts'

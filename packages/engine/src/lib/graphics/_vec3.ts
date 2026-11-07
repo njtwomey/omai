@@ -1,9 +1,8 @@
 // Number-level 3-vector kernels on `Vec3` tuples, for the per-ray and per-pixel loops of the renderers (the
 // differentiable forms are the tensor operations and `foundations/vectors.ts`). Dot products and norms come from the
 // shared BLAS kernels.
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { ddot, dnrm2 } from '../numerics/linalg/blas.ts'
-import type { Vec3 } from '../scene/index.ts'
 
 export const dot3 = (a: Vec3, b: Vec3): number => ddot(a, b)
 export const add3 = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]]

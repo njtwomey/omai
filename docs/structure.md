@@ -478,6 +478,10 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 - `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
   (`defaultTolerance`, `resolveTolerance`, `defaultReduction`, `defaultAlternative`, `defaultConfidenceLevel`,
   `resolveConfidenceLevel`).
+- `vectors.ts`: the canonical fixed-size tuples `Vec2`, `Vec3`, `Vec4` (labelled, readonly). A point, colour, complex number,
+  quaternion or plane is a labelled tuple of the same arity when its element names matter and the canonical type
+  otherwise; a same-concept alias of one (`type Pt = Vec2`) is not written (`scripts/type-definitions.ts`, run by
+  `make lint`). Variable-length vectors and matrices are tensors.
 - `version.ts`: `VERSION`, generated from `package.json`.
 
 ### 4.2 `scene/`: pictures and structures as data

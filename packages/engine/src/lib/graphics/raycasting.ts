@@ -5,19 +5,8 @@
  * view cone and the cells each ray visits.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
-import {
-  circle,
-  line,
-  palettes,
-  parsePaint,
-  polygon,
-  rect,
-  type Scene,
-  type SceneNode,
-  scene,
-  type Vec3,
-} from '../scene/index.ts'
+import { type Json, MdmlError, type Vec3 } from '../base/index.ts'
+import { circle, line, palettes, parsePaint, polygon, rect, type Scene, type SceneNode, scene } from '../scene/index.ts'
 import { concreteOrThrow, fromStorage } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { cellIndex, hasWall, type Pose, terrainOf, toScene, type World } from '../worlds/index.ts'

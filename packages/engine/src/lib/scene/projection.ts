@@ -4,9 +4,9 @@
  * algorithm (farthest first), including the 3-D layers embedded in 2-D scenes.
  */
 
-import { clamp, MdmlError } from '../base/index.ts'
+import { clamp, MdmlError, type Vec3 } from '../base/index.ts'
 import { arrow, group, line, polygon, scene, tex, text } from './build.ts'
-import type { Item3D, Scene3D, Vec3 } from './three-d.ts'
+import type { Item3D, Scene3D } from './three-d.ts'
 import type { Layer3DNode, NodeBase, Paint, Scene, SceneNode, Style } from './types.ts'
 
 /**

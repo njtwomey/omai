@@ -7,6 +7,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Raster, rasterOf, rasterTensor } from './_image.ts'
 import type { Contour } from './contours.ts'
@@ -23,8 +24,6 @@ export interface StrokeOptions {
   /** 8- or 4-connected lines, or 'aa' for anti-aliased (default 8). */
   readonly lineType?: 4 | 8 | 'aa'
 }
-
-type P = readonly [number, number]
 
 /** A mutable canvas over a copy of the image's samples. */
 class Canvas {
@@ -141,7 +140,7 @@ export function linePixels(
   return out
 }
 
-function stroke(c: Canvas, a: P, b: P, options: StrokeOptions): void {
+function stroke(c: Canvas, a: Point2, b: Point2, options: StrokeOptions): void {
   const t = options.thickness ?? 1
   const type = options.lineType ?? 8
   if (type === 'aa' && t <= 1) {
@@ -154,7 +153,7 @@ function stroke(c: Canvas, a: P, b: P, options: StrokeOptions): void {
 }
 
 /** Xiaolin Wu's anti-aliased line: two pixels per step, weighted by the fractional distance. */
-function wu(c: Canvas, a: P, b: P): void {
+function wu(c: Canvas, a: Point2, b: Point2): void {
   let [x0, y0] = a
   let [x1, y1] = b
   const steep = Math.abs(y1 - y0) > Math.abs(x1 - x0)
@@ -178,7 +177,7 @@ function wu(c: Canvas, a: P, b: P): void {
 }
 
 /** Fill a polygon by even-odd scanlines through pixel centres. */
-function fill(c: Canvas, polys: readonly (readonly P[])[]): void {
+function fill(c: Canvas, polys: readonly (readonly Point2[])[]): void {
   let y0 = Number.POSITIVE_INFINITY
   let y1 = Number.NEGATIVE_INFINITY
   for (const poly of polys)
@@ -190,8 +189,8 @@ function fill(c: Canvas, polys: readonly (readonly P[])[]): void {
     const xs: number[] = []
     for (const poly of polys)
       for (let i = 0; i < poly.length; i++) {
-        const [ax, ay] = poly[i] as P
-        const [bx, by] = poly[(i + 1) % poly.length] as P
+        const [ax, ay] = poly[i] as Point2
+        const [bx, by] = poly[(i + 1) % poly.length] as Point2
         if (ay === by) continue
         if ((y >= ay && y < by) || (y >= by && y < ay)) xs.push(ax + ((y - ay) * (bx - ax)) / (by - ay))
       }
@@ -200,7 +199,7 @@ function fill(c: Canvas, polys: readonly (readonly P[])[]): void {
   }
   // Boundary pixels, so thin polygons do not vanish.
   for (const poly of polys)
-    for (let i = 0; i < poly.length; i++) stroke(c, poly[i] as P, poly[(i + 1) % poly.length] as P, {})
+    for (let i = 0; i < poly.length; i++) stroke(c, poly[i] as Point2, poly[(i + 1) % poly.length] as Point2, {})
 }
 
 /**
@@ -262,8 +261,8 @@ export function polylines(
   if ((options.thickness ?? 1) < 0) fill(c, [points])
   else {
     const n = points.length
-    for (let i = 0; i + 1 < n; i++) stroke(c, points[i] as P, points[i + 1] as P, options)
-    if (closed && n > 2) stroke(c, points[n - 1] as P, points[0] as P, options)
+    for (let i = 0; i + 1 < n; i++) stroke(c, points[i] as Point2, points[i + 1] as Point2, options)
+    if (closed && n > 2) stroke(c, points[n - 1] as Point2, points[0] as Point2, options)
   }
   return c.tensor()
 }
@@ -318,7 +317,7 @@ export function rectangle(
   colour: Colour,
   options: StrokeOptions = {},
 ): Tensor {
-  const corners: P[] = [
+  const corners: Point2[] = [
     [p1[0], p1[1]],
     [p2[0], p1[1]],
     [p2[0], p2[1]],

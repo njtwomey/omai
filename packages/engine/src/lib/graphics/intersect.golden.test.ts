@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
-import type { Vec3 } from '../scene/index.ts'
+import type { Vec3 } from '../base/index.ts'
 import { type Tensor, toArray } from '../tensor/index.ts'
 import {
   box,

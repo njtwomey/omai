@@ -4,8 +4,7 @@
  * and a glass sphere, as in smallpt, or two white blocks, as in the original photographs.
  */
 
-import { MdmlError } from '../base/index.ts'
-import type { Vec3 } from '../scene/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { type PinholeCamera, pinholeCamera } from './camera.ts'
 import { box, sphere } from './intersect.ts'
 import { areaLight } from './lights.ts'

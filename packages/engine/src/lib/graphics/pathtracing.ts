@@ -5,9 +5,8 @@
  * vertices for figures.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, type Vec3 } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { basis3, check3, dot3, madd3, mul3, normalise3, reflect3, refract3, scale3 } from './_vec3.ts'
 import { pixelRay, type Ray, type RenderCamera } from './camera.ts'

@@ -7,20 +7,9 @@
  */
 import { readFileSync } from 'node:fs'
 import { relative } from 'node:path'
-import { domainOf, listFor, ROOT, workspaceSource } from './_shared.mjs'
+import { domainOf, listFor, norm, ROOT, strip, workspaceSource } from './_shared.mjs'
 
 const MIN = Number(process.argv[2] ?? 2)
-const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ')
-const norm = (s) =>
-  strip(s)
-    .replace(/\breadonly\s+/g, '')
-    .replace(/ReadonlyArray<([^<>]+)>/g, '$1[]')
-    .replace(/Array<([^<>]+)>/g, '$1[]')
-    .replace(/\s+/g, ' ')
-    .replace(/[;,]\s*}/g, ' }')
-    .replace(/\s*([<>{}()[\]|&=:,;])\s*/g, '$1')
-    .replace(/[;,]$/, '')
-    .trim()
 const members = (body) =>
   strip(body)
     .split(/[;\n]/)

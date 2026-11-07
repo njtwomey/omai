@@ -5,19 +5,19 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import type { Complex } from '../../exposition/index.ts'
 import { polydiv, polyroots } from './power.ts'
 
 // Rational functions follow scipy.signal: coefficients highest degree first (in s for residue, in z^-1 for residuez).
 
-type C = readonly [number, number]
-const cadd = (a: C, b: C): C => [a[0] + b[0], a[1] + b[1]]
-const csub = (a: C, b: C): C => [a[0] - b[0], a[1] - b[1]]
-const cmul = (a: C, b: C): C => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]
-const cdiv = (a: C, b: C): C => {
+const cadd = (a: Complex, b: Complex): Complex => [a[0] + b[0], a[1] + b[1]]
+const csub = (a: Complex, b: Complex): Complex => [a[0] - b[0], a[1] - b[1]]
+const cmul = (a: Complex, b: Complex): Complex => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]
+const cdiv = (a: Complex, b: Complex): Complex => {
   const d = b[0] * b[0] + b[1] * b[1]
   return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]
 }
-const cabs = (a: C): number => Math.hypot(a[0], a[1])
+const cabs = (a: Complex): number => Math.hypot(a[0], a[1])
 
 /** Complex values as parallel real and imaginary parts. */
 export interface ComplexArray {
@@ -25,48 +25,48 @@ export interface ComplexArray {
   readonly im: number[]
 }
 
-const split = (xs: readonly C[]): ComplexArray => ({ re: xs.map((x) => x[0]), im: xs.map((x) => x[1]) })
+const split = (xs: readonly Complex[]): ComplexArray => ({ re: xs.map((x) => x[0]), im: xs.map((x) => x[1]) })
 
 /** Multiply a highest-first complex polynomial by (s - p). */
-function timesLinear(poly: readonly C[], p: C): C[] {
-  const out: C[] = [...poly, [0, 0]]
-  for (let i = poly.length; i >= 1; i--) out[i] = csub(out[i] as C, cmul(poly[i - 1] as C, p))
+function timesLinear(poly: readonly Complex[], p: Complex): Complex[] {
+  const out: Complex[] = [...poly, [0, 0]]
+  for (let i = poly.length; i >= 1; i--) out[i] = csub(out[i] as Complex, cmul(poly[i - 1] as Complex, p))
   return out
 }
 
 /** Taylor coefficients of a highest-first polynomial about p (lowest order first). */
-function taylor(poly: readonly C[], p: C): C[] {
+function taylor(poly: readonly Complex[], p: Complex): Complex[] {
   // Repeated synthetic division by (s - p): each remainder is the next Taylor coefficient.
   let current = [...poly]
-  const out: C[] = []
+  const out: Complex[] = []
   while (current.length > 0) {
-    const quotient: C[] = []
-    let acc: C = [0, 0]
+    const quotient: Complex[] = []
+    let acc: Complex = [0, 0]
     for (const c of current) {
       acc = cadd(cmul(acc, p), c)
       quotient.push(acc)
     }
-    out.push(quotient.pop() as C)
+    out.push(quotient.pop() as Complex)
     current = quotient
   }
   return out
 }
 
 /** The first m coefficients of the power series of num / den, both given as Taylor coefficients (den[0] != 0). */
-function seriesDivide(num: readonly C[], den: readonly C[], m: number): C[] {
-  const out: C[] = []
+function seriesDivide(num: readonly Complex[], den: readonly Complex[], m: number): Complex[] {
+  const out: Complex[] = []
   for (let j = 0; j < m; j++) {
-    let acc: C = num[j] ?? [0, 0]
-    for (let i = 1; i <= j; i++) acc = csub(acc, cmul(den[i] ?? [0, 0], out[j - i] as C))
-    out.push(cdiv(acc, den[0] as C))
+    let acc: Complex = num[j] ?? [0, 0]
+    for (let i = 1; i <= j; i++) acc = csub(acc, cmul(den[i] ?? [0, 0], out[j - i] as Complex))
+    out.push(cdiv(acc, den[0] as Complex))
   }
   return out
 }
 
 /** Group poles closer than tol (scipy's unique_roots with averaging). */
-function groupPoles(poles: readonly C[], tol: number): { unique: C[]; multiplicity: number[] } {
+function groupPoles(poles: readonly Complex[], tol: number): { unique: Complex[]; multiplicity: number[] } {
   const used = poles.map(() => false)
-  const unique: C[] = []
+  const unique: Complex[] = []
   const multiplicity: number[] = []
   poles.forEach((p, i) => {
     if (used[i]) return
@@ -79,23 +79,27 @@ function groupPoles(poles: readonly C[], tol: number): { unique: C[]; multiplici
     multiplicity.push(group.length)
   })
   // scipy orders unique poles by magnitude.
-  const order = unique.map((_, i) => i).sort((a, b) => cabs(unique[a] as C) - cabs(unique[b] as C))
-  return { unique: order.map((i) => unique[i] as C), multiplicity: order.map((i) => multiplicity[i] as number) }
+  const order = unique.map((_, i) => i).sort((a, b) => cabs(unique[a] as Complex) - cabs(unique[b] as Complex))
+  return { unique: order.map((i) => unique[i] as Complex), multiplicity: order.map((i) => multiplicity[i] as number) }
 }
 
 /** Residues of num / prod (s - u)^{m_u} (monic denominator), per pole for powers 1..m. */
-function residuesOf(numerator: readonly C[], unique: readonly C[], multiplicity: readonly number[]): C[] {
-  const out: C[] = []
+function residuesOf(
+  numerator: readonly Complex[],
+  unique: readonly Complex[],
+  multiplicity: readonly number[],
+): Complex[] {
+  const out: Complex[] = []
   unique.forEach((p, k) => {
     const m = multiplicity[k] ?? 1
-    let others: C[] = [[1, 0]]
+    let others: Complex[] = [[1, 0]]
     unique.forEach((u, j) => {
       if (j === k) return
       for (let r = 0; r < (multiplicity[j] ?? 1); r++) others = timesLinear(others, u)
     })
     const h = seriesDivide(taylor(numerator, p), taylor(others, p), m)
     // The coefficient of (s - p)^{-j} is h_{m - j}.
-    for (let j = 1; j <= m; j++) out.push(h[m - j] as C)
+    for (let j = 1; j <= m; j++) out.push(h[m - j] as Complex)
   })
   return out
 }
@@ -145,15 +149,15 @@ export function residue(b: readonly number[], a: readonly number[], tol = 1e-3):
     numerator = remainder.reverse()
   }
   const roots = polyroots([...at].reverse())
-  const poles: C[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
+  const poles: Complex[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
   const { unique, multiplicity } = groupPoles(poles, tol)
   const lead = at[0] as number
   const rs = residuesOf(
-    numerator.map((v): C => [v / lead, 0]),
+    numerator.map((v): Complex => [v / lead, 0]),
     unique,
     multiplicity,
   )
-  const repeated = unique.flatMap((p, k) => new Array<C>(multiplicity[k] ?? 1).fill(p))
+  const repeated = unique.flatMap((p, k) => new Array<Complex>(multiplicity[k] ?? 1).fill(p))
   return { residues: split(rs), poles: split(repeated), direct }
 }
 
@@ -187,28 +191,28 @@ export function residuez(b: readonly number[], a: readonly number[], tol = 1e-3)
   }
   // Poles in z are the roots of a_0 z^N + a_1 z^(N-1) + ... + a_N.
   const roots = polyroots([...at].reverse())
-  const poles: C[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
+  const poles: Complex[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
   const { unique, multiplicity } = groupPoles(poles, tol)
   // In w the poles are 1 / p; a(w) = a_N prod (w - 1/p).
   const lead = at[at.length - 1] as number
   const inverse = unique.map((p) => cdiv([1, 0], p))
   const raw = residuesOf(
-    [...numerator].reverse().map((v): C => [v / lead, 0]),
+    [...numerator].reverse().map((v): Complex => [v / lead, 0]),
     inverse,
     multiplicity,
   )
   // r / (w - 1/p)^j = r (-p)^j / (1 - p w)^j.
   let index = 0
-  const rs: C[] = []
+  const rs: Complex[] = []
   unique.forEach((p, k) => {
-    let power: C = [1, 0]
+    let power: Complex = [1, 0]
     for (let j = 1; j <= (multiplicity[k] ?? 1); j++) {
       power = cmul(power, [-p[0], -p[1]])
-      rs.push(cmul(raw[index] as C, power))
+      rs.push(cmul(raw[index] as Complex, power))
       index++
     }
   })
-  const repeated = unique.flatMap((p, k) => new Array<C>(multiplicity[k] ?? 1).fill(p))
+  const repeated = unique.flatMap((p, k) => new Array<Complex>(multiplicity[k] ?? 1).fill(p))
   return { residues: split(rs), poles: split(repeated), direct }
 }
 
@@ -233,14 +237,14 @@ export function invres(
   k: readonly number[],
   tol = 1e-3,
 ): { readonly numerator: ComplexArray; readonly denominator: ComplexArray } {
-  const poles: C[] = p.re.map((v, i) => [v, p.im[i] ?? 0])
-  const residues: C[] = r.re.map((v, i) => [v, r.im[i] ?? 0])
+  const poles: Complex[] = p.re.map((v, i) => [v, p.im[i] ?? 0])
+  const residues: Complex[] = r.re.map((v, i) => [v, r.im[i] ?? 0])
   // Group consecutive poles, as scipy's _group_poles.
-  const unique: C[] = []
+  const unique: Complex[] = []
   const multiplicity: number[] = []
-  let block: C[] = []
+  let block: Complex[] = []
   poles.forEach((q, i) => {
-    if (i > 0 && cabs(csub(q, block[0] as C)) <= tol) block.push(block[0] as C)
+    if (i > 0 && cabs(csub(q, block[0] as Complex)) <= tol) block.push(block[0] as Complex)
     else {
       if (block.length > 0) {
         unique.push([
@@ -259,29 +263,29 @@ export function invres(
     ])
     multiplicity.push(block.length)
   }
-  let denominator: C[] = [[1, 0]]
+  let denominator: Complex[] = [[1, 0]]
   unique.forEach((u, j) => {
     for (let m = 0; m < (multiplicity[j] ?? 1); m++) denominator = timesLinear(denominator, u)
   })
-  const addInto = (acc: C[], poly: readonly C[], scale: C): C[] => {
+  const addInto = (acc: Complex[], poly: readonly Complex[], scale: Complex): Complex[] => {
     const n = Math.max(acc.length, poly.length)
-    const out: C[] = Array.from({ length: n }, () => [0, 0] as C)
+    const out: Complex[] = Array.from({ length: n }, () => [0, 0] as Complex)
     acc.forEach((c, i) => {
-      out[n - acc.length + i] = cadd(out[n - acc.length + i] as C, c)
+      out[n - acc.length + i] = cadd(out[n - acc.length + i] as Complex, c)
     })
     poly.forEach((c, i) => {
-      out[n - poly.length + i] = cadd(out[n - poly.length + i] as C, cmul(c, scale))
+      out[n - poly.length + i] = cadd(out[n - poly.length + i] as Complex, cmul(c, scale))
     })
     return out
   }
-  let numerator: C[] = [[0, 0]]
+  let numerator: Complex[] = [[0, 0]]
   if (k.length > 0) {
-    const kc: C[] = k.map((v) => [v, 0])
+    const kc: Complex[] = k.map((v) => [v, 0])
     // k * denominator.
-    const prod: C[] = Array.from({ length: kc.length + denominator.length - 1 }, () => [0, 0] as C)
+    const prod: Complex[] = Array.from({ length: kc.length + denominator.length - 1 }, () => [0, 0] as Complex)
     kc.forEach((x, i) => {
       denominator.forEach((y, j) => {
-        prod[i + j] = cadd(prod[i + j] as C, cmul(x, y))
+        prod[i + j] = cadd(prod[i + j] as Complex, cmul(x, y))
       })
     })
     numerator = prod
@@ -291,7 +295,7 @@ export function invres(
     const m = multiplicity[j] ?? 1
     for (let power = 1; power <= m; power++) {
       // denominator / (s - u)^power.
-      let factor: C[] = [[1, 0]]
+      let factor: Complex[] = [[1, 0]]
       unique.forEach((v, i) => {
         const times = i === j ? m - power : (multiplicity[i] ?? 1)
         for (let t = 0; t < times; t++) factor = timesLinear(factor, v)

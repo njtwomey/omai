@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import type { Complex } from '../../exposition/index.ts'
 import {
   add,
   type ComplexLike,
@@ -254,10 +255,7 @@ function transpose(m: Tensor): Tensor {
   return fromStorage(out, [c, r], 'float64')
 }
 
-/** A complex number as a pair. */
-export type ComplexNumber = readonly [number, number]
-
-const cpow = (z: ComplexNumber, p: number): ComplexNumber => {
+const cpow = (z: Complex, p: number): Complex => {
   const r = Math.hypot(z[0], z[1]) ** p
   const t = Math.atan2(z[1], z[0]) * p
   return [r * Math.cos(t), r * Math.sin(t)]
@@ -280,15 +278,15 @@ const cpow = (z: ComplexNumber, p: number): ComplexNumber => {
  * toArray(czt([1, 2, 3, 4]).re).map((v) => Math.round(v * 1e10) / 1e10) // => [10, -2, -2, -2]
  * ```
  */
-export function czt(x: ComplexLike, m?: number, w?: ComplexNumber, a: ComplexNumber = [1, 0]): ComplexValue {
+export function czt(x: ComplexLike, m?: number, w?: Complex, a: Complex = [1, 0]): ComplexValue {
   const z = complex(x)
   const n = z.re.shape[0] ?? 0
   const outputs = m ?? n
   if (n < 1 || outputs < 1) throw new MdmlError('value', 'czt: empty input or output')
   const ratio = w ?? [Math.cos((-2 * Math.PI) / outputs), Math.sin((-2 * Math.PI) / outputs)]
   // w^(t^2 / 2) with the angle taken from the principal argument, as scipy.
-  const chirp = (t: number): ComplexNumber => cpow(ratio, (t * t) / 2)
-  const ainv = (t: number): ComplexNumber => cpow(a, -t)
+  const chirp = (t: number): Complex => cpow(ratio, (t * t) / 2)
+  const ainv = (t: number): Complex => cpow(a, -t)
   let len = 1
   while (len < n + outputs - 1) len <<= 1
   const pre = Array.from({ length: n }, (_, t) => {
@@ -357,10 +355,10 @@ export function zoomFft(x: ComplexLike, band: number | readonly [number, number]
   const [f1, f2] = typeof band === 'number' ? [0, band] : band
   const z = complex(x)
   const points = m ?? z.re.shape[0] ?? 0
-  const w: ComplexNumber = [
+  const w: Complex = [
     Math.cos((-2 * Math.PI * (f2 - f1)) / (points * fs)),
     Math.sin((-2 * Math.PI * (f2 - f1)) / (points * fs)),
   ]
-  const a: ComplexNumber = [Math.cos((2 * Math.PI * f1) / fs), Math.sin((2 * Math.PI * f1) / fs)]
+  const a: Complex = [Math.cos((2 * Math.PI * f1) / fs), Math.sin((2 * Math.PI * f1) / fs)]
   return czt(z, points, w, a)
 }

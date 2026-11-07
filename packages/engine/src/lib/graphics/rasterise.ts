@@ -5,8 +5,8 @@
  * record of what happened to each triangle.
  */
 
-import { MdmlError } from '../base/index.ts'
-import type { Vec3 } from '../scene/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 import { check3, cross3, dot3, normalise3, sub3 } from './_vec3.ts'
 import { cameraBasis, type RenderCamera, transformPoint, viewProjection } from './camera.ts'
 import { type Light, shadePoints } from './lights.ts'
@@ -16,9 +16,6 @@ import { type FloatImage, floatImage, sampleBilinear } from './textures.ts'
 // Triangle rasterisation, the counterpart of ray casting: instead of a ray per pixel finding its nearest surface, each
 // triangle finds the pixels it covers, and a depth buffer keeps the nearest. Screen coordinates have y down and pixel
 // (x, y) has its centre at (x + 0.5, y + 0.5), as `camera.ts` projects.
-
-/** A point on the screen. */
-export type Point2 = readonly [number, number]
 
 /**
  * The edge function `E(a, b, p) = (b_x - a_x)(p_y - a_y) - (b_y - a_y)(p_x - a_x)`: twice the signed area of the

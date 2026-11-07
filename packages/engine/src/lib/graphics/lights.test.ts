@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import type { Vec3 } from '../base/index.ts'
 import { key } from '../random/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import { areaLight, directionalLight, lightSamples, material, pointLight, shadePoints } from './index.ts'
 
 // Irradiance at a point with normal n from a uniformly emitting polygon of radiance L (Lambert's contour formula):

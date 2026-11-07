@@ -27,7 +27,7 @@ import {
 } from '../../tensor/index.ts'
 import { det, inv, svd } from '../linalg/index.ts'
 
-type Quat = readonly [number, number, number, number]
+type Quat = readonly [x: number, y: number, z: number, w: number]
 type Mat3 = readonly number[]
 
 const qnorm = (q: Quat): Quat => {

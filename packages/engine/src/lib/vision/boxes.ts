@@ -16,7 +16,7 @@ import { f32, roundHalfEven, valuesOf } from './_image.ts'
 import type { GreedyPath } from './greedy-contract.ts'
 
 /** A box as [a, b, c, d] in some {@link BoxFormat}. */
-export type Box = [number, number, number, number]
+export type Box = [a: number, b: number, c: number, d: number]
 
 /** Box formats: corners (x1, y1, x2, y2), corner and size (x, y, w, h), centre and size (cx, cy, w, h). */
 export type BoxFormat = 'xyxy' | 'xywh' | 'cxcywh'

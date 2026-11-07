@@ -3,16 +3,15 @@
  * reinforcement learning, animation frames in Node and image tests.
  */
 
-import { clamp, MdmlError } from '../base/index.ts'
+import { clamp, MdmlError, type Vec2 } from '../base/index.ts'
 import { palettes, parsePaint, type Rgba } from './paint.ts'
 import { projectLayers } from './projection.ts'
 import type { Paint, Pixels, Scene, SceneNode, Style, ThemeToken, Transform } from './types.ts'
 
-type Point = readonly [number, number]
 /** A 2-D affine map `[a, b, c, d, e, f]`: `(x, y) -> (a x + c y + e, b x + d y + f)`. */
 type Affine = readonly [number, number, number, number, number, number]
 
-function apply(m: Affine, [x, y]: Point): Point {
+function apply(m: Affine, [x, y]: Vec2): Vec2 {
   return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]
 }
 
@@ -53,7 +52,7 @@ interface Mask {
   readonly bits: Uint8Array
 }
 
-function maskFor(canvas: Canvas, rings: readonly (readonly Point[])[], pad = 0): Mask | undefined {
+function maskFor(canvas: Canvas, rings: readonly (readonly Vec2[])[], pad = 0): Mask | undefined {
   let x0 = Infinity
   let y0 = Infinity
   let x1 = -Infinity
@@ -77,7 +76,7 @@ function maskFor(canvas: Canvas, rings: readonly (readonly Point[])[], pad = 0):
 }
 
 // Scanline fill with the nonzero winding rule, sampling pixel centres; covered pixels are set in the mask.
-function scan(mask: Mask, rings: readonly (readonly Point[])[]): void {
+function scan(mask: Mask, rings: readonly (readonly Vec2[])[]): void {
   const crossings: { x: number; dir: number }[] = []
   for (let j = 0; j < mask.h; j++) {
     const yc = mask.y0 + j + 0.5
@@ -85,8 +84,8 @@ function scan(mask: Mask, rings: readonly (readonly Point[])[]): void {
     for (const ring of rings) {
       const n = ring.length
       for (let i = 0; i < n; i++) {
-        const p = ring[i] as Point
-        const q = ring[(i + 1) % n] as Point
+        const p = ring[i] as Vec2
+        const q = ring[(i + 1) % n] as Vec2
         const up = p[1] <= yc && q[1] > yc
         const down = q[1] <= yc && p[1] > yc
         if (!up && !down) continue
@@ -129,9 +128,9 @@ function composite(canvas: Canvas, mask: Mask, colour: Rgba, opacity: number): v
   }
 }
 
-function ellipseRing(cx: number, cy: number, rx: number, ry: number, pixelRadius: number): Point[] {
+function ellipseRing(cx: number, cy: number, rx: number, ry: number, pixelRadius: number): Vec2[] {
   const n = clamp(Math.ceil(pixelRadius * 1.5), 12, 360)
-  const out: Point[] = []
+  const out: Vec2[] = []
   for (let i = 0; i < n; i++) {
     const t = (2 * Math.PI * i) / n
     out.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)])
@@ -139,7 +138,7 @@ function ellipseRing(cx: number, cy: number, rx: number, ry: number, pixelRadius
   return out
 }
 
-function roundedRect(x: number, y: number, w: number, h: number, radius: number): Point[] {
+function roundedRect(x: number, y: number, w: number, h: number, radius: number): Vec2[] {
   const r = Math.min(radius, w / 2, h / 2)
   if (!(r > 0)) {
     return [
@@ -149,7 +148,7 @@ function roundedRect(x: number, y: number, w: number, h: number, radius: number)
       [x, y + h],
     ]
   }
-  const out: Point[] = []
+  const out: Vec2[] = []
   const corners: readonly (readonly [number, number, number])[] = [
     [x + w - r, y + r, -Math.PI / 2],
     [x + w - r, y + h - r, 0],
@@ -166,13 +165,12 @@ function roundedRect(x: number, y: number, w: number, h: number, radius: number)
 }
 
 // Uniform Catmull-Rom spline through the points, 8 samples per span.
-function smoothed(points: readonly Point[], closed: boolean): Point[] {
+function smoothed(points: readonly Vec2[], closed: boolean): Vec2[] {
   const n = points.length
   if (n < 3) return [...points]
-  const at = (i: number): Point =>
-    closed ? (points[((i % n) + n) % n] as Point) : (points[clamp(i, 0, n - 1)] as Point)
+  const at = (i: number): Vec2 => (closed ? (points[((i % n) + n) % n] as Vec2) : (points[clamp(i, 0, n - 1)] as Vec2))
   const spans = closed ? n : n - 1
-  const out: Point[] = []
+  const out: Vec2[] = []
   for (let i = 0; i < spans; i++) {
     const p0 = at(i - 1)
     const p1 = at(i)
@@ -191,27 +189,27 @@ function smoothed(points: readonly Point[], closed: boolean): Point[] {
       out.push([coord(0), coord(1)])
     }
   }
-  if (!closed) out.push(points[n - 1] as Point)
+  if (!closed) out.push(points[n - 1] as Vec2)
   return out
 }
 
 // Split a polyline into dashes by arc length.
-function dashed(points: readonly Point[], closed: boolean, pattern: readonly number[]): Point[][] {
+function dashed(points: readonly Vec2[], closed: boolean, pattern: readonly number[]): Vec2[][] {
   const total = pattern.reduce((s, x) => s + Math.max(0, x), 0)
   if (pattern.length === 0 || !(total > 0)) return [[...points]]
-  const pts = closed && points.length > 0 ? [...points, points[0] as Point] : [...points]
-  const out: Point[][] = []
+  const pts = closed && points.length > 0 ? [...points, points[0] as Vec2] : [...points]
+  const out: Vec2[][] = []
   let index = 0
   let left = Math.max(0, pattern[0] ?? 0)
   let on = true
-  let current: Point[] = [pts[0] as Point]
+  let current: Vec2[] = [pts[0] as Vec2]
   for (let i = 0; i + 1 < pts.length; i++) {
-    let [ax, ay] = pts[i] as Point
-    const [bx, by] = pts[i + 1] as Point
+    let [ax, ay] = pts[i] as Vec2
+    const [bx, by] = pts[i + 1] as Vec2
     let length = Math.hypot(bx - ax, by - ay)
     while (length > left) {
       const f = left / length
-      const cut: Point = [ax + f * (bx - ax), ay + f * (by - ay)]
+      const cut: Vec2 = [ax + f * (bx - ax), ay + f * (by - ay)]
       if (on) {
         current.push(cut)
         out.push(current)
@@ -235,14 +233,14 @@ interface Draw {
   readonly palette: Readonly<Record<ThemeToken, string>>
 }
 
-function strokePieces(polyline: readonly Point[], closed: boolean, width: number): Point[][] {
+function strokePieces(polyline: readonly Vec2[], closed: boolean, width: number): Vec2[][] {
   const half = width / 2
-  const pieces: Point[][] = []
+  const pieces: Vec2[][] = []
   const n = polyline.length
   const segments = closed ? n : n - 1
   for (let i = 0; i < segments; i++) {
-    const [ax, ay] = polyline[i] as Point
-    const [bx, by] = polyline[(i + 1) % n] as Point
+    const [ax, ay] = polyline[i] as Vec2
+    const [bx, by] = polyline[(i + 1) % n] as Vec2
     const len = Math.hypot(bx - ax, by - ay)
     if (len === 0) continue
     const nx = (-(by - ay) / len) * half
@@ -259,7 +257,7 @@ function strokePieces(polyline: readonly Point[], closed: boolean, width: number
     const first = closed ? 0 : 1
     const last = closed ? n : n - 1
     for (let i = first; i < last; i++) {
-      const [x, y] = polyline[i] as Point
+      const [x, y] = polyline[i] as Vec2
       pieces.push(ellipseRing(x, y, half, half, half))
     }
   }
@@ -267,11 +265,11 @@ function strokePieces(polyline: readonly Point[], closed: boolean, width: number
 }
 
 // A triangular head of the given length (pixels) at the end of a polyline; the shaft is shortened in place.
-function arrowHead(polyline: Point[], size: number): Point[] | undefined {
+function arrowHead(polyline: Vec2[], size: number): Vec2[] | undefined {
   const n = polyline.length
   if (n < 2) return undefined
-  const [bx, by] = polyline[n - 1] as Point
-  const [ax, ay] = polyline[n - 2] as Point
+  const [bx, by] = polyline[n - 1] as Vec2
+  const [ax, ay] = polyline[n - 2] as Vec2
   const len = Math.hypot(bx - ax, by - ay)
   if (len === 0) return undefined
   const ux = (bx - ax) / len
@@ -291,7 +289,7 @@ function arrowHead(polyline: Point[], size: number): Point[] | undefined {
 
 function stroke(
   draw: Draw,
-  polyline: readonly Point[],
+  polyline: readonly Vec2[],
   closed: boolean,
   style: Style,
   paint: Paint,
@@ -305,7 +303,7 @@ function stroke(
   const width = (style.strokeWidth ?? 1) * k
   if (!(width > 0)) return
   const mapped = polyline.map((p) => apply(m, p))
-  const pieces: Point[][] = []
+  const pieces: Vec2[][] = []
   const dash = style.dash?.map((d) => d * k) ?? []
   const lines = dash.length > 0 ? dashed(mapped, closed, dash) : [mapped]
   const isClosed = closed && dash.length === 0
@@ -320,7 +318,7 @@ function stroke(
   composite(draw.canvas, mask, colour, opacity)
 }
 
-function fill(draw: Draw, ring: readonly Point[], paint: Paint, m: Affine, opacity: number): void {
+function fill(draw: Draw, ring: readonly Vec2[], paint: Paint, m: Affine, opacity: number): void {
   const colour = parsePaint(paint, draw.palette)
   if (colour === undefined) return
   const mapped = ring.map((p) => apply(m, p))
@@ -330,7 +328,7 @@ function fill(draw: Draw, ring: readonly Point[], paint: Paint, m: Affine, opaci
   composite(draw.canvas, mask, colour, opacity)
 }
 
-function shape(draw: Draw, ring: readonly Point[], closed: boolean, style: Style, m: Affine, opacity: number): void {
+function shape(draw: Draw, ring: readonly Vec2[], closed: boolean, style: Style, m: Affine, opacity: number): void {
   const o = opacity * (style.opacity ?? 1)
   const fillPaint = style.fill ?? (closed && style.stroke === undefined ? 'fg' : 'none')
   if (closed) fill(draw, ring, fillPaint, m, o)
@@ -341,7 +339,7 @@ function shape(draw: Draw, ring: readonly Point[], closed: boolean, style: Style
 function drawImage(draw: Draw, node: Extract<SceneNode, { kind: 'image' }>, m: Affine, opacity: number): void {
   const { canvas } = draw
   const { pixels } = node
-  const local: readonly Point[] = [
+  const local: readonly Vec2[] = [
     [node.x, node.y],
     [node.x + node.width, node.y],
     [node.x + node.width, node.y + node.height],
@@ -400,7 +398,7 @@ function drawNode(draw: Draw, node: SceneNode, m: Affine, opacity: number): void
     }
     case 'line': {
       const o = opacity * (node.opacity ?? 1)
-      const pts: Point[] = [
+      const pts: Vec2[] = [
         [node.x1, node.y1],
         [node.x2, node.y2],
       ]

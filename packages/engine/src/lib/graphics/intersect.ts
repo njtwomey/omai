@@ -7,9 +7,8 @@
  * @index function Ray-shape intersections: spheres, planes, triangles, boxes.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { crossProduct, dotProduct } from '../foundations/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import {
   div,
   greater,

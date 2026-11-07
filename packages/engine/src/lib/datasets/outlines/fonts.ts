@@ -9,7 +9,8 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { type ClassificationData, xyClasses } from '../../data/index.ts'
-import { normaliseOutline, type Point2, resampleClosed, stitchStrokes } from '../../graphics/index.ts'
+import { normaliseOutline, resampleClosed, stitchStrokes } from '../../graphics/index.ts'
+import type { Point2 } from '../../numerics/geometry/index.ts'
 import { fromStorage } from '../../tensor/index.ts'
 import { CAP_HEIGHT, FONTS, GLYPHS, SOURCE, VECTORS, WIDTH } from './_fonts.data.ts'
 

@@ -7,8 +7,8 @@
 
 import { MdmlError } from '../base/index.ts'
 
-/** A point of the complex plane as `[real, imaginary]`. */
-export type Complex = readonly [number, number]
+/** A complex number, a point of the complex plane, as `[real, imaginary]`. */
+export type Complex = readonly [re: number, im: number]
 
 /** One branch of a root locus: the path a pole takes as the parameter runs. */
 export interface LocusBranch {

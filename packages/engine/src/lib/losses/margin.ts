@@ -4,6 +4,7 @@
  * losses.
  */
 
+import type { Reduction } from '../base/index.ts'
 import { softplus } from '../numerics/special/index.ts'
 import {
   add,
@@ -28,7 +29,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
+import { type LossOptions, reduce } from './_reduce.ts'
 
 /** The margins y f of binary scores with labels in {-1, +1}. */
 const margins = (scores: TensorLike, labels: TensorLike): Value => {

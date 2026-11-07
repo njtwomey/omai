@@ -8,6 +8,7 @@
 // TODO: fitEllipseDirect and fitEllipseAMS.
 
 import { MdmlError } from '../base/index.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 import { dgesvd } from '../numerics/linalg/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { f32, type PointsLike, pointsOf } from './_image.ts'
@@ -21,10 +22,8 @@ export interface RotatedRect {
   readonly angle: number
 }
 
-type P = readonly [number, number]
-
 /** OpenCV's rotating calipers for the minimum-area rectangle of a counter-clockwise hull, in single precision. */
-function calipers(points: readonly P[]): [number, number, number, number, number, number] {
+function calipers(points: readonly Point2[]): [number, number, number, number, number, number] {
   const n = points.length
   const vx = new Float64Array(n)
   const vy = new Float64Array(n)
@@ -33,7 +32,7 @@ function calipers(points: readonly P[]): [number, number, number, number, number
   let bottom = 0
   let right = 0
   let top = 0
-  let p0 = points[0] as P
+  let p0 = points[0] as Point2
   let leftX = p0[0]
   let rightX = p0[0]
   let topY = p0[1]
@@ -55,7 +54,7 @@ function calipers(points: readonly P[]): [number, number, number, number, number
       bottomY = p0[1]
       bottom = i
     }
-    const p = points[i + 1 < n ? i + 1 : 0] as P
+    const p = points[i + 1 < n ? i + 1 : 0] as Point2
     const dx = p[0] - p0[0]
     const dy = p[1] - p0[1]
     vx[i] = f32(dx)
@@ -98,10 +97,10 @@ function calipers(points: readonly P[]): [number, number, number, number, number
     else if (main === 2) [baseA, baseB] = [-lx, -ly]
     else [baseA, baseB] = [-ly, lx]
     seq[main] = ((seq[main] ?? 0) + 1) % n
-    const q1 = points[seq[1] ?? 0] as P
-    const q3 = points[seq[3] ?? 0] as P
-    const q0 = points[seq[0] ?? 0] as P
-    const q2 = points[seq[2] ?? 0] as P
+    const q1 = points[seq[1] ?? 0] as Point2
+    const q3 = points[seq[3] ?? 0] as Point2
+    const q0 = points[seq[0] ?? 0] as Point2
+    const q2 = points[seq[2] ?? 0] as Point2
     const width = f32(f32(f32(q1[0] - q3[0]) * baseA) + f32(f32(q1[1] - q3[1]) * baseB))
     const height = f32(f32(-f32(q2[0] - q0[0]) * baseB) + f32(f32(q2[1] - q0[1]) * baseA))
     const area = f32(width * height)
@@ -119,8 +118,8 @@ function calipers(points: readonly P[]): [number, number, number, number, number
   const B1 = best.b
   const A2 = -best.b
   const B2 = best.a
-  const pl = points[best.left] as P
-  const pb = points[best.bottom] as P
+  const pl = points[best.left] as Point2
+  const pb = points[best.bottom] as Point2
   const C1 = f32(f32(A1 * pl[0]) + f32(pl[1] * B1))
   const C2 = f32(f32(A2 * pb[0]) + f32(pb[1] * B2))
   const idet = f32(1 / f32(f32(A1 * B2) - f32(A2 * B1)))
@@ -145,7 +144,7 @@ function calipers(points: readonly P[]): [number, number, number, number, number
  */
 export function minAreaRect(points: PointsLike): RotatedRect {
   const pts = pointsOf(points, 'minAreaRect')
-  const hull = convexHull(pts).map((i) => pts[i] as P)
+  const hull = convexHull(pts).map((i) => pts[i] as Point2)
   const n = hull.length
   let angle = -Math.PI / 2
   let center: [number, number] = [0, 0]
@@ -157,7 +156,7 @@ export function minAreaRect(points: PointsLike): RotatedRect {
     if (ax === 0 && ay > 0) size = [size[1], size[0]]
     else angle = -Math.atan2(ax, ay)
   } else if (n === 2) {
-    const [a, b] = hull as [P, P]
+    const [a, b] = hull as [Point2, Point2]
     center = [f32(f32(a[0] + b[0]) * 0.5), f32(f32(a[1] + b[1]) * 0.5)]
     const dx = a[0] - b[0]
     const dy = a[1] - b[1]
@@ -167,7 +166,7 @@ export function minAreaRect(points: PointsLike): RotatedRect {
       angle = Math.atan2(dy, dx)
       size = [size[1], size[0]]
     } else if (dy > 0) angle = -Math.atan2(dx, dy)
-  } else if (n === 1) center = [(hull[0] as P)[0], (hull[0] as P)[1]]
+  } else if (n === 1) center = [(hull[0] as Point2)[0], (hull[0] as Point2)[1]]
   return { center, size, angle: f32((angle * 180) / Math.PI) }
 }
 
@@ -198,7 +197,7 @@ export function boxPoints(box: RotatedRect): [number, number][] {
 }
 
 /** The circle through three points, or undefined for (nearly) collinear points. */
-function circle3(a: P, b: P, c: P): { c: [number, number]; r: number } | undefined {
+function circle3(a: Point2, b: Point2, c: Point2): { c: [number, number]; r: number } | undefined {
   const v1x = b[0] - a[0]
   const v1y = b[1] - a[1]
   const v2x = c[0] - a[0]
@@ -241,9 +240,9 @@ export interface EnclosingCircleState {
 export function minEnclosingCircleAlgorithm(points: PointsLike): Algorithm<EnclosingCircleState, GeomPath> {
   const pts = pointsOf(points, 'minEnclosingCircle')
   const n = pts.length
-  const inside = (c: [number, number], r: number, p: P): boolean =>
+  const inside = (c: [number, number], r: number, p: Point2): boolean =>
     Math.hypot(p[0] - c[0], p[1] - c[1]) <= r + 1e-12 * Math.max(1, r)
-  const two = (a: P, b: P): { c: [number, number]; r: number } => ({
+  const two = (a: Point2, b: Point2): { c: [number, number]; r: number } => ({
     c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
     r: Math.hypot(a[0] - b[0], a[1] - b[1]) / 2,
   })
@@ -252,23 +251,23 @@ export function minEnclosingCircleAlgorithm(points: PointsLike): Algorithm<Enclo
     config: { points: n },
     init: () => {
       if (n === 0) return { center: [0, 0], radius: 0, next: 0, count: 0 }
-      if (n === 1) return { center: [(pts[0] as P)[0], (pts[0] as P)[1]], radius: 0, next: 1, count: 1 }
-      const { c, r } = two(pts[0] as P, pts[1] as P)
+      if (n === 1) return { center: [(pts[0] as Point2)[0], (pts[0] as Point2)[1]], radius: 0, next: 1, count: 1 }
+      const { c, r } = two(pts[0] as Point2, pts[1] as Point2)
       return { center: c, radius: r, next: 2, count: 2 }
     },
     step: (s, ctx) => {
       const i = s.next
-      const pi = pts[i] as P
+      const pi = pts[i] as Point2
       let c = s.center
       let r = s.radius
       if (!inside(c, r, pi)) {
-        ;({ c, r } = two(pts[0] as P, pi))
+        ;({ c, r } = two(pts[0] as Point2, pi))
         for (let j = 1; j < i; j++) {
-          const pj = pts[j] as P
+          const pj = pts[j] as Point2
           if (inside(c, r, pj)) continue
           ;({ c, r } = two(pi, pj))
           for (let k = 0; k < j; k++) {
-            const pk = pts[k] as P
+            const pk = pts[k] as Point2
             if (inside(c, r, pk)) continue
             const t = circle3(pi, pj, pk)
             if (t !== undefined) ({ c, r } = t)
@@ -363,7 +362,7 @@ function svdSolve(a: Float64Array, b: Float64Array, m: number, n: number): Float
  * ```
  */
 export function fitEllipse(points: PointsLike): RotatedRect {
-  const pts = pointsOf(points, 'fitEllipse').map(([x, y]): P => [f32(x), f32(y)])
+  const pts = pointsOf(points, 'fitEllipse').map(([x, y]): Point2 => [f32(x), f32(y)])
   const n = pts.length
   if (n < 5) throw new MdmlError('value', 'fitEllipse: at least five points are needed')
   let cx = 0
@@ -441,7 +440,7 @@ const DEFAULT_C: Readonly<Record<Exclude<LineDistance, 'l2'>, number>> = {
 }
 
 /** The weighted total least-squares line through points: [vx, vy, x0, y0] (OpenCV's fitLine2D_wods). */
-function weightedLine(pts: readonly P[], w: Float64Array | undefined): [number, number, number, number] {
+function weightedLine(pts: readonly Point2[], w: Float64Array | undefined): [number, number, number, number] {
   let sx = 0
   let sy = 0
   let sxx = 0

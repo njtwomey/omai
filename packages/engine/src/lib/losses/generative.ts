@@ -8,7 +8,7 @@
  */
 
 import { grad, jvp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { softplus } from '../numerics/special/index.ts'
 import { type Key, normal, split, uniform } from '../random/index.ts'
@@ -42,7 +42,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type Reduction, reduce } from './_reduce.ts'
+import { reduce } from './_reduce.ts'
 
 /** The GAN objectives: the original minimax game, its non-saturating generator, WGAN, hinge and least squares. */
 export type GanObjective = 'minimax' | 'non-saturating' | 'wasserstein' | 'hinge' | 'least-squares'

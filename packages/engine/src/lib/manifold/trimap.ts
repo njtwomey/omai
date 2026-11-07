@@ -25,7 +25,7 @@ import {
 } from './_support.ts'
 
 /** A triplet (i, j, k): row i should be nearer to row j than to row k. */
-export type Triplet = readonly [number, number, number]
+export type Triplet = readonly [i: number, j: number, k: number]
 
 /** Triplets with their weights. */
 export interface TrimapTriplets {

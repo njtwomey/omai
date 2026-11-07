@@ -39,7 +39,7 @@ export interface ContingencyTableProps {
   readonly className?: string
 }
 
-type Cell = readonly [number, number]
+type Cell = readonly [row: number, column: number]
 /** What a margin rate divides: the cells summed on top and the cells summed underneath. */
 interface Focus {
   readonly numerator: readonly Cell[]

@@ -3,9 +3,9 @@
  * readout, a marker on a curve, a slice through a field).
  */
 
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 import { type ReactNode, useState } from 'react'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
-import type { Point2 } from './projection.ts'
 
 /**
  * Probe the figure: follow the pointer with a crosshair, and draw whatever `children` makes of the data point under it

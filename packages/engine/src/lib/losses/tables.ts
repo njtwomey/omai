@@ -7,10 +7,10 @@
  * IRLS a likelihood).
  */
 
+import type { Reduction } from '../base/index.ts'
 import { proxElasticNet, proxL1, proxSquaredL2 } from '../optim/proximal.ts'
 import { choice, dict, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import { add, asTensor, broadcastTo, concat, div, eye, mul, type TensorLike, type Value } from '../tensor/index.ts'
-import type { Reduction } from './_reduce.ts'
 import {
   backwardCorrected,
   binaryCrossEntropyWithLogits,
