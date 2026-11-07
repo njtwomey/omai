@@ -34,3 +34,22 @@ export function rowsOf(x: TensorLike, name: string): number[][] {
 export function vectorOf(a: ArrayLike<number>): Tensor<'float64', [number]> {
   return fromStorage(Float64Array.from(a), [a.length], 'float64')
 }
+
+/**
+ * The row-major storage of a matrix given as a tensor-like, with its shape.
+ *
+ * @param x - A tensor or a nested array of depth two.
+ * @param name - The caller's name, for error messages.
+ * @returns A copy of the elements, row-major, and the numbers of rows and columns.
+ * @throws MdmlError with code `shape` unless `x` has rank 2, and `not-differentiable` for a traced value.
+ */
+export function matrixOf(
+  x: TensorLike,
+  name: string,
+): { readonly data: Float64Array; readonly rows: number; readonly cols: number } {
+  const t = asTensor(x)
+  if (t.shape.length !== 2)
+    throw new MdmlError('shape', `${name}: expected a matrix, got shape [${t.shape.join(', ')}]`)
+  const [rows = 0, cols = 0] = t.shape
+  return { data: Float64Array.from(toFlat(t)), rows, cols }
+}

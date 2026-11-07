@@ -2,6 +2,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { families } from '../dists/index.ts'
 import { key } from '../random/index.ts'
+import { fromStorage } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
 import { type GlmProblem, glmSolvers } from './glm.ts'
 
@@ -29,9 +30,7 @@ describe('the penalised GLM objective along IRLS', () => {
         (name, x, u, l2) => {
           const { family, link, y } = respond[name]
           const problem: GlmProblem = {
-            x,
-            n: 12,
-            d: 2,
+            x: fromStorage(Float64Array.from(x), [12, 2], 'float64'),
             y: u.map(y),
             family,
             link,
@@ -57,9 +56,11 @@ describe('the penalised GLM objective along IRLS', () => {
 
   it('has a gradient that vanishes where IRLS stops', () => {
     const problem: GlmProblem = {
-      x: Array.from({ length: 40 }, (_, k) => Math.sin(k * 1.3)),
-      n: 20,
-      d: 2,
+      x: fromStorage(
+        Float64Array.from({ length: 40 }, (_, k) => Math.sin(k * 1.3)),
+        [20, 2],
+        'float64',
+      ),
       y: Array.from({ length: 20 }, (_, i) => (Math.sin(i * 2.1) > 0 ? 1 : 0)),
       family: families.binomial(),
       link: families.logit(),

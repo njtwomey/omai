@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { families } from '../dists/index.ts'
 import { key } from '../random/index.ts'
 import { defaults } from '../space/index.ts'
+import { grad } from '../autodiff/index.ts'
+import { fromStorage, sum, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { runAlgorithm, type StepContext } from '../trace/index.ts'
 import { fitGlm, type GlmProblem, glmGradient, glmSolvers, glmValue } from './glm.ts'
 import { loggedSolverOf } from './solvers.ts'
@@ -21,10 +23,10 @@ const eta = Array.from(
 const binary = eta.map((e, i) => (1 / (1 + Math.exp(-e)) > 0.5 + 0.35 * Math.sin(5.3 * i) ? 1 : 0))
 const counts = eta.map((e, i) => Math.round(Math.exp(e) * (1 + 0.4 * Math.sin(3.1 * i))))
 
+const design = fromStorage(Float64Array.from(x), [n, d], 'float64')
+
 const logistic = (extra: Partial<GlmProblem> = {}): GlmProblem => ({
-  x,
-  n,
-  d,
+  x: design,
   y: binary,
   family: families.binomial(),
   link: families.logit(),
@@ -59,7 +61,7 @@ describe('glmSolvers', () => {
     const problem = logistic()
     const reference = fitGlm(problem, { kind: 'irls' })
     expect(reference.converged).toBe(true)
-    expect(Math.max(...Array.from(glmGradient(problem, reference.x), Math.abs))).toBeLessThan(1e-8)
+    expect(Math.max(...toFlat(glmGradient(problem, reference.x)).map(Math.abs))).toBeLessThan(1e-8)
     for (const config of SOLVERS) {
       const fit = fitGlm(problem, config, { maxSteps: 500 })
       expect(fit.converged, config.kind).toBe(true)
@@ -91,9 +93,7 @@ describe('glmSolvers', () => {
     const offset = Array.from({ length: n }, (_, i) => 0.2 * Math.cos(i))
     const weights = Array.from({ length: n }, (_, i) => 1 + (i % 3))
     const problem: GlmProblem = {
-      x,
-      n,
-      d,
+      x: design,
       y: counts,
       weights,
       offset,
@@ -114,9 +114,7 @@ describe('glmSolvers', () => {
 
   it('uses a non-canonical link: Newton on the observed information agrees with Fisher scoring', () => {
     const problem: GlmProblem = {
-      x,
-      n,
-      d,
+      x: design,
       y: counts.map((c) => c + 1),
       family: families.gamma(families.log()),
       link: families.log(),
@@ -134,7 +132,7 @@ describe('glmSolvers', () => {
     for (let j = 0; j < d; j++) S[j * p + j] = 0.3 + 0.1 * j
     S[0 * p + 1] = 0.05
     S[1 * p + 0] = 0.05
-    const problem = logistic({ penalty: { matrix: S }, normalise: false })
+    const problem = logistic({ penalty: { matrix: fromStorage(S, [p, p], 'float64') }, normalise: false })
     const a = fitGlm(problem, { kind: 'irls' })
     const b = fitGlm(problem, { kind: 'newton', gradTol: 1e-10 }, { maxSteps: 200 })
     for (let j = 0; j < p; j++) expect(b.x[j]).toBeCloseTo(a.x[j] ?? 0, 6)
@@ -166,5 +164,39 @@ describe('glmSolvers', () => {
     const ctx = { t: 0, key: key(0), log: (path: string) => logged.push(path), emit: () => undefined }
     algorithm.step(algorithm.init(key(0)), ctx as unknown as StepContext)
     expect(logged).toEqual(['solver/objective', 'solver/gradNorm', 'solver/step'])
+  })
+})
+
+describe('tensor-like inputs (migration, D-009)', () => {
+  it('the data, the penalty matrix and the coefficients take a tensor or nested lists; a wrong rank is a shape error; a traced one is not differentiable', () => {
+    const rows = [[0], [1], [2], [3]]
+    const base = { y: [0, 0, 1, 1], family: families.binomial(), link: families.logit(), fitIntercept: true }
+    const at = (x: TensorLike): number => glmValue({ ...base, x }, [0.1, 0.2])
+    expect(at(tensor(rows))).toBe(at(rows))
+    expect(() => at(tensor([0, 1, 2, 3]))).toThrow(expect.objectContaining({ code: 'shape' }))
+    expect(() => glmValue({ ...base, x: rows, y: [[0, 0, 1, 1]] }, [0.1, 0.2])).toThrow(
+      expect.objectContaining({ code: 'shape' }),
+    )
+    const beta = (b: TensorLike): number[] => toFlat(glmGradient({ ...base, x: rows }, b))
+    expect(beta(Float64Array.of(0.1, 0.2))).toEqual(beta([0.1, 0.2]))
+    expect(beta(tensor([0.1, 0.2]))).toEqual(beta([0.1, 0.2]))
+    expect(() => beta(tensor([[0.1, 0.2]]))).toThrow(expect.objectContaining({ code: 'shape' }))
+    expect(() => grad((b: Value) => (beta(b as TensorLike), sum(b)))(tensor([0.1, 0.2]))).toThrow(
+      expect.objectContaining({ code: 'not-differentiable' }),
+    )
+    const penalty = (matrix: TensorLike): number => glmValue({ ...base, x: rows, penalty: { matrix } }, [0.1, 0.2])
+    expect(
+      penalty(
+        tensor([
+          [1, 0],
+          [0, 1],
+        ]),
+      ),
+    ).toBe(
+      penalty([
+        [1, 0],
+        [0, 1],
+      ]),
+    )
   })
 })

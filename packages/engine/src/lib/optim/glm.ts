@@ -27,7 +27,9 @@ import {
   square,
   sum,
   type Tensor,
+  type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 import {
@@ -41,6 +43,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../trace/index.ts'
+import { matrixOf, vectorOf } from './_vector.ts'
 import { type SmoothProblem, smoothSolvers, type VectorParams } from './solvers.ts'
 import type { BatchObjective } from './stochastic.ts'
 
@@ -51,8 +54,8 @@ import type { BatchObjective } from './stochastic.ts'
 export interface GlmPenalty {
   /** The ridge weight: `(l2 / 2) sum_j beta_j^2` (default 0). */
   readonly l2?: number
-  /** A quadratic penalty `beta' S beta / 2`, `S` row-major `[p, p]` (a smoothing penalty of an additive model). */
-  readonly matrix?: ArrayLike<number>
+  /** A quadratic penalty `beta' S beta / 2`, `S` a `[p, p]` matrix (a smoothing penalty of an additive model). */
+  readonly matrix?: TensorLike
   /** Coordinates the `l2` weight skips. */
   readonly unpenalised?: readonly number[]
 }
@@ -61,18 +64,19 @@ export interface GlmPenalty {
  * A penalised GLM problem: minimise `D(beta) / (2 s) + l2 |beta|^2 / 2 + beta' S beta / 2` where `D` is
  * the deviance `sum_i w_i d(y_i, mu_i)` of the family at `mu = g^-1(x beta + b + offset)`, `b` the intercept (the last
  * coordinate, when fitted) and `s` the sum of the weights (scikit-learn's scaling of its GLMs and elastic net) or 1.
- * The parameter vector is the slopes then the intercept.
+ * The parameter vector is the slopes then the intercept. The data are tensor-likes (migration, D-009: `x` was row-major
+ * `ArrayLike<number>` with `n` and `d` beside it, which are now the shape of `x`; `y`, `weights`, `offset` and `start`
+ * were `ArrayLike<number>`).
  */
 export interface GlmProblem {
-  /** The design, row-major `[n, d]`. */
-  readonly x: ArrayLike<number>
-  readonly n: number
-  readonly d: number
-  readonly y: ArrayLike<number>
-  /** Prior weights (default 1). */
-  readonly weights?: ArrayLike<number>
-  /** A known offset added to the linear predictor (default none). */
-  readonly offset?: ArrayLike<number>
+  /** The design, an `[n, d]` matrix. */
+  readonly x: TensorLike
+  /** The responses, a vector of `n`. */
+  readonly y: TensorLike
+  /** Prior weights, a vector of `n` (default 1). */
+  readonly weights?: TensorLike
+  /** A known offset added to the linear predictor, a vector of `n` (default none). */
+  readonly offset?: TensorLike
   readonly family: DispersionFamily
   readonly link: Link
   /** Append an unpenalised intercept as the last coordinate (default `false`). */
@@ -81,7 +85,7 @@ export interface GlmProblem {
   /** Divide the deviance by the sum of the weights, as scikit-learn does (default `true`); `false` divides by one. */
   readonly normalise?: boolean
   /** Where to start (default zeros, with the intercept at the link of the family's starting mean). */
-  readonly start?: ArrayLike<number>
+  readonly start?: TensorLike
 }
 
 /** The state of the IRLS and coordinate-descent modes: the iterate and what the logging convention reads. */
@@ -128,36 +132,40 @@ const cache = new WeakMap<GlmProblem, Prepared>()
 function prepared(problem: GlmProblem): Prepared {
   const hit = cache.get(problem)
   if (hit !== undefined) return hit
-  const { n, d, family, link } = problem
+  const { family, link } = problem
+  const { data: x, rows: n, cols: d } = matrixOf(problem.x, 'glm: x')
   const intercept = problem.fitIntercept === true
   const p = d + (intercept ? 1 : 0)
-  if (problem.x.length !== n * d)
-    throw new MdmlError('shape', `glm: x has ${problem.x.length} entries for [${n}, ${d}]`)
-  if (problem.y.length !== n) throw new MdmlError('shape', `glm: y has ${problem.y.length} entries for ${n} rows`)
+  const yIn = toVector(problem.y, 'glm: y')
+  if (yIn.length !== n) throw new MdmlError('shape', `glm: y has ${yIn.length} entries for ${n} rows`)
   const a = new Float64Array(n * p)
   for (let i = 0; i < n; i++) {
-    for (let j = 0; j < d; j++) a[i * p + j] = problem.x[i * d + j] ?? 0
+    for (let j = 0; j < d; j++) a[i * p + j] = x[i * d + j] ?? 0
     if (intercept) a[i * p + d] = 1
   }
-  const w = problem.weights === undefined ? new Float64Array(n).fill(1) : Float64Array.from(problem.weights)
+  const w =
+    problem.weights === undefined
+      ? new Float64Array(n).fill(1)
+      : Float64Array.from(toVector(problem.weights, 'glm: weights'))
   if (w.length !== n) throw new MdmlError('shape', `glm: ${w.length} weights for ${n} rows`)
-  const offset = problem.offset === undefined ? new Float64Array(n) : Float64Array.from(problem.offset)
+  const offset =
+    problem.offset === undefined ? new Float64Array(n) : Float64Array.from(toVector(problem.offset, 'glm: offset'))
   if (offset.length !== n) throw new MdmlError('shape', `glm: ${offset.length} offsets for ${n} rows`)
   const penalty = problem.penalty ?? {}
   const l2 = penalty.l2 ?? 0
   if (!(l2 >= 0)) throw new MdmlError('value', 'glm: the penalty weight must be non-negative')
   const free = new Set(penalty.unpenalised ?? [])
   const l2v = Float64Array.from({ length: p }, (_, j) => (j < d && !free.has(j) ? l2 : 0))
-  const matrix = penalty.matrix === undefined ? undefined : Float64Array.from(penalty.matrix)
+  const matrix = penalty.matrix === undefined ? undefined : matrixOf(penalty.matrix, 'glm: penalty').data
   if (matrix !== undefined && matrix.length !== p * p)
     throw new MdmlError('shape', `glm: the penalty matrix has ${matrix.length} entries for [${p}, ${p}]`)
   let sw = 0
   for (const v of w) sw += v
   const scale = problem.normalise === false ? 1 : sw
-  const y = Float64Array.from(problem.y)
+  const y = Float64Array.from(yIn)
   let start: Float64Array
   if (problem.start !== undefined) {
-    start = Float64Array.from(problem.start)
+    start = Float64Array.from(toVector(problem.start, 'glm: start'))
     if (start.length !== p) throw new MdmlError('shape', `glm: the start has ${start.length} entries for ${p}`)
   } else {
     start = new Float64Array(p)
@@ -244,39 +252,44 @@ function gradientAt(P: Prepared, beta: ArrayLike<number>): Float64Array {
 }
 
 /**
- * The penalised objective of a GLM problem at a coefficient vector.
+ * The penalised objective of a GLM problem at a coefficient vector. Takes the coefficients as a tensor-like
+ * (migration, D-009: was `ArrayLike<number>`).
  *
  * @param problem - The problem.
- * @param beta - The coefficients: slopes then the intercept.
+ * @param beta - The coefficients, a vector: slopes then the intercept.
  * @returns The objective.
+ * @throws MdmlError with code `shape` unless `beta` has rank 1, and `not-differentiable` for a traced one.
  * @example
  * ```ts
  * import { families } from 'mdml-engine/dists'
  * import { glmValue } from 'mdml-engine/optim'
- * const problem = { x: [0, 1], n: 2, d: 1, y: [0, 1], family: families.binomial(), link: families.logit() }
+ * const problem = { x: [[0], [1]], y: [0, 1], family: families.binomial(), link: families.logit() }
  * glmValue(problem, [0]).toFixed(4) // => '0.6931'
  * ```
  */
-export function glmValue(problem: GlmProblem, beta: ArrayLike<number>): number {
-  return valueAt(prepared(problem), beta)
+export function glmValue(problem: GlmProblem, beta: TensorLike): number {
+  return valueAt(prepared(problem), toVector(beta, 'glmValue'))
 }
 
 /**
- * The gradient of a GLM problem's objective at a coefficient vector.
+ * The gradient of a GLM problem's objective at a coefficient vector. Takes the coefficients as a tensor-like and returns
+ * a tensor (migration, D-009: was `ArrayLike<number>` in, `Float64Array` out).
  *
  * @param problem - The problem.
- * @param beta - The coefficients: slopes then the intercept.
- * @returns The gradient.
+ * @param beta - The coefficients, a vector: slopes then the intercept.
+ * @returns The gradient, a `[p]` tensor.
+ * @throws MdmlError with code `shape` unless `beta` has rank 1, and `not-differentiable` for a traced one.
  * @example
  * ```ts
  * import { families } from 'mdml-engine/dists'
  * import { glmGradient } from 'mdml-engine/optim'
- * const problem = { x: [0, 1], n: 2, d: 1, y: [0, 1], family: families.binomial(), link: families.logit() }
- * Array.from(glmGradient(problem, [0])).map((v) => v.toFixed(2)) // => ['-0.25']
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const problem = { x: [[0], [1]], y: [0, 1], family: families.binomial(), link: families.logit() }
+ * toFlat(glmGradient(problem, [0])).map((v) => v.toFixed(2)) // => ['-0.25']
  * ```
  */
-export function glmGradient(problem: GlmProblem, beta: ArrayLike<number>): Float64Array {
-  return gradientAt(prepared(problem), beta)
+export function glmGradient(problem: GlmProblem, beta: TensorLike): Tensor<'float64', [number]> {
+  return vectorOf(gradientAt(prepared(problem), toVector(beta, 'glmGradient')))
 }
 
 /**
@@ -291,7 +304,7 @@ export function glmGradient(problem: GlmProblem, beta: ArrayLike<number>): Float
  * ```ts
  * import { families } from 'mdml-engine/dists'
  * import { glmSmoothProblem } from 'mdml-engine/optim'
- * const problem = { x: [0, 1], n: 2, d: 1, y: [0, 1], family: families.binomial(), link: families.logit() }
+ * const problem = { x: [[0], [1]], y: [0, 1], family: families.binomial(), link: families.logit() }
  * glmSmoothProblem(problem).batches?.n // => 2
  * ```
  */
@@ -547,7 +560,7 @@ export interface GlmFit {
  * ```ts
  * import { families } from 'mdml-engine/dists'
  * import { fitGlm } from 'mdml-engine/optim'
- * const problem = { x: [0, 1, 2, 3, 4, 5], n: 6, d: 1, y: [0, 0, 1, 0, 1, 1], family: families.binomial(), link: families.logit(), fitIntercept: true }
+ * const problem = { x: [[0], [1], [2], [3], [4], [5]], y: [0, 0, 1, 0, 1, 1], family: families.binomial(), link: families.logit(), fitIntercept: true }
  * const irls = fitGlm(problem, { kind: 'irls' })
  * const lbfgs = fitGlm(problem, { kind: 'lbfgs', gradTol: 1e-10 })
  * Math.abs(irls.coef[0] - lbfgs.coef[0]) < 1e-4 // => true
