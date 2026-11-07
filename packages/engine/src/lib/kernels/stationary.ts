@@ -31,6 +31,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
+import { euclideanDistances, squaredDistances } from './_distance.ts'
 import { defineKernel, type Kernel } from './kernel.ts'
 
 function param(x: TensorLike): Value {
@@ -45,12 +46,14 @@ function scaled(x: Value, y: Value | undefined, lengthScale: Value): [Value, Val
 
 /** Squared distances between scaled rows. */
 function scaledSquared(x: Value, y: Value | undefined, lengthScale: Value): Value {
-  return cdist(...scaled(x, y, lengthScale), 'sqeuclidean')
+  const [a, b] = scaled(x, y, lengthScale)
+  return squaredDistances(a, y === undefined ? undefined : b)
 }
 
 /** Euclidean distances between scaled rows (zero gradient at zero distance). */
 function scaledDistance(x: Value, y: Value | undefined, lengthScale: Value): Value {
-  return cdist(...scaled(x, y, lengthScale), 'euclidean')
+  const [a, b] = scaled(x, y, lengthScale)
+  return euclideanDistances(a, y === undefined ? undefined : b)
 }
 
 /** A diagonal that is the same constant for every row. */
@@ -296,7 +299,7 @@ export function periodicKernel(options: PeriodicOptions = {}): Kernel {
     params: { lengthScale, period: param(options.period ?? 1) },
     stationary: true,
     config: { isotropic: true },
-    matrix: (p, x, y) => periodicPart(cdist(x, y ?? x, 'euclidean'), p.lengthScale as Value, p.period as Value),
+    matrix: (p, x, y) => periodicPart(euclideanDistances(x, y), p.lengthScale as Value, p.period as Value),
     diag: (_p, x) => constantDiag(x, 1),
   })
 }
@@ -335,7 +338,7 @@ export function locallyPeriodicKernel(options: LocallyPeriodicOptions = {}): Ker
     config: { isotropic: true },
     matrix: (p, x, y) => {
       const decay = p.decay as Value
-      const d = cdist(x, y ?? x, 'euclidean')
+      const d = euclideanDistances(x, y)
       const envelope = exp(mul(scaledSquared(x, y, decay), -0.5))
       return mul(periodicPart(d, p.lengthScale as Value, p.period as Value), envelope)
     },
@@ -431,7 +434,7 @@ export function cosineKernel(options: CosineOptions = {}): Kernel {
     name: 'cosine',
     params: { period: param(options.period ?? 1) },
     stationary: true,
-    matrix: (p, x, y) => cos(div(mul(cdist(x, y ?? x, 'euclidean'), Math.PI), p.period)),
+    matrix: (p, x, y) => cos(div(mul(euclideanDistances(x, y), Math.PI), p.period)),
     diag: (_p, x) => constantDiag(x, 1),
   })
 }
