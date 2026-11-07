@@ -262,7 +262,9 @@ converts it once with `asTensor`; outputs are tensors.
 `trace/events.ts`, which owns `RunStatus`). A routine that returns a result record says how it ended with `status:
 RunStatus` and `converged: boolean` (true exactly when the status is `converged`), and does not throw because it failed
 to converge. Invalid arguments (a shape, a NaN or infinity where a number is needed, crossed bounds, a negative
-tolerance) throw `MdmlError('value')` (`shape` for dimensions). A routine that returns a bare value (a matrix function,
+tolerance, too few observations) throw `MdmlError('value')` (`shape` for dimensions that disagree; `domain` only for a
+kernel hyperparameter outside its range, which the kernels' contract and tests pin; `not-implemented` only for a
+capability the thing truly lacks, such as the moment of a `Distribution` with no closed form). A routine that returns a bare value (a matrix function,
 a fitted polynomial, a differentiable solve) has no place for a status and throws `MdmlError('convergence')`, which its
 `@throws` says; where a result-returning sibling exists, that is the one to use when failure is an expected outcome.
 Where a result already had a `status` field in an older vocabulary, the old field stays (additions only) and the

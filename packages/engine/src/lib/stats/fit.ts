@@ -577,7 +577,7 @@ export function fitDistribution(x: TensorLike, family: FitFamily, options: Newto
   if (spec === undefined) throw new MdmlError('value', `fitDistribution: unknown family ${String(family)}`)
   const a = sample('fitDistribution', x, 2)
   if (spec.check !== undefined && !spec.check(a))
-    throw new MdmlError('domain', `fitDistribution: the data are outside the support of ${family}`)
+    throw new MdmlError('value', `fitDistribution: the data are outside the support of ${family}`)
   const data = asTensor(a)
   const p = spec.names.length
   const logit = family === 'negativeBinomial'

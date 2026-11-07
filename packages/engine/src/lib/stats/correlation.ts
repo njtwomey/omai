@@ -474,7 +474,17 @@ export function pointBiserial(binary: TensorLike, x: TensorLike, options: TestOp
   return { ...pearson(binary, x, options), test: 'point-biserial correlation' }
 }
 
-/** Double-centred distance matrix of the rows of an n x p matrix. */
+/**
+ * Double-centred Euclidean distance matrix of the rows of an n x p matrix (the A of the distance covariance).
+ *
+ * @param m - The n x p matrix, row-major.
+ * @returns The n x n double-centred distances, row-major.
+ * @example
+ * ```ts
+ * import { centredDistances } from 'mdml-engine/stats'
+ * Array.from(centredDistances({ rows: 2, cols: 1, data: Float64Array.of(0, 2) })) // => [-1, 1, 1, -1]
+ * ```
+ */
 export function centredDistances(m: Rows): Float64Array {
   const n = m.rows
   const p = m.cols
@@ -501,7 +511,21 @@ export function centredDistances(m: Rows): Float64Array {
   return d
 }
 
-/** The distance correlation of two double-centred distance matrices, optionally with y permuted. */
+/**
+ * The distance correlation of two double-centred distance matrices, optionally with y permuted.
+ *
+ * @param A - Double-centred distances of x, `[n, n]` row-major (see {@link centredDistances}).
+ * @param B - Double-centred distances of y, `[n, n]` row-major.
+ * @param n - The number of observations.
+ * @param perm - A permutation applied to the observations of y (default the identity).
+ * @returns The distance correlation in [0, 1] (0 when either side is constant).
+ * @example
+ * ```ts
+ * import { centredDistances, distanceCorrelationOf } from 'mdml-engine/stats'
+ * const a = centredDistances({ rows: 3, cols: 1, data: Float64Array.of(0, 1, 3) })
+ * distanceCorrelationOf(a, a, 3) // => 1
+ * ```
+ */
 export function distanceCorrelationOf(A: Float64Array, B: Float64Array, n: number, perm?: ArrayLike<number>): number {
   let xy = 0
   let xx = 0

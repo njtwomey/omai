@@ -46,7 +46,7 @@ export interface SimpleRandomisationOptions {
  * @param n - Number of units $n \ge 1$ to assign.
  * @param options - `nArms` (default `2`), `probabilities`, and `exact` (default `false`).
  * @returns An `int32` tensor of shape `[n]` with arm indices in `0 .. K - 1`.
- * @throws MdmlError with code `domain` if `n < 1`, `nArms < 2`, or probabilities are invalid.
+ * @throws MdmlError with code `value` if `n < 1`, `nArms < 2`, or probabilities are invalid.
  * @example
  * ```ts
  * import { key } from 'mdml-engine/random'
@@ -57,11 +57,11 @@ export interface SimpleRandomisationOptions {
  */
 export function simpleRandomisation(k: Key, n: number, options: SimpleRandomisationOptions = {}): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('domain', `simpleRandomisation: n must be a positive integer, got ${n}`)
+    throw new MdmlError('value', `simpleRandomisation: n must be a positive integer, got ${n}`)
   }
   const nArms = options.nArms ?? (options.probabilities !== undefined ? options.probabilities.length : 2)
   if (!Number.isInteger(nArms) || nArms < 2) {
-    throw new MdmlError('domain', `simpleRandomisation: nArms must be an integer >= 2, got ${nArms}`)
+    throw new MdmlError('value', `simpleRandomisation: nArms must be an integer >= 2, got ${nArms}`)
   }
   const probs = options.probabilities ?? new Array<number>(nArms).fill(1 / nArms)
   if (probs.length !== nArms) {
@@ -71,7 +71,7 @@ export function simpleRandomisation(k: Key, n: number, options: SimpleRandomisat
   for (let a = 0; a < nArms; a++) {
     const p = probs[a] ?? 0
     if (!(p > 0) || !Number.isFinite(p)) {
-      throw new MdmlError('domain', `simpleRandomisation: probabilities[${a}] must be > 0, got ${p}`)
+      throw new MdmlError('value', `simpleRandomisation: probabilities[${a}] must be > 0, got ${p}`)
     }
     pSum += p
   }
@@ -134,7 +134,7 @@ export interface PermutedBlockOptions {
 function buildBlockTemplate(options: PermutedBlockOptions, name: string): Int32Array {
   const nArms = options.nArms ?? (options.ratios !== undefined ? options.ratios.length : 2)
   if (!Number.isInteger(nArms) || nArms < 2) {
-    throw new MdmlError('domain', `${name}: nArms must be an integer >= 2, got ${nArms}`)
+    throw new MdmlError('value', `${name}: nArms must be an integer >= 2, got ${nArms}`)
   }
   const ratios = options.ratios ?? new Array<number>(nArms).fill(1)
   if (ratios.length !== nArms) {
@@ -144,14 +144,14 @@ function buildBlockTemplate(options: PermutedBlockOptions, name: string): Int32A
   for (let a = 0; a < nArms; a++) {
     const r = ratios[a] ?? 0
     if (!Number.isInteger(r) || r < 1) {
-      throw new MdmlError('domain', `${name}: ratios[${a}] must be a positive integer, got ${r}`)
+      throw new MdmlError('value', `${name}: ratios[${a}] must be a positive integer, got ${r}`)
     }
     ratioSum += r
   }
   const blockSize = options.blockSize ?? 2 * ratioSum
   if (!Number.isInteger(blockSize) || blockSize < ratioSum || blockSize % ratioSum !== 0) {
     throw new MdmlError(
-      'domain',
+      'value',
       `${name}: blockSize (${blockSize}) must be a positive integer multiple of sum(ratios)=${ratioSum}`,
     )
   }
@@ -174,7 +174,7 @@ function buildBlockTemplate(options: PermutedBlockOptions, name: string): Int32A
  * @param n - Number of units $n \ge 1$.
  * @param options - `nArms` (default `2`), integer `ratios` (default all `1`), and `blockSize` (default `2 * sum(ratios)`).
  * @returns An `int32` tensor of shape `[n]` with arm indices in `0 .. K - 1`.
- * @throws MdmlError with code `domain` if `blockSize` is not a positive multiple of `sum(ratios)`.
+ * @throws MdmlError with code `value` if `blockSize` is not a positive multiple of `sum(ratios)`.
  * @example
  * ```ts
  * import { key } from 'mdml-engine/random'
@@ -186,7 +186,7 @@ function buildBlockTemplate(options: PermutedBlockOptions, name: string): Int32A
  */
 export function permutedBlockRandomisation(k: Key, n: number, options: PermutedBlockOptions = {}): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('domain', `permutedBlockRandomisation: n must be a positive integer, got ${n}`)
+    throw new MdmlError('value', `permutedBlockRandomisation: n must be a positive integer, got ${n}`)
   }
   const template = buildBlockTemplate(options, 'permutedBlockRandomisation')
   const B = template.length
@@ -247,7 +247,7 @@ export function stratifiedRandomisation(
   const n = m.rows
   const p = m.cols
   if (n < 1) {
-    throw new MdmlError('shape', 'stratifiedRandomisation: strata must have at least 1 row')
+    throw new MdmlError('value', 'stratifiedRandomisation: strata must have at least 1 row')
   }
   buildBlockTemplate(options, 'stratifiedRandomisation')
 
@@ -411,15 +411,15 @@ export function minimizationAlgorithm(
   const n = m.rows
   const p = m.cols
   if (n < 1) {
-    throw new MdmlError('shape', 'minimizationAlgorithm: covariates must have at least 1 row')
+    throw new MdmlError('value', 'minimizationAlgorithm: covariates must have at least 1 row')
   }
   const nArms = options.nArms ?? 2
   if (!Number.isInteger(nArms) || nArms < 2) {
-    throw new MdmlError('domain', `minimizationAlgorithm: nArms must be an integer >= 2, got ${nArms}`)
+    throw new MdmlError('value', `minimizationAlgorithm: nArms must be an integer >= 2, got ${nArms}`)
   }
   const pBiased = options.pBiased ?? 0.8
   if (!(pBiased >= 1 / nArms && pBiased <= 1) || !Number.isFinite(pBiased)) {
-    throw new MdmlError('domain', `minimizationAlgorithm: pBiased must be in [1/nArms, 1], got ${pBiased}`)
+    throw new MdmlError('value', `minimizationAlgorithm: pBiased must be in [1/nArms, 1], got ${pBiased}`)
   }
   const wArr = new Float64Array(p)
   if (options.weights !== undefined) {
@@ -429,7 +429,7 @@ export function minimizationAlgorithm(
     for (let j = 0; j < p; j++) {
       const wj = options.weights[j] ?? 0
       if (!(wj > 0) || !Number.isFinite(wj)) {
-        throw new MdmlError('domain', `minimizationAlgorithm: weights[${j}] must be > 0, got ${wj}`)
+        throw new MdmlError('value', `minimizationAlgorithm: weights[${j}] must be > 0, got ${wj}`)
       }
       wArr[j] = wj
     }
@@ -602,7 +602,7 @@ export interface MatchedPairsResult {
  * @param covariates - 1-D vector or 2-D matrix of baseline covariates of shape `[n, p]` ($n \ge 2$).
  * @param options - `distance` (`'mahalanobis'` default or `'euclidean'`) and optional PRNG `key`.
  * @returns Matched pairs, pairwise distances, `meanDistance`, `pairIds`, and binary `assignments`.
- * @throws MdmlError with code `shape` if fewer than 2 units are provided.
+ * @throws MdmlError with code `value` if fewer than 2 units are provided.
  * @example
  * ```ts
  * import { key } from 'mdml-engine/random'
@@ -617,7 +617,7 @@ export function matchedPairsDesign(covariates: TensorLike, options: MatchedPairs
   const n = m.rows
   const p = m.cols
   if (n < 2) {
-    throw new MdmlError('shape', `matchedPairsDesign: need at least 2 units, got ${n}`)
+    throw new MdmlError('value', `matchedPairsDesign: need at least 2 units, got ${n}`)
   }
 
   const metric = options.distance ?? 'mahalanobis'
@@ -774,7 +774,7 @@ export interface FullFactorialOptions {
  * @param levels - Number of two-level factors $k \ge 1$, or array of level counts `[L_1, ..., L_k]` ($L_j \ge 2$).
  * @param options - `coding` (`'coded'` default or `'index'`).
  * @returns Design matrix `Tensor` of shape `[nRuns, k]`.
- * @throws MdmlError with code `domain` for invalid factor counts or level counts.
+ * @throws MdmlError with code `value` for invalid factor counts or level counts.
  * @example
  * ```ts
  * import { fullFactorialDesign } from 'mdml-engine/stats'
@@ -788,7 +788,7 @@ export function fullFactorialDesign(levels: number | readonly number[], options:
     typeof levels === 'number'
       ? (() => {
           if (!Number.isInteger(levels) || levels < 1 || levels > 20) {
-            throw new MdmlError('domain', `fullFactorialDesign: k must be an integer in 1..20, got ${levels}`)
+            throw new MdmlError('value', `fullFactorialDesign: k must be an integer in 1..20, got ${levels}`)
           }
           return new Array<number>(levels).fill(2)
         })()
@@ -796,13 +796,13 @@ export function fullFactorialDesign(levels: number | readonly number[], options:
 
   const k = levelArr.length
   if (k < 1) {
-    throw new MdmlError('domain', 'fullFactorialDesign: levels array must be non-empty')
+    throw new MdmlError('value', 'fullFactorialDesign: levels array must be non-empty')
   }
   let nRuns = 1
   for (let j = 0; j < k; j++) {
     const lj = levelArr[j] ?? 0
     if (!Number.isInteger(lj) || lj < 2) {
-      throw new MdmlError('domain', `fullFactorialDesign: levels[${j}] must be an integer >= 2, got ${lj}`)
+      throw new MdmlError('value', `fullFactorialDesign: levels[${j}] must be an integer >= 2, got ${lj}`)
     }
     nRuns *= lj
   }
@@ -866,7 +866,7 @@ function parseGeneratorSpecs(
 ): { readonly nBase: number; readonly genMasks: readonly number[]; readonly definingMasks: readonly number[] } {
   const p = generators.length
   if (p < 1 || p >= k) {
-    throw new MdmlError('domain', `fractionalFactorialDesign: number of generators p=${p} must satisfy 1 <= p < k=${k}`)
+    throw new MdmlError('value', `fractionalFactorialDesign: number of generators p=${p} must satisfy 1 <= p < k=${k}`)
   }
   const nBase = k - p
   const genMasks: number[] = []
@@ -885,7 +885,7 @@ function parseGeneratorSpecs(
         const lhsIdx = lhs.charCodeAt(0) - 65
         if (lhs.length !== 1 || lhsIdx !== targetFactor) {
           throw new MdmlError(
-            'domain',
+            'value',
             `fractionalFactorialDesign: generator '${spec}' must define factor ${factorLabel(targetFactor)}`,
           )
         }
@@ -894,7 +894,7 @@ function parseGeneratorSpecs(
         const fIdx = rhs.charCodeAt(c) - 65
         if (fIdx < 0 || fIdx >= nBase) {
           throw new MdmlError(
-            'domain',
+            'value',
             `fractionalFactorialDesign: generator '${spec}' RHS must reference base factors A..${factorLabel(nBase - 1)}`,
           )
         }
@@ -904,13 +904,13 @@ function parseGeneratorSpecs(
       for (let c = 0; c < spec.length; c++) {
         const fIdx = spec[c] ?? -1
         if (!Number.isInteger(fIdx) || fIdx < 0 || fIdx >= nBase) {
-          throw new MdmlError('domain', `fractionalFactorialDesign: generator index ${fIdx} must be in 0..${nBase - 1}`)
+          throw new MdmlError('value', `fractionalFactorialDesign: generator index ${fIdx} must be in 0..${nBase - 1}`)
         }
         rhsMask ^= 1 << fIdx
       }
     }
     if (rhsMask === 0) {
-      throw new MdmlError('domain', `fractionalFactorialDesign: generator ${gIdx} cannot be empty`)
+      throw new MdmlError('value', `fractionalFactorialDesign: generator ${gIdx} cannot be empty`)
     }
     genMasks.push(rhsMask)
     definingWords.push(rhsMask | (1 << targetFactor))
@@ -944,7 +944,7 @@ export interface AliasStructureResult {
  * @param k - Total number of two-level factors ($3 \le k \le 15$).
  * @param generators - Array of $p$ generator specifications (e.g. `['D=ABC']` or `[[0, 1, 2]]`).
  * @returns `AliasStructureResult` with `resolution`, `definingRelation`, and `aliases` for main effects and 2FIs.
- * @throws MdmlError with code `domain` if generators are invalid.
+ * @throws MdmlError with code `value` if generators are invalid.
  * @example
  * ```ts
  * import { aliasStructure } from 'mdml-engine/stats'
@@ -957,7 +957,7 @@ export interface AliasStructureResult {
  */
 export function aliasStructure(k: number, generators: readonly (string | readonly number[])[]): AliasStructureResult {
   if (!Number.isInteger(k) || k < 3 || k > 15) {
-    throw new MdmlError('domain', `aliasStructure: k must be an integer in 3..15, got ${k}`)
+    throw new MdmlError('value', `aliasStructure: k must be an integer in 3..15, got ${k}`)
   }
   const { nBase, definingMasks } = parseGeneratorSpecs(k, generators)
   const p = generators.length
@@ -1095,7 +1095,7 @@ export function fractionalFactorial(
  * @param n - Side length / number of treatments ($n \ge 1$).
  * @param options - Optional PRNG `key` for randomizing rows, columns, and symbols.
  * @returns An `int32` tensor of shape `[n, n]` with entries in `0 .. n - 1`.
- * @throws MdmlError with code `domain` if `n < 1`.
+ * @throws MdmlError with code `value` if `n < 1`.
  * @example
  * ```ts
  * import { latinSquareDesign } from 'mdml-engine/stats'
@@ -1106,7 +1106,7 @@ export function fractionalFactorial(
  */
 export function latinSquareDesign(n: number, options: { readonly key?: Key } = {}): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('domain', `latinSquareDesign: n must be a positive integer, got ${n}`)
+    throw new MdmlError('value', `latinSquareDesign: n must be a positive integer, got ${n}`)
   }
   let rowPerm: Int32Array = new Int32Array(n)
   let colPerm: Int32Array = new Int32Array(n)
@@ -1166,7 +1166,7 @@ export interface OneWayAnovaResult extends TestResult {
  * @param groups - Array of $k \ge 2$ 1-D group samples.
  * @param options - Optional confidence `level`.
  * @returns `OneWayAnovaResult` (`TestResult` plus ANOVA table and effect sizes).
- * @throws MdmlError with code `shape` if fewer than 2 groups or total degrees of freedom $N - k < 1$.
+ * @throws MdmlError with code `value` if fewer than 2 groups or total degrees of freedom $N - k < 1$.
  * @example
  * ```ts
  * import { oneWayAnova } from 'mdml-engine/stats'
@@ -1193,7 +1193,7 @@ export function oneWayAnova(groups: readonly TensorLike[]): OneWayAnovaResult {
   const dfBetween = k - 1
   const dfWithin = N - k
   if (dfWithin < 1) {
-    throw new MdmlError('shape', `oneWayAnova: need total sample size N > k (got N=${N}, k=${k})`)
+    throw new MdmlError('value', `oneWayAnova: need total sample size N > k (got N=${N}, k=${k})`)
   }
   const grandMean = grandSum / N
   let ssBetween = 0
@@ -1339,7 +1339,7 @@ function combineDesignBlocks(
  * @param factorB - 1-D vector of numeric/integer level labels for Factor B (length $n$).
  * @param options - `ssType` (`'I'`, `'II'`, or `'III'`, default `'III'`), and `interaction` (default `true`).
  * @returns `TwoWayAnovaResult` with `factorA`, `factorB`, optional `interaction`, `residual`, `total`, and $R^2$.
- * @throws MdmlError with code `shape` or `domain` if a factor has fewer than 2 levels or residual degrees of freedom $< 1$.
+ * @throws MdmlError with code `shape` or `value` if a factor has fewer than 2 levels or residual degrees of freedom $< 1$.
  * @example
  * ```ts
  * import { twoWayAnova } from 'mdml-engine/stats'
@@ -1371,7 +1371,7 @@ export function twoWayAnova(
   const a = levelsA.length
   const b = levelsB.length
   if (a < 2 || b < 2) {
-    throw new MdmlError('domain', `twoWayAnova: both factors must have at least 2 levels (got a=${a}, b=${b})`)
+    throw new MdmlError('value', `twoWayAnova: both factors must have at least 2 levels (got a=${a}, b=${b})`)
   }
 
   const includeInteraction = options.interaction ?? true

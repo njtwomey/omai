@@ -287,7 +287,7 @@ export const intraclassCorrelation: MetricFunction<[TensorLike, { readonly type?
     const r = shapedArray(ratings)
     const n = r.shape[0] ?? 0
     const k = r.shape[1] ?? 0
-    if (n < 2 || k < 2) throw new MdmlError('shape', 'intraclassCorrelation: needs at least two targets and two raters')
+    if (n < 2 || k < 2) throw new MdmlError('value', 'intraclassCorrelation: needs at least two targets and two raters')
     let grand = 0
     for (const v of r.data) grand += v
     grand /= n * k

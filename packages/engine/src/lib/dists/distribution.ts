@@ -153,7 +153,10 @@ export function unavailable(name: string, what: string): never {
 /**
  * Build a distribution from its defining parts. Defaults: `prob = exp(logProb)`, `sf = 1 - cdf`, `logCdf = log(cdf)`,
  * `logSf = log1p(-cdf)`, `isf(q) = ppf(1 - q)`, `stddev = sqrt(variance)`, `sample = stopGradient(rsample)`. A NaN
- * argument to `logProb`, `cdf`, `sf`, `logCdf`, `logSf`, `ppf` or `isf` gives NaN (for an event, a NaN coordinate).
+ * argument to `logProb`, `cdf`, `sf`, `logCdf`, `logSf`, `ppf` or `isf` gives NaN (for an event, a NaN coordinate). The
+ * defaults for `sf`, `logCdf`, `logSf` and `isf` are written through `cdf` and lose the tails (`sf(x) = 1 - cdf(x)` is 0
+ * where the tail is 1e-17): a family used in its tails should supply `sf`, `logSf` and `isf` itself, as every family of
+ * the library does.
  *
  * @param spec - The defining parts.
  * @returns The distribution.

@@ -300,7 +300,18 @@ export function mmdTest(x: TensorLike, y: TensorLike, options: KernelTestOptions
   })
 }
 
-/** Centre a Gram matrix: H K H with H = I - 1/n. */
+/**
+ * Centre a Gram matrix: H K H with H = I - 1/n.
+ *
+ * @param K - The Gram matrix, `[n, n]` row-major.
+ * @param n - Its order.
+ * @returns The centred matrix, `[n, n]` row-major (every row and column sums to 0).
+ * @example
+ * ```ts
+ * import { centreGram } from 'mdml-engine/stats/tests'
+ * Array.from(centreGram(Float64Array.of(1, 0, 0, 1), 2)) // => [0.5, -0.5, -0.5, 0.5]
+ * ```
+ */
 export function centreGram(K: Float64Array, n: number): Float64Array {
   const row = new Float64Array(n)
   let all = 0

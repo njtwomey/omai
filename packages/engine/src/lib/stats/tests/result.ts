@@ -373,7 +373,8 @@ export function checkNormality(
  *
  * @param groups - Two or more samples.
  * @param alpha - The level below which equality is rejected (default 0.05).
- * @returns Whether the variances look equal and the test's p-value.
+ * @returns Whether the variances look equal and the test's p-value (NaN when the test is undefined, as for constant
+ * samples, whose spreads are all 0: `equal` is then true).
  * @example
  * ```ts
  * import { checkEqualVariances } from 'mdml-engine/stats/tests'
@@ -385,7 +386,7 @@ export function checkEqualVariances(
   alpha = 0.05,
 ): { readonly equal: boolean; readonly pValue: number } {
   const p = levene(groups).pValue
-  return { equal: !(p < alpha), pValue: Number.isNaN(p) ? 1 : p }
+  return { equal: !(p < alpha), pValue: p }
 }
 
 /**

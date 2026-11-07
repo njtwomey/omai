@@ -123,6 +123,14 @@ export interface QuantileOptions {
  * ```
  */
 export function quantile(x: TensorLike, q: number, options?: QuantileOptions): number
+/**
+ * Sample quantiles at several levels (see the number overload above).
+ *
+ * @param x - The sample (flattened).
+ * @param q - The levels, in [0, 1].
+ * @param options - method (default `'linear'`).
+ * @returns A tensor with one quantile per level.
+ */
 export function quantile(x: TensorLike, q: TensorLike, options?: QuantileOptions): Tensor
 export function quantile(x: TensorLike, q: number | TensorLike, options: QuantileOptions = {}): number | Tensor {
   const name = methodName(options.method ?? 'linear')

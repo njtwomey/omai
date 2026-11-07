@@ -40,7 +40,7 @@ function clampProb(p: number): number {
  * @param mean - Expected value $\mathbb{E}[X] \ge 0$.
  * @param threshold - Positive threshold $a > 0$.
  * @returns Upper bound on $\mathbb{P}(X \ge a)$ in $[0, 1]$.
- * @throws MdmlError with code `domain` if `mean < 0` or `threshold <= 0`.
+ * @throws MdmlError with code `value` if `mean < 0` or `threshold <= 0`.
  * @example
  * ```ts
  * import { markovBound } from 'mdml-engine/stats'
@@ -50,10 +50,10 @@ function clampProb(p: number): number {
  */
 export function markovBound(mean: number, threshold: number): number {
   if (!(mean >= 0) || !Number.isFinite(mean)) {
-    throw new MdmlError('domain', `markovBound: mean must be finite and >= 0, got ${mean}`)
+    throw new MdmlError('value', `markovBound: mean must be finite and >= 0, got ${mean}`)
   }
   if (!(threshold > 0) || !Number.isFinite(threshold)) {
-    throw new MdmlError('domain', `markovBound: threshold must be finite and > 0, got ${threshold}`)
+    throw new MdmlError('value', `markovBound: threshold must be finite and > 0, got ${threshold}`)
   }
   return clampProb(mean / threshold)
 }
@@ -67,7 +67,7 @@ export function markovBound(mean: number, threshold: number): number {
  * @param t - Positive deviation threshold $t > 0$.
  * @param options - `twoSided` (default `true`; when `false`, returns Cantelli's one-sided bound $\sigma^2 / (\sigma^2 + t^2)$).
  * @returns Upper bound on the tail probability in $[0, 1]$.
- * @throws MdmlError with code `domain` if `variance < 0` or `t <= 0`.
+ * @throws MdmlError with code `value` if `variance < 0` or `t <= 0`.
  * @example
  * ```ts
  * import { chebyshevBound } from 'mdml-engine/stats'
@@ -77,10 +77,10 @@ export function markovBound(mean: number, threshold: number): number {
  */
 export function chebyshevBound(variance: number, t: number, options: TailBoundOptions = {}): number {
   if (!(variance >= 0) || !Number.isFinite(variance)) {
-    throw new MdmlError('domain', `chebyshevBound: variance must be finite and >= 0, got ${variance}`)
+    throw new MdmlError('value', `chebyshevBound: variance must be finite and >= 0, got ${variance}`)
   }
   if (!(t > 0) || !Number.isFinite(t)) {
-    throw new MdmlError('domain', `chebyshevBound: deviation t must be finite and > 0, got ${t}`)
+    throw new MdmlError('value', `chebyshevBound: deviation t must be finite and > 0, got ${t}`)
   }
   const twoSided = options.twoSided ?? true
   if (twoSided) {
@@ -105,7 +105,7 @@ export interface ChernoffOptions extends TailBoundOptions {
  * @param t - Positive deviation $t > 0$.
  * @param options - `n` (sample size, default `1`) and `twoSided` (default `true`).
  * @returns Upper bound on the tail probability in $[0, 1]$.
- * @throws MdmlError with code `domain` if `sigma <= 0`, `t <= 0`, or `n < 1`.
+ * @throws MdmlError with code `value` if `sigma <= 0`, `t <= 0`, or `n < 1`.
  * @example
  * ```ts
  * import { chernoffGaussianBound } from 'mdml-engine/stats'
@@ -114,14 +114,14 @@ export interface ChernoffOptions extends TailBoundOptions {
  */
 export function chernoffGaussianBound(sigma: number, t: number, options: ChernoffOptions = {}): number {
   if (!(sigma > 0) || !Number.isFinite(sigma)) {
-    throw new MdmlError('domain', `chernoffGaussianBound: sigma must be finite and > 0, got ${sigma}`)
+    throw new MdmlError('value', `chernoffGaussianBound: sigma must be finite and > 0, got ${sigma}`)
   }
   if (!(t > 0) || !Number.isFinite(t)) {
-    throw new MdmlError('domain', `chernoffGaussianBound: t must be finite and > 0, got ${t}`)
+    throw new MdmlError('value', `chernoffGaussianBound: t must be finite and > 0, got ${t}`)
   }
   const n = options.n ?? 1
   if (!(n >= 1) || !Number.isFinite(n)) {
-    throw new MdmlError('domain', `chernoffGaussianBound: n must be >= 1, got ${n}`)
+    throw new MdmlError('value', `chernoffGaussianBound: n must be >= 1, got ${n}`)
   }
   const twoSided = options.twoSided ?? true
   const oneSided = Math.exp((-n * t * t) / (2 * sigma * sigma))
@@ -159,14 +159,14 @@ function resolveRangeWidth(range: readonly [number, number] | number | undefined
   if (range === undefined) return 1
   if (typeof range === 'number') {
     if (!(range > 0) || !Number.isFinite(range)) {
-      throw new MdmlError('domain', `${name}: range width must be finite and > 0, got ${range}`)
+      throw new MdmlError('value', `${name}: range width must be finite and > 0, got ${range}`)
     }
     return range
   }
   const [a, b] = range
   const width = b - a
   if (!(width > 0) || !Number.isFinite(width)) {
-    throw new MdmlError('domain', `${name}: range [a, b] must have b > a, got [${a}, ${b}]`)
+    throw new MdmlError('value', `${name}: range [a, b] must have b > a, got [${a}, ${b}]`)
   }
   return width
 }
@@ -181,7 +181,7 @@ function resolveRangeWidth(range: readonly [number, number] | number | undefined
  * @param t - Positive deviation $t > 0$ of the sample mean from its expectation.
  * @param options - Common `range` (`[a, b]` or width, default `[0, 1]`), per-variable `ranges`, and `twoSided` (default `true`).
  * @returns Upper bound on the tail probability in $[0, 1]$.
- * @throws MdmlError with code `domain` for invalid `n`, `t`, or interval widths.
+ * @throws MdmlError with code `value` for invalid `n`, `t`, or interval widths.
  * @example
  * ```ts
  * import { hoeffdingBound } from 'mdml-engine/stats'
@@ -190,10 +190,10 @@ function resolveRangeWidth(range: readonly [number, number] | number | undefined
  */
 export function hoeffdingBound(n: number, t: number, options: HoeffdingOptions = {}): number {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('domain', `hoeffdingBound: n must be a positive integer, got ${n}`)
+    throw new MdmlError('value', `hoeffdingBound: n must be a positive integer, got ${n}`)
   }
   if (!(t > 0) || !Number.isFinite(t)) {
-    throw new MdmlError('domain', `hoeffdingBound: t must be finite and > 0, got ${t}`)
+    throw new MdmlError('value', `hoeffdingBound: t must be finite and > 0, got ${t}`)
   }
   let sumSqWidths = 0
   if (options.ranges !== undefined) {
@@ -223,7 +223,7 @@ export function hoeffdingBound(n: number, t: number, options: HoeffdingOptions =
  * @param delta - Allowed failure probability $\delta \in (0, 1)$.
  * @param options - `range` (`[a, b]` or width $R$, default `1`) and `twoSided` (default `true`).
  * @returns Integer sample size $n \ge 1$.
- * @throws MdmlError with code `domain` if `t <= 0` or `delta` is not in `(0, 1)`.
+ * @throws MdmlError with code `value` if `t <= 0` or `delta` is not in `(0, 1)`.
  * @example
  * ```ts
  * import { hoeffdingSampleSize } from 'mdml-engine/stats'
@@ -236,10 +236,10 @@ export function hoeffdingSampleSize(
   options: { readonly range?: readonly [number, number] | number; readonly twoSided?: boolean } = {},
 ): number {
   if (!(t > 0) || !Number.isFinite(t)) {
-    throw new MdmlError('domain', `hoeffdingSampleSize: t must be finite and > 0, got ${t}`)
+    throw new MdmlError('value', `hoeffdingSampleSize: t must be finite and > 0, got ${t}`)
   }
   if (!(delta > 0 && delta < 1)) {
-    throw new MdmlError('domain', `hoeffdingSampleSize: delta must be in (0, 1), got ${delta}`)
+    throw new MdmlError('value', `hoeffdingSampleSize: delta must be in (0, 1), got ${delta}`)
   }
   const width = resolveRangeWidth(options.range, 'hoeffdingSampleSize')
   const twoSided = options.twoSided ?? true
@@ -260,7 +260,7 @@ export function hoeffdingSampleSize(
  * @param t - Positive deviation $t > 0$ of the sample mean.
  * @param options - `twoSided` (default `true`).
  * @returns Upper bound on the tail probability in $[0, 1]$.
- * @throws MdmlError with code `domain` if `n < 1`, `variance < 0`, `maxAbsBound <= 0`, or `t <= 0`.
+ * @throws MdmlError with code `value` if `n < 1`, `variance < 0`, `maxAbsBound <= 0`, or `t <= 0`.
  * @example
  * ```ts
  * import { bernsteinBound } from 'mdml-engine/stats'
@@ -275,16 +275,16 @@ export function bernsteinBound(
   options: TailBoundOptions = {},
 ): number {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('domain', `bernsteinBound: n must be a positive integer, got ${n}`)
+    throw new MdmlError('value', `bernsteinBound: n must be a positive integer, got ${n}`)
   }
   if (!(variance >= 0) || !Number.isFinite(variance)) {
-    throw new MdmlError('domain', `bernsteinBound: variance must be finite and >= 0, got ${variance}`)
+    throw new MdmlError('value', `bernsteinBound: variance must be finite and >= 0, got ${variance}`)
   }
   if (!(maxAbsBound > 0) || !Number.isFinite(maxAbsBound)) {
-    throw new MdmlError('domain', `bernsteinBound: maxAbsBound must be finite and > 0, got ${maxAbsBound}`)
+    throw new MdmlError('value', `bernsteinBound: maxAbsBound must be finite and > 0, got ${maxAbsBound}`)
   }
   if (!(t > 0) || !Number.isFinite(t)) {
-    throw new MdmlError('domain', `bernsteinBound: t must be finite and > 0, got ${t}`)
+    throw new MdmlError('value', `bernsteinBound: t must be finite and > 0, got ${t}`)
   }
   const denom = variance + (maxAbsBound * t) / 3
   const oneSided = denom === 0 ? 0 : Math.exp((-0.5 * n * t * t) / denom)
@@ -302,7 +302,7 @@ export function bernsteinBound(
  * @param p - Success probability in $(0, 1)$.
  * @param q - Threshold for the sample proportion in $[0, 1]$.
  * @returns Upper bound on $\mathbb{P}(\bar{X}_n \ge q)$ when $q \ge p$, or on $\mathbb{P}(\bar{X}_n \le q)$ when $q < p$.
- * @throws MdmlError with code `domain` for invalid arguments.
+ * @throws MdmlError with code `value` for invalid arguments.
  * @example
  * ```ts
  * import { chernoffKlBound } from 'mdml-engine/stats'
@@ -311,10 +311,10 @@ export function bernsteinBound(
  */
 export function chernoffKlBound(n: number, p: number, q: number): number {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('domain', `chernoffKlBound: n must be a positive integer, got ${n}`)
+    throw new MdmlError('value', `chernoffKlBound: n must be a positive integer, got ${n}`)
   }
-  if (!(p > 0 && p < 1)) throw new MdmlError('domain', `chernoffKlBound: p must be in (0, 1), got ${p}`)
-  if (!(q >= 0 && q <= 1)) throw new MdmlError('domain', `chernoffKlBound: q must be in [0, 1], got ${q}`)
+  if (!(p > 0 && p < 1)) throw new MdmlError('value', `chernoffKlBound: p must be in (0, 1), got ${p}`)
+  if (!(q >= 0 && q <= 1)) throw new MdmlError('value', `chernoffKlBound: q must be in [0, 1], got ${q}`)
   const term = (a: number, b: number): number => (a === 0 ? 0 : a * Math.log(a / b))
   const kl = term(q, p) + term(1 - q, 1 - p)
   return clampProb(Math.exp(-n * kl))
@@ -330,7 +330,7 @@ export function chernoffKlBound(n: number, p: number, q: number): number {
  * @param x - A sample of at least two values, each inside the range.
  * @param options - `range` (`[a, b]` or width $R$, default `[0, 1]`) and the failure probability `delta` (default `0.05`).
  * @returns An `Estimate`: the sample mean with the symmetric interval at level $1 - \delta$.
- * @throws MdmlError with code `domain` for invalid `range` or `delta`, `value` for fewer than two observations.
+ * @throws MdmlError with code `value` for invalid `range` or `delta`, or fewer than two observations.
  * @example
  * ```ts
  * import { empiricalBernsteinInterval } from 'mdml-engine/stats'
@@ -345,7 +345,7 @@ export function empiricalBernsteinInterval(
   const xs = sample('empiricalBernsteinInterval', x, 2)
   const delta = options.delta ?? 0.05
   if (!(delta > 0 && delta < 1)) {
-    throw new MdmlError('domain', `empiricalBernsteinInterval: delta must be in (0, 1), got ${delta}`)
+    throw new MdmlError('value', `empiricalBernsteinInterval: delta must be in (0, 1), got ${delta}`)
   }
   const width = resolveRangeWidth(options.range, 'empiricalBernsteinInterval')
   const n = xs.length
@@ -367,7 +367,7 @@ export function empiricalBernsteinInterval(
  * @param t - Positive deviation $t > 0$ of the sample mean.
  * @param options - `twoSided` (default `true`).
  * @returns Upper bound on the tail probability in $[0, 1]$.
- * @throws MdmlError with code `domain` if `n < 1`, `variance <= 0`, `maxAbsBound <= 0`, or `t <= 0`.
+ * @throws MdmlError with code `value` if `n < 1`, `variance <= 0`, `maxAbsBound <= 0`, or `t <= 0`.
  * @example
  * ```ts
  * import { bennettBound, bernsteinBound } from 'mdml-engine/stats'
@@ -382,16 +382,16 @@ export function bennettBound(
   options: TailBoundOptions = {},
 ): number {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('domain', `bennettBound: n must be a positive integer, got ${n}`)
+    throw new MdmlError('value', `bennettBound: n must be a positive integer, got ${n}`)
   }
   if (!(variance > 0) || !Number.isFinite(variance)) {
-    throw new MdmlError('domain', `bennettBound: variance must be finite and > 0, got ${variance}`)
+    throw new MdmlError('value', `bennettBound: variance must be finite and > 0, got ${variance}`)
   }
   if (!(maxAbsBound > 0) || !Number.isFinite(maxAbsBound)) {
-    throw new MdmlError('domain', `bennettBound: maxAbsBound must be finite and > 0, got ${maxAbsBound}`)
+    throw new MdmlError('value', `bennettBound: maxAbsBound must be finite and > 0, got ${maxAbsBound}`)
   }
   if (!(t > 0) || !Number.isFinite(t)) {
-    throw new MdmlError('domain', `bennettBound: t must be finite and > 0, got ${t}`)
+    throw new MdmlError('value', `bennettBound: t must be finite and > 0, got ${t}`)
   }
   const u = (maxAbsBound * t) / variance
   const h = (1 + u) * Math.log1p(u) - u
@@ -410,7 +410,7 @@ export function bennettBound(
  * @param t - Positive deviation threshold $t > 0$.
  * @param options - `twoSided` (default `true`).
  * @returns Upper bound on the tail probability in $[0, 1]$.
- * @throws MdmlError with code `domain` if any $c_i \le 0$ or `t <= 0`.
+ * @throws MdmlError with code `value` if any $c_i \le 0$ or `t <= 0`.
  * @example
  * ```ts
  * import { mcDiarmidBound } from 'mdml-engine/stats'
@@ -420,13 +420,13 @@ export function bennettBound(
 export function mcDiarmidBound(boundedDifferences: TensorLike, t: number, options: TailBoundOptions = {}): number {
   const c = sample('mcDiarmidBound', boundedDifferences, 1)
   if (!(t > 0) || !Number.isFinite(t)) {
-    throw new MdmlError('domain', `mcDiarmidBound: t must be finite and > 0, got ${t}`)
+    throw new MdmlError('value', `mcDiarmidBound: t must be finite and > 0, got ${t}`)
   }
   let sumSq = 0
   for (let i = 0; i < c.length; i++) {
     const ci = c[i] ?? 0
     if (!(ci > 0) || !Number.isFinite(ci)) {
-      throw new MdmlError('domain', `mcDiarmidBound: all bounded differences must be > 0, got ${ci} at index ${i}`)
+      throw new MdmlError('value', `mcDiarmidBound: all bounded differences must be > 0, got ${ci} at index ${i}`)
     }
     sumSq += ci * ci
   }
@@ -476,7 +476,7 @@ export interface DkwBandOptions {
  * @param x - 1-D sample of observations.
  * @param options - `alpha` (significance level in `(0, 1)`) or `level` (confidence level, default `0.95`).
  * @returns Simultaneous band with sorted unique `values`, `ecdf`, `lower`, `upper`, half-width `epsilon`, and `evaluate(t)`.
- * @throws MdmlError with code `domain` if `alpha` is outside `(0, 1)`.
+ * @throws MdmlError with code `value` if `alpha` is outside `(0, 1)`.
  * @example
  * ```ts
  * import { dkwBand } from 'mdml-engine/stats'
@@ -491,7 +491,7 @@ export function dkwBand(x: TensorLike, options: DkwBandOptions = {}): DkwBandRes
   let alpha: number
   if (options.alpha !== undefined) {
     if (!(options.alpha > 0 && options.alpha < 1) || !Number.isFinite(options.alpha)) {
-      throw new MdmlError('domain', `dkwBand: alpha must be in (0, 1), got ${options.alpha}`)
+      throw new MdmlError('value', `dkwBand: alpha must be in (0, 1), got ${options.alpha}`)
     }
     alpha = options.alpha
   } else {

@@ -69,7 +69,7 @@ function readMatrixAllowingNaN(
   for (let i = 0; i < data.length; i++) {
     const v = data[i] ?? Number.NaN
     if (v === Number.POSITIVE_INFINITY || v === Number.NEGATIVE_INFINITY) {
-      throw new MdmlError('domain', `${name}: infinite value at flat index ${i} (use NaN for missing values)`)
+      throw new MdmlError('value', `${name}: infinite value at flat index ${i} (use NaN for missing values)`)
     }
   }
   return { rows, cols, data }
@@ -80,7 +80,7 @@ function readMatrixAllowingNaN(
  *
  * @param x - 2-D matrix of shape `[n, p]` where `NaN` indicates a missing entry.
  * @returns Column, row, and pattern-level missingness diagnostics.
- * @throws MdmlError with code `shape` if `x` is not a non-empty 2-D matrix, or `domain` if `x` contains `±Infinity`.
+ * @throws MdmlError with code `shape` if `x` is not a non-empty 2-D matrix, or `value` if `x` contains `±Infinity`.
  * @example
  * ```ts
  * import { missingnessProfile } from 'mdml-engine/stats'
@@ -254,7 +254,7 @@ export interface LittleMcarOptions {
  * @param x - 2-D matrix of shape `[n, p]` ($n \ge 2, p \ge 1$) with `NaN` for missing values.
  * @param options - `maxIter` (default `200`) and `tol` (default `1e-8`).
  * @returns `LittleMcarResult` (`TestResult` plus per-pattern $d_j^2$, `pooledMean`, `pooledCovariance`, and `emIterations`).
- * @throws MdmlError with code `shape` or `domain` if a column is completely missing or has zero variance.
+ * @throws MdmlError with code `shape` or `value` if a column is completely missing or has zero variance.
  * @example
  * ```ts
  * import { littleMcarTest } from 'mdml-engine/stats'
@@ -274,7 +274,7 @@ export interface LittleMcarOptions {
 export function littleMcarTest(x: TensorLike, options: LittleMcarOptions = {}): LittleMcarResult {
   const { rows, cols, data } = readMatrixAllowingNaN('littleMcarTest', x)
   if (rows < 2) {
-    throw new MdmlError('shape', `littleMcarTest: need at least 2 rows, got ${rows}`)
+    throw new MdmlError('value', `littleMcarTest: need at least 2 rows, got ${rows}`)
   }
   const maxIter = options.maxIter ?? 200
   const tol = options.tol ?? 1e-8
@@ -283,7 +283,7 @@ export function littleMcarTest(x: TensorLike, options: LittleMcarOptions = {}): 
   // Keep only patterns that observe at least one variable.
   const activePatterns = prof.patterns.filter((p) => p.observedColumns.length > 0)
   if (activePatterns.length === 0) {
-    throw new MdmlError('domain', 'littleMcarTest: all entries in the dataset are NaN')
+    throw new MdmlError('value', 'littleMcarTest: all entries in the dataset are NaN')
   }
 
   // Initialize mu and Sigma from column-wise available cases.
@@ -301,7 +301,7 @@ export function littleMcarTest(x: TensorLike, options: LittleMcarOptions = {}): 
   for (let j = 0; j < cols; j++) {
     const c = colCounts[j] ?? 0
     if (c < 1) {
-      throw new MdmlError('domain', `littleMcarTest: column ${j} has no observed values`)
+      throw new MdmlError('value', `littleMcarTest: column ${j} has no observed values`)
     }
     mu[j] = (mu[j] ?? 0) / c
   }

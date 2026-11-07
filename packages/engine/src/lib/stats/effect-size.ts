@@ -146,7 +146,7 @@ export function cohensH(
   p2: number,
   options: { readonly n1?: number; readonly n2?: number; readonly level?: number } = {},
 ): EffectSize {
-  for (const p of [p1, p2]) if (!(p >= 0 && p <= 1)) throw new MdmlError('domain', 'cohensH: proportions lie in [0, 1]')
+  for (const p of [p1, p2]) if (!(p >= 0 && p <= 1)) throw new MdmlError('value', 'cohensH: proportions lie in [0, 1]')
   const h = 2 * Math.asin(Math.sqrt(p1)) - 2 * Math.asin(Math.sqrt(p2))
   if (options.n1 === undefined || options.n2 === undefined) return { name: "Cohen's h", value: h }
   const level = resolveConfidenceLevel(options.level)

@@ -325,7 +325,7 @@ export interface AdditiveChi2Options {
  * @param options - Steps and interval.
  * @returns The feature map.
  * @throws MdmlError `value` for more than 3 steps without an interval, or an interval that is not positive and finite;
- *   `domain` from `transform` for a negative feature (a NaN feature gives NaN features).
+ *   `value` from `transform` for a negative feature (a NaN feature gives NaN features).
  * @concept random-features
  * @reference A. Vedaldi and A. Zisserman, Efficient additive kernels via explicit feature maps (TPAMI 2012).
  * @example
@@ -348,7 +348,7 @@ export function additiveChi2Sampler(options: AdditiveChi2Options = {}): FeatureM
     transform(x: TensorLike): Value {
       const { rows, single } = asRows(x, 'additiveChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v < 0))
-        throw new MdmlError('domain', 'additiveChi2Sampler: features must be non-negative')
+        throw new MdmlError('value', 'additiveChi2Sampler: features must be non-negative')
       const nonzero = greater(rows, 0)
       const missing = isnan(rows)
       // A zero feature stays zero, a NaN feature gives NaN features (NaN > 0 is false and must not read as zero).
@@ -393,7 +393,7 @@ export type SkewedChi2SamplerOptions =
  * @param options - Input dimension, number of features, skewedness and key; or the draws.
  * @returns The feature map with its draws.
  * @throws MdmlError `value` for an input dimension or number of features that is not a positive integer, or a skewedness
- *   that is not finite.
+ *   that is not finite; `value` from `transform` for a feature at or below -skewedness.
  * @concept random-features
  * @reference F. Li, C. Ionescu and C. Sminchisescu, Random Fourier approximations for skewed multiplicative histogram
  *   kernels (DAGM 2010).
@@ -428,7 +428,7 @@ export function skewedChi2Sampler(options: SkewedChi2SamplerOptions): SkewedChi2
     transform(x: TensorLike): Value {
       const { rows, single } = asRows(x, 'skewedChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v <= -c))
-        throw new MdmlError('domain', `skewedChi2Sampler: features must exceed -${c}`)
+        throw new MdmlError('value', `skewedChi2Sampler: features must exceed -${c}`)
       const projection = add(matmul(log(add(rows, c)), weights), offset)
       return finish(mul(cos(projection), Math.sqrt(2 / n)), single)
     },
