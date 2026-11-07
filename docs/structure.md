@@ -269,6 +269,19 @@ splits, solvers, running estimators) rejects non-finite input at its boundary wi
 `'event'`, `'failed'`, `BvpSolution.status` 0 to 3, each with `success`) keep their own codes as public fields; they gain
 no field yet (the follow-ups are in `docs/code-review/findings/failure-convention.md`).
 
+**Native arrays and tensors (decision D-009, staged by domain).** Plain `number[]`, `number[][]` and `Float64Array`
+belong only in primitives: kernels (`blas.ts`, `tensor/_cpu`, private `_` modules), shapes, axes, indices, labels and
+ragged lists of them. A public numeric function takes a `TensorLike` and returns a tensor, as numpy takes arrays;
+fixed-size tuples (`Vec2`, `Vec3`, `Vec4`, `Complex`, `Rgba`) stay tuples. A function that reads its input as plain
+numbers does so once at entry (a rank-1 check, `shape` error otherwise; a traced value is rejected with
+`not-differentiable` when the function is not differentiable), and its TSDoc says "takes tensors" with what it was.
+Accepting widens (a nested array still works), so only returns break callers. Migrated so far (stage 1, `random` and
+`data`): `random` `dirichlet`, `categorical`, `multinomial`, `aliasTable` (and the `AliasTable` fields, now tensors),
+`choice` (`weights`), `randomSplit` (`fractions`); `data` `weightedRandomSampler`, `balancedWeights` (returns a tensor),
+`noiseTransition` (returns a tensor) and `withLabelNoise` (`transition`). Kept native on purpose: `random.gammaVariates`
+(a kernel for `dists` and the bandits), the index and label lists of `data` (`take`, `bootstrap`, `stratifiedIndices`,
+`labelsOf`, the splits, `subsetRandomSampler`) and `parseNpy` (a decoder).
+
 **Docstrings.** Every export has a TSDoc block: summary, `@param` per parameter, `@returns`, `@throws` where relevant,
 and at least one `@example` with `// => value`, `// => figure`, `// => trace` or `// => throws Code` expectations that
 the build runs. `@concept` tags link to the concept taxonomy (section 7), `@see` and `@reference` cite sources.

@@ -1,7 +1,7 @@
 /**
  * The `Tensor` type, an n-dimensional array with a dtype, a shape and contiguous row-major storage owned by a backend,
  * and the ways in and out of it: `tensor` (like `numpy.array`), wrapping existing storage, conversion of tensor-like
- * inputs, and `toArray`, `toFlat`, `item` and `clone`.
+ * inputs, and `toArray`, `toFlat`, `toVector`, `item` and `clone`.
  *
  * @index structure The Tensor type, its constructors and conversions to plain arrays.
  */
@@ -223,6 +223,31 @@ export function toArray(t: Value): NestedArray {
  */
 export function toFlat(t: Value): number[] {
   return Array.from(concrete(t, 'toFlat').data)
+}
+
+/**
+ * The numbers of a vector given as a tensor-like, for a function whose own loop reads plain numbers (a sampler's weights,
+ * a list of fractions): a rank-1 tensor, a typed array or a flat array of numbers. A flat array of numbers is returned
+ * as it is, without a copy, so the caller must not write into the result.
+ *
+ * @param x - The vector: a tensor, a typed array or a nested array of depth one.
+ * @param name - The caller's name, for error messages.
+ * @returns The elements.
+ * @throws MdmlError with code `shape` unless `x` has rank 1, and `not-differentiable` for a traced value.
+ * @example
+ * ```ts
+ * import { tensor, toVector } from 'mdml-engine/tensor'
+ * toVector(tensor([1, 2, 3]), 'example') // => [1, 2, 3]
+ * toVector(new Float64Array([4, 5]), 'example') // => [4, 5]
+ * ```
+ */
+export function toVector(x: TensorLike, name: string): readonly number[] {
+  if (Array.isArray(x) && x.every((v) => typeof v === 'number')) return x as readonly number[]
+  if (ArrayBuffer.isView(x) && !(x instanceof DataView)) return Array.from(x as ArrayLike<number>)
+  const t = concrete(asTensor(x), name)
+  if (t.shape.length !== 1)
+    throw new MdmlError('shape', `${name}: expected a vector, got shape ${formatShape(t.shape)}`)
+  return Array.from(t.data)
 }
 
 /**

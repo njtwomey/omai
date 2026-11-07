@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { fromStorage, type Shape, sizeOf, type Tensor } from '../tensor/index.ts'
+import { fromStorage, type Shape, sizeOf, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'
 import { binomialOne, poissonOne } from './_variates.ts'
 import { uniformStream } from './continuous.ts'
@@ -94,14 +94,17 @@ function invert(cdf: readonly number[], weights: readonly number[], u: number): 
 }
 
 /**
- * Samples from a categorical distribution given probabilities or logits (by inverse CDF).
+ * Samples from a categorical distribution given probabilities or logits (by inverse CDF). Takes tensors (migration,
+ * D-009: `weights` was `readonly number[]`; nested arrays still work).
  *
  * @param k - The random key.
- * @param weights - Non-negative weights, or logits when `options.logits` is set.
+ * @param weights - Non-negative weights, or logits when `options.logits` is set: a vector (a tensor, a typed array or
+ * a nested array).
  * @param shape - Output shape.
  * @param options - `logits`: treat `weights` as unnormalised log-probabilities.
  * @returns An int32 tensor of category indices.
- * @throws MdmlError with code `value` when the weights have no positive finite sum.
+ * @throws MdmlError with code `value` when the weights have no positive finite sum, `shape` unless `weights` is a
+ * vector and `not-differentiable` for traced weights.
  * @index function Samples from a categorical distribution given probabilities or logits.
  * @example
  * ```ts
@@ -111,15 +114,16 @@ function invert(cdf: readonly number[], weights: readonly number[], u: number): 
  */
 export function categorical(
   k: Key,
-  weights: readonly number[],
+  weights: TensorLike,
   shape: Shape,
   options: { readonly logits?: boolean } = {},
 ): Tensor<'int32'> {
-  let w = weights
+  const given = toVector(weights, 'categorical')
+  let w = given
   if (options.logits === true) {
     let m = -Infinity
-    for (const x of weights) if (x > m) m = x
-    w = weights.map((x) => Math.exp(x - m))
+    for (const x of given) if (x > m) m = x
+    w = given.map((x) => Math.exp(x - m))
   }
   const cdf = cumulative(w, 'categorical')
   const u = unitDoubles(k, sizeOf(shape))
@@ -128,24 +132,28 @@ export function categorical(
 
 /**
  * Multinomial counts: `n` draws into categories, by conditional binomials (category j takes a binomial share of the
- * draws the earlier categories left), so the cost does not grow with `n`.
+ * draws the earlier categories left), so the cost does not grow with `n`. Takes tensors (migration, D-009: `probs` was
+ * `readonly number[]`; nested arrays still work).
  *
  * @param k - The random key.
  * @param n - Number of draws (a non-negative integer).
- * @param probs - Category probabilities (non-negative weights, normalised).
+ * @param probs - Category probabilities (a vector of non-negative weights, normalised): a tensor, a typed array or a
+ * nested array.
  * @param samples - Number of independent count vectors.
  * @returns An int32 tensor of shape `[samples, K]`, each row summing to `n`.
- * @throws MdmlError with code `value` for a bad `n` or weights without a positive finite sum.
+ * @throws MdmlError with code `value` for a bad `n` or weights without a positive finite sum, `shape` unless `probs`
+ * is a vector and `not-differentiable` for traced `probs`.
  * @example
  * ```ts
  * import { key, multinomial } from 'mdml-engine/random'
  * Array.from(multinomial(key(0), 10, [0.5, 0.5], 1).data).reduce((a, b) => a + b) // => 10
  * ```
  */
-export function multinomial(k: Key, n: number, probs: readonly number[], samples: number): Tensor<'int32'> {
+export function multinomial(k: Key, n: number, probs: TensorLike, samples: number): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 0) throw new MdmlError('value', `multinomial: n must be a non-negative integer`)
-  const cdf = cumulative(probs, 'multinomial')
-  const K = probs.length
+  const p = toVector(probs, 'multinomial')
+  const cdf = cumulative(p, 'multinomial')
+  const K = p.length
   const next = uniformStream(k)
   const out = new Int32Array(samples * K)
   for (let s = 0; s < samples; s++) {
@@ -236,26 +244,32 @@ export function geometric(k: Key, p: number, shape: Shape): Tensor<'int32'> {
 
 /** A Vose alias table for O(1) sampling from a fixed discrete distribution. */
 export interface AliasTable {
-  readonly probability: Float64Array
-  readonly alias: Int32Array
+  /** The probability of keeping each column, a float64 vector. */
+  readonly probability: Tensor<'float64'>
+  /** The category each column falls back to, an int32 vector. */
+  readonly alias: Tensor<'int32'>
 }
 
 /**
- * Build a Vose alias table.
+ * Build a Vose alias table. Takes and returns tensors (migration, D-009: `weights` was `readonly number[]` and the
+ * table held a `Float64Array` and an `Int32Array`; nested arrays still work as input).
  *
- * @param weights - Non-negative weights.
- * @returns The table.
+ * @param weights - Non-negative weights: a vector (a tensor, a typed array or a nested array).
+ * @returns The table, whose `probability` and `alias` are tensors of shape `[n]`.
+ * @throws MdmlError with code `value` for weights without a positive finite sum, `shape` unless `weights` is a
+ * vector and `not-differentiable` for traced weights.
  * @example
  * ```ts
  * import { aliasTable } from 'mdml-engine/random'
- * aliasTable([1, 1]).alias.length // => 2
+ * aliasTable([1, 1]).alias.shape // => [2]
  * ```
  */
-export function aliasTable(weights: readonly number[]): AliasTable {
-  const n = weights.length
-  cumulative(weights, 'aliasTable')
-  const total = weights.reduce((a, b) => a + b, 0)
-  const scaled = weights.map((w) => (w * n) / total)
+export function aliasTable(weights: TensorLike): AliasTable {
+  const w = toVector(weights, 'aliasTable')
+  const n = w.length
+  cumulative(w, 'aliasTable')
+  const total = w.reduce((a, b) => a + b, 0)
+  const scaled = w.map((x) => (x * n) / total)
   const probability = new Float64Array(n)
   const alias = new Int32Array(n)
   const small: number[] = []
@@ -275,7 +289,7 @@ export function aliasTable(weights: readonly number[]): AliasTable {
     probability[i] = 1
     alias[i] = i
   }
-  return { probability, alias }
+  return { probability: fromStorage(probability, [n], 'float64'), alias: fromStorage(alias, [n], 'int32') }
 }
 
 /**
@@ -292,10 +306,12 @@ export function aliasTable(weights: readonly number[]): AliasTable {
  * ```
  */
 export function aliasSample(k: Key, table: AliasTable, shape: Shape): Tensor<'int32'> {
-  const n = table.probability.length
+  const probability = table.probability.data
+  const alias = table.alias.data
+  const n = probability.length
   const u = unitDoubles(k, 2 * sizeOf(shape))
   return ints('aliasSample', shape, (i) => {
     const column = Math.floor((u[2 * i] ?? 0) * n)
-    return (u[2 * i + 1] ?? 0) < (table.probability[column] ?? 1) ? column : (table.alias[column] ?? column)
+    return (u[2 * i + 1] ?? 0) < (probability[column] ?? 1) ? column : (alias[column] ?? column)
   })
 }

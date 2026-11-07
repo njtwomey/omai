@@ -8,11 +8,11 @@ Explicit randomness: immutable counter-based keys (`key`, `split`, `foldIn`) and
 
 - structure `key.ts` (file): Immutable counter-based keys: key, split and foldIn. `src/lib/random/key.ts:1` `mdml-engine/random`
 
-- function `categorical`: Samples from a categorical distribution given probabilities or logits. `src/lib/random/discrete.ts:112` `mdml-engine/random`
-- function `choice`: Choose indices with or without replacement, optionally weighted. `src/lib/random/permutation.ts:79` `mdml-engine/random`
+- function `categorical`: Samples from a categorical distribution given probabilities or logits. `src/lib/random/discrete.ts:115` `mdml-engine/random`
+- function `choice`: Choose indices with or without replacement, optionally weighted. `src/lib/random/permutation.ts:81` `mdml-engine/random`
 - function `foldIn`: Derive a key from a parent key and an integer (a step). `src/lib/random/key.ts:89` `mdml-engine/random`
 - function `key`: Create a random key from an integer seed. `src/lib/random/key.ts:44` `mdml-engine/random`
-- function `normal`: Normal samples from a key and a shape, like jax.random.normal. `src/lib/random/continuous.ts:134` `mdml-engine/random`
+- function `normal`: Normal samples from a key and a shape, like jax.random.normal. `src/lib/random/continuous.ts:135` `mdml-engine/random`
 - function `permutation`: A uniformly random permutation of 0..n-1. `src/lib/random/permutation.ts:27` `mdml-engine/random`
 - function `split`: Derive n independent keys from one key. `src/lib/random/key.ts:65` `mdml-engine/random`
-- function `uniform`: Uniform samples from a key and a shape. `src/lib/random/continuous.ts:49` `mdml-engine/random`
+- function `uniform`: Uniform samples from a key and a shape. `src/lib/random/continuous.ts:50` `mdml-engine/random`

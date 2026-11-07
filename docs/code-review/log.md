@@ -371,3 +371,20 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `docs/api-surface.txt` and the agent index regenerated. Own checks only: engine and render tsc, 205 examples of the touched files, barrels, layers, lint,
   agent index and surface checks. The full gate was not run. One more thing for whoever merges: the P3.30 row of `progress.md` had 7 cells (the `ended`
   cell was missing, like the P3.14 row earlier); both rows now have the 8 cells of the table.
+
+- **17:45 Native arrays, stage 1 (P3.8, D-009, D-015: `random` and `data` only).** Branch `agent-na02-random`. Migrated: `random`
+  `dirichlet`, `categorical`, `multinomial`, `aliasTable` (and `AliasTable`, whose fields are now tensors), `choice`
+  (`weights`), `randomSplit` (`fractions`); `data` `weightedRandomSampler`, `balancedWeights` (also returns a tensor),
+  `noiseTransition` (returns a `[k, k]` tensor), `withLabelNoise` (`transition`). Inputs are `TensorLike`, so every old call
+  still compiles; only the returns broke callers, and the only callers were `sampling.aliasMethod` and the tests of `data`.
+  Draws are bit-identical (every golden, stream-bits and `@example` unchanged except the printed form of
+  `noiseTransition` and `balancedWeights`, now `toArray(...)` and `Array.from(....data)`). Gotcha found by measuring: the
+  first version read inputs with `asTensor` and cost 154 us per `categorical` call at 5000 weights against 33 us before, because
+  `tensor()` boxes a nested array. The shared reader `tensor/toVector` returns a flat array of numbers as it is, so a
+  `number[]` caller pays nothing (33 us). Kept native: `random.gammaVariates` (a kernel), the index and label lists of `data`
+  (`take`, `bootstrap`, `stratifiedIndices`, `labelsOf`, the splits, `subsetRandomSampler`), `parseNpy` (a decoder).
+  `labelsOf` returning an int32 tensor stays for a later stage (KDES-32 partly). None of the nine is differentiable (draws
+  and indices), so no gradient row; a traced weight is rejected with `not-differentiable`, tested. Own checks only (the full
+  gate was not run): engine, render, meta, site and pocs tsc; 665 files, 10,984 tests of the 17 caller domains and 57 files,
+  1,161 tests of `random`, `data`, `tensor` and `sampling/exact`; 65 `@example`s; barrels, layers, lint, agent index, surface.
+  Tests added: 1 `it.each` (7 rows). Surface: 1 added (`tensor#toVector`), 11 changed.

@@ -65,8 +65,8 @@ describe('aliasMethod', () => {
         fc.pre(w.reduce((a, b) => a + b, 0) > 0)
         const ours = aliasMethod(key(0), 1, w).table
         const theirs = aliasTable(w)
-        expect(Array.from(ours.alias)).toEqual(Array.from(theirs.alias))
-        expect(Array.from(ours.probability)).toEqual(Array.from(theirs.probability))
+        expect(Array.from(ours.alias.data)).toEqual(Array.from(theirs.alias.data))
+        expect(Array.from(ours.probability.data)).toEqual(Array.from(theirs.probability.data))
       }),
       { numRuns: RUNS },
     )

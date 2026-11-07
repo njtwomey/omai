@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { asTensor, fromStorage, type Tensor, type TensorLike, take, type Value } from '../tensor/index.ts'
+import { asTensor, fromStorage, type Tensor, type TensorLike, take, toVector, type Value } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'
 import { uniformStream } from './continuous.ts'
 import { categorical } from './discrete.ts'
@@ -60,15 +60,17 @@ export function shuffle(k: Key, x: TensorLike): Value {
 }
 
 /**
- * Choose `size` indices from `0..n-1`, with or without replacement, optionally weighted (numpy `choice`).
+ * Choose `size` indices from `0..n-1`, with or without replacement, optionally weighted (numpy `choice`). Takes tensors
+ * (migration, D-009: `options.weights` was `readonly number[]`; nested arrays still work).
  *
  * @param k - The random key.
  * @param n - Population size.
  * @param size - How many to choose.
- * @param options - `replace` (default true) and `weights`.
+ * @param options - `replace` (default true) and `weights` (a vector of length `n`: a tensor, a typed array or a nested
+ * array).
  * @returns An int32 tensor of indices.
  * @throws MdmlError with code `value` when choosing more than `n` (or more than the positive weights) without
- * replacement, or when `weights` does not have length `n`.
+ * replacement, or when `weights` does not have length `n`; `shape` unless `weights` is a vector.
  * @index function Choose indices with or without replacement, optionally weighted.
  * @example
  * ```ts
@@ -80,28 +82,29 @@ export function choice(
   k: Key,
   n: number,
   size: number,
-  options: { readonly replace?: boolean; readonly weights?: readonly number[] } = {},
+  options: { readonly replace?: boolean; readonly weights?: TensorLike } = {},
 ): Tensor<'int32'> {
   const replace = options.replace ?? true
-  if (options.weights !== undefined && options.weights.length !== n) {
-    throw new MdmlError('value', `choice: ${options.weights.length} weights for a population of ${n}`)
+  const weights = options.weights === undefined ? undefined : toVector(options.weights, 'choice')
+  if (weights !== undefined && weights.length !== n) {
+    throw new MdmlError('value', `choice: ${weights.length} weights for a population of ${n}`)
   }
   if (replace) {
-    const w = options.weights ?? new Array<number>(n).fill(1)
+    const w = weights ?? new Array<number>(n).fill(1)
     return categorical(k, w, [size])
   }
   if (size > n) throw new MdmlError('value', `choice: cannot take ${size} of ${n} without replacement`)
-  if (options.weights === undefined) {
+  if (weights === undefined) {
     return fromStorage(permutation(k, n).data.slice(0, size), [size], 'int32')
   }
-  const positive = options.weights.filter((w) => w > 0).length
+  const positive = weights.filter((w) => w > 0).length
   if (size > positive) {
     throw new MdmlError('value', `choice: cannot take ${size} without replacement from ${positive} positive weights`)
   }
   // Weighted sampling without replacement by exponential keys (Efraimidis-Spirakis): keep the largest u^(1/w), that
   // is the smallest E / w for exponential E, compared as log E - log w so that tiny weights stay finite.
   const u = unitDoubles(k, n)
-  const keys = options.weights.map((w, i) => (w > 0 ? Math.log(-Math.log(1 - (u[i] ?? 0))) - Math.log(w) : Infinity))
+  const keys = weights.map((w, i) => (w > 0 ? Math.log(-Math.log(1 - (u[i] ?? 0))) - Math.log(w) : Infinity))
   const order = keys.map((_, i) => i).sort((a, b) => (keys[a] ?? 0) - (keys[b] ?? 0))
   return fromStorage(Int32Array.from(order.slice(0, size)), [size], 'int32')
 }
@@ -240,29 +243,32 @@ export function reservoir<T>(
 }
 
 /**
- * Split `0..n-1` into disjoint random parts with given fractions (the last part takes the remainder).
+ * Split `0..n-1` into disjoint random parts with given fractions (the last part takes the remainder). Takes tensors
+ * (migration, D-009: `fractions` was `readonly number[]`; nested arrays still work).
  *
  * @param k - The random key.
  * @param n - Number of items.
- * @param fractions - Fractions of the parts (summing to at most 1).
+ * @param fractions - Fractions of the parts (a vector summing to at most 1): a tensor, a typed array or a nested array.
  * @returns One int32 index tensor per part.
- * @throws MdmlError with code `value` for negative fractions or fractions summing to more than 1.
+ * @throws MdmlError with code `value` for negative fractions or fractions summing to more than 1, `shape` unless
+ * `fractions` is a vector.
  * @example
  * ```ts
  * import { key, randomSplit } from 'mdml-engine/random'
  * randomSplit(key(0), 10, [0.8, 0.2]).map((p) => p.shape[0]) // => [8, 2]
  * ```
  */
-export function randomSplit(k: Key, n: number, fractions: readonly number[]): Tensor<'int32'>[] {
-  const total = fractions.reduce((a, b) => a + b, 0)
-  if (fractions.some((f) => !(f >= 0)) || total > 1 + 1e-9) {
+export function randomSplit(k: Key, n: number, fractions: TensorLike): Tensor<'int32'>[] {
+  const shares = toVector(fractions, 'randomSplit')
+  const total = shares.reduce((a, b) => a + b, 0)
+  if (shares.some((f) => !(f >= 0)) || total > 1 + 1e-9) {
     throw new MdmlError('value', `randomSplit: fractions must be non-negative with a sum of at most 1`)
   }
   const order = permutation(k, n).data
   const parts: Tensor<'int32'>[] = []
   let start = 0
-  fractions.forEach((f, i) => {
-    const end = i === fractions.length - 1 ? n : Math.min(n, start + Math.round(f * n))
+  shares.forEach((f, i) => {
+    const end = i === shares.length - 1 ? n : Math.min(n, start + Math.round(f * n))
     parts.push(fromStorage(order.slice(start, end), [end - start], 'int32'))
     start = end
   })

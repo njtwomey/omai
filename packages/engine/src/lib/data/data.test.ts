@@ -392,7 +392,13 @@ group('batching and samplers', () => {
     expect(new Set(noRep).size).toBe(3)
     expect(Array.from(noRep)).not.toContain(2)
     expect(batchSampler(sequentialSampler(5), 2, true)(0).length).toBe(2)
-    expect(balancedWeights([0, 1, 1, 1]).reduce((a, b) => a + b, 0)).toBeCloseTo(4, 12)
+    expect(toFlat(balancedWeights([0, 1, 1, 1])).reduce((a, b) => a + b, 0)).toBeCloseTo(4, 12)
+    expect(toFlat(balancedWeights(tensor([0, 1, 1, 1], { dtype: 'int32' })))).toEqual(
+      toFlat(balancedWeights([0, 1, 1, 1])),
+    )
+    const weights = balancedWeights([0, 0, 0, 1])
+    expect(weightedRandomSampler(weights, 5, key(0))(0).length).toBe(5)
+    expect(() => balancedWeights([[0, 1]])).toThrow(expect.objectContaining({ code: 'shape' }))
   })
   it('collate and pad', () => {
     const c = collate([

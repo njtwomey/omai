@@ -15,6 +15,7 @@ import {
   sizeOf,
   type Tensor,
   type TensorLike,
+  toVector,
   transpose,
   type Value,
 } from '../tensor/index.ts'
@@ -402,28 +403,31 @@ export function studentT(k: Key, shape: Shape, df: number): Tensor<'float64'> {
 
 /**
  * Dirichlet samples: each row sums to one (normalised gamma variates, formed from their logarithms so that small
- * concentrations do not underflow).
+ * concentrations do not underflow). Takes tensors (migration, D-009: `alpha` was `readonly number[]`; nested arrays
+ * still work).
  *
  * @param k - The random key.
- * @param alpha - Concentrations (length K, positive).
+ * @param alpha - Concentrations (a vector of length K, positive): a tensor, a typed array or a nested array.
  * @param n - Number of samples.
  * @returns A float64 tensor of shape `[n, K]`.
- * @throws MdmlError with code `value` for a non-positive concentration.
+ * @throws MdmlError with code `value` for a non-positive concentration, `shape` unless `alpha` is a vector and
+ * `not-differentiable` for a traced `alpha` (a sample is not differentiated through its concentrations).
  * @example
  * ```ts
  * import { key, dirichlet } from 'mdml-engine/random'
  * Math.abs(Array.from(dirichlet(key(0), [1, 2, 3], 1).data).reduce((a, b) => a + b) - 1) < 1e-12 // => true
  * ```
  */
-export function dirichlet(k: Key, alpha: readonly number[], n: number): Tensor<'float64'> {
-  if (alpha.some((a) => !(a > 0))) throw new MdmlError('value', 'dirichlet: concentrations must be positive')
-  const K = alpha.length
+export function dirichlet(k: Key, alpha: TensorLike, n: number): Tensor<'float64'> {
+  const a = toVector(alpha, 'dirichlet')
+  if (a.some((x) => !(x > 0))) throw new MdmlError('value', 'dirichlet: concentrations must be positive')
+  const K = a.length
   const next = uniformStream(k)
   const out = new Float64Array(n * K)
   for (let r = 0; r < n; r++) {
     let top = -Infinity
     for (let j = 0; j < K; j++) {
-      const g = logGammaOne(alpha[j] ?? 1, next)
+      const g = logGammaOne(a[j] ?? 1, next)
       out[r * K + j] = g
       if (g > top) top = g
     }

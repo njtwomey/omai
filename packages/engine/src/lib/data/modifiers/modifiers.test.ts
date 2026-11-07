@@ -13,6 +13,7 @@ import {
   sum,
   type Tensor,
   tensor,
+  toArray,
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
@@ -88,7 +89,22 @@ describe('label modifiers', () => {
     expect(far[0]).toBeCloseTo(0.8, 6)
     // Bayes error of the noisy labels: 0.2 + 0.6 * Phi(-1).
     expect(Math.abs((noisy.truth.bayesError ?? 0) - (0.2 + 0.6 * 0.158655))).toBeLessThan(0.02)
-    expect(noiseTransition(3, 0.3, 'pairflip')[2]).toEqual([0.3, 0, 0.7])
+    expect(toArray(noiseTransition(3, 0.3, 'pairflip'))).toEqual([
+      [0.7, 0.3, 0],
+      [0, 0.7, 0.3],
+      [0.3, 0, 0.7],
+    ])
+    expect(toFlat(withLabelNoise(g, { transition: noiseTransition(2, 0.2), key: key(5) }).data.y)).toEqual(
+      toFlat(
+        withLabelNoise(g, {
+          transition: [
+            [0.8, 0.2],
+            [0.2, 0.8],
+          ],
+          key: key(5),
+        }).data.y,
+      ),
+    )
     expect(() => withLabelNoise(g, { transition: [[1]], key: key(0) })).toThrow(/transition/)
   })
   it('reach exact prevalence and shift the posterior by the prior ratio', () => {
