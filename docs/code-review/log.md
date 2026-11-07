@@ -105,3 +105,7 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   other once `stepDerivatives` is exported), `allFinite` (`dynamics/ode`, `sampling`), `codec` (`dynamics/automata`, `graph`;
   the pattern is inline in dozens of places), `minorOf`, `toRows`/`rowsOf` coercions across domains, scalar `sigmoid` x4
   (`learn/calibration`, `embedding`, `logic`, `kernel-methods`), `knobsOf` and `option` (P3.4).
+- **11:40 Slip, fixed.** Registering the numerics findings I wrote the register file by opening it for writing before reading it,
+  which emptied it: it held only the 29 numerics rows for four commits (`ec417d99` to `13c951bf`). Restored from the last good
+  version (`e5a67a61`, 74 rows) plus the numerics rows. Nothing else used that pattern: the progress, log and gates files were
+  checked.
