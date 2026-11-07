@@ -15,18 +15,26 @@ import { equal, greater, less, where } from './compare.ts'
 import { floor, log } from './math.ts'
 
 /** Elementwise sum. @internal */
-export const addPrimitive: Primitive<null> = binaryPrimitive('add', {
-  jvp: (_a, _b, ta, tb, out) =>
-    ta === null ? toShape(tb as Value, out.shape) : tb === null ? toShape(ta, out.shape) : add(ta, tb),
-  vjp: (g) => [g, g],
-})
+export const addPrimitive: Primitive<null> = binaryPrimitive(
+  'add',
+  {
+    jvp: (_a, _b, ta, tb, out) =>
+      ta === null ? toShape(tb as Value, out.shape) : tb === null ? toShape(ta, out.shape) : add(ta, tb),
+    vjp: (g) => [g, g],
+  },
+  { linear: true },
+)
 
 /** Elementwise difference. @internal */
-export const subPrimitive: Primitive<null> = binaryPrimitive('sub', {
-  jvp: (_a, _b, ta, tb, out) =>
-    ta === null ? toShape(neg(tb as Value), out.shape) : tb === null ? toShape(ta, out.shape) : sub(ta, tb),
-  vjp: (g, _a, _b, _out, [_na, nb]) => [g, nb ? neg(g) : null],
-})
+export const subPrimitive: Primitive<null> = binaryPrimitive(
+  'sub',
+  {
+    jvp: (_a, _b, ta, tb, out) =>
+      ta === null ? toShape(neg(tb as Value), out.shape) : tb === null ? toShape(ta, out.shape) : sub(ta, tb),
+    vjp: (g, _a, _b, _out, [_na, nb]) => [g, nb ? neg(g) : null],
+  },
+  { linear: true },
+)
 
 /** Elementwise product. @internal */
 export const mulPrimitive: Primitive<null> = binaryPrimitive('mul', {
@@ -105,13 +113,14 @@ export const modPrimitive: Primitive<null> = binaryPrimitive('mod', {
 })
 
 const floorDivPrimitive = binaryPrimitive('floorDiv')
-const negPrimitive = unaryPrimitive('neg', (t) => neg(t))
+const negPrimitive = unaryPrimitive('neg', (t) => neg(t), { linear: true })
 const absPrimitive = unaryPrimitive('abs', (t, x) => mul(t, sign(x)))
 const signPrimitive = unaryPrimitive('sign')
 
 /** Convert to another dtype. @internal */
 export const castPrimitive: Primitive<{ readonly dtype: DType }> = definePrimitive<{ readonly dtype: DType }>({
   name: 'cast',
+  linear: true,
   abstractEval: (xs, p) => [{ shape: arg(xs, 0).shape, dtype: p.dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.cast(arg(xs, 0), p.dtype)],
   jvp: (xs, ts, p) => {

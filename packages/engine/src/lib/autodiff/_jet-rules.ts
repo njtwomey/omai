@@ -4,57 +4,32 @@
 // with operations so that the coefficients are themselves differentiable.
 import { MdmlError } from '../base/index.ts'
 import {
-  type Aval,
   add,
-  arccos,
-  arccosh,
-  arcsin,
-  arcsinh,
-  arctan,
-  arctanh,
   bind1,
   broadcastTo,
-  cast,
-  concat,
   cos,
   cosh,
-  cumsum,
   div,
-  exp,
-  expm1,
+  divPrimitive,
   isTensor,
   log,
-  log1p,
-  log2,
-  log10,
   type MaybeZero,
   matmulPrimitive,
   mul,
+  mulPrimitive,
   neg,
   type Primitive,
-  pad,
-  pow,
-  reshape,
-  scatterAdd,
-  segmentSum,
+  powPrimitive,
+  prims,
   shapesEqual,
-  sigmoid,
   sin,
   sinh,
-  slice,
   sqrt,
   square,
   sub,
-  sum,
-  type Trace,
-  type Traced,
-  take,
-  takeAlongAxis,
-  tan,
-  tanh,
-  transpose,
   type Value,
   where,
+  wherePrimitive,
 } from '../tensor/index.ts'
 
 /** A truncated Taylor series: the primal first, then coefficients 1..K (`null` for zero). */
@@ -218,54 +193,6 @@ export function fitShapes(s: Series): MaybeZero[] {
   return s.map((c, k) => (k === 0 || c === null || shapesEqual(c.shape, y0.shape) ? c : broadcastTo(c, y0.shape)))
 }
 
-// Find the primitive an operation binds by running it once on abstract placeholders (most primitives are not
-// exported). This runs at module load and touches no shared state.
-function primitiveOf(op: (...xs: Value[]) => Value, avals: readonly Aval[]): Primitive<unknown> {
-  let found: Primitive<unknown> | null = null
-  const trace: Trace = {
-    level: Number.MAX_SAFE_INTEGER,
-    lift: (x) => make(x),
-    process: <P>(p: Primitive<P>, inputs: readonly Traced[], params: P): readonly Value[] => {
-      found ??= p as Primitive<unknown>
-      return p.abstractEval(inputs, params).map(make)
-    },
-  }
-  function make(a: Aval): Traced {
-    return { kind: 'traced', shape: a.shape, dtype: a.dtype, trace }
-  }
-  op(...avals.map(make))
-  if (found === null) throw new MdmlError('value', 'jet: an operation bound no primitive')
-  return found
-}
-
-const f2: Aval = { shape: [2], dtype: 'float64' }
-const f21: Aval = { shape: [2, 1], dtype: 'float64' }
-const f22: Aval = { shape: [2, 2], dtype: 'float64' }
-const i2: Aval = { shape: [2], dtype: 'int32' }
-const i21: Aval = { shape: [2, 1], dtype: 'int32' }
-const unary = (op: (x: Value) => Value): Primitive<unknown> => primitiveOf(op, [f2])
-const binary = (op: (a: Value, b: Value) => Value): Primitive<unknown> => primitiveOf(op, [f2, f2])
-
-/** Primitives that are linear (or affine) in their inputs jointly: each coefficient maps through the jvp rule. */
-export const LINEAR: ReadonlySet<Primitive<unknown>> = new Set([
-  binary(add),
-  binary(sub),
-  unary(neg),
-  unary((x) => reshape(x, [2, 1])),
-  primitiveOf((x) => transpose(x), [f22]),
-  unary((x) => broadcastTo(x, [3, 2])),
-  binary((a, b) => concat([a, b])),
-  unary((x) => pad(x, [[1, 1]], 2)),
-  unary((x) => slice(x, [1])),
-  unary((x) => sum(x)),
-  unary((x) => cumsum(x)),
-  unary((x) => cast(x, 'float32')),
-  primitiveOf((x, i) => take(x, i), [f2, i2]),
-  primitiveOf((x, i) => takeAlongAxis(x, i, 0), [f21, i21]),
-  primitiveOf((x, i) => segmentSum(x, i, 3), [f2, i2]),
-  primitiveOf((x, i) => scatterAdd([3, 1], i, x, 0), [f21, i21]),
-])
-
 function matmulSeries(a: Series, b: Series, y0: Value, order: number): MaybeZero[] {
   const y: MaybeZero[] = [y0]
   for (let k = 1; k <= order; k++) {
@@ -297,42 +224,48 @@ const two =
   (rule: (a: Series, b: Series, y0: Value, order: number) => Series): JetRule =>
   (series, _p, outputs, order) => [rule(series[0] ?? [], series[1] ?? [], outputs[0] as Value, order)]
 
+/** A primitive as the key of the rule table (rules look primitives up by identity, whatever their parameters). */
+const erase = <P>(primitive: Primitive<P>): Primitive<unknown> => primitive as Primitive<unknown>
+
 /** Rules for the nonlinear core primitives. */
 export const RULES: ReadonlyMap<Primitive<unknown>, JetRule> = new Map<Primitive<unknown>, JetRule>([
-  [binary(mul), two(mulSeries)],
-  [binary(div), two(divSeries)],
-  [binary(pow), two(powSeries)],
-  [matmulPrimitive as Primitive<unknown>, two(matmulSeries)],
+  [erase(mulPrimitive), two(mulSeries)],
+  [erase(divPrimitive), two(divSeries)],
+  [erase(powPrimitive), two(powSeries)],
+  [erase(matmulPrimitive), two(matmulSeries)],
   [
-    primitiveOf((c, a, b) => where(c, a, b), [{ shape: [2], dtype: 'bool' }, f2, f2]),
+    erase(wherePrimitive),
     (series, _p, outputs, order) => [
       whereSeries(primal(series[0] ?? []), series[1] ?? [], series[2] ?? [], outputs[0] as Value, order),
     ],
   ],
-  [unary(exp), one((x, y0, order) => ode(x, y0, order, (y, m) => at(y, m)))],
-  [unary(expm1), one((x, y0, order) => ode(x, y0, order, (y, m) => (m === 0 ? add(y0, 1) : at(y, m))))],
-  [unary(log), one(logSeries)],
-  [unary(log1p), one((x, y0, order) => logSeries([add(primal(x), 1), ...x.slice(1)], y0, order))],
+  [erase(prims.exp), one((x, y0, order) => ode(x, y0, order, (y, m) => at(y, m)))],
+  [erase(prims.expm1), one((x, y0, order) => ode(x, y0, order, (y, m) => (m === 0 ? add(y0, 1) : at(y, m))))],
+  [erase(prims.log), one(logSeries)],
+  [erase(prims.log1p), one((x, y0, order) => logSeries([add(primal(x), 1), ...x.slice(1)], y0, order))],
   // log_b x = ln x / ln b: the logarithm's series scaled, with the exact primal.
-  [unary(log2), one((x, y0, order) => logBase(x, y0, Math.LN2, order))],
-  [unary(log10), one((x, y0, order) => logBase(x, y0, Math.LN10, order))],
-  [unary(sqrt), one(sqrtSeries)],
-  [unary(sin), one((x, y0, order) => sinCos(x, y0, cos(primal(x)), order, -1)[0])],
-  [unary(cos), one((x, y0, order) => sinCos(x, sin(primal(x)), y0, order, -1)[1])],
-  [unary(sinh), one((x, y0, order) => sinCos(x, y0, cosh(primal(x)), order, 1)[0])],
-  [unary(cosh), one((x, y0, order) => sinCos(x, sinh(primal(x)), y0, order, 1)[1])],
+  [erase(prims.log2), one((x, y0, order) => logBase(x, y0, Math.LN2, order))],
+  [erase(prims.log10), one((x, y0, order) => logBase(x, y0, Math.LN10, order))],
+  [erase(prims.sqrt), one(sqrtSeries)],
+  [erase(prims.sin), one((x, y0, order) => sinCos(x, y0, cos(primal(x)), order, -1)[0])],
+  [erase(prims.cos), one((x, y0, order) => sinCos(x, sin(primal(x)), y0, order, -1)[1])],
+  [erase(prims.sinh), one((x, y0, order) => sinCos(x, y0, cosh(primal(x)), order, 1)[0])],
+  [erase(prims.cosh), one((x, y0, order) => sinCos(x, sinh(primal(x)), y0, order, 1)[1])],
   // tan' = 1 + tan^2, tanh' = 1 - tanh^2, sigmoid' = sigmoid - sigmoid^2 (as y' = x' u)
-  [unary(tan), one((x, y0, order) => ode(x, y0, order, (y, m) => (m === 0 ? add(1, square(y0)) : cauchy(y, y, m))))],
   [
-    unary(tanh),
+    erase(prims.tan),
+    one((x, y0, order) => ode(x, y0, order, (y, m) => (m === 0 ? add(1, square(y0)) : cauchy(y, y, m)))),
+  ],
+  [
+    erase(prims.tanh),
     one((x, y0, order) => ode(x, y0, order, (y, m) => (m === 0 ? sub(1, square(y0)) : subM(null, cauchy(y, y, m))))),
   ],
-  [unary(sigmoid), one((x, y0, order) => ode(x, y0, order, (y, m) => subM(at(y, m), cauchy(y, y, m))))],
+  [erase(prims.sigmoid), one((x, y0, order) => ode(x, y0, order, (y, m) => subM(at(y, m), cauchy(y, y, m))))],
   // y' h = x' with h = 1 + x^2, sqrt(1 - x^2), sqrt(1 + x^2), sqrt(x^2 - 1), 1 - x^2
-  [unary(arctan), one((x, y0, order) => quotient(x, shiftedSquare(x, 1, 1, order), y0, order))],
-  [unary(arcsin), one((x, y0, order) => quotient(x, rootOf(x, 1, -1, order), y0, order))],
+  [erase(prims.atan), one((x, y0, order) => quotient(x, shiftedSquare(x, 1, 1, order), y0, order))],
+  [erase(prims.asin), one((x, y0, order) => quotient(x, rootOf(x, 1, -1, order), y0, order))],
   [
-    unary(arccos),
+    erase(prims.acos),
     one((x, y0, order) =>
       quotient(
         x.map((c, k) => (k === 0 || c === null ? c : neg(c))),
@@ -342,9 +275,9 @@ export const RULES: ReadonlyMap<Primitive<unknown>, JetRule> = new Map<Primitive
       ),
     ),
   ],
-  [unary(arcsinh), one((x, y0, order) => quotient(x, rootOf(x, 1, 1, order), y0, order))],
-  [unary(arccosh), one((x, y0, order) => quotient(x, rootOf(x, -1, 1, order), y0, order))],
-  [unary(arctanh), one((x, y0, order) => quotient(x, shiftedSquare(x, 1, -1, order), y0, order))],
+  [erase(prims.asinh), one((x, y0, order) => quotient(x, rootOf(x, 1, 1, order), y0, order))],
+  [erase(prims.acosh), one((x, y0, order) => quotient(x, rootOf(x, -1, 1, order), y0, order))],
+  [erase(prims.atanh), one((x, y0, order) => quotient(x, shiftedSquare(x, 1, -1, order), y0, order))],
 ])
 
 /** Apply a linear primitive to each coefficient through its jvp rule. */

@@ -16,9 +16,14 @@ export function toShape(t: Value, shape: readonly number[]): Value {
  * An elementwise unary primitive. `rule(t, x, out)` maps a tangent (or, since the Jacobian is diagonal, a cotangent)
  * through the derivative; omit it for functions whose derivative is zero (rounding, sign).
  */
-export function unaryPrimitive(kernel: UnaryKernel, rule?: (t: Value, x: Value, out: Value) => Value): Primitive<null> {
+export function unaryPrimitive(
+  kernel: UnaryKernel,
+  rule?: (t: Value, x: Value, out: Value) => Value,
+  options: { readonly linear?: boolean } = {},
+): Primitive<null> {
   const base = {
     name: kernel,
+    ...(options.linear === true ? { linear: true } : {}),
     abstractEval: (xs: readonly Aval[]) => [arg(xs, 0)],
     impl: (xs: readonly Tensor[]) => [arg(xs, 0).backend.unary(kernel, arg(xs, 0))],
     batch: (xs: readonly Value[], ds: readonly BatchDim[]) => batchElementwise(primitive, xs, ds, null),
@@ -49,9 +54,14 @@ export interface BinaryRules {
 }
 
 /** An elementwise binary primitive with broadcasting; cotangents are summed back to each input's shape. */
-export function binaryPrimitive(kernel: BinaryKernel, rules?: BinaryRules): Primitive<null> {
+export function binaryPrimitive(
+  kernel: BinaryKernel,
+  rules?: BinaryRules,
+  options: { readonly linear?: boolean } = {},
+): Primitive<null> {
   const base = {
     name: kernel,
+    ...(options.linear === true ? { linear: true } : {}),
     abstractEval: (xs: readonly Aval[]) => {
       const a = arg(xs, 0)
       const b = arg(xs, 1)

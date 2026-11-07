@@ -58,6 +58,12 @@ export interface Primitive<P> {
   ) => readonly MaybeZero[]
   readonly batch?: (inputs: readonly Value[], dims: readonly BatchDim[], params: P, size: number) => BatchResult
   readonly zeroDerivative?: boolean
+  /**
+   * Whether the primitive is linear (or affine) in its inputs jointly, as `add`, `sum`, `reshape` or `slice` are:
+   * Taylor mode then maps each coefficient of the input series through the `jvp` rule instead of needing a rule of its
+   * own.
+   */
+  readonly linear?: boolean
   /** Describe the parameters for computation-graph labels. */
   readonly describe?: (params: P) => string
 }

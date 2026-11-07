@@ -59,6 +59,7 @@ function sqrtZeroGradient(s: Value): Value {
 function reducePrimitive(op: ReduceKernel): Primitive<ReduceParams> {
   const primitive: Primitive<ReduceParams> = definePrimitive<ReduceParams>({
     name: `reduce_${op}`,
+    ...(op === 'sum' ? { linear: true } : {}),
     abstractEval: (xs, p) => [{ shape: reducedShape(arg(xs, 0).shape, p), dtype: arg(xs, 0).dtype }],
     impl: (xs, p) => [arg(xs, 0).backend.reduce(op, arg(xs, 0), p.axes, p.keepDims)],
     jvp: (xs, ts, p, outs) => {
@@ -137,6 +138,7 @@ interface ScanParams {
 
 const cumsumPrimitive: Primitive<ScanParams> = definePrimitive<ScanParams>({
   name: 'cumsum',
+  linear: true,
   abstractEval: (xs) => [arg(xs, 0)],
   impl: (xs, p) => [arg(xs, 0).backend.scan('sum', arg(xs, 0), p.axis, p.reverse)],
   jvp: (_xs, ts, p) => {

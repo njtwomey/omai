@@ -38,6 +38,7 @@ function sliceShape(p: SliceParams): number[] {
 
 const slicePrimitive: Primitive<SliceParams> = definePrimitive<SliceParams>({
   name: 'slice',
+  linear: true,
   abstractEval: (xs, p) => [{ shape: sliceShape(p), dtype: arg(xs, 0).dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.slice(arg(xs, 0), p.starts, p.stops, p.steps)],
   jvp: (_xs, ts, p) => {
@@ -96,6 +97,7 @@ const sliceScatterPrimitive: Primitive<SliceScatterParams> = definePrimitive<Sli
 
 const takePrimitive: Primitive<{ readonly axis: number }> = definePrimitive<{ readonly axis: number }>({
   name: 'take',
+  linear: true,
   abstractEval: (xs, p) => [
     { shape: arg(xs, 0).shape.map((n, a) => (a === p.axis ? (arg(xs, 1).shape[0] ?? 0) : n)), dtype: arg(xs, 0).dtype },
   ],
@@ -157,6 +159,7 @@ const takeScatterPrimitive: Primitive<{ readonly axis: number; readonly size: nu
   readonly size: number
 }>({
   name: 'takeScatter',
+  linear: true,
   abstractEval: (xs, p) => [
     { shape: arg(xs, 0).shape.map((n, a) => (a === p.axis ? p.size : n)), dtype: arg(xs, 0).dtype },
   ],
@@ -193,6 +196,7 @@ const takeScatterPrimitive: Primitive<{ readonly axis: number; readonly size: nu
 
 const takeAlongPrimitive: Primitive<{ readonly axis: number }> = definePrimitive<{ readonly axis: number }>({
   name: 'takeAlongAxis',
+  linear: true,
   abstractEval: (xs) => [{ shape: arg(xs, 1).shape, dtype: arg(xs, 0).dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.takeAlongAxis(arg(xs, 0), arg(xs, 1) as Tensor<'int32'>, p.axis)],
   jvp: (xs, ts, p) => {
@@ -215,6 +219,7 @@ const putAlongPrimitive: Primitive<{ readonly axis: number; readonly shape: Shap
   readonly shape: Shape
 }>({
   name: 'putAlongAxisAdd',
+  linear: true,
   abstractEval: (xs, p) => [{ shape: p.shape, dtype: arg(xs, 0).dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.putAlongAxisAdd(arg(xs, 0), arg(xs, 1) as Tensor<'int32'>, p.axis, p.shape)],
   jvp: (xs, ts, p) => {

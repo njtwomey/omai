@@ -24,7 +24,7 @@ import {
   type Value,
   zeros,
 } from '../tensor/index.ts'
-import { fitShapes, LINEAR, linearSeries, RULES, type Series } from './_jet-rules.ts'
+import { fitShapes, linearSeries, RULES, type Series } from './_jet-rules.ts'
 import { withLevel } from './_level.ts'
 
 /**
@@ -133,11 +133,12 @@ export function jetTrace(level: number, order: number): JetTrace {
       ])
       const key = primitive as Primitive<unknown>
       const rule = RULES.get(key)
-      const out = LINEAR.has(key)
-        ? linearSeries(primitive, series, params, outputs, order)
-        : rule !== undefined
-          ? rule(series, params, outputs, order)
-          : jvpSeries(primitive, series, params, outputs, order)
+      const out =
+        key.linear === true
+          ? linearSeries(primitive, series, params, outputs, order)
+          : rule !== undefined
+            ? rule(series, params, outputs, order)
+            : jvpSeries(primitive, series, params, outputs, order)
       return out.map((s) => {
         const fitted = fitShapes(s)
         return make(fitted[0] as Value, fitted.slice(1))

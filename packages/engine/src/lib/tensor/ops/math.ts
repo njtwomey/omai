@@ -14,7 +14,35 @@ import { binaryPrimitive, unaryPrimitive } from './_factories.ts'
 import { add, cast, div, mul, neg, square, sub } from './arithmetic.ts'
 import { greater, where } from './compare.ts'
 
-const prims = {
+/** The names of the elementwise math primitives. */
+type MathPrimitiveName =
+  | 'exp'
+  | 'expm1'
+  | 'log'
+  | 'log1p'
+  | 'log2'
+  | 'log10'
+  | 'sqrt'
+  | 'sin'
+  | 'cos'
+  | 'tan'
+  | 'asin'
+  | 'acos'
+  | 'atan'
+  | 'sinh'
+  | 'cosh'
+  | 'tanh'
+  | 'asinh'
+  | 'acosh'
+  | 'atanh'
+  | 'sigmoid'
+  | 'floor'
+  | 'ceil'
+  | 'round'
+  | 'trunc'
+
+/** The elementwise math primitives by name (the Taylor-mode rules are keyed by them). @internal */
+export const prims: Readonly<Record<MathPrimitiveName, Primitive<null>>> = {
   exp: unaryPrimitive('exp', (t, _x, out) => mul(t, out)),
   expm1: unaryPrimitive('expm1', (t, _x, out) => mul(t, add(out, 1))),
   log: unaryPrimitive('log', (t, x) => div(t, x)),
@@ -40,7 +68,7 @@ const prims = {
   ceil: unaryPrimitive('ceil'),
   round: unaryPrimitive('round'),
   trunc: unaryPrimitive('trunc'),
-} satisfies Record<string, Primitive<null>>
+}
 
 // d atan2(y, x) = (x dy - y dx) / (x^2 + y^2)
 const atan2Primitive: Primitive<null> = binaryPrimitive('atan2', {
