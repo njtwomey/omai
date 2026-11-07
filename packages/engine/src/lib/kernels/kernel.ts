@@ -121,17 +121,31 @@ function structureOf(params: KernelParams): string {
   return JSON.stringify(treeFlatten(params).def)
 }
 
-/** Resolve constraints: the given ones, `positive` by default, and `fixed` for a positive hyperparameter set to 0. */
+/** Hyperparameters that are scales of a distance or a period: zero is not "switched off" but undefined (0 / 0 on the diagonal). */
+const STRICTLY_POSITIVE: ReadonlySet<string> = new Set(['lengthScale', 'period', 'alpha', 'decay'])
+
+/**
+ * Resolve constraints: the given ones, `positive` by default, and `fixed` for a variance-like positive hyperparameter
+ * set to 0. Concrete values must be finite and non-negative, and a length scale, period, alpha or decay strictly
+ * positive.
+ */
 function resolveConstraints(name: string, params: KernelParams, given: Readonly<Record<string, Constraint>>) {
   const out: Record<string, Constraint> = {}
   for (const [path, leaf] of Object.entries(treePaths(params))) {
     let c = given[path] ?? 'positive'
-    if (c === 'positive' && isTensor(leaf)) {
+    if (isTensor(leaf)) {
       const values = Array.from(leaf.data)
-      if (values.some((v) => v < 0 || Number.isNaN(v)))
-        throw new MdmlError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
-      // log(0) is not finite, so a positive hyperparameter set to exactly zero is held fixed.
-      if (values.length > 0 && values.every((v) => v === 0)) c = 'fixed'
+      if (values.some((v) => !Number.isFinite(v)))
+        throw new MdmlError('domain', `${name}: hyperparameter ${path} must be finite`, { values })
+      if (c === 'positive') {
+        if (values.some((v) => v < 0))
+          throw new MdmlError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
+        const zero = values.length > 0 && values.every((v) => v === 0)
+        if (values.includes(0) && STRICTLY_POSITIVE.has(path.slice(path.lastIndexOf('.') + 1)))
+          throw new MdmlError('domain', `${name}: hyperparameter ${path} must be positive, got 0`, { values })
+        // log(0) is not finite, so a variance-like positive hyperparameter set to exactly zero is held fixed.
+        if (zero) c = 'fixed'
+      }
     }
     out[path] = c
   }
@@ -144,7 +158,8 @@ function resolveConstraints(name: string, params: KernelParams, given: Readonly<
  *
  * @param spec - Name, hyperparameters, constraints, the matrix function and optionally a diagonal.
  * @returns The kernel.
- * @throws MdmlError `domain` for a negative positive-constrained hyperparameter; `shape` for bad points.
+ * @throws MdmlError `domain` for a negative or non-finite hyperparameter, or a zero length scale, period, alpha or decay;
+ *   `shape` for bad points.
  * @concept kernel-functions
  * @example
  * ```ts
@@ -312,6 +327,7 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
  * @param kernel - The base kernel.
  * @param exponent - The power p (a setting, not a hyperparameter).
  * @returns The exponentiated kernel.
+ * @throws MdmlError `domain` for an exponent that is not finite.
  * @concept kernel-algebra
  * @example
  * ```ts
@@ -321,6 +337,8 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
  * ```
  */
 export function powerKernel(kernel: Kernel, exponent: number): Kernel {
+  if (!Number.isFinite(exponent))
+    throw new MdmlError('domain', `powerKernel: the exponent must be finite, got ${exponent}`)
   return defineKernel({
     name: 'power',
     params: { base: kernel.params },
@@ -534,9 +552,11 @@ export interface GramOptions {
  * The Gram matrix K_ij = k(x_i, x_j) of a set of points.
  *
  * @param kernel - The kernel.
- * @param x - Points `[n, d]`.
+ * @param x - Points `[n, d]` (or one point `[d]`).
  * @param options - Diagonal jitter.
- * @returns `[n, n]`, differentiable in the points and the hyperparameters.
+ * @returns `[n, n]` (`[1, 1]` for a single point `[d]`, `[0, 0]` for no points), differentiable in the points and the
+ *   hyperparameters.
+ * @throws MdmlError `value` for a jitter that is negative or not finite.
  * @concept kernel-functions
  * @index function Gram matrix of a kernel over a set of points.
  * @example
@@ -547,8 +567,11 @@ export interface GramOptions {
  * ```
  */
 export function gram(kernel: Kernel, x: TensorLike, options: GramOptions = {}): Value {
-  const k = kernel.k(x)
   const jitter = options.jitter ?? 0
+  if (!Number.isFinite(jitter) || jitter < 0)
+    throw new MdmlError('value', `gram: the jitter must be finite and non-negative, got ${jitter}`)
+  // A single point [d] is one row: the matrix is [1, 1], not the scalar `kernel.k(x)` drops the axes to.
+  const k = kernel.k(asRows(x, 'gram').rows)
   return jitter === 0 ? k : add(k, mul(eye(k.shape[0] ?? 0), jitter))
 }
 
