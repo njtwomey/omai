@@ -5,18 +5,14 @@ import { broadcastShapes, sizeOf } from '../shape.ts'
 import type { Tensor } from '../tensor.ts'
 import { assertSameDtype, broadcastIndex, wrap } from './_util.ts'
 
-// Round half to even, as numpy does.
-const unaryKernels: Record<UnaryKernel, (x: number) => number> = {
-  neg: (x) => -x,
-  abs: Math.abs,
+/** The unary kernels with a loop of their own below: the most used ones. */
+type LoopKernel = 'neg' | 'abs' | 'exp' | 'log' | 'sqrt' | 'log1p' | 'tanh' | 'sigmoid'
+
+const unaryKernels: Record<Exclude<UnaryKernel, LoopKernel>, (x: number) => number> = {
   sign: (x) => (x > 0 ? 1 : x < 0 ? -1 : x),
-  exp: Math.exp,
   expm1: Math.expm1,
-  log: Math.log,
-  log1p: Math.log1p,
   log2: Math.log2,
   log10: Math.log10,
-  sqrt: Math.sqrt,
   sin: Math.sin,
   cos: Math.cos,
   tan: Math.tan,
@@ -25,14 +21,12 @@ const unaryKernels: Record<UnaryKernel, (x: number) => number> = {
   atan: Math.atan,
   sinh: Math.sinh,
   cosh: Math.cosh,
-  tanh: Math.tanh,
   asinh: Math.asinh,
   acosh: Math.acosh,
   atanh: Math.atanh,
-  // Split by sign so exp never overflows.
-  sigmoid: (x) => (x >= 0 ? 1 / (1 + Math.exp(-x)) : Math.exp(x) / (1 + Math.exp(x))),
   floor: Math.floor,
   ceil: Math.ceil,
+  // Round half to even, as numpy does.
   round: roundHalfEven,
   trunc: Math.trunc,
 }
@@ -86,7 +80,14 @@ const predicateKernels: Record<PredicateKernel, (x: number) => boolean> = {
 
 // The most used unary kernels get a loop of their own: the per-element call of `unaryKernels[op]` is shared by every op
 // and so megamorphic (negating a million elements takes 9.6 ms through it, 1.5 ms in a loop of its own).
-const unaryLoops: Partial<Record<UnaryKernel, (out: Storage<DType>, data: Storage<DType>) => void>> = {
+type Loop = (out: Storage<DType>, data: Storage<DType>) => void
+
+// Split by sign so exp never overflows.
+function sigmoid(x: number): number {
+  return x >= 0 ? 1 / (1 + Math.exp(-x)) : Math.exp(x) / (1 + Math.exp(x))
+}
+
+const unaryLoops: Record<LoopKernel, Loop> = {
   neg: (out, data) => {
     for (let i = 0; i < out.length; i++) out[i] = -(data[i] ?? 0)
   },
@@ -109,17 +110,17 @@ const unaryLoops: Partial<Record<UnaryKernel, (out: Storage<DType>, data: Storag
     for (let i = 0; i < out.length; i++) out[i] = Math.tanh(data[i] ?? 0)
   },
   sigmoid: (out, data) => {
-    for (let i = 0; i < out.length; i++) {
-      const v = data[i] ?? 0
-      out[i] = v >= 0 ? 1 / (1 + Math.exp(-v)) : Math.exp(v) / (1 + Math.exp(v))
-    }
+    for (let i = 0; i < out.length; i++) out[i] = sigmoid(data[i] ?? 0)
   },
+}
+
+function hasLoop(op: UnaryKernel): op is LoopKernel {
+  return Object.hasOwn(unaryLoops, op)
 }
 
 export function unary<D extends DType>(op: UnaryKernel, x: Tensor<D>): Tensor<D> {
   const out = allocate(x.dtype, x.data.length)
-  const loop = unaryLoops[op]
-  if (loop !== undefined) loop(out, x.data)
+  if (hasLoop(op)) unaryLoops[op](out, x.data)
   else {
     const kernel = unaryKernels[op]
     for (let i = 0; i < out.length; i++) out[i] = kernel(x.data[i] ?? 0)
