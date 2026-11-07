@@ -6,9 +6,9 @@
  */
 
 import { MdmlError, maxOf } from '../../base/index.ts'
-import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { asTensor, stridesOf, type TensorLike, toFlat } from '../../tensor/index.ts'
 import type { RunOptions } from '../../trace/index.ts'
-import { decodeProfile, encodeProfile, profileCount, profileWeights, stridesOf } from './_profiles.ts'
+import { decodeProfile, encodeProfile, profileCount, profileWeights } from './_profiles.ts'
 
 /** A mixed strategy: one probability per action. */
 export type Strategy = readonly number[]
