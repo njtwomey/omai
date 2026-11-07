@@ -6,10 +6,15 @@ import { brentq } from '../numerics/roots/index.ts'
 import { betainc, chdtr, chdtrc, fdtr, fdtrc, lgamma, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
 import { asTensor, fromStorage, item, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 
-/** Read a sample as a flat array, requiring at least `min` values. */
-export function sample(name: string, x: TensorLike, min = 1): Float64Array {
+/**
+ * Read a sample as a flat array, requiring at least `min` values. With `rejectNaN` a NaN is an error: routines that
+ * sort, rank or compare the data would otherwise treat it as a tie and answer with a finite statistic.
+ */
+export function sample(name: string, x: TensorLike, min = 1, rejectNaN = false): Float64Array {
   const data = Float64Array.from(toFlat(asTensor(x)))
   if (data.length < min) throw new MdmlError('value', `${name}: needs at least ${min} observations`)
+  if (rejectNaN)
+    for (const v of data) if (Number.isNaN(v)) throw new MdmlError('value', `${name}: NaN values are not allowed`)
   return data
 }
 
@@ -20,9 +25,15 @@ export function groupsOf(name: string, groups: readonly TensorLike[], min = 1, m
 }
 
 /** Read two samples of equal length. */
-export function paired(name: string, x: TensorLike, y: TensorLike, min = 1): [Float64Array, Float64Array] {
-  const a = sample(name, x, min)
-  const b = sample(name, y, min)
+export function paired(
+  name: string,
+  x: TensorLike,
+  y: TensorLike,
+  min = 1,
+  rejectNaN = false,
+): [Float64Array, Float64Array] {
+  const a = sample(name, x, min, rejectNaN)
+  const b = sample(name, y, min, rejectNaN)
   if (a.length !== b.length) throw new MdmlError('shape', `${name}: samples differ in length`)
   return [a, b]
 }

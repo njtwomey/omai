@@ -263,6 +263,7 @@ export function fOneway(groups: readonly TensorLike[]): TestResult {
   }
   const k = gs.length
   const N = all.length
+  if (N <= k) throw new MdmlError('value', 'fOneway: needs at least one group with 2 observations')
   const F = ssb / (k - 1) / (ssw / (N - k))
   return testResult({
     test: 'one-way ANOVA',

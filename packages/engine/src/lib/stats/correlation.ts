@@ -234,7 +234,7 @@ export interface KendallOptions extends TestOptions {
  */
 export function kendallTau(x: TensorLike, y: TensorLike, options: KendallOptions = {}): TestResult {
   const { alternative, level } = resolveTestOptions(options)
-  const [a, b] = paired('kendallTau', x, y, 2)
+  const [a, b] = paired('kendallTau', x, y, 2, true)
   const n = a.length
   const order = Array.from({ length: n }, (_, i) => i).sort(
     (i, j) => (a[i] ?? 0) - (a[j] ?? 0) || (b[i] ?? 0) - (b[j] ?? 0),

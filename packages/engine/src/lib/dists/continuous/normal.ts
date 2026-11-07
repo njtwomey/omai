@@ -44,6 +44,7 @@ import {
 } from '../../tensor/index.ts'
 import { concreteTwin, numericEntropy, numericMode, numericPpf, tailProbability } from '../_numeric.ts'
 import { uniformOpen } from '../_sampling.ts'
+import { validateOrdered } from '../_validate.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
 
 const noise = (key: Key, shape: readonly number[], batch: readonly number[]): Value =>
@@ -187,6 +188,7 @@ export function logNormal(mu: TensorLike = 0, sigma: TensorLike = 1): Distributi
 export function truncatedNormal(loc: TensorLike, scale: TensorLike, low: TensorLike, high: TensorLike): Distribution {
   const [mu, sigma, lo, hi] = promoteFloat(loc, scale, low, high) as [Value, Value, Value, Value]
   validateParams('truncatedNormal', { loc: [mu, 'real'], scale: [sigma, 'positive'] })
+  validateOrdered('truncatedNormal', 'low', lo, 'high', hi)
   const batchShape = batchShapeOf(mu, sigma, lo, hi)
   const a = div(sub(lo, mu), sigma)
   const b = div(sub(hi, mu), sigma)

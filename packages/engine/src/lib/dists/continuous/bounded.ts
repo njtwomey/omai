@@ -32,6 +32,7 @@ import {
   log1p,
   logicalAnd,
   logicalOr,
+  maximum,
   mul,
   neg,
   pow,
@@ -47,6 +48,7 @@ import {
 } from '../../tensor/index.ts'
 import { concreteTwin, integrate, numericMode } from '../_numeric.ts'
 import { gammaSample, uniformOpen } from '../_sampling.ts'
+import { validateBetween, validateOrdered } from '../_validate.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
 
 /**
@@ -66,6 +68,7 @@ import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, va
 export function uniform(low: TensorLike = 0, high: TensorLike = 1): Distribution {
   const [lo, hi] = promoteFloat(low, high) as [Value, Value]
   validateParams('uniform', { low: [lo, 'finite'], high: [hi, 'finite'] })
+  validateOrdered('uniform', 'low', lo, 'high', hi)
   const batchShape = batchShapeOf(lo, hi)
   const width = sub(hi, lo)
   const outside = (x: Value): Value => logicalOr(less(x, lo), greater(x, hi))
@@ -133,7 +136,9 @@ export function beta(a: TensorLike, b: TensorLike): Distribution {
     },
     mean: () => div(p, total),
     variance: () => div(mul(p, q), mul(square(total), add(total, 1))),
-    mode: () => div(sub(p, 1), sub(total, 2)),
+    // Torch's rule (Dirichlet.mode): the excess over 1 of each shape, so the mode is 0 or 1 when one shape is at most 1
+    // and undefined (NaN) when both are.
+    mode: () => div(maximum(sub(p, 1), 0), add(maximum(sub(p, 1), 0), maximum(sub(q, 1), 0))),
     entropy: () =>
       add(
         sub(sub(lbeta(p, q), mul(sub(p, 1), digamma(p))), mul(sub(q, 1), digamma(q))),
@@ -220,6 +225,8 @@ export function kumaraswamy(a: TensorLike, b: TensorLike): Distribution {
 export function triangular(low: TensorLike, mode: TensorLike, high: TensorLike): Distribution {
   const [a, c, b] = promoteFloat(low, mode, high) as [Value, Value, Value]
   validateParams('triangular', { low: [a, 'finite'], mode: [c, 'finite'], high: [b, 'finite'] })
+  validateOrdered('triangular', 'low', a, 'high', b)
+  validateBetween('triangular', 'mode', c, ['low', a], ['high', b])
   const batchShape = batchShapeOf(a, c, b)
   const bb = (v: Value): Value => broadcastBatch(v, batchShape)
   const width = sub(b, a)

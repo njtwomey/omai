@@ -21,6 +21,7 @@ import {
   greaterEqual,
   less,
   logicalAnd,
+  minimum,
   mul,
   neg,
   promoteFloat,
@@ -153,7 +154,7 @@ export function binomial(n: TensorLike, probs: TensorLike): Distribution {
       }),
     mean: () => mul(trials, p),
     variance: () => mul(mul(trials, p), sub(1, p)),
-    mode: () => floor(mul(add(trials, 1), p)),
+    mode: () => minimum(trials, floor(mul(add(trials, 1), p))),
     entropy: () => entropyBySum(logPmf, largest(trials), batchShape.length),
   })
 }

@@ -329,9 +329,10 @@ const logNormal = (x: number, m: number, v: number): number => -0.5 * (Math.log(
  * ```ts
  * import { likelihoodRatioAttack } from 'mdml-engine/learn'
  * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { matmul, tensor } from 'mdml-engine/tensor'
  * const pool = { x: tensor([[0], [1], [2], [3]]), y: tensor([0, 1, 0, 1]) }
- * likelihoodRatioAttack((x) => x, 4, [true, true, false, false], { pool, trainer: () => (x) => x, shadows: 4, key: key(0) }).scores.length // => 4
+ * const logits = (x) => matmul(x, tensor([[-1, 1]]))
+ * likelihoodRatioAttack(logits, 4, [true, true, false, false], { pool, trainer: () => logits, shadows: 4, key: key(0) }).scores.length // => 4
  * ```
  */
 export function likelihoodRatioAttack(
@@ -368,13 +369,12 @@ export function likelihoodRatioAttack(
     const m = v.reduce((a, b) => a + b, 0) / Math.max(1, v.length)
     return { m, var: v.length < 2 ? Number.NaN : v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1) }
   }
-  const pooled = Math.max(
-    1e-6,
-    stats([
-      ...inside.flatMap((v) => v.map((q) => q - stats(v).m)),
-      ...outside.flatMap((v) => v.map((q) => q - stats(v).m)),
-    ]).var,
-  )
+  // No query with two shadows on either side gives no pooled variance (NaN): the floor then, as Math.max would give NaN.
+  const pooledVar = stats([
+    ...inside.flatMap((v) => v.map((q) => q - stats(v).m)),
+    ...outside.flatMap((v) => v.map((q) => q - stats(v).m)),
+  ]).var
+  const pooled = Math.max(1e-6, Number.isNaN(pooledVar) ? 0 : pooledVar)
   const observed = labelLogit(target, qx, qy)
   const scores = observed.map((phi, i) => {
     const a = stats(inside[i] ?? [])

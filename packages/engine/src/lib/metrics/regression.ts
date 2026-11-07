@@ -117,6 +117,7 @@ export const medianAbsoluteError: Metric = perOutputMetric(
  *
  * @param yTrue - Targets.
  * @param yPred - Predictions.
+ * @param options - Sample weights (a sample of weight 0 is ignored).
  * @returns The metric result.
  * @example
  * ```ts
@@ -124,9 +125,13 @@ export const medianAbsoluteError: Metric = perOutputMetric(
  * maxError([1, 2, 3], [1, 5, 2]).estimate.value // => 3
  * ```
  */
-export const maxError: Metric = perOutputMetric(spec('maxError', 'lower', [0, Infinity]), (t, p) =>
-  maxOf(residuals(t, p).map(Math.abs)),
-)
+export const maxError: Metric = perOutputMetric(spec('maxError', 'lower', [0, Infinity]), (t, p, w) => {
+  // A sample of weight 0 is absent (weights count repetitions), so it cannot be the maximum.
+  const kept = residuals(t, p)
+    .map(Math.abs)
+    .filter((_, i) => (w[i] ?? 0) > 0)
+  return kept.length === 0 ? Number.NaN : maxOf(kept)
+})
 
 /**
  * The coefficient of determination R^2 (sklearn.metrics.r2_score): 1 - SS_res / SS_tot. For constant targets it is 1

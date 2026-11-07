@@ -24,5 +24,5 @@ Hypothesis tests, scipy.stats, statsmodels and pingouin style, available as `mdm
 - function `chi2Contingency`: Chi-square test of independence on a contingency table. `src/lib/stats/tests/contingency.ts:87` `mdml-engine/stats/tests`
 - function `ks2samp`: Two-sample Kolmogorov-Smirnov test. `src/lib/stats/tests/two-sample.ts:36` `mdml-engine/stats/tests`
 - function `mannWhitneyU`: Mann-Whitney U rank test. `src/lib/stats/tests/nonparametric.ts:79` `mdml-engine/stats/tests`
-- function `shapiro`: Shapiro-Wilk normality test. `src/lib/stats/tests/distribution.ts:371` `mdml-engine/stats/tests`
+- function `shapiro`: Shapiro-Wilk normality test. `src/lib/stats/tests/distribution.ts:373` `mdml-engine/stats/tests`
 - function `ttestInd`: Independent two-sample t test. `src/lib/stats/tests/means.ts:109` `mdml-engine/stats/tests`

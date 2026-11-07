@@ -91,7 +91,7 @@ export interface Columns {
  * @param n - The number of samples.
  * @param sampleWeight - The weights, if any.
  * @returns The weights.
- * @throws MdmlError with code `shape` when the length differs from n.
+ * @throws MdmlError with code `shape` when the length differs from n, and `value` for a negative or non-finite weight.
  * @example
  * ```ts
  * import { sampleWeights } from 'mdml-engine/metrics'
@@ -102,6 +102,9 @@ export function sampleWeights(name: string, n: number, sampleWeight?: TensorLike
   if (sampleWeight === undefined) return new Float64Array(n).fill(1)
   const w = Float64Array.from(toFlat(asTensor(sampleWeight)))
   if (w.length !== n) throw new MdmlError('shape', `${name}: sampleWeight must have one entry per sample`)
+  for (const v of w)
+    if (!(v >= 0 && v < Number.POSITIVE_INFINITY))
+      throw new MdmlError('value', `${name}: sampleWeight must be finite and non-negative (got ${v})`)
   return w
 }
 
@@ -152,6 +155,7 @@ export function columns(name: string, yTrue: TensorLike, yPred: TensorLike, opti
   if (t.shape.length > 2) throw new MdmlError('shape', `${name}: expected 1-D or 2-D targets`)
   const n = t.shape[0] ?? 1
   const k = t.shape.length === 2 ? (t.shape[1] ?? 1) : 1
+  if (n === 0) throw new MdmlError('value', `${name}: needs at least one sample`)
   const weight = sampleWeights(name, n, options.sampleWeight)
   return { n, k, yTrue: Float64Array.from(toFlat(t)), yPred: Float64Array.from(toFlat(p)), weight }
 }

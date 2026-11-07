@@ -239,6 +239,8 @@ function oneWay(name: string, groups: readonly TensorLike[]): { ssb: number; ssw
 
 /** Population eta-squared bounds lambda / (lambda + N) from the noncentral F inversion of a one-way F statistic. */
 function etaBounds(F: number, df1: number, df2: number, level: number): [number, number] {
+  // No variance within the groups: eta squared is exactly 1 (or undefined when there is none between either).
+  if (!Number.isFinite(F)) return Number.isNaN(F) ? [Number.NaN, Number.NaN] : [1, 1]
   const cdf = (lambda: number): number =>
     lambda === 0 ? fCdf(df1, df2, F) : item(noncentralF(df1, df2, lambda).cdf(F))
   const [lo, hi] = noncentralityBounds(cdf, level, F * df1 + 1)

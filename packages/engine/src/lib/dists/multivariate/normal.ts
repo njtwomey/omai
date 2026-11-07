@@ -9,6 +9,7 @@ import { cholesky, choSolve, inv, solve, solveTriangular } from '../../numerics/
 import { foldIn, normal as normalNoise } from '../../random/index.ts'
 import {
   add,
+  asTensor,
   broadcastShapes,
   diagonal,
   div,
@@ -29,6 +30,7 @@ import {
   take,
   type Value,
 } from '../../tensor/index.ts'
+import { validateSymmetric } from '../_validate.ts'
 import { broadcastBatch, type Distribution, defineDistribution } from '../distribution.ts'
 /** How a multivariate normal's covariance is given. */
 export type CovarianceParams =
@@ -65,7 +67,11 @@ const transposeLast = (m: Value): Value => swapaxes(m, -1, -2)
  */
 export function scaleTrilOf(params: CovarianceParams): Value {
   if ('scaleTril' in params) return promoteFloat(params.scaleTril)[0] as Value
-  if ('covariance' in params) return cholesky(params.covariance)
+  if ('covariance' in params) {
+    validateSymmetric('multivariateNormal', 'covariance', asTensor(params.covariance))
+    return cholesky(params.covariance)
+  }
+  validateSymmetric('multivariateNormal', 'precision', asTensor(params.precision))
   return cholesky(inv(params.precision))
 }
 

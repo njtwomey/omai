@@ -39,8 +39,8 @@ export function ks2samp(
   options: TestOptions & { readonly method?: 'auto' | 'exact' | 'asymp' } = {},
 ): TestResult {
   const alternative = resolveAlternative(options.alternative)
-  const a = sortedCopy(sample('ks2samp', x))
-  const b = sortedCopy(sample('ks2samp', y))
+  const a = sortedCopy(sample('ks2samp', x, 1, true))
+  const b = sortedCopy(sample('ks2samp', y, 1, true))
   const n1 = a.length
   const n2 = b.length
   // The ECDF difference just after each pooled value.

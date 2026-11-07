@@ -29,7 +29,10 @@ export function positives(yTrue: MetricInput, posLabel: Label | undefined): Floa
   if (pos === undefined) {
     const classes = sortLabels(t)
     if (classes.length > 2) throw new MdmlError('value', 'binary curves need two classes or a posLabel')
-    pos = classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1)
+    // sklearn's rule: labels within {0, 1} or {-1, 1} take 1 as the positive class even when it is absent (all negatives
+    // then have no positives); otherwise the larger of two labels.
+    const onlyNegative = classes.length === 1 && (classes[0] === 0 || classes[0] === -1)
+    pos = classes.includes(1) || onlyNegative ? 1 : (classes[classes.length - 1] ?? 1)
   }
   return Float64Array.from(t, (v) => (v === pos ? 1 : 0))
 }

@@ -10,6 +10,7 @@ import { lgamma, ndtr, normalLogPdf } from '../../numerics/special/index.ts'
 import { foldIn, gammaVariates, normal as normalNoise } from '../../random/index.ts'
 import {
   add,
+  asTensor,
   div,
   exp,
   fromStorage,
@@ -35,6 +36,7 @@ import {
 } from '../../tensor/index.ts'
 import { concreteTwin, numericEntropy, numericMode, numericPpf } from '../_numeric.ts'
 import { discreteSample } from '../_sampling.ts'
+import { validateOrdered } from '../_validate.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
 
 // Double-exponential rules (step 1/16) for the inner integral over z and the outer integral over log s.
@@ -68,7 +70,9 @@ function lift(t: Tensor, axis: number, rank: number): Value {
  */
 export function studentisedRange(k: TensorLike, df: TensorLike): Distribution {
   const [groups, nu] = promoteFloat(k, df) as [Value, Value]
-  validateParams('studentisedRange', { k: [groups, 'positiveInteger'], df: [nu, 'positive'] })
+  // df = Infinity is the Nemenyi test's limit (a known variance), so `positive` (finite) does not apply.
+  validateParams('studentisedRange', { k: [groups, 'positiveInteger'], df: [nu, 'real'] })
+  validateOrdered('studentisedRange', '0', asTensor(0), 'df', nu)
   if (toFlat(primalOf(groups)).some((v) => v < 2))
     throw new MdmlError('value', 'studentisedRange: k must be at least 2')
   const batchShape = batchShapeOf(groups, nu)

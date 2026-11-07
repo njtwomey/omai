@@ -106,6 +106,23 @@ describe('structured bijectors', () => {
     expect(item(b.forwardLogDetJacobian(x))).toBeCloseTo(logAbsDet(lower, x), 10)
   })
 
+  // Unconstrained values of any size, as an optimiser or a leapfrog step reaches: the forward map stays finite and the
+  // inverse recovers them (the old forms went NaN from |u| = 19 and lost the value from 15).
+  it('stick-breaking and correlation Cholesky round-trip at large unconstrained values', () => {
+    for (const [name, bijector] of [
+      ['stickBreaking', B.stickBreaking()],
+      ['correlationCholesky', B.correlationCholesky()],
+    ] as const) {
+      for (const u of [0, 5, 15, 20, 25, 35, -20, -35]) {
+        const x = tensor([u, -u, u])
+        const y = bijector.forward(x)
+        expect(toFlat(y).every(Number.isFinite), `${name} forward at ${u}`).toBe(true)
+        expect(Number.isFinite(item(bijector.forwardLogDetJacobian(x))), `${name} log-determinant at ${u}`).toBe(true)
+        closeArrays(toFlat(bijector.inverse(y)), [u, -u, u], 6)
+      }
+    }
+  })
+
   it('lower Cholesky and its outer product map onto positive-definite matrices', () => {
     const lc = B.lowerCholesky()
     const x = tensor([0.2, -0.5, 0.3, 1.2, 0.1, -0.4])

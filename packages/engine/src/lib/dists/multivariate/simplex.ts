@@ -19,6 +19,7 @@ import {
   isfinite,
   log,
   matmul,
+  maximum,
   mul,
   neg,
   promoteFloat,
@@ -82,7 +83,8 @@ export function dirichlet(concentration: TensorLike): Distribution {
     },
     mean: () => div(alpha, totalKeep),
     variance: () => div(mul(alpha, sub(totalKeep, alpha)), mul(mul(totalKeep, totalKeep), add(totalKeep, 1))),
-    mode: () => div(sub(alpha, 1), sub(totalKeep, k)),
+    // Torch's rule: the excess over 1 of each concentration, so a coordinate with alpha <= 1 has mode 0 (NaN if all do).
+    mode: () => div(maximum(sub(alpha, 1), 0), sum(maximum(sub(alpha, 1), 0), -1, true)),
     entropy: () => add(sub(logNorm, sum(mul(sub(alpha, 1), digamma(alpha)), -1)), mul(sub(total, k), digamma(total))),
   })
 }

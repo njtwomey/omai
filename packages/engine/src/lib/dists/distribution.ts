@@ -12,6 +12,7 @@ import type { Key } from '../random/index.ts'
 import {
   abs,
   all,
+  any,
   asTensor,
   broadcastShapes,
   broadcastTo,
@@ -22,6 +23,7 @@ import {
   greater,
   greaterEqual,
   isfinite,
+  isnan,
   less,
   lessEqual,
   log,
@@ -40,7 +42,9 @@ import {
   toFlat,
   tril,
   type Value,
+  where,
 } from '../tensor/index.ts'
+import { concreteFlat } from './_validate.ts'
 
 /**
  * The set a distribution's values lie in. Elementwise kinds describe each entry; vector kinds (`simplex`, `counts`,
@@ -148,7 +152,8 @@ export function unavailable(name: string, what: string): never {
 
 /**
  * Build a distribution from its defining parts. Defaults: `prob = exp(logProb)`, `sf = 1 - cdf`, `logCdf = log(cdf)`,
- * `logSf = log1p(-cdf)`, `isf(q) = ppf(1 - q)`, `stddev = sqrt(variance)`, `sample = stopGradient(rsample)`.
+ * `logSf = log1p(-cdf)`, `isf(q) = ppf(1 - q)`, `stddev = sqrt(variance)`, `sample = stopGradient(rsample)`. A NaN
+ * argument to `logProb`, `cdf`, `sf`, `logCdf`, `logSf`, `ppf` or `isf` gives NaN (for an event, a NaN coordinate).
  *
  * @param spec - The defining parts.
  * @returns The distribution.
@@ -168,8 +173,26 @@ export function unavailable(name: string, what: string): never {
  */
 export function defineDistribution(spec: DistributionSpec): Distribution {
   const value = (x: TensorLike): Value => asTensor(x)
-  const cdf = (x: Value): Value => (spec.cdf ? spec.cdf(x) : unavailable(spec.name, 'cdf'))
-  const ppf = (q: Value): Value => (spec.ppf ? spec.ppf(q) : unavailable(spec.name, 'ppf'))
+  // NaN in gives NaN out: a comparison against the support is false for NaN, and the edge value it then selects (0, 1,
+  // -Infinity) would read as a probability. Event-valued arguments are NaN when any coordinate is.
+  const eventRank = (spec.eventShape ?? []).length
+  const nanIn = (x: Value, rank: number): Value => {
+    const m = isnan(x)
+    return rank === 0
+      ? m
+      : any(
+          m,
+          Array.from({ length: rank }, (_, i) => -1 - i),
+        )
+  }
+  const keep = (x: Value, out: Value, rank = eventRank): Value => where(nanIn(x, rank), Number.NaN, out)
+  // The limits of a univariate distribution function at an infinite argument, whatever the family's formula gives there:
+  // `atMinus` below every value and `atPlus` above them.
+  const limit = (x: Value, out: Value, atMinus: number, atPlus: number): Value =>
+    eventRank === 0 ? where(isfinite(x), out, where(greater(x, 0), atPlus, atMinus)) : out
+  const logProb = (x: Value): Value => keep(x, spec.logProb(x))
+  const cdf = (x: Value): Value => keep(x, limit(x, spec.cdf ? spec.cdf(x) : unavailable(spec.name, 'cdf'), 0, 1))
+  const ppf = (q: Value): Value => keep(q, spec.ppf ? spec.ppf(q) : unavailable(spec.name, 'ppf'), 0)
   const rsample = (key: Key, shape: readonly number[] = []): Value =>
     spec.rsample
       ? spec.rsample(key, shape)
@@ -184,17 +207,20 @@ export function defineDistribution(spec: DistributionSpec): Distribution {
     batchShape: spec.batchShape,
     eventShape: spec.eventShape ?? [],
     hasRsample: spec.rsample !== undefined,
-    logProb: (x) => spec.logProb(value(x)),
-    prob: (x) => exp(spec.logProb(value(x))),
+    logProb: (x) => logProb(value(x)),
+    prob: (x) => exp(logProb(value(x))),
     cdf: (x) => cdf(value(x)),
-    logCdf: (x) => (spec.logCdf ? spec.logCdf(value(x)) : log(cdf(value(x)))),
-    sf: (x) => (spec.sf ? spec.sf(value(x)) : sub(1, cdf(value(x)))),
+    logCdf: (x) =>
+      spec.logCdf
+        ? keep(value(x), limit(value(x), spec.logCdf(value(x)), Number.NEGATIVE_INFINITY, 0))
+        : log(cdf(value(x))),
+    sf: (x) => (spec.sf ? keep(value(x), limit(value(x), spec.sf(value(x)), 1, 0)) : sub(1, cdf(value(x)))),
     logSf: (x) => {
-      if (spec.logSf) return spec.logSf(value(x))
-      return spec.sf ? log(spec.sf(value(x))) : log1p(neg(cdf(value(x))))
+      if (spec.logSf) return keep(value(x), limit(value(x), spec.logSf(value(x)), 0, Number.NEGATIVE_INFINITY))
+      return spec.sf ? log(keep(value(x), limit(value(x), spec.sf(value(x)), 1, 0))) : log1p(neg(cdf(value(x))))
     },
     ppf: (q) => ppf(value(q)),
-    isf: (q) => (spec.isf ? spec.isf(value(q)) : ppf(sub(1, value(q)))),
+    isf: (q) => (spec.isf ? keep(value(q), spec.isf(value(q)), 0) : ppf(sub(1, value(q)))),
     sample: (key, shape = []) => (spec.sample ? spec.sample(key, shape) : stopGradient(rsample(key, shape))),
     rsample,
     mean: spec.mean,
@@ -405,11 +431,12 @@ export type Constraint =
   | 'nonNegativeInteger'
   | 'positiveInteger'
 
+// `positive` and `nonNegative` exclude Infinity: an infinite scale, rate or df makes NaN at the first use.
 const CHECKS: Readonly<Record<Constraint, (v: number) => boolean>> = {
   real: (v) => !Number.isNaN(v),
   finite: (v) => Number.isFinite(v),
-  positive: (v) => v > 0,
-  nonNegative: (v) => v >= 0,
+  positive: (v) => v > 0 && v < Number.POSITIVE_INFINITY,
+  nonNegative: (v) => v >= 0 && v < Number.POSITIVE_INFINITY,
   unitInterval: (v) => v >= 0 && v <= 1,
   openUnitInterval: (v) => v > 0 && v < 1,
   integer: (v) => Number.isInteger(v),
@@ -434,12 +461,8 @@ const CHECKS: Readonly<Record<Constraint, (v: number) => boolean>> = {
  */
 export function validateParams(family: string, checks: Readonly<Record<string, readonly [Value, Constraint]>>): void {
   for (const [name, [v, constraint]] of Object.entries(checks)) {
-    let values: number[]
-    try {
-      values = toFlat(primalOf(v))
-    } catch {
-      continue
-    }
+    const values = concreteFlat(v)
+    if (values === undefined) continue
     const ok = CHECKS[constraint]
     const bad = values.find((x) => !ok(x))
     if (bad !== undefined)

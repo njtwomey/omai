@@ -379,7 +379,7 @@ export function runsTest(
   x: TensorLike,
   options: { readonly cutoff?: 'mean' | 'median' | number; readonly correction?: boolean } = {},
 ): TestResult {
-  const a = sample('runsTest', x, 2)
+  const a = sample('runsTest', x, 2, true)
   const cut = options.cutoff ?? 'mean'
   const c = cut === 'mean' ? meanOf(a) : cut === 'median' ? median(a) : cut
   const ind = Array.from(a, (v) => (v >= c ? 1 : 0))

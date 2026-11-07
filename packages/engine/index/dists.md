@@ -8,7 +8,7 @@ Probability distributions, scipy.stats and torch.distributions style: families t
 
 - structure `distribution.ts` (file): The Distribution contract: density, CDF, quantile, moments and sampling. `src/lib/dists/distribution.ts:1` `mdml-engine/dists`
 
-- distribution `defineDistribution`: Define a new family from its log density, sampler and moments. `src/lib/dists/distribution.ts:169` `mdml-engine/dists`
+- distribution `defineDistribution`: Define a new family from its log density, sampler and moments. `src/lib/dists/distribution.ts:174` `mdml-engine/dists`
 
 ## dists/bijectors
 
@@ -26,19 +26,19 @@ Distributions composed from other distributions, available as `mdml-engine/dists
 
 Univariate continuous distributions, scipy.stats and torch.distributions style, part of `mdml-engine/dists`: the normal family, the gamma family, bounded, heavy-tailed and extreme-value distributions, and the sampling distributions of test statistics, each with densities, CDFs, quantiles, moments and sampling.
 
-- distribution `beta`: Beta distribution. `src/lib/dists/continuous/bounded.ts:106` `mdml-engine/dists`
+- distribution `beta`: Beta distribution. `src/lib/dists/continuous/bounded.ts:109` `mdml-engine/dists`
 - distribution `gamma`: Gamma distribution with shape and rate. `src/lib/dists/continuous/gamma.ts:72` `mdml-engine/dists`
-- distribution `normal`: Normal distribution, scipy.stats.norm and torch Normal in one. `src/lib/dists/continuous/normal.ts:68` `mdml-engine/dists`
+- distribution `normal`: Normal distribution, scipy.stats.norm and torch Normal in one. `src/lib/dists/continuous/normal.ts:69` `mdml-engine/dists`
 - distribution `studentT`: Student's t distribution. `src/lib/dists/continuous/heavy-tailed.ts:77` `mdml-engine/dists`
-- distribution `uniform`: Continuous uniform distribution on an interval. `src/lib/dists/continuous/bounded.ts:66` `mdml-engine/dists`
+- distribution `uniform`: Continuous uniform distribution on an interval. `src/lib/dists/continuous/bounded.ts:68` `mdml-engine/dists`
 
 ## dists/discrete
 
 Discrete distributions, scipy.stats and torch.distributions style, part of `mdml-engine/dists`: Bernoulli, binomial and beta-binomial successes, categorical, uniform and ordinal outcomes, and Poisson, negative binomial, hypergeometric and zero-inflated counts.
 
-- distribution `bernoulli`: Bernoulli distribution from a probability or logit. `src/lib/dists/discrete/binary.ts:58` `mdml-engine/dists`
-- distribution `categorical`: Categorical distribution from probabilities or logits. `src/lib/dists/discrete/categorical.ts:92` `mdml-engine/dists`
-- distribution `poisson`: Poisson distribution. `src/lib/dists/discrete/counts.ts:72` `mdml-engine/dists`
+- distribution `bernoulli`: Bernoulli distribution from a probability or logit. `src/lib/dists/discrete/binary.ts:59` `mdml-engine/dists`
+- distribution `categorical`: Categorical distribution from probabilities or logits. `src/lib/dists/discrete/categorical.ts:99` `mdml-engine/dists`
+- distribution `poisson`: Poisson distribution. `src/lib/dists/discrete/counts.ts:74` `mdml-engine/dists`
 
 ## dists/families
 
@@ -50,5 +50,5 @@ Regression families, available as `mdml-engine/dists/families`: the link functio
 
 Multivariate distributions, part of `mdml-engine/dists`: the multivariate, low-rank and matrix normals, distributions on the simplex and over counts, Wishart and LKJ distributions over matrices, directional distributions on circles and spheres, and copulas with their fitting.
 
-- distribution `dirichlet`: Dirichlet distribution on the probability simplex. `src/lib/dists/multivariate/simplex.ts:59` `mdml-engine/dists`
-- distribution `multivariateNormal`: Multivariate normal by covariance, precision or Cholesky factor. `src/lib/dists/multivariate/normal.ts:91` `mdml-engine/dists`
+- distribution `dirichlet`: Dirichlet distribution on the probability simplex. `src/lib/dists/multivariate/simplex.ts:60` `mdml-engine/dists`
+- distribution `multivariateNormal`: Multivariate normal by covariance, precision or Cholesky factor. `src/lib/dists/multivariate/normal.ts:97` `mdml-engine/dists`
