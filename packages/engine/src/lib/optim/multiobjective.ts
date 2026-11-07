@@ -8,15 +8,18 @@ import { MdmlError } from '../base/index.ts'
 import {
   add,
   asTensor,
+  fromStorage,
   max,
   mul,
   primalOf,
   sliceAxis,
   sub,
   sum,
+  type Tensor,
   type TensorLike,
   tensor,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 import { crowdingRows, dominatesRow, hv, sortRows } from './_pareto.ts'
@@ -92,28 +95,35 @@ export function paretoFront(points: TensorLike): number[] {
 
 /**
  * Crowding distances of the points of one front (Deb et al. 2002): for each objective, the gap between a point's
- * neighbours divided by the objective's range, summed; boundary points get infinity. Larger is less crowded.
+ * neighbours divided by the objective's range, summed; boundary points get infinity. Larger is less crowded. Returns a
+ * tensor (migration, D-009: was a `Float64Array`).
  *
  * @param points - The front's objective vectors [n, m].
- * @returns One distance per point.
+ * @returns One distance per point, a `[n]` tensor.
  * @concept pareto-optimality
  * @example
  * ```ts
  * import { crowdingDistance } from 'mdml-engine/optim'
- * Array.from(crowdingDistance([[0, 4], [1, 2], [3, 1], [4, 0]])) // => [Infinity, 1.5, 1.25, Infinity]
+ * import { toFlat } from 'mdml-engine/tensor'
+ * toFlat(crowdingDistance([[0, 4], [1, 2], [3, 1], [4, 0]])) // => [Infinity, 1.5, 1.25, Infinity]
  * ```
  */
-export function crowdingDistance(points: TensorLike): Float64Array {
-  return crowdingRows(rowsOf(points))
+export function crowdingDistance(points: TensorLike): Tensor<'float64', [number]> {
+  const distances = crowdingRows(rowsOf(points))
+  return fromStorage(distances, [distances.length], 'float64')
 }
 
 /**
  * The hypervolume indicator: the volume of objective space dominated by the points and bounded by a reference point
- * (minimisation). Exact: a sweep in two dimensions, the WFG algorithm (While, Bradstreet and Barone 2012) above.
+ * (minimisation). Exact: a sweep in two dimensions, the WFG algorithm (While, Bradstreet and Barone 2012) above. Takes
+ * the reference as a tensor-like (migration, D-009: was `readonly number[]`).
  *
  * @param points - Objective vectors [n, m].
- * @param reference - The reference point (worse than every point of interest); points not dominating it are ignored.
+ * @param reference - The reference point, a vector (worse than every point of interest); points not dominating it are
+ *   ignored.
  * @returns The hypervolume.
+ * @throws MdmlError with code `shape` unless `points` is `[n, m]` and `reference` a vector of `m` numbers, and
+ *   `not-differentiable` for a traced `reference`.
  * @concept hypervolume
  * @example
  * ```ts
@@ -121,8 +131,12 @@ export function crowdingDistance(points: TensorLike): Float64Array {
  * hypervolume([[1, 3], [2, 2], [3, 1]], [4, 4]) // => 6
  * ```
  */
-export function hypervolume(points: TensorLike, reference: readonly number[]): number {
-  const rows = rowsOf(points)
+export function hypervolume(points: TensorLike, reference: TensorLike): number {
+  return hypervolumeOf(rowsOf(points), toVector(reference, 'hypervolume'))
+}
+
+/** The hypervolume of rows against a reference read once, shared by {@link hypervolume} and the contributions. */
+function hypervolumeOf(rows: readonly number[][], reference: readonly number[]): number {
   if (rows.length > 0 && (rows[0]?.length ?? 0) !== reference.length)
     throw new MdmlError('shape', `hypervolume: reference has ${reference.length} objectives, points ${rows[0]?.length}`)
   const inside = rows.filter((r) => r.every((v, k) => v < (reference[k] ?? 0)))
@@ -134,30 +148,36 @@ export function hypervolume(points: TensorLike, reference: readonly number[]): n
 
 /**
  * Exclusive hypervolume contributions: how much the hypervolume falls when each point is removed (the selection
- * criterion of SMS-EMOA). Dominated points contribute 0.
+ * criterion of SMS-EMOA). Dominated points contribute 0. Takes the reference as a tensor-like and returns a tensor
+ * (migration, D-009: `reference` was `readonly number[]`, the result a `Float64Array`).
  *
  * @param points - Objective vectors [n, m].
- * @param reference - The reference point.
- * @returns One contribution per point.
+ * @param reference - The reference point, a vector.
+ * @returns One contribution per point, a `[n]` tensor.
+ * @throws MdmlError with code `shape` unless `points` is `[n, m]` and `reference` a vector of `m` numbers, and
+ *   `not-differentiable` for a traced `reference`.
  * @concept hypervolume
  * @example
  * ```ts
  * import { hypervolumeContributions } from 'mdml-engine/optim'
- * Array.from(hypervolumeContributions([[1, 3], [2, 2], [3, 1]], [4, 4])) // => [1, 1, 1]
+ * import { toFlat } from 'mdml-engine/tensor'
+ * toFlat(hypervolumeContributions([[1, 3], [2, 2], [3, 1]], [4, 4])) // => [1, 1, 1]
  * ```
  */
-export function hypervolumeContributions(points: TensorLike, reference: readonly number[]): Float64Array {
+export function hypervolumeContributions(points: TensorLike, reference: TensorLike): Tensor<'float64', [number]> {
   const rows = rowsOf(points)
-  const all = hypervolume(rows, reference)
-  return Float64Array.from(
+  const ref = toVector(reference, 'hypervolumeContributions')
+  const all = hypervolumeOf(rows, ref)
+  const contributions = Float64Array.from(
     rows,
     (_, i) =>
       all -
-      hypervolume(
+      hypervolumeOf(
         rows.filter((_, j) => j !== i),
-        reference,
+        ref,
       ),
   )
+  return fromStorage(contributions, [contributions.length], 'float64')
 }
 
 const weightsOf = (w: TensorLike): Value => asTensor(w)
@@ -241,11 +261,13 @@ export function augmentedChebyshev(
 /**
  * The epsilon-constraint scalarisation: minimise one objective subject to every other objective staying below its
  * bound, f_j(x) <= eps_j. The constraints use the c(x) >= 0 convention of {@link cobyla} and `differentialEvolution`.
+ * Takes the bounds as a tensor-like (migration, D-009: `epsilons` was `readonly number[]`).
  *
  * @param f - The vector objective.
  * @param index - The objective to minimise.
- * @param epsilons - Upper bounds for the objectives, one per objective (the entry at `index` is ignored).
+ * @param epsilons - Upper bounds for the objectives, one per objective (the entry at `index` is ignored): a vector.
  * @returns The scalar objective and its inequality constraints.
+ * @throws MdmlError with code `shape` unless `epsilons` has rank 1, and `not-differentiable` for a traced one.
  * @concept scalarisation
  * @example
  * ```ts
@@ -260,11 +282,11 @@ export function augmentedChebyshev(
 export function epsilonConstraint(
   f: VectorObjective,
   index: number,
-  epsilons: readonly number[],
+  epsilons: TensorLike,
 ): { readonly objective: Objective; readonly constraints: InequalityConstraint[] } {
   const pick = (v: Value, i: number): Value => sum(sliceAxis(v, 0, i, i + 1))
   const constraints: InequalityConstraint[] = []
-  for (const [j, eps] of epsilons.entries()) {
+  for (const [j, eps] of toVector(epsilons, 'epsilonConstraint').entries()) {
     if (j === index) continue
     constraints.push((x) => sub(tensor(eps), pick(f(x), j)))
   }

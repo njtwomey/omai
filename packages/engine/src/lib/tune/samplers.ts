@@ -454,7 +454,7 @@ function selectElite(study: Study, trials: readonly Trial[], pop: number): { eli
   const elite: Trial[] = []
   const fitness: number[] = []
   for (const [rank, front] of nonDominatedSort(losses).entries()) {
-    const crowd = crowdingDistance(front.map((i) => losses[i] as number[]))
+    const crowd = crowdingDistance(front.map((i) => losses[i] as number[])).data
     const order = front.map((_, j) => j).sort((x, y) => (crowd[y] ?? 0) - (crowd[x] ?? 0) || x - y)
     for (const j of order) {
       if (elite.length >= pop) break
