@@ -113,3 +113,11 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   first fixes came from the Phase 0 scans and did not depend on the readings, and the readers are light while the fixers are heavy, so
   I paired them; but it departed from the plan (the synthesis comes before the fixes) and the foundations reader saw files change under it.
   Decision D-013: finish the readings first, then the synthesis, then fixes.
+- **11:30 Result.** Optim and losses read (31 findings, `findings/optim-losses.md`; about 36 files). The vector minimisers are the
+  most consistent code read so far (thirteen `minimize/` methods agree on a zero-gradient start, a constant objective and a NaN objective),
+  and objectives are tensor-to-tensor so `grad` reaches them. Not healthy: scale (`linprog` with `c` scaled by 1e-9 returns a wrong
+  "optimal" in 30 of 40 random programs; seven gradient methods return the start as `converged` in 0 steps at objective scale 1e-8;
+  `fitGlm` with `lbfgs` or `newton` does the same on a design scaled by 1e-8 while `irls` is right); non-finite input has no policy (NaN in an LP
+  gives `optimal`; `b = Infinity` gives `x = [Infinity, 0]`) and there are two status vocabularies; the default Bland rule needs 223 pivots
+  at 40 by 80 against 16 for Dantzig, and `linprog` runs up to five solves on plain packing programs. The `optim` to `dists` import is
+  type-only: the real order is `dists < optim < losses`.
