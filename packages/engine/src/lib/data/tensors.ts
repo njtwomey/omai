@@ -79,9 +79,11 @@ export function xy(
  * A classification dataset from features and integer labels.
  *
  * @param x - Features `[n, d]`.
- * @param y - Class indices `[n]`.
+ * @param y - Class indices `[n]`: whole numbers (a NaN or a fraction throws); a negative one is kept and marks an
+ *   unlabelled row (the sentinel of `semiSupervisedSplit`, skipped by `classCounts`).
  * @param meta - Class names, feature names, sample weights and other metadata.
  * @returns The dataset.
+ * @throws MdmlError with code `value` for a label that is not a whole number, `shape` for a length mismatch.
  * @index function Build a classification dataset from features and class labels.
  * @example
  * ```ts
@@ -197,6 +199,11 @@ function isColumn(c: ColumnInput): c is TableColumn {
 function toColumn(name: string, c: ColumnInput, text: boolean, levels?: readonly string[]): TableColumn {
   if (isColumn(c)) return c
   const first = c.find((v) => v !== null)
+  const type = first === undefined ? undefined : typeof first
+  // The first value decides the column's type; a value of another type is an error (it used to become NaN, a level or 1).
+  const row = c.findIndex((v) => v !== null && typeof v !== type)
+  if (row >= 0)
+    throw new MdmlError('value', `table: column ${name} mixes ${type} and ${typeof c[row]} values (row ${row})`)
   if (typeof first === 'boolean') {
     return {
       kind: 'boolean',
@@ -231,7 +238,8 @@ function toColumn(name: string, c: ColumnInput, text: boolean, levels?: readonly
  * @param columns - The columns by name.
  * @param options - The target column, text columns, explicit category levels and metadata.
  * @returns The table.
- * @throws MdmlError with code `shape` when columns differ in length.
+ * @throws MdmlError with code `shape` when columns differ in length; `value` for a column that mixes types (numbers
+ *   with strings, booleans with numbers), a value outside the given levels, or a missing target.
  * @index function A data frame of named mixed-type columns.
  * @example
  * ```ts

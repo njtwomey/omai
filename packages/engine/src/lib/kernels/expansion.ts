@@ -5,7 +5,7 @@
  * kernel_approximation), and the errors of the approximate Gram matrix.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { assertFinite, MdmlError } from '../base/index.ts'
 import { type ContextOptions, resolveKey } from '../context/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'
 import { qr, svd, svdvals } from '../numerics/linalg/index.ts'
@@ -21,6 +21,7 @@ import {
   expandDims,
   fromStorage,
   greater,
+  isnan,
   isTensor,
   item,
   log,
@@ -54,6 +55,20 @@ export interface FeatureMap {
   readonly name: string
   /** Features of rows `[n, d]` (or one point `[d]`), `[n, D]`. */
   transform(x: TensorLike): Value
+}
+
+/** A size or count that must be a positive whole number (a zero or NaN here hangs, wraps or raises a typed-array error later). */
+function positiveInteger(name: string, what: string, v: number): number {
+  if (!Number.isInteger(v) || v < 1)
+    throw new MdmlError('value', `${name}: ${what} must be a positive integer, got ${v}`)
+  return v
+}
+
+/** A setting that must be finite and above `min` (strictly when `open`). */
+function finiteAbove(name: string, what: string, v: number, min: number, open: boolean): number {
+  if (!Number.isFinite(v) || (open ? v <= min : v < min))
+    throw new MdmlError('value', `${name}: ${what} must be a finite number ${open ? '>' : '>='} ${min}, got ${v}`)
+  return v
 }
 
 function rowsOf(x: TensorLike, name: string): { rows: Value; single: boolean } {
@@ -159,7 +174,8 @@ function fourierMap(name: string, weights: Tensor<'float64'>, offset: Tensor<'fl
  *
  * @param options - Input dimension, number of features, kernel and key; or the draws.
  * @returns The feature map with its frequencies and phases.
- * @throws MdmlError `not-implemented` for a kernel without a spectral sampler.
+ * @throws MdmlError `not-implemented` for a kernel without a spectral sampler; `value` for an input dimension or a
+ *   number of features that is not a positive integer.
  * @concept random-features
  * @reference A. Rahimi and B. Recht, Random features for large-scale kernel machines (NeurIPS 2007).
  * @example
@@ -172,7 +188,8 @@ function fourierMap(name: string, weights: Tensor<'float64'>, offset: Tensor<'fl
 export function randomFourierFeatures(options: RandomFourierOptions): RandomFourierFeatures {
   if ('weights' in options)
     return fourierMap('random-fourier', concrete(options.weights), concrete(options.offset), options.outputScale ?? 1)
-  const n = options.nComponents ?? 100
+  const n = positiveInteger('randomFourierFeatures', 'nComponents', options.nComponents ?? 100)
+  positiveInteger('randomFourierFeatures', 'inputDim', options.inputDim)
   const k = resolveKey(options, 'randomFourierFeatures')
   const kernel = options.kernel
   const { weights, scale } =
@@ -199,6 +216,8 @@ export interface OrthogonalRandomOptions extends ContextOptions {
  *
  * @param options - Input dimension, number of features, length scale and key.
  * @returns The feature map with its frequencies and phases.
+ * @throws MdmlError `value` for an input dimension or number of features that is not a positive integer, or a length
+ *   scale that is not positive and finite.
  * @concept random-features
  * @reference F. X. Yu et al., Orthogonal random features (NeurIPS 2016).
  * @example
@@ -209,9 +228,9 @@ export interface OrthogonalRandomOptions extends ContextOptions {
  * ```
  */
 export function orthogonalRandomFeatures(options: OrthogonalRandomOptions): RandomFourierFeatures {
-  const d = options.inputDim
-  const n = options.nComponents ?? 100
-  const l = options.lengthScale ?? 1
+  const d = positiveInteger('orthogonalRandomFeatures', 'inputDim', options.inputDim)
+  const n = positiveInteger('orthogonalRandomFeatures', 'nComponents', options.nComponents ?? 100)
+  const l = finiteAbove('orthogonalRandomFeatures', 'lengthScale', options.lengthScale ?? 1, 0, true)
   const k = resolveKey(options, 'orthogonalRandomFeatures')
   const blocks: Value[] = []
   for (let b = 0; b * d < n; b++) {
@@ -255,6 +274,7 @@ export interface NystroemOptions extends ContextOptions {
  * @param x - The data `[n, d]` to draw landmarks from.
  * @param options - Number of landmarks or their indices, and the key.
  * @returns The fitted map.
+ * @throws MdmlError `value` for a number of landmarks that is not a positive integer, or landmark indices outside the rows.
  * @concept random-features
  * @reference C. K. I. Williams and M. Seeger, Using the Nyström method to speed up kernel machines (NeurIPS 2001).
  * @example
@@ -266,6 +286,12 @@ export interface NystroemOptions extends ContextOptions {
 export function nystroem(kernel: Kernel, x: TensorLike, options: NystroemOptions = {}): Nystroem {
   const { rows } = rowsOf(x, 'nystroem')
   const n = rows.shape[0] ?? 0
+  if (options.indices !== undefined) {
+    for (const i of options.indices) {
+      if (!Number.isInteger(i) || i < 0 || i >= n)
+        throw new MdmlError('value', `nystroem: landmark ${i} is not a row in [0, ${n})`)
+    }
+  } else positiveInteger('nystroem', 'nComponents', options.nComponents ?? 100)
   const indices =
     options.indices ??
     Array.from(permutation(resolveKey(options, 'nystroem'), n).data).slice(0, Math.min(n, options.nComponents ?? 100))
@@ -302,7 +328,8 @@ export interface AdditiveChi2Options {
  *
  * @param options - Steps and interval.
  * @returns The feature map.
- * @throws MdmlError `value` for more than 3 steps without an interval.
+ * @throws MdmlError `value` for more than 3 steps without an interval, or an interval that is not positive and finite;
+ *   `domain` from `transform` for a negative feature (a NaN feature gives NaN features).
  * @concept random-features
  * @reference A. Vedaldi and A. Zisserman, Efficient additive kernels via explicit feature maps (TPAMI 2012).
  * @example
@@ -319,6 +346,7 @@ export function additiveChi2Sampler(options: AdditiveChi2Options = {}): FeatureM
     throw new MdmlError('value', `additiveChi2Sampler: sampleSteps must be a positive integer, got ${steps}`)
   if (interval === undefined)
     throw new MdmlError('value', 'additiveChi2Sampler: give sampleInterval for more than 3 sample steps')
+  finiteAbove('additiveChi2Sampler', 'sampleInterval', interval, 0, true)
   return {
     name: 'additive-chi2',
     transform(x: TensorLike): Value {
@@ -326,14 +354,17 @@ export function additiveChi2Sampler(options: AdditiveChi2Options = {}): FeatureM
       if (isTensor(rows) && Array.from(rows.data).some((v) => v < 0))
         throw new MdmlError('domain', 'additiveChi2Sampler: features must be non-negative')
       const nonzero = greater(rows, 0)
+      const missing = isnan(rows)
+      // A zero feature stays zero, a NaN feature gives NaN features (NaN > 0 is false and must not read as zero).
+      const keep = (v: Value): Value => where(missing, Number.NaN, where(nonzero, v, 0))
       const safe = where(nonzero, rows, 1)
-      const blocks = [where(nonzero, sqrt(mul(safe, interval)), 0)]
+      const blocks = [keep(sqrt(mul(safe, interval)))]
       const logStep = mul(log(safe), interval)
       const step = mul(safe, 2 * interval)
       for (let j = 1; j < steps; j++) {
         const factor = sqrt(div(step, Math.cosh(Math.PI * j * interval)))
-        blocks.push(where(nonzero, mul(factor, cos(mul(logStep, j))), 0))
-        blocks.push(where(nonzero, mul(factor, sin(mul(logStep, j))), 0))
+        blocks.push(keep(mul(factor, cos(mul(logStep, j)))))
+        blocks.push(keep(mul(factor, sin(mul(logStep, j)))))
       }
       return finish(concat(blocks, 1), single)
     },
@@ -365,6 +396,8 @@ export type SkewedChi2SamplerOptions =
  *
  * @param options - Input dimension, number of features, skewedness and key; or the draws.
  * @returns The feature map with its draws.
+ * @throws MdmlError `value` for an input dimension or number of features that is not a positive integer, or a skewedness
+ *   that is not finite.
  * @concept random-features
  * @reference F. Li, C. Ionescu and C. Sminchisescu, Random Fourier approximations for skewed multiplicative histogram
  *   kernels (DAGM 2010).
@@ -376,14 +409,15 @@ export type SkewedChi2SamplerOptions =
  * ```
  */
 export function skewedChi2Sampler(options: SkewedChi2SamplerOptions): SkewedChi2Features {
-  const c = options.skewedness ?? 1
+  const c = assertFinite(options.skewedness ?? 1, 'skewedChi2Sampler: skewedness')
   let weights: Tensor<'float64'>
   let offset: Tensor<'float64'>
   if ('weights' in options) {
     weights = concrete(options.weights)
     offset = concrete(options.offset)
   } else {
-    const n = options.nComponents ?? 100
+    const n = positiveInteger('skewedChi2Sampler', 'nComponents', options.nComponents ?? 100)
+    positiveInteger('skewedChi2Sampler', 'inputDim', options.inputDim)
     const k = resolveKey(options, 'skewedChi2Sampler')
     const u = uniform(foldIn(k, 0), [options.inputDim, n])
     weights = primalOf(div(log(tan(mul(u, Math.PI / 2))), Math.PI)) as Tensor<'float64'>
@@ -441,7 +475,8 @@ function countSketchMatrix(index: readonly number[], signs: readonly number[], n
  *
  * @param options - Factor dimensions, sketch size and key; or the hashes.
  * @returns The sketch with its hashes.
- * @throws MdmlError `shape` when hashes and inputs disagree.
+ * @throws MdmlError `shape` when hashes and inputs disagree; `value` for a sketch size or factor dimension that is not a
+ *   positive integer, or an index hash outside the sketch.
  * @concept random-features
  * @reference N. Pham and R. Pagh, Fast and scalable polynomial kernels via explicit feature maps (KDD 2013).
  * @example
@@ -453,13 +488,14 @@ function countSketchMatrix(index: readonly number[], signs: readonly number[], n
  * ```
  */
 export function tensorSketch(options: TensorSketchOptions): TensorSketch {
-  const n = options.nComponents
+  const n = positiveInteger('tensorSketch', 'nComponents', options.nComponents)
   let indexHash: (readonly number[])[]
   let bitHash: (readonly number[])[]
   if ('indexHash' in options) {
     indexHash = options.indexHash.map((r) => [...r])
     bitHash = options.bitHash.map((r) => [...r])
   } else {
+    for (const d of options.inputDims) positiveInteger('tensorSketch', 'every input dimension', d)
     const k = resolveKey(options, 'tensorSketch')
     indexHash = options.inputDims.map((d, p) => Array.from(randint(foldIn(k, 2 * p), [d], 0, n).data))
     bitHash = options.inputDims.map((d, p) =>
@@ -468,6 +504,10 @@ export function tensorSketch(options: TensorSketchOptions): TensorSketch {
   }
   if (indexHash.length !== bitHash.length || indexHash.some((r, p) => r.length !== bitHash[p]?.length))
     throw new MdmlError('shape', 'tensorSketch: indexHash and bitHash must have the same shape')
+  for (const r of indexHash) {
+    if (r.some((h) => !Number.isInteger(h) || h < 0 || h >= n))
+      throw new MdmlError('value', `tensorSketch: every index hash must be an integer in [0, ${n})`)
+  }
   const matrices = indexHash.map((r, p) => countSketchMatrix(r, bitHash[p] ?? [], n))
   return {
     indexHash,
@@ -514,6 +554,8 @@ export type PolynomialCountSketchOptions = {
  *
  * @param options - Degree, gamma, c_0, sketch size and the input dimension and key, or the hashes `[p, d (+ 1)]`.
  * @returns The feature map with its hashes.
+ * @throws MdmlError `value` for a degree, sketch size or input dimension that is not a positive integer, a gamma that is
+ *   not positive and finite, or a coef0 that is negative or not finite.
  * @concept random-features
  * @reference N. Pham and R. Pagh, Fast and scalable polynomial kernels via explicit feature maps (KDD 2013).
  * @example
@@ -524,10 +566,11 @@ export type PolynomialCountSketchOptions = {
  * ```
  */
 export function polynomialCountSketch(options: PolynomialCountSketchOptions): PolynomialCountSketch {
-  const degree = options.degree ?? 2
-  const g = options.gamma ?? 1
-  const c0 = options.coef0 ?? 0
-  const n = options.nComponents ?? 100
+  const degree = positiveInteger('polynomialCountSketch', 'degree', options.degree ?? 2)
+  const g = finiteAbove('polynomialCountSketch', 'gamma', options.gamma ?? 1, 0, true)
+  const c0 = finiteAbove('polynomialCountSketch', 'coef0', options.coef0 ?? 0, 0, false)
+  const n = positiveInteger('polynomialCountSketch', 'nComponents', options.nComponents ?? 100)
+  if ('inputDim' in options) positiveInteger('polynomialCountSketch', 'inputDim', options.inputDim)
   const sketcher =
     'indexHash' in options
       ? tensorSketch({ indexHash: options.indexHash, bitHash: options.bitHash, nComponents: n })

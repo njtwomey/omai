@@ -1,5 +1,5 @@
 import { expect, describe as group, it } from 'vitest'
-import { quantileOf } from '../base/index.ts'
+import { isMdmlError, quantileOf } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { add, mul, reshape, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
@@ -58,6 +58,7 @@ import {
   sequentialSampler,
   sha256Hex,
   shuffleRows,
+  stratifiedIndices,
   stratifiedSplit,
   subsetRandomSampler,
   TableDataSchema,
@@ -233,6 +234,122 @@ group('rows and splits', () => {
     const r = fromTensors(d, { x: mul(d.x, 2) })
     expect(toFlat(r.x)[1]).toBe(2)
     expect(() => fromTensors(d, { classes: tensor([1]) })).toThrow(/per-row/)
+  })
+})
+
+/** The error code a call fails with, or `undefined` when it returns. */
+function codeOf(f: () => unknown): string | undefined {
+  try {
+    f()
+  } catch (e) {
+    return isMdmlError(e) ? e.code : `not an MdmlError: ${String(e)}`
+  }
+  return undefined
+}
+
+group('invalid arguments at the data boundary', () => {
+  const d = xyClasses(
+    Array.from({ length: 8 }, (_, i) => [i]),
+    [0, 0, 0, 0, 0, 0, 1, 1],
+  )
+  const k = key(0)
+  it('refuse sizes and indices that are not whole numbers in range, in every row operation', () => {
+    const rows: [string, () => unknown][] = [
+      ['testSize NaN', () => trainTestSplit(d, { testSize: Number.NaN })],
+      ['testSize Infinity', () => trainTestSplit(d, { testSize: Number.POSITIVE_INFINITY })],
+      ['testSize negative', () => trainTestSplit(d, { testSize: -0.2 })],
+      ['testSize 2.5 rows', () => trainTestSplit(d, { testSize: 2.5 })],
+      ['testSize larger than the rows', () => trainTestSplit(d, { testSize: 9 })],
+      ['valSize NaN', () => trainValTestSplit(d, { valSize: Number.NaN })],
+      ['stratified testSize NaN', () => stratifiedSplit(d, { testSize: Number.NaN, key: k })],
+      ['stratifiedIndices more test rows than rows', () => stratifiedIndices([0, 1], 5, k)],
+      ['stratifiedIndices negative test rows', () => stratifiedIndices([0, 1], -1, k)],
+      ['stratifiedIndices fractional test rows', () => stratifiedIndices([0, 1], 0.5, k)],
+      ['stratifiedIndices NaN label', () => stratifiedIndices([0, Number.NaN], 1, k)],
+      ['take NaN', () => take(d, [Number.NaN])],
+      ['take a fraction', () => take(d, [1.7])],
+      ['take Infinity', () => take(d, [Number.POSITIVE_INFINITY])],
+      ['take a float tensor with a fraction', () => take(d, tensor([0.5]))],
+      ['take negative', () => take(d, [-1])],
+      ['take past the end', () => take(d, [8])],
+      ['bootstrap negative size', () => bootstrap(d, k, -1)],
+      ['bootstrap fractional size', () => bootstrap(d, k, 2.5)],
+      ['bootstrap size 0', () => bootstrap(d, k, 0)],
+      ['bootstrap of no rows', () => bootstrap(take(d, []), k)],
+    ]
+    for (const [name, f] of rows) expect(codeOf(f), name).toBe('value')
+    // Valid arguments still work: a fraction, a count, an exact count of every row but one.
+    expect(rowCount(trainTestSplit(d, { testSize: 0.25 }).test)).toBe(2)
+    expect(rowCount(trainTestSplit(d, { testSize: 3 }).test)).toBe(3)
+    expect(rowCount(take(d, tensor([0, 7])))).toBe(2)
+  })
+  it('refuse labels, columns and stacked parts that would silently mean something else', () => {
+    const x = [[0], [1]]
+    const rows: [string, () => unknown][] = [
+      ['NaN label', () => xyClasses(x, [Number.NaN, 0])],
+      ['fractional label', () => xyClasses(x, [1.5, 0])],
+      ['label above int32', () => xyClasses(x, [3e9, 0])],
+      [
+        'NaN multilabel indicator',
+        () =>
+          xyMultilabel(x, [
+            [1, Number.NaN],
+            [0, 1],
+          ]),
+      ],
+      [
+        'NaN multioutput class',
+        () =>
+          xyMultiOutput(x, [
+            [0, Number.NaN],
+            [1, 0],
+          ]),
+      ],
+      ['numbers then a string', () => table({ a: [1, 'x', 3] as unknown as number[] })],
+      ['a string then numbers', () => table({ a: ['x', 2, 3] as unknown as string[] })],
+      ['a boolean then a number', () => table({ a: [true, 2] as unknown as boolean[] })],
+      [
+        'classes that differ',
+        () =>
+          concatRows([xyClasses(x, [0, 1], { classes: ['a', 'b'] }), xyClasses(x, [0, 1], { classes: ['x', 'y'] })]),
+      ],
+      [
+        'feature names that differ',
+        () => concatRows([xy(x, [0, 1], { featureNames: ['a'] }), xy(x, [0, 1], { featureNames: ['b'] })]),
+      ],
+      [
+        'sensitive attributes that differ',
+        () =>
+          concatRows([
+            xy(x, [0, 1], { sensitive: { s: ['a', 'b'] } }),
+            xy(x, [0, 1], { sensitive: { s: ['b', 'a'] } }),
+          ]),
+      ],
+    ]
+    for (const [name, f] of rows) expect(codeOf(f), name).toBe('value')
+    // Well-typed input is unchanged: whole floats are labels, nulls are missing, negative labels mean unlabelled.
+    expect(Array.from(xyClasses(x, tensor([1, 0])).y.data)).toEqual([1, 0])
+    expect(Array.from(xyClasses(x, [-1, 0]).y.data)).toEqual([-1, 0])
+    expect(table({ a: [1, null, 3], b: ['u', null, 'v'] }).columns['a']?.kind).toBe('numeric')
+    expect(
+      concatRows([xyClasses(x, [0, 1], { classes: ['a', 'b'] }), xyClasses(x, [1, 0], { classes: ['a', 'b'] })])
+        .classes,
+    ).toEqual(['a', 'b'])
+  })
+  it('choose an integer dtype from the range of the values, and a bool one from every item', () => {
+    // 3e9 and epoch milliseconds do not fit 32 bits: they stay exact in float64 instead of wrapping.
+    const big = [3e9, 1]
+    const epoch = [1.7e12, 5]
+    expect(Array.from(padSequences([big]).values.data)).toEqual(big)
+    expect(padSequences([big]).values.dtype).toBe('float64')
+    expect(padSequences([[2 ** 31 - 1, -(2 ** 31 - 1)]]).values.dtype).toBe('int32')
+    expect(padSequences([[1, 2]], { dtype: 'int32' }).values.dtype).toBe('int32')
+    const stacked = collate([{ a: epoch[0] ?? 0 }, { a: epoch[1] ?? 0 }])['a']
+    expect([stacked?.dtype, Array.from(stacked?.data ?? [])]).toEqual(['float64', epoch])
+    expect(collate([{ a: 1 }, { a: 2 }])['a']?.dtype).toBe('int32')
+    expect(collate([{ a: false }, { a: true }])['a']?.dtype).toBe('bool')
+    expect(codeOf(() => collate([{ a: true }, { a: 2 }]))).toBe('value')
+    expect(codeOf(() => collate([{ a: 2 }, { a: true }]))).toBe('value')
   })
 })
 

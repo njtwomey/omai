@@ -298,6 +298,8 @@ export function periodicKernel(options: PeriodicOptions = {}): Kernel {
     name: 'periodic',
     params: { lengthScale, period: param(options.period ?? 1) },
     stationary: true,
+    psd: 'conditional',
+    psdDimension: 1,
     config: { isotropic: true },
     matrix: (p, x, y) => periodicPart(euclideanDistances(x, y), p.lengthScale as Value, p.period as Value),
     diag: (_p, x) => constantDiag(x, 1),
@@ -335,6 +337,8 @@ export function locallyPeriodicKernel(options: LocallyPeriodicOptions = {}): Ker
     name: 'locally-periodic',
     params: { decay: param(options.decay ?? 1), lengthScale, period: param(options.period ?? 1) },
     stationary: true,
+    psd: 'conditional',
+    psdDimension: 1,
     config: { isotropic: true },
     matrix: (p, x, y) => {
       const decay = p.decay as Value
@@ -434,6 +438,8 @@ export function cosineKernel(options: CosineOptions = {}): Kernel {
     name: 'cosine',
     params: { period: param(options.period ?? 1) },
     stationary: true,
+    psd: 'conditional',
+    psdDimension: 1,
     matrix: (p, x, y) => cos(div(mul(euclideanDistances(x, y), Math.PI), p.period)),
     diag: (_p, x) => constantDiag(x, 1),
   })

@@ -38,7 +38,7 @@ mdml-engine/graph	440	83e408a38cc3
 mdml-engine/graphics	188	711e4bdfea54
 mdml-engine/information	248	0fcfdaf1dfee
 mdml-engine/kernel-methods	134	2fca1ac97f5b
-mdml-engine/kernels	119	21b06c1ae75b
+mdml-engine/kernels	120	ce1781e0849e
 mdml-engine/learn	818	5d7f22a28cc5
 mdml-engine/learn/model-selection	154	bbc731ebd12a
 mdml-engine/learn/preprocessing	96	e034477b3b86
@@ -119,4 +119,4 @@ mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17918	488d94752bbc
+total	17919	1c09f8327903

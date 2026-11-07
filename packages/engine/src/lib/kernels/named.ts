@@ -5,6 +5,7 @@
  * JSON. Support vector machines and kernel ridge regression use these.
  */
 
+import { MdmlError, varianceOf } from '../base/index.ts'
 import { choice, real, type Space } from '../space/index.ts'
 import { asTensor, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { Kernel } from './kernel.ts'
@@ -34,6 +35,7 @@ export type ResolvedKernel = {
  * @param choice - The kernel choice.
  * @param x - Training rows `[n, d]`.
  * @returns The same kernel with a numeric gamma, as plain JSON.
+ * @throws MdmlError `value` for `'scale'` with a NaN or infinite entry in the rows.
  * @concept kernel-functions
  * @example
  * ```ts
@@ -48,13 +50,10 @@ export function resolveKernel(choice: KernelChoice, x: TensorLike): ResolvedKern
   if (choice.gamma === 'auto') gamma = 1 / d
   else if (choice.gamma === 'scale') {
     const values = toFlat(t)
-    let s = 0
-    let s2 = 0
-    for (const v of values) {
-      s += v
-      s2 += v * v
-    }
-    const variance = s2 / values.length - (s / values.length) ** 2
+    if (!values.every(Number.isFinite)) throw new MdmlError('value', "resolveKernel: gamma 'scale' needs finite rows")
+    // The two-pass variance: E[x^2] - E[x]^2 cancels to zero or below for data far from the origin.
+    const constant = values.every((v) => v === values[0])
+    const variance = constant ? 0 : varianceOf(values)
     gamma = variance > 0 ? 1 / (d * variance) : 1
   } else gamma = choice.gamma
   return {

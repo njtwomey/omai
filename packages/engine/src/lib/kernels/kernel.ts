@@ -42,13 +42,19 @@ import {
  */
 export type Constraint = 'positive' | 'real' | 'fixed'
 
+/**
+ * Whether a kernel's Gram matrices are positive semi-definite: `always` for any points and any valid hyperparameters,
+ * `conditional` when it holds only for some inputs or settings (the kernel says which in `psdDimension`).
+ */
+export type KernelPsd = 'always' | 'conditional'
+
 /** Kernel hyperparameters as a pytree: records of values, nested records and arrays of records (one per part). */
 export interface KernelParams {
   readonly [name: string]: Value | KernelParams | readonly KernelParams[]
 }
 
 /**
- * A positive semi-definite kernel with its hyperparameters as data: `k(x, y)` evaluates it, `diag(x)` gives k(x_i, x_i)
+ * A kernel (positive semi-definite where `psd` says so) with its hyperparameters as data: `k(x, y)` evaluates it, `diag(x)` gives k(x_i, x_i)
  * without forming the matrix, and `withParams` rebuilds it from a pytree of the same structure, so gradients with
  * respect to hyperparameters are ordinary `grad` calls. Points are rows: `[d]` is one point, `[n, d]` are n points.
  */
@@ -61,6 +67,17 @@ export interface Kernel {
   readonly constraints: Readonly<Record<string, Constraint>>
   /** Whether k(x, y) depends on x - y only. */
   readonly stationary: boolean
+  /**
+   * Whether every Gram matrix of the kernel is positive semi-definite (`always`), or only in some cases
+   * (`conditional`: the periodic and cosine kernels of several dimensions, the sigmoid kernel). Consumers that factorise
+   * a Gram matrix can add jitter or warn for a `conditional` kernel.
+   */
+  readonly psd: KernelPsd
+  /**
+   * For a `conditional` kernel, the largest input dimension in which it is guaranteed positive semi-definite (1 for the
+   * periodic and cosine kernels); absent when there is no such guarantee (the sigmoid kernel) and for `always`.
+   */
+  readonly psdDimension?: number
   /** Settings that are not hyperparameters (orders, degrees, exponents). */
   readonly config: Readonly<Record<string, Json>>
   /** The kernels this one combines (empty for a base kernel). */
@@ -84,6 +101,10 @@ export interface KernelSpec<P extends KernelParams> {
   /** Constraints by pytree path (default `positive` for every hyperparameter). */
   readonly constraints?: Readonly<Record<string, Constraint>>
   readonly stationary?: boolean
+  /** Positive semi-definiteness (default `always`), see {@link Kernel.psd}. */
+  readonly psd?: KernelPsd
+  /** The largest dimension a `conditional` kernel is guaranteed positive semi-definite in, see {@link Kernel.psdDimension}. */
+  readonly psdDimension?: number
   readonly config?: Readonly<Record<string, Json>>
   /** The parts of a combination, rebuilt from the hyperparameters. */
   readonly parts?: (params: P) => readonly Kernel[]
@@ -121,17 +142,31 @@ function structureOf(params: KernelParams): string {
   return JSON.stringify(treeFlatten(params).def)
 }
 
-/** Resolve constraints: the given ones, `positive` by default, and `fixed` for a positive hyperparameter set to 0. */
+/** Hyperparameters that are scales of a distance or a period: zero is not "switched off" but undefined (0 / 0 on the diagonal). */
+const STRICTLY_POSITIVE: ReadonlySet<string> = new Set(['lengthScale', 'period', 'alpha', 'decay'])
+
+/**
+ * Resolve constraints: the given ones, `positive` by default, and `fixed` for a variance-like positive hyperparameter
+ * set to 0. Concrete values must be finite and non-negative, and a length scale, period, alpha or decay strictly
+ * positive.
+ */
 function resolveConstraints(name: string, params: KernelParams, given: Readonly<Record<string, Constraint>>) {
   const out: Record<string, Constraint> = {}
   for (const [path, leaf] of Object.entries(treePaths(params))) {
     let c = given[path] ?? 'positive'
-    if (c === 'positive' && isTensor(leaf)) {
+    if (isTensor(leaf)) {
       const values = Array.from(leaf.data)
-      if (values.some((v) => v < 0 || Number.isNaN(v)))
-        throw new MdmlError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
-      // log(0) is not finite, so a positive hyperparameter set to exactly zero is held fixed.
-      if (values.length > 0 && values.every((v) => v === 0)) c = 'fixed'
+      if (values.some((v) => !Number.isFinite(v)))
+        throw new MdmlError('domain', `${name}: hyperparameter ${path} must be finite`, { values })
+      if (c === 'positive') {
+        if (values.some((v) => v < 0))
+          throw new MdmlError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
+        const zero = values.length > 0 && values.every((v) => v === 0)
+        if (values.includes(0) && STRICTLY_POSITIVE.has(path.slice(path.lastIndexOf('.') + 1)))
+          throw new MdmlError('domain', `${name}: hyperparameter ${path} must be positive, got 0`, { values })
+        // log(0) is not finite, so a variance-like positive hyperparameter set to exactly zero is held fixed.
+        if (zero) c = 'fixed'
+      }
     }
     out[path] = c
   }
@@ -144,7 +179,8 @@ function resolveConstraints(name: string, params: KernelParams, given: Readonly<
  *
  * @param spec - Name, hyperparameters, constraints, the matrix function and optionally a diagonal.
  * @returns The kernel.
- * @throws MdmlError `domain` for a negative positive-constrained hyperparameter; `shape` for bad points.
+ * @throws MdmlError `domain` for a negative or non-finite hyperparameter, or a zero length scale, period, alpha or decay;
+ *   `shape` for bad points.
  * @concept kernel-functions
  * @example
  * ```ts
@@ -178,6 +214,8 @@ export function defineKernel<P extends KernelParams>(spec: KernelSpec<P>): Kerne
     params,
     constraints,
     stationary: spec.stationary ?? false,
+    psd: spec.psd ?? 'always',
+    ...(spec.psd === 'conditional' && spec.psdDimension !== undefined ? { psdDimension: spec.psdDimension } : {}),
     config: spec.config ?? {},
     parts,
     k(x: TensorLike, y?: TensorLike): Value {
@@ -224,6 +262,16 @@ function baseOf(p: KernelParams): KernelParams {
   return p['base'] as KernelParams
 }
 
+/** The positive semi-definiteness of a sum or product of kernels: PSD in the dimensions where every part is. */
+function combinedPsd(kernels: readonly Kernel[]): Pick<KernelSpec<KernelParams>, 'psd' | 'psdDimension'> {
+  const weak = kernels.filter((k) => k.psd === 'conditional')
+  if (weak.length === 0) return { psd: 'always' }
+  const dims = weak.map((k) => k.psdDimension)
+  return dims.some((d) => d === undefined)
+    ? { psd: 'conditional' }
+    : { psd: 'conditional', psdDimension: Math.min(...(dims as number[])) }
+}
+
 function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
   if (kernels.length === 0) throw new MdmlError('value', `${name}Kernel needs at least one kernel`)
   const join = name === 'sum' ? add : mul
@@ -234,6 +282,7 @@ function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
     params: { terms: kernels.map((k) => k.params) },
     constraints: prefixed('terms', kernels, true),
     stationary: kernels.every((k) => k.stationary),
+    ...combinedPsd(kernels),
     parts: (p) => kernels.map((k, i) => k.withParams(termsOf(p)[i] as KernelParams)),
     matrix: (_p, x, y, parts) => fold(parts.map((k) => k.k(x, y))),
     diag: (_p, x, parts) => fold(parts.map((k) => k.diag(x))),
@@ -298,6 +347,7 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
     params: { outputScale: s, base: kernel.params },
     constraints: { outputScale: 'positive', ...prefixed('base', [kernel], false) },
     stationary: kernel.stationary,
+    ...combinedPsd([kernel]),
     parts: (p) => [kernel.withParams(baseOf(p))],
     matrix: (p, x, y, parts) => mul(p.outputScale as Value, (parts[0] as Kernel).k(x, y)),
     diag: (p, x, parts) => mul(p.outputScale as Value, (parts[0] as Kernel).diag(x)),
@@ -312,6 +362,7 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
  * @param kernel - The base kernel.
  * @param exponent - The power p (a setting, not a hyperparameter).
  * @returns The exponentiated kernel.
+ * @throws MdmlError `domain` for an exponent that is not finite.
  * @concept kernel-algebra
  * @example
  * ```ts
@@ -321,11 +372,15 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
  * ```
  */
 export function powerKernel(kernel: Kernel, exponent: number): Kernel {
+  if (!Number.isFinite(exponent))
+    throw new MdmlError('domain', `powerKernel: the exponent must be finite, got ${exponent}`)
   return defineKernel({
     name: 'power',
     params: { base: kernel.params },
     constraints: prefixed('base', [kernel], false),
     stationary: kernel.stationary,
+    // A non-negative integer power of a PSD kernel is PSD (Schur); other powers are only for special kernels.
+    ...(Number.isInteger(exponent) && exponent >= 0 ? combinedPsd([kernel]) : { psd: 'conditional' as const }),
     config: { exponent },
     parts: (p) => [kernel.withParams(baseOf(p))],
     matrix: (_p, x, y, parts) => pow((parts[0] as Kernel).k(x, y), exponent),
@@ -357,6 +412,10 @@ export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
     params: kernel.params,
     constraints: kernel.constraints,
     stationary: kernel.stationary,
+    // The base sees only the selected columns, so it matters whether it is PSD in that many dimensions.
+    ...(kernel.psd === 'always' || (kernel.psdDimension ?? 0) >= dims.length
+      ? { psd: 'always' as const }
+      : { psd: 'conditional' as const }),
     config: { dims: [...dims] },
     parts: (p) => [kernel.withParams(p)],
     matrix: (_p, x, y, parts) => (parts[0] as Kernel).k(pick(x), y === undefined ? undefined : pick(y)),
@@ -534,9 +593,11 @@ export interface GramOptions {
  * The Gram matrix K_ij = k(x_i, x_j) of a set of points.
  *
  * @param kernel - The kernel.
- * @param x - Points `[n, d]`.
+ * @param x - Points `[n, d]` (or one point `[d]`).
  * @param options - Diagonal jitter.
- * @returns `[n, n]`, differentiable in the points and the hyperparameters.
+ * @returns `[n, n]` (`[1, 1]` for a single point `[d]`, `[0, 0]` for no points), differentiable in the points and the
+ *   hyperparameters.
+ * @throws MdmlError `value` for a jitter that is negative or not finite.
  * @concept kernel-functions
  * @index function Gram matrix of a kernel over a set of points.
  * @example
@@ -547,8 +608,11 @@ export interface GramOptions {
  * ```
  */
 export function gram(kernel: Kernel, x: TensorLike, options: GramOptions = {}): Value {
-  const k = kernel.k(x)
   const jitter = options.jitter ?? 0
+  if (!Number.isFinite(jitter) || jitter < 0)
+    throw new MdmlError('value', `gram: the jitter must be finite and non-negative, got ${jitter}`)
+  // A single point [d] is one row: the matrix is [1, 1], not the scalar `kernel.k(x)` drops the axes to.
+  const k = kernel.k(asRows(x, 'gram').rows)
   return jitter === 0 ? k : add(k, mul(eye(k.shape[0] ?? 0), jitter))
 }
 

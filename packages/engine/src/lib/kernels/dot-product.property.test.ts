@@ -2,7 +2,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { awayFromZero, RUNS } from '../../testing/arbitrary.ts'
 import { expectConformant } from '../../testing/check.ts'
-import { expectKernelLaws, points } from '../../testing/kernels.ts'
+import { expectKernelLaws } from '../../testing/kernels.ts'
 import { foldIn, key, normal } from '../random/index.ts'
 import { add, div, matmul, mul, relu, tensor, toFlat, type Value } from '../tensor/index.ts'
 import {
@@ -24,6 +24,7 @@ const KERNELS: readonly (readonly [string, Kernel])[] = [
   ['polynomial', polynomialKernel({ degree: 3, gamma: 0.5, coef0: 0.8 })],
   ['polynomial degree 1', polynomialKernel({ degree: 1 })],
   ['cosine similarity', cosineSimilarityKernel()],
+  ['sigmoid (not PSD in general)', sigmoidKernel({ gamma: 0.4, coef0: -0.3 })],
   ['arc-cosine 0', arcCosineKernel({ order: 0 })],
   ['arc-cosine 1', arcCosineKernel({ order: 1 })],
   ['arc-cosine 2', arcCosineKernel({ order: 2 })],
@@ -50,7 +51,7 @@ describe('dot-product kernels (properties)', () => {
       // Angular kernels are defined for non-zero points; arccos near cos = 1 costs ~sqrt(eps) off the Gram diagonal.
       fc.assert(
         fc.property(awayFromZero([6, 3]), awayFromZero([3, 3]), (x, y) => {
-          expectKernelLaws(kernel, x, y, { tol: 1e-8, crossTol: 1e-6 })
+          expectKernelLaws(kernel, x, y, { tol: 1e-8, crossTol: 1e-6, psd: kernel.psd === 'always' })
         }),
         { numRuns: RUNS },
       )
@@ -62,17 +63,6 @@ describe('dot-product kernels (properties)', () => {
         expectConformant((t: Value) => withTheta(kernel, t).k(X, Y), [theta(kernel)])
     })
   }
-  it('sigmoid: symmetric and differentiable (not PSD in general)', () => {
-    const k = sigmoidKernel({ gamma: 0.4, coef0: -0.3 })
-    fc.assert(
-      fc.property(points(5, 3), points(2, 3), (x, y) => {
-        expectKernelLaws(k, x, y, { psd: false })
-      }),
-      { numRuns: RUNS },
-    )
-    expectConformant((t: Value) => withTheta(k, t).k(X, Y), [theta(k)])
-  })
-
   it('arc-cosine kernels are 2 E[step(w.x) step(w.y) (w.x)^n (w.y)^n] for Gaussian w (Monte Carlo)', () => {
     const samples = 200000
     const w = normal(key(3), [3, samples])

@@ -117,16 +117,22 @@ export function dataLoader<D extends Dataset>(
   return { epoch: (e) => batches(data, { ...options, sampler, epoch: e }), length }
 }
 
+/** Whether a value is a whole number an `int32` holds: integral dtype is chosen from the range, not only integrality. */
+function fitsInt32(v: unknown): boolean {
+  return typeof v === 'number' && Number.isInteger(v) && Math.abs(v) <= 2 ** 31 - 1
+}
+
 /** One item given to {@link collate}: a record of numbers, arrays and tensors. */
 export type CollateItem = Readonly<Record<string, number | boolean | readonly number[] | Tensor>>
 
 /**
- * Stack a list of items into batched tensors field by field (torch's `default_collate`): numbers become `[n]`,
- * arrays `[n, len]` and tensors gain a leading batch axis.
+ * Stack a list of items into batched tensors field by field (torch's `default_collate`): numbers become `[n]` (`int32`
+ * when all are integers that fit 32 bits, else `float64`; booleans `bool`), arrays `[n, len]` and tensors gain a leading
+ * batch axis.
  *
  * @param items - The items, all with the same fields and shapes.
  * @returns A tensor per field.
- * @throws MdmlError with code `value` for no items or mismatched fields.
+ * @throws MdmlError with code `value` for no items, mismatched fields, or a field that mixes booleans and numbers.
  * @example
  * ```ts
  * import { collate } from 'mdml-engine/data'
@@ -145,8 +151,10 @@ export function collate(items: readonly CollateItem[]): Readonly<Record<string, 
     })
     const head = parts[0]
     if (typeof head === 'number' || typeof head === 'boolean') {
-      const dtype: DType =
-        typeof head === 'boolean' ? 'bool' : parts.every((p) => Number.isInteger(p)) ? 'int32' : 'float64'
+      const flags = parts.filter((p) => typeof p === 'boolean').length
+      if (flags !== 0 && flags !== parts.length)
+        throw new MdmlError('value', `collate: field ${name} mixes booleans and numbers`)
+      const dtype: DType = flags > 0 ? 'bool' : parts.every(fitsInt32) ? 'int32' : 'float64'
       out[name] = tensor(parts as number[], { dtype })
     } else if (isTensor(head)) {
       out[name] = stack(parts as Tensor[], 0) as Tensor
@@ -174,7 +182,8 @@ export interface PadOptions extends PadLayout {
  * keep their trailing dimensions.
  *
  * @param seqs - The sequences (arrays or tensors whose first axis is time).
- * @param options - Pad value, maximum length, padding and truncating sides, dtype.
+ * @param options - Pad value, maximum length, padding and truncating sides, dtype (by default `int32` when every value is
+ *   an integer that fits 32 bits, else `float64`).
  * @returns The padded values `[n, T, ...]`, the mask `[n, T]` and the kept lengths `[n]`.
  * @example
  * ```ts
@@ -215,7 +224,7 @@ export function padSequences(
   const values = new Float64Array(n * t * width)
   for (const [c, lane] of lanes.entries())
     for (let i = 0; i < n * t; i++) values[i * width + c] = lane.values[i] ?? padValue
-  const allInt = values.every((v) => Number.isInteger(v))
+  const allInt = values.every(fitsInt32)
   const dtype =
     options.dtype ?? (allInt && seqs.every((s) => !isTensor(s) || s.dtype === 'int32') ? 'int32' : 'float64')
   const typed = dtype === 'int32' ? Int32Array.from(values) : dtype === 'float32' ? Float32Array.from(values) : values
