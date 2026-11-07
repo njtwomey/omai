@@ -5,7 +5,7 @@
  */
 
 import { clamp, MdmlError, maxOf, minOf } from '../base/index.ts'
-import { finite, size } from './_check.ts'
+import { finite, size, transform, vertices } from './_check.ts'
 import type {
   CircleNode,
   EllipseNode,
@@ -171,6 +171,7 @@ export function arrow(x1: number, y1: number, x2: number, y2: number, style: Sty
  * @param points - The vertices in order.
  * @param style - Stroke, fill, closure, smoothing, arrow head, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when a vertex is not a pair of finite numbers.
  * @example
  * ```ts
  * import { path } from 'mdml-engine/scene'
@@ -181,6 +182,7 @@ export function path(
   points: readonly (readonly [number, number])[],
   style: Style & NodeBase & { readonly closed?: boolean; readonly arrow?: boolean; readonly smooth?: boolean } = {},
 ): PathNode {
+  vertices('path', points, 2)
   return { kind: 'path', points, ...style }
 }
 
@@ -190,6 +192,7 @@ export function path(
  * @param points - The vertices in order.
  * @param style - Fill, stroke, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when a vertex is not a pair of finite numbers.
  * @example
  * ```ts
  * import { polygon } from 'mdml-engine/scene'
@@ -197,6 +200,7 @@ export function path(
  * ```
  */
 export function polygon(points: readonly (readonly [number, number])[], style: Style & NodeBase = {}): PathNode {
+  vertices('polygon', points, 2)
   return { kind: 'path', points, closed: true, ...style }
 }
 
@@ -208,6 +212,7 @@ export function polygon(points: readonly (readonly [number, number])[], style: S
  * @param content - The text.
  * @param style - Size, fill, anchor, baseline, weight, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when the anchor is not finite or the size is not a finite number >= 0.
  * @example
  * ```ts
  * import { text } from 'mdml-engine/scene'
@@ -220,6 +225,8 @@ export function text(
   content: string,
   style: Omit<TextNode, 'kind' | 'x' | 'y' | 'text'> = {},
 ): TextNode {
+  finite('text', { x, y })
+  if (style.size !== undefined) size('text', { size: style.size })
   return { kind: 'text', x, y, text: content, ...style }
 }
 
@@ -231,6 +238,7 @@ export function text(
  * @param source - The TeX source.
  * @param style - Size, fill, anchor, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when the anchor is not finite or the size is not a finite number >= 0.
  * @example
  * ```ts
  * import { tex } from 'mdml-engine/scene'
@@ -243,6 +251,8 @@ export function tex(
   source: string,
   style: Omit<TexNode, 'kind' | 'x' | 'y' | 'tex'> = {},
 ): TexNode {
+  finite('tex', { x, y })
+  if (style.size !== undefined) size('tex', { size: style.size })
   return { kind: 'tex', x, y, tex: source, ...style }
 }
 
@@ -335,6 +345,7 @@ export function toPixels(source: ImageSource, options: { readonly range?: readon
  * @param source - The pixels, or image data to convert.
  * @param options - Smoothing when scaled (off by default, so pixels stay crisp), id and title.
  * @returns The node.
+ * @throws MdmlError `value` when the corner is not finite or the drawn width or height is not a finite number >= 0.
  * @example
  * ```ts
  * import { image } from 'mdml-engine/scene'
@@ -350,6 +361,8 @@ export function image(
   source: Pixels | ImageSource,
   options: NodeBase & { readonly smoothing?: boolean } = {},
 ): ImageNode {
+  finite('image', { x, y })
+  size('image', { width, height })
   const pixels = !Array.isArray(source) && 'rgba' in source ? source : toPixels(source as ImageSource)
   return { kind: 'image', x, y, width, height, pixels, ...options }
 }
@@ -358,8 +371,10 @@ export function image(
  * A group that translates, rotates and scales its children.
  *
  * @param children - The grouped nodes.
- * @param transform - Translation, rotation in degrees, scale, opacity, id and title.
+ * @param spec - Translation, rotation in degrees, scale, opacity, id and title.
  * @returns The node.
+ * @throws MdmlError `value` when the translation or rotation is not finite or the scale is not a finite number other than
+ *   0.
  * @example
  * ```ts
  * import { group, circle } from 'mdml-engine/scene'
@@ -368,9 +383,10 @@ export function image(
  */
 export function group(
   children: readonly SceneNode[],
-  transform: NodeBase & Transform & { readonly opacity?: number } = {},
+  spec: NodeBase & Transform & { readonly opacity?: number } = {},
 ): GroupNode {
-  return { kind: 'group', children, ...transform }
+  transform('group', spec)
+  return { kind: 'group', children, ...spec }
 }
 
 /**
