@@ -283,6 +283,59 @@ group('invalid arguments at the data boundary', () => {
     expect(rowCount(trainTestSplit(d, { testSize: 3 }).test)).toBe(3)
     expect(rowCount(take(d, tensor([0, 7])))).toBe(2)
   })
+  it('refuse labels, columns and stacked parts that would silently mean something else', () => {
+    const x = [[0], [1]]
+    const rows: [string, () => unknown][] = [
+      ['NaN label', () => xyClasses(x, [Number.NaN, 0])],
+      ['fractional label', () => xyClasses(x, [1.5, 0])],
+      ['label above int32', () => xyClasses(x, [3e9, 0])],
+      [
+        'NaN multilabel indicator',
+        () =>
+          xyMultilabel(x, [
+            [1, Number.NaN],
+            [0, 1],
+          ]),
+      ],
+      [
+        'NaN multioutput class',
+        () =>
+          xyMultiOutput(x, [
+            [0, Number.NaN],
+            [1, 0],
+          ]),
+      ],
+      ['numbers then a string', () => table({ a: [1, 'x', 3] as unknown as number[] })],
+      ['a string then numbers', () => table({ a: ['x', 2, 3] as unknown as string[] })],
+      ['a boolean then a number', () => table({ a: [true, 2] as unknown as boolean[] })],
+      [
+        'classes that differ',
+        () =>
+          concatRows([xyClasses(x, [0, 1], { classes: ['a', 'b'] }), xyClasses(x, [0, 1], { classes: ['x', 'y'] })]),
+      ],
+      [
+        'feature names that differ',
+        () => concatRows([xy(x, [0, 1], { featureNames: ['a'] }), xy(x, [0, 1], { featureNames: ['b'] })]),
+      ],
+      [
+        'sensitive attributes that differ',
+        () =>
+          concatRows([
+            xy(x, [0, 1], { sensitive: { s: ['a', 'b'] } }),
+            xy(x, [0, 1], { sensitive: { s: ['b', 'a'] } }),
+          ]),
+      ],
+    ]
+    for (const [name, f] of rows) expect(codeOf(f), name).toBe('value')
+    // Well-typed input is unchanged: whole floats are labels, nulls are missing, negative labels mean unlabelled.
+    expect(Array.from(xyClasses(x, tensor([1, 0])).y.data)).toEqual([1, 0])
+    expect(Array.from(xyClasses(x, [-1, 0]).y.data)).toEqual([-1, 0])
+    expect(table({ a: [1, null, 3], b: ['u', null, 'v'] }).columns['a']?.kind).toBe('numeric')
+    expect(
+      concatRows([xyClasses(x, [0, 1], { classes: ['a', 'b'] }), xyClasses(x, [1, 0], { classes: ['a', 'b'] })])
+        .classes,
+    ).toEqual(['a', 'b'])
+  })
   it('choose an integer dtype from the range of the values, and a bool one from every item', () => {
     // 3e9 and epoch milliseconds do not fit 32 bits: they stay exact in float64 instead of wrapping.
     const big = [3e9, 1]

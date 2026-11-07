@@ -312,13 +312,32 @@ export function bootstrap<D extends Dataset>(
   return { sample: take(data, drawn), outOfBag: take(data, oob), indices: drawn }
 }
 
+/** The fields that name what the values of the rows stand for: stacking parts that differ in them would mislabel rows. */
+const VOCABULARIES: readonly string[] = [
+  'classes',
+  'featureNames',
+  'targetNames',
+  'labels',
+  'outputs',
+  'vocabulary',
+  'padId',
+  'tagNames',
+  'playerNames',
+  'entityNames',
+  'relationNames',
+  'channelNames',
+  'markNames',
+  'maskClasses',
+]
+
 /**
  * Stack datasets of the same kind along their rows; non-row fields (names, vocabularies, metadata) come from the
- * first.
+ * first, and the lists that row values index into (`classes`, `featureNames`, `outputs`, `vocabulary`, the sensitive
+ * attributes and the like) must agree across the parts. Counts such as `nUsers` are the first part's.
  *
  * @param parts - The datasets.
  * @returns One dataset with all rows in order.
- * @throws MdmlError with code `value` for no parts or mixed kinds.
+ * @throws MdmlError with code `value` for no parts, mixed kinds, or parts whose classes, names or vocabularies differ.
  * @example
  * ```ts
  * import { concatRows, xy } from 'mdml-engine/data'
@@ -330,6 +349,21 @@ export function concatRows<D extends Dataset>(parts: readonly D[]): D {
   if (first === undefined) throw new MdmlError('value', 'concatRows: no datasets')
   for (const p of parts) {
     if (p.kind !== first.kind) throw new MdmlError('value', `concatRows: cannot stack ${p.kind} with ${first.kind}`)
+  }
+  const rowFields = new Set<string>(perRowFields(first))
+  const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b)
+  for (const p of parts) {
+    const fields = p as unknown as Readonly<Record<string, unknown>>
+    const head = first as unknown as Readonly<Record<string, unknown>>
+    for (const f of VOCABULARIES) {
+      if (!rowFields.has(f) && !same(fields[f], head[f]))
+        throw new MdmlError(
+          'value',
+          `concatRows: the parts disagree on ${f}, so their rows would mean different things`,
+        )
+    }
+    if (!same(p.meta.sensitive, first.meta.sensitive))
+      throw new MdmlError('value', 'concatRows: the parts disagree on the sensitive attributes')
   }
   const out: Record<string, unknown> = { ...first }
   for (const f of perRowFields(first)) {

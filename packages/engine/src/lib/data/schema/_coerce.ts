@@ -2,10 +2,21 @@ import { MdmlError } from '../../base/index.ts'
 import { asTensor, cast, type DType, isTensor, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import type { DatasetKind, DatasetMeta } from './common.ts'
 
-/** A concrete tensor of the given dtype (datasets hold concrete tensors, never traced values). */
+/**
+ * A concrete tensor of the given dtype (datasets hold concrete tensors, never traced values). Floats become `int32` only
+ * when every entry is a whole number that fits: a NaN or a fraction is an error, not class 0 (negative ones are kept).
+ */
 export function concrete<D extends DType>(x: TensorLike, dtype: D, name: string): Tensor<D> {
   const t = asTensor(x)
   if (!isTensor(t)) throw new MdmlError('value', `${name}: datasets hold concrete tensors`)
+  if (dtype === 'int32' && (t.dtype === 'float64' || t.dtype === 'float32')) {
+    const data = t.data as ArrayLike<number>
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i] as number
+      if (!Number.isInteger(v) || Math.abs(v) > 2 ** 31 - 1)
+        throw new MdmlError('value', `${name}: entry ${i} is ${v}, not a whole number that fits 32 bits`)
+    }
+  }
   return (t.dtype === dtype ? t : cast(t, dtype)) as Tensor<D>
 }
 
