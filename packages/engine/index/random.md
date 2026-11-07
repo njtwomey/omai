@@ -12,7 +12,7 @@ Explicit randomness: immutable counter-based keys (`key`, `split`, `foldIn`) and
 - function `choice`: Choose indices with or without replacement, optionally weighted. `src/lib/random/permutation.ts:79` `mdml-engine/random`
 - function `foldIn`: Derive a key from a parent key and an integer (a step). `src/lib/random/key.ts:87` `mdml-engine/random`
 - function `key`: Create a random key from an integer seed. `src/lib/random/key.ts:44` `mdml-engine/random`
-- function `normal`: Normal samples from a key and a shape, like jax.random.normal. `src/lib/random/continuous.ts:114` `mdml-engine/random`
+- function `normal`: Normal samples from a key and a shape, like jax.random.normal. `src/lib/random/continuous.ts:128` `mdml-engine/random`
 - function `permutation`: A uniformly random permutation of 0..n-1. `src/lib/random/permutation.ts:27` `mdml-engine/random`
 - function `split`: Derive n independent keys from one key. `src/lib/random/key.ts:65` `mdml-engine/random`
-- function `uniform`: Uniform samples from a key and a shape. `src/lib/random/continuous.ts:46` `mdml-engine/random`
+- function `uniform`: Uniform samples from a key and a shape. `src/lib/random/continuous.ts:47` `mdml-engine/random`
