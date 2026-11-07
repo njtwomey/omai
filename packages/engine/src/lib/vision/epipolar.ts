@@ -10,6 +10,7 @@ import type { Point2 } from '../numerics/geometry/index.ts'
 import { fundamentalMatrix } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
 import { ransac } from '../stats/index.ts'
+import { toArray } from '../tensor/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
 import { det3, invOf, type Matrix, matMul, nullVector, svdOf, transposeOf } from './_refine.ts'
 import type { RobustFit } from './geometry.ts'
@@ -40,7 +41,7 @@ function toEssential(e: Matrix): Matrix {
 
 /** The essential matrix of normalised correspondences: the eight-point fundamental matrix, made essential. */
 function fitEssential(a: readonly Point2[], b: readonly Point2[]): Matrix {
-  const f = fundamentalMatrix(a as Point2[], b as Point2[])
+  const f = toArray(fundamentalMatrix(a as Point2[], b as Point2[])) as Matrix
   const e = toEssential(f)
   // Unit Frobenius norm (sqrt 2 for singular values 1, 1), the sign with the largest entry positive.
   let big = 0

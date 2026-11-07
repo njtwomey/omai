@@ -160,7 +160,7 @@ function homographyResiduals(a: readonly Point2[], b: readonly Point2[]): (p: Va
 
 /** The homography of correspondences: the normalised DLT, refined by minimising the reprojection error. */
 function fitHomography(a: readonly Point2[], b: readonly Point2[], polish: boolean): Matrix {
-  const h0 = homography(a as Point2[], b as Point2[])
+  const h0 = toArray(homography(a as Point2[], b as Point2[])) as Matrix
   if (!polish || a.length <= 4) return h0
   const x = refine(homographyResiduals(a, b), h0.flat().slice(0, 8), 50)
   return [
@@ -303,7 +303,7 @@ export function estimateAffine2D(src: PointsLike, dst: PointsLike, options: Rans
 
 /** The fundamental matrix of correspondences by the normalised eight-point algorithm, scaled to F[2][2] = 1. */
 function fitFundamental(a: readonly Point2[], b: readonly Point2[]): Matrix {
-  const f = fundamentalMatrix(a as Point2[], b as Point2[])
+  const f = toArray(fundamentalMatrix(a as Point2[], b as Point2[])) as Matrix
   const s = f[2]?.[2] ?? 0
   return Math.abs(s) > 1.1920928955078125e-7 ? f.map((r) => r.map((v) => v / s)) : f
 }

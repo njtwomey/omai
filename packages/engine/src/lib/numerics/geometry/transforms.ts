@@ -23,8 +23,10 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../../tensor/index.ts'
+import { matrixOf } from '../_vector.ts'
 import { det, inv, svd } from '../linalg/index.ts'
 
 type Quat = readonly [x: number, y: number, z: number, w: number]
@@ -114,10 +116,12 @@ export interface Rotation {
 }
 
 /**
- * A rotation from a quaternion [x, y, z, w] (scalar last, as scipy; normalised).
+ * A rotation from a quaternion [x, y, z, w] (scalar last, as scipy; normalised). Takes a tensor-like (migration, D-009:
+ * `q` was `readonly number[]`); a `Vec4` tuple still works, as it is the fixed-size form of the same four numbers.
  *
- * @param q - The quaternion.
+ * @param q - The quaternion: four numbers (a tensor `[4]`, a typed array, an array or a `Vec4`).
  * @returns The rotation.
+ * @throws MdmlError with code `shape` unless `q` has four entries, and `not-differentiable` for a traced value.
  * @concept rotations
  * @example
  * ```ts
@@ -125,9 +129,10 @@ export interface Rotation {
  * rotationFromQuat([0, 0, Math.SQRT1_2, Math.SQRT1_2]).asEuler('xyz', true).map((v) => Math.round(v * 1e10) / 1e10) // => [0, 0, 90]
  * ```
  */
-export function rotationFromQuat(q: readonly number[]): Rotation {
-  if (q.length !== 4) throw new MdmlError('shape', 'rotationFromQuat: a quaternion has four entries')
-  const quat = qnorm([q[0] ?? 0, q[1] ?? 0, q[2] ?? 0, q[3] ?? 0])
+export function rotationFromQuat(q: TensorLike): Rotation {
+  const entries = toVector(q, 'rotationFromQuat')
+  if (entries.length !== 4) throw new MdmlError('shape', 'rotationFromQuat: a quaternion has four entries')
+  const quat = qnorm([entries[0] ?? 0, entries[1] ?? 0, entries[2] ?? 0, entries[3] ?? 0])
   const matrix = quatToMatrix(quat)
   const self: Rotation = {
     quaternion: quat,
@@ -243,20 +248,22 @@ export function rotationFromMatrix(m: TensorLike): Rotation {
 }
 
 /**
- * A rotation from a rotation vector (axis times angle).
+ * A rotation from a rotation vector (axis times angle). Takes a tensor-like (migration, D-009: `v` was
+ * `readonly number[]`); a `Vec3` tuple still works.
  *
- * @param v - The vector.
+ * @param v - The vector: three numbers (a tensor `[3]`, a typed array, an array or a `Vec3`).
  * @param degrees - Whether the angle is in degrees.
  * @returns The rotation.
+ * @throws MdmlError with code `shape` unless `v` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { rotationFromRotvec } from 'mdml-engine/numerics/geometry'
  * rotationFromRotvec([0, 0, Math.PI]).asQuat().map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0, 1, 0]
  * ```
  */
-export function rotationFromRotvec(v: readonly number[], degrees = false): Rotation {
+export function rotationFromRotvec(v: TensorLike, degrees = false): Rotation {
   const k = degrees ? Math.PI / 180 : 1
-  const r = v.map((x) => x * k)
+  const r = toVector(v, 'rotationFromRotvec').map((x) => x * k)
   const angle = Math.hypot(r[0] ?? 0, r[1] ?? 0, r[2] ?? 0)
   // sin(angle / 2) / angle, with its series near zero.
   const scale = angle <= 1e-3 ? 0.5 - angle ** 2 / 48 + angle ** 4 / 3840 : Math.sin(angle / 2) / angle
@@ -265,12 +272,14 @@ export function rotationFromRotvec(v: readonly number[], degrees = false): Rotat
 
 /**
  * A rotation from Euler angles: lowercase sequences are extrinsic (about the fixed axes, in order), uppercase intrinsic
- * (about the rotating axes).
+ * (about the rotating axes). Takes a tensor-like of angles (migration, D-009: `angles` was `readonly number[]`).
  *
  * @param seq - One to three axes, such as 'z', 'xyz', 'ZYX' or 'zxz'.
- * @param angles - One angle per axis.
+ * @param angles - One angle per axis: a vector (a tensor, a typed array or an array).
  * @param degrees - Whether the angles are in degrees.
  * @returns The rotation.
+ * @throws MdmlError with code `value` for a bad sequence or a wrong number of angles, `shape` unless `angles` is a
+ *   vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { rotationFromEuler } from 'mdml-engine/numerics/geometry'
@@ -278,15 +287,16 @@ export function rotationFromRotvec(v: readonly number[], degrees = false): Rotat
  * toArray(rotationFromEuler('z', [90], true).apply([1, 0, 0])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 0]
  * ```
  */
-export function rotationFromEuler(seq: string, angles: readonly number[], degrees = false): Rotation {
-  if (!/^([xyz]{1,3}|[XYZ]{1,3})$/.test(seq) || angles.length !== seq.length) {
+export function rotationFromEuler(seq: string, angles: TensorLike, degrees = false): Rotation {
+  const turns = toVector(angles, 'rotationFromEuler')
+  if (!/^([xyz]{1,3}|[XYZ]{1,3})$/.test(seq) || turns.length !== seq.length) {
     throw new MdmlError('value', `rotationFromEuler: ${seq} needs one angle per axis`)
   }
   const k = degrees ? Math.PI / 180 : 1
   const extrinsic = seq === seq.toLowerCase()
   let q: Quat = [0, 0, 0, 1]
   ;[...seq.toLowerCase()].forEach((c, i) => {
-    const e = elementary(AXES[c] ?? 0, (angles[i] ?? 0) * k)
+    const e = elementary(AXES[c] ?? 0, (turns[i] ?? 0) * k)
     // Extrinsic: later rotations act on the left; intrinsic: on the right.
     q = extrinsic ? qmul(e, q) : qmul(q, e)
   })
@@ -448,19 +458,22 @@ function nullVector(rows: readonly number[][]): number[] {
  * The homography H with dst ~ H src from four or more point correspondences, by the normalised direct linear transform
  * (Hartley and Zisserman, algorithm 4.2), scaled so H[2][2] = 1 (as skimage's ProjectiveTransform.estimate).
  *
+ * Returns a tensor (migration, D-009: was `number[][]`).
+ *
  * @param src - Source points `[n, 2]`, n >= 4.
  * @param dst - Destination points `[n, 2]`.
- * @returns The 3 x 3 homography.
+ * @returns The 3 x 3 homography `[3, 3]`.
  * @throws MdmlError with code `value` when fewer than four correspondences are given or they are degenerate (the
  * homography would not be finite).
  * @concept homography
  * @example
  * ```ts
  * import { homography } from 'mdml-engine/numerics/geometry'
- * homography([[0, 0], [1, 0], [1, 1], [0, 1]], [[0, 0], [2, 0], [2, 2], [0, 2]]).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 0, 0], [0, 2, 0], [0, 0, 1]]
+ * import { toArray } from 'mdml-engine/tensor'
+ * (toArray(homography([[0, 0], [1, 0], [1, 1], [0, 1]], [[0, 0], [2, 0], [2, 2], [0, 2]])) as number[][]).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 0, 0], [0, 2, 0], [0, 0, 1]]
  * ```
  */
-export function homography(src: TensorLike, dst: TensorLike): number[][] {
+export function homography(src: TensorLike, dst: TensorLike): Tensor<'float64', [number, number]> {
   const a = normalisePoints(src)
   const b = normalisePoints(dst)
   const n = a.points.shape[0] ?? 0
@@ -483,15 +496,17 @@ export function homography(src: TensorLike, dst: TensorLike): number[][] {
   const h33 = full.map((r) => r.map((v) => v / s))
   if (!h33.every((r) => r.every(Number.isFinite)))
     throw new MdmlError('value', 'homography: the correspondences are degenerate (collinear points, or H[2][2] = 0)')
-  return h33
+  return matrixOf(Float64Array.from(h33.flat()), 3, 3)
 }
 
 /**
- * Apply a homography to planar points (with the perspective division).
+ * Apply a homography to planar points (with the perspective division). Takes the matrix as a tensor-like (migration,
+ * D-009: `h` was `readonly (readonly number[])[]`), so it is differentiable in the matrix as well as in the points.
  *
- * @param h - The 3 x 3 matrix.
+ * @param h - The 3 x 3 matrix `[3, 3]`.
  * @param points - Points `[n, 2]`.
- * @returns Mapped points `[n, 2]` (differentiable in the points).
+ * @returns Mapped points `[n, 2]` (differentiable in the points and the matrix).
+ * @throws MdmlError with code `shape` unless `h` is 3 x 3.
  * @example
  * ```ts
  * import { applyHomography } from 'mdml-engine/numerics/geometry'
@@ -499,33 +514,32 @@ export function homography(src: TensorLike, dst: TensorLike): number[][] {
  * toArray(applyHomography([[1, 0, 0], [0, 1, 0], [0, 1, 1]], [[2, 1]])) // => [[1, 0.5]]
  * ```
  */
-export function applyHomography(h: readonly (readonly number[])[], points: TensorLike): Value {
-  const [p] = promoteFloat(points) as [Value]
+export function applyHomography(h: TensorLike, points: TensorLike): Value {
+  const [hv, p] = promoteFloat(h, points) as [Value, Value]
+  if (hv.shape.length !== 2 || hv.shape[0] !== 3 || hv.shape[1] !== 3)
+    throw new MdmlError('shape', 'applyHomography: expected a 3 x 3 matrix')
   // [x, y] -> H [x, y, 1]: the first two columns of H act on the points, the third is added.
-  const hom = add(
-    matmul(p, swapaxes(sliceAxis(promoteFloat(h.map((r) => [...r]))[0] as Value, 1, 0, 2), 0, 1)),
-    reshape(promoteFloat(h.map((r) => r[2] ?? 0))[0] as Value, [1, 3]),
-  )
+  const hom = add(matmul(p, swapaxes(sliceAxis(hv, 1, 0, 2), 0, 1)), reshape(sliceAxis(hv, 1, 2, 3), [1, 3]))
   return div(sliceAxis(hom, 1, 0, 2), sliceAxis(hom, 1, 2, 3))
 }
 
 /**
  * The fundamental matrix F with x2^T F x1 = 0 from eight or more correspondences, by the normalised eight-point
  * algorithm with the rank-2 constraint enforced by zeroing the smallest singular value; scaled to unit Frobenius norm
- * with F[2][2] >= 0.
+ * with F[2][2] >= 0. Returns a tensor (migration, D-009: was `number[][]`).
  *
  * @param x1 - Points in the first image `[n, 2]`.
  * @param x2 - Matching points in the second `[n, 2]`.
- * @returns The 3 x 3 matrix.
+ * @returns The 3 x 3 matrix `[3, 3]`.
  * @concept epipolar-geometry
  * @example
  * ```ts
  * import { fundamentalMatrix } from 'mdml-engine/numerics/geometry'
  * const x1 = [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [1, 2], [3, 1], [2, 3]]
- * fundamentalMatrix(x1, x1.map(([x, y]) => [x + 1, y])).length // => 3
+ * fundamentalMatrix(x1, x1.map(([x, y]) => [x + 1, y])).shape // => [3, 3]
  * ```
  */
-export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): number[][] {
+export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): Tensor<'float64', [number, number]> {
   const a = normalisePoints(x1)
   const b = normalisePoints(x2)
   const n = a.points.shape[0] ?? 0
@@ -557,7 +571,11 @@ export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): number[][] {
   const full = mat3mul(mat3mul(bt, f1), a.transform)
   const norm = Math.hypot(...full.flat())
   const sign = (full[2]?.[2] ?? 0) < 0 ? -1 : 1
-  return full.map((r) => r.map((v) => (sign * v) / norm))
+  return matrixOf(
+    Float64Array.from(full.flat(), (v) => (sign * v) / norm),
+    3,
+    3,
+  )
 }
 
 /**
