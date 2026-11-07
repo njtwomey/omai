@@ -22,7 +22,7 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
-import { vectorOf } from './_vector.ts'
+import { flatOf, vectorOf } from './_vector.ts'
 
 /** A step-size rule for online learners: a constant or a function of the round t (from 1). */
 export type OnlineRate = number | ((t: number) => number)
@@ -240,8 +240,8 @@ function projectInNorm(y: Float64Array, a: Float64Array, radius: number): Float6
   if (dnrm2(y) <= radius) return y
   const n = y.length
   const { eigenvalues, eigenvectors } = eigh(fromStorage(Float64Array.from(a), [n, n], 'float64'))
-  const lam = Float64Array.from(toFlat(primalOf(eigenvalues)))
-  const q = Float64Array.from(toFlat(primalOf(eigenvectors)))
+  const lam = flatOf(eigenvalues)
+  const q = flatOf(eigenvectors)
   const c = dgemv(q, n, n, y, true)
   const at = (mu: number): Float64Array => Float64Array.from(c, (ci, i) => ((lam[i] ?? 0) * ci) / ((lam[i] ?? 0) + mu))
   let hi = 1

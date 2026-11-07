@@ -23,12 +23,10 @@ import {
   item,
   matmul,
   mul,
-  primalOf,
   square,
   sum,
   type Tensor,
   type TensorLike,
-  toFlat,
   toVector,
   type Value,
 } from '../tensor/index.ts'
@@ -43,7 +41,8 @@ import {
   stateFromJson,
   stateToJson,
 } from '../trace/index.ts'
-import { matrixOf, vectorOf } from './_vector.ts'
+import { numberKnob } from './_knobs.ts'
+import { flatOf, matrixOf, vectorOf } from './_vector.ts'
 import { type SmoothProblem, smoothSolvers, type VectorParams } from './solvers.ts'
 import type { BatchObjective } from './stochastic.ts'
 
@@ -104,6 +103,8 @@ export interface GlmState {
   readonly halvings: number
   /** Steps taken. */
   readonly iteration: number
+  /** Set when a step could not reach a finite objective (halving the step did not help): the iterate is the last finite one. */
+  readonly diverged?: boolean
 }
 
 /** What {@link glmProblemOf} prepares once: the augmented design and the penalty by coordinate. */
@@ -124,8 +125,14 @@ interface Prepared {
   readonly link: Link
 }
 
+/** The check at the boundary: a non-finite entry of the data would be zeroed or carried silently by the fit. */
+function requireFinite(values: ArrayLike<number>, name: string): void {
+  for (let i = 0; i < values.length; i++)
+    if (!Number.isFinite(values[i]))
+      throw new MdmlError('value', `glm: ${name} must be finite, entry ${i} is ${values[i]}`)
+}
+
 const vec = (a: ArrayLike<number>): Tensor => fromStorage(Float64Array.from(a), [a.length], 'float64')
-const flat = (v: Parameters<typeof primalOf>[0]): Float64Array => Float64Array.from(toFlat(primalOf(v)))
 
 const cache = new WeakMap<GlmProblem, Prepared>()
 
@@ -138,6 +145,8 @@ function prepared(problem: GlmProblem): Prepared {
   const p = d + (intercept ? 1 : 0)
   const yIn = toVector(problem.y, 'glm: y')
   if (yIn.length !== n) throw new MdmlError('shape', `glm: y has ${yIn.length} entries for ${n} rows`)
+  requireFinite(x, 'x')
+  requireFinite(yIn, 'y')
   const a = new Float64Array(n * p)
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < d; j++) a[i * p + j] = x[i * d + j] ?? 0
@@ -148,9 +157,11 @@ function prepared(problem: GlmProblem): Prepared {
       ? new Float64Array(n).fill(1)
       : Float64Array.from(toVector(problem.weights, 'glm: weights'))
   if (w.length !== n) throw new MdmlError('shape', `glm: ${w.length} weights for ${n} rows`)
+  requireFinite(w, 'weights')
   const offset =
     problem.offset === undefined ? new Float64Array(n) : Float64Array.from(toVector(problem.offset, 'glm: offset'))
   if (offset.length !== n) throw new MdmlError('shape', `glm: ${offset.length} offsets for ${n} rows`)
+  requireFinite(offset, 'offset')
   const penalty = problem.penalty ?? {}
   const l2 = penalty.l2 ?? 0
   if (!(l2 >= 0)) throw new MdmlError('value', 'glm: the penalty weight must be non-negative')
@@ -167,10 +178,11 @@ function prepared(problem: GlmProblem): Prepared {
   if (problem.start !== undefined) {
     start = Float64Array.from(toVector(problem.start, 'glm: start'))
     if (start.length !== p) throw new MdmlError('shape', `glm: the start has ${start.length} entries for ${p}`)
+    requireFinite(start, 'start')
   } else {
     start = new Float64Array(p)
     if (intercept && sw > 0) {
-      const eta = flat(link.link(family.startingMu(vec(y))))
+      const eta = flatOf(link.link(family.startingMu(vec(y))))
       let s = 0
       for (let i = 0; i < n; i++) s += (w[i] ?? 0) * ((eta[i] ?? 0) - (offset[i] ?? 0))
       start[d] = Number.isFinite(s) ? s / sw : 0
@@ -229,9 +241,9 @@ function valueAt(P: Prepared, beta: ArrayLike<number>): number {
 /** The gradient of the objective. */
 function gradientAt(P: Prepared, beta: ArrayLike<number>): Float64Array {
   const mu = P.link.inverse(vec(predictor(P, beta)))
-  const m = flat(mu)
-  const variance = flat(P.family.variance(mu))
-  const slope = flat(P.link.derivative(mu))
+  const m = flatOf(mu)
+  const variance = flatOf(P.family.variance(mu))
+  const slope = flatOf(P.link.derivative(mu))
   const u = new Float64Array(P.n)
   for (let i = 0; i < P.n; i++) {
     const v = ((P.w[i] ?? 0) * ((m[i] ?? 0) - (P.y[i] ?? 0))) / ((variance[i] ?? 1) * (slope[i] ?? 1))
@@ -444,12 +456,12 @@ function reweighting(problem: GlmProblem, name: string, knobs: ReweightingKnobs)
           },
     step: (s) => {
       const first = !Number.isFinite(s.value)
-      const eta = first ? flat(P.link.link(P.family.startingMu(yT))) : predictor(P, s.x)
+      const eta = first ? flatOf(P.link.link(P.family.startingMu(yT))) : predictor(P, s.x)
       const mu = P.link.inverse(vec(eta))
-      const muFlat = flat(mu)
-      const ww = flat(P.family.irlsWeights(mu, P.link, wT))
+      const muFlat = flatOf(mu)
+      const ww = flatOf(P.family.irlsWeights(mu, P.link, wT))
       for (let i = 0; i < n; i++) if (!Number.isFinite(ww[i])) ww[i] = 0
-      const slope = flat(P.link.derivative(mu))
+      const slope = flatOf(P.link.derivative(mu))
       const z = new Float64Array(n)
       for (let i = 0; i < n; i++)
         z[i] = (eta[i] ?? 0) - (P.offset[i] ?? 0) + ((P.y[i] ?? 0) - (muFlat[i] ?? 0)) * (slope[i] ?? 0)
@@ -461,6 +473,8 @@ function reweighting(problem: GlmProblem, name: string, knobs: ReweightingKnobs)
         x = Float64Array.from(x, (v, j) => 0.5 * (v + (s.x[j] ?? 0)))
         value = valueAt(P, x)
       }
+      // No finite objective even after halving toward the last iterate: stop there, `diverged`, with that iterate.
+      if (!Number.isFinite(value)) return { ...s, step: 0, halvings, iteration: s.iteration + 1, diverged: true }
       const moved = Float64Array.from(x, (v, j) => v - (s.x[j] ?? 0))
       return {
         x,
@@ -472,7 +486,7 @@ function reweighting(problem: GlmProblem, name: string, knobs: ReweightingKnobs)
         iteration: s.iteration + 1,
       }
     },
-    done: (s) => (s.change <= knobs.tol ? 'converged' : undefined),
+    done: (s) => (s.diverged === true ? 'diverged' : s.change <= knobs.tol ? 'converged' : undefined),
     serialise: (s) => stateToJson(s),
     deserialise: (j) => stateFromJson(j) as GlmState,
   }
@@ -480,8 +494,10 @@ function reweighting(problem: GlmProblem, name: string, knobs: ReweightingKnobs)
 
 const vector = (s: GlmState): VectorParams => ({ x: Array.from(s.x) })
 
-const tol = real(1e-14, 1e-3, { log: true, default: 1e-10, label: 'relative coefficient change' })
-const maxHalvings = int(0, 60, { default: 30, label: 'step halvings allowed' })
+const defaultTol = 1e-10
+const defaultHalvings = 30
+const tol = real(1e-14, 1e-3, { log: true, default: defaultTol, label: 'relative coefficient change' })
+const maxHalvings = int(0, 60, { default: defaultHalvings, label: 'step halvings allowed' })
 
 const irls: ModeSpec<GlmProblem, GlmState, VectorParams> = {
   description:
@@ -489,8 +505,8 @@ const irls: ModeSpec<GlmProblem, GlmState, VectorParams> = {
   space: dict({ tol, maxHalvings }),
   make: (p, k) =>
     reweighting(p, 'glm-irls', {
-      tol: (k['tol'] as number | undefined) ?? 1e-10,
-      maxHalvings: (k['maxHalvings'] as number | undefined) ?? 30,
+      tol: numberKnob(k, 'tol') ?? defaultTol,
+      maxHalvings: numberKnob(k, 'maxHalvings') ?? defaultHalvings,
     }),
   params: vector,
 }

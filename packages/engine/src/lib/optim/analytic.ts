@@ -14,14 +14,13 @@ import {
   fromStorage,
   matmul,
   mul,
-  primalOf,
   sum,
   type Tensor,
   type TensorLike,
-  toFlat,
   toVector,
   type Value,
 } from '../tensor/index.ts'
+import { flatOf } from './_vector.ts'
 
 /** A model's objective over plain numbers, with its derivatives. */
 export interface AnalyticObjective {
@@ -80,8 +79,6 @@ function hessianByDifferences(gradient: (x: Float64Array) => ArrayLike<number>, 
     }
   return H
 }
-
-const flatOf = (x: Value): Float64Array => Float64Array.from(toFlat(primalOf(x)))
 
 /**
  * An objective from its value, gradient and (optionally) Hessian over plain numbers, as a function of a parameter

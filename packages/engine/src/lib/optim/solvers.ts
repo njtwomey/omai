@@ -37,6 +37,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../trace/index.ts'
+import { boolKnob, choiceKnob, ftolKnob, given, gradTolKnob, numberKnob } from './_knobs.ts'
 import {
   type ConjugateGradientBeta,
   conjugateGradientAlgorithm,
@@ -76,16 +77,7 @@ interface WithVector {
 
 const vector = (s: WithVector): VectorParams => ({ x: Array.from(s.x) })
 
-/**
- * The gradient tolerance every gradient-based solver stops at (scipy's gtol): absolute, on the infinity norm, so an
- * objective whose gradients are everywhere below it (data in very small units) stops at its start: rescale such a
- * problem, or lower the tolerance.
- */
-const gradTol = real(1e-12, 1e-2, {
-  log: true,
-  default: 1e-5,
-  label: 'gradient tolerance (absolute, on the infinity norm)',
-})
+const gradTol = gradTolKnob
 
 const gradientDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'gradient descent: a line search along the negative gradient, a fixed step, or Barzilai-Borwein steps',
@@ -100,11 +92,15 @@ const gradientDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
     gradTol,
   }),
   make: (p, k) =>
-    gradientDescentAlgorithm(p.objective, p.x0, {
-      step: k['step'] as NonNullable<GradientDescentOptions['step']>,
-      ...(k['learningRate'] === undefined ? {} : { learningRate: k['learningRate'] as number }),
-      gradTol: k['gradTol'] as number,
-    }),
+    gradientDescentAlgorithm(
+      p.objective,
+      p.x0,
+      given({
+        step: choiceKnob<NonNullable<GradientDescentOptions['step']>>(k, 'step'),
+        learningRate: numberKnob(k, 'learningRate'),
+        gradTol: numberKnob(k, 'gradTol'),
+      }),
+    ),
   params: vector,
 }
 
@@ -119,11 +115,15 @@ const conjugateGradient: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
     gradTol,
   }),
   make: (p, k) =>
-    conjugateGradientAlgorithm(p.objective, p.x0, {
-      beta: k['beta'] as ConjugateGradientBeta,
-      ...((k['restart'] as number) > 0 ? { restart: k['restart'] as number } : {}),
-      gradTol: k['gradTol'] as number,
-    }),
+    conjugateGradientAlgorithm(
+      p.objective,
+      p.x0,
+      given({
+        beta: choiceKnob<ConjugateGradientBeta>(k, 'beta'),
+        restart: (numberKnob(k, 'restart') ?? 0) > 0 ? numberKnob(k, 'restart') : undefined,
+        gradTol: numberKnob(k, 'gradTol'),
+      }),
+    ),
   params: vector,
 }
 
@@ -135,18 +135,23 @@ const newton: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
     gradTol,
   }),
   make: (p, k) =>
-    newtonAlgorithm(p.objective, p.x0, {
-      modification: k['modification'] as 'cholesky' | 'eigenvalue',
-      beta: k['beta'] as number,
-      gradTol: k['gradTol'] as number,
-    }),
+    newtonAlgorithm(
+      p.objective,
+      p.x0,
+      given({
+        modification: choiceKnob<'cholesky' | 'eigenvalue'>(k, 'modification'),
+        beta: numberKnob(k, 'beta'),
+        gradTol: numberKnob(k, 'gradTol'),
+      }),
+    ),
   params: vector,
 }
 
 const bfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'BFGS with a More-Thuente line search',
   space: dict({ damped: bool({ default: false, label: "Powell's damping" }), gradTol }),
-  make: (p, k) => bfgsAlgorithm(p.objective, p.x0, { damped: k['damped'] as boolean, gradTol: k['gradTol'] as number }),
+  make: (p, k) =>
+    bfgsAlgorithm(p.objective, p.x0, given({ damped: boolKnob(k, 'damped'), gradTol: numberKnob(k, 'gradTol') })),
   params: vector,
 }
 
@@ -154,15 +159,15 @@ const lbfgs: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'limited-memory BFGS',
   space: dict({
     memory: int(1, 50, { default: 10, label: 'curvature pairs kept' }),
-    ftol: real(1e-16, 1e-3, { log: true, default: 2.220446049250313e-9, label: 'relative reduction tolerance' }),
+    ftol: ftolKnob,
     gradTol,
   }),
   make: (p, k) =>
-    lbfgsAlgorithm(p.objective, p.x0, {
-      memory: k['memory'] as number,
-      ...(k['ftol'] === undefined ? {} : { ftol: k['ftol'] as number }),
-      gradTol: k['gradTol'] as number,
-    }),
+    lbfgsAlgorithm(
+      p.objective,
+      p.x0,
+      given({ memory: numberKnob(k, 'memory'), ftol: numberKnob(k, 'ftol'), gradTol: numberKnob(k, 'gradTol') }),
+    ),
   params: vector,
 }
 
@@ -180,12 +185,16 @@ const coordinateDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
     gradTol,
   }),
   make: (p, k) =>
-    coordinateDescentAlgorithm(p.objective, p.x0, {
-      order: k['order'] as 'cyclic' | 'random' | 'greedy',
-      update: k['update'] as 'exact' | 'newton' | 'gradient',
-      ...(k['learningRate'] === undefined ? {} : { learningRate: k['learningRate'] as number }),
-      gradTol: k['gradTol'] as number,
-    }),
+    coordinateDescentAlgorithm(
+      p.objective,
+      p.x0,
+      given({
+        order: choiceKnob<'cyclic' | 'random' | 'greedy'>(k, 'order'),
+        update: choiceKnob<'exact' | 'newton' | 'gradient'>(k, 'update'),
+        learningRate: numberKnob(k, 'learningRate'),
+        gradTol: numberKnob(k, 'gradTol'),
+      }),
+    ),
   params: vector,
 }
 
@@ -200,14 +209,13 @@ const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
     gradTol,
   }),
   make: (p, k) => {
-    const batch = (k['batch'] as number | undefined) ?? 0
+    const batch = numberKnob(k, 'batch') ?? 0
     return gradientAlgorithm(p.objective, p.x0, {
       optimiser: optimisers.make(completeOption(optimisers, k['optimiser'])),
-      learningRate: (k['learningRate'] as number | undefined) ?? 1e-2,
       schedule: schedules.make(completeOption(schedules, k['schedule'])),
       batch: batch > 0 ? batch : null,
       ...(p.batches === undefined ? {} : { batches: p.batches }),
-      gradTol: (k['gradTol'] as number | undefined) ?? 1e-5,
+      ...given({ learningRate: numberKnob(k, 'learningRate'), gradTol: numberKnob(k, 'gradTol') }),
     })
   },
   params: vector,
@@ -243,7 +251,17 @@ export function solverConfigOf<Problem>(table: ModeTable<Problem, VectorParams>,
   } as SpaceValue
 }
 
-/** {@link solverConfigOf} for `smoothSolvers`. */
+/**
+ * {@link solverConfigOf} for `smoothSolvers`.
+ *
+ * @param config - A configuration naming a solver and some of its knobs.
+ * @returns The complete configuration, the other knobs at their defaults.
+ * @example
+ * ```ts
+ * import { smoothSolverConfig } from 'mdml-engine/optim'
+ * smoothSolverConfig({ kind: 'bfgs' }) // => { damped: false, gradTol: 0.00001, kind: 'bfgs' }
+ * ```
+ */
 export const smoothSolverConfig = (config: SpaceValue): SpaceValue => solverConfigOf(smoothSolvers, config)
 
 /**
@@ -285,7 +303,9 @@ export type GradientPath = 'solver/lr'
  */
 export const solverContract: Contract<unknown, SolverPath> = defineContract({
   'solver/objective': scalar({ description: 'the objective at the iterate' }),
-  'solver/gradNorm': scalar({ description: 'the norm of the gradient at the iterate' }),
+  'solver/gradNorm': scalar({
+    description: 'the Euclidean norm of the gradient at the iterate (the solvers stop on its infinity norm, `gradTol`)',
+  }),
   'solver/step': scalar({ description: 'the length of the last step (or trust radius, as the solver calls it)' }),
 })
 
@@ -312,6 +332,17 @@ export const gradientContract: Contract<unknown, GradientPath> = defineContract(
  * @param key - The run's key.
  * @param extra - Called each step with the iterate and the state's channels, to log what the model adds.
  * @returns The algorithm.
+ * @example
+ * ```ts
+ * import { loggedSolverOf, smoothSolvers } from 'mdml-engine/optim'
+ * import { key } from 'mdml-engine/random'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * const problem = { objective: (x: Value) => sum(square(x)), x0: [3, 4] }
+ * const algorithm = loggedSolverOf(smoothSolvers, problem, { kind: 'gradientDescent', step: 'fixed', learningRate: 0.25 }, key(0))
+ * const seen: Record<string, number> = {}
+ * algorithm.step(algorithm.init(key(0)), { log: (path: string, v: number) => { seen[path] = v }, key: key(1) } as never)
+ * [algorithm.name, seen['solver/objective']] // => ['gradientDescent', 6.25]
+ * ```
  */
 export function loggedSolverOf<Problem, K extends string = never>(
   table: ModeTable<Problem, VectorParams>,
@@ -351,6 +382,17 @@ export function loggedSolverOf<Problem, K extends string = never>(
  * @param key - The run's key.
  * @param extra - Called each step with the iterate, to log what the method adds.
  * @returns The algorithm, typed by the solver's paths and the method's own (`K`, see {@link loggedSolverOf}).
+ * @example
+ * ```ts
+ * import { loggedSolver } from 'mdml-engine/optim'
+ * import { key } from 'mdml-engine/random'
+ * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * const problem = { objective: (x: Value) => sum(square(x)), x0: [3, 4] }
+ * const algorithm = loggedSolver(problem, { kind: 'gradientDescent', step: 'fixed', learningRate: 0.25 }, key(0))
+ * const seen: Record<string, number> = {}
+ * algorithm.step(algorithm.init(key(0)), { log: (path: string, v: number) => { seen[path] = v }, key: key(1) } as never)
+ * seen['solver/objective'] // => 6.25
+ * ```
  */
 export function loggedSolver<K extends string = never>(
   problem: SmoothProblem,

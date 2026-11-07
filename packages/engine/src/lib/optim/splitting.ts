@@ -8,8 +8,9 @@ import { MdmlError } from '../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../numerics/linalg/index.ts'
 import { asOperator, type CsrMatrix, type LinearOperator } from '../numerics/sparse/index.ts'
 import { key, normal } from '../random/index.ts'
-import { asTensor, fromStorage, item, primalOf, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
+import { asTensor, fromStorage, item, primalOf, type TensorLike, type Value } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../trace/index.ts'
+import { flatOf } from './_vector.ts'
 import { configOf, observeVector, runVector, type VectorState, vectorDone, vectorSchema } from './minimize/_shared.ts'
 import {
   flatObjective,
@@ -84,8 +85,7 @@ export function proximalGradientAlgorithm(
   const shrink = options.shrink ?? 0.5
   const gradTol = options.gradTol ?? 0
   const tol = options.tol ?? 1e-12
-  const proxFlat = (v: Float64Array, t: number): Float64Array =>
-    Float64Array.from(toFlat(primalOf(prox(obj.unravel(v) as Value, t))))
+  const proxFlat = (v: Float64Array, t: number): Float64Array => flatOf(prox(obj.unravel(v) as Value, t))
   const gOf = (x: Float64Array): number =>
     options.g === undefined ? 0 : item(primalOf(options.g(obj.unravel(x) as Value)))
   return {
@@ -287,7 +287,6 @@ export interface ChambollePockState extends VectorState {
 }
 
 const asVec = (x: ArrayLike<number>): Value => fromStorage(Float64Array.from(x), [x.length], 'float64')
-const flat = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
 
 /** |K| by power iteration on K^T K. */
 function operatorNorm(op: LinearOperator, iterations = 50): number {
@@ -298,7 +297,7 @@ function operatorNorm(op: LinearOperator, iterations = 50): number {
   let v: Float64Array = Float64Array.from(start, (e) => e / s0)
   let lambda = 0
   for (let i = 0; i < iterations; i++) {
-    const w = flat((op.rmatvec as (x: Value) => Value)(op.matvec(asVec(v))))
+    const w = flatOf((op.rmatvec as (x: Value) => Value)(op.matvec(asVec(v))))
     lambda = dnrm2(w)
     if (lambda === 0) return 0
     v = Float64Array.from(w, (e) => e / lambda)
@@ -331,15 +330,15 @@ export function chambollePockAlgorithm(
   const [m, n] = op.shape
   const rmatvec = op.rmatvec
   if (rmatvec === undefined) throw new MdmlError('value', 'chambollePock: the operator needs rmatvec (K^T)')
-  const K = (x: Float64Array): Float64Array => flat(op.matvec(asVec(x)))
-  const Kt = (y: Float64Array): Float64Array => flat(rmatvec(asVec(y)))
+  const K = (x: Float64Array): Float64Array => flatOf(op.matvec(asVec(x)))
+  const Kt = (y: Float64Array): Float64Array => flatOf(rmatvec(asVec(y)))
   const proxF = problem.proxF
   const proxFConj: Prox =
     problem.proxFConjugate ??
     ((v, s) => {
       if (proxF === undefined) throw new MdmlError('value', 'chambollePock: give proxF or proxFConjugate')
-      const vv = flat(v)
-      const inner = flat(proxF(asVec(vv.map((e) => e / s)), 1 / s))
+      const vv = flatOf(v)
+      const inner = flatOf(proxF(asVec(vv.map((e) => e / s)), 1 / s))
       return asVec(vv.map((e, i) => e - s * (inner[i] ?? 0)))
     })
   const normK = options.tau === undefined || options.sigma === undefined ? operatorNorm(op) : 0
@@ -360,7 +359,7 @@ export function chambollePockAlgorithm(
       tensors: { y: { role: 'state', description: 'dual variable' } },
     }),
     init: () => {
-      const x = flat(asTensor(x0))
+      const x = flatOf(asTensor(x0))
       const y = options.y0 === undefined ? new Float64Array(m) : Float64Array.from(options.y0)
       return {
         x,
@@ -377,8 +376,8 @@ export function chambollePockAlgorithm(
       }
     },
     step: (s) => {
-      const y = flat(proxFConj(asVec(daxpy(sigma, K(s.xBar), s.y)), sigma))
-      const x = flat(problem.proxG(asVec(daxpy(-tau, Kt(y), s.x)), tau))
+      const y = flatOf(proxFConj(asVec(daxpy(sigma, K(s.xBar), s.y)), sigma))
+      const x = flatOf(problem.proxG(asVec(daxpy(-tau, Kt(y), s.x)), tau))
       const dx = daxpy(-1, x, s.x)
       const dy = daxpy(-1, y, s.y)
       const primalResidual = dnrm2(

@@ -31,6 +31,7 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
+import { flatOf } from './_vector.ts'
 import { emd } from './transport.ts'
 
 /** Options of {@link wasserstein1d}. */
@@ -43,7 +44,7 @@ export interface Wasserstein1dOptions {
 }
 
 function normalisedWeights(w: TensorLike | undefined, n: number, name: string): Float64Array {
-  const out = w === undefined ? new Float64Array(n).fill(1) : Float64Array.from(toFlat(primalOf(asTensor(w))))
+  const out = w === undefined ? new Float64Array(n).fill(1) : flatOf(asTensor(w))
   if (out.length !== n) throw new MdmlError('shape', `${name}: one weight per value`)
   let s = 0
   for (const v of out) s += v
@@ -137,7 +138,9 @@ export interface SlicedOptions {
 /**
  * The sliced Wasserstein distance (Rabin et al. 2011; POT's ot.sliced_wasserstein_distance): the p-th root of the
  * mean over directions of W_p^p between the projected clouds, with explicit directions or random ones from a key.
- * Differentiable in the point positions.
+ * Differentiable in the point positions. It is not `slicedWasserstein` of `losses`, which returns the power
+ * `SW_p^p` by default (the root has an infinite slope at zero), takes the key positionally and a count of random
+ * directions, and needs equal sample counts.
  *
  * @param x - The first cloud `[n, d]`.
  * @param y - The second cloud `[k, d]`.
@@ -385,7 +388,7 @@ export function freeSupportBarycenterAlgorithm(
   const k = X0.shape[0] ?? 0
   const d = X0.shape[1] ?? 0
   const inputs = locations.map((l) => primalOf(promoteFloat(l)[0] as Value) as Tensor)
-  const weights = masses.map((m) => Float64Array.from(toFlat(primalOf(asTensor(m)))))
+  const weights = masses.map((m) => flatOf(asTensor(m)))
   const N = inputs.length
   const b = Float64Array.from(
     options.b === undefined ? new Float64Array(k).fill(1 / k) : toVector(options.b, 'freeSupportBarycenter'),

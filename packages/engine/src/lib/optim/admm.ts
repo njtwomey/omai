@@ -22,6 +22,7 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
+import { flatOf } from './_vector.ts'
 import { type Prox, proxL1 } from './proximal.ts'
 
 /**
@@ -316,11 +317,10 @@ export function admmProx(proxF: Prox, proxG: Prox, x0: TensorLike, options: Admm
   const start = primalOf(asTensor(x0))
   const shape = start.shape
   const shaped = (v: ArrayLike<number>): Value => fromStorage(Float64Array.from(v), shape, 'float64')
-  const flat = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
   const { admm: o, run } = splitRun({ ...options, x0: options.x0 ?? Float64Array.from(start.data) })
   const problem: AdmmProblem = {
-    xUpdate: (z, u, rho) => flat(proxF(shaped(daxpy(-1, u, z)), 1 / rho)),
-    zUpdate: (ax, u, rho) => flat(proxG(shaped(daxpy(1, u, ax)), 1 / rho)),
+    xUpdate: (z, u, rho) => flatOf(proxF(shaped(daxpy(-1, u, z)), 1 / rho)),
+    zUpdate: (ax, u, rho) => flatOf(proxG(shaped(daxpy(1, u, ax)), 1 / rho)),
   }
   return finish(admmAlgorithm(problem, o), run, shape, shape)
 }
@@ -364,13 +364,12 @@ export function admmLasso(a: TensorLike, b: TensorLike, lambda: number, options:
     }
     return l
   }
-  const flat = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
   const vec = (v: ArrayLike<number>): Value => fromStorage(Float64Array.from(v), [v.length], 'float64')
   const { admm: o, run } = splitRun({ ...options, x0: options.x0 ?? new Float64Array(n) })
   const problem: AdmmProblem = {
     xUpdate: (z, u, rho) =>
-      flat(choSolve(factorOf(rho), vec(Float64Array.from(atb, (v, i) => v + rho * ((z[i] ?? 0) - (u[i] ?? 0)))))),
-    zUpdate: (ax, u, rho) => flat(proxL1(vec(daxpy(1, u, ax)), lambda / rho)),
+      flatOf(choSolve(factorOf(rho), vec(Float64Array.from(atb, (v, i) => v + rho * ((z[i] ?? 0) - (u[i] ?? 0)))))),
+    zUpdate: (ax, u, rho) => flatOf(proxL1(vec(daxpy(1, u, ax)), lambda / rho)),
     objective: (_x, z) => {
       const r = dgemv(at, rows, n, z)
       const bb = toFlat(primalOf(asTensor(b)))
@@ -423,7 +422,6 @@ export function consensusAdmmAlgorithm(
   const absTol = options.absTol ?? 1e-9
   const relTol = options.relTol ?? 1e-9
   const shaped = (v: ArrayLike<number>): Value => fromStorage(Float64Array.from(v), shape, 'float64')
-  const flat = (v: Value): Float64Array => Float64Array.from(toFlat(primalOf(v)))
   return {
     name: 'consensusAdmm',
     config: { rho, terms: N, absTol, relTol } as Json,
@@ -445,11 +443,11 @@ export function consensusAdmmAlgorithm(
       }
     },
     step: (s) => {
-      const xs = proxes.map((prox, i) => flat(prox(shaped(daxpy(-1, s.us[i] as Float64Array, s.z)), 1 / rho)))
+      const xs = proxes.map((prox, i) => flatOf(prox(shaped(daxpy(-1, s.us[i] as Float64Array, s.z)), 1 / rho)))
       const mean = new Float64Array(n)
       for (const [i, x] of xs.entries())
         for (let j = 0; j < n; j++) mean[j] = (mean[j] ?? 0) + ((x[j] ?? 0) + ((s.us[i] as Float64Array)[j] ?? 0)) / N
-      const z = options.proxG === undefined ? mean : flat(options.proxG(shaped(mean), 1 / (N * rho)))
+      const z = options.proxG === undefined ? mean : flatOf(options.proxG(shaped(mean), 1 / (N * rho)))
       const us = xs.map((x, i) => Float64Array.from(s.us[i] as Float64Array, (v, j) => v + (x[j] ?? 0) - (z[j] ?? 0)))
       let pr = 0
       for (const x of xs) pr += dnrm2(daxpy(-1, z, x)) ** 2

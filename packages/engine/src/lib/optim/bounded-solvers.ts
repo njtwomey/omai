@@ -10,6 +10,7 @@ import { MdmlError } from '../base/index.ts'
 import { dict, real } from '../space/index.ts'
 import { add, asTensor, exp, mul, sigmoid, type TensorLike, toFlat, toVector, type Value } from '../tensor/index.ts'
 import { type Algorithm, type ModeSpec, type ModeTable, modes, stateFromJson, stateToJson } from '../trace/index.ts'
+import { ftolKnob, given, gradTolKnob, numberKnob } from './_knobs.ts'
 import { lbfgsbAlgorithm } from './minimize/lbfgsb.ts'
 import type { Parameters } from './minimize/objective.ts'
 import { slsqpAlgorithm } from './minimize/slsqp.ts'
@@ -107,26 +108,26 @@ export function boxMap(lowerBounds: TensorLike, upperBounds: TensorLike): BoxMap
   }
 }
 
-const gradTol = real(1e-12, 1e-2, {
-  log: true,
-  default: 1e-5,
-  label: 'gradient tolerance (absolute, on the infinity norm)',
-})
+const gradTol = gradTolKnob
 
 const lbfgsb: ModeSpec<BoundedProblem, { readonly x: Float64Array }, VectorParams> = {
   description: 'L-BFGS-B: limited-memory BFGS with the bounds handled by a projected Cauchy search',
   space: dict({
     memory: real(1, 50, { default: 10, label: 'curvature pairs kept' }),
-    ftol: real(1e-16, 1e-3, { log: true, default: 2.220446049250313e-9, label: 'relative reduction tolerance' }),
+    ftol: ftolKnob,
     gradTol,
   }),
-  make: (p, k) =>
-    lbfgsbAlgorithm(p.objective, p.x0, {
+  make: (p, k) => {
+    const memory = numberKnob(k, 'memory')
+    return lbfgsbAlgorithm(p.objective, p.x0, {
       bounds: { lower: toVector(p.lower, 'boundedSolvers'), upper: toVector(p.upper, 'boundedSolvers') },
-      memory: Math.round(k['memory'] as number),
-      ftol: k['ftol'] as number,
-      gradTol: k['gradTol'] as number,
-    }),
+      ...given({
+        memory: memory === undefined ? undefined : Math.round(memory),
+        ftol: numberKnob(k, 'ftol'),
+        gradTol: numberKnob(k, 'gradTol'),
+      }),
+    })
+  },
   params: (s) => ({ x: Array.from(s.x) }),
 }
 
@@ -136,8 +137,7 @@ const slsqp: ModeSpec<BoundedProblem, { readonly x: Float64Array }, VectorParams
   make: (p, k) =>
     slsqpAlgorithm(p.objective, p.x0, {
       bounds: { lower: toVector(p.lower, 'boundedSolvers'), upper: toVector(p.upper, 'boundedSolvers') },
-      ftol: k['ftol'] as number,
-      gradTol: k['gradTol'] as number,
+      ...given({ ftol: numberKnob(k, 'ftol'), gradTol: numberKnob(k, 'gradTol') }),
     }),
   params: (s) => ({ x: Array.from(s.x) }),
 }

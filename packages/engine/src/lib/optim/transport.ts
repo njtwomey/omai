@@ -17,10 +17,10 @@ import {
   sum,
   type Tensor,
   type TensorLike,
-  toFlat,
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
+import { flatOf } from './_vector.ts'
 
 /** A transport problem's data as plain arrays. */
 interface Problem {
@@ -32,8 +32,8 @@ interface Problem {
 }
 
 function problem(a: TensorLike, b: TensorLike, cost: TensorLike, name: string, balanced = true): Problem {
-  const av = Float64Array.from(toFlat(primalOf(asTensor(a))))
-  const bv = Float64Array.from(toFlat(primalOf(asTensor(b))))
+  const av = flatOf(asTensor(a))
+  const bv = flatOf(asTensor(b))
   const c = primalOf(promoteFloat(cost)[0] as Value) as Tensor
   if (c.shape.length !== 2 || c.shape[0] !== av.length || c.shape[1] !== bv.length)
     throw new MdmlError('shape', `${name}: the cost must be [len(a), len(b)]`)
