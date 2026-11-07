@@ -284,9 +284,9 @@ describe('session panels', () => {
     const tape = renderToString(<SessionPanels id="t" live={live} at={null} layout={[{ kind: 'tape' }]} />)
     expect(tape).toContain('projection boom unavailable: no data to project')
     // A method without projections draws no such note.
-    expect(renderToString(<SessionPanels id="t" live={liveOf(5)} at={null} layout={[{ kind: 'tape' }]} />)).not.toContain(
-      'unavailable',
-    )
+    expect(
+      renderToString(<SessionPanels id="t" live={liveOf(5)} at={null} layout={[{ kind: 'tape' }]} />),
+    ).not.toContain('unavailable')
   })
 
   it('clips the viewed step to the head and says when a tensor has nothing yet', () => {
