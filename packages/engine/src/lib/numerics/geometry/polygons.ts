@@ -9,6 +9,7 @@ import {
   add,
   concreteOrThrow,
   div,
+  fromStorage,
   mul,
   promoteFloat,
   reshape,
@@ -282,11 +283,11 @@ export function isConvex(polygon: TensorLike | readonly Point2[]): boolean {
 
 /**
  * The winding number of a closed polygon around each point (Sunday's algorithm): 0 outside; +1 inside a
- * counter-clockwise loop.
+ * counter-clockwise loop. Returns a tensor (migration, D-009: was `number[]`).
  *
  * @param points - Query points `[q, 2]`.
  * @param polygon - Vertices `[n, 2]`.
- * @returns Winding numbers.
+ * @returns Winding numbers, an int32 tensor `[q]`.
  * @example
  * ```ts
  * import { windingNumber } from 'mdml-engine/numerics/geometry'
@@ -296,9 +297,12 @@ export function isConvex(polygon: TensorLike | readonly Point2[]): boolean {
 export function windingNumber(
   points: TensorLike | readonly Point2[],
   polygon: TensorLike | readonly Point2[],
-): number[] {
-  const qs = toPoints(points)
-  const poly = toPoints(polygon)
+): Tensor<'int32', [number]> {
+  const w = windingKernel(toPoints(points), toPoints(polygon))
+  return fromStorage(Int32Array.from(w), [w.length], 'int32')
+}
+
+function windingKernel(qs: readonly Point2[], poly: readonly Point2[]): number[] {
   return qs.map((q) => {
     let w = 0
     for (let i = 0; i < poly.length; i++) {
@@ -326,12 +330,12 @@ function onSegment(a: Point2, b: Point2, q: Point2, tol: number): boolean {
 
 /**
  * Point-in-polygon classification: 1 inside, 0 on the boundary, -1 outside (non-zero winding rule, so self-overlapping
- * loops count as inside).
+ * loops count as inside). Returns a tensor (migration, D-009: was `number[]`).
  *
  * @param points - Query points `[q, 2]`.
  * @param polygon - Vertices `[n, 2]`.
  * @param tol - Boundary tolerance (default 1e-12).
- * @returns The classification per point.
+ * @returns The classification per point, an int32 tensor `[q]`.
  * @example
  * ```ts
  * import { pointInPolygon } from 'mdml-engine/numerics/geometry'
@@ -342,15 +346,16 @@ export function pointInPolygon(
   points: TensorLike | readonly Point2[],
   polygon: TensorLike | readonly Point2[],
   tol = 1e-12,
-): number[] {
+): Tensor<'int32', [number]> {
   const qs = toPoints(points)
   const poly = toPoints(polygon)
-  const w = windingNumber(qs, poly)
-  return qs.map((q, k) => {
+  const w = windingKernel(qs, poly)
+  const out = qs.map((q, k) => {
     for (let i = 0; i < poly.length; i++)
       if (onSegment(poly[i] as Point2, poly[(i + 1) % poly.length] as Point2, q, tol)) return 0
     return w[k] !== 0 ? 1 : -1
   })
+  return fromStorage(Int32Array.from(out), [out.length], 'int32')
 }
 
 /**

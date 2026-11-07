@@ -8,7 +8,7 @@ import type { EChartsOption, SeriesOption } from 'echarts'
 import { MdmlError } from 'mdml-engine/base'
 import { contourLevels } from 'mdml-engine/numerics/geometry'
 import { type ImageSource, type Pixels, toPixels } from 'mdml-engine/scene'
-import type { TensorLike } from 'mdml-engine/tensor'
+import { type TensorLike, toFlat } from 'mdml-engine/tensor'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import { pngDataUrl } from '../svg/png.ts'
@@ -289,7 +289,7 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
       const inner =
         typeof options.levels === 'object'
           ? [...options.levels]
-          : contourLevels([finite.length > 0 ? finite : [0, 1]], options.levels ?? 8)
+          : toFlat(contourLevels([finite.length > 0 ? finite : [0, 1]], options.levels ?? 8))
       levels = [lo, ...inner.filter((l) => l > lo && l < hi), hi]
       const mids = levels.slice(0, -1).map((l, i) => (l + (levels?.[i + 1] ?? l)) / 2)
       bandColours = mids.map((m) => toHex(interpolateRgba(parsed, scaleFraction(m, domain))))

@@ -21,8 +21,10 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { eigh } from '../linalg/index.ts'
 import type { Point2 } from './triangulation.ts'
 
@@ -192,18 +194,23 @@ function assemble(segments: readonly [Point2, Point2][]): Point2[][] {
 
 /**
  * Nice contour levels inside the range of the data (as matplotlib's MaxNLocator): steps of 1, 2, 2.5 or 5 times a power
- * of ten, at most n intervals, keeping only levels strictly between the minimum and maximum.
+ * of ten, at most n intervals, keeping only levels strictly between the minimum and maximum. Returns a tensor
+ * (migration, D-009: was `number[]`).
  *
  * @param z - Values (any shape; NaNs ignored).
  * @param n - Target number of intervals (default 7).
- * @returns Increasing levels.
+ * @returns Increasing levels `[k]`.
  * @example
  * ```ts
  * import { contourLevels } from 'mdml-engine/numerics/geometry'
  * contourLevels([0, 1], 4) // => [0.25, 0.5, 0.75]
  * ```
  */
-export function contourLevels(z: TensorLike, n = 7): number[] {
+export function contourLevels(z: TensorLike, n = 7): Tensor<'float64', [number]> {
+  return vectorOf(levelsOf(z, n))
+}
+
+function levelsOf(z: TensorLike, n: number): number[] {
   const values = toFlat(concreteOrThrow(promoteFloat(z)[0] as Tensor, 'contourLevels')).filter((v) => !Number.isNaN(v))
   const lo = minOf(values)
   const hi = maxOf(values)
@@ -220,12 +227,14 @@ export function contourLevels(z: TensorLike, n = 7): number[] {
 }
 
 /**
- * Contours at several levels.
+ * Contours at several levels. Takes the levels as a tensor-like (migration, D-009: was `readonly number[]`); the paths
+ * are ragged lists of points and stay lists.
  *
  * @param z - Values `[rows, cols]`.
- * @param levels - The levels (default {@link contourLevels}).
+ * @param levels - The levels `[k]` (default {@link contourLevels}).
  * @param options - As {@link contourLines}.
  * @returns One entry per level with its paths.
+ * @throws MdmlError with code `shape` unless `levels` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { isolines } from 'mdml-engine/numerics/geometry'
@@ -234,10 +243,13 @@ export function contourLevels(z: TensorLike, n = 7): number[] {
  */
 export function isolines(
   z: TensorLike,
-  levels?: readonly number[],
+  levels?: TensorLike,
   options: ContourOptions = {},
 ): { level: number; paths: [number, number][][] }[] {
-  return (levels ?? contourLevels(z)).map((level) => ({ level, paths: contourLines(z, level, options) }))
+  return (levels === undefined ? levelsOf(z, 7) : toVector(levels, 'isolines')).map((level) => ({
+    level,
+    paths: contourLines(z, level, options),
+  }))
 }
 
 /** A confidence ellipse of a 2-D Gaussian. */

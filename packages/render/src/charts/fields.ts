@@ -8,7 +8,7 @@ import type { SeriesOption } from 'echarts'
 import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
 import { contourLevels, contourLines } from 'mdml-engine/numerics/geometry'
 import type { Pixels } from 'mdml-engine/scene'
-import type { TensorLike } from 'mdml-engine/tensor'
+import { type TensorLike, toFlat } from 'mdml-engine/tensor'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import { formatNumber } from '../theme/format.ts'
@@ -60,7 +60,7 @@ export function contours(z: TensorLike, options: ContourOptions = {}): Layer {
   const x = axisCoords(options.x, g.cols)
   const y = axisCoords(options.y, g.rows)
   const levels =
-    typeof options.levels === 'object' ? [...options.levels] : contourLevels(gridRows(g), options.levels ?? 7)
+    typeof options.levels === 'object' ? [...options.levels] : toFlat(contourLevels(gridRows(g), options.levels ?? 7))
   const ramp =
     options.colour === 'ramp'
       ? colourScale(sequentialRamp('viridis'), [levels[0] ?? 0, levels[levels.length - 1] ?? 1])

@@ -182,6 +182,32 @@ describe('geometry properties', () => {
       )
     }
     expect(() => G.rotationFromQuat([1, 0, 0])).toThrow(expect.objectContaining({ code: 'shape' }))
+    // Levels are a tensor-like; the winding number and the point classification are int32 tensors.
+    const z = [
+      [0, 1],
+      [2, 3],
+    ]
+    expect(G.isolines(z, tensor([1.5]))[0]?.level).toBe(1.5)
+    expect(() => G.isolines(z, tensor([[1.5]]))).toThrow(expect.objectContaining({ code: 'shape' }))
+    const square = [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ]
+    expect(G.windingNumber([[0.5, 0.5]], square).dtype).toBe('int32')
+    expect(
+      toFlat(
+        G.pointInPolygon(
+          [
+            [0.5, 0.5],
+            [1, 0.5],
+            [3, 3],
+          ],
+          square,
+        ),
+      ),
+    ).toEqual([1, 0, -1])
     const h = tensor([
       [1, 0, 0],
       [0, 1, 0],
@@ -263,8 +289,8 @@ describe('geometry properties', () => {
   })
 
   it('contour levels are nice and ellipses hold their probability', () => {
-    expect(G.contourLevels([[-1.3, 4.2]], 5)).toEqual([0, 2, 4])
-    expect(G.contourLevels([[-1.3, 4.2]], 6)).toEqual([-1, 0, 1, 2, 3, 4])
+    expect(toFlat(G.contourLevels([[-1.3, 4.2]], 5))).toEqual([0, 2, 4])
+    expect(toFlat(G.contourLevels([[-1.3, 4.2]], 6))).toEqual([-1, 0, 1, 2, 3, 4])
     const e = G.covarianceEllipse(
       [1, 2],
       [
