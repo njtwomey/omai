@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
-import { matmul, type Tensor, tensor, toFlat } from '../../tensor/index.ts'
+import { grad } from '../../autodiff/index.ts'
+import { matmul, sum, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import * as D from './index.ts'
 
 const FUNCTIONS: Readonly<Record<string, (x: number) => number>> = {
@@ -56,20 +57,38 @@ describe('finite differences against numpy and scipy.differentiate', () => {
 
 describe('finite-difference tools', () => {
   it('Fornberg weights reproduce the classical stencils', () => {
-    expect(D.finiteDifferenceWeights(1, [-1, 0, 1])).toEqual([-0.5, 0, 0.5])
-    const fourth = D.finiteDifferenceWeights(1, [-2, -1, 0, 1, 2])
+    expect(toFlat(D.finiteDifferenceWeights(1, [-1, 0, 1]))).toEqual([-0.5, 0, 0.5])
+    const fourth = toFlat(D.finiteDifferenceWeights(1, [-2, -1, 0, 1, 2]))
     ;[1 / 12, -2 / 3, 0, 2 / 3, -1 / 12].forEach((w, i) => {
       expect(fourth[i] ?? 0).toBeCloseTo(w, 14)
     })
-    const oneSided = D.finiteDifferenceWeights(1, [0, 1, 2])
+    const oneSided = toFlat(D.finiteDifferenceWeights(1, [0, 1, 2]))
     ;[-1.5, 2, -0.5].forEach((w, i) => {
       expect(oneSided[i] ?? 0).toBeCloseTo(w, 14)
     })
     // Weights for the second derivative are exact on cubics over an uneven stencil.
     const stencil = [-0.3, 0.1, 0.7, 1.6]
-    const w = D.finiteDifferenceWeights(2, stencil, 0.2)
+    const w = toFlat(D.finiteDifferenceWeights(2, stencil, 0.2))
     const f = (x: number): number => 2 * x ** 3 - x * x + 4
     expect(stencil.reduce((s, x, i) => s + (w[i] ?? 0) * f(x), 0)).toBeCloseTo(12 * 0.2 - 2, 11)
+  })
+
+  it('the point and stencil take tensor-likes (migration, D-009); traced input is rejected', () => {
+    const calls: [string, (v: TensorLike) => number[]][] = [
+      ['jacobianFd', (v) => toFlat(D.jacobianFd(([a, b]) => [(a ?? 0) * (b ?? 0), (a ?? 0) + (b ?? 0)], v))],
+      ['hessianFd', (v) => toFlat(D.hessianFd(([a, b]) => (a ?? 0) ** 2 * (b ?? 0), v))],
+      ['finiteDifferenceWeights', (v) => toFlat(D.finiteDifferenceWeights(1, v))],
+    ]
+    for (const [name, f] of calls) {
+      const v = [0.5, 1.5]
+      const expected = f(v)
+      expect(f(Float64Array.from(v)), name).toEqual(expected)
+      expect(f(tensor(v)), name).toEqual(expected)
+      expect(() => f(tensor([v, v])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+      expect(() => grad((x: Value) => sum(tensor(f(x as TensorLike))))(tensor(v)), name).toThrow(
+        expect.objectContaining({ code: 'not-differentiable' }),
+      )
+    }
   })
 
   it('complex-step derivatives are accurate to machine precision', () => {
