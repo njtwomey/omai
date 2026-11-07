@@ -49,8 +49,8 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `Float64Array` in ten other files; `Box` is a 4-tuple whose meaning depends on `BoxFormat`.
 - **10:17 Process.** At most two agents at a time; read-only reviewers work in the main checkout, no worktree.
 - **10:58 Result (P3.3, `agent-dd01-helpers`, `f1e64336`..`e651ebc0`).** Duplicated helpers replaced by shared ones, one
-  commit per family; behaviour preserved, every touched domain's test directory run (1,098 sibling tests, then 8,200 more
-  by domain, all green; 556 `@example`s of the touched files pass). Replaced: `dot` x8 by `ddot` (blas), `matmul` of the
+  commit per family; behaviour preserved, the test directories of every touched domain run (1,098 tests next to the touched
+  files, then 18,614 by domain, all green; 556 `@example`s of the touched files pass). Replaced: `dot` x8 by `ddot` (blas), `matmul` of the
   Kolmogorov tables by `stats/_linear`, two local `transpose`s by the tensor op, `nextAfter` x2 by `numerics/approximation`,
   `neighbourSets`, `backcastOf` and `studentConstant` (new `timeseries/_volatility.ts`), `stridesOf`/`strides` by the tensor
   one, `complete` x2 by `completeOption` (moved to `space/tables.ts` beside `OptionTable`; `learn` still re-exports it),

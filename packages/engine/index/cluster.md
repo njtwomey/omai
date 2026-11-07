@@ -13,5 +13,5 @@ Clustering as traced `Algorithm`s with estimators on the iterative base: k-means
 - estimator `kMedoids`: k-medoids (PAM, CLARA). `src/lib/cluster/medoids.ts:301` `mdml-engine/cluster`
 - estimator `spectralClustering`: Spectral clustering on an affinity graph. `src/lib/cluster/spectral.ts:153` `mdml-engine/cluster`
 
-- algorithm `lloydAlgorithm`: Lloyd's k-means, one step at a time; plain k-means has no estimator. `src/lib/cluster/kmeans.ts:158` `mdml-engine/cluster`
-- algorithm `miniBatchKMeansAlgorithm`: Mini-batch k-means, one batch at a time; no estimator wraps it. `src/lib/cluster/kmeans.ts:231` `mdml-engine/cluster`
+- algorithm `lloydAlgorithm`: Lloyd's k-means, one step at a time; plain k-means has no estimator. `src/lib/cluster/kmeans.ts:156` `mdml-engine/cluster`
+- algorithm `miniBatchKMeansAlgorithm`: Mini-batch k-means, one batch at a time; no estimator wraps it. `src/lib/cluster/kmeans.ts:229` `mdml-engine/cluster`

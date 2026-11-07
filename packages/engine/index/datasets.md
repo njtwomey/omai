@@ -25,6 +25,6 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 - dataset `multiViewImages`: Posed multi-view images of a small scene, with held-out views. `src/lib/datasets/multiview.ts:240` `mdml-engine/datasets`
 - dataset `shapes`: Images of circles, squares and triangles with labels. `src/lib/datasets/images.ts:64` `mdml-engine/datasets`
 - dataset `signedDistance`: Exact signed distance samples of sphere, box, torus or union shapes. `src/lib/datasets/neural-fields.ts:124` `mdml-engine/datasets`
-- dataset `sineCurve`: Noisy sine regression with known function. `src/lib/datasets/regression-curves.ts:136` `mdml-engine/datasets`
+- dataset `sineCurve`: Noisy sine regression with known function. `src/lib/datasets/regression-curves.ts:137` `mdml-engine/datasets`
 - dataset `spirals`: Interleaved spiral arms. `src/lib/datasets/classification.ts:460` `mdml-engine/datasets`
 - dataset `xor`: The XOR problem as four Gaussian blobs. `src/lib/datasets/classification.ts:393` `mdml-engine/datasets`

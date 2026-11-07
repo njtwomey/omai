@@ -6,4 +6,4 @@ Covariance and precision matrix estimation: empirical and shrunk covariance esti
 
 - estimator `covarianceEstimator`: Empirical, Ledoit-Wolf and OAS shrunk covariance. `src/lib/covariance/shrinkage.ts:285` `mdml-engine/covariance`
 - estimator `graphicalLassoEstimator`: Sparse precision matrix by graphical lasso. `src/lib/covariance/graphical-lasso.ts:258` `mdml-engine/covariance`
-- estimator `minCovDet`: Robust minimum covariance determinant by FastMCD. `src/lib/covariance/robust.ts:323` `mdml-engine/covariance`
+- estimator `minCovDet`: Robust minimum covariance determinant by FastMCD. `src/lib/covariance/robust.ts:318` `mdml-engine/covariance`

@@ -26,11 +26,11 @@ Distributions composed from other distributions, available as `mdml-engine/dists
 
 Univariate continuous distributions, scipy.stats and torch.distributions style, part of `mdml-engine/dists`: the normal family, the gamma family, bounded, heavy-tailed and extreme-value distributions, and the sampling distributions of test statistics, each with densities, CDFs, quantiles, moments and sampling.
 
-- distribution `beta`: Beta distribution. `src/lib/dists/continuous/bounded.ts:107` `mdml-engine/dists`
-- distribution `gamma`: Gamma distribution with shape and rate. `src/lib/dists/continuous/gamma.ts:73` `mdml-engine/dists`
+- distribution `beta`: Beta distribution. `src/lib/dists/continuous/bounded.ts:106` `mdml-engine/dists`
+- distribution `gamma`: Gamma distribution with shape and rate. `src/lib/dists/continuous/gamma.ts:72` `mdml-engine/dists`
 - distribution `normal`: Normal distribution, scipy.stats.norm and torch Normal in one. `src/lib/dists/continuous/normal.ts:68` `mdml-engine/dists`
 - distribution `studentT`: Student's t distribution. `src/lib/dists/continuous/heavy-tailed.ts:77` `mdml-engine/dists`
-- distribution `uniform`: Continuous uniform distribution on an interval. `src/lib/dists/continuous/bounded.ts:67` `mdml-engine/dists`
+- distribution `uniform`: Continuous uniform distribution on an interval. `src/lib/dists/continuous/bounded.ts:66` `mdml-engine/dists`
 
 ## dists/discrete
 
@@ -51,4 +51,4 @@ Regression families, available as `mdml-engine/dists/families`: the link functio
 Multivariate distributions, part of `mdml-engine/dists`: the multivariate, low-rank and matrix normals, distributions on the simplex and over counts, Wishart and LKJ distributions over matrices, directional distributions on circles and spheres, and copulas with their fitting.
 
 - distribution `dirichlet`: Dirichlet distribution on the probability simplex. `src/lib/dists/multivariate/simplex.ts:59` `mdml-engine/dists`
-- distribution `multivariateNormal`: Multivariate normal by covariance, precision or Cholesky factor. `src/lib/dists/multivariate/normal.ts:94` `mdml-engine/dists`
+- distribution `multivariateNormal`: Multivariate normal by covariance, precision or Cholesky factor. `src/lib/dists/multivariate/normal.ts:91` `mdml-engine/dists`

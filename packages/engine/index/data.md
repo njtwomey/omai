@@ -16,7 +16,7 @@ Datasets as data: schemas for columns and targets (`xy`, `xyClasses`, `table`), 
 - function `xy`: Build a regression dataset from features and targets. `src/lib/data/tensors.ts:57` `mdml-engine/data`
 - function `xyClasses`: Build a classification dataset from features and class labels. `src/lib/data/tensors.ts:92` `mdml-engine/data`
 
-- dataset `stream`: A data stream with planted drift, reproducible step by step. `src/lib/data/streams.ts:218` `mdml-engine/data`
+- dataset `stream`: A data stream with planted drift, reproducible step by step. `src/lib/data/streams.ts:210` `mdml-engine/data`
 
 ## data/modifiers
 
