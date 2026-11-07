@@ -3,6 +3,9 @@
 Statuses: planned, in progress, complete, dropped. Times are local, 2026-11-07, taken from commit times for finished
 work; "about" means reconstructed from the session. Update a row when its state changes.
 
+"Commit or file" is where the work or its evidence is: the commits of finished work, the file a
+finding will be written to, or the section of `findings.md` or `reports/` a planned item comes from.
+
 ## Phase 0: scripts and measurements (no model reading)
 
 | id   | item                                                                                               | status   | started     | ended | where                                  |
@@ -27,9 +30,9 @@ work; "about" means reconstructed from the session. Update a row when its state 
 
 ## Phase 2: synthesis
 
-| id   | item                                                          | status  | started | ended | where |
-| ---- | ------------------------------------------------------------- | ------- | ------- | ----- | ----- |
-| P2.1 | one ranked list of findings, gone through with the maintainer | planned |         |       |       |
+| id   | item                                                          | status  | started | ended | commit or file |
+| ---- | ------------------------------------------------------------- | ------- | ------- | ----- | -------------- |
+| P2.1 | one ranked list of findings, gone through with the maintainer | planned |         |       |                |
 
 ## Phase 3: fixes (small agents, at most two at a time; each merges after the full local gate and a surface comparison)
 
