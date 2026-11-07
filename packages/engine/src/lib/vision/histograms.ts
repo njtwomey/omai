@@ -5,11 +5,11 @@
  * comparison measures of `cv2.compareHist`, and back-projection of a histogram onto an image.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, roundHalfEven } from '../base/index.ts'
 import { extendIndex } from '../numerics/convolution/index.ts'
 import { quantile } from '../stats/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { clamp, f32, greyOf, imageTensor, level, rasterOf, rasterTensor, roundHalfEven, valuesOf } from './_image.ts'
+import { clamp, f32, greyOf, imageTensor, level, rasterOf, rasterTensor, valuesOf } from './_image.ts'
 
 /** Options of {@link calcHist} and {@link calcBackProject}. */
 export interface HistogramOptions {

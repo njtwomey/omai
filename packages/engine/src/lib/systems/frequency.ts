@@ -4,7 +4,7 @@
  * with its count of encirclements of -1, which decides closed-loop stability (python-control style).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, roundHalfEven } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { eigvals, solve } from '../numerics/linalg/index.ts'
 import type { ComplexArray } from '../numerics/polynomial/index.ts'
@@ -99,12 +99,6 @@ function responseAt(sys: Lti, z: Points): ComplexValue {
 function pointsFor(sys: Lti, w: readonly number[]): Points {
   if (!isDiscrete(sys)) return { re: constant(w.map(() => 0)), im: constant(w) }
   return { re: constant(w.map((v) => Math.cos(v * sys.dt))), im: constant(w.map((v) => Math.sin(v * sys.dt))) }
-}
-
-/** numpy.round: halves to even. */
-function roundHalfEven(x: number): number {
-  const r = Math.round(x)
-  return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r
 }
 
 /**

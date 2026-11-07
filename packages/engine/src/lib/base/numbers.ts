@@ -14,6 +14,22 @@ export const LOG_2PI: number = Math.log(2 * Math.PI)
 export const LOG_SQRT_2PI: number = 0.5 * Math.log(2 * Math.PI)
 
 /**
+ * Round to the nearest integer, halves to the even neighbour (numpy's `round`; `Math.round` takes halves up).
+ *
+ * @param x - The number.
+ * @returns The rounded number (NaN and infinities pass through).
+ * @example
+ * ```ts
+ * import { roundHalfEven } from 'mdml-engine/base'
+ * [roundHalfEven(0.5), roundHalfEven(1.5), roundHalfEven(2.5), roundHalfEven(-2.5)] // => [0, 2, 2, -2]
+ * ```
+ */
+export function roundHalfEven(x: number): number {
+  const r = Math.round(x)
+  return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r
+}
+
+/**
  * Whether two numbers are close in the numpy sense: `|a - b| <= atol + rtol * |b|`. NaNs are never close; equal
  * infinities are.
  *

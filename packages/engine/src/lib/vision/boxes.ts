@@ -8,11 +8,11 @@
  * @index function Detection boxes: format conversions, IoU and non-maximum suppression.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, roundHalfEven } from '../base/index.ts'
 import { boxIou } from '../metrics/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
-import { f32, roundHalfEven, valuesOf } from './_image.ts'
+import { f32, valuesOf } from './_image.ts'
 import type { GreedyPath } from './greedy-contract.ts'
 
 /** A box as [a, b, c, d] in some {@link BoxFormat}. */

@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../../autodiff/index.ts'
-import { kahanSum, MdmlError, pairwiseSum } from '../../base/index.ts'
+import { kahanSum, MdmlError, pairwiseSum, roundHalfEven } from '../../base/index.ts'
 import { item, tensor, type Value } from '../../tensor/index.ts'
 
 const buffer = new DataView(new ArrayBuffer(8))
@@ -122,12 +122,6 @@ export function toFloat32(x: number): number {
 function exponentOf(x: number): number {
   buffer.setFloat64(0, x)
   return ((buffer.getUint32(0) >>> 20) & 0x7ff) - 1023
-}
-
-/** Round half to even at an integer. */
-function roundHalfEven(v: number): number {
-  const r = Math.round(v)
-  return Math.abs(v - Math.trunc(v)) === 0.5 && r % 2 !== 0 ? r - 1 : r
 }
 
 /**
