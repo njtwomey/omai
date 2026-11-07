@@ -88,6 +88,7 @@ const shapes: readonly (readonly [string, Mat, number])[] = [
     0,
   ],
   ['Hilbert 6 (cond 1.5e7)', hilbert(6), 6],
+  ['Hilbert 12 (numpy rank 11)', hilbert(12), 11],
   ['identity 4', eye(4), 4],
   ['4 x 4 at scale 1e150', scale(base4, 1e150), 4],
   ['4 x 4 at scale 1e-150', scale(base4, 1e-150), 4],
@@ -96,7 +97,7 @@ const shapes: readonly (readonly [string, Mat, number])[] = [
 ]
 
 describe('factorisations on rank-deficient, ill-conditioned and extreme-scale matrices', () => {
-  it('QR, SVD, pinv and nullSpace satisfy their identities and matrixRank agrees with numpy, for 13 matrices', () => {
+  it('QR, SVD, pinv and nullSpace satisfy their identities and matrixRank agrees with numpy, for 14 matrices', () => {
     for (const [name, a, rank] of shapes) {
       const size = fro(a)
       const m = a.length
@@ -122,10 +123,12 @@ describe('factorisations on rank-deficient, ill-conditioned and extreme-scale ma
       // The four Penrose conditions of the pseudo-inverse (A+ has the scale of 1 / A, so they are relative).
       const p = mat(L.pinv(a))
       const [ap, pa] = [mm(a, p), mm(p, a)]
-      expect(fro(sub(mm(ap, a), a)), `${name}: A A+ A = A`).toBeLessThanOrEqual(1e-9 * size)
-      expect(fro(sub(mm(pa, p), p)), `${name}: A+ A A+ = A+`).toBeLessThanOrEqual(1e-9 * fro(p))
-      expect(fro(sub(ap, t(ap))), `${name}: A A+ symmetric`).toBeLessThanOrEqual(1e-7)
-      expect(fro(sub(pa, t(pa))), `${name}: A+ A symmetric`).toBeLessThanOrEqual(1e-7)
+      // Hilbert 12 keeps singular values down to 3e-14, so its pseudo-inverse carries errors of cond * eps (numpy's too).
+      const loose = name.startsWith('Hilbert 12') ? 1e7 : 1
+      expect(fro(sub(mm(ap, a), a)), `${name}: A A+ A = A`).toBeLessThanOrEqual(1e-9 * size * loose)
+      expect(fro(sub(mm(pa, p), p)), `${name}: A+ A A+ = A+`).toBeLessThanOrEqual(1e-9 * fro(p) * loose)
+      expect(fro(sub(ap, t(ap))), `${name}: A A+ symmetric`).toBeLessThanOrEqual(1e-7 * loose)
+      expect(fro(sub(pa, t(pa))), `${name}: A+ A symmetric`).toBeLessThanOrEqual(1e-7 * loose)
       // The null space: n - rank orthonormal columns that A maps to zero.
       const nul = mat(L.nullSpace(a))
       const cols = nul[0]?.length ?? 0
