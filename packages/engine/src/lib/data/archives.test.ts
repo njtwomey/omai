@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { isMdmlError } from '../base/index.ts'
 import { gunzip, indexedDbCache, parseCsv, parseNpy, untar, unzip } from './index.ts'
 
 const enc = new TextEncoder()
@@ -416,5 +417,80 @@ describe('IndexedDB cache', () => {
     expect(Array.from((await cache.get('k')) ?? [])).toEqual([1, 2, 3])
     await cache.delete('k')
     expect(await cache.get('k')).toBeUndefined()
+  })
+})
+
+/** A version 1 `.npy` file: the header text for a dtype descriptor and shape, then the given data bytes. */
+function npy(descr: string, shape: string, data: readonly number[]): Uint8Array {
+  const header = `{'descr': '${descr}', 'fortran_order': False, 'shape': (${shape}), }`
+  const padded = `${header}${' '.repeat(63 - ((10 + header.length) % 64))}\n`
+  const bytes = new Uint8Array(10 + padded.length + data.length)
+  bytes.set([0x93, 78, 85, 77, 80, 89, 1, 0, padded.length & 255, padded.length >> 8])
+  bytes.set(enc.encode(padded), 10)
+  bytes.set(data, 10 + padded.length)
+  return bytes
+}
+
+/** A one-entry tar archive whose size field says `size` (an octal string) and whose body is `body`. */
+function tarOf(size: string, body: Uint8Array): Uint8Array {
+  const header = new Uint8Array(512)
+  header.set(enc.encode('f.bin'), 0)
+  header.set(enc.encode(`${size}\0`), 124)
+  header[156] = 48
+  const out = new Uint8Array(512 + body.length)
+  out.set(header, 0)
+  out.set(body, 512)
+  return out
+}
+
+describe('archive readers on files that are cut short or corrupt', () => {
+  const code = async (f: () => unknown): Promise<string | undefined> => {
+    try {
+      await f()
+    } catch (e) {
+      return isMdmlError(e) ? e.code : `not an MdmlError: ${String(e)}`
+    }
+    return undefined
+  }
+  it('fail with a value error that names the damage, where a cut or a bad size used to read past the end or return less', async () => {
+    const whole = npy('<f8', '3,', Array.from(new Uint8Array(new Float64Array([1, 2, 3]).buffer)))
+    const stored = await zip([{ name: 'a.txt', data: enc.encode('stored'), deflate: false }])
+    // The central entry starts after the local one (30 + 5 name bytes + 6 data bytes): overwrite a field of it.
+    const patched = (bytes: Uint8Array, field: number, value: number): Uint8Array => {
+      const copy = bytes.slice()
+      new DataView(copy.buffer).setUint32(41 + field, value, true)
+      return copy
+    }
+    const rows: [string, () => unknown, RegExp][] = [
+      ['an npy cut in the data', () => parseNpy(whole.subarray(0, whole.length - 1)), /holds .* bytes of data/],
+      ['an npy with no data', () => parseNpy(whole.subarray(0, whole.length - 24)), /holds 0 bytes/],
+      ['an npy cut in the header', () => parseNpy(whole.subarray(0, 40)), /inside the header/],
+      ['an npy cut in the preamble', () => parseNpy(whole.subarray(0, 8)), /preamble/],
+      ['an npy with a shape that is not whole', () => parseNpy(npy('<f8', '1.5,', [])), /shape/],
+      ['an npy with a negative extent', () => parseNpy(npy('<f8', '-2,', [])), /shape/],
+      ['a tar whose size is not octal', () => untar(tarOf('zzz', new Uint8Array(1024))), /octal/],
+      ['a tar that ends inside a file', () => untar(tarOf('00000000100', new Uint8Array(10))), /ends inside f\.bin/],
+      ['a zip with no end record', () => unzip(stored.subarray(0, 20)), /end of central directory/],
+      ['a zip with a damaged central entry', () => unzip(patched(stored, 0, 0)), /bad central directory entry/],
+      ['a zip with a method it cannot read', () => unzip(patched(stored, 10, 99)), /method 99 of a\.txt/],
+      [
+        'a zip whose entry says more bytes than the archive has',
+        () => unzip(patched(stored, 20, 1000)),
+        /ends inside a\.txt/,
+      ],
+      ['a zip whose entry starts outside the archive', () => unzip(patched(stored, 42, 1e6)), /outside the archive/],
+    ]
+    for (const [name, f, message] of rows) {
+      expect(await code(f), name).toBe('value')
+      await expect(Promise.resolve().then(f), name).rejects.toThrow(message)
+    }
+    // Whole files still read: the exact length is enough, and a tar needs no padding after its last file.
+    expect(Array.from(parseNpy(whole).values)).toEqual([1, 2, 3])
+    expect(new TextDecoder().decode(untar(tarOf('00000000003', enc.encode('abc'))).get('f.bin'))).toBe('abc')
+    // Delimited text: nothing is not a table, a header alone is one with no rows.
+    expect(parseCsv('')).toEqual({ columns: [], rows: [] })
+    expect(parseCsv('\n\r\n')).toEqual({ columns: [], rows: [] })
+    expect(parseCsv('a,b\n')).toEqual({ columns: ['a', 'b'], rows: [] })
+    expect(parseCsv('', { header: false })).toEqual({ columns: [], rows: [] })
   })
 })
