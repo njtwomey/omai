@@ -15,12 +15,14 @@ import {
   mul,
   primalOf,
   sum,
+  type Tensor,
   type TensorLike,
   toFlat,
   toVector,
   type Value,
 } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
+import { vectorOf } from './_vector.ts'
 
 /** A step-size rule for online learners: a constant or a function of the round t (from 1). */
 export type OnlineRate = number | ((t: number) => number)
@@ -435,17 +437,17 @@ export function onlineAlgorithm<S>(
   }
 }
 
-/** The record of an online run. */
+/** The record of an online run. Holds tensors (migration, D-009: `plays` was a list of `Float64Array`s, the others `readonly number[]`). */
 export interface OnlineResult {
-  /** The point played in each round. */
-  readonly plays: readonly Float64Array[]
-  /** The loss of each round. */
-  readonly losses: readonly number[]
+  /** The point played in each round, the rows of a `[T, dim]` matrix. */
+  readonly plays: Tensor<'float64'>
+  /** The loss of each round, `[T]`. */
+  readonly losses: Tensor<'float64'>
   readonly cumulativeLoss: number
   /** The comparator's cumulative loss (the best expert's, for experts). */
   readonly comparatorLoss: number
-  /** Regret after each round (NaN without a comparator). */
-  readonly regret: readonly number[]
+  /** Regret after each round, `[T]` (NaN without a comparator). */
+  readonly regret: Tensor<'float64'>
 }
 
 /**
@@ -454,7 +456,7 @@ export interface OnlineResult {
  * @param learner - The learner.
  * @param losses - The losses, one per round.
  * @param options - Dimension, comparator and the run options (tracer, policy).
- * @returns Plays, losses and regret.
+ * @returns Plays, losses and regret, as tensors (they were plain arrays).
  * @concept online-learning
  * @example
  * ```ts
@@ -489,11 +491,16 @@ export function runOnline<S>(
     },
   }
   const result = runAlgorithm(recording, { ...run, maxSteps: losses.length })
+  const dims = plays[0]?.length ?? dim
+  const stacked = new Float64Array(plays.length * dims)
+  plays.forEach((p, t) => {
+    stacked.set(p, t * dims)
+  })
   return {
-    plays,
-    losses: roundLosses,
+    plays: fromStorage(stacked, [plays.length, dims], 'float64'),
+    losses: vectorOf(roundLosses),
     cumulativeLoss: result.state.cumulativeLoss,
     comparatorLoss: result.state.comparatorLoss,
-    regret,
+    regret: vectorOf(regret),
   }
 }

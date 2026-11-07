@@ -268,14 +268,13 @@ describe('online mirror descent, AdaGrad and the comparator in hindsight', () =>
     const grads = linear(1, 40, 3)
     const a = runOnline(pNormMirrorDescent({ q: 2, learningRate: 0.1 }), linearLosses(grads), { dim: 3 })
     const b = runOnline(onlineGradientDescent({ learningRate: 0.1 }), linearLosses(grads), { dim: 3 })
-    a.plays.forEach((x, t) => {
-      x.forEach((v, j) => {
-        expect(v).toBeCloseTo(b.plays[t]?.[j] ?? 0, 10)
-      })
+    const bPlays = toFlat(b.plays)
+    toFlat(a.plays).forEach((v, k) => {
+      expect(v).toBeCloseTo(bPlays[k] ?? 0, 10)
     })
     // Another norm moves differently but keeps the dual structure: theta is minus eta times the gradient sum.
     const c = runOnline(pNormMirrorDescent({ q: 4, learningRate: 0.1 }), linearLosses(grads), { dim: 3 })
-    expect(c.plays[10]).not.toEqual(b.plays[10])
+    expect(toFlat(c.plays).slice(30, 33)).not.toEqual(toFlat(b.plays).slice(30, 33))
     expect(() => pNormMirrorDescent({ q: 1 })).toThrow()
   })
 
@@ -294,7 +293,7 @@ describe('online mirror descent, AdaGrad and the comparator in hindsight', () =>
     const sum = grads.reduce((a, g) => a.map((v, j) => v + (g[j] ?? 0)), new Array<number>(d).fill(0))
     const comparator = sum.map((v) => -radius * Math.sign(v))
     const r = runOnline(onlineAdagrad({ radius }), linearLosses(grads), { dim: d, comparator })
-    const regret = r.regret[T - 1] ?? 0
+    const regret = toFlat(r.regret)[T - 1] ?? 0
     const bound = adagradRegretBound(grads, 2 * radius)
     expect(regret).toBeLessThanOrEqual(bound)
     const G = Math.max(...grads.map((g) => Math.hypot(...g)))
@@ -368,7 +367,7 @@ describe('tensor-like inputs (migration, D-009)', () => {
     // The comparator of a run is a vector too.
     const losses = linearLosses(m)
     expect(
-      runOnline(onlineGradientDescent({ radius: 1 }), losses, { dim: 2, comparator: tensor([0, 0]) }).regret,
-    ).toEqual(runOnline(onlineGradientDescent({ radius: 1 }), losses, { dim: 2, comparator: [0, 0] }).regret)
+      toFlat(runOnline(onlineGradientDescent({ radius: 1 }), losses, { dim: 2, comparator: tensor([0, 0]) }).regret),
+    ).toEqual(toFlat(runOnline(onlineGradientDescent({ radius: 1 }), losses, { dim: 2, comparator: [0, 0] }).regret))
   })
 })
