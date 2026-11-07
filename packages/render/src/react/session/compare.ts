@@ -21,8 +21,9 @@ const DASHES = ['solid', 'dashed', 'dotted'] as const
 
 /**
  * The curves of several runs on one chart, one colour per run: each series is named by its run's label (and, with
- * several paths, the path's leaf, one dash per path), so the legend reads as the variants. One run is drawn as its
- * own metric curves, named by path.
+ * several paths, the path's leaf, one dash per path), so the legend reads as the variants. With one path the dash
+ * follows the run instead, so colour is not the only thing that tells the runs apart (the default palette is not safe
+ * for every colour-vision type past four colours). One run is drawn as its own metric curves, named by path.
  *
  * @param runs - The labelled runs.
  * @param paths - The scalar paths.
@@ -45,7 +46,7 @@ export function overlayCurves(
         y: s.values,
         name: paths.length === 1 ? r.label : `${r.label} · ${leaf(path)}`,
         colour: categoricalColour(i),
-        dash: DASHES[j % DASHES.length] ?? 'solid',
+        dash: DASHES[(paths.length === 1 ? i : j) % DASHES.length] ?? 'solid',
       }
     }),
   )

@@ -7353,7 +7353,9 @@ Design rules:
   `replaySessions`. `_fake.ts`: an in-memory worker wire for tests.
 
 `react/` (React 19; React and ECharts are peer dependencies)
-- `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events).
+- `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events); its container is an image
+  with a label (the `label` prop, else the option's `aria` description, else its title), and the theme turns ECharts'
+  own description on.
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
 - `StructureView.tsx`: a `Structure` in a frame (by default) with pan, zoom, hover details and overlay state (`frames`
@@ -7365,7 +7367,12 @@ Design rules:
   `usePlayback.ts` (`usePlayback`, `useTimelinePlayback`, `useLiveRun`: one controller over precomputed frames and
   live algorithm steps, and `useTicker`, the animation-frame ticker every player shares), `playhead.ts` (frame
   timing, the pure part), `start.ts` (`StartPolicy`, `PlayStatus`, `startOf`, `statusOf`, `progressOf`) and `ring.ts`
-  (`RingBuffer`, the history of a live run). `_harness.tsx` is the test harness for hooks with no DOM library.
+  (`RingBuffer`, the history of a live run). `_harness.tsx` is the test harness for hooks with no DOM library. The
+  player's keys act only from its own scrubber, not from a button, option or field inside it; nothing here starts
+  playing by itself for a reader who prefers reduced motion (`_motion.ts`, `prefersReducedMotion`). Private helpers
+  of `react/`: `_download.ts` (`saveUrl`, `saveBlob`, which revokes its object URL, and `nextPaint`: the one place a
+  file is saved or a figure waited for), `controls/_focus.ts` (`useFocusTrap`: a modal takes focus, keeps Tab
+  inside and returns it).
 - `ContingencyTable.tsx`: a contingency table (confusion matrix) with full margins: named cells (TP, FN, FP, TN),
   row and column totals with their rates (TPR, FNR, TNR, FPR; PPV, FDR, NPV, FOR; recall and precision for more
   classes), prevalence and accuracy; hovering a rate outlines its numerator and denominator. Static from any table,
@@ -7382,7 +7389,8 @@ Design rules:
 - `FigureFrame.tsx`: the fixed-size figure area with its expand-to-modal button and export menu; one frame per figure
   (a grid of panels is one figure), exporting the whole figure (charts, scenes, overlay cells) as SVG or PNG, and given
   a `playback`, recording it as GIF or WebM. Fixed content is magnified in the modal; content that is a function of the
-  size redraws at it. `SceneFrame.tsx`: a scene as one framed figure (`fitScene`).
+  size redraws at it; the expanded figure is a labelled modal that holds focus and returns it to its Expand button, and
+  the export menu is a `Popover`. `SceneFrame.tsx`: a scene as one framed figure (`fitScene`).
 - `FigureGrid.tsx`: a gridspec drawn as one subplot chart with text, TeX or React content in the other cells, scaled to
   fit their cells.
 - `echarts.ts`: `loadEcharts` for the React bindings.
@@ -7419,7 +7427,8 @@ Design rules:
   Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
   `space-controls.ts`, `datasets.ts` (sources: a collection id, a collection or a registry), `environments.ts`
   (selections, `makeSelection`, `firstFrame` of any environment form, `formatSpace` gymnasium-style)) and menus open
-  in a `Popover` portal so no container clips them.
+  in a `Popover` portal so no container clips them (it moves focus in, returns it, and moves among a menu's items with
+  the arrow keys).
 - `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
@@ -7444,7 +7453,8 @@ Design rules:
   `cursor.tsx`, `scrub.ts` and `TapeView.tsx`; `useSession`'s hook options take a `producer` (see `producer/`), so the same
   hook computes in a worker; `SessionExport.tsx` (the player's `pageExport` menu: the whole page as PNG or SVG, a recording from step
   a to b as GIF or WebM, the tape as JSON in and out) over `export.ts` (`probeRequestsOf` a layout, `framesBetween`, `pageSvg`);
-  `useTape.ts` (`useTape(file, registry)`: a tape file as the live handle); `narrative.ts` (moments resolved against the tape,
+  `useTape.ts` (`useTape(file, registry, onError?)`: a tape file as the live handle, or `undefined` with the reason
+  handed to `onError` for a file its registry cannot replay); `narrative.ts` (moments resolved against the tape,
   the page switcher that keeps the cursor, the step-through) and `NarrativeView.tsx` (page tabs, text, panels, moments). The rows panel's channels are one mechanism in `overlays.ts` (a number
   per row as colour with a colour bar or as size, a category per row or named sets as hollow marks, regions of the plane
   as boxes or ellipses, one chosen row with its neighbours, a path, a radius and a related point; each is read at the

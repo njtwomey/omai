@@ -24,6 +24,21 @@ import type { PlaybackController } from './usePlayback.ts'
 /** How long after playback stops the arrow keys still step a frame from anywhere on the page, in milliseconds. */
 const RECENT_MS = 10_000
 
+// Controls that act on their own keys. Inside the player, Space and Enter belong to a focused button, a menu option or a
+// field, so the player's shortcuts leave them alone ...
+const OWN_KEYS =
+  'button, a[href], summary, input, textarea, select, [contenteditable="true"], [role="button"], [role="option"], [role="menuitem"], [role="menu"], [role="listbox"], [role="tab"], [role="radio"], [role="checkbox"], [role="textbox"], [role="spinbutton"], [role="combobox"]'
+// ... and the arrow keys that step from anywhere on the page yield to any widget that uses arrows for itself.
+const OWN_ARROWS =
+  'input, textarea, select, [contenteditable="true"], [role="slider"], [role="option"], [role="menuitem"], [role="listbox"], [role="menu"], [role="tab"], [role="radio"], [role="textbox"], [role="spinbutton"], [role="combobox"]'
+
+// Whether a key event comes from a control matching `selector` (duck-typed, so it also runs where there is no DOM).
+function fromControl(target: EventTarget | null, selector: string): boolean {
+  const el = target as { readonly isContentEditable?: boolean; readonly closest?: (s: string) => unknown } | null
+  if (el === null || typeof el.closest !== 'function') return false
+  return el.isContentEditable === true || el.closest(selector) !== null
+}
+
 /** The player that played last, so that with several on a page the arrow keys belong to one. */
 let lastPlayed: string | undefined
 
@@ -47,8 +62,9 @@ export interface PlayerProps {
  * defaults (when the controller offers one), an eager toggle (when the controller offers one: the whole run computed
  * at once, its end shown), seek to the start, step back, play or pause with a
  * caret menu for the target frames per second, step forward, seek to the end, a scrubber to drag, and an optional
- * stamp. Space toggles play, the arrow keys step one frame and Home and End seek while the player has focus. The arrow
- * keys also step while the player is playing and for ten seconds after, wherever the focus is except in a text field.
+ * stamp. Space toggles play, the arrow keys step one frame and Home and End seek while the player has focus (on its
+ * scrubber, not on a button or menu inside it: those keep their own keys). The arrow keys also step while the player is
+ * playing and for ten seconds after, wherever the focus is except in a field, slider, tab list, radio group or menu.
  *
  * @param props - The controller (from `usePlayback`, `useTimelinePlayback`, `useLiveRun` or a session player) and the
  *   stamp.
@@ -85,9 +101,7 @@ export function Player(props: PlayerProps): ReactNode {
       if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       if (!recent.current || lastPlayed !== id) return
-      const target = e.target as HTMLElement | null
-      if (target !== null && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable))
-        return
+      if (fromControl(e.target, OWN_ARROWS)) return
       e.preventDefault()
       step.current(e.key === 'ArrowLeft' ? -1 : 1)
     }
@@ -102,7 +116,7 @@ export function Player(props: PlayerProps): ReactNode {
     <div
       className={cx('flex w-full min-w-64 items-center gap-2 text-(--wb-fg)', className)}
       onKeyDown={(e) => {
-        if ((e.target as HTMLElement).tagName === 'INPUT') return
+        if (fromControl(e.target, OWN_KEYS)) return
         if (e.key === ' ') c.toggle()
         else if (e.key === 'ArrowRight') c.step(1)
         else if (e.key === 'ArrowLeft') c.step(-1)

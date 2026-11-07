@@ -45,11 +45,21 @@ export default function ExportAndTapeRecipe(): ReactNode {
   const live = useSession(orbit, { config: params, mode: prefs.mode, steps: ORBIT_STEPS }, [JSON.stringify(params)], {
     hold: prefs.hold,
   })
-  const played = useTape(file, toyRegistry)
+  const [problem, setProblem] = useState<string | null>(null)
+  // A file the registry cannot replay is dropped with a note, and the page keeps its own session.
+  const played = useTape(file, toyRegistry, (message) => {
+    setFile(undefined)
+    setProblem(message)
+  })
   const shown = played ?? live
   const root = useRef<HTMLDivElement>(null)
   return (
     <div className="flex flex-col gap-3">
+      {problem === null ? null : (
+        <div className="rounded border border-(--wb-danger,#cf222e) px-3 py-2 text-sm" role="alert">
+          {problem}
+        </div>
+      )}
       {file === undefined ? (
         <ControlPanel columns={2}>
           <SpaceControls space={orbit.config} value={params} onChange={(p) => setParams(p as Config)} />
@@ -88,6 +98,7 @@ export default function ExportAndTapeRecipe(): ReactNode {
           layout: LAYOUT,
           registry: toyRegistry,
           onLoadTape: (f) => {
+            setProblem(null)
             setFile(f)
             setAt(f.at ?? null)
           },

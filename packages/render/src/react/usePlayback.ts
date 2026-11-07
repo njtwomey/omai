@@ -7,6 +7,7 @@
 import type { Frame, Timeline } from 'mdml-engine/scene'
 import { type Algorithm, iterate } from 'mdml-engine/trace'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { prefersReducedMotion } from './_motion.ts'
 import { advanceFrame, framesDue } from './playhead.ts'
 import { RingBuffer } from './ring.ts'
 import { type PlayStatus, progressOf, type StartPolicy, statusOf } from './start.ts'
@@ -79,7 +80,7 @@ export interface PlaybackOptions {
   readonly fps?: number
   /** Start over from the first frame at the end (default false: stop on the last frame). */
   readonly loop?: boolean
-  /** Start playing at once (default false). */
+  /** Start playing at once (default false). A reader who prefers reduced motion gets a paused player whatever this says. */
   readonly autoplay?: boolean
 }
 
@@ -95,7 +96,7 @@ export interface PlaybackOptions {
 export function usePlayback(count: number, options: PlaybackOptions = {}): PlaybackController {
   const { loop = false } = options
   const [frame, setFrame] = useState(0)
-  const [playing, setPlaying] = useState(options.autoplay ?? false)
+  const [playing, setPlaying] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
   const [fps, setFps] = useState(options.fps ?? 10)
   const shown = Math.min(frame, Math.max(count - 1, 0))
   useTicker(playing && count > 1, fps, (n) => {
@@ -222,7 +223,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const [version, setVersion] = useState(0)
   // The cursor is an absolute index (states ever produced), so it stays on its state as the ring drops older ones.
   const [cursor, setCursor] = useState(0)
-  const [playing, setPlaying] = useState(options.autoplay ?? false)
+  const [playing, setPlaying] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
   const [fps, setFps] = useState(options.fps ?? 10)
   const [released, setReleased] = useState(false)
   const [epoch, setEpoch] = useState(0)

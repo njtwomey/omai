@@ -5,7 +5,7 @@
  * of its own.
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { MethodRegistry } from '../../producer/registry.ts'
 import { sharedHead } from '../../producer/step.ts'
 import { replaySessions, type TapeFile } from '../../producer/tape.ts'
@@ -54,14 +54,34 @@ export function replayLive(file: TapeFile, registry: MethodRegistry): LiveSessio
 }
 
 /**
- * A loaded tape file as a live handle, or `undefined` while no file is loaded (so a page keeps its own session).
+ * A loaded tape file as a live handle, or `undefined` while no file is loaded (so a page keeps its own session). A file
+ * that cannot be replayed (its method is not in the registry, say) also gives `undefined`, and `onError` is called with
+ * the reason, so the page shows a message and keeps its own session instead of failing while it renders.
  *
  * @param file - The tape file, if one is loaded.
  * @param registry - The methods on offer.
+ * @param onError - Called once per file that cannot be replayed, with why (an effect, not during render).
  * @returns The handle, replayed from the file.
  * @index function React hook: replay a loaded tape file as a live handle: `useTape(file, registry)`
  */
-// biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
-export function useTape(file: TapeFile | undefined, registry: MethodRegistry): LiveSessions<any, any> | undefined {
-  return useMemo(() => (file === undefined ? undefined : replayLive(file, registry)), [file, registry])
+export function useTape(
+  file: TapeFile | undefined,
+  registry: MethodRegistry,
+  onError?: (message: string) => void,
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+): LiveSessions<any, any> | undefined {
+  const made = useMemo(() => {
+    if (file === undefined) return undefined
+    try {
+      return { live: replayLive(file, registry) }
+    } catch (e) {
+      return { message: e instanceof Error ? e.message : String(e) }
+    }
+  }, [file, registry])
+  const report = useRef(onError)
+  report.current = onError
+  useEffect(() => {
+    if (made !== undefined && 'message' in made) report.current?.(made.message)
+  }, [made])
+  return made !== undefined && 'live' in made ? made.live : undefined
 }

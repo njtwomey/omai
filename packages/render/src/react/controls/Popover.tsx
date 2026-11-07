@@ -21,10 +21,15 @@ export interface PopoverProps {
   readonly className?: string
 }
 
+// The items of a menu or listbox, which the arrow keys move between.
+const ITEMS = '[role="menuitem"],[role="option"]'
+
 /**
  * A popup menu drawn above the page (in a portal, with fixed coordinates), so no scrolling or clipping container hides
  * it: below its anchor, or above when there is no room below. It closes on a press outside it and its anchor, on
- * Escape; it follows its anchor as the page scrolls or resizes.
+ * Escape; it follows its anchor as the page scrolls or resizes. Focus moves into it when it opens (to the selected
+ * option or the first item of a menu or listbox, to the popup itself for a dialog) and returns to the anchor when it
+ * closes, unless the reader has moved it elsewhere; the arrow keys, Home and End move among a menu's items.
  *
  * @param props - The anchor, whether it is open, what to call to close it, alignment and contents.
  * @returns The popup (nothing while closed or during server rendering).
@@ -48,6 +53,21 @@ export function Popover(props: PopoverProps): ReactNode {
     if (open) place()
     else setAt(null)
   }, [open, place])
+  // Focus in once the popup is placed (it is hidden until then, and a hidden element cannot take focus), and back to the
+  // anchor on close, when nothing else has taken it (a press elsewhere moves it to what was pressed).
+  const placed = at !== null
+  useEffect(() => {
+    const el = menu.current
+    if (!open || !placed || el === null || role === undefined) return
+    const items = [...el.querySelectorAll<HTMLElement>(ITEMS)]
+    const first =
+      role === 'dialog' ? undefined : (items.find((i) => i.getAttribute('aria-selected') === 'true') ?? items[0])
+    ;(first ?? el).focus({ preventScroll: true })
+    return () => {
+      const held = document.activeElement
+      if (held === null || held === document.body || el.contains(held)) anchor.current?.focus({ preventScroll: true })
+    }
+  }, [open, placed, role, anchor])
   useEffect(() => {
     if (!open) return
     const onPointer = (e: PointerEvent): void => {
@@ -56,7 +76,10 @@ export function Popover(props: PopoverProps): ReactNode {
       onClose()
     }
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      // Only the popup closes: a dialog or an expanded figure it was raised from stays.
+      e.stopPropagation()
+      onClose()
     }
     // The popup follows its anchor as the page scrolls or resizes.
     const onMove = (e: Event): void => {
@@ -77,10 +100,22 @@ export function Popover(props: PopoverProps): ReactNode {
   if (!open || typeof document === 'undefined') return null
   return createPortal(
     // biome-ignore lint/a11y/useAriaPropsSupportedByRole: the role is the caller's (a listbox or a menu), both labelled
+    // biome-ignore lint/a11y/noStaticElementInteractions: the role is the caller's; the keys move between its items
     <div
       ref={menu}
       role={role}
       aria-label={label}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (role === 'dialog' || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
+        const items = [...(menu.current?.querySelectorAll<HTMLElement>(ITEMS) ?? [])]
+        const current = items.indexOf(document.activeElement as HTMLElement)
+        const step = e.key === 'ArrowDown' ? 1 : -1
+        const next =
+          e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : (current + step + items.length) % items.length
+        e.preventDefault()
+        items[next]?.focus()
+      }}
       className={cx(menuClass, 'fixed', className)}
       // Measured hidden on the first frame, then placed.
       style={at === null ? { left: 0, top: 0, visibility: 'hidden' } : { left: at.left, top: at.top }}

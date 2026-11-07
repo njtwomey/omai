@@ -4,6 +4,7 @@ import { type Figure, figure as makeFigure, scaleFigure } from '../../figure/fig
 import { tokens } from '../../theme/tokens.ts'
 import type { TableData } from '../../trace/tables.ts'
 import type { ViewFrames } from '../../views/_view.ts'
+import { prefersReducedMotion } from '../_motion.ts'
 import { Chart, type ChartEventHandler } from '../Chart.tsx'
 import { FigureFrame, useFrameSize } from '../FigureFrame.tsx'
 import { Player } from '../Player.tsx'
@@ -102,7 +103,10 @@ export function FramesPlayer(props: {
   readonly caption?: ReactNode
   readonly fps?: number
   readonly startAtFirst?: boolean
-  /** Loop and start playing at once, for views that are a cycle rather than a run (default false). */
+  /**
+   * Loop and start playing at once, for views that are a cycle rather than a run (default false). A reader who prefers
+   * reduced motion gets it paused on its last frame.
+   */
   readonly cycle?: boolean
 }): ReactElement {
   const { figure, frames } = props
@@ -117,7 +121,7 @@ export function FramesPlayer(props: {
   // A new record (new frames) opens on its result, or on its first frame when asked.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `frames` changes with the record, which resets the view
   useEffect(() => {
-    seek.current(props.startAtFirst === true || props.cycle === true ? 0 : count - 1)
+    seek.current(props.startAtFirst === true || (props.cycle === true && !prefersReducedMotion()) ? 0 : count - 1)
   }, [frames, count, props.startAtFirst, props.cycle])
   const frame = playback.frame
   const build = useCallback((fig: Figure) => frames(fig).option(frame), [frames, frame])

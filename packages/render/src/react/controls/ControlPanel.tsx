@@ -76,7 +76,10 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
           className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold tracking-wide text-(--wb-muted) uppercase outline-none hover:text-(--wb-fg) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50"
         >
           <span className="truncate">{title}</span>
-          <ChevronDownIcon size={14} className={cx('shrink-0 transition-transform', !open && '-rotate-90')} />
+          <ChevronDownIcon
+            size={14}
+            className={cx('shrink-0 transition-transform motion-reduce:transition-none', !open && '-rotate-90')}
+          />
         </button>
       ) : (
         <div className="px-3 py-2 text-xs font-semibold tracking-wide text-(--wb-muted) uppercase">{title}</div>

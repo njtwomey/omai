@@ -159,6 +159,8 @@ describe('comparisons', () => {
       ['angle'],
     )
     expect(layer.series.map((x) => x.name)).toEqual(['slow', 'fast'])
+    // One path: the runs differ by dash as well as colour.
+    expect(layer.series.map((x) => (x as { lineStyle: { type: string } }).lineStyle.type)).toEqual(['solid', 'dashed'])
     const two = overlayCurves(
       live.variants.map((v) => ({ label: v.label, run: v.live.session.run() })),
       ['angle', 'angle'],

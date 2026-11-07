@@ -9,7 +9,7 @@ import type { Json } from 'mdml-engine/base'
 import { maxOf } from 'mdml-engine/base'
 import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
 import { type Tensor, toFlat } from 'mdml-engine/tensor'
-import type { Run } from 'mdml-engine/trace'
+import type { Run, Session } from 'mdml-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import { band, lines } from '../../charts/lines.ts'
 import { cartesian, type Layer } from '../../charts/plot.ts'
@@ -38,9 +38,38 @@ export const FIG: Figure = figure({ width: 440, height: 320 })
 /** The outcome of a probe: its value, or the message of the error it threw. */
 export type Probed = { readonly value?: unknown; readonly error?: string }
 
+// The answers of a session's probes at steps the tape already has (a probe there never changes), the most recent kept
+// per session: scrubbing back to a step, or looping over a run, does not compute its grid again. Held by the session,
+// so they go with it. Answers are not copied: a reader must not change what a probe returned.
+const PROBES_KEPT = 48
+const answers = new WeakMap<object, Map<string, unknown>>()
+
+function remembered(
+  // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
+  session: Session<any, any>,
+  t: number,
+  key: string,
+  compute: () => unknown,
+): unknown {
+  if (t > session.t) return compute()
+  const kept = answers.get(session) ?? new Map<string, unknown>()
+  answers.set(session, kept)
+  if (kept.has(key)) {
+    const hit = kept.get(key)
+    kept.delete(key)
+    kept.set(key, hit)
+    return hit
+  }
+  const value = compute()
+  kept.set(key, value)
+  if (kept.size > PROBES_KEPT) kept.delete(kept.keys().next().value as string)
+  return value
+}
+
 /**
  * One probe of the session at a step, computed once per (session, step) and never throwing: a failure is returned as
- * its message so a panel can say why and still draw its rows.
+ * its message so a panel can say why and still draw its rows. The answers at the latest steps are kept, so a step
+ * visited again is not computed again.
  *
  * @param live - The session.
  * @param t - The step.
@@ -60,7 +89,7 @@ export function useProbe(
   return useMemo(() => {
     if (path === undefined) return {}
     try {
-      return { value: live.session.probe(t, path, args) }
+      return { value: remembered(live.session, t, `${path}|${t}|${argsKey}`, () => live.session.probe(t, path, args)) }
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) }
     }
@@ -98,7 +127,12 @@ export function useChannel(
   return useMemo(() => {
     if (source === undefined) return {}
     try {
-      return { value: readChannel(live.session, t, source) }
+      const read = (): unknown => readChannel(live.session, t, source)
+      return {
+        value: isProbed(live.session, source)
+          ? remembered(live.session, t, `${source.path}|${t}|${argsKey}`, read)
+          : read(),
+      }
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) }
     }

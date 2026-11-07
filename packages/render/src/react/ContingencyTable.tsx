@@ -284,7 +284,7 @@ export function ContingencyTable(props: ContingencyTableProps): ReactNode {
                   <td
                     key={names[i]}
                     className={join(
-                      'rounded-md px-2 py-1 text-center align-middle transition-[box-shadow,opacity]',
+                      'rounded-md px-2 py-1 text-center align-middle transition-[box-shadow,opacity] motion-reduce:transition-none',
                       focus !== null && !num && !den && 'opacity-45',
                     )}
                     style={{

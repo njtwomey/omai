@@ -4,27 +4,27 @@
 
 React 19 bindings of mdml-render. Figures: `Chart` (an ECharts option), `SceneView`, `Scene3DView` and `StructureView`, in a `FigureFrame` (fixed size, expand, export) or a `FigureGrid`; typeset and live maths (`Tex`, `Equation`, `Derivation`); `ContingencyTable` and `ThresholdExplorer`; playback (`usePlayback`, `useLiveRun` and the `Player` over their controller); and the colour-mode theme (`ThemeProvider`, `useColourMode`). Subfolders: `session` (`useSession`, `SessionPlayer`, `SessionPanels`: run a method live and draw it), `controls` (inputs and controls generated from a `Space`), `interaction` (draggable overlays on a figure) and `views` (`ExpositionView` and one view per exposition record kind).
 
-- function `Chart`: React component: draw an ECharts option, themed and resized: `<Chart option={option} />` `src/react/Chart.tsx:84` `mdml-render/react`
+- function `Chart`: React component: draw an ECharts option, themed and resized: `<Chart option={option} />` `src/react/Chart.tsx:113` `mdml-render/react`
 - function `ContingencyTable`: React component: confusion matrix with margins and rates: `<ContingencyTable table={cm} positive={1} />` `src/react/ContingencyTable.tsx:86` `mdml-render/react`
 - function `Derivation`: React component: aligned derivation steps with notes: `<Derivation steps={steps} />` `src/react/MathView.tsx:106` `mdml-render/react`
 - function `Equation`: React component: an equation that re-typesets as values change: `<Equation>{eq}</Equation>` `src/react/MathView.tsx:81` `mdml-render/react`
-- function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:243` `mdml-render/react`
+- function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:236` `mdml-render/react`
 - function `FigureGrid`: React component: charts and text on a grid: `<FigureGrid grid={g} panels={p} />` `src/react/FigureGrid.tsx:76` `mdml-render/react`
-- function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:58` `mdml-render/react`
+- function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:74` `mdml-render/react`
 - function `Scene3DView`: React component: a 3-D scene you orbit by dragging: `<Scene3DView scene={scene3d} />` `src/react/Scene3DView.tsx:35` `mdml-render/react`
 - function `SceneFrame`: React component: a Scene in a frame with expand and export: `<SceneFrame scene={scene} />` `src/react/SceneFrame.tsx:55` `mdml-render/react`
 - function `SceneView`: React component: draw a Scene as SVG with click and hover: `<SceneView scene={scene} />` `src/react/SceneView.tsx:246` `mdml-render/react`
 - function `StructureView`: React component: draw an engine Structure as a diagram: `<StructureView structure={s} />` `src/react/StructureView.tsx:46` `mdml-render/react`
 - function `Tex`: React component: typeset TeX with the shared macros: `<Tex display>{source}</Tex>` `src/react/MathView.tsx:50` `mdml-render/react`
-- function `ThemeProvider`: React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>` `src/react/theme.tsx:48` `mdml-render/react`
+- function `ThemeProvider`: React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>` `src/react/theme.tsx:64` `mdml-render/react`
 - function `ThresholdExplorer`: React component: drag a threshold across ROC, cost and table: `<ThresholdExplorer yTrue={y} scores={s} />` `src/react/ThresholdExplorer.tsx:98` `mdml-render/react`
-- function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:60` `mdml-render/react`
-- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:208` `mdml-render/react`
-- function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:95` `mdml-render/react`
-- function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:144` `mdml-render/react`
+- function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:76` `mdml-render/react`
+- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:209` `mdml-render/react`
+- function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:96` `mdml-render/react`
+- function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:145` `mdml-render/react`
 
 - structure `PlayStatus`: Where a session is: 'preparing', 'ready' or 'running' (`live.status`) `src/react/start.ts:30` `mdml-render/react`
-- structure `PlaybackController`: The state and verbs of a playback: `c.frame`, `c.seek(n)`, `c.toggle()` `src/react/usePlayback.ts:20` `mdml-render/react`
+- structure `PlaybackController`: The state and verbs of a playback: `c.frame`, `c.seek(n)`, `c.toggle()` `src/react/usePlayback.ts:21` `mdml-render/react`
 - structure `RingBuffer`: The latest n items, the oldest dropped: `new RingBuffer(2000)`, `ring.push(x)`, `ring.at(0)` `src/react/ring.ts:12` `mdml-render/react`
 - structure `StartPolicy`: When a session computes and where its cursor starts: 'play' (live), 'first' (primed), 'end' (eager) `src/react/start.ts:21` `mdml-render/react`
 
@@ -33,7 +33,7 @@ React 19 bindings of mdml-render. Figures: `Chart` (an ECharts option), `SceneVi
 Form controls for figures and demos, in plain React and Tailwind over the `--wb-*` tokens. Inputs: `NumberField`, `Select`, `Choice`, `Toggle`, `SeedInput`, `ColumnOrder`. Generated from an engine `Space`: `SpaceControls` (options a rule rules out drawn disabled), `SpaceSettings` and `SettingsButton` (a modal applied on confirm), `ModelSelector` (a union's options with a settings popover each) and `SlotVariants` (the options of a slot compared at once). Choosing data: `DatasetPicker` and `DatasetSelector` with `useDataset`, `EnvironmentSelector`. Layout: `ControlPanel` and `ControlLayout` put controls beside a figure. Validity rules read from the option tables' properties, and the rest of the rules behind the controls, are pure modules.
 
 - function `Choice`: React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />` `src/react/controls/Choice.tsx:30` `mdml-render/react`
-- function `ControlLayout`: React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">` `src/react/controls/ControlPanel.tsx:136` `mdml-render/react`
+- function `ControlLayout`: React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">` `src/react/controls/ControlPanel.tsx:139` `mdml-render/react`
 - function `ControlPanel`: React component: lay controls out in columns or bento areas: `<ControlPanel columns={2}>...</ControlPanel>` `src/react/controls/ControlPanel.tsx:44` `mdml-render/react`
 - function `DatasetPicker`: React component: pick a dataset and its knobs: `<DatasetPicker collection="classification2d" value={sel} onChange={setSel} />` `src/react/controls/DatasetPicker.tsx:86` `mdml-render/react`
 - function `DatasetSelector`: React component: search the dataset registry: `<DatasetSelector real={false} value={sel} onChange={setSel} />` `src/react/controls/DatasetSelector.tsx:80` `mdml-render/react`
@@ -41,10 +41,10 @@ Form controls for figures and demos, in plain React and Tailwind over the `--wb-
 - function `ModelSelector`: React component: choose a union option and its knobs: `<ModelSelector space={union} value={v} onChange={setV} />` `src/react/controls/ModelSelector.tsx:43` `mdml-render/react`
 - function `NumberField`: React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />` `src/react/controls/NumberField.tsx:48` `mdml-render/react`
 - function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:32` `mdml-render/react`
-- function `SettingsButton`: React component: a gear opening a modal applied only on confirm: `<SettingsButton value={v} onApply={setV}>...</SettingsButton>` `src/react/controls/SettingsButton.tsx:59` `mdml-render/react`
+- function `SettingsButton`: React component: a gear opening a modal applied only on confirm: `<SettingsButton value={v} onApply={setV}>...</SettingsButton>` `src/react/controls/SettingsButton.tsx:57` `mdml-render/react`
 - function `SlotVariants`: React component: choose slot options to compare: `<SlotVariants space={union} knobs={k} onChange={setK} />` `src/react/controls/SlotVariants.tsx:60` `mdml-render/react`
 - function `SpaceControls`: React component: controls generated from an engine Space: `<SpaceControls space={space} value={v} onChange={setV} />` `src/react/controls/SpaceControls.tsx:51` `mdml-render/react`
-- function `SpaceSettings`: React component: gear button editing a Space in a modal: `<SpaceSettings space={s} value={v} onApply={setV} />` `src/react/controls/SettingsButton.tsx:224` `mdml-render/react`
+- function `SpaceSettings`: React component: gear button editing a Space in a modal: `<SpaceSettings space={s} value={v} onApply={setV} />` `src/react/controls/SettingsButton.tsx:208` `mdml-render/react`
 - function `useDataset`: React hook: generate the dataset a picker selected: `useDataset('classification2d', selection)` `src/react/controls/DatasetPicker.tsx:119` `mdml-render/react`
 
 ## react/interaction
@@ -69,15 +69,15 @@ Sessions in React. `useSession` runs a method live (`useSessions` runs several v
 - structure `layout.ts` (file): Every panel kind a layout can declare: `{ kind: 'curves', paths: ['loss'] }` `src/react/session/layout.ts:1` `mdml-render/react`
 
 - function `NarrativeView`: React component: one session told in pages: `<NarrativeView id="n" narrative={n} live={live} ... />` `src/react/session/NarrativeView.tsx:60` `mdml-render/react`
-- function `SessionExport`: React component: page export menu: PNG, SVG, GIF, WebM, tape JSON: `<SessionExport live={live} ... />` `src/react/session/SessionExport.tsx:90` `mdml-render/react`
-- function `SessionPanels`: React component: panels of a layout over a session: `<SessionPanels id="p" live={live} at={at} layout={l} />` `src/react/session/SessionPanels.tsx:90` `mdml-render/react`
+- function `SessionExport`: React component: page export menu: PNG, SVG, GIF, WebM, tape JSON: `<SessionExport live={live} ... />` `src/react/session/SessionExport.tsx:73` `mdml-render/react`
+- function `SessionPanels`: React component: panels of a layout over a session: `<SessionPanels id="p" live={live} at={at} layout={l} />` `src/react/session/SessionPanels.tsx:91` `mdml-render/react`
 - function `SessionPlayer`: React component: play a session with controls: `<SessionPlayer live={live} at={at} onScrub={setAt} />` `src/react/session/SessionPlayer.tsx:36` `mdml-render/react`
 - function `TapeView`: React component: draw whatever a session logged: `<TapeView live={live} at={at} onScrub={setAt} />` `src/react/session/TapeView.tsx:62` `mdml-render/react`
 - function `useSession`: React hook: run a method live: `useSession(method, { config, steps }, [config])` `src/react/session/useSession.ts:430` `mdml-render/react`
 - function `useSessionPreferences`: React hook: the reader's live or eager mode and hold setting: `useSessionPreferences().mode` `src/react/session/preferences.ts:70` `mdml-render/react`
 - function `useSessions`: React hook: run variants of one method in step: `useSessions(method, options, variants, deps)` `src/react/session/useSession.ts:222` `mdml-render/react`
 - function `useStepCursor`: React hook: the viewed step inside a panel: `useStepCursor()` `src/react/session/cursor.tsx:33` `mdml-render/react`
-- function `useTape`: React hook: replay a loaded tape file as a live handle: `useTape(file, registry)` `src/react/session/useTape.ts:65` `mdml-render/react`
+- function `useTape`: React hook: replay a loaded tape file as a live handle: `useTape(file, registry)` `src/react/session/useTape.ts:67` `mdml-render/react`
 - function `variantsOfSlot`: Make one comparison variant per option of a slot: `variantsOfSlot(method.config, 'solver')` `src/react/session/slots.ts:57` `mdml-render/react`
 
 - structure `LiveSession`: A live session: `live.session`, `live.head`, `live.compute()`, `live.apply()` `src/react/session/useSession.ts:113` `mdml-render/react`

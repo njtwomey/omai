@@ -1,14 +1,31 @@
+import { type Structure, structure } from 'mdml-engine/scene'
+import { type ReactElement, useState } from 'react'
 import { renderToString } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { lineChart } from '../charts/lines.ts'
 import { figure } from '../figure/figure.ts'
+import { inAct, mountElement, resetGlobals } from './_harness.tsx'
 import { Chart } from './Chart.tsx'
 import { loadEcharts } from './echarts.ts'
+import { StructureView } from './StructureView.tsx'
 import { ThemeProvider, useColourMode, useTokens } from './theme.tsx'
 
 function ModeProbe(): string {
   return `${useColourMode()}:${useTokens().bg}`
 }
+
+// A structure view whose parent can render it again with other props.
+const widthHost = { bump: (): void => {} }
+function WidthHost(props: { readonly structure: Structure }): ReactElement {
+  const [n, setN] = useState(0)
+  widthHost.bump = () => setN(n + 1)
+  return <StructureView structure={props.structure} width={300 + n} />
+}
+
+afterEach(() => {
+  resetGlobals()
+  vi.unstubAllGlobals()
+})
 
 describe('react bindings', () => {
   it('render a chart container of the figure size on the server', () => {
@@ -28,6 +45,46 @@ describe('react bindings', () => {
       ),
     ).toBe('light:#ffffff')
   })
+  it('does the page-wide work once: one observer of the page class however many figures ask, a stable structure ref', async () => {
+    const made: { disconnected: boolean }[] = []
+    vi.stubGlobal(
+      'MutationObserver',
+      class {
+        disconnected = false
+        constructor() {
+          made.push(this)
+        }
+        observe(): void {}
+        disconnect(): void {
+          this.disconnected = true
+        }
+      },
+    )
+    const many = (
+      <>
+        <ModeProbe />
+        <ModeProbe />
+        <ModeProbe />
+      </>
+    )
+    const first = await mountElement(many, { browser: true })
+    const second = await mountElement(<ModeProbe />, { browser: true })
+    expect(made).toHaveLength(1)
+    await first.unmount()
+    expect(made[0]?.disconnected).toBe(false)
+    await second.unmount()
+    expect(made[0]?.disconnected).toBe(true)
+
+    // A structure view's box ref is one function across renders, so a render does not set state twice.
+    const s = structure('bayes-net', [{ id: 'a', label: 'a', role: 'latent' }], [])
+    const mounted = await mountElement(<WidthHost structure={s} />, { browser: true })
+    const refOf = (): unknown => mounted.elements().find((e) => e.props['onPointerDown'] !== undefined)?.props['ref']
+    const before = refOf()
+    expect(typeof before).toBe('function')
+    await inAct(widthHost.bump)
+    expect(refOf()).toBe(before)
+    await mounted.unmount()
+  })
   it('loads ECharts with the mdml themes', () => {
     expect(typeof loadEcharts().init).toBe('function')
   })
@@ -41,6 +98,8 @@ describe('FigureFrame', () => {
         <Chart option={lineChart([{ y: [1, 2] }])} />
       </FigureFrame>,
     )
+    expect(html).toMatch(/<figure[^>]*aria-labelledby="([^"]+)"/)
+    expect(html).toContain(`id="${html.match(/aria-labelledby="([^"]+)"/)?.[1]}"`)
     expect(html).toContain('aria-label="Expand"')
     expect(html).toContain('aria-label="Export"')
     expect(html).toContain('<figcaption')

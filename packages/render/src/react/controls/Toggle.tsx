@@ -35,13 +35,13 @@ export function Toggle(props: ToggleProps): ReactNode {
         disabled={disabled}
         onClick={() => onChange(!value)}
         className={cx(
-          'relative inline-flex h-[18px] w-8 shrink-0 items-center rounded-full border border-transparent outline-none transition-colors focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
+          'relative inline-flex h-[18px] w-8 shrink-0 items-center rounded-full border border-transparent outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
           value ? 'bg-(--wb-accent)' : 'bg-(--wb-grid)',
         )}
       >
         <span
           className={cx(
-            'block size-3.5 rounded-full bg-(--wb-bg) shadow-sm transition-transform',
+            'block size-3.5 rounded-full bg-(--wb-bg) shadow-sm transition-transform motion-reduce:transition-none',
             value ? 'translate-x-[15px]' : 'translate-x-px',
           )}
         />

@@ -33,6 +33,7 @@ describe('FigureFrame', () => {
           return <span>drawn</span>
         }}
       </FigureFrame>,
+      { browser: true },
     )
     expect(m.text()).toContain('Loss')
     expect(m.text()).toContain('over time')
@@ -43,13 +44,25 @@ describe('FigureFrame', () => {
     await press(m, 'Export')
     const items = m.elements().filter((e) => e.props['role'] === 'menuitem')
     expect(items.map((e) => e.text)).toEqual(['PNG', 'GIF'])
-    await invoke(items[1], 'onClick')
+    // Focus moves into the menu; Escape closes it and gives focus back to the export button.
+    expect(m.focused()?.text).toBe('PNG')
+    await m.document.fire('keydown', { key: 'Escape', stopPropagation: () => undefined })
+    expect(m.elements().some((e) => e.props['role'] === 'menu')).toBe(false)
+    expect(m.focused()?.props['aria-label']).toBe('Export')
+    await press(m, 'Export')
+    await invoke(
+      m.elements().find((e) => e.props['role'] === 'menuitem' && e.text === 'GIF'),
+      'onClick',
+    )
     expect(onExport).toHaveBeenCalledWith('gif', expect.anything())
     expect(m.elements().some((e) => e.props['role'] === 'menu')).toBe(false)
 
     // Expanded: a dialog whose content is the modal's size (92% of the viewport, the figure's aspect), listeners on.
     await press(m, 'Expand')
-    expect(m.elements().some((e) => e.props['role'] === 'dialog')).toBe(true)
+    const dialog = m.elements().find((e) => e.props['role'] === 'dialog')
+    expect(dialog?.props['aria-labelledby']).toBeDefined()
+    // Focus is in the dialog.
+    expect(m.focused()?.props['role']).toBe('dialog')
     expect(labels(m)).toContain('Close')
     expect(sizes.at(-1)).toEqual({ width: 1104, height: 552, expanded: true })
     expect([m.window.count('keydown'), m.window.count('resize')]).toEqual([1, 1])
@@ -57,6 +70,8 @@ describe('FigureFrame', () => {
     expect(m.elements().some((e) => e.props['role'] === 'dialog')).toBe(true)
     await m.window.fire('keydown', { key: 'Escape' })
     expect(m.elements().some((e) => e.props['role'] === 'dialog')).toBe(false)
+    // Focus is back on the Expand button.
+    expect(m.focused()?.props['aria-label']).toBe('Expand')
     // Closing removes both listeners, and the page content is back at its own size.
     expect([m.window.count('keydown'), m.window.count('resize')]).toEqual([0, 0])
     expect(sizes.at(-1)).toEqual({ width: 200, height: 100, expanded: false })
