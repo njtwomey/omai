@@ -13,7 +13,8 @@ function order(x: ArrayLike<number>): number[] {
 /** 1-based ranks of a list of numbers (scipy.stats.rankdata); `name` labels the error for NaN entries. */
 export function rankKernel(x: ArrayLike<number>, method: TieMethod = 'average', name = 'ranksOf'): Float64Array {
   const n = x.length
-  for (let k = 0; k < n; k++) if (Number.isNaN(x[k])) throw new MdmlError('value', `${name}: NaN values cannot be ranked`)
+  for (let k = 0; k < n; k++)
+    if (Number.isNaN(x[k])) throw new MdmlError('value', `${name}: NaN values cannot be ranked`)
   const idx = order(x)
   const ranks = new Float64Array(n)
   let dense = 0

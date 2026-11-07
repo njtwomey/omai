@@ -417,11 +417,7 @@ export function wassersteinTest(x: TensorLike, y: TensorLike, options: DistanceT
  * eppsSingleton([1, 2, 3, 4, 5, 6], [6, 7, 8, 9, 10, 11]).pValue < 0.05 // => true
  * ```
  */
-export function eppsSingleton(
-  x: TensorLike,
-  y: TensorLike,
-  options: { readonly t?: TensorLike } = {},
-): TestResult {
+export function eppsSingleton(x: TensorLike, y: TensorLike, options: { readonly t?: TensorLike } = {}): TestResult {
   const a = sample('eppsSingleton', x, 5)
   const b = sample('eppsSingleton', y, 5)
   const t = options.t === undefined ? [0.4, 0.8] : toVector(options.t, 'eppsSingleton')

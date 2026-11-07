@@ -210,7 +210,10 @@ export function sumToZeroConstraint(X: TensorLike): Tensor {
 export function constraintNullSpace(C: TensorLike): Tensor {
   const t = concreteOrThrow(asTensor(C), 'constraintNullSpace')
   if (t.shape.length !== 1 && t.shape.length !== 2)
-    throw new MdmlError('shape', `constraintNullSpace: expected a [r, k] matrix or a vector, got rank ${t.shape.length}`)
+    throw new MdmlError(
+      'shape',
+      `constraintNullSpace: expected a [r, k] matrix or a vector, got rank ${t.shape.length}`,
+    )
   const k = t.shape.length === 1 ? (t.shape[0] ?? 0) : (t.shape[1] ?? 0)
   return nullSpaceOf(t.data, k)
 }

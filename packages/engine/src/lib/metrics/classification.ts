@@ -618,7 +618,6 @@ export function multilabelConfusionMatrix(
   }
   const c = countsOf(name, yTrue, yPred, options)
   const out = new Float64Array(c.classes.length * 4)
-  for (let i = 0; i < c.classes.length; i++)
-    out.set([c.tn[i] ?? 0, c.fp[i] ?? 0, c.fn[i] ?? 0, c.tp[i] ?? 0], i * 4)
+  for (let i = 0; i < c.classes.length; i++) out.set([c.tn[i] ?? 0, c.fp[i] ?? 0, c.fn[i] ?? 0, c.tp[i] ?? 0], i * 4)
   return fromStorage(out, [c.classes.length, 2, 2], 'float64')
 }

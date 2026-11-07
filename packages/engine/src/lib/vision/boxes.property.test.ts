@@ -28,8 +28,7 @@ describe('boxes', () => {
         // The suppression and the matrix compute the overlap with different arithmetic, so a pair whose overlap is the
         // threshold to within rounding may fall on either side: compare with a tolerance (fast-check found such pairs).
         const eps = 1e-9
-        for (const i of keep)
-          for (const j of keep) if (i !== j) expect(iou(i, j)).toBeLessThanOrEqual(thr + eps)
+        for (const i of keep) for (const j of keep) if (i !== j) expect(iou(i, j)).toBeLessThanOrEqual(thr + eps)
         for (let k = 1; k < keep.length; k++)
           expect(scores[keep[k] ?? 0] ?? 0).toBeLessThanOrEqual(scores[keep[k - 1] ?? 0] ?? 0)
         // Every box is either kept or overlaps a kept box with a score at least its own.
@@ -48,8 +47,7 @@ describe('boxes', () => {
           expect(batched.some((i) => classes[i] === c && scores[i] === best)).toBe(true)
           for (const i of batched)
             for (const j of batched)
-              if (i !== j && classes[i] === c && classes[j] === c)
-                expect(iou(i, j)).toBeLessThanOrEqual(thr + eps)
+              if (i !== j && classes[i] === c && classes[j] === c) expect(iou(i, j)).toBeLessThanOrEqual(thr + eps)
         }
         const soft = V.softNms(boxes, scores, { scoreThreshold: 0 })
         expect(soft.indices.length).toBe(boxes.length)

@@ -29,11 +29,7 @@ function geometry(a: readonly number[], b: readonly number[]): { inter: number; 
 }
 
 /** A pairwise box measure `[N, M]` of two sets of boxes, as a float64 tensor. */
-function pairwise(
-  a: Boxes,
-  b: Boxes,
-  f: (p: readonly number[], q: readonly number[]) => number,
-): Tensor<'float64'> {
+function pairwise(a: Boxes, b: Boxes, f: (p: readonly number[], q: readonly number[]) => number): Tensor<'float64'> {
   const ra = rowsOf(a)
   const rb = rowsOf(b)
   const out = new Float64Array(ra.length * rb.length)
@@ -110,7 +106,11 @@ function centrePenalty(p: readonly number[], q: readonly number[], encl: readonl
  * distanceBoxIou([[0, 0, 1, 1]], [[0, 0, 1, 1]]) // => [[1]]
  * ```
  */
-export function distanceBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly eps?: number } = {}): Tensor<'float64'> {
+export function distanceBoxIou(
+  boxesA: Boxes,
+  boxesB: Boxes,
+  options: { readonly eps?: number } = {},
+): Tensor<'float64'> {
   const eps = options.eps ?? 1e-7
   return pairwise(boxesA, boxesB, (p, q) => {
     const g = geometry(p, q)
@@ -133,7 +133,11 @@ export function distanceBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly
  * completeBoxIou([[0, 0, 1, 1]], [[0, 0, 1, 1]]) // => [[1]]
  * ```
  */
-export function completeBoxIou(boxesA: Boxes, boxesB: Boxes, options: { readonly eps?: number } = {}): Tensor<'float64'> {
+export function completeBoxIou(
+  boxesA: Boxes,
+  boxesB: Boxes,
+  options: { readonly eps?: number } = {},
+): Tensor<'float64'> {
   const eps = options.eps ?? 1e-7
   return pairwise(boxesA, boxesB, (p, q) => {
     const g = geometry(p, q)
