@@ -678,3 +678,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   hidden` for its first frame and a hidden element cannot take focus). Ten new `it` blocks (tables and loops inside), `render` 520 tests in 100 files, all passing; tsc for render, site and
   pocs; barrels, layers, lint, agent index and surface (3 changed: `ChartProps` gets `label`, `PlaybackOptions`' documentation, `useTape` an optional parameter). Everything that needs a
   browser is listed in the P3.40, P3.42 and P3.44 rows. The full gate was not run. Nothing pushed (D-014).
+- **23:20 Gate.** The render merge (P3.40 in part, P3.42, P3.44) passed the full local gate: 26,535 tests, 9,614 examples, all static checks and all six tsc runs, first run.
+  35 of 44 work items complete, the other 9 each done except the follow-ups recorded in the register. Completion about 85% by effort. Nothing pushed (D-014).
