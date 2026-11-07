@@ -21,7 +21,12 @@ export interface CurvesViewOptions extends ViewOptions {
 
 const DASHES = ['solid', 'dashed', 'dotted'] as const
 
-/** The colour and dash of every series: one colour per group (or per series without groups), dashes within a group. */
+/**
+ * The colour and dash of every series: one colour per group (or per series without groups), dashes within a group.
+ *
+ * @param series - The series, with their groups.
+ * @returns One colour and dash per series, in order.
+ */
 export function curveStyles(series: readonly CurveSeries[]): { colour: string; dash: 'solid' | 'dashed' | 'dotted' }[] {
   const groups: string[] = []
   const seen = new Map<string, number>()

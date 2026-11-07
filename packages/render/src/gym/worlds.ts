@@ -220,7 +220,12 @@ export function raycastViews(
 /**
  * A frame of an agent path through a world, for filmstrips and animations: the world with the path so far.
  *
+ * @param w - The world.
+ * @param cells - The cells the agent visits, in order.
+ * @param options - How the world is drawn (the agent and the path are set here).
+ * @returns One scene per cell: the agent there, with the path so far.
  * @index function Scenes of an agent walking a path: `pathFrames(world, cells)`.
+ *
  */
 export function pathFrames(w: World, cells: readonly number[], options: WorldViewOptions = {}): Scene[] {
   return cells.map((cell, i) => worldView(w, { ...options, agent: cell, path: cells.slice(0, i + 1) }))

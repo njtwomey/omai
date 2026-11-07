@@ -20,29 +20,52 @@ export const DEFAULT_PREFERENCES: SessionPreferences = { mode: 'live', hold: tru
 const KEY = 'mdml-session-preferences'
 const listeners = new Set<() => void>()
 let current: SessionPreferences | undefined
+let stopStorage: (() => void) | undefined
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-/**
- * The preferences as they stand (the remembered ones on first use, else the defaults).
- *
- * @returns The preferences.
- */
-export function sessionPreferences(): SessionPreferences {
-  if (current !== undefined) return current
-  current = DEFAULT_PREFERENCES
+// What the browser has remembered, or the defaults when it holds nothing, is unavailable or holds something else.
+function stored(): SessionPreferences {
   try {
     const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY)
     if (raw !== null) {
       const p = JSON.parse(raw) as Partial<SessionPreferences>
-      current = { mode: p.mode === 'eager' ? 'eager' : 'live', hold: typeof p.hold === 'boolean' ? p.hold : true }
+      return { mode: p.mode === 'eager' ? 'eager' : 'live', hold: typeof p.hold === 'boolean' ? p.hold : true }
     }
   } catch {
     // Storage may be unavailable (private windows) or hold something else; the defaults stand for this page.
   }
+  return DEFAULT_PREFERENCES
+}
+
+// While anything listens, another tab's change to the remembered preferences (a `storage` event) is read in, so the
+// tabs agree.
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener)
+  if (listeners.size === 1 && typeof window !== 'undefined') {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key !== null && e.key !== KEY) return
+      current = stored()
+      for (const l of listeners) l()
+    }
+    window.addEventListener('storage', onStorage)
+    stopStorage = () => window.removeEventListener('storage', onStorage)
+  }
+  return () => {
+    listeners.delete(listener)
+    if (listeners.size === 0) {
+      stopStorage?.()
+      stopStorage = undefined
+    }
+  }
+}
+
+/**
+ * The preferences as they stand (the remembered ones on first use, else the defaults; while a component listens, a
+ * change made in another tab is picked up).
+ *
+ * @returns The preferences.
+ */
+export function sessionPreferences(): SessionPreferences {
+  current ??= stored()
   return current
 }
 

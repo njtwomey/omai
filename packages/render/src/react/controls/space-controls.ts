@@ -238,7 +238,13 @@ export function settleValue(space: Space, value: SpaceValue): SpaceValue {
   return settled
 }
 
-/** The value at a path of a space's value (`undefined` when absent). */
+/**
+ * The value at a path of a space's value (`undefined` when absent).
+ *
+ * @param value - A space's value.
+ * @param path - The keys down to the entry wanted.
+ * @returns The entry at the path, or `undefined` when absent.
+ */
 export function valueAt(value: SpaceValue, path: ControlPath): SpaceValue | undefined {
   let v: SpaceValue | undefined = value
   for (const p of path) {

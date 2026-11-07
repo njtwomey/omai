@@ -14,7 +14,12 @@ export interface KeyCaptureProps {
   readonly 'aria-keyshortcuts'?: string
 }
 
-/** Whether a key event comes from somewhere the reader is typing (an input, a text area, a select, editable text). */
+/**
+ * Whether a key event comes from somewhere the reader is typing (an input, a text area, a select, editable text).
+ *
+ * @param target - The key event's target.
+ * @returns True when the target is an input, text area, select or editable text.
+ */
 export function isTyping(target: EventTarget | null): boolean {
   // Duck-typed, so it also runs where there is no DOM (server rendering, tests).
   const el = target as { readonly isContentEditable?: boolean; readonly closest?: (s: string) => unknown } | null
@@ -22,7 +27,12 @@ export function isTyping(target: EventTarget | null): boolean {
   return el.isContentEditable === true || el.closest('input, textarea, select') !== null
 }
 
-/** A key's name for bindings: the letter in lower case (`w`), or the key's name (`ArrowUp`, ` ` for space). */
+/**
+ * A key's name for bindings: the letter in lower case (`w`), or the key's name (`ArrowUp`, ` ` for space).
+ *
+ * @param e - A key event (only its `key` is read).
+ * @returns The binding name of the key.
+ */
 export function keyName(e: { readonly key: string }): string {
   return e.key.length === 1 ? e.key.toLowerCase() : e.key
 }

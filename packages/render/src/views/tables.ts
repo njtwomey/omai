@@ -21,7 +21,12 @@ import type { TableData } from '../trace/tables.ts'
 import { outlined, type ViewOptions, viewFigure, wantsLog } from './_view.ts'
 import type { Rows } from './surfaces.ts'
 
-/** The interval of each coefficient: the record's, else the estimate ± 1.96 standard errors, else none. */
+/**
+ * The interval of each coefficient: the record's, else the estimate ± 1.96 standard errors, else none.
+ *
+ * @param table - The coefficient table.
+ * @returns One interval per coefficient, or `undefined` where there is none.
+ */
 export function coefficientIntervals(table: CoefficientTable): (readonly [number, number] | undefined)[] {
   return table.names.map((_, i) => {
     const given = table.intervals?.[i]
@@ -37,7 +42,12 @@ function pText(p: number): string {
   return p < 1e-16 ? '<1e-16' : formatNumber(p, { digits: 2, smallExponent: 1e-4 })
 }
 
-/** Whether a coefficient's name is the intercept's. */
+/**
+ * Whether a coefficient's name is the intercept's.
+ *
+ * @param name - The coefficient's name.
+ * @returns True for the intercept.
+ */
 export function isIntercept(name: string): boolean {
   return /^(const|intercept|\(intercept\)|bias|b0)$/i.test(name.trim())
 }

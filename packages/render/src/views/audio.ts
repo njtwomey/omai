@@ -119,7 +119,13 @@ export interface AudioSceneOptions {
   readonly spectrogram?: Spectrogram
 }
 
-/** Where the plots of an audio scene sit: the left margin, the width, and the waveform's and spectrogram's boxes. */
+/**
+ * Where the plots of an audio scene sit: the left margin, the width, and the waveform's and spectrogram's boxes.
+ *
+ * @param width - The scene width (default 440).
+ * @param height - The scene height (default 320).
+ * @returns The left margin, the plot width and the waveform and spectrogram boxes as `[top, bottom]`.
+ */
 export function audioLayout(
   width = 440,
   height = 320,

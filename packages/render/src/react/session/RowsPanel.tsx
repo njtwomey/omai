@@ -16,6 +16,7 @@ import { cartesian, type Layer } from '../../charts/plot.ts'
 import { points } from '../../charts/points.ts'
 import { type Figure, figure } from '../../figure/index.ts'
 import { categoricalColour } from '../../theme/index.ts'
+import { useByContent } from '../_content.ts'
 import { Chart } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
@@ -84,19 +85,27 @@ export function useProbe(
   path: string | undefined,
   args?: Json,
 ): Probed {
-  const argsKey = JSON.stringify(args ?? null)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the viewed step, not on every tape version
+  const held = useByContent(args)
   return useMemo(() => {
     if (path === undefined) return {}
     try {
-      return { value: remembered(live.session, t, `${path}|${t}|${argsKey}`, () => live.session.probe(t, path, args)) }
+      return {
+        value: remembered(live.session, t, `${path}|${t}|${JSON.stringify(held ?? null)}`, () =>
+          live.session.probe(t, path, held),
+        ),
+      }
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) }
     }
-  }, [live.session, t, path, argsKey])
+  }, [live.session, t, path, held])
 }
 
-/** The tape of a session, re-read whenever it grows. */
+/**
+ * The tape of a session, re-read whenever it grows.
+ *
+ * @param live - The session.
+ * @returns The tape, a new one each time the session's version changes.
+ */
 // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
 export function useRun(live: LiveSession<any, any>): Run {
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
@@ -161,6 +170,10 @@ export const Note = (props: { readonly children: ReactNode }): ReactNode => (
  * assignments and centres, `components` those with each component's 1σ and 2σ ellipses, `fit` the 1-D fit, `band`
  * the 1-D fit with its predictive band, `surface` the decision surface, `experts` the rows by expert with each expert's
  * line and the mixture's. Each probe is independent and the chart stays mounted across frames.
+ *
+ * @param props - The overlay, title and file name, the session, the viewed step, the training rows and the per-row
+ *   channels.
+ * @returns The framed chart.
  */
 export function RowsPanel(props: {
   readonly overlay: NonNullable<Extract<Panel, { kind: 'rows' }>['overlay']> | undefined

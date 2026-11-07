@@ -87,8 +87,12 @@ const walk: Method<State, Config> = defineMethod<State, Config>({
   },
 })
 
-function liveOf(steps: number, config: Partial<Config> = {}): LiveSession<State, Config> {
-  const s = session(walk, { mode: 'eager', steps, config })
+function liveOf(
+  steps: number,
+  config: Partial<Config> = {},
+  method: Method<State, Config> = walk,
+): LiveSession<State, Config> {
+  const s = session(method, { mode: 'eager', steps, config })
   return {
     session: s,
     version: 0,
@@ -261,6 +265,28 @@ describe('session panels', () => {
     expect(html).toContain('against the angle')
     expect(html).toContain('matrix at step 10 (2×2)')
     expect(html).toContain('position to step 10')
+  })
+
+  it('says why a projection of the tape could not be drawn, in its panel and on the tape, instead of hiding it', () => {
+    const broken: Method<State, Config> = {
+      ...walk,
+      projections: {
+        boom: () => {
+          throw new Error('no data to project')
+        },
+      },
+    }
+    const live = liveOf(5, {}, broken)
+    const panel = renderToString(
+      <SessionPanels id="t" live={live} at={null} layout={[{ kind: 'projection', name: 'boom' }]} />,
+    )
+    expect(panel).toContain('projection boom unavailable: no data to project')
+    const tape = renderToString(<SessionPanels id="t" live={live} at={null} layout={[{ kind: 'tape' }]} />)
+    expect(tape).toContain('projection boom unavailable: no data to project')
+    // A method without projections draws no such note.
+    expect(
+      renderToString(<SessionPanels id="t" live={liveOf(5)} at={null} layout={[{ kind: 'tape' }]} />),
+    ).not.toContain('unavailable')
   })
 
   it('clips the viewed step to the head and says when a tensor has nothing yet', () => {

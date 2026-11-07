@@ -8,8 +8,10 @@ Animation: building timelines of frames from runs, sweeps and structure overlays
 - function `canEncodeVideo`: Whether this browser can encode video: `canEncodeVideo()`. `src/animation/video.ts:152` `mdml-render/animation`
 - function `encodeGif`: Pixel frames to GIF bytes, with no dependency: `encodeGif(frames, { fps: 10 })`. `src/animation/gif.ts:215` `mdml-render/animation`
 - function `encodeWebm`: Pixel frames to WebM bytes in a browser: `await encodeWebm(frames, { fps: 30 })`. `src/animation/video.ts:255` `mdml-render/animation`
-- function `runTimeline`: A timeline from the frame events of a run: `runTimeline(run)`. `src/animation/timeline.ts:187` `mdml-render/animation`
-- function `structureTimeline`: A timeline of overlays on one structure: `structureTimeline(structure, overlays)`. `src/animation/timeline.ts:219` `mdml-render/animation`
-- function `sweepTimeline`: A timeline from a parameter sweep: `sweepTimeline(values, (v) => scene)`. `src/animation/timeline.ts:155` `mdml-render/animation`
+- function `runTimeline`: A timeline from the frame events of a run: `runTimeline(run)`. `src/animation/timeline.ts:191` `mdml-render/animation`
+- function `structureTimeline`: A timeline of overlays on one structure: `structureTimeline(structure, overlays)`. `src/animation/timeline.ts:223` `mdml-render/animation`
+- function `sweepTimeline`: A timeline from a parameter sweep: `sweepTimeline(values, (v) => scene)`. `src/animation/timeline.ts:159` `mdml-render/animation`
 - function `timelineFrames`: Pixel frames of a timeline for GIF or video: `await timelineFrames(tl)`. `src/animation/frames.ts:81` `mdml-render/animation`
-- function `tweenTimeline`: Add in-between frames to a timeline: `tweenTimeline(tl, 4)`. `src/animation/timeline.ts:123` `mdml-render/animation`
+- function `tweenTimeline`: Add in-between frames to a timeline: `tweenTimeline(tl, 4)`. `src/animation/timeline.ts:127` `mdml-render/animation`
+
+- table `easings`: The easing curves of a timeline's tweens, by name: `easings.easeInOut` `src/animation/timeline.ts:28` `mdml-render/animation`

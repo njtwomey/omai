@@ -19,6 +19,7 @@ import { FigureFrame } from '../FigureFrame.tsx'
 import { SceneView } from '../SceneView.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
+import { Note } from './RowsPanel.tsx'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import type { LiveSession } from './useSession.ts'
@@ -57,7 +58,10 @@ function groupByPrefix(names: readonly string[]): Map<string, string[]> {
 /**
  * The player over the session, then its tape's channel panels.
  *
+ * @param props - The session, the scrubbed step and its setter, and extra panels.
+ * @returns The player and the channel panels.
  * @index function React component: draw whatever a session logged: `<TapeView live={live} at={at} onScrub={setAt} />`
+ *
  */
 export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): ReactElement {
   return (
@@ -68,7 +72,12 @@ export function TapeView<S, C extends Config>(props: TapeViewProps<S, C>): React
   )
 }
 
-/** Every channel of the tape drawn by its kind (curves, tensors, frames, messages, projections), without a player. */
+/**
+ * Every channel of the tape drawn by its kind (curves, tensors, frames, messages, projections), without a player.
+ *
+ * @param props - The session and the scrubbed step, as for {@link TapeView}; the setter is optional here.
+ * @returns The channel panels.
+ */
 export function TapeChannels<S, C extends Config>(
   props: Omit<TapeViewProps<S, C>, 'onScrub'> & { readonly onScrub?: (t: number | null) => void },
 ): ReactElement {
@@ -164,12 +173,14 @@ export function TapeChannels<S, C extends Config>(
           )
         })}
         {Object.keys(s.method.projections ?? {}).map((name) => {
-          // A projection of the tape so far; it may have nothing to project yet.
+          // A projection of the tape so far; it may have nothing to project yet, and says why when it throws.
           let record: unknown
           try {
             record = s.project(name)
-          } catch {
-            return null
+          } catch (e) {
+            return (
+              <Note key={name}>{`projection ${name} unavailable: ${e instanceof Error ? e.message : String(e)}`}</Note>
+            )
           }
           return record !== undefined && isExposition(record) ? (
             <div key={name} className="flex flex-col gap-1">

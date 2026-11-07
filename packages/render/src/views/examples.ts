@@ -22,7 +22,13 @@ export interface CounterfactualTableOptions extends ViewOptions {
   readonly all?: boolean
 }
 
-/** The feature rows a counterfactual table shows. */
+/**
+ * The feature rows a counterfactual table shows.
+ *
+ * @param record - The counterfactual set.
+ * @param all - Whether to list every feature row rather than only the changed (default false).
+ * @returns The feature row indices.
+ */
 export function counterfactualRows(record: CounterfactualSet, all = false): number[] {
   if (all) return record.features.map((_, j) => j)
   const shown = new Set<number>([...record.counterfactuals.flatMap((c) => c.changed), ...(record.immutable ?? [])])

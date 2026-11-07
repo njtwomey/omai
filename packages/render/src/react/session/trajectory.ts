@@ -13,12 +13,25 @@ import { points } from '../../charts/points.ts'
 import type { ColourMode } from '../../theme/tokens.ts'
 import { leaf } from './compare.ts'
 
-/** The tensor events of a path with full values (subsampled or summarised ones cannot be drawn element by element). */
+/**
+ * The tensor events of a path with full values (subsampled or summarised ones cannot be drawn element by element).
+ *
+ * @param run - The tape.
+ * @param path - The tensor path.
+ * @returns The events that kept full values, in order.
+ */
 export function fullTensors(run: Run, path: string): TensorEvent[] {
   return tensorSeries(run, path).filter((e) => e.values !== undefined && e.indices === undefined)
 }
 
-/** The latest tensor event of a path at or before step `t`, with full values. */
+/**
+ * The latest tensor event of a path at or before step `t`, with full values.
+ *
+ * @param run - The tape.
+ * @param path - The tensor path.
+ * @param t - The step.
+ * @returns The event, or `undefined` when none has been logged by then.
+ */
 export function tensorAt(run: Run, path: string, t: number): TensorEvent | undefined {
   return fullTensors(run, path)
     .filter((e) => e.step <= t)

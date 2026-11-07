@@ -30,7 +30,12 @@ export interface FamilyOptions {
   readonly yLimits?: readonly [number, number]
 }
 
-/** Whether a panel asks for any curve family beyond plain overlaid curves. */
+/**
+ * Whether a panel asks for any curve family beyond plain overlaid curves.
+ *
+ * @param options - The panel's family options.
+ * @returns True when any family is asked for.
+ */
 export function hasFamily(options: FamilyOptions): boolean {
   return (
     options.runs === true ||
@@ -43,7 +48,12 @@ export function hasFamily(options: FamilyOptions): boolean {
   )
 }
 
-/** The axes a `log` option asks to be logarithmic. */
+/**
+ * The axes a `log` option asks to be logarithmic.
+ *
+ * @param log - The panel's `log` option (`'x'`, `'y'`, `'xy'` or none).
+ * @returns Whether the x axis and whether the y axis are logarithmic.
+ */
 export function logAxes(log: FamilyOptions['log']): { readonly x: boolean; readonly y: boolean } {
   return { x: log === 'x' || log === 'xy', y: log === 'y' || log === 'xy' }
 }
@@ -205,7 +215,13 @@ export function curveFamily(
   return [...layers, ...over]
 }
 
-/** The steps at which a scalar path was logged with a finite non-zero value (an event that fired). */
+/**
+ * The steps at which a scalar path was logged with a finite non-zero value (an event that fired).
+ *
+ * @param run - The tape.
+ * @param path - The scalar path.
+ * @returns The steps, ascending as logged.
+ */
 export function eventSteps(run: Run, path: string): number[] {
   const s = metricSeries(run, path)
   return s.steps.filter((_, i) => {

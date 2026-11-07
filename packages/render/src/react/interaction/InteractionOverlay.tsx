@@ -105,7 +105,12 @@ export function Overlaid(props: {
   )
 }
 
-/** The transparent rectangle a tool listens on for presses that miss every handle. */
+/**
+ * The transparent rectangle a tool listens on for presses that miss every handle.
+ *
+ * @param props - Handlers for pointer down, move, up and leave, and the cursor (default crosshair).
+ * @returns The rectangle, as large as the overlay.
+ */
 export function Backdrop(props: {
   readonly onPointerDown?: (e: PointerEvent<SVGRectElement>) => void
   readonly onPointerMove?: (e: PointerEvent<SVGRectElement>) => void

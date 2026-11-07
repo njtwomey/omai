@@ -13,7 +13,13 @@ import { useStepCursor } from './cursor.tsx'
 
 type ECharts = Parameters<NonNullable<ChartProps['onInit']>>[0]
 
-/** The distinct recorded steps of the named metrics, ascending. */
+/**
+ * The distinct recorded steps of the named metrics, ascending.
+ *
+ * @param run - The tape.
+ * @param names - The metric paths.
+ * @returns The steps, ascending and distinct.
+ */
 export function recordedSteps(run: Run, names: readonly string[]): number[] {
   return [...new Set(names.flatMap((n) => metricSeries(run, n).steps))].sort((a, b) => a - b)
 }
@@ -21,6 +27,11 @@ export function recordedSteps(run: Run, names: readonly string[]): number[] {
 /**
  * The recorded step nearest to `x`, or `undefined` when nothing is recorded. With `xs` (the x position of each step,
  * such as the time an ODE reached), the nearest is by those positions instead of by step number.
+ *
+ * @param steps - The recorded steps.
+ * @param x - The position to find the nearest step to.
+ * @param xs - The x position of each step (default the step numbers).
+ * @returns The nearest step, or `undefined` when nothing is recorded.
  */
 export function nearestStep(steps: readonly number[], x: number, xs?: readonly number[]): number | undefined {
   let best: number | undefined
@@ -35,7 +46,14 @@ export function nearestStep(steps: readonly number[], x: number, xs?: readonly n
   return best
 }
 
-/** A vertical marker at `step` spanning the y range of `curves` (nothing when there is no range). */
+/**
+ * A vertical marker at `step` spanning the y range of `curves` (nothing when there is no range).
+ *
+ * @param curves - The curves whose y range the marker spans.
+ * @param step - The x position to mark.
+ * @param mode - The colour mode.
+ * @returns The marker layers (none when the curves have no range).
+ */
 export function stepMarker(curves: Layer, step: number, mode: 'light' | 'dark'): Layer[] {
   const y = curves.extent.y
   if (y === undefined || !Number.isFinite(step)) return []

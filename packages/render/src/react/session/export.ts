@@ -89,7 +89,13 @@ export function framesBetween(from: number, to: number, max: number): number[] {
   return [...steps]
 }
 
-/** The words of a caption wrapped to lines of at most `columns` characters. */
+/**
+ * The words of a caption wrapped to lines of at most `columns` characters.
+ *
+ * @param text - The caption.
+ * @param columns - The most characters on a line.
+ * @returns The lines; a word longer than a line stands alone on its own.
+ */
 export function wrapText(text: string, columns: number): string[] {
   const lines: string[] = []
   let line = ''

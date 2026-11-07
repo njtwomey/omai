@@ -260,6 +260,8 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       ...(playback === undefined ? [] : ['gif', ...(canEncodeVideo() ? ['webm'] : [])]),
     ] as ExportFormat[])
   const [busy, setBusy] = useState<string | null>(null)
+  // Why the last export gave nothing, shown beside the busy readout until the next export starts.
+  const [note, setNote] = useState<string | null>(null)
   const hasTools = formats.length > 0 || (props.expandable ?? true) || props.settings !== undefined
 
   useEffect(() => {
@@ -288,6 +290,8 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const onExport = useCallback(
     (format: ExportFormat) => {
       setMenu(null)
+      setNote(null)
+      const failed = (e: unknown): void => setNote(`export failed: ${e instanceof Error ? e.message : String(e)}`)
       const root = (expanded ? (scaledRef.current ?? modalRef.current) : frameRef.current) ?? frameRef.current
       if (root === null) return
       if (props.onExport !== undefined) {
@@ -307,13 +311,19 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
                 : await encodeWebm(frames, { fps: playback.fps })
             saveBlob(bytes as Uint8Array<ArrayBuffer>, format === 'gif' ? 'image/gif' : 'video/webm', name)
           })
-          .catch(() => undefined)
+          .catch(failed)
           .finally(() => setBusy(null))
         return
       }
-      if (format !== 'png' && format !== 'svg') return
+      if (format !== 'png' && format !== 'svg') {
+        setNote(`export failed: ${format} needs an export handler or a playback`)
+        return
+      }
       const svg = figureSvg(root, { background: t.bg, mode })
-      if (svg === undefined) return
+      if (svg === undefined) {
+        setNote('export failed: the figure holds nothing to export')
+        return
+      }
       if (format === 'svg') {
         saveUrl(svgDataUrl(svg), name)
         return
@@ -326,7 +336,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
           return svgToPng(plain, width, height, { background: t.bg })
         })
         .then((url) => saveUrl(url, name))
-        .catch(() => undefined)
+        .catch(failed)
     },
     [expanded, props.onExport, props.filename, t.bg, mode, playback, busy],
   )
@@ -360,6 +370,11 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const toolbar = (inModal: boolean): ReactElement => (
     <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', zIndex: 2, alignItems: 'center' }}>
       {busy !== null && <span style={{ font: `11px ${t.monoFont}`, color: t.muted, marginRight: 4 }}>{busy}</span>}
+      {note !== null && (
+        <span role="alert" style={{ font: `11px ${t.monoFont}`, color: t.danger, marginRight: 4 }}>
+          {note}
+        </span>
+      )}
       {props.settings}
       {formats.length > 0 && (
         <>

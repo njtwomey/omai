@@ -26,7 +26,12 @@ export type NumberCheck = { readonly value: number; readonly error?: undefined }
 
 const clean = (x: number): number => Number(x.toPrecision(12))
 
-/** Whether both bounds are finite (and, on a log scale, the range positive): the number has a range to slide over. */
+/**
+ * Whether both bounds are finite (and, on a log scale, the range positive): the number has a range to slide over.
+ *
+ * @param spec - The number's spec (bounds and scale).
+ * @returns Whether it has a range to slide over.
+ */
 export function hasRange(spec: NumberSpec): boolean {
   const { min, max } = spec
   return (
