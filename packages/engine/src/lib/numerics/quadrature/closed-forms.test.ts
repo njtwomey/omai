@@ -79,7 +79,9 @@ describe('adaptive and tanh-sinh quadrature against closed forms', () => {
     // [name, integrand, a, b, exact]: singularities at the lower end point (an upper one is lost to the rounding of 1 - x), smooth ones.
     const rows: readonly (readonly [string, Integrand, number, number, number])[] = [
       ['log x on [0, 1]', log, 0, 1, -1],
+      ['1 / sqrt(x) on [0, 1]', (x) => div(1, sqrt(x)), 0, 1, 2],
       ['sqrt(1 - x^2) on [-1, 1]', (x) => sqrt(sub(1, square(x))), -1, 1, PI / 2],
+      ['x^-0.6 on [0, 1]', (x) => exp(mul(log(x), -0.6)), 0, 1, 2.5],
       ['exp(x) on [0, 1]', exp, 0, 1, Math.E - 1],
     ]
     for (const [name, f, a, b, exact] of rows) {
