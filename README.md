@@ -11,8 +11,8 @@ understanding, not for being the fastest.
 They build on each other, and there are more than these. `docs/structure.md` has the full set.
 
 **1. One library for all of ML.** This is the goal. Things that are usually separate packages share one set of tools:
-tensors, random numbers, datasets, optimisers and metrics. Everything in the library is a library: a demonstration of a
-method is a short page that combines an estimator with a dataset.
+tensors, random numbers, datasets, optimisers and metrics. There is no separate layer of methods on top: a demonstration
+of a method is a short page that combines an estimator with a dataset.
 
 **2. Everything leaves a trace.** This is the key idea. Every routine that runs in steps (an optimiser, a sampler, a
 trainer, an agent) records what it did as it went: the state, the metrics and how it ended. You can pause a run, replay it,
