@@ -1,6 +1,6 @@
 import { roundHalfEven } from '../../base/index.ts'
 import type { BinaryKernel, CompareKernel, PredicateKernel, UnaryKernel } from '../backend.ts'
-import { allocate, type DType } from '../dtype.ts'
+import { allocate, type DType, type Storage } from '../dtype.ts'
 import { broadcastShapes, sizeOf } from '../shape.ts'
 import type { Tensor } from '../tensor.ts'
 import { assertSameDtype, broadcastIndex, wrap } from './_util.ts'
@@ -73,13 +73,13 @@ const binaryKernels: Record<BinaryKernel, (a: number, b: number) => number> = {
   xor: (a, b) => (a ? 1 : 0) ^ (b ? 1 : 0),
 }
 
-const compareKernels: Record<CompareKernel, (a: number, b: number) => boolean> = {
-  eq: (a, b) => a === b,
-  ne: (a, b) => a !== b,
-  lt: (a, b) => a < b,
-  le: (a, b) => a <= b,
-  gt: (a, b) => a > b,
-  ge: (a, b) => a >= b,
+const compareKernels: Record<CompareKernel, (a: number, b: number) => number> = {
+  eq: (a, b) => (a === b ? 1 : 0),
+  ne: (a, b) => (a !== b ? 1 : 0),
+  lt: (a, b) => (a < b ? 1 : 0),
+  le: (a, b) => (a <= b ? 1 : 0),
+  gt: (a, b) => (a > b ? 1 : 0),
+  ge: (a, b) => (a >= b ? 1 : 0),
 }
 
 const predicateKernels: Record<PredicateKernel, (x: number) => boolean> = {
@@ -108,32 +108,105 @@ export function map<D extends DType>(x: Tensor, fn: (v: number) => number, dtype
   return wrap(dtype, x.shape, out)
 }
 
+/**
+ * How an operand of an elementwise kernel is read: `1` when it has the output's size (every element in turn; an equal
+ * shape, since a broadcast that expands nothing keeps the layout), `0` when it has a single element, and `null` when it
+ * needs an index map.
+ */
+function readStride(data: ArrayLike<number>, size: number): 0 | 1 | null {
+  return data.length === size ? 1 : data.length === 1 ? 0 : null
+}
+
 export function map2<D extends DType>(a: Tensor, b: Tensor, fn: (x: number, y: number) => number, dtype: D): Tensor<D> {
   const shape = broadcastShapes(a.shape, b.shape)
+  const size = sizeOf(shape)
+  const out = allocate(dtype, size)
+  const sa = readStride(a.data, size)
+  const sb = readStride(b.data, size)
+  if (sa !== null && sb !== null) {
+    // Equal shapes or a one-element operand: read in place, no index maps.
+    for (let i = 0; i < size; i++) out[i] = fn(a.data[i * sa] ?? 0, b.data[i * sb] ?? 0)
+    return wrap(dtype, shape, out)
+  }
   const ia = broadcastIndex(shape, a.shape)
   const ib = broadcastIndex(shape, b.shape)
-  const out = allocate(dtype, sizeOf(shape))
   for (let i = 0; i < out.length; i++) out[i] = fn(a.data[ia[i] ?? 0] ?? 0, b.data[ib[i] ?? 0] ?? 0)
   return wrap(dtype, shape, out)
 }
 
+/** How two operands of the output's size map onto it: both in place, or one of them a single element. */
+type Layout = 'same' | 'left' | 'right'
+
+function layoutOf(a: Tensor, b: Tensor, size: number): Layout | null {
+  if (a.data.length === size && b.data.length === size) return 'same'
+  if (a.data.length === 1 && b.data.length === size) return 'left'
+  if (b.data.length === 1 && a.data.length === size) return 'right'
+  return null
+}
+
+// The four field operations get loops of their own: a single call site per element would be shared by every binary
+// kernel, which makes it megamorphic (11 ms against 2 ms for a million elements). The results are the same IEEE
+// operations as `binaryKernels`.
+const fieldLoops: Partial<
+  Record<BinaryKernel, (out: Storage<DType>, ad: Storage<DType>, bd: Storage<DType>, layout: Layout) => void>
+> = {
+  add: (out, ad, bd, layout) => {
+    const n = out.length
+    if (layout === 'same') for (let i = 0; i < n; i++) out[i] = (ad[i] ?? 0) + (bd[i] ?? 0)
+    else if (layout === 'left') for (let i = 0, x = ad[0] ?? 0; i < n; i++) out[i] = x + (bd[i] ?? 0)
+    else for (let i = 0, y = bd[0] ?? 0; i < n; i++) out[i] = (ad[i] ?? 0) + y
+  },
+  sub: (out, ad, bd, layout) => {
+    const n = out.length
+    if (layout === 'same') for (let i = 0; i < n; i++) out[i] = (ad[i] ?? 0) - (bd[i] ?? 0)
+    else if (layout === 'left') for (let i = 0, x = ad[0] ?? 0; i < n; i++) out[i] = x - (bd[i] ?? 0)
+    else for (let i = 0, y = bd[0] ?? 0; i < n; i++) out[i] = (ad[i] ?? 0) - y
+  },
+  mul: (out, ad, bd, layout) => {
+    const n = out.length
+    if (layout === 'same') for (let i = 0; i < n; i++) out[i] = (ad[i] ?? 0) * (bd[i] ?? 0)
+    else if (layout === 'left') for (let i = 0, x = ad[0] ?? 0; i < n; i++) out[i] = x * (bd[i] ?? 0)
+    else for (let i = 0, y = bd[0] ?? 0; i < n; i++) out[i] = (ad[i] ?? 0) * y
+  },
+  div: (out, ad, bd, layout) => {
+    const n = out.length
+    if (layout === 'same') for (let i = 0; i < n; i++) out[i] = (ad[i] ?? 0) / (bd[i] ?? 0)
+    else if (layout === 'left') for (let i = 0, x = ad[0] ?? 0; i < n; i++) out[i] = x / (bd[i] ?? 0)
+    else for (let i = 0, y = bd[0] ?? 0; i < n; i++) out[i] = (ad[i] ?? 0) / y
+  },
+}
+
 export function binary<D extends DType>(op: BinaryKernel, a: Tensor<D>, b: Tensor<D>): Tensor<D> {
   assertSameDtype(a, b, op)
-  return map2(a, b, binaryKernels[op], a.dtype)
+  const loop = fieldLoops[op]
+  const shape = broadcastShapes(a.shape, b.shape)
+  const size = sizeOf(shape)
+  const layout = layoutOf(a, b, size)
+  if (loop === undefined || layout === null) return map2(a, b, binaryKernels[op], a.dtype)
+  const out = allocate(a.dtype, size)
+  loop(out, a.data, b.data, layout)
+  return wrap(a.dtype, shape, out)
 }
 
 export function compare(op: CompareKernel, a: Tensor, b: Tensor): Tensor<'bool'> {
-  const kernel = compareKernels[op]
-  return map2(a, b, (x, y) => (kernel(x, y) ? 1 : 0), 'bool')
+  return map2(a, b, compareKernels[op], 'bool')
 }
 
 export function where<D extends DType>(condition: Tensor<'bool'>, a: Tensor<D>, b: Tensor<D>): Tensor<D> {
   assertSameDtype(a, b, 'where')
   const shape = broadcastShapes(condition.shape, broadcastShapes(a.shape, b.shape))
+  const size = sizeOf(shape)
+  const out = allocate(a.dtype, size)
+  const sc = readStride(condition.data, size)
+  const sa = readStride(a.data, size)
+  const sb = readStride(b.data, size)
+  if (sc !== null && sa !== null && sb !== null) {
+    for (let i = 0; i < size; i++) out[i] = condition.data[i * sc] ? (a.data[i * sa] ?? 0) : (b.data[i * sb] ?? 0)
+    return wrap(a.dtype, shape, out)
+  }
   const ic = broadcastIndex(shape, condition.shape)
   const ia = broadcastIndex(shape, a.shape)
   const ib = broadcastIndex(shape, b.shape)
-  const out = allocate(a.dtype, sizeOf(shape))
   for (let i = 0; i < out.length; i++) {
     out[i] = condition.data[ic[i] ?? 0] ? (a.data[ia[i] ?? 0] ?? 0) : (b.data[ib[i] ?? 0] ?? 0)
   }

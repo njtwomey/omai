@@ -48,12 +48,21 @@ export function walkStrided(
   base = 0,
 ): void {
   const rank = shape.length
-  const size = sizeOf(shape)
-  const counter = new Array<number>(rank).fill(0)
+  if (rank === 0) {
+    visit(0, base)
+    return
+  }
+  const last = rank - 1
+  const n = shape[last] ?? 1
+  const step = strides[last] ?? 0
+  const rows = n === 0 ? 0 : sizeOf(shape) / n
+  const counter = new Array<number>(last).fill(0)
   let offset = base
-  for (let i = 0; i < size; i++) {
-    visit(i, offset)
-    for (let axis = rank - 1; axis >= 0; axis--) {
+  let i = 0
+  // The last axis is a plain loop; the counter only advances once per row.
+  for (let row = 0; row < rows; row++) {
+    for (let k = 0; k < n; k++) visit(i++, offset + k * step)
+    for (let axis = last - 1; axis >= 0; axis--) {
       counter[axis] = (counter[axis] ?? 0) + 1
       offset += strides[axis] ?? 0
       if ((counter[axis] ?? 0) < (shape[axis] ?? 1)) break
