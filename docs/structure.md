@@ -142,8 +142,22 @@ document says `methods/<area>/...`, read it as an entry of the methods catalogue
 page of the site composes from library estimators; the code of the old layer is in `docs/methods-catalog/archive/`.
 
 **Layering.** Core domains import one another without cycles: if `stats` imports `dists`, nothing `dists` imports may
-lead back to `stats`. There is no declared order; the import graph is the order, and `make layers`
-(`scripts/layers.ts`) fails with the path of any cycle; the package rules of section 1 hold too.
+lead back to `stats`. There is no total order of the domains, but three tiers with explicit facts, kept as a small table
+in `scripts/layers-rules.ts` and enforced by `make layers` (`scripts/layers.ts`), which fails with the path of any cycle
+and with the file and import of any violation; the package rules of section 1 hold too:
+- the foundation (`base`, `scene`, `exposition`, `tensor`, `random`, `space`, `trace`, `autodiff`, `context`) imports only
+  the domains listed for it there: `base` none; `scene` `base`; `exposition` `base`, `scene`; `tensor` `base`; `random`
+  `base`, `tensor`; `space` those and `random`; `trace` those and `space`; `autodiff` `base`, `random`, `scene`, `tensor`;
+  `context` `base`, `random`, `tensor`, `trace` (it sits above `trace`, and `scene` is plain data beside `base`);
+- the machinery (`numerics`, `dists`, `information`, `optim`, `losses`, `kernels`, `stats`, `metrics`, `data`) imports the
+  foundation and itself, never a constructed domain (`learn`, `signal`, `graph`, `text`, `nn` ...). The four imports that go
+  the other way (`metrics/audio.ts` and `metrics/image-quality.ts` into `signal`, `metrics/text.ts` into `text`,
+  `kernels/structured.ts` into `graph`) are listed as exceptions with a one-line reason; a new one is added to the table
+  with its reason or the code is moved down, and an exception nothing uses any more fails the check;
+- inside one domain, no import cycle between files (value imports; `import type` is erased and ignored). The cycles that
+  exist today are written out in the allowlist of the same file (the tensor CPU kernels with `cpu.ts`, the tensor
+  operations with `batching.ts`, two in `symbolic`, one in `search/planning`); a new one fails, and the check prints the
+  allowed ones. The rules have a small test, `scripts/layers-rules.test.ts` (the `scripts` Vitest project).
 
 **Summaries live in the code.** The source explains itself, with no metadata files beside it:
 - A folder's summary is the doc comment that opens its `index.ts`: a short paragraph on what the folder is and what
@@ -7515,8 +7529,9 @@ library for the same computation. They do not set a higher bar than that library
 - `scripts/agent-index.ts` (`make agent-index`): the agent index of the engine and render, and the repository-level
   `llms.txt`, written from the `@index` tags (section 2); `--check` (`make agent-index-check`) fails with the stale
   files (per package) or the invalid tags.
-- `scripts/layers.ts`: no import cycles between core domains or between methods areas (a cycle is reported as its
-  path, one import per step), the core never imports methods, and the package rules (section 1).
+- `scripts/layers.ts`, with its rules and tables in `scripts/layers-rules.ts` and their test beside it: no import cycles
+  between core domains (a cycle is reported as its path, one import per step), the tiers of section 2 (foundation,
+  machinery, listed exceptions), no new file-level cycle inside a domain, and the package rules (section 1).
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
   lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows to module or file prefixes,
   `--coverage` reports documentation coverage). How-tos join it when they exist.

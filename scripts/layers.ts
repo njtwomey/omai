@@ -6,15 +6,31 @@
  * - The core domains (packages/engine/src/lib/<domain>) import one another without a cycle: if `stats` imports
  *   `dists`, nothing `dists` imports may lead back to `stats`. A cycle is reported as its path, with one import for
  *   each step.
+ * - The tiers (scripts/layers-rules.ts): the foundation domains import only the short list of domains below them, and
+ *   the machinery (numerics, dists, optim, losses, kernels, stats, metrics, information, data) imports only the
+ *   foundation and itself, except for the few imports listed there with their reason. No total order.
+ * - No file-level import cycle inside a domain (value imports only), except the ones written out in the allowlist of
+ *   scripts/layers-rules.ts; the cycles found are printed.
  * - mdml-engine never imports mdml-render or mdml-meta; mdml-render never imports mdml-meta (it draws core contracts
  *   and exposition records, never algorithms); headless render code never imports React or render/react.
  * Test files are exempt: tests may use higher layers to check lower ones.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
+import {
+  addEdge,
+  cycles,
+  fileCycleReport,
+  type Graph,
+  type ImportEdge,
+  staleExceptions,
+  tierViolations,
+} from './layers-rules.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const IMPORT = /(?:^|\n)\s*(?:import|export)\s[^'"]*?from\s+['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g
+const TYPE_ONLY = /^\s*(?:import|export)\s+type[\s{]/
+const LIB = join(ROOT, 'packages', 'engine', 'src', 'lib')
 
 interface Location {
   readonly package: string
@@ -45,72 +61,17 @@ function locate(path: string): Location {
   return { package: pkg, kind: 'other', unit: rel[2] ?? '' }
 }
 
-/** The import graph between units (core domains): one example import per edge. */
-type Graph = Map<string, Map<string, string>>
-
-function addEdge(graph: Graph, from: string, to: string, where: string): void {
-  const out = graph.get(from) ?? new Map<string, string>()
-  if (!out.has(to)) out.set(to, where)
-  graph.set(from, out)
-}
-
-/** Every cycle of a graph, one per strongly connected component (Tarjan), as a path that returns to its start. */
-function cycles(graph: Graph): string[][] {
-  const index = new Map<string, number>()
-  const low = new Map<string, number>()
-  const stack: string[] = []
-  const onStack = new Set<string>()
-  const found: string[][] = []
-  let next = 0
-  const connect = (v: string): void => {
-    index.set(v, next)
-    low.set(v, next)
-    next++
-    stack.push(v)
-    onStack.add(v)
-    for (const w of (graph.get(v) ?? new Map()).keys()) {
-      if (!index.has(w)) {
-        connect(w)
-        low.set(v, Math.min(low.get(v) as number, low.get(w) as number))
-      } else if (onStack.has(w)) low.set(v, Math.min(low.get(v) as number, index.get(w) as number))
-    }
-    if (low.get(v) !== index.get(v)) return
-    const component = new Set<string>()
-    let w: string
-    do {
-      w = stack.pop() as string
-      onStack.delete(w)
-      component.add(w)
-    } while (w !== v)
-    if (component.size > 1) found.push(shortestCycle(graph, v, component))
+/** The file a relative import names (the specifier carries its `.ts`; a folder or a bare name is tried as well). */
+function targetFile(from: string, spec: string): string {
+  const base = resolve(dirname(from), spec)
+  for (const candidate of [base, `${base}.ts`, join(base, 'index.ts')]) {
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate
   }
-  for (const v of [...graph.keys()].sort()) if (!index.has(v)) connect(v)
-  return found
-}
-
-/** The shortest path from `start` back to itself inside a strongly connected component (breadth first). */
-function shortestCycle(graph: Graph, start: string, component: ReadonlySet<string>): string[] {
-  const previous = new Map<string, string>()
-  const queue = [start]
-  while (queue.length > 0) {
-    const v = queue.shift() as string
-    for (const w of [...(graph.get(v) ?? new Map()).keys()].sort()) {
-      if (!component.has(w)) continue
-      if (w === start) {
-        const path: string[] = []
-        for (let u = v; u !== start; u = previous.get(u) as string) path.unshift(u)
-        return [start, ...path, start]
-      }
-      if (!previous.has(w)) {
-        previous.set(w, v)
-        queue.push(w)
-      }
-    }
-  }
-  return [start, start]
+  return base
 }
 
 const domains: Graph = new Map()
+const edges: ImportEdge[] = []
 const errors: string[] = []
 const files = ['engine', 'render', 'meta'].flatMap((p) => walk(join(ROOT, 'packages', p, 'src')))
 for (const file of files) {
@@ -123,6 +84,14 @@ for (const file of files) {
       const to = locate(resolve(dirname(file), spec))
       if (from.package !== 'engine' || to.package !== 'engine') continue
       if (from.kind === 'lib' && to.kind === 'lib' && from.unit !== to.unit) addEdge(domains, from.unit, to.unit, where)
+      if (from.kind === 'lib' && to.kind === 'lib') {
+        edges.push({
+          from: relative(LIB, file),
+          to: relative(LIB, targetFile(file, spec)),
+          typeOnly: TYPE_ONLY.test(match[0]),
+          where,
+        })
+      }
       continue
     }
     if (from.package === 'engine' && /^mdml-(render|meta)/.test(spec))
@@ -134,10 +103,21 @@ for (const file of files) {
   }
 }
 
-for (const cycle of cycles(domains)) {
-  const steps = cycle.slice(1).map((to, i) => `  ${domains.get(cycle[i] as string)?.get(to)}`)
-  errors.push(`import cycle between core domains: ${cycle.join(' -> ')}\n${steps.join('\n')}`)
+for (const { path } of cycles(domains)) {
+  const steps = path.slice(1).map((to, i) => `  ${domains.get(path[i] as string)?.get(to)}`)
+  errors.push(`import cycle between core domains: ${path.join(' -> ')}\n${steps.join('\n')}`)
 }
+
+errors.push(...tierViolations(edges), ...staleExceptions(edges))
+
+const fileCycles = fileCycleReport(edges)
+for (const c of fileCycles.found) {
+  const steps = c.path.slice(1).map((to, i) => `  ${c.path[i]} -> ${to}`)
+  const text = `${c.members.length} files, shortest cycle:\n${steps.join('\n')}`
+  if (c.allowed === null) errors.push(`file-level import cycle (new): ${text}`)
+  else console.log(`layers: allowed file cycle, ${text}\n  because ${c.allowed.reason}`)
+}
+errors.push(...fileCycles.stale)
 
 if (errors.length > 0) {
   for (const e of errors) console.error(e)
@@ -145,4 +125,6 @@ if (errors.length > 0) {
   process.exit(1)
 }
 const units = (g: Graph): number => new Set([...g.keys(), ...[...g.values()].flatMap((m) => [...m.keys()])]).size
-console.log(`layers: ${files.length} files checked; ${units(domains)} domains import without cycles`)
+console.log(
+  `layers: ${files.length} files checked; ${units(domains)} domains import without cycles; ${fileCycles.found.length} allowed file cycle(s)`,
+)
