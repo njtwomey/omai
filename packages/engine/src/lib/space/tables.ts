@@ -34,6 +34,23 @@ export interface Option<T, Props> {
   make(knobs: ModeConfig): T
 }
 
+/**
+ * A value of a dict or union space as a record of knobs: the value itself when it is a record, an empty record for
+ * anything else (a missing value, a number, a list).
+ *
+ * @param value - A value of a space.
+ * @returns The record.
+ * @example
+ * ```ts
+ * import { asModeConfig } from 'mdml-engine/space'
+ * asModeConfig({ kind: 'sgd', lr: 0.1 }) // => { kind: 'sgd', lr: 0.1 }
+ * asModeConfig(3) // => {}
+ * ```
+ */
+export function asModeConfig(value: SpaceValue | undefined): ModeConfig {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as ModeConfig) : {}
+}
+
 /** The knobs of an option read by name; the type argument is what the option's knobs are (numbers by default). */
 export type Knobs<V extends SpaceValue = number> = (name: string) => V
 
@@ -79,12 +96,8 @@ export function optionTable<T, Props>(
     ...(options.label === undefined ? {} : { label: options.label }),
     ...(options.description === undefined ? {} : { description: options.description }),
   })
-  const asRecord = (config: SpaceValue | undefined): ModeConfig =>
-    typeof config === 'object' && config !== null && !Array.isArray(config)
-      ? (config as Readonly<Record<string, SpaceValue>>)
-      : {}
   const optionOf = (config: SpaceValue | undefined): NamedOption<T, Props> => {
-    const name = asRecord(config)[tag]
+    const name = asModeConfig(config)[tag]
     const chosen =
       typeof name === 'string' && Object.hasOwn(table, name) ? name : (options.default ?? (names[0] as string))
     return { ...(table[chosen] as Option<T, Props>), name: chosen }
@@ -94,7 +107,7 @@ export function optionTable<T, Props>(
     names,
     space,
     optionOf,
-    make: (config) => optionOf(config).make(asRecord(config)),
+    make: (config) => optionOf(config).make(asModeConfig(config)),
     properties: (config) => optionOf(config).properties,
     where: (predicate) => names.filter((n) => predicate((table[n] as Option<T, Props>).properties, n)),
   }
@@ -116,7 +129,7 @@ export function optionTable<T, Props>(
  * ```
  */
 export function completeOption<T, P>(table: OptionTable<T, P>, config: SpaceValue | undefined): SpaceValue {
-  const given = (typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}) as ModeConfig
+  const given = asModeConfig(config)
   const chosen = table.optionOf(given)
   return { ...(defaults(chosen.space) as ModeConfig), ...given, [table.tag]: chosen.name }
 }

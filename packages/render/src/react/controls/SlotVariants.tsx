@@ -5,7 +5,7 @@
  * edited. An option a rule puts out of reach is listed greyed with the reason, and is left out of the comparison.
  */
 
-import { defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
+import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
 import { type ReactNode, useRef, useState } from 'react'
 import { categoricalColour } from '../../theme/palettes.ts'
 import { cx, labelClass } from './classes.ts'
@@ -49,9 +49,6 @@ export function variantColours(
   return Object.fromEntries(names.filter(admissible).map((n, i) => [n, categoricalColour(i)]))
 }
 
-const recordOf = (v: SpaceValue | undefined): Readonly<Record<string, SpaceValue>> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Readonly<Record<string, SpaceValue>>) : {}
-
 /**
  * A list of the options of a union compared at once, each with its colour swatch and a settings button for its own
  * knobs. Unlike {@link ModelSelector} nothing is chosen: every option that applies is a variant.
@@ -67,7 +64,7 @@ export function SlotVariants(props: SlotVariantsProps): ReactNode {
   const [open, setOpen] = useState<string | undefined>(undefined)
   const anchors = useRef<Record<string, HTMLButtonElement | null>>({})
   const knobsOf = (name: string): Readonly<Record<string, SpaceValue>> =>
-    knobs[name] ?? recordOf(defaults(space.options[name] as Space))
+    knobs[name] ?? asModeConfig(defaults(space.options[name] as Space))
   return (
     <div className={cx('flex w-full min-w-56 max-w-md flex-col gap-1.5', props.className)}>
       {props.label === undefined ? null : <span className={cx(labelClass, 'truncate')}>{props.label}</span>}
@@ -135,7 +132,7 @@ export function SlotVariants(props: SlotVariantsProps): ReactNode {
                   <SpaceControls
                     space={space.options[name] as Space}
                     value={knobsOf(name)}
-                    onChange={(next) => onChange({ ...knobs, [name]: recordOf(next) })}
+                    onChange={(next) => onChange({ ...knobs, [name]: asModeConfig(next) })}
                     disabled={disabled}
                   />
                 </div>

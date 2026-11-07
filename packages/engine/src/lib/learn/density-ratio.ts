@@ -12,7 +12,7 @@ import { ddot, dgemv, dnrm2, solve } from '../numerics/linalg/index.ts'
 import { loggedSolver, type SmoothProblem, smoothSolvers, type VectorParams } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import { importanceEss } from '../sampling/index.ts'
-import { type DictSpace, defaults, dict, real, type SpaceValue } from '../space/index.ts'
+import { asModeConfig, type DictSpace, defaults, dict, real, type SpaceValue } from '../space/index.ts'
 import { medianHeuristic } from '../stats/tests/kernel.ts'
 import {
   add,
@@ -461,7 +461,7 @@ function kliepAlpha(p: KliepProblem, params: KliepParams): Float64Array {
 /** A solver configuration with the defaults of the mode it names filled in where it gives only some knobs. */
 function solverConfig<Q, P extends Json>(table: ModeTable<Q, P>, config: SpaceValue | undefined): SpaceValue {
   const name = table.modeOf(config).name
-  const given = typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}
+  const given = asModeConfig(config)
   return { ...(defaults(table.space.options[name] as DictSpace) as object), ...given, [table.tag]: name }
 }
 

@@ -11,7 +11,7 @@ import { MdmlError } from '../../base/index.ts'
 import { type Link, type LinkName, linkByName } from '../../dists/families/index.ts'
 import { dgesv } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
-import type { SpaceValue } from '../../space/index.ts'
+import { asModeConfig } from '../../space/index.ts'
 import {
   add,
   asTensor,
@@ -106,7 +106,7 @@ export class AdditiveModel extends Composite {
         spec.features,
         label,
         { key: foldIn(base, i), lambda: options.lambda ?? 0, ...(sample === undefined ? {} : { sample }) },
-        knobsOf(spec.config),
+        asModeConfig(spec.config),
       )
     })
     checkHeredity(built, options.heredity ?? 'none')
@@ -395,11 +395,6 @@ export class AdditiveModel extends Composite {
     return `terms=[${this.labels.join(', ')}], link=${this.link.name}, centre=${this.centre}`
   }
 }
-
-const knobsOf = (config: SpaceValue): Readonly<Record<string, SpaceValue>> =>
-  typeof config === 'object' && config !== null && !Array.isArray(config)
-    ? (config as Readonly<Record<string, SpaceValue>>)
-    : {}
 
 /** The reference rows: up to `count` rows spread evenly over the sample (all of them if it is smaller). */
 function referenceRows(sample: Value | undefined, d: number, count: number): Value {
