@@ -9,7 +9,7 @@ import { type Key, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { eighKernel, qrKernel } from './_kernels.ts'
-import { dnrm2 } from './blas.ts'
+import { dgemv, dnrm2 } from './blas.ts'
 
 /** A symmetric matrix given as a dense matrix or implicitly by its order and its product with a vector. */
 export type SymmetricOperator = TensorLike | { readonly n: number; readonly matvec: (x: Float64Array) => Float64Array }
@@ -48,15 +48,7 @@ function operatorOf(a: SymmetricOperator): Op {
   const data = m.data
   return {
     n,
-    matvec: (x) => {
-      const y = new Float64Array(n)
-      for (let i = 0; i < n; i++) {
-        let s = 0
-        for (let j = 0; j < n; j++) s += (data[i * n + j] ?? 0) * (x[j] ?? 0)
-        y[i] = s
-      }
-      return y
-    },
+    matvec: (x) => dgemv(data, n, n, x),
   }
 }
 

@@ -21,7 +21,7 @@ import {
 } from '../../tensor/index.ts'
 import { eighKernel } from './_kernels.ts'
 import { mT } from './_matrix.ts'
-import { dnrm2 } from './blas.ts'
+import { dgemv, dnrm2 } from './blas.ts'
 import { qr } from './qr.ts'
 import { svd } from './svd.ts'
 
@@ -152,15 +152,7 @@ function asMatvec(op: Operator): { matvec: (x: Float64Array) => Float64Array; n:
   const data = m.data
   return {
     n,
-    matvec: (x) => {
-      const y = new Float64Array(n)
-      for (let i = 0; i < n; i++) {
-        let s = 0
-        for (let j = 0; j < n; j++) s += (data[i * n + j] ?? 0) * (x[j] ?? 0)
-        y[i] = s
-      }
-      return y
-    },
+    matvec: (x) => dgemv(data, n, n, x),
   }
 }
 
