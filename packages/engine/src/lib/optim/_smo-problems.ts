@@ -4,8 +4,8 @@
 // start or a bound reaches both. Not exported from the barrel.
 
 import { fromStorage, type Tensor } from '../tensor/index.ts'
-import type { SmoNuProblem } from './smo-nu.ts'
 import type { SmoProblem } from './smo.ts'
+import type { SmoNuProblem } from './smo-nu.ts'
 
 /** Row-major m x m matrix `entry(i, j)` as a tensor. */
 function matrixOf(m: number, entry: (i: number, j: number) => number): Tensor {

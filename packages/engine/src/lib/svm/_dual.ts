@@ -4,7 +4,6 @@
 // `optim/_smo-problems.ts`; what is here is the reading of a state. Each dual is built without shrinking, so the
 // gradient (and with it the objective and the gap) is exact at every step. Not exported from the barrel.
 
-import { nuRho, nuSmoAlgorithm, nuSvcStart, nuSvrStart, type SmoState, smoAlgorithm, smoRho } from '../optim/index.ts'
 import {
   nuSvcProblem,
   nuSvrProblem,
@@ -13,6 +12,7 @@ import {
   svddProblem,
   svrProblem,
 } from '../optim/_smo-problems.ts'
+import { nuRho, nuSmoAlgorithm, nuSvcStart, nuSvrStart, type SmoState, smoAlgorithm, smoRho } from '../optim/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 
 /** What a state of a dual stands for: a kernel expansion `sum_i coef_i K(x_i, x) - rho` over the dual's samples. */

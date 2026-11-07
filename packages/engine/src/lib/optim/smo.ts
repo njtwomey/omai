@@ -456,7 +456,6 @@ export function svrDual(
  */
 export function oneClassDual(kernel: TensorLike, nu: number, options: SmoOptions = {}): SvmDualResult {
   const K = squareFrom(kernel, 'kernel')
-  const n = K.n
   if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `oneClassDual: nu must be in (0, 1], got ${nu}`)
   const r = smo(oneClassProblem(K.data, nu), options)
   return { ...r, coef: r.alpha }

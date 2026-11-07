@@ -288,3 +288,20 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   of exported unions or signatures. FD-25: only `matmulPrimitive`, which is exported, is imported instead of found by running `matmul`; the rest of the
   rules' primitives are not exported. The rules are pure functions in `scripts/layers-rules.ts` with a test (3 `it`) in a new Vitest project `scripts`.
   Own checks only (the full gate was not run). Surface 0 added, 0 removed, 0 changed.
+- **16:55 Wave C, the SVM duals and the LP default (P3.5, P3.27), `agent-sv02-duals`, three commits, not pushed.** P3.5: the duals were set up in
+  `optim/smo.ts`, `optim/smo-nu.ts` and `svm/_dual.ts` with the same `Q`, `p`, `y`, bounds and feasible starts written out in each (the `alpha0` fill loops
+  line for line). A pin table first (`svm/_dual.test.ts`, one `it`, 12 rows: C-SVC, epsilon-SVR, one-class, SVDD, nu-SVC, nu-SVR on 8 points, linear and RBF
+  Gram matrices; each row runs `optim`'s run-to-end function and `svm`'s steppable dual and checks step count, rho, the coefficients and both objectives)
+  passed on the old code, then on the new: `optim/_smo-problems.ts` (not in the barrel) builds the six problems, and the three files call it. Solutions and
+  step counts are identical. The nu builders take the start as an argument, because `nuSvcStart` and `nuSvrStart` live in `smo-nu.ts`, which imports the
+  builders. P3.27: the review's premise that Bland's rule fails on plain programs was already half gone (Wave B's equilibration and pivot floor), but it is
+  still slow: Klee-Minty 8 took 67 pivots, a 60 x 120 packing program 262 to 325, a 80 x 160 one 333. The default is now Dantzig, with Bland's rule taking over
+  after more than `rows` consecutive pivots that left the vertex where they were (counted from the path, so no new state field); `pivotRule: 'bland'` is kept
+  for the teaching path. Pivots now: 15, 36 to 28, 22, and 5 instead of 38 on the near-tied 4 x 4 equilibrium program. `linprog` is one rule: an optimal
+  answer of any method is taken, infeasible or unbounded only when the interior point agrees with a simplex, and the methods are tried in order (simplex,
+  simplex with Bland and no pivot floor, interior point); the two Dantzig rungs are gone. The Bland-without-floor rung was kept after a stress run of 1,500
+  random near-tied games: without it 2 programs failed, with it 1 (the same one the old chain also loses). I could not find a cycling instance for
+  this tie rule (Beale under 300 row and column permutations, 20,000 random degenerate programs), so the fallback is exercised by Beale (5 pivots instead of 6)
+  and not shown to be necessary. Test count: 2 `it` added (the pin table, the pivot-rule table), the either-or assertions of the retry tests tightened to
+  `optimal`. The `simplexAlgorithm` example path changed from `[[0, 0], [4, 0], [3, 1]]` to `[[0, 0], [0, 2], [3, 1]]` (Dantzig takes the larger
+  reduced cost first). Own checks only (the full gate was not run). Surface 0 added, 0 removed, 0 changed.
