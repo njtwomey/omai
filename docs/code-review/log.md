@@ -390,7 +390,7 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   Tests added: 1 `it.each` (7 rows). Surface: 1 added (`tensor#toVector`), 11 changed.
 - **17:55 Gate.** The duplicate-cluster, failure-convention and native-array stage 1 merges passed the full local gate together: 26,438 tests, 9,613 examples, all static
   checks and all six tsc runs, no failure on the first run. 143 commits are ahead of `origin/main`; nothing is pushed (D-014).
-- **18:20 Native arrays, stage 2 (P3.8, D-009, D-015: `stats` and `metrics`).** Branch `agent-na03-stats`, 11 commits, nothing pushed (D-014).
+- **18:20 Native arrays, stage 2 (P3.8, D-009, D-015: `stats` and `metrics`).** Branch `agent-na03-stats`, 13 commits, nothing pushed (D-014).
   Migrated: `stats` `ranksOf` (takes a tensor-like, returns a float64 tensor; the rank tests keep a private plain-number kernel in
   `stats/_ranks.ts`), `tieCounts` (int32 tensor), `newtonMle`, `newtonMleAlgorithm`, `observedInformation` and `MleProblem.eta0`
   (start vector), `smoothing.bsplineDerivativeDesign` (takes tensors, returns the `[n, k]` matrix instead of `{ data, cols }`),
