@@ -200,7 +200,8 @@ function rowsOf(a: LinearProgram['aUb']): number[][] {
 /** The power of two that brings a data scale `largest` to about 1, or 1 when it is within a factor of 64 of it already. */
 function unitScale(largest: number): number {
   if (!(largest > 0) || !Number.isFinite(largest) || (largest >= 1 / 64 && largest <= 64)) return 1
-  return 2 ** -Math.round(Math.log2(largest))
+  // The exponent stops short of the largest finite power of two: for a denormal data scale 2 ** 1074 is Infinity.
+  return 2 ** Math.max(-1000, Math.min(1000, -Math.round(Math.log2(largest))))
 }
 
 /**

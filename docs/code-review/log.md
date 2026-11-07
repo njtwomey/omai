@@ -307,3 +307,10 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   and not shown to be necessary. Test count: 2 `it` added (the pin table, the pivot-rule table), the either-or assertions of the retry tests tightened to
   `optimal`. The `simplexAlgorithm` example path changed from `[[0, 0], [4, 0], [3, 1]]` to `[[0, 0], [0, 2], [3, 1]]` (Dantzig takes the larger
   reduced cost first). Own checks only (the full gate was not run). Surface 0 added, 0 removed, 1 changed (`LinprogOptions`: only the doc comment of `pivotRule`, which says the new default; `docs/api-surface.txt` regenerated).
+- **16:55 Regression found by the gate, fixed.** The gate over the data/kernels, exposition, layering, trace and SVM/LP merges failed one test:
+  `games/cooperative.property.test.ts` (a fast-check counterexample, a 4-player game with a value of 5e-324; the `trace` agent had seen the same test fail once and
+  pass on rerun, and called it load). It was not a flake. Run against the commits of the session it passes at the start and after the foundations, numerics and
+  dists merges, and fails from the optim merge (`a1f18991`): `linprog`'s equilibration (OL-3) scales the right-hand sides by `2 ** -round(log2(largest))`, which
+  is `2 ** 1074` = Infinity when the largest right-hand side is a denormal, so the program was declared infeasible (the nucleolus of that game threw). `unitScale`
+  now clamps the exponent to +-1000; a row with a right-hand side of 5e-324 joins the new-units test and fails without the fix. Lesson: a failure the agent
+  called a flake was a counterexample from a property test with a random seed, and those are the cheapest regression finders we have; check them against older commits before calling them load.

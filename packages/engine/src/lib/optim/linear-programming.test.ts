@@ -343,6 +343,13 @@ describe('linprog in other units', () => {
         )
       }
     }
+    // A right-hand side of the size of the smallest denormal: its unit scale (2 ** 1074) is not a finite double.
+    for (const [name, method] of Object.entries(methods)) {
+      const tiny: O.LinearProgram = { c: [1, 2], aEq: [[1, 1]], bEq: [5e-324] }
+      const r = method(tiny)
+      expect(r.status, `denormal right-hand side ${name}`).toBe('optimal')
+      expect(Array.from(toFlat(r.x)).every(Number.isFinite), `denormal right-hand side ${name} finite`).toBe(true)
+    }
   })
 })
 
