@@ -110,6 +110,11 @@ export function offlineBatch<O, A>(
   }
 }
 
+/** An action clipped to the box (a coordinate without a bound stays as it is). */
+export function clipToBox(sp: OfflineSpaces, a: readonly number[]): number[] {
+  return a.map((v, i) => Math.min(sp.high[i] ?? v, Math.max(sp.low[i] ?? v, v)))
+}
+
 /** Squash network outputs into the action box: `centre + scale tanh(u)`. */
 export function squashToBox(sp: OfflineSpaces, u: Value): Value {
   return add(mul(tanh(u), vectorTensor(sp.scale)), vectorTensor(sp.centre))
