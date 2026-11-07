@@ -12,6 +12,11 @@ export interface Expansion {
   readonly rho: number
 }
 
+/** A kernel expansion as the plain numbers a state stores (`live` in the classifier's and regressor's states). */
+export function toLive(e: Expansion): { readonly coef: number[]; readonly rho: number } {
+  return { coef: Array.from(e.coef), rho: e.rho }
+}
+
 /** A dual problem on the Gram matrix of its samples. */
 export interface Dual {
   /** The number of samples (the dual of a regression has twice as many variables). */
