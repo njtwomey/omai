@@ -288,7 +288,8 @@ export function hessianFd(
 export function finiteDifferenceWeights(order: number, stencil: readonly number[], x0 = 0): number[] {
   const n = stencil.length
   if (order >= n) throw new MdmlError('value', 'finiteDifferenceWeights: need more points than the derivative order')
-  if (new Set(stencil).size !== n) throw new MdmlError('value', 'finiteDifferenceWeights: the stencil points must be distinct')
+  if (new Set(stencil).size !== n)
+    throw new MdmlError('value', 'finiteDifferenceWeights: the stencil points must be distinct')
   // c[j][k]: weight of point j for derivative k, built point by point.
   const c: number[][] = Array.from({ length: n }, () => new Array<number>(order + 1).fill(0))
   let c1 = 1

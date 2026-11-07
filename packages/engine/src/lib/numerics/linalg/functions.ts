@@ -167,18 +167,22 @@ export function sqrtm(a: TensorLike, options: MatrixIterationOptions = {}): Valu
   let y = m
   let z = identity(n, m)
   const tol = options.tol ?? 1e-14
-  return namingSingular('sqrtm', 'an iterate is singular (A has an eigenvalue on the closed negative real axis, or is singular)', () => {
-    for (let i = 0; i < (options.maxIterations ?? 100); i++) {
-      const yi = inv(y)
-      const zi = inv(z)
-      const next = mul(add(y, zi), 0.5)
-      z = mul(add(z, yi), 0.5)
-      const change = norm1(sub(next, y)) / Math.max(norm1(next), 1e-300)
-      y = next
-      if (change <= tol) return y
-    }
-    throw new MdmlError('convergence', 'sqrtm: the Denman-Beavers iteration did not converge')
-  })
+  return namingSingular(
+    'sqrtm',
+    'an iterate is singular (A has an eigenvalue on the closed negative real axis, or is singular)',
+    () => {
+      for (let i = 0; i < (options.maxIterations ?? 100); i++) {
+        const yi = inv(y)
+        const zi = inv(z)
+        const next = mul(add(y, zi), 0.5)
+        z = mul(add(z, yi), 0.5)
+        const change = norm1(sub(next, y)) / Math.max(norm1(next), 1e-300)
+        y = next
+        if (change <= tol) return y
+      }
+      throw new MdmlError('convergence', 'sqrtm: the Denman-Beavers iteration did not converge')
+    },
+  )
 }
 
 // Gauss-Legendre nodes and weights on [0, 1] (8 points), for log(I + X) = sum_j w_j X (I + t_j X)^{-1}.

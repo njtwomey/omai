@@ -58,7 +58,10 @@ export function triangularKernel(
   if (!o.unitDiagonal)
     for (let i = 0; i < n; i++)
       if (at(i, i) === 0)
-        throw new MdmlError('value', `solveTriangular: the triangular factor is singular (zero on the diagonal at ${i})`)
+        throw new MdmlError(
+          'value',
+          `solveTriangular: the triangular factor is singular (zero on the diagonal at ${i})`,
+        )
   for (let c = 0; c < k; c++) {
     for (let step = 0; step < n; step++) {
       const i = forward ? step : n - 1 - step
@@ -774,6 +777,6 @@ export function svdKernel(
     normaliseColumns(t.v, m, m, t.u, n)
     out = { u: t.v, s: t.s, v: t.u }
   }
-  if (e !== 0) out.s.forEach((x, i) => (out.s[i] = scaleByPow2(x, e)))
+  if (e !== 0) for (let i = 0; i < out.s.length; i++) out.s[i] = scaleByPow2(out.s[i] ?? 0, e)
   return out
 }

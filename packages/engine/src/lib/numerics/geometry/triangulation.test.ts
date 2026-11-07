@@ -80,10 +80,13 @@ describe('triangulation properties', () => {
 
 describe('delaunay of exactly cocircular points is a valid triangulation', () => {
   const ring = (n: number, radius: number, centre: G.Point2 = [0, 0]): G.Point2[] =>
-    Array.from({ length: n }, (_, i): G.Point2 => [
-      centre[0] + radius * Math.cos((2 * Math.PI * i) / n),
-      centre[1] + radius * Math.sin((2 * Math.PI * i) / n),
-    ])
+    Array.from(
+      { length: n },
+      (_, i): G.Point2 => [
+        centre[0] + radius * Math.cos((2 * Math.PI * i) / n),
+        centre[1] + radius * Math.sin((2 * Math.PI * i) / n),
+      ],
+    )
   const polygonArea = (n: number, radius: number): number => 0.5 * n * radius * radius * Math.sin((2 * Math.PI) / n)
   const area = (pts: readonly G.Point2[], t: readonly [number, number, number]): number =>
     G.orient(pts[t[0]] as G.Point2, pts[t[1]] as G.Point2, pts[t[2]] as G.Point2) / 2
@@ -115,6 +118,12 @@ describe('delaunay of exactly cocircular points is a valid triangulation', () =>
     expect(G.inCircle(a, b, c, [0, -1])).toBe(0)
     expect(G.inCircle(a, b, c, [0, -1 + 2 ** -52])).toBeGreaterThan(0)
     expect(G.inCircle(a, b, c, [0, -1 - 2 ** -52])).toBeLessThan(0)
-    expect(() => G.delaunay([[0, 0], [1, 0], [0, Number.NaN]])).toThrow(expect.objectContaining({ code: 'value' }))
+    expect(() =>
+      G.delaunay([
+        [0, 0],
+        [1, 0],
+        [0, Number.NaN],
+      ]),
+    ).toThrow(expect.objectContaining({ code: 'value' }))
   })
 })

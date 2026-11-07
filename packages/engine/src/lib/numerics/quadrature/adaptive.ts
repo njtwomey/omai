@@ -325,7 +325,8 @@ export function adaptiveSimpson(
   b: number,
   options: { readonly tol?: number; readonly maxDepth?: number } = {},
 ): { readonly value: number; readonly evaluations: number } {
-  if (!Number.isFinite(a) || !Number.isFinite(b)) throw new MdmlError('value', 'adaptiveSimpson: the limits must be finite')
+  if (!Number.isFinite(a) || !Number.isFinite(b))
+    throw new MdmlError('value', 'adaptiveSimpson: the limits must be finite')
   let evaluations = 0
   const at = (x: number): number => {
     evaluations += 1
@@ -353,7 +354,8 @@ export function adaptiveSimpson(
     const left = simpsonPanel(l, m, fl, flm, fm)
     const right = simpsonPanel(m, r, fm, frm, fr)
     const delta = left + right - whole
-    if (depth <= 0 || evaluations >= SIMPSON_EVALUATION_CAP || Math.abs(delta) <= 15 * tol) return left + right + delta / 15
+    if (depth <= 0 || evaluations >= SIMPSON_EVALUATION_CAP || Math.abs(delta) <= 15 * tol)
+      return left + right + delta / 15
     return recurse(l, m, fl, flm, fm, left, tol / 2, depth - 1) + recurse(m, r, fm, frm, fr, right, tol / 2, depth - 1)
   }
   const fa = at(a)

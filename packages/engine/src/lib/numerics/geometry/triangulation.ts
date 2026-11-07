@@ -50,7 +50,14 @@ function inCircleSign(a: Point2, b: Point2, c: Point2, d: Point2): number {
   const parts = [a[0], a[1], b[0], b[1], c[0], c[1], d[0], d[1]].map(decompose)
   const lowest = Math.min(...parts.map((p) => p.exponent))
   const [ax, ay, bx, by, cx, cy, dx, dy] = parts.map((p) => p.mantissa << BigInt(p.exponent - lowest)) as [
-    bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
   ]
   const adx = ax - dx
   const ady = ay - dy

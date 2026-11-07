@@ -181,9 +181,7 @@ export function lstsq(a: TensorLike, b: TensorLike): Value {
   let x: Value
   if (m >= n) {
     const { q, r } = qr(ab)
-    x = rankDeficient(r, m, n)
-      ? matmul(pinv(ab), bb)
-      : triangularSolve(r, matmul(mT(q), bb), upper(false))
+    x = rankDeficient(r, m, n) ? matmul(pinv(ab), bb) : triangularSolve(r, matmul(mT(q), bb), upper(false))
   } else {
     // A^T = Q R, so A = R^T Q^T and the minimum-norm solution is Q R^{-T} b.
     const { q, r } = qr(mT(ab))
