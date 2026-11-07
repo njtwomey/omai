@@ -116,6 +116,21 @@ describe('combinators and the vector front', () => {
     expect(r.evaluations).toBe(5)
     expect(r.message).toMatch(/after: gave up/)
   })
+  it('More-Thuente reports a step bound or tolerance it stopped at as a typed warning, with the step still usable', () => {
+    const slide = { at: (a: number) => ({ value: -a, slope: -1 }) }
+    const stopped = O.moreThuente({ alphaMax: 4 })(slide, { value: 0, slope: -1 })
+    expect([stopped.success, stopped.warning, stopped.alpha, stopped.message]).toEqual([
+      false,
+      'alphaMax',
+      4,
+      'step at alphaMax',
+    ])
+    const met = O.moreThuente()(
+      { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) },
+      { value: 0.0625, slope: -0.5 },
+    )
+    expect([met.success, met.warning]).toEqual([true, undefined])
+  })
   it('lineSearch returns the new point and the gradient there', () => {
     const r = O.lineSearch(problem('rosen'), [-1.2, 1], [1, 0.4])
     expect(r.success).toBe(true)

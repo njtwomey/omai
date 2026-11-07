@@ -45,6 +45,9 @@ export interface LineTrial {
   readonly slope: number
 }
 
+/** Why a search that did not meet its conditions still ended at a usable last trial step (More-Thuente's warnings). */
+export type LineSearchWarning = 'xtol' | 'rounding' | 'alphaMax' | 'alphaMin'
+
 /** The outcome of a line search. */
 export interface LineSearchResult {
   /** The accepted step (NaN when the search failed). */
@@ -61,6 +64,11 @@ export interface LineSearchResult {
   readonly gradEvaluations: number
   readonly trials: readonly LineTrial[]
   readonly message: string
+  /**
+   * Set when `success` is false because the search stopped at a tolerance (`xtol`, `rounding`) or a step bound
+   * (`alphaMax`, `alphaMin`) before the conditions held: the last trial step is finite and a solver may take it.
+   */
+  readonly warning?: LineSearchWarning
 }
 
 /** A line search: a function of the line function and the start, as every second-order method takes it. */
