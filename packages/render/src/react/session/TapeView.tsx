@@ -179,9 +179,7 @@ export function TapeChannels<S, C extends Config>(
             record = s.project(name)
           } catch (e) {
             return (
-              <Note key={name}>
-                projection {name} unavailable: {e instanceof Error ? e.message : String(e)}
-              </Note>
+              <Note key={name}>{`projection ${name} unavailable: ${e instanceof Error ? e.message : String(e)}`}</Note>
             )
           }
           return record !== undefined && isExposition(record) ? (

@@ -747,12 +747,7 @@ function ProjectionView(props: {
       return { error: e instanceof Error ? e.message : String(e) }
     }
   }, [live.session, live.version, name, t])
-  if (projected.error !== undefined)
-    return (
-      <Note>
-        projection {name} unavailable: {projected.error}
-      </Note>
-    )
+  if (projected.error !== undefined) return <Note>{`projection ${name} unavailable: ${projected.error}`}</Note>
   // The record up to the viewed step is a still: views that would play it are told not to.
   const record = projected.record
   return record !== undefined && isExposition(record) ? (
