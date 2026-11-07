@@ -49,6 +49,9 @@ export const isBarrel = (f) => /\/index\.ts$/.test(f)
 
 /** The engine's source files: no tests, no generated data, no barrels. */
 export const engineSource = () => walk(LIB).filter((f) => !isTest(f) && !isData(f) && !isBarrel(f))
+/** Every package's and app's source files: no tests, no generated data, no barrels. */
+export const workspaceSource = () =>
+  ['packages', 'apps'].flatMap((d) => walk(join(ROOT, d))).filter((f) => !isTest(f) && !isData(f) && !isBarrel(f))
 export const domainOf = (f) => relative(LIB, f).split('/')[0]
 export const relOf = (f) => relative(LIB, f)
 

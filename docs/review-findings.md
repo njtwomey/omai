@@ -78,6 +78,29 @@ dispatching code: `numerics/special/incomplete.ts` (21 per 100 lines), `optim/sc
 (16), `numerics/special/elliptic.ts`, `bessel.ts`, `gamma.ts`, `zeta.ts` (11 to 15), `space/operations.ts` (59 casts),
 `optim/solvers.ts` (40). Worth reading for a missing type, not as a defect count.
 
+## Type definitions written more than once
+
+`node scripts/review/types.mjs` reads every `type` and `interface` of the packages and apps (7,859 definitions, 7,253
+exported, in 1,798 files), normalises each right-hand side (readonly dropped, `Array<T>` as `T[]`, members sorted) and
+groups them by name and by structure.
+- **Same name in several files: 355 names**, 11 with an identical structure (the same type written again): `Point2`
+  (`[number, number]`) in `graphics/rasterise.ts`, `numerics/geometry/triangulation.ts` and `render/react/interaction/
+  projection.ts`; `Pt` in `numerics/geometry/contours.ts`, `render/charts/lines.ts` and `render/svg/paths.ts`; `Vec3` in
+  `dynamics/celestial/elements.ts` and `scene/three-d.ts`; `Rgba` in `graphics/textures.ts` and `scene/paint.ts`;
+  `Reduction` in `base/options.ts` and `losses/_reduce.ts`; `RiemannRule` in `foundations/calculus.ts` and
+  `render/charts/functions.ts`; `C` (a complex pair) in `numerics/polynomial/rational.ts` and `symbolic/_numeric.ts`. The
+  other 344 share a name with a different structure: the same word meaning different things.
+- **Numeric shapes: 141 definitions in 49 shapes.** One shape under many names: `[number, number]` is `Point2`, `Pt`,
+  `Complex`, `ComplexNumber`, `PacmapPair` and 20 more (several are state types, which are a different matter);
+  `[number, number, number]` is `Vec3`, `Rgb`, `Point3`, `P3`, `Triplet`; `[n, n, n, n]` is `Rgba`, `Quat`, `Plane4`, `Box`.
+  One name under several shapes: `Vec` is `number[]` in some files and `Float64Array` in others (12 definitions of
+  `Mat`/`Vec` as `Float64Array`); `Matrix` is `number[][]` in four places and a `{rows, cols, data}` record in two.
+- **How vectors are spelled in the engine's source** (occurrences): `number[]` 11,720; `Float64Array` 10,940; `TensorLike`
+  6,947; `Value` 6,567; `number[][]` 2,137; `ArrayLike<number>` 1,472. By domain, `optim` writes `Float64Array` 1,640 times
+  and `number[]` 211; `numerics` is even (580 and 513); `dists` and `losses` write `TensorLike` and `Value`.
+- **What the scan cannot say:** whether two names with one structure mean one thing (a `Point2` and a `Complex` do not).
+  The cluster review reads only the vector, matrix, point, colour and complex families, not every shape.
+
 ## Not yet done
 
 Coverage per file for the core (running), the CPU profile for the hot paths, the cluster reading (Phase 1), and the
