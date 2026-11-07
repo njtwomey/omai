@@ -2,6 +2,7 @@
 // on typed arrays (the fast, untraced path) and anything traced goes through tensor operations, so the same solver
 // code is differentiable by differentiating through its steps.
 import { MdmlError } from '../../base/index.ts'
+import { nextAfter } from '../../numerics/approximation/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import {
   add,
@@ -100,17 +101,4 @@ export function allFinite(x: ArrayLike<number>): boolean {
 export function minStep(t: number, direction: number): number {
   const next = nextAfter(t, direction * Number.POSITIVE_INFINITY)
   return 10 * Math.abs(next - t)
-}
-
-/** The next float after `x` towards `toward` (C's nextafter). */
-export function nextAfter(x: number, toward: number): number {
-  if (Number.isNaN(x) || Number.isNaN(toward)) return Number.NaN
-  if (x === toward) return toward
-  if (x === 0) return toward > 0 ? Number.MIN_VALUE : -Number.MIN_VALUE
-  const buf = new DataView(new ArrayBuffer(8))
-  buf.setFloat64(0, x)
-  let bits = buf.getBigInt64(0)
-  bits += toward > x === x > 0 ? 1n : -1n
-  buf.setBigInt64(0, bits)
-  return buf.getFloat64(0)
 }

@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
+import { nextAfter } from '../../numerics/approximation/index.ts'
 import { daxpy, ddot, dgesvd, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { jtv, jv, robustCost, runLeastSquares, scaleForLoss } from './_least-squares.ts'
@@ -89,19 +90,6 @@ function strictlyFeasible(x: Float64Array, box: Box, rstep: number): Float64Arra
     if ((out[i] ?? 0) < lb || (out[i] ?? 0) > ub) out[i] = 0.5 * (lb + ub)
   }
   return out
-}
-
-/** The next double after x towards y. */
-function nextAfter(x: number, y: number): number {
-  if (Number.isNaN(x) || Number.isNaN(y)) return Number.NaN
-  if (x === y) return y
-  if (x === 0) return y > 0 ? Number.MIN_VALUE : -Number.MIN_VALUE
-  const buf = new DataView(new ArrayBuffer(8))
-  buf.setFloat64(0, x)
-  let bits = buf.getBigInt64(0)
-  bits += y > x === x > 0 ? 1n : -1n
-  buf.setBigInt64(0, bits)
-  return buf.getFloat64(0)
 }
 
 /** The largest step along s from x within the bounds and which bounds it hits (scipy's step_size_to_bound). */
