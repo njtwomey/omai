@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../../testing/golden.ts'
 import { checkPrimitive, grad } from '../../autodiff/index.ts'
-import { item, sum, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { item, sum, type Tensor, type TensorLike, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { runAlgorithm } from '../../trace/index.ts'
 import { solve } from '../linalg/index.ts'
 import * as S from './index.ts'
 
@@ -109,5 +110,32 @@ describe('sparse properties', () => {
       }
     }
     expect(S.arnoldi(a, 5).basis.length).toBe(6)
+  })
+
+  it('the start vectors, the deflation matrix and the multigrid iterate take tensor-likes (migration, D-009)', () => {
+    const a = tri(12)
+    const v0 = Array.from({ length: 12 }, (_, i) => 1 + (i % 3))
+    const calls: [string, (v: TensorLike) => number[]][] = [
+      ['lanczos', (v) => [...S.lanczos(a, 5, { v0: v }).alpha]],
+      ['arnoldi', (v) => toFlat(S.arnoldi(a, 4, { v0: v }).hessenberg)],
+      [
+        'arnoldiAlgorithm',
+        (v) => [...(runAlgorithm(S.arnoldiAlgorithm(a, 3, { v0: v }), { maxSteps: 3 }).state.basis[0] ?? [])],
+      ],
+      ['multigridCycle', (v) => toFlat(S.multigridCycle(S.poisson1d(7), Array(7).fill(1), v, { shape: [7] }).post)],
+    ]
+    for (const [name, f] of calls) {
+      const v = name === 'multigridCycle' ? v0.slice(0, 7) : v0
+      const expected = f(v)
+      expect(f(Float64Array.from(v)), name).toEqual(expected)
+      expect(f(tensor(v)), name).toEqual(expected)
+      expect(() => f(tensor([v, v])), name).toThrow(expect.objectContaining({ code: 'shape' }))
+    }
+    // The deflation vectors: the rows of a matrix, or a list of Float64Arrays.
+    const e0 = Float64Array.from({ length: 12 }, (_, i) => (i === 0 ? 1 : 0))
+    expect([...S.lanczos(a, 4, { v0, deflate: [e0] }).alpha]).toEqual([
+      ...S.lanczos(a, 4, { v0, deflate: [Array.from(e0)] }).alpha,
+    ])
+    expect(() => S.lanczos(a, 4, { v0, deflate: tensor([1, 2]) })).toThrow(expect.objectContaining({ code: 'shape' }))
   })
 })

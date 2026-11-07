@@ -69,8 +69,8 @@ describe('multigrid', () => {
     const x0 = exact.map((v, i) => v + (smoothError[i] ?? 0))
     const cycle = S.multigridCycle(a, ones(n), x0, { shape: [n], levels: 2 })
     const err = (x: readonly number[]): number => Math.hypot(...x.map((v, i) => v - (exact[i] ?? 0)))
-    expect(err(cycle.pre)).toBeGreaterThan(0.9 * err(x0))
-    expect(err(cycle.corrected)).toBeLessThan(0.1 * err(x0))
+    expect(err(toFlat(cycle.pre))).toBeGreaterThan(0.9 * err(x0))
+    expect(err(toFlat(cycle.corrected))).toBeLessThan(0.1 * err(x0))
   })
 
   it('is the identity on a fixed point for any smoother', () => {
@@ -82,7 +82,7 @@ describe('multigrid', () => {
           const a = S.poisson1d(7)
           const exact = toFlat(solve(S.toDense(a), ones(7)))
           const c = S.multigridCycle(a, ones(7), exact, { shape: [7], smoother, preSweeps: sweeps, postSweeps: sweeps })
-          c.post.forEach((v, i) => {
+          toFlat(c.post).forEach((v, i) => {
             expect(v).toBeCloseTo(exact[i] ?? 0, 10)
           })
         },

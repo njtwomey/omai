@@ -6,7 +6,16 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
-import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import {
+  asTensor,
+  concreteOrThrow,
+  fromStorage,
+  primalOf,
+  type Tensor,
+  type TensorLike,
+  toFlat,
+  toVector,
+} from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -28,11 +37,21 @@ function numeric(op: LinearOperator, transpose = false): (x: Vec) => Vec {
   return (x) => Float64Array.from(toFlat(primalOf(f(fromStorage(x, [x.length], 'float64')))))
 }
 
-function startVector(n: number, v0: ArrayLike<number> | undefined, key: Key | undefined): Vec {
-  if (v0 !== undefined) return Float64Array.from(v0)
+function startVector(n: number, v0: TensorLike | undefined, key: Key | undefined): Vec {
+  if (v0 !== undefined) return Float64Array.from(toVector(v0, 'the start vector'))
   if (key !== undefined) return Float64Array.from(normal(key, [n]).data)
   // A fixed, non-degenerate default.
   return Float64Array.from({ length: n }, (_, i) => 1 + Math.sin(i + 1) / 3)
+}
+
+/** The vectors to stay orthogonal to: the rows of a matrix, or a list of vectors. */
+function deflationRows(deflate: TensorLike | readonly Float64Array[] | undefined): readonly Vec[] {
+  if (deflate === undefined) return []
+  if (Array.isArray(deflate) && deflate.every((row) => row instanceof Float64Array)) return deflate as readonly Vec[]
+  const t = concreteOrThrow(asTensor(deflate as TensorLike) as Tensor, 'the deflation vectors')
+  if (t.shape.length !== 2) throw new MdmlError('shape', 'the deflation vectors must be the rows of a matrix')
+  const [k = 0, n = 0] = t.shape
+  return Array.from({ length: k }, (_, i) => Float64Array.from(Array.from(t.data).slice(i * n, (i + 1) * n)))
 }
 
 /** Orthogonalise w against the basis twice (classical Gram-Schmidt with reorthogonalisation). */
@@ -59,12 +78,17 @@ export interface LanczosResult {
 
 /**
  * The Lanczos process for a symmetric operator, with full reorthogonalisation (so the basis stays orthonormal in
- * floating point): m steps produce the tridiagonal T whose eigenvalues (Ritz values) approximate A's extremes.
+ * floating point): m steps produce the tridiagonal T whose eigenvalues (Ritz values) approximate A's extremes. Takes the
+ * start vector as a tensor-like and the deflation vectors as the rows of a matrix (migration, D-009: `v0` was
+ * `ArrayLike<number>`, `deflate` a list of `Float64Array`s, which is still accepted); the result keeps its plain
+ * arrays, which are the internal state of the iteration.
  *
  * @param a - Symmetric matrix or operator.
  * @param m - Number of steps.
- * @param options - Start vector or key, and vectors to stay orthogonal to (deflation).
+ * @param options - Start vector `[n]` or key, and vectors to stay orthogonal to (deflation) as `[k, n]` rows.
  * @returns T's diagonals and the basis.
+ * @throws MdmlError with code `shape` unless the start vector is a vector and the deflation vectors a matrix, and
+ *   `not-differentiable` for a traced value.
  * @concept lanczos
  * @example
  * ```ts
@@ -75,12 +99,16 @@ export interface LanczosResult {
 export function lanczos(
   a: CsrMatrix | TensorLike | LinearOperator,
   m: number,
-  options: { readonly v0?: ArrayLike<number>; readonly key?: Key; readonly deflate?: readonly Float64Array[] } = {},
+  options: {
+    readonly v0?: TensorLike
+    readonly key?: Key
+    readonly deflate?: TensorLike | readonly Float64Array[]
+  } = {},
 ): LanczosResult {
   const op = asOperator(a)
   const apply = numeric(op)
   const n = op.shape[0]
-  const deflate = options.deflate ?? []
+  const deflate = deflationRows(options.deflate)
   let q = orthogonalise(startVector(n, options.v0, options.key), deflate)
   if (norm(q) < 1e-10)
     q = orthogonalise(
@@ -153,8 +181,9 @@ export interface ArnoldiState {
  *
  * @param a - Matrix or operator.
  * @param m - Number of steps.
- * @param options - Start vector or key.
+ * @param options - Start vector `[n]` (a tensor-like; migration, D-009: was `ArrayLike<number>`) or key.
  * @returns The algorithm.
+ * @throws MdmlError with code `shape` unless the start vector is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { arnoldiAlgorithm } from 'mdml-engine/numerics/sparse'
@@ -166,7 +195,7 @@ export interface ArnoldiState {
 export function arnoldiAlgorithm(
   a: CsrMatrix | TensorLike | LinearOperator,
   m: number,
-  options: { readonly v0?: ArrayLike<number>; readonly key?: Key } = {},
+  options: { readonly v0?: TensorLike; readonly key?: Key } = {},
 ): Algorithm<ArnoldiState, KrylovPath> {
   const op = asOperator(a)
   const apply = numeric(op)
@@ -219,8 +248,9 @@ export function arnoldiAlgorithm(
  *
  * @param a - Matrix or operator.
  * @param m - Number of steps.
- * @param options - Start vector or key.
+ * @param options - Start vector `[n]` (a tensor-like; migration, D-009: was `ArrayLike<number>`) or key.
  * @returns The Hessenberg matrix `[m + 1, m]` and the basis.
+ * @throws MdmlError with code `shape` unless the start vector is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { arnoldi } from 'mdml-engine/numerics/sparse'
@@ -230,7 +260,7 @@ export function arnoldiAlgorithm(
 export function arnoldi(
   a: CsrMatrix | TensorLike | LinearOperator,
   m: number,
-  options: { readonly v0?: ArrayLike<number>; readonly key?: Key } = {},
+  options: { readonly v0?: TensorLike; readonly key?: Key } = {},
 ): ArnoldiResult {
   const n = asOperator(a).shape[0]
   const steps = Math.min(m, n)
