@@ -61,7 +61,7 @@ describe('smoothSolvers', () => {
     const slotted = slotAlgorithm<SlotState>({
       name: 'big',
       config: {},
-      schema: { metrics: {} },
+      schema: { metrics: {}, tensors: {} },
       problem,
       solver: config,
       tol: 1e-12,
@@ -69,6 +69,6 @@ describe('smoothSolvers', () => {
       observe: () => ({ metrics: {} }),
     })
     const state = slotted.step(slotted.init(key(0)), { key: key(1) } as never)
-    expect(slotted.observe?.(state).metrics?.['gradNorm']).toBeCloseTo(expected, 6)
+    expect(slotted.observe?.(state, 1).metrics?.['gradNorm']).toBeCloseTo(expected, 6)
   })
 })
