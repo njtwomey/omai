@@ -35,7 +35,6 @@ const unaryKernels: Record<UnaryKernel, (x: number) => number> = {
   ceil: Math.ceil,
   round: roundHalfEven,
   trunc: Math.trunc,
-  not: (x) => (x ? 0 : 1),
 }
 
 /** Python's `%`: the exact remainder of `a % b` moved to the sign of the divisor (numpy `mod`, no `a / b` rounding). */
@@ -68,9 +67,6 @@ const binaryKernels: Record<BinaryKernel, (a: number, b: number) => number> = {
   floorDiv: (a, b) => floorDivide(a, b),
   // Python semantics: the result takes the sign of the divisor.
   mod: pyMod,
-  and: (a, b) => (a && b ? 1 : 0),
-  or: (a, b) => (a || b ? 1 : 0),
-  xor: (a, b) => (a ? 1 : 0) ^ (b ? 1 : 0),
 }
 
 const compareKernels: Record<CompareKernel, (a: number, b: number) => number> = {

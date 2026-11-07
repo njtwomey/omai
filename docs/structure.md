@@ -428,7 +428,7 @@ graph attached.
 
 Randomness is explicit. `Key` values are immutable and derived, never advanced. A `Context` holds a seed and derives
 keys by name: `ctx.key('init')`, `ctx.key('data', 3)`. The same names give the same numbers on every machine, in any
-call order. A context also carries the tracer, the trace policy, the backend and default dtype. Every high-level
+call order. A context also carries the tracer and the trace policy. Every high-level
 function resolves randomness with one rule: an explicit `key` option, else `ctx.key(<function name>)` from the
 `ctx` option, else the default context. The default context (seed 0) can be replaced once at application start with
 `setDefaultContext(createContext({ seed: 42 }))`. That is the only module-level state in the library, and the core
@@ -682,10 +682,11 @@ oracle: numpy, jax for derivative rules
   `isTraced`, `lift` (a value into a trace, as a constant when it belongs to a lower one), `concreteOrThrow` (clear
   errors where a concrete value is required), `primalOf`.
 - `backend.ts`: the `Backend` interface (the kernel vocabulary: elementwise, reduce, scan, matmul, transpose, slice,
-  concat, pad, take and take-along-axis gathers with their scatter-add adjoints, where, cast, sort),
-  `BackendCapabilities` (dtypes, synchronous, device, element limit), `supportsDType`. Convolutions are composed in
-  `numerics/convolution` (im2col and matmul), so a backend needs no conv kernel; WASM and WebGPU backends implement the
-  interface later.
+  concat, pad, take and take-along-axis gathers with their scatter-add adjoints, where, cast, sort). Every tensor
+  carries its backend and the primitives dispatch through it. The interface declares no capabilities and the context
+  carries no backend: when a second backend exists, what it can do (dtypes, device, element limit) is designed with it.
+  Convolutions are composed in `numerics/convolution` (im2col and matmul), so a backend needs no conv kernel; WASM and
+  WebGPU backends implement the interface later.
 - `cpu.ts` and `_cpu/elementwise.ts`, `_cpu/reduce.ts`, `_cpu/structure.ts`, `_cpu/sort.ts`: the reference CPU backend.
 - `ops/arithmetic.ts`: `add`, `sub`, `mul`, `div`, `floorDiv`, `mod`, `pow`, `neg`, `abs`, `sign`, `maximum`,
   `minimum`, `clip`, `reciprocal`.
@@ -954,7 +955,7 @@ oracle: none; checked by properties (samples, neighbours and decoded values stay
 
 ### 4.9 `context/`: reproducibility and defaults
 
-- `context.ts`: `Context` (seed, key derivation, tracer, trace policy, backend, default dtype, tolerances),
+- `context.ts`: `Context` (seed, key derivation, tracer, trace policy),
   `createContext`, `ctx.key(...names)`, `derive(ctx, name)` (child contexts with a namespaced key path).
 - `default.ts`: `defaultContext`, `setDefaultContext` (the one documented piece of module state; read only by
   convenience layers).

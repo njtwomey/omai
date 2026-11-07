@@ -1,19 +1,17 @@
 /**
  * The `Context`: everything a computation needs besides its data, namely a seed with named key derivation, the tracer
- * and trace policy, the backend and the default float dtype. `createContext` makes one, and `derive` makes a child
- * whose keys are namespaced so independent parts of a program never share randomness.
+ * and trace policy. `createContext` makes one, and `derive` makes a child whose keys are namespaced so independent parts
+ * of a program never share randomness.
  *
  * @index structure Context: a seed with named key derivation, tracer and trace policy.
  */
 
 import { type Key, keyFromPath } from '../random/index.ts'
-import { type Backend, cpu, type DType } from '../tensor/index.ts'
 import { nullTracer, policies, type TracePolicy, type Tracer } from '../trace/index.ts'
 
 /**
  * Everything a computation needs besides its data: the seed (with named key derivation), where traces go and what is
- * recorded, the backend and the default float dtype. Passing one context gives a whole program reproducible
- * randomness and consistent tracing.
+ * recorded. Passing one context gives a whole program reproducible randomness and consistent tracing.
  *
  * @concept context
  */
@@ -23,8 +21,6 @@ export interface Context {
   readonly path: readonly (string | number)[]
   readonly tracer: Tracer
   readonly policy: TracePolicy
-  readonly backend: Backend
-  readonly dtype: Extract<DType, 'float64' | 'float32'>
   /** A key for a named purpose: the same names always give the same key. */
   key(...names: readonly (string | number)[]): Key
 }
@@ -34,8 +30,6 @@ export interface CreateContextOptions {
   readonly seed?: number
   readonly tracer?: Tracer
   readonly policy?: TracePolicy
-  readonly backend?: Backend
-  readonly dtype?: Extract<DType, 'float64' | 'float32'>
 }
 
 function make(
@@ -49,8 +43,6 @@ function make(
     path,
     tracer: options.tracer,
     policy: options.policy,
-    backend: options.backend,
-    dtype: options.dtype,
     key: (...names) => keyFromPath(seed, ...path, ...names),
   }
 }
@@ -58,7 +50,7 @@ function make(
 /**
  * Create a context.
  *
- * @param options - Seed (default 0), tracer (default none), policy (default minimal), backend (default CPU), dtype.
+ * @param options - Seed (default 0), tracer (default none), policy (default minimal).
  * @returns The context.
  * @concept context
  * @example
@@ -72,8 +64,6 @@ export function createContext(options: CreateContextOptions = {}): Context {
   return make(options.seed ?? 0, [], {
     tracer: options.tracer ?? nullTracer,
     policy: options.policy ?? policies.minimal,
-    backend: options.backend ?? cpu,
-    dtype: options.dtype ?? 'float64',
   })
 }
 
@@ -100,8 +90,6 @@ export function derive(
   return make(ctx.seed, [...ctx.path, name], {
     tracer: overrides.tracer ?? ctx.tracer,
     policy: overrides.policy ?? ctx.policy,
-    backend: overrides.backend ?? ctx.backend,
-    dtype: overrides.dtype ?? ctx.dtype,
   })
 }
 
