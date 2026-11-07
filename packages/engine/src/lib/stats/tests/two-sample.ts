@@ -7,7 +7,7 @@
 
 import { type Alternative, gcdOf, MdmlError, maxOf, meanOf, minOf, type TestResult } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../../random/index.ts'
-import type { TensorLike } from '../../tensor/index.ts'
+import { type TensorLike, toVector } from '../../tensor/index.ts'
 import { matrixRankSym, ols, pinvSym } from '../_linear.ts'
 import { chi2Sf, groupsOf, rowsOf, sample, sortedCopy } from '../_util.ts'
 import { iqr } from '../quantiles.ts'
@@ -405,10 +405,11 @@ export function wassersteinTest(x: TensorLike, y: TensorLike, options: DistanceT
 /**
  * The Epps-Singleton test of equal distributions (scipy.stats.epps_singleton_2samp), comparing empirical characteristic
  * functions at the points t / sigma (sigma the pooled semi-IQR), with the small-sample correction for samples under 25.
+ * Takes tensors (migration, D-009: the `t` option was `readonly number[]`; nested arrays still work).
  *
  * @param x - First sample (at least 5).
  * @param y - Second sample (at least 5).
- * @param options - t, the evaluation points (default [0.4, 0.8]).
+ * @param options - t, the evaluation points: a vector (default [0.4, 0.8]).
  * @returns W and its chi-square p-value.
  * @example
  * ```ts
@@ -419,11 +420,11 @@ export function wassersteinTest(x: TensorLike, y: TensorLike, options: DistanceT
 export function eppsSingleton(
   x: TensorLike,
   y: TensorLike,
-  options: { readonly t?: readonly number[] } = {},
+  options: { readonly t?: TensorLike } = {},
 ): TestResult {
   const a = sample('eppsSingleton', x, 5)
   const b = sample('eppsSingleton', y, 5)
-  const t = options.t ?? [0.4, 0.8]
+  const t = options.t === undefined ? [0.4, 0.8] : toVector(options.t, 'eppsSingleton')
   for (const v of t) if (!(v > 0)) throw new MdmlError('value', 'eppsSingleton: t must be positive')
   const nx = a.length
   const ny = b.length

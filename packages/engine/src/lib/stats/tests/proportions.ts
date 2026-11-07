@@ -7,7 +7,7 @@
 import { type Alternative, type Estimate, MdmlError, type TestResult } from '../../base/index.ts'
 import { binomial } from '../../dists/index.ts'
 import { betaincinv } from '../../numerics/special/index.ts'
-import { arange, item, toFlat } from '../../tensor/index.ts'
+import { arange, item, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
 import { normCdf, normPpf, normSf } from '../_util.ts'
 import { cohensH } from '../effect-size.ts'
 import { intervalEstimate, pValueFromTails, resolveTestOptions, type TestOptions, testResult } from './result.ts'
@@ -144,12 +144,15 @@ export function binomTest(
 /**
  * The z test of one proportion against a value, or of the difference of two proportions
  * (statsmodels proportions_ztest): z = (p_hat - value) / sqrt(p(1 - p) sum(1 / n_i)) with p the pooled sample
- * proportion (or `propVar` when given), referred to the standard normal.
+ * proportion (or `propVar` when given), referred to the standard normal. Takes tensors (migration, D-009: `count` and
+ * `nobs` were `number | readonly number[]`; nested arrays still work).
  *
- * @param count - Successes: one count, or two.
- * @param nobs - Trials: one or two.
+ * @param count - Successes: one count, or a vector of two.
+ * @param nobs - Trials: one number (for every count) or a vector of one or two.
  * @param options - value (default 0 for two samples; required for one), propVar, alternative and level.
  * @returns z, its p-value and the proportion (or difference) with its Wald interval.
+ * @throws MdmlError with code `shape` unless `count` and `nobs` are numbers or vectors, and `value` for counts and
+ * sizes that do not match.
  * @example
  * ```ts
  * import { proportionsZtest } from 'mdml-engine/stats/tests'
@@ -157,13 +160,13 @@ export function binomTest(
  * ```
  */
 export function proportionsZtest(
-  count: number | readonly number[],
-  nobs: number | readonly number[],
+  count: number | TensorLike,
+  nobs: number | TensorLike,
   options: TestOptions & { readonly value?: number; readonly propVar?: number } = {},
 ): TestResult {
   const { alternative, level } = resolveTestOptions(options)
-  const c = typeof count === 'number' ? [count] : [...count]
-  const nn = typeof nobs === 'number' ? c.map(() => nobs) : [...nobs]
+  const c = typeof count === 'number' ? [count] : [...toVector(count, 'proportionsZtest')]
+  const nn = typeof nobs === 'number' ? c.map(() => nobs) : [...toVector(nobs, 'proportionsZtest')]
   if (c.length !== nn.length || c.length < 1 || c.length > 2)
     throw new MdmlError('value', 'proportionsZtest: one or two samples of matching counts and sizes')
   for (let i = 0; i < c.length; i++) counts('proportionsZtest', c[i] ?? 0, nn[i] ?? 1)

@@ -6,7 +6,7 @@
 
 import { MdmlError, type TestResult } from '../../base/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
-import { type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { normCdf, normPpf, normSf, sample, vec } from '../_util.ts'
 import { testResult } from './result.ts'
@@ -204,11 +204,13 @@ export interface GroupSequentialDesign {
  * critical z whose crossing probability, given no earlier crossing, equals the alpha newly spent, computed by
  * recursive numerical integration of the score process (Armitage, McPherson and Rowe) on a Simpson grid. A two-sided
  * design is symmetric and spends alpha / 2 in each tail (so its O'Brien-Fleming boundaries for alpha 0.05 are those of
- * the one-sided alpha 0.025 design, as in Jennison and Turnbull's tables).
+ * the one-sided alpha 0.025 design, as in Jennison and Turnbull's tables). Takes tensors (migration, D-009: `times` was
+ * `readonly number[]`; nested arrays still work).
  *
- * @param times - Increasing information fractions in (0, 1].
+ * @param times - Increasing information fractions in (0, 1]: a vector.
  * @param options - alpha (default 0.05), kind (default `'obrien-fleming'`), sides (2, default, or 1), rho, gamma.
  * @returns The spent alpha, boundaries and nominal levels.
+ * @throws MdmlError with code `value` unless the times increase within (0, 1], and `shape` unless `times` is a vector.
  * @example
  * ```ts
  * import { alphaSpending } from 'mdml-engine/stats/tests'
@@ -216,7 +218,7 @@ export interface GroupSequentialDesign {
  * ```
  */
 export function alphaSpending(
-  times: readonly number[],
+  times: TensorLike,
   options: {
     readonly alpha?: number
     readonly kind?: SpendingKind
@@ -225,25 +227,26 @@ export function alphaSpending(
     readonly gamma?: number
   } = {},
 ): GroupSequentialDesign {
+  const looks = toVector(times, 'alphaSpending')
   const alpha = options.alpha ?? 0.05
   const sides = options.sides ?? 2
-  for (let i = 0; i < times.length; i++)
-    if (!((times[i] ?? 0) > (i === 0 ? 0 : (times[i - 1] ?? 0)) && (times[i] ?? 0) <= 1))
+  for (let i = 0; i < looks.length; i++)
+    if (!((looks[i] ?? 0) > (i === 0 ? 0 : (looks[i - 1] ?? 0)) && (looks[i] ?? 0) <= 1))
       throw new MdmlError('value', 'alphaSpending: times must increase within (0, 1]')
   // A symmetric two-sided design spends alpha / 2 in each tail.
   const perSide = spendingFunction(options.kind ?? 'obrien-fleming', sides === 2 ? alpha / 2 : alpha, {
     ...(options.rho === undefined ? {} : { rho: options.rho }),
     ...(options.gamma === undefined ? {} : { gamma: options.gamma }),
   })
-  const spent = times.map((t) => (sides === 2 ? 2 : 1) * perSide(t))
+  const spent = looks.map((t) => (sides === 2 ? 2 : 1) * perSide(t))
   const boundaries: number[] = []
   const G = 801
   // The sub-density of the score S on a grid over the continuation region of the previous look.
   let grid: Float64Array | undefined
   let dens: Float64Array | undefined
   let prevT = 0
-  for (let k = 0; k < times.length; k++) {
-    const t = times[k] ?? 1
+  for (let k = 0; k < looks.length; k++) {
+    const t = looks[k] ?? 1
     const inc = (spent[k] ?? 0) - (k === 0 ? 0 : (spent[k - 1] ?? 0))
     const dt = t - prevT
     const sd = Math.sqrt(dt)
@@ -295,7 +298,7 @@ export function alphaSpending(
     prevT = t
   }
   return {
-    times: [...times],
+    times: [...looks],
     spent,
     boundaries: vec(boundaries),
     nominalAlpha: vec(boundaries.map((c) => (sides === 2 ? 2 : 1) * normSf(c))),
