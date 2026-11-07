@@ -247,3 +247,7 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `kernel-selection.test.ts` (back to 300). The same `Math.hypot(...grad)` is in `causal/_solve.ts:37`, outside optim, left. Own checks only: the test
   directories of optim, losses, kernel-methods, nn, learn, linear, svm, tune, rl, agents and 18 callers (10,934 tests, one worker, niced; the two failures above
   were the only ones), tsc, examples, barrels, layers, lint, agent index and surface (0 added, 0 removed, 0 changed); the full gate was not run.
+- **15:25 Gate.** The first four Wave B merges (foundations, numerics, dists/stats/metrics, optim/losses) passed the full local gate together: 26,373 tests,
+  9,570 examples, all static checks and all six tsc runs. The test count is 165 above the last gate (26,208) because each table row of an `it.each` counts as
+  a test: the count of `it` blocks rose by about 40, which the review estimated at +40 to +60. Two existing tests pinned bugs and were changed by the agents
+  (`knowledge-graph.test.ts`: bound 4x to 3x chance after the stochastic mode stopped converging early; `kernel-quantile.test.ts`: the LP support count is not monotone in the penalty).
