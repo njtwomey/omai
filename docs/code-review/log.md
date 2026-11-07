@@ -644,3 +644,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   files of `numerics`; `vitest related` on the changed sources in two runs (A: 1,504 files, 23,802 tests; B: 1,376 files, 21,761 tests; all passed, the callers of `norm`, `svd`,
   `erfinv`, the root finders and the trees included); 43 `@example`s of the touched files; barrels, layers, lint, agent index, surface 0 added, 0 removed, 0 changed. The full gate was not
   run. Nothing pushed (D-014).
+- **22:00 Gate.** The type-name renames and unused-export triage (P3.10, P3.9) and the numerics test tables (P3.23) passed the full local gate: 26,525 tests, 9,613 examples,
+  all static checks and all six tsc runs, first run. 233 commits ahead of `origin/main`; nothing pushed (D-014). Completion about 77% by effort, 33 of 44 work items.
