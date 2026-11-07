@@ -55,7 +55,7 @@ import {
   runAlgorithm,
 } from '../trace/index.ts'
 import { invSpd } from './_linear.ts'
-import { mat, sample } from './_util.ts'
+import { mat, sample, vec } from './_util.ts'
 import { median } from './quantiles.ts'
 
 /** The state of {@link newtonMleAlgorithm}. */
@@ -243,9 +243,10 @@ export const mleSolvers: ModeTable<MleProblem, VectorParams> = familySolvers<Mle
   },
 )
 
-/** The result of {@link newtonMle}. */
+/** The result of {@link newtonMle}. Holds a tensor (migration, D-009: `eta` was a `Float64Array`). */
 export interface NewtonMleResult {
-  readonly eta: Float64Array
+  /** The maximiser, a `[p]` tensor. */
+  readonly eta: Tensor
   readonly logLikelihood: number
   readonly iterations: number
   readonly converged: boolean
@@ -259,7 +260,7 @@ export interface NewtonMleResult {
  * @param eta0 - The starting point: a vector (a tensor, a typed array or a flat array).
  * @param options - maxIterations, tol, tracer, policy, and `solver` (a value of `mleSolvers.space`: the default
  *   Levenberg Newton or any generic solver of `smoothSolvers`).
- * @returns The maximiser and its log-likelihood.
+ * @returns The maximiser (`eta`, a tensor; migration, D-009: was a `Float64Array`) and its log-likelihood.
  * @throws MdmlError with code `shape` unless `eta0` is a vector.
  * @example
  * ```ts
@@ -280,10 +281,10 @@ export function newtonMle(
       ...run,
       maxSteps: maxIterations ?? 200,
     })
-    const eta = Float64Array.from(mleSolvers.params(config, generic.state).x)
+    const eta = vec(mleSolvers.params(config, generic.state).x)
     return {
       eta,
-      logLikelihood: item(logLikelihood(asTensor(eta)) as Tensor),
+      logLikelihood: item(logLikelihood(eta) as Tensor),
       iterations: generic.steps,
       converged: generic.status === 'converged',
     }
@@ -293,7 +294,7 @@ export function newtonMle(
     maxSteps: maxIterations ?? 200,
   })
   return {
-    eta: r.state.eta,
+    eta: vec(r.state.eta),
     logLikelihood: r.state.logLikelihood,
     iterations: r.state.iterations,
     converged: r.state.converged || r.state.stalled,
@@ -600,7 +601,7 @@ export function fitDistribution(x: TensorLike, family: FitFamily, options: Newto
       return spec.positive[i] === true ? Math.log(v) : v
     })
     const r = newtonMle((eta) => ll(natural(eta)), eta0, options)
-    theta = natural(asTensor(r.eta)).map((v) => item(v as Tensor))
+    theta = natural(r.eta).map((v) => item(v as Tensor))
     method = 'newton'
     converged = r.converged
   }

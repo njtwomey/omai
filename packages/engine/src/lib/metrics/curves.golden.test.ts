@@ -5,10 +5,10 @@ import * as M from './index.ts'
 
 /** A curve case: one array field of a curve computed from (yTrue, yScore[, weights]) and the options. */
 const field =
-  <C>(curve: (t: never, s: Tensor, o: Record<string, unknown>) => C, pick: (c: C) => readonly number[]): CaseFn =>
+  <C>(curve: (t: never, s: Tensor, o: Record<string, unknown>) => C, pick: (c: C) => Tensor): CaseFn =>
   (inputs, params) => {
     const [t, , o] = metricArgs(inputs, params)
-    return tensor([...pick(curve(t as never, inputs[1], o))])
+    return pick(curve(t as never, inputs[1], o))
   }
 
 goldenSuite('ROC and DET curves against sklearn', 'metrics/curves', {

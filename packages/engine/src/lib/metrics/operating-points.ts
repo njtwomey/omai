@@ -5,11 +5,11 @@
  */
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { labelValues } from './_labels.ts'
-import { type CurveOptions, confusionMatrixAtThresholds, rocCurve } from './curves.ts'
+import { precisionRecallRows, rocRows, thresholdRows } from './_curves.ts'
+import type { CurveOptions } from './curves.ts'
 import { type Metric, type MetricInput, metricResult } from './metric.ts'
-import { precisionRecallCurve } from './precision-recall.ts'
 
 const spec = (
   name: string,
@@ -26,7 +26,7 @@ const spec = (
 
 /** The ROC points without dropping intermediate thresholds. */
 const roc = (yTrue: MetricInput, yScore: MetricInput, options: CurveOptions) =>
-  rocCurve(yTrue, yScore as TensorLike, { ...options, dropIntermediate: false })
+  rocRows(yTrue, yScore as TensorLike, { ...options, dropIntermediate: false })
 
 const at = (name: string, value: number, threshold: number, yTrue: MetricInput): MetricResult =>
   metricResult(name, value, labelValues(yTrue).length, { threshold })
@@ -54,7 +54,7 @@ export interface FixedRateOptions extends CurveOptions {
  */
 export const recallAtFixedPrecision: Metric<FixedRateOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yScore: MetricInput, options: FixedRateOptions = { min: 0 }): MetricResult => {
-    const pr = precisionRecallCurve(yTrue, yScore as TensorLike, options)
+    const pr = precisionRecallRows(yTrue, yScore as TensorLike, options)
     let best: [number, number, number] | undefined
     for (const [i, t] of pr.thresholds.entries()) {
       const p = pr.precision[i] ?? 0
@@ -90,7 +90,7 @@ export const recallAtFixedPrecision: Metric<FixedRateOptions, MetricInput> = Obj
  */
 export const precisionAtFixedRecall: Metric<FixedRateOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yScore: MetricInput, options: FixedRateOptions = { min: 0 }): MetricResult => {
-    const pr = precisionRecallCurve(yTrue, yScore as TensorLike, options)
+    const pr = precisionRecallRows(yTrue, yScore as TensorLike, options)
     let best: [number, number, number] | undefined
     for (const [i, t] of pr.thresholds.entries()) {
       const p = pr.precision[i] ?? 0
@@ -294,7 +294,7 @@ export interface CostOptions extends CurveOptions {
  */
 export const minimumExpectedCost: Metric<CostOptions, MetricInput> = Object.assign(
   (yTrue: MetricInput, yScore: MetricInput, options: CostOptions = {}): MetricResult => {
-    const c = confusionMatrixAtThresholds(yTrue, yScore as TensorLike, options)
+    const c = thresholdRows(yTrue, yScore as TensorLike, options)
     const nP = c.tps[c.tps.length - 1] ?? 0
     const nN = c.fps[c.fps.length - 1] ?? 0
     const pi = options.prior ?? nP / (nP + nN)
@@ -316,10 +316,13 @@ export const minimumExpectedCost: Metric<CostOptions, MetricInput> = Object.assi
   { spec: spec('minimumExpectedCost', 'lower', [0, Infinity]) },
 )
 
-/** A cost curve: normalised expected cost against the probability cost of the positive class. */
+/**
+ * A cost curve: normalised expected cost against the probability cost of the positive class. The vectors are `[points]`
+ * tensors (migration, D-009: they were `readonly number[]`).
+ */
 export interface CostCurve {
-  readonly probabilityCost: readonly number[]
-  readonly normalizedExpectedCost: readonly number[]
+  readonly probabilityCost: Tensor<'float64'>
+  readonly normalizedExpectedCost: Tensor<'float64'>
 }
 
 /**
@@ -330,7 +333,7 @@ export interface CostCurve {
  * @param yTrue - True labels `[N]`.
  * @param yScore - Scores `[N]`.
  * @param options - points on the PC axis (default 101), posLabel and sample weights.
- * @returns The curve.
+ * @returns The curve, `[points]` tensors (was `number[]`).
  * @example
  * ```ts
  * import { costCurve } from 'mdml-engine/metrics'
@@ -350,5 +353,5 @@ export function costCurve(
     for (const [i, f] of r.fpr.entries()) best = Math.min(best, (1 - (r.tpr[i] ?? 0)) * p + f * (1 - p))
     return best
   })
-  return { probabilityCost: pc, normalizedExpectedCost: nec }
+  return { probabilityCost: fromVector(pc), normalizedExpectedCost: fromVector(nec) }
 }

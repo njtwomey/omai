@@ -1,10 +1,9 @@
 import { metricValue } from '../../testing/metrics.ts'
 import { goldenSuite } from '../../testing/suite.ts'
-import { tensor } from '../tensor/index.ts'
 import * as M from './index.ts'
 
 goldenSuite('external clustering metrics against sklearn', 'metrics/clustering', {
-  contingencyMatrix: ([t, p]) => tensor(M.contingencyMatrix(t, p).matrix as number[][]),
+  contingencyMatrix: ([t, p]) => M.contingencyMatrix(t, p).matrix,
   pairConfusionMatrix: ([t, p]) => M.pairConfusionMatrix(t, p),
   randScore: metricValue(M.randScore),
   adjustedRandScore: metricValue(M.adjustedRandScore),

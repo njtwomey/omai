@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { toFlat } from '../tensor/index.ts'
 import * as M from './index.ts'
 
 const yTrue = [0, 1, 1, 0, 1, 0, 1, 1, 0, 0]
@@ -21,13 +22,13 @@ describe('classification rates and their identities', () => {
     const t = [0, 1, 2, 2, 1, 0, 2, 1]
     const p = [0, 2, 2, 1, 1, 0, 2, 0]
     const r = M.precisionRecallFscoreSupport(t, p, { average: 'macro' })
-    expect(r.support).toEqual([2, 3, 3])
+    expect(toFlat(r.support)).toEqual([2, 3, 3])
     expect(r.averaged?.precision).toBeCloseTo(v(M.precisionScore(t, p, { average: 'macro' })), 15)
     expect(r.averaged?.recall).toBeCloseTo(v(M.recallScore(t, p, { average: 'macro' })), 15)
     expect(r.averaged?.fscore).toBeCloseTo(v(M.f1Score(t, p, { average: 'macro' })), 15)
     const none = M.precisionRecallFscoreSupport(t, p, { average: 'none' })
     expect(none.averaged).toBeUndefined()
-    expect(none.recall[0]).toBe(1)
+    expect(toFlat(none.recall)[0]).toBe(1)
   })
 
   it('scores multilabel rows by exact match in subset accuracy', () => {

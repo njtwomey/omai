@@ -1,6 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { sweepAt } from '../exposition/index.ts'
+import { toArray, toFlat } from '../tensor/index.ts'
 import { accuracyScore, confusionMatrix } from './classification.ts'
 import { analyseThresholds, confusionMargins, tableCost, thresholdConfusion, thresholdCosts } from './contingency.ts'
 import { rocAucScore } from './curves.ts'
@@ -17,17 +18,26 @@ describe('contingency tables', () => {
       ],
     })
     expect(m.n).toBe(100)
-    expect(m.actual).toEqual([60, 40])
-    expect(m.predicted).toEqual([55, 45])
-    expect(m.rowRate[1]).toBeCloseTo(35 / 40) // TPR
-    expect(m.rowMiss[1]).toBeCloseTo(5 / 40) // FNR
-    expect(m.rowRate[0]).toBeCloseTo(50 / 60) // TNR
-    expect(m.rowMiss[0]).toBeCloseTo(10 / 60) // FPR
-    expect(m.columnRate[1]).toBeCloseTo(35 / 45) // PPV
-    expect(m.columnMiss[1]).toBeCloseTo(10 / 45) // FDR
-    expect(m.columnRate[0]).toBeCloseTo(50 / 55) // NPV
-    expect(m.columnMiss[0]).toBeCloseTo(5 / 55) // FOR
-    expect(m.prevalence[1]).toBeCloseTo(0.4)
+    const [actual, predicted, rowRate, rowMiss, columnRate, columnMiss, prevalence] = [
+      m.actual,
+      m.predicted,
+      m.rowRate,
+      m.rowMiss,
+      m.columnRate,
+      m.columnMiss,
+      m.prevalence,
+    ].map(toFlat)
+    expect(actual).toEqual([60, 40])
+    expect(predicted).toEqual([55, 45])
+    expect(rowRate?.[1]).toBeCloseTo(35 / 40) // TPR
+    expect(rowMiss?.[1]).toBeCloseTo(5 / 40) // FNR
+    expect(rowRate?.[0]).toBeCloseTo(50 / 60) // TNR
+    expect(rowMiss?.[0]).toBeCloseTo(10 / 60) // FPR
+    expect(columnRate?.[1]).toBeCloseTo(35 / 45) // PPV
+    expect(columnMiss?.[1]).toBeCloseTo(10 / 45) // FDR
+    expect(columnRate?.[0]).toBeCloseTo(50 / 55) // NPV
+    expect(columnMiss?.[0]).toBeCloseTo(5 / 55) // FOR
+    expect(prevalence?.[1]).toBeCloseTo(0.4)
     expect(m.accuracy).toBeCloseTo(0.85)
   })
 
@@ -39,8 +49,8 @@ describe('contingency tables', () => {
         [0, 0],
       ],
     })
-    expect(m.rowRate[1]).toBeNaN()
-    expect(m.columnRate[1]).toBeNaN()
+    expect(toFlat(m.rowRate)[1]).toBeNaN()
+    expect(toFlat(m.columnRate)[1]).toBeNaN()
     expect(m.accuracy).toBe(1)
     expect(
       confusionMargins({
@@ -66,14 +76,13 @@ describe('contingency tables', () => {
   })
 
   it('thresholding orders negative then positive and honours posLabel and weights', () => {
-    expect(thresholdConfusion([1, 1, 2, 2], [0.1, 0.9, 0.2, 0.8], 0.5, { posLabel: 1 })).toEqual({
-      labels: [2, 1],
-      matrix: [
-        [1, 1],
-        [1, 1],
-      ],
-    })
-    expect(thresholdConfusion([0, 1, 1], [0.9, 0.9, 0.1], 0.5, { sampleWeight: [2, 3, 5] }).matrix).toEqual([
+    const tied = thresholdConfusion([1, 1, 2, 2], [0.1, 0.9, 0.2, 0.8], 0.5, { posLabel: 1 })
+    expect(tied.labels).toEqual([2, 1])
+    expect(toArray(tied.matrix)).toEqual([
+      [1, 1],
+      [1, 1],
+    ])
+    expect(toArray(thresholdConfusion([0, 1, 1], [0.9, 0.9, 0.1], 0.5, { sampleWeight: [2, 3, 5] }).matrix)).toEqual([
       [0, 2],
       [5, 3],
     ])
@@ -97,18 +106,20 @@ describe('contingency tables', () => {
             { labels: [0, 1] },
           )
           const m = confusionMargins(cut)
-          const rowsSumToOne = m.rowRate.every(
-            (r, i) => Number.isNaN(r) || Math.abs(r + (m.rowMiss[i] ?? 0) - 1) < 1e-12,
+          const rowMiss = toFlat(m.rowMiss)
+          const columnMiss = toFlat(m.columnMiss)
+          const rowsSumToOne = toFlat(m.rowRate).every(
+            (r, i) => Number.isNaN(r) || Math.abs(r + (rowMiss[i] ?? 0) - 1) < 1e-12,
           )
-          const colsSumToOne = m.columnRate.every(
-            (r, j) => Number.isNaN(r) || Math.abs(r + (m.columnMiss[j] ?? 0) - 1) < 1e-12,
+          const colsSumToOne = toFlat(m.columnRate).every(
+            (r, j) => Number.isNaN(r) || Math.abs(r + (columnMiss[j] ?? 0) - 1) < 1e-12,
           )
           const acc = accuracyScore(
             y,
             s.map((v) => (v >= threshold ? 1 : 0)),
           ).estimate.value
           return (
-            JSON.stringify(cut.matrix) === JSON.stringify(direct.matrix) &&
+            JSON.stringify(toArray(cut.matrix)) === JSON.stringify(toArray(direct.matrix)) &&
             m.n === y.length &&
             Math.abs(m.accuracy - acc) < 1e-12 &&
             rowsSumToOne &&
@@ -136,7 +147,7 @@ describe('misclassification costs', () => {
         [50, -2],
       ],
     )
-    expect(c.cells).toEqual([
+    expect(toArray(c.cells)).toEqual([
       [0, 70],
       [400, -84],
     ])
@@ -169,12 +180,12 @@ describe('misclassification costs', () => {
             [fn, -tp],
           ]
           const sweep = thresholdCosts(y, s, costs)
-          const direct = sweep.thresholds.map((th) => tableCost(thresholdConfusion(y, s, th), costs).total)
+          const direct = toFlat(sweep.thresholds).map((th) => tableCost(thresholdConfusion(y, s, th), costs).total)
           const min = Math.min(...direct)
           return (
-            sweep.totals.every((v, i) => Math.abs(v - (direct[i] ?? Number.NaN)) < 1e-9) &&
+            toFlat(sweep.totals).every((v, i) => Math.abs(v - (direct[i] ?? Number.NaN)) < 1e-9) &&
             sweep.best.total === min &&
-            sweep.thresholds.length === new Set(s).size + 1
+            sweep.thresholds.shape[0] === new Set(s).size + 1
           )
         },
       ),
@@ -232,12 +243,12 @@ describe('threshold analysis', () => {
           const tablesAgree = r.thresholds.every(
             (t, i) =>
               JSON.stringify(sweepAt(r, t).table) ===
-                JSON.stringify(thresholdConfusion(y, s, t, { sampleWeight: w }).matrix) && sweepAt(r, t).index === i,
+                JSON.stringify(toArray(thresholdConfusion(y, s, t, { sampleWeight: w }).matrix)) && sweepAt(r, t).index === i,
           )
           const close = (a: number, b: number): boolean => Math.abs(a - b) < 1e-9
           return (
             tablesAgree &&
-            r.cost?.every((c, i) => close(c, cut.totals[i] ?? Number.NaN)) === true &&
+            r.cost?.every((c, i) => close(c, toFlat(cut.totals)[i] ?? Number.NaN)) === true &&
             r.thresholds[r.cheapest ?? -1] === cut.best.threshold &&
             close(r.rocAuc, rocAucScore(y, s, { sampleWeight: w }).estimate.value) &&
             close(r.averagePrecision, averagePrecisionScore(y, s, { sampleWeight: w }).estimate.value)

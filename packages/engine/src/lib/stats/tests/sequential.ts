@@ -188,11 +188,12 @@ export function spendingFunction(
   }
 }
 
-/** A group-sequential design. */
+/** A group-sequential design. Holds tensors (migration, D-009: `times` and `spent` were `readonly number[]`). */
 export interface GroupSequentialDesign {
-  readonly times: readonly number[]
-  /** Cumulative alpha spent at each look. */
-  readonly spent: readonly number[]
+  /** The information fractions of the looks, `[K]`. */
+  readonly times: Tensor
+  /** Cumulative alpha spent at each look, `[K]`. */
+  readonly spent: Tensor
   /** Critical |z| (two-sided) or z (one-sided) at each look. */
   readonly boundaries: Tensor
   /** The nominal p-value threshold of each look's z test. */
@@ -209,7 +210,8 @@ export interface GroupSequentialDesign {
  *
  * @param times - Increasing information fractions in (0, 1]: a vector.
  * @param options - alpha (default 0.05), kind (default `'obrien-fleming'`), sides (2, default, or 1), rho, gamma.
- * @returns The spent alpha, boundaries and nominal levels.
+ * @returns The looks, the spent alpha, boundaries and nominal levels, all `[K]` tensors (`times` and `spent` were
+ *   `number[]`).
  * @throws MdmlError with code `value` unless the times increase within (0, 1], and `shape` unless `times` is a vector.
  * @example
  * ```ts
@@ -298,8 +300,8 @@ export function alphaSpending(
     prevT = t
   }
   return {
-    times: [...looks],
-    spent,
+    times: vec(looks),
+    spent: vec(spent),
     boundaries: vec(boundaries),
     nominalAlpha: vec(boundaries.map((c) => (sides === 2 ? 2 : 1) * normSf(c))),
   }

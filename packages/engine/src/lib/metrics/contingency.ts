@@ -7,33 +7,50 @@
 
 import { MdmlError, toRows } from '../base/index.ts'
 import { type ThresholdSweep, thresholdSweep } from '../exposition/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { asTensor, fromStorage, fromVector, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
 import type { LabelledConfusionMatrix } from './classification.ts'
 import { auc } from './curves.ts'
 import { flat, type MetricInput, type MetricOptions, sampleWeights, shapedArray } from './metric.ts'
 
+/** A confusion matrix as the functions of this file take it: the classes and the `[k, k]` counts as a tensor-like. */
+export interface ConfusionTable {
+  readonly labels: readonly Label[]
+  /** The counts, `[k, k]`: actual classes as rows, predicted classes as columns (a nested array works). */
+  readonly matrix: TensorLike
+}
+
+/** The counts of a table as rows of plain numbers, checked to be `k` by `k` for its `k` labels. */
+function tableRows(name: string, table: ConfusionTable): number[][] {
+  const k = table.labels.length
+  const t = asTensor(table.matrix)
+  if (t.shape.length !== 2 || t.shape[0] !== k || t.shape[1] !== k)
+    throw new MdmlError('shape', `${name}: the matrix must be ${k} by ${k}, one row and column per label`)
+  return toRows(toFlat(t), k, k)
+}
+
 /**
  * The margins of a contingency table (a confusion matrix with actual classes as rows and predicted classes as
- * columns): totals and the rates read along rows and columns. A rate whose denominator is zero is NaN.
+ * columns): totals and the rates read along rows and columns. A rate whose denominator is zero is NaN. The vectors
+ * are `[k]` tensors (migration, D-009: they were `readonly number[]`).
  */
 export interface ConfusionMargins {
   /** The grand total. */
   readonly n: number
   /** Row totals: how many of each actual class. */
-  readonly actual: readonly number[]
+  readonly actual: Tensor<'float64'>
   /** Column totals: how many predicted as each class. */
-  readonly predicted: readonly number[]
+  readonly predicted: Tensor<'float64'>
   /** Diagonal over row total: each class's recall (TPR for the positive class, TNR for the negative). */
-  readonly rowRate: readonly number[]
+  readonly rowRate: Tensor<'float64'>
   /** Off-diagonal over row total: each class's miss rate (FNR for the positive class, FPR for the negative). */
-  readonly rowMiss: readonly number[]
+  readonly rowMiss: Tensor<'float64'>
   /** Diagonal over column total: each class's precision (PPV for the positive class, NPV for the negative). */
-  readonly columnRate: readonly number[]
+  readonly columnRate: Tensor<'float64'>
   /** Off-diagonal over column total: each class's false discovery rate (FDR; FOR for the negative class). */
-  readonly columnMiss: readonly number[]
+  readonly columnMiss: Tensor<'float64'>
   /** Row total over n: each class's prevalence. */
-  readonly prevalence: readonly number[]
+  readonly prevalence: Tensor<'float64'>
   /** The diagonal over n. */
   readonly accuracy: number
 }
@@ -42,7 +59,8 @@ export interface ConfusionMargins {
  * The margins of a confusion matrix: row and column totals, each class's recall and miss rate (rows), precision and
  * false discovery rate (columns), prevalence, and accuracy — everything a contingency table writes around its cells.
  *
- * @param table - A confusion matrix of counts (`confusionMatrix`, `thresholdConfusion`), actual classes as rows.
+ * @param table - A confusion matrix of counts (`confusionMatrix`, `thresholdConfusion`), actual classes as rows; the
+ *   matrix takes a tensor-like (migration, D-009: it was a nested array, which still works).
  * @returns The margins, in the table's class order.
  * @throws MdmlError `shape` when the matrix is not square or does not match its labels.
  * @concept classification-metrics
@@ -55,25 +73,24 @@ export interface ConfusionMargins {
  * m.actual // => [4, 6]
  * ```
  */
-export function confusionMargins(table: LabelledConfusionMatrix): ConfusionMargins {
+export function confusionMargins(table: ConfusionTable): ConfusionMargins {
   const k = table.labels.length
-  if (table.matrix.length !== k || table.matrix.some((row) => row.length !== k))
-    throw new MdmlError('shape', `confusionMargins: the matrix must be ${k} by ${k}, one row and column per label`)
-  const at = (i: number, j: number): number => table.matrix[i]?.[j] ?? 0
-  const actual = Array.from({ length: k }, (_, i) => table.matrix[i]?.reduce((s, v) => s + v, 0) ?? 0)
+  const rows = tableRows('confusionMargins', table)
+  const at = (i: number, j: number): number => rows[i]?.[j] ?? 0
+  const actual = Array.from({ length: k }, (_, i) => rows[i]?.reduce((s, v) => s + v, 0) ?? 0)
   const predicted = Array.from({ length: k }, (_, j) => actual.reduce((s, _a, i) => s + at(i, j), 0))
   const n = actual.reduce((s, v) => s + v, 0)
   const diagonal = Array.from({ length: k }, (_, i) => at(i, i))
   const ratio = (a: number, b: number): number => (b === 0 ? Number.NaN : a / b)
   return {
     n,
-    actual,
-    predicted,
-    rowRate: diagonal.map((d, i) => ratio(d, actual[i] ?? 0)),
-    rowMiss: diagonal.map((d, i) => ratio((actual[i] ?? 0) - d, actual[i] ?? 0)),
-    columnRate: diagonal.map((d, j) => ratio(d, predicted[j] ?? 0)),
-    columnMiss: diagonal.map((d, j) => ratio((predicted[j] ?? 0) - d, predicted[j] ?? 0)),
-    prevalence: actual.map((a) => ratio(a, n)),
+    actual: fromVector(actual),
+    predicted: fromVector(predicted),
+    rowRate: fromVector(diagonal.map((d, i) => ratio(d, actual[i] ?? 0))),
+    rowMiss: fromVector(diagonal.map((d, i) => ratio((actual[i] ?? 0) - d, actual[i] ?? 0))),
+    columnRate: fromVector(diagonal.map((d, j) => ratio(d, predicted[j] ?? 0))),
+    columnMiss: fromVector(diagonal.map((d, j) => ratio((predicted[j] ?? 0) - d, predicted[j] ?? 0))),
+    prevalence: fromVector(actual.map((a) => ratio(a, n))),
     accuracy: ratio(
       diagonal.reduce((s, v) => s + v, 0),
       n,
@@ -96,7 +113,8 @@ export interface ThresholdConfusionOptions extends MetricOptions {
  * @param yScore - Scores, higher meaning more positive (probabilities, decision values).
  * @param threshold - The cut.
  * @param options - posLabel and sample weights.
- * @returns The confusion matrix with labels `[negative, positive]`.
+ * @returns The confusion matrix with labels `[negative, positive]`; the `[2, 2]` matrix is a tensor (migration,
+ *   D-009: was `number[][]`).
  * @throws MdmlError `value` with more than two classes; `shape` when the lengths differ.
  * @concept classification-metrics
  * @example
@@ -129,13 +147,13 @@ export function thresholdConfusion(
     const j = (s[i] ?? Number.NaN) >= threshold ? 1 : 0
     if (row !== undefined) row[j] = (row[j] ?? 0) + (w[i] ?? 0)
   }
-  return { labels: [neg, pos], matrix: m }
+  return { labels: [neg, pos], matrix: fromStorage(Float64Array.of(...m.flat()), [2, 2], 'float64') }
 }
 
-/** The cost of a contingency table under a cost matrix. */
+/** The cost of a contingency table under a cost matrix. Holds a tensor (migration, D-009: `cells` was nested arrays). */
 export interface TableCost {
-  /** cells[i][j]: the count of actual class i predicted as j, times its cost. */
-  readonly cells: readonly (readonly number[])[]
+  /** The `[k, k]` cells: the count of actual class i predicted as j, times its cost. */
+  readonly cells: Tensor<'float64'>
   readonly total: number
   /** The total over the grand total of the table (the expected cost of one case). */
   readonly perCase: number
@@ -146,9 +164,9 @@ export interface TableCost {
  * the table's class order; correct decisions usually cost 0 and may be negative to count as benefits), summed. Takes
  * tensors (migration, D-009: `costs` was `readonly (readonly number[])[]`; nested arrays still work).
  *
- * @param table - A confusion matrix of counts.
+ * @param table - A confusion matrix of counts (the matrix takes a tensor-like).
  * @param costs - The cost matrix `[k, k]`, one row per actual class and one column per predicted class.
- * @returns Each cell's cost, the total and the cost per case.
+ * @returns Each cell's cost (a `[k, k]` tensor, was `number[][]`), the total and the cost per case.
  * @throws MdmlError `shape` when the cost matrix does not match the table.
  * @concept classification-metrics
  * @example
@@ -160,21 +178,25 @@ export interface TableCost {
  * c.perCase // => 0.47
  * ```
  */
-export function tableCost(table: LabelledConfusionMatrix, costs: TensorLike): TableCost {
+export function tableCost(table: ConfusionTable, costs: TensorLike): TableCost {
   const k = table.labels.length
   const c = costRows('tableCost', costs, k, `${k} by ${k}, like the table`)
-  const cells = table.matrix.map((row, i) => row.map((n, j) => n * (c[i]?.[j] ?? 0)))
+  const rows = tableRows('tableCost', table)
+  const cells = rows.map((row, i) => row.map((n, j) => n * (c[i]?.[j] ?? 0)))
   const total = cells.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
-  const n = table.matrix.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
-  return { cells, total, perCase: n === 0 ? Number.NaN : total / n }
+  const n = rows.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0)
+  return { cells: fromStorage(Float64Array.from(cells.flat()), [k, k], 'float64'), total, perCase: n === 0 ? Number.NaN : total / n }
 }
 
-/** The total cost of cutting scores at every threshold, and the cheapest cut. */
+/**
+ * The total cost of cutting scores at every threshold, and the cheapest cut. The vectors are tensors (migration, D-009:
+ * they were `readonly number[]`).
+ */
 export interface ThresholdCosts {
-  /** Every distinct score, ascending, then +Infinity (nothing predicted positive). */
-  readonly thresholds: readonly number[]
-  /** The total cost at each threshold. */
-  readonly totals: readonly number[]
+  /** Every distinct score, ascending, then +Infinity (nothing predicted positive), a `[m]` tensor. */
+  readonly thresholds: Tensor<'float64'>
+  /** The total cost at each threshold, a `[m]` tensor. */
+  readonly totals: Tensor<'float64'>
   /** The cheapest threshold (the lowest of any ties) and its total. */
   readonly best: { readonly threshold: number; readonly total: number }
 }
@@ -189,7 +211,7 @@ export interface ThresholdCosts {
  * @param yScore - Scores, higher meaning more positive.
  * @param costs - `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`, a `[2, 2]` matrix.
  * @param options - posLabel and sample weights.
- * @returns The thresholds, their totals and the cheapest.
+ * @returns The thresholds, their totals (`[m]` tensors, were `number[]`) and the cheapest.
  * @throws MdmlError `shape` for a cost matrix that is not 2 by 2 or lengths that differ; `value` with more than two
  * classes.
  * @concept classification-metrics
@@ -211,8 +233,8 @@ export function thresholdCosts(
   const totals = sweepCost(sweep, c)
   const best = cheapestIndex(totals)
   return {
-    thresholds: sweep.thresholds,
-    totals,
+    thresholds: fromVector(sweep.thresholds),
+    totals: fromVector(totals),
     best: { threshold: sweep.thresholds[best] ?? Number.POSITIVE_INFINITY, total: totals[best] ?? 0 },
   }
 }

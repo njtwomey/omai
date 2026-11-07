@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beta, gamma, laplace, logNormal, normal } from '../dists/index.ts'
+import { toFlat } from '../tensor/index.ts'
 import * as M from './index.ts'
 
 // Reference values of metrics that no golden file runs: the cluster validity indices (scikit-learn), the proper scoring
@@ -132,9 +133,9 @@ describe('metrics against reference values', () => {
   it('agree with scikit-learn, scipy and the closed forms, including single-class and empty-positive inputs', () => {
     for (const [name, v, expected] of rows) expect(v(), name).toBeCloseTo(expected, 7)
     const curve = M.precisionRecallCurve([0, 0, 1, 1, 0, 1, 1, 0], [0.1, 0.4, 0.35, 0.8, 0.5, 0.45, 0.9, 0.4])
-    expect(curve.precision, 'precision').toEqual([0.5, 4 / 7, 0.5, 0.75, 2 / 3, 1, 1, 1])
-    expect(curve.recall, 'recall').toEqual([1, 1, 0.75, 0.75, 0.5, 0.5, 0.25, 0])
-    expect(curve.thresholds, 'thresholds').toEqual([0.1, 0.35, 0.4, 0.45, 0.5, 0.8, 0.9])
+    expect(toFlat(curve.precision), 'precision').toEqual([0.5, 4 / 7, 0.5, 0.75, 2 / 3, 1, 1, 1])
+    expect(toFlat(curve.recall), 'recall').toEqual([1, 1, 0.75, 0.75, 0.5, 0.5, 0.25, 0])
+    expect(toFlat(curve.thresholds), 'thresholds').toEqual([0.1, 0.35, 0.4, 0.45, 0.5, 0.8, 0.9])
     for (const [name, metric, want] of expected)
       Object.entries(cases).forEach(([label, [a, b]], i) => {
         const got = value(metric(a, b))

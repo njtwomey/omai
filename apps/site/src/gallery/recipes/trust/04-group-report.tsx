@@ -1,5 +1,6 @@
 import { groupReport, groupReportFromTables } from 'mdml-engine/exposition'
 import { rocCurve } from 'mdml-engine/metrics'
+import { toFlat } from 'mdml-engine/tensor'
 import { ControlPanel, ExpositionView, GroupSweepView, NumberField, SeedInput, Toggle } from 'mdml-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
@@ -54,10 +55,11 @@ export default function GroupReportRecipe(): ReactNode {
         scored: rows,
         roc: [0, 1].map((g) => {
           const idx = rows.groups.flatMap((gr, i) => (gr === g ? [i] : []))
-          return rocCurve(
+          const c = rocCurve(
             idx.map((i) => rows.labels[i] ?? 0),
             idx.map((i) => rows.scores[i] ?? 0),
           )
+          return { fpr: toFlat(c.fpr), tpr: toFlat(c.tpr), thresholds: toFlat(c.thresholds) }
         }),
         sweep: {
           thresholds: grid,

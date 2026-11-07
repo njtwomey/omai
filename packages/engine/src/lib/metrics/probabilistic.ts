@@ -5,7 +5,7 @@
  */
 
 import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
-import type { TensorLike } from '../tensor/index.ts'
+import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, rejectSampleWeight, sortLabels } from './_labels.ts'
 import { binarise, type Grid } from './_scores.ts'
 import {
@@ -233,11 +233,14 @@ export interface BinningOptions extends MetricOptions {
   readonly posLabel?: Label
 }
 
-/** A reliability diagram: the observed frequency and mean forecast of each non-empty bin. */
+/**
+ * A reliability diagram: the observed frequency and mean forecast of each non-empty bin. The vectors are `[bins]`
+ * tensors (migration, D-009: they were `readonly number[]`).
+ */
 export interface CalibrationCurve {
-  readonly probTrue: readonly number[]
-  readonly probPred: readonly number[]
-  readonly counts: readonly number[]
+  readonly probTrue: Tensor<'float64'>
+  readonly probPred: Tensor<'float64'>
+  readonly counts: Tensor<'float64'>
 }
 
 /**
@@ -247,7 +250,7 @@ export interface CalibrationCurve {
  * @param yTrue - True binary labels `[N]`.
  * @param yProb - Positive-class probabilities `[N]`.
  * @param options - nBins (default 5), strategy ('uniform' or 'quantile') and posLabel.
- * @returns The curve, with the sample count of each bin.
+ * @returns The curve, with the sample count of each bin, as `[bins]` tensors (was `number[]`).
  * @concept calibration
  * @example
  * ```ts
@@ -260,6 +263,16 @@ export function calibrationCurve(
   yProb: TensorLike,
   options: BinningOptions = {},
 ): CalibrationCurve {
+  const c = calibrationRows(yTrue, yProb, options)
+  return { probTrue: fromVector(c.probTrue), probPred: fromVector(c.probPred), counts: fromVector(c.counts) }
+}
+
+/** The points of a {@link calibrationCurve} as plain numbers, the form the decomposition reads. */
+function calibrationRows(
+  yTrue: MetricInput,
+  yProb: TensorLike,
+  options: BinningOptions,
+): { probTrue: number[]; probPred: number[]; counts: number[] } {
   const { y, p } = binaryForecast(yTrue, yProb, options.posLabel)
   const nBins = options.nBins ?? 5
   const bins = binIndices(p, nBins, options.strategy ?? 'uniform')
@@ -299,7 +312,7 @@ export const brierDecomposition: Metric<BinningOptions, MetricInput> = Object.as
     rejectSampleWeight('brierDecomposition', options)
     const { y, p } = binaryForecast(yTrue, yProb as TensorLike, options.posLabel)
     const n = y.length
-    const curve = calibrationCurve(yTrue, yProb as TensorLike, { ...options, nBins: options.nBins ?? 10 })
+    const curve = calibrationRows(yTrue, yProb as TensorLike, { ...options, nBins: options.nBins ?? 10 })
     const obar = y.reduce((a, b) => a + b, 0) / n
     let reliability = 0
     let resolution = 0

@@ -112,12 +112,14 @@ export function membershipReport(
   let advantage = 0
   let threshold = Number.POSITIVE_INFINITY
   let tprAtFpr = 0
-  c.fpr.forEach((fpr, i) => {
-    const tpr = c.tpr[i] ?? 0
+  const tprs = toFlat(c.tpr)
+  const thresholds = toFlat(c.thresholds)
+  toFlat(c.fpr).forEach((fpr, i) => {
+    const tpr = tprs[i] ?? 0
     const acc = (tpr + 1 - fpr) / 2
     if (acc > accuracy) {
       accuracy = acc
-      threshold = c.thresholds[i] ?? threshold
+      threshold = thresholds[i] ?? threshold
     }
     advantage = Math.max(advantage, tpr - fpr)
     if (fpr <= fprLevel) tprAtFpr = Math.max(tprAtFpr, tpr)

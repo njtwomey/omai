@@ -1,7 +1,7 @@
 /**
  * The `Tensor` type, an n-dimensional array with a dtype, a shape and contiguous row-major storage owned by a backend,
  * and the ways in and out of it: `tensor` (like `numpy.array`), wrapping existing storage, conversion of tensor-like
- * inputs, and `toArray`, `toFlat`, `toVector`, `item` and `clone`.
+ * inputs, `fromVector` (a float64 vector from a list), and `toArray`, `toFlat`, `toVector`, `item` and `clone`.
  *
  * @index structure The Tensor type, its constructors and conversions to plain arrays.
  */
@@ -125,6 +125,22 @@ export function fromStorage<D extends DType, S extends Shape>(
   backend: Backend = cpu,
 ): Tensor<D, S> {
   return backend.wrap(dtype, shape, data) as Tensor<D, S>
+}
+
+/**
+ * A float64 vector holding a copy of a list of numbers: how a routine that computed in plain arrays hands a result back
+ * as a tensor, once, at its boundary.
+ *
+ * @param values - The numbers (an array or a typed array); they are copied.
+ * @returns A tensor of shape `[values.length]`.
+ * @example
+ * ```ts
+ * import { fromVector } from 'mdml-engine/tensor'
+ * fromVector([1, 2, 3]).shape // => [3]
+ * ```
+ */
+export function fromVector(values: ArrayLike<number>): Tensor<'float64', [number]> {
+  return fromStorage(Float64Array.from(values), [values.length], 'float64')
 }
 
 /**
