@@ -174,7 +174,8 @@ export function schurEigenvalues(t: Float64Array, n: number): { re: number[]; im
 
 /**
  * An eigenvector of A for eigenvalue (re + i im), by two steps of inverse iteration on the real 2n x 2n embedding of
- * (A - lambda I) v = b, normalised to unit length with its largest-magnitude component real and positive.
+ * (A - lambda I) v = b, normalised to unit length with its largest-magnitude component real and positive. O(n^3) per eigenvalue, so `eig` uses
+ * {@link schurEigenvectors}; this is kept as the reference that one is tested against.
  */
 export function eigenvectorKernel(
   a: Float64Array,
@@ -228,5 +229,174 @@ export function eigenvectorKernel(
     outIm[i] = xr * pi + xi * pr
   }
   if (im === 0) outIm.fill(0)
+  return { re: outRe, im: outIm }
+}
+
+/**
+ * Solve (T - sigma I) y = w in place for a real quasi-upper-triangular T and a complex shift sigma = (sr, si), by block
+ * back-substitution (1 x 1 blocks by a complex division, 2 x 2 blocks by Cramer's rule). `starts` lists the first row of
+ * every diagonal block; a pivot smaller than `tiny` is replaced by `tiny`, which keeps an exactly singular shift finite.
+ */
+function solveShifted(
+  t: Float64Array,
+  n: number,
+  starts: readonly number[],
+  sr: number,
+  si: number,
+  tiny: number,
+  wr: Float64Array,
+  wi: Float64Array,
+): void {
+  for (let b = starts.length - 1; b >= 0; b--) {
+    const p = starts[b] ?? 0
+    const end = b === starts.length - 1 ? n : (starts[b + 1] ?? n)
+    // Subtract the already solved unknowns below the block from its right-hand side.
+    for (let i = p; i < end; i++) {
+      let sRe = 0
+      let sIm = 0
+      for (let j = end; j < n; j++) {
+        const tij = t[i * n + j] ?? 0
+        sRe += tij * (wr[j] ?? 0)
+        sIm += tij * (wi[j] ?? 0)
+      }
+      wr[i] = (wr[i] ?? 0) - sRe
+      wi[i] = (wi[i] ?? 0) - sIm
+    }
+    if (end - p === 1) {
+      divide(wr, wi, p, (t[p * n + p] ?? 0) - sr, -si, tiny)
+      continue
+    }
+    // 2 x 2 block [[a - sigma, b], [c, d - sigma]]: det = (a - sigma)(d - sigma) - b c.
+    const a = (t[p * n + p] ?? 0) - sr
+    const bb = t[p * n + p + 1] ?? 0
+    const c = t[(p + 1) * n + p] ?? 0
+    const d = (t[(p + 1) * n + p + 1] ?? 0) - sr
+    // (a + i(-si)) (d + i(-si)) = a d - si^2 - i si (a + d).
+    let detRe = a * d - si * si - bb * c
+    let detIm = -si * (a + d)
+    if (Math.hypot(detRe, detIm) < Math.max(tiny * tiny, 1e-300)) {
+      detRe = Math.max(tiny * tiny, 1e-300)
+      detIm = 0
+    }
+    const r1Re = wr[p] ?? 0
+    const r1Im = wi[p] ?? 0
+    const r2Re = wr[p + 1] ?? 0
+    const r2Im = wi[p + 1] ?? 0
+    // y1 = ((d - sigma) r1 - b r2) / det, y2 = ((a - sigma) r2 - c r1) / det, with d - sigma = (d, -si).
+    wr[p] = d * r1Re + si * r1Im - bb * r2Re
+    wi[p] = d * r1Im - si * r1Re - bb * r2Im
+    wr[p + 1] = a * r2Re + si * r2Im - c * r1Re
+    wi[p + 1] = a * r2Im - si * r2Re - c * r1Im
+    divide(wr, wi, p, detRe, detIm, 0)
+    divide(wr, wi, p + 1, detRe, detIm, 0)
+  }
+}
+
+/** w[i] = w[i] / (pRe + i pIm) in place, with a divisor of modulus below `tiny` replaced by `tiny`. */
+function divide(wr: Float64Array, wi: Float64Array, i: number, pRe: number, pIm: number, tiny: number): void {
+  let dr = pRe
+  let di = pIm
+  if (Math.hypot(dr, di) < tiny) {
+    dr = tiny
+    di = 0
+  }
+  const x = wr[i] ?? 0
+  const y = wi[i] ?? 0
+  // Smith's algorithm, which avoids overflow in the squared modulus.
+  if (Math.abs(dr) >= Math.abs(di)) {
+    const q = di / dr
+    const den = dr + di * q
+    wr[i] = (x + y * q) / den
+    wi[i] = (y - x * q) / den
+  } else {
+    const q = dr / di
+    const den = dr * q + di
+    wr[i] = (x * q + y) / den
+    wi[i] = (y * q - x) / den
+  }
+}
+
+/**
+ * The eigenvectors of A = Z T Z^T for the eigenvalues `re + i im` of its real Schur form, as the columns of two n x n
+ * row-major matrices (real and imaginary parts): the same three steps of shifted inverse iteration, with the same
+ * shift, start vector, unit length and phase (largest component real and positive) as {@link eigenvectorKernel}, but
+ * carried out on the quasi-triangular T (a block back-substitution, O(n^2) per step) instead of a dense 2n x 2n LU
+ * (O(n^3) per eigenvalue), then rotated back by Z. O(n^3) in all.
+ */
+export function schurEigenvectors(
+  t: Float64Array,
+  z: Float64Array,
+  n: number,
+  re: readonly number[],
+  im: readonly number[],
+): { re: Float64Array; im: Float64Array } {
+  // The diagonal blocks, found as schurEigenvalues finds them.
+  const starts: number[] = []
+  for (let i = 0; i < n; ) {
+    starts.push(i)
+    i += i === n - 1 || (t[(i + 1) * n + i] ?? 0) === 0 ? 1 : 2
+  }
+  let normT = 0
+  for (const e of t) normT = Math.max(normT, Math.abs(e))
+  const tiny = Math.max(EPS * normT, 1e-300)
+  // Z^T b for the start vector b_i = 1 / sqrt(n) + 1e-3 i, which is the same for every eigenvalue.
+  const c0 = new Float64Array(n)
+  for (let i = 0; i < n; i++) {
+    const bi = 1 / Math.sqrt(n) + i * 1e-3
+    for (let j = 0; j < n; j++) c0[j] = (c0[j] ?? 0) + (z[i * n + j] ?? 0) * bi
+  }
+  const outRe = new Float64Array(n * n)
+  const outIm = new Float64Array(n * n)
+  const wr = new Float64Array(n)
+  const wi = new Float64Array(n)
+  const vr = new Float64Array(n)
+  const vi = new Float64Array(n)
+  for (let k = 0; k < n; k++) {
+    const lr = re[k] ?? 0
+    const li = im[k] ?? 0
+    const sr = lr + Math.max(1, Math.abs(lr), Math.abs(li)) * 1e-10
+    wr.set(c0)
+    wi.fill(0)
+    for (let iter = 0; iter < 3; iter++) {
+      solveShifted(t, n, starts, sr, li, tiny, wr, wi)
+      let norm = 0
+      for (let i = 0; i < n; i++) norm += (wr[i] ?? 0) ** 2 + (wi[i] ?? 0) ** 2
+      norm = Math.sqrt(norm)
+      for (let i = 0; i < n; i++) {
+        wr[i] = (wr[i] ?? 0) / norm
+        wi[i] = (wi[i] ?? 0) / norm
+      }
+    }
+    // Back to the original basis: v = Z w.
+    for (let i = 0; i < n; i++) {
+      let sRe = 0
+      let sIm = 0
+      for (let j = 0; j < n; j++) {
+        const zij = z[i * n + j] ?? 0
+        sRe += zij * (wr[j] ?? 0)
+        sIm += zij * (wi[j] ?? 0)
+      }
+      vr[i] = sRe
+      vi[i] = sIm
+    }
+    // Rotate the phase so that the largest component is real and positive.
+    let best = 0
+    let bestMag = -1
+    for (let i = 0; i < n; i++) {
+      const mag = (vr[i] ?? 0) ** 2 + (vi[i] ?? 0) ** 2
+      if (mag > bestMag) {
+        bestMag = mag
+        best = i
+      }
+    }
+    const pr = (vr[best] ?? 0) / Math.sqrt(bestMag)
+    const pi = -(vi[best] ?? 0) / Math.sqrt(bestMag)
+    for (let i = 0; i < n; i++) {
+      const xr = vr[i] ?? 0
+      const xi = vi[i] ?? 0
+      outRe[i * n + k] = xr * pr - xi * pi
+      outIm[i * n + k] = li === 0 ? 0 : xr * pi + xi * pr
+    }
+  }
   return { re: outRe, im: outIm }
 }

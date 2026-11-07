@@ -22,7 +22,7 @@ import {
 } from '../../trace/index.ts'
 import { solveKernel } from './_kernels.ts'
 import { squareSize } from './_matrix.ts'
-import { eigenvectorKernel, hessenbergKernel, schurEigenvalues, schurKernel } from './_schur.ts'
+import { hessenbergKernel, schurEigenvalues, schurEigenvectors, schurKernel } from './_schur.ts'
 import { dnrm2, ddot as dot } from './blas.ts'
 
 /** Complex values as their real and imaginary parts. */
@@ -115,16 +115,9 @@ export function eigvals(a: TensorLike): ComplexTensor {
  */
 export function eig(a: TensorLike): { readonly values: ComplexTensor; readonly vectors: ComplexTensor } {
   const { data, n } = concreteSquare(a, 'eig')
-  const { re, im } = schurEigenvalues(schurKernel(data, n).t, n)
-  const vr = new Float64Array(n * n)
-  const vi = new Float64Array(n * n)
-  re.forEach((r, k) => {
-    const v = eigenvectorKernel(data, n, r, im[k] ?? 0, (m, b, size) => solveKernel(m, b, size, 1))
-    for (let i = 0; i < n; i++) {
-      vr[i * n + k] = v.re[i] ?? 0
-      vi[i * n + k] = v.im[i] ?? 0
-    }
-  })
+  const { t, z } = schurKernel(data, n)
+  const { re, im } = schurEigenvalues(t, n)
+  const { re: vr, im: vi } = schurEigenvectors(t, z, n, re, im)
   return {
     values: {
       re: fromStorage(Float64Array.from(re), [n], 'float64'),
