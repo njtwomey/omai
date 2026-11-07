@@ -136,6 +136,20 @@ a method are the encyclopedia's, composed from the packages, and the site has no
 `mdml-engine/numerics/linalg`; its parent re-exports it as the namespace `linalg`. Index files are generated from
 folder contents, so adding a file never edits another file.
 
+**One name, one meaning.** A generic type name means one thing across the library, and the meaning that is most used keeps
+it: `Bounds` is the variable bounds of `optim`, `Kernel` the object of `kernels`, `Tree` the pytree of `tensor`,
+`Shape` a tensor shape, `Objective` the optimiser's, `Transition` a step of experience. Another meaning gets a name that
+says what it is (`BoundingBox`, `IntervalBounds`, `TruncationBounds`; `DiscontinuityKernel`, `KernelFunction`;
+`FittedTree`, `ParamTree`; `RayShape`; `StudyObjective`; `ChainTransition`), and `Matrix`, `Mat`, `Vec`, `Box`,
+`Direction`, `Schedule` and `Selection` are retired as type names (`Rows`, `MutableRows`, `DenseMatrix`, `ShapedArray`,
+`ExprMatrix`, `BoundVectors`, `BoxCoords`, `LayoutBox`, `MetricDirection`, `LearningRateSchedule`, `ChannelSelection`...).
+`scripts/type-definitions.ts` (run by `make lint`) holds the table of reserved names with their one home and the names the
+other meanings got; a new definition of one of them fails the lint. The `*Options`, `*State`, `*Result`, `*Path` and
+`*Hyper` records are named for the function they configure and may repeat across domains. Functions are namespaced by
+their entry point and keep the names of the references they mirror (`det`, `norm`, `gamma`), so the same function name in
+two entry points is not a clash. The record form of a complex number, `ComplexNumber` (`{ re, im }`, `numerics/differentiate`),
+and the tuple `Complex` of `base` are one concept in two shapes, each documented as the other's counterpart.
+
 **The library.** `packages/engine/src/lib/` is all of the engine: general machinery, and the named models, algorithms,
 environments, datasets and studies built from it. There is no methods layer (retired 2026-11-01): wherever this
 document says `methods/<area>/...`, read it as an entry of the methods catalogue (`docs/methods-catalog/`) that a
@@ -592,7 +606,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 - `vectors.ts`: the canonical fixed-size tuples `Vec2`, `Vec3`, `Vec4` (labelled, readonly). A point, colour, complex number,
   quaternion or plane is a labelled tuple of the same arity when its element names matter and the canonical type
   otherwise; a same-concept alias of one (`type Pt = Vec2`) is not written (`scripts/type-definitions.ts`, run by
-  `make lint`). Variable-length vectors and matrices are tensors.
+  `make lint`). Variable-length vectors and matrices are tensors. A local alias of a typed array (`type Vec = Float64Array`)
+  is the same mistake: write the type.
 - `version.ts`: `VERSION`, generated from `package.json`.
 
 ### 4.2 `scene/`: pictures and structures as data

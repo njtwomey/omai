@@ -13,7 +13,7 @@ Probabilistic graphical models, pgmpy style: factors, Bayesian and Markov networ
 Inference algorithms for graphical models, part of `mdml-engine/pgm`: exact methods (enumeration, variable elimination, junction trees, forward-backward on chains), message passing (loopy and Gaussian belief propagation, expectation propagation), variational methods, MAP search and sampling.
 
 - function `beliefPropagation`: Loopy and tree belief propagation. `src/lib/pgm/inference/belief-propagation.ts:343` `mdml-engine/pgm`
-- function `forwardBackward`: Forward-backward smoothing on chains; viterbi finds the best path. `src/lib/pgm/inference/chain.ts:119` `mdml-engine/pgm`
+- function `forwardBackward`: Forward-backward smoothing on chains; viterbi finds the best path. `src/lib/pgm/inference/chain.ts:118` `mdml-engine/pgm`
 - function `variableElimination`: Exact inference by variable elimination. `src/lib/pgm/inference/elimination.ts:318` `mdml-engine/pgm`
 
 ## pgm/learning

@@ -8,7 +8,7 @@ Search, AIMA style: state-space search (uninformed and informed), local, evoluti
 
 - function `aStarSearch`: A* search; best-first and IDA* beside it. `src/lib/search/informed.ts:158` `mdml-engine/search`
 - function `alphaBeta`: Minimax with alpha-beta pruning for two-player games. `src/lib/search/adversarial.ts:442` `mdml-engine/search`
-- function `backtrackingSearch`: Backtracking search for constraint satisfaction problems. `src/lib/search/csp.ts:788` `mdml-engine/search`
+- function `backtrackingSearch`: Backtracking search for constraint satisfaction problems. `src/lib/search/csp.ts:793` `mdml-engine/search`
 - function `mcts`: Monte Carlo tree search for games. `src/lib/search/adversarial.ts:776` `mdml-engine/search`
 - function `simulatedAnnealing`: Simulated annealing local search. `src/lib/search/local.ts:547` `mdml-engine/search`
 - function `uniformCostSearch`: Uniform-cost search; BFS, DFS and iterative deepening beside it. `src/lib/search/uninformed.ts:481` `mdml-engine/search`

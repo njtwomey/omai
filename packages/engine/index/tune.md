@@ -8,7 +8,7 @@ Parameter selection for anything, Optuna style: studies of trials over spaces, o
 
 - structure `study.ts` (file): Studies and trials: the record of a parameter search. `src/lib/tune/study.ts:1` `mdml-engine/tune`
 
-- function `tune`: Run a study of an objective over a space with a sampler. `src/lib/tune/tuning.ts:382` `mdml-engine/tune`
+- function `tune`: Run a study of an objective over a space with a sampler. `src/lib/tune/tuning.ts:386` `mdml-engine/tune`
 
 - estimator `gridSearchCv`: Grid search over hyperparameters with cross-validation. `src/lib/tune/wrappers.ts:318` `mdml-engine/tune`
 

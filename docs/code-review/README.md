@@ -29,6 +29,8 @@ All read the engine's source; none changes anything.
 - `node scripts/review/scan.mjs`: generic-named helper copies, repeated constants, layering, cast density.
 - `node scripts/review/surface.mjs <full surface file>`: export-name collisions and core exports nothing else uses.
 - `node scripts/review/types.mjs`: type definitions written more than once; the numeric shapes and how they are spelled.
+- `node scripts/review/unused.mjs <full surface file> [rows.tsv]`: the core exports no other source file uses, sorted by
+  signal into public API, building blocks and dead (`findings/unused-exports.md`).
 - `node scripts/review/signatures.mjs`: native arrays in public numeric signatures, per domain.
 - `node scripts/review/coverage.mjs <coverage-final.json>`: coverage per domain and file, never-run functions. Make the
   JSON with `vitest run --project engine --coverage --coverage.provider=v8 --coverage.reporter=json

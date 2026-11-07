@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { isTensor, type Tensor } from '../../tensor/index.ts'
+import { isTensor } from '../../tensor/index.ts'
 import type { ComparisonData } from './comparisons.ts'
 import type { CorpusData, ParallelData, SequenceLabellingData } from './corpus.ts'
 import type { EventData } from './events.ts'
