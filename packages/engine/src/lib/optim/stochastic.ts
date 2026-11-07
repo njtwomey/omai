@@ -3,7 +3,9 @@
  * examples: the loop of every stochastic learner. Each step applies the optimiser's update at the scheduled learning
  * rate, then draws the next batch from the step's key (without replacement, so the same run draws the same batches
  * however it was paused or sought) and evaluates the objective and gradient there. The state is the iterate, its
- * objective and gradient, the optimiser's own state and the step count, all of which serialise.
+ * objective and gradient, the optimiser's own state and the step count, all of which serialise. The gradient tolerance
+ * is tested on the gradient of the whole objective, which with a batch is evaluated once per epoch (never on the
+ * batch's gradient, which is exactly zero whenever the examples it drew have no loss).
  */
 
 import type { Json } from '../base/index.ts'
@@ -102,8 +104,22 @@ export function gradientAlgorithm(
     const indices = Array.from(subsample(k, n as number, batch as number).data)
     return flatObjective((p) => objective(p, indices), x0).valueAndGrad(x)
   }
-  const stopped = (grad: Float64Array): Pick<GradientState, 'stop'> =>
-    infNorm(grad) <= gtol ? { stop: { status: 'converged', message: 'gradient norm below tolerance' } } : {}
+  // The tolerance is a statement about the gradient of the whole objective: a batch whose examples all have zero loss
+  // (a satisfied margin, a dead unit) has an exactly zero gradient at a point that is far from a minimum. Without a
+  // batch the gradient in hand is the whole one; with one the whole gradient is evaluated once per epoch.
+  const epoch = stochastic ? Math.ceil((n as number) / (batch as number)) : 1
+  const stopped = (
+    x: Float64Array,
+    grad: Float64Array,
+    t: number,
+  ): Pick<GradientState, 'stop'> & { readonly evals: number } => {
+    if (stochastic && t % epoch !== 0) return { evals: 0 }
+    const whole = stochastic ? full.valueAndGrad(x).grad : grad
+    const evals = stochastic ? 1 : 0
+    return infNorm(whole) <= gtol
+      ? { stop: { status: 'converged', message: 'gradient norm below tolerance' }, evals }
+      : { evals }
+  }
   return {
     name: 'gradient',
     config: {
@@ -115,18 +131,19 @@ export function gradientAlgorithm(
     schema: vectorSchema({ metrics: { lr: { description: 'learning rate of the last step' } } }),
     init: (k) => {
       const { value, grad } = evaluate(full.x0, k)
+      const { evals, ...stop } = stopped(full.x0, grad, 0)
       return {
         x: full.x0,
         value,
         grad,
-        nfev: 1,
-        ngev: 1,
+        nfev: 1 + evals,
+        ngev: 1 + evals,
         nhev: 0,
         step: 0,
         t: 0,
         lr: schedule(0),
         opt: optimiser.init(asTensor(full.x0)),
-        ...stopped(grad),
+        ...stop,
       }
     },
     step: (s, ctx) => {
@@ -134,18 +151,19 @@ export function gradientAlgorithm(
       const update = toFlat(primalOf(updates as Value))
       const x = daxpy(1, update, s.x)
       const { value, grad } = evaluate(x, ctx.key)
+      const { evals, ...stop } = stopped(x, grad, s.t + 1)
       return {
         x,
         value,
         grad,
-        nfev: s.nfev + 1,
-        ngev: s.ngev + 1,
+        nfev: s.nfev + 1 + evals,
+        ngev: s.ngev + 1 + evals,
         nhev: 0,
         step: dnrm2(update),
         t: s.t + 1,
         lr: schedule(s.t),
         opt: state,
-        ...stopped(grad),
+        ...stop,
       }
     },
     done: vectorDone,

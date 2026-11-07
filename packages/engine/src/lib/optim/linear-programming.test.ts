@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { decode, expectMatches, loadFixture } from '../../testing/golden.ts'
-import { type Tensor, toArray, toFlat } from '../tensor/index.ts'
+import { asTensor, type Tensor, toArray, toFlat } from '../tensor/index.ts'
 import { messages, metricSeries, recorder, runAlgorithm, tracePolicy } from '../trace/index.ts'
 import * as O from './index.ts'
 
@@ -237,6 +237,107 @@ function correlatedEquilibriumLp(a: readonly (readonly number[])[], b: readonly 
   )
   return { c, aUb, bUb: new Array<number>(aUb.length).fill(0), aEq: [new Array<number>(n * m).fill(1)], bEq: [1] }
 }
+
+describe('linprog in other units', () => {
+  // A program whose cost vector, right-hand sides and bounds are multiplied by powers of ten has the same vertex: x
+  // scales with b, the optimal value with c and b, the duals with c (they are d fun / d b). Tolerances are relative to
+  // the data, not absolute, so every method must return the reference solution of the unscaled program.
+  const textbook: O.LinearProgram = {
+    c: [-1, -2],
+    aUb: [
+      [1, 1],
+      [1, 3],
+    ],
+    bUb: [4, 6],
+  }
+  const bounded: O.LinearProgram = {
+    c: [1, 2],
+    aEq: [[1, 1]],
+    bEq: [2],
+    bounds: [
+      [0, 1.5],
+      [0, null],
+    ],
+  }
+  const scaled = (p: O.LinearProgram, kc: number, kb: number): O.LinearProgram => {
+    const times = (v: O.LinearProgram['bUb'], k: number): number[] | undefined =>
+      v === undefined ? undefined : toFlat(asTensor(v)).map((e) => e * k)
+    const bounds = (p.bounds as readonly (readonly [number | null, number | null])[] | undefined)?.map(
+      ([lo, hi]) => [lo === null ? null : lo * kb, hi === null ? null : hi * kb] as const,
+    )
+    const [bUb, bEq] = [times(p.bUb, kb), times(p.bEq, kb)]
+    return {
+      ...p,
+      c: toFlat(asTensor(p.c)).map((e) => e * kc),
+      ...(bUb === undefined ? {} : { bUb }),
+      ...(bEq === undefined ? {} : { bEq }),
+      ...(bounds === undefined ? {} : { bounds }),
+    }
+  }
+  const methods = { simplex: O.linprogSimplex, interiorPoint: O.linprogInteriorPoint, linprog: O.linprog }
+  const rel = (got: readonly number[], want: readonly number[], what: string): void => {
+    const unit = Math.max(...want.filter(Number.isFinite).map(Math.abs), Number.MIN_VALUE)
+    got.forEach((v, i) => {
+      const w = want[i] ?? 0
+      if (!Number.isFinite(w)) expect(v, `${what}[${i}]`).toBe(w)
+      else expect(Math.abs(v - w) / unit, `${what}[${i}] = ${v}, expected ${w}`).toBeLessThan(1e-5)
+    })
+  }
+
+  it('finds the same vertex in the new units, by every method', () => {
+    const rows = [
+      ['textbook', textbook, 1e-9, 1],
+      ['textbook', textbook, 1e-12, 1],
+      ['textbook', textbook, 1e9, 1],
+      ['textbook', textbook, 1, 1e-12],
+      ['textbook', textbook, 1, 1e9],
+      ['textbook', textbook, 1e-9, 1e-12],
+      ['bounded', bounded, 1e-9, 1],
+      ['bounded', bounded, 1, 1e-12],
+      ['bounded', bounded, 1e9, 1e9],
+    ] as const
+    for (const [label, lp, kc, kb] of rows) {
+      for (const [name, method] of Object.entries(methods)) {
+        const ref = method(lp)
+        const r = method(scaled(lp, kc, kb))
+        expect(r.status, `${label} c x ${kc} b x ${kb} ${name} status`).toBe('optimal')
+        rel(
+          toFlat(r.x),
+          toFlat(ref.x).map((v) => v * kb),
+          `${label} c x ${kc} b x ${kb} ${name} x`,
+        )
+        rel([r.fun], [ref.fun * kc * kb], `${label} c x ${kc} b x ${kb} ${name} fun`)
+        rel(
+          toFlat(r.marginals.ineqlin),
+          toFlat(ref.marginals.ineqlin).map((v) => v * kc),
+          `${label} c x ${kc} b x ${kb} ${name} ineqlin`,
+        )
+        rel(
+          toFlat(r.marginals.eqlin),
+          toFlat(ref.marginals.eqlin).map((v) => v * kc),
+          `${label} c x ${kc} b x ${kb} ${name} eqlin`,
+        )
+        if (r.sensitivity !== undefined && ref.sensitivity !== undefined) {
+          rel(
+            r.sensitivity.cost.flat(),
+            ref.sensitivity.cost.flat().map((v) => v * kc),
+            `${label} c x ${kc} b x ${kb} ${name} cost range`,
+          )
+          rel(
+            r.sensitivity.bUb.flat(),
+            ref.sensitivity.bUb.flat().map((v) => v * kb),
+            `${label} c x ${kc} b x ${kb} ${name} b range`,
+          )
+        }
+        rel(
+          r.path.at(-1)?.x ?? [],
+          (ref.path.at(-1)?.x ?? []).map((v) => v * kb),
+          `${label} c x ${kc} b x ${kb} ${name} path`,
+        )
+      }
+    }
+  })
+})
 
 describe('simplex robustness on near-tied programs', () => {
   it('solves the correlated-equilibrium program that used to come back infeasible-but-optimal', () => {

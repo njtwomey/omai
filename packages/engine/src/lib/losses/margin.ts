@@ -29,7 +29,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, reduce } from './_reduce.ts'
+import { checkScalar, type LossOptions, reduce } from './_reduce.ts'
 
 /** The margins y f of binary scores with labels in {-1, +1}. */
 const margins = (scores: TensorLike, labels: TensorLike): Value => {
@@ -57,6 +57,7 @@ export function hinge(
   labels: TensorLike,
   options: LossOptions & { readonly margin?: number } = {},
 ): Value {
+  checkScalar('hinge', 'margin', options.margin, 'nonNegative')
   return reduce(relu(sub(options.margin ?? 1, margins(scores, labels))), options)
 }
 
@@ -79,6 +80,7 @@ export function squaredHinge(
   labels: TensorLike,
   options: LossOptions & { readonly margin?: number } = {},
 ): Value {
+  checkScalar('squaredHinge', 'margin', options.margin, 'nonNegative')
   return reduce(square(relu(sub(options.margin ?? 1, margins(scores, labels)))), options)
 }
 
@@ -180,6 +182,7 @@ export interface MulticlassMarginOptions {
  * ```
  */
 export function crammerSinger(scores: TensorLike, target: TensorLike, options: MulticlassMarginOptions = {}): Value {
+  checkScalar('crammerSinger', 'margin', options.margin, 'nonNegative')
   const [s] = promoteFloat(scores) as [Value]
   const c = s.shape[s.shape.length - 1] ?? 0
   const index = cast(promoteFloat(target)[0] as Value, 'int32')
@@ -210,6 +213,7 @@ export function westonWatkins(
   target: TensorLike,
   options: MulticlassMarginOptions & { readonly p?: 1 | 2; readonly classWeight?: TensorLike } = {},
 ): Value {
+  checkScalar('westonWatkins', 'margin', options.margin, 'nonNegative')
   const [s] = promoteFloat(scores) as [Value]
   const c = s.shape[s.shape.length - 1] ?? 0
   const index = cast(promoteFloat(target)[0] as Value, 'int32')

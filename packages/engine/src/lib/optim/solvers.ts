@@ -9,6 +9,7 @@
  */
 
 import type { Json } from '../base/index.ts'
+import { dnrm2 } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
 import {
   bool,
@@ -74,8 +75,16 @@ interface WithVector {
 
 const vector = (s: WithVector): VectorParams => ({ x: Array.from(s.x) })
 
-/** The gradient tolerance every gradient-based solver stops at (scipy's gtol). */
-const gradTol = real(1e-12, 1e-2, { log: true, default: 1e-5, label: 'gradient tolerance' })
+/**
+ * The gradient tolerance every gradient-based solver stops at (scipy's gtol): absolute, on the infinity norm, so an
+ * objective whose gradients are everywhere below it (data in very small units) stops at its start: rescale such a
+ * problem, or lower the tolerance.
+ */
+const gradTol = real(1e-12, 1e-2, {
+  log: true,
+  default: 1e-5,
+  label: 'gradient tolerance (absolute, on the infinity norm)',
+})
 
 const gradientDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   description: 'gradient descent: a line search along the negative gradient, a fixed step, or Barzilai-Borwein steps',
@@ -326,7 +335,7 @@ export function loggedSolverOf<Problem, K extends string = never>(
       const next = inner.step(state, ctx)
       const r = next as SolverReached
       ctx.log('solver/objective', r.value)
-      ctx.log('solver/gradNorm', Math.hypot(...r.grad))
+      ctx.log('solver/gradNorm', dnrm2(r.grad))
       ctx.log('solver/step', r.step)
       if (r.lr !== undefined) ctx.log('solver/lr', r.lr)
       extra?.(r.x, ctx, r)

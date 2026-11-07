@@ -24,7 +24,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, reduce } from './_reduce.ts'
+import { checkScalar, type LossOptions, reduce } from './_reduce.ts'
 
 const pair = (input: TensorLike, target: TensorLike): [Value, Value] => promoteFloat(input, target) as [Value, Value]
 
@@ -87,6 +87,8 @@ export function huber(
   target: TensorLike,
   options: LossOptions & { readonly delta?: number } = {},
 ): Value {
+  checkScalar('huber', 'delta', options.delta, 'positive')
+  checkScalar('huber', 'delta', options.delta, 'positive')
   const [x, y] = pair(input, target)
   const delta = options.delta ?? 1
   const r = abs(sub(x, y))
@@ -134,6 +136,8 @@ export function pinball(
   target: TensorLike,
   options: LossOptions & { readonly tau?: number } = {},
 ): Value {
+  checkScalar('pinball', 'tau', options.tau, 'unit')
+  checkScalar('pinball', 'tau', options.tau, 'unit')
   const [x, y] = pair(input, target)
   const tau = options.tau ?? 0.5
   const r = sub(y, x)
@@ -219,6 +223,8 @@ export function smoothL1(
   target: TensorLike,
   options: LossOptions & { readonly beta?: number } = {},
 ): Value {
+  checkScalar('smoothL1', 'beta', options.beta, 'nonNegative')
+  checkScalar('smoothL1', 'beta', options.beta, 'nonNegative')
   const [x, y] = pair(input, target)
   const beta = options.beta ?? 1
   const r = abs(sub(x, y))
@@ -246,6 +252,8 @@ export function expectile(
   target: TensorLike,
   options: LossOptions & { readonly tau?: number } = {},
 ): Value {
+  checkScalar('expectile', 'tau', options.tau, 'unit')
+  checkScalar('expectile', 'tau', options.tau, 'unit')
   const [x, y] = pair(input, target)
   const tau = options.tau ?? 0.5
   const r = sub(y, x)

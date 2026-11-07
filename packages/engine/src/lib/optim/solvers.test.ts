@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { key } from '../random/index.ts'
 import { type DictSpace, defaults, grid } from '../space/index.ts'
-import { mul, square, sub, sum, type Value } from '../tensor/index.ts'
+import { mul, square, sub, sum, type Value, zeros } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
-import { type SmoothProblem, smoothSolvers } from './solvers.ts'
+import { type SlotState, slotAlgorithm } from './slot.ts'
+import { loggedSolver, type SmoothProblem, smoothSolvers } from './solvers.ts'
 
 // An ill-conditioned bowl centred at (1, -2): f(x) = (x0 - 1)^2 + 10 (x1 + 2)^2.
 const bowl: SmoothProblem = {
@@ -43,5 +44,36 @@ describe('smoothSolvers', () => {
       expect(x[0], JSON.stringify(config)).toBeCloseTo(1, 3)
       expect(x[1], JSON.stringify(config)).toBeCloseTo(-2, 3)
     }
+  })
+
+  // The gradient norm was `Math.hypot(...grad)`, whose spread overflows the call stack at about 130,000 parameters.
+  it('logs the gradient norm of a large parameter vector through loggedSolver and slotAlgorithm', () => {
+    const n = 200_000
+    const problem: SmoothProblem = { objective: (x: Value): Value => sum(square(sub(x, 1))), x0: zeros([n]) }
+    const config = { kind: 'gradientDescent', step: 'fixed', learningRate: 0.25 }
+    // The gradient 2 (x - 1) is -1 everywhere after one step of 0.25 from zero: its norm is sqrt(n).
+    const expected = Math.sqrt(n)
+    const logged = loggedSolver(problem, config, key(0))
+    const seen: Record<string, number> = {}
+    const ctx = {
+      log: (path: string, v: number) => {
+        seen[path] = v
+      },
+      key: key(1),
+    }
+    logged.step(logged.init(key(0)), ctx as never)
+    expect(seen['solver/gradNorm']).toBeCloseTo(expected, 6)
+    const slotted = slotAlgorithm<SlotState>({
+      name: 'big',
+      config: {},
+      schema: { metrics: {}, tensors: {} },
+      problem,
+      solver: config,
+      tol: 1e-12,
+      view: () => ({}),
+      observe: () => ({ metrics: {} }),
+    })
+    const state = slotted.step(slotted.init(key(0)), { key: key(1) } as never)
+    expect(slotted.observe?.(state, 1).metrics?.['gradNorm']).toBeCloseTo(expected, 6)
   })
 })

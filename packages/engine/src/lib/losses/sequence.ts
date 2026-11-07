@@ -167,12 +167,12 @@ const logAdd = (a: number, b: number): number => {
 
 /** A dense frames-by-states table of numbers with checked access. */
 class Lattice {
+  readonly rows: number
+  readonly cols: number
   private readonly cells: Float64Array
-  constructor(
-    readonly rows: number,
-    readonly cols: number,
-    fill: number,
-  ) {
+  constructor(rows: number, cols: number, fill: number) {
+    this.rows = rows
+    this.cols = cols
     this.cells = new Float64Array(rows * cols).fill(fill)
   }
   get(t: number, s: number): number {

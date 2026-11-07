@@ -151,7 +151,9 @@ describe('what each scorer can express (planted relations)', () => {
     const chance = Math.log(nE) / nE
     for (const model of models) {
       const r = rankKg(trained[model], test, all, { heads: false })
-      expect(r.mrr, model).toBeGreaterThan(4 * chance)
+      // 3 x chance: the stochastic mode used to stop as `converged` on the first batch of zero loss (after 67 to 556 of
+      // the 800 steps), which flattered TransE (0.282); trained for all 800 steps it is 0.270, still 3.9 x chance.
+      expect(r.mrr, model).toBeGreaterThan(3 * chance)
     }
   })
 

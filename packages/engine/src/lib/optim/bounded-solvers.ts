@@ -100,7 +100,11 @@ export function boxMap(lower: ArrayLike<number>, upper: ArrayLike<number>): BoxM
   }
 }
 
-const gradTol = real(1e-12, 1e-2, { log: true, default: 1e-5, label: 'gradient tolerance' })
+const gradTol = real(1e-12, 1e-2, {
+  log: true,
+  default: 1e-5,
+  label: 'gradient tolerance (absolute, on the infinity norm)',
+})
 
 const lbfgsb: ModeSpec<BoundedProblem, { readonly x: Float64Array }, VectorParams> = {
   description: 'L-BFGS-B: limited-memory BFGS with the bounds handled by a projected Cauchy search',

@@ -9,16 +9,16 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - function `adam`: Adam as a gradient transformation, like torch.optim.Adam. `src/lib/optim/adaptive.ts:69` `mdml-engine/optim`
 - function `admm`: Alternating direction method of multipliers. `src/lib/optim/admm.ts:280` `mdml-engine/optim`
 - function `fista`: Accelerated proximal gradient for composite objectives. `src/lib/optim/splitting.ts:246` `mdml-engine/optim`
-- function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:332` `mdml-engine/optim`
+- function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:379` `mdml-engine/optim`
 - function `milp`: Mixed-integer linear programming by branch and bound. `src/lib/optim/integer.ts:451` `mdml-engine/optim`
 - function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:287` `mdml-engine/optim`
 - function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:67` `mdml-engine/optim`
 - function `sinkhorn`: Entropic optimal transport by Sinkhorn iterations. `src/lib/optim/transport.ts:482` `mdml-engine/optim`
 
-- table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:214` `mdml-engine/optim`
+- table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:218` `mdml-engine/optim`
 - table `optimisers`: SGD, RMSprop, Adagrad, Adam and relatives as one slot. `src/lib/optim/optimiser-table.ts:58` `mdml-engine/optim`
 - table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:56` `mdml-engine/optim`
-- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:258` `mdml-engine/optim`
+- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:267` `mdml-engine/optim`
 
 ## optim/minimize
 
@@ -33,6 +33,6 @@ Minimisation of functions of parameter trees, scipy.optimize style: the `minimiz
 - function `leastSquares`: Nonlinear least squares, scipy style, with bounds and robust losses. `src/lib/optim/minimize/least-squares.ts:263` `mdml-engine/optim`
 - function `minimize`: Minimise an objective scipy-style with a method chosen by value. `src/lib/optim/minimize/minimizer.ts:122` `mdml-engine/optim`
 - function `nelderMead`: Derivative-free Nelder-Mead simplex minimiser. `src/lib/optim/minimize/derivative-free.ts:284` `mdml-engine/optim`
-- function `newton`: Newton's method with modified Cholesky and line search. `src/lib/optim/minimize/newton.ts:241` `mdml-engine/optim`
+- function `newton`: Newton's method with modified Cholesky and line search. `src/lib/optim/minimize/newton.ts:251` `mdml-engine/optim`
 
 - algorithm `minimizer`: Turn a gradient transformation into a steppable minimising Algorithm. `src/lib/optim/minimize/minimizer.ts:51` `mdml-engine/optim`
