@@ -102,6 +102,13 @@ describe('simplex', () => {
       [0, 2],
       [3, 1],
     ])
+    // The default is Dantzig's rule; Bland's rule, on request, walks the other way round.
+    expect(O.linprog(textbook).path.map((p) => p.x)).toEqual(dantzig.path.map((p) => p.x))
+    expect(O.linprog(textbook, { pivotRule: 'bland' }).path.map((p) => p.x)).toEqual([
+      [0, 0],
+      [4, 0],
+      [3, 1],
+    ])
     const rec = recorder()
     O.linprog(textbook, { tracer: rec, policy: tracePolicy({ messages: true }) })
     const run = rec.run()
@@ -354,12 +361,11 @@ describe('simplex robustness on near-tied programs', () => {
       [0.49999309999930003, -0.49999499999950003, -0.1422289642229, 0.49998309999829993],
     ]
     const lp = correlatedEquilibriumLp(A, B)
-    // The simplex alone either finds a feasible optimum or reports numerical difficulties; linprog always succeeds.
+    // Dantzig's rule settles it without a retry.
     const raw = O.linprogSimplex(lp)
-    if (raw.status === 'optimal') {
-      expect(Math.abs(toFlat(raw.con)[0] ?? 1)).toBeLessThan(1e-9)
-      for (const v of toFlat(raw.slack)) expect(v).toBeGreaterThan(-1e-9)
-    } else expect(raw.status).toBe('numerical difficulties')
+    expect(raw.status).toBe('optimal')
+    expect(Math.abs(toFlat(raw.con)[0] ?? 1)).toBeLessThan(1e-9)
+    for (const v of toFlat(raw.slack)) expect(v).toBeGreaterThan(-1e-9)
     const r = O.linprog(lp)
     expect(r.status).toBe('optimal')
     expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-7)
@@ -417,7 +423,7 @@ describe('simplex robustness on near-tied programs', () => {
     const A = [0, 1, 2].map((i) => [0, 1, 2].map((j) => pay(i * 3 + j)))
     const B = [0, 1, 2].map((i) => [0, 1, 2].map((j) => pay(9 + i * 3 + j)))
     const lp = correlatedEquilibriumLp(A, B)
-    expect(['optimal', 'numerical difficulties']).toContain(O.linprogSimplex(lp).status)
+    expect(O.linprogSimplex(lp).status).toBe('optimal')
     for (const r of [O.linprog(lp)]) {
       expect(r.status).toBe('optimal')
       expect(Math.abs(toFlat(r.con)[0] ?? 1)).toBeLessThan(1e-7)
@@ -455,5 +461,133 @@ describe('simplex robustness on near-tied programs', () => {
       ),
       { numRuns: 60 },
     )
+  })
+})
+
+describe('the simplex pivot rule and the verdict of linprog', () => {
+  // Dantzig's rule is the default, with Bland's rule after a run of degenerate pivots: the verdicts and optimal values
+  // of every rule agree on these programs, and the default needs far fewer pivots than Bland's rule did as the default
+  // (with Bland's rule as the default it was 67 on Klee-Minty 8, 91 on the 20 x 40 packing program and 325 on 60 x 120).
+  const lcg = (seed: number): (() => number) => {
+    let a = seed
+    return () => {
+      a = (Math.imul(a, 1664525) + 1013904223) >>> 0
+      return a / 4294967296
+    }
+  }
+  const packing = (m: number, n: number, seed: number): O.LinearProgram => {
+    const u = lcg(seed)
+    return {
+      c: Array.from({ length: n }, () => -(1 + u())),
+      aUb: Array.from({ length: m }, () => Array.from({ length: n }, () => 0.5 + u())),
+      bUb: Array.from({ length: m }, () => 10 + 10 * u()),
+    }
+  }
+  const kleeMinty = (d: number): O.LinearProgram => ({
+    c: Array.from({ length: d }, (_, j) => -(2 ** (d - 1 - j))),
+    aUb: Array.from({ length: d }, (_, i) =>
+      Array.from({ length: d }, (_, j) => (j < i ? 2 ** (i - j + 1) : j === i ? 1 : 0)),
+    ),
+    bUb: Array.from({ length: d }, (_, i) => 5 ** (i + 1)),
+  })
+  const cost = [
+    [9, 2, 7, 8],
+    [6, 4, 3, 7],
+    [5, 8, 1, 8],
+    [7, 6, 9, 4],
+  ]
+  const assignment: O.LinearProgram = {
+    c: cost.flat(),
+    aEq: [
+      ...Array.from({ length: 4 }, (_, i) => Array.from({ length: 16 }, (_, k) => (Math.floor(k / 4) === i ? 1 : 0))),
+      ...Array.from({ length: 4 }, (_, j) => Array.from({ length: 16 }, (_, k) => (k % 4 === j ? 1 : 0))),
+    ],
+    bEq: new Array<number>(8).fill(1),
+    bounds: [0, null],
+  }
+  // [name, program, status, optimal value, most pivots the default may take]
+  const rows: readonly (readonly [string, O.LinearProgram, O.LinprogResult['status'], number, number])[] = [
+    [
+      'Beale (cycles under textbook ties)',
+      {
+        c: [-0.75, 150, -0.02, 6],
+        aUb: [
+          [0.25, -60, -0.04, 9],
+          [0.5, -90, -0.02, 3],
+          [0, 0, 1, 0],
+        ],
+        bUb: [0, 0, 1],
+      },
+      'optimal',
+      -0.05,
+      6,
+    ],
+    [
+      'a degenerate vertex (six rows through it)',
+      {
+        c: [-1, -1],
+        aUb: [
+          [1, 0],
+          [0, 1],
+          [1, 1],
+          [2, 1],
+          [1, 2],
+          [3, 3],
+        ],
+        bUb: [1, 1, 2, 3, 3, 6],
+      },
+      'optimal',
+      -2,
+      3,
+    ],
+    ['4 x 4 assignment (all bases degenerate)', assignment, 'optimal', 13, 20],
+    ['Klee-Minty cube of dimension 8', kleeMinty(8), 'optimal', -(5 ** 8), 20],
+    ['packing 20 x 40', packing(20, 40, 1), 'optimal', -24.513843, 10],
+    ['packing 60 x 120', packing(60, 120, 3), 'optimal', -23.109719, 35],
+    [
+      'infeasible inequalities',
+      {
+        c: [1, 1],
+        aUb: [
+          [1, 1],
+          [-1, -1],
+        ],
+        bUb: [1, -2],
+      },
+      'infeasible',
+      Number.NaN,
+      5,
+    ],
+    [
+      'infeasible equalities',
+      {
+        c: [1, 1],
+        aEq: [
+          [1, 1],
+          [1, 1],
+        ],
+        bEq: [1, 2],
+      },
+      'infeasible',
+      Number.NaN,
+      5,
+    ],
+    ['unbounded', { c: [-1, -1], aUb: [[1, -1]], bUb: [1] }, 'unbounded', -Infinity, 5],
+  ]
+
+  it('gives one verdict and value under every pivot rule and through linprog, in few pivots', () => {
+    for (const [name, lp, status, fun, pivots] of rows) {
+      for (const [rule, r] of [
+        ['default', O.linprogSimplex(lp)],
+        ['bland', O.linprogSimplex(lp, { pivotRule: 'bland' })],
+        ['dantzig', O.linprogSimplex(lp, { pivotRule: 'dantzig' })],
+        ['linprog', O.linprog(lp)],
+      ] as const) {
+        expect(r.status, `${name} by ${rule}`).toBe(status)
+        if (status === 'optimal') expect(r.fun, `${name} by ${rule}`).toBeCloseTo(fun, 5)
+        else expect(r.fun, `${name} by ${rule}`).toBe(status === 'unbounded' ? -Infinity : Number.NaN)
+      }
+      expect(O.linprogSimplex(lp).iterations, `${name} pivots`).toBeLessThanOrEqual(pivots)
+    }
   })
 })

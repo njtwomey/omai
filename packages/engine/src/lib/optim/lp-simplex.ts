@@ -70,10 +70,12 @@ function point(form: StandardForm, s: { tableau: Float64Array; rows: number; col
  * phase 1 to phase 2). Phase 1 minimises the sum of artificial variables from the slack-and-artificial basis to find a
  * feasible vertex (or prove infeasibility), drives remaining artificial variables out and drops redundant rows; phase 2
  * optimises the cost. A pivot must exceed the tolerance and also `pivotFloor` (default 1e-7) times the largest
- * entry of its column (a tiny pivot on a degenerate program is rounding noise and ends on a singular basis). Bland's
- * rule (smallest eligible index for entering and leaving) prevents cycling in exact arithmetic (with the pivot floor it
- * can still cycle on badly conditioned programs, which `linprog` retries without the floor); Dantzig's rule (most negative reduced cost) is available. Updating the tableau pivot by pivot accumulates rounding error, so before
- * every decision (optimal, infeasible, end of phase 1), and every 50 pivots, the tableau is recomputed from the
+ * entry of its column (a tiny pivot on a degenerate program is rounding noise and ends on a singular basis). The
+ * entering column is by default the one of the most negative reduced cost (Dantzig's rule, the quick one: a handful of
+ * pivots where Bland's takes hundreds), with Bland's rule (smallest eligible index for entering and leaving, which
+ * cannot cycle in exact arithmetic) taking over while the last pivots, more than there are rows of them, all left the
+ * vertex where it was; `pivotRule: 'bland'` uses Bland's rule throughout, the slow path that is easy to follow. Updating
+ * the tableau pivot by pivot accumulates rounding error, so before every decision (optimal, infeasible, end of phase 1), and every 50 pivots, the tableau is recomputed from the
  * original matrix and the basis (re-inversion, one LU solve); if the clean tableau disagrees (a negative reduced cost,
  * or a basic variable below zero), pivoting continues, with dual-simplex pivots to restore feasibility. A basis that
  * has become singular, or 8 re-inversions without agreement, end with status `numerical difficulties` (`linprog` then
@@ -90,12 +92,12 @@ function point(form: StandardForm, s: { tableau: Float64Array; rows: number; col
  * import { simplexAlgorithm, standardForm } from 'mdml-engine/optim'
  * import { runAlgorithm } from 'mdml-engine/trace'
  * const form = standardForm({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
- * runAlgorithm(simplexAlgorithm(form), { maxSteps: 50 }).state.path.map((p) => p.x) // => [[0, 0], [4, 0], [3, 1]]
+ * runAlgorithm(simplexAlgorithm(form), { maxSteps: 50 }).state.path.map((p) => p.x) // => [[0, 0], [0, 2], [3, 1]]
  * ```
  */
 export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {}): Algorithm<SimplexState> {
   const tol = options.tol ?? 1e-9
-  const rule = options.pivotRule ?? 'bland'
+  const rule = options.pivotRule ?? 'dantzig'
   const N = form.a.cols
   const m = form.a.rows
   const bScale = 1 + maxOf(Array.from(form.b, Math.abs))
@@ -103,6 +105,19 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
   const MAX_REINVERSIONS = 8
   const REINVERT_EVERY = 50
   const pivotRelative = options.pivotFloor ?? 1e-7
+  // The run of pivots that left the vertex where it was (ratio 0) at the end of the path, counted up to `limit`: a
+  // degenerate vertex is where Dantzig's rule can cycle, so a run longer than the number of rows hands the choice of
+  // the entering column to Bland's rule until a pivot moves the vertex.
+  const degenerateRun = (path: readonly LpPathPoint[], limit: number): number => {
+    const last = path[path.length - 1]
+    let run = 0
+    for (let i = path.length - 2; i >= 0 && run <= limit; i--) {
+      const x = path[i]?.x
+      if (last === undefined || x === undefined || x.some((v, k) => v !== last.x[k])) break
+      run += 1
+    }
+    return run
+  }
   // Artificial column N + k belongs to row artRow[k] (the rows init cannot start from a slack).
   const artRow: number[] = []
   for (let r = 0; r < m; r++) {
@@ -319,11 +334,12 @@ export function simplexAlgorithm(form: StandardForm, options: LinprogOptions = {
       }
       let e = -1
       let best = -tol
+      const bland = rule === 'bland' || degenerateRun(s.path, s.rows) > s.rows
       for (let j = 0; j < s.cols; j++) {
         const d = s.tableau[obj + j] ?? 0
         if (d < best) {
           e = j
-          if (rule === 'bland') break
+          if (bland) break
           best = d
         }
       }
