@@ -396,7 +396,8 @@ export interface VectorLineSearchResult extends LineSearchResult {
  *
  * @param f - The objective.
  * @param x - The point (any parameters; flattened).
- * @param direction - The search direction (flattened like x).
+ * @param direction - The search direction (flattened like x): a tensor-like or a tree like `x` (migration, D-009: also
+ *   accepted any `ArrayLike<number>`, which a tensor-like now covers).
  * @param options - The line search, known value and gradient, the previous value and the first step.
  * @returns The step, the new point and value, the gradient there, evaluation counts and the trial points.
  * @throws MdmlError with code `value` when the direction is not a descent direction.
@@ -412,7 +413,7 @@ export interface VectorLineSearchResult extends LineSearchResult {
 export function lineSearch(
   f: Objective,
   x: Parameters,
-  direction: ArrayLike<number> | Parameters,
+  direction: Parameters,
   options: LineSearchOptions = {},
 ): VectorLineSearchResult {
   const obj = flatObjective(f, x)

@@ -16,7 +16,10 @@ import {
   mul,
   primalOf,
   sum,
+  type Tensor,
+  type TensorLike,
   toFlat,
+  toVector,
   type Value,
 } from '../tensor/index.ts'
 
@@ -31,22 +34,32 @@ export interface AnalyticObjective {
 }
 
 /**
- * The Hessian by central differences of an analytic gradient, symmetrised.
+ * The Hessian by central differences of an analytic gradient, symmetrised. Takes the point as a tensor-like and returns
+ * the `[m, m]` matrix as a tensor (migration, D-009: `x` was a `Float64Array`, the result a row-major `Float64Array`);
+ * the gradient stays a function over plain numbers, like the rest of this module's callbacks.
  *
  * @param gradient - The gradient.
- * @param x - The point.
- * @returns The Hessian, row-major `[m, m]`.
+ * @param point - The point, a vector.
+ * @returns The Hessian, an `[m, m]` tensor.
+ * @throws MdmlError with code `shape` unless `point` has rank 1, and `not-differentiable` for a traced one.
  * @example
  * ```ts
  * import { finiteDifferenceHessian } from 'mdml-engine/optim'
- * const h = finiteDifferenceHessian((x) => Float64Array.from([2 * x[0], 6 * x[1]]), Float64Array.from([1, 1]))
- * Array.from(h).map((v) => Math.round(v)) // => [2, 0, 0, 6]
+ * import { toFlat } from 'mdml-engine/tensor'
+ * const h = finiteDifferenceHessian((x) => Float64Array.from([2 * x[0], 6 * x[1]]), [1, 1])
+ * toFlat(h).map((v) => Math.round(v)) // => [2, 0, 0, 6]
  * ```
  */
 export function finiteDifferenceHessian(
   gradient: (x: Float64Array) => ArrayLike<number>,
-  x: Float64Array,
-): Float64Array {
+  point: TensorLike,
+): Tensor<'float64', [number, number]> {
+  const x = Float64Array.from(toVector(point, 'finiteDifferenceHessian'))
+  return fromStorage(hessianByDifferences(gradient, x), [x.length, x.length], 'float64')
+}
+
+/** The kernel of {@link finiteDifferenceHessian} on plain numbers, row-major. */
+function hessianByDifferences(gradient: (x: Float64Array) => ArrayLike<number>, x: Float64Array): Float64Array {
   const m = x.length
   const H = new Float64Array(m * m)
   for (let j = 0; j < m; j++) {
@@ -89,8 +102,7 @@ const flatOf = (x: Value): Float64Array => Float64Array.from(toFlat(primalOf(x))
  * ```
  */
 export function analyticObjective(spec: AnalyticObjective): (x: Value) => Value {
-  const hessianAt = (x: Float64Array): ArrayLike<number> =>
-    spec.hessian?.(x) ?? finiteDifferenceHessian(spec.gradient, x)
+  const hessianAt = (x: Float64Array): ArrayLike<number> => spec.hessian?.(x) ?? hessianByDifferences(spec.gradient, x)
   const gradientPrimitive = definePrimitive<null>({
     name: 'analytic-gradient',
     abstractEval: ([x]) => [{ shape: (x as { shape: readonly number[] }).shape, dtype: 'float64' }],

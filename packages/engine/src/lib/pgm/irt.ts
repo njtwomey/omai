@@ -273,7 +273,7 @@ function mStep(model: IrtModel, eta0: number[], n: Float64Array, r: Float64Array
   for (let it = 0; it < 20; it++) {
     const g = itemGradient(model, eta, n, r, grid)
     if (maxOf(g.map(Math.abs)) < 1e-9) break
-    const H = finiteDifferenceHessian((x) => itemGradient(model, x, n, r, grid), Float64Array.from(eta))
+    const H = finiteDifferenceHessian((x) => itemGradient(model, x, n, r, grid), eta).data
     const m = eta.length
     let accepted = false
     for (let lam = 1e-8; lam < 1e6 && !accepted; lam *= 10) {

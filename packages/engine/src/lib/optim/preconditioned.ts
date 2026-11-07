@@ -12,6 +12,7 @@ import {
   concat,
   div,
   eye,
+  fromStorage,
   item,
   matmul,
   maximum,
@@ -23,9 +24,11 @@ import {
   reshape,
   sliceAxis,
   sqrt,
+  type Tensor,
   type TensorLike,
   tensordot,
   toFlat,
+  toVector,
   trace,
   transpose,
   treeFlatten,
@@ -424,9 +427,12 @@ export function shampoo(options: ShampooOptions): GradientTransformation<Shampoo
 
 /**
  * A fixed preconditioner: updates = P g over the flattened parameters, with P a matrix, a vector (diagonal) or a
- * function of the flat gradient (for example a solve with a known Hessian approximation).
+ * function of the flat gradient (for example a solve with a known Hessian approximation). The function takes the flat
+ * gradient as a tensor and returns a tensor-like (migration, D-009: it took a `Float64Array` and returned an
+ * `ArrayLike<number>`).
  *
  * @param preconditioner - The matrix, diagonal or function.
+ * @throws MdmlError with code `shape` when the function returns something that is not a vector.
  * @returns The transformation.
  * @concept preconditioning
  * @example
@@ -437,11 +443,12 @@ export function shampoo(options: ShampooOptions): GradientTransformation<Shampoo
  * ```
  */
 export function preconditionBy(
-  preconditioner: TensorLike | ((grad: Float64Array) => ArrayLike<number>),
+  preconditioner: TensorLike | ((grad: Tensor<'float64', [number]>) => TensorLike),
 ): GradientTransformation<undefined> {
   const apply =
     typeof preconditioner === 'function'
-      ? preconditioner
+      ? (g: Float64Array): ArrayLike<number> =>
+          toVector(preconditioner(fromStorage(g, [g.length], 'float64')), 'preconditionBy')
       : (g: Float64Array): ArrayLike<number> => {
           const p = asTensor(preconditioner)
           const gv = asTensor(g)

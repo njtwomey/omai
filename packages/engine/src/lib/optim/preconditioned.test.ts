@@ -148,9 +148,9 @@ describe('preconditioning helpers', () => {
         ]).update(tensor([1, 2]), undefined).updates as Value,
       ),
     ).toEqual([2, 1])
-    expect(
-      toFlat(O.preconditionBy((g) => g.map((v) => v * 3)).update(tensor([1, 2]), undefined).updates as Value),
-    ).toEqual([3, 6])
+    expect(toFlat(O.preconditionBy((g) => mul(g, 3)).update(tensor([1, 2]), undefined).updates as Value)).toEqual([
+      3, 6,
+    ])
     expect(toFlat(O.diagonalPrecondition(ones([2]), tensor([4, 1]), 0) as Value)).toEqual([0.5, 1])
     expect(toArray(O.empiricalFisher([[1, 1]]))).toEqual([
       [1, 1],
