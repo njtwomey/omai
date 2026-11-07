@@ -6,7 +6,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** One track: a value at each position, drawn as a row of cells beneath the tokens. */
 export interface StripTrack {
@@ -73,7 +73,7 @@ export function stripRecord(record: Omit<Strip, 'kind'>): Strip {
   for (const m of record.marks ?? [])
     if (!(Number.isInteger(m) && m >= 0 && m < n))
       throw new MdmlError('value', `strip: marks holds ${m}, not a position`)
-  return { kind: 'strip', ...record }
+  return seal({ kind: 'strip', ...record })
 }
 
 /** What {@link runLengthStrip} reads: the run-length posterior of each step, and what to lay over it. */

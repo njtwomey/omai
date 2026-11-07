@@ -7,7 +7,7 @@
  * transition sharpening with size.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import {
   type Algorithm,
@@ -411,7 +411,7 @@ export function erdosRenyiGiantFraction(c: number): number {
  */
 export function giantComponentFraction(g: Graph): number {
   if (g.n === 0) return 0
-  return Math.max(...connectedComponents(g).components.map((c) => c.length)) / g.n
+  return maxOf(connectedComponents(g).components.map((c) => c.length)) / g.n
 }
 
 /** The curves of one run of {@link percolationSweep}. */

@@ -6,7 +6,7 @@
  * Boltzmann machine, the other energy-based block, is in `rbm.ts`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { pinv } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, randint } from '../../random/index.ts'
 import {
@@ -341,7 +341,7 @@ export function modernHopfieldUpdate(patterns: TensorLike, state: TensorLike, be
 export function modernHopfieldEnergy(patterns: TensorLike, state: TensorLike, beta = 1): Value {
   const x = asTensor(patterns)
   const p = x.shape[0] ?? 1
-  const m2 = Math.max(...toFlat(sum(mul(x, x), -1)))
+  const m2 = maxOf(toFlat(sum(mul(x, x), -1)))
   const s = asTensor(state)
   const scores = mul(matmul(s, transpose(x)), beta)
   return add(add(neg(div1(logsumexp(scores, -1), beta)), mul(sum(mul(s, s), -1), 0.5)), Math.log(p) / beta + 0.5 * m2)
@@ -406,7 +406,7 @@ export function modernHopfieldAlgorithm(
     init: () => ({ state: initial, energy: energyOf(initial), change: Infinity }),
     step: (s) => {
       const next = toFlat(modernHopfieldUpdate(x, s.state, beta))
-      const change = Math.max(...next.map((v, j) => Math.abs(v - (s.state[j] as number))))
+      const change = maxOf(next.map((v, j) => Math.abs(v - (s.state[j] as number))))
       return { state: next, energy: energyOf(next), change }
     },
     done: (s) => (s.change <= tolerance ? 'converged' : undefined),

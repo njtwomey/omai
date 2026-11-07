@@ -30,6 +30,7 @@ import { MarginView } from './margins.tsx'
 import { MarkedTableView } from './marked-tables.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
 import { PointsStepsView } from './points-steps.tsx'
+import { RecordBoundary } from './RecordBoundary.tsx'
 import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
 import { SampleGridView } from './sample-grid.tsx'
@@ -69,10 +70,19 @@ export interface ExpositionViewProps {
  * method's whole `exposition` without knowing its kinds.
  *
  * @param props - The record, the figure, and the input rows and labels for views that use them.
- * @returns The figure.
+ * @returns The figure, or a one-line note when the kind has no view or the view throws on the record.
  * @index function React component: the standard view of any exposition record: `<ExpositionView record={record} />`
  */
 export function ExpositionView(props: ExpositionViewProps): ReactElement {
+  return (
+    <RecordBoundary record={props.record}>
+      <StandardRecordView {...props} />
+    </RecordBoundary>
+  )
+}
+
+// The view of the record's kind, or a note when the kind has none (a record from a newer engine).
+function StandardRecordView(props: ExpositionViewProps): ReactElement {
   const { record } = props
   const common = {
     ...(props.figure === undefined ? {} : { figure: props.figure }),
@@ -211,5 +221,11 @@ export function ExpositionView(props: ExpositionViewProps): ReactElement {
       return <EquationFitView record={record} {...common} />
     case 'stabilityRegion':
       return <StabilityRegionView record={record} {...common} />
+    default:
+      return (
+        <p role="note" className="text-xs text-(--wb-muted)">
+          no standard view for record kind '{String((record as { kind?: unknown }).kind)}'
+        </p>
+      )
   }
 }

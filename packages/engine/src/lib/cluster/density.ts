@@ -6,7 +6,7 @@
  * modes, every seed moving each step).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import {
   type DistanceAlias,
   type DistanceName,
@@ -1156,7 +1156,7 @@ export const hdbscanEstimator: IterativeEstimator<
       condensedTree: s.rows.map(([p, c, l, size]): CondensedRow => [p, c, Number.isFinite(l) ? l : -1, size]),
       components: rowsAt(m.data, m.d, members),
       componentLabels: members.map((i) => labels[i] ?? -1),
-      reach: Math.max(0, ...members.map((i) => s.core[i] ?? 0)),
+      reach: Math.max(0, maxOf(members.map((i) => s.core[i] ?? 0))),
       metric: h.metric,
     }
   },

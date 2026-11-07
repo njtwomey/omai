@@ -6,7 +6,7 @@
  * path lengths as per-point evidence.
  */
 
-import { EULER_GAMMA, type Json } from '../base/index.ts'
+import { EULER_GAMMA, type Json, maxOf, minOf } from '../base/index.ts'
 import {
   ExplainedEstimatorClass,
   type Fitted,
@@ -122,8 +122,8 @@ export function isolationTree(
     if (members.length <= 1 || depth >= options.maxDepth) return id
     if (options.extended === true) {
       const nrm = Array.from({ length: m.d }, () => z[zi++ % Math.max(1, z.length)] ?? 0)
-      const lo = Array.from({ length: m.d }, (_, j) => Math.min(...members.map((i) => value(i, j))))
-      const hi = Array.from({ length: m.d }, (_, j) => Math.max(...members.map((i) => value(i, j))))
+      const lo = Array.from({ length: m.d }, (_, j) => minOf(members.map((i) => value(i, j))))
+      const hi = Array.from({ length: m.d }, (_, j) => maxOf(members.map((i) => value(i, j))))
       if (lo.every((v, j) => v === hi[j])) return id
       const point = lo.map((v, j) => v + u() * ((hi[j] ?? v) - v))
       const threshold = nrm.reduce((s, w, j) => s + w * (point[j] ?? 0), 0)
@@ -138,13 +138,13 @@ export function isolationTree(
     }
     const candidates = Array.from({ length: m.d }, (_, j) => j).filter((j) => {
       const vs = members.map((i) => value(i, j))
-      return Math.max(...vs) > Math.min(...vs)
+      return maxOf(vs) > minOf(vs)
     })
     if (candidates.length === 0) return id
     const feature = candidates[Math.min(candidates.length - 1, Math.floor(u() * candidates.length))] ?? 0
     const vs = members.map((i) => value(i, feature))
-    const lo = Math.min(...vs)
-    const hi = Math.max(...vs)
+    const lo = minOf(vs)
+    const hi = maxOf(vs)
     const threshold = lo + u() * (hi - lo)
     const left = members.filter((i) => value(i, feature) < threshold)
     const right = members.filter((i) => value(i, feature) >= threshold)

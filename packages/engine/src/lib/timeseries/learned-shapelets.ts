@@ -9,7 +9,7 @@
  * other solver reaches a minimum of the same function. The shapelets start at k-means centres of the windows.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { initialCentres, lloydAlgorithm } from '../cluster/index.ts'
 import { analyticObjective, type SmoothProblem, slotAlgorithm, smoothSolverConfig } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
@@ -434,7 +434,7 @@ export function predictLearnedShapelets(
   const probabilities = series.map((x) => {
     const m = model.shapelets.map((sk) => softMinDistance(x, sk, model.alpha))
     const z = model.weights.map((w) => (w[0] ?? 0) + m.reduce((a, v, k) => a + v * (w[1 + k] ?? 0), 0))
-    const top = Math.max(...z)
+    const top = maxOf(z)
     const e = z.map((v) => Math.exp(v - top))
     const sum = e.reduce((a, v) => a + v, 0)
     return e.map((v) => v / sum)

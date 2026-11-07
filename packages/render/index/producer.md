@@ -6,8 +6,8 @@ The producer of a live session, behind one interface: `inlineProducer`, the main
 
 - function `inlineProducer`: The main-thread producer that computes in slices: `inlineProducer(method, options, variants)`. `src/producer/inline.ts:24` `mdml-render/producer`
 - function `methodRegistry`: Methods by name for a worker and tape files: `methodRegistry([methodA, methodB])`. `src/producer/registry.ts:33` `mdml-render/producer`
-- function `parseTape`: Validate a tape file read back from JSON: `parseTape(json)`. `src/producer/tape.ts:182` `mdml-render/producer`
-- function `replaySessions`: Sessions replayed from a tape file, nothing recomputed: `replaySessions(file, registry)`. `src/producer/tape.ts:325` `mdml-render/producer`
+- function `parseTape`: Validate a tape file read back from JSON: `parseTape(json)`. `src/producer/tape.ts:186` `mdml-render/producer`
+- function `replaySessions`: Sessions replayed from a tape file, nothing recomputed: `replaySessions(file, registry)`. `src/producer/tape.ts:347` `mdml-render/producer`
 - function `serveWorker`: The whole body of a worker entry file: `serveWorker(registry)`. `src/producer/serve.ts:401` `mdml-render/producer`
 - function `tapeOf`: Write a page's sessions and probes as a tape file: `await tapeOf(name, sessions, opts)`. `src/producer/tape.ts:121` `mdml-render/producer`
 - function `workerProducer`: A producer that computes in a Web Worker: `workerProducer({ createWorker })`. `src/producer/client.ts:55` `mdml-render/producer`

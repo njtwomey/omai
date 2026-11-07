@@ -4,7 +4,7 @@
  * approximation and the symbolic SAX representation with its MINDIST bound, and the lag of maximum cross-correlation.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, minOf } from '../base/index.ts'
 import { correlate, correlationLags } from '../numerics/convolution/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -177,7 +177,7 @@ export function dtwAlgorithm(x: TensorLike, y: TensorLike, options: DtwOptions =
       s.row = i + 1
       const row = g.slice(i * m, (i + 1) * m)
       if (ctx.wants('dtw/row')) ctx.log('dtw/row', row)
-      ctx.log('dtw/cost', Math.min(...row))
+      ctx.log('dtw/cost', minOf(row))
       if (s.row === n && Number.isFinite(g[n * m - 1] ?? Number.NaN)) {
         const path = dtwAlignment(s)
         ctx.log(

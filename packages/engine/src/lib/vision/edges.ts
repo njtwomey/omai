@@ -6,7 +6,7 @@
  * `houghLine` of `signal/image` exactly.
  */
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type CannyOptions, cannyStages } from '../signal/image/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import {
@@ -221,13 +221,13 @@ export function houghLineAlgorithm(
         }
       }
       ctx.log('hough/voted', end)
-      ctx.log('hough/maxVotes', Math.max(...acc))
+      ctx.log('hough/maxVotes', maxOf(acc))
       if (ctx.wants('hough/accumulator')) ctx.log('hough/accumulator', fromStorage(acc, [nd, nt], 'float64'))
       return { accumulator: acc, voted: end, step: s.step + 1 }
     },
     done: (s) => (s.voted >= pixels.length ? 'completed' : undefined),
     observe: (s) => ({
-      metrics: { voted: s.voted, maxVotes: Math.max(...s.accumulator) },
+      metrics: { voted: s.voted, maxVotes: maxOf(s.accumulator) },
       tensors: { accumulator: { role: 'state', value: s.accumulator, shape: [nd, nt] } },
     }),
     serialise: (s) => stateToJson(s),

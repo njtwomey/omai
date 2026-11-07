@@ -7,7 +7,7 @@
  * as the batch grower's, so prediction, drawing and importances are shared. The stream is the rows of the data in order.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import { type LearnData, withDefaultScore } from '../learn/estimator.ts'
 import { encodeLabels, matrixView, rowsOf } from '../learn/validation.ts'
@@ -353,7 +353,7 @@ export function hoeffdingTreeAlgorithm(
       }
       const seen = s.seen + 1
       if (ctx.wants('tree/leaves')) ctx.log('tree/leaves', nodes.filter((x) => x.left < 0).length)
-      if (ctx.wants('tree/depth')) ctx.log('tree/depth', Math.max(...nodes.map((x) => x.depth)))
+      if (ctx.wants('tree/depth')) ctx.log('tree/depth', maxOf(nodes.map((x) => x.depth)))
       if (ctx.wants('eval/accuracy')) ctx.log('eval/accuracy', correct / seen)
       return { nodes, seen, correct }
     },

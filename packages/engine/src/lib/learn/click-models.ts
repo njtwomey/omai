@@ -7,7 +7,7 @@
  * log-likelihood of a log. The EM fits are `Algorithm`s, one iteration per step, with serialisable states.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import type { InteractionData } from '../data/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../trace/index.ts'
@@ -121,7 +121,7 @@ export function positionBasedAlgorithm(
   options: { readonly tol?: number } = {},
 ): Algorithm<PositionBasedState> {
   if (sessions.length === 0) throw new MdmlError('value', 'positionBasedModel: needs sessions')
-  const depth = Math.max(...sessions.map((s) => s.items.length))
+  const depth = maxOf(sessions.map((s) => s.items.length))
   const tol = options.tol ?? 1e-8
   return {
     name: 'positionBasedEm',

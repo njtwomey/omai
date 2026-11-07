@@ -4,6 +4,7 @@
  * groups kept together, and coordinates that keep the spacing. The default layout of structure diagrams.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import {
   type Box,
   boxBoundary,
@@ -66,7 +67,7 @@ function ranks(ids: readonly string[], edges: readonly (readonly [string, string
     if (known !== undefined) return known
     if (visiting.has(v)) return 0
     visiting.add(v)
-    const r = Math.max(-1, ...(preds.get(v) ?? []).map(of)) + 1
+    const r = Math.max(-1, maxOf((preds.get(v) ?? []).map(of))) + 1
     visiting.delete(v)
     rank.set(v, r)
     return r
@@ -157,7 +158,7 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
     for (let i = 0; i + 1 < chain.length; i++) link(chain[i] as string, chain[i + 1] as string)
     chains.push(chain)
   })
-  const depth = Math.max(0, ...rank.values()) + 1
+  const depth = Math.max(0, maxOf([...rank.values()])) + 1
   let layers: string[][] = Array.from({ length: depth }, () => [])
   // Initial order: depth first from the sources, in node order.
   const seen = new Set<string>()
@@ -294,11 +295,11 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
   for (let round = 0; round < 6; round++) {
     let moved = false
     for (const [g, ms] of members) {
-      const lo = Math.min(...ms.map((v) => (x.get(v) ?? 0) - halfW(v)))
-      const hi = Math.max(...ms.map((v) => (x.get(v) ?? 0) + halfW(v)))
+      const lo = minOf(ms.map((v) => (x.get(v) ?? 0) - halfW(v)))
+      const hi = maxOf(ms.map((v) => (x.get(v) ?? 0) + halfW(v)))
       const ranks = new Set(ms.map((v) => rank.get(v) ?? 0))
       // The group's box reaches 12 px past its members per level of nesting inside it.
-      const depth = Math.max(...ms.map((v) => (groupsOf.get(v) ?? []).indexOf(g)))
+      const depth = maxOf(ms.map((v) => (groupsOf.get(v) ?? []).indexOf(g)))
       const ancestors = new Set(chainOf(g))
       for (const r of ranks) {
         const layer = layers[r] ?? []
@@ -325,7 +326,7 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
   const rankY: number[] = []
   let y = 0
   layers.forEach((layer, r) => {
-    const h = Math.max(0, ...layer.map((v) => items.get(v)?.height ?? 0))
+    const h = Math.max(0, maxOf(layer.map((v) => items.get(v)?.height ?? 0)))
     if (r > 0) y += rankSep
     rankY.push(y + h / 2)
     y += h

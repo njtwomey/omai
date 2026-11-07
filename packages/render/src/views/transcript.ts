@@ -4,6 +4,7 @@
  * highlight is never the only way to read it). The React view draws these spans as text.
  */
 
+import { maxOf } from 'mdml-engine/base'
 import { type Transcript, turnsOf } from 'mdml-engine/exposition'
 import { type Scene, scene, text } from 'mdml-engine/scene'
 
@@ -43,7 +44,7 @@ export interface TranscriptTurn {
  */
 export function transcriptTurns(record: Transcript, track = 0): TranscriptTurn[] {
   const weights = record.tracks?.[track]?.weights
-  const top = Math.max(0, ...(weights ?? []))
+  const top = Math.max(0, maxOf(weights ?? []))
   return turnsOf(record).map((turn) => ({
     role: turn.role,
     spans: record.tokens.slice(turn.from, turn.to).map((token, k): TranscriptSpan => {

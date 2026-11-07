@@ -4,6 +4,7 @@
  * as a heatmap.
  */
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { Dependence, DependenceCurve, DependenceSurface } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -55,7 +56,7 @@ function curveLayers(record: Dependence, c: DependenceCurve, mode: ColourMode, m
   const ale = record.method === 'ale'
   const shape = record.method === 'shape function'
   // A shape function holds each bin's value from its left end: drawn as steps, the last bin carried to the data's end.
-  const end = c.rug === undefined || c.rug.length === 0 ? undefined : Math.max(...c.rug)
+  const end = c.rug === undefined || c.rug.length === 0 ? undefined : maxOf(c.rug)
   const stepX = shape && end !== undefined && end > (c.grid[c.grid.length - 1] ?? end) ? [...c.grid, end] : c.grid
   const stepY = stepX.length > c.average.length ? [...c.average, c.average[c.average.length - 1] ?? 0] : c.average
   layers.push(

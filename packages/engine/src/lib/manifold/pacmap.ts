@@ -9,6 +9,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
+import { dnrm2 } from '../numerics/linalg/index.ts'
 import { analyticObjective, type OptimiserShape, optimisers, type SmoothProblem } from '../optim/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import { choice, dict, int, real, type SpaceValue } from '../space/index.ts'
@@ -325,7 +326,7 @@ export function pacmapAlgorithm(
         opt: optimiser.init(asTensor(flat)),
         loss,
         grad: Array.from(grad),
-        gradNorm: Math.hypot(...grad),
+        gradNorm: dnrm2(grad),
       }
     },
     step: (s, ctx) => {
@@ -334,7 +335,7 @@ export function pacmapAlgorithm(
       const update = toFlat(primalOf(updates as Value))
       const y = s.y.map((r, i) => r.map((v, q) => v + (update[i * k + q] ?? 0)))
       const next = pacmapLoss(y.flat(), k, pairs, pacmapWeights(ctx.t + 1, phases, midInit))
-      return { y, opt: state, loss: next.loss, grad: Array.from(next.grad), gradNorm: Math.hypot(...next.grad) }
+      return { y, opt: state, loss: next.loss, grad: Array.from(next.grad), gradNorm: dnrm2(next.grad) }
     },
     done: (_s, t) => (t >= total ? 'completed' : undefined),
     observe: (s, t) => ({

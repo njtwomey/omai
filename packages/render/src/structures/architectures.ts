@@ -4,6 +4,7 @@
  * tensor shapes, and a treemap of parameter counts, with `flowOrder` for animating a forward pass.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import {
   arrow,
   rect,
@@ -70,7 +71,7 @@ function shapeFlow(s: Structure, width: number): Scene {
     const perExample = shape.length > 1 ? shape.slice(1) : shape
     return perExample.reduce((a, b) => a * Math.max(b, 1), 1)
   })
-  const most = Math.max(2, ...sizes)
+  const most = Math.max(2, maxOf(sizes))
   const row = 30
   const gap = 14
   const labelWidth = 150
@@ -127,8 +128,8 @@ function squarify(
   const worst = (row: readonly Item[], side: number): number => {
     const areas = row.map((r) => r.value * scale)
     const sum = areas.reduce((a, b) => a + b, 0)
-    const max = Math.max(...areas)
-    const min = Math.min(...areas)
+    const max = maxOf(areas)
+    const min = minOf(areas)
     return Math.max((side * side * max) / (sum * sum), (sum * sum) / (side * side * min))
   }
   while (rest.length > 0) {

@@ -6,7 +6,7 @@
  * population, births and deaths per generation, and the period once the board has settled into a cycle.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -283,8 +283,8 @@ export function lifeStep(
  * ```
  */
 export function placePattern(pattern: LifePattern, width: number, height: number): Uint8Array {
-  const rows = Math.max(...pattern.cells.map(([r]) => r)) + 1
-  const cols = Math.max(...pattern.cells.map(([, c]) => c)) + 1
+  const rows = maxOf(pattern.cells.map(([r]) => r)) + 1
+  const cols = maxOf(pattern.cells.map(([, c]) => c)) + 1
   if (rows > height || cols > width) throw new MdmlError('shape', `placePattern: ${pattern.name} does not fit`)
   const top = Math.floor((height - rows) / 2)
   const left = Math.floor((width - cols) / 2)

@@ -6,7 +6,7 @@
  * and the agreement between explainers.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { keyFor } from '../learn/_shared.ts'
 import type { Estimator, LearnData } from '../learn/estimator.ts'
 import { type Scoring, scorersOf } from '../learn/scoring.ts'
@@ -375,7 +375,7 @@ export function sensitivity(
     const e0 = base[i] ?? []
     const n0 = norm(e0) || 1
     const ratios = rows.map((s) => norm(s.e.map((v, j) => v - (e0[j] ?? 0))) / n0)
-    max.push(Math.max(0, ...ratios))
+    max.push(Math.max(0, maxOf(ratios)))
     average.push(ratios.reduce((a, b) => a + b, 0) / Math.max(1, ratios.length))
   })
   return { max, average }
@@ -405,10 +405,12 @@ export function localLipschitz(explainer: Explainer, x: TensorLike, options: Sen
     const x0 = Array.from(m.data.subarray(i * m.d, (i + 1) * m.d))
     return Math.max(
       0,
-      ...rows.map((s) => {
-        const dz = norm(s.z.map((v, j) => v - (x0[j] ?? 0)))
-        return dz === 0 ? 0 : norm(s.e.map((v, j) => v - (e0[j] ?? 0))) / dz
-      }),
+      maxOf(
+        rows.map((s) => {
+          const dz = norm(s.z.map((v, j) => v - (x0[j] ?? 0)))
+          return dz === 0 ? 0 : norm(s.e.map((v, j) => v - (e0[j] ?? 0))) / dz
+        }),
+      ),
     )
   })
 }

@@ -7,7 +7,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import {
   abs,
   asTensor,
@@ -64,8 +64,10 @@ export function receptiveField(layers: readonly ConvLayerSpec[], dims?: number):
     dims ??
     Math.max(
       1,
-      ...layers.flatMap((l) =>
-        [l.kernel, l.stride, l.dilation, l.padding].map((v) => (Array.isArray(v) ? v.length : 1)),
+      maxOf(
+        layers.flatMap((l) =>
+          [l.kernel, l.stride, l.dilation, l.padding].map((v) => (Array.isArray(v) ? v.length : 1)),
+        ),
       ),
     )
   let size: number[] = new Array<number>(d).fill(1)

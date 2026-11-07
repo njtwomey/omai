@@ -3,6 +3,7 @@
  * and lattices whose row-major node order matches grid graphs and Ising-style models.
  */
 
+import { maxOf } from 'mdml-engine/base'
 import { type Box, type GraphLayout, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /**
@@ -25,7 +26,7 @@ export function gridLayout(
 ): GraphLayout {
   const n = graph.nodes.length
   const columns = Math.max(1, options.columns ?? Math.ceil(Math.sqrt(n)))
-  const cell = options.cell ?? Math.max(10, ...graph.nodes.map((v) => Math.max(v.width, v.height))) + 24
+  const cell = options.cell ?? Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height)))) + 24
   const placed: Record<string, Box> = {}
   graph.nodes.forEach((v, i) => {
     placed[v.id] = { x: (i % columns) * cell, y: Math.floor(i / columns) * cell, width: v.width, height: v.height }
@@ -60,7 +61,7 @@ export function bipartiteLayout(
   } = {},
 ): GraphLayout {
   const { orientation = 'columns', gap = 200, margin = 16 } = options
-  const spacing = options.spacing ?? Math.max(10, ...graph.nodes.map((v) => Math.max(v.width, v.height))) + 16
+  const spacing = options.spacing ?? Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height)))) + 16
   const isLeft = new Set(left)
   const sides = [graph.nodes.filter((v) => isLeft.has(v.id)), graph.nodes.filter((v) => !isLeft.has(v.id))]
   const longest = Math.max(sides[0]?.length ?? 0, sides[1]?.length ?? 0)

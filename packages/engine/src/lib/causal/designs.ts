@@ -7,7 +7,7 @@
  * algorithm).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, minOf } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import { quadprog } from '../optim/index.ts'
@@ -155,7 +155,7 @@ export function differenceInDifferences(
   options: { readonly cutoff?: number; readonly level?: number } = {},
 ): DidResult {
   const ix = index(panel)
-  const first = Math.min(...Array.from(ix.adoption).filter((a) => a >= 0))
+  const first = minOf(Array.from(ix.adoption).filter((a) => a >= 0))
   if (!Number.isFinite(first)) throw new MdmlError('value', 'differenceInDifferences: no unit is ever treated')
   const cutoff = options.cutoff === undefined ? first : ix.periods.findIndex((p) => p >= (options.cutoff ?? 0))
   const rows = Array.from({ length: ix.n }, (_, i) => i).filter((i) => {

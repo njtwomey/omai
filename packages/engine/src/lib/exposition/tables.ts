@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /**
  * What a mark says about a cell or a row: `ok`, `warn` and `bad` colour it as such, `info` and `muted` quieter,
@@ -67,5 +67,5 @@ export function markedTable(record: Omit<MarkedTable, 'kind'>): MarkedTable {
     if (m.col !== undefined && !(Number.isInteger(m.col) && m.col >= 0 && m.col < record.columns.length))
       throw new MdmlError('value', `markedTable: marks[${k}] names the column ${m.col}, which the table lacks`)
   }
-  return { kind: 'markedTable', ...record }
+  return seal({ kind: 'markedTable', ...record })
 }

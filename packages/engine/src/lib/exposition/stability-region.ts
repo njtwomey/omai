@@ -7,6 +7,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 import type { Complex } from './complex-plane.ts'
 
 /** The stability function of a one-step method as a ratio of polynomials in `z`: `R(z) = P(z) / Q(z)`. */
@@ -78,7 +79,7 @@ export function stabilityRegion(record: Omit<StabilityRegion, 'kind'>): Stabilit
   for (const [k, m] of (record.marks ?? []).entries())
     if (!(Number.isFinite(m.at[0]) && Number.isFinite(m.at[1])))
       throw new MdmlError('value', `stabilityRegion: marks[${k}] is not finite`)
-  return { kind: 'stabilityRegion', ...record }
+  return seal({ kind: 'stabilityRegion', ...record })
 }
 
 /**

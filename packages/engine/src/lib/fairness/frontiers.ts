@@ -5,7 +5,7 @@
  * rates when base rates differ (Kleinberg, Mullainathan and Raghavan; Chouldechova).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type GroupRateValues, groupDisparities, tableRates } from '../exposition/index.ts'
 import { calibrationByGroup } from './group-metrics.ts'
 import { optimiseThresholds, thresholdDecisions } from './post-processing.ts'
@@ -171,7 +171,7 @@ export function thresholdFrontier(
 ): ThresholdFrontier {
   if (scores.length !== labels.length || scores.length !== groups.length)
     throw new MdmlError('shape', 'thresholdFrontier: inputs differ in length')
-  const k = Math.max(...groups) + 1
+  const k = maxOf(groups) + 1
   const base = options.base ?? 0.5
   const constraint = options.constraint ?? 'demographicParity'
   const cut = (thresholds: readonly number[]): number[] =>
@@ -230,7 +230,7 @@ export function impossibilityAt(
   groups: readonly number[],
   threshold = 0.5,
 ): ImpossibilityPoint {
-  const k = Math.max(...groups) + 1
+  const k = maxOf(groups) + 1
   const named = (tables: number[][][], name: string): number =>
     groupDisparities(tables.map(tableRates), 0).find((d) => d.name === name)?.value ?? 0
   const before = tablesOf(

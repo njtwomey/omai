@@ -4,6 +4,7 @@
  */
 
 import type { SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { extentOf } from '../figure/limits.ts'
 import { colourScale, sequentialRamp } from '../theme/palettes.ts'
 import type { ColourMode } from '../theme/tokens.ts'
@@ -60,7 +61,7 @@ export function hexbin(
   const shade = (c: number): number => (options.log === true ? Math.log10(c) : c)
   const colour = colourScale(sequentialRamp('viridis', options.mode ?? 'light'), [
     shade(1),
-    Math.max(shade(1) + 1e-9, ...cells.map((c) => shade(c.count))),
+    Math.max(shade(1) + 1e-9, maxOf(cells.map((c) => shade(c.count)))),
   ])
   const series = {
     type: 'custom',

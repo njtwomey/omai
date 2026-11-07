@@ -8,7 +8,7 @@
  * `H1` and the characteristic time of the lower bound).
  */
 
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, MdmlError, minOf } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import { type Env, isBandit } from '../rl/index.ts'
 import {
@@ -258,7 +258,7 @@ export function successiveEliminationAlgorithm<S, O>(
       const pulled = pullArm(env, s0, arm, ctx.key)
       let s: BestArmState = pulled
       logPull(ctx, arm, pulled.reward, s)
-      const n = Math.min(...Array.from(s.counts, (c, i) => ((s.active[i] ?? 0) === 1 ? c : Number.POSITIVE_INFINITY)))
+      const n = minOf(Array.from(s.counts, (c, i) => ((s.active[i] ?? 0) === 1 ? c : Number.POSITIVE_INFINITY)))
       if (n > s.round && Number.isFinite(n)) {
         // A round has just completed: every active arm has n pulls.
         s = { ...s, round: n }
@@ -277,7 +277,7 @@ export function successiveEliminationAlgorithm<S, O>(
         ctx.log('stop/threshold', 2 * c)
         ctx.log(
           'stop/statistic',
-          top - Math.min(...Array.from(s.counts, (_, i) => ((s.active[i] ?? 0) === 1 ? meanOf(s, i) : top))),
+          top - minOf(Array.from(s.counts, (_, i) => ((s.active[i] ?? 0) === 1 ? meanOf(s, i) : top))),
         )
         for (let i = 0; i < arms; i++) {
           if ((s.active[i] ?? 0) === 1 && top - meanOf(s, i) > 2 * c) s = drop(ctx, s, i)
@@ -503,7 +503,7 @@ export function characteristicTime(means: readonly number[], sigma = 1): Charact
   const total = (t: number): number =>
     others.reduce((a, g) => a + (1 / ((g * g) / (2 * sigma * sigma * t) - 1)) ** 2, 0)
   let lo = 0
-  let hi = Math.min(...others) ** 2 / (2 * sigma * sigma)
+  let hi = minOf(others) ** 2 / (2 * sigma * sigma)
   for (let i = 0; i < 200; i++) {
     const mid = (lo + hi) / 2
     if (total(mid) < 1) lo = mid
@@ -515,8 +515,10 @@ export function characteristicTime(means: readonly number[], sigma = 1): Charact
   const weights = x.map((v) => v / sum)
   const w1 = weights[best] ?? 0
   const value = Math.min(
-    ...gaps.flatMap((g, i) =>
-      i === best ? [] : [(w1 * (weights[i] ?? 0) * g * g) / ((w1 + (weights[i] ?? 0)) * 2 * sigma * sigma)],
+    minOf(
+      gaps.flatMap((g, i) =>
+        i === best ? [] : [(w1 * (weights[i] ?? 0) * g * g) / ((w1 + (weights[i] ?? 0)) * 2 * sigma * sigma)],
+      ),
     ),
   )
   return { weights, time: 1 / value }

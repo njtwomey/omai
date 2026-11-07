@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { ComponentsRecord } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -110,7 +111,7 @@ export function loadingsPanel(record: ComponentsRecord, options: ComponentsViewO
     options.maxFeatures ?? 12,
   )
   const byFeature = keep.map((f) => comps.map((c) => c[f] ?? 0))
-  const top = Math.max(1e-12, ...comps.flat().map(Math.abs))
+  const top = Math.max(1e-12, maxOf(comps.flat().map(Math.abs)))
   return {
     layers: [
       matrix(byFeature, {
@@ -155,10 +156,10 @@ export function biplotPanel(record: ComponentsRecord, options: ComponentsViewOpt
   const plane = scores.map((s) => [s[a] ?? 0, s[b] ?? 0])
   // Kernel methods weight training rows, not features: no arrows. Otherwise the longest few.
   const shown = record.space === 'samples' ? [] : topFeatures(record, [a, b], options.maxFeatures ?? 12)
-  const spread = Math.max(1e-12, ...plane.flat().map(Math.abs))
+  const spread = Math.max(1e-12, maxOf(plane.flat().map(Math.abs)))
   const ca = record.components[a] ?? []
   const cb = record.components[b] ?? []
-  const longest = Math.max(1e-12, ...shown.map((f) => Math.hypot(ca[f] ?? 0, cb[f] ?? 0)))
+  const longest = Math.max(1e-12, maxOf(shown.map((f) => Math.hypot(ca[f] ?? 0, cb[f] ?? 0))))
   const scale = (0.85 * spread) / longest
   const lengths = shown.map((f) => Math.hypot(ca[f] ?? 0, cb[f] ?? 0))
   const cutoff = [...lengths].sort((p, q) => q - p)[Math.min(7, lengths.length - 1)] ?? 0

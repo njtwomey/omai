@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** A split a tree considered at a node. */
 export interface SplitCandidate {
@@ -82,7 +83,7 @@ export function treeRecord(tree: Omit<TreeRecord, 'kind'>): TreeRecord {
     if (n.split !== undefined && !(ids.has(n.split.left) && ids.has(n.split.right)))
       throw new MdmlError('value', `treeRecord: node ${n.id} splits into unknown children`)
   }
-  return { kind: 'tree', ...tree }
+  return seal({ kind: 'tree', ...tree })
 }
 
 /** The cost-complexity pruning path: the effective alphas and the impurities and sizes of the pruned trees. */
@@ -108,5 +109,5 @@ export interface PruningPath {
 export function pruningPath(path: Omit<PruningPath, 'kind'>): PruningPath {
   if (path.impurities.length !== path.alphas.length || path.leaves.length !== path.alphas.length)
     throw new MdmlError('shape', 'pruningPath: alphas, impurities and leaves must have one entry per step')
-  return { kind: 'pruningPath', ...path }
+  return seal({ kind: 'pruningPath', ...path })
 }

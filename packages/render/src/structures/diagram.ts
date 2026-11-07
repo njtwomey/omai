@@ -5,6 +5,7 @@
  * steady across an animation's frames.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import {
   circle,
   group as groupNode,
@@ -77,7 +78,7 @@ const textWidth = (s: string, size: number): number =>
   isTex(s) ? (s.length - 2) * size * 0.45 : s.length * size * CHAR
 
 function nodeSize(look: NodeLook, content: readonly string[], size: number): { width: number; height: number } {
-  const wide = Math.max(...content.map((s, i) => textWidth(s, i === 0 ? size : size - 2)))
+  const wide = maxOf(content.map((s, i) => textWidth(s, i === 0 ? size : size - 2)))
   const tall = size + 6 + (content.length - 1) * (size + 2)
   switch (look.shape) {
     case 'dot':
@@ -182,7 +183,7 @@ function selfLoop(
     if (end !== undefined) taken.push(Math.atan2(end[1] - b.y, end[0] - b.x))
   }
   const gap = (a: number): number =>
-    Math.min(Math.PI, ...taken.map((t) => Math.abs(Math.atan2(Math.sin(a - t), Math.cos(a - t)))))
+    Math.min(Math.PI, minOf(taken.map((t) => Math.abs(Math.atan2(Math.sin(a - t), Math.cos(a - t))))))
   // Up first, then the sides, then down; the first with the widest berth wins.
   const candidates = [-90, -45, -135, 0, 180, 45, 135, 90].map((d) => (d * Math.PI) / 180)
   let angle = candidates[0] as number

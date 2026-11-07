@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** One frame: every agent's position, and its heading (radians) and state when the record has them. */
 export interface AgentFrame {
@@ -77,5 +77,5 @@ export function agentSteps(record: Omit<AgentSteps, 'kind'>): AgentSteps {
   }
   for (const s of record.series ?? [])
     sameLength('agentSteps', `series '${s.name}'`, s.values.length, record.frames.length)
-  return { kind: 'agentSteps', ...record }
+  return seal({ kind: 'agentSteps', ...record })
 }

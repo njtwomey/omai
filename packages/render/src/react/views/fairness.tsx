@@ -4,6 +4,7 @@
  * table, the rates over a threshold sweep, and a threshold explorer per group.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { GroupRateName, GroupReport } from 'mdml-engine/exposition'
 import { analyseThresholds } from 'mdml-engine/metrics'
 import { type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'
@@ -218,7 +219,7 @@ export function GroupThresholds(props: GroupThresholdsProps): ReactNode {
   const [own, setOwn] = useState<readonly number[]>(record.thresholds)
   if (rows === undefined) return null
   const probability = rows.scores.every((s) => s >= 0 && s <= 1)
-  const range: [number, number] = probability ? [0, 1] : [Math.min(...rows.scores), Math.max(...rows.scores)]
+  const range: [number, number] = probability ? [0, 1] : [minOf(rows.scores), maxOf(rows.scores)]
   const thresholds = props.thresholds ?? own
   const setGroup = (g: number, v: number): void => {
     const next = thresholds.map((x, i) => (i === g ? v : x))

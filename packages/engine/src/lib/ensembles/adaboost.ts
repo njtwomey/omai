@@ -9,7 +9,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, MdmlError, maxOf } from '../base/index.ts'
 import { categorical, type Distribution } from '../dists/index.ts'
 import type { Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
@@ -244,7 +244,7 @@ function probaOf(decision: Float64Array, k: number): Float64Array {
   for (let i = 0; i < m; i++) {
     const row = Array.from({ length: k }, (_, c) => (decision[i * k + c] ?? 0) / (k - 1))
     const z = k === 2 ? [((row[0] ?? 0) - (row[1] ?? 0)) / 2, ((row[1] ?? 0) - (row[0] ?? 0)) / 2] : row
-    const max = Math.max(...z)
+    const max = maxOf(z)
     const e = z.map((v) => Math.exp(v - max))
     const s = e.reduce((a, b) => a + b, 0)
     for (let c = 0; c < k; c++) out[i * k + c] = (e[c] ?? 0) / s
@@ -363,7 +363,7 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
           const pred = outputsOf(fitted)
           contribution = pred
           const abs = Array.from(pred, (p, i) => Math.abs(p - (y[i] ?? 0)))
-          const max = Math.max(...abs)
+          const max = maxOf(abs)
           const loss = abs.map((e) => {
             const r = max > 0 ? e / max : 0
             return h.loss === 'square' ? r * r : h.loss === 'exponential' ? 1 - Math.exp(-r) : r
@@ -561,7 +561,7 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
               const scale =
                 h.algorithm === 'SAMME'
                   ? (state.weights.reduce((a, b) => a + b, 0) * k) / (k - 1)
-                  : 2 * Math.max(...state.decision.map(Math.abs), EPS)
+                  : 2 * Math.max(maxOf(state.decision.map(Math.abs)), EPS)
               return Array.from(y, (c, i) => {
                 let against = Number.NEGATIVE_INFINITY
                 for (let j = 0; j < k; j++) if (j !== c) against = Math.max(against, state.decision[i * k + j] ?? 0)

@@ -7,6 +7,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { Structure } from '../scene/index.ts'
+import { seal } from './_check.ts'
 
 /** How a node looks at a step. A value maps to the ramp, a category to a categorical colour. */
 export interface NodeLook {
@@ -88,7 +89,7 @@ export function structureSteps(record: Omit<StructureSteps, 'kind'>): StructureS
         `structureSteps: steps[${t}] names the edge ${missing.from} to ${missing.to}, which the structure lacks`,
       )
   }
-  return { kind: 'structureSteps', ...record }
+  return seal({ kind: 'structureSteps', ...record })
 }
 
 /**

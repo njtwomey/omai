@@ -4,7 +4,7 @@
  * algorithm, started from k-means++ centres.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, tensor } from '../tensor/index.ts'
@@ -122,9 +122,7 @@ export function fuzzyCMeansAlgorithm(x: TensorLike, init: Rows, m = 2, tol = 1e-
         }
         return mean.map((t) => t / (w || 1))
       })
-      const shift = Math.max(
-        ...centres.map((cent, k) => Math.hypot(...cent.map((t, q) => t - (s.centres[k]?.[q] ?? 0)))),
-      )
+      const shift = maxOf(centres.map((cent, k) => Math.hypot(...cent.map((t, q) => t - (s.centres[k]?.[q] ?? 0)))))
       return { centres, ...fuzzyMemberships(x, centres, m), shift }
     },
     done: (s) => (s.shift < tol ? 'converged' : undefined),

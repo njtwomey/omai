@@ -5,7 +5,7 @@
  * Kenthapadi, 2019).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 
 /** How attention falls off with position (1-based): logarithmic (DCG's 1 / log2(1 + rank)) or geometric. */
 export type PositionBias = { readonly kind: 'log' } | { readonly kind: 'geometric'; readonly p: number }
@@ -63,7 +63,7 @@ export function rankingExposure(
     rel[j] = (rel[j] ?? 0) + (options.relevance?.[i] ?? 0)
   }
   const exposure = exp.map((e, j) => e / Math.max(1, count[j] ?? 0))
-  const ratio = (v: readonly number[]): number => (Math.max(...v) === 0 ? 1 : Math.min(...v) / Math.max(...v))
+  const ratio = (v: readonly number[]): number => (maxOf(v) === 0 ? 1 : minOf(v) / maxOf(v))
   if (options.relevance === undefined) return { groups: names, exposure, exposureRatio: ratio(exposure) }
   if (options.relevance.length !== groups.length)
     throw new MdmlError('shape', 'rankingExposure: one relevance per item')

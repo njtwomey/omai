@@ -10,7 +10,7 @@
  * (exact) or the ELBO (variational, warm-started from the previous posterior) at every step.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../../trace/index.ts'
@@ -187,7 +187,7 @@ export function factorialHmmVariational(
   const D = params.bias.length
   const tol = options.tol ?? 1e-8
   const maxSweeps = options.maxSweeps ?? 50
-  const width = Math.max(...K)
+  const width = maxOf(K)
   const jitter =
     options.start === undefined ? Array.from(toFlat(uniform(options.key ?? makeKey(0), [M * T * width]))) : []
   // the start: the given marginals, or the uniform tilted by a keyed jitter so that the chains can break symmetry

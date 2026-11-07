@@ -8,15 +8,15 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 
 - function `band`: A filled band between two curves: `band([{ x, lower, upper }])`. `src/charts/lines.ts:126` `mdml-render/charts`
 - function `barChart`: A bar chart over categories: `barChart(['a', 'b'], [3, 5])`. `src/charts/bars.ts:407` `mdml-render/charts`
-- function `boxPlot`: Box plots of groups: `boxPlot([{ name: 'a', values }])`. `src/charts/distributions.ts:298` `mdml-render/charts`
+- function `boxPlot`: Box plots of groups: `boxPlot([{ name: 'a', values }])`. `src/charts/distributions.ts:302` `mdml-render/charts`
 - function `cartesian`: Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`. `src/charts/plot.ts:484` `mdml-render/charts`
 - function `confusionMatrixChart`: A labelled confusion matrix: `confusionMatrixChart(counts, ['cat', 'dog'])`. `src/charts/matrices.ts:521` `mdml-render/charts`
 - function `contours`: Contour lines of a 2-D array: `contours(z, { levels: 7 })`. `src/charts/fields.ts:57` `mdml-render/charts`
 - function `decisionRegions`: A classifier's decision regions from class probability grids: `decisionRegions(probs, { x, y })`. `src/charts/fields.ts:196` `mdml-render/charts`
-- function `densityChart`: Densities of distributions on one chart: `densityChart([{ name, dist }])`. `src/charts/distributions.ts:526` `mdml-render/charts`
+- function `densityChart`: Densities of distributions on one chart: `densityChart([{ name, dist }])`. `src/charts/distributions.ts:530` `mdml-render/charts`
 - function `heatmapChart`: A heatmap of a 2-D array: `heatmapChart(z)`. `src/charts/matrices.ts:589` `mdml-render/charts`
 - function `histogram`: A histogram layer of values: `histogram(values, { bins: 20 })`. `src/charts/bars.ts:260` `mdml-render/charts`
-- function `historyChart`: Objective per trial of a hyperparameter study: `historyChart(study)`. `src/charts/tuning.ts:95` `mdml-render/charts`
+- function `historyChart`: Objective per trial of a hyperparameter study: `historyChart(study)`. `src/charts/tuning.ts:96` `mdml-render/charts`
 - function `kde`: A kernel density estimate layer of samples: `kde(samples)`. `src/charts/distributions.ts:124` `mdml-render/charts`
 - function `learningCurveChart`: Train and validation scores against training size: `learningCurveChart(sizes, train, test)`. `src/charts/evaluation.ts:195` `mdml-render/charts`
 - function `lineChart`: A line chart of curves: `lineChart([{ y: [3, 1, 2], name: 'loss' }])`. `src/charts/lines.ts:308` `mdml-render/charts`

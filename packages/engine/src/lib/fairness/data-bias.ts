@@ -5,7 +5,7 @@
  * amplification by a model (Zhao et al. 2017; Wang and Russakovsky 2021).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, minOf } from '../base/index.ts'
 import { labelValues, sortLabels } from '../metrics/_labels.ts'
 import { normalizedMutualInfoScore } from '../metrics/clustering.ts'
 import { rocAucScore } from '../metrics/curves.ts'
@@ -123,7 +123,7 @@ export function baseRates(yTrue: MetricInput, groups: MetricInput, options: Base
   let spd = 0
   for (const [k, r] of rates.entries()) if (k !== reference && Math.abs(r - ref) > Math.abs(spd)) spd = r - ref
   const others = rates.filter((_, k) => k !== reference)
-  const di = ref === 0 || others.length === 0 ? Number.NaN : Math.min(...others) / ref
+  const di = ref === 0 || others.length === 0 ? Number.NaN : minOf(others) / ref
   return {
     groups: names,
     rates,
@@ -244,7 +244,7 @@ export function proxyScores(
   const names = sortLabels(labelValues(groups)).map(String)
   if (names.length < 2) throw new MdmlError('value', 'proxyScores: needs at least two groups')
   const counts = names.map((n) => g.filter((v) => v === n).length)
-  let target = names[counts.indexOf(Math.min(...counts))] ?? ''
+  let target = names[counts.indexOf(minOf(counts))] ?? ''
   if (options.target !== undefined) target = String(options.target)
   const y = g.map((v) => (v === target ? 1 : 0))
   const d = x[0]?.length ?? 0

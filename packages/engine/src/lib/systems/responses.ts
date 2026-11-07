@@ -5,7 +5,7 @@
  * overshoot, settling time).
  */
 
-import { type Json, linspaceNumbers, MdmlError, minOf } from '../base/index.ts'
+import { type Json, linspaceNumbers, MdmlError, maxOf, minOf } from '../base/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { eigvals, expm } from '../numerics/linalg/index.ts'
 import {
@@ -482,7 +482,7 @@ export function stepMeasures(
     }
   }
   const after = yv.slice(upper)
-  const top = Math.max(...yv.map((v) => sign * v))
+  const top = maxOf(yv.map((v) => sign * v))
   const overshoot =
     Math.abs(top) - Math.abs(final) > 0 ? Math.abs((100 * (Math.abs(top) - Math.abs(final))) / final) : 0
   const lowest = yv.reduce((best, v, i) => (sign * v < sign * (yv[best] as number) ? i : best), 0)
@@ -492,8 +492,8 @@ export function stepMeasures(
   return {
     riseTime: (t[upper] as number) - (t[lower] as number),
     settlingTime: settled < n ? (t[settled] as number) : Number.NaN,
-    settlingMin: Math.min(Math.min(...after), final),
-    settlingMax: Math.max(Math.max(...after), final),
+    settlingMin: Math.min(minOf(after), final),
+    settlingMax: Math.max(maxOf(after), final),
     overshoot,
     undershoot,
     peak: Math.abs(yv[peakIndex] as number),

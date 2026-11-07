@@ -5,7 +5,7 @@
  * model amplifies the base-rate gap.
  */
 
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 import type { GroupDisparity } from './fairness.ts'
 
 /** The features that predict the protected attribute: each feature's dependence and how well it predicts the group. */
@@ -81,5 +81,5 @@ export function dataBias(record: Omit<DataBias, 'kind'>): DataBias {
   }
   if (record.amplification !== undefined)
     sameLength('dataBias', 'amplification.selectionRates', record.amplification.selectionRates.length, k)
-  return { kind: 'dataBias', ...record }
+  return seal({ kind: 'dataBias', ...record })
 }

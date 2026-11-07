@@ -7,7 +7,7 @@
  * distances to the chosen shapelets, on which any tabular classifier runs.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 
 /** The distance from a series to a shapelet, and where it is attained. */
@@ -113,7 +113,7 @@ export interface ShapeletSplit {
  */
 export function shapeletSplit(distances: ArrayLike<number>, labels: ArrayLike<number>): ShapeletSplit {
   const n = distances.length
-  const classes = Math.max(...Array.from(labels)) + 1
+  const classes = maxOf(Array.from(labels)) + 1
   const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (distances[a] ?? 0) - (distances[b] ?? 0))
   const total = new Array<number>(classes).fill(0)
   for (const l of Array.from(labels)) total[l] = (total[l] ?? 0) + 1
@@ -204,7 +204,7 @@ export function shapeletDiscoveryAlgorithm(
 ): { readonly algorithm: Algorithm<ShapeletDiscoveryState>; readonly candidates: number } {
   if (series.length !== labels.length || series.length < 2)
     throw new MdmlError('shape', 'shapelets: need labelled series')
-  const shortest = Math.min(...series.map((s) => s.length))
+  const shortest = minOf(series.map((s) => s.length))
   const minLength = options.minLength ?? 3
   const maxLength = Math.min(options.maxLength ?? Math.max(minLength, Math.floor(shortest / 4)), shortest)
   const lengthStep = options.lengthStep ?? 1

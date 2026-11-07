@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** The stability class of a fixed point of a two-dimensional system. */
 export type FixedPointClass = 'stable' | 'unstable' | 'saddle' | 'centre'
@@ -76,7 +76,7 @@ export function vectorFieldRecord(record: Omit<VectorField, 'kind'>): VectorFiel
     for (const p of n.paths)
       if (p.some((q) => !(Number.isFinite(q[0]) && Number.isFinite(q[1]))))
         throw new MdmlError('value', `vectorField: nullclines[${k}] holds a point that is not finite`)
-  return { kind: 'vectorField', ...record }
+  return seal({ kind: 'vectorField', ...record })
 }
 
 /**

@@ -5,7 +5,7 @@
  * in the state. The state serialises.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { fromStorage, primalOf, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -159,7 +159,7 @@ export function lanczosAlgorithm(
     observe: (s) => ({
       metrics: {
         orthogonalityLoss: s.orthogonalityLoss,
-        maxResidual: Math.max(0, ...s.ritzResiduals),
+        maxResidual: Math.max(0, maxOf(s.ritzResiduals)),
         beta: s.beta[s.beta.length - 1] ?? 0,
       },
       tensors: {

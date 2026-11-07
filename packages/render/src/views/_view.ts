@@ -1,4 +1,5 @@
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { Layer } from '../charts/plot.ts'
 import { type Figure, type FigureOptions, figure as makeFigure } from '../figure/figure.ts'
 import { formatNumber } from '../theme/format.ts'
@@ -35,7 +36,7 @@ export function viewMode(options: ViewOptions): ColourMode {
 /** Whether values are best shown on a log axis: all positive and spanning more than a decade and a half. */
 export function wantsLog(values: readonly number[]): boolean {
   if (values.length < 2 || !values.every((v) => v > 0 && Number.isFinite(v))) return false
-  return Math.max(...values) / Math.min(...values) > 30
+  return maxOf(values) / minOf(values) > 30
 }
 
 /** The low and high of finite values (`[0, 1]` when there are none). */

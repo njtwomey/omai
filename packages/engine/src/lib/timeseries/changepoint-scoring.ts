@@ -6,7 +6,7 @@
  * them; a series of length n has changepoints in 1..n-1.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 
 /** One true changepoint and the detection matched to it. */
 export interface ChangepointMatch {
@@ -133,7 +133,7 @@ export function changepointHausdorff(truth: readonly number[], detected: readonl
   if (a.length === 0 && b.length === 0) return 0
   if (a.length === 0 || b.length === 0) return Number.POSITIVE_INFINITY
   const reach = (from: readonly number[], to: readonly number[]): number =>
-    Math.max(...from.map((x) => Math.min(...to.map((y) => Math.abs(x - y)))))
+    maxOf(from.map((x) => minOf(to.map((y) => Math.abs(x - y)))))
   return Math.max(reach(a, b), reach(b, a))
 }
 

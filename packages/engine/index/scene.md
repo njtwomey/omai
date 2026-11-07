@@ -6,4 +6,4 @@ Pictures and structures as data: drawings (`Scene`: shapes, text, paths), 3-D la
 
 - structure `types.ts` (file): Scene graph node types: shapes, text, paths, 3-D layers. `src/lib/scene/types.ts:1` `mdml-engine/scene`
 
-- function `scene`: Build a Scene from nodes; rect, circle and path sit beside it. `src/lib/scene/build.ts:43` `mdml-engine/scene`
+- function `scene`: Build a Scene from nodes; rect, circle and path sit beside it. `src/lib/scene/build.ts:45` `mdml-engine/scene`

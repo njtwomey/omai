@@ -5,7 +5,7 @@
  * of individual benefits with their between- and within-group parts (Speicher et al. 2018; AIF360).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type GroupRateName, type GroupRateValues, tableRates } from '../exposition/index.ts'
 import { labelValues } from '../metrics/_labels.ts'
 import type { MetricInput } from '../metrics/metric.ts'
@@ -151,7 +151,7 @@ export function subgroupRates(
   const worst = {} as Record<GroupRateName, { subgroup: number; gap: number }>
   for (const name of RATES) {
     const vs = large.map((s) => rates[s]?.[name] ?? 0)
-    gaps[name] = vs.length === 0 ? 0 : Math.max(...vs) - Math.min(...vs)
+    gaps[name] = vs.length === 0 ? 0 : maxOf(vs) - minOf(vs)
     let best = { subgroup: large[0] ?? 0, gap: -1 }
     for (const s of large) {
       const gap = Math.abs((rates[s]?.[name] ?? 0) - overall[name])

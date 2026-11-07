@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -151,14 +152,14 @@ export function likelihoodView(table: LikelihoodTable, options: ViewOptions = {}
   const mode = fig.mode
   const cells = table.classes.map((_, c) => [table.logPriors[c] ?? 0, ...(table.contributions[c] ?? [])])
   const totals = cells.map((row) => row.reduce((s, v) => s + v, 0))
-  const best = totals.indexOf(Math.max(...totals))
+  const best = totals.indexOf(maxOf(totals))
   // The posterior over the classes: a softmax of the totals.
-  const top = Math.max(...totals)
+  const top = maxOf(totals)
   const weights = totals.map((v) => Math.exp(v - top))
   const sum = weights.reduce((a, b) => a + b, 0)
   const posterior = weights.map((w) => w / sum)
   // Colours span the twelve nats below the largest term; anything lower is as dark as it gets.
-  const hi = Math.max(...cells.flat())
+  const hi = maxOf(cells.flat())
   const bare = (f: string): string => {
     const b = f.replace(/\s*\([^)]*\)\s*$/, '')
     return b.length > 12 ? `${b.slice(0, 11)}…` : b
@@ -410,7 +411,7 @@ export function searchTrialsView(record: SearchTrials, options: SearchViewOption
   trials.forEach((t, i) => {
     if (t.intermediate === undefined || t.intermediate.length < 2) return
     xs.push(i, i, Number.NaN)
-    ys.push(Math.min(...t.intermediate), Math.max(...t.intermediate), Number.NaN)
+    ys.push(minOf(t.intermediate), maxOf(t.intermediate), Number.NaN)
   })
   if (xs.length > 0)
     history.push(lines([{ x: xs, y: ys, name: '__spread', colour: 'muted', width: 1.2, opacity: 0.7 }], { mode }))

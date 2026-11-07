@@ -5561,6 +5561,11 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
   maps, filters, hidden states as cells, with steps through training) and `ConfusionMatrix` (counts per true and
   predicted class, with steps through training; `confusionCounts` builds them).
+  Every record constructor ends in `seal` (`exposition/_check.ts`): the record it returns is a copy that shares no array
+  with the caller's, and every number in it is finite except the fields `SEAL_OPTIONS` lists for its kind (a missing
+  standard error or a rate with no denominator shown as a gap, an infinite threshold); `expositionSamples`
+  (`samples.ts`) is one small valid record of each kind, the fixtures of the contract test over all kinds and of the
+  views' smoke tests. The scene builders check their sizes and coordinates the same way (`scene/_check.ts`).
   Records that index the training rows (clusterings, mixtures, margins, neighbours, anomaly scores, decision surfaces)
   carry those rows (`InputRows`, two coordinates each, for data up to a few thousand rows), so a view draws from the
   record alone; iterative trainers' decision surfaces carry their `steps` through training, which the views play.
@@ -7269,7 +7274,9 @@ Design rules:
   `EquationFitView`; `audio.tsx`: `AudioView`, `useClipPlayback`; `transcript.tsx`: `TranscriptView`; `sample-grid.tsx`:
   `SampleGridView`;
   `reachability.tsx`: `ReachabilityPlotView`; `scene-steps.tsx`: `SceneStepsView`; `images.tsx` also `ImageGridView`), each one figure in one
-  `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record.
+  `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record inside a
+  `RecordBoundary` (`RecordBoundary.tsx`: a record whose view throws, or whose kind has no view, shows a one-line note and
+  the page goes on).
 - `session/`: sessions in React (the Sessions and Comparisons paragraphs of section 5): `useSession.ts` (`useSession`,
   `useSessions`: one producer over one or several sessions, `LiveSession`, `LiveSessions`, `variantsOf`), `compare.ts`
   (the pure part of a comparison: `sharedHead`, `advanceInStep`, `overlayCurves`, `sweepTrials`), `SessionPlayer.tsx`,

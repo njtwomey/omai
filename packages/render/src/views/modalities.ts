@@ -4,6 +4,7 @@
  * time.
  */
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { FeatureAttributions } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -57,7 +58,7 @@ export function attributionImageView(record: FeatureAttributions, options: Modal
   const mode = fig.mode
   const values = record.values[row] ?? []
   const data = record.data[row] ?? []
-  const m = Math.max(1e-12, ...values.map(Math.abs))
+  const m = Math.max(1e-12, maxOf(values.map(Math.abs)))
   const hidden = { show: false, splitLine: false }
   const panels: Record<string, Panel> = {
     input: {
@@ -188,7 +189,7 @@ export function tokenStripView(record: FeatureAttributions, options: ModalityVie
   const top = base.padding.top + Math.round(fs * 2.2)
   const t = tokens(base.mode)
   const values = record.values[row] ?? []
-  const max = Math.max(1e-12, ...values.map(Math.abs))
+  const max = Math.max(1e-12, maxOf(values.map(Math.abs)))
   const prediction = record.predictions[row]
   const header = `${record.output}: ${prediction === undefined ? '' : short(prediction)}  (base ${short(record.baseValues?.[row] ?? record.baseValue)}) · ${record.method}`
   const graphic: Record<string, unknown>[] = [
@@ -270,7 +271,7 @@ export function attributionSeriesView(record: FeatureAttributions, options: Moda
       : Array.from({ length: d }, (_, i) => i)
   const values = record.values[row] ?? []
   const data = record.data[row] ?? []
-  const max = Math.max(1e-12, ...values.map(Math.abs))
+  const max = Math.max(1e-12, maxOf(values.map(Math.abs)))
   const dots = layer(
     [
       {

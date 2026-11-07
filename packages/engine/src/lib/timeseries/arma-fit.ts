@@ -7,7 +7,7 @@
  * @index function AR, MA and ARMA estimators: Yule-Walker, Burg, innovations.
  */
 
-import { MdmlError, meanOf } from '../base/index.ts'
+import { MdmlError, meanOf, minOf } from '../base/index.ts'
 import { burg, yuleWalker } from '../signal/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import {
@@ -189,7 +189,7 @@ export function arOrderAlgorithm(
       const k = p + 2
       const score = m * (Math.log(2 * Math.PI * sigma2) + 1) + criterionPenalty(criterion, m) * k
       const scores = [...s.scores, score]
-      const best = scores.indexOf(Math.min(...scores))
+      const best = scores.indexOf(minOf(scores))
       if (ctx.wants('select/order')) ctx.log('select/order', p)
       if (ctx.wants('select/criterion')) ctx.log('select/criterion', score)
       if (ctx.wants('select/sigma2')) ctx.log('select/sigma2', sigma2)

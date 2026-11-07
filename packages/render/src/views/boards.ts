@@ -6,6 +6,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { BoardSteps, PopulationSteps } from 'mdml-engine/exposition'
 import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
 import type { Pixels } from 'mdml-engine/scene'
@@ -207,8 +208,8 @@ export function boardFrames(record: BoardSteps, options: BoardViewOptions = {}):
   if (layout.type === 'graph' && layout.nodes.length > 1) {
     const xs = layout.nodes.map((p) => p.x)
     const ys = layout.nodes.map((p) => p.y)
-    const span = Math.max(Math.max(...xs) - Math.min(...xs), 1e-9)
-    const rise = Math.max(Math.max(...ys) - Math.min(...ys), 1e-9)
+    const span = Math.max(maxOf(xs) - minOf(xs), 1e-9)
+    const rise = Math.max(maxOf(ys) - minOf(ys), 1e-9)
     const scale = Math.min(mainWidth / span, (fig.height * 0.75) / rise)
     let closest = Number.POSITIVE_INFINITY
     for (let i = 0; i < layout.nodes.length; i++)
@@ -518,8 +519,8 @@ export function populationFrames(record: PopulationSteps, options: PopulationVie
       main.push(points([{ x: d.x, y: d.y, name: 'data', colour: 'muted', size: 6 }], { mode }))
       if (g?.best.curve !== undefined)
         main.push(lines([{ x: d.grid, y: g.best.curve, name: 'best program', colour: 'accent', width: 2 }], { mode }))
-      const lo = Math.min(...d.y)
-      const hi = Math.max(...d.y)
+      const lo = minOf(d.y)
+      const hi = maxOf(d.y)
       const pad = 0.25 * (hi - lo || 1)
       mainOptions = { x: { label: 'x' }, y: { label: 'y', limits: [lo - pad, hi + pad] } }
     } else {

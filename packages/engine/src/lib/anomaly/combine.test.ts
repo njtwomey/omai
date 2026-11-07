@@ -64,6 +64,11 @@ describe('score normalisation', () => {
     expect(unifyScores([0, 0, 0, 0, 0, 100])[0]).toBe(0)
     expect(normaliseScores([1, 2, 3], 'rank')).toEqual([0, 0.5, 1])
     expect(zscoreNormalise([])).toEqual([])
+    // 200,000 scores: the extremes are found by a loop, not Math.max(...scores), which overflows the stack
+    const n = 200_000
+    const scores = Array.from({ length: n }, (_, i) => (i * 7919) % n)
+    const scaled = minmaxNormalise(scores)
+    expect([scaled[scores.indexOf(0)], scaled[scores.indexOf(n - 1)]]).toEqual([0, 1])
   })
 
   it('property: z-scores have mean 0 and deviation 1, min-max spans [0, 1], ranks and unified scores are monotone', () => {

@@ -86,6 +86,7 @@ export default function ExportAndTapeRecipe(): ReactNode {
           caption: CAPTION,
           filename: 'orbit',
           layout: LAYOUT,
+          registry: toyRegistry,
           onLoadTape: (f) => {
             setFile(f)
             setAt(f.at ?? null)

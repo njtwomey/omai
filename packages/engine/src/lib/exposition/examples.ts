@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** One counterfactual of a {@link CounterfactualSet}. */
 export interface CounterfactualEntry {
@@ -83,7 +83,7 @@ export function counterfactualSet(record: Omit<CounterfactualSet, 'kind'>): Coun
   }
   for (const c of record.counterfactuals) for (const j of c.changed) named(j)
   for (const j of record.immutable ?? []) named(j)
-  return { kind: k, ...record }
+  return seal({ kind: k, ...record })
 }
 
 /**
@@ -154,5 +154,5 @@ export function prototypeSet(record: Omit<PrototypeSet, 'kind'>): PrototypeSet {
   if (record.labels !== undefined) sameLength(k, 'labels', record.labels.length, n)
   if (record.imageShape !== undefined && record.imageShape[0] * record.imageShape[1] !== d)
     throw new MdmlError('shape', `${k}: images of ${record.imageShape.join('x')} for ${d} features`)
-  return { kind: k, ...record }
+  return seal({ kind: k, ...record })
 }

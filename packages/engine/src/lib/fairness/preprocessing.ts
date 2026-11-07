@@ -7,7 +7,7 @@
  * is minimised by L-BFGS or by any other solver of the slot (`fairRepresentationAlgorithm`).
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import {
   infNorm,
   linprog,
@@ -74,7 +74,7 @@ export function reweighingWeights(
 ): { readonly weights: number[]; readonly cells: ReweighingCell[] } {
   if (labels.length !== groups.length) throw new MdmlError('shape', 'reweighingWeights: one group per label')
   const n = labels.length
-  const k = Math.max(-1, ...groups) + 1
+  const k = Math.max(-1, maxOf(groups)) + 1
   const joint = Array.from({ length: k }, () => [0, 0])
   for (const [i, g] of groups.entries()) {
     const row = joint[g] as number[]
@@ -143,7 +143,7 @@ export function repairFeatures(
   if (!(level >= 0 && level <= 1)) throw new MdmlError('value', 'repairFeatures: the level is in [0, 1]')
   const n = groups.length
   if (x.length !== n * d) throw new MdmlError('shape', `repairFeatures: ${x.length} values for ${n} rows of ${d}`)
-  const k = Math.max(-1, ...groups) + 1
+  const k = Math.max(-1, maxOf(groups)) + 1
   const members = Array.from({ length: k }, (): number[] => [])
   for (const [i, g] of groups.entries()) members[g]?.push(i)
   const skip = new Set(options.skip ?? [])
@@ -337,7 +337,7 @@ export function optimisedLabelMapping(
 ): LabelMapping {
   if (labels.length !== groups.length) throw new MdmlError('shape', 'optimisedLabelMapping: one group per label')
   const n = labels.length
-  const k = Math.max(-1, ...groups) + 1
+  const k = Math.max(-1, maxOf(groups)) + 1
   const eps = options.epsilon ?? 0.02
   const cap = options.maxFlip ?? 1
   // P(group, label).
@@ -422,7 +422,7 @@ export interface FairRepresentation {
 export function fairRepresentationMemberships(rep: FairRepresentation, x: readonly (readonly number[])[]): number[][] {
   return x.map((row) => {
     const d = rep.prototypes.map((v) => -row.reduce((s, xj, j) => s + (xj - (v[j] ?? 0)) ** 2, 0))
-    const top = Math.max(...d)
+    const top = maxOf(d)
     const e = d.map((v) => Math.exp(v - top))
     const z = e.reduce((s, v) => s + v, 0)
     return e.map((v) => v / z)

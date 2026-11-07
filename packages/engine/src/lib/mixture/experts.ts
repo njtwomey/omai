@@ -7,7 +7,7 @@
  * state keeps no past (the tape records it).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type MatrixView, matrixView, targetVector } from '../learn/index.ts'
 import { leastSquaresSolve, matrixTensor, vectorTensor } from '../linear/index.ts'
 import { cholesky, choSolve, ddot } from '../numerics/linalg/index.ts'
@@ -79,7 +79,7 @@ function gateLogProbs(a: Float64Array, n: number, gate: readonly (readonly numbe
   return Array.from({ length: n }, (_, i) => {
     const row = a.subarray(i * q, (i + 1) * q)
     const eta = gate.map((w) => ddot(w, row))
-    const top = Math.max(...eta)
+    const top = maxOf(eta)
     const logZ = top + Math.log(eta.reduce((s, v) => s + Math.exp(v - top), 0))
     return eta.map((v) => v - logZ)
   })
@@ -204,7 +204,7 @@ export function moePosterior(
 
 /** The most responsible expert of each row. */
 function mostResponsible(resp: readonly (readonly number[])[]): number[] {
-  return resp.map((r) => r.indexOf(Math.max(...r)))
+  return resp.map((r) => r.indexOf(maxOf(r)))
 }
 
 /**

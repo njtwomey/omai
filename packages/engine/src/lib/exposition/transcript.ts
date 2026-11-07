@@ -6,6 +6,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** One token of a transcript. */
 export interface TranscriptToken {
@@ -60,7 +61,7 @@ export function transcript(record: Omit<Transcript, 'kind'>): Transcript {
   }
   if (record.emitted !== undefined && !(Number.isInteger(record.emitted) && record.emitted >= 0 && record.emitted < n))
     throw new MdmlError('shape', `transcript: emitted ${record.emitted} is not one of the ${n} tokens`)
-  return { kind: 'transcript', ...record }
+  return seal({ kind: 'transcript', ...record })
 }
 
 /**

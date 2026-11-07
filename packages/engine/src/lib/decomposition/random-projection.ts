@@ -5,6 +5,7 @@
  * training pairs.
  */
 
+import { maxOf, minOf } from '../base/index.ts'
 import { resolveKey } from '../context/index.ts'
 import { defineEstimator, type Estimator, type Fitted, matrixView } from '../learn/index.ts'
 import { geometry, linalg } from '../numerics/index.ts'
@@ -83,9 +84,9 @@ export function randomProjection(
         return {
           components,
           distortion: {
-            min: Math.min(...ratios),
+            min: minOf(ratios),
             mean: ratios.reduce((a, v) => a + v, 0) / Math.max(1, ratios.length),
-            max: Math.max(...ratios),
+            max: maxOf(ratios),
           },
         }
       },

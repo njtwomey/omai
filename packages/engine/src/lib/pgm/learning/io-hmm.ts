@@ -9,7 +9,7 @@
  * coefficient has a small ridge penalty, so the EM objective is the penalised log likelihood and it never decreases.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { analyticObjective, newtonAt, type SmoothProblem, smoothSolvers } from '../../optim/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import type { SpaceValue } from '../../space/index.ts'
@@ -44,7 +44,7 @@ const vec = (o: HmmObservation): readonly number[] => (typeof o === 'number' ? [
 
 /** Softmax of logits. */
 function softmax(z: readonly number[]): number[] {
-  const m = Math.max(...z)
+  const m = maxOf(z)
   const e = z.map((v) => Math.exp(v - m))
   const s = e.reduce((a, v) => a + v, 0)
   return e.map((v) => v / s)
@@ -81,7 +81,7 @@ function logEmission(params: IoHmmParameters, input: readonly number[], x: HmmOb
   if (params.kind === 'categorical') {
     return params.emission.map((rows) => {
       const z = rows.map((w) => dotf(w, f))
-      const m = Math.max(...z)
+      const m = maxOf(z)
       return (z[x as number] ?? NEG) - (m + Math.log(z.reduce((a, v) => a + Math.exp(v - m), 0)))
     })
   }

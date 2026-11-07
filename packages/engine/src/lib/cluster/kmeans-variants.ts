@@ -4,7 +4,7 @@
  * (Lloyd's algorithm in a kernel's feature space). Each is a traced algorithm with an estimator.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type PairwiseKernelMetric, pairwiseKernels } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { eigh } from '../numerics/linalg/index.ts'
@@ -286,7 +286,7 @@ export function bisectingKMeansAlgorithm(
       const scores = s.centres.map((_, c) =>
         (sizes[c] ?? 0) < 2 ? -1 : strategy === 'largest_cluster' ? (sizes[c] as number) : (s.inertias[c] as number),
       )
-      const target = scores.indexOf(Math.max(...scores))
+      const target = scores.indexOf(maxOf(scores))
       const rows = s.labels.flatMap((l, i) => (l === target ? [i] : []))
       const sub = rows.map((i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
       let best: { readonly labels: number[]; readonly inertia: number } | undefined
@@ -627,7 +627,7 @@ export const kernelKMeans: IterativeEstimator<KernelKMeansHyper, KernelKMeansSta
       }
     },
     verbs: (p) => {
-      const k = Math.max(0, ...p.labels) + 1
+      const k = Math.max(0, maxOf(p.labels)) + 1
       const ktt = gramOf(p.data, undefined, p.kernel, p.gamma)
       return {
         predict: (x) => {

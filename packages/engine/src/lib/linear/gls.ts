@@ -9,7 +9,7 @@
  * likelihood of the mean and variance coefficients over the solver slot (Harvey's multiplicative heteroscedasticity).
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -375,7 +375,7 @@ export function glsarAlgorithm(data: LearnData, options: GlsarOptions = {}): Alg
       const coef = Array.from(fit.beta)
       let change = Number.POSITIVE_INFINITY
       if (s.iteration > 0) {
-        change = Math.max(...coef.map((v, j) => Math.abs((s.coef[j] ?? 0) - v) / Math.abs(s.coef[j] ?? 0)))
+        change = maxOf(coef.map((v, j) => Math.abs((s.coef[j] ?? 0) - v) / Math.abs(s.coef[j] ?? 0)))
         if (change < rtol) return { ...s, coef, change, converged: true, iteration: s.iteration + 1 }
       }
       return { rho: yuleWalker(residuals, order), coef, iteration: s.iteration + 1, change, converged: false }
@@ -591,7 +591,7 @@ function fglsAlgorithm(problem: HeteroProblem, tol: number): Algorithm<FglsState
       const logSq = Float64Array.from(y, (v, i) => Math.log(Math.max((v - (fitted[i] ?? 0)) ** 2, 1e-300)))
       const reg = leastSquares(z, logSq, n, q)
       const change =
-        s.iteration === 0 ? Number.POSITIVE_INFINITY : Math.max(...beta.map((v, j) => Math.abs(v - (s.beta[j] ?? 0))))
+        s.iteration === 0 ? Number.POSITIVE_INFINITY : maxOf(beta.map((v, j) => Math.abs(v - (s.beta[j] ?? 0))))
       return { beta, gamma: Array.from(reg.beta), iteration: s.iteration + 1, change }
     },
     done: (s) => (s.change <= tol ? 'converged' : undefined),

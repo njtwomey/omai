@@ -8,6 +8,6 @@ Ensembles of learners: bagging with out-of-bag bookkeeping, random forests and e
 - estimator `baggingClassifier`: Bagging with out-of-bag bookkeeping. `src/lib/ensembles/bagging.ts:312` `mdml-engine/ensembles`
 - estimator `explainableBoostingClassifier`: Cyclic boosting of additive terms (explainable boosting machine). `src/lib/ensembles/cyclic.ts:524` `mdml-engine/ensembles`
 - estimator `gradientBoostingClassifier`: Gradient boosting over trees; regressor twin beside it. `src/lib/ensembles/gradient-boosting.ts:99` `mdml-engine/ensembles`
-- estimator `histGradientBoostingClassifier`: Histogram gradient boosting with leaf-wise growth. `src/lib/ensembles/histogram-boosting.ts:391` `mdml-engine/ensembles`
+- estimator `histGradientBoostingClassifier`: Histogram gradient boosting with leaf-wise growth. `src/lib/ensembles/histogram-boosting.ts:392` `mdml-engine/ensembles`
 - estimator `randomForestClassifier`: Random forest; regressor and extra-trees twins beside it. `src/lib/ensembles/forest.ts:367` `mdml-engine/ensembles`
 - estimator `stackingClassifier`: Stacked generalisation; voting ensembles sit beside it. `src/lib/ensembles/stacking.ts:579` `mdml-engine/ensembles`

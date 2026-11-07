@@ -5,7 +5,7 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
 import { contourLevels, contourLines } from 'mdml-engine/numerics/geometry'
 import type { Pixels } from 'mdml-engine/scene'
 import type { TensorLike } from 'mdml-engine/tensor'
@@ -123,8 +123,8 @@ export function contours(z: TensorLike, options: ContourOptions = {}): Layer {
     } as SeriesOption)
   }
   return layer(series, {
-    x: [Math.min(...x), Math.max(...x)],
-    y: [Math.min(...y), Math.max(...y)],
+    x: [minOf(x), maxOf(x)],
+    y: [minOf(y), maxOf(y)],
     tight: true,
   })
 }
@@ -302,7 +302,7 @@ export function fieldArrows(
       if (!(magnitude > 1e-12) || !Number.isFinite(magnitude)) continue
       samples.push({ cx, cy, gu: u / dx, gv: v / dy, cell: Math.hypot(u / dx, v / dy), magnitude })
     }
-  const longest = Math.max(0, ...samples.map((s) => s.cell))
+  const longest = Math.max(0, maxOf(samples.map((s) => s.cell)))
   return samples.map(({ cx, cy, gu, gv, cell, magnitude }) => {
     const unit = (scale / 2) * (length === 'unit' ? 1 / cell : 1 / longest)
     const hx = gu * unit * dx

@@ -6,6 +6,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** A complex number, a point of the complex plane, as `[real, imaginary]`. */
 export type Complex = readonly [re: number, im: number]
@@ -75,5 +76,5 @@ export function complexPlane(record: Omit<ComplexPlane, 'kind'>): ComplexPlane {
       'shape',
       `complexPlane: labels has ${record.labels.length} entries, expected ${record.poles.length}`,
     )
-  return { kind: 'complexPlane', ...record }
+  return seal({ kind: 'complexPlane', ...record })
 }

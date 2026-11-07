@@ -4,8 +4,8 @@
  * rows, including intervals for regression and runs on a stream. `setSizes` summarises a conformal record's set sizes.
  */
 
-import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
+import { sameLength, seal } from './_check.ts'
 
 /** One reliability curve: per non-empty bin the mean forecast, the observed frequency and the count, with its errors. */
 export interface ReliabilityCurve {
@@ -56,7 +56,7 @@ export function calibrationRecord(record: Omit<CalibrationRecord, 'kind'>): Cali
     sameLength('calibration', `${c.name}.counts`, c.counts.length, c.meanPredicted.length)
     if (c.map !== undefined) sameLength('calibration', `${c.name}.map.y`, c.map.y.length, c.map.x.length)
   }
-  return { kind: 'calibration', ...record }
+  return seal({ kind: 'calibration', ...record })
 }
 
 /** A conformal predictor run on a stream: at each time, whether the truth was covered, the running coverage, and more. */
@@ -130,7 +130,7 @@ export function conformalRecord(record: Omit<ConformalRecord, 'kind'>): Conforma
       if (v !== undefined) sameLength('conformal', `stream.${field}`, v.length, s.t.length)
     }
   }
-  return { kind: 'conformal', ...record }
+  return seal({ kind: 'conformal', ...record })
 }
 
 /**
@@ -147,7 +147,7 @@ export function conformalRecord(record: Omit<ConformalRecord, 'kind'>): Conforma
  * ```
  */
 export function setSizes(record: ConformalRecord): { readonly counts: number[]; readonly coverage: number[] } {
-  const k = record.classes?.length ?? Math.max(0, ...(record.sets ?? []).map((s) => s.length))
+  const k = record.classes?.length ?? Math.max(0, maxOf((record.sets ?? []).map((s) => s.length)))
   const counts = new Array<number>(k + 1).fill(0)
   const covered = new Array<number>(k + 1).fill(0)
   for (const [i, s] of (record.sets ?? []).entries()) {

@@ -4,7 +4,7 @@
  * calibration within groups.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec, maxOf, minOf } from '../base/index.ts'
 import { type Label, labelValues, sortLabels } from '../metrics/_labels.ts'
 import {
   defineMetric,
@@ -745,8 +745,8 @@ export function metricFrame(
   }
   const entries = Object.entries(byGroup)
   const values = entries.map(([, v]) => v)
-  const groupMin = Math.min(...values)
-  const groupMax = Math.max(...values)
+  const groupMin = minOf(values)
+  const groupMax = maxOf(values)
   const higher = (options.direction ?? 'higher') === 'higher'
   const [worstGroup, worstValue] = entries.reduce((a, b) => ((higher ? b[1] < a[1] : b[1] > a[1]) ? b : a))
   let reference = options.reference === undefined ? undefined : String(options.reference)

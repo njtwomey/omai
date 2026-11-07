@@ -6,7 +6,7 @@
  * from a target (target encoding) are in `encoders.ts`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { matrixView } from '../validation.ts'
 
@@ -21,8 +21,8 @@ function aggregateOf(kind: Aggregate, v: readonly number[]): number {
     for (const x of v) s += x
     return kind === 'sum' ? s : s / v.length
   }
-  if (kind === 'min') return Math.min(...v)
-  if (kind === 'max') return Math.max(...v)
+  if (kind === 'min') return minOf(v)
+  if (kind === 'max') return maxOf(v)
   if (kind === 'median') {
     const s = [...v].sort((a, b) => a - b)
     const mid = Math.floor(s.length / 2)

@@ -42,6 +42,19 @@ describe('group reports', () => {
         [0, 0],
       ]).precision,
     ).toBe(0)
+    // A group with no rows is not a group that is never selected: it is left out of the gaps (not before: 0.55).
+    const empty = [
+      [0, 0],
+      [0, 0],
+    ]
+    const all = [...tables, empty]
+    const gap = (counts?: number[]): number | undefined =>
+      groupDisparities(all.map(tableRates), 0, counts).find((x) => x.name === 'demographic parity difference')?.value
+    expect([gap(), gap([100, 50, 0])]).toEqual([0.55, 0.55 - 0.2])
+    const r = groupReport(
+      groupReportFromTables({ attribute: 'a', groups: ['m', 'f', 'none'], tables: all, reference: 0 }),
+    )
+    expect(r.disparities.find((x) => x.name === 'demographic parity difference')?.value).toBeCloseTo(0.35, 12)
   })
 
   it('re-threshold from the scored rows', () => {

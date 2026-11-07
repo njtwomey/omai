@@ -9,7 +9,7 @@
  * rather than the catch22 C code, so the values are not the pycatch22 numbers.
  */
 
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { MdmlError, maxOf, meanOf, varianceOf } from '../base/index.ts'
 import { approximateEntropy, sampleEntropy } from '../information/index.ts'
 import { periodogram } from '../signal/index.ts'
 import { detrendedFluctuation, hurstRs } from '../stochastic/index.ts'
@@ -155,7 +155,7 @@ export function timeSeriesFeatures(y: ArrayLike<number>, options: FeatureOptions
   const power = Array.from(toFlat(p.values)).slice(1)
   const fr = freq.slice(1)
   const total = power.reduce((a, v) => a + v, 0) || 1
-  f['dominant_frequency'] = fr[power.indexOf(Math.max(...power))] ?? 0
+  f['dominant_frequency'] = fr[power.indexOf(maxOf(power))] ?? 0
   f['spectral_centroid'] = fr.reduce((a, v, k) => a + v * (power[k] ?? 0), 0) / total
   f['spectral_low_power_ratio'] =
     power.slice(0, Math.max(1, Math.floor(power.length / 5))).reduce((a, v) => a + v, 0) / total
@@ -178,8 +178,8 @@ export function timeSeriesFeatures(y: ArrayLike<number>, options: FeatureOptions
   }
   f['stability'] = varianceOf(means, 0)
   f['lumpiness'] = varianceOf(vars, 0)
-  f['max_level_shift'] = Math.max(0, ...means.slice(1).map((m, k) => Math.abs(m - (means[k] ?? 0))))
-  f['max_variance_shift'] = Math.max(0, ...vars.slice(1).map((m, k) => Math.abs(m - (vars[k] ?? 0))))
+  f['max_level_shift'] = Math.max(0, maxOf(means.slice(1).map((m, k) => Math.abs(m - (means[k] ?? 0)))))
+  f['max_variance_shift'] = Math.max(0, maxOf(vars.slice(1).map((m, k) => Math.abs(m - (vars[k] ?? 0)))))
 
   // Crossings, peaks and strikes.
   const above = x.map((v) => v > mean)

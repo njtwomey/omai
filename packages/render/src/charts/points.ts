@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
 import type { TensorLike } from 'mdml-engine/tensor'
 import { extentOf } from '../figure/limits.ts'
 import { colourScale, sequentialRamp } from '../theme/palettes.ts'
@@ -91,8 +91,8 @@ export function points(
     const sizeOf = (() => {
       if (p.sizes === undefined) return (): number => size
       const sz = p.sizes
-      const lo = Math.min(...sz.map(Math.abs))
-      const hi = Math.max(...sz.map(Math.abs))
+      const lo = minOf(sz.map(Math.abs))
+      const hi = maxOf(sz.map(Math.abs))
       return (i: number): number => {
         const a = Math.abs(sz[i] ?? 0)
         const f = hi > lo ? (a - lo) / (hi - lo) : 0.5

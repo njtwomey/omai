@@ -3,7 +3,8 @@
  * (TensorBoard's distributions view), and a heatmap of per-layer norms for spotting vanishing or exploding gradients.
  */
 
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
+import { dnrm2 } from 'mdml-engine/numerics/linalg'
 import { metricSeries, type Run, tensorSeries } from 'mdml-engine/trace'
 import { lines } from '../charts/lines.ts'
 import { heatmap, type RampSpec } from '../charts/matrices.ts'
@@ -130,8 +131,8 @@ export function histogramsOverTime(
   for (const e of events) {
     const vs = e.values ?? []
     const s = e.summary
-    lo = Math.min(lo, s?.min ?? Number.POSITIVE_INFINITY, ...vs)
-    hi = Math.max(hi, s?.max ?? Number.NEGATIVE_INFINITY, ...vs)
+    lo = Math.min(lo, s?.min ?? Number.POSITIVE_INFINITY, minOf(vs))
+    hi = Math.max(hi, s?.max ?? Number.NEGATIVE_INFINITY, maxOf(vs))
   }
   if (!(hi > lo)) hi = lo + 1
   const width = (hi - lo) / bins
@@ -190,7 +191,7 @@ export function normHeatmap(
   const z = series.map((s) =>
     steps.map((t) => {
       const e = s.find((x) => x.step === t)
-      const norm = e?.summary?.norm ?? (e?.values === undefined ? Number.NaN : Math.hypot(...e.values))
+      const norm = e?.summary?.norm ?? (e?.values === undefined ? Number.NaN : dnrm2(e.values))
       return log ? Math.log10(norm) : norm
     }),
   )

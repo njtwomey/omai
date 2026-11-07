@@ -6,7 +6,7 @@
  * H-infinity norm checked, and the search for the smallest achievable gamma as a stepped bisection.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../../base/index.ts'
 import { eigvals, solve, solveCare } from '../../numerics/linalg/index.ts'
 import { hinfNorm, type StateSpace, ss } from '../../systems/index.ts'
 import {
@@ -212,11 +212,11 @@ export function hinfSynthesis(plant: GeneralisedPlant, gamma: number): HinfSolut
   }
   const psd = (m: Value): boolean => {
     const ev = eigvals(m).re
-    return toFlat(ev).every((v) => v >= -1e-9 * Math.max(1, ...toFlat(ev).map(Math.abs)))
+    return toFlat(ev).every((v) => v >= -1e-9 * Math.max(1, maxOf(toFlat(ev).map(Math.abs))))
   }
   const xPositive = psd(X)
   const yPositive = psd(Y)
-  const coupling = Math.max(...toFlat(eigvals(matmul(X, Y)).re)) / (gamma * gamma)
+  const coupling = maxOf(toFlat(eigvals(matmul(X, Y)).re)) / (gamma * gamma)
   const conditions = { xExists: true, yExists: true, xPositive, yPositive, coupling }
   if (!(xPositive && yPositive && coupling < 1)) return { gamma, feasible: false, conditions, X, Y }
   const g2 = 1 / (gamma * gamma)

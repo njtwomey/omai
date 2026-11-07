@@ -5,6 +5,7 @@
  */
 
 import type { SeriesOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import { type Frame, type Structure, type StructureOverlay, type Timeline, timeline } from 'mdml-engine/scene'
 import { messages, type Run } from 'mdml-engine/trace'
 import { type Layer, layer } from '../charts/plot.ts'
@@ -48,7 +49,7 @@ export function messageTimeline(run: Run, options: { readonly kind?: string } = 
       }) as SeriesOption,
   )
   const steps = ms.map((m) => m.step)
-  return layer(series, steps.length > 0 ? { x: [Math.min(...steps), Math.max(...steps)] } : {}, { yCategories: rows })
+  return layer(series, steps.length > 0 ? { x: [minOf(steps), maxOf(steps)] } : {}, { yCategories: rows })
 }
 
 /**

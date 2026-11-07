@@ -8,7 +8,7 @@
  * as a `Kernel` object and its Gram matrix, ready for `kernelRidge`, the support vector machines or a Gaussian process.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type Kernel, scaleKernel, sumKernel } from '../kernels/index.ts'
 import { eigvalsh, inv, solve } from '../numerics/linalg/index.ts'
 import {
@@ -89,7 +89,7 @@ const projectedSimplex = (v: ArrayLike<number>): Float64Array =>
   Float64Array.from(toFlat(primalOf(projectSimplex(fromStorage(Float64Array.from(v), [v.length], 'float64')))))
 
 const largestEigenvalue = (m: Float64Array, p: number): number =>
-  Math.max(...Array.from(toFlat(primalOf(eigvalsh(fromStorage(m, [p, p], 'float64'))))))
+  maxOf(Array.from(toFlat(primalOf(eigvalsh(fromStorage(m, [p, p], 'float64'))))))
 
 /** How {@link alignmentWeights} solves for the weights. */
 export type AlignmentSolver = 'closed-form' | 'projected-gradient'
@@ -280,7 +280,7 @@ export function easyMkl(grams: readonly TensorLike[], y: TensorLike, options: Ea
 }
 
 const softmaxOf = (u: ArrayLike<number>): number[] => {
-  const top = Math.max(...Array.from(u))
+  const top = maxOf(Array.from(u))
   const e = Array.from(u, (v) => Math.exp(v - top))
   const s = e.reduce((a, b) => a + b, 0)
   return e.map((v) => v / s)

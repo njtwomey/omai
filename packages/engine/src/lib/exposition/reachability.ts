@@ -4,6 +4,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** A reachability plot: distances in cluster order, optionally with the clusters found and a cut. */
 export interface Reachability {
@@ -39,5 +40,5 @@ export function reachabilityRecord(record: Omit<Reachability, 'kind'>): Reachabi
     throw new MdmlError('shape', `reachability: labels has ${record.labels.length} entries, expected ${n}`)
   for (const [i, r] of record.reach.entries())
     if (r !== null && !(r >= 0)) throw new MdmlError('value', `reachability: reach[${i}] is not a distance`)
-  return { kind: 'reachability', ...record }
+  return seal({ kind: 'reachability', ...record })
 }

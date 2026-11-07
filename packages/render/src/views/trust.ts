@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import { type CalibrationRecord, type ConformalRecord, setSizes } from 'mdml-engine/exposition'
 import { bars, histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -145,7 +146,7 @@ function intervalPanel(r: ConformalRecord, mode: ColourMode, upTo: number): Pane
     layers,
     options: {
       title: `${covered}/${keep.length} inside, nominal ${short(100 * (1 - r.alpha))}%`,
-      x: { label: r.xLabel ?? 'x', limits: [Math.min(...x), Math.max(...x)] },
+      x: { label: r.xLabel ?? 'x', limits: [minOf(x), maxOf(x)] },
       y: { label: 'y' },
     },
   }
@@ -198,7 +199,7 @@ function streamPanel(r: ConformalRecord, mode: ColourMode, upTo: number): Panel 
     ],
     options: {
       title: s.baseline === undefined ? 'running coverage' : 'running coverage (orange: fixed)',
-      x: { label: r.xLabel ?? 'time', limits: [Math.min(...s.t), Math.max(...s.t)] },
+      x: { label: r.xLabel ?? 'time', limits: [minOf(s.t), maxOf(s.t)] },
       y: { label: 'coverage', limits: [Math.max(0, 1 - 4 * r.alpha - 0.05), 1] },
     },
   }

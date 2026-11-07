@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import { sweepAt, type ThresholdSweep } from 'mdml-engine/exposition'
 import { histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
@@ -55,8 +56,8 @@ export function defaultThreshold(record: ThresholdSweep): number {
 export function scoreRange(record: ThresholdSweep): [number, number] {
   const finite = record.thresholds.filter(Number.isFinite)
   if (finite.length === 0) return [0, 1]
-  const lo = Math.min(...finite)
-  const hi = Math.max(...finite)
+  const lo = minOf(finite)
+  const hi = maxOf(finite)
   if (lo >= 0 && hi <= 1) return [0, 1]
   const pad = Math.max((hi - lo) * 0.05, 1e-6)
   return [lo - pad, hi + pad]
@@ -74,7 +75,7 @@ function histogramTop(record: ThresholdSweep, range: readonly [number, number], 
     const row = counts[rows.labels[i] === 1 ? 1 : 0]
     if (row !== undefined) row[b] = (row[b] ?? 0) + 1
   }
-  const top = Math.max(1, ...counts.flat()) * 1.15
+  const top = Math.max(1, maxOf(counts.flat())) * 1.15
   return top > 10 ? Math.ceil(top / 5) * 5 : Math.ceil(top)
 }
 
@@ -154,8 +155,8 @@ export function thresholdCostPanel(
     }
   xs.push(range[1])
   ys.push(cost[last] ?? 0)
-  const lo = Math.min(0, ...cost)
-  const hi = Math.max(...cost)
+  const lo = Math.min(0, minOf(cost))
+  const hi = maxOf(cost)
   const top = hi + (hi - lo) * 0.08 || 1
   const at = sweepAt(record, threshold)
   const best = record.cheapest ?? 0

@@ -27,7 +27,7 @@ mdml-engine/embedding	49	ec43d33cc087
 mdml-engine/ensembles	95	69aac78dde10
 mdml-engine/environments	260	4a13bca80610
 mdml-engine/explain	337	1ab81fbc459b
-mdml-engine/exposition	240	74f41241dde7
+mdml-engine/exposition	241	1d3e89cdc541
 mdml-engine/fairness	201	0ec84c5d89ac
 mdml-engine/fields	117	6f3578c5e577
 mdml-engine/foundations	360	c71944da508a
@@ -113,10 +113,10 @@ mdml-render/gym	6	4b961f9ecabc
 mdml-render/layout	24	d68fae461973
 mdml-render/maths	19	108a93384296
 mdml-render/producer	46	97e2e5bea41e
-mdml-render/react	443	312c770a3bcc
+mdml-render/react	445	be0be0c0dacc
 mdml-render/structures	22	e114cf64ad2d
 mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17919	1c09f8327903
+total	17922	3de2cd600ebf

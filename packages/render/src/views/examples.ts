@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { CounterfactualSet, PrototypeSet } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { heatmap } from '../charts/matrices.ts'
@@ -98,7 +99,10 @@ export function counterfactualTableView(
   const fs = fig.fontSize
   const line = Math.round(fs * 2.1)
   const rows = counterfactualRows(record, all)
-  const labelWidth = Math.min(200, Math.max(80, 12 + 0.62 * fs * Math.max(...record.features.map((f) => f.length), 7)))
+  const labelWidth = Math.min(
+    200,
+    Math.max(80, 12 + 0.62 * fs * Math.max(maxOf(record.features.map((f) => f.length)), 7)),
+  )
   const cols = record.counterfactuals.length + 1
   const left = fig.padding.left > 40 ? 16 : fig.padding.left
   const colWidth = Math.max(54, Math.floor((fig.width - left - 16 - labelWidth) / cols))

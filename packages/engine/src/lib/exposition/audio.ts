@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** A magnitude spectrogram: `magnitude[f][k]` at `frequencies[f]` Hz and `times[k]` seconds. */
 export interface Spectrogram {
@@ -69,7 +70,7 @@ export function audioClip(record: Omit<AudioClip, 'kind'>): AudioClip {
   for (let k = 1; k < frames.length; k++)
     if ((frames[k]?.step ?? 0) <= (frames[k - 1]?.step ?? 0) || (frames[k]?.time ?? 0) < (frames[k - 1]?.time ?? 0))
       throw new MdmlError('value', `audioClip: frames[${k}] is out of order`)
-  return { kind: 'audio', ...record }
+  return seal({ kind: 'audio', ...record })
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 import type { GroupRateName, GroupRateValues } from './fairness.ts'
 
 /** The rich-subgroup audit of a subgroup report: the linear subgroup with the largest weighted error-rate gap. */
@@ -95,7 +95,7 @@ export function subgroupReport(record: Omit<SubgroupReport, 'kind'>): SubgroupRe
       throw new MdmlError('value', `subgroupReport: the worst subgroup ${w.subgroup} is not one of ${k}`)
   if (record.audit !== undefined)
     sameLength('subgroupReport', 'audit.weights', record.audit.weights.length, record.audit.features.length)
-  return { kind: 'subgroupReport', ...record }
+  return seal({ kind: 'subgroupReport', ...record })
 }
 
 /**

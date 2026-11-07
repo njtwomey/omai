@@ -7,7 +7,7 @@
  * time.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type PosteriorGrid, posteriorGrid } from '../exposition/index.ts'
 import { hyperparameters, type Kernel, rbfKernel, scaleKernel, theta as thetaOf, withTheta } from '../kernels/index.ts'
 import {
@@ -556,8 +556,8 @@ function latentGrid(h: GpClassifierHyper, p: Prepared, s: GpcState, resolution: 
     h,
   )
   const column = p.rows.map((r) => r[0] ?? 0)
-  const lo = Math.min(...column)
-  const hi = Math.max(...column)
+  const lo = minOf(column)
+  const hi = maxOf(column)
   const pad = 0.15 * (hi - lo || 1)
   const centre = Array.from({ length: p.d }, (_, j) => p.rows.reduce((a, r) => a + (r[j] ?? 0), 0) / p.n)
   const m = Math.max(2, Math.min(resolution, 400))

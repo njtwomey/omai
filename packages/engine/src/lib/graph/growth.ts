@@ -7,7 +7,7 @@
  * algorithms whose tape holds the size, the giant component, the degrees and the clustering.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { foldIn, type Key, permutation, subsample, uniformStream } from '../random/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, scalar, tensor } from '../trace/index.ts'
 import { checkNumber, codec } from './_run.ts'
@@ -78,10 +78,10 @@ function observeGrowth(
   const metrics: Record<string, number> = {
     'graph/nodes': n,
     'graph/edges': g.edges.length,
-    'graph/giantShare': n === 0 ? 0 : Math.max(...comps.components.map((c) => c.length)) / n,
+    'graph/giantShare': n === 0 ? 0 : maxOf(comps.components.map((c) => c.length)) / n,
     'graph/components': comps.count,
     'graph/meanDegree': n === 0 ? 0 : (2 * g.edges.length) / n,
-    'graph/maxDegree': n === 0 ? 0 : Math.max(...degrees),
+    'graph/maxDegree': n === 0 ? 0 : maxOf(degrees),
   }
   if (extra.clustering === true) metrics['graph/clustering'] = averageClustering(g)
   if (extra.pathLength === true) metrics['graph/pathLength'] = averageShortestPathLength(g)

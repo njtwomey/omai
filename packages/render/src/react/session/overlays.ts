@@ -6,6 +6,7 @@
  */
 
 import type { SeriesOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import { toFlat } from 'mdml-engine/tensor'
 import { type Session, tensorSeries } from 'mdml-engine/trace'
 import { lines, polygons } from '../../charts/lines.ts'
@@ -217,8 +218,8 @@ const markColour = (k: number): string => categoricalColour(MARK_SLOTS[k % MARK_
 // Size of a row in pixels from its channel value, between the range's ends (square-root scale: area is the value).
 function sizeScale(numbers: readonly number[], range: readonly [number, number] = [4, 16]): (i: number) => number {
   const finite = numbers.filter(Number.isFinite)
-  const lo = Math.min(...finite)
-  const hi = Math.max(...finite)
+  const lo = minOf(finite)
+  const hi = maxOf(finite)
   const [a, b] = range
   return (i) => {
     const f = hi > lo ? ((numbers[i] ?? lo) - lo) / (hi - lo) : 0.5
@@ -241,12 +242,7 @@ export function channelLayers(channels: RowChannels): ChannelLayers {
   const at = (i: number): [number, number] => [x[i] ?? 0, y[i] ?? 0]
   const finite = (xs: readonly number[]): number[] => xs.filter(Number.isFinite)
   const bounds = ((): [number, number, number, number] => {
-    const [x0, x1, y0, y1] = [
-      Math.min(...finite(x)),
-      Math.max(...finite(x)),
-      Math.min(...finite(y)),
-      Math.max(...finite(y)),
-    ]
+    const [x0, x1, y0, y1] = [minOf(finite(x)), maxOf(finite(x)), minOf(finite(y)), maxOf(finite(y))]
     const px = 0.1 * (x1 - x0 || 1)
     const py = 0.1 * (y1 - y0 || 1)
     return [x0 - px, x1 + px, y0 - py, y1 + py]
@@ -271,8 +267,8 @@ export function channelLayers(channels: RowChannels): ChannelLayers {
   if (values !== undefined || sizes !== undefined) {
     const stops = values?.diverging === true ? divergingRamp('rdbu') : sequentialRamp('viridis', mode)
     const finiteValues = finite(values?.numbers ?? [])
-    const lo = values?.range?.[0] ?? Math.min(...finiteValues)
-    const hi = values?.range?.[1] ?? Math.max(...finiteValues)
+    const lo = values?.range?.[0] ?? minOf(finiteValues)
+    const hi = values?.range?.[1] ?? maxOf(finiteValues)
     const bound = Math.max(Math.abs(lo), Math.abs(hi))
     const scale =
       values === undefined
@@ -315,8 +311,8 @@ export function channelLayers(channels: RowChannels): ChannelLayers {
         }) as SeriesOption,
     )
     rows = layer(series, {
-      x: [Math.min(...finite(x)), Math.max(...finite(x))],
-      y: [Math.min(...finite(y)), Math.max(...finite(y))],
+      x: [minOf(finite(x)), maxOf(finite(x))],
+      y: [minOf(finite(y)), maxOf(finite(y))],
     })
     if (values !== undefined && finiteValues.length > 0)
       over.push(

@@ -7,7 +7,7 @@
  * so each prediction is a sum of readable contributions. Moved here from `explain`, which re-exports it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import type { FittedFacts, LearnData, Verbs } from '../learn/estimator.ts'
 import { withDefaultScore } from '../learn/estimator.ts'
@@ -225,7 +225,7 @@ export function cyclicBoosting(data: LearnData, options: ExplainableBoostingOpti
           }
         }
         if (ctx.wants('boost/shapeChange')) ctx.log('boost/shapeChange', change)
-        if (ctx.wants('boost/feature')) ctx.log('boost/feature', change.indexOf(Math.max(...change)))
+        if (ctx.wants('boost/feature')) ctx.log('boost/feature', change.indexOf(maxOf(change)))
         if (ctx.wants('boost/round')) ctx.log('boost/round', s.round + 1)
         if (ctx.wants('boost/trainLoss')) ctx.log('boost/trainLoss', lossOf(f))
         return { ...s, f, shapes, round: s.round + 1 }

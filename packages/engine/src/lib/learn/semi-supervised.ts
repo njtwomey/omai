@@ -8,7 +8,7 @@
  * diffusion step) per step, so a session shows the labels spread and `fittedAt(t)` is the model at round `t`.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type KernelChoice, kernelMatrix, kernelSpace, type ResolvedKernel, resolveKernel } from '../kernels/index.ts'
 import { dgemm, solve } from '../numerics/linalg/index.ts'
 import { kNearest } from '../numerics/spatial/index.ts'
@@ -784,11 +784,11 @@ function triVerbs(p: TriTrainingParams, h: TriTrainingHyper): PseudoLabelVerbs {
       Array.from({ length: n }, (_, r) => {
         const tally = new Map<number, number>()
         for (const v of votes) tally.set(v[r] ?? 0, (tally.get(v[r] ?? 0) ?? 0) + 1)
-        const best = Math.max(...tally.values())
+        const best = maxOf([...tally.values()])
         const tied = Array.from(tally)
           .filter(([, c]) => c === best)
           .map(([label]) => label)
-        if (tied.length === 1 || mean === undefined) return Math.min(...tied)
+        if (tied.length === 1 || mean === undefined) return minOf(tied)
         const k = mean.k
         return tied.reduce((a, b) => {
           const ia = classes.indexOf(a)

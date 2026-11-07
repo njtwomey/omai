@@ -6,6 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { Scene } from '../scene/index.ts'
+import { seal } from './_check.ts'
 
 /** One recorded scene: the tape step it was taken at, the scene and an optional caption. */
 export interface SceneStep {
@@ -43,7 +44,7 @@ export function sceneSteps(record: Omit<SceneSteps, 'kind'>): SceneSteps {
     if (s.step < previous) throw new MdmlError('value', `sceneSteps: steps[${t}] is out of order`)
     previous = s.step
   }
-  return { kind: 'sceneSteps', ...record }
+  return seal({ kind: 'sceneSteps', ...record })
 }
 
 /**

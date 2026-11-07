@@ -6,7 +6,7 @@
  * seasonal amplitude growing with the level calls for.
  */
 
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { MdmlError, meanOf, minOf, varianceOf } from '../base/index.ts'
 import { fminbound } from '../optim/index.ts'
 import { boxcoxNormmax } from '../stats/index.ts'
 import { asSeries } from './_series.ts'
@@ -94,7 +94,7 @@ export interface BoxCoxMstlResult {
 export function boxCoxMstl(y: ArrayLike<number>, options: BoxCoxMstlOptions): BoxCoxMstlResult {
   const x = Array.from(asSeries(Float64Array.from(y), 'boxCoxMstl'))
   const choice = options.lambda ?? 'guerrero'
-  const shortest = Math.min(...options.periods)
+  const shortest = minOf(options.periods)
   const lambda = typeof choice === 'number' ? choice : choice === 'mle' ? boxcoxNormmax(x) : guerreroLambda(x, shortest)
   const { lambda: _drop, ...rest } = options
   const decomposition = mstl(x, { ...rest, lambda })

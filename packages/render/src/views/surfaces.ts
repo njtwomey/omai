@@ -6,6 +6,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { type DecisionSurface, type HyperparameterSurface, type PosteriorGrid, surfaceAt } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { contours, decisionRegions } from '../charts/fields.ts'
@@ -79,7 +80,7 @@ export function classPointSets(
     sizes === undefined ? {} : { sizes: idx.map((i) => Math.abs(sizes[i] ?? 0)), sizeRange: [2, 22] }
   if (labels === undefined)
     return [{ x, y, name: 'data', colour: 'fg', size: 6, ...style, ...sized(rows.map((_, i) => i)) }]
-  const k = Math.max(-1, ...labels) + 1
+  const k = Math.max(-1, maxOf(labels)) + 1
   const sets: PointSet[] = []
   for (let c = -1; c < k; c++) {
     const idx = labels.flatMap((l, i) => (l === c ? [i] : []))
@@ -144,7 +145,7 @@ export function decisionSurfaceLayers(
   const { x, y } = surface
   // Class names: the model's, else its rows' (a detector's inlier and outlier).
   const classes = surface.classes ?? surface.rows?.classes
-  const k = surface.probabilities?.length ?? (surface.labels === undefined ? 0 : Math.max(...surface.labels.flat()) + 1)
+  const k = surface.probabilities?.length ?? (surface.labels === undefined ? 0 : maxOf(surface.labels.flat()) + 1)
   const layers: Layer[] = []
   const { rows, columns, labels } = surfaceRows(surface, options)
   const xAxis: AxisSpec = { label: surface.features[0] }

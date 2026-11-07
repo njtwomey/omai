@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf, minOf } from 'mdml-engine/base'
 import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'mdml-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -79,7 +80,7 @@ export function regularisationPathPanels(
     { mode },
   )
   // Each coefficient named at its least penalised end, nudged apart where names would overlap.
-  const last = nearestIndex(path.penalties, Math.min(...path.penalties))
+  const last = nearestIndex(path.penalties, minOf(path.penalties))
   const names = layer(
     [
       {
@@ -139,7 +140,7 @@ export function regularisationPathPanels(
         ...(path.chosen === undefined ? [] : [referenceLines({ x: [path.chosen] }, { mode, colour: 'fgSecondary' })]),
         active,
       ],
-      options: { x, y: { label: 'active', limits: [0, Math.max(1, ...counts) + 0.5] } },
+      options: { x, y: { label: 'active', limits: [0, Math.max(1, maxOf(counts)) + 0.5] } },
     },
   }
 }

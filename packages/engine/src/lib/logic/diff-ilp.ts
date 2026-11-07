@@ -10,7 +10,7 @@
  * probable clause. A crisp forward chainer checks the extracted program against the examples.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import {
   type GradientPath,
   gradientContract,
@@ -452,7 +452,7 @@ export function diffIlp(task: DilpTask, k: Key): DiffIlp {
       ({
         clauses: slots.map((s, i) => {
           const w = theta.slice(weightOffsets[i] as number, (weightOffsets[i] as number) + s.clauses.length)
-          const top = Math.max(...w)
+          const top = maxOf(w)
           const z = w.reduce((acc, x) => acc + Math.exp(x - top), 0)
           const best = w.indexOf(top)
           return {

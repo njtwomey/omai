@@ -5,7 +5,7 @@
  * mean prediction and mean residual (calibration in the mean) between groups.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { labelValues, sortLabels } from '../metrics/_labels.ts'
 import type { MetricInput } from '../metrics/metric.ts'
 import { ks2samp, wassersteinDistance } from '../stats/tests/index.ts'
@@ -203,7 +203,7 @@ export function regressionGaps(
     r.reduce((s, i) => s + f(i), 0) / Math.max(1, r.length)
   const meanPrediction = rows.map((r) => mean(r, (i) => yPred[i] ?? 0))
   const meanResidual = rows.map((r) => mean(r, (i) => (yTrue[i] ?? 0) - (yPred[i] ?? 0)))
-  const spread = (v: readonly number[]): number => Math.max(...v) - Math.min(...v)
+  const spread = (v: readonly number[]): number => maxOf(v) - minOf(v)
   return {
     groups: names,
     meanPrediction,

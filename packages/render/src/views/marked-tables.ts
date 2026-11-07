@@ -4,6 +4,7 @@
  * status per cell) that the scene is drawn from, for tests and for other renderers.
  */
 
+import { maxOf } from 'mdml-engine/base'
 import type { CellStatus, MarkedTable } from 'mdml-engine/exposition'
 import { line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'mdml-engine/scene'
 import { formatNumber } from '../theme/format.ts'
@@ -110,7 +111,7 @@ export function markedTableScene(record: MarkedTable): Scene {
     ...row,
   ])
   const widths = columns.map((h, c) =>
-    Math.ceil(Math.max(h.length, ...body.map((row) => row[c]?.text.length ?? 0)) * CHAR + 2 * PAD),
+    Math.ceil(Math.max(h.length, maxOf(body.map((row) => row[c]?.text.length ?? 0))) * CHAR + 2 * PAD),
   )
   const left: number[] = []
   widths.reduce((x, w) => {

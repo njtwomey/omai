@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
+import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
 import { type Distribution, normal } from 'mdml-engine/dists'
 import { ecdf, gaussianKde, quantile } from 'mdml-engine/stats'
 import { type TensorLike, toFlat } from 'mdml-engine/tensor'
@@ -230,7 +230,11 @@ export function pmf(dist: Distribution, options: DistributionLayerOptions & { re
     color: colour,
     itemStyle: { color: colour },
   } as SeriesOption
-  return layer([stems, heads], { x: [ks[0] ?? 0, ks[ks.length - 1] ?? 1], y: [0, Math.max(0, ...pk)], baseline: 'y' })
+  return layer([stems, heads], {
+    x: [ks[0] ?? 0, ks[ks.length - 1] ?? 1],
+    y: [0, Math.max(0, maxOf(pk))],
+    baseline: 'y',
+  })
 }
 
 /** A named sample for box and violin plots. */
@@ -364,7 +368,7 @@ export function violinPlot(
     const n = Math.max(8, options.n ?? 80)
     const y = Array.from({ length: n }, (_, i) => a + ((b - a) * i) / (n - 1))
     const d = toFlat(est.evaluate(y))
-    const peak = Math.max(...d)
+    const peak = maxOf(d)
     return { y, d: d.map((x) => (peak > 0 ? x / peak : 0)), stats: boxStats(v), range: [a, b] as Range }
   })
   const fg = colourFor('fg', mode)
@@ -529,7 +533,7 @@ export function densityChart(
 ): EChartsOption {
   const mode = modeOf(options)
   const ranges = dists.map((d) => distributionRange(d.dist))
-  const range: Range = options.range ?? [Math.min(...ranges.map((r) => r[0])), Math.max(...ranges.map((r) => r[1]))]
+  const range: Range = options.range ?? [minOf(ranges.map((r) => r[0])), maxOf(ranges.map((r) => r[1]))]
   const layers = dists.map((d, i) =>
     density(d.dist, {
       range,
@@ -604,13 +608,13 @@ export function ridgeline(
 ): Layer {
   const mode = options.mode ?? 'light'
   const all = groups.flatMap((g) => [...g.values])
-  const range = options.range ?? padRange([Math.min(...all), Math.max(...all)], 0.08)
+  const range = options.range ?? padRange([minOf(all), maxOf(all)], 0.08)
   const n = Math.max(2, options.n ?? 200)
   const x = Array.from({ length: n }, (_, i) => range[0] + ((range[1] - range[0]) * i) / (n - 1))
   const dens = groups.map((g) =>
     g.values.length > 1 ? toFlat(gaussianKde([...g.values]).evaluate(x)) : x.map(() => 0),
   )
-  const top = Math.max(1e-12, ...dens.flat())
+  const top = Math.max(1e-12, maxOf(dens.flat()))
   const scale = (options.overlap ?? 1.6) / top
   const bands = band(
     groups.map((g, k) => ({

@@ -7,7 +7,7 @@
  * by a zero sum of the log strengths. Every item needs at least one win and one loss for the maximum to exist.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import {
   analyticObjective,
   familySolvers,
@@ -75,7 +75,7 @@ function evaluate(p: ChoiceProblem, u: ArrayLike<number>): { value: number; grad
   for (const r of p.rankings) {
     for (let s = 0; s < r.length - 1; s++) {
       const rest = r.slice(s)
-      const mx = Math.max(...rest.map((i) => theta[i] ?? 0))
+      const mx = maxOf(rest.map((i) => theta[i] ?? 0))
       const z = rest.reduce((a, i) => a + Math.exp((theta[i] ?? 0) - mx), 0)
       const chosen = r[s] as number
       ll += (theta[chosen] ?? 0) - mx - Math.log(z)

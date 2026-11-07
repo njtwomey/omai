@@ -6,6 +6,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import {
   type DecisionSurface,
   type EnsembleStages,
@@ -235,8 +236,8 @@ function cell(v: number | string | readonly number[]): string {
  */
 export function pipelineScene(record: PipelineStages): Scene {
   const stages = record.stages
-  const learnedLines = Math.min(4, Math.max(0, ...stages.map((s) => s.learned.length)))
-  const sampleRows = Math.min(4, Math.max(0, ...stages.map((s) => s.outputSample.length)))
+  const learnedLines = Math.min(4, Math.max(0, maxOf(stages.map((s) => s.learned.length))))
+  const sampleRows = Math.min(4, Math.max(0, maxOf(stages.map((s) => s.outputSample.length))))
   const height = 16 + 2 * LINE + 8 + learnedLines * LINE + 10 + (sampleRows + 1) * LINE + 12
   const gap = 56
   const children: SceneNode[] = []
@@ -515,7 +516,7 @@ export function pipelineSurfaceView(step: PipelineStep, options: PipelineSurface
   if (field === 'loss' && loss?.expected !== undefined) {
     // The loss the model expects from zero up (natural log: at most log 2 for two classes), the 0.5 boundary over it,
     // and each row sized by its own loss.
-    const hi = Math.max(1e-12, ...loss.expected.flat())
+    const hi = Math.max(1e-12, maxOf(loss.expected.flat()))
     layers = [
       heatmap(loss.expected, {
         x: surface.x,

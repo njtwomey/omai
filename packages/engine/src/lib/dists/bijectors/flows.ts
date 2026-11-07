@@ -8,7 +8,7 @@
  */
 
 import { jacobian, jvp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { MdmlError, maxOf } from '../../base/index.ts'
 import { inv, lu, norm, slogdet } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
@@ -753,7 +753,7 @@ export function residualFlow(g: (x: Value) => Value, options: ResidualFlowOption
       let x: Value = y
       for (let i = 0; i < (options.maxIterations ?? 500); i++) {
         const next = sub(y, g(x))
-        const change = Math.max(...Array.from(toFlat(stopGradient(sub(next, x))), Math.abs))
+        const change = maxOf(Array.from(toFlat(stopGradient(sub(next, x))), Math.abs))
         x = next
         if (change < (options.tolerance ?? 1e-12)) break
       }

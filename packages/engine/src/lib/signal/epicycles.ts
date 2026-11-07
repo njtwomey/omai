@@ -5,7 +5,7 @@
  * chained in, the partial sums, and the joints of the chain at a time.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { fft, fftfreq, ifft } from '../numerics/fourier/index.ts'
 import { type Key, permutation } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -134,7 +134,7 @@ export function partialSum(
   kept: readonly number[],
   m: number,
 ): { readonly x: number[]; readonly y: number[] } {
-  const top = Math.max(0, ...kept.map((b) => Math.abs(s.k[b] ?? 0)))
+  const top = Math.max(0, maxOf(kept.map((b) => Math.abs(s.k[b] ?? 0))))
   if (!(Number.isInteger(m) && m > 2 * top)) throw new MdmlError('value', `partialSum: m must exceed ${2 * top}`)
   const re = new Array<number>(m).fill(0)
   const im = new Array<number>(m).fill(0)

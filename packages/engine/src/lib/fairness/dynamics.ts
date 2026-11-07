@@ -7,7 +7,7 @@
  * population (covariate shift by importance weights, or label shift by a group's new base rate).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type GroupDisparity, groupDisparities, tableRates } from '../exposition/index.ts'
 
 /** A lending model on a grid of scores: each score's probability of repaying, and what each outcome is worth. */
@@ -141,7 +141,7 @@ export function delayedImpact(model: ImpactModel, groups: readonly ImpactGroup[]
     meanChange: groups.map((g, j) => evaluate(model, g.distribution, betas[j] ?? 0).change),
     utility: total(betas),
   })
-  const argmax = (values: readonly number[]): number => values.indexOf(Math.max(...values))
+  const argmax = (values: readonly number[]): number => values.indexOf(maxOf(values))
   const maxUtility = curves.map((c) => grid[argmax(c.utility)] ?? 0)
   const dp = grid[argmax(grid.map((b) => total(groups.map(() => b))))] ?? 0
   // Equal opportunity: for each true-positive rate on the grid, each group's selection rate reaching it.
@@ -269,7 +269,7 @@ export function shiftedDisparities(
   const n = labels.length
   if (decisions.length !== n || groups.length !== n || weights.length !== n)
     throw new MdmlError('shape', 'shiftedDisparities: inputs differ in length')
-  const k = Math.max(...groups) + 1
+  const k = maxOf(groups) + 1
   const tables = Array.from({ length: k }, () => [
     [0, 0],
     [0, 0],

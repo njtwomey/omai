@@ -8,7 +8,7 @@
  * `word2vecSgd` beside the library's generic solvers.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import { type HuffmanCoding, hierarchicalSoftmax, huffmanCoding } from '../losses/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type BatchObjective, type SmoothProblem, smoothSolvers, type VectorParams } from '../optim/index.ts'
@@ -134,7 +134,7 @@ export function word2vecExamples(
   const V = vocabulary.words.length
   const total = vocabulary.counts.reduce((a, b) => a + b, 0)
   const rows = rowsOfWords(vocabulary, options)
-  const width = architecture === 'skip-gram' ? Math.max(...rows.map((r) => r.length), 1) : 2 * window
+  const width = architecture === 'skip-gram' ? Math.max(maxOf(rows.map((r) => r.length)), 1) : 2 * window
   const t = options.subsample ?? 0
   const pairs: { input: number[]; target: number }[] = []
   for (const [si, sentence] of sentences.entries()) {

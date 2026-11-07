@@ -12,7 +12,7 @@
  * (randomised for discrete responses) and their worm-plot data check the fitted distribution.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { dgemv } from '../numerics/linalg/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { nelderMead } from '../optim/index.ts'
@@ -287,7 +287,7 @@ export function gamlssAlgorithm(
         logLik: ev.logLik,
         penalisedLogLik: after,
         criterion,
-        gradNorm: Math.max(0, ...Array.from(ev.gradient, (g, i) => Math.abs(g - (sb[i] ?? 0)))),
+        gradNorm: Math.max(0, maxOf(Array.from(ev.gradient, (g, i) => Math.abs(g - (sb[i] ?? 0))))),
         edf: edfCoef.reduce((x, y) => x + y, 0),
         edfCoef: Array.from(edfCoef),
         converged,

@@ -7,7 +7,7 @@
  * on the iterative base whose verbs score new points in novelty mode; the training scores are in the parameters.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { pairwiseDistances } from '../distances/index.ts'
 import {
   ExplainedEstimatorClass,
@@ -162,7 +162,7 @@ export function lofAlgorithm(x: TensorLike, options: LofAlgorithmOptions = {}): 
     },
     done: (s) => (s.stage >= 3 ? 'completed' : undefined),
     observe: (s) => ({
-      metrics: { stage: s.stage, ...(s.stage >= 3 ? { maxFactor: Math.max(...s.lof) } : {}) },
+      metrics: { stage: s.stage, ...(s.stage >= 3 ? { maxFactor: maxOf(s.lof) } : {}) },
       tensors: {
         ...(s.stage >= 1 ? { kDistance: { role: 'state' as const, value: s.kDistance, shape: [m.n] } } : {}),
         ...(s.stage >= 2 ? { lrd: { role: 'state' as const, value: s.lrd, shape: [m.n] } } : {}),
@@ -494,7 +494,7 @@ export function cofAlgorithm(x: TensorLike, options: CofAlgorithmOptions = {}): 
     },
     done: (s) => (s.stage >= 3 ? 'completed' : undefined),
     observe: (s) => ({
-      metrics: { stage: s.stage, ...(s.stage >= 3 ? { maxFactor: Math.max(...s.cof) } : {}) },
+      metrics: { stage: s.stage, ...(s.stage >= 3 ? { maxFactor: maxOf(s.cof) } : {}) },
       tensors: {
         ...(s.stage >= 2 ? { acDist: { role: 'state' as const, value: s.acDist, shape: [m.n] } } : {}),
         ...(s.stage >= 3 ? { cof: { role: 'state' as const, value: s.cof, shape: [m.n] } } : {}),
@@ -739,7 +739,7 @@ export function knnAlgorithm(x: TensorLike, options: KnnAlgorithmOptions = {}): 
     },
     done: (s) => (s.stage >= 2 ? 'completed' : undefined),
     observe: (s) => ({
-      metrics: { stage: s.stage, ...(s.stage >= 2 ? { maxScore: Math.max(...s.scores) } : {}) },
+      metrics: { stage: s.stage, ...(s.stage >= 2 ? { maxScore: maxOf(s.scores) } : {}) },
       tensors: s.stage >= 2 ? { scores: { role: 'state' as const, value: s.scores, shape: [m.n] } } : {},
     }),
     serialise: (s) => stateToJson(s),

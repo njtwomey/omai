@@ -7,7 +7,7 @@
  * beside every generic smooth solver, KLIEP's own projected gradient is one beside them too.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import { ddot, dgemv, dnrm2, solve } from '../numerics/linalg/index.ts'
 import { loggedSolver, type SmoothProblem, smoothSolvers, type VectorParams } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
@@ -452,7 +452,7 @@ export const kliepSolvers: ModeTable<KliepProblem, KliepParams> = modes<KliepPro
 /** The normalised coefficients of a fitted KLIEP parameter vector. */
 function kliepAlpha(p: KliepProblem, params: KliepParams): Float64Array {
   if (params.scale === 'alpha') return Float64Array.from(params.x)
-  const top = Math.max(...params.x)
+  const top = maxOf(params.x)
   const raw = Float64Array.from(params.x, (t) => Math.exp(t - top))
   const norm = ddot(p.kernelMean, raw)
   return raw.map((a) => a / norm)

@@ -7,6 +7,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** The iterates of an optimiser in the coordinates of a slice. */
 export interface LandscapePath {
@@ -113,7 +114,7 @@ export function landscapeSlice(record: Omit<LandscapeSlice, 'kind'>): LandscapeS
         `landscapeSlice: paths[${k}].loss has ${p.loss.length} entries, expected ${p.coords.length}`,
       )
   }
-  return { kind: 'landscapeSlice', ...record }
+  return seal({ kind: 'landscapeSlice', ...record })
 }
 
 /**

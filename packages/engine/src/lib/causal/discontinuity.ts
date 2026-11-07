@@ -6,7 +6,7 @@
  * manipulation of the running variable.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { covariance, normCdf, variance, wls } from './_dense.ts'
@@ -366,8 +366,8 @@ export function densityTest(
   const sd = Math.sqrt(variance(x, 1))
   const b = options.binWidth ?? (2 * sd) / Math.sqrt(n)
   const h = options.bandwidth ?? 3.348 * sd * n ** (-1 / 5)
-  const lo = Math.floor((Math.min(...x) - c) / b)
-  const hi = Math.floor((Math.max(...x) - c) / b)
+  const lo = Math.floor((minOf(x) - c) / b)
+  const hi = Math.floor((maxOf(x) - c) / b)
   const counts = new Map<number, number>()
   for (const v of x) counts.set(Math.floor((v - c) / b), (counts.get(Math.floor((v - c) / b)) ?? 0) + 1)
   const side = (above: boolean): number => {

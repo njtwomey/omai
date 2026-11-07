@@ -4,7 +4,7 @@
  * such as SMO steps, IRLS iterations or boosting stages. `surfaceAt` gives the record as it was at one step.
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 import type { InputRows } from './rows.ts'
 
 /** A grid of values over the surface's two features: grid[i][j] at (x[j], y[i]). */
@@ -109,7 +109,7 @@ export function decisionSurface(surface: Omit<DecisionSurface, 'kind'>): Decisio
       surface.objective.values.length,
       surface.objective.iterations.length,
     )
-  return { kind: 'decisionSurface', ...surface }
+  return seal({ kind: 'decisionSurface', ...surface })
 }
 
 /**

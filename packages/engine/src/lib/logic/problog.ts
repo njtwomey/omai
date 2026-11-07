@@ -9,7 +9,7 @@
  * interpretations by EM, one iteration per step.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, maxOf } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { parseTerm } from './parse.ts'
 import { type Term, termToString } from './terms.ts'
@@ -375,7 +375,7 @@ export function probLogEmAlgorithm(
         probabilities: next,
         logLikelihood: observations.reduce((acc, o) => acc + Math.log(probOf(o, next)), 0),
         iteration: s.iteration + 1,
-        change: Math.max(0, ...next.map((p, i) => Math.abs(p - (s.probabilities[i] ?? 0)))),
+        change: Math.max(0, maxOf(next.map((p, i) => Math.abs(p - (s.probabilities[i] ?? 0))))),
       }
     },
     done: (s) => (s.change < 1e-10 ? 'converged' : undefined),

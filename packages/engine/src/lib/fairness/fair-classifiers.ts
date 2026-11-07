@@ -8,7 +8,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { lstsq } from '../numerics/linalg/index.ts'
 import { lbfgs, slsqp } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../random/index.ts'
@@ -129,7 +129,7 @@ export function prejudiceRemover(
   const { t: X, n, d } = design('prejudiceRemover', x)
   if (labels.length !== n || groups.length !== n)
     throw new MdmlError('shape', 'prejudiceRemover: one label and group per row')
-  const k = Math.max(...groups) + 1
+  const k = maxOf(groups) + 1
   const eta = options.eta ?? 1
   const l2 = options.l2 ?? 1e-2
   const onehot = new Float64Array(n * k)
@@ -440,7 +440,7 @@ export function metaFairClassifier(
   if (posteriors.length !== groups.length) throw new MdmlError('shape', 'metaFairClassifier: one group per row')
   const tau = options.tau ?? 0.8
   if (!(tau > 0 && tau <= 1)) throw new MdmlError('value', 'metaFairClassifier: tau is in (0, 1]')
-  const k = Math.max(...groups) + 1
+  const k = maxOf(groups) + 1
   const n = posteriors.length
   // Each group's posteriors, highest first, and the expected accuracy gain of selecting its top j: sum of (2 eta - 1).
   const sorted = Array.from({ length: k }, (_, g) => posteriors.filter((_, i) => groups[i] === g).sort((a, b) => b - a))
@@ -449,7 +449,7 @@ export function metaFairClassifier(
     for (const p of s) out.push((out[out.length - 1] ?? 0) + 2 * p - 1)
     return out
   })
-  const best = gains.map((gain) => gain.indexOf(Math.max(...gain)))
+  const best = gains.map((gain) => gain.indexOf(maxOf(gain)))
   const baseline = posteriors.reduce((s, p) => s + (1 - p), 0)
   const steps = options.grid ?? 201
   let choice: number[] = best
@@ -476,7 +476,7 @@ export function metaFairClassifier(
   return {
     thresholds: choice.map((c, g) => (c === 0 ? Number.POSITIVE_INFINITY : (sorted[g]?.[c - 1] ?? 0))),
     selectionRates: rates,
-    ratio: Math.max(...rates) === 0 ? 1 : Math.min(...rates) / Math.max(...rates),
+    ratio: maxOf(rates) === 0 ? 1 : minOf(rates) / maxOf(rates),
     expectedAccuracy: (baseline + choice.reduce((s, c, g) => s + (gains[g]?.[c] ?? 0), 0)) / n,
   }
 }

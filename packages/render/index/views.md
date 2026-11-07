@@ -6,11 +6,11 @@ Headless views of exposition records (`mdml-engine/exposition`): for each kind o
 
 - table `registry.ts` (file): Open first: the standard view of each exposition record kind. `src/views/registry.ts:1` `mdml-render/views`
 
-- function `componentsView`: Biplot, scree and loadings of PCA-like components: `componentsView(record)`. `src/views/components.ts:224` `mdml-render/views`
-- function `decisionSurfaceView`: A classifier's decision surface with its rows: `decisionSurfaceView(record)`. `src/views/surfaces.ts:325` `mdml-render/views`
-- function `regularisationPathView`: Coefficients against the penalty, lasso style: `regularisationPathView(path)`. `src/views/paths.ts:163` `mdml-render/views`
-- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:663` `mdml-render/views`
-- function `treeScene`: A decision tree as a scene of cards: `treeScene(record)`. `src/views/trees.ts:72` `mdml-render/views`
-- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:642` `mdml-render/views`
+- function `componentsView`: Biplot, scree and loadings of PCA-like components: `componentsView(record)`. `src/views/components.ts:225` `mdml-render/views`
+- function `decisionSurfaceView`: A classifier's decision surface with its rows: `decisionSurfaceView(record)`. `src/views/surfaces.ts:326` `mdml-render/views`
+- function `regularisationPathView`: Coefficients against the penalty, lasso style: `regularisationPathView(path)`. `src/views/paths.ts:164` `mdml-render/views`
+- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:671` `mdml-render/views`
+- function `treeScene`: A decision tree as a scene of cards: `treeScene(record)`. `src/views/trees.ts:73` `mdml-render/views`
+- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:645` `mdml-render/views`
 
-- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:70` `mdml-render/views`
+- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:71` `mdml-render/views`

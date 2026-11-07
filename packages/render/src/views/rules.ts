@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import { type ConceptScores, type RuleSet, ruleText } from 'mdml-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -22,7 +23,7 @@ export interface RuleListOptions extends ViewOptions {
 
 // Room on the left for category labels of this many characters.
 function padded(fig: Figure, labels: readonly string[]): Figure {
-  const longest = Math.max(4, ...labels.map((l) => l.length))
+  const longest = Math.max(4, maxOf(labels.map((l) => l.length)))
   const left = Math.min(360, Math.round(16 + longest * fig.fontSize * 0.58))
   return { ...fig, padding: { ...fig.padding, left: Math.max(fig.padding.left, left) } }
 }

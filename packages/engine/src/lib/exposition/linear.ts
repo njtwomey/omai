@@ -4,7 +4,7 @@
  * summary, and cross-validated scores along one parameter for choosing it.
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** Coefficients along a penalty grid (lasso, ridge, elastic net, GAM smoothness sweeps). */
 export interface RegularisationPath {
@@ -39,7 +39,7 @@ export function regularisationPath(path: Omit<RegularisationPath, 'kind'>): Regu
   rowsOf('regularisationPath', 'coefficients', path.coefficients, path.features.length)
   if (path.active !== undefined) sameLength('regularisationPath', 'active', path.active.length, path.penalties.length)
   if (path.gaps !== undefined) sameLength('regularisationPath', 'gaps', path.gaps.length, path.penalties.length)
-  return { kind: 'regularisationPath', ...path }
+  return seal({ kind: 'regularisationPath', ...path })
 }
 
 /** Estimated coefficients with their uncertainty (a statsmodels-style summary table). */
@@ -91,7 +91,7 @@ export function coefficientTable(table: Omit<CoefficientTable, 'kind'>): Coeffic
     )
     rowsOf('coefficientTable', 'trajectories.values', table.trajectories.values, n)
   }
-  return { kind: 'coefficientTable', ...table }
+  return seal({ kind: 'coefficientTable', ...table })
 }
 
 /** Cross-validated scores along one parameter, with their spread (for choosing it, e.g. by the one-SE rule). */
@@ -130,5 +130,5 @@ export function crossValidationCurve(curve: Omit<CrossValidationCurve, 'kind'>):
   sameLength('crossValidationCurve', 'meanScores', curve.meanScores.length, n)
   sameLength('crossValidationCurve', 'standardErrors', curve.standardErrors.length, n)
   if (curve.foldScores !== undefined) sameLength('crossValidationCurve', 'foldScores', curve.foldScores.length, n)
-  return { kind: 'crossValidationCurve', ...curve }
+  return seal({ kind: 'crossValidationCurve', ...curve })
 }

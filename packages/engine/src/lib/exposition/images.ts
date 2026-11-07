@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { sameLength } from './_check.ts'
+import { sameLength, seal } from './_check.ts'
 
 /**
  * The images at one recorded step: per group, its images as flat row-major grey levels (row 0 at the top), or
@@ -82,5 +82,5 @@ export function imageSteps(record: Omit<ImageSteps, 'kind'>): ImageSteps {
         sameLength('imageSteps', `steps[${t}].labels[${g}]`, group.length, step.images[g]?.length ?? 0)
     }
   }
-  return { kind: 'imageSteps', ...record }
+  return seal({ kind: 'imageSteps', ...record })
 }

@@ -5,6 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
+import { maxOf } from 'mdml-engine/base'
 import type { TreeNode, TreeRecord } from 'mdml-engine/exposition'
 import { group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'mdml-engine/scene'
 import { referenceLines } from '../charts/functions.ts'
@@ -44,7 +45,7 @@ export function splitText(tree: TreeRecord, node: TreeNode): string | undefined 
 /** What a node predicts: its majority class (classification) or its mean (regression). */
 export function nodePrediction(tree: TreeRecord, node: TreeNode): string {
   if (tree.classes === undefined || node.value.length < 2) return `ŷ = ${short(node.value[0] ?? 0)}`
-  const k = node.value.indexOf(Math.max(...node.value))
+  const k = node.value.indexOf(maxOf(node.value))
   return tree.classes[k] ?? `class ${k}`
 }
 
@@ -187,7 +188,7 @@ export function treeNodeOf(sceneId: string): number | undefined {
 
 /** The number of growth steps of a tree (one per node, in growth order). */
 export function growthSteps(tree: TreeRecord): number {
-  return Math.max(0, ...tree.nodes.map((n) => n.order)) + 1
+  return Math.max(0, maxOf(tree.nodes.map((n) => n.order))) + 1
 }
 
 /**

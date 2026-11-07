@@ -5,6 +5,7 @@
  * so well-connected nodes sit together.
  */
 
+import { maxOf, minOf } from 'mdml-engine/base'
 import { eigh } from 'mdml-engine/numerics/linalg'
 import { key as makeKey, uniform } from 'mdml-engine/random'
 import { toArray } from 'mdml-engine/tensor'
@@ -155,7 +156,7 @@ export function circularLayout(
   options: { readonly radius?: number; readonly margin?: number } = {},
 ): GraphLayout {
   const n = graph.nodes.length
-  const widest = Math.max(10, ...graph.nodes.map((v) => Math.max(v.width, v.height)))
+  const widest = Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height))))
   const radius = options.radius ?? Math.max(widest, (n * (widest + 12)) / (2 * Math.PI))
   const xy = graph.nodes.map((_, i): [number, number] => {
     const a = (2 * Math.PI * i) / Math.max(n, 1) - Math.PI / 2
@@ -207,8 +208,8 @@ export function spectralLayout(
     const col = (j: number): number[] => v.map((row) => row[j] ?? 0)
     const [u, w] = [col(1), col(2)]
     const scale = (c: number[]): number[] => {
-      const lo = Math.min(...c)
-      const hi = Math.max(...c)
+      const lo = minOf(c)
+      const hi = maxOf(c)
       return c.map((x) => (hi === lo ? 0 : ((x - lo) / (hi - lo)) * size))
     }
     const [su, sw] = [scale(u), scale(w)]

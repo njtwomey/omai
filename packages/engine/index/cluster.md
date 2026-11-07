@@ -6,7 +6,7 @@ Clustering as traced `Algorithm`s with estimators on the iterative base: k-means
 
 - function `gapStatistic`: Gap statistic for choosing the number of clusters. `src/lib/cluster/validity.ts:94` `mdml-engine/cluster`
 
-- estimator `agglomerativeClustering`: Agglomerative clustering with the linkage matrix. `src/lib/cluster/hierarchical.ts:417` `mdml-engine/cluster`
+- estimator `agglomerativeClustering`: Agglomerative clustering with the linkage matrix. `src/lib/cluster/hierarchical.ts:418` `mdml-engine/cluster`
 - estimator `bisectingKMeans`: Bisecting k-means; Elkan and kernel k-means beside it. `src/lib/cluster/kmeans-variants.ts:366` `mdml-engine/cluster`
 - estimator `dbscan`: DBSCAN density clustering. `src/lib/cluster/density.ts:168` `mdml-engine/cluster`
 - estimator `hdbscanClustering`: HDBSCAN with its condensed tree. `src/lib/cluster/density.ts:1182` `mdml-engine/cluster`

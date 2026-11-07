@@ -4,6 +4,7 @@
  * operating point) and in the contingency table with its rates and costs.
  */
 
+import { minOf } from 'mdml-engine/base'
 import { sweepAt, type ThresholdSweep } from 'mdml-engine/exposition'
 import { analyseThresholds, type MetricInput } from 'mdml-engine/metrics'
 import type { TensorLike } from 'mdml-engine/tensor'
@@ -154,7 +155,7 @@ export function ThresholdExplorer(props: ThresholdExplorerProps): ReactElement {
   const figureOf = (f: ThresholdFigure): ReactNode => {
     if (f === 'scores' || f === 'cost') {
       const panel = f === 'scores' ? scoresPanel : costPanel
-      const bottom = f === 'scores' ? 0 : Math.min(0, ...(record.cost ?? [0]))
+      const bottom = f === 'scores' ? 0 : Math.min(0, minOf(record.cost ?? [0]))
       return (
         <FigureFrame key={f} figure={fig} filename={`${name}-${f}`}>
           <Overlaid width={fig.width} height={fig.height} overlay={draggable(f, panel.top, bottom)}>

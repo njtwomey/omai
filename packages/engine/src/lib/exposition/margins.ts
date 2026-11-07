@@ -3,7 +3,7 @@
  * coefficients, how the dual was solved, and the decision surface with its margins.
  */
 
-import { rowsOf, sameLength } from './_check.ts'
+import { rowsOf, sameLength, seal } from './_check.ts'
 import type { InputRows } from './rows.ts'
 import type { DecisionSurface } from './surfaces.ts'
 
@@ -48,5 +48,5 @@ export function marginRecord(record: Omit<MarginRecord, 'kind'>): MarginRecord {
   if (record.workingSets !== undefined) rowsOf('margin', 'workingSets', record.workingSets, 2)
   if (record.steps !== undefined && record.dualObjective !== undefined)
     sameLength('margin', 'steps', record.steps.length, record.dualObjective.length)
-  return { kind: 'margin', ...record }
+  return seal({ kind: 'margin', ...record })
 }

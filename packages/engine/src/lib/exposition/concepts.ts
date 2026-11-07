@@ -4,6 +4,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import { seal } from './_check.ts'
 
 /** One concept's TCAV test. */
 export interface ConceptScore {
@@ -51,5 +52,5 @@ export function conceptScores(record: Omit<ConceptScores, 'kind'>): ConceptScore
   for (const c of record.concepts) {
     if (c.scores.length === 0) throw new MdmlError('shape', `concepts: ${c.name} has no scores`)
   }
-  return { kind: 'concepts', ...record }
+  return seal({ kind: 'concepts', ...record })
 }

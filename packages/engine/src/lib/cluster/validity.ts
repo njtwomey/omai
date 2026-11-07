@@ -4,7 +4,7 @@
  * 2002), which asks whether clusterings of overlapping subsamples agree, and the elbow curve of k-means inertia.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, maxOf, minOf } from '../base/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { adjustedRandScore } from '../metrics/index.ts'
 import { foldIn, type Key, subsample, uniform } from '../random/index.ts'
@@ -103,10 +103,10 @@ export function gapStatistic(
   if (ks.length === 0 || ks.some((k) => !(Number.isInteger(k) && k >= 1 && k <= m.n)))
     throw new MdmlError('value', `gapStatistic: every k must be an integer in 1..${m.n}`)
   const lows = Array.from({ length: m.d }, (_, q) =>
-    Math.min(...Array.from({ length: m.n }, (_, i) => m.data[i * m.d + q] ?? 0)),
+    minOf(Array.from({ length: m.n }, (_, i) => m.data[i * m.d + q] ?? 0)),
   )
   const highs = Array.from({ length: m.d }, (_, q) =>
-    Math.max(...Array.from({ length: m.n }, (_, i) => m.data[i * m.d + q] ?? 0)),
+    maxOf(Array.from({ length: m.n }, (_, i) => m.data[i * m.d + q] ?? 0)),
   )
   const logW = (data: TensorLike, k: number, kk: Key): number =>
     Math.log(Math.max(bestKMeans(data, k, kk, nInit).inertia, Number.MIN_VALUE))
