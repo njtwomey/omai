@@ -12,6 +12,7 @@ import { matVec, solveDense, vectorTensor } from './_programming.ts'
 import { lpInteriorPointAlgorithm } from './lp-interior-point.ts'
 import { simplexAlgorithm } from './lp-simplex.ts'
 import {
+  type Bound,
   fromStandard,
   type LinearProgram,
   type LinprogOptions,
@@ -196,11 +197,22 @@ function rowsOf(a: LinearProgram['aUb']): number[][] {
   return v.length === 0 ? [] : Array.isArray(v[0]) ? (v as number[][]) : [v as number[]]
 }
 
+/** The power of two that brings a data scale `largest` to about 1, or 1 when it is within a factor of 64 of it already. */
+function unitScale(largest: number): number {
+  if (!(largest > 0) || !Number.isFinite(largest) || (largest >= 1 / 64 && largest <= 64)) return 1
+  return 2 ** -Math.round(Math.log2(largest))
+}
+
 /**
- * Solve with every constraint row equilibrated to a largest coefficient of 1 (the solution is unchanged), then report
- * slacks and residuals against the original rows and rescale the row duals and ranges. Rows of 1e-6-sized coefficients
- * beside rows of order 1 (near-tied payoffs) otherwise fall under the solvers' tolerances: the simplex then reports
- * feasible programs infeasible and the interior point reports bounded ones unbounded.
+ * Solve with every constraint row equilibrated to a largest coefficient of 1, the cost vector scaled to a largest
+ * entry of about 1 and the right-hand sides and bounds to about 1 (the last two by powers of two, which are exact in
+ * floating point, and only when they are further than a factor of 64 from 1), so the tolerances of the solvers, which
+ * are absolute, are relative to the data. The solution is unchanged: x scales with b, the optimal value with c and b, the
+ * duals and cost ranges with c, the right-hand-side ranges with b. Slacks and residuals are reported against the
+ * original rows, and the duals, ranges, point and path rescaled. Rows of 1e-6-sized coefficients beside rows of order 1
+ * (near-tied payoffs) otherwise fall under the solvers' tolerances: the simplex then reports feasible programs
+ * infeasible and the interior point reports bounded ones unbounded; a cost vector or right-hand side of 1e-9 does the
+ * same.
  */
 function equilibrated(problem: LinearProgram, solve: (p: LinearProgram) => LinprogResult): LinprogResult {
   const aUb = rowsOf(problem.aUb)
@@ -212,41 +224,76 @@ function equilibrated(problem: LinearProgram, solve: (p: LinearProgram) => Linpr
   }
   const sUb = aUb.map(scaleOf)
   const sEq = aEq.map(scaleOf)
-  if (sUb.every((v) => v === 1) && sEq.every((v) => v === 1)) return solve(problem)
+  const cVec = toFlat(asTensor(problem.c))
   const bUb = problem.bUb === undefined ? [] : toFlat(asTensor(problem.bUb))
   const bEq = problem.bEq === undefined ? [] : toFlat(asTensor(problem.bEq))
+  const bUbRows = bUb.map((v, r) => v * (sUb[r] ?? 1))
+  const bEqRows = bEq.map((v, r) => v * (sEq[r] ?? 1))
+  const finiteBounds = (bs: LinearProgram['bounds']): number[] =>
+    bs === undefined
+      ? []
+      : ((bs.length === 2 && !Array.isArray(bs[0]) ? [bs] : bs) as readonly (readonly [number | null, number | null])[])
+          .flat()
+          .filter((v): v is number => v !== null && Number.isFinite(v))
+  const magnitude = (values: readonly number[]): number => values.reduce((m, v) => Math.max(m, Math.abs(v)), 0)
+  const sc = unitScale(magnitude(cVec))
+  const sb = unitScale(magnitude([...bUbRows, ...bEqRows, ...finiteBounds(problem.bounds)]))
+  if (sUb.every((v) => v === 1) && sEq.every((v) => v === 1) && sc === 1 && sb === 1) return solve(problem)
+  const scaleBound = (v: number | null): number | null => (v === null || !Number.isFinite(v) ? v : v * sb)
   const scaled: LinearProgram = {
     ...problem,
+    c: cVec.map((v) => v * sc),
     ...(aUb.length === 0
       ? {}
-      : { aUb: aUb.map((row, r) => row.map((v) => v * (sUb[r] ?? 1))), bUb: bUb.map((v, r) => v * (sUb[r] ?? 1)) }),
+      : { aUb: aUb.map((row, r) => row.map((v) => v * (sUb[r] ?? 1))), bUb: bUbRows.map((v) => v * sb) }),
     ...(aEq.length === 0
       ? {}
-      : { aEq: aEq.map((row, r) => row.map((v) => v * (sEq[r] ?? 1))), bEq: bEq.map((v, r) => v * (sEq[r] ?? 1)) }),
+      : { aEq: aEq.map((row, r) => row.map((v) => v * (sEq[r] ?? 1))), bEq: bEqRows.map((v) => v * sb) }),
+    ...(sb === 1 || problem.bounds === undefined
+      ? {}
+      : {
+          bounds: (problem.bounds.length === 2 && !Array.isArray(problem.bounds[0])
+            ? ([
+                scaleBound(problem.bounds[0] as number | null),
+                scaleBound(problem.bounds[1] as number | null),
+              ] as const)
+            : (problem.bounds as readonly Bound[]).map(([lo, hi]) => [scaleBound(lo), scaleBound(hi)] as const)) as
+            | Bound
+            | readonly Bound[],
+        }),
   }
   const r = solve(scaled)
-  const x = toFlat(r.x)
+  const x = Float64Array.from(toFlat(r.x), (v) => v / sb)
   const residual = (rows: number[][], b: number[]): Tensor =>
     vectorTensor(Float64Array.from(rows, (row, i) => (b[i] ?? 0) - ddot(row, x)))
-  // fun depends on b_r' = s_r b_r, so d fun / d b_r = s_r d fun / d b_r'; a range of b_r' is a range of b_r times 1 / s_r.
-  const rescale = (t: Tensor, s: readonly number[]): Tensor =>
-    vectorTensor(Float64Array.from(toFlat(t), (v, i) => v * (s[i] ?? 1)))
-  const ranges = (rs: readonly (readonly [number, number])[], s: readonly number[]): [number, number][] =>
-    rs.map(([lo, hi], i) => [lo / (s[i] ?? 1), hi / (s[i] ?? 1)])
+  // fun depends on b_r' = s_r sb b_r, so d fun / d b_r = s_r (d fun' / d b_r') / sc; a range of b_r' is a range of b_r
+  // times 1 / (s_r sb), and a range of c' = sc c is a range of c times 1 / sc.
+  const rescale = (t: Tensor, s: readonly number[] | undefined): Tensor =>
+    vectorTensor(Float64Array.from(toFlat(t), (v, i) => (v * (s?.[i] ?? 1)) / sc))
+  const ranges = (rs: readonly (readonly [number, number])[], s: readonly number[], k: number): [number, number][] =>
+    rs.map(([lo, hi], i) => [lo / ((s[i] ?? 1) * k), hi / ((s[i] ?? 1) * k)])
   return {
     ...r,
+    x: vectorTensor(x),
+    fun: r.fun / (sc * sb),
     slack: aUb.length === 0 ? r.slack : residual(aUb, bUb),
     con: aEq.length === 0 ? r.con : residual(aEq, bEq),
-    marginals: { ...r.marginals, ineqlin: rescale(r.marginals.ineqlin, sUb), eqlin: rescale(r.marginals.eqlin, sEq) },
+    marginals: {
+      ineqlin: rescale(r.marginals.ineqlin, sUb),
+      eqlin: rescale(r.marginals.eqlin, sEq),
+      lower: rescale(r.marginals.lower, undefined),
+      upper: rescale(r.marginals.upper, undefined),
+    },
     ...(r.sensitivity === undefined
       ? {}
       : {
           sensitivity: {
-            ...r.sensitivity,
-            bUb: ranges(r.sensitivity.bUb, sUb),
-            bEq: ranges(r.sensitivity.bEq, sEq),
+            cost: r.sensitivity.cost.map(([lo, hi]) => [lo / sc, hi / sc] as const),
+            bUb: ranges(r.sensitivity.bUb, sUb, sb),
+            bEq: ranges(r.sensitivity.bEq, sEq, sb),
           },
         }),
+    path: r.path.map((p) => ({ ...p, x: p.x.map((v) => v / sb), objective: p.objective / (sc * sb) })),
   }
 }
 
