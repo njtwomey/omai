@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { toArray } from '../../tensor/index.ts'
+import { grad } from '../../autodiff/index.ts'
+import { sum, tensor, toArray, type Value } from '../../tensor/index.ts'
 import * as L from './index.ts'
 
 // Singular values of [[1, 2], [3, 4], [5, 6]] (numpy.linalg.svd).
@@ -34,5 +35,29 @@ describe('linalg at the edges of the double range', () => {
     [[[1e-310, 0], [0, 1e-310]], [1e-310, 1e-310]],
   ])('svd of the scaled identity %j', (a, expected) => {
     expect(toArray(L.svd(a).s)).toEqual(expected)
+  })
+})
+
+describe('lstsq of a rank-deficient system is the minimum-norm least-squares solution (numpy.linalg.lstsq)', () => {
+  const third = 1 / 3
+  const cases: readonly (readonly [string, number[][], number[] | number[][], number[] | number[][]])[] = [
+    ['three equal columns', [[1, 1, 1], [1, 1, 1], [1, 1, 1]], [1, 1, 1], [third, third, third]],
+    ['the zero matrix', [[0, 0], [0, 0]], [1, 1], [0, 0]],
+    ['a column twice the other', [[1, 2], [2, 4], [3, 6]], [1, 2, 3], [0.2, 0.4]],
+    ['the same, with a right-hand side outside the range', [[1, 2], [2, 4], [3, 6]], [1, 0, 0], [1 / 70, 2 / 70]],
+    ['a zero column', [[1, 0], [2, 0], [3, 0]], [1, 0, 5], [8 / 7, 0]],
+    ['wide, a repeated column', [[1, 1, 0], [2, 2, 0]], [1, 2], [0.5, 0.5, 0]],
+    ['square of rank one', [[1, 2, 3], [2, 4, 6], [3, 6, 9]], [1, 2, 3], [1 / 14, 2 / 14, 3 / 14]],
+    ['several right-hand sides', [[1, 1], [1, 1]], [[1, 2], [3, 0]], [[1, 0.5], [1, 0.5]]],
+  ]
+  it.each(cases)('%s', (_name, a, b, expected) => {
+    const x = toArray(L.lstsq(a, b)) as number[] | number[][]
+    expect(x.flat()).toEqual(expected.flat().map((e) => expect.closeTo(e, 12)))
+  })
+
+  it('keeps the QR solution (and its bits) for a full-rank matrix, and its gradient through pinv when deficient', () => {
+    expect(toArray(L.lstsq([[1, 0], [0, 1], [0, 0]], [1, 2, 3]))).toEqual([1, 2])
+    const g = toArray(grad((b: Value) => sum(L.lstsq([[1, 2], [2, 4], [3, 6]], b)))(tensor([1, 2, 3]))) as number[]
+    expect(g).toEqual([3 / 70, 6 / 70, 9 / 70].map((e) => expect.closeTo(e, 12)))
   })
 })

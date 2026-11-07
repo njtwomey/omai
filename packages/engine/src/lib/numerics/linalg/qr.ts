@@ -13,15 +13,18 @@ import {
   type FloatDType,
   matmul,
   type Primitive,
+  primalOf,
   promoteFloat,
   squeeze,
   sub,
   type TensorLike,
+  toFlat,
   tril,
   type Value,
 } from '../../tensor/index.ts'
 import { qrKernel } from './_kernels.ts'
 import { asColumns, assemble, broadcastBatch, matrices, matrixShape, mT } from './_matrix.ts'
+import { pinv } from './svd.ts'
 import { triangularSolve } from './triangular.ts'
 
 const upper = (transpose: boolean) => ({ lower: false, transpose, unitDiagonal: false })
@@ -131,10 +134,35 @@ export function qr(a: TensorLike): QrResult {
 }
 
 /**
- * Least-squares solution of A x = b (numpy.linalg.lstsq's solution) for A of full rank: the minimiser of ||A x - b|| when
- * m >= n, and the minimum-norm solution when m < n; computed from a QR factorisation.
+ * Whether any matrix of the batch has a triangular factor `r` `[..., k, k]` whose diagonal is rank-deficient: its smallest
+ * magnitude at most max(m, n) eps times its largest (numpy.linalg.lstsq's default `rcond`, applied to the diagonal).
+ */
+function rankDeficient(r: Value, m: number, n: number): boolean {
+  const k = Math.min(m, n)
+  if (k === 0) return false
+  const flat = toFlat(primalOf(r))
+  const cut = Math.max(m, n) * Number.EPSILON
+  for (let offset = 0; offset < flat.length; offset += k * k) {
+    let smallest = Number.POSITIVE_INFINITY
+    let largest = 0
+    for (let i = 0; i < k; i++) {
+      const d = Math.abs(flat[offset + i * k + i] ?? 0)
+      smallest = Math.min(smallest, d)
+      largest = Math.max(largest, d)
+    }
+    if (!(smallest > cut * largest)) return true
+  }
+  return false
+}
+
+/**
+ * Least-squares solution of A x = b (numpy.linalg.lstsq's solution): the minimiser of ||A x - b|| when m >= n, and the
+ * minimum-norm solution when m < n, computed from a QR factorisation. A matrix whose R factor has a diagonal entry below
+ * max(m, n) eps times the largest (a collinear column, a constant feature, a repeated abscissa) is rank-deficient: the
+ * solution is then the minimum-norm least-squares one, `pinv(A) b`, as numpy's (a batch with any such matrix is solved
+ * that way throughout).
  *
- * @param a - Matrix `[..., m, n]` of full rank.
+ * @param a - Matrix `[..., m, n]`.
  * @param b - Right-hand side `[..., m, k]` or `[m]`.
  * @returns The solution `[..., n, k]` or `[n]`, differentiable in both arguments.
  * @index function Least-squares solution of A x = b.
@@ -153,11 +181,13 @@ export function lstsq(a: TensorLike, b: TensorLike): Value {
   let x: Value
   if (m >= n) {
     const { q, r } = qr(ab)
-    x = triangularSolve(r, matmul(mT(q), bb), upper(false))
+    x = rankDeficient(r, m, n)
+      ? matmul(pinv(ab), bb)
+      : triangularSolve(r, matmul(mT(q), bb), upper(false))
   } else {
     // A^T = Q R, so A = R^T Q^T and the minimum-norm solution is Q R^{-T} b.
     const { q, r } = qr(mT(ab))
-    x = matmul(q, triangularSolve(r, bb, upper(true)))
+    x = rankDeficient(r, m, n) ? matmul(pinv(ab), bb) : matmul(q, triangularSolve(r, bb, upper(true)))
   }
   return cols.vector ? squeeze(x, -1) : x
 }
