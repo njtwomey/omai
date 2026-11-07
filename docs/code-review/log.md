@@ -432,3 +432,28 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `tensor`, `autodiff`, `base`, `exposition`, `dists`, `trace`; `data` for `archives.ts`): see the `progress.md` row. The five domains and `trace` and `data`: 131 files, 2,720 tests passed;
   the 10 caller domains of the fixed functions (197 files, 3,486 tests) passed. Surface: 0 added, 0 removed, 1 changed (`CheckOptions` gains `order`);
   `docs/api-surface.txt` regenerated. Own checks only; the full gate was not run.
+- **18:17 P3.39 and P3.18: tests for `data`, `kernels` and render (`agent-ts03-data-render`).** Net +19 `it` blocks (12 in the
+  engine, 7 in render) and a few hundred table rows. Engine: `data/rows.contract.test.ts` (the three splitters over a classification set, a
+  corpus and a table with a text column: every row once, the same key the same split, class shares within a row when stratified; a table of
+  refusals and the single-class, empty and repeated-row cases), `data/batching.test.ts` (sequence lengths of every kind, every pad and truncate
+  side, `collate`, batch invariants for any size, key or sampler checked against the loader's length, bucket rows), an `archives.test.ts` table of nine
+  damaged files, `data/loader.test.ts` (several pinned files, a tampered cache entry fetched again, a failed download caches nothing), and two tables in
+  `kernels/catalogue.test.ts` (a finite gradient in the points and in theta at a repeated point that equals a central difference, for all 40
+  kernels and combinators; no points, one point and a NaN point). Bugs found and fixed: a batch size of 2.5 gave overlapping batches,
+  a `bucketBy` batch size of 0 never ended (the worker ran out of memory: the failing row was run against main first), unsorted `bucketBy` boundaries,
+  `padSequences` with a `maxLength` of NaN or a fraction, `randomSampler` with a `numSamples` of NaN, and `.npy`, tar and zip files cut short (a
+  `RangeError` from `DataView`, or silently fewer bytes). Left as they are and recorded: CSV with an unterminated quote or ragged rows and a kept
+  byte-order mark (Python's `csv` does the same and the existing table pins it; KDES-25), the three shuffle conventions (a change moves seeds;
+  KDES-26), KDES-37 (the zero-order arc-cosine kernel is 1 on its own diagonal for a NaN point, found by the NaN row). The kernels' gradients were
+  right everywhere at the first run. Render: the harness grew `elements()` (React keeps each element's props on its node, so a test finds a button by
+  its label and calls its handler), recorded window and document listeners (`count`, `fire`) and a `browser` option that gives the code under test
+  a document with a body to portal into (`Popover` and the export menu need one); tests of `Chart` against a fake ECharts instance, `FigureFrame`
+  (expand sizes, Escape, listeners removed), `Popover`, `NarrativeView` (step-through and Alt+Arrow), `SessionExport` (menu, range, tape
+  loading for a known method only) and two tables of record views (attributions by layout and row count, group sweep and thresholds,
+  dendrogram, reachability, dependence surface, a pipeline table). One bug found by rendering every kind with a title: `FramesPlayer` dropped the title
+  and caption of 14 kinds (RD-30, fixed). Coverage, statements before to after: the react layer 67.4% (57.9% when F-036 was written, main had
+  moved) to 73.4%, the record views 71.3% to 82.3%, `NarrativeView` 0 to 91.7%, `Popover` 17.8 to 91.1%, `Chart` 23.5 to 70.6%, `SessionExport`
+  1.7 to 29.8%, `FigureFrame` 20.9 to 37.3%, `attributions.tsx` 32.8 to 98.5%; `data/batching.ts` 79.3 to 99.2%, `_columns.ts` 77.6 to 95.9%, `rows.ts` 92.2 to
+  97.9%, `samplers.ts` 94.0 to 98.1%, `archives.ts` 96.7 to 98.2%. Not done: `trees.tsx` interaction, `ZoomPanel`, `StructureView`, the `Player` key
+  test (RD-6 first, or it pins the wrong behaviour), `SessionExport` recording and saving (a canvas and `a.click`). Surface 0 added, 0 removed, 0
+  changed. Own checks only; the full gate was not run.
