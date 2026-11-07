@@ -26,6 +26,7 @@ import {
   type TensorLike,
   take,
   toFlat,
+  transpose,
   type Value,
 } from '../../tensor/index.ts'
 import { fft, ifft } from './fft.ts'
@@ -246,13 +247,6 @@ export function nufft2(
     re: mul(reshape(matmul(st, reshape(u.re, [-1, 1])), [xs.length]), factor),
     im: mul(reshape(matmul(st, reshape(u.im, [-1, 1])), [xs.length]), factor),
   }
-}
-
-function transpose(m: Tensor): Tensor {
-  const [r = 0, c = 0] = m.shape
-  const out = new Float64Array(r * c)
-  for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) out[j * r + i] = m.data[i * c + j] ?? 0
-  return fromStorage(out, [c, r], 'float64')
 }
 
 const cpow = (z: Complex, p: number): Complex => {

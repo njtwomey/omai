@@ -14,6 +14,7 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  transpose,
   type Value,
 } from '../../tensor/index.ts'
 import {
@@ -92,7 +93,7 @@ export function makeSmoothingSpline(
     }
   }
   const qt = fromStorage(q, [n, p], 'float64')
-  const k = toFlat(matmul(matmul(qt, inv(fromStorage(r, [p, p], 'float64'))), transpose(q, n, p)))
+  const k = toFlat(matmul(matmul(qt, inv(fromStorage(r, [p, p], 'float64'))), transpose(qt)))
   const smoother = (lam: number): Float64Array => {
     // S = (W + lam K)^{-1} W.
     const lhs = new Float64Array(n * n)
@@ -148,12 +149,6 @@ export function makeSmoothingSpline(
   const { gcv, df, s } = score(lam)
   const fitted = matmul(fromStorage(s, [n, n], 'float64'), yv)
   return { spline: cubicSpline(xs, fitted, 'natural'), lam, gcv, degreesOfFreedom: df }
-}
-
-function transpose(q: Float64Array, n: number, p: number): Tensor {
-  const t = new Float64Array(p * n)
-  for (let i = 0; i < n; i++) for (let j = 0; j < p; j++) t[j * n + i] = q[i * p + j] ?? 0
-  return fromStorage(t, [p, n], 'float64')
 }
 
 /** Result of {@link univariateSpline}. */

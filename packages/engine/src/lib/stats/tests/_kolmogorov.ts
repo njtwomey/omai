@@ -5,23 +5,13 @@
 
 import { smirnov } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
+import { matmul } from '../_linear.ts'
 
 const E128 = 2 ** 128
 const EM128 = 2 ** -128
 const SQRT2PI = Math.sqrt(2 * Math.PI)
 
 const smirnovSf = (n: number, d: number): number => item(smirnov(n, d))
-
-function matmul(a: Float64Array, b: Float64Array, m: number): Float64Array {
-  const c = new Float64Array(m * m)
-  for (let i = 0; i < m; i++)
-    for (let k = 0; k < m; k++) {
-      const v = a[i * m + k] ?? 0
-      if (v === 0) continue
-      for (let j = 0; j < m; j++) c[i * m + j] = (c[i * m + j] ?? 0) + v * (b[k * m + j] ?? 0)
-    }
-  return c
-}
 
 // P(D_n <= d) by Durbin's matrix (Marsaglia, Tsang and Wang 2003), with exponent bookkeeping against overflow.
 function durbin(n: number, d: number): number {
@@ -52,10 +42,10 @@ function durbin(n: number, d: number): number {
   let hExp = 0
   while (nn > 0) {
     if (nn % 2) {
-      P = matmul(P, H, m)
+      P = matmul(P, H, m, m, m)
       expnt += hExp
     }
-    H = matmul(H, H, m)
+    H = matmul(H, H, m, m, m)
     hExp *= 2
     if (Math.abs(H[(k - 1) * m + (k - 1)] ?? 0) > E128) {
       for (let i = 0; i < H.length; i++) H[i] = (H[i] ?? 0) / E128
