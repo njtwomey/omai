@@ -205,6 +205,13 @@ const expected = new Map<string, readonly number[]>([
     ],
   ],
   [
+    'interp spline k4',
+    [
+      20.81101218300588, 0.3, -0.3137769022950902, 1.1000000000000003, -0.140564850851775, -0.2238966555029532, 0.9,
+      -68.12851665719369,
+    ],
+  ],
+  [
     'interp spline k5',
     [
       24.692237247000776, 0.3, -0.3357252212134653, 1.1, -0.1210694426419665, -0.23618887378710177, 0.9,
@@ -312,7 +319,7 @@ describe('interpolation against scipy.interpolate', () => {
     for (const kind of ['linear', 'nearest', 'previous', 'next', 'zero', 'slinear', 'quadratic', 'cubic'] as const) {
       compare(`interp1d ${kind}`, I.interp1d(x1, y1, outside(kind))(q1))
     }
-    for (const k of [1, 2, 3, 5]) compare(`interp spline k${k}`, I.makeInterpSpline(x1, y1, k).evaluate(q1))
+    for (const k of [1, 2, 3, 4, 5]) compare(`interp spline k${k}`, I.makeInterpSpline(x1, y1, k).evaluate(q1))
     compare('interp spline k3 nu1', I.makeInterpSpline(x1, y1, 3).evaluate(q1, 1))
     compare('lsq spline', I.makeLsqSpline(x1, y1, [0, 0, 0, 0, 1.5, 3, 5, 5, 5, 5], 3).evaluate(q1))
     expect(failures).toEqual([])
