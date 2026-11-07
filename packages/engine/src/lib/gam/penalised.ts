@@ -10,7 +10,7 @@ import { MdmlError, maxOf } from '../base/index.ts'
 import { dgemm, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
 import { nelderMead, qpActiveSet, qpArrays, qpInteriorPoint } from '../optim/index.ts'
 import { constraintNullSpace } from '../stats/smoothing/index.ts'
-import { asTensor, toFlat, type Value } from '../tensor/index.ts'
+import { asTensor, fromStorage, toFlat, type Value } from '../tensor/index.ts'
 import type { ConstraintBlock } from './shape.ts'
 import type { GamDesign } from './terms.ts'
 
@@ -359,7 +359,7 @@ function solveConstrained(g: Gram, S: Float64Array, A: Float64Array, c: Constrai
   } else candidates = [...result.active]
   const rows = independentRows(c, candidates, p)
   const active = Float64Array.from(rows.flatMap((r) => Array.from(c.rows.subarray(r * p, (r + 1) * p))))
-  const N = Float64Array.from(toFlat(constraintNullSpace(active, p)))
+  const N = Float64Array.from(toFlat(constraintNullSpace(fromStorage(active, [rows.length, p], 'float64'))))
   const q = N.length / p
   const AN = dgemm(A, N, p, p, q)
   const H = dgemm(N, AN, q, p, q, { transposeA: true })

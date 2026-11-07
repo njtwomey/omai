@@ -8,7 +8,7 @@
 import { MdmlError } from '../../base/index.ts'
 import { makeSmoothingSpline, type SmoothingSpline } from '../../numerics/interpolate/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
-import { asTensor, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { asTensor, type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
 import { ols } from '../_linear.ts'
 import { paired, sample, vec } from '../_util.ts'
 import { median } from '../quantiles.ts'
@@ -403,11 +403,12 @@ export function runningMedian(x: TensorLike, window: number, options: RunningOpt
 
 /**
  * A cubic smoothing-spline smoother (scipy.interpolate.make_smoothing_spline): the penalty lambda given, chosen to give
- * `df` effective degrees of freedom, or by generalised cross-validation.
+ * `df` effective degrees of freedom, or by generalised cross-validation. Takes tensors (migration, D-009: the `weights`
+ * option was `readonly number[]`; nested arrays still work).
  *
  * @param x - The covariate (sorted and distinct, at least five points).
  * @param y - The response.
- * @param options - lambda or df.
+ * @param options - lambda or df, and `weights` (a vector, one per point).
  * @returns The fitted spline with its penalty, GCV score and degrees of freedom.
  * @example
  * ```ts
@@ -418,9 +419,9 @@ export function runningMedian(x: TensorLike, window: number, options: RunningOpt
 export function smoothingSpline(
   x: TensorLike,
   y: TensorLike,
-  options: { readonly lambda?: number; readonly df?: number; readonly weights?: readonly number[] } = {},
+  options: { readonly lambda?: number; readonly df?: number; readonly weights?: TensorLike } = {},
 ): SmoothingSpline {
-  const w = options.weights === undefined ? {} : { w: options.weights }
+  const w = options.weights === undefined ? {} : { w: toVector(options.weights, 'smoothingSpline') }
   if (options.lambda !== undefined) return makeSmoothingSpline(x, y, { ...w, lam: options.lambda })
   if (options.df === undefined) return makeSmoothingSpline(x, y, w)
   const target = options.df
