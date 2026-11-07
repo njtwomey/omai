@@ -5,7 +5,7 @@
  * the Frobenius loss, one sweep per step, with NNDSVD initialisation.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { normal } from '../random/index.ts'
@@ -296,7 +296,7 @@ export interface NmfVerbs {
 
 const asRows = (x: TensorLike, who: string, d?: number): number[][] => {
   const m = matrixView(x, who, d === undefined ? {} : { nFeatures: d })
-  return Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
+  return toRows(m.data, m.n, m.d)
 }
 const toTensor = (rows: number[][]): Tensor =>
   fromStorage(Float64Array.from(rows.flat()), [rows.length, rows[0]?.length ?? 0], 'float64')

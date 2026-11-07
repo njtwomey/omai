@@ -8,15 +8,14 @@
 
 import {
   type DictSpace,
-  defaults,
   dict,
+  fillKnobs,
   int,
   type Option,
   type OptionTable,
   optionTable,
   type RealSpace,
   real,
-  type SpaceValue,
 } from '../../space/index.ts'
 
 /** What a time scheme does, for validity rules and selectors. */
@@ -147,7 +146,7 @@ function profile(
     properties,
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       return build((name) => Number(full[name]))
     },
   }
@@ -223,7 +222,7 @@ function iteration(
     properties,
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       return make((name) => Number(full[name]))
     },
   }

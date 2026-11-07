@@ -4,7 +4,7 @@
  * table is one `union` space for controls and grids, and builds the options of `dtw` and `dtwAlgorithm`.
  */
 
-import { defaults, dict, int, type Option, type OptionTable, optionTable, type SpaceValue } from '../space/index.ts'
+import { dict, fillKnobs, int, type Option, type OptionTable, optionTable } from '../space/index.ts'
 import type { DtwOptions } from './similarity.ts'
 
 /** What a step pattern means, for validity rules and selectors. */
@@ -26,7 +26,7 @@ function pattern(
     properties,
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       const window = full['window'] as number
       return { stepPattern, ...(window >= 10000 ? {} : { window }) }
     },

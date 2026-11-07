@@ -39,8 +39,4 @@ export function inverse(a: Float64Array, dim: number): Float64Array {
   return Float64Array.from(toFlat(inv(fromStorage(Float64Array.from(a), [dim, dim], 'float64'))))
 }
 
-/** Whether every entry of a buffer is finite. */
-export function allFinite(x: ArrayLike<number>): boolean {
-  for (let i = 0; i < x.length; i++) if (!Number.isFinite(x[i] ?? Number.NaN)) return false
-  return true
-}
+export { allFinite } from '../base/index.ts'

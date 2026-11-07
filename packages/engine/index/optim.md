@@ -18,7 +18,7 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:218` `mdml-engine/optim`
 - table `optimisers`: SGD, RMSprop, Adagrad, Adam and relatives as one slot. `src/lib/optim/optimiser-table.ts:58` `mdml-engine/optim`
 - table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:56` `mdml-engine/optim`
-- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:267` `mdml-engine/optim`
+- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:261` `mdml-engine/optim`
 
 ## optim/minimize
 
@@ -28,7 +28,7 @@ Minimisation of functions of parameter trees, scipy.optimize style: the `minimiz
 - function `cmaes`: Covariance matrix adaptation evolution strategy. `src/lib/optim/minimize/cmaes.ts:303` `mdml-engine/optim`
 - function `curveFit`: Fit a parametric curve to data by nonlinear least squares. `src/lib/optim/minimize/least-squares.ts:319` `mdml-engine/optim`
 - function `differentialEvolution`: Population-based global minimiser. `src/lib/optim/minimize/differential-evolution.ts:454` `mdml-engine/optim`
-- function `lbfgs`: L-BFGS minimisation without bounds. `src/lib/optim/minimize/quasi-newton.ts:488` `mdml-engine/optim`
+- function `lbfgs`: L-BFGS minimisation without bounds. `src/lib/optim/minimize/quasi-newton.ts:484` `mdml-engine/optim`
 - function `lbfgsb`: L-BFGS-B minimisation under box bounds. `src/lib/optim/minimize/lbfgsb.ts:572` `mdml-engine/optim`
 - function `leastSquares`: Nonlinear least squares, scipy style, with bounds and robust losses. `src/lib/optim/minimize/least-squares.ts:263` `mdml-engine/optim`
 - function `minimize`: Minimise an objective scipy-style with a method chosen by value. `src/lib/optim/minimize/minimizer.ts:122` `mdml-engine/optim`

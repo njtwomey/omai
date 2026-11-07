@@ -12,13 +12,14 @@ import type { Json } from '../base/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
 import {
+  asModeConfig,
   bool,
   choice,
+  completeOption,
   type DictSpace,
   defaults,
   dict,
   int,
-  type OptionTable,
   real,
   type SpaceValue,
 } from '../space/index.ts'
@@ -188,13 +189,6 @@ const coordinateDescent: ModeSpec<SmoothProblem, WithVector, VectorParams> = {
   params: vector,
 }
 
-/** A table option's configuration with the defaults of its option filled in where it names only some knobs. */
-function filled<T, P>(table: OptionTable<T, P>, config: SpaceValue | undefined): SpaceValue {
-  const name = table.optionOf(config).name
-  const given = typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}
-  return { ...(defaults(table.space.options[name] as DictSpace) as object), ...given, [table.tag]: name }
-}
-
 const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
   description:
     'stochastic gradient: an optimiser (SGD with momentum, RMSprop, Adam and others) at a scheduled learning rate, over the whole set or a batch drawn at every step',
@@ -208,9 +202,9 @@ const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
   make: (p, k) => {
     const batch = (k['batch'] as number | undefined) ?? 0
     return gradientAlgorithm(p.objective, p.x0, {
-      optimiser: optimisers.make(filled(optimisers, k['optimiser'])),
+      optimiser: optimisers.make(completeOption(optimisers, k['optimiser'])),
       learningRate: (k['learningRate'] as number | undefined) ?? 1e-2,
-      schedule: schedules.make(filled(schedules, k['schedule'])),
+      schedule: schedules.make(completeOption(schedules, k['schedule'])),
       batch: batch > 0 ? batch : null,
       ...(p.batches === undefined ? {} : { batches: p.batches }),
       gradTol: (k['gradTol'] as number | undefined) ?? 1e-5,
@@ -235,11 +229,11 @@ const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
  */
 export function solverConfigOf<Problem>(table: ModeTable<Problem, VectorParams>, config: SpaceValue): SpaceValue {
   const name = table.modeOf(config).name
-  const given = typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}
+  const given = asModeConfig(config)
   const nested: Record<string, SpaceValue> = {}
   if (name === 'gradient') {
-    if ('optimiser' in given) nested['optimiser'] = filled(optimisers, given['optimiser'] as SpaceValue)
-    if ('schedule' in given) nested['schedule'] = filled(schedules, given['schedule'] as SpaceValue)
+    if ('optimiser' in given) nested['optimiser'] = completeOption(optimisers, given['optimiser'] as SpaceValue)
+    if ('schedule' in given) nested['schedule'] = completeOption(schedules, given['schedule'] as SpaceValue)
   }
   return {
     ...(defaults(table.space.options[name] as DictSpace) as object),

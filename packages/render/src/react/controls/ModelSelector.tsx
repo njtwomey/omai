@@ -5,7 +5,7 @@
  * puts out of reach are drawn disabled with the reason as their title.
  */
 
-import { defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
+import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
 import { type ReactNode, useRef, useState } from 'react'
 import { cx, labelClass } from './classes.ts'
 import { SlidersIcon } from './icons.tsx'
@@ -31,9 +31,6 @@ export interface ModelSelectorProps<V extends SpaceValue> {
   readonly className?: string
 }
 
-const recordOf = (v: SpaceValue | undefined): Readonly<Record<string, SpaceValue>> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Readonly<Record<string, SpaceValue>>) : {}
-
 /**
  * A list of the options of a union space with a settings button on each: pressing a name chooses the option, pressing
  * its gear chooses it too and opens its knobs in a popover. The knobs set for an option are remembered while the
@@ -48,7 +45,7 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
   const tag = space.tag ?? 'kind'
   const names = Object.keys(space.options)
   const current = ((): string => {
-    const named = recordOf(value)[tag]
+    const named = asModeConfig(value)[tag]
     return typeof named === 'string' && named in space.options ? named : (space.default ?? (names[0] as string))
   })()
   // The knobs last set for each option, so that coming back to one finds its settings as they were.
@@ -57,10 +54,10 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
   const anchors = useRef<Record<string, HTMLButtonElement | null>>({})
   const knobsOf = (name: string): Readonly<Record<string, SpaceValue>> => {
     if (name === current) {
-      const { [tag]: _tag, ...rest } = recordOf(value)
+      const { [tag]: _tag, ...rest } = asModeConfig(value)
       return rest
     }
-    return memory[name] ?? recordOf(defaults(space.options[name] as Space))
+    return memory[name] ?? asModeConfig(defaults(space.options[name] as Space))
   }
   const choose = (name: string, knobs: Readonly<Record<string, SpaceValue>> = knobsOf(name)): void => {
     setMemory((m) => ({ ...m, [name]: knobs }))
@@ -135,7 +132,7 @@ export function ModelSelector<V extends SpaceValue>(props: ModelSelectorProps<V>
                   <SpaceControls
                     space={space.options[name] as Space}
                     value={knobsOf(name)}
-                    onChange={(knobs) => choose(name, recordOf(knobs))}
+                    onChange={(knobs) => choose(name, asModeConfig(knobs))}
                     disabled={disabled}
                   />
                 </div>

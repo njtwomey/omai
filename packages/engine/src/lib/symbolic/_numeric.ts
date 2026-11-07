@@ -5,8 +5,7 @@
  * numerics).
  */
 
-import { MdmlError } from '../base/index.ts'
-import type { Complex } from '../exposition/index.ts'
+import { type Complex, cadd, cdiv, cexp, clog, cmul, MdmlError } from '../base/index.ts'
 import { children } from './_node.ts'
 import { KNOWN_FUNCTIONS } from './_order.ts'
 import type { Expr } from './expr.ts'
@@ -14,17 +13,6 @@ import type { Expr } from './expr.ts'
 /** Numeric implementations supplied by the caller for functions symbolic cannot evaluate itself (erf, gamma, f). */
 export type NumericFunctions = Readonly<Record<string, (...args: number[]) => number>>
 
-const cadd = (a: Complex, b: Complex): Complex => [a[0] + b[0], a[1] + b[1]]
-const cmul = (a: Complex, b: Complex): Complex => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]
-function cdiv(a: Complex, b: Complex): Complex {
-  const d = b[0] * b[0] + b[1] * b[1]
-  return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]
-}
-const cexp = (a: Complex): Complex => {
-  const r = Math.exp(a[0])
-  return [r * Math.cos(a[1]), r * Math.sin(a[1])]
-}
-const clog = (a: Complex): Complex => [Math.log(Math.hypot(a[0], a[1])), Math.atan2(a[1], a[0])]
 function csqrt(a: Complex): Complex {
   const r = Math.hypot(a[0], a[1])
   const re = Math.sqrt((r + a[0]) / 2)

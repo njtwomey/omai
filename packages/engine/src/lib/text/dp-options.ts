@@ -5,16 +5,7 @@
  * and grids, and builds the options of `dpAlgorithm`.
  */
 
-import {
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../space/index.ts'
+import { dict, int, knobOption, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import type { DpOptions } from './dp-tables.ts'
 
 /** What a table computes, for validity rules and selectors. */
@@ -31,15 +22,7 @@ function kind(
   space: ReturnType<typeof dict>,
   build: (k: (name: string) => number) => DpOptions,
 ): Option<DpOptions, DpKindProperties> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 /**

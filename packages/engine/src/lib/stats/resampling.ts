@@ -5,7 +5,15 @@
  * and bootstrap are also traced algorithms with explicit keys.
  */
 
-import { type Alternative, type Estimate, MdmlError, meanOf, type TestResult, varianceOf } from '../base/index.ts'
+import {
+  type Alternative,
+  type Estimate,
+  factorialOf,
+  MdmlError,
+  meanOf,
+  type TestResult,
+  varianceOf,
+} from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key, permutation, randint } from '../random/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -57,12 +65,6 @@ function binomialCoefficient(n: number, k: number): number {
   return Math.round(r)
 }
 
-function factorial(n: number): number {
-  let r = 1
-  for (let i = 2; i <= n; i++) r *= i
-  return r
-}
-
 // The lexicographic combination of `m` of the items 0..N-1 with rank r.
 function unrankCombination(N: number, m: number, rank: number): number[] {
   const out: number[] = []
@@ -84,7 +86,7 @@ function unrankPermutation(n: number, rank: number): number[] {
   const out: number[] = []
   let r = rank
   for (let i = n; i >= 1; i--) {
-    const f = factorial(i - 1)
+    const f = factorialOf(i - 1)
     const j = Math.floor(r / f)
     r -= j * f
     out.push(items.splice(j, 1)[0] ?? 0)
@@ -106,9 +108,9 @@ function arrangements(type: PermutationType, data: readonly Float64Array[]): num
   }
   if (type === 'samples') {
     const n = sizes[0] ?? 0
-    return data.length === 1 ? 2 ** n : factorial(data.length) ** n
+    return data.length === 1 ? 2 ** n : factorialOf(data.length) ** n
   }
-  return sizes.reduce((s, n) => s * factorial(n), 1)
+  return sizes.reduce((s, n) => s * factorialOf(n), 1)
 }
 
 /** Build the samples of arrangement `rank` (exact) or of a random arrangement (key). */
@@ -152,7 +154,7 @@ function arrange(type: PermutationType, data: readonly Float64Array[], rank: num
     const k = data.length
     const out = data.map(() => new Float64Array(n))
     let r = exact ? rank : 0
-    const kf = factorial(k)
+    const kf = factorialOf(k)
     for (let i = 0; i < n; i++) {
       const p = exact ? unrankPermutation(k, r % kf) : Array.from(permutation(foldIn(rank, i), k).data)
       if (exact) r = Math.floor(r / kf)
@@ -166,8 +168,8 @@ function arrange(type: PermutationType, data: readonly Float64Array[], rank: num
   let r = exact ? rank : 0
   return data.map((d, g) => {
     const n = d.length
-    const p = exact ? unrankPermutation(n, r % factorial(n)) : Array.from(permutation(foldIn(rank, g), n).data)
-    if (exact) r = Math.floor(r / factorial(n))
+    const p = exact ? unrankPermutation(n, r % factorialOf(n)) : Array.from(permutation(foldIn(rank, g), n).data)
+    if (exact) r = Math.floor(r / factorialOf(n))
     return Float64Array.from(p, (i) => d[i] ?? 0)
   })
 }

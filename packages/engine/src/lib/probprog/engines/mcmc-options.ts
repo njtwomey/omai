@@ -4,35 +4,9 @@
  * unconstrained scale, or from the prior draw as it is). Each table is one `union` space for controls and grids.
  */
 
-import {
-  bool,
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../../space/index.ts'
+import { bool, dict, int, type OptionTable, optionTable, plainOption, real } from '../../space/index.ts'
 import { type InitStrategy, initToFeasible, initToUniform } from '../density.ts'
 import type { McmcOptions } from './nuts.ts'
-
-function option<T>(
-  description: string,
-  space: ReturnType<typeof dict>,
-  build: (k: (name: string) => number | boolean) => T,
-): Option<T, Record<string, never>> {
-  return {
-    description,
-    properties: {},
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number | boolean)
-    },
-  }
-}
 
 const commonSpaces = () => ({
   numChains: int(1, 16, { default: 2, label: 'chains' }),
@@ -65,12 +39,12 @@ const shared = (k: (name: string) => number | boolean): McmcOptions => ({
  */
 export const mcmcKernels: OptionTable<McmcOptions, Record<string, never>> = optionTable(
   {
-    nuts: option<McmcOptions>(
+    nuts: plainOption<McmcOptions, number | boolean>(
       'the No-U-Turn sampler',
       dict({ ...commonSpaces(), maxTreeDepth: int(1, 15, { default: 10, label: 'tree depth cap' }) }),
       (k) => ({ ...shared(k), algorithm: 'nuts', maxTreeDepth: k('maxTreeDepth') as number }),
     ),
-    hmc: option<McmcOptions>(
+    hmc: plainOption<McmcOptions, number | boolean>(
       'Hamiltonian Monte Carlo with a fixed number of leapfrog steps',
       dict({ ...commonSpaces(), numSteps: int(1, 200, { default: 10, label: 'leapfrog steps' }) }),
       (k) => ({ ...shared(k), algorithm: 'hmc', numSteps: k('numSteps') as number }),
@@ -92,12 +66,12 @@ export const mcmcKernels: OptionTable<McmcOptions, Record<string, never>> = opti
  */
 export const initStrategies: OptionTable<InitStrategy, Record<string, never>> = optionTable(
   {
-    uniform: option<InitStrategy>(
+    uniform: plainOption<InitStrategy, number | boolean>(
       'uniform in a box on the unconstrained scale',
       dict({ radius: real(0.1, 10, { default: 2, label: 'radius' }) }),
       (k) => initToUniform({ radius: k('radius') as number }),
     ),
-    prior: option<InitStrategy>('the prior draw', dict({}), () => initToFeasible()),
+    prior: plainOption<InitStrategy, number | boolean>('the prior draw', dict({}), () => initToFeasible()),
   },
   { default: 'uniform', label: 'chain start', description: 'Where each chain begins.' },
 )

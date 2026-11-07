@@ -1,7 +1,7 @@
 // Expression size measures used to choose between rewrites (a version of SymPy's `count_ops`), and a numeric
 // equivalence check at fixed sample points used to guard heuristic rewrites.
 
-import type { Complex } from '../exposition/index.ts'
+import type { Complex } from '../base/index.ts'
 import { isNumeric } from './_canon.ts'
 import { children } from './_node.ts'
 import { evalComplex, freeNames } from './_numeric.ts'

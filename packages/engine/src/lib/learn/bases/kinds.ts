@@ -6,7 +6,7 @@
  * the scores for outlier detectors. Adding a probe to every classifier is one line here.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, MdmlError, toRows } from '../../base/index.ts'
 import { type Tensor, toFlat } from '../../tensor/index.ts'
 import { type DerivedSource, derived } from '../../trace/index.ts'
 import type { EstimatorKind, Fitted, LearnData } from '../estimator.ts'
@@ -32,9 +32,7 @@ export type KindPath =
 const rows = (t: Tensor): number[][] => {
   const d = t.shape[1] ?? 1
   const flat = toFlat(t)
-  const out: number[][] = []
-  for (let i = 0; i < flat.length; i += d) out.push(flat.slice(i, i + d))
-  return out
+  return toRows(flat, Math.ceil(flat.length / d), d)
 }
 
 function verb<K extends 'predict' | 'transform' | 'decisionFunction'>(fitted: Fitted, name: K): NonNullable<Fitted[K]> {

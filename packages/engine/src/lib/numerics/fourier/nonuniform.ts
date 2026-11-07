@@ -4,8 +4,7 @@
  * evaluating a spectrum on a chosen band (scipy.signal `czt` and `zoom_fft`).
  */
 
-import { MdmlError } from '../../base/index.ts'
-import type { Complex } from '../../exposition/index.ts'
+import { type Complex, MdmlError } from '../../base/index.ts'
 import {
   add,
   type ComplexLike,
@@ -31,7 +30,17 @@ import {
 } from '../../tensor/index.ts'
 import { fft, ifft } from './fft.ts'
 
-/** The integer modes k = -floor(M/2) .. ceil(M/2) - 1, as FINUFFT's default ordering. */
+/**
+ * The integer modes k = -floor(M/2) .. ceil(M/2) - 1, as FINUFFT's default ordering.
+ *
+ * @param m - Number of modes M.
+ * @returns The modes, in increasing order.
+ * @example
+ * ```ts
+ * import { modes } from 'mdml-engine/numerics/fourier'
+ * modes(4) // => [-2, -1, 0, 1]
+ * ```
+ */
 export function modes(m: number): number[] {
   return Array.from({ length: m }, (_, i) => i - Math.floor(m / 2))
 }

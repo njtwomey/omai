@@ -12,6 +12,8 @@ import {
   defaults,
   dict,
   int,
+  type Knobs,
+  knobOption,
   type Option,
   type OptionTable,
   optionTable,
@@ -45,21 +47,13 @@ export interface HazardProperties {
   readonly allowsShort: boolean
 }
 
-/** The values of a configuration's knobs, the option's defaults filling those not given. */
-type Knobs = (name: string) => number
-
-const knobsOf = (space: DictSpace, config: Readonly<Record<string, SpaceValue>>): Knobs => {
-  const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-  return (name) => full[name] as number
-}
-
 function model(
   description: string,
   properties: SegmentModelProperties,
   space: DictSpace,
   build: (k: Knobs) => ConjugateModel,
 ): Option<ConjugateModel, SegmentModelProperties> {
-  return { description, properties, space, make: (config) => build(knobsOf(space, config)) }
+  return knobOption(description, properties, space, build)
 }
 
 function hazard(
@@ -68,7 +62,7 @@ function hazard(
   space: DictSpace,
   build: (k: Knobs) => Hazard,
 ): Option<Hazard, HazardProperties> {
-  return { description, properties, space, make: (config) => build(knobsOf(space, config)) }
+  return knobOption(description, properties, space, build)
 }
 
 const sigma = real(0.001, 100, { log: true, default: 1, label: 'noise standard deviation' })

@@ -5,7 +5,7 @@
  */
 
 import { MdmlError } from 'mdml-engine/base'
-import { defaults, type Space, type SpaceValue } from 'mdml-engine/space'
+import { asModeConfig, defaults, type Space, type SpaceValue } from 'mdml-engine/space'
 import type { Config } from 'mdml-engine/trace'
 import type { ControlPath } from '../controls/space-controls.ts'
 import { settleValue, valueAt, withValueAt } from '../controls/space-controls.ts'
@@ -23,23 +23,20 @@ export interface SlotOptions {
   readonly knobs?: Readonly<Record<string, Readonly<Record<string, SpaceValue>>>>
 }
 
-const recordOf = (v: SpaceValue | undefined): Readonly<Record<string, SpaceValue>> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Readonly<Record<string, SpaceValue>>) : {}
-
 // The space at a path of a value: dict keys, and through a union the option the value names (else its default).
 function spaceAt(space: Space, value: SpaceValue, path: ControlPath): Space | undefined {
   let s: Space | undefined = space
   let v: SpaceValue | undefined = value
   for (const key of path) {
     if (s?.kind === 'union') {
-      const named: SpaceValue | undefined = recordOf(v)[s.tag ?? 'kind']
+      const named: SpaceValue | undefined = asModeConfig(v)[s.tag ?? 'kind']
       const option: string =
         typeof named === 'string' && named in s.options ? named : (s.default ?? Object.keys(s.options)[0] ?? '')
       s = s.options[option]
     }
     if (s?.kind !== 'dict') return undefined
     s = s.spaces[String(key)]
-    v = recordOf(v)[String(key)]
+    v = asModeConfig(v)[String(key)]
   }
   return s
 }
@@ -64,7 +61,10 @@ export function variantsOfSlot<C extends Config>(
   options: SlotOptions = {},
 ): Variant<C>[] {
   const at: ControlPath = typeof path === 'string' ? path.split('.') : path
-  const start = settleValue(space, { ...recordOf(defaults(space)), ...(base as Readonly<Record<string, SpaceValue>>) })
+  const start = settleValue(space, {
+    ...asModeConfig(defaults(space)),
+    ...(base as Readonly<Record<string, SpaceValue>>),
+  })
   const slot = spaceAt(space, start, at)
   if (slot?.kind !== 'union')
     throw new MdmlError('value', `variantsOfSlot: '${at.join('.')}' is not a union of the space`)
@@ -73,10 +73,10 @@ export function variantsOfSlot<C extends Config>(
   const names = (options.only ?? Object.keys(slot.options)).filter(
     (n) => n in slot.options && (options.admissible?.(n) ?? true),
   )
-  const kept = recordOf(valueAt(start, at))
+  const kept = asModeConfig(valueAt(start, at))
   return names.map((name): Variant<C> => {
     // The option's knobs: those the page holds for it, else the base's when it is the base's own, over the defaults.
-    const own = recordOf(defaults(slot.options[name] as Space))
+    const own = asModeConfig(defaults(slot.options[name] as Space))
     const knobs = { ...own, ...(options.knobs?.[name] ?? (kept[tag] === name ? kept : {})) }
     const whole = withValueAt(space, start, at, { ...knobs, [tag]: name })
     return {

@@ -4,7 +4,7 @@
  * (Lloyd's algorithm in a kernel's feature space). Each is a traced algorithm with an estimator.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { MdmlError, maxOf, toRows } from '../base/index.ts'
 import { type PairwiseKernelMetric, pairwiseKernels } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { eigh } from '../numerics/linalg/index.ts'
@@ -12,7 +12,6 @@ import { foldIn, type Key } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
-import { toRows } from './_support.ts'
 import { initialCentres, lloydAlgorithm, nearestCentres, type Rows } from './kmeans.ts'
 
 const dist = (a: ArrayLike<number>, b: ArrayLike<number>): number => {

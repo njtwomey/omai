@@ -5,17 +5,7 @@
  * function and a start from a configuration.
  */
 
-import {
-  bool,
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../space/index.ts'
+import { bool, dict, int, knobOption, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import type { LineFunction, LineStart } from './line-search.ts'
 import {
@@ -44,15 +34,7 @@ function rule(
   space: ReturnType<typeof dict>,
   build: (k: Knobs) => LineSearchBuilder,
 ): Option<LineSearchBuilder, LineSearchRuleProperties> {
-  return {
-    description,
-    properties,
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number | boolean)
-    },
-  }
+  return knobOption(description, properties, space, build)
 }
 
 /**

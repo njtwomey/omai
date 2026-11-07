@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { maxOf, minOf, quantileOf, range } from './index.ts'
+import { factorialOf, gcdOf, maxOf, minOf, quantileOf, range, toRows } from './index.ts'
 
 describe('numbers at degenerate arguments', () => {
   it('rejects a zero step and a quantile level outside [0, 1], as numpy and the tensor arange do', () => {
@@ -30,5 +30,35 @@ describe('numbers at degenerate arguments', () => {
       expect(maxOf(xs)).toBe(Math.max(...xs))
       expect(minOf(xs)).toBe(Math.min(...xs))
     }
+  })
+
+  it('toRows reshapes a flat row-major array of any array type, reading a missing entry as 0', () => {
+    expect(toRows([1, 2, 3, 4, 5, 6], 2, 3)).toEqual([
+      [1, 2, 3],
+      [4, 5, 6],
+    ])
+    expect(toRows(Float64Array.of(1, 2, 3, 4), 2, 2)).toEqual([
+      [1, 2],
+      [3, 4],
+    ])
+    expect(toRows([1, 2, 3], 2, 2)).toEqual([
+      [1, 2],
+      [3, 0],
+    ])
+    expect(toRows([], 0, 3)).toEqual([])
+    expect(toRows([], 2, 0)).toEqual([[], []])
+  })
+
+  it('factorialOf is the running product (the loops it replaces) and gcdOf is Euclid on absolute values', () => {
+    const loop = (n: number): number => {
+      let r = 1
+      for (let i = 2; i <= n; i++) r *= i
+      return r
+    }
+    for (const n of [0, 1, 2, 5, 10, 20, 22, 23, 50, 100, 170]) expect(factorialOf(n)).toBe(loop(n))
+    expect([factorialOf(171), factorialOf(-1), factorialOf(2.5)]).toEqual([Infinity, Number.NaN, Number.NaN])
+    expect([gcdOf(12, 18), gcdOf(12, -18), gcdOf(0, 5), gcdOf(7, 0), gcdOf(0, 0), gcdOf(17, 5)]).toEqual([
+      6, 6, 5, 7, 0, 1,
+    ])
   })
 })

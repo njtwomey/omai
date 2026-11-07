@@ -5,7 +5,7 @@
  * its penalty matrices and a way to evaluate it at new data.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { factorialOf, MdmlError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { dgesv, dsyev } from '../../numerics/linalg/index.ts'
 import { gamma as gammaFn } from '../../numerics/special/index.ts'
@@ -512,8 +512,9 @@ function thinPlateKernel(m: number, d: number, s = 0): Kernel {
   let c: number
   if (s === 0) {
     if (d % 2 === 0)
-      c = (-1) ** (m + 1 + d / 2) / (2 ** (2 * m - 1) * Math.PI ** (d / 2) * factorial(m - 1) * factorial(m - d / 2))
-    else c = item(gammaFn(d / 2 - m)) / (2 ** (2 * m) * Math.PI ** (d / 2) * factorial(m - 1))
+      c =
+        (-1) ** (m + 1 + d / 2) / (2 ** (2 * m - 1) * Math.PI ** (d / 2) * factorialOf(m - 1) * factorialOf(m - d / 2))
+    else c = item(gammaFn(d / 2 - m)) / (2 ** (2 * m) * Math.PI ** (d / 2) * factorialOf(m - 1))
   } else c = 1
   const value = (r: number): number => (r <= 0 ? 0 : even ? c * r ** p * Math.log(r) : c * r ** p)
   const derivative =
@@ -526,12 +527,6 @@ function thinPlateKernel(m: number, d: number, s = 0): Kernel {
         : c * p * (p - 1) * r ** (p - 2)
     }
   return Object.assign(value, { derivative })
-}
-
-function factorial(n: number): number {
-  let r = 1
-  for (let i = 2; i <= n; i++) r *= i
-  return r
 }
 
 /** The monomials of total degree below m in d variables (the thin-plate null space). */

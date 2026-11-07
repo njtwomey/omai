@@ -5,37 +5,9 @@
  * Each table is one `union` space for controls and grids, and builds the options of the warm-up algorithm.
  */
 
-import {
-  bool,
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../space/index.ts'
+import { bool, dict, int, type Knobs, type OptionTable, optionTable, plainOption, real } from '../space/index.ts'
 import type { WindowAdaptationOptions } from './hamiltonian/adaptation.ts'
 import type { RandomWalkAdaptationOptions } from './metropolis.ts'
-
-type Knobs = (name: string) => number | boolean
-
-function option<T>(
-  description: string,
-  space: ReturnType<typeof dict>,
-  build: (k: Knobs) => T,
-): Option<T, Record<string, never>> {
-  return {
-    description,
-    properties: {},
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number | boolean)
-    },
-  }
-}
 
 const windowKnobs = (): ReturnType<typeof dict> =>
   dict({
@@ -50,7 +22,7 @@ const windowKnobs = (): ReturnType<typeof dict> =>
     kappa: real(0.51, 1, { default: 0.75, label: 'dual averaging exponent' }),
   })
 
-const windowOptions = (k: Knobs, dense: boolean): WindowAdaptationOptions => ({
+const windowOptions = (k: Knobs<number | boolean>, dense: boolean): WindowAdaptationOptions => ({
   dense,
   targetAcceptance: k('targetAcceptance') as number,
   initialBuffer: k('initialBuffer') as number,
@@ -77,8 +49,14 @@ const windowOptions = (k: Knobs, dense: boolean): WindowAdaptationOptions => ({
  */
 export const windowAdaptationForms: OptionTable<WindowAdaptationOptions, Record<string, never>> = optionTable(
   {
-    diagonal: option('estimate one variance per coordinate', windowKnobs(), (k) => windowOptions(k, false)),
-    dense: option('estimate the full covariance', windowKnobs(), (k) => windowOptions(k, true)),
+    diagonal: plainOption<WindowAdaptationOptions, number | boolean>(
+      'estimate one variance per coordinate',
+      windowKnobs(),
+      (k) => windowOptions(k, false),
+    ),
+    dense: plainOption<WindowAdaptationOptions, number | boolean>('estimate the full covariance', windowKnobs(), (k) =>
+      windowOptions(k, true),
+    ),
   },
   {
     default: 'diagonal',
@@ -100,12 +78,12 @@ export const windowAdaptationForms: OptionTable<WindowAdaptationOptions, Record<
  */
 export const randomWalkAdaptations: OptionTable<RandomWalkAdaptationOptions, Record<string, never>> = optionTable(
   {
-    'scale-only': option<RandomWalkAdaptationOptions>(
+    'scale-only': plainOption<RandomWalkAdaptationOptions, number | boolean>(
       'Robbins-Monro on the log proposal scale only',
       dict({ targetAcceptance: real(0.05, 0.9, { default: 0.234, label: 'target acceptance' }) }),
       (k) => ({ targetAcceptance: k('targetAcceptance') as number, adaptCovariance: false }),
     ),
-    'scale-and-shape': option<RandomWalkAdaptationOptions>(
+    'scale-and-shape': plainOption<RandomWalkAdaptationOptions, number | boolean>(
       'also learn the proposal covariance from the second half of warm-up',
       dict({ targetAcceptance: real(0.05, 0.9, { default: 0.234, label: 'target acceptance' }) }),
       (k) => ({ targetAcceptance: k('targetAcceptance') as number, adaptCovariance: true }),

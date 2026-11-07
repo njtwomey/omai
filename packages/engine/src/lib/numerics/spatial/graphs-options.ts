@@ -5,17 +5,7 @@
  * is the caller's).
  */
 
-import {
-  choice,
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../../space/index.ts'
+import { choice, dict, fillKnobs, int, type Option, type OptionTable, optionTable, real } from '../../space/index.ts'
 import type { Metric } from '../geometry/index.ts'
 import type { HnswOptions } from './graphs.ts'
 
@@ -42,7 +32,7 @@ function profile(description: string, m: number, ef: number): Option<HnswProfile
     properties: { m },
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       return {
         m: full['m'] as number,
         efConstruction: full['efConstruction'] as number,

@@ -4,6 +4,7 @@
  * reconstructions through a set of components, and products and pseudo-inverses of row arrays.
  */
 
+import { toRows } from '../base/index.ts'
 import type { MatrixView } from '../learn/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
@@ -95,8 +96,7 @@ export function reconstruct(
 /** Rows of a tensor as plain arrays. */
 export function rowsOf(t: Tensor): number[][] {
   const [n = 0, k = 0] = t.shape
-  const flat = toFlat(t)
-  return Array.from({ length: n }, (_, i) => flat.slice(i * k, (i + 1) * k))
+  return toRows(toFlat(t), n, k)
 }
 
 /** A matrix product of row arrays, through the tensor matmul. */

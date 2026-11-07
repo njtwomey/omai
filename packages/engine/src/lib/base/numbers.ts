@@ -248,6 +248,77 @@ export function argminOf(xs: ArrayLike<number>): number {
   return best
 }
 
+const FACTORIALS: number[] = [1]
+for (let i = 1; i <= 170; i++) FACTORIALS.push((FACTORIALS[i - 1] ?? 1) * i)
+
+/**
+ * n! as a double, by the running product (exact up to 22!, rounded after that).
+ *
+ * @param n - A non-negative integer.
+ * @returns n!, `Infinity` above 170 and `NaN` for a negative or non-integer argument.
+ * @example
+ * ```ts
+ * import { factorialOf } from 'mdml-engine/base'
+ * factorialOf(5) // => 120
+ * ```
+ */
+export function factorialOf(n: number): number {
+  if (!Number.isInteger(n) || n < 0) return Number.NaN
+  return n > 170 ? Infinity : (FACTORIALS[n] ?? Infinity)
+}
+
+/**
+ * The greatest common divisor of two integers, by Euclid's algorithm (non-negative; the gcd of 0 and 0 is 0).
+ *
+ * @param a - An integer.
+ * @param b - An integer.
+ * @returns The gcd.
+ * @example
+ * ```ts
+ * import { gcdOf } from 'mdml-engine/base'
+ * gcdOf(12, -18) // => 6
+ * ```
+ */
+export function gcdOf(a: number, b: number): number {
+  let x = Math.abs(a)
+  let y = Math.abs(b)
+  while (y) [x, y] = [y, x % y]
+  return x
+}
+
+/**
+ * The logistic function 1 / (1 + exp(-x)), evaluated from the side where the exponential cannot overflow, so it is
+ * accurate in both tails.
+ *
+ * @param x - The argument.
+ * @returns The logistic of `x`, in [0, 1].
+ * @example
+ * ```ts
+ * import { sigmoidOf } from 'mdml-engine/base'
+ * sigmoidOf(0) // => 0.5
+ * ```
+ */
+export function sigmoidOf(x: number): number {
+  return x >= 0 ? 1 / (1 + Math.exp(-x)) : Math.exp(x) / (1 + Math.exp(x))
+}
+
+/**
+ * Whether every entry of a list is finite (a missing entry is not).
+ *
+ * @param xs - The numbers.
+ * @returns `true` for an empty list and when no entry is NaN or infinite.
+ * @example
+ * ```ts
+ * import { allFinite } from 'mdml-engine/base'
+ * allFinite([1, 2, 3]) // => true
+ * allFinite([1, Infinity]) // => false
+ * ```
+ */
+export function allFinite(xs: ArrayLike<number>): boolean {
+  for (let i = 0; i < xs.length; i++) if (!Number.isFinite(xs[i] ?? Number.NaN)) return false
+  return true
+}
+
 /**
  * The integers `start, start + step, ...` below `stop`.
  *
@@ -358,6 +429,23 @@ export function logAddExp(a: number, b: number): number {
   if (b === Number.NEGATIVE_INFINITY) return a
   if (a === Number.POSITIVE_INFINITY || b === Number.POSITIVE_INFINITY) return Number.POSITIVE_INFINITY
   return a > b ? a + Math.log1p(Math.exp(b - a)) : b + Math.log1p(Math.exp(a - b))
+}
+
+/**
+ * A flat row-major array as `n` rows of `d` numbers (an entry past the end of the array reads as 0).
+ *
+ * @param flat - The entries, row by row.
+ * @param n - The number of rows.
+ * @param d - The number of columns.
+ * @returns The rows, as new arrays.
+ * @example
+ * ```ts
+ * import { toRows } from 'mdml-engine/base'
+ * toRows([1, 2, 3, 4, 5, 6], 2, 3) // => [[1, 2, 3], [4, 5, 6]]
+ * ```
+ */
+export function toRows(flat: ArrayLike<number>, n: number, d: number): number[][] {
+  return Array.from({ length: n }, (_, i) => Array.from({ length: d }, (_, j) => flat[i * d + j] ?? 0))
 }
 
 /**

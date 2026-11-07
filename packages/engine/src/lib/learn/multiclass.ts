@@ -7,7 +7,7 @@
  * how its scores combine.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { type DictSpace, dict, real } from '../space/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -111,13 +111,6 @@ function finish(
   }
 }
 
-const argmaxRow = (row: ArrayLike<number>): number => {
-  let best = 0
-  for (let c = 1; c < row.length; c++)
-    if ((row[c] ?? Number.NEGATIVE_INFINITY) > (row[best] ?? Number.NEGATIVE_INFINITY)) best = c
-  return best
-}
-
 /** One-versus-rest plan: the class index each problem separates from the others. */
 export type OneVsRestPlan = { readonly positives: number[] }
 
@@ -180,7 +173,7 @@ export function oneVsRest(
           }
           const s = scores(x)
           return matrix(
-            Array.from({ length: n }, (_, r) => p.classes[argmaxRow(s.subarray(r * k, (r + 1) * k))] ?? 0),
+            Array.from({ length: n }, (_, r) => p.classes[argmaxOf(s.subarray(r * k, (r + 1) * k))] ?? 0),
             [n],
           )
         }
@@ -287,7 +280,7 @@ export function oneVsOne(
               [n],
             )
           return matrix(
-            Array.from({ length: n }, (_, r) => p.classes[argmaxRow(y.subarray(r * k, (r + 1) * k))] ?? 0),
+            Array.from({ length: n }, (_, r) => p.classes[argmaxOf(y.subarray(r * k, (r + 1) * k))] ?? 0),
             [n],
           )
         }
@@ -397,7 +390,7 @@ export function outputCode(
           return matrix(
             Array.from(
               { length: n },
-              (_, r) => p.classes[argmaxRow(dist.subarray(r * k, (r + 1) * k).map((v) => -v))] ?? 0,
+              (_, r) => p.classes[argmaxOf(dist.subarray(r * k, (r + 1) * k).map((v) => -v))] ?? 0,
             ),
             [n],
           )
@@ -547,7 +540,7 @@ export function nestedDichotomies(
         const predict = (x: TensorLike): Tensor => {
           const { n, p: pr } = logProba(x)
           return matrix(
-            Array.from({ length: n }, (_, r) => p.classes[argmaxRow(pr.subarray(r * k, (r + 1) * k))] ?? 0),
+            Array.from({ length: n }, (_, r) => p.classes[argmaxOf(pr.subarray(r * k, (r + 1) * k))] ?? 0),
             [n],
           )
         }

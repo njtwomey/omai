@@ -5,7 +5,7 @@
  */
 
 import { type Json, MdmlError } from '../base/index.ts'
-import { dict, type OptionTable, optionTable } from '../space/index.ts'
+import { dict, knobOption, type OptionTable, optionTable } from '../space/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -15,7 +15,6 @@ import {
   scalar,
   tensor,
 } from '../trace/index.ts'
-import { knobOption } from './_options.ts'
 import type { Adjacency, Graph, GraphRunOptions, NodeId } from './graph.ts'
 import { nodeIndex } from './graph.ts'
 import { IndexedQueue } from './structures.ts'

@@ -26,7 +26,19 @@ export interface Delaunay {
   readonly findSimplex: (p: Point2) => number
 }
 
-/** Twice the signed area of (a, b, c): positive when counter-clockwise. */
+/**
+ * Twice the signed area of (a, b, c): positive when counter-clockwise.
+ *
+ * @param a - The first vertex.
+ * @param b - The second vertex.
+ * @param c - The third vertex.
+ * @returns The signed area times two.
+ * @example
+ * ```ts
+ * import { orient } from 'mdml-engine/numerics/geometry'
+ * orient([0, 0], [1, 0], [0, 1]) // => 1
+ * ```
+ */
 export function orient(a: Point2, b: Point2, c: Point2): number {
   return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
 }
@@ -77,6 +89,18 @@ function inCircleSign(a: Point2, b: Point2, c: Point2, d: Point2): number {
  * outside, zero when on it, with the sign exact for any finite points: the determinant is evaluated in floating point
  * and, when it is within Shewchuk's error bound of zero, again in integers, so that cocircular points (a regular polygon)
  * are never decided by rounding noise.
+ *
+ * @param a - The first vertex of the triangle.
+ * @param b - The second vertex.
+ * @param c - The third vertex.
+ * @param d - The query point.
+ * @returns A positive number when `d` is inside, negative when outside, zero when on the circle.
+ * @example
+ * ```ts
+ * import { inCircle } from 'mdml-engine/numerics/geometry'
+ * Math.sign(inCircle([0, 0], [1, 0], [0, 1], [0.5, 0.5])) // => 1
+ * Math.sign(inCircle([0, 0], [1, 0], [0, 1], [2, 2])) // => -1
+ * ```
  */
 export function inCircle(a: Point2, b: Point2, c: Point2, d: Point2): number {
   const adx = a[0] - d[0]
@@ -97,7 +121,19 @@ export function inCircle(a: Point2, b: Point2, c: Point2, d: Point2): number {
   return inCircleSign(a, b, c, d) * (Math.abs(det) || Number.MIN_VALUE)
 }
 
-/** The circumcentre of a triangle. */
+/**
+ * The circumcentre of a triangle.
+ *
+ * @param a - The first vertex.
+ * @param b - The second vertex.
+ * @param c - The third vertex (not collinear with the others).
+ * @returns The point equally far from the three vertices.
+ * @example
+ * ```ts
+ * import { circumcentre } from 'mdml-engine/numerics/geometry'
+ * circumcentre([0, 0], [2, 0], [0, 2]) // => [1, 1]
+ * ```
+ */
 export function circumcentre(a: Point2, b: Point2, c: Point2): Point2 {
   const d = 2 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]))
   const a2 = a[0] * a[0] + a[1] * a[1]
@@ -109,7 +145,18 @@ export function circumcentre(a: Point2, b: Point2, c: Point2): Point2 {
   ]
 }
 
-/** Points `[n, 2]` (tensor or nested arrays) as pairs. */
+/**
+ * Points `[n, 2]` (tensor or nested arrays) as pairs.
+ *
+ * @param points - Points `[n, 2]`.
+ * @returns The points as `[x, y]` pairs.
+ * @throws MdmlError with code `shape` unless the points are `[n, 2]`.
+ * @example
+ * ```ts
+ * import { toPoints } from 'mdml-engine/numerics/geometry'
+ * toPoints([[0, 1], [2, 3]]) // => [[0, 1], [2, 3]]
+ * ```
+ */
 export function toPoints(points: TensorLike | readonly Point2[]): Point2[] {
   if (Array.isArray(points) && (points.length === 0 || Array.isArray(points[0])))
     return (points as readonly Point2[]).map((p) => [p[0], p[1]])
@@ -397,7 +444,17 @@ export function alphaShape(
   return { edges, triangles }
 }
 
-/** Simplices as an int32 tensor `[m, 3]`. */
+/**
+ * Simplices as an int32 tensor `[m, 3]`.
+ *
+ * @param tri - A Delaunay triangulation.
+ * @returns The vertex indices of each triangle.
+ * @example
+ * ```ts
+ * import { delaunay, simplexTensor } from 'mdml-engine/numerics/geometry'
+ * simplexTensor(delaunay([[0, 0], [1, 0], [0, 1]])).shape // => [1, 3]
+ * ```
+ */
 export function simplexTensor(tri: Delaunay): Tensor {
   return fromStorage(Int32Array.from(tri.simplices.flat()), [tri.simplices.length, 3], 'int32')
 }

@@ -6,7 +6,7 @@
 
 import { runAlgorithm } from '../trace/index.ts'
 import { checkConstants, firstStep, probe } from './_line-search.ts'
-import { type ExtraCondition, type LineSearch, strongWolfe } from './line-search.ts'
+import { type ExtraCondition, type LineSearch, type LineSearchWarning, strongWolfe } from './line-search.ts'
 import { hagerZhangSearch } from './line-search-algorithms.ts'
 
 /** Options of {@link moreThuente}. */
@@ -116,6 +116,14 @@ function dcstep(
   return [stx, fx, dx, sty, fy, dy, stpf, brackt]
 }
 
+/** The messages of More-Thuente's warnings, for people: a solver reads the typed `warning`, not these. */
+const WARNING_MESSAGES: Readonly<Record<LineSearchWarning, string>> = {
+  rounding: 'rounding errors prevent progress',
+  xtol: 'xtol test satisfied',
+  alphaMax: 'step at alphaMax',
+  alphaMin: 'step at alphaMin',
+}
+
 /**
  * The More-Thuente line search (MINPACK-2 dcsrch, scipy's scalar_search_wolfe1 and the default of scipy's BFGS and
  * conjugate gradients): safeguarded cubic and quadratic steps that keep an interval of uncertainty and find a step
@@ -174,14 +182,14 @@ export function moreThuente(options: MoreThuenteOptions = {}): LineSearch {
       const g = pt.slope
       const ftest = finit + stp * gtest
       if (stage === 1 && f <= ftest && g >= 0) stage = 2
-      let warning: string | undefined
-      if (brackt && (stp <= stmin || stp >= stmax)) warning = 'rounding errors prevent progress'
-      if (brackt && stmax - stmin <= xtol * stmax) warning = 'xtol test satisfied'
-      if (stp === stpmax && f <= ftest && g <= gtest) warning = 'step at alphaMax'
-      if (stp === stpmin && (f > ftest || g >= gtest)) warning = 'step at alphaMin'
+      let warning: LineSearchWarning | undefined
+      if (brackt && (stp <= stmin || stp >= stmax)) warning = 'rounding'
+      if (brackt && stmax - stmin <= xtol * stmax) warning = 'xtol'
+      if (stp === stpmax && f <= ftest && g <= gtest) warning = 'alphaMax'
+      if (stp === stpmin && (f > ftest || g >= gtest)) warning = 'alphaMin'
       if (f <= ftest && Math.abs(g) <= gtol * -ginit) return p.finish(stp, f, g, 'strong Wolfe conditions satisfied')
       // A warning (as scipy, a failure) still reports the last trial step, which L-BFGS-B accepts.
-      if (warning !== undefined) return { ...p.finish(stp, f, g, warning), success: false }
+      if (warning !== undefined) return { ...p.finish(stp, f, g, WARNING_MESSAGES[warning]), success: false, warning }
       if (stage === 1 && f <= fx && f > ftest) {
         const r = dcstep(
           stx,

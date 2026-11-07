@@ -11,6 +11,7 @@
 import { LOG_2PI, MdmlError } from '../../base/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
+import { positive } from './_check.ts'
 
 /**
  * A conjugate model of the observations within a segment (with its prior), which gives an exact posterior predictive
@@ -105,10 +106,6 @@ function studentVariance(nu: number, scale2: number): number {
 
 function gaussianLog(y: number, mean: number, variance: number): number {
   return -0.5 * (LOG_2PI + Math.log(variance) + (y - mean) ** 2 / variance)
-}
-
-function positive(who: string, name: string, v: number): void {
-  if (!(v > 0 && Number.isFinite(v))) throw new MdmlError('value', `${who}: ${name} must be positive`)
 }
 
 function finite(who: string, name: string, v: number): void {

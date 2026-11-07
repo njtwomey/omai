@@ -6,7 +6,7 @@
  * rows in a tree of clustering features before it clusters them, is here too.
  */
 
-import { maxOf } from '../base/index.ts'
+import { maxOf, toRows } from '../base/index.ts'
 import { type DistanceAlias, type DistanceName, type DistanceOptions, distanceMatrix } from '../distances/index.ts'
 import { UnionFind } from '../graph/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
@@ -14,7 +14,7 @@ import { choice, dict, int, real } from '../space/index.ts'
 import { pearson } from '../stats/index.ts'
 import { fromStorage, type Tensor, type TensorLike, tensor } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
-import { canonicalLabels, toRows } from './_support.ts'
+import { canonicalLabels } from './_support.ts'
 import { nearestCentres } from './kmeans.ts'
 
 /** How the distance between two clusters is measured (scipy.cluster.hierarchy.linkage's methods). */

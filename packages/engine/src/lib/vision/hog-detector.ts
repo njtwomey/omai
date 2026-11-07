@@ -7,7 +7,7 @@
 
 // TODO: OpenCV's HOGDescriptor layout (Gaussian block weighting, trilinear voting) and its default people detector.
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { image } from '../signal/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
@@ -22,9 +22,6 @@ export interface HogDetector {
   /** The HOG options the weights were trained with (signal's hog defaults otherwise). */
   readonly hog?: image.HogOptions
 }
-
-const rowsOf = (data: Float64Array, h: number, w: number): number[][] =>
-  Array.from({ length: h }, (_, i) => Array.from(data.subarray(i * w, (i + 1) * w)))
 
 /**
  * HOG descriptors of windows (signal's hog), one row per window, for training a linear detector.
@@ -92,7 +89,7 @@ export function hogDetectMultiScale(
   const threshold = options.threshold ?? 0
   const boxes: number[][] = []
   const scores: number[] = []
-  const full = rowsOf(g.data, g.h, g.w)
+  const full = toRows(g.data, g.h, g.w)
   for (let level = 0, scale = 1; level < (options.maxLevels ?? Number.POSITIVE_INFINITY); level++, scale *= factor) {
     const h = Math.round(g.h / scale)
     const w = Math.round(g.w / scale)

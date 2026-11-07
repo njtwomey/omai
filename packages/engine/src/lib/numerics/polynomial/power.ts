@@ -105,7 +105,20 @@ export function polyfit(x: TensorLike, y: TensorLike, deg: number, w?: TensorLik
   return weightedFit(polyvander(x, deg), y, w)
 }
 
-/** Weighted least squares with column scaling (numpy's *fit functions). */
+/**
+ * Weighted least squares with column scaling (numpy's *fit functions).
+ *
+ * @param vander - The design matrix `[n, m]`.
+ * @param y - Targets `[n]` or `[n, k]`.
+ * @param w - Optional weights `[n]`.
+ * @returns The coefficients `[m]` or `[m, k]`.
+ * @example
+ * ```ts
+ * import { polyvander, weightedFit } from 'mdml-engine/numerics/polynomial'
+ * import { toArray } from 'mdml-engine/tensor'
+ * (toArray(weightedFit(polyvander([0, 1, 2], 1), [1, 3, 5])) as number[]).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2]
+ * ```
+ */
 export function weightedFit(vander: Value, y: TensorLike, w?: TensorLike): Value {
   const [yv] = promoteFloat(y) as [Value]
   let lhs = vander
@@ -136,7 +149,18 @@ function safeDivide(a: Value, b: Value): Value {
   return div(a, where(zero, 1, b))
 }
 
-/** Drop trailing (highest-degree) zero coefficients, keeping at least one. */
+/**
+ * Drop trailing (highest-degree) zero coefficients, keeping at least one.
+ *
+ * @param c - Coefficients, lowest first.
+ * @param tol - Coefficients of absolute value at most `tol` count as zero (default 0).
+ * @returns The trimmed coefficients.
+ * @example
+ * ```ts
+ * import { polytrim } from 'mdml-engine/numerics/polynomial'
+ * polytrim([1, 2, 0, 0]) // => [1, 2]
+ * ```
+ */
 export function polytrim(c: readonly number[], tol = 0): number[] {
   let n = c.length
   while (n > 1 && Math.abs(c[n - 1] ?? 0) <= tol) n--

@@ -5,7 +5,7 @@
  * matrices.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { type Complex, cadd, cdiv, cexp, clog, cmul, csub, MdmlError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -343,31 +343,18 @@ export const complexOps: {
 } = (() => {
   const of = (re: number, im = 0): ComplexNumber => ({ re, im })
   const lift = (b: ComplexNumber | number): ComplexNumber => (typeof b === 'number' ? of(b) : b)
-  const exp = (a: ComplexNumber): ComplexNumber => {
-    const r = Math.exp(a.re)
-    return of(r * Math.cos(a.im), r * Math.sin(a.im))
-  }
-  const log = (a: ComplexNumber): ComplexNumber => of(Math.log(Math.hypot(a.re, a.im)), Math.atan2(a.im, a.re))
-  const mul = (a: ComplexNumber, b0: ComplexNumber | number): ComplexNumber => {
-    const b = lift(b0)
-    return of(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re)
-  }
+  // The object form over the pair arithmetic of `base`.
+  const pair = (a: ComplexNumber): Complex => [a.re, a.im]
+  const object = ([re, im]: Complex): ComplexNumber => of(re, im)
+  const exp = (a: ComplexNumber): ComplexNumber => object(cexp(pair(a)))
+  const log = (a: ComplexNumber): ComplexNumber => object(clog(pair(a)))
+  const mul = (a: ComplexNumber, b: ComplexNumber | number): ComplexNumber => object(cmul(pair(a), pair(lift(b))))
   return {
     of,
-    add: (a, b0) => {
-      const b = lift(b0)
-      return of(a.re + b.re, a.im + b.im)
-    },
-    sub: (a, b0) => {
-      const b = lift(b0)
-      return of(a.re - b.re, a.im - b.im)
-    },
+    add: (a, b) => object(cadd(pair(a), pair(lift(b)))),
+    sub: (a, b) => object(csub(pair(a), pair(lift(b)))),
     mul,
-    div: (a, b0) => {
-      const b = lift(b0)
-      const d = b.re * b.re + b.im * b.im
-      return of((a.re * b.re + a.im * b.im) / d, (a.im * b.re - a.re * b.im) / d)
-    },
+    div: (a, b) => object(cdiv(pair(a), pair(lift(b)))),
     exp,
     log,
     sin: (a) => of(Math.sin(a.re) * Math.cosh(a.im), Math.cos(a.re) * Math.sinh(a.im)),

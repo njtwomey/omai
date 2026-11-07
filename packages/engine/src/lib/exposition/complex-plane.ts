@@ -5,11 +5,10 @@
  * probes it at each step to watch the poles move as a gain or a parameter changes.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { type Complex, MdmlError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
-/** A complex number, a point of the complex plane, as `[real, imaginary]`. */
-export type Complex = readonly [re: number, im: number]
+export type { Complex }
 
 /** One branch of a root locus: the path a pole takes as the parameter runs. */
 export interface LocusBranch {

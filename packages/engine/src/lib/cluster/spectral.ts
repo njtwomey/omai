@@ -4,7 +4,7 @@
  * (`graph/spectral.ts`), and k-means on the embedding, which separates clusters that are connected but not convex.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import { spectralEmbedding } from '../graph/index.ts'
 import { pairwiseKernels } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
@@ -13,7 +13,7 @@ import type { Key } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
-import { labelledPredict, toRows } from './_support.ts'
+import { labelledPredict } from './_support.ts'
 import { initialCentres, type LloydState, lloydAlgorithm } from './kmeans.ts'
 
 /** How the affinity graph is built: symmetrised k-nearest-neighbour connectivity, an RBF kernel, or given. */

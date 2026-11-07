@@ -5,7 +5,7 @@
  * median, Savitzky-Golay (local least-squares polynomials), moving average and exponentially weighted moving average.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { factorialOf, MdmlError } from '../../base/index.ts'
 import { convolve } from '../../numerics/convolution/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { type Lti, toSos, toTf } from '../../systems/index.ts'
@@ -588,12 +588,6 @@ function polyfitMatrix(t: readonly number[], order: number): number[][] {
   )
 }
 
-function factorial(n: number): number {
-  let f = 1
-  for (let i = 2; i <= n; i++) f *= i
-  return f
-}
-
 /**
  * Savitzky-Golay filter coefficients (scipy.signal.savgol_coeffs): the weights that evaluate (a derivative of) the
  * least-squares polynomial of a given order through a window at one point.
@@ -622,7 +616,7 @@ export function savgolCoeffs(windowLength: number, polyorder: number, options: S
   let t = Array.from({ length: windowLength }, (_, i) => i - pos)
   if ((options.use ?? 'conv') === 'conv') t = t.reverse()
   const fit = polyfitMatrix(t, polyorder)
-  const scale = factorial(deriv) / delta ** deriv
+  const scale = factorialOf(deriv) / delta ** deriv
   return constant(Float64Array.from(fit[deriv] ?? [], (v) => v * scale))
 }
 
@@ -650,7 +644,7 @@ function edgeMatrix(
     t.map((_, c) => {
       let s = 0
       for (let q = deriv; q <= polyorder; q++)
-        s += ((fit[q]?.[c] ?? 0) * factorial(q) * p ** (q - deriv)) / factorial(q - deriv)
+        s += ((fit[q]?.[c] ?? 0) * factorialOf(q) * p ** (q - deriv)) / factorialOf(q - deriv)
       return s / delta ** deriv
     }),
   )

@@ -1,7 +1,7 @@
 // Shared machinery of the distributional agents (private to methods/rl/agents): the replay agent they all are, the
 // head contract that distinguishes them, and the quantile Huber kernel with its derivative rules.
 import { customVjp } from '../autodiff/index.ts'
-import { argmaxOf, type Json } from '../base/index.ts'
+import { argmaxOf, type Json, toRows } from '../base/index.ts'
 import { incrementalUpdate, linearSchedule, type Tree } from '../optim/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import {
@@ -167,7 +167,7 @@ export interface Head {
 
 export const rowsOf = (x: Value, width: number): number[][] => {
   const flat = toFlat(x)
-  return Array.from({ length: flat.length / width }, (_, i) => flat.slice(i * width, (i + 1) * width))
+  return toRows(flat, flat.length / width, width)
 }
 
 // The chosen action's row of `[B, nA, N]` (atoms last) or of `[B, N, nA]` (actions last), for one-hot `mask [B, nA]`.

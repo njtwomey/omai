@@ -6,7 +6,7 @@
  * modes, every seed moving each step).
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { MdmlError, maxOf, toRows } from '../base/index.ts'
 import {
   type DistanceAlias,
   type DistanceName,
@@ -29,7 +29,7 @@ import {
   stateToJson,
   tensor,
 } from '../trace/index.ts'
-import { kthInRow, labelledPredict, rowsAt, toRows } from './_support.ts'
+import { kthInRow, labelledPredict, rowsAt } from './_support.ts'
 import { type ClusterSelectionRule, hdbscanSelections } from './density-options.ts'
 import type { Merge } from './hierarchical.ts'
 

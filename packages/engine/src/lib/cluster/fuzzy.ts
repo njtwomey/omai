@@ -4,12 +4,11 @@
  * algorithm, started from k-means++ centres.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { MdmlError, maxOf, toRows } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, tensor } from '../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
-import { toRows } from './_support.ts'
 import { initialCentres, type Rows, squaredDistancesToCentres } from './kmeans.ts'
 
 /** The state of fuzzy c-means: the centres, the memberships `[n, c]` (flat), the objective and the last centre shift. */

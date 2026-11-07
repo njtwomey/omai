@@ -4,34 +4,9 @@
  * Chebyshev approximation insists the coefficients decay. Each table is one `union` space for controls and grids.
  */
 
-import {
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../../space/index.ts'
+import { dict, int, type OptionTable, optionTable, plainOption, real } from '../../space/index.ts'
 import type { RemezOptions } from './best.ts'
 import type { ChebfunOptions } from './chebyshev.ts'
-
-function option<T>(
-  description: string,
-  space: ReturnType<typeof dict>,
-  build: (k: (name: string) => number) => T,
-): Option<T, Record<string, never>> {
-  return {
-    description,
-    properties: {},
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
-}
 
 /**
  * The types of minimax approximation as one slot: `polynomial` (denominator degree 0) and `rational` (a denominator of
@@ -47,12 +22,12 @@ function option<T>(
  */
 export const minimaxTypes: OptionTable<RemezOptions, Record<string, never>> = optionTable(
   {
-    polynomial: option(
+    polynomial: plainOption(
       'the best polynomial of the numerator degree',
       dict({ tol: real(1e-14, 1e-3, { default: 1e-10, log: true, label: 'tolerance' }) }),
       (k) => ({ n: 0, tol: k('tol') }),
     ),
-    rational: option(
+    rational: plainOption(
       'the best rational function: numerator degree m over a denominator of degree n',
       dict({
         n: int(1, 10, { default: 1, label: 'denominator degree' }),
@@ -77,7 +52,7 @@ export const minimaxTypes: OptionTable<RemezOptions, Record<string, never>> = op
  */
 export const chebyshevResolutions: OptionTable<ChebfunOptions, Record<string, never>> = optionTable(
   {
-    standard: option(
+    standard: plainOption(
       'ten machine epsilons',
       dict({ maxPoints: int(17, 1048577, { default: 65537, label: 'largest sample' }) }),
       (k) => ({
@@ -85,7 +60,7 @@ export const chebyshevResolutions: OptionTable<ChebfunOptions, Record<string, ne
         maxPoints: k('maxPoints'),
       }),
     ),
-    loose: option(
+    loose: plainOption(
       '1e-8, a few terms for a plot',
       dict({ maxPoints: int(17, 1048577, { default: 65537, label: 'largest sample' }) }),
       (k) => ({
@@ -93,7 +68,7 @@ export const chebyshevResolutions: OptionTable<ChebfunOptions, Record<string, ne
         maxPoints: k('maxPoints'),
       }),
     ),
-    strict: option(
+    strict: plainOption(
       'one machine epsilon',
       dict({ maxPoints: int(17, 1048577, { default: 65537, label: 'largest sample' }) }),
       (k) => ({

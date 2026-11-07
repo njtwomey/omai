@@ -9,7 +9,7 @@
  * and the query probabilities on the tape. Weight learning is in `mln-learning.ts`.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, MdmlError, sigmoidOf } from '../base/index.ts'
 import { categorical, type Key, uniformStream } from '../random/index.ts'
 import {
   type Algorithm,
@@ -1046,8 +1046,6 @@ export interface MlnMcSatOptions extends MlnSamplerOptions {
   readonly sampleSat?: SampleSatOptions
 }
 
-const sigmoid = (x: number): number => (x >= 0 ? 1 / (1 + Math.exp(-x)) : Math.exp(x) / (1 + Math.exp(x)))
-
 interface Prepared {
   readonly n: number
   readonly fixed: Int8Array
@@ -1160,7 +1158,7 @@ function conditional(ground: GroundMln, world: Uint8Array, a: number): number {
 
 /**
  * Gibbs sampling of a ground Markov logic network, one sweep per step: each unobserved atom is resampled from its
- * conditional given the atoms that share a ground formula with it (the Markov blanket), `P(a = 1 | rest) = sigmoid(sum
+ * conditional given the atoms that share a ground formula with it (the Markov blanket), `P(a = 1 | rest) = sigmoidOf(sum
  * of the weights of the groundings it makes true minus those it makes false)`. After the burn-in each sweep adds to
  * the atoms' and the queries' frequencies. Hard formulas are respected by a conditional of 0 or 1, so a network with
  * hard formulas needs a start that satisfies them (found by SampleSAT) and may not be ergodic.
@@ -1202,7 +1200,7 @@ export function mlnGibbsAlgorithm(
       for (let k = 0; k < count; k++) {
         const a = scan === 'systematic' ? (p.freeAtoms[k] as number) : (p.freeAtoms[Math.floor(u() * count)] as number)
         const d = conditional(ground, world, a)
-        const p1 = d === Number.POSITIVE_INFINITY ? 1 : d === Number.NEGATIVE_INFINITY ? 0 : sigmoid(d)
+        const p1 = d === Number.POSITIVE_INFINITY ? 1 : d === Number.NEGATIVE_INFINITY ? 0 : sigmoidOf(d)
         world[a] = u() < p1 ? 1 : 0
       }
       return accumulate(ground, p, s, world)

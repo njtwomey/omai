@@ -8,7 +8,7 @@
  * diffusion step) per step, so a session shows the labels spread and `fittedAt(t)` is the model at round `t`.
  */
 
-import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
 import { type KernelChoice, kernelMatrix, kernelSpace, type ResolvedKernel, resolveKernel } from '../kernels/index.ts'
 import { dgemm, solve } from '../numerics/linalg/index.ts'
 import { kNearest } from '../numerics/spatial/index.ts'
@@ -86,11 +86,9 @@ function probaOf(f: Fitted, x: TensorLike, who: string): { readonly p: Float64Ar
   return { p: Float64Array.from(toFlat(t)), k: t.shape[1] ?? 1 }
 }
 
-const argmaxRow = (p: ArrayLike<number>, from: number, k: number): number => {
-  let best = 0
-  for (let c = 1; c < k; c++) if ((p[from + c] ?? 0) > (p[from + best] ?? 0)) best = c
-  return best
-}
+/** The index within the row of `k` entries starting at `from` that holds its first maximum. */
+const argmaxRow = (p: ArrayLike<number>, from: number, k: number): number =>
+  argmaxOf(Array.prototype.slice.call(p, from, from + k) as number[])
 
 const rowsTensor = (values: ArrayLike<number>, shape: readonly number[]): Tensor =>
   fromStorage(Float64Array.from(values), [...shape], 'float64')

@@ -492,7 +492,7 @@ function lbfgsbOn(obj: FlatObjective, options: LbfgsbOptions): Algorithm<LbfgsbS
       )
       // dcsrch's warnings (xtol, step bounds, rounding) end the search at its last trial, which L-BFGS-B accepts; the
       // evaluation cap and errors are failures.
-      const accepted = ls.success || (Number.isFinite(ls.alpha) && /xtol|alphaMax|alphaMin|rounding/.test(ls.message))
+      const accepted = ls.success || (Number.isFinite(ls.alpha) && ls.warning !== undefined)
       if (!accepted) return fail(ls, `abnormal termination in line search: ${ls.message}`)
       const xRaw = daxpy(ls.alpha, d, st.x)
       const x = clipToBox(xRaw, box)

@@ -5,40 +5,15 @@
  * its binding. Each table is one `union` space for controls and grids.
  */
 
-import {
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../space/index.ts'
+import { dict, int, type Option, type OptionTable, optionTable, plainOption, real } from '../space/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { candidateEliminationAlgorithm, findSAlgorithm, type LabelledExample } from './ilp/version-spaces.ts'
 import type { SampleSatOptions } from './markov-logic.ts'
 import type { CoverMethod, QuineMcCluskeyOptions } from './propositional.ts'
 import type { UnifyOptions } from './unify.ts'
 
-function option<T>(
-  description: string,
-  space: ReturnType<typeof dict>,
-  build: (k: (name: string) => number) => T,
-): Option<T, Record<string, never>> {
-  return {
-    description,
-    properties: {},
-    space,
-    make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-      return build((name) => full[name] as number)
-    },
-  }
-}
-
 const cover = (description: string, method: CoverMethod): Option<QuineMcCluskeyOptions, Record<string, never>> =>
-  option(description, dict({}), () => ({ cover: method }))
+  plainOption(description, dict({}), () => ({ cover: method }))
 
 /**
  * How Quine-McCluskey covers the models once the prime implicants are found, as one slot: `none` (stop with the primes),
@@ -67,7 +42,7 @@ function sampling(
   noise: number,
   temperature: number,
 ): Option<SampleSatOptions, Record<string, never>> {
-  return option(
+  return plainOption(
     description,
     dict({
       annealing: real(0, 1, { default: annealing, label: 'annealing probability' }),
@@ -119,12 +94,12 @@ export type VersionSpaceLearner = (
  */
 export const versionSpaceLearners: OptionTable<VersionSpaceLearner, Record<string, never>> = optionTable(
   {
-    'find-s': option<VersionSpaceLearner>(
+    'find-s': plainOption<VersionSpaceLearner>(
       'the most specific hypothesis covering the positives',
       dict({}),
       () => (examples) => findSAlgorithm(examples) as unknown as Algorithm<unknown>,
     ),
-    'candidate-elimination': option<VersionSpaceLearner>(
+    'candidate-elimination': plainOption<VersionSpaceLearner>(
       'both boundaries of the version space',
       dict({}),
       () => (examples, domains) => candidateEliminationAlgorithm(examples, domains) as unknown as Algorithm<unknown>,
@@ -150,8 +125,10 @@ export const versionSpaceLearners: OptionTable<VersionSpaceLearner, Record<strin
  */
 export const unificationVariants: OptionTable<UnifyOptions, Record<string, never>> = optionTable(
   {
-    prolog: option<UnifyOptions>('no occurs check, as in standard Prolog', dict({}), () => ({ occursCheck: false })),
-    sound: option<UnifyOptions>('the occurs check on', dict({}), () => ({ occursCheck: true })),
+    prolog: plainOption<UnifyOptions>('no occurs check, as in standard Prolog', dict({}), () => ({
+      occursCheck: false,
+    })),
+    sound: plainOption<UnifyOptions>('the occurs check on', dict({}), () => ({ occursCheck: true })),
   },
   { default: 'sound', label: 'unification', description: 'Whether a variable may be bound to a term containing it.' },
 )

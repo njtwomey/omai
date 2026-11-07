@@ -5,7 +5,7 @@
  * table as gymnasium's toy-text ones are.
  */
 
-import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
+import { argmaxOf, type Json, MdmlError, maxOf, toRows } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { uniform } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
@@ -183,9 +183,6 @@ function backup(mdp: TabularMdp, V: ArrayLike<number>, gamma: number): Float64Ar
   return Q
 }
 
-const rows = (flat: Float64Array, n: number, m: number): number[][] =>
-  Array.from({ length: n }, (_, i) => Array.from(flat.subarray(i * m, (i + 1) * m)))
-
 /**
  * Action values from state values by one Bellman backup: `Q(s, a) = R(s, a) + gamma sum_s' P(s' | s, a) V(s')`.
  *
@@ -202,7 +199,7 @@ const rows = (flat: Float64Array, n: number, m: number): number[][] =>
  * ```
  */
 export function qFromV(mdp: TabularMdp, V: readonly number[], gamma: number = mdp.gamma): number[][] {
-  return rows(backup(mdp, V, gamma), mdp.nStates, mdp.nActions)
+  return toRows(backup(mdp, V, gamma), mdp.nStates, mdp.nActions)
 }
 
 /**

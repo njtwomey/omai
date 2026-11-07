@@ -13,9 +13,10 @@ import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   bool,
   type DictSpace,
-  defaults,
   dict,
+  fillKnobs,
   int,
+  type Knobs,
   type Option,
   type OptionTable,
   optionTable,
@@ -70,13 +71,6 @@ export interface NonlinearFilterProperties {
   readonly carries: 'moments' | 'sigma points' | 'ensemble'
 }
 
-type Knobs = (name: string) => number
-
-const knobsOf = (space: DictSpace, config: Readonly<Record<string, SpaceValue>>): Knobs => {
-  const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
-  return (name) => Number(full[name])
-}
-
 function scheme(
   description: string,
   properties: NonlinearFilterProperties,
@@ -87,8 +81,10 @@ function scheme(
     description,
     properties,
     space,
-    make: (config) =>
-      build(knobsOf(space, config), { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }),
+    make: (config) => {
+      const full = fillKnobs(space, config)
+      return build((name) => Number(full[name]), full)
+    },
   }
 }
 
@@ -197,7 +193,15 @@ function ssModel(
   space: DictSpace,
   build: (k: Knobs) => StateSpaceModel,
 ): Option<StateSpaceModel, StateSpaceProperties> {
-  return { description, properties, space, make: (config) => build(knobsOf(space, config)) }
+  return {
+    description,
+    properties,
+    space,
+    make: (config) => {
+      const full = fillKnobs(space, config)
+      return build((name) => Number(full[name]))
+    },
+  }
 }
 
 const noise = (label: string, def: number): ReturnType<typeof real> =>

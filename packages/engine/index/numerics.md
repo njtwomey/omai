@@ -36,7 +36,7 @@ Fourier transforms, numpy.fft and scipy.fft style: the FFT for every length (rea
 Computational geometry: distances and metrics (scipy.spatial.distance), convex hulls, polygons and clipping, Delaunay triangulations and Voronoi diagrams, segment collision primitives, contours and confidence ellipses, and rotations, homographies and point-set alignment.
 
 - function `cdist`: Pairwise distances between two sets of points, scipy metrics. `src/lib/numerics/geometry/distances.ts:275` `mdml-engine/numerics/geometry`
-- function `delaunay`: Delaunay triangulation of planar points. `src/lib/numerics/geometry/triangulation.ts:137` `mdml-engine/numerics/geometry`
+- function `delaunay`: Delaunay triangulation of planar points. `src/lib/numerics/geometry/triangulation.ts:184` `mdml-engine/numerics/geometry`
 
 ## numerics/interpolate
 
@@ -61,7 +61,7 @@ Dense linear algebra, numpy.linalg and scipy.linalg style: determinants and norm
 
 - function `cholesky`: Cholesky factor of a symmetric positive-definite matrix. `src/lib/numerics/linalg/cholesky.ts:96` `mdml-engine/numerics/linalg`
 - function `eig`: Eigenvalues and eigenvectors of a general real matrix. `src/lib/numerics/linalg/eig.ts:116` `mdml-engine/numerics/linalg`
-- function `eigh`: Symmetric eigendecomposition with derivatives. `src/lib/numerics/linalg/eigh.ts:122` `mdml-engine/numerics/linalg`
+- function `eigh`: Symmetric eigendecomposition with derivatives. `src/lib/numerics/linalg/eigh.ts:134` `mdml-engine/numerics/linalg`
 - function `expm`: Matrix exponential by Pade scaling and squaring. `src/lib/numerics/linalg/functions.ts:73` `mdml-engine/numerics/linalg`
 - function `inv`: Matrix inverse, batched and differentiable. `src/lib/numerics/linalg/lu.ts:106` `mdml-engine/numerics/linalg`
 - function `lstsq`: Least-squares solution of A x = b. `src/lib/numerics/linalg/qr.ts:176` `mdml-engine/numerics/linalg`
@@ -90,7 +90,7 @@ Root finding: scalar methods with brackets or derivatives, solvers for systems o
 - function `brentq`: Brent's bracketing root finder for a scalar function. `src/lib/numerics/roots/scalar.ts:58` `mdml-engine/numerics/roots`
 - function `root`: Solve F(x) = 0 with newton, broyden or other methods. `src/lib/numerics/roots/systems.ts:570` `mdml-engine/numerics/roots`
 
-- table `rootFinders`: The scalar root finders as one named slot. `src/lib/numerics/roots/scalar-options.ts:121` `mdml-engine/numerics/roots`
+- table `rootFinders`: The scalar root finders as one named slot. `src/lib/numerics/roots/scalar-options.ts:116` `mdml-engine/numerics/roots`
 
 ## numerics/sparse
 

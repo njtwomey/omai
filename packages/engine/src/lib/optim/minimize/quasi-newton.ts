@@ -399,11 +399,7 @@ function lbfgsOn(obj: FlatObjective, options: LbfgsOptions): Algorithm<LbfgsStat
       const alpha0 = first ? Math.min(1, 1 / dnrm2(p)) : 1
       const raw = search(lineFunction(obj, st.x, p), { value: st.value, slope, alpha: alpha0 })
       // More-Thuente's warnings (xtol, step bounds, rounding) still end at a usable trial step, as in L-BFGS-B.
-      const usable =
-        !raw.success &&
-        Number.isFinite(raw.alpha) &&
-        raw.value <= st.value &&
-        /xtol|alphaMax|alphaMin|rounding/.test(raw.message)
+      const usable = !raw.success && Number.isFinite(raw.alpha) && raw.value <= st.value && raw.warning !== undefined
       const ls = usable ? { ...raw, success: true } : raw
       const nfev = st.nfev + ls.evaluations
       let ngev = st.ngev + ls.gradEvaluations

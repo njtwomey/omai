@@ -5,16 +5,7 @@
  * of `place` and `placeAlgorithm`.
  */
 
-import {
-  defaults,
-  dict,
-  int,
-  type Option,
-  type OptionTable,
-  optionTable,
-  real,
-  type SpaceValue,
-} from '../../space/index.ts'
+import { dict, fillKnobs, int, type Option, type OptionTable, optionTable, real } from '../../space/index.ts'
 import type { PlaceOptions } from './placement.ts'
 
 function scheme(description: string, method: 'YT' | 'KNV0'): Option<PlaceOptions, Record<string, never>> {
@@ -27,7 +18,7 @@ function scheme(description: string, method: 'YT' | 'KNV0'): Option<PlaceOptions
     properties: {},
     space,
     make: (config) => {
-      const full = { ...(defaults(space) as Readonly<Record<string, SpaceValue>>), ...config }
+      const full = fillKnobs(space, config)
       return { method, rtol: full['rtol'] as number, maxIterations: full['maxIterations'] as number }
     },
   }

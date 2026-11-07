@@ -23,7 +23,7 @@ import {
 import { solveKernel } from './_kernels.ts'
 import { squareSize } from './_matrix.ts'
 import { hessenbergKernel, schurEigenvalues, schurEigenvectors, schurKernel } from './_schur.ts'
-import { dnrm2, ddot as dot } from './blas.ts'
+import { dgemv, dnrm2, ddot as dot } from './blas.ts'
 
 /** Complex values as their real and imaginary parts. */
 export interface ComplexTensor {
@@ -137,16 +137,6 @@ export interface EigenIterationResult {
   readonly history: readonly number[]
 }
 
-function matvec(a: Float64Array, n: number, x: Float64Array): Float64Array {
-  const y = new Float64Array(n)
-  for (let i = 0; i < n; i++) {
-    let s = 0
-    for (let j = 0; j < n; j++) s += (a[i * n + j] ?? 0) * (x[j] ?? 0)
-    y[i] = s
-  }
-  return y
-}
-
 const normalise = (x: Float64Array): Float64Array => {
   const length = dnrm2(x)
   return x.map((v) => v / length)
@@ -205,7 +195,7 @@ function logIterate(
   if (ctx.wants('eig/vector')) ctx.log('eig/vector', Float64Array.from(after))
   if (ctx.wants('eig/value')) ctx.log('eig/value', value)
   if (ctx.wants('eig/residual')) {
-    const ax = matvec(data, n, Float64Array.from(after))
+    const ax = dgemv(data, n, n, Float64Array.from(after))
     ctx.log('eig/residual', dnrm2(ax.map((v, i) => v - value * (after[i] ?? 0))))
   }
   if (ctx.wants('eig/angle'))
@@ -257,7 +247,7 @@ export function powerIterationAlgorithm(
     config: { n, tol, maxIterations: max },
     init: () => ({ x: Array.from(start(n, options)), value: null, iteration: 0, history: [], converged: false }),
     step: (s, ctx) => {
-      const y = matvec(data, n, Float64Array.from(s.x))
+      const y = dgemv(data, n, n, Float64Array.from(s.x))
       const next = dot(Float64Array.from(s.x), y)
       const x = Array.from(normalise(y))
       const converged = s.value !== null && Math.abs(next - s.value) <= tol * Math.max(1, Math.abs(next))
@@ -304,7 +294,7 @@ export function inverseIterationAlgorithm(
     init: () => ({ x: Array.from(start(n, options)), value: null, iteration: 0, history: [], converged: false }),
     step: (s, ctx) => {
       const x = Array.from(normalise(solveKernel(shifted, Float64Array.from(s.x), n, 1)))
-      const next = dot(Float64Array.from(x), matvec(data, n, Float64Array.from(x)))
+      const next = dot(Float64Array.from(x), dgemv(data, n, n, Float64Array.from(x)))
       const converged = s.value !== null && Math.abs(next - s.value) <= tol * Math.max(1, Math.abs(next))
       logIterate(ctx, data, n, s.x, x, next, shift)
       return { x, value: next, iteration: s.iteration + 1, history: [...s.history, next], converged }
@@ -344,7 +334,7 @@ export function rayleighQuotientIterationAlgorithm(
     config: { n, tol, maxIterations: max },
     init: () => {
       const x = start(n, options)
-      const value = dot(x, matvec(data, n, x))
+      const value = dot(x, dgemv(data, n, n, x))
       return { x: Array.from(x), value, iteration: 0, history: [value], converged: false }
     },
     step: (s, ctx) => {
@@ -360,7 +350,7 @@ export function rayleighQuotientIterationAlgorithm(
         return { ...s, iteration: s.iteration + 1, converged: true }
       }
       const x = Array.from(normalise(y))
-      const next = dot(Float64Array.from(x), matvec(data, n, Float64Array.from(x)))
+      const next = dot(Float64Array.from(x), dgemv(data, n, n, Float64Array.from(x)))
       const converged = Math.abs(next - value) <= tol * Math.max(1, Math.abs(next))
       logIterate(ctx, data, n, s.x, x, next, value)
       return { x, value: next, iteration: s.iteration + 1, history: [...s.history, next], converged }

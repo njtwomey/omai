@@ -5,7 +5,7 @@
  * the samples apart.
  */
 
-import { type Alternative, MdmlError, maxOf, meanOf, minOf, type TestResult } from '../../base/index.ts'
+import { type Alternative, gcdOf, MdmlError, maxOf, meanOf, minOf, type TestResult } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { matrixRankSym, ols, pinvSym } from '../_linear.ts'
@@ -119,13 +119,6 @@ function cvmExact(u: number, m: number, n: number): number {
     if (k >= zeta) tail += c
   }
   return tail / total
-}
-
-function gcdOf(a: number, b: number): number {
-  let x = a
-  let y = b
-  while (y) [x, y] = [y, x % y]
-  return x
 }
 
 /**

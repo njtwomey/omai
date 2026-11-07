@@ -5,6 +5,7 @@
  * its dynamics as a plain function, as gymnasium computes it, and draws its state as a scene.
  */
 
+import { numberOr } from '../base/index.ts'
 import { uniform } from '../random/index.ts'
 import type { Env, EnvDefinition } from '../rl/index.ts'
 import { circle, line, path, polygon, rect, type Scene, scene } from '../scene/index.ts'
@@ -12,11 +13,6 @@ import { bool, box, dict, discrete, real } from '../space/index.ts'
 
 const draws = (k: Parameters<typeof uniform>[0], n: number, low: number, high: number): number[] =>
   Array.from(uniform(k, [n], { low, high }).data)
-
-const num = (options: Readonly<Record<string, unknown>> | undefined, name: string, fallback: number): number => {
-  const v = options?.[name]
-  return typeof v === 'number' ? v : fallback
-}
 
 // Rotate a point (x, y) by an angle (radians, counter-clockwise in a y-up frame).
 const rotate = (x: number, y: number, a: number): [number, number] => [
@@ -291,7 +287,7 @@ export const mountainCar: EnvDefinition<MountainCarState, readonly number[], num
   description: MC_DESCRIPTION,
   options: dict({ goalVelocity: real(0, MC_MAX_SPEED, { default: 0, description: 'minimum speed at the goal' }) }),
   create: (options): Env<MountainCarState, readonly number[], number> => {
-    const goalVelocity = num(options, 'goalVelocity', 0)
+    const goalVelocity = numberOr(options, 'goalVelocity', 0)
     return {
       spec: {
         id: 'MountainCar-v0',
@@ -375,7 +371,7 @@ export const mountainCarContinuous: EnvDefinition<MountainCarState, readonly num
   description: MCC_DESCRIPTION,
   options: dict({ goalVelocity: real(0, MC_MAX_SPEED, { default: 0, description: 'minimum speed at the goal' }) }),
   create: (options): Env<MountainCarState, readonly number[], readonly number[]> => {
-    const goalVelocity = num(options, 'goalVelocity', 0)
+    const goalVelocity = numberOr(options, 'goalVelocity', 0)
     return {
       spec: {
         id: 'MountainCarContinuous-v0',
@@ -513,7 +509,7 @@ export const pendulum: EnvDefinition<PendulumState, readonly number[], readonly 
   description: PENDULUM_DESCRIPTION,
   options: dict({ g: real(0, 20, { default: 10, description: 'gravitational acceleration' }) }),
   create: (options): Env<PendulumState, readonly number[], readonly number[]> => {
-    const g = num(options, 'g', 10)
+    const g = numberOr(options, 'g', 10)
     const observe = (s: PendulumState): number[] => [Math.cos(s[0]), Math.sin(s[0]), s[1]]
     return {
       spec: { id: 'Pendulum-v1', description: PENDULUM_DESCRIPTION, maxEpisodeSteps: 200, deterministic: true },

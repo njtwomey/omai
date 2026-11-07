@@ -4,7 +4,7 @@
  * value by path while keeping conditional dimensions in line with their conditions.
  */
 
-import { activeDims, defaults, type Space, type SpaceValue } from 'mdml-engine/space'
+import { activeDims, asModeConfig, defaults, type Space, type SpaceValue } from 'mdml-engine/space'
 import type { NumberSpec } from './number.ts'
 import type { OptionInput, OptionValue } from './options.ts'
 
@@ -56,12 +56,6 @@ function meta(space: Space, path: ControlPath, fallback: string): ControlBase {
 }
 
 const plain = (path: ControlPath, label: string): ControlBase => ({ id: path.join('.'), path, label })
-
-function asRecord(value: SpaceValue | undefined): Readonly<Record<string, SpaceValue>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Readonly<Record<string, SpaceValue>>)
-    : {}
-}
 
 /** The keys of a dict space that are active for a value (its conditions hold), in the space's order. */
 function activeKeys(space: Space & { readonly kind: 'dict' }, value: SpaceValue): Set<string> {
@@ -162,7 +156,7 @@ export function spaceControls(space: Space, value: SpaceValue, options: SpaceCon
         }
       }
       case 'dict': {
-        const record = asRecord(v)
+        const record = asModeConfig(v)
         const active = activeKeys(s, record)
         return {
           ...base,
@@ -175,7 +169,7 @@ export function spaceControls(space: Space, value: SpaceValue, options: SpaceCon
       case 'union': {
         // The option as a choice at the tag's path, then the chosen option's knobs at the same level (a union's value
         // carries them beside the tag), so choosing another option swaps the knobs that follow.
-        const record = asRecord(v)
+        const record = asModeConfig(v)
         const tag = s.tag ?? 'kind'
         const names = Object.keys(s.options)
         const name = unionOption(s, record)
@@ -218,14 +212,14 @@ function unionOption(space: Space & { readonly kind: 'union' }, value: Readonly<
 export function settleValue(space: Space, value: SpaceValue): SpaceValue {
   if (space.kind === 'union') {
     // Keep the tag, settle the chosen option's knobs (the other options' knobs drop; missing ones get defaults).
-    const record = asRecord(value)
+    const record = asModeConfig(value)
     const tag = space.tag ?? 'kind'
     const name = unionOption(space, record)
     const { [tag]: _tag, ...rest } = record
-    return { [tag]: name, ...asRecord(settleValue(space.options[name] as Space, rest)) }
+    return { [tag]: name, ...asModeConfig(settleValue(space.options[name] as Space, rest)) }
   }
   if (space.kind !== 'dict') return value
-  const out: Record<string, SpaceValue> = { ...asRecord(value) }
+  const out: Record<string, SpaceValue> = { ...asModeConfig(value) }
   const keys = Object.keys(space.spaces)
   for (let round = 0; round <= keys.length; round++) {
     let added = false
@@ -273,7 +267,7 @@ export function withValueAt(space: Space, value: SpaceValue, path: ControlPath, 
       items[p] = write(items[p], i + 1)
       return items
     }
-    const record = { ...asRecord(v) }
+    const record = { ...asModeConfig(v) }
     record[p] = write(record[p], i + 1)
     return record
   }
