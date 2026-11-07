@@ -167,3 +167,27 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   indices and distances on 864 cases; total 325 ms to 226 ms at 200 queries x 2000 points x 8 dimensions because `cdist` (about 500 ns
   per pair, broadcast tensor ops) is now 90% of it. NaN distances rank last (an F11 fix on the way; finite input unchanged). Own tests
   and checks only; the full gate was not run.
+- **13:40 Result.** Wave A performance fix P3.38 (worktree `agent-kd01-kernels`, commit `344f211c`). The stationary kernels (rbf, matern, rational
+  quadratic, gamma-exponential, periodic, locally periodic, cosine) take their distances from a private differentiable primitive
+  (`kernels/_distance.ts`) that is one fused loop, sum_p (a_ip - b_jp)^2, on the upper triangle when a set is taken with itself (KDES-11). The
+  matmul expansion that the finding proposed was built first (shared centre, clamp, exact recomputation of every pair below 0.1 (|x|^2 + |y|^2),
+  exact diagonal) and measured: accurate (max relative difference to the broadcast form 3e-15 on well separated pairs, close pairs exact, the
+  minimum eigenvalues of the PSD kernels equal to the digit, a plain expansion without the centre is wrong by 1e9 at offset 1e8) but 1.5 to 2
+  times slower than the fused loop on this engine's `dgemm` for d = 4 to 50 (1500 points at d = 20: 58 ms against 31 ms), because the 2.2 s of
+  the old path was the three `[m, n, d]` tensors and not the flops. The fused loop gives the arithmetic of the broadcast form, so values are
+  bit-identical to `cdist` (max |difference| 0 over offsets 0, 1e4, 1e8, spreads 1 and 1e-3, d = 1 to 50, m up to 500, Gram and cross), exactly
+  symmetric with an exactly zero diagonal, never negative; coincident rows give 0 and the Euclidean distance keeps value 0 and derivative 0 there.
+  Gram matrix of 1500 points at d = 20, median ms: rbf 2214 to 113, matern 3/2 2558 to 287, rational quadratic 2288 to 173, periodic 2686 to 390,
+  locally periodic 4941 to 538, cosine 2521 to 240 (linear, a matmul, 45); at d = 2 about 2.5x to 3.7x; the rest is the elementwise tensor ops of
+  the profile (2.25 million entries, a dozen passes for matern), not the distance. Derivative rules are written with a matrix product on the
+  centred points (they must be ops, for higher orders): gradients in the points agree with the old composition to 1e-15 relative, and the
+  gradient in the length scale at offset 1e8 differs from it by 1e-9 to 4e-6 relative, the same order as the old version's own error against the
+  centred reference (`x / l` then a contraction with x of size 1e8 is ill-conditioned in the old code too). `cdist` itself is unchanged (kNearest,
+  clustering and metrics keep their results; their 500 ns per pair is a separate item). KDES-35 was not touched (structured kernels, `mmdSquared`
+  and `subStructure` are not stationary kernels). One test moved and was run down: `kernel-selection.test.ts` "reaches the same optimum with
+  different solvers" timed out (5.2 s) because Newton with `gradTol: 1e-8` no longer declared convergence and walked to its 300-step cap
+  (before: 8 steps, 124 ms). The iterates agree with the old ones to 1e-14 for the first seven steps and gradients and Hessians agree to 1e-13;
+  at the end log alpha is off by 1e-9 where the gradient is 1.5e-8, and the line search cannot find a decrease of 1e-16 in an objective of 7.4,
+  so whether a step is accepted is rounding luck (gradTol 1e-8 is about sqrt(eps), the noise floor of the objective). It is a fragile test and
+  a solver that does not stop when no decrease exists, not an accuracy loss; the test now caps `maxSteps` at 60 (commit `aeae0a5c`), its
+  assertions unchanged. Own tests and checks only; the full gate was not run.

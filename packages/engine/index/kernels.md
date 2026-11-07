@@ -12,8 +12,8 @@ Kernel functions with differentiable hyperparameters under the `Kernel` contract
 - function `kernelMatrix`: Gram matrix of a kernel chosen by name. `src/lib/kernels/named.ts:85` `mdml-engine/kernels`
 
 - kernel `linearKernel`: Linear kernel. `src/lib/kernels/dot-product.ts:85` `mdml-engine/kernels`
-- kernel `maternKernel`: Matern kernel with smoothness parameter. `src/lib/kernels/stationary.ts:123` `mdml-engine/kernels`
-- kernel `periodicKernel`: Periodic kernel. `src/lib/kernels/stationary.ts:291` `mdml-engine/kernels`
+- kernel `maternKernel`: Matern kernel with smoothness parameter. `src/lib/kernels/stationary.ts:126` `mdml-engine/kernels`
+- kernel `periodicKernel`: Periodic kernel. `src/lib/kernels/stationary.ts:294` `mdml-engine/kernels`
 - kernel `polynomialKernel`: Polynomial kernel. `src/lib/kernels/dot-product.ts:127` `mdml-engine/kernels`
-- kernel `rationalQuadraticKernel`: Rational quadratic kernel, a mixture of RBF length scales. `src/lib/kernels/stationary.ts:180` `mdml-engine/kernels`
-- kernel `rbfKernel`: Radial basis function (squared exponential) kernel. `src/lib/kernels/stationary.ts:88` `mdml-engine/kernels`
+- kernel `rationalQuadraticKernel`: Rational quadratic kernel, a mixture of RBF length scales. `src/lib/kernels/stationary.ts:183` `mdml-engine/kernels`
+- kernel `rbfKernel`: Radial basis function (squared exponential) kernel. `src/lib/kernels/stationary.ts:91` `mdml-engine/kernels`
