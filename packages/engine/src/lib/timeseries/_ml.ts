@@ -132,6 +132,9 @@ export function numericalHessian(f: (x: Float64Array) => number, x: ArrayLike<nu
 
 /** The square roots of the diagonal of the inverse of a symmetric matrix (NaN where it is not positive). */
 export function inverseDiagonalRoots(h: Float64Array, n: number): number[] {
+  // A Hessian with a non-finite entry (the likelihood was not finite near the optimum) has no inverse worth taking: `inv`
+  // rejects it (the NaN rule of numerics), and the standard errors are NaN, as for a matrix that is not positive.
+  if (!h.every((v) => Number.isFinite(v))) return new Array<number>(n).fill(Number.NaN)
   const covariance = toFlat(inv(fromStorage(h, [n, n], 'float64')))
   return Array.from({ length: n }, (_, i) => Math.sqrt(covariance[i * n + i] ?? Number.NaN))
 }
