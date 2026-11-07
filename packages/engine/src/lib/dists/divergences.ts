@@ -74,14 +74,17 @@ function klGaussian(p: { loc: Value; l: Value }, q: { loc: Value; l: Value }): V
 
 type Rule = (p: Distribution, q: Distribution) => Value
 
+// prob * (log p - log q) with 0 * (-Infinity) taken as 0 (a zero-probability outcome, as a masked logit makes): the
+// arguments of the masked branch are replaced as well so that no NaN reaches a derivative.
+const klTerm = (prob: Value, logP: Value, logQ: Value): Value => {
+  const positive = greater(prob, 0)
+  return where(positive, mul(prob, sub(where(positive, logP, 0), where(positive, logQ, 0))), 0)
+}
 const klBernoulliLogits = (lp: Value, lq: Value): Value => {
   const pp = sigmoid(lp)
-  return add(
-    mul(pp, sub(logSigmoid(lp), logSigmoid(lq))),
-    mul(sub(1, pp), sub(logSigmoid(neg(lp)), logSigmoid(neg(lq)))),
-  )
+  return add(klTerm(pp, logSigmoid(lp), logSigmoid(lq)), klTerm(sub(1, pp), logSigmoid(neg(lp)), logSigmoid(neg(lq))))
 }
-const klCategoricalLogits = (lp: Value, lq: Value): Value => sum(mul(exp(lp), sub(lp, lq)), -1)
+const klCategoricalLogits = (lp: Value, lq: Value): Value => sum(klTerm(exp(lp), lp, lq), -1)
 const klGamma = (ap: Value, bp: Value, aq: Value, bq: Value): Value =>
   add(
     add(sub(mul(sub(ap, aq), digamma(ap)), sub(lgamma(ap), lgamma(aq))), mul(aq, sub(log(bp), log(bq)))),

@@ -7,11 +7,11 @@
 
 import { MdmlError } from '../../base/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'
-import { logit, logSigmoid } from '../../numerics/special/index.ts'
+import { logSigmoid } from '../../numerics/special/index.ts'
 import {
+  abs,
   add,
   arange,
-  arctanh,
   broadcastTo,
   concat,
   cumsum,
@@ -26,6 +26,7 @@ import {
   neg,
   pad,
   reshape,
+  sign,
   sliceAxis,
   softplus,
   sqrt,
@@ -113,10 +114,9 @@ export function stickBreaking(): Bijector {
     },
     inverse: (y) => {
       const k = lastSize(y)
-      const head = lastSlice(y, 0, k - 1)
-      // The stick remaining before each break: 1 - sum of the earlier pieces.
-      const stick = sub(1, sub(cumsum(head, -1), head))
-      return add(logit(div(head, stick)), offsets(k - 1))
+      // z_i / (1 - z_i) = y_i / (the pieces after i), read from a reversed cumulative sum: no cancellation in the tail.
+      const after = lastSlice(cumsum(y, -1, true), 1, k)
+      return add(sub(log(lastSlice(y, 0, k - 1)), log(after)), offsets(k - 1))
     },
     forwardLogDetJacobian: (x) => {
       const { logZ, logRest, logStick } = parts(x)
@@ -163,11 +163,13 @@ function padRow(row: Value, d: number): Value {
  * ```
  */
 export function correlationCholesky(): Bijector {
-  // For row i: the partial correlations, and the exclusive cumulative sums of log sqrt(1 - z^2) (log of the products).
-  const rowParts = (z: Value, i: number): { zr: Value; logPrefix: Value; logDiag: Value } => {
+  // For row i: the partial correlations tanh(x), and the exclusive cumulative sums of log sqrt(1 - z^2) (log of the
+  // products). log sqrt(1 - tanh(x)^2) = log 2 - |x| - log1p(exp(-2 |x|)) stays finite where tanh(x) rounds to 1.
+  const rowParts = (x: Value, i: number): { zr: Value; logPrefix: Value; logDiag: Value } => {
     const off = (i * (i - 1)) / 2
-    const zr = lastSlice(z, off, off + i)
-    const logs = mul(log1p(neg(square(zr))), 0.5)
+    const xr = lastSlice(x, off, off + i)
+    const zr = tanh(xr)
+    const logs = sub(Math.LN2, add(abs(xr), log1p(exp(mul(abs(xr), -2)))))
     const inclusive = cumsum(logs, -1)
     return { zr, logPrefix: sub(inclusive, logs), logDiag: sum(logs, -1, true) }
   }
@@ -178,7 +180,6 @@ export function correlationCholesky(): Bijector {
     codomain: { kind: 'correlationCholesky' },
     forward: (x) => {
       const d = strictSize(lastSize(x))
-      const z = tanh(x)
       const first = fromStorage(
         Float64Array.from({ length: d }, (_, j) => (j === 0 ? 1 : 0)),
         [d],
@@ -186,7 +187,7 @@ export function correlationCholesky(): Bijector {
       )
       const rows: Value[] = [broadcastTo(first, [...x.shape.slice(0, -1), d])]
       for (let i = 1; i < d; i++) {
-        const { zr, logPrefix, logDiag } = rowParts(z, i)
+        const { zr, logPrefix, logDiag } = rowParts(x, i)
         rows.push(padRow(concat([mul(zr, exp(logPrefix)), exp(logDiag)], -1), d))
       }
       return stack(rows, -2)
@@ -195,20 +196,21 @@ export function correlationCholesky(): Bijector {
       const d = lastSize(l)
       const parts: Value[] = []
       for (let i = 1; i < d; i++) {
-        const row = lastSlice(take(l, [i], -2), 0, i)
-        const flat = reshape(row, [...l.shape.slice(0, -2), i])
-        // z_j = L_ij / sqrt(1 - sum_{k<j} L_ik^2).
-        const sq = square(flat)
-        const before = sub(cumsum(sq, -1), sq)
-        parts.push(div(flat, sqrt(sub(1, before))))
+        const row = reshape(lastSlice(take(l, [i], -2), 0, i + 1), [...l.shape.slice(0, -2), i + 1])
+        // The row has unit norm, so the radius left at j is S_j = sum_{k >= j} L_ik^2 (a reversed cumulative sum, with no
+        // cancellation) and z_j = L_ij / sqrt(S_j); atanh(z) = log1p(|z|) + (log S_j - log S_{j+1}) / 2 for z > 0, odd.
+        const s = cumsum(square(row), -1, true)
+        const here = lastSlice(s, 0, i)
+        const z = div(lastSlice(row, 0, i), sqrt(here))
+        const half = mul(sub(log(here), log(lastSlice(s, 1, i + 1))), 0.5)
+        parts.push(mul(sign(z), add(log1p(abs(z)), half)))
       }
-      return arctanh(concat(parts, -1))
+      return concat(parts, -1)
     },
     forwardLogDetJacobian: (x) => {
       const d = strictSize(lastSize(x))
-      const z = tanh(x)
       let total: Value = sum(logTanhDerivative(x), -1)
-      for (let i = 1; i < d; i++) total = add(total, sum(rowParts(z, i).logPrefix, -1))
+      for (let i = 1; i < d; i++) total = add(total, sum(rowParts(x, i).logPrefix, -1))
       return total
     },
     forwardShape: (shape) => {

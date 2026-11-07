@@ -25,6 +25,7 @@ import {
   expandDims,
   floor,
   full,
+  greater,
   greaterEqual,
   less,
   lessEqual,
@@ -65,6 +66,12 @@ function logProbsOf(params: CategoricalParams, family: string): Value {
   }
   if (raw.shape.length === 0) throw new MdmlError('shape', `${family}: parameters need a category axis`)
   return logSoftmax(raw, -1)
+}
+
+/** The entropy -sum p log p with 0 log 0 taken as 0 (a masked category has log p = -Infinity), safe to differentiate. */
+function entropyOf(probs: Value, logp: Value): Value {
+  const positive = greater(probs, 0)
+  return neg(sum(where(positive, mul(probs, where(positive, logp, 0)), 0), -1))
 }
 
 /** Draw category indices `[...shape, ...batch]` from cumulative probabilities `[...batch, K]`. */
@@ -141,7 +148,7 @@ function categoricalFromLogProbs(logp: Value, name: string, extra: Readonly<Reco
       return sub(sum(mul(probs, square(index)), -1), square(m))
     },
     mode: () => cast(argmax(logp, -1), 'float64'),
-    entropy: () => neg(sum(mul(probs, logp), -1)),
+    entropy: () => entropyOf(probs, logp),
   })
 }
 
@@ -183,7 +190,7 @@ export function oneHotCategorical(params: CategoricalParams): Distribution {
     mean: () => probs,
     variance: () => mul(probs, sub(1, probs)),
     mode: () => oneHot(cast(argmax(logp, -1), 'int32'), k),
-    entropy: () => neg(sum(mul(probs, logp), -1)),
+    entropy: () => entropyOf(probs, logp),
   })
 }
 

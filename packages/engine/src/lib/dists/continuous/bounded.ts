@@ -32,6 +32,7 @@ import {
   log1p,
   logicalAnd,
   logicalOr,
+  maximum,
   mul,
   neg,
   pow,
@@ -133,7 +134,9 @@ export function beta(a: TensorLike, b: TensorLike): Distribution {
     },
     mean: () => div(p, total),
     variance: () => div(mul(p, q), mul(square(total), add(total, 1))),
-    mode: () => div(sub(p, 1), sub(total, 2)),
+    // Torch's rule (Dirichlet.mode): the excess over 1 of each shape, so the mode is 0 or 1 when one shape is at most 1
+    // and undefined (NaN) when both are.
+    mode: () => div(maximum(sub(p, 1), 0), add(maximum(sub(p, 1), 0), maximum(sub(q, 1), 0))),
     entropy: () =>
       add(
         sub(sub(lbeta(p, q), mul(sub(p, 1), digamma(p))), mul(sub(q, 1), digamma(q))),

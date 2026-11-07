@@ -99,7 +99,8 @@ export function vonMises(loc: TensorLike = 0, concentration: TensorLike = 1): Di
   const self: Distribution = defineDistribution({
     name: 'vonMises',
     params: { loc: mu, concentration: kappa },
-    support: { kind: 'circular' },
+    // Draws and the CDF live on one turn centred at loc, as scipy's: [loc - pi, loc + pi] (not the circle [-pi, pi]).
+    support: { kind: 'interval', low: sub(mu, Math.PI), high: add(mu, Math.PI) },
     batchShape,
     logProb: (x) => sub(mul(kappa, cos(sub(x, mu))), logNorm),
     cdf,

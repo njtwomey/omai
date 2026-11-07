@@ -15,6 +15,7 @@ import {
   lbeta,
   lgamma,
   ndtr,
+  xlogy,
 } from '../../numerics/special/index.ts'
 import { foldIn, gammaVariates, type Key, normal as normalNoise, poisson as poissonDraw } from '../../random/index.ts'
 import {
@@ -25,6 +26,7 @@ import {
   exp,
   fromStorage,
   greater,
+  greaterEqual,
   less,
   log,
   log1p,
@@ -102,12 +104,14 @@ export function fDistribution(d1: TensorLike, d2: TensorLike): Distribution {
     support: { kind: 'positive' },
     batchShape,
     logProb: (x) => {
-      const v = safe(x)
+      // The density at 0 is the limit: +Infinity for d1 < 2, finite for d1 = 2 (xlogy(0, 0) = 0), 0 above (as gamma).
+      const inside = greaterEqual(x, 0)
+      const v = where(inside, x, 1)
       const lp = sub(
-        sub(add(mul(hn, log(div(n, m))), mul(sub(hn, 1), log(v))), mul(add(hn, hm), log1p(div(mul(n, v), m)))),
+        sub(add(mul(hn, log(div(n, m))), xlogy(sub(hn, 1), v)), mul(add(hn, hm), log1p(div(mul(n, v), m)))),
         lbeta(hn, hm),
       )
-      return where(positive(x), lp, Number.NEGATIVE_INFINITY)
+      return where(inside, lp, Number.NEGATIVE_INFINITY)
     },
     cdf: (x) => where(positive(x), fdtr(n, m, safe(x)), 0),
     sf: (x) => where(positive(x), fdtrc(n, m, safe(x)), 1),
