@@ -601,6 +601,14 @@ describe('eigh, expm, sqrtm and logm against scipy on clustered, defective and l
       ['pinv', () => L.pinv(nan)],
       ['lstsq', () => L.lstsq(nan, [1, 2])],
       ['expm', () => L.expm(nan)],
+      [
+        'expm of an infinite matrix (the squaring count was infinite)',
+        () =>
+          L.expm([
+            [Number.POSITIVE_INFINITY, 1],
+            [1, 1],
+          ]),
+      ],
       ['sqrtm', () => L.sqrtm(nan)],
       ['norm', () => L.norm(nan)],
       ['cond', () => L.cond(nan)],

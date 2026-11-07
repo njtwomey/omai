@@ -75,6 +75,8 @@ export function expm(a: TensorLike): Value {
   const n = squareSize(m.shape, 'expm')
   const eye = identity(n, m)
   const nrm = norm1(m)
+  // An infinite entry has no exponential (the squaring count below would be infinite, a loop that never ends).
+  if (nrm === Number.POSITIVE_INFINITY) return mul(m, Number.NaN)
   for (const [degree, theta] of THETA) {
     if (nrm <= theta) {
       const b = B[degree] as readonly number[]
