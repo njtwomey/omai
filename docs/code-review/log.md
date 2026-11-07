@@ -191,3 +191,10 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   so whether a step is accepted is rounding luck (gradTol 1e-8 is about sqrt(eps), the noise floor of the objective). It is a fragile test and
   a solver that does not stop when no decrease exists, not an accuracy loss; the test now caps `maxSteps` at 60 (commit `aeae0a5c`), its
   assertions unchanged. Own tests and checks only; the full gate was not run.
+- **14:05 Decision by an agent.** The kernel distance (P3.38, `agent-kd01-kernels`) was built as the matmul expansion the review proposed (shared centre,
+  clamp, exact recompute of close pairs, exact diagonal) and then dropped for a plain fused loop: it was accurate (3e-15) but 1.5x to 2x slower than the loop
+  on this engine's `dgemm` (1500 points, d = 20: 58 ms against 31 ms), because the cost was the three `[m, n, d]` tensors of `cdist`, not the arithmetic.
+  A private primitive `squaredDistance` in `kernels/_distance.ts` does the sum in one loop and mirrors the upper triangle; its jvp and vjp use centred
+  matmuls. Gram matrices are bit-identical to before (distances differ by 0), 7x to 20x faster at d = 20 and 2x to 3.7x at d = 2. One existing test moved:
+  `kernel-selection.test.ts` timed out because Newton's iterates, identical to 1e-14 for seven steps, then ran into its 300-step cap at the noise floor (F-046);
+  its `maxSteps` is capped at 60 in a separate commit that can be dropped. The review's proposed matmul route is not the final design: update KDES-11's fix.
