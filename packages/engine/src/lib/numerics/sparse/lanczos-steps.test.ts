@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { key } from '../../random/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import * as S from './index.ts'
 
@@ -12,11 +13,12 @@ describe('stepped Lanczos', () => {
   it('matches the whole-process lanczos with full reorthogonalisation', () => {
     const whole = S.lanczos(a, 6, { v0 })
     const state = S.lanczosSteps(a, 6, { v0 })
+    const [alpha, beta] = [toFlat(whole.alpha), toFlat(whole.beta)]
     state.alpha.forEach((v, i) => {
-      expect(v).toBeCloseTo(whole.alpha[i] ?? 0, 10)
+      expect(v).toBeCloseTo(alpha[i] ?? 0, 10)
     })
     state.beta.forEach((v, i) => {
-      expect(v).toBeCloseTo(whole.beta[i] ?? 0, 10)
+      expect(v).toBeCloseTo(beta[i] ?? 0, 10)
     })
   })
 

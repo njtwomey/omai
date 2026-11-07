@@ -103,20 +103,23 @@ describe('sparse properties', () => {
   it('Lanczos and Arnoldi produce orthonormal bases', () => {
     const a = tri(12)
     const l = S.lanczos(a, 8)
-    for (let i = 0; i < l.basis.length; i++) {
-      for (let j = 0; j < l.basis.length; j++) {
-        const d = (l.basis[i] as Float64Array).reduce((s, v, k) => s + v * ((l.basis[j] as Float64Array)[k] ?? 0), 0)
+    const [rows = 0, cols = 0] = l.basis.shape
+    const q = toFlat(l.basis)
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < rows; j++) {
+        let d = 0
+        for (let k = 0; k < cols; k++) d += (q[i * cols + k] ?? 0) * (q[j * cols + k] ?? 0)
         expect(d).toBeCloseTo(i === j ? 1 : 0, 12)
       }
     }
-    expect(S.arnoldi(a, 5).basis.length).toBe(6)
+    expect(S.arnoldi(a, 5).basis.shape[0]).toBe(6)
   })
 
   it('the start vectors, the deflation matrix and the multigrid iterate take tensor-likes (migration, D-009)', () => {
     const a = tri(12)
     const v0 = Array.from({ length: 12 }, (_, i) => 1 + (i % 3))
     const calls: [string, (v: TensorLike) => number[]][] = [
-      ['lanczos', (v) => [...S.lanczos(a, 5, { v0: v }).alpha]],
+      ['lanczos', (v) => toFlat(S.lanczos(a, 5, { v0: v }).alpha)],
       ['arnoldi', (v) => toFlat(S.arnoldi(a, 4, { v0: v }).hessenberg)],
       [
         'arnoldiAlgorithm',
@@ -133,9 +136,9 @@ describe('sparse properties', () => {
     }
     // The deflation vectors: the rows of a matrix, or a list of Float64Arrays.
     const e0 = Float64Array.from({ length: 12 }, (_, i) => (i === 0 ? 1 : 0))
-    expect([...S.lanczos(a, 4, { v0, deflate: [e0] }).alpha]).toEqual([
-      ...S.lanczos(a, 4, { v0, deflate: [Array.from(e0)] }).alpha,
-    ])
+    expect(toFlat(S.lanczos(a, 4, { v0, deflate: [e0] }).alpha)).toEqual(
+      toFlat(S.lanczos(a, 4, { v0, deflate: [Array.from(e0)] }).alpha),
+    )
     expect(() => S.lanczos(a, 4, { v0, deflate: tensor([1, 2]) })).toThrow(expect.objectContaining({ code: 'shape' }))
   })
 })
