@@ -10,9 +10,11 @@ understanding, not for being the fastest.
 
 They build on each other, and there are more than these. `docs/structure.md` has the full set.
 
-**1. One library for all of ML.** This is the goal. Things that are usually separate packages share one set of tools:
-tensors, random numbers, datasets, optimisers and metrics. There is no separate layer of methods on top: a demonstration
-of a method is a short page that combines an estimator with a dataset.
+**1. One library for all of ML.** This is the goal. Bayesian inference, differentiable tensors, neural networks, logic,
+reinforcement learning and visualisation usually live in separate worlds, each with its own tools and its own way of doing
+things. Here they sit side by side and work the same way, so an idea can move between them: a probabilistic program, a
+network, a logic program and a game-playing agent all run, record and draw in the same fashion. There is no separate
+layer of methods on top. A demonstration of a method is a short page that combines an estimator with a dataset.
 
 **2. Everything leaves a trace.** This is the key idea. Every routine that runs in steps (an optimiser, a sampler, a
 trainer, an agent) records what it did as it went: the state, the metrics and how it ended. You can pause a run, replay it,
