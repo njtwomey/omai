@@ -215,3 +215,24 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `multiDiscrete` and `multiBinary` validate; `range` rejects a zero step, `quantileOf` a level outside [0, 1], `allclose` a traced input; `clipTo` in the diffusion
   samplers is the tensor `clip` (F-042). Skipped: FD-16 (a convention), the tolerance defaults of `isClose`/`allclose`, `cumprod` at zero. Own checks only: all
   engine test directories (about 25,900 tests in five niced runs, one worker), 207 examples, tsc, barrels, layers, lint; the full gate was not run.
+- **15:20 Fix, P3.26 and P3.29 (`agent-ol02-optim`).** The certain bugs of optim and losses, each first as a probe or test that fails on main, then the fix,
+  the test kept as a table (one `it` per area, no new file but `losses/degenerate.test.ts`). Optim: the gradient norm of `loggedSolverOf` and `slotAlgorithm`
+  is `dnrm2`, so 200,000 parameters no longer overflow the stack on a `Math.hypot` spread (OL-1). The stochastic `gradient` mode no longer ends `converged`
+  on a minibatch whose examples have no loss: the tolerance is tested on the whole gradient once per epoch (and at the start), at the cost of one extra
+  evaluation per epoch, counted in `nfev` and `ngev` (OL-2). `linprog` scales the cost vector, the right-hand sides and the finite bounds by powers of two,
+  only when they are further than a factor of 64 from 1, and rescales x, the optimal value, duals, ranges and path; a cost vector of 1e-9 or a right-hand
+  side of 1e-12 gave the wrong vertex or `unbounded` and now give the reference one in all three methods (OL-3; the columns of `A` are not scaled). OMP builds its
+  Gram matrix from views of the atoms (7.3 s to 0.23 s for 100 atoms of 300 x 900, identical residuals) and tests linear dependence as a cosine, so data in
+  small units select atoms (OL-9). Newton (F-046): the cause was not a failed line search; Armijo accepted steps of 1e-16 that left the objective and the
+  gradient unchanged. It now stops with `failed` when an accepted step improves neither, and `kernel-selection.test.ts` is back at `maxSteps: 300` with an
+  assertion that no solver takes 40 steps (Newton stops at step 9). OL-6 (the relative gradient tolerance) is documentation only: the option needs a public
+  field and a `VectorState` field, and the surface must stay flat. Losses: `l2Normalise` clamps under the square root and `binaryCrossEntropy` clamps the
+  input of the log, so zero embeddings and p in {0, 1} have finite gradients and the same values (OL-20); `checkScalar` and `checkWeights` reject 35
+  out-of-range knobs of 31 losses with `MdmlError('value')` (OL-19); the CTC `Lattice` has no parameter property (OL-22). `erasableSyntaxOnly`, proposed for the
+  engine tsconfig, fails on 14 files elsewhere (the finding was wrong that it was the only one) and was dropped. OL-23 is foundations F13, not `losses`.
+  Three existing tests pinned the bug and moved: `knowledge-graph.test.ts` (the stochastic mode used to stop after 67 to 556 of 800 steps on a lucky batch; TransE
+  trained fully has an MRR of 0.270 against 0.282, so the bound is 3 x chance, not 4), `kernel-quantile.test.ts` (the support count at penalty 0.0005 was 60 solver
+  noise entries above 1e-9, now 24 at an objective 1e-10 lower; the exact LP vertex is not monotone in the penalty, the test compares 0.1 with 0.002) and
+  `kernel-selection.test.ts` (back to 300). The same `Math.hypot(...grad)` is in `causal/_solve.ts:37`, outside optim, left. Own checks only: the test
+  directories of optim, losses, kernel-methods, nn, learn, linear, svm, tune, rl, agents and 18 callers (10,934 tests, one worker, niced; the two failures above
+  were the only ones), tsc, examples, barrels, layers, lint, agent index and surface (0 added, 0 removed, 0 changed); the full gate was not run.
