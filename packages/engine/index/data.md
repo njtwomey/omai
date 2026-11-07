@@ -8,7 +8,7 @@ Datasets as data: schemas for columns and targets (`xy`, `xyClasses`, `table`), 
 - structure `recipes.ts` (file): Recipes: a generator, knobs, modifiers and seed as plain data. `src/lib/data/recipes.ts:1` `mdml-engine/data`
 - structure `truth.ts` (file): The known truth of a generated dataset: function, boundary, Bayes rate. `src/lib/data/truth.ts:1` `mdml-engine/data`
 
-- function `batches`: Minibatches of a dataset, in order or shuffled by a key. `src/lib/data/batching.ts:44` `mdml-engine/data`
+- function `batches`: Minibatches of a dataset, in order or shuffled by a key. `src/lib/data/batching.ts:45` `mdml-engine/data`
 - function `generate`: Run a generator with a key and knob values. `src/lib/data/generator.ts:67` `mdml-engine/data`
 - function `makeFromRecipe`: Remake a dataset exactly from its recipe. `src/lib/data/recipes.ts:133` `mdml-engine/data`
 - function `table`: A data frame of named mixed-type columns. `src/lib/data/tensors.ts:251` `mdml-engine/data`

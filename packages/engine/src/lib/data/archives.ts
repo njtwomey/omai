@@ -42,6 +42,8 @@ function text(bytes: Uint8Array, start: number, length: number): string {
  *
  * @param bytes - The archive.
  * @returns A map from file path to contents.
+ * @throws MdmlError with code `value` for a header whose size is not an octal number, or a file the archive is too short
+ *   to hold.
  * @example
  * ```ts
  * import { untar } from 'mdml-engine/data'
@@ -55,6 +57,8 @@ export function untar(bytes: Uint8Array): Map<string, Uint8Array> {
     const name = text(bytes, offset, 100)
     if (name === '') break
     const size = Number.parseInt(text(bytes, offset + 124, 12).trim() || '0', 8)
+    if (!(size >= 0)) throw new MdmlError('value', `untar: the size of ${name} is not an octal number`)
+    if (offset + 512 + size > bytes.length) throw new MdmlError('value', `untar: the archive ends inside ${name}`)
     const type = bytes[offset + 156]
     const prefix = text(bytes, offset + 345, 155)
     const path = prefix === '' ? name : `${prefix}/${name}`
@@ -70,7 +74,7 @@ export function untar(bytes: Uint8Array): Map<string, Uint8Array> {
  *
  * @param bytes - The archive.
  * @returns A map from file path to contents.
- * @throws MdmlError with code `value` for a malformed archive or an unsupported compression method.
+ * @throws MdmlError with code `value` for a malformed or cut-short archive or an unsupported compression method.
  * @example
  * ```ts
  * import { unzip } from 'mdml-engine/data'
@@ -101,7 +105,10 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
     const name = new TextDecoder().decode(bytes.subarray(p + 46, p + 46 + nameLength))
     p += 46 + nameLength + extraLength + commentLength
     if (name.endsWith('/')) continue
+    if (local + 30 > bytes.length)
+      throw new MdmlError('value', `unzip: the local header of ${name} is outside the archive`)
     const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true)
+    if (start + compressed > bytes.length) throw new MdmlError('value', `unzip: the archive ends inside ${name}`)
     const data = bytes.subarray(start, start + compressed)
     if (method === 0) out.set(name, data.slice())
     else if (method === 8) out.set(name, await streamThrough(data, 'deflate-raw'))
@@ -192,7 +199,8 @@ const NPY_READERS: Readonly<
  *
  * @param bytes - The file.
  * @returns The shape, the dtype descriptor and the values.
- * @throws MdmlError with code `value` for a file that is not `.npy` or an unsupported dtype.
+ * @throws MdmlError with code `value` for a file that is not `.npy`, an unsupported dtype, a shape that is not a list of
+ *   whole numbers, or a file shorter than its header says.
  * @example
  * ```ts
  * import { parseNpy } from 'mdml-engine/data'
@@ -215,8 +223,10 @@ export function parseNpy(bytes: Uint8Array): {
     throw new MdmlError('value', 'parseNpy: not a .npy file')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const major = bytes[6] ?? 1
-  const headerLength = major === 1 ? view.getUint16(8, true) : view.getUint32(8, true)
   const start = major === 1 ? 10 : 12
+  if (bytes.length < start) throw new MdmlError('value', 'parseNpy: the file ends inside the preamble')
+  const headerLength = major === 1 ? view.getUint16(8, true) : view.getUint32(8, true)
+  if (start + headerLength > bytes.length) throw new MdmlError('value', 'parseNpy: the file ends inside the header')
   const header = new TextDecoder().decode(bytes.subarray(start, start + headerLength))
   const descr = /'descr':\s*'([<>|=])(\w)(\d+)'/.exec(header)
   const shapeText = /'shape':\s*\(([^)]*)\)/.exec(header)?.[1] ?? ''
@@ -230,9 +240,16 @@ export function parseNpy(bytes: Uint8Array): {
     .map((s) => s.trim())
     .filter((s) => s !== '')
     .map(Number)
+  if (!shape.every((s) => Number.isInteger(s) && s >= 0))
+    throw new MdmlError('value', `parseNpy: the shape (${shapeText}) is not a list of whole numbers`)
   const count = shape.reduce((a, b) => a * b, 1)
   const little = order !== '>'
   const offset = start + headerLength
+  if (offset + count * reader.size > bytes.length)
+    throw new MdmlError(
+      'value',
+      `parseNpy: the file holds ${bytes.length - offset} bytes of data, ${count * reader.size} needed`,
+    )
   const raw = Float64Array.from({ length: count }, (_, i) => reader.read(view, offset + i * reader.size, little))
   if (!fortran || shape.length < 2) return { shape, dtype: `${order}${kind}${width}`, values: raw }
   // Fortran order: the first index varies fastest.

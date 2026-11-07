@@ -74,6 +74,8 @@ export function padRagged(
   let longest = 0
   for (const s of seqs) longest = Math.max(longest, s.length)
   const t = layout.maxLength ?? longest
+  if (!Number.isInteger(t) || t < 0)
+    throw new MdmlError('value', `padRagged: the padded length must be a whole number, got ${t}`)
   const values = new Float64Array(seqs.length * t).fill(padValue)
   const mask = new Uint8Array(seqs.length * t)
   const lengths = new Int32Array(seqs.length)

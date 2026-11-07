@@ -10,6 +10,10 @@ import { RecordBoundary } from './RecordBoundary.tsx'
 
 const kinds = Object.keys(expositionSamples) as ExpositionKind[]
 
+// A pipeline whose stage shows a table has no frame to title, and a threshold sweep is several figures: both leave the
+// title to the page. Every other view puts the title it is given above its figure.
+const UNTITLED: readonly ExpositionKind[] = ['pipelineStages', 'thresholdSweep']
+
 function Bad(): ReactElement {
   throw new Error('this record cannot be drawn')
 }
@@ -17,8 +21,13 @@ function Bad(): ReactElement {
 describe('ExpositionView over a small valid record of every kind', () => {
   it('draws every kind on the server, through a component the registry names and the package exports', () => {
     for (const kind of kinds) {
-      const html = renderToString(<ExpositionView record={expositionSamples[kind]() as Exposition} />)
+      const record = expositionSamples[kind]() as Exposition
+      const html = renderToString(<ExpositionView record={record} />)
       expect(html.length, kind).toBeGreaterThan(0)
+      expect(
+        renderToString(<ExpositionView record={record} title="A TITLE" />).includes('A TITLE'),
+        `${kind}: title`,
+      ).toBe(!UNTITLED.includes(kind))
       expect(Object.keys(views), kind).toContain(viewFor(kind).component)
     }
   })

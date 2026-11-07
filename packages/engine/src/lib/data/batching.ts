@@ -33,6 +33,7 @@ export interface BatchOptions {
  * @param data - The dataset.
  * @param options - Batch size, shuffling key or sampler, and whether to drop the last partial batch.
  * @returns The batches.
+ * @throws MdmlError with code `value` unless `batchSize` is a whole number of at least 1.
  * @concept datasets
  * @index function Minibatches of a dataset, in order or shuffled by a key.
  * @example
@@ -97,6 +98,7 @@ export function epochs<D extends Dataset>(data: D, nEpochs: number, options: Bat
  * @param data - The dataset.
  * @param options - Batch size, key or sampler, and whether to drop the last partial batch.
  * @returns `{ epoch(e), length }`: the batches of epoch `e`, and the number of batches per epoch.
+ * @throws MdmlError with code `value` unless `batchSize` is a whole number of at least 1.
  * @example
  * ```ts
  * import { dataLoader, xy } from 'mdml-engine/data'
@@ -111,6 +113,7 @@ export function dataLoader<D extends Dataset>(
 ): { readonly epoch: (e: number) => D[]; readonly length: number } {
   const n = rowCount(data)
   const sampler = options.sampler ?? (options.key === undefined ? sequentialSampler(n) : randomSampler(n, options.key))
+  batchSampler(sampler, options.batchSize) // refuses a batch size that is not a whole number of at least 1
   const perEpoch = sampler(0).length
   const length =
     options.dropLast === true ? Math.floor(perEpoch / options.batchSize) : Math.ceil(perEpoch / options.batchSize)
@@ -185,6 +188,7 @@ export interface PadOptions extends PadLayout {
  * @param options - Pad value, maximum length, padding and truncating sides, dtype (by default `int32` when every value is
  *   an integer that fits 32 bits, else `float64`).
  * @returns The padded values `[n, T, ...]`, the mask `[n, T]` and the kept lengths `[n]`.
+ * @throws MdmlError with code `value` when `maxLength` is not a whole number of at least 0.
  * @example
  * ```ts
  * import { padSequences } from 'mdml-engine/data'
@@ -290,7 +294,8 @@ export interface BucketOptions {
  * @param data - The dataset.
  * @param options - Bucket boundaries, batch sizes, lengths, key and whether to drop partial batches.
  * @returns The batches.
- * @throws MdmlError with code `value` when the batch sizes do not match the buckets.
+ * @throws MdmlError with code `value` when the batch sizes do not match the buckets or are not whole numbers of at least
+ *   1, when the boundaries are not finite and strictly increasing, or when `lengths` is not one per row.
  * @example
  * ```ts
  * import { bucketBy, corpus } from 'mdml-engine/data'
@@ -300,10 +305,16 @@ export interface BucketOptions {
  */
 export function bucketBy<D extends Dataset>(data: D, options: BucketOptions): D[] {
   const lengths = options.lengths ?? sequenceLengths(data)
+  if (lengths.length !== rowCount(data))
+    throw new MdmlError('value', `bucketBy: ${lengths.length} lengths for ${rowCount(data)} rows`)
+  if (!options.boundaries.every((b, i) => Number.isFinite(b) && (i === 0 || b > (options.boundaries[i - 1] ?? 0))))
+    throw new MdmlError('value', 'bucketBy: the boundaries must be finite and strictly increasing')
   const nb = options.boundaries.length + 1
   const sizes =
     typeof options.batchSize === 'number' ? new Array<number>(nb).fill(options.batchSize) : options.batchSize
   if (sizes.length !== nb) throw new MdmlError('value', `bucketBy: ${sizes.length} batch sizes for ${nb} buckets`)
+  if (!sizes.every((z) => Number.isInteger(z) && z >= 1))
+    throw new MdmlError('value', 'bucketBy: the batch sizes must be whole numbers of at least 1')
   const buckets: number[][] = Array.from({ length: nb }, () => [])
   for (const [i, len] of lengths.entries()) {
     let b = 0
