@@ -48,6 +48,7 @@ import {
 } from '../../tensor/index.ts'
 import { concreteTwin, integrate, numericMode } from '../_numeric.ts'
 import { gammaSample, uniformOpen } from '../_sampling.ts'
+import { validateBetween, validateOrdered } from '../_validate.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
 
 /**
@@ -67,6 +68,7 @@ import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, va
 export function uniform(low: TensorLike = 0, high: TensorLike = 1): Distribution {
   const [lo, hi] = promoteFloat(low, high) as [Value, Value]
   validateParams('uniform', { low: [lo, 'finite'], high: [hi, 'finite'] })
+  validateOrdered('uniform', 'low', lo, 'high', hi)
   const batchShape = batchShapeOf(lo, hi)
   const width = sub(hi, lo)
   const outside = (x: Value): Value => logicalOr(less(x, lo), greater(x, hi))
@@ -223,6 +225,8 @@ export function kumaraswamy(a: TensorLike, b: TensorLike): Distribution {
 export function triangular(low: TensorLike, mode: TensorLike, high: TensorLike): Distribution {
   const [a, c, b] = promoteFloat(low, mode, high) as [Value, Value, Value]
   validateParams('triangular', { low: [a, 'finite'], mode: [c, 'finite'], high: [b, 'finite'] })
+  validateOrdered('triangular', 'low', a, 'high', b)
+  validateBetween('triangular', 'mode', c, ['low', a], ['high', b])
   const batchShape = batchShapeOf(a, c, b)
   const bb = (v: Value): Value => broadcastBatch(v, batchShape)
   const width = sub(b, a)

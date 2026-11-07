@@ -26,6 +26,7 @@ import {
 } from '../../random/index.ts'
 import {
   add,
+  asTensor,
   ceil,
   div,
   equal,
@@ -52,6 +53,7 @@ import {
 } from '../../tensor/index.ts'
 import { concreteTwin, discretePpf } from '../_numeric.ts'
 import { discreteSample, elementwiseSample } from '../_sampling.ts'
+import { validateBetween } from '../_validate.ts'
 import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, validateParams } from '../distribution.ts'
 import { binaryLogits, cdfBySum, entropyBySum, isCount, largest, modeBySearch } from './_support.ts'
 
@@ -113,6 +115,7 @@ export function poisson(rate: TensorLike): Distribution {
  */
 export function geometric(probs: TensorLike): Distribution {
   const [p] = promoteFloat(probs) as [Value]
+  validateParams('geometric', { probs: [p, 'positive'] })
   validateParams('geometric', { probs: [p, 'unitInterval'] })
   const batchShape = batchShapeOf(p)
   const inside = (x: Value): Value => logicalAnd(isCount(x), greaterEqual(x, 1))
@@ -166,7 +169,8 @@ export function geometric(probs: TensorLike): Distribution {
  */
 export function negativeBinomial(n: TensorLike, probs: TensorLike): Distribution {
   const [r, p] = promoteFloat(n, probs) as [Value, Value]
-  validateParams('negativeBinomial', { n: [r, 'positive'], probs: [p, 'unitInterval'] })
+  validateParams('negativeBinomial', { n: [r, 'positive'], probs: [p, 'positive'] })
+  validateParams('negativeBinomial', { probs: [p, 'unitInterval'] })
   const batchShape = batchShapeOf(r, p)
   const logPmf = (x: Value): Value => {
     const safe = where(isCount(x), x, 0)
@@ -235,6 +239,8 @@ export function hypergeometric(total: TensorLike, successes: TensorLike, draws: 
     successes: [n, 'nonNegativeInteger'],
     draws: [nn, 'nonNegativeInteger'],
   })
+  validateBetween('hypergeometric', 'successes', n, ['0', asTensor(0)], ['total', m])
+  validateBetween('hypergeometric', 'draws', nn, ['0', asTensor(0)], ['total', m])
   const batchShape = batchShapeOf(m, n, nn)
   const b = (v: Value): Value => broadcastBatch(v, batchShape)
   const low = maximum(sub(nn, sub(m, n)), 0)
