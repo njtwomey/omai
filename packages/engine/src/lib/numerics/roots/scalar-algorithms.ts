@@ -109,7 +109,9 @@ export const rootContract: Contract<RootState, RootPath> = defineContract({
 /** True when a and b are both non-zero with the same sign (compared by sign: a product of two small values underflows). */
 const sameSign = (a: number, b: number): boolean => a !== 0 && b !== 0 && Math.sign(a) === Math.sign(b)
 
-function checkBracket(fa: number, fb: number, name: string): void {
+function checkBracket(a: number, b: number, fa: number, fb: number, name: string): void {
+  // An infinite end point has no midpoint: bisect, brentq and toms748 used to run 100 steps on NaN and report no root.
+  if (!Number.isFinite(a) || !Number.isFinite(b)) throw new MdmlError('value', `${name}: the bracket must be finite`)
   if (sameSign(fa, fb)) throw new MdmlError('value', `${name}: f(a) and f(b) must have different signs`)
 }
 
@@ -289,7 +291,7 @@ export function bisectAlgorithm(
       const { call, history } = evaluator(f, [], 'bisect')
       const fa = call(a)
       const fb = call(b)
-      checkBracket(fa, fb, 'bisect')
+      checkBracket(a, b, fa, fb, 'bisect')
       if (fa === 0) return first(history, { x: a, fx: fa, rule: 'end point', flag: 'converged', internal: {} })
       if (fb === 0) return first(history, { x: b, fx: fb, rule: 'end point', flag: 'converged', internal: {} })
       return first(history, { x: a + (b - a), fx: fb, lo: a, hi: b, rule: 'start', internal: { lo: a, dm: b - a, fa } })
@@ -354,7 +356,7 @@ export function brentqAlgorithm(
       const { call, history } = evaluator(f, [], 'brentq')
       const fpre = call(a)
       const fcur = call(b)
-      checkBracket(fpre, fcur, 'brentq')
+      checkBracket(a, b, fpre, fcur, 'brentq')
       if (fpre === 0) return first(history, { x: a, fx: fpre, rule: 'end point', flag: 'converged', internal: {} })
       if (fcur === 0) return first(history, { x: b, fx: fcur, rule: 'end point', flag: 'converged', internal: {} })
       return first(history, {
@@ -471,7 +473,7 @@ export function ridderAlgorithm(
       const { call, history } = evaluator(f, [], 'ridder')
       const fa = call(a)
       const fb = call(b)
-      checkBracket(fa, fb, 'ridder')
+      checkBracket(a, b, fa, fb, 'ridder')
       if (fa === 0) return first(history, { x: a, fx: fa, rule: 'end point', flag: 'converged', internal: {} })
       if (fb === 0) return first(history, { x: b, fx: fb, rule: 'end point', flag: 'converged', internal: {} })
       return first(history, {
@@ -564,7 +566,7 @@ export function toms748Algorithm(
       const b = Math.max(a0, b0)
       const fa = call(a)
       const fb = call(b)
-      checkBracket(fa, fb, 'toms748')
+      checkBracket(a, b, fa, fb, 'toms748')
       if (fa === 0) return first(history, { x: a, fx: fa, rule: 'end point', flag: 'converged', internal: {} })
       if (fb === 0) return first(history, { x: b, fx: fb, rule: 'end point', flag: 'converged', internal: {} })
       return first(history, {

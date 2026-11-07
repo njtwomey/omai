@@ -215,7 +215,12 @@ function buildTree(kind: 'kd' | 'ball' | 'vp', x: TensorLike, options: TreeOptio
       }
       return p === Number.POSITIVE_INFINITY ? s : s ** (1 / p)
     }
-    if (kind === 'ball') return Math.max(0, dist(qs, iq, node.centre, 0) - node.radius)
+    if (kind === 'ball') {
+      // The triangle inequality holds in the reals, but the centre is a rounded mean and both distances are rounded: shrink
+      // the bound by the rounding, or a point exactly at the query radius (a lattice, a duplicate) is pruned and missed.
+      const toCentre = dist(qs, iq, node.centre, 0)
+      return Math.max(0, toCentre - node.radius - 8 * Number.EPSILON * (toCentre + node.radius))
+    }
     return dq ?? 0
   }
 

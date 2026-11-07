@@ -400,7 +400,6 @@ export function tanhSinh(
   options: { readonly tol?: number; readonly maxLevel?: number } = {},
 ): { readonly value: Value; readonly levels: number; readonly converged: boolean; readonly status: RunStatus } {
   const half = (b - a) / 2
-  const mid = (a + b) / 2
   const estimate = (h: number): Value => {
     const ts: number[] = []
     for (let t = -4; t <= 4 + 1e-12; t += h) ts.push(t)
@@ -408,11 +407,14 @@ export function tanhSinh(
     const ws: number[] = []
     for (const t of ts) {
       const u = (Math.PI / 2) * Math.sinh(t)
-      const x = Math.tanh(u)
       const w = (h * (Math.PI / 2) * Math.cosh(t)) / Math.cosh(u) ** 2
+      // The node is measured from the nearer end point, by (b - a) / (1 + exp(2 |u|)): mid + half tanh(u) loses everything
+      // below 1e-16 of the end point (1 / sqrt(x) on [0, 1] came out 1e-8 short), this keeps the offset exactly.
+      const offset = (b - a) / (1 + Math.exp(2 * Math.abs(u)))
+      const x = u < 0 ? a + offset : b - offset
       // Skip nodes that round to the endpoints (the integrand may be singular there).
-      if (Math.abs(x) >= 1 || w === 0) continue
-      xs.push(mid + half * x)
+      if (x <= Math.min(a, b) || x >= Math.max(a, b) || w === 0) continue
+      xs.push(x)
       ws.push(half * w)
     }
     const fx = f(fromStorage(Float64Array.from(xs), [xs.length], 'float64'))

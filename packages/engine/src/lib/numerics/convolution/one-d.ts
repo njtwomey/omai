@@ -133,7 +133,8 @@ export function convolve(a: TensorLike, v: TensorLike, mode: ConvolutionMode = '
 
 /**
  * Cross-correlation of two 1-D arrays (numpy.correlate): c_k = sum_n a_(n + k) v_n, which is the convolution with v
- * reversed.
+ * reversed. As numpy, when v is longer than a the `same` output is the middle of the full one counted from the other end
+ * (the `valid` and `full` outputs do not depend on it).
  *
  * @param a - First input.
  * @param v - Second input.
@@ -147,7 +148,12 @@ export function convolve(a: TensorLike, v: TensorLike, mode: ConvolutionMode = '
  * ```
  */
 export function correlate(a: TensorLike, v: TensorLike, mode: ConvolutionMode = 'valid'): Value {
-  return convolve(a, flip(vector(v, 'correlate'), 0), mode)
+  const kernel = vector(v, 'correlate')
+  // numpy swaps a longer v to the front and reverses the result, which centres 'same' on the other side: the middle
+  // max(n, m) entries of the full output start at (n + m - 1 - max) / 2 counted from the end, not the start.
+  const [x] = promoteFloat(a) as [Value]
+  if (mode === 'same' && (kernel.shape[0] ?? 0) > (x.shape[0] ?? 0)) return flip(convolve(kernel, flip(x, 0), mode), 0)
+  return convolve(x, flip(kernel, 0), mode)
 }
 
 /**

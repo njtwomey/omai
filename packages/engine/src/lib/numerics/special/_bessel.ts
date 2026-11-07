@@ -405,6 +405,11 @@ export function besselJY(v: number, x: number): { j: BesselPair; y: BesselPair }
     const rytemp = (xmu + i) * xi2 * ry1 - rymu
     rymu = ry1
     ry1 = rytemp
+    // Y_v overflows towards -Infinity for small x, and Infinity - Infinity in the next step would turn that into NaN.
+    if (!Number.isFinite(ry1)) {
+      if (i < nl) rymu = ry1
+      break
+    }
   }
   // J_{v+1} = (v / x) J_v - J'_v.
   return { j: { v: jv, v1: v * xi * jv - jpv }, y: { v: rymu, v1: ry1 } }

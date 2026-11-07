@@ -449,14 +449,14 @@ export function bsplineBasisElement(t: TensorLike, extrapolate = true): BSpline 
 
 /**
  * The default interpolation knots of make_interp_spline: for odd k, not-a-knot (the data points without the (k - 1) / 2
- * nearest each end, plus k + 1 repeated end knots); for k = 2, the midpoints between data points without the first and
- * last; for k = 0, the data points themselves plus the last repeated. Takes and returns tensors (migration, D-009:
- * was `readonly number[]` to `number[]`).
+ * nearest each end, plus k + 1 repeated end knots); for even k (scipy since 1.13), the midpoints between data points
+ * without the first and last k / 2 of them; for k = 0, the data points themselves plus the last repeated. Takes and
+ * returns tensors (migration, D-009: was `readonly number[]` to `number[]`).
  *
  * @param x - Data points `[n]`, increasing.
- * @param k - Degree: 0, 2 or odd.
+ * @param k - Degree.
  * @returns The knot vector `[n + k + 1]`.
- * @throws MdmlError with code `value` for an even degree other than 0 and 2, `shape` unless `x` is a vector, and
+ * @throws MdmlError with code `value` for a degree that is not a whole number, `shape` unless `x` is a vector, and
  *   `not-differentiable` for a traced value.
  * @example
  * ```ts
@@ -471,12 +471,14 @@ export function notAKnot(points: TensorLike, k: number): Tensor<'float64', [numb
 function notAKnotKernel(x: readonly number[], k: number): number[] {
   const first = x[0] ?? 0
   const last = x[x.length - 1] ?? 0
+  if (!Number.isInteger(k) || k < 0) throw new MdmlError('value', 'notAKnot: the degree must be a whole number')
   if (k === 0) return [...x, last]
-  if (k === 2) {
+  if (k % 2 === 0) {
+    // Even degrees (scipy since 1.13): the Greville sites, without the first and last k / 2 of them.
     const mids = x.slice(1).map((v, i) => (v + (x[i] ?? 0)) / 2)
-    return [first, first, first, ...mids.slice(1, -1), last, last, last]
+    const inner = mids.slice(k / 2, mids.length - k / 2)
+    return [...new Array<number>(k + 1).fill(first), ...inner, ...new Array<number>(k + 1).fill(last)]
   }
-  if (k % 2 !== 1) throw new MdmlError('value', 'notAKnot: degrees 0, 2 and odd degrees only')
   const m = (k - 1) / 2
   const inner = x.slice(m + 1, x.length - m - 1)
   return [...new Array<number>(k + 1).fill(x[0] ?? 0), ...inner, ...new Array<number>(k + 1).fill(x[x.length - 1] ?? 0)]
@@ -489,7 +491,7 @@ function notAKnotKernel(x: readonly number[], k: number): number[] {
  *
  * @param x - Points `[n]`, increasing.
  * @param y - Values `[n, ...]`.
- * @param k - Degree: 0, 2 or odd (default 3).
+ * @param k - Degree (default 3).
  * @param knots - Optional knots `[n + k + 1]` (default not-a-knot).
  * @returns The spline.
  * @example

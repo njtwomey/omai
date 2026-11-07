@@ -416,28 +416,78 @@ export function eighQlKernel(input: Float64Array, n: number): { w: Float64Array;
   return sortedEigen(d, a, n)
 }
 
-/** Complete the columns j >= rank of an m x k matrix with orthonormal columns to an orthonormal set (Gram-Schmidt). */
+/**
+ * Re-orthogonalise the kept columns of an m x k matrix U (modified Gram-Schmidt, twice, in order of decreasing singular
+ * value) when they are not orthogonal to 1e-14. A left vector is A v / s, and for a singular value near eps |A| it carries
+ * the rounding error of A v relative to s, so a matrix of rank 11 in numerical terms (Hilbert 12) had U'U - I of 5e-9.
+ * Orthogonal columns (every well-conditioned matrix) are left exactly as they were; a column that turns out to lie in the
+ * span of the earlier ones is dropped from `filled`, to be completed with the null columns.
+ */
+function orthogonaliseKept(u: Float64Array, m: number, k: number, filled: boolean[]): void {
+  const dot = (c: number, d: number): number => {
+    let sum = 0
+    for (let i = 0; i < m; i++) sum += (u[i * k + c] ?? 0) * (u[i * k + d] ?? 0)
+    return sum
+  }
+  let worst = 0
+  for (let c = 1; c < k; c++)
+    for (let d = 0; d < c; d++) if (filled[c] && filled[d]) worst = Math.max(worst, Math.abs(dot(c, d)))
+  if (worst <= 1e-14) return
+  for (let c = 0; c < k; c++) {
+    if (!filled[c]) continue
+    for (let pass = 0; pass < 2; pass++) {
+      for (let d = 0; d < c; d++) {
+        if (!filled[d]) continue
+        const proj = dot(c, d)
+        for (let i = 0; i < m; i++) u[i * k + c] = (u[i * k + c] ?? 0) - proj * (u[i * k + d] ?? 0)
+      }
+    }
+    const norm = Math.sqrt(dot(c, c))
+    if (norm < 1e-8) {
+      filled[c] = false
+      for (let i = 0; i < m; i++) u[i * k + c] = 0
+    } else for (let i = 0; i < m; i++) u[i * k + c] = (u[i * k + c] ?? 0) / norm
+  }
+}
+
+/**
+ * Complete the columns j >= rank of an m x k matrix with orthonormal columns to an orthonormal set: each missing column
+ * is a coordinate vector with the span of the filled columns projected out (Gram-Schmidt, two passes). The first
+ * coordinate vector that keeps a residual above 0.1 is taken, else the one with the largest residual: a residual near 1e-8
+ * would carry the rounding error of the projection (eps / 1e-8) into the orthogonality of the whole set.
+ */
 function completeColumns(u: Float64Array, m: number, k: number, filled: readonly boolean[]): void {
   let candidate = 0
   for (let c = 0; c < k; c++) {
     if (filled[c]) continue
+    let best: Float64Array | undefined
+    let bestNorm = 0
+    let next = candidate
     while (candidate < m) {
       const x = new Float64Array(m)
       x[candidate++] = 1
-      for (let d = 0; d < k; d++) {
-        if (!filled[d]) continue
-        let dot = 0
-        for (let i = 0; i < m; i++) dot += (u[i * k + d] ?? 0) * (x[i] ?? 0)
-        for (let i = 0; i < m; i++) x[i] = (x[i] ?? 0) - dot * (u[i * k + d] ?? 0)
+      for (let pass = 0; pass < 2; pass++) {
+        for (let d = 0; d < k; d++) {
+          if (!filled[d]) continue
+          let dot = 0
+          for (let i = 0; i < m; i++) dot += (u[i * k + d] ?? 0) * (x[i] ?? 0)
+          for (let i = 0; i < m; i++) x[i] = (x[i] ?? 0) - dot * (u[i * k + d] ?? 0)
+        }
       }
       let norm = 0
       for (const e of x) norm += e * e
       norm = Math.sqrt(norm)
-      if (norm > 1e-8) {
-        for (let i = 0; i < m; i++) u[i * k + c] = (x[i] ?? 0) / norm
-        ;(filled as boolean[])[c] = true
-        break
+      if (norm > bestNorm) {
+        best = x
+        bestNorm = norm
+        next = candidate
       }
+      if (norm > 0.1) break
+    }
+    candidate = next
+    if (best !== undefined && bestNorm > 1e-8) {
+      for (let i = 0; i < m; i++) u[i * k + c] = (best[i] ?? 0) / bestNorm
+      ;(filled as boolean[])[c] = true
     }
   }
 }
@@ -501,6 +551,7 @@ function svdTall(a: Float64Array, m: number, n: number): { u: Float64Array; s: F
     for (let i = 0; i < m; i++) uo[i * n + dst] = keep ? (u[i * n + src] ?? 0) / sv : 0
     for (let i = 0; i < n; i++) vo[i * n + dst] = v[i * n + src] ?? 0
   })
+  orthogonaliseKept(uo, m, n, filled)
   completeColumns(uo, m, n, filled)
   normaliseColumns(uo, m, n, vo, n)
   return { u: uo, s, v: vo }
@@ -729,6 +780,7 @@ function svdGolubKahan(
     for (let i = 0; i < m; i++) uo[i * n + dst] = keep ? A(i, src) : 0
     for (let i = 0; i < n; i++) vo[i * n + dst] = V(i, src)
   })
+  orthogonaliseKept(uo, m, n, filled)
   completeColumns(uo, m, n, filled)
   normaliseColumns(uo, m, n, vo, n)
   return { u: uo, s: sv, v: vo }
@@ -744,10 +796,12 @@ function scaleByPow2(x: number, k: number): number {
  * The exponent e whose power 2^-e brings the largest finite magnitude of the matrix into [1, 2), or 0 when the matrix is
  * of ordinary scale (largest magnitude within [2^-100, 2^100]), is zero, or has a non-finite entry: the Jacobi test
  * multiplies two squared column norms (a fourth power of the entries), which leaves the double range outside that band.
+ * The Euclidean norm of `norm` squares the entries and needs less, so it takes the same exponent.
  */
-function scaleExponent(a: Float64Array): number {
+export function scaleExponent(a: ArrayLike<number>): number {
   let largest = 0
-  for (const x of a) {
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i] ?? 0
     if (!Number.isFinite(x)) return 0
     largest = Math.max(largest, Math.abs(x))
   }

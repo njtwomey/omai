@@ -623,3 +623,24 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   deleted; `isContext`, `supportRank`, `avalOf` kept: executed examples). Findings: `findings/unused-exports.md`. Own checks
   only (the full gate was not run): six tsc runs, 1,306 test files with 19,354 tests of the 41 touched domains plus render and the
   site, 1,521 `@example`s, barrels, layers, lint, agent index, surface.
+- **19:55 P3.23: tests for `numerics` (`agent-ts05-numerics-tests`).** 15 new `it` blocks in 11 files (numerics tests 1,586 to 1,601, the directory runs in
+  10 s) and about 1,300 table rows. `linalg/edge.test.ts`: 14 matrices (1 x 1, tall and wide, rank 1 and 2, zero, Hilbert 6 and 12, identity, a 4 x 4 at scales
+  1e-300 to 1e300) through QR, SVD, `pinv` (Penrose conditions), `nullSpace` and `matrixRank` against their identities and numpy; `solve`, `inv`, `det`, `cond`, `norm`,
+  LU and Cholesky at cond 1.5e7 and at the edges of the double range; `eigh` on a Wilkinson matrix and repeated spectra, `expm`, `sqrtm`, `logm` against scipy; NaN input
+  never answered with a finite result; the small helpers never run before. `special/limits.test.ts`: 718 scipy and mpmath rows (gamma, erf, normal, incomplete gamma and beta
+  and their inverses, Bessel, zeta, elliptic, distribution functions, logistic family) at poles, overflow, large parameters and infinities, and the gradients of
+  `gammainc` and `betainc` against closed forms and central differences. `roots/hard`, `quadrature/closed-forms`, `fourier/lengths` (lengths 1 to 65537),
+  `convolution/lengths`, `sparse/krylov`, `approximation/closed-forms`, `interpolate/scipy-edges`, `geometry/postconditions`, `spatial/ties`. The library was right on
+  nearly every ordinary row; the edges found nine fixes, each with its failing row seen first and its own commit: `norm` overflowed and underflowed outside 1e-154 to
+  1e154 (`fe276d7a`), `expm` looped for ever on an infinite entry (`e5c0eb7e`), the SVD of a numerically rank-deficient matrix had a non-orthonormal U (Hilbert 12:
+  7e-9, `78fddf4d`), `erfinv` below 0.5 lost its argument (8e-8 relative at 1e-10, 0 at 1e-300) and `yv` gave NaN where scipy gives -Infinity (`d2041b23`), an infinite
+  bracket ran 100 steps on NaN in three finders (`36e7decd`), `tanhSinh` lost a lower end-point singularity to rounding (1 / sqrt(x): 1e-8 short, `0cb2102c`),
+  `correlate` in `same` mode with a longer kernel was centred from the wrong end (`7d4df768`), `makeInterpSpline` threw for degree 4 (`ffdcf7a1`), and `ballTree` pruned a
+  point exactly at the query radius (`969b4f34`). Not fixed, recorded: ND-30 (`minres` ignores `preconditioner`), ND-31 (`gmres` and `minres` residual on a singular
+  inconsistent system), ND-32 (`betainc` at a = 5e7), ND-33 (`tanhSinh` range and upper end points). Findings about the tests: `simpson` on an even number of points is
+  not exact for cubics (scipy's Cartwright correction is the same), `halley` counts one more iteration than scipy at the same four evaluations, `fftConvolve` `same`
+  has the size of the first input (scipy) where `convolve` has the larger (numpy). Coverage of the numerics suite alone (v8, one worker): statements 92.94 to 94.27 percent
+  (11,692 of 12,580 to 11,936 of 12,662), branches 70.28 to 72.26 (5,753 of 8,186 to 5,958 of 8,245), functions 94.63 to 95.97. Checks: engine tsc; the 61
+  files of `numerics`; `vitest related` on the changed sources in two runs (A: 1,504 files, 23,802 tests; B: 1,376 files, 21,761 tests; all passed, the callers of `norm`, `svd`,
+  `erfinv`, the root finders and the trees included); 43 `@example`s of the touched files; barrels, layers, lint, agent index, surface 0 added, 0 removed, 0 changed. The full gate was not
+  run. Nothing pushed (D-014).

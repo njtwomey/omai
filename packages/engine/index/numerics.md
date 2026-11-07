@@ -65,7 +65,7 @@ Dense linear algebra, numpy.linalg and scipy.linalg style: determinants and norm
 - function `expm`: Matrix exponential by Pade scaling and squaring. `src/lib/numerics/linalg/functions.ts:73` `mdml-engine/numerics/linalg`
 - function `inv`: Matrix inverse, batched and differentiable. `src/lib/numerics/linalg/lu.ts:106` `mdml-engine/numerics/linalg`
 - function `lstsq`: Least-squares solution of A x = b. `src/lib/numerics/linalg/qr.ts:176` `mdml-engine/numerics/linalg`
-- function `norm`: Vector and matrix norms, like numpy.linalg.norm. `src/lib/numerics/linalg/basics.ts:152` `mdml-engine/numerics/linalg`
+- function `norm`: Vector and matrix norms, like numpy.linalg.norm. `src/lib/numerics/linalg/basics.ts:154` `mdml-engine/numerics/linalg`
 - function `qr`: Reduced QR factorisation by Householder reflections. `src/lib/numerics/linalg/qr.ts:130` `mdml-engine/numerics/linalg`
 - function `solve`: Solve a square linear system by LU, like numpy.linalg.solve. `src/lib/numerics/linalg/lu.ts:85` `mdml-engine/numerics/linalg`
 - function `svd`: Reduced singular value decomposition, differentiable. `src/lib/numerics/linalg/svd.ts:174` `mdml-engine/numerics/linalg`
@@ -109,7 +109,7 @@ Nearest-neighbour search: exact brute force and spatial trees (KD, ball, vantage
 
 - function `kNearest`: Exact k nearest neighbours by brute force. `src/lib/numerics/spatial/brute.ts:126` `mdml-engine/numerics/spatial`
 
-- structure `kdTree`: KD tree for nearest-neighbour and radius queries. `src/lib/numerics/spatial/trees.ts:385` `mdml-engine/numerics/spatial`
+- structure `kdTree`: KD tree for nearest-neighbour and radius queries. `src/lib/numerics/spatial/trees.ts:390` `mdml-engine/numerics/spatial`
 
 ## numerics/special
 
