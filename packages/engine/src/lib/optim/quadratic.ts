@@ -9,8 +9,8 @@ import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
 import {
-  type Dense,
   boundVectorFrom,
+  type Dense,
   expectLength,
   finiteVectorFrom,
   matrixFrom,
