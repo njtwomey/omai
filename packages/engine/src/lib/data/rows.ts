@@ -174,6 +174,12 @@ export interface SplitOptions {
  * Split a dataset into training and test parts (sklearn.model_selection.train_test_split, test size rounded up),
  * optionally shuffled and stratified by class.
  *
+ * Without a `key` the rows are split in order, not shuffled (unlike scikit-learn), so sorted data gives a biased test
+ * set. The split is over the dataset's per-row entries: for `queries`, `interactions`, `trajectories`, `timeseries` and
+ * `events` that is a document, a (user, item) pair, a transition or a time, so one query, user, episode or the future
+ * of a series can land in both parts. Split those by group or in time with the splitters of `learn` on indices, then
+ * `take`.
+ *
  * @param data - The dataset.
  * @param options - Test size, shuffling key and stratification. A `testSize` below 1 is a fraction of the rows, from 1 up
  *   a whole number of rows (`1` is one row, not all of them).
