@@ -8,7 +8,7 @@ Rendering mathematics as data: pinhole and orthographic cameras, grid ray castin
 
 - function `pathTrace`: Monte Carlo path tracing. `src/lib/graphics/pathtracing.ts:312` `mdml-engine/graphics`
 - function `pinholeCamera`: Pinhole camera with view and projection matrices. `src/lib/graphics/camera.ts:79` `mdml-engine/graphics`
-- function `rasteriseMesh`: Triangle rasterisation with depth buffer. `src/lib/graphics/rasterise.ts:349` `mdml-engine/graphics`
+- function `rasteriseMesh`: Triangle rasterisation with depth buffer. `src/lib/graphics/rasterise.ts:350` `mdml-engine/graphics`
 - function `renderWhitted`: Whitted ray tracing with reflection, refraction and shadows. `src/lib/graphics/raytracing.ts:610` `mdml-engine/graphics`
 
 - algorithm `pathTracerAlgorithm`: Path tracing accumulating one sample per pixel per step. `src/lib/graphics/pathtracing.ts:214` `mdml-engine/graphics`
