@@ -1,8 +1,17 @@
 /**
  * Small helpers on plain numbers and number lists, used where tensors would be overkill: closeness tests in the numpy
  * sense, clamping, accurate summation (Kahan and pairwise), loop-based extrema and argmax that never spread into
- * `Math.max`, stable log-sum-exp and softmax, ranges, quantiles, means and variances, and bit counts.
+ * `Math.max`, stable log-sum-exp and softmax, ranges, quantiles, means and variances, and bit counts, with the few constants that more than one domain needs.
  */
+
+/** The Euler-Mascheroni constant, the limit of the harmonic sum minus the logarithm. */
+export const EULER_GAMMA: number = 0.5772156649015329
+
+/** The natural logarithm of 2 pi, the constant of the Gaussian log density (as `Math.log(2 * Math.PI)`). */
+export const LOG_2PI: number = Math.log(2 * Math.PI)
+
+/** Half the natural logarithm of 2 pi (as `0.5 * Math.log(2 * Math.PI)`): the standard normal log density at 0 is minus this. */
+export const LOG_SQRT_2PI: number = 0.5 * Math.log(2 * Math.PI)
 
 /**
  * Whether two numbers are close in the numpy sense: `|a - b| <= atol + rtol * |b|`. NaNs are never close; equal
