@@ -35,6 +35,14 @@ agent-index: ## Regenerate the agent index (llms.txt, packages/{engine,render}/l
 agent-index-check: ## Fail if the agent index is stale or an @index tag is invalid
 	$(NODE) scripts/agent-index.ts --check
 
+.PHONY: api-surface
+api-surface: ## Regenerate docs/api-surface.txt, the digest of every export's name and signature (the guard of a refactor)
+	$(NODE) scripts/api-surface.ts
+
+.PHONY: api-surface-check
+api-surface-check: ## Fail if the public surface differs from docs/api-surface.txt (ARGS="--compare <full file>" for a diff)
+	$(NODE) scripts/api-surface.ts --check
+
 .PHONY: layers
 layers: ## Check layering: no import cycles between core domains, and the package rules
 	$(NODE) scripts/layers.ts
