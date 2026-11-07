@@ -665,3 +665,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   `surface-before-waveb16.tsv`: 2 added (`metrics#ConfusionTable`, `tensor#fromVector`), 0 removed, 39 changed (34 engine, 5 render). Checks (own, the full gate was not
   run): six tsc runs; 478 engine test files with 7,723 tests of `metrics`, `stats`, `numerics`, `optim`, `systems`, `vision`, `linear`, `gam`, `learn`, `tensor`, `exposition`; render 93 files, 510 tests; 384
   `@example`s of the touched files and of `metrics`; barrels, layers, lint, agent index, surface. Nothing pushed (D-014).
+- **22:40 Gate.** Native-array stage 5 (result and state records) passed the full local gate: 26,525 tests, 9,614 examples, all static checks and all six tsc runs, first run.
+  Completion about 80% by effort. Nothing pushed (D-014).
