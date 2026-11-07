@@ -5,8 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { fromStorage, type Shape, sizeOf, type Tensor, type TensorLike } from '../tensor/index.ts'
-import { vectorNumbers } from './_check.ts'
+import { fromStorage, type Shape, sizeOf, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'
 import { binomialOne, poissonOne } from './_variates.ts'
 import { uniformStream } from './continuous.ts'
@@ -119,7 +118,7 @@ export function categorical(
   shape: Shape,
   options: { readonly logits?: boolean } = {},
 ): Tensor<'int32'> {
-  const given = vectorNumbers('categorical', 'the weights', weights)
+  const given = toVector(weights, 'categorical')
   let w = given
   if (options.logits === true) {
     let m = -Infinity
@@ -152,7 +151,7 @@ export function categorical(
  */
 export function multinomial(k: Key, n: number, probs: TensorLike, samples: number): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 0) throw new MdmlError('value', `multinomial: n must be a non-negative integer`)
-  const p = vectorNumbers('multinomial', 'the probabilities', probs)
+  const p = toVector(probs, 'multinomial')
   const cdf = cumulative(p, 'multinomial')
   const K = p.length
   const next = uniformStream(k)
@@ -266,7 +265,7 @@ export interface AliasTable {
  * ```
  */
 export function aliasTable(weights: TensorLike): AliasTable {
-  const w = vectorNumbers('aliasTable', 'the weights', weights)
+  const w = toVector(weights, 'aliasTable')
   const n = w.length
   cumulative(w, 'aliasTable')
   const total = w.reduce((a, b) => a + b, 0)

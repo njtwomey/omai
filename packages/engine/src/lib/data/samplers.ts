@@ -6,7 +6,7 @@
 
 import { MdmlError } from '../base/index.ts'
 import { categorical, foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
-import { asTensor, concreteOrThrow, fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
+import { fromStorage, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 
 /**
  * The order in which rows are visited in one epoch (a torch `Sampler`): a function of the epoch number, so each epoch
@@ -65,14 +65,6 @@ export function randomSampler(n: number, key: Key, options: RandomSamplerOptions
   }
 }
 
-/** The numbers of a rank-1 tensor-like read at the entry of a function of this file (a traced value is rejected). */
-function vectorOf(name: string, what: string, x: TensorLike): number[] {
-  const t = concreteOrThrow(asTensor(x), name)
-  if (t.shape.length !== 1)
-    throw new MdmlError('shape', `${name}: ${what} must be a vector, got [${t.shape.join(', ')}]`)
-  return Array.from(t.data)
-}
-
 /**
  * Draw rows with probability proportional to their weights (torch `WeightedRandomSampler`), for example inverse class
  * frequencies to balance classes. Takes tensors (migration, D-009: `weights` was `readonly number[]`; nested arrays
@@ -93,21 +85,21 @@ function vectorOf(name: string, what: string, x: TensorLike): number[] {
  * ```
  */
 export function weightedRandomSampler(
-  weightVector: TensorLike,
+  weights: TensorLike,
   numSamples: number,
   key: Key,
   options: { readonly replacement?: boolean } = {},
 ): Sampler {
-  const weights = vectorOf('weightedRandomSampler', 'the weights', weightVector)
-  const positive = weights.filter((w) => w > 0).length
+  const score = toVector(weights, 'weightedRandomSampler')
+  const positive = score.filter((w) => w > 0).length
   if (options.replacement === false && numSamples > positive)
     throw new MdmlError('value', `weightedRandomSampler: ${numSamples} draws from ${positive} rows without replacement`)
   return (epoch) => {
     const k = foldIn(key, epoch)
-    if (options.replacement !== false) return Int32Array.from(categorical(k, weights, [numSamples]).data)
+    if (options.replacement !== false) return Int32Array.from(categorical(k, score, [numSamples]).data)
     // Without replacement: Efraimidis-Spirakis keys u^(1/w), the largest numSamples.
-    const u = uniform(k, [weights.length]).data
-    const scored = weights.map((w, i) => [w > 0 ? Math.log(u[i] ?? 0) / w : -Infinity, i] as const)
+    const u = uniform(k, [score.length]).data
+    const scored = score.map((w, i) => [w > 0 ? Math.log(u[i] ?? 0) / w : -Infinity, i] as const)
     scored.sort((a, b) => b[0] - a[0] || a[1] - b[1])
     return Int32Array.from(scored.slice(0, numSamples), (s) => s[1])
   }
@@ -148,7 +140,7 @@ export function subsetRandomSampler(indices: readonly number[], key: Key): Sampl
  * ```
  */
 export function balancedWeights(labels: TensorLike): Tensor<'float64'> {
-  const classes = vectorOf('balancedWeights', 'the labels', labels)
+  const classes = toVector(labels, 'balancedWeights')
   const counts = new Map<number, number>()
   for (const c of classes) counts.set(c, (counts.get(c) ?? 0) + 1)
   const k = counts.size

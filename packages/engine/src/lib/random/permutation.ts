@@ -5,8 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
-import { asTensor, fromStorage, type Tensor, type TensorLike, take, type Value } from '../tensor/index.ts'
-import { vectorNumbers } from './_check.ts'
+import { asTensor, fromStorage, type Tensor, type TensorLike, take, toVector, type Value } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'
 import { uniformStream } from './continuous.ts'
 import { categorical } from './discrete.ts'
@@ -86,7 +85,7 @@ export function choice(
   options: { readonly replace?: boolean; readonly weights?: TensorLike } = {},
 ): Tensor<'int32'> {
   const replace = options.replace ?? true
-  const weights = options.weights === undefined ? undefined : vectorNumbers('choice', 'the weights', options.weights)
+  const weights = options.weights === undefined ? undefined : toVector(options.weights, 'choice')
   if (weights !== undefined && weights.length !== n) {
     throw new MdmlError('value', `choice: ${weights.length} weights for a population of ${n}`)
   }
@@ -260,7 +259,7 @@ export function reservoir<T>(
  * ```
  */
 export function randomSplit(k: Key, n: number, fractions: TensorLike): Tensor<'int32'>[] {
-  const shares = vectorNumbers('randomSplit', 'the fractions', fractions)
+  const shares = toVector(fractions, 'randomSplit')
   const total = shares.reduce((a, b) => a + b, 0)
   if (shares.some((f) => !(f >= 0)) || total > 1 + 1e-9) {
     throw new MdmlError('value', `randomSplit: fractions must be non-negative with a sum of at most 1`)

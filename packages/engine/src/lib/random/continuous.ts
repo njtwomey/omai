@@ -15,11 +15,12 @@ import {
   sizeOf,
   type Tensor,
   type TensorLike,
+  toVector,
   transpose,
   type Value,
 } from '../tensor/index.ts'
 import { bitsBlock } from './_bits.ts'
-import { assertPositive, assertScale, vectorNumbers } from './_check.ts'
+import { assertPositive, assertScale } from './_check.ts'
 import { unitDouble, unitDoubles } from './_unit.ts'
 import { gammaOne, logGammaOne, truncatedOne } from './_variates.ts'
 import { foldIn, type Key, split } from './key.ts'
@@ -418,7 +419,7 @@ export function studentT(k: Key, shape: Shape, df: number): Tensor<'float64'> {
  * ```
  */
 export function dirichlet(k: Key, alpha: TensorLike, n: number): Tensor<'float64'> {
-  const a = vectorNumbers('dirichlet', 'the concentrations', alpha)
+  const a = toVector(alpha, 'dirichlet')
   if (a.some((x) => !(x > 0))) throw new MdmlError('value', 'dirichlet: concentrations must be positive')
   const K = a.length
   const next = uniformStream(k)
