@@ -87,7 +87,7 @@ export interface MetricResult {
  * estimate(1, 0.5).interval // => [0.020018, 1.979982]
  * ```
  */
-export function estimate(value: number, standardError?: number, level: number = defaultConfidenceLevel): Estimate {
+export function estimate(value: number, standardError?: number, level = 0.95): Estimate {
   if (standardError === undefined) return { value }
   resolveConfidenceLevel(level)
   const z = normalQuantile(0.5 + level / 2)

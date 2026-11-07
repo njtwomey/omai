@@ -5,7 +5,7 @@
  */
 
 import { clamp, MdmlError, maxOf, minOf } from '../base/index.ts'
-import { finite, size, transform, vertices } from './_check.ts'
+import { transform as checkTransform, finite, size, vertices } from './_check.ts'
 import type {
   CircleNode,
   EllipseNode,
@@ -371,7 +371,7 @@ export function image(
  * A group that translates, rotates and scales its children.
  *
  * @param children - The grouped nodes.
- * @param spec - Translation, rotation in degrees, scale, opacity, id and title.
+ * @param transform - Translation, rotation in degrees, scale, opacity, id and title.
  * @returns The node.
  * @throws MdmlError `value` when the translation or rotation is not finite or the scale is not a finite number other than
  *   0.
@@ -383,10 +383,10 @@ export function image(
  */
 export function group(
   children: readonly SceneNode[],
-  spec: NodeBase & Transform & { readonly opacity?: number } = {},
+  transform: NodeBase & Transform & { readonly opacity?: number } = {},
 ): GroupNode {
-  transform('group', spec)
-  return { kind: 'group', children, ...spec }
+  checkTransform('group', transform)
+  return { kind: 'group', children, ...transform }
 }
 
 /**
