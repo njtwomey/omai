@@ -308,7 +308,7 @@ export function meshgrid(axes: readonly TensorLike[], indexing: 'xy' | 'ij' = 'x
 
 /**
  * The lower triangle of a matrix (entries above the `k`th diagonal set to zero, whatever they hold: Infinity and NaN
- * above the diagonal do not leak).
+ * above the diagonal do not leak; the dtype is kept, so a bool mask stays a bool mask).
  *
  * @param x - A matrix (or batch of matrices).
  * @param k - Diagonal offset.
@@ -323,12 +323,12 @@ export function tril(x: TensorLike, k = 0): Value {
   const v = asTensor(x)
   const n = v.shape[v.shape.length - 2] ?? 1
   const m = v.shape[v.shape.length - 1] ?? 1
-  return where(cast(tri(n, m, k), 'bool'), v, 0)
+  return where(cast(tri(n, m, k), 'bool'), v, zeros([], { dtype: v.dtype }))
 }
 
 /**
  * The upper triangle of a matrix (entries below the `k`th diagonal set to zero, whatever they hold: Infinity and NaN
- * below the diagonal do not leak).
+ * below the diagonal do not leak; the dtype is kept).
  *
  * @param x - A matrix (or batch of matrices).
  * @param k - Diagonal offset.
@@ -343,7 +343,7 @@ export function triu(x: TensorLike, k = 0): Value {
   const v = asTensor(x)
   const n = v.shape[v.shape.length - 2] ?? 1
   const m = v.shape[v.shape.length - 1] ?? 1
-  return where(equal(tri(n, m, k - 1), 0), v, 0)
+  return where(equal(tri(n, m, k - 1), 0), v, zeros([], { dtype: v.dtype }))
 }
 
 /**
