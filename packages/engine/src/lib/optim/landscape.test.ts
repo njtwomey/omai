@@ -37,7 +37,7 @@ describe('slices', () => {
     const at = flat(netLoss(params))[0] as number
     const d1 = O.randomDirection(params, key(5))
     const d2 = O.randomDirection(params, key(6))
-    expect(O.slice1d(netLoss, params, d1, [0, 0.3]).losses[0]).toBe(at)
+    expect(flat(O.slice1d(netLoss, params, d1, [0, 0.3]).losses)[0]).toBe(at)
     const plane = O.slice2d(netLoss, params, d1, d2, [-0.5, 0, 0.5], [0, 0.25])
     expect(plane.losses.shape).toEqual([3, 2])
     expect(flat(plane.losses)[2]).toBe(at)
@@ -91,12 +91,12 @@ describe('slices', () => {
     const alphas = [-1, -0.5, 0, 0.5, 1]
     const a = O.randomSlice(netLoss, params, key(9), { alphas }).slice as O.Slice1d
     const b = O.randomSlice(netLoss, scaled, key(9), { alphas }).slice as O.Slice1d
-    a.losses.forEach((l, i) => {
-      expect(b.losses[i]).toBeCloseTo(l, 9)
+    flat(a.losses).forEach((l, i) => {
+      expect(flat(b.losses)[i]).toBeCloseTo(l, 9)
     })
     const rawA = O.randomSlice(netLoss, params, key(9), { alphas }, { mode: 'none' }).slice as O.Slice1d
     const rawB = O.randomSlice(netLoss, scaled, key(9), { alphas }, { mode: 'none' }).slice as O.Slice1d
-    expect(Math.abs((rawA.losses[0] as number) - (rawB.losses[0] as number))).toBeGreaterThan(1e-3)
+    expect(Math.abs((flat(rawA.losses)[0] as number) - (flat(rawB.losses)[0] as number))).toBeGreaterThan(1e-3)
   })
 })
 
@@ -112,8 +112,8 @@ describe('paths between minima', () => {
 
   it('the straight line crosses the ring’s hole and a bent path avoids it', () => {
     const line = O.interpolationSlice(ring, a, b, ts)
-    expect(line.losses[0]).toBeCloseTo(0, 14)
-    expect(line.losses[20]).toBeCloseTo(1, 12)
+    expect(flat(line.losses)[0]).toBeCloseTo(0, 14)
+    expect(flat(line.losses)[20]).toBeCloseTo(1, 12)
     expect(O.barrier(line)).toBeCloseTo(1, 12)
     const bent = O.bezierSlice(ring, a, tensor([0, 2]), b, ts)
     expect(O.barrier(bent)).toBeLessThan(0.1)
