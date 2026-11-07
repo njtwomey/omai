@@ -38,3 +38,5 @@ All read the engine's source; none changes anything.
   relative to the engine project, a repository-relative path matches nothing).
 - `scripts/type-definitions.ts --check` (in `make lint`): the guard against restated vector types and purposeless
   aliases.
+
+- `summary.md`: where the review stands at the end of 2026-11-07 (state, what changed, surface changes, what is not done, before pushing).
