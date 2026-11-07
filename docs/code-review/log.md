@@ -249,5 +249,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   were the only ones), tsc, examples, barrels, layers, lint, agent index and surface (0 added, 0 removed, 0 changed); the full gate was not run.
 - **15:25 Gate.** The first four Wave B merges (foundations, numerics, dists/stats/metrics, optim/losses) passed the full local gate together: 26,373 tests,
   9,570 examples, all static checks and all six tsc runs. The test count is 165 above the last gate (26,208) because each table row of an `it.each` counts as
-  a test: the count of `it` blocks rose by about 40, which the review estimated at +40 to +60. Two existing tests pinned bugs and were changed by the agents
+  a test: the count of `it` blocks rose by 45 since the start of this session's fixes (none removed), inside the review's estimate of +40 to +60. Two existing tests pinned bugs and were changed by the agents
   (`knowledge-graph.test.ts`: bound 4x to 3x chance after the stochastic mode stopped converging early; `kernel-quantile.test.ts`: the LP support count is not monotone in the penalty).
