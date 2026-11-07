@@ -20,10 +20,12 @@ describe('hypothesis tests on degenerate input', () => {
     ['jarqueBera of a constant', () => T.jarqueBera(c)],
     ['lilliefors of a constant', () => T.lilliefors(c)],
   ]
-  it.each(undefinedTests)('%s: statistic and p are NaN', (_name, call) => {
-    const r = call()
-    expect(r.statistic).toBeNaN()
-    expect(r.pValue).toBeNaN()
+  it('give NaN for the statistic and the p-value when the statistic is undefined', () => {
+    for (const [name, call] of undefinedTests) {
+      const r = call()
+      expect(r.statistic, name).toBeNaN()
+      expect(r.pValue, name).toBeNaN()
+    }
   })
 
   it('fOneway of two different constants is F = Infinity, p = 0, eta squared exactly 1', () => {
@@ -49,7 +51,7 @@ describe('hypothesis tests on degenerate input', () => {
     ['chisquare with a negative count', () => T.chisquare([5, -5])],
     ['fOneway of singletons', () => T.fOneway([[1], [2], [3]])],
   ]
-  it.each(rejected)('%s throws value', (_name, call) => {
-    expect(call).toThrow(expect.objectContaining({ code: 'value' }))
+  it('throw value for NaN where the data is ranked or sorted, and for negative counts', () => {
+    for (const [name, call] of rejected) expect(call, name).toThrow(expect.objectContaining({ code: 'value' }))
   })
 })
