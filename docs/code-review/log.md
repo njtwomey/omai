@@ -201,3 +201,13 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
 - **14:30 Decisions.** Asked whether the work was complete, I answered with a list of decisions I needed; the maintainer had already told me to carry on without
   asking. I should have taken my own recommendations and gone on. D-015 records them as adopted, D-013's wait is lifted, and D-014 (no push) stands. Wave B
   starts in two worktrees (foundations; numerics), one heavy run at a time.
+- **14:47 Wave B, numerics (P3.19 and P3.20), `agent-nm02-numerics`, ten commits, not pushed.** Fixed with a probe or table row that fails on main: the default `svd` above
+  1e77 and below 1e-155 (scaled by an exact power of two; `cond`, `matrixRank` follow), the four bracketing finders (signs compared, a NaN from `f` throws `value`),
+  `adaptiveSimpson` (throws on a non-finite limit or integrand, capped at a million evaluations), fifteen special-function edge cases and `ndtri` of denormal p (Newton on
+  log ndtr, 1 ulp of mpmath), singular triangular, Cholesky and LU solves (throw `value`), `lstsq` and `polyfit` of rank-deficient systems (minimum-norm, `pinv`), `delaunay` of
+  cocircular points (`inCircle` has an exact sign), and ten small degenerate-input guards. Public surface 0 added, 0 removed, 0 changed of 17,918, so the parts that needed
+  a signature (a `nan` root flag, `converged` on two integrators, a `Polynomial` type, `matrixRank` `rtol`) were skipped and are listed in the register rows. **Decision by an
+  agent:** the sweep of 50 caller domains (22,921 tests) found two callers that had read the old garbage as a signal: `solveCare` took a rank-deficient stable subspace
+  as "no stabilising solution" from the 1e15 `lstsq` answer, and `optim`'s `solveDense` read a non-finite result as a singular KKT matrix. The first now checks its
+  singular values and throws `convergence`; the second maps the new `luSolve` throw back to NaN (one file outside numerics). No test was edited. Own tests and checks only;
+  the full gate was not run.
