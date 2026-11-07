@@ -4,7 +4,7 @@
  * detections over images under the COCO or Pascal VOC protocol.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult, type MetricSpec, toRows } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, matrix, metricResult } from './metric.ts'
 
@@ -14,7 +14,7 @@ type Boxes = TensorLike | readonly (readonly number[])[]
 const rowsOf = (boxes: Boxes): number[][] => {
   const m = matrix(boxes as TensorLike)
   const n = m.shape.length === 1 ? (m.data.length === 0 ? 0 : 1) : (m.shape[0] ?? 0)
-  return Array.from({ length: n }, (_, i) => Array.from(m.data.subarray(i * 4, i * 4 + 4)))
+  return toRows(m.data, n, 4)
 }
 
 /** Intersection, union and the enclosing box of two boxes. */

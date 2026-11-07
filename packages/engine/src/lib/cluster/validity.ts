@@ -4,13 +4,12 @@
  * 2002), which asks whether clusterings of overlapping subsamples agree, and the elbow curve of k-means inertia.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { MdmlError, maxOf, minOf, toRows } from '../base/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { adjustedRandScore } from '../metrics/index.ts'
 import { foldIn, type Key, subsample, uniform } from '../random/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
-import { toRows } from './_support.ts'
 import { initialCentres, lloydAlgorithm, nearestCentres } from './kmeans.ts'
 
 /** k-means by the best of `nInit` starts: the labels and the inertia. */

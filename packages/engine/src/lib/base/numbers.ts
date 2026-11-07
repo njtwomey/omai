@@ -361,6 +361,23 @@ export function logAddExp(a: number, b: number): number {
 }
 
 /**
+ * A flat row-major array as `n` rows of `d` numbers (an entry past the end of the array reads as 0).
+ *
+ * @param flat - The entries, row by row.
+ * @param n - The number of rows.
+ * @param d - The number of columns.
+ * @returns The rows, as new arrays.
+ * @example
+ * ```ts
+ * import { toRows } from 'mdml-engine/base'
+ * toRows([1, 2, 3, 4, 5, 6], 2, 3) // => [[1, 2, 3], [4, 5, 6]]
+ * ```
+ */
+export function toRows(flat: ArrayLike<number>, n: number, d: number): number[][] {
+  return Array.from({ length: n }, (_, i) => Array.from({ length: d }, (_, j) => flat[i * d + j] ?? 0))
+}
+
+/**
  * Arithmetic mean of a list (pairwise summation), `NaN` for an empty list.
  *
  * @param xs - The numbers.

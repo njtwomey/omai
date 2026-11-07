@@ -20,10 +20,6 @@ import type { PredictFunction } from './shapley.ts'
 /** Attributions, one row of values per explained row. */
 export type AttributionRows = readonly (readonly number[])[]
 
-function rowsOf(x: TensorLike, who: string): { n: number; d: number; data: Float64Array } {
-  return matrixView(x, who)
-}
-
 function checkAttributions(a: AttributionRows, n: number, d: number, who: string): void {
   if (a.length !== n || a.some((r) => r.length !== d))
     throw new MdmlError('shape', `${who}: attributions must have one row of ${d} values per input`)
@@ -90,7 +86,7 @@ export function deletionCurve(
   attributions: AttributionRows,
   options: DeletionOptions = {},
 ): DeletionCurve {
-  const m = rowsOf(x, 'deletionCurve')
+  const m = matrixView(x, 'deletionCurve')
   checkAttributions(attributions, m.n, m.d, 'deletionCurve')
   const steps = options.steps ?? 11
   if (!(Number.isInteger(steps) && steps >= 2)) throw new MdmlError('value', 'deletionCurve: steps must be >= 2')
@@ -166,7 +162,7 @@ export function faithfulnessCorrelation(
   attributions: AttributionRows,
   options: FaithfulnessOptions = {},
 ): number[] {
-  const m = rowsOf(x, 'faithfulnessCorrelation')
+  const m = matrixView(x, 'faithfulnessCorrelation')
   checkAttributions(attributions, m.n, m.d, 'faithfulnessCorrelation')
   const size = Math.min(m.d, Math.max(1, options.subsetSize ?? Math.round(m.d / 4)))
   const runs = options.nRuns ?? 50
@@ -215,7 +211,7 @@ export function monotonicity(
   attributions: AttributionRows,
   options: { readonly target?: Target; readonly baseline?: TensorLike | number } = {},
 ): number[] {
-  const m = rowsOf(x, 'monotonicity')
+  const m = matrixView(x, 'monotonicity')
   checkAttributions(attributions, m.n, m.d, 'monotonicity')
   const base = baselineRows(options.baseline, m.n, m.d, 'monotonicity')
   return Array.from({ length: m.n }, (_, i) => {
@@ -277,8 +273,8 @@ export function removeAndRetrain(
   testAttributions: AttributionRows,
   options: RoarOptions = {},
 ): { readonly fractions: readonly number[]; readonly scores: readonly number[] } {
-  const tr = rowsOf(train.x, 'removeAndRetrain')
-  const te = rowsOf(test.x, 'removeAndRetrain')
+  const tr = matrixView(train.x, 'removeAndRetrain')
+  const te = matrixView(test.x, 'removeAndRetrain')
   checkAttributions(trainAttributions, tr.n, tr.d, 'removeAndRetrain')
   checkAttributions(testAttributions, te.n, te.d, 'removeAndRetrain')
   const scorer = Object.values(scorersOf(options.scoring))[0]
@@ -329,7 +325,7 @@ function perturbations(
   readonly base: AttributionRows
   readonly samples: { readonly z: number[]; readonly e: readonly number[] }[][]
 } {
-  const m = rowsOf(x, who)
+  const m = matrixView(x, who)
   const base = explainer(fromStorage(Float64Array.from(m.data), [m.n, m.d], 'float64'))
   checkAttributions(base, m.n, m.d, who)
   const ns = options.nSamples ?? 10

@@ -4,6 +4,7 @@
  * through the library's linear algebra.
  */
 
+import { toRows } from '../base/index.ts'
 import { cholesky, dgemm, eigh, eigvals, inv, slogdet } from '../numerics/linalg/index.ts'
 import { fromStorage, toFlat, type Value } from '../tensor/index.ts'
 import { leastSquares } from './_ml.ts'
@@ -20,8 +21,7 @@ export function tensorOf(a: readonly (readonly number[])[]): Value {
 
 /** The rows of a matrix tensor. */
 export function rowsOf(t: Value, rows: number, cols: number): Matrix {
-  const flat = toFlat(t)
-  return Array.from({ length: rows }, (_, i) => flat.slice(i * cols, (i + 1) * cols))
+  return toRows(toFlat(t), rows, cols)
 }
 
 /** The identity of size n. */

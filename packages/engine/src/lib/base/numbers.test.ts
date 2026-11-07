@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { maxOf, minOf, quantileOf, range } from './index.ts'
+import { maxOf, minOf, quantileOf, range, toRows } from './index.ts'
 
 describe('numbers at degenerate arguments', () => {
   it('rejects a zero step and a quantile level outside [0, 1], as numpy and the tensor arange do', () => {
@@ -30,5 +30,22 @@ describe('numbers at degenerate arguments', () => {
       expect(maxOf(xs)).toBe(Math.max(...xs))
       expect(minOf(xs)).toBe(Math.min(...xs))
     }
+  })
+
+  it('toRows reshapes a flat row-major array of any array type, reading a missing entry as 0', () => {
+    expect(toRows([1, 2, 3, 4, 5, 6], 2, 3)).toEqual([
+      [1, 2, 3],
+      [4, 5, 6],
+    ])
+    expect(toRows(Float64Array.of(1, 2, 3, 4), 2, 2)).toEqual([
+      [1, 2],
+      [3, 4],
+    ])
+    expect(toRows([1, 2, 3], 2, 2)).toEqual([
+      [1, 2],
+      [3, 0],
+    ])
+    expect(toRows([], 0, 3)).toEqual([])
+    expect(toRows([], 2, 0)).toEqual([[], []])
   })
 })

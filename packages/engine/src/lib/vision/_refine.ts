@@ -4,7 +4,7 @@
  * `optim`'s Levenberg-Marquardt. Private to vision.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import { dgemm, dgesv, dgesvd } from '../numerics/linalg/index.ts'
 import { levenbergMarquardt } from '../optim/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
@@ -16,17 +16,12 @@ export type Matrix = number[][]
 /** Rows to a row-major array. */
 export const flatOf = (m: readonly (readonly number[])[]): Float64Array => Float64Array.from(m.flat())
 
-/** A row-major array to rows. */
-export function rowsOf(a: ArrayLike<number>, rows: number, cols: number): Matrix {
-  return Array.from({ length: rows }, (_, i) => Array.from({ length: cols }, (_, j) => a[i * cols + j] ?? 0))
-}
-
 /** The product of two matrices given as rows. */
 export function matMul(a: readonly (readonly number[])[], b: readonly (readonly number[])[]): Matrix {
   const m = a.length
   const k = b.length
   const n = b[0]?.length ?? 0
-  return rowsOf(dgemm(flatOf(a), flatOf(b), m, k, n), m, n)
+  return toRows(dgemm(flatOf(a), flatOf(b), m, k, n), m, n)
 }
 
 /** The transpose of a matrix given as rows. */
@@ -38,7 +33,7 @@ export function invOf(a: readonly (readonly number[])[]): Matrix {
   const n = a.length
   const eye = Float64Array.from({ length: n * n }, (_, i) => (Math.floor(i / n) === i % n ? 1 : 0))
   // dgesv solves A X = B for B (and X) row-major n x n.
-  return rowsOf(dgesv(flatOf(a), eye, n, n), n, n)
+  return toRows(dgesv(flatOf(a), eye, n, n), n, n)
 }
 
 /** The determinant of a 3 x 3 matrix. */
@@ -57,7 +52,7 @@ export function svdOf(a: readonly (readonly number[])[]): { u: Matrix; s: number
   const n = a[0]?.length ?? 0
   const { u, s, v } = dgesvd(flatOf(a), m, n)
   const k = s.length
-  return { u: rowsOf(u, m, k), s: Array.from(s), v: rowsOf(v, n, k) }
+  return { u: toRows(u, m, k), s: Array.from(s), v: toRows(v, n, k) }
 }
 
 /**

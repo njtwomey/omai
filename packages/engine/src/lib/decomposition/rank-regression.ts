@@ -6,7 +6,7 @@
  * reduced-rank fit, the inverse output covariance gives the canonical-correlation form.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import {
   defineEstimator,
   type Estimator,
@@ -20,9 +20,6 @@ import {
 import { dict, int, real } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { centred, columnMeans, mm, pinvRows, thinSvd, tr } from './_linear.ts'
-
-const toRows = (flat: ArrayLike<number>, n: number, d: number): number[][] =>
-  Array.from({ length: n }, (_, i) => Array.from({ length: d }, (_, j) => flat[i * d + j] ?? 0))
 
 const matrixTensor = (rows: readonly (readonly number[])[], d: number): Tensor =>
   fromStorage(Float64Array.from(rows.flat()), [rows.length, d], 'float64')

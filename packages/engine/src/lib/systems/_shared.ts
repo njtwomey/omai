@@ -1,5 +1,5 @@
 // Shared plumbing for the systems domain: number views of values, complex lists and highest-first polynomials.
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type ComplexArray, polyadd, polyFromRoots, polyroots, polytrim } from '../numerics/polynomial/index.ts'
 import { binom, factorial as factorialOf } from '../numerics/special/index.ts'
@@ -19,9 +19,8 @@ export function numbers(v: Value): number[] {
 
 /** The primal rows of a matrix value. */
 export function rows(v: Value): number[][] {
-  const flat = numbers(v)
   const [m = 0, n = 0] = v.shape
-  return Array.from({ length: m }, (_, i) => flat.slice(i * n, (i + 1) * n))
+  return toRows(numbers(v), m, n)
 }
 
 /** A list of complex numbers from parallel parts. */

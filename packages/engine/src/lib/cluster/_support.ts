@@ -16,11 +16,6 @@ export function rowsAt(data: ArrayLike<number>, d: number, idx: readonly number[
   return idx.map((i) => Array.from({ length: d }, (_, j) => data[i * d + j] ?? 0))
 }
 
-/** A flat row-major matrix as rows. */
-export function toRows(flat: ArrayLike<number>, n: number, d: number): number[][] {
-  return Array.from({ length: n }, (_, i) => Array.from({ length: d }, (_, j) => flat[i * d + j] ?? 0))
-}
-
 /** Labels renumbered 0, 1, ... in order of first appearance; negative labels (noise) become -1. */
 export function canonicalLabels(labels: readonly number[]): number[] {
   const seen = new Map<number, number>()

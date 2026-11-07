@@ -7,7 +7,7 @@
  * on the iterative base whose verbs score new points in novelty mode; the training scores are in the parameters.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { MdmlError, maxOf, toRows } from '../base/index.ts'
 import { pairwiseDistances } from '../distances/index.ts'
 import {
   ExplainedEstimatorClass,
@@ -42,8 +42,7 @@ const searchOf = (h: Partial<NeighbourSearch>): Partial<NeighbourSearch> => ({
 
 const asTensor2 = (m: MatrixView): Tensor => fromStorage(m.data, [m.n, m.d], 'float64')
 
-const rowsOf = (m: MatrixView): number[][] =>
-  Array.from({ length: m.n }, (_, i) => Array.from(m.data.subarray(i * m.d, (i + 1) * m.d)))
+const rowsOf = (m: MatrixView): number[][] => toRows(m.data, m.n, m.d)
 
 /** The neighbours a detector asks for: at least one, and at most the other `n - 1` rows. */
 function effectiveK(nNeighbors: number, n: number, who: string): number {

@@ -71,10 +71,6 @@ function finiteAbove(name: string, what: string, v: number, min: number, open: b
   return v
 }
 
-function rowsOf(x: TensorLike, name: string): { rows: Value; single: boolean } {
-  return asRows(x, name)
-}
-
 function finish(z: Value, single: boolean): Value {
   return single ? sum(z, 0) : z
 }
@@ -159,7 +155,7 @@ function fourierMap(name: string, weights: Tensor<'float64'>, offset: Tensor<'fl
     offset,
     outputScale: scale,
     transform(x: TensorLike): Value {
-      const { rows, single } = rowsOf(x, name)
+      const { rows, single } = asRows(x, name)
       return finish(mul(cos(add(matmul(rows, weights), offset)), factor), single)
     },
   }
@@ -284,7 +280,7 @@ export interface NystroemOptions extends ContextOptions {
  * ```
  */
 export function nystroem(kernel: Kernel, x: TensorLike, options: NystroemOptions = {}): Nystroem {
-  const { rows } = rowsOf(x, 'nystroem')
+  const { rows } = asRows(x, 'nystroem')
   const n = rows.shape[0] ?? 0
   if (options.indices !== undefined) {
     for (const i of options.indices) {
@@ -306,7 +302,7 @@ export function nystroem(kernel: Kernel, x: TensorLike, options: NystroemOptions
     componentIndices: indices,
     normalization,
     transform(points: TensorLike): Value {
-      const r = rowsOf(points, 'nystroem')
+      const r = asRows(points, 'nystroem')
       return finish(matmul(kernel.k(r.rows, components), swapaxes(normalization, 0, 1)), r.single)
     },
   }
@@ -350,7 +346,7 @@ export function additiveChi2Sampler(options: AdditiveChi2Options = {}): FeatureM
   return {
     name: 'additive-chi2',
     transform(x: TensorLike): Value {
-      const { rows, single } = rowsOf(x, 'additiveChi2Sampler')
+      const { rows, single } = asRows(x, 'additiveChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v < 0))
         throw new MdmlError('domain', 'additiveChi2Sampler: features must be non-negative')
       const nonzero = greater(rows, 0)
@@ -430,7 +426,7 @@ export function skewedChi2Sampler(options: SkewedChi2SamplerOptions): SkewedChi2
     offset,
     skewedness: c,
     transform(x: TensorLike): Value {
-      const { rows, single } = rowsOf(x, 'skewedChi2Sampler')
+      const { rows, single } = asRows(x, 'skewedChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v <= -c))
         throw new MdmlError('domain', `skewedChi2Sampler: features must exceed -${c}`)
       const projection = add(matmul(log(add(rows, c)), weights), offset)
@@ -516,7 +512,7 @@ export function tensorSketch(options: TensorSketchOptions): TensorSketch {
     sketch(...xs: readonly TensorLike[]): Value {
       if (xs.length !== matrices.length)
         throw new MdmlError('shape', `tensorSketch: expected ${matrices.length} inputs, got ${xs.length}`)
-      const parts = xs.map((x) => rowsOf(x, 'tensorSketch'))
+      const parts = xs.map((x) => asRows(x, 'tensorSketch'))
       const spectra = parts.map((part, p) => fft(matmul(part.rows, matrices[p] as Value), undefined, -1))
       const product = spectra.slice(1).reduce((acc, z) => cMul(acc, z), spectra[0] as (typeof spectra)[number])
       return finish(
@@ -585,7 +581,7 @@ export function polynomialCountSketch(options: PolynomialCountSketchOptions): Po
     indexHash: sketcher.indexHash,
     bitHash: sketcher.bitHash,
     transform(x: TensorLike): Value {
-      const { rows, single } = rowsOf(x, 'polynomialCountSketch')
+      const { rows, single } = asRows(x, 'polynomialCountSketch')
       const scaled = mul(rows, Math.sqrt(g))
       const lifted = c0 === 0 ? scaled : concat([scaled, mul(ones([rows.shape[0] ?? 0, 1]), Math.sqrt(c0))], 1)
       return finish(sketcher.sketch(...Array.from({ length: sketcher.indexHash.length }, () => lifted)), single)

@@ -4,14 +4,13 @@
  * initial centres (k-means++, random rows or given) and the nearest-centre assignment they share.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, toRows } from '../base/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { geometry } from '../numerics/index.ts'
 import { kmeansCodebook } from '../numerics/spatial/index.ts'
 import { type Key, subsample } from '../random/index.ts'
 import { fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
-import { toRows } from './_support.ts'
 
 /** Rows of a matrix as plain arrays. */
 export type Rows = readonly (readonly number[])[]
