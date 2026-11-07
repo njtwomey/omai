@@ -211,7 +211,7 @@ describe('the dtype of every operation family, for every input dtype', () => {
     }
   })
 
-  it('promotion, weak scalars and machine limits follow numpy', () => {
+  it('promotion, weak scalars, machine limits, broadcast shapes and axes follow numpy', () => {
     const grid = ['bifd', 'iidd', 'fdfd', 'dddd']
     for (const [i, a] of [...'bifd'].entries())
       for (const [j, b] of [...'bifd'].entries())
@@ -240,9 +240,7 @@ describe('the dtype of every operation family, for every input dtype', () => {
       { min: -2147483648, max: 2147483647, bits: 32 },
       { min: 0, max: 1, bits: 1 },
     ])
-  })
 
-  it('broadcast shapes and axes agree with numpy, empty axes included', () => {
     const shapes: [number[], number[], number[] | null][] = [
       [
         [2, 1],

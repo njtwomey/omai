@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { dict } from '../space/index.ts'
 import { type Algorithm, iterate, runAlgorithm, runFor } from './algorithm.ts'
 import { checkpointEvery } from './checkpoint.ts'
-import type { TraceEvent } from './events.ts'
 import { scalar } from './contract.ts'
+import type { TraceEvent } from './events.ts'
 import { filtered, isRun, mergeRuns, recorder, replay, startRun } from './index.ts'
 import { defineMethod, session } from './session.ts'
 
@@ -72,7 +72,7 @@ describe('the four drivers compute one run', () => {
     expect(new Set(logs.run.map((s) => s.split(':')[1])).size).toBe(9)
   })
 
-  it('record the same tape: the same metrics, checkpoints and end', () => {
+  it('record the same tape (metrics, checkpoints and end), and the trace helpers replay, mergeRuns, isRun and filtered work on it', () => {
     const policy = checkpointEvery(4)
     const rec = recorder()
     runAlgorithm(drift(undefined), { ...OPTIONS, tracer: rec, policy })
@@ -96,13 +96,7 @@ describe('the four drivers compute one run', () => {
     // a session records the same observed values on its tape
     const tape = session(method, { seed: 3, steps: 12, mode: 'eager', logs: 'all' }).run()
     expect(metricsOf(tape.events)).toEqual(metricsOf(rec.events))
-  })
-})
 
-describe('the trace helpers', () => {
-  it('replay feeds events to handlers in order, mergeRuns concatenates, isRun validates, filtered drops', () => {
-    const rec = recorder()
-    runAlgorithm(drift(undefined), { ...OPTIONS, tracer: rec })
     const a = rec.run()
     const seen: string[] = []
     replay(a, { metric: (e) => seen.push(`${e.step}`), end: (e) => seen.push(`end ${e.steps}`) })

@@ -52,7 +52,7 @@ function report(over: Partial<Omit<SubgroupReport, 'kind'>> = {}): SubgroupRepor
 }
 
 describe('subgroupGrid', () => {
-  it('lays a rate out with the first attribute as rows and the others as columns, NaN and 0 where a cell has no rows', () => {
+  it('lays a rate out with the first attribute as rows and the others as columns (one named column for one attribute, joined combinations for three), NaN and 0 where a cell has no rows', () => {
     const grid = subgroupGrid(report(), 'selectionRate')
     expect(grid.rows).toEqual(['f', 'm'])
     expect(grid.columns).toEqual(['old', 'young', 'mid'])
@@ -67,9 +67,7 @@ describe('subgroupGrid', () => {
     ])
     // another rate reads the same cells
     expect(subgroupGrid(report(), 'accuracy').values[0]).toEqual([85 / 100, 0.5, Number.NaN])
-  })
 
-  it('has one named column for one attribute, and joins the combinations of three attributes', () => {
     const one = subgroupReport({
       attributes: ['sex'],
       values: [['f', 'm']],

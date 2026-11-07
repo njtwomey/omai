@@ -250,7 +250,7 @@ describe('archive readers against the files numpy and Python write', () => {
       [1, 2],
     ],
   ]
-  it('parseNpy reads every numeric dtype, byte order, memory order and format version as numpy wrote it', () => {
+  it('parseNpy reads every numeric dtype, byte order, memory order and format version as numpy wrote it, and parseCsv splits as Python csv does', () => {
     for (const [name, base64, shape, dtype, values] of npyFiles) {
       const got = parseNpy(fromBase64(base64))
       expect([got.shape, got.dtype, Array.from(got.values)], name).toEqual([shape, dtype, values])
@@ -262,6 +262,11 @@ describe('archive readers against the files numpy and Python write', () => {
     bytes.set([0x93, 78, 85, 77, 80, 89, 1, 0, header.length, 0])
     bytes.set(new TextEncoder().encode(header), 10)
     expect(() => parseNpy(bytes)).toThrow(/not supported/)
+
+    for (const [text, delimiter, rows] of csvCases) {
+      const got = parseCsv(text, { delimiter, header: false })
+      expect(got.rows, JSON.stringify(text)).toEqual(rows)
+    }
   })
 
   // [text, delimiter, rows]: Python's csv.reader on the same text, with blank lines dropped as the reader does
@@ -343,12 +348,6 @@ describe('archive readers against the files numpy and Python write', () => {
     ],
     ['a,b\n1,2,3\n4\n', ',', [['a', 'b'], ['1', '2', '3'], ['4']]],
   ]
-  it('parseCsv splits fields, quotes, doubled quotes and line endings as Python csv does', () => {
-    for (const [text, delimiter, rows] of csvCases) {
-      const got = parseCsv(text, { delimiter, header: false })
-      expect(got.rows, JSON.stringify(text)).toEqual(rows)
-    }
-  })
 
   it('untar reads the regular files of a tar.gz Python wrote: prefixes, directories, empty and block-aligned files', async () => {
     const files = untar(

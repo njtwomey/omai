@@ -579,7 +579,7 @@ describe('more degenerate inputs agree with numpy', () => {
     expectRows(rows)
   })
 
-  it('keeps the shape of an empty answer (numpy: add, reshape, matmul and take over zero-length axes)', () => {
+  it('keeps the shape of an empty answer, and refuses by a value error what numpy answers with NaN or an empty result', () => {
     const shapes: [string, () => Value, number[]][] = [
       ['add [0] + [1]', () => T.add(T.zeros([0]), T.tensor([5])), [0]],
       ['add [0, 3] + [3]', () => T.add(T.zeros([0, 3]), T.tensor([1, 2, 3])), [0, 3]],
@@ -593,9 +593,7 @@ describe('more degenerate inputs agree with numpy', () => {
       ['concat [2, 0] and [2, 1] on axis 1', () => T.concat([T.zeros([2, 0]), T.ones([2, 1])], 1), [2, 1]],
     ]
     for (const [name, thunk, shape] of shapes) expect(thunk().shape, name).toEqual(shape)
-  })
 
-  it('refuses what numpy answers with NaN or an empty result, by a value error naming the cause', () => {
     // numpy returns NaN (variance of nothing, a degrees-of-freedom of 0) or an empty array (linspace with no points)
     const rows: [string, () => Value][] = [
       ['variance of nothing', () => T.variance(T.zeros([0]))],

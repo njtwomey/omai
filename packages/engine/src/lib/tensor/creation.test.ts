@@ -139,11 +139,9 @@ describe('creation helpers agree with numpy', () => {
     ],
     ['meshgrid of one axis', () => T.stack(T.meshgrid([T.tensor([1, 2])])), [[1, 2]]],
   ]
-  it("gives numpy's values and shapes for logspace, geomspace, eye, tri, diag and meshgrid", () => {
+  it("gives numpy's values and shapes for the creation helpers, keeps the dtype in onesLike and fullLike, and rejects endpoints geomspace cannot use", () => {
     expectRows(rows)
-  })
 
-  it('keeps the dtype in onesLike, fullLike and zerosLike, and rejects endpoints geomspace cannot use', () => {
     for (const dtype of ['bool', 'int32', 'float32', 'float64'] as const) {
       const x = T.tensor([1, 0], { dtype })
       expect([T.onesLike(x), T.fullLike(x, 1), T.zerosLike(x)].map((t) => [t.dtype, toArray(t)])).toEqual([

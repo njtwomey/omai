@@ -61,11 +61,9 @@ describe('formatTensor', () => {
       'tensor([[[0, ..., 3], ..., [8, ..., 11]], [[12, ..., 15], ..., [20, ..., 23]]])',
     ],
   ]
-  it('prints nesting, dtypes, special values and summaries as numpy does', () => {
+  it('prints nesting, dtypes, special values and summaries as numpy does, and a traced value by shape and dtype', () => {
     for (const [name, x, options, text] of rows) expect(formatTensor(x, options), name).toBe(text)
-  })
 
-  it('shows a traced value by shape and dtype, never by data', () => {
     let shown = ''
     let refused = ''
     grad((x: Value) => {
@@ -83,7 +81,7 @@ describe('formatTensor', () => {
 })
 
 describe('tensorToJson and tensorFromJson', () => {
-  it('round-trip every dtype, shape and non-finite value, with infinities and NaN as strings', () => {
+  it('round-trip every dtype, shape and non-finite value (infinities and NaN as strings) and reject data that does not fill the shape', () => {
     const cases: [DType, number[], number[]][] = [
       ['float64', [2, 3], [1.5, -inf, inf, nan, 0, 1e-300]],
       ['float32', [3], [0.1, inf, -3.5]],
@@ -102,9 +100,7 @@ describe('tensorToJson and tensorFromJson', () => {
       expect([back.dtype, back.shape, toArray(back)], `${dtype} ${shape}`).toEqual([dtype, shape, toArray(t)])
     }
     expect(tensorToJson(tensor([1, inf, -inf, nan])).data).toEqual([1, 'inf', '-inf', 'nan'])
-  })
 
-  it('rejects data that does not fill the shape', () => {
     expect(() => tensorFromJson({ dtype: 'float64', shape: [3], data: [1, 2] })).toThrow(
       expect.objectContaining({ code: 'shape' }),
     )
