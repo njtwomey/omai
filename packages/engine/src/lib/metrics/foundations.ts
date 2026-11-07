@@ -5,12 +5,14 @@
  * cost-minimising threshold.
  */
 
-import { type Estimate, MdmlError, type MetricResult, type MetricSpec, type TestResult } from '../base/index.ts'
+import { type Estimate, MdmlError, type MetricResult, type TestResult } from '../base/index.ts'
 import { betainc, chdtrc, ndtr, ndtri } from '../numerics/special/index.ts'
 import { bootstrapIndices, type Key, key as makeKey, split } from '../random/index.ts'
+import { wilsonBounds } from '../stats/tests/index.ts'
 import { item, type TensorLike, toFlat } from '../tensor/index.ts'
 import { encodeLabels, type Label, labelValues } from './_labels.ts'
 import { positives } from './_scores.ts'
+import { specOf } from './_spec.ts'
 import {
   defineMetric,
   flat,
@@ -117,14 +119,6 @@ function bootstrapInterval<O extends MetricOptions, I extends MetricInput>(
   return { value, standardError: se, interval: [lo, hi], level, method: `bootstrap (${kind}, ${reps.length})` }
 }
 
-/** The Wilson score interval of a proportion of n trials. */
-function wilson(p: number, n: number, level: number): readonly [number, number] {
-  const z = phiInv(0.5 + level / 2)
-  const centre = (p + (z * z) / (2 * n)) / (1 + (z * z) / n)
-  const half = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / (1 + (z * z) / n)
-  return [centre - half, centre + half]
-}
-
 /**
  * Attach a confidence interval to any metric: 'bootstrap' resamples the samples (percentile, basic or BCa intervals,
  * with the bootstrap standard error), 'wilson' and 'analytic' (Wald) treat a proportion metric (one reporting
@@ -169,7 +163,7 @@ export function withInterval<O extends MetricOptions, I extends MetricInput>(
     const p = successes / trials
     const se = Math.sqrt((p * (1 - p)) / trials)
     const z = phiInv(0.5 + level / 2)
-    const interval = method === 'wilson' ? wilson(p, trials, level) : ([p - z * se, p + z * se] as const)
+    const interval = method === 'wilson' ? wilsonBounds(p, trials, z) : ([p - z * se, p + z * se] as const)
     return {
       ...r,
       estimate: { value, standardError: se, interval, level, method: method === 'wilson' ? 'Wilson' : 'Wald' },
@@ -393,14 +387,7 @@ export function evaluate<I extends MetricInput>(
   return out
 }
 
-const decisionSpec = (name: string, direction: 'higher' | 'lower'): MetricSpec => ({
-  name,
-  direction,
-  range: [-Infinity, Infinity],
-  inputs: 'labels',
-  category: 'decision',
-  concept: 'decision-theory',
-})
+const decisionSpec = specOf('decision', 'labels', 'decision-theory')
 
 /** The mean of matrix[true][pred] over samples (classes in label order). */
 function meanMatrix(

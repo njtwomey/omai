@@ -35,15 +35,11 @@ import {
   where,
 } from '../tensor/index.ts'
 import { defineMetric, flat, type MetricFunction, metricResult, sampleWeights, weightedMean } from './metric.ts'
+import { specOf } from './_spec.ts'
 
-const spec = (name: string, direction: 'higher' | 'lower'): MetricSpec => ({
-  name,
-  direction,
-  range: direction === 'lower' ? [-Infinity, Infinity] : [0, Infinity],
-  inputs: 'distributions',
-  category: 'probabilistic',
-  concept: 'proper-scoring-rules',
-})
+const scoreRule = specOf('probabilistic', 'distributions', 'proper-scoring-rules')
+const spec = (name: string, direction: 'higher' | 'lower'): MetricSpec =>
+  scoreRule(name, direction, direction === 'lower' ? [-Infinity, Infinity] : [0, Infinity])
 
 /** Options of the distributional scores. */
 export interface ScoreOptions {

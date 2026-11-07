@@ -22,19 +22,14 @@ import {
   sampleWeights,
   shapedArray,
 } from './metric.ts'
+import { specOf } from './_spec.ts'
 
+const agreementSpec = specOf('agreement', 'values', 'correlation-agreement', { range: [-1, 1] })
 const spec = (
   name: string,
-  range: readonly [number, number] = [-1, 1],
+  range?: readonly [number, number],
   inputs: MetricSpec['inputs'] = 'values',
-): MetricSpec => ({
-  name,
-  direction: 'higher',
-  range,
-  inputs,
-  category: 'agreement',
-  concept: 'correlation-agreement',
-})
+): MetricSpec => ({ ...agreementSpec(name, 'higher', range), inputs })
 
 const pair = (name: string, x: TensorLike, y: TensorLike): [Float64Array, Float64Array] => {
   const a = flat(x)

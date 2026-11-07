@@ -5,12 +5,13 @@
  * supplied model.
  */
 
-import { argmaxOf, MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { argmaxOf, MdmlError, type MetricResult } from '../base/index.ts'
 import { ddot, solveToeplitz } from '../numerics/linalg/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
 import { dtw, firwin, hann, resamplePoly, stft } from '../signal/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
+import { specOf } from './_spec.ts'
 
 /** A mono signal as a Float64Array. */
 function signal(name: string, x: TensorLike): Float64Array {
@@ -60,11 +61,7 @@ function framePowers(
   )
 }
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower',
-  range: readonly [number, number] = [-Infinity, Infinity],
-): MetricSpec => ({ name, direction, range, inputs: 'values', category: 'audio', concept: 'audio-evaluation' })
+const spec = specOf('audio', 'values', 'audio-evaluation')
 
 const EPS = Number.EPSILON
 

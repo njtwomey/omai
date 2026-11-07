@@ -1,5 +1,6 @@
 import { MdmlError, type MetricSpec } from '../base/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
+import { specOf } from './_spec.ts'
 import type { MetricInput } from './metric.ts'
 
 /** A row-major matrix (or vector) of values. */
@@ -9,18 +10,8 @@ export interface Grid {
 }
 
 /** The spec of a score-based classification metric. */
-export const scoreSpec = (
-  name: string,
-  direction: 'higher' | 'lower' = 'higher',
-  concept = 'roc-curve',
-): MetricSpec => ({
-  name,
-  direction,
-  range: [0, 1],
-  inputs: 'scores',
-  category: 'classification',
-  concept,
-})
+export const scoreSpec = (name: string, direction: 'higher' | 'lower' = 'higher', concept = 'roc-curve'): MetricSpec =>
+  specOf('classification', 'scores', concept)(name, direction, [0, 1])
 
 /** Binary targets (1 for the positive class) of label input; the positive class defaults to 1 or the larger label. */
 export function positives(yTrue: MetricInput, posLabel: Label | undefined): Float64Array {

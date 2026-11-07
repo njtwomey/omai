@@ -4,7 +4,7 @@
  * classwise calibration errors.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, rejectSampleWeight, sortLabels } from './_labels.ts'
 import { binarise, type Grid } from './_scores.ts'
@@ -17,15 +17,9 @@ import {
   shapedArray,
   weightedMean,
 } from './metric.ts'
+import { specOf } from './_spec.ts'
 
-const spec = (name: string, direction: 'higher' | 'lower', range: readonly [number, number]): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'probabilities',
-  category: 'probabilistic',
-  concept: 'proper-scoring-rules',
-})
+const spec = specOf('probabilistic', 'probabilities', 'proper-scoring-rules')
 
 /** Options of the probabilistic classification metrics. */
 export interface ProbabilityOptions extends MetricOptions {

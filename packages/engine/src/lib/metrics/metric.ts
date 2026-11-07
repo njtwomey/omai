@@ -145,7 +145,22 @@ export function shapedArray(x: TensorLike): ShapedArray {
   return { shape: t.shape, data: Float64Array.from(toFlat(t)) }
 }
 
-/** Read 1-D or 2-D targets and predictions (and weights) into columns, checking their shapes. */
+/**
+ * Read 1-D or 2-D targets and predictions (and weights) into columns, checking their shapes.
+ *
+ * @param name - The metric's name (for errors).
+ * @param yTrue - Targets, `[n]` or `[n, k]`.
+ * @param yPred - Predictions of the same shape.
+ * @param options - Options carrying the sample weights.
+ * @returns The sample and output counts, the row-major values and the weights.
+ * @throws MdmlError with code `shape` when the shapes differ or have more than two axes, `value` for no samples or a
+ * bad weight.
+ * @example
+ * ```ts
+ * import { columns } from 'mdml-engine/metrics'
+ * columns('demo', [[1, 2], [3, 4]], [[1, 2], [3, 5]]).k // => 2
+ * ```
+ */
 export function columns(name: string, yTrue: TensorLike, yPred: TensorLike, options: MetricOptions = {}): Columns {
   const t = asTensor(yTrue)
   const p = asTensor(yPred)
@@ -160,7 +175,21 @@ export function columns(name: string, yTrue: TensorLike, yPred: TensorLike, opti
   return { n, k, yTrue: Float64Array.from(toFlat(t)), yPred: Float64Array.from(toFlat(p)), weight }
 }
 
-/** Define a metric from its spec and a per-output score; multi-output scores are averaged uniformly (sklearn). */
+/**
+ * Define a metric from its spec and a per-output score; multi-output scores are averaged uniformly (sklearn), and
+ * the per-output scores are the `breakdown`.
+ *
+ * @param spec - The metric's specification.
+ * @param score - The score of one output: targets, predictions, weights and the options.
+ * @returns The metric function with `spec` attached.
+ * @example
+ * ```ts
+ * import { perOutputMetric } from 'mdml-engine/metrics'
+ * const spec = { name: 'bias', direction: 'lower', range: [-Infinity, Infinity], inputs: 'values', category: 'demo' } as const
+ * const bias = perOutputMetric(spec, (t, p) => p.reduce((a, v, i) => a + v - (t[i] ?? 0), 0) / p.length)
+ * bias([1, 2], [2, 4]).estimate.value // => 1.5
+ * ```
+ */
 export function perOutputMetric<O extends MetricOptions>(
   spec: MetricSpec,
   score: (yTrue: Float64Array, yPred: Float64Array, weight: Float64Array, options: O) => number,
@@ -188,7 +217,18 @@ export function perOutputMetric<O extends MetricOptions>(
   return Object.assign(metric, { spec })
 }
 
-/** The weighted mean of `values`. */
+/**
+ * The weighted mean of `values`.
+ *
+ * @param values - The values.
+ * @param weight - Their weights, one per value (a missing weight counts as 0).
+ * @returns The sum of value times weight over the sum of weights (NaN when the weights sum to 0).
+ * @example
+ * ```ts
+ * import { weightedMean } from 'mdml-engine/metrics'
+ * weightedMean([1, 3], [3, 1]) // => 1.5
+ * ```
+ */
 export function weightedMean(values: ArrayLike<number>, weight: ArrayLike<number>): number {
   let s = 0
   let w = 0
@@ -248,15 +288,36 @@ export function weightedPercentile(
   return (at + (xs[order[next] ?? 0] ?? 0)) / 2
 }
 
-/** The number of samples (rows) of a metric input. */
+/**
+ * The number of samples (rows) of a metric input.
+ *
+ * @param x - Numeric array or string labels.
+ * @returns The length of the first axis (the length of a string array).
+ * @example
+ * ```ts
+ * import { rowCount } from 'mdml-engine/metrics'
+ * rowCount([[1, 2], [3, 4], [5, 6]]) // => 3
+ * ```
+ */
 export function rowCount(x: MetricInput): number {
-  if (Array.isArray(x) && x.every((v) => typeof v === 'string')) return x.length
+  if (isStringInput(x)) return x.length
   return asTensor(x as TensorLike).shape[0] ?? 1
 }
 
-/** Select rows of a metric input (numeric arrays along their first axis, string arrays by index). */
+/**
+ * Select rows of a metric input (numeric arrays along their first axis, string arrays by index).
+ *
+ * @param x - Numeric array or string labels.
+ * @param rows - The row indices to take, repeats allowed.
+ * @returns The selected rows in the order of `rows`, as nested arrays for numeric input.
+ * @example
+ * ```ts
+ * import { selectRows } from 'mdml-engine/metrics'
+ * selectRows(['a', 'b', 'c'], [2, 0]) // => ['c', 'a']
+ * ```
+ */
 export function selectRows<I extends MetricInput>(x: I, rows: readonly number[]): I {
-  if (Array.isArray(x) && x.every((v) => typeof v === 'string')) return rows.map((i) => x[i] as string) as unknown as I
+  if (isStringInput(x)) return rows.map((i) => x[i] as string) as unknown as I
   const t = asTensor(x as TensorLike)
   const shape = t.shape
   const width = shape.slice(1).reduce((a, b) => a * b, 1)
@@ -315,10 +376,11 @@ export function streaming<O extends MetricOptions, I extends MetricInput>(metric
       const t = rows(yTrue)
       const p = rows(yPred)
       if (t.length !== p.length) throw new MdmlError('shape', 'streaming: yTrue and yPred differ in length')
-      trues = trues.concat(t)
-      preds = preds.concat(p)
+      for (const v of t) trues.push(v)
+      for (const v of p) preds.push(v)
       if (sampleWeight !== undefined) weighted = true
-      weights = weights.concat(sampleWeight === undefined ? t.map(() => 1) : Array.from(flat(sampleWeight)))
+      if (sampleWeight === undefined) for (let i = 0; i < t.length; i++) weights.push(1)
+      else for (const v of flat(sampleWeight)) weights.push(v)
     },
     compute(options) {
       if (trues.length === 0) throw new MdmlError('value', 'streaming: no batches seen')
@@ -346,7 +408,17 @@ function selectRowsList(t: ReturnType<typeof asTensor>): unknown[] {
   return Array.from({ length: n }, (_, i) => reshapeNested(data.subarray(i * width, (i + 1) * width), rowsShape))
 }
 
-/** Whether a metric input holds strings. */
+/**
+ * Whether a metric input holds strings (a non-empty array of strings: the one definition of "string labels").
+ *
+ * @param x - Numeric array or string labels.
+ * @returns True for a non-empty array of strings.
+ * @example
+ * ```ts
+ * import { isStringInput } from 'mdml-engine/metrics'
+ * isStringInput(['a', 'b']) // => true
+ * ```
+ */
 export function isStringInput(x: MetricInput): x is readonly string[] {
   return Array.isArray(x) && x.length > 0 && x.every((v) => typeof v === 'string') && !isValue(x)
 }

@@ -20,6 +20,7 @@ import {
   shapedArray,
   weightedMean,
 } from './metric.ts'
+import { specOf } from './_spec.ts'
 
 /** The counts of {@link confusionMatrix} as rows of plain numbers, the form the loops of this file read. */
 function confusionRows(yTrue: MetricInput, yPred: MetricInput, options: MetricOptions): number[][] {
@@ -27,12 +28,13 @@ function confusionRows(yTrue: MetricInput, yPred: MetricInput, options: MetricOp
   return toRows(matrix.data, labels.length, labels.length)
 }
 
+const labelsSpec = specOf('classification', 'labels', 'classification-metrics')
 const spec = (
   name: string,
   direction: 'higher' | 'lower',
   range: readonly [number, number],
   inputs: MetricSpec['inputs'] = 'labels',
-): MetricSpec => ({ name, direction, range, inputs, category: 'classification', concept: 'classification-metrics' })
+): MetricSpec => ({ ...labelsSpec(name, direction, range), inputs })
 
 /**
  * Matthews correlation coefficient (sklearn.metrics.matthews_corrcoef), in its multi-class form

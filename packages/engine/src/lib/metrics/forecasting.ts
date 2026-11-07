@@ -4,7 +4,7 @@
  * multi-quantile loss, the continuous ranked probability score (CRPS) for ensembles and Gaussians, and Theil's U2.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { normal } from '../dists/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { rejectSampleWeight } from './_labels.ts'
@@ -22,18 +22,11 @@ import {
 } from './metric.ts'
 import { meanAbsolutePercentageError } from './regression.ts'
 import { crps } from './scoring-rules.ts'
+import { specOf } from './_spec.ts'
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower' = 'lower',
-  range: readonly [number, number] = [0, Infinity],
-): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'values',
-  category: 'forecasting',
-  concept: 'forecast-evaluation',
+const spec = specOf('forecasting', 'values', 'forecast-evaluation', {
+  direction: 'lower',
+  range: [0, Infinity],
 })
 
 /**

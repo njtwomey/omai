@@ -18,19 +18,9 @@ import {
   shapedArray,
   weightedMean,
 } from './metric.ts'
+import { specOf } from './_spec.ts'
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower' = 'higher',
-  range: readonly [number, number] = [0, 1],
-): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'rankings',
-  category: 'ranking',
-  concept: 'ranking-metrics',
-})
+const spec = specOf('ranking', 'rankings', 'ranking-metrics', { range: [0, 1] })
 
 /** Options of the ranking metrics: one query per row of relevance and scores. */
 export interface RankingOptions extends MetricOptions {

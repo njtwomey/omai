@@ -4,8 +4,9 @@
  * and the log-cosh and Huber errors that mirror the corresponding losses.
  */
 
-import { MdmlError, type MetricDirection, type MetricSpec, maxOf } from '../base/index.ts'
+import { MdmlError, maxOf } from '../base/index.ts'
 import { type Metric, type MetricOptions, perOutputMetric, weightedMean, weightedPercentile } from './metric.ts'
+import { specOf } from './_spec.ts'
 
 const map = (n: number, f: (i: number) => number): Float64Array => Float64Array.from({ length: n }, (_, i) => f(i))
 const residuals = (t: Float64Array, p: Float64Array): Float64Array => map(t.length, (i) => (t[i] ?? 0) - (p[i] ?? 0))
@@ -14,14 +15,7 @@ const residuals = (t: Float64Array, p: Float64Array): Float64Array => map(t.leng
 const median = (values: Float64Array, weight: Float64Array, weighted: boolean): number =>
   weighted ? weightedPercentile(values, weight, 50, false) : weightedPercentile(values, undefined, 50, true)
 
-const spec = (name: string, direction: MetricDirection, range: readonly [number, number]): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'values',
-  category: 'regression',
-  concept: 'regression-metrics',
-})
+const spec = specOf('regression', 'values', 'regression-metrics')
 
 /**
  * Mean squared error (sklearn.metrics.mean_squared_error).

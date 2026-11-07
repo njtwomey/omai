@@ -3,23 +3,13 @@
  * style), the Procrustes disparity between configurations, and the Hausdorff and Chamfer distances between point sets.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { cdist, metricFunction, procrustes } from '../numerics/geometry/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
 import { defineMetric, flat, type MetricFunction, metricResult, shapedArray } from './metric.ts'
+import { specOf } from './_spec.ts'
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower' = 'lower',
-  range: readonly [number, number] = [0, Infinity],
-): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'values',
-  category: 'distance',
-  concept: 'distances',
-})
+const spec = specOf('distance', 'values', 'distances', { direction: 'lower', range: [0, Infinity] })
 
 const vectors = (name: string, u: TensorLike, v: TensorLike): [Float64Array, Float64Array] => {
   const a = flat(u)

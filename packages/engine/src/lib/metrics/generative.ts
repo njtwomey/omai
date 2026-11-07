@@ -4,24 +4,14 @@
  * agreement and the Vendi diversity score.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { eigvalsh, funmSymmetric } from '../numerics/linalg/index.ts'
 import { type Key, key as makeKey, permutation, split } from '../random/index.ts'
 import { matmul, relu, sqrt, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
 import { defineMetric, type MetricFunction, metricResult, shapedArray } from './metric.ts'
+import { specOf } from './_spec.ts'
 
-const spec = (
-  name: string,
-  direction: 'higher' | 'lower',
-  range: readonly [number, number] = [0, Infinity],
-): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'values',
-  category: 'generative',
-  concept: 'generative-evaluation',
-})
+const spec = specOf('generative', 'values', 'generative-evaluation', { range: [0, Infinity] })
 
 /** Rows of a feature matrix `[N, D]`. */
 function rows(name: string, x: TensorLike): { n: number; d: number; data: Float64Array } {

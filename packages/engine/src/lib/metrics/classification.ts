@@ -5,7 +5,7 @@
  * multilabel confusion matrices.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { MdmlError, type MetricResult } from '../base/index.ts'
 import { fromStorage, fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
   type ClassCounts,
@@ -18,6 +18,7 @@ import {
   ratio,
 } from './_labels.ts'
 import { type Metric, type MetricInput, type MetricOptions, metricResult, rowCount, sampleWeights } from './metric.ts'
+import { specOf } from './_spec.ts'
 
 /**
  * How per-class scores combine: 'binary' (the positive class only), 'micro' (pooled counts), 'macro' (unweighted mean
@@ -38,14 +39,7 @@ export interface AveragingOptions extends MetricOptions {
   readonly zeroDivision?: number
 }
 
-const spec = (name: string, direction: 'higher' | 'lower', range: readonly [number, number]): MetricSpec => ({
-  name,
-  direction,
-  range,
-  inputs: 'labels',
-  category: 'classification',
-  concept: 'classification-metrics',
-})
+const spec = specOf('classification', 'labels', 'classification-metrics')
 
 /** A rate of one class's one-vs-rest counts. */
 type Rate = (tp: number, fp: number, fn: number, tn: number, zeroDivision: number) => number
