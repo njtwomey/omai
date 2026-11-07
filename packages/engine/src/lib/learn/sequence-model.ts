@@ -15,7 +15,7 @@ import type { TrainState } from '../nn/index.ts'
 import type { Params } from '../nn/module/module.ts'
 import { optimisers } from '../optim/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
-import { defaults, dict, int, type ModeConfig, type OptionTable, real, type SpaceValue } from '../space/index.ts'
+import { completeOption, dict, int, real, type SpaceValue } from '../space/index.ts'
 import { asTensor, sliceAxis, type TensorLike, toFlat, treePaths, type Value } from '../tensor/index.ts'
 import { type Contract, derived, tapContext } from '../trace/index.ts'
 import { defineTrainer, type TrainerEstimator } from './bases/trainer.ts'
@@ -44,13 +44,6 @@ export interface SequenceModelHyper {
   readonly validationFraction?: number
   /** The vocabulary size (default: the largest token id in the data plus one). */
   readonly vocabSize?: number
-}
-
-/** A configuration of an option table with the knobs it leaves out at their defaults (a union value must be whole). */
-function complete<T, P>(table: OptionTable<T, P>, config: SpaceValue): SpaceValue {
-  const given = (typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}) as ModeConfig
-  const chosen = table.optionOf(given)
-  return { ...(defaults(chosen.space) as ModeConfig), ...given, [table.tag]: chosen.name }
 }
 
 const sequenceModelDefaults: SequenceModelHyper = {
@@ -136,8 +129,8 @@ export function sequenceModelTrainer(
   const hyper: SequenceModelHyper = {
     ...sequenceModelDefaults,
     ...changes,
-    mixer: complete(sequenceMixers, changes.mixer ?? sequenceModelDefaults.mixer),
-    optimiser: complete(optimisers, changes.optimiser ?? sequenceModelDefaults.optimiser),
+    mixer: completeOption(sequenceMixers, changes.mixer ?? sequenceModelDefaults.mixer),
+    optimiser: completeOption(optimisers, changes.optimiser ?? sequenceModelDefaults.optimiser),
   }
   const estimator = defineTrainer<SequenceModelHyper, SequenceModelPath>(
     {

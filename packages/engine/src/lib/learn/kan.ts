@@ -40,7 +40,10 @@ import {
 } from '../nn/index.ts'
 import { optimisers } from '../optim/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
-import { defaults, dict, int, type ModeConfig, type OptionTable, real, type SpaceValue } from '../space/index.ts'
+import { completeOption, dict, int, real, type SpaceValue } from '../space/index.ts'
+
+export { completeOption }
+
 import { asTensor, item, reshape, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 import { type Contract, type DerivedSource, derived } from '../trace/index.ts'
 import type { IterativeSession, IterativeSessionOptions } from './bases/iterative.ts'
@@ -166,13 +169,6 @@ export interface KanEstimator extends Omit<TrainerEstimator<KanHyper, KanPath>, 
   fit(...args: Parameters<TrainerEstimator<KanHyper, KanPath>['fit']>): KanFitted
   revive(params: Json): KanFitted
   with(changes: Partial<KanHyper>): KanEstimator
-}
-
-/** A configuration of an option table with the knobs it leaves out at their defaults (a union value must be whole). */
-export function completeOption<T, P>(table: OptionTable<T, P>, config: SpaceValue | undefined): SpaceValue {
-  const given = (typeof config === 'object' && config !== null && !Array.isArray(config) ? config : {}) as ModeConfig
-  const chosen = table.optionOf(given)
-  return { ...(defaults(chosen.space) as ModeConfig), ...given, [table.tag]: chosen.name }
 }
 
 /** About `count` rows spread evenly over the data, as `[m, d]`. */
