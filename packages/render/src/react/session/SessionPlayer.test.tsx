@@ -2,7 +2,7 @@ import { dict, int } from 'mdml-engine/space'
 import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'mdml-engine/trace'
 import { type ReactElement, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { type FakeFrames, fakeFrames, inAct, mountElement } from '../_harness.tsx'
+import { type FakeFrames, fakeFrames, inAct, mountElement, resetGlobals } from '../_harness.tsx'
 import type { StartPolicy } from '../start.ts'
 import type { PlaybackController } from '../usePlayback.ts'
 import { SessionPlayer } from './SessionPlayer.tsx'
@@ -64,6 +64,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   frames.restore()
+  resetGlobals()
 })
 
 async function untilDone(limit = 400): Promise<void> {

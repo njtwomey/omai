@@ -7,7 +7,7 @@ import { inlineProducer } from '../../producer/inline.ts'
 import type { Producer, ProducerFactory } from '../../producer/producer.ts'
 import { methodRegistry } from '../../producer/registry.ts'
 import { serveProducer } from '../../producer/serve.ts'
-import { type FakeFrames, fakeFrames, mountHook } from '../_harness.tsx'
+import { type FakeFrames, fakeFrames, mountHook, resetGlobals } from '../_harness.tsx'
 import { type LiveSession, type SessionHookOptions, useSession } from './useSession.ts'
 
 interface S {
@@ -40,6 +40,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   frames.restore()
+  resetGlobals()
 })
 
 const mountSession = (hook: SessionHookOptions, options: { mode?: 'eager' | 'live'; strict?: boolean } = {}) =>

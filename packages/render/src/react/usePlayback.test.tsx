@@ -1,6 +1,6 @@
 import type { Algorithm } from 'mdml-engine/trace'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { type FakeFrames, fakeFrames, inAct, mountHook } from './_harness.tsx'
+import { type FakeFrames, fakeFrames, inAct, mountHook, resetGlobals } from './_harness.tsx'
 import { type LiveRunOptions, useLiveRun } from './usePlayback.ts'
 
 const counter: Algorithm<number> = { name: 'counter', config: {}, init: () => 0, step: (s) => s + 1 }
@@ -11,6 +11,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   frames.restore()
+  resetGlobals()
 })
 
 const mountRun = (options: LiveRunOptions, strict = false) => mountHook(() => useLiveRun(counter, options), { strict })

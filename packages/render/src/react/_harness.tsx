@@ -160,8 +160,37 @@ export interface Mounted<T> {
   unmount(): Promise<void>
 }
 
+/** The globals as they were before the first mounted tree, and how many trees are mounted now. */
+const mounted: { saved?: { window: unknown; hadWindow: boolean; act: unknown; hadAct: boolean }; trees: number } = {
+  trees: 0,
+}
+
+/**
+ * Put back the globals a mounted tree replaced (`window`, `IS_REACT_ACT_ENVIRONMENT`). It runs by itself when the last
+ * mounted tree unmounts; call it from `afterEach` in a test file as well, so a test that does not unmount leaves
+ * nothing behind for the next file when files share one module graph (CI runs them that way).
+ */
+export function resetGlobals(): void {
+  const g = globalThis as Record<string, unknown>
+  const saved = mounted.saved
+  mounted.saved = undefined
+  mounted.trees = 0
+  if (saved === undefined) return
+  if (saved.hadWindow) g['window'] = saved.window
+  else delete g['window']
+  if (saved.hadAct) g['IS_REACT_ACT_ENVIRONMENT'] = saved.act
+  else delete g['IS_REACT_ACT_ENVIRONMENT']
+}
+
 async function mount(element: (tick: () => number) => ReactElement, strict: boolean): Promise<Mounted<unknown>> {
   const g = globalThis as Record<string, unknown>
+  mounted.saved ??= {
+    window: g['window'],
+    hadWindow: 'window' in g,
+    act: g['IS_REACT_ACT_ENVIRONMENT'],
+    hadAct: 'IS_REACT_ACT_ENVIRONMENT' in g,
+  }
+  mounted.trees++
   g['IS_REACT_ACT_ENVIRONMENT'] = true
   const doc = new FakeDocument()
   const window = { event: undefined, document: doc, HTMLIFrameElement: class {} }
@@ -191,6 +220,7 @@ async function mount(element: (tick: () => number) => ReactElement, strict: bool
       await act(async () => {
         root.unmount()
       })
+      if (--mounted.trees <= 0) resetGlobals()
     },
   }
 }

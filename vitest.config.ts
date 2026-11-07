@@ -18,6 +18,12 @@ const testTimeout = onCi ? 30_000 : 5_000
 // stay isolated, so a test that leaks state between files still shows up when running a few of them.
 const isolate = !onCi
 
+// Only the engine's tests gain from that (a very large module graph imported by 1,500 files). The tests of render, meta
+// and the apps are few, drive React with stand-in globals (window, requestAnimationFrame, performance.now) and keep
+// module-level state (the stored session preferences, the last player to play), so they keep a fresh module graph per
+// file on CI as well: sharing one made files fail depending on which ran first in a worker.
+const keepIsolation = { isolate: true }
+
 // One Vitest run for the workspace. Packages resolve each other's source through the `source` export condition, so
 // tests never need a build.
 export default defineConfig({
@@ -42,6 +48,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'render',
+          ...keepIsolation,
           root: 'packages/render',
           include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
           environment: 'node',
@@ -51,6 +58,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'meta',
+          ...keepIsolation,
           root: 'packages/meta',
           include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
           environment: 'node',
@@ -60,6 +68,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'pocs',
+          ...keepIsolation,
           root: 'apps/pocs',
           include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
           environment: 'node',
@@ -69,6 +78,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'site',
+          ...keepIsolation,
           root: 'apps/site',
           include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
           environment: 'node',
