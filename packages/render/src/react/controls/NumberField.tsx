@@ -247,7 +247,7 @@ function Rail(props: {
         <div className="h-full bg-(--wb-accent)" style={{ width: `${fraction * 100}%` }} />
       </div>
       <div
-        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-(--wb-accent) bg-(--wb-bg) transition-shadow group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
+        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-(--wb-accent) bg-(--wb-bg) transition-shadow motion-reduce:transition-none group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
         style={{ left: `${fraction * 100}%` }}
       />
     </div>
