@@ -178,8 +178,11 @@ describe('tensor-like start (migration, D-009)', () => {
     expect(at(Float64Array.of(0.5, 0.5))).toEqual(expected)
     expect(at(tensor([0.5, 0.5]))).toEqual(expected)
     expect(() => at(tensor([[0.5, 0.5]]))).toThrow(expect.objectContaining({ code: 'shape' }))
-    expect(() => grad((a: Value) => (at(a as TensorLike), sum(a)))(tensor([0.5, 0.5]))).toThrow(
-      expect.objectContaining({ code: 'not-differentiable' }),
-    )
+    expect(() =>
+      grad((a: Value) => {
+        at(a as TensorLike)
+        return sum(a)
+      })(tensor([0.5, 0.5])),
+    ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
   })
 })

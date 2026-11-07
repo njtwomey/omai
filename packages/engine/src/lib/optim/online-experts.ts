@@ -13,8 +13,8 @@ import { ddot } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { add, asTensor, type Tensor, type TensorLike, toArray, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
-import { lbfgsb } from './minimize/lbfgsb.ts'
 import { rowsOf, vectorOf } from './_vector.ts'
+import { lbfgsb } from './minimize/lbfgsb.ts'
 import type { OnlineLearner, OnlineLoss } from './online.ts'
 
 /** The rounds of a prediction-with-expert-advice problem. */

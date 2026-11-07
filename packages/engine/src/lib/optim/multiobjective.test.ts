@@ -274,9 +274,14 @@ describe('tensor-like inputs (migration, D-009)', () => {
       expect(f(Float64Array.from(values)), name).toEqual(expected)
       expect(f(tensor(values)), name).toEqual(expected)
       expect(() => f(tensor([values, values])), name).toThrow(expect.objectContaining({ code: 'shape' }))
-      expect(() => grad((a: Value) => (f(a as TensorLike), sum(a)))(tensor(values)), name).toThrow(
-        expect.objectContaining({ code: 'not-differentiable' }),
-      )
+      expect(
+        () =>
+          grad((a: Value) => {
+            f(a as TensorLike)
+            return sum(a)
+          })(tensor(values)),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
     }
     expect(crowdingDistance(front).shape).toEqual([3])
     expect(hypervolumeContributions(front, [4, 4]).shape).toEqual([3])

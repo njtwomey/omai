@@ -185,9 +185,14 @@ describe('sharpness', () => {
       expect(JSON.stringify(f(Float64Array.from(g))), name).toBe(expected)
       expect(JSON.stringify(f(tensor(g))), name).toBe(expected)
       expect(() => f(tensor([g, g])), name).toThrow(expect.objectContaining({ code: 'shape' }))
-      expect(() => grad((a: Value) => (f(a as TensorLike), sum(a)))(tensor(g)), name).toThrow(
-        expect.objectContaining({ code: 'not-differentiable' }),
-      )
+      expect(
+        () =>
+          grad((a: Value) => {
+            f(a as TensorLike)
+            return sum(a)
+          })(tensor(g)),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
     }
   })
 })

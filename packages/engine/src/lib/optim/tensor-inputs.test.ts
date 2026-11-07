@@ -97,9 +97,14 @@ describe('tensor-like option vectors (migration, D-009)', () => {
       expect(f(Float64Array.from(values)), name).toEqual(expected)
       expect(f(tensor(values)), name).toEqual(expected)
       expect(() => f(tensor([values, values])), name).toThrow(expect.objectContaining({ code: 'shape' }))
-      expect(() => grad((a: Value) => (f(a as TensorLike), sum(a)))(tensor(values)), name).toThrow(
-        expect.objectContaining({ code: 'not-differentiable' }),
-      )
+      expect(
+        () =>
+          grad((a: Value) => {
+            f(a as TensorLike)
+            return sum(a)
+          })(tensor(values)),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
     }
   })
 })

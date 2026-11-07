@@ -86,9 +86,12 @@ describe('tensor-like bounds (migration, D-009)', () => {
     expect(at(Float64Array.of(0, 1))).toEqual(expected)
     expect(at(tensor([0, 1]))).toEqual(expected)
     expect(() => at(tensor([[0, 1]]))).toThrow(expect.objectContaining({ code: 'shape' }))
-    expect(() => grad((a: Value) => (at(a as TensorLike), sum(a)))(tensor([0, 1]))).toThrow(
-      expect.objectContaining({ code: 'not-differentiable' }),
-    )
+    expect(() =>
+      grad((a: Value) => {
+        at(a as TensorLike)
+        return sum(a)
+      })(tensor([0, 1])),
+    ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
     const p: BoundedProblem = {
       objective: (x) => sum(square(sub(x as Value, 0.4))),
       x0: [1],

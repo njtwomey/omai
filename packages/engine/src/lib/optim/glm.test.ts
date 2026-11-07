@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { grad } from '../autodiff/index.ts'
 import { families } from '../dists/index.ts'
 import { key } from '../random/index.ts'
 import { defaults } from '../space/index.ts'
-import { grad } from '../autodiff/index.ts'
 import { fromStorage, sum, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { runAlgorithm, type StepContext } from '../trace/index.ts'
 import { fitGlm, type GlmProblem, glmGradient, glmSolvers, glmValue } from './glm.ts'
@@ -181,9 +181,12 @@ describe('tensor-like inputs (migration, D-009)', () => {
     expect(beta(Float64Array.of(0.1, 0.2))).toEqual(beta([0.1, 0.2]))
     expect(beta(tensor([0.1, 0.2]))).toEqual(beta([0.1, 0.2]))
     expect(() => beta(tensor([[0.1, 0.2]]))).toThrow(expect.objectContaining({ code: 'shape' }))
-    expect(() => grad((b: Value) => (beta(b as TensorLike), sum(b)))(tensor([0.1, 0.2]))).toThrow(
-      expect.objectContaining({ code: 'not-differentiable' }),
-    )
+    expect(() =>
+      grad((b: Value) => {
+        beta(b as TensorLike)
+        return sum(b)
+      })(tensor([0.1, 0.2])),
+    ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
     const penalty = (matrix: TensorLike): number => glmValue({ ...base, x: rows, penalty: { matrix } }, [0.1, 0.2])
     expect(
       penalty(

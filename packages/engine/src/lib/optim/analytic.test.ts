@@ -70,8 +70,11 @@ describe('tensor-like inputs (migration, D-009)', () => {
     expect(at(tensor([1, 1]))).toEqual(expected)
     expect(finiteDifferenceHessian((v) => v, [1, 1, 1]).shape).toEqual([3, 3])
     expect(() => at(tensor([[1, 1]]))).toThrow(expect.objectContaining({ code: 'shape' }))
-    expect(() => grad((a: Value) => (at(a as TensorLike), sum(a)))(tensor([1, 1]))).toThrow(
-      expect.objectContaining({ code: 'not-differentiable' }),
-    )
+    expect(() =>
+      grad((a: Value) => {
+        at(a as TensorLike)
+        return sum(a)
+      })(tensor([1, 1])),
+    ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
   })
 })

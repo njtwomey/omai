@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { grad } from '../autodiff/index.ts'
 import { hedgeRegretBound, ogdRegretBound } from '../learn/theory.ts'
 import { foldIn, key, normal, uniform } from '../random/index.ts'
-import { grad } from '../autodiff/index.ts'
 import { square, sub, sum, type TensorLike, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { recorder, runAlgorithm } from '../trace/index.ts'
 import { linearLosses, onlineGradientDescent, runOnline } from './online.ts'
@@ -352,9 +352,14 @@ describe('tensor-like inputs (migration, D-009)', () => {
       const expected = f(values)
       expect(f(tensor(values)), name).toEqual(expected)
       expect(() => f(tensor(values[0] as number[])), name).toThrow(expect.objectContaining({ code: 'shape' }))
-      expect(() => grad((a: Value) => (f(a as TensorLike), sum(a)))(tensor(values)), name).toThrow(
-        expect.objectContaining({ code: 'not-differentiable' }),
-      )
+      expect(
+        () =>
+          grad((a: Value) => {
+            f(a as TensorLike)
+            return sum(a)
+          })(tensor(values)),
+        name,
+      ).toThrow(expect.objectContaining({ code: 'not-differentiable' }))
     }
     // Advice that changes every round is a rank-3 tensor.
     const perRound = [m.slice(0, 2), m.slice(1, 3), m.slice(0, 2)]
