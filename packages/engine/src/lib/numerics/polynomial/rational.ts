@@ -5,18 +5,27 @@
  */
 
 import { type Complex, cabs, cadd, cdiv, cmul, csub, MdmlError } from '../../base/index.ts'
-import { type TensorLike, toVector } from '../../tensor/index.ts'
+import { type Tensor, type TensorLike, toVector } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { divKernel, rootsKernel } from './_power.ts'
+import type { ComplexRoots } from './power.ts'
 
 // Rational functions follow scipy.signal: coefficients highest degree first (in s for residue, in z^-1 for residuez).
 
-/** Complex values as parallel real and imaginary parts. */
+/**
+ * Complex values as parallel real and imaginary parts, as plain numbers. The view the `systems` domain holds the zeros
+ * and poles of its records in (it builds them literally in about thirty files), so it stays native until `systems` is
+ * staged; the results of this domain use {@link ComplexRoots}, whose parts are tensors.
+ */
 export interface ComplexArray {
   readonly re: number[]
   readonly im: number[]
 }
 
-const split = (xs: readonly Complex[]): ComplexArray => ({ re: xs.map((x) => x[0]), im: xs.map((x) => x[1]) })
+const split = (xs: readonly Complex[]): ComplexRoots => ({
+  re: vectorOf(xs.map((x) => x[0])),
+  im: vectorOf(xs.map((x) => x[1])),
+})
 
 /** Multiply a highest-first complex polynomial by (s - p). */
 function timesLinear(poly: readonly Complex[], p: Complex): Complex[] {
@@ -101,34 +110,38 @@ function trimLeading(c: readonly number[]): number[] {
   return c.slice(i)
 }
 
-/** Partial fractions r_i / (s - p_i)^j plus a direct polynomial k. */
+/**
+ * Partial fractions r_i / (s - p_i)^j plus a direct polynomial k. Holds tensors (migration, D-009: the parts were
+ * `number[]` in a {@link ComplexArray} and `direct` a `number[]`).
+ */
 export interface PartialFractions {
   /** Residues, one per pole entry (repeated poles appear once per power, lowest power first). */
-  readonly residues: ComplexArray
+  readonly residues: ComplexRoots
   /** Poles, repeated by multiplicity. */
-  readonly poles: ComplexArray
-  /** The direct polynomial term (highest first). */
-  readonly direct: number[]
+  readonly poles: ComplexRoots
+  /** The direct polynomial term (highest first), `[m]`. */
+  readonly direct: Tensor<'float64', [number]>
 }
 
 /**
  * The partial-fraction expansion of b(s) / a(s) (scipy.signal.residue): sum_i r_i / (s - p_i)^j + k(s), with poles
  * closer than tol treated as one repeated pole. Residues of repeated poles come from the Taylor expansion of
  * b / (the rest of a) about the pole. Takes tensors (migration, D-009: `b` and `a` were `readonly number[]`); the result
- * record keeps its plain arrays, as {@link ComplexArray} is built literally by `systems`.
+ * holds tensors (it was plain arrays).
  *
  * @param b - Numerator `[p]`, highest degree first.
  * @param a - Denominator `[q]`, highest degree first.
  * @param tol - Tolerance for repeated poles (default 1e-3).
- * @returns Residues, poles and the direct term.
+ * @returns Residues, poles (as {@link ComplexRoots}) and the direct term, all tensors (they were plain arrays).
  * @throws MdmlError with code `value` for a zero denominator, `shape` unless `b` and `a` are vectors, and
  *   `not-differentiable` for a traced value.
  * @concept partial-fractions
  * @example
  * ```ts
  * import { residue } from 'mdml-engine/numerics/polynomial'
+ * import { toFlat } from 'mdml-engine/tensor'
  * // 1 / (s^2 + 3s + 2) = 1 / (s + 1) - 1 / (s + 2).
- * residue([1], [1, 3, 2]).residues.re.map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
+ * toFlat(residue([1], [1, 3, 2]).residues.re).map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
  * ```
  */
 export function residue(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFractions {
@@ -152,18 +165,18 @@ export function residue(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFracti
     multiplicity,
   )
   const repeated = unique.flatMap((p, k) => new Array<Complex>(multiplicity[k] ?? 1).fill(p))
-  return { residues: split(rs), poles: split(repeated), direct }
+  return { residues: split(rs), poles: split(repeated), direct: vectorOf(direct) }
 }
 
 /**
  * The partial-fraction expansion of a discrete-time transfer function in z^-1 (scipy.signal.residuez):
  * b(z) / a(z) = sum_i r_i / (1 - p_i z^-1)^j + k(z^-1). Takes tensors (migration, D-009: `b` and `a` were
- * `readonly number[]`); the result record keeps its plain arrays.
+ * `readonly number[]`); the result holds tensors (it was plain arrays).
  *
  * @param b - Numerator coefficients `[p]` of z^0, z^-1, ...
  * @param a - Denominator coefficients `[q]` of z^0, z^-1, ... (a[0] != 0).
  * @param tol - Tolerance for repeated poles (default 1e-3).
- * @returns Residues, poles and the direct term (in z^-1, lowest power first).
+ * @returns Residues, poles and the direct term (in z^-1, lowest power first), all tensors (they were plain arrays).
  * @throws MdmlError with code `value` when a[0] is zero, `shape` unless `b` and `a` are vectors, and
  *   `not-differentiable` for a traced value.
  * @example
@@ -210,13 +223,14 @@ export function residuez(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFract
     }
   })
   const repeated = unique.flatMap((p, k) => new Array<Complex>(multiplicity[k] ?? 1).fill(p))
-  return { residues: split(rs), poles: split(repeated), direct }
+  return { residues: split(rs), poles: split(repeated), direct: vectorOf(direct) }
 }
 
 /**
  * Rebuild b(s) / a(s) from a partial-fraction expansion (scipy.signal.invres): consecutive poles closer than tol form
  * one repeated pole, whose residues are for powers 1, 2, ... Takes tensor-likes (migration, D-009: the parts and `k`
- * were `number[]`); the result record keeps its plain arrays.
+ * were `number[]`); the result holds tensors, the parts of each polynomial as a {@link ComplexRoots} (they were plain
+ * arrays).
  *
  * @param r - Residues, as real and imaginary parts (each a vector).
  * @param p - Poles (repeated poles adjacent), likewise.
@@ -236,7 +250,7 @@ export function invres(
   p: { readonly re: TensorLike; readonly im: TensorLike },
   k: TensorLike,
   tol = 1e-3,
-): { readonly numerator: ComplexArray; readonly denominator: ComplexArray } {
+): { readonly numerator: ComplexRoots; readonly denominator: ComplexRoots } {
   const pim = toVector(p.im, 'invres')
   const rim = toVector(r.im, 'invres')
   const direct = toVector(k, 'invres')
