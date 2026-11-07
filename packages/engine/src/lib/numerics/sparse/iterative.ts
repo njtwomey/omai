@@ -21,8 +21,12 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
+import { assertFinite } from '../_vector.ts'
 import { daxpy, ddot as dot, dnrm2 as norm } from '../linalg/index.ts'
 import { asOperator, type CsrMatrix, csr, type LinearOperator, primalValues, spmv, transposeCsr } from './csr.ts'
+
+/** A new Krylov direction shorter than this many rounding errors of its column is no direction: the space has stopped growing. */
+const STALL = 64 * Number.EPSILON
 
 /** A preconditioner: z = M^{-1} r. */
 export type Preconditioner = (r: Float64Array) => Float64Array
@@ -52,7 +56,11 @@ export interface KrylovResult {
   readonly x: Tensor
   readonly iterations: number
   readonly converged: boolean
-  /** How the solve ended: `converged`, `completed` (the iteration cap), or `diverged` (a non-finite residual). */
+  /**
+   * How the solve ended: `converged`, `completed` (the iteration cap), `diverged` (a non-finite residual) or `failed`
+   * (GMRES and MINRES: the Krylov space stopped growing before the tolerance was met, as for a singular system that
+   * has no solution; `x` is then the best iterate found and `residualNorm` its true residual).
+   */
   readonly status: RunStatus
   readonly residualNorm: number
   /** The residual norm after each iteration (the semi-log convergence plot). */
@@ -64,10 +72,16 @@ const SCHEMA = channels({
   tensors: { x: { role: 'state', description: 'current iterate' } },
 })
 
-function setup(a: CsrMatrix | TensorLike | LinearOperator, b: TensorLike, options: KrylovOptions) {
+function setup(name: string, a: CsrMatrix | TensorLike | LinearOperator, b: TensorLike, options: KrylovOptions) {
   const op = asOperator(a)
   const apply = numeric(op)
   const bv = Float64Array.from(toFlat(primalOf(promoteFloat(b)[0] as Value)))
+  // The NaN rule: a solver rejects non-finite data at its boundary (an operator is opaque, a matrix is scanned).
+  assertFinite(name, bv, 'b')
+  if (options.x0 !== undefined) assertFinite(name, options.x0, 'x0')
+  if (typeof a === 'object' && a !== null && 'indptr' in a) assertFinite(name, primalValues(a as CsrMatrix), 'matrix')
+  else if (!(typeof a === 'object' && a !== null && 'matvec' in a))
+    assertFinite(name, toFlat(primalOf(promoteFloat(a as TensorLike)[0] as Value)), 'matrix')
   if (op.shape[0] !== bv.length || op.shape[1] !== bv.length)
     throw new MdmlError('shape', 'Krylov solvers need a square operator matching b')
   const x0 = options.x0 === undefined ? new Float64Array(bv.length) : Float64Array.from(options.x0)
@@ -117,7 +131,7 @@ export function cgAlgorithm(
   b: TensorLike,
   options: KrylovOptions = {},
 ): Algorithm<KrylovState> {
-  const { apply, b: bv, x0, tol, precondition } = setup(a, b, options)
+  const { apply, b: bv, x0, tol, precondition } = setup('cg', a, b, options)
   return {
     name: 'cg',
     config: { rtol: options.rtol ?? 1e-5, atol: options.atol ?? 0 } as Json,
@@ -198,7 +212,7 @@ export function bicgstabAlgorithm(
   b: TensorLike,
   options: KrylovOptions = {},
 ): Algorithm<KrylovState> {
-  const { apply, b: bv, x0, tol, precondition } = setup(a, b, options)
+  const { apply, b: bv, x0, tol, precondition } = setup('bicgstab', a, b, options)
   return {
     name: 'bicgstab',
     config: { rtol: options.rtol ?? 1e-5, atol: options.atol ?? 0 } as Json,
@@ -314,7 +328,7 @@ export function gmresAlgorithm(
   b: TensorLike,
   options: KrylovOptions & { readonly restart?: number } = {},
 ): Algorithm<KrylovState> {
-  const { apply: rawApply, b: rawB, x0, tol: rawTol, precondition } = setup(a, b, options)
+  const { apply: rawApply, b: rawB, x0, tol: rawTol, precondition } = setup('gmres', a, b, options)
   const apply = (x: Float64Array): Float64Array => precondition(rawApply(x))
   const bv = precondition(rawB)
   const tol =
@@ -361,6 +375,7 @@ export function gmresAlgorithm(
       }
       const hn = norm(w)
       h[j + 1] = hn
+      const columnNorm = norm(Float64Array.from(h))
       // Apply the previous rotations, then a new one to zero h[j + 1].
       for (let i = 0; i < j; i++) {
         const t = (c.cs[i] ?? 1) * (h[i] ?? 0) + (c.sn[i] ?? 0) * (h[i + 1] ?? 0)
@@ -368,6 +383,13 @@ export function gmresAlgorithm(
         h[i] = t
       }
       const r = Math.hypot(h[j] ?? 0, h[j + 1] ?? 0)
+      if (r <= STALL * columnNorm) {
+        // The new direction adds nothing: the Krylov space has stopped growing (a singular matrix and a right-hand side
+        // outside its range). Keep the iterate of the columns before it and report its true residual.
+        const x = solution(c)
+        const rn = begin(x).rn
+        return { x, residualNorm: rn, history: [...s.history, rn], internal: { cycle: c, stalled: true } }
+      }
       const cs = r === 0 ? 1 : (h[j] ?? 0) / r
       const sn = r === 0 ? 0 : (h[j + 1] ?? 0) / r
       h[j] = r
@@ -392,7 +414,14 @@ export function gmresAlgorithm(
       }
       return { x, residualNorm: rn, history: [...s.history, rn], internal: { cycle } }
     },
-    done: (s) => (s.residualNorm <= tol ? 'converged' : Number.isFinite(s.residualNorm) ? undefined : 'diverged'),
+    done: (s) =>
+      s.residualNorm <= tol
+        ? 'converged'
+        : s.internal['stalled'] === true
+          ? 'failed'
+          : Number.isFinite(s.residualNorm)
+            ? undefined
+            : 'diverged',
     observe,
   }
 }
@@ -436,10 +465,21 @@ export function gmres(
  * MINRES (Paige and Saunders) for symmetric, possibly indefinite systems: minimises the residual over the Krylov space
  * through the Lanczos recurrence and Givens rotations. The residual norm decreases monotonically.
  *
+ * With a `preconditioner` (z = M^-1 r, M symmetric positive definite, so `jacobiPreconditioner` and
+ * `incompleteCholesky` qualify for a positive definite A) the Lanczos process runs in the inner product of M^-1 and the
+ * solver minimises the M^-1 norm of the residual, sqrt(r^T M^-1 r): that is the `residualNorm` and the history, and the
+ * tolerance is relative to the same norm of b (as for the left-preconditioned GMRES). A preconditioner that is not
+ * positive definite is rejected with a `value` error when it shows.
+ *
+ * On a singular system whose right-hand side is outside the range of A the Krylov space stops growing before the
+ * residual reaches the tolerance: the run ends `failed` with the best iterate and its true residual.
+ *
  * @param a - Symmetric matrix or operator.
  * @param b - Right-hand side.
- * @param options - Start and tolerances.
+ * @param options - Start, tolerances and the preconditioner.
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry, or when the
+ *   preconditioner is not positive definite.
  * @example
  * ```ts
  * import { minresAlgorithm } from 'mdml-engine/numerics/sparse'
@@ -451,10 +491,22 @@ export function minresAlgorithm(
   b: TensorLike,
   options: KrylovOptions = {},
 ): Algorithm<KrylovState> {
-  const { apply, b: bv, x0, tol } = setup(a, b, options)
+  const { apply, b: bv, x0, tol: rawTol } = setup('minres', a, b, options)
+  const m = options.preconditioner
+  // The M^-1 inner product: the squared length of the residual r in the norm the method minimises, and z = M^-1 r.
+  const measure = (r: Float64Array): { z: Float64Array; length: number } => {
+    if (m === undefined) return { z: r, length: norm(r) }
+    const z = m(r)
+    const square = dot(r, z)
+    if (!(square >= 0))
+      throw new MdmlError('value', 'minres: the preconditioner is not positive definite (r^T M^-1 r < 0)')
+    return { z, length: Math.sqrt(square) }
+  }
+  const tol = m === undefined ? rawTol : Math.max((options.rtol ?? 1e-5) * measure(bv).length, options.atol ?? 0)
   type M = {
     vOld: Float64Array
     v: Float64Array
+    z: Float64Array
     beta: number
     wOld: Float64Array
     wOlder: Float64Array
@@ -470,7 +522,7 @@ export function minresAlgorithm(
     schema: SCHEMA,
     init: () => {
       const r = daxpy(-1, apply(x0), bv)
-      const beta = norm(r)
+      const { z, length: beta } = measure(r)
       const n = r.length
       const zero = new Float64Array(n)
       return {
@@ -480,6 +532,7 @@ export function minresAlgorithm(
         internal: {
           vOld: zero,
           v: r.map((v) => v / (beta || 1)),
+          z: m === undefined ? r.map((v) => v / (beta || 1)) : z.map((v) => v / (beta || 1)),
           beta,
           wOld: zero,
           wOlder: zero,
@@ -493,20 +546,27 @@ export function minresAlgorithm(
     },
     step: (s) => {
       const st = s.internal as M
-      // Lanczos step: A v_j = beta_j v_{j-1} + alpha_j v_j + beta_{j+1} v_{j+1}.
-      const av = apply(st.v)
-      const alpha = dot(st.v, av)
-      let next = daxpy(-st.beta, st.vOld, daxpy(-alpha, st.v, av))
-      const betaNext = norm(next)
-      next = next.map((v) => v / (betaNext || 1))
+      // Lanczos step: A z_j = beta_j v_{j-1} + alpha_j v_j + beta_{j+1} v_{j+1}, with z_j = M^-1 v_j (v_j itself without M).
+      const av = apply(st.z)
+      const alpha = dot(st.z, av)
+      const next = daxpy(-st.beta, st.vOld, daxpy(-alpha, st.v, av))
+      const { z: zNext, length: betaNext } = measure(next)
+      const nextScaled = next.map((v) => v / (betaNext || 1))
+      const zNextScaled = m === undefined ? nextScaled : zNext.map((v) => v / (betaNext || 1))
       // Apply the previous two rotations to the new column (beta_j, alpha_j, beta_{j+1}).
       const delta = st.gamma * alpha - st.gammaOld * st.sigma * st.beta
       const rho1 = Math.hypot(delta, betaNext)
+      if (rho1 <= STALL * Math.hypot(alpha, st.beta, betaNext)) {
+        // The tridiagonal matrix has become singular with the residual not yet small (a singular A and a right-hand
+        // side outside its range): the space stopped growing. Keep the iterate and report its true residual.
+        const rn = measure(daxpy(-1, apply(s.x), bv)).length
+        return { ...s, residualNorm: rn, history: [...s.history, rn], internal: { ...st, stalled: true } }
+      }
       const rho2 = st.sigma * alpha + st.gammaOld * st.gamma * st.beta
       const rho3 = st.sigmaOld * st.beta
       const gammaNext = delta / rho1
       const sigmaNext = betaNext / rho1
-      const w = st.v.map((v, i) => (v - rho3 * (st.wOlder[i] ?? 0) - rho2 * (st.wOld[i] ?? 0)) / rho1)
+      const w = st.z.map((v, i) => (v - rho3 * (st.wOlder[i] ?? 0) - rho2 * (st.wOld[i] ?? 0)) / rho1)
       const x = daxpy(gammaNext * st.eta, w, s.x)
       const rn = Math.abs(sigmaNext) * s.residualNorm
       return {
@@ -515,7 +575,8 @@ export function minresAlgorithm(
         history: [...s.history, rn],
         internal: {
           vOld: st.v,
-          v: next,
+          v: nextScaled,
+          z: zNextScaled,
           beta: betaNext,
           wOld: w,
           wOlder: st.wOld,
@@ -527,18 +588,28 @@ export function minresAlgorithm(
         } satisfies M,
       }
     },
-    done: (s) => (s.residualNorm <= tol ? 'converged' : Number.isFinite(s.residualNorm) ? undefined : 'diverged'),
+    done: (s) =>
+      s.residualNorm <= tol
+        ? 'converged'
+        : (s.internal as { stalled?: boolean }).stalled === true
+          ? 'failed'
+          : Number.isFinite(s.residualNorm)
+            ? undefined
+            : 'diverged',
     observe,
   }
 }
 
 /**
- * Solve a symmetric system by MINRES (scipy.sparse.linalg.minres).
+ * Solve a symmetric system by MINRES (scipy.sparse.linalg.minres), optionally preconditioned (see
+ * {@link minresAlgorithm}).
  *
  * @param a - Symmetric matrix or operator.
  * @param b - Right-hand side.
- * @param options - Tolerances, start, iteration cap and trace options.
- * @returns The solution with its residual history.
+ * @param options - Tolerances, start, preconditioner, iteration cap (default 10 n) and trace options.
+ * @returns The solution with its residual history; `status` is `failed` when the system is singular and inconsistent.
+ * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry, or when the
+ *   preconditioner is not positive definite.
  * @example
  * ```ts
  * import { minres } from 'mdml-engine/numerics/sparse'
@@ -551,12 +622,13 @@ export function minres(
   b: TensorLike,
   options: KrylovOptions & Partial<Omit<RunOptions, 'maxSteps'>> & { readonly maxIterations?: number } = {},
 ): KrylovResult {
-  const { x0, rtol, atol, preconditioner: _p, ...run } = options
+  const { x0, rtol, atol, preconditioner, ...run } = options
   return finish(
     minresAlgorithm(a, b, {
       ...(x0 === undefined ? {} : { x0 }),
       ...(rtol === undefined ? {} : { rtol }),
       ...(atol === undefined ? {} : { atol }),
+      ...(preconditioner === undefined ? {} : { preconditioner }),
     }),
     run,
     asOperator(a).shape[0],
