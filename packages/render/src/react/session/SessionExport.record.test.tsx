@@ -2,7 +2,6 @@ import { act, type RefObject } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { invoke, mountElement, resetGlobals } from '../_harness.tsx'
 import { SessionExport } from './SessionExport.tsx'
-import type { LiveSession } from './useSession.ts'
 
 // The page is not drawn here: a capture is a stub, and the moment the page has drawn is one the test lets pass.
 const paint = vi.hoisted(() => ({ release: [] as (() => void)[] }))
@@ -40,7 +39,7 @@ function setup(playing: boolean) {
     pause: () => order.push('pause'),
     play: () => order.push('play'),
     session: {},
-  } as unknown as LiveSession<never, never>
+  } as never
   const el = { offsetWidth: 10, offsetHeight: 10 } as unknown as HTMLElement
   const root = { current: el } as RefObject<HTMLElement | null>
   const onScrub = (t: number | null): number => order.push(`scrub ${t}`)

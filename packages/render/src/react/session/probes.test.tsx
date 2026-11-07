@@ -1,14 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mountHook, resetGlobals } from '../_harness.tsx'
 import { useProbe } from './RowsPanel.tsx'
-import type { LiveSession } from './useSession.ts'
 
 afterEach(resetGlobals)
 
 describe('useProbe', () => {
   it('computes a step once however often it is viewed again, and does not keep a step the tape has not reached', async () => {
     const probe = vi.fn((t: number, path: string) => ({ t, path }))
-    const live = { session: { t: 5, probe }, version: 0 } as unknown as LiveSession<never, never>
+    const live = { session: { t: 5, probe }, version: 0 } as never
     const view = { t: 1 }
     const m = await mountHook(() => useProbe(live, view.t, 'plane'))
     const visit = async (t: number): Promise<unknown> => {
