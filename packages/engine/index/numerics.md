@@ -15,7 +15,7 @@ Approximating functions and sequences: Chebyshev expansions and adaptive chebfun
 Convolution and padding: 1-D convolution and correlation (direct, FFT and overlap-add, numpy and scipy.signal style), N-dimensional deep-learning convolutions with their transposes and patch extraction, and the numpy and scipy.ndimage padding modes they share.
 
 - function `convNd`: Deep-learning convolution over any number of spatial axes. `src/lib/numerics/convolution/n-d.ts:194` `mdml-engine/numerics/convolution`
-- function `convolve`: Discrete 1-D linear convolution, like numpy.convolve. `src/lib/numerics/convolution/one-d.ts:67` `mdml-engine/numerics/convolution`
+- function `convolve`: Discrete 1-D linear convolution, like numpy.convolve. `src/lib/numerics/convolution/one-d.ts:126` `mdml-engine/numerics/convolution`
 
 ## numerics/differentiate
 
@@ -101,13 +101,13 @@ Sparse linear algebra, scipy.sparse style: compressed sparse row matrices and li
 - function `cg`: Conjugate gradients for symmetric positive-definite systems. `src/lib/numerics/sparse/iterative.ts:163` `mdml-engine/numerics/sparse`
 - function `eigsh`: Extreme eigenpairs of a symmetric operator by Lanczos. `src/lib/numerics/sparse/eigen.ts:455` `mdml-engine/numerics/sparse`
 
-- structure `csr`: Compressed sparse row matrix from a dense matrix or its arrays. `src/lib/numerics/sparse/csr.ts:61` `mdml-engine/numerics/sparse`
+- structure `csr`: Compressed sparse row matrix from a dense matrix or its arrays. `src/lib/numerics/sparse/csr.ts:67` `mdml-engine/numerics/sparse`
 
 ## numerics/spatial
 
 Nearest-neighbour search: exact brute force and spatial trees (KD, ball, vantage-point), and approximate indexes for large or high-dimensional data, namely graph search (HNSW, NN-descent), locality-sensitive hashing and MinHash, and vector quantisation (product quantisation, IVF).
 
-- function `kNearest`: Exact k nearest neighbours by brute force. `src/lib/numerics/spatial/brute.ts:54` `mdml-engine/numerics/spatial`
+- function `kNearest`: Exact k nearest neighbours by brute force. `src/lib/numerics/spatial/brute.ts:126` `mdml-engine/numerics/spatial`
 
 - structure `kdTree`: KD tree for nearest-neighbour and radius queries. `src/lib/numerics/spatial/trees.ts:379` `mdml-engine/numerics/spatial`
 

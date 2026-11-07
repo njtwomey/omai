@@ -152,3 +152,20 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
 - **13:20 Pushing.** The maintainer said "i never said push" and then "don't push until we're done locally". Four pushes had gone out on 2026-11-07
   on the strength of "carry on autonomously" (a51124be, 1fb92fb5, cf5f1ae1, aaf3c87f); `origin/main` is at aaf3c87f and nothing is unpushed. From now on
   commits, agent merges and the full local gate stay local (D-014). The CI run already started for aaf3c87f is left to finish; no more are started.
+  ||||||| cf5f1ae1
+- **13:10 Result.** Wave A performance fixes P3.21 (worktree `agent-pn01-numerics`, commits `e016de15`, `6b338589`, `9f6f7781`,
+  `803f8395`, `c0ad8718`). `convolve` is a primitive with a direct loop and rules that are convolutions of itself (ND-8): 4096 x 4096
+  2027 ms to 15.7 ms, values and gradients bit-identical to the window-matrix version on 27 cases; the FFT route was not taken because
+  it changes the last digits. General `eig` runs the same three steps of shifted inverse iteration on the Schur factor by block
+  back-substitution and rotates back with Z (ND-7): n = 100 1009 ms to 37.7 ms, n = 200 15.6 s to 264 ms (`eigvals` alone 238 ms);
+  against the old vectors on 61 matrices the differences are at most 2.5e-14 on random matrices up to n = 60 and 3e-12 on a hippo-like
+  matrix (where the new residual, 1e-15, beats the old 2.4e-12); Jordan and defective cases are identical; inside a repeated
+  non-defective eigenspace the basis vector differs by 1e-6 (both residuals 1e-16). `eigenvectorKernel` stays as the reference of a new
+  table test. `spmv` is a CSR-loop primitive (ND-9): 0.350 ms to 0.014 ms for 6,000 entries, bit-identical values and gradients, and
+  `cg`, `gmres`, `minres` and `bicgstab` give identical iterates; `cg` over 1000 iterations only falls 431 ms to 102 ms because the
+  dots, axpys and the tensor wrapper in `iterative.ts` remain (the optional `LinearOperator` fast path of F9 would change the public
+  surface and was not added). Bluestein builds its chirp plan once per call over many lines (ND-13): 1024 rows x 1000 169 ms to
+  94 ms, bit-identical on 98 outputs; mixed-radix was not added. `kNearest` keeps the k best in a bounded heap (ND-14): identical
+  indices and distances on 864 cases; total 325 ms to 226 ms at 200 queries x 2000 points x 8 dimensions because `cdist` (about 500 ns
+  per pair, broadcast tensor ops) is now 90% of it. NaN distances rank last (an F11 fix on the way; finite input unchanged). Own tests
+  and checks only; the full gate was not run.
