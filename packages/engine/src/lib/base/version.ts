@@ -1,6 +1,6 @@
 /**
- * The mdml-engine version as a constant, generated from the package manifest and recorded in every traced run so
- * that the run can be reproduced.
+ * The mdml-engine version as a constant, kept equal to the package manifest (a test checks it) and recorded in every
+ * traced run so that the run can be reproduced.
  */
 
 // Keep in step with the version in packages/engine/package.json.

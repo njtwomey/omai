@@ -62,21 +62,6 @@ export function isTraced(x: unknown): x is Traced {
 }
 
 /**
- * The abstract value (shape and dtype) of a value.
- *
- * @param x - A tensor or traced value.
- * @returns Its shape and dtype.
- * @example
- * ```ts
- * import { avalOf, zeros } from 'mdml-engine/tensor'
- * avalOf(zeros([2, 3])) // => { shape: [2, 3], dtype: 'float64' }
- * ```
- */
-export function avalOf(x: Value): Aval {
-  return { shape: x.shape, dtype: x.dtype }
-}
-
-/**
  * Require a concrete tensor, with a clear error where an operation cannot work on traced values (for example when a
  * shape would depend on data).
  *

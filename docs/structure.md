@@ -619,9 +619,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 - `registry.ts`: the shape the dataset and environment registries share: `Registry<E>` (named entries in order, a
   plain value), `registry`, `register` (a new registry with more entries, replacing by name; nothing registers itself
   on import), `lookup`, `find`, `matchesText` (the search-box test of the registries' queries).
-- `options.ts`: shared option shapes (`Tolerance`, `Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
-  (`defaultTolerance`, `resolveTolerance`, `defaultReduction`, `defaultAlternative`, `defaultConfidenceLevel`,
-  `resolveConfidenceLevel`).
+- `options.ts`: shared option shapes (`Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
+  (`defaultReduction`, `defaultAlternative`, `defaultConfidenceLevel`, `resolveConfidenceLevel`).
 - `vectors.ts`: the canonical fixed-size tuples `Vec2`, `Vec3`, `Vec4` (labelled, readonly). A point, colour, complex number,
   quaternion or plane is a labelled tuple of the same arity when its element names matter and the canonical type
   otherwise; a same-concept alias of one (`type Pt = Vec2`) is not written (`scripts/type-definitions.ts`, run by
