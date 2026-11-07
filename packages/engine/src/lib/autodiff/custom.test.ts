@@ -6,7 +6,9 @@ import {
   cast,
   cos,
   definePrimitive,
+  exp,
   floor,
+  log1p,
   type MaybeZero,
   matmul,
   mul,
@@ -23,8 +25,8 @@ import {
   type Value,
 } from '../tensor/index.ts'
 import { checkPrimitive } from './check.ts'
-import { checkpoint, customJvp, straightThrough } from './custom.ts'
-import { grad, hessian, jvp, valueAndGrad } from './transforms.ts'
+import { checkpoint, customJvp, customVjp, stopGradient, straightThrough } from './custom.ts'
+import { grad, hessian, jacfwd, jvp, linearize, valueAndGrad, vjp } from './transforms.ts'
 import { vmap } from './vmap.ts'
 
 const rand = (shape: readonly number[], seed: number): Tensor => normal(key(seed), shape) as Tensor
@@ -139,5 +141,63 @@ describe('straightThrough', () => {
     // d/dv [q(v) v] with dq/dv = 1: q(v) + v
     expectClose(g, add(q(x), x))
     expect(toArray(jvp(straightThrough(floor), tensor(1.7), tensor(3)).tangent)).toBe(3)
+  })
+})
+
+describe('customVjp', () => {
+  // softplus with the stable derivative sigmoid(x); the forward pass is the naive formula
+  const reverseOnly = customVjp({
+    name: 'softplusTest',
+    forward: (x) => log1p(exp(x)),
+    vjp: (g, [x]) => [mul(g, sigmoid(x as Value))],
+  })
+  const both = customVjp({
+    name: 'softplusTest',
+    forward: (x) => log1p(exp(x)),
+    vjp: (g, [x]) => [mul(g, sigmoid(x as Value))],
+    jvp: ([x], [t]) => (t === null || t === undefined ? null : mul(t, sigmoid(x as Value))),
+  })
+  const x = tensor([-2, 0, 1.5])
+
+  it('replaces differentiation through the forward pass by the rule, in reverse mode, under vmap and with a jvp rule', () => {
+    const want = sigmoid(x)
+    expectClose(reverseOnly(x), log1p(exp(x)), 0)
+    expectClose(grad((v: Value) => sum(reverseOnly(v)))(x), want)
+    expectClose(
+      vmap(grad((v: Value) => sum(reverseOnly(v))))(
+        tensor([
+          [-2, 0],
+          [1.5, 3],
+        ]),
+      ),
+      sigmoid(
+        tensor([
+          [-2, 0],
+          [1.5, 3],
+        ]),
+      ),
+    )
+    // with a forward rule too, both modes agree and the rule nests (second derivative sigmoid')
+    expectClose(jvp(both, x, tensor([1, 2, 3])).tangent, mul(want, tensor([1, 2, 3])))
+    expectClose(jacfwd(both)(tensor([0.3, -0.4])), jacfwd((v: Value) => log1p(exp(v)))(tensor([0.3, -0.4])))
+    expect(checkPrimitive(both, [x], { order: 2 }).failures).toEqual([])
+    // a zero cotangent gives zero inputs without calling the rule
+    expect(toArray(vjp(reverseOnly, x).pullback(tensor([0, 0, 0])))).toEqual([0, 0, 0])
+  })
+
+  it('has no forward mode without a jvp rule, and stopGradient is the identity with a zero derivative', () => {
+    expect(() => jvp(reverseOnly, x, tensor([1, 1, 1]))).toThrow(
+      expect.objectContaining({ code: 'not-differentiable' }),
+    )
+    expectClose(stopGradient(x), x, 0)
+    expect(toArray(grad((v: Value) => sum(stopGradient(v)))(x))).toEqual([0, 0, 0])
+    expect(toArray(jvp(stopGradient, x, tensor([1, 1, 1])).tangent)).toEqual([0, 0, 0])
+    // d/dx [x * stopGradient(x)] = stopGradient(x): the second factor is a constant
+    expectClose(grad((v: Value) => sum(mul(v, stopGradient(v))))(x), x)
+    const { out, tangentAt } = linearize((v: Value) => mul(v, v), tensor([3, -1]))
+    expect([toArray(out), toArray(tangentAt(tensor([1, 2])))]).toEqual([
+      [9, 1],
+      [6, -4],
+    ])
   })
 })

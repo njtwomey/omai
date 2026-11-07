@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { expectRows } from '../../testing/close.ts'
 import { grad } from '../autodiff/index.ts'
+import * as T from './index.ts'
 import {
   all,
   any,
@@ -35,7 +37,6 @@ import {
   type Value,
   zeros,
 } from './index.ts'
-import * as T from './index.ts'
 
 const inf = Number.POSITIVE_INFINITY
 const nan = Number.NaN
@@ -205,10 +206,6 @@ describe('derivatives at points where they exist', () => {
 
 const t32 = (x: number[]): Tensor => T.tensor(x, { dtype: 'float32' })
 const t32i = (x: number[]): Tensor => T.tensor(x, { dtype: 'int32' })
-const flat = (x: NestedArray): number[] => (Array.isArray(x) ? x.flatMap(flat) : [Number(x)])
-const shapeOf = (x: NestedArray): number[] =>
-  Array.isArray(x) ? [x.length, ...(x.length > 0 ? shapeOf(x[0] as NestedArray) : [])] : []
-
 describe('more degenerate inputs agree with numpy', () => {
   // [name, value under test, numpy's answer] (numpy 2.5; each row is one numpy expression)
   const rows: [string, () => Value, NestedArray][] = [
@@ -270,7 +267,7 @@ describe('more degenerate inputs agree with numpy', () => {
     [
       'arctan2 at signed zeros and Infinity',
       () => T.arctan2(T.tensor([0, 0, inf, 1]), T.tensor([-0, 0, inf, -inf])),
-      [3.141592653589793, 0, 0.7853981633974483, 3.141592653589793],
+      [Math.PI, 0, Math.PI / 4, Math.PI],
     ],
     [
       'maximum and minimum propagate NaN',
@@ -579,29 +576,7 @@ describe('more degenerate inputs agree with numpy', () => {
     ['float32 overflow is Infinity', () => T.mul(t32([3e38]), t32([10])), [inf]],
   ]
   it('gives the numpy value, shape and NaN pattern for empty, non-finite, signed and out-of-range inputs', () => {
-    const wrong: string[] = []
-    for (const [name, thunk, want] of rows) {
-      let got: Value
-      try {
-        got = thunk()
-      } catch (e) {
-        wrong.push(`${name}: threw ${e instanceof Error ? e.message : String(e)}`)
-        continue
-      }
-      // an empty answer has no first row to read the inner shape from: compare the element count then
-      if (flat(want).length > 0 && got.shape.join() !== shapeOf(want).join())
-        wrong.push(`${name}: shape [${got.shape}], numpy [${shapeOf(want)}]`)
-      const g = flat(toArray(got))
-      const w = flat(want)
-      if (g.length !== w.length) wrong.push(`${name}: ${g.length} values, numpy ${w.length}`)
-      for (const [k, v] of g.entries()) {
-        const b = w[k] as number
-        const same =
-          (Number.isNaN(v) && Number.isNaN(b)) || v === b || Math.abs(v - b) <= 1e-12 * Math.max(1, Math.abs(b))
-        if (!same) wrong.push(`${name}: [${k}] got ${v}, numpy ${b}`)
-      }
-    }
-    expect(wrong).toEqual([])
+    expectRows(rows)
   })
 
   it('keeps the shape of an empty answer (numpy: add, reshape, matmul and take over zero-length axes)', () => {

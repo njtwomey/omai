@@ -1,19 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { MdmlError } from '../base/index.ts'
 import * as T from './index.ts'
+
+const nan = Number.NaN
+
 import {
   abs,
   add,
   all,
   any,
-  argmax,
   arctan2,
+  argmax,
   broadcastShapes,
   ceil,
   clip,
   concat,
   cumprod,
   cumsum,
+  type DType,
   div,
   dot,
   equal,
@@ -38,6 +42,7 @@ import {
   minimum,
   mod,
   mul,
+  type NestedArray,
   neg,
   norm,
   normaliseAxis,
@@ -56,23 +61,18 @@ import {
   std,
   sub,
   sum,
+  type Tensor,
   take,
   tanh,
   tensor,
   toArray,
   tril,
   unique,
+  type Value,
   variance,
   weakResultType,
   where,
-  type DType,
-  type NestedArray,
-  type Tensor,
-  type Value,
 } from './index.ts'
-
-const inf = Number.POSITIVE_INFINITY
-const nan = Number.NaN
 
 // One letter per dtype, in promotion order: bool, int32, float32, float64.
 const DTYPES: Record<string, DType> = { b: 'bool', i: 'int32', f: 'float32', d: 'float64' }
