@@ -143,6 +143,29 @@ describe('cpu elementwise kernels: every broadcast case against a reference loop
 
 type Storage = ReturnType<typeof allocate>
 
+describe('cpu unary kernels', () => {
+  const REFERENCE: Readonly<Record<string, (x: number) => number>> = {
+    neg: (x) => -x,
+    abs: Math.abs,
+    exp: Math.exp,
+    log: Math.log,
+    sqrt: Math.sqrt,
+    log1p: Math.log1p,
+    tanh: Math.tanh,
+    sigmoid: (x) => (x >= 0 ? 1 / (1 + Math.exp(-x)) : Math.exp(x) / (1 + Math.exp(x))),
+    sin: Math.sin, // no loop of its own: the shared path
+  }
+  it.each(Object.keys(REFERENCE))('%s equals its reference on specials in float64, float32 and int32', (op) => {
+    const f = REFERENCE[op] as (x: number) => number
+    for (const dtype of ['float64', 'float32', 'int32'] as const) {
+      const x = make(dtype, [3, 4])
+      const want = allocate(dtype, x.data.length)
+      for (let i = 0; i < want.length; i++) want[i] = f(x.data[i] ?? 0)
+      same(cpu.unary(op as never, x).data, want)
+    }
+  })
+})
+
 describe('cpu structure kernels against a reference loop', () => {
   const REDUCES: readonly (readonly [Shape, readonly number[], boolean])[] = [
     [[12], [0], false], // full reduction of a vector
