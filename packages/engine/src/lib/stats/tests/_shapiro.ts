@@ -1,7 +1,7 @@
 // The Shapiro-Wilk W statistic and its p-value by Royston's algorithm AS R94 (1995), as scipy.stats.shapiro computes
 // them. Shared by tests/distribution.ts (the test) and tests/result.ts (the normality assumption check).
 import { MdmlError } from '../../base/index.ts'
-import { normPpf, normSf, sortedCopy } from '../_util.ts'
+import { normPpf, normSf, poly, sortedCopy } from '../_util.ts'
 
 const C1 = [0, 0.221157, -0.147981, -2.07119, 4.434685, -2.706056]
 const C2 = [0, 0.042981, -0.293762, -1.752461, 5.682633, -3.582633]
@@ -10,12 +10,6 @@ const C4 = [1.3822, -0.77857, 0.062767, -0.0020322]
 const C5 = [-1.5861, -0.31082, -0.083751, 0.0038915]
 const C6 = [-0.4803, -0.082676, 0.0030302]
 const G = [-2.273, 0.459]
-
-function poly(c: readonly number[], x: number): number {
-  let r = 0
-  for (let i = c.length - 1; i >= 0; i--) r = r * x + (c[i] ?? 0)
-  return r
-}
 
 /** The Shapiro-Wilk statistic W and its upper-tail p-value. */
 export function shapiroWilk(x: ArrayLike<number>): { w: number; p: number } {
