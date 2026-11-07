@@ -45,7 +45,7 @@ describe('react bindings', () => {
       ),
     ).toBe('light:#ffffff')
   })
-  it('observe the page class with one observer however many figures ask, and disconnect with the last', async () => {
+  it('does the page-wide work once: one observer of the page class however many figures ask, a stable structure ref', async () => {
     const made: { disconnected: boolean }[] = []
     vi.stubGlobal(
       'MutationObserver',
@@ -74,8 +74,8 @@ describe('react bindings', () => {
     expect(made[0]?.disconnected).toBe(false)
     await second.unmount()
     expect(made[0]?.disconnected).toBe(true)
-  })
-  it('gives a structure view one stable ref callback, so a render does not set state twice', async () => {
+
+    // A structure view's box ref is one function across renders, so a render does not set state twice.
     const s = structure('bayes-net', [{ id: 'a', label: 'a', role: 'latent' }], [])
     const mounted = await mountElement(<WidthHost structure={s} />, { browser: true })
     const refOf = (): unknown => mounted.elements().find((e) => e.props['onPointerDown'] !== undefined)?.props['ref']

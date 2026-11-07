@@ -36,7 +36,7 @@ const press = (key: string, what: Parameters<typeof target>[0]): object => ({
 })
 
 describe('Player keys', () => {
-  it('Space, the arrows and Home act from the scrubber and the player, and not from a button, an option or a field', async () => {
+  it('keeps to its own scrubber: Space, the arrows and Home act there and not on a button, an option or a field', async () => {
     for (const [key, verb] of [
       [' ', 'toggle'],
       ['ArrowRight', 'step'],
@@ -55,9 +55,8 @@ describe('Player keys', () => {
       expect(c[verb]).toHaveBeenCalledTimes(2)
       await m.unmount()
     }
-  })
 
-  it('steps on the arrow keys from anywhere for a while after playing, except from a slider, tab or option', async () => {
+    // And the arrows step from anywhere for a while after playing, except from a slider, tab, option or field.
     const c = controller({ playing: true })
     const m = await mountElement(<Player controller={c} />)
     expect(m.window.count('keydown')).toBe(1)

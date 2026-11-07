@@ -66,21 +66,26 @@ describe('separable bicubic', () => {
     cols,
     values: Float64Array.from({ length: rows * cols }, (_, k) => f(Math.floor(k / cols), k % cols)),
   })
-  it.each([
-    ['a smooth square surface up to 3x', surface(24, 24, (i, j) => Math.sin(i / 5) * Math.cos(j / 4)), 70, 70],
-    ['a wide grid, down-sampled in one axis', surface(9, 31, (i, j) => (i * 7 + j * 3) % 5), 5, 63],
-    ['a single row', surface(1, 6, (_, j) => j * j), 4, 20],
-    [
-      'a grid with a NaN node (it spreads to the pixels it touches)',
-      surface(6, 6, (i, j) => (i === 2 && j === 3 ? Number.NaN : i - j)),
-      17,
-      19,
-    ],
-  ])('equals the 2-D kernel on %s', (_name, g, rows, cols) => {
-    const got = resample(g, rows, cols, 'bicubic')
-    const want = bicubic2d(g, rows, cols)
-    for (let k = 0; k < want.length; k++)
-      expect(Math.abs((got[k] as number) - (want[k] as number)) < 1e-12 || Object.is(got[k], want[k])).toBe(true)
+  it('equals the 2-D kernel on smooth, wide, one-row and NaN-holding grids, up and down in size', () => {
+    const cases: readonly [string, ReturnType<typeof surface>, number, number][] = [
+      ['a smooth square surface up to 3x', surface(24, 24, (i, j) => Math.sin(i / 5) * Math.cos(j / 4)), 70, 70],
+      ['a wide grid, down-sampled in one axis', surface(9, 31, (i, j) => (i * 7 + j * 3) % 5), 5, 63],
+      ['a single row', surface(1, 6, (_, j) => j * j), 4, 20],
+      [
+        'a grid with a NaN node (it spreads to the pixels it touches)',
+        surface(6, 6, (i, j) => (i === 2 && j === 3 ? Number.NaN : i - j)),
+        17,
+        19,
+      ],
+    ]
+    for (const [name, g, rows, cols] of cases) {
+      const got = resample(g, rows, cols, 'bicubic')
+      const want = bicubic2d(g, rows, cols)
+      for (let k = 0; k < want.length; k++)
+        expect(Math.abs((got[k] as number) - (want[k] as number)) < 1e-12 || Object.is(got[k], want[k]), name).toBe(
+          true,
+        )
+    }
   })
 })
 

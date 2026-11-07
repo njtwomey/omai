@@ -55,33 +55,33 @@ const record = (m: Awaited<ReturnType<typeof mountElement>>) =>
   )
 
 describe('SessionExport recording', () => {
-  it('pauses playback while it records, scrubs through the steps, then restores the cursor and playing', async () => {
-    const { order, element } = setup(true)
+  const start = async (playing: boolean) => {
+    const { order, element } = setup(playing)
     const m = await mountElement(element, { browser: true })
     await invoke(
       m.elements().find((e) => e.props['aria-label'] === 'Export the page'),
       'onClick',
     )
     await record(m)
+    return { order, m }
+  }
+
+  it('pauses playback while it records and restores the cursor and playing; it stops when the menu unmounts', async () => {
+    const whole = await start(true)
     for (let i = 0; i < 3; i++) await draw()
     await act(letRun)
-    expect(order).toEqual(['pause', 'scrub 0', 'scrub 1', 'scrub 2', 'scrub 1', 'play'])
+    expect(whole.order).toEqual(['pause', 'scrub 0', 'scrub 1', 'scrub 2', 'scrub 1', 'play'])
     expect(saved.blobs).toEqual(['p.gif'])
-    await m.unmount()
-  })
+    await whole.m.unmount()
 
-  it('stops when the menu unmounts: no more scrubbing, no cursor restore, no file', async () => {
-    const { order, element } = setup(false)
-    const m = await mountElement(element, { browser: true })
-    await invoke(
-      m.elements().find((e) => e.props['aria-label'] === 'Export the page'),
-      'onClick',
-    )
-    await record(m)
+    // Unmounted part way: no more scrubbing, no cursor restore, no file.
+    saved.blobs.length = 0
+    paint.release.length = 0
+    const cut = await start(false)
     await draw()
-    await m.unmount()
+    await cut.m.unmount()
     for (let i = 0; i < 3; i++) await draw()
-    expect(order).toEqual(['pause', 'scrub 0', 'scrub 1'])
+    expect(cut.order).toEqual(['pause', 'scrub 0', 'scrub 1'])
     expect(saved.blobs).toEqual([])
   })
 })
