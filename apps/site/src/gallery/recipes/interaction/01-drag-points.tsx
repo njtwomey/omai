@@ -1,3 +1,4 @@
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 import { cartesian, lines } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import {
@@ -6,7 +7,6 @@ import {
   FigureFrame,
   InteractionOverlay,
   Overlaid,
-  type Point2,
   useChartProjection,
   useColourMode,
 } from 'mdml-render/react'

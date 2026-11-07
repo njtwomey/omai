@@ -1,8 +1,10 @@
 // Expression size measures used to choose between rewrites (a version of SymPy's `count_ops`), and a numeric
 // equivalence check at fixed sample points used to guard heuristic rewrites.
+
+import type { Complex } from '../exposition/index.ts'
 import { isNumeric } from './_canon.ts'
 import { children } from './_node.ts'
-import { type C, evalComplex, freeNames } from './_numeric.ts'
+import { evalComplex, freeNames } from './_numeric.ts'
 import type { Expr } from './expr.ts'
 
 /** Number of operations: one per argument joined by + or *, per power, function, division and negation. @internal */
@@ -60,7 +62,7 @@ export function numericCompare(a: Expr, b: Expr, tol = 1e-8): 'equal' | 'differe
   const names = [...new Set([...freeNames(a), ...freeNames(b)])].sort()
   let agreed = 0
   for (let s = 0; s < SAMPLES.length; s++) {
-    const env = new Map<string, C>()
+    const env = new Map<string, Complex>()
     names.forEach((n, i) => {
       env.set(n, [(SAMPLES[(s + i) % SAMPLES.length] as number) + 0.1 * i, 0])
     })

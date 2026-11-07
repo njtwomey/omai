@@ -5,7 +5,7 @@
  * the sliced Wasserstein distance, which averages one-dimensional optimal transport over random projections.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import { xlogy } from '../numerics/special/index.ts'
 import { type Key, normal } from '../random/index.ts'
 import {
@@ -39,7 +39,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type Reduction, reduce } from './_reduce.ts'
+import { reduce } from './_reduce.ts'
 import { crossEntropy } from './classification.ts'
 
 /**

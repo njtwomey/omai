@@ -4,9 +4,8 @@
  * under these lights with a shadow-ray visibility test per sample.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { foldIn, isKey, type Key, uniform } from '../random/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import { concreteOrThrow, fromStorage } from '../tensor/index.ts'
 import { check3, cross3, dot3, length3, madd3, normalise3, scale3, sub3 } from './_vec3.ts'
 import { type Material, shade } from './shading.ts'

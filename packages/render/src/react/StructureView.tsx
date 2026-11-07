@@ -32,7 +32,7 @@ export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'fr
   readonly className?: string
 }
 
-type View = readonly [number, number, number, number]
+type View = readonly [x: number, y: number, width: number, height: number]
 
 /**
  * A `Structure` drawn as a diagram (`diagram` in `mdml-render/structures`), with pan (drag) and zoom (the buttons

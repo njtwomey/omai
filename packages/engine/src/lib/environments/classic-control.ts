@@ -27,7 +27,7 @@ const rotate = (x: number, y: number, a: number): [number, number] => [
 // ---------------------------------------------------------------------------------------------------------- CartPole
 
 /** The state of CartPole: cart position and velocity, pole angle (radians from upright) and angular velocity. */
-export type CartPoleState = readonly [number, number, number, number]
+export type CartPoleState = readonly [position: number, velocity: number, angle: number, angularVelocity: number]
 
 // gymnasium's CartPoleEnv constants (Barto, Sutton and Anderson, 1983).
 const GRAVITY = 9.8
@@ -181,7 +181,7 @@ export const cartPole: EnvDefinition<CartPoleState, readonly number[], number> =
 // ------------------------------------------------------------------------------------------------------- MountainCar
 
 /** The state of MountainCar: position and velocity. */
-export type MountainCarState = readonly [number, number]
+export type MountainCarState = readonly [position: number, velocity: number]
 
 const MC_MIN_POSITION = -1.2
 const MC_MAX_POSITION = 0.6
@@ -406,7 +406,7 @@ export const mountainCarContinuous: EnvDefinition<MountainCarState, readonly num
 // ---------------------------------------------------------------------------------------------------------- Pendulum
 
 /** The state of Pendulum: angle (radians, 0 upright) and angular velocity. */
-export type PendulumState = readonly [number, number]
+export type PendulumState = readonly [angle: number, angularVelocity: number]
 
 const PENDULUM_MAX_SPEED = 8
 const PENDULUM_MAX_TORQUE = 2
@@ -544,7 +544,7 @@ export const pendulum: EnvDefinition<PendulumState, readonly number[], readonly 
 // ----------------------------------------------------------------------------------------------------------- Acrobot
 
 /** The state of Acrobot: the two joint angles and their angular velocities. */
-export type AcrobotState = readonly [number, number, number, number]
+export type AcrobotState = readonly [angle1: number, angle2: number, angularVelocity1: number, angularVelocity2: number]
 
 const ACRO_DT = 0.2
 const MAX_VEL_1 = 4 * Math.PI

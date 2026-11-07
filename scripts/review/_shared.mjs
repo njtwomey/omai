@@ -1,6 +1,7 @@
 /**
  * What the review scripts share: where the engine is, which domains are the core and in what order they stack, how to
- * walk and filter its files, and how to turn a function body into comparable tokens and shingles.
+ * walk and filter its files, how to turn a function body into comparable tokens and shingles, and how to normalise a
+ * type's right-hand side so two spellings of one structure compare equal (also used by scripts/type-definitions.ts).
  */
 import { createHash } from 'node:crypto'
 import { readdirSync, statSync } from 'node:fs'
@@ -103,4 +104,56 @@ export function listFor(map, key) {
     map.set(key, list)
   }
   return list
+}
+
+/** Source text without block and line comments. */
+export const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ')
+
+/** A type's right-hand side in a comparable form: no comments, `readonly` dropped, `Array<T>` as `T[]`, no spaces. */
+export const norm = (s) =>
+  strip(s)
+    .replace(/\breadonly\s+/g, '')
+    .replace(/ReadonlyArray<([^<>]+)>/g, '$1[]')
+    .replace(/Array<([^<>]+)>/g, '$1[]')
+    .replace(/\s+/g, ' ')
+    .replace(/[;,]\s*}/g, ' }')
+    .replace(/\s*([<>{}()[\]|&=:,;])\s*/g, '$1')
+    .replace(/[;,]$/, '')
+    .trim()
+
+/**
+ * The one-line type aliases of a source text at any indentation, `type X = <rhs>` with or without `export`, each with
+ * its 1-based line, whether it is exported, whether it has type parameters, its normalised right-hand side and the
+ * doc comment directly above it (empty when there is none).
+ */
+export function aliasLines(text) {
+  const lines = text.split('\n')
+  const found = []
+  lines.forEach((line, i) => {
+    const m = /^(\s*)(export )?type ([A-Za-z0-9_]+)(<[^=]*>)? = (.+?);?\s*(\/\/.*)?$/.exec(line)
+    if (m === null || m[5] === undefined) return
+    let doc = ''
+    let j = i - 1
+    if ((lines[j] ?? '').trim().endsWith('*/')) {
+      const end = j
+      while (j >= 0 && !(lines[j] ?? '').trim().startsWith('/*')) j--
+      doc = lines
+        .slice(j, end + 1)
+        .join(' ')
+        .replace(/\/\*+|\*+\//g, ' ')
+        .replace(/\s\*\s/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+    found.push({
+      line: i + 1,
+      name: m[3],
+      exported: m[2] !== undefined,
+      generic: m[4] !== undefined,
+      shape: norm(m[5]),
+      doc,
+      optOut: line.includes('// allow:'),
+    })
+  })
+  return found
 }

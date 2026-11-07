@@ -26,8 +26,6 @@ import {
 import { eigh } from '../linalg/index.ts'
 import type { Point2 } from './triangulation.ts'
 
-type Pt = Point2
-
 /** Options of {@link contourLines}. */
 export interface ContourOptions {
   /** At saddles, connect the low-valued corners (default, as skimage) or the high-valued ones. */
@@ -64,7 +62,7 @@ export function contourLines(z: TensorLike, level: number, options: ContourOptio
   const at = (r: number, c: number): number => v[r * cols + c] ?? Number.NaN
   const fraction = (from: number, to: number): number => (to === from ? 0 : (level - from) / (to - from))
   const high = options.fullyConnected === 'high'
-  const segments: [Pt, Pt][] = []
+  const segments: [Point2, Point2][] = []
   for (let r = 0; r < rows - 1; r++) {
     for (let c = 0; c < cols - 1; c++) {
       const ul = at(r, c)
@@ -78,10 +76,10 @@ export function contourLines(z: TensorLike, level: number, options: ContourOptio
       if (ll > level) square |= 4
       if (lr > level) square |= 8
       if (square === 0 || square === 15) continue
-      const top: Pt = [r, c + fraction(ul, ur)]
-      const bottom: Pt = [r + 1, c + fraction(ll, lr)]
-      const left: Pt = [r + fraction(ul, ll), c]
-      const right: Pt = [r + fraction(ur, lr), c + 1]
+      const top: Point2 = [r, c + fraction(ul, ur)]
+      const bottom: Point2 = [r + 1, c + fraction(ll, lr)]
+      const left: Point2 = [r + fraction(ul, ll), c]
+      const right: Point2 = [r + fraction(ur, lr), c + 1]
       switch (square) {
         case 1:
           segments.push([top, left])
@@ -146,10 +144,10 @@ export function contourLines(z: TensorLike, level: number, options: ContourOptio
 }
 
 /** Join directed segments into paths (skimage's _assemble_contours, keeping its ordering). */
-function assemble(segments: readonly [Pt, Pt][]): Pt[][] {
-  const key = (p: Pt): string => `${p[0]},${p[1]}`
-  type Entry = { path: Pt[]; id: number }
-  const contours = new Map<number, Pt[]>()
+function assemble(segments: readonly [Point2, Point2][]): Point2[][] {
+  const key = (p: Point2): string => `${p[0]},${p[1]}`
+  type Entry = { path: Point2[]; id: number }
+  const contours = new Map<number, Point2[]>()
   const starts = new Map<string, Entry>()
   const ends = new Map<string, Entry>()
   let next = 0
@@ -165,17 +163,17 @@ function assemble(segments: readonly [Pt, Pt][]): Pt[][] {
       } else if (tail.id > head.id) {
         head.path.push(...tail.path)
         contours.delete(tail.id)
-        starts.set(key(head.path[0] as Pt), head)
-        ends.set(key(head.path[head.path.length - 1] as Pt), head)
+        starts.set(key(head.path[0] as Point2), head)
+        ends.set(key(head.path[head.path.length - 1] as Point2), head)
       } else {
         tail.path.unshift(...head.path)
-        starts.delete(key(head.path[0] as Pt))
+        starts.delete(key(head.path[0] as Point2))
         contours.delete(head.id)
-        starts.set(key(tail.path[0] as Pt), tail)
-        ends.set(key(tail.path[tail.path.length - 1] as Pt), tail)
+        starts.set(key(tail.path[0] as Point2), tail)
+        ends.set(key(tail.path[tail.path.length - 1] as Point2), tail)
       }
     } else if (tail === undefined && head === undefined) {
-      const path: Pt[] = [from, to]
+      const path: Point2[] = [from, to]
       const entry = { path, id: next }
       contours.set(next, path)
       starts.set(key(from), entry)

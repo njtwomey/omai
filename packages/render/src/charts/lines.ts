@@ -105,8 +105,6 @@ export interface Band {
   readonly edges?: boolean
 }
 
-type Pt = Point2
-
 interface PolygonApi {
   coord(p: readonly number[]): number[]
 }
@@ -128,7 +126,7 @@ interface PolygonApi {
 export function band(bands: readonly Band[], options: LineOptions = {}): Layer {
   const mode = options.mode ?? 'light'
   const offset = options.colourOffset ?? 0
-  const all: Pt[] = []
+  const all: Point2[] = []
   const series: SeriesOption[] = []
   bands.forEach((b, i) => {
     const x = numbers(b.x)
@@ -136,12 +134,12 @@ export function band(bands: readonly Band[], options: LineOptions = {}): Layer {
     const hi = numbers(b.upper)
     if (lo.length !== x.length || hi.length !== x.length)
       throw new MdmlError('shape', 'band: x, lower and upper must have the same length')
-    const polygons: Pt[][] = []
+    const polygons: Point2[][] = []
     let run: number[] = []
     const flush = (): void => {
       if (run.length >= 2) {
-        const top = run.map((k): Pt => [x[k] ?? 0, hi[k] ?? 0])
-        const bottom = run.map((k): Pt => [x[k] ?? 0, lo[k] ?? 0]).reverse()
+        const top = run.map((k): Point2 => [x[k] ?? 0, hi[k] ?? 0])
+        const bottom = run.map((k): Point2 => [x[k] ?? 0, lo[k] ?? 0]).reverse()
         polygons.push([...top, ...bottom])
       }
       run = []
@@ -211,7 +209,7 @@ export interface Polygon {
 export function polygons(shapes: readonly Polygon[], options: LineOptions = {}): Layer {
   const mode = options.mode ?? 'light'
   const offset = options.colourOffset ?? 0
-  const all: Pt[] = []
+  const all: Point2[] = []
   const series: SeriesOption[] = []
   shapes.forEach((s, i) => {
     const pts = s.points.filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))

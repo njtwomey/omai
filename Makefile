@@ -48,9 +48,10 @@ layers: ## Check layering: no import cycles between core domains, and the packag
 	$(NODE) scripts/layers.ts
 
 .PHONY: lint
-lint: ## Lint TypeScript (Biome), banned globals, and Python (ruff)
+lint: ## Lint TypeScript (Biome), banned globals, restated types, and Python (ruff)
 	$(PNPM) exec biome check .
 	$(NODE) scripts/banned.ts
+	$(NODE) scripts/type-definitions.ts --check
 	$(UV) run --group dev ruff check oracle scripts
 	$(UV) run --group dev ruff format --check oracle scripts
 

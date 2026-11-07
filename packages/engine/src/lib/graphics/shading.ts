@@ -5,9 +5,8 @@
  * evaluating them on batches.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { dotProduct, unitVector } from '../foundations/index.ts'
-import type { Vec3 } from '../scene/index.ts'
 import {
   add,
   broadcastShapes,

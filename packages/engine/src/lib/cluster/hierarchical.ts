@@ -20,7 +20,7 @@ import { nearestCentres } from './kmeans.ts'
 export type Linkage = 'single' | 'complete' | 'average' | 'weighted' | 'ward' | 'centroid' | 'median'
 
 /** One merge as scipy's linkage row: the two clusters joined (ids >= n are earlier merges), the height, the size. */
-export type Merge = [number, number, number, number]
+export type Merge = [left: number, right: number, height: number, size: number]
 
 /** The metric slot of the distance-based clusterers: a registered distance, or the rows already are distances. */
 export type MetricChoice = DistanceName | DistanceAlias | 'precomputed'

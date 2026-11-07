@@ -7,8 +7,9 @@
  *
  * @index function Structure from motion in steps: RANSAC two-view start, bundle adjustment.
  */
-import type { Json, Vec2 } from '../base/index.ts'
+import type { Json } from '../base/index.ts'
 import { MdmlError } from '../base/index.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
 import { type RansacState, ransacAlgorithm } from '../stats/index.ts'
 import { concat, reshape, sliceAxis, sub, type TensorLike, take, tensor, type Value } from '../tensor/index.ts'
@@ -19,10 +20,8 @@ import { type Pose, projectPoints, projectValue, solvePnP } from './camera.ts'
 import { findEssentialMat, recoverPose, triangulatePoints } from './epipolar.ts'
 import { type RefinementPath, type RefinementState, steppedRefinement } from './refinement.ts'
 
-type P = Vec2
-
 /** Pixels to normalised camera coordinates. */
-function normalise(points: readonly P[], k: readonly (readonly number[])[]): P[] {
+function normalise(points: readonly Point2[], k: readonly (readonly number[])[]): Point2[] {
   const fx = k[0]?.[0] ?? 1
   const fy = k[1]?.[1] ?? 1
   const cx = k[0]?.[2] ?? 0
@@ -31,7 +30,7 @@ function normalise(points: readonly P[], k: readonly (readonly number[])[]): P[]
 }
 
 /** The Sampson distance of a normalised correspondence to an essential matrix (OpenCV's error for it). */
-function sampson(e: Matrix, a: P, b: P): number {
+function sampson(e: Matrix, a: Point2, b: Point2): number {
   const E = (r: number, c: number): number => e[r]?.[c] ?? 0
   const l = [0, 1, 2].map((r) => E(r, 0) * a[0] + E(r, 1) * a[1] + E(r, 2))
   const lt = [0, 1, 2].map((c) => E(0, c) * b[0] + E(1, c) * b[1] + E(2, c))
@@ -96,12 +95,12 @@ export function essentialRansacAlgorithm(
       // A model is fitted on normalised points, so the intrinsics of the fit are the identity.
       fit: (s) =>
         findEssentialMat(
-          s.map((i) => a[i] as P),
-          s.map((i) => b[i] as P),
+          s.map((i) => a[i] as Point2),
+          s.map((i) => b[i] as Point2),
           identity,
           { method: 'all' },
         ).model,
-      residual: (e, i) => sampson(e, a[i] as P, b[i] as P),
+      residual: (e, i) => sampson(e, a[i] as Point2, b[i] as Point2),
     },
     {
       minSamples: 8,
@@ -161,17 +160,17 @@ export function twoViewReconstruction(
   const p2 = pointsOf(points2, 'twoViewReconstruction')
   const inl = ransac.bestInliers
   if (inl.length < 8) throw new MdmlError('value', 'twoViewReconstruction: fewer than eight inliers')
-  const s1 = inl.map((i) => p1[i] as P)
-  const s2 = inl.map((i) => p2[i] as P)
+  const s1 = inl.map((i) => p1[i] as Point2)
+  const s2 = inl.map((i) => p2[i] as Point2)
   const essential = findEssentialMat(s1, s2, cameraMatrix, { method: 'all' }).model
   const pose = recoverPose(essential, s1, s2, cameraMatrix)
   const keep = inl.filter((_, k) => pose.mask[k] === 1)
   const n1 = normalise(
-    keep.map((i) => p1[i] as P),
+    keep.map((i) => p1[i] as Point2),
     cameraMatrix,
   )
   const n2 = normalise(
-    keep.map((i) => p2[i] as P),
+    keep.map((i) => p2[i] as Point2),
     cameraMatrix,
   )
   const P0 = [
@@ -244,7 +243,7 @@ export function bundleAdjustmentAlgorithm(
     if (o.length !== N)
       throw new MdmlError('value', `bundleAdjustmentAlgorithm: camera ${c} needs one observation row per point`)
   const index = seen.map((s) => s.flatMap((v, j) => (v ? [j] : [])))
-  const observed = obs.map((o, c) => tensor((index[c] as number[]).map((j) => [...(o[j] as P)])))
+  const observed = obs.map((o, c) => tensor((index[c] as number[]).map((j) => [...(o[j] as Point2)])))
   const intr = tensor([
     cameraMatrix[0]?.[0] ?? 1,
     cameraMatrix[1]?.[1] ?? 1,
@@ -348,7 +347,7 @@ export function bundleReprojectionError(scene: BundleScene, cameraMatrix: readon
     const seen = pointsOf(scene.observations[c] as PointsLike, 'bundleReprojectionError')
     projected.forEach(([u, v], j) => {
       if (scene.visible?.[c]?.[j] === false) return
-      const [a, b] = seen[j] as P
+      const [a, b] = seen[j] as Point2
       total += (u - a) ** 2 + (v - b) ** 2
       count++
     })

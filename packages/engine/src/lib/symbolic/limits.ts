@@ -5,11 +5,12 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import type { Complex } from '../exposition/index.ts'
 import { attempt, bounded } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeMul, makePow, NAN, NEG_INF, OO, ZERO, ZOO } from './_canon.ts'
 import { makeFn } from './_functions.ts'
 import { children, hasSymbol, rawFn } from './_node.ts'
-import { type C, evalComplex, freeNames } from './_numeric.ts'
+import { evalComplex, freeNames } from './_numeric.ts'
 import { numerDenom, together } from './_rational-functions.ts'
 import { LOG_T, seriesAt0 } from './_series.ts'
 import { diff } from './differentiate.ts'
@@ -216,7 +217,7 @@ function oneSided(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] |
 
 function sample(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', h: number): number | undefined {
   const xv = x0.key === OO.key ? 1 / h : x0.key === NEG_INF.key ? -1 / h : undefined
-  const env = new Map<string, C>()
+  const env = new Map<string, Complex>()
   if (xv !== undefined) env.set(x.name, [xv, 0])
   else {
     const z = evalComplex(x0, new Map())

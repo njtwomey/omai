@@ -3,9 +3,9 @@
  * press without dragging to clear it.
  */
 
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 import { type ReactNode, useState } from 'react'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
-import type { Point2 } from './projection.ts'
 import { type DataRect, rectBetween } from './selection.ts'
 
 /**

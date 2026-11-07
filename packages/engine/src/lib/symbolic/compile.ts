@@ -5,6 +5,7 @@
  */
 
 import { MdmlError } from '../base/index.ts'
+import type { Complex } from '../exposition/index.ts'
 import {
   abs,
   add,
@@ -50,7 +51,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type C, evalComplex, evalReal, freeNames, type NumericFunctions } from './_numeric.ts'
+import { evalComplex, evalReal, freeNames, type NumericFunctions } from './_numeric.ts'
 import type { Expr, ExprSym } from './expr.ts'
 
 export type { NumericFunctions } from './_numeric.ts'
@@ -287,7 +288,7 @@ export function evaluateComplex(
   values: Readonly<Record<string, number | readonly [number, number]>> = {},
   functions: NumericFunctions = {},
 ): [number, number] {
-  const env = new Map<string, C>()
+  const env = new Map<string, Complex>()
   for (const [k, v] of Object.entries(values)) env.set(k, typeof v === 'number' ? [v, 0] : [v[0], v[1]])
   const z = evalComplex(e, env, functions)
   if (z === undefined) throw new MdmlError('value', 'evaluateComplex: cannot evaluate the expression')

@@ -6,9 +6,9 @@
  */
 
 import { jvp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Vec3 } from '../base/index.ts'
 import { cubature, productGaussRule } from '../numerics/quadrature/index.ts'
-import { type Face3D, face3d, type Paint, type Style, type Vec3 } from '../scene/index.ts'
+import { type Face3D, face3d, type Paint, type Style } from '../scene/index.ts'
 import {
   add,
   cos,

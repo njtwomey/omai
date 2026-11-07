@@ -4,14 +4,13 @@
  * for each hull edge, the contour point deepest inside it and its depth.
  */
 
-import { MdmlError, type Vec2 } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 import { f32, type PointsLike, pointsOf, roundHalfEven } from './_image.ts'
-
-type P = Vec2
 
 /** OpenCV's Sklansky scan of one quarter of the hull (from start towards end), into `stack`; returns its size. */
 function sklansky(
-  pts: readonly P[],
+  pts: readonly Point2[],
   ptr: readonly number[],
   start: number,
   end0: number,
@@ -21,7 +20,7 @@ function sklansky(
   sign2: number,
   float: boolean,
 ): number {
-  const at = (i: number): P => pts[ptr[i] ?? 0] as P
+  const at = (i: number): Point2 => pts[ptr[i] ?? 0] as Point2
   const incr = end0 > start ? 1 : -1
   let pprev = start
   let pcur = pprev + incr
@@ -111,11 +110,11 @@ export function convexHull(points: PointsLike, options: { readonly clockwise?: b
   const ptr = pts
     .map((_, i) => i)
     .sort((a, b) => {
-      const pa = pts[a] as P
-      const pb = pts[b] as P
+      const pa = pts[a] as Point2
+      const pb = pts[b] as Point2
       return pa[0] !== pb[0] ? pa[0] - pb[0] : pa[1] !== pb[1] ? pa[1] - pb[1] : a - b
     })
-  const at = (i: number): P => pts[ptr[i] ?? 0] as P
+  const at = (i: number): Point2 => pts[ptr[i] ?? 0] as Point2
   let miny = 0
   let maxy = 0
   for (let i = 1; i < total; i++) {
@@ -260,8 +259,8 @@ export function convexityDefects(contour: PointsLike, hull: readonly number[]): 
     const hnext = hull[reversed ? h - i - 1 : i] ?? 0
     if (hcurr < 0 || hcurr >= n || hnext < 0 || hnext >= n)
       throw new MdmlError('value', 'convexityDefects: hull index out of range')
-    const p0 = pts[hcurr] as P
-    const p1 = pts[hnext] as P
+    const p0 = pts[hcurr] as Point2
+    const p1 = pts[hnext] as Point2
     // The first edge closes the loop (last index to first), so it runs against the others' direction.
     if (increasing < 0) increasing = hcurr < hnext ? 0 : 1
     else if (increasing !== (hcurr < hnext ? 1 : 0))
@@ -272,7 +271,7 @@ export function convexityDefects(contour: PointsLike, hull: readonly number[]): 
     let deepest = -1
     let depth = 0
     for (let j = (hcurr + 1) % n; j !== hnext; j = (j + 1) % n) {
-      const q = pts[j] as P
+      const q = pts[j] as Point2
       const d = Math.abs(-dy0 * (q[0] - p0[0]) + dx0 * (q[1] - p0[1])) * scale
       if (d > depth) {
         depth = d

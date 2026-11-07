@@ -261,7 +261,7 @@ export function datalog(source: string | readonly Clause[]): DatalogProgram {
 
 // ------------------------------------------------------------------------------------------------ evaluation
 
-/** A ground fact. */
+/** A ground fact: a {@link Term} with no variables. */
 export type Fact = Term
 
 /** How a fact was first derived: the rule (index into the program) and the positive body facts it used. */

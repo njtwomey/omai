@@ -210,11 +210,10 @@ export function gammatone(
   const fr = 2 * freq * Math.PI * T
   const bwT = bw * T
   // Complex arithmetic of Slaney's gain computation.
-  type C = Complex
-  const cmul = (p: C, q: C): C => [p[0] * q[0] - p[1] * q[1], p[0] * q[1] + p[1] * q[0]]
-  const cexp = (re: number, im: number): C => [Math.exp(re) * Math.cos(im), Math.exp(re) * Math.sin(im)]
-  const cadd = (p: C, q: C): C => [p[0] + q[0], p[1] + q[1]]
-  const cscale = (p: C, s: number): C => [p[0] * s, p[1] * s]
+  const cmul = (p: Complex, q: Complex): Complex => [p[0] * q[0] - p[1] * q[1], p[0] * q[1] + p[1] * q[0]]
+  const cexp = (re: number, im: number): Complex => [Math.exp(re) * Math.cos(im), Math.exp(re) * Math.sin(im)]
+  const cadd = (p: Complex, q: Complex): Complex => [p[0] + q[0], p[1] + q[1]]
+  const cscale = (p: Complex, s: number): Complex => [p[0] * s, p[1] * s]
   const g1 = cscale(cexp(0, 2 * fr), -2 * T)
   const g2 = cscale(cexp(-bwT, fr), 2 * T)
   const g3 = Math.sqrt(3 + 2 ** 1.5) * Math.sin(fr)
@@ -224,10 +223,13 @@ export function gammatone(
   g = cmul(g, cadd(g1, cscale(g2, Math.cos(fr) + g4)))
   g = cmul(g, cadd(g1, cscale(g2, Math.cos(fr) - g3)))
   g = cmul(g, cadd(g1, cscale(g2, Math.cos(fr) + g3)))
-  let den: C = cadd(cadd([-2 / Math.exp(2 * bwT), 0], cscale(g5, -2)), cscale(cadd([1, 0], g5), 2 / Math.exp(bwT)))
+  let den: Complex = cadd(
+    cadd([-2 / Math.exp(2 * bwT), 0], cscale(g5, -2)),
+    cscale(cadd([1, 0], g5), 2 / Math.exp(bwT)),
+  )
   den = cmul(cmul(den, den), cmul(den, den))
   const dd = den[0] * den[0] + den[1] * den[1]
-  const q: C = [(g[0] * den[0] + g[1] * den[1]) / dd, (g[1] * den[0] - g[0] * den[1]) / dd]
+  const q: Complex = [(g[0] * den[0] + g[1] * den[1]) / dd, (g[1] * den[0] - g[0] * den[1]) / dd]
   const gain = Math.hypot(q[0], q[1])
   const T4 = T ** 4
   const b = [

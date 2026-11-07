@@ -1,8 +1,9 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { checkPrimitive } from '../autodiff/index.ts'
+import type { Vec3 } from '../base/index.ts'
 import { key } from '../random/index.ts'
-import { camera, projectPoint, type Vec3 } from '../scene/index.ts'
+import { camera, projectPoint } from '../scene/index.ts'
 import { toArray, type Value } from '../tensor/index.ts'
 import {
   boxInFrustum,

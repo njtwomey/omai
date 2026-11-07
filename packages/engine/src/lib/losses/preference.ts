@@ -6,7 +6,7 @@
  * log-probabilities with `sequenceLogProb`) and are differentiable in the policy's.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import { log1mexp, logSigmoid } from '../numerics/special/index.ts'
 import {
   add,
@@ -25,7 +25,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type Reduction, reduce } from './_reduce.ts'
+import { reduce } from './_reduce.ts'
 
 /**
  * The log-probability of a response from its per-token log-probabilities: their sum over the tokens that are not

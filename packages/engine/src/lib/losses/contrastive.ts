@@ -8,6 +8,7 @@
  * @index function Contrastive and metric-learning losses such as InfoNCE and triplet.
  */
 
+import type { Reduction } from '../base/index.ts'
 import { logaddexp } from '../numerics/special/index.ts'
 import {
   add,
@@ -46,7 +47,7 @@ import {
   variance,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
+import { type LossOptions, reduce } from './_reduce.ts'
 import { l2Normalise, pairwiseDistance } from './_vectors.ts'
 import { crossEntropy } from './classification.ts'
 

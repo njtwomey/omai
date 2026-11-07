@@ -49,8 +49,6 @@ import { enumerate, isDiscrete, type SampleSite, seed, traceOf } from './handler
 import { definePosterior, type Posterior } from './posterior.ts'
 import { type Model, type PlateFrame, param, plate, sample } from './primitives.ts'
 
-type Bijector = bijectors.Bijector
-
 /** One continuous latent site a guide covers, at full plate size. */
 export interface GuideSite {
   readonly name: string
@@ -58,7 +56,7 @@ export interface GuideSite {
   readonly shape: readonly number[]
   readonly unconstrainedShape: readonly number[]
   readonly support: Support
-  readonly bijector: Bijector
+  readonly bijector: bijectors.Bijector
   /** Event dimensions of the constrained and unconstrained values (beyond the plate batch axes). */
   readonly eventDim: number
   readonly unconstrainedEventDim: number
@@ -186,7 +184,7 @@ function initialUnconstrained(site: GuideSite, key: Key, options: AutoGuideOptio
  * A guide site's distribution pushed through its bijector, remembering each draw's unconstrained value so its log
  * density needs no inverse (NumPyro's intermediates).
  */
-function pushed(base: Distribution, bijector: Bijector): Distribution {
+function pushed(base: Distribution, bijector: bijectors.Bijector): Distribution {
   const t = compose.transformed(base, bijector)
   let lastY: Value | undefined
   let lastU: Value | undefined
@@ -637,9 +635,9 @@ export interface AutoIafOptions extends AutoGuideOptions {
 export function autoIafNormal<D = void>(model: Model<D>, options: AutoIafOptions = {}): AutoGuide<D> {
   const numFlows = options.numFlows ?? 2
   const s0 = options.initScale ?? 0.1
-  const flowOf = (D: number, get: (name: string, init: (k: Key) => Value) => Value): Bijector[] => {
+  const flowOf = (D: number, get: (name: string, init: (k: Key) => Value) => Value): bijectors.Bijector[] => {
     const H = options.hiddenDim ?? 2 * D + 2
-    const parts: Bijector[] = []
+    const parts: bijectors.Bijector[] = []
     for (let l = 0; l < numFlows; l++) {
       if (D < 2) break
       const [m1, m2] = bijectors.madeMasks(D, [H]) as [Tensor, Tensor]
@@ -656,7 +654,7 @@ export function autoIafNormal<D = void>(model: Model<D>, options: AutoIafOptions
     }
     return parts
   }
-  const affineOf = (loc: Value, scale: Value): Bijector =>
+  const affineOf = (loc: Value, scale: Value): bijectors.Bijector =>
     bijectors.defineBijector({
       name: 'affineVector',
       inputRank: 1,

@@ -1,3 +1,4 @@
+import type { Vec3 } from 'mdml-engine/base'
 import {
   checkerboard,
   imageToPixels,
@@ -10,7 +11,6 @@ import {
   renderWhitted,
   sphere,
 } from 'mdml-engine/graphics'
-import type { Vec3 } from 'mdml-engine/scene'
 import { bool, choice, dict, real } from 'mdml-engine/space'
 import { ControlPanel, SpaceControls } from 'mdml-render/react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'

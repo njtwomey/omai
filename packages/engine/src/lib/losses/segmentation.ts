@@ -4,7 +4,7 @@
  * hinge and Lovasz-softmax losses, convex surrogates of the IoU.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import {
   abs,
   add,
@@ -35,7 +35,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type Reduction, reduce } from './_reduce.ts'
+import { reduce } from './_reduce.ts'
 
 /** Options of the overlap losses (Dice, Tversky, focal Tversky); classes lie along the last axis, as MONAI's. */
 export interface OverlapOptions {

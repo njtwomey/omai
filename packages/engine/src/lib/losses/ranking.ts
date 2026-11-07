@@ -4,7 +4,7 @@
  * softmax, ListMLE's Plackett-Luce likelihood and ApproxNDCG, a smooth surrogate of NDCG).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import { logSigmoid, softplus } from '../numerics/special/index.ts'
 import {
   abs,
@@ -38,7 +38,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
+import { type LossOptions, reduce } from './_reduce.ts'
 
 /** Options shared by the learning-to-rank losses: lists lie along the last axis. */
 export interface RankingOptions {

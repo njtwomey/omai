@@ -22,7 +22,7 @@ import {
 } from '../../trace/index.ts'
 import { type Metric, metricFunction } from '../geometry/index.ts'
 
-type Scored = readonly [number, number] // [distance, node]
+type Scored = readonly [distance: number, node: number]
 
 /** Options of {@link hnswIndex}. */
 export interface HnswOptions {

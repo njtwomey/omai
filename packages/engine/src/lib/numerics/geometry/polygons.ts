@@ -25,9 +25,6 @@ import {
 } from '../../tensor/index.ts'
 import { orient, type Point2, toPoints } from './triangulation.ts'
 
-/** A point in space. */
-export type Point3 = Vec3
-
 /**
  * The convex hull of planar points by Andrew's monotone chain (scipy.spatial.ConvexHull in 2-D): vertex indices in
  * counter-clockwise order, starting from the lowest-leftmost point; collinear boundary points are dropped. The
@@ -96,10 +93,10 @@ export interface ConvexHull3 {
  * convexHull3([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0.1, 0.1, 0.1]]).volume // => 0.16666666666666666
  * ```
  */
-export function convexHull3(points: TensorLike | readonly Point3[]): ConvexHull3 {
-  const pts: Point3[] =
+export function convexHull3(points: TensorLike | readonly Vec3[]): ConvexHull3 {
+  const pts: Vec3[] =
     Array.isArray(points) && Array.isArray(points[0])
-      ? (points as readonly Point3[]).map((p) => [p[0], p[1], p[2]])
+      ? (points as readonly Vec3[]).map((p) => [p[0], p[1], p[2]])
       : (() => {
           const t = concreteOrThrow(promoteFloat(points as TensorLike)[0] as Tensor, 'convexHull3')
           if (t.shape.length !== 2 || t.shape[1] !== 3)
@@ -107,18 +104,18 @@ export function convexHull3(points: TensorLike | readonly Point3[]): ConvexHull3
           const f = toFlat(t)
           return Array.from(
             { length: t.shape[0] ?? 0 },
-            (_, i): Point3 => [f[3 * i] ?? 0, f[3 * i + 1] ?? 0, f[3 * i + 2] ?? 0],
+            (_, i): Vec3 => [f[3 * i] ?? 0, f[3 * i + 1] ?? 0, f[3 * i + 2] ?? 0],
           )
         })()
   const n = pts.length
-  const sub3 = (a: Point3, b: Point3): Point3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
-  const cross = (a: Point3, b: Point3): Point3 => [
+  const sub3 = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+  const cross = (a: Vec3, b: Vec3): Vec3 => [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
     a[0] * b[1] - a[1] * b[0],
   ]
-  const dot3 = (a: Point3, b: Point3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-  const at = (i: number): Point3 => pts[i] as Point3
+  const dot3 = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+  const at = (i: number): Vec3 => pts[i] as Vec3
   const volume6 = (a: number, b: number, c: number, d: number): number =>
     dot3(cross(sub3(at(b), at(a)), sub3(at(c), at(a))), sub3(at(d), at(a)))
   const scale = Math.max(1e-300, ...pts.flatMap((p) => p.map(Math.abs)))
@@ -151,7 +148,7 @@ export function convexHull3(points: TensorLike | readonly Point3[]): ConvexHull3
     }
   }
   if (i2 < 0 || i3 < 0 || best <= eps) throw new MdmlError('value', 'convexHull3: the points are coplanar')
-  type Face = [number, number, number]
+  type Face = [a: number, b: number, c: number]
   const outward = (f: Face, inside: number): Face => (volume6(f[0], f[1], f[2], inside) > 0 ? [f[0], f[2], f[1]] : f)
   let faces: Face[] = [
     outward([i0, i1, i2], i3),

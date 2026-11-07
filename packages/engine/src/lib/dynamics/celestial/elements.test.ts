@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Vec3 } from '../../base/index.ts'
 import { mul, pow, reshape, sliceAxis, stack, sum, toFlat, type Value } from '../../tensor/index.ts'
 import { solveIvp } from '../ode/index.ts'
 import {
@@ -12,7 +13,6 @@ import {
   propagateKepler,
   semiLatusRectum,
   stateFromElements,
-  type Vec3,
   visViva,
 } from './elements.ts'
 

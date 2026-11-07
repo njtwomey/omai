@@ -6,7 +6,8 @@
  * (x, y) pixels; RANSAC draws its samples from an explicit key.
  */
 
-import { MdmlError, type Vec2 } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 import { applyHomography, fundamentalMatrix, homography } from '../numerics/geometry/index.ts'
 import { dgesv, lstsq } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
@@ -27,8 +28,6 @@ import {
 } from '../tensor/index.ts'
 import { type PointsLike, pointsOf } from './_image.ts'
 import { type Matrix, refine } from './_refine.ts'
-
-type P = Vec2
 
 /** Options of the RANSAC estimators. */
 export interface RansacEstimateOptions {
@@ -51,7 +50,7 @@ export interface RobustFit {
   readonly mask: number[]
 }
 
-function pairsOf(src: PointsLike, dst: PointsLike, name: string, min: number): { a: P[]; b: P[] } {
+function pairsOf(src: PointsLike, dst: PointsLike, name: string, min: number): { a: Point2[]; b: Point2[] } {
   const a = pointsOf(src, name)
   const b = pointsOf(dst, name)
   if (a.length !== b.length) throw new MdmlError('shape', `${name}: the point sets differ in size`)
@@ -80,8 +79,8 @@ export function getPerspectiveTransform(src: PointsLike, dst: PointsLike): Matri
   const A = new Float64Array(64)
   const rhs = new Float64Array(8)
   for (let i = 0; i < 4; i++) {
-    const [x, y] = a[i] as P
-    const [u, v] = b[i] as P
+    const [x, y] = a[i] as Point2
+    const [u, v] = b[i] as Point2
     A.set([x, y, 1, 0, 0, 0, -x * u, -y * u], i * 8)
     A.set([0, 0, 0, x, y, 1, -x * v, -y * v], (i + 4) * 8)
     rhs[i] = u
@@ -114,8 +113,8 @@ export function getAffineTransform(src: PointsLike, dst: PointsLike): Matrix {
   const A = new Float64Array(36)
   const rhs = new Float64Array(6)
   for (let i = 0; i < 3; i++) {
-    const [x, y] = a[i] as P
-    const [u, v] = b[i] as P
+    const [x, y] = a[i] as Point2
+    const [u, v] = b[i] as Point2
     A.set([x, y, 1, 0, 0, 0], i * 12)
     A.set([0, 0, 0, x, y, 1], i * 12 + 6)
     rhs[2 * i] = u
@@ -148,7 +147,7 @@ export function perspectiveTransform(points: PointsLike, h: readonly (readonly n
 }
 
 /** Reprojection residuals (dst - H src) of a homography with H[2][2] = 1, as a differentiable function of H[0..7]. */
-function homographyResiduals(a: readonly P[], b: readonly P[]): (p: Value) => Value {
+function homographyResiduals(a: readonly Point2[], b: readonly Point2[]): (p: Value) => Value {
   const src = tensor(a.map(([x, y]) => [x, y, 1]))
   const dst = tensor(b.map(([x, y]) => [x, y]))
   return (p) => {
@@ -160,8 +159,8 @@ function homographyResiduals(a: readonly P[], b: readonly P[]): (p: Value) => Va
 }
 
 /** The homography of correspondences: the normalised DLT, refined by minimising the reprojection error. */
-function fitHomography(a: readonly P[], b: readonly P[], polish: boolean): Matrix {
-  const h0 = homography(a as P[], b as P[])
+function fitHomography(a: readonly Point2[], b: readonly Point2[], polish: boolean): Matrix {
+  const h0 = homography(a as Point2[], b as Point2[])
   if (!polish || a.length <= 4) return h0
   const x = refine(homographyResiduals(a, b), h0.flat().slice(0, 8), 50)
   return [
@@ -172,7 +171,7 @@ function fitHomography(a: readonly P[], b: readonly P[], polish: boolean): Matri
 }
 
 /** The reprojection error of a correspondence under a homography. */
-const homographyError = (h: Matrix, p: P, q: P): number => {
+const homographyError = (h: Matrix, p: Point2, q: Point2): number => {
   const w = (h[2]?.[0] ?? 0) * p[0] + (h[2]?.[1] ?? 0) * p[1] + (h[2]?.[2] ?? 0)
   const x = ((h[0]?.[0] ?? 0) * p[0] + (h[0]?.[1] ?? 0) * p[1] + (h[0]?.[2] ?? 0)) / w
   const y = ((h[1]?.[0] ?? 0) * p[0] + (h[1]?.[1] ?? 0) * p[1] + (h[1]?.[2] ?? 0)) / w
@@ -181,11 +180,11 @@ const homographyError = (h: Matrix, p: P, q: P): number => {
 
 /** Run RANSAC over correspondences with a model that may fail on degenerate samples. */
 function robust(
-  a: readonly P[],
-  b: readonly P[],
+  a: readonly Point2[],
+  b: readonly Point2[],
   minSamples: number,
-  fit: (a: readonly P[], b: readonly P[], final: boolean) => Matrix,
-  error: (m: Matrix, p: P, q: P) => number,
+  fit: (a: readonly Point2[], b: readonly Point2[], final: boolean) => Matrix,
+  error: (m: Matrix, p: Point2, q: Point2) => number,
   options: RansacEstimateOptions,
   name: string,
 ): RobustFit {
@@ -197,8 +196,8 @@ function robust(
     fit: (sample: readonly number[]): Matrix | undefined => {
       try {
         return fit(
-          sample.map((i) => a[i] as P),
-          sample.map((i) => b[i] as P),
+          sample.map((i) => a[i] as Point2),
+          sample.map((i) => b[i] as Point2),
           final,
         )
       } catch {
@@ -206,7 +205,7 @@ function robust(
       }
     },
     residual: (m: Matrix | undefined, i: number): number =>
-      m === undefined ? Number.POSITIVE_INFINITY : error(m, a[i] as P, b[i] as P),
+      m === undefined ? Number.POSITIVE_INFINITY : error(m, a[i] as Point2, b[i] as Point2),
   }
   const r = ransac(idx, model, {
     minSamples,
@@ -224,7 +223,7 @@ function robust(
     refit = model.fit(inliers)
     if (refit === undefined) throw new MdmlError('value', `${name}: the inliers are degenerate`)
     const fitted = refit
-    const next = idx.filter((i) => error(fitted, a[i] as P, b[i] as P) <= threshold)
+    const next = idx.filter((i) => error(fitted, a[i] as Point2, b[i] as Point2) <= threshold)
     if (next.length < minSamples || (next.length === inliers.length && next.every((v, k) => v === inliers[k]))) break
     inliers = next
   }
@@ -261,7 +260,7 @@ export function findHomography(src: PointsLike, dst: PointsLike, options: Ransac
 }
 
 /** The least-squares affine map of correspondences (exact for three). */
-function fitAffine(a: readonly P[], b: readonly P[]): Matrix {
+function fitAffine(a: readonly Point2[], b: readonly Point2[]): Matrix {
   const A = a.map(([x, y]) => [x, y, 1])
   const sol = toFlat(
     lstsq(
@@ -294,7 +293,7 @@ function fitAffine(a: readonly P[], b: readonly P[]): Matrix {
  */
 export function estimateAffine2D(src: PointsLike, dst: PointsLike, options: RansacEstimateOptions = {}): RobustFit {
   const { a, b } = pairsOf(src, dst, 'estimateAffine2D', 3)
-  const error = (m: Matrix, p: P, q: P): number =>
+  const error = (m: Matrix, p: Point2, q: Point2): number =>
     Math.hypot(
       (m[0]?.[0] ?? 0) * p[0] + (m[0]?.[1] ?? 0) * p[1] + (m[0]?.[2] ?? 0) - q[0],
       (m[1]?.[0] ?? 0) * p[0] + (m[1]?.[1] ?? 0) * p[1] + (m[1]?.[2] ?? 0) - q[1],
@@ -303,14 +302,14 @@ export function estimateAffine2D(src: PointsLike, dst: PointsLike, options: Rans
 }
 
 /** The fundamental matrix of correspondences by the normalised eight-point algorithm, scaled to F[2][2] = 1. */
-function fitFundamental(a: readonly P[], b: readonly P[]): Matrix {
-  const f = fundamentalMatrix(a as P[], b as P[])
+function fitFundamental(a: readonly Point2[], b: readonly Point2[]): Matrix {
+  const f = fundamentalMatrix(a as Point2[], b as Point2[])
   const s = f[2]?.[2] ?? 0
   return Math.abs(s) > 1.1920928955078125e-7 ? f.map((r) => r.map((v) => v / s)) : f
 }
 
 /** The larger distance of a correspondence from its two epipolar lines (OpenCV's fundamental-matrix error). */
-function epipolarError(f: Matrix, p: P, q: P): number {
+function epipolarError(f: Matrix, p: Point2, q: Point2): number {
   const F = (i: number, j: number): number => f[i]?.[j] ?? 0
   let a = F(0, 0) * p[0] + F(0, 1) * p[1] + F(0, 2)
   let b = F(1, 0) * p[0] + F(1, 1) * p[1] + F(1, 2)

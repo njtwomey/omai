@@ -23,7 +23,7 @@ export interface BlackjackState {
 }
 
 /** The observation of Blackjack: the player's sum, the dealer's showing card and whether the player has a usable ace. */
-export type BlackjackObservation = readonly [number, number, number]
+export type BlackjackObservation = readonly [playerSum: number, dealerCard: number, usableAce: number]
 
 const usableAce = (hand: readonly number[]): boolean => hand.includes(1) && hand.reduce((a, b) => a + b, 0) + 10 <= 21
 

@@ -4,7 +4,7 @@
  * sampled softmax, which scores the true class against a few sampled candidates with a correction for the sampling.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import { huffmanTree } from '../information/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type Key, randint, uniform } from '../random/index.ts'
@@ -33,7 +33,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type Reduction, reduce } from './_reduce.ts'
+import { reduce } from './_reduce.ts'
 
 /** A Huffman code over classes: for each class, the inner nodes on its root-to-leaf path and the branch bits. */
 export interface HuffmanCoding {

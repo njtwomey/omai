@@ -7,7 +7,7 @@
  * matrix, and the bi-tempered logistic loss.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { MdmlError, type Reduction } from '../base/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import {
@@ -45,7 +45,7 @@ import {
   type Value,
   where,
 } from '../tensor/index.ts'
-import { type LossOptions, type Reduction, reduce } from './_reduce.ts'
+import { type LossOptions, reduce } from './_reduce.ts'
 
 /**
  * Binary cross-entropy on logits, -[y log sigma(x) + (1 - y) log(1 - sigma(x))], computed stably from the logits

@@ -1,3 +1,4 @@
+import type { Vec3 } from 'mdml-engine/base'
 import type { PinholeCamera } from 'mdml-engine/graphics'
 import {
   type Camera,
@@ -8,7 +9,6 @@ import {
   type Scene3D,
   scene3d,
   segment3d,
-  type Vec3,
 } from 'mdml-engine/scene'
 import { Scene3DView } from 'mdml-render/react'
 import { type ReactNode, useMemo } from 'react'

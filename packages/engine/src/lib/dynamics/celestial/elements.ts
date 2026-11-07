@@ -6,11 +6,8 @@
  * and standard orbit facts (vis-viva, period, escape speed, the area swept).
  */
 
-import { type Vec3 as BaseVec3, MdmlError } from '../../base/index.ts'
+import { MdmlError, type Vec3 } from '../../base/index.ts'
 import { conicKind, meanFromTrue, solveKepler, trueFromMean } from './kepler.ts'
-
-/** A vector in three dimensions: the `Vec3` of `base`. */
-export type Vec3 = BaseVec3
 
 /**
  * The six elements of an orbit about a body of gravitational parameter mu. Angles are in radians. For a hyperbola

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Vec3 } from '../scene/index.ts'
+import type { Vec3 } from '../base/index.ts'
 import {
   bakeTexture,
   checkerboard,

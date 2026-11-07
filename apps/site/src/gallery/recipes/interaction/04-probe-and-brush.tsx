@@ -1,3 +1,4 @@
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 import { key, normal } from 'mdml-engine/random'
 import { toArray } from 'mdml-engine/tensor'
 import { cartesian, points as pointLayer } from 'mdml-render/charts'
@@ -9,7 +10,6 @@ import {
   FigureFrame,
   InteractionOverlay,
   Overlaid,
-  type Point2,
   Probe,
   useChartProjection,
   useColourMode,

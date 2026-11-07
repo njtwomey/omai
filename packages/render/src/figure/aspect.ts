@@ -7,7 +7,7 @@
 import { MdmlError } from 'mdml-engine/base'
 
 /** A closed interval `[low, high]` of data values. */
-export type Range = readonly [number, number]
+export type Range = readonly [low: number, high: number]
 
 /**
  * The data aspect of axes: `auto` (ranges fill the box however they stretch), `equal` (one unit on x is as long as one

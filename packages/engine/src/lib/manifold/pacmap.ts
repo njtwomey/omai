@@ -25,7 +25,7 @@ import {
 } from './_support.ts'
 
 /** A pair of row indices. */
-export type PacmapPair = readonly [number, number]
+export type PacmapPair = readonly [i: number, j: number]
 
 /** The three kinds of pair of PaCMAP. */
 export interface PacmapPairs {

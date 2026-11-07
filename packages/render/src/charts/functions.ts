@@ -6,7 +6,7 @@
 
 import type { SeriesOption } from 'echarts'
 import { MdmlError } from 'mdml-engine/base'
-import type { RiemannRule as CalculusRiemannRule } from 'mdml-engine/foundations'
+import type { RiemannRule } from 'mdml-engine/foundations'
 import { contourLines } from 'mdml-engine/numerics/geometry'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
@@ -263,9 +263,6 @@ function withPoints(l: Layer, pts: readonly (readonly [number, number])[], style
   } as SeriesOption
   return { ...l, series: [...l.series, marks] }
 }
-
-/** Riemann sum rules: left, right or midpoint rectangles, or trapezoids. */
-export type RiemannRule = CalculusRiemannRule
 
 interface PolyApi {
   coord(p: readonly number[]): number[]

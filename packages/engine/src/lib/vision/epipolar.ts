@@ -5,7 +5,8 @@
  * and linear (DLT) triangulation of points seen by two projection matrices.
  */
 
-import { MdmlError, type Vec2 } from '../base/index.ts'
+import { MdmlError } from '../base/index.ts'
+import type { Point2 } from '../numerics/geometry/index.ts'
 import { fundamentalMatrix } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
 import { ransac } from '../stats/index.ts'
@@ -13,10 +14,8 @@ import { type PointsLike, pointsOf } from './_image.ts'
 import { det3, invOf, type Matrix, matMul, nullVector, svdOf, transposeOf } from './_refine.ts'
 import type { RobustFit } from './geometry.ts'
 
-type P = Vec2
-
 /** Pixel points to normalised camera coordinates K^-1 [u, v, 1]. */
-function normalised(points: readonly P[], k: readonly (readonly number[])[]): P[] {
+function normalised(points: readonly Point2[], k: readonly (readonly number[])[]): Point2[] {
   const fx = k[0]?.[0] ?? 1
   const fy = k[1]?.[1] ?? 1
   const s = k[0]?.[1] ?? 0
@@ -40,8 +39,8 @@ function toEssential(e: Matrix): Matrix {
 }
 
 /** The essential matrix of normalised correspondences: the eight-point fundamental matrix, made essential. */
-function fitEssential(a: readonly P[], b: readonly P[]): Matrix {
-  const f = fundamentalMatrix(a as P[], b as P[])
+function fitEssential(a: readonly Point2[], b: readonly Point2[]): Matrix {
+  const f = fundamentalMatrix(a as Point2[], b as Point2[])
   const e = toEssential(f)
   // Unit Frobenius norm (sqrt 2 for singular values 1, 1), the sign with the largest entry positive.
   let big = 0
@@ -94,8 +93,8 @@ export function findEssentialMat(
   if ((options.method ?? 'ransac') === 'all') return { model: fitEssential(a, b), mask: new Array<number>(n).fill(1) }
   const focal = ((cameraMatrix[0]?.[0] ?? 1) + (cameraMatrix[1]?.[1] ?? 1)) / 2
   const error = (e: Matrix, i: number): number => {
-    const [x1, y1] = a[i] as P
-    const [x2, y2] = b[i] as P
+    const [x1, y1] = a[i] as Point2
+    const [x2, y2] = b[i] as Point2
     const E = (r: number, c: number): number => e[r]?.[c] ?? 0
     const l = [0, 1, 2].map((r) => E(r, 0) * x1 + E(r, 1) * y1 + E(r, 2))
     const lt = [0, 1, 2].map((c) => E(0, c) * x2 + E(1, c) * y2 + E(2, c))
@@ -109,8 +108,8 @@ export function findEssentialMat(
       fit: (s: readonly number[]): Matrix | undefined => {
         try {
           return fitEssential(
-            s.map((i) => a[i] as P),
-            s.map((i) => b[i] as P),
+            s.map((i) => a[i] as Point2),
+            s.map((i) => b[i] as Point2),
           )
         } catch {
           return undefined
@@ -191,11 +190,12 @@ export function triangulatePoints(
   const a = pointsOf(points1, 'triangulatePoints')
   const b = pointsOf(points2, 'triangulatePoints')
   if (a.length !== b.length) throw new MdmlError('shape', 'triangulatePoints: the point sets differ in size')
-  const row = (P: readonly (readonly number[])[], r: number): number[] => [0, 1, 2, 3].map((c) => P[r]?.[c] ?? 0)
+  const row = (Point2: readonly (readonly number[])[], r: number): number[] =>
+    [0, 1, 2, 3].map((c) => Point2[r]?.[c] ?? 0)
   return a.map(([x1, y1], i) => {
-    const [x2, y2] = b[i] as P
-    const eq = (P: readonly (readonly number[])[], x: number, r: number): number[] =>
-      row(P, 2).map((v, c) => x * v - (row(P, r)[c] ?? 0))
+    const [x2, y2] = b[i] as Point2
+    const eq = (Point2: readonly (readonly number[])[], x: number, r: number): number[] =>
+      row(Point2, 2).map((v, c) => x * v - (row(Point2, r)[c] ?? 0))
     const X = nullVector([eq(proj1, x1, 0), eq(proj1, y1, 1), eq(proj2, x2, 0), eq(proj2, y2, 1)])
     const w = X[3] ?? 1
     return [(X[0] ?? 0) / w, (X[1] ?? 0) / w, (X[2] ?? 0) / w]

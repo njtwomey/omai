@@ -47,8 +47,6 @@ export interface Pose {
   readonly tvec: [number, number, number]
 }
 
-type P3 = Vec3
-
 /** Distortion coefficients padded to OpenCV's eight. */
 const coeffs = (d: Distortion | undefined): number[] => Array.from({ length: 8 }, (_, i) => d?.[i] ?? 0)
 
@@ -257,9 +255,9 @@ export function undistortPoints(
   const cy = cameraMatrix[1]?.[2] ?? 0
   let RR: Matrix | undefined = options.R?.map((r) => [...r])
   if (options.P !== undefined) {
-    const P3 = options.P.map((r) => [r[0] ?? 0, r[1] ?? 0, r[2] ?? 0])
+    const Vec3 = options.P.map((r) => [r[0] ?? 0, r[1] ?? 0, r[2] ?? 0])
     RR = matMul(
-      P3,
+      Vec3,
       RR ?? [
         [1, 0, 0],
         [0, 1, 0],
@@ -488,7 +486,7 @@ function nearestRotation(m: Matrix): { R: Matrix; scale: number } {
 }
 
 /** A linear pose from correspondences in normalised camera coordinates: the planar homography or the 3-D DLT. */
-function linearPose(X: readonly P3[], x: readonly [number, number][]): Pose {
+function linearPose(X: readonly Vec3[], x: readonly [number, number][]): Pose {
   const planar = X.every((p) => Math.abs(p[2]) < 1e-12)
   let R: Matrix
   let t: number[]
@@ -631,7 +629,7 @@ export function solvePnPRansac(
     try {
       if (sample.length === minimal)
         return linearPose(
-          sample.map((i) => X[i] as P3),
+          sample.map((i) => X[i] as Vec3),
           undistortPoints(
             sample.map((i) => x[i] as [number, number]),
             cameraMatrix,
@@ -639,7 +637,7 @@ export function solvePnPRansac(
           ),
         )
       return solvePnP(
-        sample.map((i) => X[i] as P3),
+        sample.map((i) => X[i] as Vec3),
         sample.map((i) => x[i] as [number, number]),
         cameraMatrix,
         distortion,
@@ -650,7 +648,7 @@ export function solvePnPRansac(
   }
   const residual = (pose: Pose | undefined, i: number): number => {
     if (pose === undefined) return Number.POSITIVE_INFINITY
-    const [u, v] = (projectPoints([X[i] as P3], pose, cameraMatrix, distortion)[0] ?? [0, 0]) as [number, number]
+    const [u, v] = (projectPoints([X[i] as Vec3], pose, cameraMatrix, distortion)[0] ?? [0, 0]) as [number, number]
     const [a, b] = x[i] as [number, number]
     return Math.hypot(u - a, v - b)
   }

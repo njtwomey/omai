@@ -3,7 +3,7 @@
  * polyline or circle, snapped to a grid, along one axis, or several chained in turn.
  */
 
-import type { Point2 } from './projection.ts'
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 
 /**
  * A rule for where a dragged or added point may go: the allowed point nearest to (or standing for) the one asked.

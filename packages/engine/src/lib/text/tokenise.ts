@@ -8,7 +8,7 @@ import { MdmlError } from '../base/index.ts'
 import { boundary, globalRegExp, PY_SPACE, PY_WORD, UNI_SPACE, UNI_WORD } from './_classes.ts'
 
 /** A half-open `[start, end)` range of UTF-16 code units in a text. */
-export type Span = readonly [number, number]
+export type Span = readonly [start: number, end: number]
 
 /** The text of each span. */
 function sliceAll(text: string, spans: readonly Span[]): string[] {

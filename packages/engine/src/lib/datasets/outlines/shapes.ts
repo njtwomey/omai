@@ -20,7 +20,8 @@
  */
 
 import { MdmlError } from '../../base/index.ts'
-import { normaliseOutline, type Point2, resampleClosed, type SvgElement, svgOutline } from '../../graphics/index.ts'
+import { normaliseOutline, resampleClosed, type SvgElement, svgOutline } from '../../graphics/index.ts'
+import type { Point2 } from '../../numerics/geometry/index.ts'
 
 const LUCIDE: readonly (readonly [string, string, readonly SvgElement[]])[] = [
   [

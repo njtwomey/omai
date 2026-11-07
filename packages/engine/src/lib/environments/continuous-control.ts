@@ -559,7 +559,7 @@ export function doubleIntegratorMatrices(params: { readonly mass: number; readon
 }
 
 /** The state of the double integrator: position and velocity. */
-export type DoubleIntegratorState = readonly [number, number]
+export type DoubleIntegratorState = readonly [position: number, velocity: number]
 
 /**
  * One exact step of the double integrator under a force clipped to `[-maxForce, maxForce]`.

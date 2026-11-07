@@ -4,8 +4,9 @@
  * handle.
  */
 
+import type { Point2 } from 'mdml-engine/numerics/geometry'
 import { createContext, type PointerEvent, type ReactNode, useContext, useMemo, useRef } from 'react'
-import type { Point2, Projection } from './projection.ts'
+import type { Projection } from './projection.ts'
 
 /** What overlay tools read from their {@link InteractionOverlay}. */
 export interface OverlayContext {
