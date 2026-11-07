@@ -14,6 +14,7 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   transpose,
   type Value,
 } from '../../tensor/index.ts'
@@ -48,11 +49,12 @@ export interface SmoothingSpline {
  * The cubic smoothing spline (scipy.interpolate.make_smoothing_spline): the natural cubic spline g minimising
  * sum w_i (y_i - g(x_i))^2 + lam * integral g''^2, computed by Reinsch's method: the fitted values solve
  * (W + lam Q R^{-1} Q^T) g = W y, then g is interpolated with natural ends. Without lam, it is chosen by generalised
- * cross-validation (golden-section search in log lam). Linear in y, so differentiable in the data.
+ * cross-validation (golden-section search in log lam). Linear in y, so differentiable in the data. Takes the weights
+ * as a tensor-like (migration, D-009: `w` was `readonly number[]`, here and in {@link UnivariateSplineOptions}).
  *
  * @param x - Points `[n]`, strictly increasing (n >= 5).
  * @param y - Values `[n]`.
- * @param options - Weights and the penalty.
+ * @param options - Weights `[n]` and the penalty.
  * @returns The spline, the penalty, its GCV score and degrees of freedom.
  * @concept smoothing-splines
  * @example
@@ -66,14 +68,14 @@ export interface SmoothingSpline {
 export function makeSmoothingSpline(
   x: TensorLike,
   y: TensorLike,
-  options: { readonly w?: readonly number[]; readonly lam?: number } = {},
+  options: { readonly w?: TensorLike; readonly lam?: number } = {},
 ): SmoothingSpline {
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'makeSmoothingSpline'))
   const [yv] = promoteFloat(y) as [Value]
   const n = xs.length
   if (n < 5) throw new MdmlError('value', 'makeSmoothingSpline: at least five points are needed')
   if (yv.shape.length !== 1 || yv.shape[0] !== n) throw new MdmlError('shape', 'makeSmoothingSpline: y must be [n]')
-  const w = options.w ?? new Array<number>(n).fill(1)
+  const w = options.w === undefined ? new Array<number>(n).fill(1) : toVector(options.w, 'makeSmoothingSpline')
   const h = xs.slice(1).map((v, i) => v - (xs[i] ?? 0))
   if (h.some((v) => !(v > 0))) throw new MdmlError('value', 'makeSmoothingSpline: x must be strictly increasing')
   // Q (n x n-2) and R (n-2 x n-2) of Green and Silverman; K = Q R^{-1} Q^T is the roughness penalty matrix.
@@ -176,8 +178,8 @@ export interface UnivariateSplineOptions {
   readonly k?: number
   /** The smoothing factor: stop once the weighted residual sum of squares is at most s (default m, the number of points). */
   readonly s?: number
-  /** Weights (default ones). */
-  readonly w?: readonly number[]
+  /** Weights `[m]` (default ones): a vector (a tensor, a typed array or an array). */
+  readonly w?: TensorLike
 }
 
 /**
@@ -227,7 +229,7 @@ export function univariateSplineAlgorithm(
   const m = xs.length
   const k = options.k ?? 3
   const s = options.s ?? m
-  const w = options.w ?? new Array<number>(m).fill(1)
+  const w = options.w === undefined ? new Array<number>(m).fill(1) : toVector(options.w, 'univariateSpline')
   if (m <= k) throw new MdmlError('value', `univariateSpline: degree ${k} needs more than ${k} points`)
   const yp = toFlat(primalOf(yv))
   const maxInterior = m - k - 1
@@ -339,7 +341,7 @@ export function univariateSpline(
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'univariateSpline'))
   const [yv] = promoteFloat(y) as [Value]
   const k = options.k ?? 3
-  const w = options.w ?? new Array<number>(xs.length).fill(1)
+  const w = options.w === undefined ? new Array<number>(xs.length).fill(1) : toVector(options.w, 'univariateSpline')
   const run = runAlgorithm(univariateSplineAlgorithm(x, y, options), { maxSteps: Number.MAX_SAFE_INTEGER })
   const { spline } = fitSpline(xs, yv, toFlat(primalOf(yv)), w, k, run.state.interior)
   return { spline, residual: run.state.total, interiorKnots: run.state.interior }

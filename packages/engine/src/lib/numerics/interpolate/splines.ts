@@ -23,9 +23,11 @@ import {
   type Tensor,
   type TensorLike,
   toFlat,
+  toVector,
   type Value,
   where,
 } from '../../tensor/index.ts'
+import { vectorOf } from '../_vector.ts'
 import { solve } from '../linalg/index.ts'
 import { type Extrapolate, type PPoly, ppoly } from './piecewise.ts'
 
@@ -448,19 +450,25 @@ export function bsplineBasisElement(t: TensorLike, extrapolate = true): BSpline 
 /**
  * The default interpolation knots of make_interp_spline: for odd k, not-a-knot (the data points without the (k - 1) / 2
  * nearest each end, plus k + 1 repeated end knots); for k = 2, the midpoints between data points without the first and
- * last; for k = 0, the data points themselves plus the last repeated.
+ * last; for k = 0, the data points themselves plus the last repeated. Takes and returns tensors (migration, D-009:
+ * was `readonly number[]` to `number[]`).
  *
- * @param x - Data points, increasing.
+ * @param x - Data points `[n]`, increasing.
  * @param k - Degree: 0, 2 or odd.
- * @returns The knot vector.
- * @throws MdmlError with code `value` for an even degree other than 0 and 2.
+ * @returns The knot vector `[n + k + 1]`.
+ * @throws MdmlError with code `value` for an even degree other than 0 and 2, `shape` unless `x` is a vector, and
+ *   `not-differentiable` for a traced value.
  * @example
  * ```ts
  * import { notAKnot } from 'mdml-engine/numerics/interpolate'
  * notAKnot([0, 1, 2, 3, 4, 5], 3) // => [0, 0, 0, 0, 2, 3, 5, 5, 5, 5]
  * ```
  */
-export function notAKnot(x: readonly number[], k: number): number[] {
+export function notAKnot(points: TensorLike, k: number): Tensor<'float64', [number]> {
+  return vectorOf(notAKnotKernel(toVector(points, 'notAKnot'), k))
+}
+
+function notAKnotKernel(x: readonly number[], k: number): number[] {
   const first = x[0] ?? 0
   const last = x[x.length - 1] ?? 0
   if (k === 0) return [...x, last]
@@ -477,11 +485,12 @@ export function notAKnot(x: readonly number[], k: number): number[] {
 /**
  * The interpolating B-spline of degree k with scipy's default knots (scipy.interpolate.make_interp_spline; see
  * {@link notAKnot}; k = 3 is the not-a-knot cubic spline). The coefficients solve the collocation system, linear in y.
+ * Takes the knots as a tensor-like (migration, D-009: was `readonly number[]`).
  *
  * @param x - Points `[n]`, increasing.
  * @param y - Values `[n, ...]`.
  * @param k - Degree: 0, 2 or odd (default 3).
- * @param knots - Optional knots (default not-a-knot).
+ * @param knots - Optional knots `[n + k + 1]` (default not-a-knot).
  * @returns The spline.
  * @example
  * ```ts
@@ -490,11 +499,11 @@ export function notAKnot(x: readonly number[], k: number): number[] {
  * Math.abs(item(makeInterpSpline([0, 1, 2, 3, 4], [0, 1, 8, 27, 64]).evaluate(2.5)) - 15.625) < 1e-12 // => true
  * ```
  */
-export function makeInterpSpline(x: TensorLike, y: TensorLike, k = 3, knotVector?: readonly number[]): BSpline {
+export function makeInterpSpline(x: TensorLike, y: TensorLike, k = 3, knotVector?: TensorLike): BSpline {
   const xs = knots(x, 'makeInterpSpline')
   const [yv] = promoteFloat(y) as [Value]
   if (xs.length < k + 1) throw new MdmlError('value', `makeInterpSpline: degree ${k} needs at least ${k + 1} points`)
-  const t = knotVector ?? notAKnot(xs, k)
+  const t = knotVector === undefined ? notAKnotKernel(xs, k) : toVector(knotVector, 'makeInterpSpline')
   const n = t.length - k - 1
   const probe = bspline(t, fromStorage(new Float64Array(n), [n], 'float64'), k)
   const collocation = probe.designMatrix(xs)
@@ -504,11 +513,11 @@ export function makeInterpSpline(x: TensorLike, y: TensorLike, k = 3, knotVector
 /**
  * The least-squares spline with given knots (scipy.interpolate.make_lsq_spline): coefficients minimising
  * sum (w_i (y_i - s(x_i)))^2 (weights enter squared, as scipy and FITPACK), by the normal equations; linear (so
- * differentiable) in y.
+ * differentiable) in y. Takes the knots as a tensor-like (migration, D-009: was `readonly number[]`).
  *
  * @param x - Points `[m]`.
  * @param y - Values `[m, ...]`.
- * @param t - Knots (with k + 1 repeated end knots, satisfying the Schoenberg-Whitney conditions).
+ * @param t - Knots `[q]` (with k + 1 repeated end knots, satisfying the Schoenberg-Whitney conditions).
  * @param k - Degree (default 3).
  * @param w - Optional weights `[m]`.
  * @returns The spline.
@@ -520,7 +529,8 @@ export function makeInterpSpline(x: TensorLike, y: TensorLike, k = 3, knotVector
  * Math.abs(item(makeLsqSpline(xs, xs.map((v) => v * v), [0, 0, 0, 0, 1.5, 3, 3, 3, 3]).evaluate(1.2)) - 1.44) < 1e-12 // => true
  * ```
  */
-export function makeLsqSpline(x: TensorLike, y: TensorLike, t: readonly number[], k = 3, w?: TensorLike): BSpline {
+export function makeLsqSpline(x: TensorLike, y: TensorLike, knotVector: TensorLike, k = 3, w?: TensorLike): BSpline {
+  const t = toVector(knotVector, 'makeLsqSpline')
   const [xv] = promoteFloat(x) as [Value]
   const [yv] = promoteFloat(y) as [Value]
   const n = t.length - k - 1

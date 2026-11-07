@@ -155,9 +155,28 @@ describe('interpolant properties', () => {
       ['barycentric weights', (v) => toFlat(I.barycentric([0, 1, 2, 3], [1, 2, 4, 8], v).weights)],
       ['lagrange', (v) => toFlat(I.lagrange(v, [1, 2, 4, 8]))],
       ['lebesgueConstant', (v) => [I.lebesgueConstant(v, 50)]],
+      ['notAKnot', (v) => toFlat(I.notAKnot(v, 3))],
+      ['realRoots', (v) => toFlat(I.realRoots(v))],
+      [
+        'makeInterpSpline knots',
+        (v) => toFlat(I.makeInterpSpline([0, 1, 2, 3, 4], [1, 2, 0, 5, 4], 1, v).evaluate([0.5])),
+      ],
+      ['makeLsqSpline knots', (v) => toFlat(I.makeLsqSpline([0, 1, 2, 3, 4], [1, 2, 0, 5, 4], v, 1).evaluate([0.5]))],
+      [
+        'makeSmoothingSpline weights',
+        (v) =>
+          toFlat(
+            I.makeSmoothingSpline([0, 1, 2, 3, 4, 5], [1, 2, 0, 5, 4, 3], { w: v, lam: 1 }).spline.evaluate([0.5]),
+          ),
+      ],
     ]
-    const v = [0, 1, 2, 4]
+    const vectors: Record<string, number[]> = {
+      'makeInterpSpline knots': [0, 0, 1, 2, 3, 4, 4],
+      'makeLsqSpline knots': [0, 0, 1, 2, 3, 4, 4],
+      'makeSmoothingSpline weights': [1, 1, 2, 1, 1, 2],
+    }
     for (const [name, f] of calls) {
+      const v = vectors[name] ?? [0, 1, 2, 4]
       const expected = f(v)
       expect(f(Float64Array.from(v)), name).toEqual(expected)
       expect(f(tensor(v)), name).toEqual(expected)
