@@ -61,3 +61,11 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   surface digest and the type scan already covered it, the other scans had run on the engine only. The scripts take
   `--package=render` now and render's Phase 0 is done (P0.7). Render is clean on duplicated helpers and constants; its gap
   is tests of the React layer (57.9% of statements).
+- **11:25 Result.** Numerics read (29 findings, `findings/numerics.md`; about 50 of 112 files, flag-led). Most valuable: scale and
+  degenerate inputs give silent wrong answers (`svd` wrong above about 1e77 and below 1e-155; `bisect` reports a tiny-scale or NaN function as
+  converged; `adaptiveSimpson` on NaN would take about 4.5e15 evaluations; `erf(Infinity)` and `ndtri(5e-324)` are NaN); `lstsq`
+  and `polyfit` on a rank-deficient system return garbage of size 2e15 instead of the minimum-norm solution (20 callers outside
+  numerics); `delaunay` of 8 or more cocircular points returns overlapping triangles. No single failure convention (throw,
+  `converged: false`, a flag, or nothing; `fixedPoint` and `fsolve` have the same return type and opposite behaviour). The
+  approximate-nearest-neighbour code in `spatial` (about 1,850 lines) looks like a retrieval domain, filed as a placement
+  question. The reader ran no Python: every quoted scipy or numpy value needs the oracle.
