@@ -680,3 +680,28 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   browser is listed in the P3.40, P3.42 and P3.44 rows. The full gate was not run. Nothing pushed (D-014).
 - **23:20 Gate.** The render merge (P3.40 in part, P3.42, P3.44) passed the full local gate: 26,535 tests, 9,614 examples, all static checks and all six tsc runs, first run.
   35 of 44 work items complete, the other 9 each done except the follow-ups recorded in the register. Completion about 85% by effort. Nothing pushed (D-014).
+
+- **21:55 Foundations follow-ups (`agent-ff02-foundations-followups`, P3.7 leftovers, P3.12, P3.15; FD-12, 13, 14, 16, 22, 23, 25, 35, 37).** Fifteen commits on the branch (twelve of code and tests, then documentation, the regenerated index and surface, and this count), nothing pushed (D-014).
+  Performance (niced throwaway script outside the repo, median of 9 after 3 warm-ups, ms, before to after): kernels without index maps or megamorphic calls (`65bcb155`, `7da78da6`; 1e6 elements:
+  `add` 4.1 to 1.6, `mul` by a scalar 14.5 to 1.5, `greater` 14.2 to 1.7, `where` 19.6 to 4.7, `sum` 6.1 to 1.6, `sum` over the last axis of 1000x1000 6.0 to 1.0, `max` 15.1 to 4.3,
+  `transpose` 10.1 to 4.9, `concat` 3.5 to 1.6, `log1p` 17.7 to 6.5, `sigmoid` 16.2 to 6.2, `tanh` 23.4 to 9.2): the per-element call of the shared unary and binary tables was megamorphic,
+  which a loop per hot op removes with the same bits; reverse mode with `needs` (`a5a9444b`; `sum(matmul(X, W))` gradient with respect to `W` 512x512 461 to 318, `sum(mul(mul(x, 2), 3))`
+  17 to 10); the chains of `softmax` (118 to 35-62), `logSoftmax` (96 to 25-54), `logsumexp` (74 to 33) and `softplus` (117 to 38) are 2 to 5x faster without a fused primitive (the
+  numbers moved by up to 2x with the other agent's test run). Every performance change was pinned first by a test that compares with a reference loop or with the unchanged gradient
+  and passed before the change (`tensor/_cpu/kernels.test.ts`, `autodiff/reverse.test.ts`). Left on purpose, with the numbers in the register: the fused `logsumexp` (its derivative rules cannot
+  be bit-identical to the chain's; it would add a backend kernel and a batch rule), the `metricSeries` index (it wins only from the third chart on a fresh copy of the tape, and the copy
+  is the cost) and the `maxBytes` stringify (3.7 ms for 20,000 events, and it defines the budget). Removal of dead machinery (`e59a791b`, `5dc2345e`, after a search of engine, render,
+  meta, apps, docs, tests and `@example`s): `Context.backend` and `Context.dtype`, `BackendCapabilities`, `Backend.capabilities`, `supportsDType`, the kernels `not`, `and`, `or`, `xor`,
+  `avalOf`, `Tolerance`, `defaultTolerance`, `resolveTolerance`; kept, because they are live or tested: `Backend`, `Tensor.backend`, `Backend.wrap`, `CreateOptions.backend` and ten exports
+  the review listed as caller-less (`assertShape`, `assertFinite`, `invariant`, `formatTensor`, `finfo`, `iinfo`, `fullLike`, `tapsFor`, `mergeRuns`, `exportRun`). Additive: `Primitive.vjp`'s
+  fifth argument `needs`, `Primitive.linear` (with which Taylor mode no longer finds 40 primitives by running ops on placeholders at import), `CreateOptions` on eight constructors. Two bugs
+  found: `floorDiv(0, -1)` gave +0 where numpy gives -0.0 (the P3.7 numpy rows, failing first, fixed in `4b62274f`) and `vmap(grad(f))` over a primitive without a derivative rule ran `f`
+  twice before reporting it (`6af737d1`: the missing-rule errors carry the primitive in their details and `vmap` loops only for the others; the new `ErrorCode` for the second meaning is
+  not added, it is about 25 tests and 80 `@throws` lines across five domains, the convention of P3.20). Coverage of the tensor and autodiff suites (tests of those two domains only): `tensor/_cpu`
+  statements 96.5 to 97.8% (100% in each file), branches 73.1 to 76.0%; what is left are the `?? 0` fallbacks of typed-array reads. Public surface against `surface-before-waveb18.tsv`: 0 added,
+  6 removed (`base#Tolerance`, `base#defaultTolerance`, `base#resolveTolerance`, `tensor#BackendCapabilities`, `tensor#avalOf`, `tensor#supportsDType`), 14 changed (`context#Context`,
+  `context#CreateContextOptions`, `tensor#Backend`, `tensor#BinaryKernel`, `tensor#UnaryKernel`, `tensor#Primitive`, and the options of `arange`, `eye`, `geomspace`, `indices`, `linspace`,
+  `logspace`, `meshgrid`, `tri`). Own checks only, the full gate was not run: tsc for engine, render, meta, site, pocs and the root; 720 engine test files with 11,698 tests (`base`, `context`, `trace`,
+  `space`, `random`, `tensor`, `autodiff`, `exposition`, `losses`, `optim`, `kernels`, `dists`, `metrics`, `nn`, `numerics`, `stats`, `gp`, `learn`, `data`, `dynamics`, `agents`) and render's
+  100 files with 520 tests, all passing; the 162 `@example`s of the touched files; barrels, layers, lint (no warnings), agent index, surface. Net `it` blocks: +8 (two `it.each` over case tables in `kernels.test.ts`, two in `reverse.test.ts`,
+  one creation table, one `VERSION` test, one custom-rule test, one `vmap` test).

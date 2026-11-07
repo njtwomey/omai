@@ -16,9 +16,14 @@ export function toShape(t: Value, shape: readonly number[]): Value {
  * An elementwise unary primitive. `rule(t, x, out)` maps a tangent (or, since the Jacobian is diagonal, a cotangent)
  * through the derivative; omit it for functions whose derivative is zero (rounding, sign).
  */
-export function unaryPrimitive(kernel: UnaryKernel, rule?: (t: Value, x: Value, out: Value) => Value): Primitive<null> {
+export function unaryPrimitive(
+  kernel: UnaryKernel,
+  rule?: (t: Value, x: Value, out: Value) => Value,
+  options: { readonly linear?: boolean } = {},
+): Primitive<null> {
   const base = {
     name: kernel,
+    ...(options.linear === true ? { linear: true } : {}),
     abstractEval: (xs: readonly Aval[]) => [arg(xs, 0)],
     impl: (xs: readonly Tensor[]) => [arg(xs, 0).backend.unary(kernel, arg(xs, 0))],
     batch: (xs: readonly Value[], ds: readonly BatchDim[]) => batchElementwise(primitive, xs, ds, null),
@@ -44,13 +49,19 @@ export function unaryPrimitive(kernel: UnaryKernel, rule?: (t: Value, x: Value, 
 /** The rules of an elementwise binary primitive, on broadcast operands. */
 export interface BinaryRules {
   jvp(a: Value, b: Value, ta: MaybeZero, tb: MaybeZero, out: Value): MaybeZero
-  vjp(g: Value, a: Value, b: Value, out: Value): readonly [MaybeZero, MaybeZero]
+  /** `needs[j]` is `false` when the cotangent of operand `j` would be dropped: return `null` for it without computing it. */
+  vjp(g: Value, a: Value, b: Value, out: Value, needs: readonly [boolean, boolean]): readonly [MaybeZero, MaybeZero]
 }
 
 /** An elementwise binary primitive with broadcasting; cotangents are summed back to each input's shape. */
-export function binaryPrimitive(kernel: BinaryKernel, rules?: BinaryRules): Primitive<null> {
+export function binaryPrimitive(
+  kernel: BinaryKernel,
+  rules?: BinaryRules,
+  options: { readonly linear?: boolean } = {},
+): Primitive<null> {
   const base = {
     name: kernel,
+    ...(options.linear === true ? { linear: true } : {}),
     abstractEval: (xs: readonly Aval[]) => {
       const a = arg(xs, 0)
       const b = arg(xs, 1)
@@ -69,13 +80,18 @@ export function binaryPrimitive(kernel: BinaryKernel, rules?: BinaryRules): Prim
         if (ta === null && tb === null) return [null]
         return [rules.jvp(arg(xs, 0), arg(xs, 1), ta, tb, arg(outs, 0))]
       },
-      vjp: (gs, xs, _p, outs) => {
+      vjp: (gs, xs, _p, outs, needs) => {
         const g = arg(gs, 0)
         if (g === null) return [null, null]
         const a = arg(xs, 0)
         const b = arg(xs, 1)
-        const [ga, gb] = rules.vjp(g, a, b, arg(outs, 0))
-        return [ga === null ? null : sumToShape(ga, a.shape), gb === null ? null : sumToShape(gb, b.shape)]
+        const na = needs?.[0] !== false
+        const nb = needs?.[1] !== false
+        const [ga, gb] = rules.vjp(g, a, b, arg(outs, 0), [na, nb])
+        return [
+          ga === null || !na ? null : sumToShape(ga, a.shape),
+          gb === null || !nb ? null : sumToShape(gb, b.shape),
+        ]
       },
     })
   }

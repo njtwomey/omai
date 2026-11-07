@@ -297,6 +297,27 @@ describe('vmap against a loop', () => {
     expect((pair[1] as Value).shape).toEqual([4])
   })
 
+  it('reports a missing derivative rule instead of looping over the examples and running the function twice', () => {
+    let calls = 0
+    const noRule = definePrimitive<null>({
+      name: 'noRuleForVmap',
+      abstractEval: ([v]) => [v as NonNullable<typeof v>],
+      impl: ([v]) => [v as Tensor],
+    })
+    const f = (v: Value): Value => {
+      calls += 1
+      return sum(bind1(noRule, [v], null))
+    }
+    let caught: unknown
+    try {
+      vmap(grad(f))(x)
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).toMatchObject({ code: 'not-differentiable', details: { primitive: 'noRuleForVmap' } })
+    expect(calls).toBe(1)
+  })
+
   it('rejects mismatched batch sizes and unbatched calls', () => {
     expect(() => vmap(add)(x, rand([3, 3], 1))).toThrow(/batch sizes/)
     expect(() => vmap(add, null)(x, y)).toThrow(/no argument/)

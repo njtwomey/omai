@@ -96,6 +96,18 @@ export function defineMethod<S, C extends Config, K extends string = string>(met
  * @param config - The configuration.
  * @param key - The key `make` is given.
  * @returns The contract.
+ * @example
+ * ```ts
+ * import { dict } from 'mdml-engine/space'
+ * import { key } from 'mdml-engine/random'
+ * import { contractOf, defineMethod, scalar } from 'mdml-engine/trace'
+ * const m = defineMethod({
+ *   name: 'count', config: dict({}),
+ *   make: () => ({ name: 'count', config: {}, init: () => 0, step: (s: number, ctx) => { ctx.log('n', s); return s + 1 } }),
+ *   contract: { n: scalar() },
+ * })
+ * Object.keys(contractOf(m, {}, key(0))) // => ['n']
+ * ```
  */
 export function contractOf<S, C extends Config, K extends string = string>(
   method: Method<S, C, K>,

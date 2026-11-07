@@ -20,6 +20,7 @@ import { sum } from './reduce.ts'
 
 const reshapePrimitive: Primitive<{ readonly shape: Shape }> = definePrimitive<{ readonly shape: Shape }>({
   name: 'reshape',
+  linear: true,
   abstractEval: (xs, p) => [{ shape: p.shape, dtype: arg(xs, 0).dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.wrap(arg(xs, 0).dtype, p.shape, arg(xs, 0).data)],
   jvp: (_xs, ts, p) => {
@@ -41,6 +42,7 @@ const transposePrimitive: Primitive<{ readonly perm: readonly number[] }> = defi
   readonly perm: readonly number[]
 }>({
   name: 'transpose',
+  linear: true,
   abstractEval: (xs, p) => [{ shape: p.perm.map((a) => arg(xs, 0).shape[a] ?? 1), dtype: arg(xs, 0).dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.transpose(arg(xs, 0), p.perm)],
   jvp: (_xs, ts, p) => {
@@ -61,6 +63,7 @@ const transposePrimitive: Primitive<{ readonly perm: readonly number[] }> = defi
 
 const broadcastPrimitive: Primitive<{ readonly shape: Shape }> = definePrimitive<{ readonly shape: Shape }>({
   name: 'broadcastTo',
+  linear: true,
   abstractEval: (xs, p) => [{ shape: p.shape, dtype: arg(xs, 0).dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.broadcastTo(arg(xs, 0), p.shape)],
   jvp: (_xs, ts, p) => {
@@ -85,6 +88,7 @@ interface ConcatParams {
 
 const concatPrimitive: Primitive<ConcatParams> = definePrimitive<ConcatParams>({
   name: 'concat',
+  linear: true,
   abstractEval: (xs, p) => {
     const first = arg(xs, 0)
     const total = xs.reduce((acc, x) => acc + (x.shape[p.axis] ?? 0), 0)
@@ -121,6 +125,7 @@ interface PadParams {
 
 const padPrimitive: Primitive<PadParams> = definePrimitive<PadParams>({
   name: 'pad',
+  linear: true,
   abstractEval: (xs, p) => [
     {
       shape: arg(xs, 0).shape.map((n, a) => n + (p.widths[a]?.[0] ?? 0) + (p.widths[a]?.[1] ?? 0)),

@@ -46,6 +46,13 @@ describe('customJvp', () => {
     jvp: (_xs, [t], out) => (t === null || t === undefined ? null : mul(t, mul(out, add(mul(out, -1), 1)))),
   })
 
+  it('reads a rule that returns null (a zero tangent) as a zero derivative in both modes', () => {
+    const constant = customJvp({ name: 'zeroRuleTest', forward: (x) => mul(x, 2), jvp: () => null })
+    const x = tensor([1, 2])
+    expect(toArray(grad((v: Value) => sum(constant(v)))(x))).toEqual([0, 0])
+    expect(toArray(jvp(constant, x, tensor([1, 1])).tangent)).toEqual([0, 0])
+  })
+
   it('passes the conformance check in both modes, from a single forward rule', () => {
     expect(checkPrimitive(logistic, [tensor([-1.5, 0.2, 2])]).failures).toEqual([])
   })

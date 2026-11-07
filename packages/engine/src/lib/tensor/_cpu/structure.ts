@@ -130,7 +130,7 @@ export function concat<D extends DType>(xs: readonly Tensor<D>[], axis: number):
     for (let o = 0; o < outer; o++) {
       const src = o * n * inner
       const dst = (o * total + offsetAxis) * inner
-      for (let j = 0; j < n * inner; j++) out[dst + j] = x.data[src + j] ?? 0
+      out.set(x.data.subarray(src, src + n * inner), dst)
     }
     offsetAxis += n
   }

@@ -15,23 +15,31 @@ import { equal, greater, less, where } from './compare.ts'
 import { floor, log } from './math.ts'
 
 /** Elementwise sum. @internal */
-export const addPrimitive: Primitive<null> = binaryPrimitive('add', {
-  jvp: (_a, _b, ta, tb, out) =>
-    ta === null ? toShape(tb as Value, out.shape) : tb === null ? toShape(ta, out.shape) : add(ta, tb),
-  vjp: (g) => [g, g],
-})
+export const addPrimitive: Primitive<null> = binaryPrimitive(
+  'add',
+  {
+    jvp: (_a, _b, ta, tb, out) =>
+      ta === null ? toShape(tb as Value, out.shape) : tb === null ? toShape(ta, out.shape) : add(ta, tb),
+    vjp: (g) => [g, g],
+  },
+  { linear: true },
+)
 
 /** Elementwise difference. @internal */
-export const subPrimitive: Primitive<null> = binaryPrimitive('sub', {
-  jvp: (_a, _b, ta, tb, out) =>
-    ta === null ? toShape(neg(tb as Value), out.shape) : tb === null ? toShape(ta, out.shape) : sub(ta, tb),
-  vjp: (g) => [g, neg(g)],
-})
+export const subPrimitive: Primitive<null> = binaryPrimitive(
+  'sub',
+  {
+    jvp: (_a, _b, ta, tb, out) =>
+      ta === null ? toShape(neg(tb as Value), out.shape) : tb === null ? toShape(ta, out.shape) : sub(ta, tb),
+    vjp: (g, _a, _b, _out, [_na, nb]) => [g, nb ? neg(g) : null],
+  },
+  { linear: true },
+)
 
 /** Elementwise product. @internal */
 export const mulPrimitive: Primitive<null> = binaryPrimitive('mul', {
   jvp: (a, b, ta, tb) => (ta === null ? mul(a, tb as Value) : tb === null ? mul(ta, b) : add(mul(ta, b), mul(a, tb))),
-  vjp: (g, a, b) => [mul(g, b), mul(g, a)],
+  vjp: (g, a, b, _out, [na, nb]) => [na ? mul(g, b) : null, nb ? mul(g, a) : null],
 })
 
 /** Elementwise quotient. @internal */
@@ -39,7 +47,7 @@ export const divPrimitive: Primitive<null> = binaryPrimitive('div', {
   // d(a / b) = (da - db * out) / b
   jvp: (_a, b, ta, tb, out) =>
     div(ta === null ? neg(mul(tb as Value, out)) : tb === null ? ta : sub(ta, mul(tb, out)), b),
-  vjp: (g, _a, b, out) => [div(g, b), neg(div(mul(g, out), b))],
+  vjp: (g, _a, b, out, [na, nb]) => [na ? div(g, b) : null, nb ? neg(div(mul(g, out), b)) : null],
 })
 
 // d/db a^b = a^b log a, taken as 0 where a = 0 (the limit for b > 0).
@@ -59,7 +67,7 @@ export const powPrimitive: Primitive<null> = binaryPrimitive('pow', {
     const db = tb === null ? null : mul(tb, powLogTerm(a, out))
     return da === null ? db : db === null ? da : add(da, db)
   },
-  vjp: (g, a, b, out) => [mul(g, powBaseTerm(a, b)), mul(g, powLogTerm(a, out))],
+  vjp: (g, a, b, out, [na, nb]) => [na ? mul(g, powBaseTerm(a, b)) : null, nb ? mul(g, powLogTerm(a, out)) : null],
 })
 
 // Ties share the derivative equally, as in JAX.
@@ -75,9 +83,9 @@ export const maxPrimitive: Primitive<null> = binaryPrimitive('max', {
     const db = tb === null ? null : mul(tb, sub(1, s))
     return da === null ? db : db === null ? da : add(da, db)
   },
-  vjp: (g, a, b) => {
+  vjp: (g, a, b, _out, [na, nb]) => {
     const s = maxShare(a, b, greater)
-    return [mul(g, s), mul(g, sub(1, s))]
+    return [na ? mul(g, s) : null, nb ? mul(g, sub(1, s)) : null]
   },
 })
 
@@ -89,9 +97,9 @@ export const minPrimitive: Primitive<null> = binaryPrimitive('min', {
     const db = tb === null ? null : mul(tb, sub(1, s))
     return da === null ? db : db === null ? da : add(da, db)
   },
-  vjp: (g, a, b) => {
+  vjp: (g, a, b, _out, [na, nb]) => {
     const s = maxShare(a, b, less)
-    return [mul(g, s), mul(g, sub(1, s))]
+    return [na ? mul(g, s) : null, nb ? mul(g, sub(1, s)) : null]
   },
 })
 
@@ -101,17 +109,18 @@ export const modPrimitive: Primitive<null> = binaryPrimitive('mod', {
     const q = floor(div(a, b))
     return ta === null ? neg(mul(tb as Value, q)) : tb === null ? toShape(ta, out.shape) : sub(ta, mul(tb, q))
   },
-  vjp: (g, a, b) => [g, neg(mul(g, floor(div(a, b))))],
+  vjp: (g, a, b, _out, [_na, nb]) => [g, nb ? neg(mul(g, floor(div(a, b)))) : null],
 })
 
 const floorDivPrimitive = binaryPrimitive('floorDiv')
-const negPrimitive = unaryPrimitive('neg', (t) => neg(t))
+const negPrimitive = unaryPrimitive('neg', (t) => neg(t), { linear: true })
 const absPrimitive = unaryPrimitive('abs', (t, x) => mul(t, sign(x)))
 const signPrimitive = unaryPrimitive('sign')
 
 /** Convert to another dtype. @internal */
 export const castPrimitive: Primitive<{ readonly dtype: DType }> = definePrimitive<{ readonly dtype: DType }>({
   name: 'cast',
+  linear: true,
   abstractEval: (xs, p) => [{ shape: arg(xs, 0).shape, dtype: p.dtype }],
   impl: (xs, p) => [arg(xs, 0).backend.cast(arg(xs, 0), p.dtype)],
   jvp: (xs, ts, p) => {

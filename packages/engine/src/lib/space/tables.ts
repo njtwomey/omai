@@ -82,6 +82,20 @@ export interface OptionTable<T, Props> {
  * @param options - The tag, the default option and metadata.
  * @returns The table.
  * @throws MdmlError with code `value` for an empty table or a default that is not an option (as `union` does).
+ * @example
+ * ```ts
+ * import { dict, optionTable, real } from 'mdml-engine/space'
+ * const kernels = optionTable(
+ *   {
+ *     small: { space: dict({}), properties: { smooth: true }, make: () => 'small' },
+ *     wide: { space: dict({ scale: real(0, 1) }), properties: { smooth: false }, make: (k) => `wide ${k.scale}` },
+ *   },
+ *   { default: 'wide' },
+ * )
+ * kernels.names // => ['small', 'wide']
+ * kernels.make({ kind: 'wide', scale: 0.5 }) // => 'wide 0.5'
+ * kernels.where((properties) => properties.smooth) // => ['small']
+ * ```
  */
 export function optionTable<T, Props>(
   table: Readonly<Record<string, Option<T, Props>>>,

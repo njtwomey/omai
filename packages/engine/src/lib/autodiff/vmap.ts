@@ -135,8 +135,10 @@ function leafAxes(result: unknown, outAxes: OutAxes, count: number): number[] {
   )
 }
 
+// `not-differentiable` means two things: a value that must be concrete was traced (the function is then mapped by a
+// loop), and a primitive without a derivative rule was differentiated (a real failure; its details name the primitive).
 function isConcreteValueError(e: unknown): boolean {
-  return e instanceof MdmlError && e.code === 'not-differentiable'
+  return e instanceof MdmlError && e.code === 'not-differentiable' && e.details['primitive'] === undefined
 }
 
 /**

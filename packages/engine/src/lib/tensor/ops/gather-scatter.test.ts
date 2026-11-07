@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { checkPrimitive, grad } from '../../autodiff/index.ts'
-import { supportsDType } from '../backend.ts'
 import { cpu } from '../cpu.ts'
 import { indices } from '../create.ts'
 import { iinfo } from '../dtype.ts'
@@ -101,12 +100,11 @@ describe('sliding windows', () => {
 })
 
 describe('dtype, creation, tracing and backend helpers', () => {
-  it('indices, iinfo, lift and capabilities', () => {
+  it('indices, iinfo and lift', () => {
     expect(indices([]).shape).toEqual([0])
     expect(toArray(indices([3]))).toEqual([[0, 1, 2]])
     expect(iinfo('int32').min).toBe(-2147483648)
     expect(iinfo('bool')).toEqual({ min: 0, max: 1, bits: 1 })
-    expect(supportsDType(cpu, 'bool')).toBe(true)
     const trace: Trace = {
       level: 3,
       lift: (x): Traced => ({ kind: 'traced', dtype: x.dtype, shape: x.shape, trace }),

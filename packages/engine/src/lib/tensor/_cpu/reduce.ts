@@ -28,12 +28,41 @@ export function reduce<D extends DType>(
   const outShape = keepDims ? keptShape : x.shape.filter((_, axis) => !reduced.has(axis))
   // Accumulate in float64: integer storage cannot hold the +-Infinity identities of max and min.
   const acc = new Float64Array(sizeOf(outShape)).fill(identity[op])
-  // Walk the input with the output's strides on kept axes and zero on reduced axes.
-  const strides = stridesOf(keptShape).map((s, axis) => (reduced.has(axis) ? 0 : s))
-  const f = combine[op]
-  walkStrided(x.shape, strides, (i, offset) => {
-    acc[offset] = f(acc[offset] ?? 0, x.data[i] ?? 0)
-  })
+  const rank = x.shape.length
+  const k = reduced.size
+  const inRange = axes.every((a) => a >= 0 && a < rank)
+  const trailing = inRange && axes.every((a) => a >= rank - k)
+  const leading = inRange && axes.every((a) => a < k)
+  if (rank > 0 && (trailing || leading)) {
+    // The reduced axes are the last k or the first k: each accumulator takes its elements in the same ascending order
+    // as the strided walk below, so the results are identical; only the offset arithmetic goes.
+    const split = trailing ? rank - k : k
+    const head = sizeOf(x.shape.slice(0, split))
+    const tail = sizeOf(x.shape.slice(split))
+    const data = x.data
+    if (trailing) {
+      for (let o = 0; o < head; o++) {
+        let a = identity[op]
+        const base = o * tail
+        if (op === 'sum') for (let j = 0; j < tail; j++) a += data[base + j] ?? 0
+        else for (let j = 0; j < tail; j++) a = combine[op](a, data[base + j] ?? 0)
+        acc[o] = a
+      }
+    } else {
+      for (let o = 0; o < head; o++) {
+        const base = o * tail
+        if (op === 'sum') for (let j = 0; j < tail; j++) acc[j] = (acc[j] ?? 0) + (data[base + j] ?? 0)
+        else for (let j = 0; j < tail; j++) acc[j] = combine[op](acc[j] ?? 0, data[base + j] ?? 0)
+      }
+    }
+  } else {
+    // Walk the input with the output's strides on kept axes and zero on reduced axes.
+    const strides = stridesOf(keptShape).map((s, axis) => (reduced.has(axis) ? 0 : s))
+    const f = combine[op]
+    walkStrided(x.shape, strides, (i, offset) => {
+      acc[offset] = f(acc[offset] ?? 0, x.data[i] ?? 0)
+    })
+  }
   const out = allocate(x.dtype, acc.length)
   for (let i = 0; i < acc.length; i++) out[i] = acc[i] ?? 0
   return wrap(x.dtype, outShape, out)

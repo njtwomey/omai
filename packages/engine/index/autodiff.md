@@ -11,6 +11,6 @@ Differentiation as function transforms, JAX style: reverse mode (`grad`, `vjp`, 
 - function `customVjp`: Define a function with a hand-written reverse rule. `src/lib/autodiff/custom.ts:62` `mdml-engine/autodiff`
 - function `grad`: Gradient of a scalar function of a pytree, like jax.grad. `src/lib/autodiff/transforms.ts:144` `mdml-engine/autodiff`
 - function `hessian`: Hessian of a scalar function, forward over reverse. `src/lib/autodiff/transforms.ts:309` `mdml-engine/autodiff`
-- function `taylorCoefficients`: Higher derivatives along a direction by Taylor-mode differentiation. `src/lib/autodiff/taylor.ts:233` `mdml-engine/autodiff`
+- function `taylorCoefficients`: Higher derivatives along a direction by Taylor-mode differentiation. `src/lib/autodiff/taylor.ts:234` `mdml-engine/autodiff`
 - function `valueAndGrad`: A function's value and gradient in one pass. `src/lib/autodiff/transforms.ts:106` `mdml-engine/autodiff`
-- function `vmap`: Vectorise a function over a batch axis, like jax.vmap. `src/lib/autodiff/vmap.ts:169` `mdml-engine/autodiff`
+- function `vmap`: Vectorise a function over a batch axis, like jax.vmap. `src/lib/autodiff/vmap.ts:171` `mdml-engine/autodiff`

@@ -37,14 +37,14 @@ export const matmulPrimitive: Primitive<null> = definePrimitive<null>({
     const db = tb === null ? null : bind1(matmulPrimitive, [a, tb], null)
     return [da === null ? db : db === null ? da : add(da, db)]
   },
-  vjp: (gs, xs) => {
+  vjp: (gs, xs, _p, _outs, needs) => {
     const g = arg(gs, 0)
     if (g === null) return [null, null]
     const a = arg(xs, 0)
     const b = arg(xs, 1)
-    const ga = bind1(matmulPrimitive, [g, swapaxes(b, -1, -2)], null)
-    const gb = bind1(matmulPrimitive, [swapaxes(a, -1, -2), g], null)
-    return [sumToShape(ga, a.shape), sumToShape(gb, b.shape)]
+    const ga = needs?.[0] === false ? null : bind1(matmulPrimitive, [g, swapaxes(b, -1, -2)], null)
+    const gb = needs?.[1] === false ? null : bind1(matmulPrimitive, [swapaxes(a, -1, -2), g], null)
+    return [ga === null ? null : sumToShape(ga, a.shape), gb === null ? null : sumToShape(gb, b.shape)]
   },
   // Batch axes of a product broadcast, so a batched operand only needs its batch in front of its own batch axes.
   batch: (xs, ds) => {

@@ -36,13 +36,6 @@ import type { Backend } from './backend.ts'
  */
 export const cpu: Backend = {
   name: 'cpu',
-  // Typed arrays hold at most 2^32 - 1 elements; int32 indices address 2^31 - 1.
-  capabilities: {
-    dtypes: ['float64', 'float32', 'int32', 'bool'],
-    synchronous: true,
-    maxElements: 2147483647,
-    device: false,
-  },
   wrap,
   unary,
   predicate,

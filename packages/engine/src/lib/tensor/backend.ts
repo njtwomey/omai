@@ -1,7 +1,6 @@
 /**
  * The backend contract: the kernel vocabulary (elementwise, comparison, predicate and reduction kernels) that a backend
- * implements for tensors to run on it, and the capabilities it declares so callers can choose a dtype or fall back
- * before dispatching.
+ * implements for tensors to run on it.
  */
 
 import type { DType, Storage } from './dtype.ts'
@@ -37,23 +36,9 @@ export type UnaryKernel =
   | 'ceil'
   | 'round'
   | 'trunc'
-  | 'not'
 
 /** Elementwise functions of two broadcast-compatible tensors of one dtype. */
-export type BinaryKernel =
-  | 'add'
-  | 'sub'
-  | 'mul'
-  | 'div'
-  | 'pow'
-  | 'max'
-  | 'min'
-  | 'atan2'
-  | 'floorDiv'
-  | 'mod'
-  | 'and'
-  | 'or'
-  | 'xor'
+export type BinaryKernel = 'add' | 'sub' | 'mul' | 'div' | 'pow' | 'max' | 'min' | 'atan2' | 'floorDiv' | 'mod'
 
 /** Elementwise comparisons; results are bool. */
 export type CompareKernel = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge'
@@ -65,39 +50,6 @@ export type PredicateKernel = 'isnan' | 'isfinite' | 'isinf'
 export type ReduceKernel = 'sum' | 'prod' | 'max' | 'min'
 
 /**
- * What a backend can do, so callers can choose a dtype or fall back before dispatching. A WebGPU backend, for example,
- * has no float64 and runs asynchronously; the CPU backend has every dtype and runs synchronously.
- *
- * @concept tensor-backend
- */
-export interface BackendCapabilities {
-  /** The dtypes its kernels accept. */
-  readonly dtypes: readonly DType[]
-  /** Whether results are available synchronously (the CPU backend) or only after a device round trip. */
-  readonly synchronous: boolean
-  /** The largest number of elements one tensor may hold. */
-  readonly maxElements: number
-  /** Whether the backend runs kernels on a separate device (results must be read back). */
-  readonly device: boolean
-}
-
-/**
- * Whether a backend supports a dtype.
- *
- * @param backend - The backend.
- * @param dtype - The dtype.
- * @returns `true` when its kernels accept the dtype.
- * @example
- * ```ts
- * import { cpu, supportsDType } from 'mdml-engine/tensor'
- * supportsDType(cpu, 'float64') // => true
- * ```
- */
-export function supportsDType(backend: Backend, dtype: DType): boolean {
-  return backend.capabilities.dtypes.includes(dtype)
-}
-
-/**
  * The kernel vocabulary a backend implements. Primitives call these on concrete tensors; transformations never see them.
  * A new backend (WASM, WebGPU) implements this interface, and may fall back to the CPU backend for kernels it lacks.
  *
@@ -105,7 +57,6 @@ export function supportsDType(backend: Backend, dtype: DType): boolean {
  */
 export interface Backend {
   readonly name: string
-  readonly capabilities: BackendCapabilities
   wrap<D extends DType>(dtype: D, shape: Shape, data: Storage<D>): Tensor<D>
   unary<D extends DType>(op: UnaryKernel, x: Tensor<D>): Tensor<D>
   predicate(op: PredicateKernel, x: Tensor): Tensor<'bool'>
