@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { TestResult } from '../../base/index.ts'
 import { etaSquared, histogram, kendallTau, rankdata, spearman } from '../index.ts'
 import * as T from './index.ts'
 
@@ -10,7 +11,7 @@ const other = [3, 5, 6, 7, 2]
 // is NaN too, never a number); a NaN in data that a routine sorts or ranks is an error, not a tie; a count below zero
 // is an error.
 describe('hypothesis tests on degenerate input', () => {
-  const undefinedTests: readonly (readonly [string, () => T.TestResult])[] = [
+  const undefinedTests: readonly (readonly [string, () => TestResult])[] = [
     ['fligner of constant groups', () => T.fligner([c, c])],
     ['fligner of two different constants', () => T.fligner([c, [5, 5, 5, 5]])],
     ['fOneway of identical groups', () => T.fOneway([c, c])],
