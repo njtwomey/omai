@@ -98,6 +98,8 @@ export function FramesPlayer(props: {
   readonly figure: Figure
   readonly frames: (fig: Figure) => ViewFrames
   readonly filename: string
+  readonly title?: ReactNode
+  readonly caption?: ReactNode
   readonly fps?: number
   readonly startAtFirst?: boolean
   /** Loop and start playing at once, for views that are a cycle rather than a run (default false). */
@@ -125,6 +127,8 @@ export function FramesPlayer(props: {
       figure={figure}
       build={build}
       filename={props.filename}
+      {...(props.title === undefined ? {} : { title: props.title })}
+      {...(props.caption === undefined ? {} : { caption: props.caption })}
       footer={count > 1 ? <Player controller={playback} stamp={label} /> : undefined}
     />
   )
