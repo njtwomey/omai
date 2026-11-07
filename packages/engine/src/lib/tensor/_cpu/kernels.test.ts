@@ -322,6 +322,11 @@ describe('cpu kernels: the branches the other suites do not reach', () => {
   const floorDiv = (a: number, b: number): number => cpu.binary('floorDiv', t([a]), t([b])).data[0] as number
   // [name, result, numpy's answer] (one-off numpy 2.5 run: floor_divide, argsort(kind='stable'), argmax and argmin with keepdims)
   const rows: [string, () => ArrayLike<number>, number[]][] = [
+    // the sign of a zero quotient is the sign of a / b, signed zeros included (numpy takes copysign(0, a / b))
+    ['floorDiv(0, -1)', () => [floorDiv(0, -1)], [-0]],
+    ['floorDiv(-0, 1)', () => [floorDiv(-0, 1)], [-0]],
+    ['floorDiv(0, -Infinity)', () => [floorDiv(0, -Infinity)], [-0]],
+    ['floorDiv(-0, -1)', () => [floorDiv(-0, -1)], [0]],
     ['floorDiv(0.5, 1)', () => [floorDiv(0.5, 1)], [0]],
     ['floorDiv(-0.5, -1)', () => [floorDiv(-0.5, -1)], [0]],
     ['floorDiv(7, 2)', () => [floorDiv(7, 2)], [3]],

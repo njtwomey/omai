@@ -43,7 +43,11 @@ function floorDivide(a: number, b: number): number {
   const r = a % b
   let div = (a - r) / b
   if (r !== 0 && r < 0 !== b < 0) div -= 1
-  if (div === 0) return a / b < 0 ? -0 : 0
+  if (div === 0) {
+    // A zero quotient keeps the sign of a / b, signed zeros included (numpy: copysign(0, a / b)).
+    const q = a / b
+    return q < 0 || Object.is(q, -0) ? -0 : 0
+  }
   const floor = Math.floor(div)
   return div - floor > 0.5 ? floor + 1 : floor
 }
