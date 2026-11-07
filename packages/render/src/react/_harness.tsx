@@ -161,7 +161,11 @@ export interface Mounted<T> {
 }
 
 /** The globals as they were before the first mounted tree, and how many trees are mounted now. */
-const mounted: { saved?: { window: unknown; hadWindow: boolean; act: unknown; hadAct: boolean }; trees: number } = {
+const mounted: {
+  saved: { window: unknown; hadWindow: boolean; act: unknown; hadAct: boolean } | undefined
+  trees: number
+} = {
+  saved: undefined,
   trees: 0,
 }
 
