@@ -490,3 +490,22 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   97.9%, `samplers.ts` 94.0 to 98.1%, `archives.ts` 96.7 to 98.2%. Not done: `trees.tsx` interaction, `ZoomPanel`, `StructureView`, the `Player` key
   test (RD-6 first, or it pins the wrong behaviour), `SessionExport` recording and saving (a canvas and `a.click`). Surface 0 added, 0 removed, 0
   changed. Own checks only; the full gate was not run.
+- **18:45 P3.31 and FD-33: tests for `dists`, `stats`, `metrics` and the samplers (`agent-ts04-dsm-tests`).** Net +12 `it` blocks and several
+  hundred table rows; the four directories' tests 3,340 to 3,352. `dists/contract.test.ts` takes four more families and checks over its 49
+  families, with no formula taken from the family: the density integrates, between quantiles, to the difference of the cdf (the pmf to 1 and the cdf
+  its running sum); mean, variance and entropy equal the Gauss-Legendre integrals of `ppf(u)`, `ppf(u)^2` and `-logProb(ppf(u))` over
+  u in (0, 1), with panels that are decades into both tails (a density with a singular edge, such as gamma(0.3), needs nothing special on the probability scale);
+  `logProb`, `logCdf`, `logSf`, `sf` and `isf` against `prob`, `cdf` and `ppf`; 28 scipy.stats rows; the closed-form KL of 19 pairs against its
+  quadrature definition. `dists/samplers.gof.test.ts`: Kolmogorov-Smirnov of 47 sampler rows and chi-square of 23 against the exact cdf at one fixed seed
+  (a p-value of at least 1e-3), four wrong laws that the same test rejects (so it has the power to see a 10% scale error), and key dependence for every row.
+  `random/keys.test.ts`: 320 keys, all distinct, uncorrelated streams, uniform first draws, prefix stability. `stats/known-cases.test.ts`:
+  small exact and permutation cases against scipy, the multiple-testing wrappers against the formulas, effect sizes against their closed forms,
+  `formatTest`, `rejects`, the design aliases, `shrinkagePenalty`, `trimmedVariance` and `hsic` (linear kernels: the squared covariance).
+  `metrics/references.test.ts`: cluster validity, scoring rules, energy score, the precision-recall curve and single-class inputs against scikit-learn
+  and scipy. One bug: `permutationTest` with `'pairings'` permuted every sample (DSM-31, fixed; its first fix passed one sample, the index
+  vector of the independence tests, through the same rule and broke `independence.property.test.ts`, which the directory run caught). Samplers, distributions
+  and metrics were all right: the quadrature, the scipy rows, the KL pairs and the 70 goodness-of-fit rows agreed at the first or second run; the surprises were
+  conventions (DSM-32: `random.vonMises` wraps to (-pi, pi], `variance` of a von Mises law is the circular variance). A first seed gave p = 2e-4 for
+  `beta(2, 3)` and `dirichlet` (the same gamma draws); twelve other seeds give p between 0.06 and 0.9, so seed 7 is used. Lesson for the next test of this kind: a
+  generic quadrature check needs a per-family tolerance only for heavy tails (inverse gamma, Pareto, Frechet, F and Student's t lose up to 3e-3 of the second moment to the last 1e-10 of the mass). Coverage:
+  see the P3.31 row. Surface 0 added, 0 removed, 0 changed. Own checks only; the full gate was not run.
