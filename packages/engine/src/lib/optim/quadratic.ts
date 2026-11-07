@@ -7,8 +7,18 @@
 import { MdmlError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
-import { type Dense, expectLength, matrixFrom, matVec, solveSpd, vectorFrom, vectorTensor } from './_programming.ts'
+import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
+import {
+  type Dense,
+  boundVectorFrom,
+  expectLength,
+  finiteVectorFrom,
+  matrixFrom,
+  matVec,
+  solveSpd,
+  vectorFrom,
+  vectorTensor,
+} from './_programming.ts'
 import { qpActiveSetAlgorithm } from './qp-active-set.ts'
 import { qpInteriorPointAlgorithm } from './qp-interior-point.ts'
 
@@ -79,6 +89,7 @@ export interface QpOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'
  * @param problem - The program.
  * @returns The arrays.
  * @throws MdmlError with code `shape` when the sizes disagree.
+ * @throws MdmlError with code `value` when q, h, b or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @example
  * ```ts
  * import { qpArrays } from 'mdml-engine/optim'
@@ -87,18 +98,18 @@ export interface QpOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'start'
  * ```
  */
 export function qpArrays(problem: QuadraticProgram): QpArrays {
-  const q = vectorFrom(problem.q)
+  const q = finiteVectorFrom(problem.q, 'q')
   const n = q.length
   const P = matrixFrom(problem.P, n, 'P')
   if (P.rows !== n) throw new MdmlError('shape', `P must be ${n} x ${n}`)
   const G = matrixFrom(problem.G, n, 'G')
-  const h = vectorFrom(problem.h)
+  const h = finiteVectorFrom(problem.h, 'h')
   expectLength(h, G.rows, 'h')
   const A = matrixFrom(problem.A, n, 'A')
-  const b = vectorFrom(problem.b)
+  const b = finiteVectorFrom(problem.b, 'b')
   expectLength(b, A.rows, 'b')
-  const lb = problem.lb === undefined ? new Float64Array(n).fill(-Infinity) : vectorFrom(problem.lb)
-  const ub = problem.ub === undefined ? new Float64Array(n).fill(Infinity) : vectorFrom(problem.ub)
+  const lb = problem.lb === undefined ? new Float64Array(n).fill(-Infinity) : boundVectorFrom(problem.lb, 'lb')
+  const ub = problem.ub === undefined ? new Float64Array(n).fill(Infinity) : boundVectorFrom(problem.ub, 'ub')
   expectLength(lb, n, 'lb')
   expectLength(ub, n, 'ub')
   const rows: number[][] = []
@@ -261,6 +272,10 @@ export interface QuadprogResult {
   readonly zUpper: Tensor
   readonly status: QpSolution['status']
   readonly success: boolean
+  /** `success` as a synonym of `converged` in the one vocabulary shared with the vector methods. */
+  readonly converged: boolean
+  /** The run in the one vocabulary (`optimal` is `converged`, a limit is `completed`, the rest `failed`): `runStatusOf(status)`. */
+  readonly runStatus: RunStatus
   readonly iterations: number
   /** Rows of G active at the solution. */
   readonly active: readonly number[]
@@ -274,6 +289,7 @@ export interface QuadprogResult {
  * @param problem - The program.
  * @param options - Method, tolerance, start, iteration cap and run options.
  * @returns The solution, its multipliers split by constraint type, the active rows and the KKT residuals.
+ * @throws MdmlError with code `value` when q, h, b or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @concept quadratic-programming
  * @index function Convex quadratic programming by active set or interior point.
  * @example
@@ -305,6 +321,8 @@ export function quadprog(problem: QuadraticProgram, options: QpOptions = {}): Qu
     zUpper: vectorTensor(zUpper),
     status: sol.status,
     success: sol.status === 'optimal',
+    converged: sol.status === 'optimal',
+    runStatus: runStatusOf(sol.status),
     iterations: sol.iterations,
     active: sol.active,
     kkt: kktResiduals(qp, sol.x, sol.y, sol.z),
@@ -340,6 +358,7 @@ const project = (x: ArrayLike<number>, lb: Float64Array, ub: Float64Array): Floa
  * @param ub - Upper bounds (Infinity allowed).
  * @param options - Tolerance (default 1e-10) and starting point (default the projection of 0).
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when q or P is NaN or infinite (bounds may be infinite, not NaN); or when lb exceeds ub.
  * @concept quadratic-programming
  * @reference D. P. Bertsekas, Projected Newton methods for optimization problems with simple constraints (1982).
  * @example
@@ -357,13 +376,16 @@ export function boxQpAlgorithm(
   ub: TensorLike,
   options: { readonly tol?: number; readonly x0?: ArrayLike<number> } = {},
 ): Algorithm<BoxQpState> {
-  const qv = vectorFrom(q)
+  const qv = finiteVectorFrom(q, 'q')
   const n = qv.length
   const pm = matrixFrom(P, n, 'P')
-  const lo = vectorFrom(lb)
-  const hi = vectorFrom(ub)
+  const lo = boundVectorFrom(lb, 'lb')
+  const hi = boundVectorFrom(ub, 'ub')
   expectLength(lo, n, 'lb')
   expectLength(hi, n, 'ub')
+  const conflict = lo.findIndex((l, j) => l > (hi[j] ?? Infinity))
+  if (conflict >= 0)
+    throw new MdmlError('value', `boxQp: lb[${conflict}] = ${lo[conflict]} exceeds ub[${conflict}] = ${hi[conflict]}`)
   const tol = options.tol ?? 1e-10
   const f = (x: Float64Array): { value: number; grad: Float64Array } => {
     const px = matVec(pm, x)
@@ -469,6 +491,8 @@ export interface BoxQpResult {
   readonly zUpper: Tensor
   readonly iterations: number
   readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
 }
 
 /**
@@ -480,6 +504,7 @@ export interface BoxQpResult {
  * @param ub - Upper bounds.
  * @param options - Tolerance, start, iteration cap (default 100 + 10 n) and run options.
  * @returns The solution and its bound multipliers.
+ * @throws MdmlError with code `value` when q or P is NaN or infinite (bounds may be infinite, not NaN); or when lb exceeds ub.
  * @concept quadratic-programming
  * @example
  * ```ts
@@ -517,5 +542,6 @@ export function boxQp(
     ),
     iterations: r.steps,
     converged: r.status === 'converged',
+    status: r.status,
   }
 }

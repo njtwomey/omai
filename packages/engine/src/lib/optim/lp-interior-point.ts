@@ -5,7 +5,7 @@
  */
 
 import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
-import type { Algorithm } from '../trace/index.ts'
+import { type Algorithm, runStatusOf } from '../trace/index.ts'
 import { LP_SCHEMA, lpConfig } from './_lp.ts'
 import { type Dense, matVec, solveSpd } from './_programming.ts'
 import {
@@ -279,7 +279,7 @@ export function lpInteriorPointAlgorithm(
       }
       return { ...next, solution: solutionOf(next, 'iteration limit'), finished: false }
     },
-    done: (s) => (s.finished ? (s.solution.status === 'optimal' ? 'converged' : 'failed') : undefined),
+    done: (s) => (s.finished ? runStatusOf(s.solution.status) : undefined),
     observe: (s) => {
       const last = s.path[s.path.length - 1]
       return {

@@ -7,8 +7,17 @@
 import { MdmlError } from '../base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, eigvalsh } from '../numerics/linalg/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
-import { type Dense, matrixFrom, matVec, solveDense, solveSpd, vectorFrom, vectorTensor } from './_programming.ts'
+import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
+import {
+  type Dense,
+  finiteVectorFrom,
+  matrixFrom,
+  matVec,
+  solveDense,
+  solveSpd,
+  vectorFrom,
+  vectorTensor,
+} from './_programming.ts'
 
 /** A second-order cone constraint |A x + b|_2 <= c^T x + d. */
 export interface SecondOrderCone {
@@ -51,21 +60,21 @@ interface Blocks {
 }
 
 function blocksOf(problem: ConicProgram): Blocks {
-  const c = vectorFrom(problem.c)
+  const c = finiteVectorFrom(problem.c, 'c')
   const n = c.length
   const G = matrixFrom(problem.G, n, 'G')
   const A = matrixFrom(problem.A, n, 'A')
   const soc = (problem.soc ?? []).map((k) => {
     const Ak = matrixFrom(k.A, n, 'soc A')
-    return { A: Ak, b: vectorFrom(k.b), c: vectorFrom(k.c), d: k.d }
+    return { A: Ak, b: finiteVectorFrom(k.b, 'soc b'), c: finiteVectorFrom(k.c, 'soc c'), d: k.d }
   })
   const lmi = (problem.lmi ?? []).map((l) => {
-    const F0 = vectorFrom(l.F0)
+    const F0 = finiteVectorFrom(l.F0, 'lmi F0')
     const p = Math.round(Math.sqrt(F0.length))
     if (l.F.length !== n) throw new MdmlError('shape', `each LMI needs one matrix per variable (${n})`)
-    return { p, F0, F: l.F.map((f) => vectorFrom(f)) }
+    return { p, F0, F: l.F.map((f) => finiteVectorFrom(f, 'lmi F')) }
   })
-  return { n, c, G, h: vectorFrom(problem.h), A, b: vectorFrom(problem.b), soc, lmi }
+  return { n, c, G, h: finiteVectorFrom(problem.h, 'h'), A, b: finiteVectorFrom(problem.b, 'b'), soc, lmi }
 }
 
 /** The barrier parameter: 1 per linear inequality, 2 per second-order cone, p per p x p LMI. */
@@ -431,7 +440,7 @@ export function conicBarrierAlgorithm(problem: ConicProgram, options: ConicOptio
         status: gap < tol ? 'optimal' : 'running',
       }
     },
-    done: (s) => (s.status === 'optimal' ? 'converged' : s.status === 'running' ? undefined : 'failed'),
+    done: (s) => (s.status === 'running' ? undefined : runStatusOf(s.status)),
     observe: (s) => ({
       metrics: {
         phase: s.phase,
@@ -451,6 +460,10 @@ export interface ConicResult {
   readonly fun: number
   readonly status: 'optimal' | 'infeasible' | 'unbounded' | 'iteration limit'
   readonly success: boolean
+  /** `success` as a synonym of `converged` in the one vocabulary shared with the vector methods. */
+  readonly converged: boolean
+  /** The run in the one vocabulary (`optimal` is `converged`, a limit is `completed`, the rest `failed`): `runStatusOf(status)`. */
+  readonly runStatus: RunStatus
   /** The duality gap bound at the end. */
   readonly gap: number
   readonly iterations: number
@@ -474,6 +487,7 @@ export interface ConicResult {
  * @param problem - The program.
  * @param options - Tolerance, mu, t0, iteration cap and run options.
  * @returns The solution, its status, gap and duals.
+ * @throws MdmlError with code `value` when the program data is NaN or infinite (bounds may be infinite, not NaN).
  * @concept conic-programming
  * @example
  * ```ts
@@ -496,6 +510,8 @@ export function conicProgram(problem: ConicProgram, options: ConicOptions = {}):
       fun: Number.NaN,
       status,
       success: false,
+      converged: false,
+      runStatus: runStatusOf(status),
       gap: s.gap,
       iterations: r.steps,
       duals: {
@@ -537,6 +553,8 @@ export function conicProgram(problem: ConicProgram, options: ConicOptions = {}):
     fun: s.status === 'unbounded' ? -Infinity : ddot(blocks.c, x),
     status,
     success: status === 'optimal',
+    converged: status === 'optimal',
+    runStatus: runStatusOf(status),
     gap: s.gap,
     iterations: r.steps,
     duals: { linear: vectorTensor(linear), soc, lmi, equality: vectorTensor(equality) },

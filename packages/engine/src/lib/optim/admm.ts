@@ -328,6 +328,7 @@ export type AdmmLassoOptions = AdmmRunOptions
  * @param lambda - The L1 weight.
  * @param options - Penalty, adaptation, relaxation, tolerances, iteration cap and run options.
  * @returns The result; `z` is the sparse solution.
+ * @throws MdmlError with code `value` when `lambda` is negative or not finite.
  * @concept admm
  * @example
  * ```ts
@@ -337,6 +338,8 @@ export type AdmmLassoOptions = AdmmRunOptions
  * ```
  */
 export function admmLasso(a: TensorLike, b: TensorLike, lambda: number, options: AdmmLassoOptions = {}): AdmmResult {
+  if (!(lambda >= 0) || !Number.isFinite(lambda))
+    throw new MdmlError('value', `admmLasso: lambda must be finite and non-negative, got ${lambda}`)
   const av = primalOf(asTensor(a))
   const n = av.shape[1] ?? 0
   const at = Float64Array.from(av.data)

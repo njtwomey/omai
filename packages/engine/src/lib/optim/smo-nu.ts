@@ -7,7 +7,7 @@
 import { MdmlError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
-import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
+import { finiteVectorFrom, matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
 import { nuSvcProblem, nuSvrProblem } from './_smo-problems.ts'
 import { TAU, updatePair } from './_smo-update.ts'
 import type { SmoOptions, SmoState, SvmDualResult } from './smo.ts'
@@ -150,6 +150,7 @@ export function nuRho(
  * @param problem - Q, p, labels, bound and feasible start.
  * @param options - Tolerance (default 1e-3).
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when p or Q is NaN or infinite (bounds may be infinite, not NaN).
  * @concept support-vector-machines
  * @reference C.-C. Chang and C.-J. Lin, Training nu-support vector classifiers: theory and algorithms (2001).
  * @example
@@ -164,7 +165,7 @@ export function nuRho(
  * ```
  */
 export function nuSmoAlgorithm(problem: SmoNuProblem, options: Pick<SmoOptions, 'tol'> = {}): Algorithm<SmoState> {
-  const p = vectorFrom(problem.p)
+  const p = finiteVectorFrom(problem.p, 'p')
   const n = p.length
   const Q = matrixFrom(problem.Q, n, 'Q').data
   const y = vectorFrom(problem.y)
@@ -359,6 +360,7 @@ export function nuSvcDual(kernel: TensorLike, labels: TensorLike, nu: number, op
     objective: objective / (margin * margin),
     iterations: s.iterations,
     converged: s.converged,
+    status: s.converged ? 'converged' : 'completed',
     support: Array.from(alpha).flatMap((v, i) => (v > 0 ? [i] : [])),
   }
 }
@@ -409,6 +411,7 @@ export function nuSvrDual(
     objective,
     iterations: s.iterations,
     converged: s.converged,
+    status: s.converged ? 'converged' : 'completed',
     support: Array.from(s.alpha).flatMap((v, i) => (v > 0 ? [i] : [])),
   }
 }

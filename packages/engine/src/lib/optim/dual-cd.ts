@@ -11,7 +11,7 @@
 import { type Json, MdmlError } from '../base/index.ts'
 import { type Key, key as makeKey, permutation } from '../random/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
-import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
+import { type Algorithm, channels, type RunStatus, runAlgorithm } from '../trace/index.ts'
 
 /** The loss on the margin violation: the hinge (L1) or its square (L2). */
 export type DualCdLoss = 'l1' | 'l2'
@@ -304,6 +304,8 @@ export interface DualCdResult {
   readonly gap: number
   readonly sweeps: number
   readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
 }
 
 /**
@@ -346,5 +348,6 @@ export function linearSvmDualCd(
     gap: s.primal - s.dual,
     sweeps: s.sweep,
     converged: s.converged,
+    status: r.status,
   }
 }

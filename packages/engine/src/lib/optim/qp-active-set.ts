@@ -5,7 +5,7 @@
  */
 
 import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
-import { type Algorithm, channels } from '../trace/index.ts'
+import { type Algorithm, channels, runStatusOf } from '../trace/index.ts'
 import { matVec, quadraticValue, solveDense } from './_programming.ts'
 import { linprogSimplex } from './linear-programming.ts'
 import type { QpArrays, QpOptions, QpSolution } from './quadratic.ts'
@@ -259,7 +259,7 @@ export function qpActiveSetAlgorithm(qp: QpArrays, options: QpOptions = {}): Alg
         solution: solutionOf(x, working, undefined, 'iteration limit', iterations),
       }
     },
-    done: (s) => (s.finished ? (s.solution.status === 'optimal' ? 'converged' : 'failed') : undefined),
+    done: (s) => (s.finished ? runStatusOf(s.solution.status) : undefined),
     observe: (s) => ({
       metrics: {
         objective: s.solution.fun,

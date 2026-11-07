@@ -7,8 +7,16 @@
 
 import { MdmlError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
-import { type Algorithm, channels, type RunOptions, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
-import { matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
+import {
+  type Algorithm,
+  channels,
+  type RunOptions,
+  type RunStatus,
+  runAlgorithm,
+  stateFromJson,
+  stateToJson,
+} from '../trace/index.ts'
+import { finiteVectorFrom, matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
 import { oneClassProblem, svcProblem, svddProblem, svrProblem } from './_smo-problems.ts'
 import { TAU, updatePair } from './_smo-update.ts'
 
@@ -75,6 +83,8 @@ export interface SmoResult {
   readonly objective: number
   readonly iterations: number
   readonly converged: boolean
+  /** How the run ended in the one vocabulary: `converged`, or `completed` when the iteration cap was reached. */
+  readonly status: RunStatus
   /** Indices with alpha > 0. */
   readonly support: readonly number[]
 }
@@ -90,6 +100,7 @@ export interface SmoResult {
  * @param problem - Q, p, labels, bounds and start.
  * @param options - Tolerance, selection rule and shrinking.
  * @returns The algorithm.
+ * @throws MdmlError with code `value` when p or Q is NaN or infinite (bounds may be infinite, not NaN).
  * @concept support-vector-machines
  * @reference R.-E. Fan, P.-H. Chen and C.-J. Lin, Working set selection using second order information for training
  * support vector machines (2005).
@@ -102,7 +113,7 @@ export interface SmoResult {
  * ```
  */
 export function smoAlgorithm(problem: SmoProblem, options: SmoOptions = {}): Algorithm<SmoState> {
-  const p = vectorFrom(problem.p)
+  const p = finiteVectorFrom(problem.p, 'p')
   const n = p.length
   const Q = matrixFrom(problem.Q, n, 'Q').data
   const y = vectorFrom(problem.y)
@@ -357,6 +368,7 @@ export function smo(problem: SmoProblem, options: SmoOptions = {}): SmoResult {
     objective,
     iterations: s.iterations,
     converged: r.status === 'converged',
+    status: r.status,
     support: Array.from(s.alpha).flatMap((v, i) => (v > 0 ? [i] : [])),
   }
 }
