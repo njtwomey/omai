@@ -109,3 +109,7 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   which emptied it: it held only the 29 numerics rows for four commits (`ec417d99` to `13c951bf`). Restored from the last good
   version (`e5a67a61`, 74 rows) plus the numerics rows. Nothing else used that pattern: the progress, log and gates files were
   checked.
+- **11:20 Sequencing.** The maintainer asked why Phase 3 fixes ran while Phase 1 readings were still planned. Honest answer: the
+  first fixes came from the Phase 0 scans and did not depend on the readings, and the readers are light while the fixers are heavy, so
+  I paired them; but it departed from the plan (the synthesis comes before the fixes) and the foundations reader saw files change under it.
+  Decision D-013: finish the readings first, then the synthesis, then fixes.
