@@ -23,6 +23,7 @@ import {
   type Viewport,
   zoomViewport,
 } from '../../views/zoom.ts'
+import { saveBlob } from '../_download.ts'
 import { FigureFrame, type FrameSize } from '../FigureFrame.tsx'
 import { useColourMode, useTokens } from '../theme.tsx'
 import type { Panel } from './layout.ts'
@@ -131,11 +132,7 @@ export function ZoomPanel(props: {
       exportFormats={['png']}
       onExport={(_, frame) => {
         frame.querySelector('canvas')?.toBlob((b) => {
-          if (b === null) return
-          const a = document.createElement('a')
-          a.href = URL.createObjectURL(b)
-          a.download = `${props.filename}.png`
-          a.click()
+          if (b !== null) saveBlob(b, 'image/png', `${props.filename}.png`)
         })
       }}
       caption={

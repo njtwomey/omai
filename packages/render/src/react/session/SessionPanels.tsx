@@ -18,6 +18,7 @@ import { type PointSet, points } from '../../charts/points.ts'
 import { categoricalColour } from '../../theme/palettes.ts'
 import { parameterTrajectories, stepPositions } from '../../trace/tensors.ts'
 import { type MatrixMark, matrixMarksView } from '../../views/matrix-marks.ts'
+import { saveBlob } from '../_download.ts'
 import { Chart } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
@@ -709,12 +710,7 @@ function ProbeView(
       title={title}
       filename={filename}
       exportFormats={['json']}
-      onExport={() => {
-        const a = document.createElement('a')
-        a.href = URL.createObjectURL(new Blob([text ?? ''], { type: 'application/json' }))
-        a.download = `${filename}.json`
-        a.click()
-      }}
+      onExport={() => saveBlob(text ?? '', 'application/json', `${filename}.json`)}
       {...(probed.error === undefined ? {} : { caption: <Note>unavailable: {probed.error}</Note> })}
     >
       <pre className="h-full overflow-auto p-2 font-mono text-xs">{text}</pre>

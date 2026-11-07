@@ -23,6 +23,7 @@ import { texToHtml } from '../maths/tex.ts'
 import { chartToSvg, composeSvg, type FigurePart, svgDataUrl, svgToPixels, svgToPng } from '../svg/export.ts'
 import { escapeXml } from '../svg/svg.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
+import { nextPaint, saveBlob, saveUrl } from './_download.ts'
 import { loadEcharts } from './echarts.ts'
 import { useColourMode } from './theme.tsx'
 
@@ -116,18 +117,6 @@ function Icon(props: { readonly path: string }): ReactElement {
   )
 }
 
-function download(url: string, name: string): void {
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
-}
-
-const nextPaint = (): Promise<void> =>
-  new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 20)))
-  })
-
 /** Every frame of a playing figure as pixels: seek, wait for the figure to draw, rasterise its SVG; then seek back. */
 async function recordFrames(
   root: HTMLElement,
@@ -144,7 +133,7 @@ async function recordFrames(
   try {
     for (let i = 0; i < Math.min(playback.count, 600); i++) {
       playback.seek(i)
-      await nextPaint()
+      await nextPaint(20)
       const svg = figureSvg(root, options)
       if (svg === undefined) break
       // Some browsers refuse to read back a canvas drawn from HTML in an SVG; then the frame goes without overlays.
@@ -298,11 +287,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
               format === 'gif'
                 ? encodeGif(frames, { fps: playback.fps })
                 : await encodeWebm(frames, { fps: playback.fps })
-            const url = URL.createObjectURL(
-              new Blob([bytes as Uint8Array<ArrayBuffer>], { type: format === 'gif' ? 'image/gif' : 'video/webm' }),
-            )
-            download(url, name)
-            setTimeout(() => URL.revokeObjectURL(url), 10_000)
+            saveBlob(bytes as Uint8Array<ArrayBuffer>, format === 'gif' ? 'image/gif' : 'video/webm', name)
           })
           .catch(() => undefined)
           .finally(() => setBusy(null))
@@ -312,7 +297,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       const svg = figureSvg(root, { background: t.bg, mode })
       if (svg === undefined) return
       if (format === 'svg') {
-        download(svgDataUrl(svg), name)
+        saveUrl(svgDataUrl(svg), name)
         return
       }
       const [width, height] = [root.offsetWidth, root.offsetHeight]
@@ -322,7 +307,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
           const plain = figureSvg(root, { background: t.bg, mode, overlays: false }) ?? svg
           return svgToPng(plain, width, height, { background: t.bg })
         })
-        .then((url) => download(url, name))
+        .then((url) => saveUrl(url, name))
         .catch(() => undefined)
     },
     [expanded, props.onExport, props.filename, t.bg, mode, playback, busy],

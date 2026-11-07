@@ -6,7 +6,7 @@
  * element it is given.
  */
 
-import { type ReactElement, type RefObject, useRef, useState } from 'react'
+import { type ReactElement, type RefObject, useEffect, useRef, useState } from 'react'
 import { encodeGif } from '../../animation/gif.ts'
 import { canEncodeVideo, encodeWebm } from '../../animation/video.ts'
 import type { MethodRegistry } from '../../producer/registry.ts'
@@ -14,6 +14,7 @@ import { canProbeAsync } from '../../producer/remote.ts'
 import { parseTape, type TapeFile, tapeOf } from '../../producer/tape.ts'
 import { svgDataUrl, svgToPixels, svgToPng } from '../../svg/export.ts'
 import { type ColourMode, tokens } from '../../theme/tokens.ts'
+import { nextPaint, saveBlob, saveUrl } from '../_download.ts'
 import { cx, iconButtonClass, menuClass, menuItemClass } from '../controls/classes.ts'
 import { Popover } from '../controls/Popover.tsx'
 import { figureSvg } from '../FigureFrame.tsx'
@@ -48,24 +49,6 @@ export interface SessionExportProps {
 
 /** The most frames of a recording. */
 const MAX_FRAMES = 200
-
-const nextPaint = (): Promise<void> =>
-  new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 30)))
-  })
-
-function download(url: string, name: string): void {
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
-}
-
-function downloadBlob(bytes: BlobPart, type: string, name: string): void {
-  const url = URL.createObjectURL(new Blob([bytes], { type }))
-  download(url, name)
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
-}
 
 // The page as it stands: the figures in the root, framed by the title and caption. `undefined` when nothing to export.
 function capture(
@@ -105,6 +88,14 @@ export function SessionExport(props: SessionExportProps): ReactElement {
     ...(props.caption === undefined ? {} : { caption: props.caption }),
   }
   const requests = props.layout === undefined ? [] : probeRequestsOf(props.layout)
+  // A recording stops when the menu goes (it would go on moving the page's cursor for up to 200 frames).
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
 
   const still = (format: 'png' | 'svg'): void => {
     const el = root.current
@@ -116,27 +107,31 @@ export function SessionExport(props: SessionExportProps): ReactElement {
     }
     setOpen(false)
     if (format === 'svg') {
-      download(svgDataUrl(page.svg), `${name}.svg`)
+      saveUrl(svgDataUrl(page.svg), `${name}.svg`)
       return
     }
     svgToPng(page.svg, page.width, page.height, { background: tokens(mode).bg })
-      .then((url) => download(url, `${name}.png`))
+      .then((url) => saveUrl(url, `${name}.png`))
       .catch(() => setNote('the browser could not rasterise the page'))
   }
 
-  // A recording seeks the cursor through the steps and rasterises the page at each. Sessions in a worker are asked for
-  // the step's probes first, so the page draws complete when it is captured.
+  // A recording seeks the cursor through the steps and rasterises the page at each. Playback is paused for the
+  // recording (the player's clock would move the cursor between the recorder's steps) and resumed after if it played.
+  // Sessions in a worker are asked for the step's probes first, so the page draws complete when it is captured.
   const record = async (format: 'gif' | 'webm'): Promise<void> => {
     const el = root.current
     if (el === null || busy !== null) return
     const steps = framesBetween(from, last, MAX_FRAMES)
     const previous = at
+    const wasPlaying = live.playing
+    live.pause()
     setOpen(false)
     setNote(null)
     try {
       const bg = tokens(mode).bg
       const pixels = []
       for (const [i, step] of steps.entries()) {
+        if (!mounted.current) return
         setBusy(`recording ${i + 1} / ${steps.length}`)
         await Promise.all(
           variantsOf(live).flatMap((v) => {
@@ -147,21 +142,27 @@ export function SessionExport(props: SessionExportProps): ReactElement {
               .map((r) => s.probeAsync(step, r.path, r.args).catch(() => undefined))
           }),
         )
+        if (!mounted.current) return
         onScrub(step)
         await nextPaint()
+        if (!mounted.current) return
         const page = capture(el, mode, frame)
         if (page === undefined) break
         pixels.push(await svgToPixels(page.svg, page.width, page.height, { background: bg }))
       }
+      if (!mounted.current) return
       setBusy('encoding')
       const fps = Math.min(30, Math.max(4, Math.round(steps.length / 6)))
-      if (format === 'gif') downloadBlob(encodeGif(pixels, { fps }) as BlobPart, 'image/gif', `${name}.gif`)
-      else downloadBlob((await encodeWebm(pixels, { fps })) as BlobPart, 'video/webm', `${name}.webm`)
+      if (format === 'gif') saveBlob(encodeGif(pixels, { fps }) as BlobPart, 'image/gif', `${name}.gif`)
+      else saveBlob((await encodeWebm(pixels, { fps })) as BlobPart, 'video/webm', `${name}.webm`)
     } catch (e) {
       setNote(e instanceof Error ? e.message : String(e))
     } finally {
-      onScrub(previous)
-      setBusy(null)
+      if (mounted.current) {
+        onScrub(previous)
+        setBusy(null)
+        if (wasPlaying) live.play()
+      }
     }
   }
 
@@ -179,7 +180,7 @@ export function SessionExport(props: SessionExportProps): ReactElement {
         ...(props.title === undefined ? {} : { title: props.title }),
         ...(props.layout === undefined ? {} : { layout: props.layout as never }),
       })
-      downloadBlob(JSON.stringify(file), 'application/json', `${name}.tape.json`)
+      saveBlob(JSON.stringify(file), 'application/json', `${name}.tape.json`)
     } catch (e) {
       setNote(e instanceof Error ? e.message : String(e))
     } finally {
