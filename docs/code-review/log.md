@@ -314,3 +314,24 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   is `2 ** 1074` = Infinity when the largest right-hand side is a denormal, so the program was declared infeasible (the nucleolus of that game threw). `unitScale`
   now clamps the exponent to +-1000; a row with a right-hand side of 5e-324 joins the new-units test and fails without the fix. Lesson: a failure the agent
   called a flake was a counterexample from a property test with a random seed, and those are the cheapest regression finders we have; check them against older commits before calling them load.
+- **17:10 Wave C, the remaining duplicate clusters (P3.4, P3.17, P3.22, P3.24, P3.25, P3.28), `agent-dd02-clusters`, ten commits, not merged, not pushed.**
+  **Option tables (F-008, ND-15):** `option()` x3, `knobsOf` x5 and the inline merge of `defaults(space)` with the configuration in about twenty more `*-options.ts`
+  files were one builder: `space/tables.ts` now has `fillKnobs` (the whole record), `readKnobs` (a reader by name), `knobOption` and `plainOption` (an `Option`
+  from its description, properties, space and a build over the knobs) and the `Knobs` type; 30 files use them and `graph/_options.ts` is deleted. **Coercions
+  (F-007, F-035):** reading the 25 `rowsOf`/`toRows`/`rows`/`asRows` showed three families, not one: a flat row-major array to rows (merged into `base` `toRows`:
+  six copies plus six tensor-to-rows helpers), the validating readers each with its own message (`learn/validation.matrixView`, `optim/assignment.matrixOf`...,
+  left: F-041a) and two renamed aliases (`kernels/expansion.rowsOf`, `explain/evaluation.rowsOf`, removed). `recordOf` in render (x3, and `asRecord` beside them)
+  and the same coercion in `space`, `optim/solvers`, `learn/density-ratio`, `nn/additive` are one `asModeConfig` in `space`, so render adds no export;
+  `optim/solvers.filled` was `completeOption`. **Complex (F-038, ND-18):** `Complex` moved to `base/vectors.ts` next to `Vec2` and `base/complex.ts` holds `cadd`,
+  `csub`, `cmul`, `cdiv`, `cabs`, `cexp`, `clog`; `polynomial/rational`, `symbolic/_numeric`, `special/_misc` (which used a private `{ re, im }`), `filterbanks` and
+  `differentiate.complexOps` (object form kept, built on the pairs) use them; the `exposition` imports of `symbolic` and `numerics` are gone. **Dense matvec (ND-17):**
+  three hand-written loops are `dgemv` (same summation order). **`kmeansCodebook` (ND-16):** nothing to merge: `lloydAlgorithm` already takes each step from it, so the
+  Lloyd loop exists once; the Algorithm wrappers for it, `sqrtm`, `signm` are new exports and stay a question. **Line search (OL-11):** `LineSearchResult.warning`;
+  only `moreThuente` produced the messages the two regexes matched. **TSDoc (ND-24):** 22 exports done, the examples run. ND-25 (typing `special` by arity) tried and
+  dropped: overloads make five self-referencing partials circular (TS7022). **P3.25 triage:** merged `argmaxRow` x3, `factorial` x4 and `gcd` x4 (`factorialOf` is checked
+  against the loop on 11 inputs), `num` x3, `positive` x2, `allFinite` x2, the stable `sigmoid` x4 (the three naive sigmoids differ in the last bits and stay); left
+  as non-duplicates (F-041a to F-041f): `paramsOf`, `verbsOf`, `prepare`, `isZero`, `mean`, `seriesOf`, `safeDivide`, the metric `spec` builders (a factory would do;
+  `metrics` belongs to the NaN-rule work), `vectorTensor` (needs a `tensor` export); F-039 stays open with its question. Own checks only (the full gate was not run):
+  tsc for engine and render, 1,059 engine test files of the 31 domains touched (18,240 tests: two timeouts of 5 s under a load average of 30 to 50, both pass alone;
+  the files that changed during the run were run again), render 87 files, 535 `@example`s of the changed files, barrels, layers, lint, agent index and surface. Tests added: 4 `it`.
+  Surface: 21 added, 1 removed (`exposition#Complex`, still re-exported by `exposition`), 1 changed (`LineSearchResult`).

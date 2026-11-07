@@ -1,7 +1,7 @@
 mdml-engine/agents	384	0b30622a3c4b
 mdml-engine/anomaly	72	a3d09895de23
 mdml-engine/autodiff	54	33e9f058f38c
-mdml-engine/base	66	790541d8f286
+mdml-engine/base	80	e381bc2db98a
 mdml-engine/causal	145	0c687dfea6fd
 mdml-engine/cluster	148	4fd55ef970d4
 mdml-engine/context	11	7e772f190eba
@@ -27,7 +27,7 @@ mdml-engine/embedding	49	ec43d33cc087
 mdml-engine/ensembles	95	69aac78dde10
 mdml-engine/environments	260	4a13bca80610
 mdml-engine/explain	337	1ab81fbc459b
-mdml-engine/exposition	241	1d3e89cdc541
+mdml-engine/exposition	240	f6d05bb83c5f
 mdml-engine/fairness	201	0ec84c5d89ac
 mdml-engine/fields	117	6f3578c5e577
 mdml-engine/foundations	360	c71944da508a
@@ -65,7 +65,7 @@ mdml-engine/numerics/roots	55	5a9309ee78ae
 mdml-engine/numerics/sparse	72	2d8e9f0befde
 mdml-engine/numerics/spatial	45	2d1f523c78a3
 mdml-engine/numerics/special	77	7e725fa94aed
-mdml-engine/optim	788	9d830592b434
+mdml-engine/optim	789	d75efd5b2d24
 mdml-engine/patterns	63	0b5726ab1f1c
 mdml-engine/pgm	370	eaa0b419761b
 mdml-engine/pgm/causal	59	eef13c834f1f
@@ -82,7 +82,7 @@ mdml-engine/signal	374	38f6a3211d5a
 mdml-engine/signal/audio	86	1a4a68259aeb
 mdml-engine/signal/image	103	c4af8b3c017e
 mdml-engine/sketches	105	ff5b4079c6f6
-mdml-engine/space	46	d66934703589
+mdml-engine/space	52	2d1bcd52100f
 mdml-engine/stats	270	194dd3a3bd24
 mdml-engine/stats/smoothing	44	8bd769dc4e6a
 mdml-engine/stats/tests	168	7284d88ec4b4
@@ -119,4 +119,4 @@ mdml-render/svg	18	c59c7bb2b758
 mdml-render/theme	45	eadfffb63be6
 mdml-render/trace	21	e66ba0549538
 mdml-render/views	266	4098b1b0dc40
-total	17922	8bf712746c3c
+total	17942	96526afd9700
