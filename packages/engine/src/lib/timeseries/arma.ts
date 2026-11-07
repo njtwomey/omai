@@ -98,8 +98,9 @@ export function isInvertible(ma: ArrayLike<number>): boolean {
 function rootsOutside(poly: number[]): boolean {
   // A vanishing top coefficient puts a root beyond any radius of interest (and ill-conditions the companion matrix).
   while (poly.length > 1 && Math.abs(poly[poly.length - 1] ?? 0) < 1e-12) poly.pop()
-  const { re, im } = polyroots(poly)
-  return re.every((x, i) => Math.hypot(x, im[i] ?? 0) > 1 + 1e-12)
+  const roots = polyroots(poly)
+  const im = toFlat(roots.im)
+  return toFlat(roots.re).every((x, i) => Math.hypot(x, im[i] ?? 0) > 1 + 1e-12)
 }
 
 /**

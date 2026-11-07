@@ -5,6 +5,7 @@
  */
 import { MdmlError } from '../base/index.ts'
 import { polymul } from '../numerics/polynomial/index.ts'
+import { toFlat } from '../tensor/index.ts'
 import { constrainStationary } from './_params.ts'
 import { difference, differencePolynomial } from './differencing.ts'
 import { armaForm, filterForm } from './state-space.ts'
@@ -130,9 +131,9 @@ export function expandPolynomials(
     return poly
   }
   let arPoly = [1, ...ar.map((v) => -v)]
-  if (sar.length > 0) arPoly = polymul(arPoly, seasonalPoly(sar, -1))
+  if (sar.length > 0) arPoly = toFlat(polymul(arPoly, seasonalPoly(sar, -1)))
   let maPoly = [1, ...ma]
-  if (sma.length > 0) maPoly = polymul(maPoly, seasonalPoly(sma, 1))
+  if (sma.length > 0) maPoly = toFlat(polymul(maPoly, seasonalPoly(sma, 1)))
   return { ar: arPoly.slice(1).map((v) => -v), ma: maPoly.slice(1) }
 }
 

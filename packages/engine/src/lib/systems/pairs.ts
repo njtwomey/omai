@@ -4,8 +4,7 @@
  * response is the time function, so the tables can be checked by simulation.
  */
 
-import { polymul } from '../numerics/polynomial/index.ts'
-import { choose, factorial } from './_shared.ts'
+import { choose, factorial, polyMulHf } from './_shared.ts'
 import { type TransferFunction, tf } from './representations.ts'
 
 // Laplace and z-transform pairs as data: each pair has its time function, its rational transform and both written
@@ -34,7 +33,7 @@ const p = <T extends Record<string, number>>(params: Readonly<Record<string, num
 /** A factor raised to a power (highest first). */
 function powerOf(base: readonly number[], k: number): number[] {
   let out = [1]
-  for (let i = 0; i < k; i++) out = polymul(out, base)
+  for (let i = 0; i < k; i++) out = polyMulHf(out, base)
   return out
 }
 

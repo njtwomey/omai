@@ -1,7 +1,15 @@
 // Shared plumbing for the systems domain: number views of values, complex lists and highest-first polynomials.
 import { MdmlError, toRows } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
-import { type ComplexArray, polyadd, polyFromRoots, polyroots, polytrim } from '../numerics/polynomial/index.ts'
+import {
+  type ComplexArray,
+  polyadd,
+  polyder,
+  polyFromRoots,
+  polymul,
+  polyroots,
+  polytrim,
+} from '../numerics/polynomial/index.ts'
 import { binom, factorial as factorialOf } from '../numerics/special/index.ts'
 import { item, primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
@@ -52,7 +60,8 @@ export function rootsOf(c: readonly number[]): ComplexArray {
     p.pop()
     atZero++
   }
-  const r = polyroots(p.reverse())
+  const found = polyroots(p.reverse())
+  const r = { re: toFlat(found.re), im: toFlat(found.im) }
   if (atZero === 0) return r
   const pairs = [
     ...r.re.map((re, i) => [re, r.im[i] ?? 0] as const),
@@ -64,7 +73,7 @@ export function rootsOf(c: readonly number[]): ComplexArray {
 
 /** The monic highest-first polynomial with the given roots (numpy.poly); real when the roots come in conjugate pairs. */
 export function polyOf(roots: ComplexArray): number[] {
-  return polyFromRoots(roots).reverse()
+  return toFlat(polyFromRoots(roots)).reverse()
 }
 
 /** Evaluate a highest-first real polynomial at a complex point (Horner). */
@@ -76,12 +85,22 @@ export function evalAt(c: readonly number[], z: ComplexNumber): ComplexNumber {
 
 /** Strip leading zeros (keeping at least one coefficient): numpy.polynomial's polytrim on the reversed list. */
 export function trimLeading(c: readonly number[], tol = 0): number[] {
-  return polytrim([...c].reverse(), tol).reverse()
+  return toFlat(polytrim([...c].reverse(), tol)).reverse()
 }
 
 /** Add highest-first polynomials (right-aligned): polyadd on the reversed lists. */
 export function polyAddHf(a: readonly number[], b: readonly number[]): number[] {
-  return polyadd([...a].reverse(), [...b].reverse()).reverse()
+  return toFlat(polyadd([...a].reverse(), [...b].reverse())).reverse()
+}
+
+/** Multiply highest-first polynomials (the convolution is the same in either order). */
+export function polyMulHf(a: readonly number[], b: readonly number[]): number[] {
+  return toFlat(polymul(a, b))
+}
+
+/** The derivative of a highest-first polynomial: polyder on the reversed list. */
+export function polyDerHf(c: readonly number[]): number[] {
+  return toFlat(polyder([...c].reverse())).reverse()
 }
 
 /** The sample time shared by systems being combined: equal, or one of them continuous-agnostic is an error. */

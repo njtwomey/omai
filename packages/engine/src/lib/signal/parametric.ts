@@ -397,8 +397,8 @@ export function prony(x: TensorLike, p: number, fs = 1): PronyResult {
   const coef = toFlat(lstsq(constant(a, [rows, p]), constant(b)))
   // The characteristic polynomial z^p + a_1 z^(p-1) + ... + a_p, lowest degree first.
   const roots = polyroots([...[...coef].reverse(), 1])
-  const zr = roots.re
-  const zi = roots.im
+  const zr = toFlat(roots.re)
+  const zi = toFlat(roots.im)
   // Amplitudes: the complex Vandermonde system as a real least-squares problem of twice the size.
   const vr = new Float64Array(2 * n * 2 * p)
   for (let k = 0; k < n; k++) {

@@ -5,7 +5,7 @@
  */
 
 import { type Complex, cabs, cadd, cdiv, cmul, csub, MdmlError } from '../../base/index.ts'
-import { polydiv, polyroots } from './power.ts'
+import { divKernel, rootsKernel } from './_power.ts'
 
 // Rational functions follow scipy.signal: coefficients highest degree first (in s for residue, in z^-1 for residuez).
 
@@ -134,11 +134,11 @@ export function residue(b: readonly number[], a: readonly number[], tol = 1e-3):
   let numerator = bt
   let direct: number[] = []
   if (bt.length >= at.length) {
-    const { quotient, remainder } = polydiv([...bt].reverse(), [...at].reverse())
+    const { quotient, remainder } = divKernel([...bt].reverse(), [...at].reverse())
     direct = quotient.reverse()
     numerator = remainder.reverse()
   }
-  const roots = polyroots([...at].reverse())
+  const roots = rootsKernel([...at].reverse())
   const poles: Complex[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
   const { unique, multiplicity } = groupPoles(poles, tol)
   const lead = at[0] as number
@@ -175,12 +175,12 @@ export function residuez(b: readonly number[], a: readonly number[], tol = 1e-3)
   let numerator = bt
   let direct: number[] = []
   if (bt.length >= at.length) {
-    const { quotient, remainder } = polydiv(bt, at)
+    const { quotient, remainder } = divKernel(bt, at)
     direct = quotient
     numerator = remainder
   }
   // Poles in z are the roots of a_0 z^N + a_1 z^(N-1) + ... + a_N.
-  const roots = polyroots([...at].reverse())
+  const roots = rootsKernel([...at].reverse())
   const poles: Complex[] = roots.re.map((r, i) => [r, roots.im[i] ?? 0])
   const { unique, multiplicity } = groupPoles(poles, tol)
   // In w the poles are 1 / p; a(w) = a_N prod (w - 1/p).
