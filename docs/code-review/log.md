@@ -598,3 +598,5 @@ Dated notes, newest at the bottom: decisions, noteworthy things found, gotchas. 
   barrels, layers, lint, agent index, surface. Tests added: 8 `it` (one table per family: `landscape`, `multiobjective`,
   `online-experts`, `glm`, `bounded-solvers`, `quadratic`, `analytic`, and one new file `tensor-inputs.test.ts` for the option
   vectors). Surface: 0 added, 0 removed, 38 changed.
+- **20:30 Gate.** The dists, stats and metrics contract tests (P3.31, FD-33) and native-array stage 4 (`optim`, `losses`) passed the full local gate: 26,510 tests, 9,613 examples,
+  all static checks and all six tsc runs, first run. 223 commits ahead of `origin/main`; nothing pushed (D-014).
