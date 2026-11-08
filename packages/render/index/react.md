@@ -19,7 +19,7 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `ThemeProvider`: React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>` `src/react/theme.tsx:64` `omai-render/react`
 - function `ThresholdExplorer`: React component: drag a threshold across ROC, cost and table: `<ThresholdExplorer yTrue={y} scores={s} />` `src/react/ThresholdExplorer.tsx:98` `omai-render/react`
 - function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:76` `omai-render/react`
-- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:308` `omai-render/react`
+- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:324` `omai-render/react`
 - function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:108` `omai-render/react`
 - function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:173` `omai-render/react`
 
@@ -41,7 +41,7 @@ Form controls for figures and demos, in plain React and Tailwind over the `--wb-
 - function `ModelSelector`: React component: choose a union option and its knobs: `<ModelSelector space={union} value={v} onChange={setV} />` `src/react/controls/ModelSelector.tsx:41` `omai-render/react`
 - function `NumberField`: React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />` `src/react/controls/NumberField.tsx:55` `omai-render/react`
 - function `PopoverContainer`: React component: draw popups of the controls inside a given element: `<PopoverContainer container={el}>` `src/react/controls/Popover.tsx:33` `omai-render/react`
-- function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:41` `omai-render/react`
+- function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:43` `omai-render/react`
 - function `SettingsButton`: React component: a gear opening a modal applied only on confirm: `<SettingsButton value={v} onApply={setV}>...</SettingsButton>` `src/react/controls/SettingsButton.tsx:57` `omai-render/react`
 - function `SlotVariants`: React component: choose slot options to compare: `<SlotVariants space={union} knobs={k} onChange={setK} />` `src/react/controls/SlotVariants.tsx:58` `omai-render/react`
 - function `SpaceControls`: React component: controls generated from an engine Space: `<SpaceControls space={space} value={v} onChange={setV} />` `src/react/controls/SpaceControls.tsx:51` `omai-render/react`

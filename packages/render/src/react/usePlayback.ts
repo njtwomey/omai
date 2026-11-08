@@ -194,8 +194,24 @@ function kept<S>(algorithm: Algorithm<S>, item: Item<S>): Item<S> {
 export interface LiveRunOptions extends PlaybackOptions {
   readonly maxSteps: number
   readonly seed?: number
-  /** Algorithm steps per frame while playing (default 1); every state is kept, so stepping back moves one step. */
-  readonly stepsPerFrame?: number
+  /**
+   * Algorithm steps per frame while playing (default 1); every state is kept, so stepping back moves one step. `'auto'`
+   * times the steps as they run and takes as many per frame as fit in `frameBudgetMs` (at least 1, at most
+   * `maxStepsPerFrame`), so a cheap algorithm plays fast and a dear one does not stall the page.
+   */
+  readonly stepsPerFrame?: number | 'auto'
+  /** The milliseconds of a frame the steps may take under `stepsPerFrame: 'auto'` (default 8). */
+  readonly frameBudgetMs?: number
+  /** The most steps per frame under `'auto'` (default 16). */
+  readonly maxStepsPerFrame?: number
+  /**
+   * The longest a single tick may spend computing steps to catch up after a slow frame, in milliseconds (default 40).
+   * The clock is behind after a long frame and runs the frames it owes at once; without a bound a dear step turns one
+   * long frame into a freeze of half a second as the debt is paid back. Past the bound the rest of the debt is dropped
+   * (the animation runs a little slow rather than freezing). Steps already computed (a cursor moving through the
+   * kept states) cost nothing and are not counted.
+   */
+  readonly catchUpMs?: number
   /**
    * The most states kept for stepping back and scrubbing (default 2000), in a ring buffer: past it the oldest are
    * dropped, stepping back stops at the oldest kept (`oldest`), and the controller's frames count from there. A run
@@ -306,7 +322,17 @@ export interface LiveRun<S> {
  * @index function React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })`
  */
 export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions): LiveRun<S> {
-  const { maxSteps, seed = 0, stepsPerFrame = 1, history = 2000, start = 'play', active = true } = options
+  const {
+    maxSteps,
+    seed = 0,
+    stepsPerFrame = 1,
+    frameBudgetMs = 8,
+    maxStepsPerFrame = 16,
+    catchUpMs = 40,
+    history = 2000,
+    start = 'play',
+    active = true,
+  } = options
   const prime = start !== 'play'
   const capacity = prime ? Math.max(history, maxSteps + 1) : history
   const make = useCallback(() => {
@@ -388,19 +414,35 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const abs = Math.min(Math.max(cursor, dropped), dropped + count - 1)
   const shown = abs - dropped
   /** Move forward `frames` frames from the latest position (whatever the playing flag says). */
+  // The steps per frame under 'auto': from the measured cost of a step (a moving average), held to 1..maxStepsPerFrame.
+  const stepCost = useRef(0)
+  const autoSteps = useRef(1)
+  const perFrame = (): number => (stepsPerFrame === 'auto' ? autoSteps.current : stepsPerFrame)
   const advance = (frames: number): void => {
     // A frame queued before `dispose` finds no run: there is nothing to move through.
     if (run.current === null || disposed.current) return
     const live = run.current.states
     let to = clamped(live)
+    let spent = 0
     for (let k = 0; k < frames; k++) {
       if (to < live.dropped + live.length - 1) to++
-      else if (extend(stepsPerFrame) > 0) {
-        setVersion((v) => v + 1)
-        to = live.dropped + live.length - 1
-      } else {
-        setPlaying(false)
-        break
+      else {
+        const t0 = performance.now() // allow: the cost of a step, to size a frame's work; not on the tape
+        const added = extend(perFrame())
+        const took = performance.now() - t0 // allow: as above
+        if (added > 0) {
+          spent += took
+          stepCost.current = stepCost.current === 0 ? took / added : 0.7 * stepCost.current + (0.3 * took) / added
+          if (stepsPerFrame === 'auto')
+            autoSteps.current = Math.max(1, Math.min(maxStepsPerFrame, Math.floor(frameBudgetMs / stepCost.current)))
+          setVersion((v) => v + 1)
+          to = live.dropped + live.length - 1
+          // Catching up after a slow frame: past the bound the debt is dropped, not paid in one long frame.
+          if (spent >= catchUpMs) break
+        } else {
+          setPlaying(false)
+          break
+        }
       }
     }
     moveTo(to)

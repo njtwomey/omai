@@ -54,6 +54,8 @@ export interface PopoverProps {
    * {@link PopoverContainer}, else the page). It must be positioned. See {@link PopoverContainer}.
    */
   readonly container?: HTMLElement | null
+  /** Make the popup at least as wide as its anchor (a select's list under its trigger; default false). */
+  readonly matchAnchorWidth?: boolean
 }
 
 // The items of a menu or listbox, which the arrow keys move between.
@@ -74,22 +76,25 @@ export function Popover(props: PopoverProps): ReactNode {
   const inherited = useContext(PopoverContainerContext)
   const container = props.container === undefined ? inherited : props.container
   const menu = useRef<HTMLDivElement>(null)
-  const [at, setAt] = useState<{ readonly left: number; readonly top: number } | null>(null)
+  const [at, setAt] = useState<{ readonly left: number; readonly top: number; readonly minWidth?: number } | null>(null)
   const place = useCallback((): void => {
     const a = anchor.current?.getBoundingClientRect()
     const m = menu.current?.getBoundingClientRect()
     if (a === undefined) return
     if (container !== null) {
       // In a container: its own coordinates, corrected for the scale it is drawn at (a transform on it or above it).
-      setAt(
-        placeInContainer({
+      const rect = container.getBoundingClientRect()
+      const scale = rect.width / Math.max(1, container.offsetWidth) || 1
+      setAt({
+        ...placeInContainer({
           anchor: a,
-          container: container.getBoundingClientRect(),
+          container: rect,
           size: { width: container.offsetWidth, height: container.offsetHeight },
           menu: { width: m?.width ?? 0, height: m?.height ?? 0 },
           align,
         }),
-      )
+        ...(props.matchAnchorWidth === true ? { minWidth: a.width / scale } : {}),
+      })
       return
     }
     const height = m?.height ?? 0
@@ -97,8 +102,12 @@ export function Popover(props: PopoverProps): ReactNode {
     const below = a.bottom + 4
     const top = below + height > innerHeight - 8 && a.top - height - 4 > 8 ? a.top - height - 4 : below
     const left = align === 'end' ? a.right - width : a.left
-    setAt({ left: Math.max(8, Math.min(left, innerWidth - width - 8)), top })
-  }, [anchor, align, container])
+    setAt({
+      left: Math.max(8, Math.min(left, innerWidth - width - 8)),
+      top,
+      ...(props.matchAnchorWidth === true ? { minWidth: a.width } : {}),
+    })
+  }, [anchor, align, container, props.matchAnchorWidth])
   useLayoutEffect(() => {
     if (open) place()
     else setAt(null)
@@ -137,12 +146,13 @@ export function Popover(props: PopoverProps): ReactNode {
       place()
     }
     document.addEventListener('pointerdown', onPointer)
-    document.addEventListener('keydown', onKey)
+    // The capture phase, so Escape closes the popup before any handler of the surrounding card or dialog sees it.
+    document.addEventListener('keydown', onKey, true)
     addEventListener('scroll', onMove, true)
     addEventListener('resize', onMove)
     return () => {
       document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('keydown', onKey, true)
       removeEventListener('scroll', onMove, true)
       removeEventListener('resize', onMove)
     }
@@ -168,7 +178,11 @@ export function Popover(props: PopoverProps): ReactNode {
       }}
       className={cx(menuClass, container === null ? 'fixed' : 'absolute', className)}
       // Measured hidden on the first frame, then placed.
-      style={at === null ? { left: 0, top: 0, visibility: 'hidden' } : { left: at.left, top: at.top }}
+      style={
+        at === null
+          ? { left: 0, top: 0, visibility: 'hidden' }
+          : { left: at.left, top: at.top, ...(at.minWidth === undefined ? {} : { minWidth: at.minWidth }) }
+      }
     >
       {children}
     </div>,

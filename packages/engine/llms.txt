@@ -129,7 +129,7 @@ carries its truth), `distribution`, `kernel`, `agent`. A "(file)" entry is a hub
 - [trees](index/trees.md): Decision trees: the fitted tree as arrays (prediction, decision paths, node regions, importances, drawing and text), the split criteria and split search, the grower as a stepped algorithm that records every candidate split ... (2 entries)
 - [tune](index/tune.md): Parameter selection for anything, Optuna style: studies of trials over spaces, objectives, samplers (grid, random, quasi-random, CMA-ES, Nelder-Mead, evolutionary, TPE, Gaussian-process Bayesian optimisation), pruners, multi-fidelity schedules ... (5 entries)
 - [vision](index/vision.md): Classical computer vision, OpenCV-shaped, available as `omai-engine/vision`: colour spaces and balance, histograms and equalisation, thresholds, contours and shape descriptors, drawing, keypoints and descriptors with matching ... (10 entries)
-- [worlds](index/worlds.md): Discrete worlds shared by search, reinforcement learning and graphics: grid, hexagonal and graph maps with walls, terrain and items, ASCII maps, rules and transition models, keyed maze and level generators, textbook worlds ... (3 entries)
+- [worlds](index/worlds.md): Discrete worlds shared by search, reinforcement learning and graphics: grid, hexagonal and graph maps with walls, terrain and items, ASCII maps, rules and transition models, keyed maze and level generators, textbook worlds ... (4 entries)
 
 ## For tools
 

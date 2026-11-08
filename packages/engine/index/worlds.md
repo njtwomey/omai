@@ -6,6 +6,7 @@ Discrete worlds shared by search, reinforcement learning and graphics: grid, hex
 
 - function `rules.ts` (file): Composable rules turning a world into a task. `src/lib/worlds/rules.ts:1` `omai-engine/worlds`
 
-- function `greedyPath`: The greedy path up a value per cell, for drawing a policy. `src/lib/worlds/paths.ts:31` `omai-engine/worlds`
+- function `greedyPath`: The greedy path up a value per cell, for drawing a policy. `src/lib/worlds/paths.ts:32` `omai-engine/worlds`
+- function `policyPath`: The path a policy takes from a cell, for drawing a rollout. `src/lib/worlds/paths.ts:76` `omai-engine/worlds`
 
 - structure `world`: A grid, hex or graph world with walls, terrain and items. `src/lib/worlds/world.ts:211` `omai-engine/worlds`

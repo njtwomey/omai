@@ -71,7 +71,7 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   - `active` (hook option of `useSession`, `useSessions`, `useLiveRun` and `usePlayback`, default true): while false
     nothing computes (no priming, the producer stopped, a worker paused, the player's clock off) and the tape and the
     state are kept; it carries on when true again (a `usePlayback` that was playing is still `playing`, its clock off,
-    and plays on from the same frame unless the caller paused it meanwhile). `live.halt()` and `live.pause()` are the
+    and plays on from the same frame unless the caller paused it meanwhile). So a slide that should stay paused when it is shown again must pause explicitly (`pause()` before it is hidden, or on return): `active` keeps a playing run playing, it does not pause it. `live.halt()` and `live.pause()` are the
     imperative forms; `dispose()` throws the tape away, and is safe to call from a frame that was already queued.
   - `live.disposed` is true after `dispose()` until `compute`, `play`, `advance` or `apply` uses the session again. The
     `status` then reads `'preparing'` (a session at step 0), which is not a restart; check `disposed` to tell them apart.
@@ -98,6 +98,13 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   it catches up with the head) the clock waits for a quarter of a second of steps, or at most 250 ms and one step, so a
   method slower than the rate plays in even bursts; the statistics line shows "buffering" and the steps ahead. A single step
   dearer than a frame still blocks the main thread; only a worker helps there.
+- Stepping a live algorithm (`useLiveRun`). `stepsPerFrame` is a number, or `'auto'`: the steps are timed as they run and as many
+  are taken each frame as fit in `frameBudgetMs` (default 8, at most `maxStepsPerFrame`, default 16), so a cheap algorithm
+  plays fast and a dear one does not stall the page. After a slow frame the clock owes frames and runs their steps at once;
+  `catchUpMs` (default 40) bounds the time one tick spends computing them, and past it the rest of the debt is dropped (the
+  animation runs a little slow instead of freezing for half a second). A step dearer than a frame still blocks the main
+  thread; only a worker (`useSession` with `workerProducer`) helps. `useLiveRun` is not paced like `useSession`: it
+  computes in the frame that draws the steps, there is no buffer ahead of the cursor.
 - Player and panel settings (React). `SessionPlayer` takes `fps` (the rate; with `onFpsChange` the host owns it),
   `eagerToggle={false}` (hide the Eager button) and `statistics={false}` (hide the line of event counts and slice
   time). Its starting rate and mode come from the session preferences: a `SessionPreferencesProvider` with `defaults`

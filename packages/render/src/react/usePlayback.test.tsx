@@ -45,6 +45,60 @@ describe('useLiveRun history', () => {
   })
 })
 
+describe('useLiveRun steps per frame and catching up', () => {
+  /** Play frame by frame and return the steps each frame added. */
+  async function increments(m: { readonly current: LiveRun<number> }, n: number, ms = 16): Promise<number[]> {
+    const out: number[] = []
+    let last = m.current.t
+    for (let i = 0; i < n; i++) {
+      await frames.frame(ms)
+      out.push(m.current.t - last)
+      last = m.current.t
+    }
+    return out
+  }
+
+  it("under 'auto' takes more steps per frame as the steps prove cheap, up to the most allowed", async () => {
+    const m = await mountRun({ maxSteps: 2000, fps: 60, autoplay: true, stepsPerFrame: 'auto', maxStepsPerFrame: 12 })
+    await frames.frame()
+    const taken = await increments(m, 20)
+    // A step is timed at 1 ms by the fake clock, so a frame's 8 ms budget holds 8 of them and the allowance is reached
+    // within a few frames.
+    expect(taken[0]).toBeLessThanOrEqual(2)
+    expect(Math.max(...taken)).toBeGreaterThanOrEqual(8)
+    expect(Math.max(...taken)).toBeLessThanOrEqual(12)
+    await m.unmount()
+  })
+
+  it("under 'auto' stays at one step a frame when a step costs more than the budget", async () => {
+    frames.restore()
+    frames = fakeFrames(20)
+    const m = await mountRun({ maxSteps: 2000, fps: 60, autoplay: true, stepsPerFrame: 'auto', frameBudgetMs: 8 })
+    await frames.frame()
+    const taken = await increments(m, 12)
+    expect(Math.max(...taken)).toBe(1)
+    await m.unmount()
+  })
+
+  it('does not pay back a long frame in one long tick: past `catchUpMs` the rest of the debt is dropped', async () => {
+    frames.restore()
+    frames = fakeFrames(30)
+    const bounded = await mountRun({ maxSteps: 2000, fps: 60, autoplay: true, catchUpMs: 40 })
+    await frames.frame()
+    const before = bounded.current.t
+    // A frame 500 ms late owes 30 frames of steps; each step is timed at 30 ms, so only two fit in 40 ms.
+    await frames.frame(500)
+    expect(bounded.current.t - before).toBeLessThanOrEqual(2)
+    await bounded.unmount()
+    const unbounded = await mountRun({ maxSteps: 2000, fps: 60, autoplay: true, catchUpMs: 1e9 })
+    await frames.frame()
+    const from = unbounded.current.t
+    await frames.frame(500)
+    expect(unbounded.current.t - from).toBeGreaterThan(10)
+    await unbounded.unmount()
+  })
+})
+
 describe('useLiveRun start policies', () => {
   it('first: computes the whole run in slices, parked at step 0 and paused, then ready', async () => {
     const ready = vi.fn()

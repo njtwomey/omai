@@ -570,7 +570,8 @@
     {"kind":"function","name":"orb","level":"symbol","importPath":"omai-engine/vision","path":"src/lib/vision/descriptors.ts","line":230,"description":"ORB keypoint descriptors; matchDescriptors in matching.ts.","domain":"vision","folder":"vision"},
     {"kind":"function","name":"threshold","level":"symbol","importPath":"omai-engine/vision","path":"src/lib/vision/thresholds.ts","line":40,"description":"Global thresholding: binary, truncate, to-zero and inverse variants.","domain":"vision","folder":"vision"},
     {"kind":"function","name":"rules.ts","level":"file","importPath":"omai-engine/worlds","path":"src/lib/worlds/rules.ts","line":1,"description":"Composable rules turning a world into a task.","domain":"worlds","folder":"worlds"},
-    {"kind":"function","name":"greedyPath","level":"symbol","importPath":"omai-engine/worlds","path":"src/lib/worlds/paths.ts","line":31,"description":"The greedy path up a value per cell, for drawing a policy.","domain":"worlds","folder":"worlds"},
+    {"kind":"function","name":"greedyPath","level":"symbol","importPath":"omai-engine/worlds","path":"src/lib/worlds/paths.ts","line":32,"description":"The greedy path up a value per cell, for drawing a policy.","domain":"worlds","folder":"worlds"},
+    {"kind":"function","name":"policyPath","level":"symbol","importPath":"omai-engine/worlds","path":"src/lib/worlds/paths.ts","line":76,"description":"The path a policy takes from a cell, for drawing a rollout.","domain":"worlds","folder":"worlds"},
     {"kind":"structure","name":"world","level":"symbol","importPath":"omai-engine/worlds","path":"src/lib/worlds/world.ts","line":211,"description":"A grid, hex or graph world with walls, terrain and items.","domain":"worlds","folder":"worlds"}
   ]
 }

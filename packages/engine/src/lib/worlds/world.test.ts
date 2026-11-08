@@ -14,6 +14,7 @@ import {
   hasWall,
   neighbours,
   passable,
+  policyPath,
   setTerrain,
   setWalls,
   terrainOf,
@@ -220,5 +221,24 @@ describe('blocks, structures and scenes', () => {
     expect(ids).toContain('path')
     const walled = toScene(fromAscii(['#####', '#S#G#', '#####'], { format: 'walls' }))
     expect(walled.children.some((n) => n.kind === 'group' && n.id === 'walls')).toBe(true)
+  })
+
+  it("follows a policy's own actions: to the goal, stuck where it is blocked, round a loop, or into a hazard", () => {
+    const w = fromAscii(['S..G'])
+    // Every cell says east (direction 1): to the goal.
+    expect(policyPath(w, [1, 1, 1, 1], 0)).toEqual([0, 1, 2, 3])
+    // A policy that turns back (west, 3) at cell 1: it comes back to cell 0, a loop, and stops.
+    expect(policyPath(w, [1, 3, 1, 1], 0)).toEqual([0, 1])
+    // North from the start is blocked by the edge of the map: the path is the start alone, as an unlearnt policy is.
+    expect(policyPath(w, [0, 0, 0, 0], 0)).toEqual([0])
+    // A distribution per cell takes its most probable action.
+    const east = [0, 1, 0, 0]
+    expect(policyPath(w, [east, east, east, east], 0)).toEqual([0, 1, 2, 3])
+    // Into the cliff: the hazardous cell is the last of the path.
+    const cliff = cliffWalkingWorld().world
+    const east36 = Array.from({ length: cliff.n }, () => 1)
+    const path = policyPath(cliff, east36, cliff.starts[0] ?? 0)
+    expect(path).toEqual([36, 37])
+    expect(terrainOf(cliff, 37).hazard).toBe(true)
   })
 })
