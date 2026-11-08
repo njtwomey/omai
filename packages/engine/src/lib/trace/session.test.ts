@@ -154,3 +154,35 @@ describe('sessions', () => {
     expect(() => session(counter, { logs: { nope: Log() } })).toThrow(/no path/)
   })
 })
+
+describe('a state mutated in place', () => {
+  interface Frontier {
+    readonly open: number[]
+  }
+  const search = defineMethod<Frontier, Record<string, never>>({
+    name: 'search',
+    config: dict({}),
+    make: () => ({
+      name: 'search',
+      config: {},
+      init: () => ({ open: [] }),
+      step: (s, ctx) => {
+        s.open.push(ctx.t)
+        return s
+      },
+      serialise: (s) => ({ open: [...s.open] }),
+      deserialise: (j) => ({ open: [...(j as { open: number[] }).open] }),
+    }),
+    contract: {},
+    defaults: {},
+  })
+
+  it('has `state` as the live object, and `stateAt` exact through checkpoints', () => {
+    const s = session(search, { mode: 'eager', steps: 6 })
+    const before = s.state
+    expect(before.open).toEqual([0, 1, 2, 3, 4, 5])
+    expect(s.stateAt(2).open).toEqual([0, 1])
+    expect(s.stateAt(4).open).toEqual([0, 1, 2, 3])
+    expect(s.state).toBe(before)
+  })
+})

@@ -5,7 +5,7 @@
  */
 
 import type { Frame, Timeline } from 'omai-engine/scene'
-import { type Algorithm, iterate } from 'omai-engine/trace'
+import { type Algorithm, iterate, type RunStatus } from 'omai-engine/trace'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { prefersReducedMotion } from './_motion.ts'
 import { advanceFrame, framesDue } from './playhead.ts'
@@ -153,6 +153,15 @@ export function useTimelinePlayback(
 /** Milliseconds of computation per animation frame while priming a run in the background. */
 const PRIME_MS = 8
 
+/** A state of a run, as `iterate` yields it. */
+type Item<S> = { readonly t: number; readonly state: S; readonly status?: RunStatus }
+
+// The item as the history should hold it: its state through the algorithm's `snapshot`, for an algorithm that changes
+// its state in place (every frame would otherwise show the latest one).
+function kept<S>(algorithm: Algorithm<S>, item: Item<S>): Item<S> {
+  return algorithm.snapshot === undefined ? item : { ...item, state: algorithm.snapshot(item.state) }
+}
+
 /** Options of {@link useLiveRun}. */
 export interface LiveRunOptions extends PlaybackOptions {
   readonly maxSteps: number
@@ -173,6 +182,13 @@ export interface LiveRunOptions extends PlaybackOptions {
   readonly start?: StartPolicy
   /** Called once when the whole run exists. */
   readonly onReady?: () => void
+  /**
+   * Whether the run computes (default true). While false nothing computes: no priming, and a playing run does not move
+   * on (its clock is off); the states and the cursor are kept, and it carries on from where it stood when this is true
+   * again. Use it for a run on a page that is hidden (a slide that is not showing), where {@link LiveRun.dispose}
+   * would throw the states away. A step taken by hand (`controller.step(1)`) still computes.
+   */
+  readonly active?: boolean
 }
 
 /** What {@link useLiveRun} returns. */
@@ -186,11 +202,24 @@ export interface LiveRun<S> {
   readonly status: string | undefined
   /** Where the run is (the run's own `status` is above): preparing, ready or running; see `PlayStatus`. */
   readonly phase: PlayStatus
-  /** The fraction of the run computed, 0 to 1 (of `maxSteps`; 1 once the run has ended). */
+  /**
+   * The fraction of the run computed, 0 to 1. While the run goes on it is the step reached over `maxSteps`; once the
+   * run has ended, whatever step it ended at (it converged after 8 of 1000), it is exactly 1, so an indicator of it
+   * always completes. A run that ends early therefore jumps to 1 on the step that ends it.
+   */
   readonly progress: number
   /** The algorithm's step number of the oldest state still kept (0 until the history buffer starts dropping). */
   readonly oldest: number
-  /** Stop computing and release the states and the generator; the run starts again from step 0 if played. */
+  /**
+   * Whether the run was disposed and nothing has used it since: the states are gone, nothing computes, and `phase`
+   * reads `'preparing'` only because the run is at step 0 (it is not a restart). Cleared by `controller.play()`,
+   * a step forward, `controller.reset()` and a new algorithm or seed.
+   */
+  readonly disposed: boolean
+  /**
+   * Stop computing and release the states and the generator; the run starts again from step 0 if played. Safe to call
+   * at any time, including from an animation frame or a ticker callback that was already queued.
+   */
   dispose(): void
 }
 
@@ -202,12 +231,12 @@ export interface LiveRun<S> {
  * Unmounting releases the run.
  *
  * @param algorithm - The algorithm (keep its identity stable across renders, e.g. with `useMemo`).
- * @param options - The step budget, seed, rate, steps per frame, history length and start policy.
+ * @param options - The step budget, seed, rate, steps per frame, history length, start policy and `active`.
  * @returns The controller, the state shown, its step, the run's status, and where the run is (`phase`, `progress`).
  * @index function React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })`
  */
 export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions): LiveRun<S> {
-  const { maxSteps, seed = 0, stepsPerFrame = 1, history = 2000, start = 'play' } = options
+  const { maxSteps, seed = 0, stepsPerFrame = 1, history = 2000, start = 'play', active = true } = options
   const prime = start !== 'play'
   const capacity = prime ? Math.max(history, maxSteps + 1) : history
   const make = useCallback(() => {
@@ -216,7 +245,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     const item = first.done === true ? undefined : first.value
     if (item === undefined) throw new Error(`${algorithm.name}: iterate yielded nothing`)
     const states = new RingBuffer<typeof item>(capacity)
-    states.push(item)
+    states.push(kept(algorithm, item))
     return { gen, states }
   }, [algorithm, maxSteps, seed, capacity])
   const run = useRef<ReturnType<typeof make> | null>(null)
@@ -226,6 +255,8 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const [playing, setPlaying] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
   const [fps, setFps] = useState(options.fps ?? 10)
   const [released, setReleased] = useState(false)
+  // Set by `release` before anything renders, so a frame callback queued before the dispose sees it at once.
+  const disposed = useRef(false)
   const [epoch, setEpoch] = useState(0)
   const madeFor = useRef<typeof make | null>(null)
   if (madeFor.current !== make) {
@@ -239,20 +270,22 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   // A fresh run (new algorithm or seed) starts from its first state.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset exactly when the run is remade
   useEffect(() => {
+    disposed.current = false
     setCursor(0)
     setReleased(false)
   }, [make])
 
   /** Compute up to `n` more states (the ring drops the oldest past its capacity); returns how many were added. */
   const extend = (n: number): number => {
-    const live = run.current as ReturnType<typeof make>
+    const live = run.current
+    if (live === null || disposed.current) return 0
     let added = 0
     for (let i = 0; i < n; i++) {
       const tail = live.states.last
       if (tail === undefined || tail.status !== undefined) break
       const next = live.gen.next()
       if (next.done === true) break
-      live.states.push(next.value)
+      live.states.push(kept(algorithm, next.value))
       added++
     }
     return added
@@ -265,6 +298,8 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const positioned = useRef(abs)
   positioned.current = abs
   const forward = (frames: number): void => {
+    // A frame queued before `dispose` finds no run: there is nothing to move through.
+    if (run.current === null || disposed.current) return
     let at = positioned.current
     for (let k = 0; k < frames; k++) {
       const live = (run.current as ReturnType<typeof make>).states
@@ -282,21 +317,22 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   }
   // The clock may fall behind when frames are slow, and then runs the algorithm several frames' steps at once, but no
   // more than half a second's worth.
-  useTicker(playing, fps, forward, Math.max(4, Math.ceil(fps / 2)))
+  useTicker(playing && active, fps, forward, Math.max(4, Math.ceil(fps / 2)))
 
   // Priming: the whole run, in slices of each animation frame, from the moment the run is made.
   // biome-ignore lint/correctness/useExhaustiveDependencies: restarts for a new run (`make`) or a reset (`epoch`); `extend` reads the latest run
   useEffect(() => {
-    if (!prime || released || typeof requestAnimationFrame !== 'function') return
+    if (!prime || !active || released || typeof requestAnimationFrame !== 'function') return
     let handle = requestAnimationFrame(function tick() {
-      const live = run.current as ReturnType<typeof make>
+      const live = run.current
+      if (live === null || disposed.current) return
       const t0 = performance.now() // allow: the frame's budget for computing ahead; not on the tape
       while (live.states.last?.status === undefined && performance.now() - t0 < PRIME_MS) extend(1) // allow: as above
       setVersion((v) => v + 1)
       if (live.states.last?.status === undefined) handle = requestAnimationFrame(tick)
     })
     return () => cancelAnimationFrame(handle)
-  }, [prime, released, make, epoch])
+  }, [prime, active, released, make, epoch])
 
   // Eager: the cursor goes to the end once the whole run exists, if it has not been moved.
   const parked = useRef(true)
@@ -319,6 +355,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     old?.gen.return(undefined)
     old?.states.clear()
     run.current = null
+    disposed.current = true
     madeFor.current = null
     setPlaying(false)
     setReleased(true)
@@ -350,6 +387,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     open: !finished,
     play: () => {
       parked.current = false
+      disposed.current = false
       setReleased(false)
       if (finished && shown >= count - 1) setCursor(dropped)
       setPlaying(true)
@@ -360,7 +398,11 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
       parked.current = false
       setPlaying(false)
       if (dir < 0) setCursor(Math.max(abs - 1, dropped))
-      else forward(1)
+      else {
+        disposed.current = false
+        setReleased(false)
+        forward(1)
+      }
     },
     seek: (f) => {
       parked.current = false
@@ -369,6 +411,8 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     setFps,
     reset: () => {
       parked.current = start === 'end'
+      disposed.current = false
+      setReleased(false)
       setPlaying(false)
       run.current?.gen.return(undefined)
       run.current = make()
@@ -386,6 +430,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     phase: statusOf(playing, finished),
     progress: progressOf(dropped + count - 1, finished, maxSteps),
     oldest: r.states.at(0)?.t ?? 0,
+    disposed: released,
     dispose: release,
   }
 }

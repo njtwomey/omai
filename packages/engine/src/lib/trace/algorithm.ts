@@ -83,7 +83,35 @@ export interface Observation {
  * unless its method's contract declares them, when only those compile. An `Algorithm<S, 'a' | 'b'>` can be given
  * wherever an `Algorithm<S>` is wanted, and a runner hands it a context that accepts any path.
  *
+ * ## State and mutation
+ *
+ * A state does not have to be immutable: the library's own searches (`search/_best-first.ts`) update their frontier in
+ * place, and that is fine. The rule is about where a view reads from. What a view draws at a step comes from what was
+ * recorded when the step happened: `observe` (metrics, tensors, frame, messages) or `ctx.log` and `ctx.emit` at emit
+ * time, which are copied onto the tape then. `session.state` (and the `state` of `iterate` and `runFor`) is the live
+ * object, the one the next step goes on to change, so a drawing that holds on to it shows the latest state at every
+ * frame. `session.stateAt(t)` is exact through checkpoints, for an algorithm that `serialise`s. A consumer that keeps
+ * states of its own across steps (a history for stepping back, as `useLiveRun` does) calls `snapshot` on each, and an
+ * algorithm that mutates its state in place gives it, so each kept frame is the state of its own step.
+ *
  * @concept algorithm-protocol
+ * @example
+ * ```ts
+ * import { iterate, snapshotOf, type Algorithm } from 'omai-engine/trace'
+ * // The frontier is changed in place, so the states an iteration yields are one object; a snapshot copies it.
+ * const frontier: Algorithm<{ open: number[] }> = {
+ *   name: 'frontier',
+ *   config: {},
+ *   init: () => ({ open: [] }),
+ *   step: (s, ctx) => {
+ *     s.open.push(ctx.t)
+ *     return s
+ *   },
+ *   snapshot: (s) => ({ open: [...s.open] }),
+ * }
+ * const kept = Array.from(iterate(frontier, { maxSteps: 3 }), (x) => snapshotOf(frontier, x.state).open)
+ * kept // => [[], [0], [0, 1], [0, 1, 2]]
+ * ```
  */
 export interface Algorithm<S, K extends string = string> {
   readonly name: string
@@ -97,6 +125,36 @@ export interface Algorithm<S, K extends string = string> {
   /** Serialise a state for checkpoints (and restore it), enabling resume and seek. */
   serialise?(state: S): Json
   deserialise?(json: Json): S
+  /**
+   * A copy of a state that later steps cannot change, for an algorithm whose `step` mutates its state in place. A
+   * consumer that keeps states across steps (a ring buffer of frames, a history) takes them through this (see
+   * {@link snapshotOf}); the stepping itself never calls it. Omitted, a state is kept as it is.
+   */
+  snapshot?(state: S): S
+}
+
+/**
+ * A state as a consumer that keeps it should hold it: the algorithm's `snapshot` of it when it has one, else the state
+ * itself.
+ *
+ * @param algorithm - The algorithm.
+ * @param state - A state it produced.
+ * @returns A state that later steps will not change (the state itself when the algorithm gives no `snapshot`).
+ * @example
+ * ```ts
+ * import { snapshotOf, type Algorithm } from 'omai-engine/trace'
+ * const set: Algorithm<Set<number>> = {
+ *   name: 'set', config: {}, init: () => new Set<number>(), step: (s) => s,
+ *   snapshot: (s) => new Set(s),
+ * }
+ * const live = new Set([1])
+ * const kept = snapshotOf(set, live)
+ * live.add(2)
+ * kept.size // => 1
+ * ```
+ */
+export function snapshotOf<S>(algorithm: Algorithm<S>, state: S): S {
+  return algorithm.snapshot === undefined ? state : algorithm.snapshot(state)
 }
 
 /** Options for {@link runAlgorithm}. */

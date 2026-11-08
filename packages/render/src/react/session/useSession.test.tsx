@@ -7,7 +7,7 @@ import { inlineProducer } from '../../producer/inline.ts'
 import type { Producer, ProducerFactory } from '../../producer/producer.ts'
 import { methodRegistry } from '../../producer/registry.ts'
 import { serveProducer } from '../../producer/serve.ts'
-import { type FakeFrames, fakeFrames, mountHook, resetGlobals } from '../_harness.tsx'
+import { type FakeFrames, fakeFrames, inAct, mountHook, resetGlobals } from '../_harness.tsx'
 import { type LiveSession, type SessionHookOptions, useSession } from './useSession.ts'
 
 interface S {
@@ -285,5 +285,182 @@ describe('in a worker', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('disposed', () => {
+  it('is set by dispose, with the status still `preparing`, and cleared by play, compute, advance and apply', async () => {
+    const m = await mountSession({ start: 'first' })
+    expect(m.current.disposed).toBe(false)
+    await untilDone(m)
+    expect(m.current.status).toBe('ready')
+    await inAct(() => m.current.dispose())
+    expect(m.current.disposed).toBe(true)
+    // The status is the one of a fresh session; `disposed` is what tells them apart.
+    expect(m.current.status).toBe('preparing')
+    expect(m.current.computing).toBe(false)
+    // Nothing restarts it by itself: it stays disposed and still.
+    await frames.frames(3)
+    expect(m.current.disposed).toBe(true)
+    expect(m.current.head).toBe(0)
+    expect(frames.pending).toBe(0)
+    await inAct(() => m.current.play())
+    expect(m.current.disposed).toBe(false)
+    await frames.frames(2)
+    expect(m.current.head).toBeGreaterThan(0)
+    for (const use of [
+      () => m.current.compute(),
+      () => m.current.advance({ steps: 1 }),
+      () => void m.current.apply(),
+    ]) {
+      await inAct(() => m.current.dispose())
+      expect(m.current.disposed).toBe(true)
+      await inAct(use)
+      expect(m.current.disposed).toBe(false)
+    }
+    await m.unmount()
+  })
+
+  it('computes nothing in a frame queued before it', async () => {
+    let live: LiveSession<S, Config> | undefined
+    let queued = false
+    const m = await mountHook(() => {
+      if (!queued) {
+        queued = true
+        requestAnimationFrame(() => live?.dispose())
+      }
+      live = useSession(count, { steps: 200 }, [], { start: 'first' })
+      return live
+    })
+    await frames.frame()
+    expect(m.current.disposed).toBe(true)
+    await frames.frames(2)
+    expect(m.current.session.t).toBe(0)
+    expect(m.current.head).toBe(0)
+    await m.unmount()
+  })
+})
+
+describe('madeWith', () => {
+  it('is the configuration and seed of the run on the tape, which stay until a held change is applied', async () => {
+    let len = 200
+    const m = await mountHook(() => useSession(count, { steps: 300, seed: 7, config: { len } }, [len], {}))
+    expect(m.current.madeWith).toEqual({ config: { len: 200 }, seed: 7 })
+    len = 50
+    await m.rerender()
+    // The page's options are newer than the run: the change is held until play.
+    expect(m.current.stale).toBe(true)
+    expect(m.current.held).toBe(true)
+    expect(m.current.madeWith).toEqual({ config: { len: 200 }, seed: 7 })
+    expect(m.current.madeWith.config).toBe(m.current.session.config)
+    await inAct(() => void m.current.apply())
+    expect(m.current.stale).toBe(false)
+    expect(m.current.madeWith).toEqual({ config: { len: 50 }, seed: 7 })
+    await m.unmount()
+  })
+
+  it('stays the old one for the pause before an unheld change is applied, then is the new one', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      let len = 200
+      const m = await mountHook(() => useSession(count, { steps: 300, config: { len } }, [len], { hold: false }))
+      len = 50
+      await m.rerender()
+      expect(m.current.madeWith.config).toEqual({ len: 200 })
+      await vi.advanceTimersByTimeAsync(300)
+      await frames.frame()
+      expect(m.current.madeWith.config).toEqual({ len: 50 })
+      await m.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('progress of a run that ends early', () => {
+  it('is against the budget while it goes on, and exactly 1 once it has ended, whatever its length', async () => {
+    const m = await mountHook(() => useSession(count, { steps: 1000, config: { len: 8 } }, [], { start: 'first' }))
+    expect(m.current.progress).toBe(0)
+    const seen: number[] = []
+    for (let n = 0; n < 50 && !m.current.done; n++) {
+      await frames.frame()
+      seen.push(m.current.progress)
+    }
+    expect(m.current.done).toBe(true)
+    expect(m.current.session.status).toBe('completed')
+    expect(m.current.head).toBe(8)
+    expect(m.current.progress).toBe(1)
+    // Never above its budget fraction until it ended: a run of 8 steps of 1000 cannot read more than 0.008 before.
+    for (const p of seen.slice(0, -1)) expect(p).toBeLessThanOrEqual(0.008)
+    await m.unmount()
+  })
+})
+
+describe('active', () => {
+  it('computes nothing while false (no priming, no frames), keeps the tape, and carries on when true', async () => {
+    let active = false
+    const m = await mountHook(() => useSession(count, { steps: 200 }, [], { start: 'first', active }))
+    expect(m.current.active).toBe(false)
+    expect(m.current.computing).toBe(false)
+    await frames.frames(3)
+    expect(m.current.head).toBe(0)
+    expect(frames.pending).toBe(0)
+    active = true
+    await m.rerender()
+    expect(m.current.active).toBe(true)
+    expect(m.current.computing).toBe(true)
+    await frames.frames(2)
+    const partway = m.current.session.t
+    expect(partway).toBeGreaterThan(0)
+    expect(m.current.done).toBe(false)
+    // Hidden: the tape stays, nothing more is computed, no frame is asked for.
+    active = false
+    await m.rerender()
+    expect(m.current.computing).toBe(false)
+    await frames.frames(3)
+    expect(m.current.session.t).toBe(partway)
+    expect(m.current.disposed).toBe(false)
+    expect(frames.pending).toBe(0)
+    active = true
+    await m.rerender()
+    await untilDone(m)
+    expect(m.current.head).toBe(200)
+    expect(m.current.status).toBe('ready')
+    await m.unmount()
+  })
+
+  it('pauses a session that was playing, and play resumes it', async () => {
+    let active = true
+    const m = await mountHook(() => useSession(count, { steps: 200 }, [], { active }))
+    await inAct(() => m.current.play())
+    await frames.frames(2)
+    const partway = m.current.session.t
+    expect(partway).toBeGreaterThan(0)
+    expect(m.current.playing).toBe(true)
+    active = false
+    await m.rerender()
+    await frames.frames(3)
+    expect(m.current.session.t).toBe(partway)
+    expect(m.current.playing).toBe(true)
+    active = true
+    await m.rerender()
+    await frames.frames(2)
+    expect(m.current.session.t).toBeGreaterThan(partway)
+    await m.unmount()
+  })
+
+  it('does not prime a session disposed while inactive', async () => {
+    let active = true
+    const m = await mountHook(() => useSession(count, { steps: 200 }, [], { start: 'first', active }))
+    await frames.frames(1)
+    await inAct(() => m.current.dispose())
+    active = false
+    await m.rerender()
+    active = true
+    await m.rerender()
+    await frames.frames(3)
+    expect(m.current.head).toBe(0)
+    expect(m.current.disposed).toBe(true)
+    await m.unmount()
   })
 })

@@ -28,7 +28,7 @@ import { FigureFrame, type FrameSize } from '../FigureFrame.tsx'
 import { useColourMode, useTokens } from '../theme.tsx'
 import type { Panel } from './layout.ts'
 import { ToolButton, useSettled } from './parts.tsx'
-import { FIG, Note, useProbe } from './RowsPanel.tsx'
+import { Note, usePanelFigure, useProbe } from './RowsPanel.tsx'
 import type { LiveSession } from './useSession.ts'
 
 type ZoomSpec = Extract<Panel, { kind: 'zoom' }>
@@ -80,6 +80,7 @@ export function ZoomPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { live, panel, t } = props
   const tk = useTokens()
   const mode = useColourMode()
@@ -126,7 +127,7 @@ export function ZoomPanel(props: {
       : undefined)
   return (
     <FigureFrame
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       exportFormats={['png']}

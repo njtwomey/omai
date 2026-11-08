@@ -134,6 +134,7 @@ function liveOf(steps: number): LiveSession<State, Config> {
   const s = session(toy, { mode: 'eager', steps })
   return {
     session: s,
+    madeWith: { config: s.config, seed: s.seed },
     version: 0,
     head: s.t,
     done: s.status !== undefined,

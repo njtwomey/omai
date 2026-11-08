@@ -15,6 +15,7 @@ import { lines } from '../../charts/lines.ts'
 import { heatmapChart } from '../../charts/matrices.ts'
 import { cartesian, type Layer } from '../../charts/plot.ts'
 import { type PointSet, points } from '../../charts/points.ts'
+import type { Figure } from '../../figure/index.ts'
 import { categoricalColour } from '../../theme/palettes.ts'
 import { parameterTrajectories, stepPositions } from '../../trace/tensors.ts'
 import { type MatrixMark, matrixMarksView } from '../../views/matrix-marks.ts'
@@ -31,7 +32,7 @@ import { InnerPanel, type InnerSessionSpec } from './InnerPanel.tsx'
 import type { Panel } from './layout.ts'
 import { Multiples } from './Multiples.tsx'
 import { GraphPanel, ImagesPanel, PointsPanel, ScenePanel, StripPanel, TablePanel } from './RecordPanels.tsx'
-import { FIG, Note, RowsPanel, useProbe, useRun } from './RowsPanel.tsx'
+import { Note, PanelFigureProvider, RowsPanel, usePanelFigure, useProbe, useRun } from './RowsPanel.tsx'
 import { SpecialisedPanel } from './SpecialisedPanels.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import { TapeChannels } from './TapeView.tsx'
@@ -88,14 +89,23 @@ const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')
  * @returns The grid of panels.
  * @index function React component: panels of a layout over a session: `<SessionPanels id="p" live={live} at={at} layout={l} />`
  */
-export function SessionPanels(props: PanelContext & { readonly layout: readonly Panel[] }): ReactNode {
-  const { layout, live, ...ctx } = props
+export function SessionPanels(
+  props: PanelContext & {
+    readonly layout: readonly Panel[]
+    /**
+     * The figure every panel is drawn at: width, height, type size and padding (default 440 by 320 pixels at the page's
+     * type size). The same as wrapping the panels in a `PanelFigureProvider`.
+     */
+    readonly figure?: Figure
+  },
+): ReactNode {
+  const { layout, live, figure: panelFigure, ...ctx } = props
   const variants = variantsOf(live)
   const single = variants.length === 1 ? variants[0] : undefined
   const head = live.head
   const viewed = ctx.at === null ? head : Math.min(ctx.at, head)
   const cursor = useMemo(() => ({ viewed, head, scrub: ctx.onScrub ?? (() => undefined) }), [viewed, head, ctx.onScrub])
-  return (
+  const grid = (
     <StepCursorProvider value={cursor}>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" data-testid="panels">
         {layout.map((panel) => {
@@ -161,6 +171,7 @@ export function SessionPanels(props: PanelContext & { readonly layout: readonly 
       </div>
     </StepCursorProvider>
   )
+  return panelFigure === undefined ? grid : <PanelFigureProvider figure={panelFigure}>{grid}</PanelFigureProvider>
 }
 
 // A panel of the tape over every variant at once: curves or a sweep, overlaid.
@@ -379,14 +390,15 @@ function ChartPanel(props: {
   readonly onInit?: ChartProps['onInit']
   readonly caption?: ReactNode
 }): ReactNode {
+  const base = usePanelFigure()
   return (
     <FigureFrame
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       {...(props.caption === undefined ? {} : { caption: props.caption })}
     >
-      <Chart figure={FIG} option={props.option} {...(props.onInit === undefined ? {} : { onInit: props.onInit })} />
+      <Chart figure={base} option={props.option} {...(props.onInit === undefined ? {} : { onInit: props.onInit })} />
     </FigureFrame>
   )
 }
@@ -404,6 +416,7 @@ function CurvesView(props: {
   readonly family?: FamilyOptions
   readonly onScrub?: (t: number | null) => void
 }): ReactNode {
+  const base = usePanelFigure()
   const { variants, paths, t, family } = props
   const mode = useColourMode()
   const runs = useRuns(variants)
@@ -412,7 +425,7 @@ function CurvesView(props: {
       return familyOption(
         runs.map((run, i) => ({ label: variants[i]?.label ?? '', run })),
         paths,
-        { ...family, t, mode, figure: FIG },
+        { ...family, t, mode, figure: base },
       )
     const curves = overlayCurves(
       runs.map((run, i) => ({ label: variants[i]?.label ?? '', run })),
@@ -421,11 +434,11 @@ function CurvesView(props: {
     )
     return cartesian([curves, ...stepMarker(curves, t, mode)], {
       mode,
-      figure: FIG,
+      figure: base,
       x: { label: 'step' },
       legend: true,
     })
-  }, [runs, variants, paths, mode, t, family])
+  }, [runs, variants, paths, mode, t, family, base])
   const steps = useMemo(
     () => [...new Set(runs.flatMap((run) => recordedSteps(run, paths)))].sort((a, b) => a - b),
     [runs, paths],
@@ -446,6 +459,7 @@ function SweepView(props: {
   readonly t: number
   readonly onScrub?: (t: number | null) => void
 }): ReactNode {
+  const base = usePanelFigure()
   const { variants, panel, t } = props
   const mode = useColourMode()
   const runs = useRuns(variants)
@@ -485,7 +499,7 @@ function SweepView(props: {
           ...(truth === undefined ? {} : { truth }),
           t,
         },
-        { mode, figure: FIG, label: leaf(panel.path) },
+        { mode, figure: base, label: leaf(panel.path) },
       )
     }
     const compared = trials.length > 1
@@ -530,7 +544,7 @@ function SweepView(props: {
     return {
       ...cartesian([layer, ...extra], {
         mode,
-        figure: FIG,
+        figure: base,
         x: {
           label: panel.over === undefined ? 'trial (step)' : leaf(panel.over),
           ...(log.x ? { scale: 'log' as const } : {}),
@@ -540,7 +554,7 @@ function SweepView(props: {
       }),
       animation: false,
     }
-  }, [trials, runs, variants, panel, t, mode, log.x, log.y])
+  }, [trials, runs, variants, panel, t, mode, log.x, log.y, base])
   // The interval strip has a trial per row, not per x: a click there scrubs nowhere.
   const { steps, xs } = useMemo(
     () =>
@@ -563,6 +577,7 @@ function SeriesView(props: {
   readonly t: number
   readonly onScrub?: (t: number | null) => void
 }): ReactNode {
+  const base = usePanelFigure()
   const { live, panel, t } = props
   const mode = useColourMode()
   const run = useRun(live)
@@ -578,11 +593,11 @@ function SeriesView(props: {
     const xAt = xs[i < 0 ? xs.length - 1 : i] ?? t
     return cartesian([layer, ...stepMarker(layer, xAt, mode)], {
       mode,
-      figure: FIG,
+      figure: base,
       x: { label: panel.x === undefined ? 'step' : leaf(panel.x) },
       legend: layer.series.length <= 8,
     })
-  }, [run, steps, xs, t, mode, panel])
+  }, [run, steps, xs, t, mode, panel, base])
   const onInit = useScrubClick(steps, live.head, props.onScrub, panel.x === undefined ? undefined : xs)
   return <ChartPanel title={props.title} filename={props.filename} option={option} onInit={onInit} />
 }
@@ -596,6 +611,7 @@ function TrajectoryView(props: {
   readonly filename: string
   readonly t: number
 }): ReactNode {
+  const base = usePanelFigure()
   const { live, panel, t } = props
   const mode = useColourMode()
   const run = useRun(live)
@@ -628,8 +644,8 @@ function TrajectoryView(props: {
         ...(panel.ellipse === undefined ? {} : { ellipse: panel.ellipse }),
       }),
     )
-    return { ...cartesian(layers, { mode, figure: FIG, legend: panel.paths.length > 1 }), animation: false }
-  }, [run, over.value, panel, t, i, j, mode])
+    return { ...cartesian(layers, { mode, figure: base, legend: panel.paths.length > 1 }), animation: false }
+  }, [run, over.value, panel, t, i, j, mode, base])
   return (
     <ChartPanel
       title={props.title}
@@ -650,6 +666,7 @@ function TensorView(props: {
   readonly filename: string
   readonly t: number
 }): ReactNode {
+  const base = usePanelFigure()
   const { live, panel, t } = props
   const mode = useColourMode()
   const run = useRun(live)
@@ -669,18 +686,18 @@ function TensorView(props: {
       const probed = Array.isArray(probedMarks.value) ? (probedMarks.value as MatrixMark[]) : []
       return matrixMarksView(z, {
         mode,
-        figure: FIG,
+        figure: base,
         marks: [...(panel.marks ?? []), ...probed],
         ...(panel.rowLabels === undefined ? {} : { rowLabels: panel.rowLabels }),
         ...(panel.colLabels === undefined ? {} : { colLabels: panel.colLabels }),
       })
     }
     // Row 0 at the top, as a matrix is read.
-    return { ...heatmapChart(z.reverse(), { smooth: 'cells' }, { mode, figure: FIG }), animation: false }
-  }, [at, mode, marked, panel, probedMarks.value])
+    return { ...heatmapChart(z.reverse(), { smooth: 'cells' }, { mode, figure: base }), animation: false }
+  }, [at, mode, marked, panel, probedMarks.value, base])
   return (
     <FigureFrame
-      figure={FIG}
+      figure={base}
       title={`${props.title} at step ${at?.step ?? t}${at === undefined ? '' : ` (${at.shape.join('×')})`}`}
       filename={props.filename}
       {...(option === undefined
@@ -689,7 +706,7 @@ function TensorView(props: {
           ? {}
           : { caption: <Note>marks unavailable: {probedMarks.error}</Note> })}
     >
-      {option === undefined ? <div className="h-full" /> : <Chart figure={FIG} option={option} />}
+      {option === undefined ? <div className="h-full" /> : <Chart figure={base} option={option} />}
     </FigureFrame>
   )
 }
@@ -702,17 +719,18 @@ function ProbeView(
     readonly titled: (title: string) => string
   },
 ): ReactNode {
+  const base = usePanelFigure()
   const { panel, live, t } = props
   const probed = useProbe(live, t, panel.path, panel.args)
   const title = props.titled(`${panel.title ?? panel.path} at step ${t}`)
   const filename = props.file(panel.title ?? panel.path)
   // A record at a step is a still: views that would play it along x are told not to.
   if (probed.value !== undefined && isExposition(probed.value))
-    return <ExpositionView record={probed.value} figure={FIG} title={title} filename={filename} play={false} />
+    return <ExpositionView record={probed.value} figure={base} title={title} filename={filename} play={false} />
   const text = probed.value === undefined ? undefined : JSON.stringify(probed.value, null, 1)
   return (
     <FigureFrame
-      figure={FIG}
+      figure={base}
       title={title}
       filename={filename}
       exportFormats={['json']}
@@ -734,6 +752,7 @@ function ProjectionView(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { live, name, t } = props
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
   const projected = useMemo((): { readonly record?: unknown; readonly error?: string } => {
@@ -751,6 +770,6 @@ function ProjectionView(props: {
   // The record up to the viewed step is a still: views that would play it are told not to.
   const record = projected.record
   return record !== undefined && isExposition(record) ? (
-    <ExpositionView record={record} figure={FIG} title={props.title} filename={props.filename} play={false} />
+    <ExpositionView record={record} figure={base} title={props.title} filename={props.filename} play={false} />
   ) : null
 }

@@ -13,8 +13,10 @@ import {
 } from 'omai-engine/trace'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { figure } from '../../figure/index.ts'
 import { advanceInStep, overlayCurves, sharedHead, sweepTrials } from './compare.ts'
 import { sessionPreferences, setSessionPreferences } from './preferences.ts'
+import { PanelFigureProvider } from './RowsPanel.tsx'
 import { SessionPanels } from './SessionPanels.tsx'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { nearestStep } from './scrub.ts'
@@ -95,6 +97,7 @@ function liveOf(
   const s = session(method, { mode: 'eager', steps, config })
   return {
     session: s,
+    madeWith: { config: s.config, seed: s.seed },
     version: 0,
     head: s.t,
     done: s.status !== undefined,
@@ -312,11 +315,70 @@ describe('session panels', () => {
   })
 
   it('keeps the reader’s preferences, with or without storage', () => {
-    expect(sessionPreferences()).toEqual({ mode: 'live', hold: true })
+    expect(sessionPreferences()).toEqual({ mode: 'live', hold: true, fps: 60 })
     setSessionPreferences({ mode: 'eager' })
-    expect(sessionPreferences()).toEqual({ mode: 'eager', hold: true })
+    expect(sessionPreferences()).toEqual({ mode: 'eager', hold: true, fps: 60 })
     setSessionPreferences({ mode: 'live', hold: false })
     expect(sessionPreferences().hold).toBe(false)
     setSessionPreferences({ hold: true })
+  })
+})
+
+describe('the figure of the panels', () => {
+  const layout = [
+    { kind: 'curves', paths: ['angle'] },
+    { kind: 'tensor', path: 'matrix' },
+    { kind: 'probe', path: 'plane/distance' },
+    { kind: 'tape' },
+  ] as const
+  const draw = (extra: object = {}): string =>
+    renderToString(
+      <SessionPanels id="t" live={liveOf(20)} at={10} onScrub={() => undefined} layout={layout} {...extra} />,
+    )
+  const widths = (html: string): string[] => [...new Set(html.match(/width:\s*\d+px/g) ?? [])]
+
+  it('is 440 by 320 unless a figure is given, and the tape views keep their own sizes', () => {
+    expect(widths(draw())).toContain('width:440px')
+    expect(widths(draw())).toContain('width:520px')
+    expect(draw()).not.toContain('width:600px')
+  })
+
+  it('follows the `figure` prop of SessionPanels and a PanelFigureProvider above them', () => {
+    const wide = figure({ width: 600, height: 300 })
+    const byProp = draw({ figure: wide })
+    expect(widths(byProp)).toContain('width:600px')
+    expect(widths(byProp)).not.toContain('width:440px')
+    expect(widths(byProp)).not.toContain('width:520px')
+    const byProvider = renderToString(
+      <PanelFigureProvider figure={wide}>
+        <SessionPanels id="t" live={liveOf(20)} at={10} onScrub={() => undefined} layout={layout} />
+      </PanelFigureProvider>,
+    )
+    expect(widths(byProvider)).toEqual(widths(byProp))
+    // The innermost wins.
+    const inner = renderToString(
+      <PanelFigureProvider figure={wide}>
+        <PanelFigureProvider figure={figure({ width: 500, height: 300 })}>
+          <SessionPanels id="t" live={liveOf(20)} at={10} onScrub={() => undefined} layout={layout} />
+        </PanelFigureProvider>
+      </PanelFigureProvider>,
+    )
+    expect(widths(inner)).toContain('width:500px')
+    expect(widths(inner)).not.toContain('width:600px')
+  })
+})
+
+describe('the player’s eager toggle and statistics line', () => {
+  it('leaves them out when asked', () => {
+    const live = liveOf(20)
+    const plain = renderToString(<SessionPlayer live={live} at={5} onScrub={() => undefined} />)
+    expect(plain).toContain('aria-label="Eager"')
+    expect(plain).toContain('last slice')
+    const quiet = renderToString(
+      <SessionPlayer live={live} at={5} onScrub={() => undefined} eagerToggle={false} statistics={false} />,
+    )
+    expect(quiet).not.toContain('aria-label="Eager"')
+    expect(quiet).not.toContain('last slice')
+    expect(quiet).toContain('step 5 of 20')
   })
 })

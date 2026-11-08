@@ -158,11 +158,23 @@ export interface Session<S, C extends Config = Config, K extends string = string
   readonly contract: Contract<S, K>
   /** The step reached, the state there, and the status once the run has ended. */
   readonly t: number
+  /**
+   * The state at the step reached: the live object, the very one the next step goes on from. An algorithm may change
+   * its state in place, so a reference kept from an earlier step shows the latest state, not that step's. State and
+   * mutation: what a view draws at a step comes from the tape (what `observe` reported, or `ctx.log` and `ctx.emit`
+   * wrote at that step), or from {@link Session.stateAt}; a history kept by hand takes `snapshotOf(algorithm, state)`
+   * of each state as it goes by (see `Algorithm`).
+   */
   readonly state: S
   readonly status: RunStatus | undefined
   /** Compute more: by a budget of steps or milliseconds (default: the rest of the run). */
   advance(budget?: SliceBudget): Slice<S>
-  /** The state at any recorded step: the nearest earlier checkpoint re-run forward with the original keys. */
+  /**
+   * The state at any recorded step: the nearest earlier checkpoint re-run forward with the original keys. It is exact
+   * (the same state an uninterrupted run had at `t`) and a state of its own, whatever the algorithm mutates in place
+   * later, because a checkpoint is the serialised state; for the step reached it is the live `state`, and without
+   * `serialise` there are no checkpoints to go back to.
+   */
   stateAt(t: number): S
   /** A new session starting from `stateAt(t)`: the same seed to continue exactly, another to branch. */
   fork(t: number, options?: { readonly seed?: number; readonly config?: Partial<C> }): Session<S, C, K>

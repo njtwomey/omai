@@ -10,7 +10,7 @@ import { maxOf } from 'omai-engine/base'
 import { covarianceEllipse } from 'omai-engine/numerics/geometry'
 import { type Tensor, toFlat } from 'omai-engine/tensor'
 import type { Run, Session } from 'omai-engine/trace'
-import { type ReactNode, useMemo } from 'react'
+import { createContext, type ReactElement, type ReactNode, useContext, useMemo } from 'react'
 import { band, lines } from '../../charts/lines.ts'
 import { cartesian, type Layer } from '../../charts/plot.ts'
 import { points } from '../../charts/points.ts'
@@ -33,8 +33,63 @@ import {
 } from './overlays.ts'
 import type { LiveSession } from './useSession.ts'
 
-/** The figure every session panel is drawn at. */
+/** The figure every session panel is drawn at unless a {@link PanelFigureProvider} says another: 440 by 320 pixels. */
 export const FIG: Figure = figure({ width: 440, height: 320 })
+
+const PanelFigureContext = createContext<Figure | undefined>(undefined)
+
+/**
+ * Set the figure the session panels below it are drawn at: its width and height, type size (`fontSize`), padding and
+ * medium, for every panel of `SessionPanels` and of the specialised panels at once (the tape views too, where the
+ * default differs). Panels that derive their own shape (a strip's aspect, a grid of images, the tall equation figure)
+ * keep the width, type size and padding and change the height as they need. Nested, the innermost wins.
+ *
+ * @param props - The figure and the panels.
+ * @returns The panels, with the figure in context.
+ * @example
+ * ```tsx
+ * import { figure } from 'omai-render/figure'
+ * import { PanelFigureProvider, SessionPanels } from 'omai-render/react'
+ * const large = figure({ width: 640, height: 400, fontSize: 14 })
+ * const panels = (
+ *   <PanelFigureProvider figure={large}>
+ *     <SessionPanels live={live} at={at} layout={layout} />
+ *   </PanelFigureProvider>
+ * )
+ * ```
+ */
+export function PanelFigureProvider(props: { readonly figure: Figure; readonly children?: ReactNode }): ReactElement {
+  return <PanelFigureContext.Provider value={props.figure}>{props.children}</PanelFigureContext.Provider>
+}
+
+/**
+ * The figure a session panel is drawn at: the one a {@link PanelFigureProvider} above it gives, else `fallback`.
+ *
+ * @param fallback - The figure without a provider (default {@link FIG}, 440 by 320; the tape views pass their own).
+ * @returns The figure.
+ */
+export function usePanelFigure(fallback: Figure = FIG): Figure {
+  return useContext(PanelFigureContext) ?? fallback
+}
+
+/**
+ * A figure of another shape for a panel that needs one (a strip's aspect, a grid of images, the tall equation figure),
+ * with the type size, padding, medium and colour mode of the panel figure it comes from.
+ *
+ * @param base - The panel figure.
+ * @param shape - The width, the height or the aspect to change (`width` defaults to the base's).
+ * @returns The figure.
+ */
+export function reshaped(base: Figure, shape: { readonly height?: number; readonly aspect?: number }): Figure {
+  return figure({
+    medium: base.medium,
+    width: base.width,
+    padding: base.padding,
+    fontSize: base.fontSize,
+    mode: base.mode,
+    ...shape,
+  })
+}
 
 /** The outcome of a probe: its value, or the message of the error it threw. */
 export type Probed = { readonly value?: unknown; readonly error?: string }
@@ -187,6 +242,7 @@ export function RowsPanel(props: {
   /** The per-row channels: values, size, marks, regions and focus. */
   readonly channels?: RowChannelSpecs
 }): ReactNode {
+  const base = usePanelFigure()
   const { overlay, live, t, x, y, channels = {} } = props
   const mode = useColourMode()
   const withCentres = overlay === 'assignments' || overlay === 'components'
@@ -420,14 +476,14 @@ export function RowsPanel(props: {
           ),
         )
     }
-    return { ...cartesian(layers, { mode, figure: FIG }), animation: false }
-  }, [rowX, rowY, groups, labels, byExpert, expertRows, centreRows, covs, fitted, interval, d, mode, extra])
+    return { ...cartesian(layers, { mode, figure: base }), animation: false }
+  }, [rowX, rowY, groups, labels, byExpert, expertRows, centreRows, covs, fitted, interval, d, mode, extra, base])
   // The decision surface is an exposition view (its own frame); the rest is one chart in this panel's frame.
   if (surface.value !== undefined)
     return (
       <ExpositionView
         record={surface.value as never}
-        figure={FIG}
+        figure={base}
         title={props.title}
         filename={props.filename}
         points={rowsOf(xs, d)}
@@ -436,12 +492,12 @@ export function RowsPanel(props: {
     )
   return (
     <FigureFrame
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       {...(error === undefined ? {} : { caption: <Note>unavailable: {error}</Note> })}
     >
-      <Chart figure={FIG} option={option} />
+      <Chart figure={base} option={option} />
     </FigureFrame>
   )
 }

@@ -12,7 +12,7 @@ import { Chart } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
 import type { Panel } from './layout.ts'
-import { FIG, Note, useProbe, useRun } from './RowsPanel.tsx'
+import { Note, usePanelFigure, useProbe, useRun } from './RowsPanel.tsx'
 import { trajectoryLayers } from './trajectory.ts'
 import type { LiveSession } from './useSession.ts'
 
@@ -32,6 +32,7 @@ export function FieldPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { live, panel, t } = props
   const run = useRun(live)
   const mode = useColourMode()
@@ -64,24 +65,24 @@ export function FieldPanel(props: {
     return {
       ...cartesian(layers, {
         mode,
-        figure: FIG,
+        figure: base,
         x: { label: names[0], limits: [x0, record.x[record.x.length - 1] ?? x0 + 1] },
         y: { label: names[1], limits: [y0, record.y[record.y.length - 1] ?? y0 + 1] },
         legend: (record.nullclines?.length ?? 0) + (record.fixedPoints?.length ?? 0) > 0,
       }),
       animation: false,
     }
-  }, [record, panel.style, panel.trajectory, run, t, mode])
+  }, [record, panel.style, panel.trajectory, run, t, mode, base])
   const problem =
     probed.error ?? (record === undefined && probed.value !== undefined ? 'the probe is not a vector field' : undefined)
   return (
     <FigureFrame
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       {...(problem === undefined ? {} : { caption: <Note>unavailable: {problem}</Note> })}
     >
-      {option === undefined ? <div className="h-full" /> : <Chart figure={FIG} option={option} />}
+      {option === undefined ? <div className="h-full" /> : <Chart figure={base} option={option} />}
     </FigureFrame>
   )
 }

@@ -22,7 +22,8 @@ export type StartPolicy = 'play' | 'first' | 'end'
 
 /**
  * Where a session is for a host that shows a quiet indicator: `preparing` while the tape is incomplete and nothing is
- * playing, `ready` once the whole tape exists and nothing is playing, `running` while it plays (including a play
+ * playing (also a disposed session, which is at step 0 with nothing computed: read `live.disposed` to tell it from a
+ * fresh one), `ready` once the whole tape exists and nothing is playing, `running` while it plays (including a play
  * pressed before the tape was ready, which plays at the head as live does).
  *
  * @index structure Where a session is: 'preparing', 'ready' or 'running' (`live.status`)
@@ -63,16 +64,19 @@ export function statusOf(playing: boolean, done: boolean): PlayStatus {
 }
 
 /**
- * The fraction of a run computed. The total is the run's budget in steps, so a run that stops early (it converged)
- * reads less than 1 until it ends, and exactly 1 once it has.
+ * The fraction of a run computed. While the run goes on the total is its budget in steps; once it has ended, whatever
+ * step it ended at (a run that converged after 8 of 1000 steps has a length of 8), the fraction is exactly 1, measured
+ * against its own length. So a run that stops early sits near 0 while it computes and reaches 1 on the step that ends it,
+ * and an indicator driven by this always completes.
  *
  * @param head - The step reached (of a comparison, the step every variant has reached).
- * @param done - Whether the run has ended.
+ * @param done - Whether the run has ended (then the result is 1, the run being as long as it turned out to be).
  * @param total - The budget in steps (default 1000, the engine's own).
  * @returns A number from 0 to 1.
  * @example
  * progressOf(50, false, 200) // => 0.25
  * progressOf(80, true, 200) // => 1
+ * progressOf(8, true, 1000) // => 1
  */
 export function progressOf(head: number, done: boolean, total: number = DEFAULT_STEPS): number {
   if (done) return 1
