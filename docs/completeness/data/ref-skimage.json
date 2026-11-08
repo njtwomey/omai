@@ -1,0 +1,2431 @@
+{
+"library": "skimage",
+"version": "0.26.0",
+"source": "introspection",
+"entries": [
+{
+"area": "skimage.color",
+"name": "combine_stains",
+"kind": "function",
+"doc": "Stain to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "convert_colorspace",
+"kind": "function",
+"doc": "Convert an image array to a new color space."
+},
+{
+"area": "skimage.color",
+"name": "deltaE_cie76",
+"kind": "function",
+"doc": "Euclidean distance between two points in Lab color space"
+},
+{
+"area": "skimage.color",
+"name": "deltaE_ciede2000",
+"kind": "function",
+"doc": "Color difference as given by the CIEDE 2000 standard."
+},
+{
+"area": "skimage.color",
+"name": "deltaE_ciede94",
+"kind": "function",
+"doc": "Color difference according to CIEDE 94 standard"
+},
+{
+"area": "skimage.color",
+"name": "deltaE_cmc",
+"kind": "function",
+"doc": "Color difference from the  CMC l:c standard."
+},
+{
+"area": "skimage.color",
+"name": "gray2rgb",
+"kind": "function",
+"doc": "Create an RGB representation of a gray-level image."
+},
+{
+"area": "skimage.color",
+"name": "gray2rgba",
+"kind": "function",
+"doc": "Create a RGBA representation of a gray-level image."
+},
+{
+"area": "skimage.color",
+"name": "hed2rgb",
+"kind": "function",
+"doc": "Haematoxylin-Eosin-DAB (HED) to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "hsv2rgb",
+"kind": "function",
+"doc": "HSV to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "lab2lch",
+"kind": "function",
+"doc": "Convert image in CIE-LAB to CIE-LCh color space."
+},
+{
+"area": "skimage.color",
+"name": "lab2rgb",
+"kind": "function",
+"doc": "Convert image in CIE-LAB to sRGB color space."
+},
+{
+"area": "skimage.color",
+"name": "lab2xyz",
+"kind": "function",
+"doc": "Convert image in CIE-LAB to XYZ color space."
+},
+{
+"area": "skimage.color",
+"name": "label2rgb",
+"kind": "function",
+"doc": "Return an RGB image where color-coded labels are painted over the image."
+},
+{
+"area": "skimage.color",
+"name": "lch2lab",
+"kind": "function",
+"doc": "Convert image in CIE-LCh to CIE-LAB color space."
+},
+{
+"area": "skimage.color",
+"name": "luv2rgb",
+"kind": "function",
+"doc": "Luv to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "luv2xyz",
+"kind": "function",
+"doc": "CIE-Luv to XYZ color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2gray",
+"kind": "function",
+"doc": "Compute luminance of an RGB image."
+},
+{
+"area": "skimage.color",
+"name": "rgb2hed",
+"kind": "function",
+"doc": "RGB to Haematoxylin-Eosin-DAB (HED) color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2hsv",
+"kind": "function",
+"doc": "RGB to HSV color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2lab",
+"kind": "function",
+"doc": "Conversion from the sRGB color space (IEC 61966-2-1:1999)"
+},
+{
+"area": "skimage.color",
+"name": "rgb2luv",
+"kind": "function",
+"doc": "RGB to CIE-Luv color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2rgbcie",
+"kind": "function",
+"doc": "RGB to RGB CIE color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2xyz",
+"kind": "function",
+"doc": "RGB to XYZ color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2ycbcr",
+"kind": "function",
+"doc": "RGB to YCbCr color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2ydbdr",
+"kind": "function",
+"doc": "RGB to YDbDr color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2yiq",
+"kind": "function",
+"doc": "RGB to YIQ color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2ypbpr",
+"kind": "function",
+"doc": "RGB to YPbPr color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgb2yuv",
+"kind": "function",
+"doc": "RGB to YUV color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "rgba2rgb",
+"kind": "function",
+"doc": "RGBA to RGB conversion using alpha blending [1]_."
+},
+{
+"area": "skimage.color",
+"name": "rgbcie2rgb",
+"kind": "function",
+"doc": "RGB CIE to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "separate_stains",
+"kind": "function",
+"doc": "RGB to stain color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "xyz2lab",
+"kind": "function",
+"doc": "XYZ to CIE-LAB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "xyz2luv",
+"kind": "function",
+"doc": "XYZ to CIE-Luv color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "xyz2rgb",
+"kind": "function",
+"doc": "XYZ to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "xyz_tristimulus_values",
+"kind": "function",
+"doc": "Get the CIE XYZ tristimulus values."
+},
+{
+"area": "skimage.color",
+"name": "ycbcr2rgb",
+"kind": "function",
+"doc": "YCbCr to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "ydbdr2rgb",
+"kind": "function",
+"doc": "YDbDr to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "yiq2rgb",
+"kind": "function",
+"doc": "YIQ to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "ypbpr2rgb",
+"kind": "function",
+"doc": "YPbPr to RGB color space conversion."
+},
+{
+"area": "skimage.color",
+"name": "yuv2rgb",
+"kind": "function",
+"doc": "YUV to RGB color space conversion."
+},
+{
+"area": "skimage.data",
+"name": "astronaut",
+"kind": "function",
+"doc": "Color image of the astronaut Eileen Collins."
+},
+{
+"area": "skimage.data",
+"name": "binary_blobs",
+"kind": "function",
+"doc": "Generate synthetic binary image with several rounded blob-like objects."
+},
+{
+"area": "skimage.data",
+"name": "brain",
+"kind": "function",
+"doc": "Subset of data from the University of North Carolina Volume Rendering"
+},
+{
+"area": "skimage.data",
+"name": "brick",
+"kind": "function",
+"doc": "Brick wall."
+},
+{
+"area": "skimage.data",
+"name": "camera",
+"kind": "function",
+"doc": "Gray-level \"camera\" image."
+},
+{
+"area": "skimage.data",
+"name": "cat",
+"kind": "function",
+"doc": "Chelsea the cat."
+},
+{
+"area": "skimage.data",
+"name": "cell",
+"kind": "function",
+"doc": "Cell floating in saline."
+},
+{
+"area": "skimage.data",
+"name": "cells3d",
+"kind": "function",
+"doc": "3D fluorescence microscopy image of cells."
+},
+{
+"area": "skimage.data",
+"name": "checkerboard",
+"kind": "function",
+"doc": "Checkerboard image."
+},
+{
+"area": "skimage.data",
+"name": "chelsea",
+"kind": "function",
+"doc": "Chelsea the cat."
+},
+{
+"area": "skimage.data",
+"name": "clock",
+"kind": "function",
+"doc": "Motion blurred clock."
+},
+{
+"area": "skimage.data",
+"name": "coffee",
+"kind": "function",
+"doc": "Coffee cup."
+},
+{
+"area": "skimage.data",
+"name": "coins",
+"kind": "function",
+"doc": "Greek coins from Pompeii."
+},
+{
+"area": "skimage.data",
+"name": "colorwheel",
+"kind": "function",
+"doc": "Color Wheel."
+},
+{
+"area": "skimage.data",
+"name": "download_all",
+"kind": "function",
+"doc": "Download all datasets for use with scikit-image offline."
+},
+{
+"area": "skimage.data",
+"name": "eagle",
+"kind": "function",
+"doc": "A golden eagle."
+},
+{
+"area": "skimage.data",
+"name": "grass",
+"kind": "function",
+"doc": "Grass."
+},
+{
+"area": "skimage.data",
+"name": "gravel",
+"kind": "function",
+"doc": "Gravel"
+},
+{
+"area": "skimage.data",
+"name": "horse",
+"kind": "function",
+"doc": "Black and white silhouette of a horse."
+},
+{
+"area": "skimage.data",
+"name": "hubble_deep_field",
+"kind": "function",
+"doc": "Hubble eXtreme Deep Field."
+},
+{
+"area": "skimage.data",
+"name": "human_mitosis",
+"kind": "function",
+"doc": "Image of human cells undergoing mitosis."
+},
+{
+"area": "skimage.data",
+"name": "immunohistochemistry",
+"kind": "function",
+"doc": "Immunohistochemical (IHC) staining with hematoxylin counterstaining."
+},
+{
+"area": "skimage.data",
+"name": "kidney",
+"kind": "function",
+"doc": "Mouse kidney tissue."
+},
+{
+"area": "skimage.data",
+"name": "lbp_frontal_face_cascade_filename",
+"kind": "function",
+"doc": "Return the path to the XML file containing the weak classifier cascade."
+},
+{
+"area": "skimage.data",
+"name": "lfw_subset",
+"kind": "function",
+"doc": "Subset of data from the LFW dataset."
+},
+{
+"area": "skimage.data",
+"name": "lily",
+"kind": "function",
+"doc": "Lily of the valley plant stem."
+},
+{
+"area": "skimage.data",
+"name": "logo",
+"kind": "function",
+"doc": "Scikit-image logo, a RGBA image."
+},
+{
+"area": "skimage.data",
+"name": "microaneurysms",
+"kind": "function",
+"doc": "Gray-level \"microaneurysms\" image."
+},
+{
+"area": "skimage.data",
+"name": "moon",
+"kind": "function",
+"doc": "Surface of the moon."
+},
+{
+"area": "skimage.data",
+"name": "nickel_solidification",
+"kind": "function",
+"doc": "Image sequence of synchrotron x-radiographs showing the rapid"
+},
+{
+"area": "skimage.data",
+"name": "page",
+"kind": "function",
+"doc": "Scanned page."
+},
+{
+"area": "skimage.data",
+"name": "palisades_of_vogt",
+"kind": "function",
+"doc": "Return image sequence of in-vivo tissue showing the palisades of Vogt."
+},
+{
+"area": "skimage.data",
+"name": "protein_transport",
+"kind": "function",
+"doc": "Microscopy image sequence with fluorescence tagging of proteins"
+},
+{
+"area": "skimage.data",
+"name": "retina",
+"kind": "function",
+"doc": "Human retina."
+},
+{
+"area": "skimage.data",
+"name": "rocket",
+"kind": "function",
+"doc": "Launch photo of DSCOVR on Falcon 9 by SpaceX."
+},
+{
+"area": "skimage.data",
+"name": "shepp_logan_phantom",
+"kind": "function",
+"doc": "Shepp Logan Phantom."
+},
+{
+"area": "skimage.data",
+"name": "skin",
+"kind": "function",
+"doc": "Microscopy image of dermis and epidermis (skin layers)."
+},
+{
+"area": "skimage.data",
+"name": "stereo_motorcycle",
+"kind": "function",
+"doc": "Rectified stereo image pair with ground-truth disparities."
+},
+{
+"area": "skimage.data",
+"name": "text",
+"kind": "function",
+"doc": "Gray-level \"text\" image used for corner detection."
+},
+{
+"area": "skimage.data",
+"name": "vortex",
+"kind": "function",
+"doc": "Case B1 image pair from the first PIV challenge."
+},
+{
+"area": "skimage.draw",
+"name": "_bezier_segment",
+"kind": "function",
+"doc": "Generate Bezier segment coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "bezier_curve",
+"kind": "function",
+"doc": "Generate Bezier curve coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "circle_perimeter",
+"kind": "function",
+"doc": "Generate circle perimeter coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "circle_perimeter_aa",
+"kind": "function",
+"doc": "Generate anti-aliased circle perimeter coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "disk",
+"kind": "function",
+"doc": "Generate coordinates of pixels within circle."
+},
+{
+"area": "skimage.draw",
+"name": "ellipse",
+"kind": "function",
+"doc": "Generate coordinates of pixels within ellipse."
+},
+{
+"area": "skimage.draw",
+"name": "ellipse_perimeter",
+"kind": "function",
+"doc": "Generate ellipse perimeter coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "ellipsoid",
+"kind": "function",
+"doc": "Generate ellipsoid for given semi-axis lengths."
+},
+{
+"area": "skimage.draw",
+"name": "ellipsoid_stats",
+"kind": "function",
+"doc": "Calculate analytical volume and surface area of an ellipsoid."
+},
+{
+"area": "skimage.draw",
+"name": "line",
+"kind": "function",
+"doc": "Generate line pixel coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "line_aa",
+"kind": "function",
+"doc": "Generate anti-aliased line pixel coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "line_nd",
+"kind": "function",
+"doc": "Draw a single-pixel thick line in n dimensions."
+},
+{
+"area": "skimage.draw",
+"name": "polygon",
+"kind": "function",
+"doc": "Generate coordinates of pixels inside a polygon."
+},
+{
+"area": "skimage.draw",
+"name": "polygon2mask",
+"kind": "function",
+"doc": "Create a binary mask from a polygon."
+},
+{
+"area": "skimage.draw",
+"name": "polygon_perimeter",
+"kind": "function",
+"doc": "Generate polygon perimeter coordinates."
+},
+{
+"area": "skimage.draw",
+"name": "random_shapes",
+"kind": "function",
+"doc": "Generate an image with random shapes, labeled with bounding boxes."
+},
+{
+"area": "skimage.draw",
+"name": "rectangle",
+"kind": "function",
+"doc": "Generate coordinates of pixels within a rectangle."
+},
+{
+"area": "skimage.draw",
+"name": "rectangle_perimeter",
+"kind": "function",
+"doc": "Generate coordinates of pixels that are exactly around a rectangle."
+},
+{
+"area": "skimage.draw",
+"name": "set_color",
+"kind": "function",
+"doc": "Set pixel color in the image at the given coordinates."
+},
+{
+"area": "skimage.exposure",
+"name": "adjust_gamma",
+"kind": "function",
+"doc": "Perform gamma correction on the input image."
+},
+{
+"area": "skimage.exposure",
+"name": "adjust_log",
+"kind": "function",
+"doc": "Performs Logarithmic correction on the input image."
+},
+{
+"area": "skimage.exposure",
+"name": "adjust_sigmoid",
+"kind": "function",
+"doc": "Performs Sigmoid Correction on the input image."
+},
+{
+"area": "skimage.exposure",
+"name": "cumulative_distribution",
+"kind": "function",
+"doc": "Return cumulative distribution function (cdf) for the given image."
+},
+{
+"area": "skimage.exposure",
+"name": "equalize_adapthist",
+"kind": "function",
+"doc": "Contrast Limited Adaptive Histogram Equalization (CLAHE)."
+},
+{
+"area": "skimage.exposure",
+"name": "equalize_hist",
+"kind": "function",
+"doc": "Return image after histogram equalization."
+},
+{
+"area": "skimage.exposure",
+"name": "histogram",
+"kind": "function",
+"doc": "Return histogram of image."
+},
+{
+"area": "skimage.exposure",
+"name": "is_low_contrast",
+"kind": "function",
+"doc": "Determine if an image is low contrast."
+},
+{
+"area": "skimage.exposure",
+"name": "match_histograms",
+"kind": "function",
+"doc": "Adjust an image so that its cumulative histogram matches that of another."
+},
+{
+"area": "skimage.exposure",
+"name": "rescale_intensity",
+"kind": "function",
+"doc": "Return image after stretching or shrinking its intensity levels."
+},
+{
+"area": "skimage.feature",
+"name": "BRIEF",
+"kind": "class",
+"doc": "BRIEF binary descriptor extractor."
+},
+{
+"area": "skimage.feature",
+"name": "CENSURE",
+"kind": "class",
+"doc": "CENSURE keypoint detector."
+},
+{
+"area": "skimage.feature",
+"name": "Cascade",
+"kind": "class",
+"doc": "Class for cascade of classifiers that is used for object detection."
+},
+{
+"area": "skimage.feature",
+"name": "ORB",
+"kind": "class",
+"doc": "Oriented FAST and rotated BRIEF feature detector and binary descriptor"
+},
+{
+"area": "skimage.feature",
+"name": "SIFT",
+"kind": "class",
+"doc": "SIFT feature detection and descriptor extraction."
+},
+{
+"area": "skimage.feature",
+"name": "blob_dog",
+"kind": "function",
+"doc": "Finds blobs in the given grayscale image."
+},
+{
+"area": "skimage.feature",
+"name": "blob_doh",
+"kind": "function",
+"doc": "Finds blobs in the given grayscale image."
+},
+{
+"area": "skimage.feature",
+"name": "blob_log",
+"kind": "function",
+"doc": "Finds blobs in the given grayscale image."
+},
+{
+"area": "skimage.feature",
+"name": "canny",
+"kind": "function",
+"doc": "Edge filter an image using the Canny algorithm."
+},
+{
+"area": "skimage.feature",
+"name": "corner_fast",
+"kind": "function",
+"doc": "Extract FAST corners for a given image."
+},
+{
+"area": "skimage.feature",
+"name": "corner_foerstner",
+"kind": "function",
+"doc": "Compute Foerstner corner measure response image."
+},
+{
+"area": "skimage.feature",
+"name": "corner_harris",
+"kind": "function",
+"doc": "Compute Harris corner measure response image."
+},
+{
+"area": "skimage.feature",
+"name": "corner_kitchen_rosenfeld",
+"kind": "function",
+"doc": "Compute Kitchen and Rosenfeld corner measure response image."
+},
+{
+"area": "skimage.feature",
+"name": "corner_moravec",
+"kind": "function",
+"doc": "Compute Moravec corner measure response image."
+},
+{
+"area": "skimage.feature",
+"name": "corner_orientations",
+"kind": "function",
+"doc": "Compute the orientation of corners."
+},
+{
+"area": "skimage.feature",
+"name": "corner_peaks",
+"kind": "function",
+"doc": "Find peaks in corner measure response image."
+},
+{
+"area": "skimage.feature",
+"name": "corner_shi_tomasi",
+"kind": "function",
+"doc": "Compute Shi-Tomasi (Kanade-Tomasi) corner measure response image."
+},
+{
+"area": "skimage.feature",
+"name": "corner_subpix",
+"kind": "function",
+"doc": "Determine subpixel position of corners."
+},
+{
+"area": "skimage.feature",
+"name": "daisy",
+"kind": "function",
+"doc": "Extract DAISY feature descriptors densely for the given image."
+},
+{
+"area": "skimage.feature",
+"name": "draw_haar_like_feature",
+"kind": "function",
+"doc": "Visualization of Haar-like features."
+},
+{
+"area": "skimage.feature",
+"name": "draw_multiblock_lbp",
+"kind": "function",
+"doc": "Multi-block local binary pattern visualization."
+},
+{
+"area": "skimage.feature",
+"name": "fisher_vector",
+"kind": "function",
+"doc": "Compute the Fisher vector given some descriptors/vectors,"
+},
+{
+"area": "skimage.feature",
+"name": "graycomatrix",
+"kind": "function",
+"doc": "Calculate the gray-level co-occurrence matrix."
+},
+{
+"area": "skimage.feature",
+"name": "graycoprops",
+"kind": "function",
+"doc": "Calculate texture properties of a GLCM."
+},
+{
+"area": "skimage.feature",
+"name": "haar_like_feature",
+"kind": "function",
+"doc": "Compute the Haar-like features for a region of interest (ROI) of an"
+},
+{
+"area": "skimage.feature",
+"name": "haar_like_feature_coord",
+"kind": "function",
+"doc": "Compute the coordinates of Haar-like features."
+},
+{
+"area": "skimage.feature",
+"name": "hessian_matrix",
+"kind": "function",
+"doc": "Compute the Hessian matrix."
+},
+{
+"area": "skimage.feature",
+"name": "hessian_matrix_det",
+"kind": "function",
+"doc": "Compute the approximate Hessian Determinant over an image."
+},
+{
+"area": "skimage.feature",
+"name": "hessian_matrix_eigvals",
+"kind": "function",
+"doc": "Compute eigenvalues of Hessian matrix."
+},
+{
+"area": "skimage.feature",
+"name": "hog",
+"kind": "function",
+"doc": "Extract Histogram of Oriented Gradients (HOG) for a given image."
+},
+{
+"area": "skimage.feature",
+"name": "learn_gmm",
+"kind": "function",
+"doc": "Estimate a Gaussian mixture model (GMM) given a set of descriptors and"
+},
+{
+"area": "skimage.feature",
+"name": "local_binary_pattern",
+"kind": "function",
+"doc": "Compute the local binary patterns (LBP) of an image."
+},
+{
+"area": "skimage.feature",
+"name": "match_descriptors",
+"kind": "function",
+"doc": "Brute-force matching of descriptors."
+},
+{
+"area": "skimage.feature",
+"name": "match_template",
+"kind": "function",
+"doc": "Match a template to a 2-D or 3-D image using normalized correlation."
+},
+{
+"area": "skimage.feature",
+"name": "multiblock_lbp",
+"kind": "function",
+"doc": "Multi-block local binary pattern (MB-LBP)."
+},
+{
+"area": "skimage.feature",
+"name": "multiscale_basic_features",
+"kind": "function",
+"doc": "Local features for a single- or multi-channel nd image."
+},
+{
+"area": "skimage.feature",
+"name": "peak_local_max",
+"kind": "function",
+"doc": "Find peaks in an image as coordinate list."
+},
+{
+"area": "skimage.feature",
+"name": "plot_matched_features",
+"kind": "function",
+"doc": "Plot matched features between two images."
+},
+{
+"area": "skimage.feature",
+"name": "shape_index",
+"kind": "function",
+"doc": "Compute the shape index."
+},
+{
+"area": "skimage.feature",
+"name": "structure_tensor",
+"kind": "function",
+"doc": "Compute structure tensor using sum of squared differences."
+},
+{
+"area": "skimage.feature",
+"name": "structure_tensor_eigenvalues",
+"kind": "function",
+"doc": "Compute eigenvalues of structure tensor."
+},
+{
+"area": "skimage.filters",
+"name": "LPIFilter2D",
+"kind": "class",
+"doc": "Linear Position-Invariant Filter (2-dimensional)"
+},
+{
+"area": "skimage.filters",
+"name": "apply_hysteresis_threshold",
+"kind": "function",
+"doc": "Apply hysteresis thresholding to ``image``."
+},
+{
+"area": "skimage.filters",
+"name": "butterworth",
+"kind": "function",
+"doc": "Apply a Butterworth filter to enhance high or low frequency features."
+},
+{
+"area": "skimage.filters",
+"name": "correlate_sparse",
+"kind": "function",
+"doc": "Compute valid cross-correlation of `padded_array` and `kernel`."
+},
+{
+"area": "skimage.filters",
+"name": "difference_of_gaussians",
+"kind": "function",
+"doc": "Find features between ``low_sigma`` and ``high_sigma`` in size."
+},
+{
+"area": "skimage.filters",
+"name": "farid",
+"kind": "function",
+"doc": "Find the edge magnitude using the Farid transform."
+},
+{
+"area": "skimage.filters",
+"name": "farid_h",
+"kind": "function",
+"doc": "Find the horizontal edges of an image using the Farid transform."
+},
+{
+"area": "skimage.filters",
+"name": "farid_v",
+"kind": "function",
+"doc": "Find the vertical edges of an image using the Farid transform."
+},
+{
+"area": "skimage.filters",
+"name": "filter_forward",
+"kind": "function",
+"doc": "Apply the given filter to data."
+},
+{
+"area": "skimage.filters",
+"name": "filter_inverse",
+"kind": "function",
+"doc": "Apply the filter in reverse to the given data."
+},
+{
+"area": "skimage.filters",
+"name": "frangi",
+"kind": "function",
+"doc": "Filter an image with the Frangi vesselness filter."
+},
+{
+"area": "skimage.filters",
+"name": "gabor",
+"kind": "function",
+"doc": "Return real and imaginary responses to Gabor filter."
+},
+{
+"area": "skimage.filters",
+"name": "gabor_kernel",
+"kind": "function",
+"doc": "Return complex 2D Gabor filter kernel."
+},
+{
+"area": "skimage.filters",
+"name": "gaussian",
+"kind": "function",
+"doc": "Multi-dimensional Gaussian filter."
+},
+{
+"area": "skimage.filters",
+"name": "hessian",
+"kind": "function",
+"doc": "Filter an image with the Hybrid Hessian filter."
+},
+{
+"area": "skimage.filters",
+"name": "laplace",
+"kind": "function",
+"doc": "Find the edges of an image using the Laplace operator."
+},
+{
+"area": "skimage.filters",
+"name": "median",
+"kind": "function",
+"doc": "Return local median of an image."
+},
+{
+"area": "skimage.filters",
+"name": "meijering",
+"kind": "function",
+"doc": "Filter an image with the Meijering neuriteness filter."
+},
+{
+"area": "skimage.filters",
+"name": "prewitt",
+"kind": "function",
+"doc": "Find the edge magnitude using the Prewitt transform."
+},
+{
+"area": "skimage.filters",
+"name": "prewitt_h",
+"kind": "function",
+"doc": "Find the horizontal edges of an image using the Prewitt transform."
+},
+{
+"area": "skimage.filters",
+"name": "prewitt_v",
+"kind": "function",
+"doc": "Find the vertical edges of an image using the Prewitt transform."
+},
+{
+"area": "skimage.filters",
+"name": "rank_order",
+"kind": "function",
+"doc": "Return an image of the same shape where each pixel is the"
+},
+{
+"area": "skimage.filters",
+"name": "roberts",
+"kind": "function",
+"doc": "Find the edge magnitude using Roberts' cross operator."
+},
+{
+"area": "skimage.filters",
+"name": "roberts_neg_diag",
+"kind": "function",
+"doc": "Find the cross edges of an image using the Roberts' Cross operator."
+},
+{
+"area": "skimage.filters",
+"name": "roberts_pos_diag",
+"kind": "function",
+"doc": "Find the cross edges of an image using Roberts' cross operator."
+},
+{
+"area": "skimage.filters",
+"name": "sato",
+"kind": "function",
+"doc": "Filter an image with the Sato tubeness filter."
+},
+{
+"area": "skimage.filters",
+"name": "scharr",
+"kind": "function",
+"doc": "Find the edge magnitude using the Scharr transform."
+},
+{
+"area": "skimage.filters",
+"name": "scharr_h",
+"kind": "function",
+"doc": "Find the horizontal edges of an image using the Scharr transform."
+},
+{
+"area": "skimage.filters",
+"name": "scharr_v",
+"kind": "function",
+"doc": "Find the vertical edges of an image using the Scharr transform."
+},
+{
+"area": "skimage.filters",
+"name": "sobel",
+"kind": "function",
+"doc": "Find edges in an image using the Sobel filter."
+},
+{
+"area": "skimage.filters",
+"name": "sobel_h",
+"kind": "function",
+"doc": "Find the horizontal edges of an image using the Sobel transform."
+},
+{
+"area": "skimage.filters",
+"name": "sobel_v",
+"kind": "function",
+"doc": "Find the vertical edges of an image using the Sobel transform."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_isodata",
+"kind": "function",
+"doc": "Return threshold value(s) based on ISODATA method."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_li",
+"kind": "function",
+"doc": "Compute threshold value by Li's iterative Minimum Cross Entropy method."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_local",
+"kind": "function",
+"doc": "Compute a threshold mask image based on local pixel neighborhood."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_mean",
+"kind": "function",
+"doc": "Return threshold value based on the mean of grayscale values."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_minimum",
+"kind": "function",
+"doc": "Return threshold value based on minimum method."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_multiotsu",
+"kind": "function",
+"doc": "Generate `classes`-1 threshold values to divide gray levels in `image`,"
+},
+{
+"area": "skimage.filters",
+"name": "threshold_niblack",
+"kind": "function",
+"doc": "Applies Niblack local threshold to an array."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_otsu",
+"kind": "function",
+"doc": "Return threshold value based on Otsu's method."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_sauvola",
+"kind": "function",
+"doc": "Applies Sauvola local threshold to an array. Sauvola is a"
+},
+{
+"area": "skimage.filters",
+"name": "threshold_triangle",
+"kind": "function",
+"doc": "Return threshold value based on the triangle algorithm."
+},
+{
+"area": "skimage.filters",
+"name": "threshold_yen",
+"kind": "function",
+"doc": "Return threshold value based on Yen's method."
+},
+{
+"area": "skimage.filters",
+"name": "try_all_threshold",
+"kind": "function",
+"doc": "Returns a figure comparing the outputs of different thresholding methods."
+},
+{
+"area": "skimage.filters",
+"name": "unsharp_mask",
+"kind": "function",
+"doc": "Unsharp masking filter."
+},
+{
+"area": "skimage.filters",
+"name": "wiener",
+"kind": "function",
+"doc": "Minimum Mean Square Error (Wiener) inverse filter."
+},
+{
+"area": "skimage.filters",
+"name": "window",
+"kind": "function",
+"doc": "Return an n-dimensional window of a given size and dimensionality."
+},
+{
+"area": "skimage.graph",
+"name": "MCP",
+"kind": "class",
+"doc": "MCP(costs, offsets=None, fully_connected=True, sampling=None)"
+},
+{
+"area": "skimage.graph",
+"name": "MCP_Connect",
+"kind": "class",
+"doc": "MCP_Connect(costs, offsets=None, fully_connected=True)"
+},
+{
+"area": "skimage.graph",
+"name": "MCP_Flexible",
+"kind": "class",
+"doc": "MCP_Flexible(costs, offsets=None, fully_connected=True)"
+},
+{
+"area": "skimage.graph",
+"name": "MCP_Geometric",
+"kind": "class",
+"doc": "MCP_Geometric(costs, offsets=None, fully_connected=True)"
+},
+{
+"area": "skimage.graph",
+"name": "RAG",
+"kind": "class",
+"doc": "The Region Adjacency Graph (RAG) of an image, subclasses :obj:`networkx.Graph`."
+},
+{
+"area": "skimage.graph",
+"name": "central_pixel",
+"kind": "function",
+"doc": "Find the pixel with the highest closeness centrality."
+},
+{
+"area": "skimage.graph",
+"name": "cut_normalized",
+"kind": "function",
+"doc": "Perform Normalized Graph cut on the Region Adjacency Graph."
+},
+{
+"area": "skimage.graph",
+"name": "cut_threshold",
+"kind": "function",
+"doc": "Combine regions separated by weight less than threshold."
+},
+{
+"area": "skimage.graph",
+"name": "merge_hierarchical",
+"kind": "function",
+"doc": "Perform hierarchical merging of a RAG."
+},
+{
+"area": "skimage.graph",
+"name": "pixel_graph",
+"kind": "function",
+"doc": "Create an adjacency graph of pixels in an image."
+},
+{
+"area": "skimage.graph",
+"name": "rag_boundary",
+"kind": "function",
+"doc": "Comouter RAG based on region boundaries"
+},
+{
+"area": "skimage.graph",
+"name": "rag_mean_color",
+"kind": "function",
+"doc": "Compute the Region Adjacency Graph using mean colors."
+},
+{
+"area": "skimage.graph",
+"name": "route_through_array",
+"kind": "function",
+"doc": "Simple example of how to use the MCP and MCP_Geometric classes."
+},
+{
+"area": "skimage.graph",
+"name": "shortest_path",
+"kind": "function",
+"doc": "Find the shortest path through an n-d array from one side to another."
+},
+{
+"area": "skimage.graph",
+"name": "show_rag",
+"kind": "function",
+"doc": "Show a Region Adjacency Graph on an image."
+},
+{
+"area": "skimage.measure",
+"name": "CircleModel",
+"kind": "class",
+"doc": "Total least squares estimator for 2D circles."
+},
+{
+"area": "skimage.measure",
+"name": "EllipseModel",
+"kind": "class",
+"doc": "Total least squares estimator for 2D ellipses."
+},
+{
+"area": "skimage.measure",
+"name": "LineModelND",
+"kind": "class",
+"doc": "Total least squares estimator for N-dimensional lines."
+},
+{
+"area": "skimage.measure",
+"name": "RansacModelProtocol",
+"kind": "class",
+"doc": "Protocol for `ransac` model class."
+},
+{
+"area": "skimage.measure",
+"name": "approximate_polygon",
+"kind": "function",
+"doc": "Approximate a polygonal chain with the specified tolerance."
+},
+{
+"area": "skimage.measure",
+"name": "block_reduce",
+"kind": "function",
+"doc": "Downsample image by applying function `func` to local blocks."
+},
+{
+"area": "skimage.measure",
+"name": "blur_effect",
+"kind": "function",
+"doc": "Compute a metric that indicates the strength of blur in an image"
+},
+{
+"area": "skimage.measure",
+"name": "centroid",
+"kind": "function",
+"doc": "Return the (weighted) centroid of an image."
+},
+{
+"area": "skimage.measure",
+"name": "euler_number",
+"kind": "function",
+"doc": "Calculate the Euler characteristic in binary image."
+},
+{
+"area": "skimage.measure",
+"name": "find_contours",
+"kind": "function",
+"doc": "Find iso-valued contours in a 2D array for a given level value."
+},
+{
+"area": "skimage.measure",
+"name": "grid_points_in_poly",
+"kind": "function",
+"doc": "Test whether points on a specified grid are inside a polygon."
+},
+{
+"area": "skimage.measure",
+"name": "inertia_tensor",
+"kind": "function",
+"doc": "Compute the inertia tensor of the input image."
+},
+{
+"area": "skimage.measure",
+"name": "inertia_tensor_eigvals",
+"kind": "function",
+"doc": "Compute the eigenvalues of the inertia tensor of the image."
+},
+{
+"area": "skimage.measure",
+"name": "intersection_coeff",
+"kind": "function",
+"doc": "Fraction of a channel's segmented binary mask that overlaps with a"
+},
+{
+"area": "skimage.measure",
+"name": "label",
+"kind": "function",
+"doc": "Label connected regions of an integer array."
+},
+{
+"area": "skimage.measure",
+"name": "manders_coloc_coeff",
+"kind": "function",
+"doc": "Manders' colocalization coefficient between two image channels."
+},
+{
+"area": "skimage.measure",
+"name": "manders_overlap_coeff",
+"kind": "function",
+"doc": "Manders' overlap coefficient"
+},
+{
+"area": "skimage.measure",
+"name": "marching_cubes",
+"kind": "function",
+"doc": "Marching cubes algorithm to find surfaces in 3d volumetric data."
+},
+{
+"area": "skimage.measure",
+"name": "mesh_surface_area",
+"kind": "function",
+"doc": "Compute surface area, given vertices and triangular faces."
+},
+{
+"area": "skimage.measure",
+"name": "moments",
+"kind": "function",
+"doc": "Calculate all raw image moments up to a certain order."
+},
+{
+"area": "skimage.measure",
+"name": "moments_central",
+"kind": "function",
+"doc": "Calculate all central image moments up to a certain order."
+},
+{
+"area": "skimage.measure",
+"name": "moments_coords",
+"kind": "function",
+"doc": "Calculate all raw image moments up to a certain order."
+},
+{
+"area": "skimage.measure",
+"name": "moments_coords_central",
+"kind": "function",
+"doc": "Calculate all central image moments up to a certain order."
+},
+{
+"area": "skimage.measure",
+"name": "moments_hu",
+"kind": "function",
+"doc": "Calculate Hu's set of image moments (2D-only)."
+},
+{
+"area": "skimage.measure",
+"name": "moments_normalized",
+"kind": "function",
+"doc": "Calculate all normalized central image moments up to a certain order."
+},
+{
+"area": "skimage.measure",
+"name": "pearson_corr_coeff",
+"kind": "function",
+"doc": "Calculate Pearson's Correlation Coefficient between pixel intensities"
+},
+{
+"area": "skimage.measure",
+"name": "perimeter",
+"kind": "function",
+"doc": "Calculate total perimeter of all objects in binary image."
+},
+{
+"area": "skimage.measure",
+"name": "perimeter_crofton",
+"kind": "function",
+"doc": "Calculate total Crofton perimeter of all objects in binary image."
+},
+{
+"area": "skimage.measure",
+"name": "points_in_poly",
+"kind": "function",
+"doc": "Test whether points lie inside a polygon."
+},
+{
+"area": "skimage.measure",
+"name": "profile_line",
+"kind": "function",
+"doc": "Return the intensity profile of an image measured along a scan line."
+},
+{
+"area": "skimage.measure",
+"name": "ransac",
+"kind": "function",
+"doc": "Fit a model to data with the RANSAC (random sample consensus) algorithm."
+},
+{
+"area": "skimage.measure",
+"name": "regionprops",
+"kind": "function",
+"doc": "Measure properties of labeled image regions."
+},
+{
+"area": "skimage.measure",
+"name": "regionprops_table",
+"kind": "function",
+"doc": "Compute region properties and return them as a pandas-compatible table."
+},
+{
+"area": "skimage.measure",
+"name": "shannon_entropy",
+"kind": "function",
+"doc": "Calculate the Shannon entropy of an image."
+},
+{
+"area": "skimage.measure",
+"name": "subdivide_polygon",
+"kind": "function",
+"doc": "Subdivision of polygonal curves using B-Splines."
+},
+{
+"area": "skimage.metrics",
+"name": "adapted_rand_error",
+"kind": "function",
+"doc": "Compute Adapted Rand error as defined by the SNEMI3D contest. [1]_"
+},
+{
+"area": "skimage.metrics",
+"name": "contingency_table",
+"kind": "function",
+"doc": "Return the contingency table for all regions in matched segmentations."
+},
+{
+"area": "skimage.metrics",
+"name": "hausdorff_distance",
+"kind": "function",
+"doc": "Calculate the Hausdorff distance between nonzero elements of given images."
+},
+{
+"area": "skimage.metrics",
+"name": "hausdorff_pair",
+"kind": "function",
+"doc": "Returns pair of points that are Hausdorff distance apart between nonzero"
+},
+{
+"area": "skimage.metrics",
+"name": "mean_squared_error",
+"kind": "function",
+"doc": "Compute the mean-squared error between two images."
+},
+{
+"area": "skimage.metrics",
+"name": "normalized_mutual_information",
+"kind": "function",
+"doc": "Compute the normalized mutual information (NMI)."
+},
+{
+"area": "skimage.metrics",
+"name": "normalized_root_mse",
+"kind": "function",
+"doc": "Compute the normalized root mean-squared error (NRMSE) between two"
+},
+{
+"area": "skimage.metrics",
+"name": "peak_signal_noise_ratio",
+"kind": "function",
+"doc": "Compute the peak signal to noise ratio (PSNR) for an image."
+},
+{
+"area": "skimage.metrics",
+"name": "structural_similarity",
+"kind": "function",
+"doc": "Compute the mean structural similarity index between two images."
+},
+{
+"area": "skimage.metrics",
+"name": "variation_of_information",
+"kind": "function",
+"doc": "Return symmetric conditional entropies associated with the VI. [1]_"
+},
+{
+"area": "skimage.morphology",
+"name": "area_closing",
+"kind": "function",
+"doc": "Perform an area closing of the image."
+},
+{
+"area": "skimage.morphology",
+"name": "area_opening",
+"kind": "function",
+"doc": "Perform an area opening of the image."
+},
+{
+"area": "skimage.morphology",
+"name": "ball",
+"kind": "function",
+"doc": "Generates a ball-shaped footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "black_tophat",
+"kind": "function",
+"doc": "Return black top hat of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "closing",
+"kind": "function",
+"doc": "Return grayscale morphological closing of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "convex_hull_image",
+"kind": "function",
+"doc": "Compute the convex hull image of a binary image."
+},
+{
+"area": "skimage.morphology",
+"name": "convex_hull_object",
+"kind": "function",
+"doc": "Compute the convex hull image of individual objects in a binary image."
+},
+{
+"area": "skimage.morphology",
+"name": "diameter_closing",
+"kind": "function",
+"doc": "Perform a diameter closing of the image."
+},
+{
+"area": "skimage.morphology",
+"name": "diameter_opening",
+"kind": "function",
+"doc": "Perform a diameter opening of the image."
+},
+{
+"area": "skimage.morphology",
+"name": "diamond",
+"kind": "function",
+"doc": "Generates a flat, diamond-shaped footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "dilation",
+"kind": "function",
+"doc": "Return grayscale morphological dilation of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "disk",
+"kind": "function",
+"doc": "Generates a flat, disk-shaped footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "ellipse",
+"kind": "function",
+"doc": "Generates a flat, ellipse-shaped footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "erosion",
+"kind": "function",
+"doc": "Return grayscale morphological erosion of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "flood",
+"kind": "function",
+"doc": "Mask corresponding to a flood fill."
+},
+{
+"area": "skimage.morphology",
+"name": "flood_fill",
+"kind": "function",
+"doc": "Perform flood filling on an image."
+},
+{
+"area": "skimage.morphology",
+"name": "footprint_from_sequence",
+"kind": "function",
+"doc": "Convert a footprint sequence into an equivalent ndarray."
+},
+{
+"area": "skimage.morphology",
+"name": "footprint_rectangle",
+"kind": "function",
+"doc": "Generate a rectangular or hyper-rectangular footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "h_maxima",
+"kind": "function",
+"doc": "Determine all maxima of the image with height >= h."
+},
+{
+"area": "skimage.morphology",
+"name": "h_minima",
+"kind": "function",
+"doc": "Determine all minima of the image with depth >= h."
+},
+{
+"area": "skimage.morphology",
+"name": "isotropic_closing",
+"kind": "function",
+"doc": "Return binary morphological closing of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "isotropic_dilation",
+"kind": "function",
+"doc": "Return binary morphological dilation of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "isotropic_erosion",
+"kind": "function",
+"doc": "Return binary morphological erosion of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "isotropic_opening",
+"kind": "function",
+"doc": "Return binary morphological opening of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "label",
+"kind": "function",
+"doc": "Label connected regions of an integer array."
+},
+{
+"area": "skimage.morphology",
+"name": "local_maxima",
+"kind": "function",
+"doc": "Find local maxima of n-dimensional array."
+},
+{
+"area": "skimage.morphology",
+"name": "local_minima",
+"kind": "function",
+"doc": "Find local minima of n-dimensional array."
+},
+{
+"area": "skimage.morphology",
+"name": "max_tree",
+"kind": "function",
+"doc": "Build the max tree from an image."
+},
+{
+"area": "skimage.morphology",
+"name": "max_tree_local_maxima",
+"kind": "function",
+"doc": "Determine all local maxima of the image."
+},
+{
+"area": "skimage.morphology",
+"name": "medial_axis",
+"kind": "function",
+"doc": "Compute the medial axis transform of a binary image."
+},
+{
+"area": "skimage.morphology",
+"name": "mirror_footprint",
+"kind": "function",
+"doc": "Mirror each dimension in the footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "octagon",
+"kind": "function",
+"doc": "Generates an octagon shaped footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "octahedron",
+"kind": "function",
+"doc": "Generates a octahedron-shaped footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "opening",
+"kind": "function",
+"doc": "Return grayscale morphological opening of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "pad_footprint",
+"kind": "function",
+"doc": "Pad the footprint to an odd size along each dimension."
+},
+{
+"area": "skimage.morphology",
+"name": "reconstruction",
+"kind": "function",
+"doc": "Perform a morphological reconstruction of an image."
+},
+{
+"area": "skimage.morphology",
+"name": "remove_objects_by_distance",
+"kind": "function",
+"doc": "Remove objects, in specified order, until remaining are a minimum distance apart."
+},
+{
+"area": "skimage.morphology",
+"name": "remove_small_holes",
+"kind": "function",
+"doc": "Remove contiguous holes smaller than the specified size."
+},
+{
+"area": "skimage.morphology",
+"name": "remove_small_objects",
+"kind": "function",
+"doc": "Remove objects smaller than the specified size."
+},
+{
+"area": "skimage.morphology",
+"name": "skeletonize",
+"kind": "function",
+"doc": "Compute the skeleton of the input image via thinning."
+},
+{
+"area": "skimage.morphology",
+"name": "star",
+"kind": "function",
+"doc": "Generates a star shaped footprint."
+},
+{
+"area": "skimage.morphology",
+"name": "thin",
+"kind": "function",
+"doc": "Perform morphological thinning of a binary image."
+},
+{
+"area": "skimage.morphology",
+"name": "white_tophat",
+"kind": "function",
+"doc": "Return white top hat of an image."
+},
+{
+"area": "skimage.registration",
+"name": "optical_flow_ilk",
+"kind": "function",
+"doc": "Coarse to fine optical flow estimator."
+},
+{
+"area": "skimage.registration",
+"name": "optical_flow_tvl1",
+"kind": "function",
+"doc": "Coarse to fine optical flow estimator."
+},
+{
+"area": "skimage.registration",
+"name": "phase_cross_correlation",
+"kind": "function",
+"doc": "Efficient subpixel image translation registration by cross-correlation."
+},
+{
+"area": "skimage.restoration",
+"name": "ball_kernel",
+"kind": "function",
+"doc": "Create a ball kernel for restoration.rolling_ball."
+},
+{
+"area": "skimage.restoration",
+"name": "calibrate_denoiser",
+"kind": "function",
+"doc": "Calibrate a denoising function and return optimal J-invariant version."
+},
+{
+"area": "skimage.restoration",
+"name": "cycle_spin",
+"kind": "function",
+"doc": "Cycle spinning (repeatedly apply func to shifted versions of x)."
+},
+{
+"area": "skimage.restoration",
+"name": "denoise_bilateral",
+"kind": "function",
+"doc": "Denoise image using bilateral filter."
+},
+{
+"area": "skimage.restoration",
+"name": "denoise_invariant",
+"kind": "function",
+"doc": "Apply a J-invariant version of a denoising function."
+},
+{
+"area": "skimage.restoration",
+"name": "denoise_nl_means",
+"kind": "function",
+"doc": "Perform non-local means denoising on 2D-4D grayscale or RGB images."
+},
+{
+"area": "skimage.restoration",
+"name": "denoise_tv_bregman",
+"kind": "function",
+"doc": "Perform total variation denoising using split-Bregman optimization."
+},
+{
+"area": "skimage.restoration",
+"name": "denoise_tv_chambolle",
+"kind": "function",
+"doc": "Perform total variation denoising in nD."
+},
+{
+"area": "skimage.restoration",
+"name": "denoise_wavelet",
+"kind": "function",
+"doc": "Perform wavelet denoising on an image."
+},
+{
+"area": "skimage.restoration",
+"name": "ellipsoid_kernel",
+"kind": "function",
+"doc": "Create an ellipoid kernel for restoration.rolling_ball."
+},
+{
+"area": "skimage.restoration",
+"name": "estimate_sigma",
+"kind": "function",
+"doc": "Robust wavelet-based estimator of the (Gaussian) noise standard deviation."
+},
+{
+"area": "skimage.restoration",
+"name": "inpaint_biharmonic",
+"kind": "function",
+"doc": "Inpaint masked points in image with biharmonic equations."
+},
+{
+"area": "skimage.restoration",
+"name": "richardson_lucy",
+"kind": "function",
+"doc": "Richardson-Lucy deconvolution."
+},
+{
+"area": "skimage.restoration",
+"name": "rolling_ball",
+"kind": "function",
+"doc": "Estimate background intensity using the rolling-ball algorithm."
+},
+{
+"area": "skimage.restoration",
+"name": "unsupervised_wiener",
+"kind": "function",
+"doc": "Unsupervised Wiener-Hunt deconvolution."
+},
+{
+"area": "skimage.restoration",
+"name": "unwrap_phase",
+"kind": "function",
+"doc": "Recover the original from a wrapped phase image."
+},
+{
+"area": "skimage.restoration",
+"name": "wiener",
+"kind": "function",
+"doc": "Restore image using Wiener\u2013Hunt deconvolution."
+},
+{
+"area": "skimage.segmentation",
+"name": "active_contour",
+"kind": "function",
+"doc": "Active contour model."
+},
+{
+"area": "skimage.segmentation",
+"name": "chan_vese",
+"kind": "function",
+"doc": "Chan-Vese segmentation algorithm."
+},
+{
+"area": "skimage.segmentation",
+"name": "checkerboard_level_set",
+"kind": "function",
+"doc": "Create a checkerboard level set with binary values."
+},
+{
+"area": "skimage.segmentation",
+"name": "clear_border",
+"kind": "function",
+"doc": "Clear objects connected to the label image border."
+},
+{
+"area": "skimage.segmentation",
+"name": "disk_level_set",
+"kind": "function",
+"doc": "Create a disk level set with binary values."
+},
+{
+"area": "skimage.segmentation",
+"name": "expand_labels",
+"kind": "function",
+"doc": "Expand labels in label image by ``distance`` pixels without overlapping."
+},
+{
+"area": "skimage.segmentation",
+"name": "felzenszwalb",
+"kind": "function",
+"doc": "Computes Felsenszwalb's efficient graph based image segmentation."
+},
+{
+"area": "skimage.segmentation",
+"name": "find_boundaries",
+"kind": "function",
+"doc": "Return bool array where boundaries between labeled regions are True."
+},
+{
+"area": "skimage.segmentation",
+"name": "flood",
+"kind": "function",
+"doc": "Mask corresponding to a flood fill."
+},
+{
+"area": "skimage.segmentation",
+"name": "flood_fill",
+"kind": "function",
+"doc": "Perform flood filling on an image."
+},
+{
+"area": "skimage.segmentation",
+"name": "inverse_gaussian_gradient",
+"kind": "function",
+"doc": "Inverse of gradient magnitude."
+},
+{
+"area": "skimage.segmentation",
+"name": "join_segmentations",
+"kind": "function",
+"doc": "Return the join of the two input segmentations."
+},
+{
+"area": "skimage.segmentation",
+"name": "mark_boundaries",
+"kind": "function",
+"doc": "Return image with boundaries between labeled regions highlighted."
+},
+{
+"area": "skimage.segmentation",
+"name": "morphological_chan_vese",
+"kind": "function",
+"doc": "Morphological Active Contours without Edges (MorphACWE)"
+},
+{
+"area": "skimage.segmentation",
+"name": "morphological_geodesic_active_contour",
+"kind": "function",
+"doc": "Morphological Geodesic Active Contours (MorphGAC)."
+},
+{
+"area": "skimage.segmentation",
+"name": "quickshift",
+"kind": "function",
+"doc": "Segment image using quickshift clustering in Color-(x,y) space."
+},
+{
+"area": "skimage.segmentation",
+"name": "random_walker",
+"kind": "function",
+"doc": "Random walker algorithm for segmentation from markers."
+},
+{
+"area": "skimage.segmentation",
+"name": "relabel_sequential",
+"kind": "function",
+"doc": "Relabel arbitrary labels to {`offset`, ... `offset` + number_of_labels}."
+},
+{
+"area": "skimage.segmentation",
+"name": "slic",
+"kind": "function",
+"doc": "Segments image using k-means clustering in Color-(x,y,z) space."
+},
+{
+"area": "skimage.segmentation",
+"name": "watershed",
+"kind": "function",
+"doc": "Find watershed basins in an image flooded from given markers."
+},
+{
+"area": "skimage.transform",
+"name": "AffineTransform",
+"kind": "class",
+"doc": "Affine transformation."
+},
+{
+"area": "skimage.transform",
+"name": "EssentialMatrixTransform",
+"kind": "class",
+"doc": "Essential matrix transformation."
+},
+{
+"area": "skimage.transform",
+"name": "EuclideanTransform",
+"kind": "class",
+"doc": "Euclidean transformation, also known as a rigid transform."
+},
+{
+"area": "skimage.transform",
+"name": "FundamentalMatrixTransform",
+"kind": "class",
+"doc": "Fundamental matrix transformation."
+},
+{
+"area": "skimage.transform",
+"name": "PiecewiseAffineTransform",
+"kind": "class",
+"doc": "Piecewise affine transformation."
+},
+{
+"area": "skimage.transform",
+"name": "PolynomialTransform",
+"kind": "class",
+"doc": "2D polynomial transformation."
+},
+{
+"area": "skimage.transform",
+"name": "ProjectiveTransform",
+"kind": "class",
+"doc": "Projective transformation."
+},
+{
+"area": "skimage.transform",
+"name": "SimilarityTransform",
+"kind": "class",
+"doc": "Similarity transformation."
+},
+{
+"area": "skimage.transform",
+"name": "ThinPlateSplineTransform",
+"kind": "class",
+"doc": "Thin-plate spline transformation."
+},
+{
+"area": "skimage.transform",
+"name": "downscale_local_mean",
+"kind": "function",
+"doc": "Down-sample N-dimensional image by local averaging."
+},
+{
+"area": "skimage.transform",
+"name": "estimate_transform",
+"kind": "function",
+"doc": "Estimate 2D geometric transformation parameters."
+},
+{
+"area": "skimage.transform",
+"name": "frt2",
+"kind": "function",
+"doc": "Compute the 2-dimensional finite Radon transform (FRT) for the input array."
+},
+{
+"area": "skimage.transform",
+"name": "hough_circle",
+"kind": "function",
+"doc": "Perform a circular Hough transform."
+},
+{
+"area": "skimage.transform",
+"name": "hough_circle_peaks",
+"kind": "function",
+"doc": "Return peaks in a circle Hough transform."
+},
+{
+"area": "skimage.transform",
+"name": "hough_ellipse",
+"kind": "function",
+"doc": "Perform an elliptical Hough transform."
+},
+{
+"area": "skimage.transform",
+"name": "hough_line",
+"kind": "function",
+"doc": "Perform a straight line Hough transform."
+},
+{
+"area": "skimage.transform",
+"name": "hough_line_peaks",
+"kind": "function",
+"doc": "Return peaks in a straight line Hough transform."
+},
+{
+"area": "skimage.transform",
+"name": "ifrt2",
+"kind": "function",
+"doc": "Compute the 2-dimensional inverse finite Radon transform (iFRT) for the input array."
+},
+{
+"area": "skimage.transform",
+"name": "integral_image",
+"kind": "function",
+"doc": "Integral image / summed area table."
+},
+{
+"area": "skimage.transform",
+"name": "integrate",
+"kind": "function",
+"doc": "Use an integral image to integrate over a given window."
+},
+{
+"area": "skimage.transform",
+"name": "iradon",
+"kind": "function",
+"doc": "Inverse radon transform."
+},
+{
+"area": "skimage.transform",
+"name": "iradon_sart",
+"kind": "function",
+"doc": "Inverse radon transform."
+},
+{
+"area": "skimage.transform",
+"name": "matrix_transform",
+"kind": "function",
+"doc": "Apply 2D matrix transform."
+},
+{
+"area": "skimage.transform",
+"name": "order_angles_golden_ratio",
+"kind": "function",
+"doc": "Order angles to reduce the amount of correlated information in"
+},
+{
+"area": "skimage.transform",
+"name": "probabilistic_hough_line",
+"kind": "function",
+"doc": "Return lines from a progressive probabilistic line Hough transform."
+},
+{
+"area": "skimage.transform",
+"name": "pyramid_expand",
+"kind": "function",
+"doc": "Upsample and then smooth image."
+},
+{
+"area": "skimage.transform",
+"name": "pyramid_gaussian",
+"kind": "function",
+"doc": "Yield images of the Gaussian pyramid formed by the input image."
+},
+{
+"area": "skimage.transform",
+"name": "pyramid_laplacian",
+"kind": "function",
+"doc": "Yield images of the laplacian pyramid formed by the input image."
+},
+{
+"area": "skimage.transform",
+"name": "pyramid_reduce",
+"kind": "function",
+"doc": "Smooth and then downsample image."
+},
+{
+"area": "skimage.transform",
+"name": "radon",
+"kind": "function",
+"doc": "Calculates the radon transform of an image given specified"
+},
+{
+"area": "skimage.transform",
+"name": "rescale",
+"kind": "function",
+"doc": "Scale image by a certain factor."
+},
+{
+"area": "skimage.transform",
+"name": "resize",
+"kind": "function",
+"doc": "Resize image to match a certain size."
+},
+{
+"area": "skimage.transform",
+"name": "resize_local_mean",
+"kind": "function",
+"doc": "Resize an array with the local mean / bilinear scaling."
+},
+{
+"area": "skimage.transform",
+"name": "rotate",
+"kind": "function",
+"doc": "Rotate image by a certain angle around its center."
+},
+{
+"area": "skimage.transform",
+"name": "swirl",
+"kind": "function",
+"doc": "Perform a swirl transformation."
+},
+{
+"area": "skimage.transform",
+"name": "warp",
+"kind": "function",
+"doc": "Warp an image according to a given coordinate transformation."
+},
+{
+"area": "skimage.transform",
+"name": "warp_coords",
+"kind": "function",
+"doc": "Build the source coordinates for the output of a 2-D image warp."
+},
+{
+"area": "skimage.transform",
+"name": "warp_polar",
+"kind": "function",
+"doc": "Remap image to polar or log-polar coordinates space."
+},
+{
+"area": "skimage.util",
+"name": "FailedEstimationAccessError",
+"kind": "class",
+"doc": "Error from use of failed estimation instance"
+},
+{
+"area": "skimage.util",
+"name": "PendingSkimage2Change",
+"kind": "class",
+"doc": "A warning about API usage that will silently change or break in skimage2."
+},
+{
+"area": "skimage.util",
+"name": "apply_parallel",
+"kind": "function",
+"doc": "Map a function in parallel across an array."
+},
+{
+"area": "skimage.util",
+"name": "compare_images",
+"kind": "function",
+"doc": "Return an image showing the differences between two images."
+},
+{
+"area": "skimage.util",
+"name": "crop",
+"kind": "function",
+"doc": "Crop array `ar` by `crop_width` along each dimension."
+},
+{
+"area": "skimage.util",
+"name": "dtype_limits",
+"kind": "function",
+"doc": "Return intensity limits, i.e. (min, max) tuple, of the image's dtype."
+},
+{
+"area": "skimage.util",
+"name": "img_as_bool",
+"kind": "function",
+"doc": "Convert an image to boolean format."
+},
+{
+"area": "skimage.util",
+"name": "img_as_float",
+"kind": "function",
+"doc": "Convert an image to floating point format."
+},
+{
+"area": "skimage.util",
+"name": "img_as_float32",
+"kind": "function",
+"doc": "Convert an image to single-precision (32-bit) floating point format."
+},
+{
+"area": "skimage.util",
+"name": "img_as_float64",
+"kind": "function",
+"doc": "Convert an image to double-precision (64-bit) floating point format."
+},
+{
+"area": "skimage.util",
+"name": "img_as_int",
+"kind": "function",
+"doc": "Convert an image to 16-bit signed integer format."
+},
+{
+"area": "skimage.util",
+"name": "img_as_ubyte",
+"kind": "function",
+"doc": "Convert an image to 8-bit unsigned integer format."
+},
+{
+"area": "skimage.util",
+"name": "img_as_uint",
+"kind": "function",
+"doc": "Convert an image to 16-bit unsigned integer format."
+},
+{
+"area": "skimage.util",
+"name": "invert",
+"kind": "function",
+"doc": "Invert an image."
+},
+{
+"area": "skimage.util",
+"name": "label_points",
+"kind": "function",
+"doc": "Assign unique integer labels to coordinates on an image mask"
+},
+{
+"area": "skimage.util",
+"name": "lookfor",
+"kind": "function",
+"doc": "Do a keyword search on scikit-image docstrings and print results."
+},
+{
+"area": "skimage.util",
+"name": "map_array",
+"kind": "function",
+"doc": "Map values from input array from input_vals to output_vals."
+},
+{
+"area": "skimage.util",
+"name": "montage",
+"kind": "function",
+"doc": "Create a montage of several single- or multichannel images."
+},
+{
+"area": "skimage.util",
+"name": "random_noise",
+"kind": "function",
+"doc": "Function to add random noise of various types to a floating-point image."
+},
+{
+"area": "skimage.util",
+"name": "regular_grid",
+"kind": "function",
+"doc": "Find `n_points` regularly spaced along `ar_shape`."
+},
+{
+"area": "skimage.util",
+"name": "regular_seeds",
+"kind": "function",
+"doc": "Return an image with ~`n_points` regularly-spaced nonzero pixels."
+},
+{
+"area": "skimage.util",
+"name": "slice_along_axes",
+"kind": "function",
+"doc": "Slice an image along given axes."
+},
+{
+"area": "skimage.util",
+"name": "unique_rows",
+"kind": "function",
+"doc": "Remove repeated rows from a 2D array."
+},
+{
+"area": "skimage.util",
+"name": "view_as_blocks",
+"kind": "function",
+"doc": "Block view of the input n-dimensional array (using re-striding)."
+},
+{
+"area": "skimage.util",
+"name": "view_as_windows",
+"kind": "function",
+"doc": "Rolling window view of the input n-dimensional array."
+}
+]
+}

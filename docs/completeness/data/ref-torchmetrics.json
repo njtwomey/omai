@@ -1,0 +1,1255 @@
+{
+"library": "torchmetrics",
+"version": "1.9.0",
+"source": "introspection",
+"entries": [
+{
+"area": "torchmetrics",
+"name": "AUROC",
+"kind": "class",
+"doc": "Compute Area Under the Receiver Operating Characteristic Curve (`ROC AUC`_)."
+},
+{
+"area": "torchmetrics",
+"name": "Accuracy",
+"kind": "class",
+"doc": "Compute `Accuracy`_."
+},
+{
+"area": "torchmetrics",
+"name": "AveragePrecision",
+"kind": "class",
+"doc": "Compute the average precision (AP) score."
+},
+{
+"area": "torchmetrics",
+"name": "BLEUScore",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "BootStrapper",
+"kind": "class",
+"doc": "Using `Turn a Metric into a Bootstrapped`_."
+},
+{
+"area": "torchmetrics",
+"name": "CHRFScore",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "CalibrationError",
+"kind": "class",
+"doc": "`Top-label Calibration Error`_."
+},
+{
+"area": "torchmetrics",
+"name": "CatMetric",
+"kind": "class",
+"doc": "Concatenate a stream of values."
+},
+{
+"area": "torchmetrics",
+"name": "CharErrorRate",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "ClasswiseWrapper",
+"kind": "class",
+"doc": "Wrapper metric for altering the output of classification metrics."
+},
+{
+"area": "torchmetrics",
+"name": "CohenKappa",
+"kind": "class",
+"doc": "Calculate `Cohen's kappa score`_ that measures inter-annotator agreement."
+},
+{
+"area": "torchmetrics",
+"name": "ConcordanceCorrCoef",
+"kind": "class",
+"doc": "Compute concordance correlation coefficient that measures the agreement between two variables."
+},
+{
+"area": "torchmetrics",
+"name": "ConfusionMatrix",
+"kind": "class",
+"doc": "Compute the `confusion matrix`_."
+},
+{
+"area": "torchmetrics",
+"name": "CosineSimilarity",
+"kind": "class",
+"doc": "Compute the `Cosine Similarity`_."
+},
+{
+"area": "torchmetrics",
+"name": "CramersV",
+"kind": "class",
+"doc": "Compute `Cramer's V`_ statistic measuring the association between two categorical (nominal) data series."
+},
+{
+"area": "torchmetrics",
+"name": "CriticalSuccessIndex",
+"kind": "class",
+"doc": "Calculate critical success index (CSI)."
+},
+{
+"area": "torchmetrics",
+"name": "ErrorRelativeGlobalDimensionlessSynthesis",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "ExactMatch",
+"kind": "class",
+"doc": "Compute Exact match (also known as subset accuracy)."
+},
+{
+"area": "torchmetrics",
+"name": "ExplainedVariance",
+"kind": "class",
+"doc": "Compute `explained variance`_."
+},
+{
+"area": "torchmetrics",
+"name": "ExtendedEditDistance",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "F1Score",
+"kind": "class",
+"doc": "Compute F-1 score."
+},
+{
+"area": "torchmetrics",
+"name": "FBetaScore",
+"kind": "class",
+"doc": "Compute `F-score`_ metric."
+},
+{
+"area": "torchmetrics",
+"name": "FleissKappa",
+"kind": "class",
+"doc": "Calculatees `Fleiss kappa`_ a statistical measure for inter agreement between raters."
+},
+{
+"area": "torchmetrics",
+"name": "HammingDistance",
+"kind": "class",
+"doc": "Compute the average `Hamming distance`_ (also known as Hamming loss)."
+},
+{
+"area": "torchmetrics",
+"name": "HingeLoss",
+"kind": "class",
+"doc": "Compute the mean `Hinge loss`_ typically used for Support Vector Machines (SVMs)."
+},
+{
+"area": "torchmetrics",
+"name": "JaccardIndex",
+"kind": "class",
+"doc": "Calculate the Jaccard index for multilabel tasks."
+},
+{
+"area": "torchmetrics",
+"name": "KLDivergence",
+"kind": "class",
+"doc": "Compute the `KL divergence`_."
+},
+{
+"area": "torchmetrics",
+"name": "KendallRankCorrCoef",
+"kind": "class",
+"doc": "Compute `Kendall Rank Correlation Coefficient`_."
+},
+{
+"area": "torchmetrics",
+"name": "LogAUC",
+"kind": "class",
+"doc": "Compute the `Log AUC`_ score for multiclass classification tasks."
+},
+{
+"area": "torchmetrics",
+"name": "LogCoshError",
+"kind": "class",
+"doc": "Compute the `LogCosh Error`_."
+},
+{
+"area": "torchmetrics",
+"name": "MatchErrorRate",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "MatthewsCorrCoef",
+"kind": "class",
+"doc": "Calculate `Matthews correlation coefficient`_ ."
+},
+{
+"area": "torchmetrics",
+"name": "MaxMetric",
+"kind": "class",
+"doc": "Aggregate a stream of value into their maximum value."
+},
+{
+"area": "torchmetrics",
+"name": "MeanAbsoluteError",
+"kind": "class",
+"doc": "`Compute Mean Absolute Error`_ (MAE)."
+},
+{
+"area": "torchmetrics",
+"name": "MeanAbsolutePercentageError",
+"kind": "class",
+"doc": "Compute `Mean Absolute Percentage Error`_ (MAPE)."
+},
+{
+"area": "torchmetrics",
+"name": "MeanMetric",
+"kind": "class",
+"doc": "Aggregate a stream of value into their mean value."
+},
+{
+"area": "torchmetrics",
+"name": "MeanSquaredError",
+"kind": "class",
+"doc": "Compute `mean squared error`_ (MSE)."
+},
+{
+"area": "torchmetrics",
+"name": "MeanSquaredLogError",
+"kind": "class",
+"doc": "Compute `mean squared logarithmic error`_ (MSLE)."
+},
+{
+"area": "torchmetrics",
+"name": "Metric",
+"kind": "class",
+"doc": "Base class for all metrics present in the Metrics API."
+},
+{
+"area": "torchmetrics",
+"name": "MetricCollection",
+"kind": "class",
+"doc": "MetricCollection class can be used to chain metrics that have the same call pattern into one single class."
+},
+{
+"area": "torchmetrics",
+"name": "MetricTracker",
+"kind": "class",
+"doc": "A wrapper class that can help keeping track of a metric or metric collection over time."
+},
+{
+"area": "torchmetrics",
+"name": "MinMaxMetric",
+"kind": "class",
+"doc": "Wrapper metric that tracks both the minimum and maximum of a scalar/tensor across an experiment."
+},
+{
+"area": "torchmetrics",
+"name": "MinMetric",
+"kind": "class",
+"doc": "Aggregate a stream of value into their minimum value."
+},
+{
+"area": "torchmetrics",
+"name": "MinkowskiDistance",
+"kind": "class",
+"doc": "Compute `Minkowski Distance`_."
+},
+{
+"area": "torchmetrics",
+"name": "ModifiedPanopticQuality",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "MultiScaleStructuralSimilarityIndexMeasure",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "MultioutputWrapper",
+"kind": "class",
+"doc": "Wrap a base metric to enable it to support multiple outputs."
+},
+{
+"area": "torchmetrics",
+"name": "MultitaskWrapper",
+"kind": "class",
+"doc": "Wrapper class for computing different metrics on different tasks in the context of multitask learning."
+},
+{
+"area": "torchmetrics",
+"name": "NegativePredictiveValue",
+"kind": "class",
+"doc": "Compute `Negative Predictive Value`_."
+},
+{
+"area": "torchmetrics",
+"name": "NormalizedRootMeanSquaredError",
+"kind": "class",
+"doc": "Calculates the `Normalized Root Mean Squared Error`_ (NRMSE) also know as scatter index."
+},
+{
+"area": "torchmetrics",
+"name": "PanopticQuality",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "PeakSignalNoiseRatio",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "PearsonCorrCoef",
+"kind": "class",
+"doc": "Compute `Pearson Correlation Coefficient`_."
+},
+{
+"area": "torchmetrics",
+"name": "PearsonsContingencyCoefficient",
+"kind": "class",
+"doc": "Compute `Pearson's Contingency Coefficient`_ statistic."
+},
+{
+"area": "torchmetrics",
+"name": "PermutationInvariantTraining",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "Perplexity",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "Precision",
+"kind": "class",
+"doc": "Compute `Precision`_."
+},
+{
+"area": "torchmetrics",
+"name": "PrecisionAtFixedRecall",
+"kind": "class",
+"doc": "Compute the highest possible recall value given the minimum precision thresholds provided."
+},
+{
+"area": "torchmetrics",
+"name": "PrecisionRecallCurve",
+"kind": "class",
+"doc": "Compute the precision-recall curve."
+},
+{
+"area": "torchmetrics",
+"name": "R2Score",
+"kind": "class",
+"doc": "Compute r2 score also known as `R2 Score_Coefficient Determination`_."
+},
+{
+"area": "torchmetrics",
+"name": "ROC",
+"kind": "class",
+"doc": "Compute the Receiver Operating Characteristic (ROC)."
+},
+{
+"area": "torchmetrics",
+"name": "Recall",
+"kind": "class",
+"doc": "Compute `Recall`_."
+},
+{
+"area": "torchmetrics",
+"name": "RecallAtFixedPrecision",
+"kind": "class",
+"doc": "Compute the highest possible recall value given the minimum precision thresholds provided."
+},
+{
+"area": "torchmetrics",
+"name": "RelativeAverageSpectralError",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RelativeSquaredError",
+"kind": "class",
+"doc": "Computes the relative squared error (RSE)."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalFallOut",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalHitRate",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalMAP",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalMRR",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalNormalizedDCG",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalPrecision",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalPrecisionRecallCurve",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalRPrecision",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalRecall",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RetrievalRecallAtFixedPrecision",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RootMeanSquaredErrorUsingSlidingWindow",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "RunningMean",
+"kind": "class",
+"doc": "Aggregate a stream of value into their mean over a running window."
+},
+{
+"area": "torchmetrics",
+"name": "RunningSum",
+"kind": "class",
+"doc": "Aggregate a stream of value into their sum over a running window."
+},
+{
+"area": "torchmetrics",
+"name": "SQuAD",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "SacreBLEUScore",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "ScaleInvariantSignalDistortionRatio",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "ScaleInvariantSignalNoiseRatio",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "SensitivityAtSpecificity",
+"kind": "class",
+"doc": "Compute the highest possible sensitivity value given the minimum specificity thresholds provided."
+},
+{
+"area": "torchmetrics",
+"name": "SignalDistortionRatio",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "SignalNoiseRatio",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "SpearmanCorrCoef",
+"kind": "class",
+"doc": "Compute `spearmans rank correlation coefficient`_."
+},
+{
+"area": "torchmetrics",
+"name": "Specificity",
+"kind": "class",
+"doc": "Compute `Specificity`_."
+},
+{
+"area": "torchmetrics",
+"name": "SpecificityAtSensitivity",
+"kind": "class",
+"doc": "Compute the highest possible specificity value given the minimum sensitivity thresholds provided."
+},
+{
+"area": "torchmetrics",
+"name": "SpectralAngleMapper",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "SpectralDistortionIndex",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "StatScores",
+"kind": "class",
+"doc": "Compute the number of true positives, false positives, true negatives, false negatives and the support."
+},
+{
+"area": "torchmetrics",
+"name": "StructuralSimilarityIndexMeasure",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "SumMetric",
+"kind": "class",
+"doc": "Aggregate a stream of value into their sum."
+},
+{
+"area": "torchmetrics",
+"name": "SymmetricMeanAbsolutePercentageError",
+"kind": "class",
+"doc": "Compute symmetric mean absolute percentage error (`SMAPE`_)."
+},
+{
+"area": "torchmetrics",
+"name": "TheilsU",
+"kind": "class",
+"doc": "Compute `Theil's U`_ statistic measuring the association between two categorical (nominal) data series."
+},
+{
+"area": "torchmetrics",
+"name": "TotalVariation",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "TranslationEditRate",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "TschuprowsT",
+"kind": "class",
+"doc": "Compute `Tschuprow's T`_ statistic measuring the association between two categorical (nominal) data series."
+},
+{
+"area": "torchmetrics",
+"name": "TweedieDevianceScore",
+"kind": "class",
+"doc": "Compute the `Tweedie Deviance Score`_."
+},
+{
+"area": "torchmetrics",
+"name": "UniversalImageQualityIndex",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "WeightedMeanAbsolutePercentageError",
+"kind": "class",
+"doc": "Compute weighted mean absolute percentage error (`WMAPE`_)."
+},
+{
+"area": "torchmetrics",
+"name": "WordErrorRate",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "WordInfoLost",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics",
+"name": "WordInfoPreserved",
+"kind": "class",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "accuracy",
+"kind": "function",
+"doc": "Compute `Accuracy`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "auroc",
+"kind": "function",
+"doc": "Compute Area Under the Receiver Operating Characteristic Curve (`ROC AUC`_)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "average_precision",
+"kind": "function",
+"doc": "Compute the average precision (AP) score."
+},
+{
+"area": "torchmetrics.functional",
+"name": "binary_eer",
+"kind": "function",
+"doc": "Compute Equal Error Rate (EER) for binary classification task."
+},
+{
+"area": "torchmetrics.functional",
+"name": "bleu_score",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "calibration_error",
+"kind": "function",
+"doc": "`Top-label Calibration Error`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "char_error_rate",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "chrf_score",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "cohen_kappa",
+"kind": "function",
+"doc": "Calculate `Cohen's kappa score`_ that measures inter-annotator agreement. It is defined as."
+},
+{
+"area": "torchmetrics.functional",
+"name": "concordance_corrcoef",
+"kind": "function",
+"doc": "Compute concordance correlation coefficient that measures the agreement between two variables."
+},
+{
+"area": "torchmetrics.functional",
+"name": "confusion_matrix",
+"kind": "function",
+"doc": "Compute the `confusion matrix`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "cosine_similarity",
+"kind": "function",
+"doc": "Compute the `Cosine Similarity`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "cramers_v",
+"kind": "function",
+"doc": "Compute `Cramer's V`_ statistic measuring the association between two categorical (nominal) data series."
+},
+{
+"area": "torchmetrics.functional",
+"name": "cramers_v_matrix",
+"kind": "function",
+"doc": "Compute `Cramer's V`_ statistic between a set of multiple variables."
+},
+{
+"area": "torchmetrics.functional",
+"name": "critical_success_index",
+"kind": "function",
+"doc": "Compute critical success index."
+},
+{
+"area": "torchmetrics.functional",
+"name": "eer",
+"kind": "function",
+"doc": "Compute Equal Error Rate (EER) metric."
+},
+{
+"area": "torchmetrics.functional",
+"name": "error_relative_global_dimensionless_synthesis",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "exact_match",
+"kind": "function",
+"doc": "Compute Exact match (also known as subset accuracy)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "explained_variance",
+"kind": "function",
+"doc": "Compute explained variance."
+},
+{
+"area": "torchmetrics.functional",
+"name": "extended_edit_distance",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "f1_score",
+"kind": "function",
+"doc": "Compute F-1 score."
+},
+{
+"area": "torchmetrics.functional",
+"name": "fbeta_score",
+"kind": "function",
+"doc": "Compute `F-score`_ metric."
+},
+{
+"area": "torchmetrics.functional",
+"name": "fleiss_kappa",
+"kind": "function",
+"doc": "Calculatees `Fleiss kappa`_ a statistical measure for inter agreement between raters."
+},
+{
+"area": "torchmetrics.functional",
+"name": "hamming_distance",
+"kind": "function",
+"doc": "Compute the average `Hamming distance`_ (also known as Hamming loss)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "hinge_loss",
+"kind": "function",
+"doc": "Compute the mean `Hinge loss`_ typically used for Support Vector Machines (SVMs)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "image_gradients",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "jaccard_index",
+"kind": "function",
+"doc": "Calculate the Jaccard index."
+},
+{
+"area": "torchmetrics.functional",
+"name": "kendall_rank_corrcoef",
+"kind": "function",
+"doc": "Compute `Kendall Rank Correlation Coefficient`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "kl_divergence",
+"kind": "function",
+"doc": "Compute `KL divergence`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "lip_vertex_error",
+"kind": "function",
+"doc": "Compute Lip Vertex Error (LVE) for 3D talking head evaluation."
+},
+{
+"area": "torchmetrics.functional",
+"name": "log_cosh_error",
+"kind": "function",
+"doc": "Compute the `LogCosh Error`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "logauc",
+"kind": "function",
+"doc": "Compute the `Log AUC`_ score for classification tasks."
+},
+{
+"area": "torchmetrics.functional",
+"name": "match_error_rate",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "matthews_corrcoef",
+"kind": "function",
+"doc": "Calculate `Matthews correlation coefficient`_ ."
+},
+{
+"area": "torchmetrics.functional",
+"name": "mean_absolute_error",
+"kind": "function",
+"doc": "Compute mean absolute error."
+},
+{
+"area": "torchmetrics.functional",
+"name": "mean_absolute_percentage_error",
+"kind": "function",
+"doc": "Compute mean absolute percentage error."
+},
+{
+"area": "torchmetrics.functional",
+"name": "mean_squared_error",
+"kind": "function",
+"doc": "Compute mean squared error."
+},
+{
+"area": "torchmetrics.functional",
+"name": "mean_squared_log_error",
+"kind": "function",
+"doc": "Compute mean squared log error."
+},
+{
+"area": "torchmetrics.functional",
+"name": "minkowski_distance",
+"kind": "function",
+"doc": "Compute the `Minkowski distance`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "multiclass_eer",
+"kind": "function",
+"doc": "Compute Equal Error Rate (EER) for multiclass classification task."
+},
+{
+"area": "torchmetrics.functional",
+"name": "multilabel_eer",
+"kind": "function",
+"doc": "Compute Equal Error Rate (EER) for multilabel classification task."
+},
+{
+"area": "torchmetrics.functional",
+"name": "multiscale_structural_similarity_index_measure",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "negative_predictive_value",
+"kind": "function",
+"doc": "Compute `Negative Predictive Value`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "normalized_root_mean_squared_error",
+"kind": "function",
+"doc": "Calculates the `Normalized Root Mean Squared Error`_ (NRMSE) also know as scatter index."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pairwise_cosine_similarity",
+"kind": "function",
+"doc": "Calculate pairwise cosine similarity."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pairwise_euclidean_distance",
+"kind": "function",
+"doc": "Calculate pairwise euclidean distances."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pairwise_linear_similarity",
+"kind": "function",
+"doc": "Calculate pairwise linear similarity."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pairwise_manhattan_distance",
+"kind": "function",
+"doc": "Calculate pairwise manhattan distance."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pairwise_minkowski_distance",
+"kind": "function",
+"doc": "Calculate pairwise minkowski distances."
+},
+{
+"area": "torchmetrics.functional",
+"name": "panoptic_quality",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "peak_signal_noise_ratio",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pearson_corrcoef",
+"kind": "function",
+"doc": "Compute pearson correlation coefficient."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pearsons_contingency_coefficient",
+"kind": "function",
+"doc": "Compute `Pearson's Contingency Coefficient`_ for measuring the association between two categorical data series"
+},
+{
+"area": "torchmetrics.functional",
+"name": "pearsons_contingency_coefficient_matrix",
+"kind": "function",
+"doc": "Compute `Pearson's Contingency Coefficient`_ statistic between a set of multiple variables."
+},
+{
+"area": "torchmetrics.functional",
+"name": "permutation_invariant_training",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "perplexity",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "pit_permutate",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "precision",
+"kind": "function",
+"doc": "Compute `Precision`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "precision_at_fixed_recall",
+"kind": "function",
+"doc": "Compute the highest possible recall value given the minimum precision thresholds provided."
+},
+{
+"area": "torchmetrics.functional",
+"name": "precision_recall_curve",
+"kind": "function",
+"doc": "Compute the precision-recall curve."
+},
+{
+"area": "torchmetrics.functional",
+"name": "r2_score",
+"kind": "function",
+"doc": "Compute r2 score also known as `R2 Score_Coefficient Determination`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "recall",
+"kind": "function",
+"doc": "Compute `Recall`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "recall_at_fixed_precision",
+"kind": "function",
+"doc": "Compute the highest possible recall value given the minimum precision thresholds provided."
+},
+{
+"area": "torchmetrics.functional",
+"name": "relative_average_spectral_error",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "relative_squared_error",
+"kind": "function",
+"doc": "Computes the relative squared error (RSE)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_average_precision",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_fall_out",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_hit_rate",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_normalized_dcg",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_precision",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_precision_recall_curve",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_r_precision",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_recall",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "retrieval_reciprocal_rank",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "roc",
+"kind": "function",
+"doc": "Compute the Receiver Operating Characteristic (ROC)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "root_mean_squared_error_using_sliding_window",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "rouge_score",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "sacre_bleu_score",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "scale_invariant_signal_distortion_ratio",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "scale_invariant_signal_noise_ratio",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "sensitivity_at_specificity",
+"kind": "function",
+"doc": "Compute the highest possible sensitivity value given the minimum specificity thresholds provided."
+},
+{
+"area": "torchmetrics.functional",
+"name": "signal_distortion_ratio",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "signal_noise_ratio",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "spearman_corrcoef",
+"kind": "function",
+"doc": "Compute `spearmans rank correlation coefficient`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "specificity",
+"kind": "function",
+"doc": "Compute `Specificity`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "specificity_at_sensitivity",
+"kind": "function",
+"doc": "Compute the highest possible specificity value given the minimum sensitivity thresholds provided."
+},
+{
+"area": "torchmetrics.functional",
+"name": "spectral_angle_mapper",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "spectral_distortion_index",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "squad",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "stat_scores",
+"kind": "function",
+"doc": "Compute the number of true positives, false positives, true negatives, false negatives and the support."
+},
+{
+"area": "torchmetrics.functional",
+"name": "structural_similarity_index_measure",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "symmetric_mean_absolute_percentage_error",
+"kind": "function",
+"doc": "Compute symmetric mean absolute percentage error (SMAPE_)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "theils_u",
+"kind": "function",
+"doc": "Compute `Theils Uncertainty coefficient`_ statistic measuring the association between two nominal data series."
+},
+{
+"area": "torchmetrics.functional",
+"name": "theils_u_matrix",
+"kind": "function",
+"doc": "Compute `Theil's U`_ statistic between a set of multiple variables."
+},
+{
+"area": "torchmetrics.functional",
+"name": "total_variation",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "translation_edit_rate",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "tschuprows_t",
+"kind": "function",
+"doc": "Compute `Tschuprow's T`_ statistic measuring the association between two categorical (nominal) data series."
+},
+{
+"area": "torchmetrics.functional",
+"name": "tschuprows_t_matrix",
+"kind": "function",
+"doc": "Compute `Tschuprow's T`_ statistic between a set of multiple variables."
+},
+{
+"area": "torchmetrics.functional",
+"name": "tweedie_deviance_score",
+"kind": "function",
+"doc": "Compute the `Tweedie Deviance Score`_."
+},
+{
+"area": "torchmetrics.functional",
+"name": "universal_image_quality_index",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "weighted_mean_absolute_percentage_error",
+"kind": "function",
+"doc": "Compute weighted mean absolute percentage error (`WMAPE`_)."
+},
+{
+"area": "torchmetrics.functional",
+"name": "word_error_rate",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "word_information_lost",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+},
+{
+"area": "torchmetrics.functional",
+"name": "word_information_preserved",
+"kind": "function",
+"doc": "Wrapper for deprecated import."
+}
+]
+}

@@ -1,0 +1,1795 @@
+{
+"library": "numpyro",
+"version": "0.22.0",
+"source": "introspection",
+"entries": [
+{
+"area": "numpyro",
+"name": "deterministic",
+"kind": "function",
+"doc": "Used to designate deterministic sites in the model. Note that most effect"
+},
+{
+"area": "numpyro",
+"name": "enable_validation",
+"kind": "function",
+"doc": "Enable or disable validation checks in NumPyro. Validation checks provide useful warnings and"
+},
+{
+"area": "numpyro",
+"name": "enable_x64",
+"kind": "function",
+"doc": "Changes the default array type to use 64 bit precision as in NumPy."
+},
+{
+"area": "numpyro",
+"name": "factor",
+"kind": "function",
+"doc": "Factor statement to add arbitrary log probability factor to a"
+},
+{
+"area": "numpyro",
+"name": "get_mask",
+"kind": "function",
+"doc": "Records the effects of enclosing ``handlers.mask`` handlers."
+},
+{
+"area": "numpyro",
+"name": "module",
+"kind": "function",
+"doc": "Declare a :mod:`~jax.example_libraries.stax` style neural network inside a"
+},
+{
+"area": "numpyro",
+"name": "param",
+"kind": "function",
+"doc": "Annotate the given site as an optimizable parameter for use with"
+},
+{
+"area": "numpyro",
+"name": "plate",
+"kind": "class",
+"doc": "Construct for annotating conditionally independent variables. Within a"
+},
+{
+"area": "numpyro",
+"name": "plate_stack",
+"kind": "function",
+"doc": "Create a contiguous stack of :class:`plate` s with dimensions::"
+},
+{
+"area": "numpyro",
+"name": "prng_key",
+"kind": "function",
+"doc": "A statement to draw a pseudo-random number generator key"
+},
+{
+"area": "numpyro",
+"name": "render_model",
+"kind": "function",
+"doc": "Wrap all functions needed to automatically render a model."
+},
+{
+"area": "numpyro",
+"name": "sample",
+"kind": "function",
+"doc": "Returns a random sample from the stochastic function `fn`. This can have"
+},
+{
+"area": "numpyro",
+"name": "set_host_device_count",
+"kind": "function",
+"doc": "By default, XLA considers all CPU cores as one device. This utility tells XLA"
+},
+{
+"area": "numpyro",
+"name": "set_platform",
+"kind": "function",
+"doc": "Changes platform to CPU, GPU, or TPU. This utility only takes"
+},
+{
+"area": "numpyro",
+"name": "subsample",
+"kind": "function",
+"doc": "EXPERIMENTAL Subsampling statement to subsample data based on enclosing"
+},
+{
+"area": "numpyro",
+"name": "validation_enabled",
+"kind": "function",
+"doc": "Context manager that is useful when temporarily enabling/disabling validation checks."
+},
+{
+"area": "numpyro.contrib.control_flow",
+"name": "cond",
+"kind": "function",
+"doc": "This primitive conditionally applies ``true_fun`` or ``false_fun``. See"
+},
+{
+"area": "numpyro.contrib.control_flow",
+"name": "scan",
+"kind": "function",
+"doc": "This primitive scans a function over the leading array axes of"
+},
+{
+"area": "numpyro.diagnostics",
+"name": "autocorrelation",
+"kind": "function",
+"doc": "Computes the autocorrelation of samples at dimension ``axis``."
+},
+{
+"area": "numpyro.diagnostics",
+"name": "autocovariance",
+"kind": "function",
+"doc": "Computes the autocovariance of samples at dimension ``axis``."
+},
+{
+"area": "numpyro.diagnostics",
+"name": "effective_sample_size",
+"kind": "function",
+"doc": "Computes effective sample size of input ``x``, where the first dimension of"
+},
+{
+"area": "numpyro.diagnostics",
+"name": "gelman_rubin",
+"kind": "function",
+"doc": "Computes R-hat over chains of samples ``x``, where the first dimension of"
+},
+{
+"area": "numpyro.diagnostics",
+"name": "hpdi",
+"kind": "function",
+"doc": "Computes \"highest posterior density interval\" (HPDI) which is the narrowest"
+},
+{
+"area": "numpyro.diagnostics",
+"name": "print_summary",
+"kind": "function",
+"doc": "Prints a summary table displaying diagnostics of ``samples`` from the"
+},
+{
+"area": "numpyro.diagnostics",
+"name": "split_gelman_rubin",
+"kind": "function",
+"doc": "Computes split R-hat over chains of samples ``x``, where the first dimension"
+},
+{
+"area": "numpyro.distributions",
+"name": "AsymmetricLaplace",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "AsymmetricLaplaceQuantile",
+"kind": "class",
+"doc": "An alternative parameterization of AsymmetricLaplace commonly applied in"
+},
+{
+"area": "numpyro.distributions",
+"name": "Bernoulli",
+"kind": "function",
+"doc": "Factory function to create a Bernoulli distribution instance from either"
+},
+{
+"area": "numpyro.distributions",
+"name": "BernoulliLogits",
+"kind": "class",
+"doc": "A Bernoulli discrete random variable parameterized by log-odds (logits)."
+},
+{
+"area": "numpyro.distributions",
+"name": "BernoulliProbs",
+"kind": "class",
+"doc": "A Bernoulli discrete random variable parameterizing the probability of a binary"
+},
+{
+"area": "numpyro.distributions",
+"name": "Beta",
+"kind": "class",
+"doc": "Beta distribution parameterized by concentration parameters alpha (:attr:`concentration1`)"
+},
+{
+"area": "numpyro.distributions",
+"name": "BetaBinomial",
+"kind": "class",
+"doc": "Compound distribution comprising of a beta-binomial pair. The probability of"
+},
+{
+"area": "numpyro.distributions",
+"name": "BetaNegativeBinomial",
+"kind": "class",
+"doc": "Compound distribution comprising of a beta-negative-binomial pair. The ``probs``"
+},
+{
+"area": "numpyro.distributions",
+"name": "BetaProportion",
+"kind": "class",
+"doc": "Beta distribution reparameterized in terms of a mean (:attr:`mean`) and a"
+},
+{
+"area": "numpyro.distributions",
+"name": "Binomial",
+"kind": "function",
+"doc": "Factory function to create a Binomial distribution instance from either"
+},
+{
+"area": "numpyro.distributions",
+"name": "BinomialLogits",
+"kind": "class",
+"doc": "A Binomial discrete random variable parameterized by log-odds (logits)."
+},
+{
+"area": "numpyro.distributions",
+"name": "BinomialProbs",
+"kind": "class",
+"doc": "A Binomial discrete random variable parameterizing the count of successes in"
+},
+{
+"area": "numpyro.distributions",
+"name": "CAR",
+"kind": "class",
+"doc": "The Conditional Autoregressive (CAR) distribution is a special case of the multivariate"
+},
+{
+"area": "numpyro.distributions",
+"name": "Categorical",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions",
+"name": "CategoricalLogits",
+"kind": "class",
+"doc": "A Categorical discrete random variable over :math:`K` mutually exclusive"
+},
+{
+"area": "numpyro.distributions",
+"name": "CategoricalProbs",
+"kind": "class",
+"doc": "A Categorical discrete random variable over :math:`K` mutually exclusive"
+},
+{
+"area": "numpyro.distributions",
+"name": "Cauchy",
+"kind": "class",
+"doc": "Cauchy distribution parameterized by location (:attr:`loc`) and"
+},
+{
+"area": "numpyro.distributions",
+"name": "Chi2",
+"kind": "class",
+"doc": "A chi-square continuous random variable, parameterized by the degrees of"
+},
+{
+"area": "numpyro.distributions",
+"name": "CirculantNormal",
+"kind": "class",
+"doc": "Multivariate normal distribution with covariance matrix :math:`\\mathbf{C}` that is"
+},
+{
+"area": "numpyro.distributions",
+"name": "Dagum",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "Delta",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "Dirichlet",
+"kind": "class",
+"doc": "Dirichlet distribution parameterized by concentration (:attr:`concentration`)."
+},
+{
+"area": "numpyro.distributions",
+"name": "DirichletMultinomial",
+"kind": "class",
+"doc": "Compound distribution comprising of a dirichlet-multinomial pair. The probability of"
+},
+{
+"area": "numpyro.distributions",
+"name": "DiscreteUniform",
+"kind": "class",
+"doc": "A discrete uniform random variable over the inclusive integer interval"
+},
+{
+"area": "numpyro.distributions",
+"name": "Distribution",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "DoublyTruncatedPowerLaw",
+"kind": "class",
+"doc": "Power law distribution with :math:`\\alpha` index, and lower and upper bounds."
+},
+{
+"area": "numpyro.distributions",
+"name": "EulerMaruyama",
+"kind": "class",
+"doc": "Euler\u2013Maruyama method is a method for the approximate numerical solution"
+},
+{
+"area": "numpyro.distributions",
+"name": "ExpandedDistribution",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "Exponential",
+"kind": "class",
+"doc": "Exponential distribution parameterized by rate (:attr:`rate`)."
+},
+{
+"area": "numpyro.distributions",
+"name": "FoldedDistribution",
+"kind": "class",
+"doc": "Equivalent to ``TransformedDistribution(base_dist, AbsTransform())``,"
+},
+{
+"area": "numpyro.distributions",
+"name": "Gamma",
+"kind": "class",
+"doc": "Implementation of the `Gamma distribution <https://en.wikipedia.org/wiki/Gamma_distribution>`_,"
+},
+{
+"area": "numpyro.distributions",
+"name": "GammaPoisson",
+"kind": "class",
+"doc": "Compound distribution comprising of a gamma-poisson pair, also referred to as"
+},
+{
+"area": "numpyro.distributions",
+"name": "GaussianCopula",
+"kind": "class",
+"doc": "A distribution that links the `batch_shape[:-1]` of marginal distribution `marginal_dist`"
+},
+{
+"area": "numpyro.distributions",
+"name": "GaussianCopulaBeta",
+"kind": "class",
+"doc": "A distribution that links the `batch_shape[:-1]` of marginal distribution `marginal_dist`"
+},
+{
+"area": "numpyro.distributions",
+"name": "GaussianRandomWalk",
+"kind": "class",
+"doc": "Gaussian random walk distribution parameterized by scale (:attr:`scale`)"
+},
+{
+"area": "numpyro.distributions",
+"name": "GaussianStateSpace",
+"kind": "class",
+"doc": "Gaussian state space model."
+},
+{
+"area": "numpyro.distributions",
+"name": "Geometric",
+"kind": "function",
+"doc": "Geometric distribution parameterized by either probabilities"
+},
+{
+"area": "numpyro.distributions",
+"name": "GeometricLogits",
+"kind": "class",
+"doc": "Geometric distribution parameterized by logits (:attr:`logits`)."
+},
+{
+"area": "numpyro.distributions",
+"name": "GeometricProbs",
+"kind": "class",
+"doc": "A Geometric discrete random variable representing the number of failures"
+},
+{
+"area": "numpyro.distributions",
+"name": "Gompertz",
+"kind": "class",
+"doc": "Gompertz Distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "Gumbel",
+"kind": "class",
+"doc": "The Gumbel (maximum) distribution, a continuous real-valued"
+},
+{
+"area": "numpyro.distributions",
+"name": "HalfCauchy",
+"kind": "class",
+"doc": "Half-Cauchy distribution parameterized by scale (:attr:`scale`)."
+},
+{
+"area": "numpyro.distributions",
+"name": "HalfNormal",
+"kind": "class",
+"doc": "Half-Normal distribution parameterized by scale (:attr:`scale`)."
+},
+{
+"area": "numpyro.distributions",
+"name": "HurdleDistribution",
+"kind": "function",
+"doc": "Generic hurdle distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "HurdleGamma",
+"kind": "class",
+"doc": "A hurdle Gamma distribution: a two-part model in which a structural zero"
+},
+{
+"area": "numpyro.distributions",
+"name": "HurdleLogNormal",
+"kind": "class",
+"doc": "A hurdle Log-Normal distribution: a two-part model in which a structural"
+},
+{
+"area": "numpyro.distributions",
+"name": "HurdleLogits",
+"kind": "class",
+"doc": "Hurdle distribution parameterized by ``gate_logits`` (the log-odds of the"
+},
+{
+"area": "numpyro.distributions",
+"name": "HurdleNegativeBinomial2",
+"kind": "function",
+"doc": "A hurdle Negative Binomial distribution (NB2 / mean-dispersion"
+},
+{
+"area": "numpyro.distributions",
+"name": "HurdlePoisson",
+"kind": "class",
+"doc": "A hurdle Poisson distribution: a two-part model in which structural zeros"
+},
+{
+"area": "numpyro.distributions",
+"name": "HurdleProbs",
+"kind": "class",
+"doc": "Generic hurdle distribution parameterized by a probability :math:`g` (``gate``)"
+},
+{
+"area": "numpyro.distributions",
+"name": "ImproperUniform",
+"kind": "class",
+"doc": "A helper distribution with zero :meth:`log_prob` over the `support` domain."
+},
+{
+"area": "numpyro.distributions",
+"name": "Independent",
+"kind": "class",
+"doc": "Reinterprets batch dimensions of a distribution as event dims by shifting"
+},
+{
+"area": "numpyro.distributions",
+"name": "IntervalCensoredDistribution",
+"kind": "class",
+"doc": "Distribution wrapper for interval-censored outcomes."
+},
+{
+"area": "numpyro.distributions",
+"name": "InverseGamma",
+"kind": "class",
+"doc": "The Inverse-Gamma distribution, a continuous distribution on the"
+},
+{
+"area": "numpyro.distributions",
+"name": "InverseWishart",
+"kind": "class",
+"doc": "Inverse Wishart distribution for covariance matrices."
+},
+{
+"area": "numpyro.distributions",
+"name": "InverseWishartCholesky",
+"kind": "class",
+"doc": "Cholesky factor of an Inverse Wishart distribution for covariance matrices."
+},
+{
+"area": "numpyro.distributions",
+"name": "Kumaraswamy",
+"kind": "class",
+"doc": "The Kumaraswamy distribution, a continuous distribution on the unit"
+},
+{
+"area": "numpyro.distributions",
+"name": "LKJ",
+"kind": "class",
+"doc": "LKJ distribution for correlation matrices. The distribution is controlled by ``concentration``"
+},
+{
+"area": "numpyro.distributions",
+"name": "LKJCholesky",
+"kind": "class",
+"doc": "LKJ distribution for lower Cholesky factors of correlation matrices. The distribution is"
+},
+{
+"area": "numpyro.distributions",
+"name": "Laplace",
+"kind": "class",
+"doc": "The Laplace (double-exponential) distribution, a continuous real-valued"
+},
+{
+"area": "numpyro.distributions",
+"name": "LeftCensoredDistribution",
+"kind": "class",
+"doc": "Distribution wrapper for left-censored outcomes."
+},
+{
+"area": "numpyro.distributions",
+"name": "LeftTruncatedDistribution",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "LeftTruncatedGamma",
+"kind": "class",
+"doc": "A :class:`~numpyro.distributions.continuous.Gamma` distribution truncated"
+},
+{
+"area": "numpyro.distributions",
+"name": "Levy",
+"kind": "class",
+"doc": "L\u00e9vy distribution is a special case of L\u00e9vy alpha-stable distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "LogNormal",
+"kind": "class",
+"doc": "The Log-Normal distribution, a continuous distribution on the positive"
+},
+{
+"area": "numpyro.distributions",
+"name": "LogUniform",
+"kind": "class",
+"doc": "The Log-Uniform (reciprocal) distribution, a continuous distribution on"
+},
+{
+"area": "numpyro.distributions",
+"name": "Logistic",
+"kind": "class",
+"doc": "The Logistic distribution, a continuous real-valued distribution"
+},
+{
+"area": "numpyro.distributions",
+"name": "LowRankMultivariateNormal",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "LowerTruncatedPowerLaw",
+"kind": "class",
+"doc": "Lower truncated power law distribution with :math:`\\alpha` index."
+},
+{
+"area": "numpyro.distributions",
+"name": "MaskedDistribution",
+"kind": "class",
+"doc": "Masks a distribution by a boolean array that is broadcastable to the"
+},
+{
+"area": "numpyro.distributions",
+"name": "MatrixNormal",
+"kind": "class",
+"doc": "Matrix variate normal distribution as described in [1] but with a lower_triangular parametrization,"
+},
+{
+"area": "numpyro.distributions",
+"name": "Mixture",
+"kind": "function",
+"doc": "A marginalized finite mixture of component distributions"
+},
+{
+"area": "numpyro.distributions",
+"name": "MixtureGeneral",
+"kind": "class",
+"doc": "A finite mixture of component distributions from different families"
+},
+{
+"area": "numpyro.distributions",
+"name": "MixtureSameFamily",
+"kind": "class",
+"doc": "A finite mixture of component distributions from the same family"
+},
+{
+"area": "numpyro.distributions",
+"name": "Multinomial",
+"kind": "function",
+"doc": "Multinomial distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "MultinomialLogits",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "MultinomialProbs",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "MultivariateNormal",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "MultivariateStudentT",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "NegativeBinomial",
+"kind": "function",
+"doc": "Factory function for Negative Binomial distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "NegativeBinomial2",
+"kind": "class",
+"doc": "If :math:`X \\sim \\mathrm{NegativeBinomial2}(\\mu, \\alpha)`, then"
+},
+{
+"area": "numpyro.distributions",
+"name": "NegativeBinomialLogits",
+"kind": "class",
+"doc": "Negative Binomial distribution parameterized by :code:`total_count` (:math:`r`)"
+},
+{
+"area": "numpyro.distributions",
+"name": "NegativeBinomialProbs",
+"kind": "class",
+"doc": "Negative Binomial distribution parameterized by :code:`total_count` (:math:`r`)"
+},
+{
+"area": "numpyro.distributions",
+"name": "Normal",
+"kind": "class",
+"doc": "Normal (Gaussian) distribution parameterized by mean (:attr:`loc`) and"
+},
+{
+"area": "numpyro.distributions",
+"name": "OrderedLogistic",
+"kind": "class",
+"doc": "A categorical distribution with ordered outcomes."
+},
+{
+"area": "numpyro.distributions",
+"name": "Pareto",
+"kind": "class",
+"doc": "Pareto distribution parameterized by scale (:attr:`scale`) and tail"
+},
+{
+"area": "numpyro.distributions",
+"name": "Poisson",
+"kind": "class",
+"doc": "Creates a Poisson distribution parameterized by rate, the rate parameter."
+},
+{
+"area": "numpyro.distributions",
+"name": "ProjectedNormal",
+"kind": "class",
+"doc": "Projected isotropic normal distribution of arbitrary dimension."
+},
+{
+"area": "numpyro.distributions",
+"name": "RelaxedBernoulli",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions",
+"name": "RelaxedBernoulliLogits",
+"kind": "class",
+"doc": "Returns a distribution instance obtained as a result of applying"
+},
+{
+"area": "numpyro.distributions",
+"name": "RightCensoredDistribution",
+"kind": "class",
+"doc": "Distribution wrapper for right-censored outcomes."
+},
+{
+"area": "numpyro.distributions",
+"name": "RightTruncatedDistribution",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "RightTruncatedGamma",
+"kind": "class",
+"doc": "A :class:`~numpyro.distributions.continuous.Gamma` distribution truncated"
+},
+{
+"area": "numpyro.distributions",
+"name": "SineBivariateVonMises",
+"kind": "class",
+"doc": "Unimodal distribution of two dependent angles on the 2-torus"
+},
+{
+"area": "numpyro.distributions",
+"name": "SineSkewed",
+"kind": "class",
+"doc": "Sine-skewing [1] is a procedure for producing a distribution that breaks pointwise symmetry on a torus"
+},
+{
+"area": "numpyro.distributions",
+"name": "SoftLaplace",
+"kind": "class",
+"doc": "Smooth distribution with Laplace-like tail behavior."
+},
+{
+"area": "numpyro.distributions",
+"name": "StudentT",
+"kind": "class",
+"doc": "Student's t-distribution, a continuous location-scale family on"
+},
+{
+"area": "numpyro.distributions",
+"name": "TransformedDistribution",
+"kind": "class",
+"doc": "Returns a distribution instance obtained as a result of applying"
+},
+{
+"area": "numpyro.distributions",
+"name": "TruncatedCauchy",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions",
+"name": "TruncatedDistribution",
+"kind": "function",
+"doc": "A function to generate a truncated distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "TruncatedGamma",
+"kind": "function",
+"doc": "A function to generate a truncated gamma distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "TruncatedNormal",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions",
+"name": "TruncatedPolyaGamma",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "TwoSidedTruncatedDistribution",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "TwoSidedTruncatedGamma",
+"kind": "class",
+"doc": "A :class:`~numpyro.distributions.continuous.Gamma` distribution truncated to"
+},
+{
+"area": "numpyro.distributions",
+"name": "Uniform",
+"kind": "class",
+"doc": "Continuous uniform distribution on the interval"
+},
+{
+"area": "numpyro.distributions",
+"name": "Unit",
+"kind": "class",
+"doc": "Trivial nonnormalized distribution representing the unit type."
+},
+{
+"area": "numpyro.distributions",
+"name": "VonMises",
+"kind": "class",
+"doc": "The von Mises distribution (circular normal), a continuous distribution"
+},
+{
+"area": "numpyro.distributions",
+"name": "Weibull",
+"kind": "class",
+"doc": "Weibull distribution parameterized by scale (:attr:`scale`) and shape"
+},
+{
+"area": "numpyro.distributions",
+"name": "Wishart",
+"kind": "class",
+"doc": "Wishart distribution for covariance matrices."
+},
+{
+"area": "numpyro.distributions",
+"name": "WishartCholesky",
+"kind": "class",
+"doc": "Cholesky factor of a Wishart distribution for covariance matrices."
+},
+{
+"area": "numpyro.distributions",
+"name": "ZeroInflatedDistribution",
+"kind": "function",
+"doc": "Generic Zero Inflated distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "ZeroInflatedLogits",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "ZeroInflatedNegativeBinomial2",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions",
+"name": "ZeroInflatedPoisson",
+"kind": "class",
+"doc": "A Zero Inflated Poisson distribution."
+},
+{
+"area": "numpyro.distributions",
+"name": "ZeroInflatedProbs",
+"kind": "class",
+"doc": "Base class for probability distributions in NumPyro. The design largely"
+},
+{
+"area": "numpyro.distributions",
+"name": "ZeroSumNormal",
+"kind": "class",
+"doc": "Zero Sum Normal distribution adapted from PyMC [1] as described in [2,3]. This is a Normal distribution where "
+},
+{
+"area": "numpyro.distributions",
+"name": "biject_to",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions",
+"name": "kl_divergence",
+"kind": "function",
+"doc": "Multiply dispatched method: kl_divergence"
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "Constraint",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "boolean",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "cat",
+"kind": "class",
+"doc": "Applies a sequence of constraints to slices along a dimension, in a way"
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "circular",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "complex",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "corr_cholesky",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "corr_matrix",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "dependent",
+"kind": "function",
+"doc": "Placeholder for variables whose support depends on other variables."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "greater_than",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "greater_than_eq",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "integer_greater_than",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "integer_interval",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "interval",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "is_dependent",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "l1_ball",
+"kind": "function",
+"doc": "Constrain to the L1 ball of any dimension."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "less_than",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "lower_cholesky",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "multinomial",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "nonnegative",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "nonnegative_integer",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "ordered_vector",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "positive",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "positive_definite",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "positive_definite_circulant_vector",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "positive_integer",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "positive_semidefinite",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "real",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "real_matrix",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "real_vector",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "scaled_unit_lower_cholesky",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "simplex",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "softplus_lower_cholesky",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "softplus_positive",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "sphere",
+"kind": "function",
+"doc": "Constrain to the Euclidean sphere of any dimension."
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "unit_interval",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.distributions.constraints",
+"name": "zero_sum",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "AbsTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "AffineTransform",
+"kind": "class",
+"doc": ".. note:: When `scale` is a JAX tracer, we always assume that `scale > 0`"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "CatTransform",
+"kind": "class",
+"doc": "Applies a sequence of transforms to consecutive slices along a dimension,"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "CholeskyTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = cholesky(x)`, where `x` is a"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "ComplexTransform",
+"kind": "class",
+"doc": "Transforms a pair of real numbers to a complex number."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "ComposeTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "CorrCholeskyTransform",
+"kind": "class",
+"doc": "Transforms an unconstrained real vector :math:`x` with length :math:`D*(D-1)/2` into the"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "CorrMatrixCholeskyTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = cholesky(x)`, where `x` is a"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "DiscreteCosineTransform",
+"kind": "class",
+"doc": "Discrete Cosine Transform of type II."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "ExpTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "HaarTransform",
+"kind": "class",
+"doc": "Discrete Haar transform."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "IdentityTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "L1BallTransform",
+"kind": "class",
+"doc": "Transforms an unconstrained real vector :math:`x` into the unit L1 ball."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "LowerCholeskyAffine",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = loc + scale\\_tril\\ @\\ x`."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "LowerCholeskyTransform",
+"kind": "class",
+"doc": "Transform a real vector to a lower triangular cholesky"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "PackRealFastFourierCoefficientsTransform",
+"kind": "class",
+"doc": "Transform a real vector to complex coefficients of a real fast Fourier transform."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "PermuteTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "PowerTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "RealFastFourierTransform",
+"kind": "class",
+"doc": "N-dimensional discrete fast Fourier transform for real input."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "ReshapeTransform",
+"kind": "class",
+"doc": "Reshape a sample, leaving batch dimensions unchanged."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "ScaledUnitLowerCholeskyTransform",
+"kind": "class",
+"doc": "Like `LowerCholeskyTransform` this `Transform` transforms"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "SigmoidTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "SimplexToOrderedTransform",
+"kind": "class",
+"doc": "Transform a simplex into an ordered vector (via difference in Logistic CDF between cutpoints)"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "SoftplusLowerCholeskyTransform",
+"kind": "class",
+"doc": "Transform from unconstrained vector to lower-triangular matrices with"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "SoftplusTransform",
+"kind": "class",
+"doc": "Transform from unconstrained space to positive domain via softplus :math:`y = \\log(1 + \\exp(x))`."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "StickBreakingTransform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "Transform",
+"kind": "class",
+"doc": "Abstract base class for generic types."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "UnpackTransform",
+"kind": "class",
+"doc": "Transforms a contiguous array to a pytree of subarrays."
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "ZeroSumTransform",
+"kind": "class",
+"doc": "A transform that constrains an array to sum to zero, adapted from PyMC [1] as described in [2,3]"
+},
+{
+"area": "numpyro.distributions.transforms",
+"name": "biject_to",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "numpyro.handlers",
+"name": "block",
+"kind": "class",
+"doc": "Given a callable `fn`, return another callable that selectively hides"
+},
+{
+"area": "numpyro.handlers",
+"name": "collapse",
+"kind": "class",
+"doc": "EXPERIMENTAL Collapses all sites in the context by lazily sampling and"
+},
+{
+"area": "numpyro.handlers",
+"name": "condition",
+"kind": "class",
+"doc": "Conditions unobserved sample sites to values from `data` or `condition_fn`."
+},
+{
+"area": "numpyro.handlers",
+"name": "do",
+"kind": "class",
+"doc": "Given a stochastic function with some sample statements and a dictionary"
+},
+{
+"area": "numpyro.handlers",
+"name": "infer_config",
+"kind": "class",
+"doc": "Given a callable `fn` that contains NumPyro primitive calls"
+},
+{
+"area": "numpyro.handlers",
+"name": "lift",
+"kind": "class",
+"doc": "Given a stochastic function with ``param`` calls and a prior distribution,"
+},
+{
+"area": "numpyro.handlers",
+"name": "mask",
+"kind": "class",
+"doc": "This messenger masks out some of the sample statements elementwise."
+},
+{
+"area": "numpyro.handlers",
+"name": "reparam",
+"kind": "class",
+"doc": "Reparametrizes each affected sample site into one or more auxiliary sample"
+},
+{
+"area": "numpyro.handlers",
+"name": "replay",
+"kind": "class",
+"doc": "Given a callable `fn` and an execution trace `trace`,"
+},
+{
+"area": "numpyro.handlers",
+"name": "scale",
+"kind": "class",
+"doc": "This messenger rescales the log probability score."
+},
+{
+"area": "numpyro.handlers",
+"name": "scope",
+"kind": "class",
+"doc": "This handler prepend a prefix followed by a divider to the name of sample sites."
+},
+{
+"area": "numpyro.handlers",
+"name": "seed",
+"kind": "class",
+"doc": "JAX uses a functional pseudo random number generator that requires passing"
+},
+{
+"area": "numpyro.handlers",
+"name": "substitute",
+"kind": "class",
+"doc": "Given a callable `fn` and a dict `data` keyed by site names"
+},
+{
+"area": "numpyro.handlers",
+"name": "trace",
+"kind": "class",
+"doc": "Returns a handler that records the inputs and outputs at primitive calls"
+},
+{
+"area": "numpyro.handlers",
+"name": "uncondition",
+"kind": "class",
+"doc": "Messenger to force the value of observed nodes to be sampled from their"
+},
+{
+"area": "numpyro.infer",
+"name": "AIES",
+"kind": "class",
+"doc": "Affine-Invariant Ensemble Sampling: a gradient free method that informs Metropolis-Hastings"
+},
+{
+"area": "numpyro.infer",
+"name": "BarkerMH",
+"kind": "class",
+"doc": "This is a gradient-based MCMC algorithm of Metropolis-Hastings type that uses"
+},
+{
+"area": "numpyro.infer",
+"name": "CustomGibbs",
+"kind": "class",
+"doc": "Block kernel that delegates the update to a user callable. The callable receives the"
+},
+{
+"area": "numpyro.infer",
+"name": "DiscreteGibbs",
+"kind": "class",
+"doc": "Metropolis / Gibbs updates of the discrete latent sites of a model, one flat coordinate at"
+},
+{
+"area": "numpyro.infer",
+"name": "DiscreteHMCGibbs",
+"kind": "class",
+"doc": "[EXPERIMENTAL INTERFACE]"
+},
+{
+"area": "numpyro.infer",
+"name": "ELBO",
+"kind": "class",
+"doc": "Base class for all ELBO objectives."
+},
+{
+"area": "numpyro.infer",
+"name": "ESS",
+"kind": "class",
+"doc": "Ensemble Slice Sampling: a gradient free method that finds better slice sampling directions"
+},
+{
+"area": "numpyro.infer",
+"name": "Gibbs",
+"kind": "class",
+"doc": "Composite kernel that updates the latent sites of a model block by block. Each block is a"
+},
+{
+"area": "numpyro.infer",
+"name": "HMC",
+"kind": "class",
+"doc": "Hamiltonian Monte Carlo inference, using fixed trajectory length, with"
+},
+{
+"area": "numpyro.infer",
+"name": "HMCECS",
+"kind": "class",
+"doc": "[EXPERIMENTAL INTERFACE]"
+},
+{
+"area": "numpyro.infer",
+"name": "HMCGibbs",
+"kind": "class",
+"doc": "[EXPERIMENTAL INTERFACE]"
+},
+{
+"area": "numpyro.infer",
+"name": "MCMC",
+"kind": "class",
+"doc": "Provides access to Markov Chain Monte Carlo inference algorithms in NumPyro."
+},
+{
+"area": "numpyro.infer",
+"name": "MixedHMC",
+"kind": "class",
+"doc": "Implementation of Mixed Hamiltonian Monte Carlo (reference [1]). An HMC-family wrapper"
+},
+{
+"area": "numpyro.infer",
+"name": "NUTS",
+"kind": "class",
+"doc": "Hamiltonian Monte Carlo inference, using the No U-Turn Sampler (NUTS)"
+},
+{
+"area": "numpyro.infer",
+"name": "Predictive",
+"kind": "class",
+"doc": "This class is used to construct predictive distribution. The predictive distribution is obtained"
+},
+{
+"area": "numpyro.infer",
+"name": "RenyiELBO",
+"kind": "class",
+"doc": "An implementation of Renyi's :math:`\\alpha`-divergence"
+},
+{
+"area": "numpyro.infer",
+"name": "SA",
+"kind": "class",
+"doc": "Sample Adaptive MCMC, a gradient-free sampler."
+},
+{
+"area": "numpyro.infer",
+"name": "SVI",
+"kind": "class",
+"doc": "Stochastic Variational Inference given an ELBO loss objective."
+},
+{
+"area": "numpyro.infer",
+"name": "TraceEnum_ELBO",
+"kind": "class",
+"doc": "(EXPERIMENTAL) A TraceEnum implementation of ELBO-based SVI. The gradient estimator"
+},
+{
+"area": "numpyro.infer",
+"name": "TraceGraph_ELBO",
+"kind": "class",
+"doc": "A TraceGraph implementation of ELBO-based SVI. The gradient estimator"
+},
+{
+"area": "numpyro.infer",
+"name": "TraceMeanField_ELBO",
+"kind": "class",
+"doc": "A trace implementation of ELBO-based SVI. This is currently the only"
+},
+{
+"area": "numpyro.infer",
+"name": "Trace_ELBO",
+"kind": "class",
+"doc": "A trace implementation of ELBO-based SVI. The estimator is constructed"
+},
+{
+"area": "numpyro.infer",
+"name": "init_to_feasible",
+"kind": "function",
+"doc": "Initialize to an arbitrary feasible point, ignoring distribution"
+},
+{
+"area": "numpyro.infer",
+"name": "init_to_mean",
+"kind": "function",
+"doc": "Initialize to the prior mean. For priors with no `.mean` property implemented,"
+},
+{
+"area": "numpyro.infer",
+"name": "init_to_median",
+"kind": "function",
+"doc": "Initialize to the prior median. For priors with no `.sample` method implemented,"
+},
+{
+"area": "numpyro.infer",
+"name": "init_to_sample",
+"kind": "function",
+"doc": "Initialize to a prior sample. For priors with no `.sample` method implemented,"
+},
+{
+"area": "numpyro.infer",
+"name": "init_to_uniform",
+"kind": "function",
+"doc": "Initialize to a random point in the area `(-radius, radius)` of unconstrained domain."
+},
+{
+"area": "numpyro.infer",
+"name": "init_to_value",
+"kind": "function",
+"doc": "Initialize to the value specified in `values`. We defer to"
+},
+{
+"area": "numpyro.infer",
+"name": "initialize_model",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Helper function that calls :func:`~numpyro.infer.util.get_potential_fn`"
+},
+{
+"area": "numpyro.infer",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Returns log likelihood at observation nodes of model,"
+},
+{
+"area": "numpyro.infer",
+"name": "psis_diagnostic",
+"kind": "function",
+"doc": "Compute the PSIS k-hat diagnostic for a model/guide pair."
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoBNAFNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoContinuous` uses a Diagonal Normal"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoBatchedLowRankMultivariateNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoContinuous` uses a batched"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoBatchedMultivariateNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoContinuous` uses a batched MultivariateNormal"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoContinuous",
+"kind": "class",
+"doc": "Base class for implementations of continuous-valued Automatic"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoDAIS",
+"kind": "class",
+"doc": "This implementation of :class:`AutoDAIS` uses Differentiable Annealed"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoDelta",
+"kind": "class",
+"doc": "This implementation of :class:`AutoGuide` uses Delta distributions to"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoDiagonalNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoContinuous` uses a Normal distribution"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoGuide",
+"kind": "class",
+"doc": "Base class for automatic guides."
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoGuideList",
+"kind": "class",
+"doc": "Container class to combine multiple automatic guides."
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoIAFNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoContinuous` uses a Diagonal Normal"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoLaplaceApproximation",
+"kind": "class",
+"doc": "Laplace approximation (quadratic approximation) approximates the posterior"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoLowRankMultivariateNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoContinuous` uses a LowRankMultivariateNormal"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoMultivariateNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoContinuous` uses a MultivariateNormal"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoNormal",
+"kind": "class",
+"doc": "This implementation of :class:`AutoGuide` uses Normal distributions"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoSemiDAIS",
+"kind": "class",
+"doc": "This implementation of :class:`AutoSemiDAIS` [1] combines a parametric"
+},
+{
+"area": "numpyro.infer.autoguide",
+"name": "AutoSurrogateLikelihoodDAIS",
+"kind": "class",
+"doc": "This implementation of :class:`AutoSurrogateLikelihoodDAIS` provides a"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "CircularReparam",
+"kind": "class",
+"doc": "Reparametrizer for :class:`~numpyro.distributions.VonMises` latent"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "DiscreteCosineReparam",
+"kind": "class",
+"doc": "Discrete Cosine reparameterizer, using a"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "ExplicitReparam",
+"kind": "class",
+"doc": "Explicit reparametrizer of a latent variable :code:`x` to a transformed space"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "HaarReparam",
+"kind": "class",
+"doc": "Haar wavelet reparameterizer, using a"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "LocScaleReparam",
+"kind": "class",
+"doc": "Generic decentering reparameterizer [1] for latent variables parameterized"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "NeuTraReparam",
+"kind": "class",
+"doc": "Neural Transport reparameterizer [1] of multiple latent variables."
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "ProjectedNormalReparam",
+"kind": "class",
+"doc": "Reparametrizer for :class:`~numpyro.distributions.ProjectedNormal` latent"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "Reparam",
+"kind": "class",
+"doc": "Base class for reparameterizers."
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "TransformReparam",
+"kind": "class",
+"doc": "Reparameterizer for"
+},
+{
+"area": "numpyro.infer.reparam",
+"name": "UnitJacobianReparam",
+"kind": "class",
+"doc": "Reparameterizer for a :class:`~numpyro.distributions.transforms.Transform`"
+},
+{
+"area": "numpyro.infer.util",
+"name": "Predictive",
+"kind": "class",
+"doc": "This class is used to construct predictive distribution. The predictive distribution is obtained"
+},
+{
+"area": "numpyro.infer.util",
+"name": "find_valid_initial_params",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Given a model with Pyro primitives, returns an initial"
+},
+{
+"area": "numpyro.infer.util",
+"name": "get_potential_fn",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Given a model with Pyro primitives, returns a"
+},
+{
+"area": "numpyro.infer.util",
+"name": "initialize_model",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Helper function that calls :func:`~numpyro.infer.util.get_potential_fn`"
+},
+{
+"area": "numpyro.infer.util",
+"name": "log_density",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Computes log of joint density for the model given latent"
+},
+{
+"area": "numpyro.infer.util",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Returns log likelihood at observation nodes of model,"
+},
+{
+"area": "numpyro.infer.util",
+"name": "potential_energy",
+"kind": "function",
+"doc": "(EXPERIMENTAL INTERFACE) Computes potential energy of a model given unconstrained params."
+},
+{
+"area": "numpyro.optim",
+"name": "Adagrad",
+"kind": "class",
+"doc": "Wrapper class for the JAX optimizer: :func:`~jax.example_libraries.optimizers.adagrad`"
+},
+{
+"area": "numpyro.optim",
+"name": "Adam",
+"kind": "class",
+"doc": "Wrapper class for the JAX optimizer: :func:`~jax.example_libraries.optimizers.adam`"
+},
+{
+"area": "numpyro.optim",
+"name": "ClippedAdam",
+"kind": "class",
+"doc": ":class:`~numpyro.optim.Adam` optimizer with gradient clipping."
+},
+{
+"area": "numpyro.optim",
+"name": "Minimize",
+"kind": "class",
+"doc": "Wrapper class for the JAX minimizer: :func:`~jax.scipy.optimize.minimize`."
+},
+{
+"area": "numpyro.optim",
+"name": "Momentum",
+"kind": "class",
+"doc": "Wrapper class for the JAX optimizer: :func:`~jax.example_libraries.optimizers.momentum`"
+},
+{
+"area": "numpyro.optim",
+"name": "RMSProp",
+"kind": "class",
+"doc": "Wrapper class for the JAX optimizer: :func:`~jax.example_libraries.optimizers.rmsprop`"
+},
+{
+"area": "numpyro.optim",
+"name": "RMSPropMomentum",
+"kind": "class",
+"doc": "Wrapper class for the JAX optimizer: :func:`~jax.example_libraries.optimizers.rmsprop_momentum`"
+},
+{
+"area": "numpyro.optim",
+"name": "SGD",
+"kind": "class",
+"doc": "Wrapper class for the JAX optimizer: :func:`~jax.example_libraries.optimizers.sgd`"
+},
+{
+"area": "numpyro.optim",
+"name": "SM3",
+"kind": "class",
+"doc": "Wrapper class for the JAX optimizer: :func:`~jax.example_libraries.optimizers.sm3`"
+}
+]
+}

@@ -1,0 +1,4 @@
+@lib hmmlearn
+F | CategoricalHMM|MultinomialHMM|GMMHMM | pgm#hiddenMarkovModel, pgm/learning#baumWelch, #gmmHmmAlgorithm | | | | |
+P | GaussianHMM|PoissonHMM | pgm/learning#baumWelch, #HmmEmission | continuous and count emissions are available through the emission slot of the HMM; check that Gaussian and Poisson are named options | | | |
+A | Variational.*|BaseCategoricalHMM|BaseGaussianHMM|VariationalBaseHMM|fill_covars | | variational Bayes for HMMs (VB Baum-Welch) | pgm/learning/hmm-variational.ts | M | low | variational HMMs

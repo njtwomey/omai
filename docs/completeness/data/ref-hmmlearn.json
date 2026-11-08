@@ -1,0 +1,49 @@
+{
+"library": "hmmlearn",
+"version": "0.3.3",
+"source": "introspection",
+"entries": [
+{
+"area": "hmmlearn.hmm",
+"name": "CategoricalHMM",
+"kind": "class",
+"doc": "Hidden Markov Model with categorical (discrete) emissions."
+},
+{
+"area": "hmmlearn.hmm",
+"name": "GMMHMM",
+"kind": "class",
+"doc": "Hidden Markov Model with Gaussian mixture emissions."
+},
+{
+"area": "hmmlearn.hmm",
+"name": "GaussianHMM",
+"kind": "class",
+"doc": "Hidden Markov Model with Gaussian emissions."
+},
+{
+"area": "hmmlearn.hmm",
+"name": "MultinomialHMM",
+"kind": "class",
+"doc": "Hidden Markov Model with multinomial emissions."
+},
+{
+"area": "hmmlearn.hmm",
+"name": "PoissonHMM",
+"kind": "class",
+"doc": "Hidden Markov Model with Poisson emissions."
+},
+{
+"area": "hmmlearn.vhmm",
+"name": "VariationalCategoricalHMM",
+"kind": "class",
+"doc": "Hidden Markov Model with categorical (discrete) emissions trained"
+},
+{
+"area": "hmmlearn.vhmm",
+"name": "VariationalGaussianHMM",
+"kind": "class",
+"doc": "Hidden Markov Model with Multivariate Gaussian Emissions trained"
+}
+]
+}

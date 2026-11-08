@@ -1,0 +1,433 @@
+{
+"library": "fairlearn",
+"version": "0.15.0",
+"source": "introspection",
+"entries": [
+{
+"area": "fairlearn.adversarial",
+"name": "AdversarialFairnessClassifier",
+"kind": "class",
+"doc": "Train PyTorch or TensorFlow classifiers while mitigating unfairness."
+},
+{
+"area": "fairlearn.adversarial",
+"name": "AdversarialFairnessRegressor",
+"kind": "class",
+"doc": "Train PyTorch or TensorFlow regressors while mitigating unfairness."
+},
+{
+"area": "fairlearn.datasets",
+"name": "fetch_acs_income",
+"kind": "function",
+"doc": "Load the ACS Income dataset (regression)."
+},
+{
+"area": "fairlearn.datasets",
+"name": "fetch_adult",
+"kind": "function",
+"doc": "Load the UCI Adult dataset (binary classification)."
+},
+{
+"area": "fairlearn.datasets",
+"name": "fetch_bank_marketing",
+"kind": "function",
+"doc": "Load the UCI bank marketing dataset (binary classification)."
+},
+{
+"area": "fairlearn.datasets",
+"name": "fetch_boston",
+"kind": "function",
+"doc": "Load the boston housing dataset (regression)."
+},
+{
+"area": "fairlearn.datasets",
+"name": "fetch_credit_card",
+"kind": "function",
+"doc": "Load the 'Default of Credit Card clients' dataset (binary classification)."
+},
+{
+"area": "fairlearn.datasets",
+"name": "fetch_diabetes_hospital",
+"kind": "function",
+"doc": "Load the preprocessed Diabetes 130-Hospitals dataset (binary classification)."
+},
+{
+"area": "fairlearn.metrics",
+"name": "MetricFrame",
+"kind": "class",
+"doc": "Collection of disaggregated metric values."
+},
+{
+"area": "fairlearn.metrics",
+"name": "accuracy_score_difference",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "accuracy_score_group_min",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "accuracy_score_ratio",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "balanced_accuracy_score_group_min",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "count",
+"kind": "function",
+"doc": "Calculate the number of data points in each group when working with `MetricFrame`."
+},
+{
+"area": "fairlearn.metrics",
+"name": "demographic_parity_difference",
+"kind": "function",
+"doc": "Calculate the demographic parity difference."
+},
+{
+"area": "fairlearn.metrics",
+"name": "demographic_parity_ratio",
+"kind": "function",
+"doc": "Calculate the demographic parity ratio."
+},
+{
+"area": "fairlearn.metrics",
+"name": "equal_opportunity_difference",
+"kind": "function",
+"doc": "Calculate the equal opportunity difference."
+},
+{
+"area": "fairlearn.metrics",
+"name": "equal_opportunity_ratio",
+"kind": "function",
+"doc": "Calculate the equal opportunity ratio."
+},
+{
+"area": "fairlearn.metrics",
+"name": "equalized_odds_difference",
+"kind": "function",
+"doc": "Calculate the equalized odds difference."
+},
+{
+"area": "fairlearn.metrics",
+"name": "equalized_odds_ratio",
+"kind": "function",
+"doc": "Calculate the equalized odds ratio."
+},
+{
+"area": "fairlearn.metrics",
+"name": "f1_score_group_min",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "false_negative_rate",
+"kind": "function",
+"doc": "Calculate the false negative rate (also called miss rate)."
+},
+{
+"area": "fairlearn.metrics",
+"name": "false_negative_rate_difference",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "false_negative_rate_ratio",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "false_positive_rate",
+"kind": "function",
+"doc": "Calculate the false positive rate (also called fall-out)."
+},
+{
+"area": "fairlearn.metrics",
+"name": "false_positive_rate_difference",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "false_positive_rate_ratio",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "log_loss_group_max",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "make_derived_metric",
+"kind": "function",
+"doc": "Create a scalar returning metric function based on aggregation of a disaggregated metric."
+},
+{
+"area": "fairlearn.metrics",
+"name": "mean_absolute_error_group_max",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "mean_prediction",
+"kind": "function",
+"doc": "Calculate the (weighted) mean prediction."
+},
+{
+"area": "fairlearn.metrics",
+"name": "mean_squared_error_group_max",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "plot_model_comparison",
+"kind": "function",
+"doc": "Create a scatter plot comparing multiple models along two metrics."
+},
+{
+"area": "fairlearn.metrics",
+"name": "plot_roc_curve_by_group",
+"kind": "function",
+"doc": "Plot ROC curves for a binary classifier disaggregated by sensitive feature."
+},
+{
+"area": "fairlearn.metrics",
+"name": "precision_score_group_min",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "r2_score_group_min",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "recall_score_group_min",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "roc_auc_score_group_min",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "selection_rate",
+"kind": "function",
+"doc": "Calculate the fraction of predicted labels matching the 'good' outcome."
+},
+{
+"area": "fairlearn.metrics",
+"name": "selection_rate_difference",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "selection_rate_ratio",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "true_negative_rate",
+"kind": "function",
+"doc": "Calculate the true negative rate (also called specificity or selectivity)."
+},
+{
+"area": "fairlearn.metrics",
+"name": "true_negative_rate_difference",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "true_negative_rate_ratio",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "true_positive_rate",
+"kind": "function",
+"doc": "Calculate the true positive rate (also called sensitivity, recall, or hit rate)."
+},
+{
+"area": "fairlearn.metrics",
+"name": "true_positive_rate_difference",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "true_positive_rate_ratio",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "zero_one_loss_difference",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "zero_one_loss_group_max",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.metrics",
+"name": "zero_one_loss_ratio",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "fairlearn.postprocessing",
+"name": "ThresholdOptimizer",
+"kind": "class",
+"doc": "A classifier based on the threshold optimization approach."
+},
+{
+"area": "fairlearn.postprocessing",
+"name": "plot_threshold_optimizer",
+"kind": "function",
+"doc": "Plot the chosen solution of the threshold optimizer."
+},
+{
+"area": "fairlearn.preprocessing",
+"name": "CorrelationRemover",
+"kind": "class",
+"doc": "A component that filters out sensitive correlations in a dataset."
+},
+{
+"area": "fairlearn.preprocessing",
+"name": "PrototypeRepresentationLearner",
+"kind": "class",
+"doc": "A transformer and classifier that learns a latent representation of the input data to obfuscate the sensitive "
+},
+{
+"area": "fairlearn.reductions",
+"name": "AbsoluteLoss",
+"kind": "class",
+"doc": "Class to evaluate absolute loss."
+},
+{
+"area": "fairlearn.reductions",
+"name": "BoundedGroupLoss",
+"kind": "class",
+"doc": "Moment for constraining the worst-case loss by a group."
+},
+{
+"area": "fairlearn.reductions",
+"name": "ClassificationMoment",
+"kind": "class",
+"doc": "Moment that can be expressed as weighted classification error."
+},
+{
+"area": "fairlearn.reductions",
+"name": "DemographicParity",
+"kind": "class",
+"doc": "Implementation of demographic parity as a moment."
+},
+{
+"area": "fairlearn.reductions",
+"name": "EqualizedOdds",
+"kind": "class",
+"doc": "Implementation of equalized odds as a moment."
+},
+{
+"area": "fairlearn.reductions",
+"name": "ErrorRate",
+"kind": "class",
+"doc": "Misclassification error as a moment."
+},
+{
+"area": "fairlearn.reductions",
+"name": "ErrorRateParity",
+"kind": "class",
+"doc": "Implementation of error rate parity as a moment."
+},
+{
+"area": "fairlearn.reductions",
+"name": "ExponentiatedGradient",
+"kind": "class",
+"doc": "An Estimator which implements the exponentiated gradient reduction."
+},
+{
+"area": "fairlearn.reductions",
+"name": "FalsePositiveRateParity",
+"kind": "class",
+"doc": "Implementation of false positive rate parity as a moment."
+},
+{
+"area": "fairlearn.reductions",
+"name": "GridSearch",
+"kind": "class",
+"doc": "Estimator to perform a grid search given a blackbox estimator algorithm."
+},
+{
+"area": "fairlearn.reductions",
+"name": "LossMoment",
+"kind": "class",
+"doc": "Moment that can be expressed as weighted loss."
+},
+{
+"area": "fairlearn.reductions",
+"name": "MeanLoss",
+"kind": "class",
+"doc": "Moment for evaluating the mean loss."
+},
+{
+"area": "fairlearn.reductions",
+"name": "Moment",
+"kind": "class",
+"doc": "Generic moment."
+},
+{
+"area": "fairlearn.reductions",
+"name": "SquareLoss",
+"kind": "class",
+"doc": "Class to evaluate the square loss."
+},
+{
+"area": "fairlearn.reductions",
+"name": "TruePositiveRateParity",
+"kind": "class",
+"doc": "Implementation of true positive rate parity as a moment."
+},
+{
+"area": "fairlearn.reductions",
+"name": "UtilityParity",
+"kind": "class",
+"doc": "A generic moment for parity in utilities (or costs) under classification."
+},
+{
+"area": "fairlearn.reductions",
+"name": "ZeroOneLoss",
+"kind": "class",
+"doc": "Class to evaluate a zero-one loss."
+}
+]
+}

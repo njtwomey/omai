@@ -1,0 +1,889 @@
+{
+"library": "gymnasium",
+"version": "1.4.0",
+"source": "introspection",
+"entries": [
+{
+"area": "gymnasium.envs.box2d",
+"name": "BipedalWalker-v3",
+"kind": "environment",
+"doc": "BipedalWalker"
+},
+{
+"area": "gymnasium.envs.box2d",
+"name": "BipedalWalkerHardcore-v3",
+"kind": "environment",
+"doc": "BipedalWalker"
+},
+{
+"area": "gymnasium.envs.box2d",
+"name": "CarRacing-v3",
+"kind": "environment",
+"doc": "CarRacing"
+},
+{
+"area": "gymnasium.envs.box2d",
+"name": "LunarLander-v3",
+"kind": "environment",
+"doc": "LunarLander"
+},
+{
+"area": "gymnasium.envs.box2d",
+"name": "LunarLanderContinuous-v3",
+"kind": "environment",
+"doc": "LunarLander"
+},
+{
+"area": "gymnasium.envs.classic_control",
+"name": "Acrobot-v1",
+"kind": "environment",
+"doc": "AcrobotEnv"
+},
+{
+"area": "gymnasium.envs.classic_control",
+"name": "CartPole-v0",
+"kind": "environment",
+"doc": "CartPoleEnv"
+},
+{
+"area": "gymnasium.envs.classic_control",
+"name": "CartPole-v1",
+"kind": "environment",
+"doc": "CartPoleEnv"
+},
+{
+"area": "gymnasium.envs.classic_control",
+"name": "MountainCar-v0",
+"kind": "environment",
+"doc": "MountainCarEnv"
+},
+{
+"area": "gymnasium.envs.classic_control",
+"name": "MountainCarContinuous-v0",
+"kind": "environment",
+"doc": "Continuous_MountainCarEnv"
+},
+{
+"area": "gymnasium.envs.classic_control",
+"name": "Pendulum-v1",
+"kind": "environment",
+"doc": "PendulumEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Ant-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Ant-v3",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Ant-v4",
+"kind": "environment",
+"doc": "AntEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Ant-v5",
+"kind": "environment",
+"doc": "AntEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "HalfCheetah-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "HalfCheetah-v3",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "HalfCheetah-v4",
+"kind": "environment",
+"doc": "HalfCheetahEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "HalfCheetah-v5",
+"kind": "environment",
+"doc": "HalfCheetahEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Hopper-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Hopper-v3",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Hopper-v4",
+"kind": "environment",
+"doc": "HopperEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Hopper-v5",
+"kind": "environment",
+"doc": "HopperEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Humanoid-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Humanoid-v3",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Humanoid-v4",
+"kind": "environment",
+"doc": "HumanoidEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Humanoid-v5",
+"kind": "environment",
+"doc": "HumanoidEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "HumanoidStandup-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "HumanoidStandup-v4",
+"kind": "environment",
+"doc": "HumanoidStandupEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "HumanoidStandup-v5",
+"kind": "environment",
+"doc": "HumanoidStandupEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "InvertedDoublePendulum-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "InvertedDoublePendulum-v4",
+"kind": "environment",
+"doc": "InvertedDoublePendulumEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "InvertedDoublePendulum-v5",
+"kind": "environment",
+"doc": "InvertedDoublePendulumEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "InvertedPendulum-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "InvertedPendulum-v4",
+"kind": "environment",
+"doc": "InvertedPendulumEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "InvertedPendulum-v5",
+"kind": "environment",
+"doc": "InvertedPendulumEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Pusher-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Pusher-v4",
+"kind": "environment",
+"doc": "PusherEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Pusher-v5",
+"kind": "environment",
+"doc": "PusherEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Reacher-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Reacher-v4",
+"kind": "environment",
+"doc": "ReacherEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Reacher-v5",
+"kind": "environment",
+"doc": "ReacherEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Swimmer-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Swimmer-v3",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Swimmer-v4",
+"kind": "environment",
+"doc": "SwimmerEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Swimmer-v5",
+"kind": "environment",
+"doc": "SwimmerEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Walker2d-v2",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Walker2d-v3",
+"kind": "environment",
+"doc": "<function _raise_mujoco_py_error at 0x169940d60>"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Walker2d-v4",
+"kind": "environment",
+"doc": "Walker2dEnv"
+},
+{
+"area": "gymnasium.envs.mujoco",
+"name": "Walker2d-v5",
+"kind": "environment",
+"doc": "Walker2dEnv"
+},
+{
+"area": "gymnasium.envs.other",
+"name": "GymV21Environment-v0",
+"kind": "environment",
+"doc": "<function _raise_shimmy_error at 0x169981bc0>"
+},
+{
+"area": "gymnasium.envs.other",
+"name": "GymV26Environment-v0",
+"kind": "environment",
+"doc": "<function _raise_shimmy_error at 0x169981bc0>"
+},
+{
+"area": "gymnasium.envs.other",
+"name": "phys2d/CartPole-v0",
+"kind": "environment",
+"doc": "CartPoleJaxEnv"
+},
+{
+"area": "gymnasium.envs.other",
+"name": "phys2d/CartPole-v1",
+"kind": "environment",
+"doc": "CartPoleJaxEnv"
+},
+{
+"area": "gymnasium.envs.other",
+"name": "phys2d/Pendulum-v0",
+"kind": "environment",
+"doc": "PendulumJaxEnv"
+},
+{
+"area": "gymnasium.envs.other",
+"name": "tabular/Blackjack-v0",
+"kind": "environment",
+"doc": "BlackJackJaxEnv"
+},
+{
+"area": "gymnasium.envs.other",
+"name": "tabular/CliffWalking-v0",
+"kind": "environment",
+"doc": "CliffWalkingJaxEnv"
+},
+{
+"area": "gymnasium.envs.toy_text",
+"name": "Blackjack-v1",
+"kind": "environment",
+"doc": "BlackjackEnv"
+},
+{
+"area": "gymnasium.envs.toy_text",
+"name": "CliffWalking-v1",
+"kind": "environment",
+"doc": "CliffWalkingEnv"
+},
+{
+"area": "gymnasium.envs.toy_text",
+"name": "CliffWalkingSlippery-v1",
+"kind": "environment",
+"doc": "CliffWalkingEnv"
+},
+{
+"area": "gymnasium.envs.toy_text",
+"name": "FrozenLake-v1",
+"kind": "environment",
+"doc": "FrozenLakeEnv"
+},
+{
+"area": "gymnasium.envs.toy_text",
+"name": "FrozenLake8x8-v1",
+"kind": "environment",
+"doc": "FrozenLakeEnv"
+},
+{
+"area": "gymnasium.envs.toy_text",
+"name": "Taxi-v4",
+"kind": "environment",
+"doc": "TaxiEnv"
+},
+{
+"area": "gymnasium.spaces",
+"name": "Box",
+"kind": "class",
+"doc": "A (possibly unbounded) box in :math:`\\mathbb{R}^n`."
+},
+{
+"area": "gymnasium.spaces",
+"name": "Dict",
+"kind": "class",
+"doc": "A dictionary of :class:`Space` instances."
+},
+{
+"area": "gymnasium.spaces",
+"name": "Discrete",
+"kind": "class",
+"doc": "A space consisting of finitely many elements."
+},
+{
+"area": "gymnasium.spaces",
+"name": "Graph",
+"kind": "class",
+"doc": "A space representing graph information as a series of ``nodes`` connected with ``edges`` according to an adjac"
+},
+{
+"area": "gymnasium.spaces",
+"name": "GraphInstance",
+"kind": "class",
+"doc": "A Graph space instance."
+},
+{
+"area": "gymnasium.spaces",
+"name": "MultiBinary",
+"kind": "class",
+"doc": "An n-shape binary space."
+},
+{
+"area": "gymnasium.spaces",
+"name": "MultiDiscrete",
+"kind": "class",
+"doc": "This represents the cartesian product of arbitrary :class:`Discrete` spaces."
+},
+{
+"area": "gymnasium.spaces",
+"name": "OneOf",
+"kind": "class",
+"doc": "An exclusive tuple (more precisely: the direct sum) of :class:`Space` instances."
+},
+{
+"area": "gymnasium.spaces",
+"name": "Sequence",
+"kind": "class",
+"doc": "This space represent sets of finite-length sequences."
+},
+{
+"area": "gymnasium.spaces",
+"name": "Space",
+"kind": "class",
+"doc": "Superclass that is used to define observation and action spaces."
+},
+{
+"area": "gymnasium.spaces",
+"name": "Text",
+"kind": "class",
+"doc": "A space representing a string comprised of characters from a given charset."
+},
+{
+"area": "gymnasium.spaces",
+"name": "Tuple",
+"kind": "class",
+"doc": "A tuple (more precisely: the cartesian product) of :class:`Space` instances."
+},
+{
+"area": "gymnasium.spaces",
+"name": "flatdim",
+"kind": "function",
+"doc": "Return the number of dimensions a flattened equivalent of this space would have."
+},
+{
+"area": "gymnasium.spaces",
+"name": "flatten",
+"kind": "function",
+"doc": "Flatten a data point from a space."
+},
+{
+"area": "gymnasium.spaces",
+"name": "flatten_space",
+"kind": "function",
+"doc": "Flatten a space into a space that is as flat as possible."
+},
+{
+"area": "gymnasium.spaces",
+"name": "unflatten",
+"kind": "function",
+"doc": "Unflatten a data point from a space."
+},
+{
+"area": "gymnasium.utils",
+"name": "EzPickle",
+"kind": "class",
+"doc": "Objects that are pickled and unpickled via their constructor arguments."
+},
+{
+"area": "gymnasium.utils",
+"name": "RecordConstructorArgs",
+"kind": "class",
+"doc": "Records all arguments passed to constructor to `_saved_kwargs`."
+},
+{
+"area": "gymnasium.utils",
+"name": "colorize",
+"kind": "function",
+"doc": "Returns string surrounded by appropriate terminal colour codes to print colourised text."
+},
+{
+"area": "gymnasium.vector",
+"name": "AsyncVectorEnv",
+"kind": "class",
+"doc": "Vectorized environment that runs multiple environments in parallel."
+},
+{
+"area": "gymnasium.vector",
+"name": "AutoresetMode",
+"kind": "class",
+"doc": "Enum representing the different autoreset modes, next step, same step and disabled."
+},
+{
+"area": "gymnasium.vector",
+"name": "SyncVectorEnv",
+"kind": "class",
+"doc": "Vectorized environment that serially runs multiple environments."
+},
+{
+"area": "gymnasium.vector",
+"name": "VectorActionWrapper",
+"kind": "class",
+"doc": "Wraps the vectorized environment to allow a modular transformation of the actions."
+},
+{
+"area": "gymnasium.vector",
+"name": "VectorEnv",
+"kind": "class",
+"doc": "Base class for vectorized environments to run multiple independent copies of the same environment in parallel."
+},
+{
+"area": "gymnasium.vector",
+"name": "VectorObservationWrapper",
+"kind": "class",
+"doc": "Wraps the vectorized environment to allow a modular transformation of the observation."
+},
+{
+"area": "gymnasium.vector",
+"name": "VectorRewardWrapper",
+"kind": "class",
+"doc": "Wraps the vectorized environment to allow a modular transformation of the reward."
+},
+{
+"area": "gymnasium.vector",
+"name": "VectorWrapper",
+"kind": "class",
+"doc": "Wraps the vectorized environment to allow a modular transformation."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "AddRenderObservation",
+"kind": "class",
+"doc": "Includes the rendered observations in the environment's observations."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "AddWhiteNoise",
+"kind": "class",
+"doc": "Randomly replaces pixels with white noise."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "AtariPreprocessing",
+"kind": "class",
+"doc": "Implements the common preprocessing techniques for Atari environments (excluding frame stacking)."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "Autoreset",
+"kind": "class",
+"doc": "The wrapped environment is automatically reset when a terminated or truncated state is reached."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "ClipAction",
+"kind": "class",
+"doc": "Clips the ``action`` pass to ``step`` to be within the environment's `action_space`."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "ClipReward",
+"kind": "class",
+"doc": "Clips the rewards for an environment between an upper and lower bound."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "DelayObservation",
+"kind": "class",
+"doc": "Adds a delay to the returned observation from the environment."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "DiscretizeAction",
+"kind": "class",
+"doc": "Uniformly discretizes a continuous Box action space into a single Discrete space."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "DiscretizeObservation",
+"kind": "class",
+"doc": "Uniformly discretizes a continuous Box observation space into a single Discrete space."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "DtypeObservation",
+"kind": "class",
+"doc": "Modifies the dtype of an observation array to a specified dtype."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "FilterObservation",
+"kind": "class",
+"doc": "Filters a Dict or Tuple observation spaces by a set of keys or indexes."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "FlattenObservation",
+"kind": "class",
+"doc": "Flattens the environment's observation space and each observation from ``reset`` and ``step`` functions."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "FrameStackObservation",
+"kind": "class",
+"doc": "Stacks the observations from the last ``N`` time steps in a rolling manner."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "GrayscaleObservation",
+"kind": "class",
+"doc": "Converts an image observation computed by ``reset`` and ``step`` from RGB to Grayscale."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "HumanRendering",
+"kind": "class",
+"doc": "Allows human like rendering for environments that support \"rgb_array\" rendering."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "MaxAndSkipObservation",
+"kind": "class",
+"doc": "Skips the N-th frame (observation) and return the max values between the two last observations."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "NormalizeObservation",
+"kind": "class",
+"doc": "Normalizes observations to be centered at the mean with unit variance."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "NormalizeReward",
+"kind": "class",
+"doc": "Normalizes immediate rewards such that their exponential moving average has an approximately fixed variance."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "ObstructView",
+"kind": "class",
+"doc": "Randomly obstructs rendering with white noise patches."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "OrderEnforcing",
+"kind": "class",
+"doc": "Will produce an error if ``step`` or ``render`` is called before ``reset``."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "PassiveEnvChecker",
+"kind": "class",
+"doc": "A passive wrapper that surrounds the ``step``, ``reset`` and ``render`` functions to check they follow Gymnasi"
+},
+{
+"area": "gymnasium.wrappers",
+"name": "RecordEpisodeStatistics",
+"kind": "class",
+"doc": "This wrapper will keep track of cumulative rewards and episode lengths."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "RecordVideo",
+"kind": "class",
+"doc": "Records videos of environment episodes using the environment's render function."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "RenderCollection",
+"kind": "class",
+"doc": "Collect rendered frames of an environment such ``render`` returns a ``list[RenderedFrame]``."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "RepeatAction",
+"kind": "class",
+"doc": "Repeats the given action for ``num_repeats`` steps, accumulating the reward."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "RescaleAction",
+"kind": "class",
+"doc": "Affinely (linearly) rescales a ``Box`` action space of the environment to within the range of ``[min_action, m"
+},
+{
+"area": "gymnasium.wrappers",
+"name": "RescaleObservation",
+"kind": "class",
+"doc": "Affinely (linearly) rescales a ``Box`` observation space of the environment to within the range of ``[min_obs,"
+},
+{
+"area": "gymnasium.wrappers",
+"name": "ReshapeObservation",
+"kind": "class",
+"doc": "Reshapes Array based observations to a specified shape."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "ResizeObservation",
+"kind": "class",
+"doc": "Resizes image observations using OpenCV to a specified shape."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "StickyAction",
+"kind": "class",
+"doc": "Adds a probability that the action is repeated for the same ``step`` function."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "TimeAwareObservation",
+"kind": "class",
+"doc": "Augment the observation with the number of time steps taken within an episode."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "TimeLimit",
+"kind": "class",
+"doc": "Limits the number of steps for an environment through truncating the environment if a maximum number of timest"
+},
+{
+"area": "gymnasium.wrappers",
+"name": "TransformAction",
+"kind": "class",
+"doc": "Applies a function to the ``action`` before passing the modified value to the environment ``step`` function."
+},
+{
+"area": "gymnasium.wrappers",
+"name": "TransformObservation",
+"kind": "class",
+"doc": "Applies a function to the ``observation`` received from the environment's :meth:`Env.reset` and :meth:`Env.ste"
+},
+{
+"area": "gymnasium.wrappers",
+"name": "TransformReward",
+"kind": "class",
+"doc": "Applies a function to the ``reward`` received from the environment's ``step``."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "ClipAction",
+"kind": "class",
+"doc": "Clip the continuous action within the valid :class:`Box` observation space bound."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "ClipReward",
+"kind": "class",
+"doc": "A wrapper that clips the rewards for an environment between an upper and lower bound."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "DictInfoToList",
+"kind": "class",
+"doc": "Converts infos of vectorized environments from ``dict`` to ``List[dict]``."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "DtypeObservation",
+"kind": "class",
+"doc": "Observation wrapper for transforming the dtype of an observation."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "FilterObservation",
+"kind": "class",
+"doc": "Vector wrapper for filtering dict or tuple observation spaces."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "FlattenObservation",
+"kind": "class",
+"doc": "Observation wrapper that flattens the observation."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "GrayscaleObservation",
+"kind": "class",
+"doc": "Observation wrapper that converts an RGB image to grayscale."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "HumanRendering",
+"kind": "class",
+"doc": "Adds support for Human-based Rendering for Vector-based environments."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "NormalizeObservation",
+"kind": "class",
+"doc": "This wrapper will normalize observations s.t. each coordinate is centered with unit variance."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "NormalizeReward",
+"kind": "class",
+"doc": "This wrapper will scale rewards s.t. their exponential moving average has an approximately fixed variance."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "RecordEpisodeStatistics",
+"kind": "class",
+"doc": "This wrapper will keep track of cumulative rewards and episode lengths."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "RecordVideo",
+"kind": "class",
+"doc": "Adds support for video recording for Vector-based environments."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "RescaleAction",
+"kind": "class",
+"doc": "Affinely rescales the continuous action space of the environment to the range [min_action, max_action]."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "RescaleObservation",
+"kind": "class",
+"doc": "Linearly rescales observation to between a minimum and maximum value."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "ReshapeObservation",
+"kind": "class",
+"doc": "Reshapes array based observations to shapes."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "ResizeObservation",
+"kind": "class",
+"doc": "Resizes image observations using OpenCV to shape."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "TransformAction",
+"kind": "class",
+"doc": "Transforms an action via a function provided to the wrapper."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "TransformObservation",
+"kind": "class",
+"doc": "Transforms an observation via a function provided to the wrapper."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "TransformReward",
+"kind": "class",
+"doc": "A reward wrapper that allows a custom function to modify the step reward."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "VectorizeTransformAction",
+"kind": "class",
+"doc": "Vectorizes a single-agent transform action wrapper for vector environments."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "VectorizeTransformObservation",
+"kind": "class",
+"doc": "Vectorizes a single-agent transform observation wrapper for vector environments."
+},
+{
+"area": "gymnasium.wrappers.vector",
+"name": "VectorizeTransformReward",
+"kind": "class",
+"doc": "Vectorizes a single-agent transform reward wrapper for vector environments."
+}
+]
+}

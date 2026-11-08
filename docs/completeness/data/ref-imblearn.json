@@ -1,0 +1,211 @@
+{
+"library": "imblearn",
+"version": "0.14.2",
+"source": "introspection",
+"entries": [
+{
+"area": "imblearn.combine",
+"name": "SMOTEENN",
+"kind": "class",
+"doc": "Over-sampling using SMOTE and cleaning using ENN."
+},
+{
+"area": "imblearn.combine",
+"name": "SMOTETomek",
+"kind": "class",
+"doc": "Over-sampling using SMOTE and cleaning using Tomek links."
+},
+{
+"area": "imblearn.ensemble",
+"name": "BalancedBaggingClassifier",
+"kind": "class",
+"doc": "A Bagging classifier with additional balancing."
+},
+{
+"area": "imblearn.ensemble",
+"name": "BalancedRandomForestClassifier",
+"kind": "class",
+"doc": "A balanced random forest classifier."
+},
+{
+"area": "imblearn.ensemble",
+"name": "EasyEnsembleClassifier",
+"kind": "class",
+"doc": "Bag of balanced boosted learners also known as EasyEnsemble."
+},
+{
+"area": "imblearn.ensemble",
+"name": "RUSBoostClassifier",
+"kind": "class",
+"doc": "Random under-sampling integrated in the learning of AdaBoost."
+},
+{
+"area": "imblearn.metrics",
+"name": "classification_report_imbalanced",
+"kind": "function",
+"doc": "Build a classification report based on metrics used with imbalanced dataset."
+},
+{
+"area": "imblearn.metrics",
+"name": "geometric_mean_score",
+"kind": "function",
+"doc": "Compute the geometric mean."
+},
+{
+"area": "imblearn.metrics",
+"name": "macro_averaged_mean_absolute_error",
+"kind": "function",
+"doc": "Compute Macro-Averaged MAE for imbalanced ordinal classification."
+},
+{
+"area": "imblearn.metrics",
+"name": "make_index_balanced_accuracy",
+"kind": "function",
+"doc": "Balance any scoring function using the index balanced accuracy."
+},
+{
+"area": "imblearn.metrics",
+"name": "sensitivity_score",
+"kind": "function",
+"doc": "Compute the sensitivity."
+},
+{
+"area": "imblearn.metrics",
+"name": "sensitivity_specificity_support",
+"kind": "function",
+"doc": "Compute sensitivity, specificity, and support for each class."
+},
+{
+"area": "imblearn.metrics",
+"name": "specificity_score",
+"kind": "function",
+"doc": "Compute the specificity."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "ADASYN",
+"kind": "class",
+"doc": "Oversample using Adaptive Synthetic (ADASYN) algorithm."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "BorderlineSMOTE",
+"kind": "class",
+"doc": "Over-sampling using Borderline SMOTE."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "KMeansSMOTE",
+"kind": "class",
+"doc": "Apply a KMeans clustering before to over-sample using SMOTE."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "RandomOverSampler",
+"kind": "class",
+"doc": "Class to perform random over-sampling."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "SMOTE",
+"kind": "class",
+"doc": "Class to perform over-sampling using SMOTE."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "SMOTEN",
+"kind": "class",
+"doc": "Synthetic Minority Over-sampling Technique for Nominal."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "SMOTENC",
+"kind": "class",
+"doc": "Synthetic Minority Over-sampling Technique for Nominal and Continuous."
+},
+{
+"area": "imblearn.over_sampling",
+"name": "SVMSMOTE",
+"kind": "class",
+"doc": "Over-sampling using SVM-SMOTE."
+},
+{
+"area": "imblearn.pipeline",
+"name": "Pipeline",
+"kind": "class",
+"doc": "Pipeline of transforms and resamples with a final estimator."
+},
+{
+"area": "imblearn.pipeline",
+"name": "make_pipeline",
+"kind": "function",
+"doc": "Construct a Pipeline from the given estimators."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "AllKNN",
+"kind": "class",
+"doc": "Undersample based on the AllKNN method."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "ClusterCentroids",
+"kind": "class",
+"doc": "Undersample by generating centroids based on clustering methods."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "CondensedNearestNeighbour",
+"kind": "class",
+"doc": "Undersample based on the condensed nearest neighbour method."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "EditedNearestNeighbours",
+"kind": "class",
+"doc": "Undersample based on the edited nearest neighbour method."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "InstanceHardnessThreshold",
+"kind": "class",
+"doc": "Undersample based on the instance hardness threshold."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "NearMiss",
+"kind": "class",
+"doc": "Class to perform under-sampling based on NearMiss methods."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "NeighbourhoodCleaningRule",
+"kind": "class",
+"doc": "Undersample based on the neighbourhood cleaning rule."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "OneSidedSelection",
+"kind": "class",
+"doc": "Class to perform under-sampling based on one-sided selection method."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "RandomUnderSampler",
+"kind": "class",
+"doc": "Class to perform random under-sampling."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "RepeatedEditedNearestNeighbours",
+"kind": "class",
+"doc": "Undersample based on the repeated edited nearest neighbour method."
+},
+{
+"area": "imblearn.under_sampling",
+"name": "TomekLinks",
+"kind": "class",
+"doc": "Under-sampling by removing Tomek's links."
+}
+]
+}

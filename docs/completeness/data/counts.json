@@ -1,0 +1,380 @@
+{
+ "sklearn": {
+  "full": 446,
+  "partial": 11,
+  "absent": 42,
+  "skip": 53,
+  "notLow": 30,
+  "libs": {
+   "sklearn": {
+    "full": 430,
+    "partial": 11,
+    "absent": 24,
+    "skip": 53,
+    "notLow": 16,
+    "version": "1.9.1",
+    "source": "introspection"
+   },
+   "imblearn": {
+    "full": 16,
+    "partial": 0,
+    "absent": 18,
+    "skip": 0,
+    "notLow": 14,
+    "version": "0.14.2",
+    "source": "introspection"
+   }
+  }
+ },
+ "scipy-statsmodels": {
+  "full": 962,
+  "partial": 159,
+  "absent": 600,
+  "skip": 181,
+  "notLow": 200,
+  "libs": {
+   "scipy": {
+    "full": 649,
+    "partial": 68,
+    "absent": 426,
+    "skip": 71,
+    "notLow": 83,
+    "version": "1.18.1",
+    "source": "introspection"
+   },
+   "statsmodels": {
+    "full": 285,
+    "partial": 70,
+    "absent": 125,
+    "skip": 106,
+    "notLow": 48,
+    "version": "0.15.0",
+    "source": "introspection"
+   },
+   "sktime": {
+    "full": 21,
+    "partial": 10,
+    "absent": 31,
+    "skip": 0,
+    "notLow": 40,
+    "version": "",
+    "source": "memory"
+   },
+   "tslearn": {
+    "full": 7,
+    "partial": 0,
+    "absent": 18,
+    "skip": 0,
+    "notLow": 18,
+    "version": "",
+    "source": "memory"
+   },
+   "prophet": {
+    "full": 0,
+    "partial": 11,
+    "absent": 0,
+    "skip": 4,
+    "notLow": 11,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "probabilistic": {
+  "full": 354,
+  "partial": 27,
+  "absent": 118,
+  "skip": 59,
+  "notLow": 83,
+  "libs": {
+   "numpyro": {
+    "full": 215,
+    "partial": 1,
+    "absent": 64,
+    "skip": 14,
+    "notLow": 20,
+    "version": "0.22.0",
+    "source": "introspection"
+   },
+   "arviz": {
+    "full": 39,
+    "partial": 23,
+    "absent": 29,
+    "skip": 45,
+    "notLow": 46,
+    "version": "1.3.0",
+    "source": "introspection"
+   },
+   "pymc": {
+    "full": 49,
+    "partial": 3,
+    "absent": 7,
+    "skip": 0,
+    "notLow": 3,
+    "version": "",
+    "source": "memory"
+   },
+   "tensorflow_probability": {
+    "full": 51,
+    "partial": 0,
+    "absent": 18,
+    "skip": 0,
+    "notLow": 14,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "graphical-models": {
+  "full": 65,
+  "partial": 15,
+  "absent": 39,
+  "skip": 23,
+  "notLow": 35,
+  "libs": {
+   "pgmpy": {
+    "full": 62,
+    "partial": 13,
+    "absent": 37,
+    "skip": 23,
+    "notLow": 35,
+    "version": "1.1.2",
+    "source": "introspection"
+   },
+   "hmmlearn": {
+    "full": 3,
+    "partial": 2,
+    "absent": 2,
+    "skip": 0,
+    "notLow": 0,
+    "version": "0.3.3",
+    "source": "introspection"
+   }
+  }
+ },
+ "rl": {
+  "full": 118,
+  "partial": 30,
+  "absent": 72,
+  "skip": 39,
+  "notLow": 27,
+  "libs": {
+   "gymnasium": {
+    "full": 64,
+    "partial": 13,
+    "absent": 22,
+    "skip": 30,
+    "notLow": 4,
+    "version": "1.4.0",
+    "source": "introspection"
+   },
+   "stable_baselines3": {
+    "full": 35,
+    "partial": 8,
+    "absent": 14,
+    "skip": 6,
+    "notLow": 4,
+    "version": "",
+    "source": "memory"
+   },
+   "cleanrl": {
+    "full": 9,
+    "partial": 0,
+    "absent": 6,
+    "skip": 3,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "pettingzoo": {
+    "full": 10,
+    "partial": 9,
+    "absent": 30,
+    "skip": 0,
+    "notLow": 19,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "torch": {
+  "full": 701,
+  "partial": 10,
+  "absent": 76,
+  "skip": 129,
+  "notLow": 34,
+  "libs": {
+   "torch": {
+    "full": 479,
+    "partial": 6,
+    "absent": 43,
+    "skip": 42,
+    "notLow": 3,
+    "version": "2.14.1",
+    "source": "introspection"
+   },
+   "torchvision": {
+    "full": 14,
+    "partial": 4,
+    "absent": 33,
+    "skip": 87,
+    "notLow": 31,
+    "version": "0.29.1",
+    "source": "introspection"
+   },
+   "torchmetrics": {
+    "full": 208,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "1.9.0",
+    "source": "introspection"
+   }
+  }
+ },
+ "graph-neural-networks": {
+  "full": 245,
+  "partial": 47,
+  "absent": 625,
+  "skip": 12,
+  "notLow": 161,
+  "libs": {
+   "torch_geometric": {
+    "full": 63,
+    "partial": 14,
+    "absent": 128,
+    "skip": 0,
+    "notLow": 133,
+    "version": "",
+    "source": "memory"
+   },
+   "networkx": {
+    "full": 182,
+    "partial": 33,
+    "absent": 497,
+    "skip": 12,
+    "notLow": 28,
+    "version": "3.7",
+    "source": "introspection"
+   }
+  }
+ },
+ "other": {
+  "full": 751,
+  "partial": 110,
+  "absent": 154,
+  "skip": 122,
+  "notLow": 130,
+  "libs": {
+   "dowhy": {
+    "full": 23,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0,
+    "notLow": 6,
+    "version": "",
+    "source": "memory"
+   },
+   "econml": {
+    "full": 12,
+    "partial": 13,
+    "absent": 7,
+    "skip": 0,
+    "notLow": 7,
+    "version": "",
+    "source": "memory"
+   },
+   "fairlearn": {
+    "full": 66,
+    "partial": 0,
+    "absent": 4,
+    "skip": 1,
+    "notLow": 0,
+    "version": "0.15.0",
+    "source": "introspection"
+   },
+   "shap": {
+    "full": 54,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5,
+    "notLow": 0,
+    "version": "0.54.1",
+    "source": "introspection"
+   },
+   "captum": {
+    "full": 70,
+    "partial": 0,
+    "absent": 17,
+    "skip": 0,
+    "notLow": 0,
+    "version": "0.9.0",
+    "source": "introspection"
+   },
+   "lifelines": {
+    "full": 18,
+    "partial": 0,
+    "absent": 14,
+    "skip": 0,
+    "notLow": 10,
+    "version": "",
+    "source": "memory"
+   },
+   "scikit_survival": {
+    "full": 9,
+    "partial": 4,
+    "absent": 8,
+    "skip": 0,
+    "notLow": 6,
+    "version": "",
+    "source": "memory"
+   },
+   "pyod": {
+    "full": 15,
+    "partial": 0,
+    "absent": 24,
+    "skip": 0,
+    "notLow": 24,
+    "version": "",
+    "source": "memory"
+   },
+   "skimage": {
+    "full": 281,
+    "partial": 24,
+    "absent": 29,
+    "skip": 64,
+    "notLow": 30,
+    "version": "0.26.0",
+    "source": "introspection"
+   },
+   "nltk": {
+    "full": 133,
+    "partial": 68,
+    "absent": 29,
+    "skip": 20,
+    "notLow": 41,
+    "version": "3.10.4",
+    "source": "introspection"
+   },
+   "gensim": {
+    "full": 19,
+    "partial": 1,
+    "absent": 16,
+    "skip": 17,
+    "notLow": 6,
+    "version": "4.4.0",
+    "source": "introspection"
+   },
+   "optuna": {
+    "full": 51,
+    "partial": 0,
+    "absent": 0,
+    "skip": 15,
+    "notLow": 0,
+    "version": "5.0.0",
+    "source": "introspection"
+   }
+  }
+ }
+}

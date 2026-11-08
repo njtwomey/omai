@@ -1,0 +1,30 @@
+@lib gymnasium
+@area gymnasium.envs.classic_control
+F | .* | environments#cartPole, #mountainCar, #mountainCarContinuous, #pendulum, #acrobot | | | | |
+@area gymnasium.envs.toy_text
+F | .* | environments#frozenLake, #frozenLake8x8, #taxi, #blackjack, #cliffWalking, #cliffWalkingSlippery | | | | |
+@area gymnasium.envs.box2d
+A | LunarLander.* | environments#planarQuadrotor | the most-used continuous-control task after CartPole; needs a small 2-d rigid-body step with contacts | environments/lunar-lander.ts | L | medium | LunarLander
+S | BipedalWalker.*|CarRacing.* | | Box2D walking and pixel racing; needs a physics engine and rendering | | | |
+@area gymnasium.envs.mujoco
+F | (InvertedPendulum|InvertedDoublePendulum|Reacher)-v.* | environments#cartPole, #cartDoublePendulum, #reacher2d | planar analogues exist | | | | |
+A | (HalfCheetah|Hopper|Walker2d|Swimmer)-v.* | environments | planar articulated locomotion; the standard benchmark of PPO/SAC/TD3 papers. Would need a small articulated-body engine | environments/locomotion.ts | L | low | locomotion benchmarks
+S | (Ant|Humanoid|HumanoidStandup|Pusher)-v.* | | 3-d MuJoCo bodies | | | |
+@area gymnasium.envs.other
+F | tabular/Blackjack-v0|tabular/CliffWalking-v0 | environments#blackjack, #cliffWalking | | | | |
+F | phys2d/.* | environments#cartPole, #pendulum | JAX-based reimplementations of the same tasks | | | | |
+S | GymV2.*Environment-v0 | | compatibility shim for old gym | | | |
+@area gymnasium.spaces
+A | OneOf | space | tagged union of spaces; omai's union spaces play this role for hyperparameters | | S | low |
+A | GraphInstance | graph | graph-valued observations for GNN policies | rl/spaces | S | low | graph observations
+F | flatten_space | rl#flattenObservation | | | | |
+@area gymnasium.utils
+S | .* | | | | | |
+@area gymnasium.vector
+F | SyncVectorEnv|VectorWrapper|VectorObservationWrapper|VectorActionWrapper|VectorRewardWrapper | rl#vectorEnv | | | | |
+S | AsyncVectorEnv | rl#vectorEnv | subprocess workers; not meaningful in a single-threaded traced run | | | |
+@area gymnasium.wrappers
+F | FrameStackObservation|RepeatAction|Autoreset|AddRenderObservation|RecordEpisodeStatistics|TimeLimit|RescaleAction|ClipAction|NormalizeObservation|NormalizeReward|TransformObservation|TransformAction|TransformReward|ClipReward|StickyAction|TimeAwareObservation|FlattenObservation | rl#frameStack, #actionRepeat, #episodeStatistics, #rescaleAction, #clipAction, #normalizeObservation, #normalizeReward, #transformObservation, #clipReward, #stickyAction, #timeAwareObservation | | | | |
+P | MaxAndSkipObservation|ResizeObservation|GrayscaleObservation|RescaleObservation|ReshapeObservation|DtypeObservation|FilterObservation|DelayObservation|AddWhiteNoise|ObstructView|DiscretizeAction|DiscretizeObservation|DictInfoToList | rl#transformObservation, #transformAction | any of these is one transformObservation or transformAction call; none is a named wrapper | rl/wrappers.ts | S | low | named wrappers
+A | PassiveEnvChecker|OrderEnforcing|check_env | rl#isEnvDefinition | environment contract checker (spaces, reset/step shapes, seeding) that tells a learner who wrote a custom environment what is wrong | rl/check-env.ts | S | medium | environment checker
+S | AtariPreprocessing|HumanRendering|RecordVideo|RenderCollection|VectorizeTransform.* | | Atari, video and display wrappers | | | |

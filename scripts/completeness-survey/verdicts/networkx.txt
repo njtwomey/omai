@@ -1,0 +1,48 @@
+@lib networkx
+S | not_implemented_for|np_random_state|dataclass|product|Counter|defaultdict|deque|islice|.*Exceeded|NotATree|matching_dict_to_set|EdgePartition | | python plumbing | | | |
+@area networkx.shortest_paths
+F | .* | graph (dijkstra, bellmanFord, aStar, floydWarshall, johnson, bfs, bidirectional search in search) | omai names the algorithm; networkx has one function per source/target/weight variant | | | | |
+@area networkx.flow
+F | .* | graph#maxFlow, #maxFlowMethods (several methods), #minCostFlow | | | | |
+@area networkx.coloring
+F | strategy_.* | graph#colouringStrategies, #greedyColouring | | | | |
+@area networkx.clique
+F | .* | graph#maximalCliques, #maximumClique | | | | |
+@area networkx.community
+F | louvain_communities|louvain_partitions|leiden_communities|leiden_partitions|label_propagation_communities|asyn_lpa_communities|fast_label_propagation_communities|girvan_newman|modularity|partition_quality|is_partition|spectral_modularity_bipartition | graph#louvain, #leiden, #labelPropagation, #girvanNewman, #modularity, #partition | | | | |
+A | kernighan_lin_bisection|greedy_modularity_communities|naive_greedy_modularity_communities|k_clique_communities|asyn_fluidc|lukes_partitioning|constant_potts_model|edge_betweenness_partition|edge_current_flow_betweenness_partition|greedy_node_swap_bipartition|greedy_source_expansion|is_cover|overlapping_modularity | graph#louvain | greedy modularity (Clauset-Newman-Moore), k-clique percolation (overlapping communities), Kernighan-Lin bisection | graph/community.ts | M | low | more community detection
+@area networkx.connectivity
+A | .* | graph#minCut, #maxFlow, #articulationPoints, #bridges | edge and node connectivity, Stoer-Wagner global minimum cut, disjoint paths, k-edge components | graph/connectivity.ts | M | medium | graph connectivity
+@area networkx.link_prediction
+A | .* | graph#clustering, #triangles | neighbourhood link-prediction scores (common neighbours, Jaccard, Adamic-Adar, resource allocation, preferential attachment); the baseline every GNN link-prediction page compares against | graph/link-prediction.ts | S | high | link prediction heuristics
+@area networkx.link_analysis
+F | .* | graph#pagerank, #hits | google_matrix is the one missing helper | | | | |
+@area networkx.isomorphism
+F | .* | graph#vf2, #isIsomorphic, #subgraphIsomorphisms, #weisfeilerLehman | VF2 with node and edge match modes; VF2++, ISMAGS and time-respecting matchers are variants | | | | |
+@area networkx.tree
+F | .* | graph#minimumSpanningTree, #spanningTreeMethods, #rootTree, #lowestCommonAncestor | minimum branchings (Edmonds, directed MST) are the part to check | | | | |
+@area networkx.dag
+F | .* | graph#topologicalSort, #isDag, pgm#dSeparated | | | | |
+@area networkx.matching
+F | .* | graph#bipartiteMatching, #Matching | general (blossom) maximum matching is the part to check | | | | |
+@area networkx.similarity
+A | .* | graph#weisfeilerLehman | graph edit distance and SimRank | graph/similarity.ts | M | low | graph similarity
+@area networkx.cycles
+F | .* | graph#findCycle | cycle basis and enumeration of simple cycles are the missing parts | | | | |
+@area networkx.components
+F | .* | graph#connectedComponents, #stronglyConnectedComponents, #biconnectedComponents, #condensation | | | | |
+@area networkx.centrality
+F | degree_centrality|in_degree_centrality|out_degree_centrality|closeness_centrality|betweenness_centrality|edge_betweenness_centrality|eigenvector_centrality|katz_centrality|harmonic_centrality|pagerank|hits | graph (degreeCentrality, closenessCentrality, betweennessCentrality, eigenvectorCentrality, katzCentrality, pagerank, hits) | | | | |
+A | .* | graph#betweennessCentrality | harmonic, load, current-flow, subgraph, communicability, percolation and group centralities | graph/centrality.ts | M | low | more centralities
+@area networkx.generators
+F | complete_graph|path_graph|cycle_graph|star_graph|wheel_graph|grid_2d_graph|hypercube_graph|petersen_graph|karate_club_graph|erdos_renyi_graph|gnm_random_graph|watts_strogatz_graph|barabasi_albert_graph|stochastic_block_model|random_geometric_graph|balanced_tree|barbell_graph|complete_bipartite_graph|configuration_model|gnp_random_graph|fast_gnp_random_graph|les_miserables_graph|binomial_graph|connected_watts_strogatz_graph|newman_watts_strogatz_graph | graph (completeGraph, pathGraph, ..., erdosRenyiGraph, wattsStrogatzGraph, barabasiAlbertGraph, stochasticBlockModel, configurationModelGraph) | | | | |
+A | .* | graph | the other generators (powerlaw cluster, LFR benchmark, planted partition, named small graphs such as Zachary variants, Florentine families, Davis southern women, Tutte, Frucht...) | graph/generators | M | low | graph generators and named graphs
+@area networkx.approximation
+A | .* | search (TSP), graph | approximation algorithms: Christofides TSP, Steiner tree, vertex cover, max clique, treewidth heuristics (pgm has exact elimination heuristics) | graph/approximation.ts | M | low | approximation algorithms
+@area networkx.bipartite
+P | .* | graph#bipartiteMatching, #bipartiteColouring, #isBipartite | matching and colouring exist; bipartite projections, biadjacency matrices and bipartite clustering do not | graph/bipartite.ts | S | low | bipartite graph tools
+@area networkx.traversal
+F | .* | graph#bfs, #dfs | | | | |
+@area networkx.algorithms
+F | bfs_.*|dfs_.*|shortest_path|topological_.*|is_connected|connected_components|degree_assortativity_coefficient|attribute_assortativity_coefficient|average_clustering|clustering|transitivity|triangles|density|diameter|radius|eccentricity|center|periphery|minimum_spanning_tree|maximum_spanning_tree|pagerank|spectral_.*|laplacian_.*|adjacency_.*|incidence_matrix|modularity_.*|effective_size|is_tree|is_forest|is_bipartite|is_directed_acyclic_graph|conductance|edge_expansion|volume|k_hop.*|ego_graph | graph | | | | |
+A | core_number|k_core|k_shell|k_crust|k_corona|onion_layers|communicability.*|current_flow_.*|all_triads|all_triangles|average_neighbor_degree|average_degree_connectivity|degree_mixing_.*|attribute_mixing_.*|rich_club_coefficient|s_metric|wiener_index|estrada_index|node_connected_component|chordal_.*|complete_to_chordal_graph|check_planarity|boundary_expansion|cut_size|normalized_cut_size|mixing_expansion|node_boundary|edge_boundary|dedensify|equivalence_classes|contracted_.*|quotient_graph|complement|compose.*|union.*|disjoint_union.*|cartesian_product|tensor_product|strong_product|lexicographic_product|rooted_product|power|line_graph|inverse_line_graph|corona_product|barycenter|centroid|chain_decomposition|dominating_set|is_dominating_set|dominance_.*|immediate_dominators|euler.*|eulerian_.*|is_eulerian|is_semieulerian|hamiltonian_.*|tournament.*|is_tournament|is_perfect_graph|chromatic_polynomial|tree_all_pairs_lowest_common_ancestor|all_pairs_lowest_common_ancestor|antichains|colliders|v_structures|has_cycle|dag_.*|all_topological_sorts|all_simple_.*|all_node_cuts|bridge_components|cd_index|chordless_cycles|connected_double_edge_swap|double_edge_swap|directed_edge_swap|attracting_components|is_attracting_component|number_attracting_components|node_attribute_xy|node_degree_xy|average_shortest_path_length|average_node_connectivity|has_bridges|local_bridges|is_regular|is_k_regular|is_chordal|find_cliques.*|enumerate_all_cliques|make_max_clique_graph|make_clique_bipartite|graph_clique_number|graph_number_of_cliques|node_clique_number|number_of_cliques|cliques_containing_node|bfs_beam_edges|bfs_labeled_edges|max_weight_clique|MaxWeightClique|PlanarEmbedding|combinatorial_embedding_to_pos|ArborescenceIterator|SpanningTreeIterator|approximate_.*|.* | graph | the long tail of networkx.algorithms (k-core decomposition, Eulerian and Hamiltonian paths, planarity, graph products, communicability, rich-club, dominating sets); k-core and graph products are the ones a learner is likely to ask for | graph/structure.ts | M | low | networkx long tail

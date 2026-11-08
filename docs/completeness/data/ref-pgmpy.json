@@ -1,0 +1,853 @@
+{
+"library": "pgmpy",
+"version": "1.1.2",
+"source": "introspection",
+"entries": [
+{
+"area": "pgmpy.base",
+"name": "ADMG",
+"kind": "class",
+"doc": "A class representing an Acyclic Directed Mixed Graph (ADMG)."
+},
+{
+"area": "pgmpy.base",
+"name": "AncestralBase",
+"kind": "class",
+"doc": "Base class for undirected graphs."
+},
+{
+"area": "pgmpy.base",
+"name": "DAG",
+"kind": "class",
+"doc": "Directed Graphical Model, graph with vertex roles."
+},
+{
+"area": "pgmpy.base",
+"name": "MAG",
+"kind": "class",
+"doc": "Class for representing Maximal Ancestral Graphs (MAGs)."
+},
+{
+"area": "pgmpy.base",
+"name": "PDAG",
+"kind": "class",
+"doc": "Class for representing PDAGs (also known as CPDAG). PDAGs are the equivalence classes of"
+},
+{
+"area": "pgmpy.base",
+"name": "SimpleCausalModel",
+"kind": "class",
+"doc": "A specialized DAG class for simple causal models."
+},
+{
+"area": "pgmpy.base",
+"name": "UndirectedGraph",
+"kind": "class",
+"doc": "Base class for all the Undirected Graphical models."
+},
+{
+"area": "pgmpy.causal_discovery",
+"name": "ExpertInLoop",
+"kind": "class",
+"doc": "Expert-in-the-loop causal discovery algorithm."
+},
+{
+"area": "pgmpy.causal_discovery",
+"name": "ExpertKnowledge",
+"kind": "class",
+"doc": "Class to specify expert knowledge for causal discovery / structure learning algorithms."
+},
+{
+"area": "pgmpy.causal_discovery",
+"name": "GES",
+"kind": "class",
+"doc": "Score-based causal discovery using Greedy Equivalence Search (GES)."
+},
+{
+"area": "pgmpy.causal_discovery",
+"name": "HillClimbSearch",
+"kind": "class",
+"doc": "Score-based causal discovery using hill climbing optimization."
+},
+{
+"area": "pgmpy.causal_discovery",
+"name": "PC",
+"kind": "class",
+"doc": "The PC algorithm for causal discovery / structure learning."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "ChiSquare",
+"kind": "class",
+"doc": "Pearson chi-square test for conditional independence on discrete data."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "FisherZ",
+"kind": "class",
+"doc": "Fisher's Z test for conditional independence on continuous data."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "GCM",
+"kind": "class",
+"doc": "Generalized Covariance Measure (GCM) [1] test for conditional independence."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "GSq",
+"kind": "class",
+"doc": "G-squared test for conditional independence on discrete data."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "GeneralizedCov",
+"kind": "class",
+"doc": "Residual cross-covariance determinant CI test with permutation-based p-values [1]."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "HotellingLawley",
+"kind": "class",
+"doc": "Hotelling-Lawley trace CI test for mixed data [1]."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "IndependenceMatch",
+"kind": "class",
+"doc": "Check if `X \u22a5\u22a5 Y | Z` is in `independences`."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "LogLikelihood",
+"kind": "class",
+"doc": "Log-likelihood ratio test for conditional independence on discrete data."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "ModifiedLogLikelihood",
+"kind": "class",
+"doc": "Modified log-likelihood ratio test for conditional independence on discrete data."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "Pearsonr",
+"kind": "class",
+"doc": "Partial Correlation test for conditional independence."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "PearsonrEquivalence",
+"kind": "class",
+"doc": "Pearson equivalence test [1] for conditional independence on continuous data."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "PillaiTrace",
+"kind": "class",
+"doc": "Pillai's trace test for conditional independence with mixed data [1]."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "PowerDivergence",
+"kind": "class",
+"doc": "Cressie-Read power divergence test for conditional independence on discrete data [1]."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "RoysLargestRoot",
+"kind": "class",
+"doc": "Roy's largest root CI test for mixed data [1]."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "WilksLambda",
+"kind": "class",
+"doc": "Wilks' Lambda CI test for mixed data [1]."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "_BaseCITest",
+"kind": "class",
+"doc": "Base class for all Conditional Independence (CI) tests."
+},
+{
+"area": "pgmpy.ci_tests",
+"name": "get_ci_test",
+"kind": "function",
+"doc": "Return an instantiated CI test object given a test name, instance, or data."
+},
+{
+"area": "pgmpy.estimators",
+"name": "AIC",
+"kind": "class",
+"doc": "AIC (Akaike Information Criterion) structure score for discrete Bayesian networks."
+},
+{
+"area": "pgmpy.estimators",
+"name": "AICCondGauss",
+"kind": "class",
+"doc": "AIC (Akaike Information Criterion) score for Bayesian networks with mixed (discrete and continuous) variables."
+},
+{
+"area": "pgmpy.estimators",
+"name": "AICGauss",
+"kind": "class",
+"doc": "AIC (Akaike Information Criterion) structure score for Gaussian Bayesian networks."
+},
+{
+"area": "pgmpy.estimators",
+"name": "BDeu",
+"kind": "class",
+"doc": "BDeu structure score for discrete Bayesian networks with Dirichlet priors."
+},
+{
+"area": "pgmpy.estimators",
+"name": "BDs",
+"kind": "class",
+"doc": "BDs (Bayesian Dirichlet sparse) structure score for discrete Bayesian networks."
+},
+{
+"area": "pgmpy.estimators",
+"name": "BIC",
+"kind": "class",
+"doc": "BIC (Bayesian Information Criterion) structure score for discrete Bayesian networks."
+},
+{
+"area": "pgmpy.estimators",
+"name": "BICCondGauss",
+"kind": "class",
+"doc": "BIC (Bayesian Information Criterion) score for Bayesian networks with mixed (discrete and continuous) variable"
+},
+{
+"area": "pgmpy.estimators",
+"name": "BICGauss",
+"kind": "class",
+"doc": "BIC (Bayesian Information Criterion) structure score for Gaussian Bayesian networks."
+},
+{
+"area": "pgmpy.estimators",
+"name": "BaseEstimator",
+"kind": "class",
+"doc": "Base class for estimators in pgmpy; `ParameterEstimator`,"
+},
+{
+"area": "pgmpy.estimators",
+"name": "BayesianEstimator",
+"kind": "class",
+"doc": "Class used to compute parameters for a model using Bayesian Parameter Estimation."
+},
+{
+"area": "pgmpy.estimators",
+"name": "ExhaustiveSearch",
+"kind": "class",
+"doc": "Search class for exhaustive searches over all DAGs with a given set of variables."
+},
+{
+"area": "pgmpy.estimators",
+"name": "ExpectationMaximization",
+"kind": "class",
+"doc": "Class used to compute parameters for a model using Expectation"
+},
+{
+"area": "pgmpy.estimators",
+"name": "ExpertInLoop",
+"kind": "class",
+"doc": "Base class for structure estimators in pgmpy."
+},
+{
+"area": "pgmpy.estimators",
+"name": "ExpertKnowledge",
+"kind": "class",
+"doc": "Class to specify expert knowledge for causal discovery / structure learning algorithms."
+},
+{
+"area": "pgmpy.estimators",
+"name": "GES",
+"kind": "class",
+"doc": "Implementation of Greedy Equivalence Search (GES) causal discovery / structure learning algorithm."
+},
+{
+"area": "pgmpy.estimators",
+"name": "HillClimbSearch",
+"kind": "class",
+"doc": "Class for heuristic hill climb searches for DAGs, to learn"
+},
+{
+"area": "pgmpy.estimators",
+"name": "IVEstimator",
+"kind": "class",
+"doc": "Initialize IVEstimator object."
+},
+{
+"area": "pgmpy.estimators",
+"name": "K2",
+"kind": "class",
+"doc": "K2 structure score for discrete Bayesian networks using Dirichlet priors."
+},
+{
+"area": "pgmpy.estimators",
+"name": "LogLikelihoodCondGauss",
+"kind": "class",
+"doc": "Log-likelihood score for Bayesian networks with mixed discrete and continuous variables."
+},
+{
+"area": "pgmpy.estimators",
+"name": "LogLikelihoodGauss",
+"kind": "class",
+"doc": "Log-likelihood structure score for Gaussian Bayesian networks."
+},
+{
+"area": "pgmpy.estimators",
+"name": "MarginalEstimator",
+"kind": "class",
+"doc": "Base class for marginal estimators in pgmpy."
+},
+{
+"area": "pgmpy.estimators",
+"name": "MaximumLikelihoodEstimator",
+"kind": "class",
+"doc": "Class used to compute parameters for a model using Maximum Likelihood Estimation."
+},
+{
+"area": "pgmpy.estimators",
+"name": "MirrorDescentEstimator",
+"kind": "class",
+"doc": "Class for estimation of a undirected graphical model based upon observed"
+},
+{
+"area": "pgmpy.estimators",
+"name": "MmhcEstimator",
+"kind": "class",
+"doc": "Implements the MMHC hybrid structure estimation procedure for"
+},
+{
+"area": "pgmpy.estimators",
+"name": "PC",
+"kind": "class",
+"doc": "Class for constraint-based estimation of DAGs using the PC algorithm"
+},
+{
+"area": "pgmpy.estimators",
+"name": "ParameterEstimator",
+"kind": "class",
+"doc": "Base class for parameter estimators in pgmpy."
+},
+{
+"area": "pgmpy.estimators",
+"name": "SEMEstimator",
+"kind": "class",
+"doc": "Base class of SEM estimators. All the estimators inherit this class."
+},
+{
+"area": "pgmpy.estimators",
+"name": "StructureEstimator",
+"kind": "class",
+"doc": "Base class for structure estimators in pgmpy."
+},
+{
+"area": "pgmpy.estimators",
+"name": "StructureScore",
+"kind": "class",
+"doc": "Abstract base class for structure scoring in pgmpy."
+},
+{
+"area": "pgmpy.estimators",
+"name": "TreeSearch",
+"kind": "class",
+"doc": "Search class for learning tree related graph structure. The algorithms"
+},
+{
+"area": "pgmpy.factors",
+"name": "FactorDict",
+"kind": "class",
+"doc": "dict() -> new empty dictionary"
+},
+{
+"area": "pgmpy.factors",
+"name": "FactorSet",
+"kind": "class",
+"doc": "Base class of *DiscreteFactor Sets*."
+},
+{
+"area": "pgmpy.factors",
+"name": "factor_divide",
+"kind": "function",
+"doc": "Returns `DiscreteFactor` representing `phi1 / phi2`."
+},
+{
+"area": "pgmpy.factors",
+"name": "factor_product",
+"kind": "function",
+"doc": "Returns factor product over `args`."
+},
+{
+"area": "pgmpy.factors",
+"name": "factor_sum_product",
+"kind": "function",
+"doc": "For a given set of factors: `args` returns the"
+},
+{
+"area": "pgmpy.factors",
+"name": "factorset_divide",
+"kind": "function",
+"doc": "Base method for dividing two factor sets."
+},
+{
+"area": "pgmpy.factors",
+"name": "factorset_product",
+"kind": "function",
+"doc": "Base method used for product of factor sets."
+},
+{
+"area": "pgmpy.factors.continuous",
+"name": "LinearGaussianCPD",
+"kind": "class",
+"doc": "Defines a Linear Gaussian CPD."
+},
+{
+"area": "pgmpy.factors.discrete",
+"name": "DiscreteFactor",
+"kind": "class",
+"doc": "Initialize a `DiscreteFactor` class."
+},
+{
+"area": "pgmpy.factors.discrete",
+"name": "JointProbabilityDistribution",
+"kind": "class",
+"doc": "Base class for Joint Probability Distribution"
+},
+{
+"area": "pgmpy.factors.discrete",
+"name": "NoisyORCPD",
+"kind": "class",
+"doc": "Initializes the NoisyORCPD class."
+},
+{
+"area": "pgmpy.factors.discrete",
+"name": "State",
+"kind": "class",
+"doc": "State(var, state)"
+},
+{
+"area": "pgmpy.factors.discrete",
+"name": "TabularCPD",
+"kind": "class",
+"doc": "Defines the conditional probability distribution table (CPD table)"
+},
+{
+"area": "pgmpy.factors.hybrid",
+"name": "FunctionalCPD",
+"kind": "class",
+"doc": "Defines a Functional CPD."
+},
+{
+"area": "pgmpy.inference",
+"name": "ApproxInference",
+"kind": "class",
+"doc": "Initializes the Approximate Inference class."
+},
+{
+"area": "pgmpy.inference",
+"name": "BeliefPropagation",
+"kind": "class",
+"doc": "Class for performing inference using Belief Propagation method."
+},
+{
+"area": "pgmpy.inference",
+"name": "BeliefPropagationWithMessagePassing",
+"kind": "class",
+"doc": "Class for performing efficient inference using Belief Propagation method on factor graphs with no loops."
+},
+{
+"area": "pgmpy.inference",
+"name": "CausalInference",
+"kind": "class",
+"doc": "This is an inference class for performing Causal Inference over Bayesian"
+},
+{
+"area": "pgmpy.inference",
+"name": "DBNInference",
+"kind": "class",
+"doc": "Class for performing inference using Belief Propagation method"
+},
+{
+"area": "pgmpy.inference",
+"name": "Inference",
+"kind": "class",
+"doc": "Base class for all inference algorithms."
+},
+{
+"area": "pgmpy.inference",
+"name": "Mplp",
+"kind": "class",
+"doc": "Class for performing approximate inference using Max-Product Linear Programming method."
+},
+{
+"area": "pgmpy.inference",
+"name": "VariableElimination",
+"kind": "class",
+"doc": "Base class for all inference algorithms."
+},
+{
+"area": "pgmpy.metrics",
+"name": "AdjacencyConfusionMatrix",
+"kind": "class",
+"doc": "Computes confusion matrix based metrics for comparing causal graph skeletons."
+},
+{
+"area": "pgmpy.metrics",
+"name": "CorrelationScore",
+"kind": "class",
+"doc": "Score to compute how well the model structure represents the correlations"
+},
+{
+"area": "pgmpy.metrics",
+"name": "FisherC",
+"kind": "class",
+"doc": "Returns a p-value for testing whether the given data is faithful to the"
+},
+{
+"area": "pgmpy.metrics",
+"name": "ImpliedCIs",
+"kind": "class",
+"doc": "Tests the implied Conditional Independences (CI) of the DAG in the given data."
+},
+{
+"area": "pgmpy.metrics",
+"name": "OrientationConfusionMatrix",
+"kind": "class",
+"doc": "Computes confusion matrix based metrics for comparing edge orientations in DAGs."
+},
+{
+"area": "pgmpy.metrics",
+"name": "SHD",
+"kind": "class",
+"doc": "Computes the Structural Hamming Distance between `true_causal_graph` and `est_causal_graph`."
+},
+{
+"area": "pgmpy.metrics",
+"name": "StructureScore",
+"kind": "class",
+"doc": "Uses the standard model scoring methods to give a score for each structure."
+},
+{
+"area": "pgmpy.metrics",
+"name": "_BaseSupervisedMetric",
+"kind": "class",
+"doc": "Base class for all metric classes in pgmpy that require ground truth causal graph."
+},
+{
+"area": "pgmpy.metrics",
+"name": "_BaseUnsupervisedMetric",
+"kind": "class",
+"doc": "Base class for all metric classes in pgmpy that do not require ground truth causal graph."
+},
+{
+"area": "pgmpy.metrics",
+"name": "get_metrics",
+"kind": "function",
+"doc": "Get metric classes matching the given tag filters."
+},
+{
+"area": "pgmpy.models",
+"name": "BayesianNetwork",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pgmpy.models",
+"name": "ClusterGraph",
+"kind": "class",
+"doc": "Base class for representing Cluster Graph."
+},
+{
+"area": "pgmpy.models",
+"name": "DiscreteBayesianNetwork",
+"kind": "class",
+"doc": "Initializes a Discrete Bayesian Network."
+},
+{
+"area": "pgmpy.models",
+"name": "DiscreteMarkovNetwork",
+"kind": "class",
+"doc": "Base class for Markov Model."
+},
+{
+"area": "pgmpy.models",
+"name": "DynamicBayesianNetwork",
+"kind": "class",
+"doc": "Base class for Dynamic Bayesian Network"
+},
+{
+"area": "pgmpy.models",
+"name": "FactorGraph",
+"kind": "class",
+"doc": "Class for representing factor graph."
+},
+{
+"area": "pgmpy.models",
+"name": "FunctionalBayesianNetwork",
+"kind": "class",
+"doc": "Class for representing Functional Bayesian Network."
+},
+{
+"area": "pgmpy.models",
+"name": "JunctionTree",
+"kind": "class",
+"doc": "Class for representing Junction Tree."
+},
+{
+"area": "pgmpy.models",
+"name": "LinearGaussianBayesianNetwork",
+"kind": "class",
+"doc": "Class to represent Linear Gaussian Bayesian Networks (LGBN)."
+},
+{
+"area": "pgmpy.models",
+"name": "MarkovChain",
+"kind": "class",
+"doc": "Class to represent a Markov Chain with multiple kernels for factored state space,"
+},
+{
+"area": "pgmpy.models",
+"name": "MarkovNetwork",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pgmpy.models",
+"name": "NaiveBayes",
+"kind": "class",
+"doc": "Class to represent Naive Bayes. Naive Bayes is a special case of Bayesian Model"
+},
+{
+"area": "pgmpy.models",
+"name": "SEM",
+"kind": "class",
+"doc": "Class for representing Structural Equation Models. This class is a wrapper over"
+},
+{
+"area": "pgmpy.models",
+"name": "SEMAlg",
+"kind": "class",
+"doc": "Base class for algebraic representation of Structural Equation Models(SEMs). The model is"
+},
+{
+"area": "pgmpy.models",
+"name": "SEMGraph",
+"kind": "class",
+"doc": "Base class for graphical representation of Structural Equation Models(SEMs)."
+},
+{
+"area": "pgmpy.readwrite",
+"name": "BIFReader",
+"kind": "class",
+"doc": "Initializes a BIFReader object."
+},
+{
+"area": "pgmpy.readwrite",
+"name": "BIFWriter",
+"kind": "class",
+"doc": "Initialise a BIFWriter Object"
+},
+{
+"area": "pgmpy.readwrite",
+"name": "NETReader",
+"kind": "class",
+"doc": "Initializes a NETReader object."
+},
+{
+"area": "pgmpy.readwrite",
+"name": "NETWriter",
+"kind": "class",
+"doc": "Base class for writing network file in net format"
+},
+{
+"area": "pgmpy.readwrite",
+"name": "PomdpXReader",
+"kind": "class",
+"doc": "Initialize an instance of PomdpX reader class"
+},
+{
+"area": "pgmpy.readwrite",
+"name": "PomdpXWriter",
+"kind": "class",
+"doc": "Initialise a PomdpXWriter Object"
+},
+{
+"area": "pgmpy.readwrite",
+"name": "UAIReader",
+"kind": "class",
+"doc": "Initialize an instance of UAI reader class"
+},
+{
+"area": "pgmpy.readwrite",
+"name": "UAIWriter",
+"kind": "class",
+"doc": "Initialize an instance of UAI writer class"
+},
+{
+"area": "pgmpy.readwrite",
+"name": "XBNReader",
+"kind": "class",
+"doc": "Initializer for XBNReader class."
+},
+{
+"area": "pgmpy.readwrite",
+"name": "XBNWriter",
+"kind": "class",
+"doc": "Initializer for XBNWriter class"
+},
+{
+"area": "pgmpy.readwrite",
+"name": "XDSLReader",
+"kind": "class",
+"doc": "Initializes the reader object for XDSL file formats[1] created through GeNIe[2]."
+},
+{
+"area": "pgmpy.readwrite",
+"name": "XDSLWriter",
+"kind": "class",
+"doc": "Initialise a XDSL writer object to export pgmpy models to XDSL file format[1] used by GeNIe[2]."
+},
+{
+"area": "pgmpy.readwrite",
+"name": "XMLBIFReader",
+"kind": "class",
+"doc": "Initialisation of XMLBIFReader object."
+},
+{
+"area": "pgmpy.readwrite",
+"name": "XMLBIFWriter",
+"kind": "class",
+"doc": "Initialise a XMLBIFWriter object."
+},
+{
+"area": "pgmpy.sampling",
+"name": "BayesianModelInference",
+"kind": "class",
+"doc": "Class to calculate probability (pmf) values specific to Bayesian Models"
+},
+{
+"area": "pgmpy.sampling",
+"name": "BayesianModelSampling",
+"kind": "class",
+"doc": "Class for sampling methods specific to Bayesian Models"
+},
+{
+"area": "pgmpy.sampling",
+"name": "GibbsSampling",
+"kind": "class",
+"doc": "Class for performing Gibbs sampling."
+},
+{
+"area": "pgmpy.sampling",
+"name": "_return_samples",
+"kind": "function",
+"doc": "A utility function to return samples according to type"
+},
+{
+"area": "pgmpy.utils",
+"name": "StateNameMixin",
+"kind": "class",
+"doc": "This class is inherited by classes which deal with state names of variables."
+},
+{
+"area": "pgmpy.utils",
+"name": "_check_1d_array_object",
+"kind": "function",
+"doc": "Checks whether given parameter is a 1d array like object, and returns a numpy array object"
+},
+{
+"area": "pgmpy.utils",
+"name": "_check_length_equal",
+"kind": "function",
+"doc": "Raises an error when the length of given two arguments is not equal"
+},
+{
+"area": "pgmpy.utils",
+"name": "build_state_names",
+"kind": "function",
+"doc": "Build a complete state-name mapping for all variables in `data`."
+},
+{
+"area": "pgmpy.utils",
+"name": "cartesian",
+"kind": "function",
+"doc": "Generate a cartesian product of input arrays."
+},
+{
+"area": "pgmpy.utils",
+"name": "collect_state_names",
+"kind": "function",
+"doc": "Return the sorted observed states for `variable` in `data`."
+},
+{
+"area": "pgmpy.utils",
+"name": "discretize",
+"kind": "function",
+"doc": "Discretizes a given continuous dataset."
+},
+{
+"area": "pgmpy.utils",
+"name": "get_dataset_type",
+"kind": "function",
+"doc": "Returns continuous, discrete or mixed depending on the type of variable"
+},
+{
+"area": "pgmpy.utils",
+"name": "get_example_model",
+"kind": "function",
+"doc": "Fetches the specified model from bnlearn repository and returns a"
+},
+{
+"area": "pgmpy.utils",
+"name": "get_state_counts",
+"kind": "function",
+"doc": "Return counts for `variable`, optionally conditioned on `parents`."
+},
+{
+"area": "pgmpy.utils",
+"name": "llm_pairwise_orient",
+"kind": "function",
+"doc": "Asks a Large Language Model (LLM) for the"
+},
+{
+"area": "pgmpy.utils",
+"name": "manual_pairwise_orient",
+"kind": "function",
+"doc": "Generates a prompt for the user to"
+},
+{
+"area": "pgmpy.utils",
+"name": "optimize",
+"kind": "function",
+"doc": "Generic function to optimize loss functions."
+},
+{
+"area": "pgmpy.utils",
+"name": "pinverse",
+"kind": "function",
+"doc": "Computes the pseudo-inverse of a matrix using SVD."
+},
+{
+"area": "pgmpy.utils",
+"name": "preprocess_data",
+"kind": "function",
+"doc": "Tries to figure out the data type of each variable `df`."
+},
+{
+"area": "pgmpy.utils",
+"name": "sample_discrete",
+"kind": "function",
+"doc": "Generate a sample of given size, given a probability mass function."
+},
+{
+"area": "pgmpy.utils",
+"name": "to_timeseries_format",
+"kind": "function",
+"doc": "Converts given wide format dataframe to different time series formats."
+}
+]
+}

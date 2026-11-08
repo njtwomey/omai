@@ -1,0 +1,21 @@
+@lib pgmpy
+S | _.*|BaseEstimator|Inference|StateNameMixin|State|FactorDict|FactorSet|get_dataset_type|_return_samples|build_state_names|collect_state_names|get_state_counts|pinverse|cartesian|optimize|preprocess_data|to_timeseries_format|sample_discrete|discretize | | helpers | | | |
+F | DiscreteFactor|JointProbabilityDistribution|TabularCPD|FunctionalCPD | pgm#factor, pgm#bayesNode (cptRow), pgm#scm | a CPD is a factor or a BayesNode table | | | |
+F | LinearGaussianCPD|LinearGaussianBayesianNetwork | pgm#linearGaussianBayesNet | | | | |
+A | NoisyORCPD | pgm#bayesNode | noisy-OR and noisy-MAX CPDs (compact conditional tables for many parents); a standard teaching device | pgm/noisy-or.ts | S | medium | noisy-OR CPDs
+F | BayesianNetwork|DiscreteBayesianNetwork|DiscreteMarkovNetwork|DynamicBayesianNetwork|FunctionalBayesianNetwork|ClusterGraph|MarkovChain | pgm#bayesNet, #markovNetwork, #dynamicBayesNet, #scm, #junctionTree, stochastic Markov chains | | | | |
+P | SEMGraph|SEMAlg|SEMEstimator|IVEstimator | pgm/causal#scm, causal#twoStageLeastSquares | linear SEMs appear as linearGaussianBayesNet and structural causal models; no path-diagram SEM with fit indices | pgm/sem.ts | M | low | structural equation models
+A | ADMG|MAG|AncestralBase|SimpleCausalModel | pgm/causal#Pag | latent-variable graphs (ADMG, MAG); PAG and FCI exist | pgm/causal | M | low | latent-variable graphs
+F | PC|HillClimbSearch|ExhaustiveSearch|TreeSearch|MmhcEstimator | pgm/learning#pc, #hillClimb, #chowLiu | PC, hill climbing and Chow-Liu exist; exhaustive search over DAGs and MMHC are absent | | | | |
+A | ExhaustiveSearch|MmhcEstimator|ExpertInLoop|ExpertKnowledge|llm_pairwise_orient|manual_pairwise_orient | pgm/learning#hillClimb | exhaustive DAG enumeration (small n), MMHC (hybrid), whitelists and blacklists of edges | pgm/learning/hybrid.ts | M | medium | structure-learning odds and ends
+P | K2|BDeu|BDs|AICGauss|BICGauss|AICCondGauss|BICCondGauss|LogLikelihoodGauss|LogLikelihoodCondGauss | pgm/learning#structureScore, #discreteScorer, #gaussianScorer | BIC, AIC and likelihood scores exist; K2 and the Bayesian Dirichlet family (BDeu, BDs) are not named | pgm/learning/scores.ts | S | medium | Bayesian structure scores
+F | MaximumLikelihoodEstimator|BayesianEstimator|ExpectationMaximization|ParameterEstimator|MarginalEstimator|StructureEstimator | pgm/learning#maximumLikelihood, #bayesianEstimate, #emAlgorithm | | | | |
+A | MirrorDescentEstimator | | estimating a model from marginals (private synthetic data); niche | | | low |
+F | ApproxInference|BayesianModelInference|BayesianModelSampling|GibbsSampling|BeliefPropagationWithMessagePassing|CausalInference|DBNInference | pgm#approximateQuery, #gibbsSample, #beliefPropagation, #forwardSample, pgm/causal, #dbnFilter | | | | |
+F | FisherZ|GSq|Pearsonr|PearsonrEquivalence|IndependenceMatch|ModifiedLogLikelihood|get_ci_test | pgm/learning#fisherZTest, #gSquareTest, #chiSquareTest, #partialCorrelationTest, stats/tests | | | | |
+A | GCM|GeneralizedCov|HotellingLawley|PillaiTrace|RoysLargestRoot|WilksLambda | stats/tests#hotellingT2, stats/tests#manova | CI tests built from multivariate statistics; Hotelling and MANOVA exist in stats | pgm/learning/ci-tests.ts | S | low |
+F | SHD | pgm/causal#structuralHammingDistance | | | | |
+A | AdjacencyConfusionMatrix|OrientationConfusionMatrix|CorrelationScore|FisherC|ImpliedCIs|get_metrics | pgm/causal#structuralHammingDistance | testing a model against data (implied conditional independences, Fisher's C) and scoring a learnt graph by adjacency or orientation precision and recall | pgm/learning/model-checks.ts | S | medium | model checking
+A | .*(Reader|Writer) | pgm#toStructure | BIF, XMLBIF, UAI, NET, XDSL and XBN readers and writers: exchange formats for published Bayesian networks | pgm/io.ts (BIF and UAI first) | M | medium | Bayesian network file formats
+A | get_example_model | datasets | the classic benchmark networks (asia, cancer, earthquake, sachs, alarm, insurance, child) that textbooks use; none ships with omai | datasets/bayes-nets.ts | M | high | classic Bayesian network benchmarks
+F | factor_sum_product|factorset_divide|factorset_product | pgm#factorProduct, #factorDivide, #marginalise | | | | |

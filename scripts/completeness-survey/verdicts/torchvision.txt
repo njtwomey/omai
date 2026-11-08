@@ -1,0 +1,11 @@
+@lib torchvision
+@area torchvision.datasets
+F | FashionMNIST | datasets#fashionMnistTest | the 10000-image test set of Fashion-MNIST is vendored | | | | |
+P | MNIST|KMNIST|EMNIST|QMNIST | datasets#digits, datasets#digitImages | 8x8 digits are vendored; 28x28 handwritten MNIST is not | datasets/images.ts | S | medium | small real image datasets
+A | CIFAR10|CIFAR100|SVHN|STL10|Omniglot|USPS | datasets | colour image benchmarks (CIFAR-10 is 60000 images; a small subsample could be vendored) | datasets/images.ts | M | low | small real image datasets
+S | .* | | large or downloaded image, video and detection datasets | | | |
+@area torchvision.transforms.v2
+
+F | RandomHorizontalFlip|RandomVerticalFlip|RandomCrop|RandomErasing|MixUp|CutMix|Compose|Normalize|Identity|Lambda|RandomApply|RandomChoice|RandomOrder | data#withRandomFlip, #withRandomCrop, #withCutout, #withMixup, #withCutmix | augmentations are data modifiers | | | | |
+A | RandAugment|AutoAugment|TrivialAugmentWide|AugMix|ColorJitter|RandomAffine|RandomRotation|RandomPerspective|RandomResizedCrop|ElasticTransform|GaussianBlur|GaussianNoise|RandomAdjustSharpness|RandomAutocontrast|RandomEqualize|RandomInvert|RandomPosterize|RandomSolarize|RandomGrayscale|Grayscale|Resize|Pad|CenterCrop|FiveCrop|TenCrop|ScaleJitter|LinearTransformation | vision, data | geometric and photometric augmentations as random data modifiers (the classical operations exist in vision; the randomised, composable modifier form does not) | data/modifiers/image.ts | M | medium | image augmentation modifiers
+S | .* | | bounding-box, PIL, video and type-conversion transforms | | | |

@@ -1,0 +1,433 @@
+{
+"library": "shap",
+"version": "0.54.1",
+"source": "introspection",
+"entries": [
+{
+"area": "shap",
+"name": "ActionOptimizer",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "shap",
+"name": "AdditiveExplainer",
+"kind": "class",
+"doc": "Computes SHAP values for generalized additive models."
+},
+{
+"area": "shap",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "shap",
+"name": "CoalitionExplainer",
+"kind": "class",
+"doc": "A coalition-based explainer that uses Winter values, also called recursive Owen values, to explain model predi"
+},
+{
+"area": "shap",
+"name": "Cohorts",
+"kind": "class",
+"doc": "A collection of :class:`.Explanation` objects, typically each explaining a cluster of similar samples."
+},
+{
+"area": "shap",
+"name": "DeepExplainer",
+"kind": "class",
+"doc": "Meant to approximate SHAP values for deep learning models."
+},
+{
+"area": "shap",
+"name": "ExactExplainer",
+"kind": "class",
+"doc": "Computes SHAP values via an optimized exact enumeration."
+},
+{
+"area": "shap",
+"name": "Explainer",
+"kind": "class",
+"doc": "Uses Shapley values to explain any machine learning model or python function."
+},
+{
+"area": "shap",
+"name": "Explanation",
+"kind": "class",
+"doc": "A sliceable set of parallel arrays representing a SHAP explanation."
+},
+{
+"area": "shap",
+"name": "GradientExplainer",
+"kind": "class",
+"doc": "Explains a model using expected gradients (an extension of integrated gradients)."
+},
+{
+"area": "shap",
+"name": "KernelExplainer",
+"kind": "class",
+"doc": "Uses the Kernel SHAP method to explain the output of any function."
+},
+{
+"area": "shap",
+"name": "LinearExplainer",
+"kind": "class",
+"doc": "Computes SHAP values for a linear model, optionally accounting for inter-feature correlations."
+},
+{
+"area": "shap",
+"name": "PartitionExplainer",
+"kind": "class",
+"doc": "Uses the Partition SHAP method to explain the output of any function."
+},
+{
+"area": "shap",
+"name": "PermutationExplainer",
+"kind": "class",
+"doc": "This method approximates the Shapley values by iterating through permutations of the inputs."
+},
+{
+"area": "shap",
+"name": "SamplingExplainer",
+"kind": "class",
+"doc": "Computes SHAP values using an extension of the Shapley sampling values explanation method"
+},
+{
+"area": "shap",
+"name": "TreeExplainer",
+"kind": "class",
+"doc": "Uses Tree SHAP algorithms to explain the output of ensemble tree models."
+},
+{
+"area": "shap",
+"name": "UnsupportedModule",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "shap",
+"name": "approximate_interactions",
+"kind": "function",
+"doc": "Order other features by how much interaction they seem to have with the feature at the given index."
+},
+{
+"area": "shap",
+"name": "bar_plot",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "shap",
+"name": "decision_plot",
+"kind": "function",
+"doc": "Visualize model decisions using cumulative SHAP values."
+},
+{
+"area": "shap",
+"name": "dependence_plot",
+"kind": "function",
+"doc": "Create a SHAP dependence plot, colored by an interaction feature."
+},
+{
+"area": "shap",
+"name": "embedding_plot",
+"kind": "function",
+"doc": "Use the SHAP values as an embedding which we project to 2D for visualization."
+},
+{
+"area": "shap",
+"name": "force_plot",
+"kind": "function",
+"doc": "Visualize the given SHAP values with an additive force layout."
+},
+{
+"area": "shap",
+"name": "getjs",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "shap",
+"name": "group_difference_plot",
+"kind": "function",
+"doc": "This plots the difference in mean SHAP values between two groups."
+},
+{
+"area": "shap",
+"name": "heatmap_plot",
+"kind": "function",
+"doc": "Create a heatmap plot of a set of SHAP values."
+},
+{
+"area": "shap",
+"name": "image_plot",
+"kind": "function",
+"doc": "Plots SHAP values for image inputs."
+},
+{
+"area": "shap",
+"name": "initjs",
+"kind": "function",
+"doc": "Initialize the necessary javascript libraries for interactive force plots."
+},
+{
+"area": "shap",
+"name": "kmeans",
+"kind": "function",
+"doc": "Summarize a dataset with k mean samples weighted by the number of data points they"
+},
+{
+"area": "shap",
+"name": "monitoring_plot",
+"kind": "function",
+"doc": "Create a SHAP monitoring plot."
+},
+{
+"area": "shap",
+"name": "multioutput_decision_plot",
+"kind": "function",
+"doc": "Decision plot for multioutput models."
+},
+{
+"area": "shap",
+"name": "partial_dependence_plot",
+"kind": "function",
+"doc": "A basic partial dependence plot function."
+},
+{
+"area": "shap",
+"name": "sample",
+"kind": "function",
+"doc": "Performs sampling without replacement of the input data ``X``."
+},
+{
+"area": "shap",
+"name": "save_html",
+"kind": "function",
+"doc": "Save html plots to an output file."
+},
+{
+"area": "shap",
+"name": "summary_plot",
+"kind": "function",
+"doc": "Create a SHAP beeswarm plot, colored by feature values when they are provided."
+},
+{
+"area": "shap",
+"name": "text_plot",
+"kind": "function",
+"doc": "Plots an explanation of a string of text using coloring and interactive labels."
+},
+{
+"area": "shap",
+"name": "unsupported",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "shap",
+"name": "violin_plot",
+"kind": "function",
+"doc": "Create a SHAP violin plot, colored by feature values when they are provided."
+},
+{
+"area": "shap",
+"name": "waterfall_plot",
+"kind": "function",
+"doc": "Plots an explanation of a single prediction as a waterfall plot."
+},
+{
+"area": "shap.explainers",
+"name": "Additive",
+"kind": "class",
+"doc": "Computes SHAP values for generalized additive models."
+},
+{
+"area": "shap.explainers",
+"name": "AdditiveExplainer",
+"kind": "class",
+"doc": "Computes SHAP values for generalized additive models."
+},
+{
+"area": "shap.explainers",
+"name": "Coalition",
+"kind": "class",
+"doc": "A coalition-based explainer that uses Winter values, also called recursive Owen values, to explain model predi"
+},
+{
+"area": "shap.explainers",
+"name": "CoalitionExplainer",
+"kind": "class",
+"doc": "A coalition-based explainer that uses Winter values, also called recursive Owen values, to explain model predi"
+},
+{
+"area": "shap.explainers",
+"name": "Deep",
+"kind": "class",
+"doc": "Meant to approximate SHAP values for deep learning models."
+},
+{
+"area": "shap.explainers",
+"name": "DeepExplainer",
+"kind": "class",
+"doc": "Meant to approximate SHAP values for deep learning models."
+},
+{
+"area": "shap.explainers",
+"name": "Exact",
+"kind": "class",
+"doc": "Computes SHAP values via an optimized exact enumeration."
+},
+{
+"area": "shap.explainers",
+"name": "ExactExplainer",
+"kind": "class",
+"doc": "Computes SHAP values via an optimized exact enumeration."
+},
+{
+"area": "shap.explainers",
+"name": "Gradient",
+"kind": "class",
+"doc": "Explains a model using expected gradients (an extension of integrated gradients)."
+},
+{
+"area": "shap.explainers",
+"name": "GradientExplainer",
+"kind": "class",
+"doc": "Explains a model using expected gradients (an extension of integrated gradients)."
+},
+{
+"area": "shap.explainers",
+"name": "Kernel",
+"kind": "class",
+"doc": "Uses the Kernel SHAP method to explain the output of any function."
+},
+{
+"area": "shap.explainers",
+"name": "KernelExplainer",
+"kind": "class",
+"doc": "Uses the Kernel SHAP method to explain the output of any function."
+},
+{
+"area": "shap.explainers",
+"name": "Linear",
+"kind": "class",
+"doc": "Computes SHAP values for a linear model, optionally accounting for inter-feature correlations."
+},
+{
+"area": "shap.explainers",
+"name": "LinearExplainer",
+"kind": "class",
+"doc": "Computes SHAP values for a linear model, optionally accounting for inter-feature correlations."
+},
+{
+"area": "shap.explainers",
+"name": "Partition",
+"kind": "class",
+"doc": "Uses the Partition SHAP method to explain the output of any function."
+},
+{
+"area": "shap.explainers",
+"name": "PartitionExplainer",
+"kind": "class",
+"doc": "Uses the Partition SHAP method to explain the output of any function."
+},
+{
+"area": "shap.explainers",
+"name": "Permutation",
+"kind": "class",
+"doc": "This method approximates the Shapley values by iterating through permutations of the inputs."
+},
+{
+"area": "shap.explainers",
+"name": "PermutationExplainer",
+"kind": "class",
+"doc": "This method approximates the Shapley values by iterating through permutations of the inputs."
+},
+{
+"area": "shap.explainers",
+"name": "Sampling",
+"kind": "class",
+"doc": "Computes SHAP values using an extension of the Shapley sampling values explanation method"
+},
+{
+"area": "shap.explainers",
+"name": "SamplingExplainer",
+"kind": "class",
+"doc": "Computes SHAP values using an extension of the Shapley sampling values explanation method"
+},
+{
+"area": "shap.explainers",
+"name": "Tree",
+"kind": "class",
+"doc": "Uses Tree SHAP algorithms to explain the output of ensemble tree models."
+},
+{
+"area": "shap.explainers",
+"name": "TreeExplainer",
+"kind": "class",
+"doc": "Uses Tree SHAP algorithms to explain the output of ensemble tree models."
+},
+{
+"area": "shap.maskers",
+"name": "Composite",
+"kind": "class",
+"doc": "This merges several maskers for different inputs together into a single composite masker."
+},
+{
+"area": "shap.maskers",
+"name": "Fixed",
+"kind": "class",
+"doc": "This leaves the input unchanged during masking, and is used for things like scoring labels."
+},
+{
+"area": "shap.maskers",
+"name": "FixedComposite",
+"kind": "class",
+"doc": "A masker that outputs both the masked data and the original data as a pair."
+},
+{
+"area": "shap.maskers",
+"name": "Image",
+"kind": "class",
+"doc": "Masks out image regions with blurring or inpainting."
+},
+{
+"area": "shap.maskers",
+"name": "Impute",
+"kind": "class",
+"doc": "This imputes the values of missing features using the values of the observed features."
+},
+{
+"area": "shap.maskers",
+"name": "Independent",
+"kind": "class",
+"doc": "This masks out tabular features by integrating over the given background dataset."
+},
+{
+"area": "shap.maskers",
+"name": "Masker",
+"kind": "class",
+"doc": "This is the superclass of all maskers."
+},
+{
+"area": "shap.maskers",
+"name": "OutputComposite",
+"kind": "class",
+"doc": "A masker that is a combination of a masker and a model and outputs both masked args and the model's output."
+},
+{
+"area": "shap.maskers",
+"name": "Partition",
+"kind": "class",
+"doc": "This masks out tabular features by integrating over the given background dataset."
+},
+{
+"area": "shap.maskers",
+"name": "Text",
+"kind": "class",
+"doc": "This masks out tokens according to the given tokenizer."
+}
+]
+}

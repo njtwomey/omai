@@ -1,0 +1,103 @@
+@lib torchmetrics
+F | .* | metrics (accuracyScore, precisionScore, recallScore, f1Score, rocAucScore, rocCurve, detCurve, confusionMatrix, calibration, regression, retrieval and ranking, clustering, audio, image and text metrics) | the metrics domain follows torchmetrics' breadth; names differ (functional names map to *Score) | | | | |
+P | MetricCollection|MetricTracker|BootStrapper|ClasswiseWrapper|MultioutputWrapper|MultitaskWrapper|MinMaxMetric|RunningSum|CatMetric|MaxMetric|MeanMetric|MinMetric|SumMetric|Metric.* | metrics#streaming, #StreamingMetric | a streaming-metric type exists; named collections, trackers and bootstrap wrappers are not | metrics/streaming.ts | S | low | metric collections
+@lib fairlearn
+F | accuracy_score_.*|balanced_accuracy_score_.*|count|f1_score_.*|false_.*_rate.*|true_.*_rate.*|selection_rate.*|log_loss_group_max|make_derived_metric|mean_.*_group_max|mean_prediction|precision_score_group_min|r2_score_group_min|recall_score_group_min|roc_auc_score_group_min|zero_one_loss_.* | fairness (metricFrame, groupRates, demographicParityDifference, equalizedOddsDifference, boundedGroupLoss) | | | | |
+F | plot_model_comparison|plot_roc_curve_by_group|plot_threshold_optimizer | omai-render/views#groupRocPanel, #groupSweepView | | | | |
+F | ThresholdOptimizer | fairness#optimiseThresholds | | | | |
+F | CorrelationRemover|PrototypeRepresentationLearner | fairness#repairFeatures, #learnFairRepresentation | | | | |
+F | AdversarialFairness.* | fairness#adversarialDebiasing | | | | |
+F | AbsoluteLoss|ClassificationMoment|DemographicParity|EqualizedOdds|ErrorRate.*|FalsePositiveRateParity|GridSearch|LossMoment|MeanLoss|SquareLoss|TruePositiveRateParity|UtilityParity | fairness#exponentiatedGradientReduction, #gridReduction, #reductionConstraints | | | | |
+F | fetch_adult | datasets#adultIncome, #germanCredit, #biasedCredit | omai vendors Adult income and German credit and generates biased credit data with a known bias | | | | |
+A | fetch_(acs_income|bank_marketing|credit_card|diabetes_hospital) | datasets#adultIncome | further real fairness benchmarks (COMPAS is not in fairlearn either); small vendored subsamples | datasets/fairness.ts | S | low | real fairness benchmark datasets
+S | fetch_boston | | removed from scikit-learn for ethical reasons | | | |
+@lib shap
+F | Explanation|Cohorts|ActionOptimizer|approximate_interactions|kmeans | explain#ShapExplanation, #shapleyValues, #shapleyInteractionValues | | | | |
+F | (Tree|Kernel|Linear|Partition|Permutation|Sampling|Exact|Additive|Gradient|Deep|Coalition)(Explainer)?|Additive|Coalition|Deep|Exact|Sampling | explain (treeShap, kernelShap, linearShap, partitionShap, samplingShapley, shapleyValues, gradientShap, deepLift, owenValues) | | | | |
+F | Fixed|FixedComposite|Impute|Masker|OutputComposite | explain#maskedPredictor, #maskGroups | | | | |
+F | bar_plot|beeswarm|decision_plot|dependence_plot|force_plot|heatmap_plot|image_plot|summary_plot|violin_plot|waterfall_plot|group_difference_plot|partial_dependence_plot|embedding_plot|monitoring_plot|multioutput_decision_plot|text_plot | omai-render/views (waterfallView, beeswarmView, attributionBarView, dependenceScatterView, forceView, attributionImageView, tokenStripView) | | | | |
+S | getjs|initjs|save_html|unsupported|UnsupportedModule | | | | | |
+@lib captum
+F | .*(IntegratedGradients|Saliency|InputXGradient|DeepLift|GradientShap|GuidedBackprop|Deconvolution|GuidedGradCam|LRP|FeatureAblation|FeaturePermutation|Occlusion|ShapleyValue.*|Lime.*|KernelShap|NoiseTunnel|LayerConductance|LayerActivation|LayerGradCam|LayerGradientXActivation|InternalInfluence|NeuronConductance|NeuronGradient|NeuronIntegratedGradients|NeuronFeatureAblation|NeuronDeepLift.*|NeuronGradientShap|NeuronGuidedBackprop|NeuronDeconvolution|LayerAttribution|NeuronAttribution|Attribution|GradientAttribution|PerturbationAttribution|DeepLiftShap|LayerDeepLift.*|LayerGradientShap|LayerIntegratedGradients|LayerLRP|LayerFeatureAblation|LayerFeaturePermutation|ProductBaselines) | explain (integratedGradients, saliency, inputXGradient, deepLift, gradientShap, guidedBackprop, deconvolution, gradCam, lrp, featureAblation, occlusion, shapleyEstimates, lime, noiseTunnel, layerConductance, neuronConductance, neuronIntegratedGradients, internalInfluence) | layer and neuron variants are named separately in omai too | | | | |
+F | CAV|ConceptInterpreter|DefaultClassifier | explain#conceptActivationVector, #tcav | | | | |
+F | infidelity|infidelity_perturb_func_decorator|sensitivity_max | explain#faithfulnessCorrelation, #sensitivity | | | | |
+F | AttackComparator|MinParamPerturbation|Perturbation | nn#pgd, #carliniWagner, #deepFool | adversarial attacks are in nn; a minimum-perturbation search wrapper is not | | | | |
+A | .*(LLM|VLLM|RemoteLLM|TextTemplateInput|TextTokenInput|TokenReferenceBase|ImageMaskInput|InterpretableInput|InterpretableEmbedding.*|DataLoaderAttribution|Summarizer.*|ClassSummarizer|CommonStats|Count|StdDev|configure_interpretable_embedding_layer|remove_interpretable_embedding_layer).* | explain | LLM attribution wrappers and summary helpers | | | low |
+@lib optuna
+F | .*Sampler|BaseSampler|BruteForceSampler|NSGAIISampler|NSGAIIISampler|PartialFixedSampler|QMCSampler|BaseGASampler | tune (grid, random, quasi-random, CMA-ES, Nelder-Mead, evolutionary, TPE, Gaussian process samplers) | NSGA-II and NSGA-III multi-objective samplers are the part to check | | | | |
+F | WilcoxonPruner|BasePruner | tune (pruners) | | | | |
+F | get_param_importances|.*ImportanceEvaluator | explain#permutationImportance, tune | hyperparameter importance by fANOVA is the part to check | | | | |
+F | plot_.*|is_available | omai-render (historyChart, parallelCoordinates, sliceChart, contourChart, importanceChart, intermediateChart, paretoChart) | | | | |
+F | .*Terminator.*|.*Evaluator|report_cross_validation_scores | tune | | | | |
+S | .*Storage.*|.*Journal.*|RDBStorage|InMemoryStorage|Grpc.*|run_grpc_proxy_server|fail_stale_trials|Retry.*|_CachedStorage | | persistent and distributed storage | | | |
+@lib imblearn
+A | SMOTEN|SMOTENC|KMeansSMOTE|SVMSMOTE|SMOTEENN|SMOTETomek|AllKNN|ClusterCentroids|CondensedNearestNeighbour|EditedNearestNeighbours|InstanceHardnessThreshold|NeighbourhoodCleaningRule|OneSidedSelection|RepeatedEditedNearestNeighbours | learn/preprocessing#smote, #borderlineSmote, #adasyn, #tomekLinks, #nearMiss | SMOTE, borderline-SMOTE, ADASYN, Tomek links, NearMiss and random sampling exist; the categorical SMOTE variants (SMOTEN, SMOTENC), the combined samplers (SMOTE+ENN, SMOTE+Tomek) and the edited-nearest-neighbour family are absent | learn/preprocessing/resampling.ts | S | medium | imbalanced-learn resampling
+A | BalancedBaggingClassifier|BalancedRandomForestClassifier|EasyEnsembleClassifier|RUSBoostClassifier | ensembles | ensembles that rebalance each bag | ensembles/balanced.ts | S | low | imbalanced-learn resampling
+F | classification_report_imbalanced|geometric_mean_score|macro_averaged_mean_absolute_error|make_index_balanced_accuracy|sensitivity_specificity_support | metrics (classificationReport, balancedAccuracyScore, sensitivityScore, specificityScore) | | | | |
+@lib gensim
+F | Word2Vec|FastText|KeyedVectors|TfidfModel|OkapiBM25Model|AtireBM25Model|LuceneBM25Model|CoherenceModel|LsiModel|NormModel|LogEntropyModel|RpModel|PorterStemmer|MatrixSimilarity|SparseMatrixSimilarity|SoftCosineSimilarity | embedding (word2vec, fastText), text (tfidfWeights, bm25, lsa, topicCoherence, phrases) | | | | | |
+A | Doc2Vec | embedding (word2vec) | paragraph vectors (PV-DM, PV-DBOW) | embedding/doc2vec.ts | S | low | document embeddings
+P | Phrases | text#collocationCounts, #pmi | collocation scores exist; the phrase-merging transformer does not | text/phrases.ts | S | low |
+A | LdaModel|LdaMulticore|LdaSeqModel|HdpModel|EnsembleLda|AuthorTopicModel | text#topicCoherence, datasets#topicCorpus | topic models (LDA, HDP, dynamic LDA): the standard text-mining model; the coherence measure and a topic corpus generator exist, the model does not | decomposition/lda.ts | M | high | topic models
+A | TranslationMatrix|BackMappingTranslationMatrix|VocabTransform|WmdSimilarity|LevenshteinSimilarityIndex|TermSimilarityIndex|UniformTermSimilarityIndex|WordEmbeddingSimilarityIndex|SparseTermSimilarityMatrix | embedding | embedding translation, word mover's distance similarity | embedding/wmd.ts | S | low |
+S | .*Corpus|HashDictionary|IndexedCorpus|Dense2Corpus|Scipy2Corpus|Sparse2Corpus|MmReader|MmWriter | | corpus file formats | | | |
+@lib skimage
+@area skimage.data
+A | shepp_logan_phantom | signal/image | the standard CT phantom, needed for the Radon transform pages | datasets/images.ts | S | medium | tomography
+S | .* | | bundled photographs and microscopy images | | | |
+@area skimage.color
+F | .* | vision (cvtColor, rgbToHsv, rgbToXyz, rgbToLab, rgbToYcrcb, ...) | deltaE colour differences, stain separation (HED) and the less common colour spaces (YIQ, YUV, LCH) are part of the matching check | | | | |
+A | deltaE_cie76|deltaE_ciede2000|deltaE_ciede94|deltaE_cmc|combine_stains|separate_stains|rgb2hed|hed2rgb|label2rgb|rgb2luv|luv2rgb|lab2lch|lch2lab | vision#rgbToLab | perceptual colour difference and histology stain separation | vision/colour.ts | S | low | colour spaces
+@area skimage.draw
+F | .* | vision (line, circle, ellipse, polylines, fillPoly) | | | | |
+@area skimage.exposure
+F | .* | vision (equalizeHist, clahe, matchHistograms, rescaleIntensity, adjustGamma) | | | | |
+@area skimage.feature
+F | corner_.*|blob_.*|BRIEF|SIFT|CENSURE|daisy|hessian_matrix.*|structure_tensor_eigenvalues|shape_index|graycomatrix|graycoprops|haar_like_feature.*|draw_.*|multiblock_lbp|multiscale_basic_features|fisher_vector|learn_gmm|plot_matched_features | vision (cornerHarris, cornerShiTomasi, fast, siftDescriptors, briefDescriptors, orb, haarFeatures, hog, localBinaryPattern) | | | | |
+A | blob_dog|blob_doh|blob_log|graycomatrix|graycoprops|daisy|fisher_vector|CENSURE | vision#detectSift | blob detectors (LoG, DoG, DoH) and gray-level co-occurrence texture features | vision/blobs.ts | S | low | classical vision long tail
+@area skimage.filters
+F | .* | vision (sobel, scharr, prewitt, gaborBank, thresholdOtsu, thresholdLi, thresholdSauvola, thresholdNiblack, gaussianFilter, bilateralFilter, nonLocalMeans) | | | | |
+A | frangi|meijering|sato|farid.*|roberts.*|butterworth|unsharp_mask|apply_hysteresis_threshold|difference_of_gaussians|threshold_isodata|threshold_mean|threshold_minimum|threshold_yen|threshold_local|try_all_threshold|rank_order|LPIFilter2D|filter_forward|filter_inverse|correlate_sparse | vision#threshold, #adaptiveThreshold | ridge filters (Frangi, Sato, Meijering: vessels), Roberts and Farid edges, unsharp mask, further threshold rules | vision/ridge.ts | S | low | classical vision long tail
+@area skimage.graph
+F | MCP.*|route_through_array|pixel_graph|central_pixel | graph#dijkstra, #aStar | | | | |
+A | RAG|cut_normalized|cut_threshold|merge_hierarchical|rag_boundary|rag_mean_color|show_rag | vision#graphCut | region adjacency graphs and normalised cuts | vision/rag.ts | M | low | classical vision long tail
+@area skimage.measure
+F | pearson_corr_coeff|shannon_entropy|moments|moments_central|moments_hu|moments_normalized|perimeter|centroid | stats#pearson, information#entropy, vision#moments, #huMoments | | | | |
+P | regionprops|regionprops_table|moments.*|centroid|inertia_tensor.*|perimeter.*|euler_number|block_reduce|CircleModel|EllipseModel|LineModelND|RansacModelProtocol|approximate_polygon|subdivide_polygon|points_in_poly|grid_points_in_poly|profile_line|blur_effect|shannon_entropy|pearson_corr_coeff|manders_.*|intersection_coeff|marching_cubes|mesh_surface_area | vision (connectedComponentsWithStats, moments, huMoments, fitEllipse, contourArea, approxPolyDP) | per-region properties are spread over several vision functions; regionprops as one table is not there | vision/regionprops.ts | M | medium | region properties
+@area skimage.metrics
+F | normalized_root_mse|variation_of_information|adapted_rand_error|contingency_table|hausdorff_pair|normalized_mutual_information | metrics (normalizedMutualInfoScore, contingencyMatrix, hausdorffDistance) | | | | |
+@area skimage.morphology
+F | .* | vision (binaryErosion, binaryDilation, binaryOpening, binaryClosing, greyErosion, ..., skeletonize, thin, watershed, label) | footprints (disk, ball, star) and area/diameter openings are partly there | | | | |
+@area skimage.registration
+F | .* | vision#lucasKanade, #hornSchunck, #phaseCrossCorrelation | TV-L1 optical flow is a variant | | | | |
+@area skimage.restoration
+F | denoise_bilateral|denoise_nl_means|denoise_tv_bregman|estimate_sigma|inpaint_biharmonic | vision (bilateralFilter, nonLocalMeans, denoiseTvChambolle, inpaint) | | | | |
+F | denoise_wavelet|unwrap_phase | signal#WaveletDenoiseOptions, signal#unwrap | | | | |
+A | richardson_lucy|unsupervised_wiener|cycle_spin|calibrate_denoiser|denoise_invariant|rolling_ball|ball_kernel|ellipsoid_kernel | signal/image | image deconvolution (Richardson-Lucy, Wiener), wavelet denoising, phase unwrapping | signal/image/restoration.ts | M | low | image restoration
+@area skimage.segmentation
+F | clear_border|expand_labels|find_boundaries|flood|join_segmentations|mark_boundaries|relabel_sequential | vision (floodFill, label, slic, watershed, felzenszwalb, grabCut) | | | | |
+A | chan_vese|checkerboard_level_set|disk_level_set|morphological_chan_vese|morphological_geodesic_active_contour|inverse_gaussian_gradient|quickshift|random_walker | vision#activeContour | level-set segmentation (Chan-Vese, morphological snakes), quickshift, random walker | vision/segmentation.ts | M | low | classical vision long tail
+@area skimage.transform
+F | rescale|resize_local_mean|downscale_local_mean|warp|warp_coords|estimate_transform|matrix_transform|EuclideanTransform|SimilarityTransform|ProjectiveTransform|PiecewiseAffineTransform|PolynomialTransform|ThinPlateSplineTransform|EssentialMatrixTransform|FundamentalMatrixTransform|pyramid_laplacian|hough_circle_peaks|hough_ellipse|probabilistic_hough_line|swirl|warp_polar|order_angles_golden_ratio | vision (warpPerspective, remap, findHomography, estimateAffine2D, buildPyramid, houghCircle, houghLine) | | | | |
+A | radon|iradon|iradon_sart|frt2|ifrt2 | signal/image#hough | Radon transform and filtered back projection (tomography): a classic inverse problem, and the inverse-problem solvers (Tikhonov, TSVD, CGLS) it would exercise already exist | signal/image/tomography.ts | M | medium | tomography
+@area skimage.util
+S | .* | | dtype conversion and array utilities (img_as_*, view_as_*, montage, crop) | | | |
+A | random_noise | signal | additive noise models for images (Gaussian, salt and pepper, Poisson, speckle) to feed the denoising pages | signal/image/noise.ts | S | low | image restoration
+@lib nltk
+F | EarleyChartParser|FeatureEarleyChartParser | text#earley | | | | |
+F | .*Tokenizer|.*_tokenize|casual_tokenize|punkt_model_available|regexp_span_tokenize|string_span_tokenize|sent_tokenize|PunktTokenizer|NLTKWordTokenizer|SyllableTokenizer|LegalitySyllableTokenizer|MWETokenizer|TextTilingTokenizer | text (tokenisers, subword models, sentence splitting) | | | | |
+F | PorterStemmer|LancasterStemmer|SnowballStemmer|RegexpStemmer|Cistem|ISRIStemmer|ARLSTem.*|RSLPStemmer|StemmerI | text (stemmers) | | | | |
+F | WordNetLemmatizer | text#lemmatize | | | | |
+F | FreqDist|ConditionalFreqDist|.*ProbDist.*|ProbDistI|add_logs|sum_logs|ProbabilisticMixIn|ImmutableProbabilisticMixIn|MutableProbDist | text (n-gram counts and smoothing: Laplace, Lidstone, Good-Turing, Kneser-Ney, Witten-Bell), dists | | | | |
+F | MLE|Lidstone|Laplace|KneserNeyInterpolated|WittenBellInterpolated|AbsoluteDiscountingInterpolated|StupidBackoff|NgramCounter | text (n-gram language models and smoothing) | | | | |
+F | edit_distance|edit_distance_align|binary_distance|masi_distance|jaccard_distance|interval_distance|custom_distance|AnnotationTask|windowdiff|pk|f_measure|precision|recall|approxrand|ranks_from_scores|ranks_from_sequence|fractional_presence|presence|align|ghd|Paice|.*AssocMeasures|ContingencyMeasures | text (levenshtein), metrics (krippendorffAlpha, fleissKappa), information | association measures for collocations (PMI, chi-square, likelihood ratio) are the part to check | | | | |
+F | bleu|chrf|gleu|meteor|nist|ribes|lepor|corpus_lepor|sacre_bleu.* | metrics (text generation metrics) | | | | |
+P | HiddenMarkovModelTagger|HiddenMarkovModelTrainer|CRFTagger|TnT|PerceptronTagger|UnigramTagger|BigramTagger|TrigramTagger|NgramTagger|AffixTagger|DefaultTagger|RegexpTagger|ContextTagger|SequentialBackoffTagger|BrillTagger.*|ClassifierBasedTagger|ClassifierBasedPOSTagger|TaggerI|pos_tag.*|map_tag|str2tuple|tuple2str|untag|tagset_mapping|accuracy | pgm#linearChainCrf, pgm/learning#baumWelch | sequence taggers exist as HMM and CRF models in pgm; there is no n-gram/backoff or perceptron tagger and no POS-tagging wrapper (no pretrained models) | text/tagging.ts | S | low | classical NLP
+A | Brill.*|Hunpos.*|Senna.*|Stanford.*|TnT | text | Brill transformation-based tagging | text/tagging.ts | S | low | classical NLP
+F | NaiveBayesClassifier|PositiveNaiveBayesClassifier|MaxentClassifier|ConditionalExponentialClassifier|SklearnClassifier|ClassifierI|MultiClassifierI|apply_features|BinaryMaxentFeatureEncoding|TypedMaxentFeatureEncoding | learn#naiveBayes, linear#multinomial | | | | |
+A | RTE.*|rte_.*|TextCat|Weka.*|Senna|call_megam|config_megam|config_weka | | recognising textual entailment, language identification (TextCat), external tool bridges | | | low |
+F | KMeansClusterer|EMClusterer|GAAClusterer|VectorSpaceClusterer | cluster | | | | |
+P | .*ChartParser|RecursiveDescentParser|ShiftReduceParser|Stepping.*Parser|ViterbiParser|InsideChartParser|LongestChartParser|RandomChartParser|UnsortedChartParser|EarleyChartParser|FeatureEarleyChartParser|Feature.*ChartParser|Incremental.*ChartParser|ParserI|TestGrammar|load_parser|extract_test_sentences|BottomUp.*Parser|TopDownChartParser|LeftCornerChartParser|ProbabilisticProjectiveDependencyParser|ProjectiveDependencyParser|NonprojectiveDependencyParser|ProbabilisticNonprojectiveParser|TransitionParser|DependencyGraph|DependencyEvaluator|NaiveBayesDependencyScorer | text#earley, #trainPcfg, logic | Earley and PCFG training exist; the steppable chart-parser family (top-down, bottom-up, left-corner, shift-reduce, recursive descent), CKY, and dependency parsers (projective, transition-based) are absent | text/parsing.ts | M | medium | syntactic parsing
+S | .*CoreNLP.*|Bllip.*|Malt.*|.*Senna.*|Stanford.*|Maxent_NE_Chunker|ne_chunker|ne_chunk.*|ChunkParserI|ChunkScore|RegexpChunkParser|RegexpParser|conll.*|ieerstr2tree|tagstr2tree|tree2conll.*|SentimentAnalyzer|SentimentIntensityAnalyzer | | external-tool bridges and pretrained chunkers or sentiment lexicons (VADER) | | | |
+A | .*Translate|IBMModel.*|AlignedSent|PhraseTable|StackDecoder|alignment_error_rate|extract|grow_diag_final_and | | word alignment (IBM models 1 to 5) and phrase-based translation: a classic EM exercise | text/alignment.ts | M | low | classical NLP
+

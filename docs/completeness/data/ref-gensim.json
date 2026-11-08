@@ -1,0 +1,325 @@
+{
+"library": "gensim",
+"version": "4.4.0",
+"source": "introspection",
+"entries": [
+{
+"area": "gensim.corpora",
+"name": "BleiCorpus",
+"kind": "class",
+"doc": "Corpus in Blei's LDA-C format."
+},
+{
+"area": "gensim.corpora",
+"name": "Dictionary",
+"kind": "class",
+"doc": "Dictionary encapsulates the mapping between normalized words and their integer ids."
+},
+{
+"area": "gensim.corpora",
+"name": "HashDictionary",
+"kind": "class",
+"doc": "Mapping between words and their integer ids, using a hashing function."
+},
+{
+"area": "gensim.corpora",
+"name": "IndexedCorpus",
+"kind": "class",
+"doc": "Indexed corpus is a mechanism for random-accessing corpora."
+},
+{
+"area": "gensim.corpora",
+"name": "LowCorpus",
+"kind": "class",
+"doc": "Corpus handles input in `GibbsLda++ format <https://gibbslda.sourceforge.net/>`_."
+},
+{
+"area": "gensim.corpora",
+"name": "MalletCorpus",
+"kind": "class",
+"doc": "Corpus handles input in `Mallet format <http://mallet.cs.umass.edu/import.php>`_."
+},
+{
+"area": "gensim.corpora",
+"name": "MmCorpus",
+"kind": "class",
+"doc": "Corpus serialized using the `sparse coordinate Matrix Market format"
+},
+{
+"area": "gensim.corpora",
+"name": "OpinosisCorpus",
+"kind": "class",
+"doc": "Creates a corpus and dictionary from the Opinosis dataset."
+},
+{
+"area": "gensim.corpora",
+"name": "SvmLightCorpus",
+"kind": "class",
+"doc": "Corpus in SVMlight format."
+},
+{
+"area": "gensim.corpora",
+"name": "TextCorpus",
+"kind": "class",
+"doc": "Helper class to simplify the pipeline of getting BoW vectors from plain text."
+},
+{
+"area": "gensim.corpora",
+"name": "TextDirectoryCorpus",
+"kind": "class",
+"doc": "Read documents recursively from a directory."
+},
+{
+"area": "gensim.corpora",
+"name": "UciCorpus",
+"kind": "class",
+"doc": "Corpus in the UCI bag-of-words format."
+},
+{
+"area": "gensim.corpora",
+"name": "WikiCorpus",
+"kind": "class",
+"doc": "Treat a Wikipedia articles dump as a read-only, streamed, memory-efficient corpus."
+},
+{
+"area": "gensim.matutils",
+"name": "Dense2Corpus",
+"kind": "class",
+"doc": "Treat dense numpy array as a streamed Gensim corpus in the bag-of-words format."
+},
+{
+"area": "gensim.matutils",
+"name": "MmReader",
+"kind": "class",
+"doc": "MmReader(input, transposed=True)"
+},
+{
+"area": "gensim.matutils",
+"name": "MmWriter",
+"kind": "class",
+"doc": "Store a corpus in `Matrix Market format <https://math.nist.gov/MatrixMarket/formats.html>`_,"
+},
+{
+"area": "gensim.matutils",
+"name": "Scipy2Corpus",
+"kind": "class",
+"doc": "Convert a sequence of dense/sparse vectors into a streamed Gensim corpus object."
+},
+{
+"area": "gensim.matutils",
+"name": "Sparse2Corpus",
+"kind": "class",
+"doc": "Convert a matrix in scipy.sparse format into a streaming Gensim corpus."
+},
+{
+"area": "gensim.models",
+"name": "AtireBM25Model",
+"kind": "class",
+"doc": "The scoring function of Trotman et al. [5]_."
+},
+{
+"area": "gensim.models",
+"name": "AuthorTopicModel",
+"kind": "class",
+"doc": "The constructor estimates the author-topic model parameters based on a training corpus."
+},
+{
+"area": "gensim.models",
+"name": "BackMappingTranslationMatrix",
+"kind": "class",
+"doc": "Realize the BackMapping translation matrix which maps the source model's document vector"
+},
+{
+"area": "gensim.models",
+"name": "CoherenceModel",
+"kind": "class",
+"doc": "Objects of this class allow for building and maintaining a model for topic coherence."
+},
+{
+"area": "gensim.models",
+"name": "Doc2Vec",
+"kind": "class",
+"doc": "Serialize/deserialize objects from disk, by equipping them with the `save()` / `load()` methods."
+},
+{
+"area": "gensim.models",
+"name": "EnsembleLda",
+"kind": "class",
+"doc": "Ensemble Latent Dirichlet Allocation (eLDA), a method of training a topic model ensemble."
+},
+{
+"area": "gensim.models",
+"name": "FastText",
+"kind": "class",
+"doc": "Serialize/deserialize objects from disk, by equipping them with the `save()` / `load()` methods."
+},
+{
+"area": "gensim.models",
+"name": "HdpModel",
+"kind": "class",
+"doc": "`Hierarchical Dirichlet Process model <http://jmlr.csail.mit.edu/proceedings/papers/v15/wang11a/wang11a.pdf>`_"
+},
+{
+"area": "gensim.models",
+"name": "KeyedVectors",
+"kind": "class",
+"doc": "Serialize/deserialize objects from disk, by equipping them with the `save()` / `load()` methods."
+},
+{
+"area": "gensim.models",
+"name": "LdaModel",
+"kind": "class",
+"doc": "Train and use Online Latent Dirichlet Allocation model as presented in"
+},
+{
+"area": "gensim.models",
+"name": "LdaMulticore",
+"kind": "class",
+"doc": "An optimized implementation of the LDA algorithm, able to harness the power of multicore CPUs."
+},
+{
+"area": "gensim.models",
+"name": "LdaSeqModel",
+"kind": "class",
+"doc": "Estimate Dynamic Topic Model parameters based on a training corpus."
+},
+{
+"area": "gensim.models",
+"name": "LogEntropyModel",
+"kind": "class",
+"doc": "Objects of this class realize the transformation between word-document co-occurrence matrix (int)"
+},
+{
+"area": "gensim.models",
+"name": "LsiModel",
+"kind": "class",
+"doc": "Model for `Latent Semantic Indexing"
+},
+{
+"area": "gensim.models",
+"name": "LuceneBM25Model",
+"kind": "class",
+"doc": "The scoring function of Apache Lucene 8 [4]_."
+},
+{
+"area": "gensim.models",
+"name": "Nmf",
+"kind": "class",
+"doc": "Online Non-Negative Matrix Factorization."
+},
+{
+"area": "gensim.models",
+"name": "NormModel",
+"kind": "class",
+"doc": "Objects of this class realize the explicit normalization of vectors (l1 and l2)."
+},
+{
+"area": "gensim.models",
+"name": "OkapiBM25Model",
+"kind": "class",
+"doc": "The original Okapi BM25 scoring function of Robertson et al. [2]_."
+},
+{
+"area": "gensim.models",
+"name": "Phrases",
+"kind": "class",
+"doc": "Detect phrases based on collocation counts."
+},
+{
+"area": "gensim.models",
+"name": "RpModel",
+"kind": "class",
+"doc": "Transformation interface."
+},
+{
+"area": "gensim.models",
+"name": "TfidfModel",
+"kind": "class",
+"doc": "Objects of this class realize the transformation between word-document co-occurrence matrix (int)"
+},
+{
+"area": "gensim.models",
+"name": "TranslationMatrix",
+"kind": "class",
+"doc": "Objects of this class realize the translation matrix which maps the source language to the target language."
+},
+{
+"area": "gensim.models",
+"name": "VocabTransform",
+"kind": "class",
+"doc": "Remap feature ids to new values."
+},
+{
+"area": "gensim.models",
+"name": "Word2Vec",
+"kind": "class",
+"doc": "Serialize/deserialize objects from disk, by equipping them with the `save()` / `load()` methods."
+},
+{
+"area": "gensim.parsing.preprocessing",
+"name": "PorterStemmer",
+"kind": "class",
+"doc": "Class contains implementation of Porter stemming algorithm."
+},
+{
+"area": "gensim.similarities",
+"name": "LevenshteinSimilarityIndex",
+"kind": "class",
+"doc": "Retrieve the most similar terms from a static set of terms (\"dictionary\")"
+},
+{
+"area": "gensim.similarities",
+"name": "MatrixSimilarity",
+"kind": "class",
+"doc": "Compute cosine similarity against a corpus of documents by storing the index matrix in memory."
+},
+{
+"area": "gensim.similarities",
+"name": "Similarity",
+"kind": "class",
+"doc": "Compute cosine similarity of a dynamic query against a corpus of documents ('the index')."
+},
+{
+"area": "gensim.similarities",
+"name": "SoftCosineSimilarity",
+"kind": "class",
+"doc": "Compute soft cosine similarity against a corpus of documents by storing the index matrix in memory."
+},
+{
+"area": "gensim.similarities",
+"name": "SparseMatrixSimilarity",
+"kind": "class",
+"doc": "Compute cosine similarity against a corpus of documents by storing the index matrix in memory."
+},
+{
+"area": "gensim.similarities",
+"name": "SparseTermSimilarityMatrix",
+"kind": "class",
+"doc": "Builds a sparse term similarity matrix using a term similarity index."
+},
+{
+"area": "gensim.similarities",
+"name": "TermSimilarityIndex",
+"kind": "class",
+"doc": "Base class = common interface for retrieving the most similar terms for a given term."
+},
+{
+"area": "gensim.similarities",
+"name": "UniformTermSimilarityIndex",
+"kind": "class",
+"doc": "Retrieves most similar terms for a given term under the hypothesis that the similarities between"
+},
+{
+"area": "gensim.similarities",
+"name": "WmdSimilarity",
+"kind": "class",
+"doc": "Compute negative WMD similarity against a corpus of documents."
+},
+{
+"area": "gensim.similarities",
+"name": "WordEmbeddingSimilarityIndex",
+"kind": "class",
+"doc": "Computes cosine similarities between word embeddings and retrieves most"
+}
+]
+}

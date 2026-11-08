@@ -1,0 +1,529 @@
+{
+"library": "captum",
+"version": "0.9.0",
+"source": "introspection",
+"entries": [
+{
+"area": "captum.attr",
+"name": "Attribution",
+"kind": "class",
+"doc": "All attribution algorithms extend this class. It enforces its child classes"
+},
+{
+"area": "captum.attr",
+"name": "ClassSummarizer",
+"kind": "class",
+"doc": "Used to keep track of summaries for associated classes. The"
+},
+{
+"area": "captum.attr",
+"name": "CommonStats",
+"kind": "function",
+"doc": "Returns common summary statistics, specifically:"
+},
+{
+"area": "captum.attr",
+"name": "Count",
+"kind": "class",
+"doc": "Counts the number of elements, i.e. the"
+},
+{
+"area": "captum.attr",
+"name": "DataLoaderAttribution",
+"kind": "class",
+"doc": "Decorate a perturbation-based attribution algorthm to make it work with dataloaders."
+},
+{
+"area": "captum.attr",
+"name": "Deconvolution",
+"kind": "class",
+"doc": "Computes attribution using deconvolution. Deconvolution"
+},
+{
+"area": "captum.attr",
+"name": "DeepLift",
+"kind": "class",
+"doc": "Implements DeepLIFT algorithm based on the following paper:"
+},
+{
+"area": "captum.attr",
+"name": "DeepLiftShap",
+"kind": "class",
+"doc": "Extends DeepLift algorithm and approximates SHAP values using Deeplift."
+},
+{
+"area": "captum.attr",
+"name": "FeatureAblation",
+"kind": "class",
+"doc": "A perturbation based approach to computing attribution, involving"
+},
+{
+"area": "captum.attr",
+"name": "FeaturePermutation",
+"kind": "class",
+"doc": "A perturbation based approach to compute attribution, which"
+},
+{
+"area": "captum.attr",
+"name": "GradientAttribution",
+"kind": "class",
+"doc": "All gradient based attribution algorithms extend this class. It requires a"
+},
+{
+"area": "captum.attr",
+"name": "GradientShap",
+"kind": "class",
+"doc": "Implements gradient SHAP based on the implementation from SHAP's primary"
+},
+{
+"area": "captum.attr",
+"name": "GuidedBackprop",
+"kind": "class",
+"doc": "Computes attribution using guided backpropagation. Guided backpropagation"
+},
+{
+"area": "captum.attr",
+"name": "GuidedGradCam",
+"kind": "class",
+"doc": "Computes element-wise product of guided backpropagation attributions"
+},
+{
+"area": "captum.attr",
+"name": "ImageMaskInput",
+"kind": "class",
+"doc": "ImageMaskInput is an implementation of InterpretableInput for the image, whose"
+},
+{
+"area": "captum.attr",
+"name": "InputXGradient",
+"kind": "class",
+"doc": "A baseline approach for computing the attribution. It multiplies input with"
+},
+{
+"area": "captum.attr",
+"name": "IntegratedGradients",
+"kind": "class",
+"doc": "Integrated Gradients is an axiomatic model interpretability algorithm that"
+},
+{
+"area": "captum.attr",
+"name": "InternalInfluence",
+"kind": "class",
+"doc": "Computes internal influence by approximating the integral of gradients"
+},
+{
+"area": "captum.attr",
+"name": "InterpretableEmbeddingBase",
+"kind": "class",
+"doc": "Since some embedding vectors, e.g. word are created and assigned in"
+},
+{
+"area": "captum.attr",
+"name": "InterpretableInput",
+"kind": "class",
+"doc": "InterpretableInput is an adapter for different kinds of model inputs to"
+},
+{
+"area": "captum.attr",
+"name": "KernelShap",
+"kind": "class",
+"doc": "Kernel SHAP is a method that uses the LIME framework to compute"
+},
+{
+"area": "captum.attr",
+"name": "LLMAttribution",
+"kind": "class",
+"doc": "Attribution class for large language models. It wraps a perturbation-based"
+},
+{
+"area": "captum.attr",
+"name": "LLMAttributionResult",
+"kind": "class",
+"doc": "Data class for the return result of LLMAttribution,"
+},
+{
+"area": "captum.attr",
+"name": "LLMGradientAttribution",
+"kind": "class",
+"doc": "Attribution class for large language models. It wraps a gradient-based"
+},
+{
+"area": "captum.attr",
+"name": "LRP",
+"kind": "class",
+"doc": "Layer-wise relevance propagation is based on a backward propagation"
+},
+{
+"area": "captum.attr",
+"name": "LayerActivation",
+"kind": "class",
+"doc": "Computes activation of selected layer for given input."
+},
+{
+"area": "captum.attr",
+"name": "LayerAttribution",
+"kind": "class",
+"doc": "Layer attribution provides attribution values for the given layer, quantifying"
+},
+{
+"area": "captum.attr",
+"name": "LayerConductance",
+"kind": "class",
+"doc": "Computes conductance with respect to the given layer. The"
+},
+{
+"area": "captum.attr",
+"name": "LayerDeepLift",
+"kind": "class",
+"doc": "Implements DeepLIFT algorithm for the layer based on the following paper:"
+},
+{
+"area": "captum.attr",
+"name": "LayerDeepLiftShap",
+"kind": "class",
+"doc": "Extends LayerDeepLift and DeepLiftShap algorithms and approximates SHAP"
+},
+{
+"area": "captum.attr",
+"name": "LayerFeatureAblation",
+"kind": "class",
+"doc": "A perturbation based approach to computing layer attribution, involving"
+},
+{
+"area": "captum.attr",
+"name": "LayerFeaturePermutation",
+"kind": "class",
+"doc": "A perturbation based approach to computing layer attribution similar to"
+},
+{
+"area": "captum.attr",
+"name": "LayerGradCam",
+"kind": "class",
+"doc": "Computes GradCAM attribution for chosen layer. GradCAM is designed for"
+},
+{
+"area": "captum.attr",
+"name": "LayerGradientShap",
+"kind": "class",
+"doc": "Implements gradient SHAP for layer based on the implementation from SHAP's"
+},
+{
+"area": "captum.attr",
+"name": "LayerGradientXActivation",
+"kind": "class",
+"doc": "Computes element-wise product of gradient and activation for selected"
+},
+{
+"area": "captum.attr",
+"name": "LayerIntegratedGradients",
+"kind": "class",
+"doc": "Layer Integrated Gradients is a variant of Integrated Gradients that assigns"
+},
+{
+"area": "captum.attr",
+"name": "LayerLRP",
+"kind": "class",
+"doc": "Layer-wise relevance propagation is based on a backward propagation"
+},
+{
+"area": "captum.attr",
+"name": "Lime",
+"kind": "class",
+"doc": "Lime is an interpretability method that trains an interpretable surrogate model"
+},
+{
+"area": "captum.attr",
+"name": "LimeBase",
+"kind": "class",
+"doc": "Lime is an interpretability method that trains an interpretable surrogate model"
+},
+{
+"area": "captum.attr",
+"name": "MSE",
+"kind": "class",
+"doc": "Calculates the mean squared error of a tensor"
+},
+{
+"area": "captum.attr",
+"name": "Max",
+"kind": "class",
+"doc": "Performs update(x): result = fn(result, x)"
+},
+{
+"area": "captum.attr",
+"name": "Mean",
+"kind": "class",
+"doc": "Calculates the average of a tensor"
+},
+{
+"area": "captum.attr",
+"name": "Min",
+"kind": "class",
+"doc": "Performs update(x): result = fn(result, x)"
+},
+{
+"area": "captum.attr",
+"name": "NeuronAttribution",
+"kind": "class",
+"doc": "Neuron attribution provides input attribution for a given neuron, quantifying"
+},
+{
+"area": "captum.attr",
+"name": "NeuronConductance",
+"kind": "class",
+"doc": "Computes conductance with respect to particular hidden neuron. The"
+},
+{
+"area": "captum.attr",
+"name": "NeuronDeconvolution",
+"kind": "class",
+"doc": "Computes attribution of the given neuron using deconvolution."
+},
+{
+"area": "captum.attr",
+"name": "NeuronDeepLift",
+"kind": "class",
+"doc": "Implements DeepLIFT algorithm for the neuron based on the following paper:"
+},
+{
+"area": "captum.attr",
+"name": "NeuronDeepLiftShap",
+"kind": "class",
+"doc": "Extends NeuronAttribution and uses LayerDeepLiftShap algorithms and"
+},
+{
+"area": "captum.attr",
+"name": "NeuronFeatureAblation",
+"kind": "class",
+"doc": "A perturbation based approach to computing neuron attribution,"
+},
+{
+"area": "captum.attr",
+"name": "NeuronGradient",
+"kind": "class",
+"doc": "Computes the gradient of the output of a particular neuron with"
+},
+{
+"area": "captum.attr",
+"name": "NeuronGradientShap",
+"kind": "class",
+"doc": "Implements gradient SHAP for a neuron in a hidden layer based on the"
+},
+{
+"area": "captum.attr",
+"name": "NeuronGuidedBackprop",
+"kind": "class",
+"doc": "Computes attribution of the given neuron using guided backpropagation."
+},
+{
+"area": "captum.attr",
+"name": "NeuronIntegratedGradients",
+"kind": "class",
+"doc": "Approximates the integral of gradients for a particular neuron"
+},
+{
+"area": "captum.attr",
+"name": "NoiseTunnel",
+"kind": "class",
+"doc": "Adds gaussian noise to each input in the batch `nt_samples` times"
+},
+{
+"area": "captum.attr",
+"name": "Occlusion",
+"kind": "class",
+"doc": "A perturbation based approach to compute attribution, involving"
+},
+{
+"area": "captum.attr",
+"name": "PerturbationAttribution",
+"kind": "class",
+"doc": "All perturbation based attribution algorithms extend this class. It requires a"
+},
+{
+"area": "captum.attr",
+"name": "ProductBaselines",
+"kind": "class",
+"doc": "A Callable Baselines class that returns a sample from the Cartesian product of"
+},
+{
+"area": "captum.attr",
+"name": "RemoteLLMAttribution",
+"kind": "class",
+"doc": "Attribution class for large language models"
+},
+{
+"area": "captum.attr",
+"name": "RemoteLLMProvider",
+"kind": "class",
+"doc": "All remote LLM providers that offer logprob via API"
+},
+{
+"area": "captum.attr",
+"name": "Saliency",
+"kind": "class",
+"doc": "A baseline approach for computing input attribution. It returns"
+},
+{
+"area": "captum.attr",
+"name": "ShapleyValueSampling",
+"kind": "class",
+"doc": "A perturbation based approach to compute attribution, based on the concept"
+},
+{
+"area": "captum.attr",
+"name": "ShapleyValues",
+"kind": "class",
+"doc": "A perturbation based approach to compute attribution, based on the concept"
+},
+{
+"area": "captum.attr",
+"name": "StdDev",
+"kind": "class",
+"doc": "The standard deviation, with an associated order."
+},
+{
+"area": "captum.attr",
+"name": "Sum",
+"kind": "class",
+"doc": "Performs update(x): result = fn(result, x)"
+},
+{
+"area": "captum.attr",
+"name": "Summarizer",
+"kind": "class",
+"doc": "This class simply wraps over a given a set of SummarizerSingleTensor's in order"
+},
+{
+"area": "captum.attr",
+"name": "SummarizerSingleTensor",
+"kind": "class",
+"doc": "A simple class that summarizes a single tensor. The basic functionality"
+},
+{
+"area": "captum.attr",
+"name": "TextTemplateInput",
+"kind": "class",
+"doc": "TextTemplateInput is an implementation of InterpretableInput for text inputs, whose"
+},
+{
+"area": "captum.attr",
+"name": "TextTokenInput",
+"kind": "class",
+"doc": "TextTokenInput is an implementation of InterpretableInput for text inputs, whose"
+},
+{
+"area": "captum.attr",
+"name": "TokenReferenceBase",
+"kind": "class",
+"doc": "A base class for creating reference (aka baseline) tensor for a sequence of"
+},
+{
+"area": "captum.attr",
+"name": "VLLMProvider",
+"kind": "class",
+"doc": "All remote LLM providers that offer logprob via API"
+},
+{
+"area": "captum.attr",
+"name": "Var",
+"kind": "class",
+"doc": "Calculates the variance of a tensor, with an order. e.g."
+},
+{
+"area": "captum.attr",
+"name": "configure_interpretable_embedding_layer",
+"kind": "function",
+"doc": "This method wraps a model's embedding layer with an interpretable embedding"
+},
+{
+"area": "captum.attr",
+"name": "remove_interpretable_embedding_layer",
+"kind": "function",
+"doc": "Removes interpretable embedding layer and sets back original"
+},
+{
+"area": "captum.concept",
+"name": "CAV",
+"kind": "class",
+"doc": "Concept Activation Vector (CAV) is a vector orthogonal to the decision"
+},
+{
+"area": "captum.concept",
+"name": "Classifier",
+"kind": "class",
+"doc": "An abstract class definition of any classifier that allows to train a model"
+},
+{
+"area": "captum.concept",
+"name": "Concept",
+"kind": "class",
+"doc": "Concepts are human-friendly abstract representations that can be"
+},
+{
+"area": "captum.concept",
+"name": "ConceptInterpreter",
+"kind": "class",
+"doc": "An abstract class that exposes an abstract interpret method"
+},
+{
+"area": "captum.concept",
+"name": "DefaultClassifier",
+"kind": "class",
+"doc": "A default Linear Classifier based on sklearn's SGDClassifier for"
+},
+{
+"area": "captum.concept",
+"name": "TCAV",
+"kind": "class",
+"doc": "This class implements ConceptInterpreter abstract class using an"
+},
+{
+"area": "captum.metrics",
+"name": "infidelity",
+"kind": "function",
+"doc": "Explanation infidelity represents the expected mean-squared error"
+},
+{
+"area": "captum.metrics",
+"name": "infidelity_perturb_func_decorator",
+"kind": "function",
+"doc": "An auxiliary, decorator function that helps with computing"
+},
+{
+"area": "captum.metrics",
+"name": "sensitivity_max",
+"kind": "function",
+"doc": "Explanation sensitivity measures the extent of explanation change when"
+},
+{
+"area": "captum.robust",
+"name": "AttackComparator",
+"kind": "class",
+"doc": "Allows measuring model robustness for a given attack or set of attacks. This class"
+},
+{
+"area": "captum.robust",
+"name": "FGSM",
+"kind": "class",
+"doc": "Fast Gradient Sign Method is a one-step method that can generate"
+},
+{
+"area": "captum.robust",
+"name": "MinParamPerturbation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "captum.robust",
+"name": "PGD",
+"kind": "class",
+"doc": "Projected Gradient Descent is an iterative version of the one-step attack"
+},
+{
+"area": "captum.robust",
+"name": "Perturbation",
+"kind": "class",
+"doc": "All perturbation and attack algorithms extend this class. It enforces"
+}
+]
+}

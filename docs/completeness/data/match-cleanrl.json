@@ -1,0 +1,20 @@
+[
+{"lib":"cleanrl","area":"algorithms","name":"dqn","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"dqn_atari","status":"skip","how":"verdict","note":"Atari"},
+{"lib":"cleanrl","area":"algorithms","name":"c51","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"c51_atari","status":"skip","how":"verdict","note":"Atari"},
+{"lib":"cleanrl","area":"algorithms","name":"ppo","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"ppo_atari","status":"skip","how":"verdict","note":"Atari"},
+{"lib":"cleanrl","area":"algorithms","name":"ppo_continuous_action","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"ppg_procgen","status":"absent","how":"verdict","omai":"agents","note":"phasic policy gradient, QDagger, robust policy optimisation","home":"agents","size":"M","priority":"low","group":"further deep RL algorithms"},
+{"lib":"cleanrl","area":"algorithms","name":"ddpg_continuous_action","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"td3_continuous_action","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"sac_continuous_action","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"sac_atari","status":"absent","how":"verdict","omai":"agents","note":"phasic policy gradient, QDagger, robust policy optimisation","home":"agents","size":"M","priority":"low","group":"further deep RL algorithms"},
+{"lib":"cleanrl","area":"algorithms","name":"rainbow_atari","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"qdagger_dqn","status":"absent","how":"verdict","omai":"agents","note":"phasic policy gradient, QDagger, robust policy optimisation","home":"agents","size":"M","priority":"low","group":"further deep RL algorithms"},
+{"lib":"cleanrl","area":"algorithms","name":"ppo_rnd_envpool","status":"full","how":"verdict","omai":"agents (dqn, c51, ppo, ddpg, td3, sac, rainbow, rndModule)","note":"CleanRL's single-file spirit matches omai's one function per agent"},
+{"lib":"cleanrl","area":"algorithms","name":"rpo_continuous_action","status":"absent","how":"verdict","omai":"agents","note":"phasic policy gradient, QDagger, robust policy optimisation","home":"agents","size":"M","priority":"low","group":"further deep RL algorithms"},
+{"lib":"cleanrl","area":"algorithms","name":"ppo_atari_lstm","status":"absent","how":"verdict","omai":"agents","note":"phasic policy gradient, QDagger, robust policy optimisation","home":"agents","size":"M","priority":"low","group":"further deep RL algorithms"},
+{"lib":"cleanrl","area":"algorithms","name":"ppo_pettingzoo_ma_atari","status":"absent","how":"verdict","omai":"agents","note":"phasic policy gradient, QDagger, robust policy optimisation","home":"agents","size":"M","priority":"low","group":"further deep RL algorithms"}
+]
