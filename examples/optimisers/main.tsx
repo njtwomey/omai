@@ -5,12 +5,13 @@
  * the axes, with its contours), and the right panel the loss against the step on a log axis, both read from the tapes.
  */
 import { adam, bfgs, lbfgs, minimizer, newton, sgd } from 'omai-engine/optim'
-import { add, mul, square, sub, take, tensor, type Value } from 'omai-engine/tensor'
-import { metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'omai-engine/trace'
+import { add, mul, square, sub, take, tensor, toFlat, type Value } from 'omai-engine/tensor'
+import { iterate, metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'omai-engine/trace'
 import { cartesian, lines, points } from 'omai-render/charts'
 import { figure } from 'omai-render/figure'
 import { parameterPath } from 'omai-render/trace'
-import type { ExampleModule, Outcome } from '../_shared/contract.ts'
+import type { Mode } from '../_shared/colours.ts'
+import type { ExampleModule, Live, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 import { axesOf, fieldLayers, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'
 
@@ -20,6 +21,7 @@ export const meta: ExampleModule['meta'] = {
     'Gradient descent, momentum and Adam against BFGS, L-BFGS and Newton on the Rosenbrock function: the paths and the loss from the recorded runs.',
   readme: true,
   alt: 'Six optimisers on the Rosenbrock function: their paths over the function and the loss against the step on a log axis',
+  home: { label: 'Optimisers', fps: 10, seconds: 17 },
 }
 
 const rosenbrock = (p: Value): Value =>
@@ -115,8 +117,88 @@ export function run(): Outcome<Result> {
   return { result: { methods }, tapes, notes }
 }
 
-export function View({ result }: { result: Result }) {
+/**
+ * Stepped live, as it is watched: the three first-order methods take a step of their own `minimizer` algorithm each
+ * time (from `iterate`), and the three that use curvature, which the library runs to the end in one call, are run
+ * when it starts (they take about twenty steps) and shown one step at a time beside them.
+ */
+export function live(): Live<Result> {
+  const firsts = METHODS.filter((m) => !m.curvature).map((m) => ({
+    m,
+    steps: iterate(
+      minimizer((p) => rosenbrock(p as Value), tensor([...START]), first[m.key as keyof typeof first]()),
+      { seed: 0, maxSteps: FIRST_ORDER_STEPS },
+    ),
+    path: [[START[0], START[1]]] as [number, number][],
+    steps_: [0],
+    loss: [f(START[0], START[1])],
+  }))
+  const seconds = METHODS.filter((m) => m.curvature).map((m) => {
+    const tape = recorder()
+    second[m.key as keyof typeof second](rosenbrock, [...START], { tracer: tape, policy: record })
+    const run = tape.run()
+    const series = metricSeries(run, 'loss')
+    return { m, path: parameterPath(run, 'x'), steps_: series.steps, loss: series.values }
+  })
+  for (const x of firsts) x.steps.next() // the first state is the start, already in the path
+  let t = 0
+  const run: Live<Result> = {
+    step: () => {
+      let more = false
+      // Two steps a frame (`frames` below counts frames of two steps).
+      for (let k = 0; k < 2; k++) {
+        t++
+        for (const x of firsts) {
+          const next = x.steps.next()
+          if (next.done === true) continue
+          const p = Array.from(toFlat(next.value.state.params as Value))
+          x.path.push([p[0] ?? 0, p[1] ?? 0])
+          x.steps_.push(t)
+          x.loss.push(next.value.state.value)
+          more = more || next.value.status === undefined
+        }
+      }
+      return more || t < 30
+    },
+    result: () => ({
+      methods: [
+        ...firsts.map((x) => ({
+          name: x.m.name,
+          colour: x.m.colour,
+          curvature: false,
+          path: x.path,
+          steps: x.steps_,
+          loss: x.loss,
+        })),
+        ...seconds.map((x) => {
+          const keep = x.steps_.filter((k) => k <= t).length
+          return {
+            name: x.m.name,
+            colour: x.m.colour,
+            curvature: true,
+            path: x.path.slice(0, keep),
+            steps: x.steps_.slice(0, keep),
+            loss: x.loss.slice(0, keep),
+          }
+        }),
+      ],
+    }),
+  }
+  return run
+}
+
+/** Played in the browser: each frame is two steps of every method. */
+export const frames = (result: Result): number =>
+  Math.ceil(Math.max(...result.methods.map((m) => m.steps.at(-1) ?? 0)) / 2)
+
+export function View({ result, at, mode = 'light' }: { result: Result; at?: number; mode?: Mode }) {
+  // The limits come from the whole run, so the axes stay put while the paths grow.
   const all = result.methods.flatMap((m) => m.path)
+  const step = at === undefined ? Number.POSITIVE_INFINITY : at * 2
+  const upTo = (m: Result['methods'][number]): { path: [number, number][]; steps: number[]; loss: number[] } => {
+    const keep = m.steps.filter((t) => t <= step).length
+    return { path: m.path.slice(0, keep), steps: m.steps.slice(0, keep), loss: m.loss.slice(0, keep) }
+  }
   const window = windowOf([...all, [1, 1]], 0.05)
   const n = 80
   const axes = axesOf(window, n)
@@ -125,8 +207,8 @@ export function View({ result }: { result: Result }) {
     n,
   )
   const one = (m: Result['methods'][number], dash: boolean) => ({
-    x: m.path.map((p) => p[0]),
-    y: m.path.map((p) => p[1]),
+    x: upTo(m).path.map((p) => p[0]),
+    y: upTo(m).path.map((p) => p[1]),
     name: m.name,
     colour: m.colour,
     width: 1.8,
@@ -134,14 +216,31 @@ export function View({ result }: { result: Result }) {
   })
   const paths = cartesian(
     [
-      ...fieldLayers({ window, field, label: 'log10(1 + f)', colourBar: false, levels: 10 }),
-      lines(result.methods.map((m) => one(m, !m.curvature))),
-      points([
-        { x: [START[0]], y: [START[1]], colour: 'fg', size: 9, symbol: 'emptyCircle', name: '__start', outline: false },
-      ]),
-      points([{ x: [1], y: [1], colour: 'fg', size: 9, symbol: 'diamond', name: '__minimum', outline: false }]),
+      ...fieldLayers({ window, field, label: 'log10(1 + f)', colourBar: false, levels: 10, mode }),
+      lines(
+        result.methods.map((m) => one(m, !m.curvature)),
+        { mode },
+      ),
+      points(
+        [
+          {
+            x: [START[0]],
+            y: [START[1]],
+            colour: 'fg',
+            size: 9,
+            symbol: 'emptyCircle',
+            name: '__start',
+            outline: false,
+          },
+        ],
+        { mode },
+      ),
+      points([{ x: [1], y: [1], colour: 'fg', size: 9, symbol: 'diamond', name: '__minimum', outline: false }], {
+        mode,
+      }),
     ],
     {
+      mode,
       figure: figure({ width: 520, height: 400, padding: { top: 12, right: 12, bottom: 38, left: 42 } }),
       x: { label: 'x', limits: [...window.x] },
       y: { label: 'y', limits: [...window.y] },
@@ -152,16 +251,18 @@ export function View({ result }: { result: Result }) {
     [
       lines(
         result.methods.map((m) => ({
-          x: m.steps,
-          y: m.loss.map((v) => Math.max(v, FLOOR)),
+          x: upTo(m).steps,
+          y: upTo(m).loss.map((v) => Math.max(v, FLOOR)),
           name: m.name,
           colour: m.colour,
           width: 1.8,
           ...(m.curvature ? {} : { dash: 'dashed' as const }),
         })),
+        { mode },
       ),
     ],
     {
+      mode,
       figure: figure({ width: 520, height: 400, padding: { top: 40, right: 12, bottom: 38, left: 56 } }),
       x: { label: 'step', limits: [0, FIRST_ORDER_STEPS] },
       y: { label: 'loss f (floored at 1e-12)', scale: 'log', limits: [FLOOR, 10] },
@@ -169,7 +270,7 @@ export function View({ result }: { result: Result }) {
     },
   )
   return (
-    <Figure width={1040} height={426} title={meta.alt}>
+    <Figure width={1040} height={426} title={meta.alt} mode={mode}>
       <Panel x={0} width={520} height={400} title="paths (dashed: first order, solid: uses curvature)" still={paths} />
       <Panel x={520} width={520} height={400} title="loss against step" still={loss} />
     </Figure>

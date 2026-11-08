@@ -11,7 +11,8 @@ export default defineConfig({
   base: process.env['OMAI_SITE_BASE'] ?? '/',
   plugins: [recipeMeta(), react(), tailwindcss(), docsCatalogue()],
   // Workspace packages resolve to their source, as in the tests.
-  resolve: { conditions: ['source'] },
+  // The front page runs programs from `examples/`, which sit outside the site: one copy of React for all of them.
+  resolve: { conditions: ['source'], dedupe: ['react', 'react-dom'] },
   // A single-page app with path URLs (/gallery/..., /docs/...).
   appType: 'spa',
   // Module workers, so a worker loads only the modules it runs (as separate chunks).

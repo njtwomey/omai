@@ -1,0 +1,53 @@
+# The site on GitHub Pages: the landing page, the gallery and the docs, built with `make site` (apps/site/dist) and
+# published on each push to main. It only builds the site, so it publishes in a few minutes; the ci workflow runs the
+# checks and tests alongside. The site is a single-page app with path URLs, so the build is also copied to 404.html:
+# a link to /gallery/... opened from outside loads the app, which then shows that page.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - id: pages
+        uses: actions/configure-pages@v6
+      - name: Build the site
+        run: make site
+        env:
+          # `/<repository>/` for a project site, `/` under a custom domain.
+          OMAI_SITE_BASE: ${{ steps.pages.outputs.base_path }}/
+      - name: Deep links
+        run: cp apps/site/dist/index.html apps/site/dist/404.html
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

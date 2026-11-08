@@ -1,0 +1,785 @@
+{
+  "schema": "omai.run/1",
+  "events": [
+    {
+      "type": "run",
+      "runId": "kalman-filter:none",
+      "name": "kalman-filter",
+      "seed": null,
+      "version": "0.1.4",
+      "config": {
+        "steps": 150,
+        "joseph": true
+      },
+      "channels": {
+        "metrics": {
+          "logLikelihood": {
+            "description": "log p(z_1..t)",
+            "direction": "higher"
+          },
+          "nis": {
+            "description": "normalised innovation squared of this step"
+          }
+        },
+        "tensors": {
+          "x": {
+            "role": "state",
+            "description": "the filtered mean"
+          }
+        },
+        "messages": {},
+        "episodes": false,
+        "frames": false
+      }
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":0,"name":"logLikelihood","value":0},
+    {"type":"metric","runId":"kalman-filter:none","step":1,"name":"logLikelihood","value":-2.9368226328675755},
+    {"type":"metric","runId":"kalman-filter:none","step":2,"name":"logLikelihood","value":-7.226016291750885},
+    {"type":"metric","runId":"kalman-filter:none","step":3,"name":"logLikelihood","value":-10.877650075583954},
+    {"type":"metric","runId":"kalman-filter:none","step":4,"name":"logLikelihood","value":-13.95051740051361},
+    {"type":"metric","runId":"kalman-filter:none","step":5,"name":"logLikelihood","value":-18.74996964921725},
+    {"type":"metric","runId":"kalman-filter:none","step":6,"name":"logLikelihood","value":-22.783686461526234},
+    {"type":"metric","runId":"kalman-filter:none","step":7,"name":"logLikelihood","value":-26.68389581263744},
+    {"type":"metric","runId":"kalman-filter:none","step":8,"name":"logLikelihood","value":-29.912409389286935},
+    {"type":"metric","runId":"kalman-filter:none","step":9,"name":"logLikelihood","value":-33.32386901847667},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 10,
+      "name": "logLikelihood",
+      "value": -36.712889818301726
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":11,"name":"logLikelihood","value":-40.38043162031034},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 12,
+      "name": "logLikelihood",
+      "value": -42.670446557907916
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":13,"name":"logLikelihood","value":-46.47595345597223},
+    {"type":"metric","runId":"kalman-filter:none","step":14,"name":"logLikelihood","value":-49.83660708824931},
+    {"type":"metric","runId":"kalman-filter:none","step":15,"name":"logLikelihood","value":-52.66366992196752},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 16,
+      "name": "logLikelihood",
+      "value": -55.695000178686044
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 17,
+      "name": "logLikelihood",
+      "value": -60.981169703163474
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":18,"name":"logLikelihood","value":-67.70994966904092},
+    {"type":"metric","runId":"kalman-filter:none","step":19,"name":"logLikelihood","value":-70.34703370003477},
+    {"type":"metric","runId":"kalman-filter:none","step":20,"name":"logLikelihood","value":-73.20092122623831},
+    {"type":"metric","runId":"kalman-filter:none","step":21,"name":"logLikelihood","value":-76.34815334815306},
+    {"type":"metric","runId":"kalman-filter:none","step":22,"name":"logLikelihood","value":-78.60811563227767},
+    {"type":"metric","runId":"kalman-filter:none","step":23,"name":"logLikelihood","value":-81.40556383231757},
+    {"type":"metric","runId":"kalman-filter:none","step":24,"name":"logLikelihood","value":-85.0747897556653},
+    {"type":"metric","runId":"kalman-filter:none","step":25,"name":"logLikelihood","value":-88.94005734562836},
+    {"type":"metric","runId":"kalman-filter:none","step":26,"name":"logLikelihood","value":-92.00843078823966},
+    {"type":"metric","runId":"kalman-filter:none","step":27,"name":"logLikelihood","value":-94.34508489512156},
+    {"type":"metric","runId":"kalman-filter:none","step":28,"name":"logLikelihood","value":-98.11239782715668},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 29,
+      "name": "logLikelihood",
+      "value": -102.09608014576274
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 30,
+      "name": "logLikelihood",
+      "value": -104.44538930809696
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 31,
+      "name": "logLikelihood",
+      "value": -106.91270462615647
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 32,
+      "name": "logLikelihood",
+      "value": -110.66817095002118
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 33,
+      "name": "logLikelihood",
+      "value": -113.48436037134007
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 34,
+      "name": "logLikelihood",
+      "value": -115.72112718714865
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":35,"name":"logLikelihood","value":-118.107246395155},
+    {"type":"metric","runId":"kalman-filter:none","step":36,"name":"logLikelihood","value":-121.4652691902761},
+    {"type":"metric","runId":"kalman-filter:none","step":37,"name":"logLikelihood","value":-126.3203808467113},
+    {"type":"metric","runId":"kalman-filter:none","step":38,"name":"logLikelihood","value":-129.7332932255226},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 39,
+      "name": "logLikelihood",
+      "value": -133.51227061219936
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 40,
+      "name": "logLikelihood",
+      "value": -138.36780841465477
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 41,
+      "name": "logLikelihood",
+      "value": -141.94300390916845
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 42,
+      "name": "logLikelihood",
+      "value": -144.47956642485292
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":43,"name":"logLikelihood","value":-147.7373741556955},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 44,
+      "name": "logLikelihood",
+      "value": -150.28686344850692
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 45,
+      "name": "logLikelihood",
+      "value": -153.35263642230652
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 46,
+      "name": "logLikelihood",
+      "value": -157.45196392969436
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 47,
+      "name": "logLikelihood",
+      "value": -159.68771884532114
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 48,
+      "name": "logLikelihood",
+      "value": -161.99055845236788
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 49,
+      "name": "logLikelihood",
+      "value": -164.26053646580002
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 50,
+      "name": "logLikelihood",
+      "value": -166.89399500677087
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 51,
+      "name": "logLikelihood",
+      "value": -170.09269188256022
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 52,
+      "name": "logLikelihood",
+      "value": -172.96075210890547
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 53,
+      "name": "logLikelihood",
+      "value": -176.65261598508695
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":54,"name":"logLikelihood","value":-180.2318947851763},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 55,
+      "name": "logLikelihood",
+      "value": -182.45285342942654
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 56,
+      "name": "logLikelihood",
+      "value": -185.03699416190793
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 57,
+      "name": "logLikelihood",
+      "value": -187.26299770187063
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 58,
+      "name": "logLikelihood",
+      "value": -190.23120337050733
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 59,
+      "name": "logLikelihood",
+      "value": -193.41863962072404
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 60,
+      "name": "logLikelihood",
+      "value": -196.95491634594006
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":61,"name":"logLikelihood","value":-200.0043118121699},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 62,
+      "name": "logLikelihood",
+      "value": -202.52607019587748
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 63,
+      "name": "logLikelihood",
+      "value": -204.72963979185363
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":64,"name":"logLikelihood","value":-207.8531991020333},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 65,
+      "name": "logLikelihood",
+      "value": -210.25020008931224
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":66,"name":"logLikelihood","value":-213.4766766994851},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 67,
+      "name": "logLikelihood",
+      "value": -216.18284673556332
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 68,
+      "name": "logLikelihood",
+      "value": -218.96560586649858
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 69,
+      "name": "logLikelihood",
+      "value": -221.76575468894035
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":70,"name":"logLikelihood","value":-224.3220647855033},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 71,
+      "name": "logLikelihood",
+      "value": -226.56422916116222
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":72,"name":"logLikelihood","value":-228.8712934334582},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 73,
+      "name": "logLikelihood",
+      "value": -231.27219589739158
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 74,
+      "name": "logLikelihood",
+      "value": -234.15852780377048
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":75,"name":"logLikelihood","value":-237.5757907738125},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 76,
+      "name": "logLikelihood",
+      "value": -240.15295328793792
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 77,
+      "name": "logLikelihood",
+      "value": -243.36856336909642
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":78,"name":"logLikelihood","value":-245.6897107846961},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 79,
+      "name": "logLikelihood",
+      "value": -248.76750818726407
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 80,
+      "name": "logLikelihood",
+      "value": -251.05430845396532
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 81,
+      "name": "logLikelihood",
+      "value": -254.44569436479773
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":82,"name":"logLikelihood","value":-256.7363529993872},
+    {"type":"metric","runId":"kalman-filter:none","step":83,"name":"logLikelihood","value":-259.6579343210162},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 84,
+      "name": "logLikelihood",
+      "value": -262.21248563495647
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 85,
+      "name": "logLikelihood",
+      "value": -266.30656535904205
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":86,"name":"logLikelihood","value":-269.2097368844689},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 87,
+      "name": "logLikelihood",
+      "value": -272.85397998416244
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":88,"name":"logLikelihood","value":-277.9447761464133},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 89,
+      "name": "logLikelihood",
+      "value": -280.42773698508887
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 90,
+      "name": "logLikelihood",
+      "value": -286.74046500307844
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":91,"name":"logLikelihood","value":-290.8270303701994},
+    {"type":"metric","runId":"kalman-filter:none","step":92,"name":"logLikelihood","value":-294.402386043834},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 93,
+      "name": "logLikelihood",
+      "value": -296.86959054484055
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":94,"name":"logLikelihood","value":-301.1045795936976},
+    {"type":"metric","runId":"kalman-filter:none","step":95,"name":"logLikelihood","value":-303.4488557581818},
+    {"type":"metric","runId":"kalman-filter:none","step":96,"name":"logLikelihood","value":-305.896755049672},
+    {"type":"metric","runId":"kalman-filter:none","step":97,"name":"logLikelihood","value":-308.1322033469486},
+    {"type":"metric","runId":"kalman-filter:none","step":98,"name":"logLikelihood","value":-311.8262577254711},
+    {"type":"metric","runId":"kalman-filter:none","step":99,"name":"logLikelihood","value":-314.1329153763012},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 100,
+      "name": "logLikelihood",
+      "value": -316.70334233547305
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 101,
+      "name": "logLikelihood",
+      "value": -319.8405546272497
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 102,
+      "name": "logLikelihood",
+      "value": -323.0068666995476
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 103,
+      "name": "logLikelihood",
+      "value": -325.7386806602187
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 104,
+      "name": "logLikelihood",
+      "value": -328.6870367361122
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 105,
+      "name": "logLikelihood",
+      "value": -331.05295749144324
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 106,
+      "name": "logLikelihood",
+      "value": -333.25914091427205
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 107,
+      "name": "logLikelihood",
+      "value": -337.6536113800603
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 108,
+      "name": "logLikelihood",
+      "value": -340.48470679203234
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 109,
+      "name": "logLikelihood",
+      "value": -342.86922324043144
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 110,
+      "name": "logLikelihood",
+      "value": -347.08001285036886
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 111,
+      "name": "logLikelihood",
+      "value": -349.5686518000577
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 112,
+      "name": "logLikelihood",
+      "value": -354.31310305197394
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 113,
+      "name": "logLikelihood",
+      "value": -357.25287648442173
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 114,
+      "name": "logLikelihood",
+      "value": -360.3084474932815
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 115,
+      "name": "logLikelihood",
+      "value": -362.69053484624544
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 116,
+      "name": "logLikelihood",
+      "value": -365.0603296967293
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 117,
+      "name": "logLikelihood",
+      "value": -368.0303698112133
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 118,
+      "name": "logLikelihood",
+      "value": -370.4824195781067
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 119,
+      "name": "logLikelihood",
+      "value": -374.76362338326567
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 120,
+      "name": "logLikelihood",
+      "value": -379.6989591922916
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 121,
+      "name": "logLikelihood",
+      "value": -383.1635018304499
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 122,
+      "name": "logLikelihood",
+      "value": -386.9650030470484
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 123,
+      "name": "logLikelihood",
+      "value": -391.6595739333261
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 124,
+      "name": "logLikelihood",
+      "value": -395.2725816413723
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 125,
+      "name": "logLikelihood",
+      "value": -400.51432038588484
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 126,
+      "name": "logLikelihood",
+      "value": -403.61023578204487
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 127,
+      "name": "logLikelihood",
+      "value": -405.85006112018067
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":128,"name":"logLikelihood","value":-409.413913586401},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 129,
+      "name": "logLikelihood",
+      "value": -412.4415939270509
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 130,
+      "name": "logLikelihood",
+      "value": -415.48701255190736
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 131,
+      "name": "logLikelihood",
+      "value": -418.3156807940737
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 132,
+      "name": "logLikelihood",
+      "value": -421.2416778672052
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 133,
+      "name": "logLikelihood",
+      "value": -423.5123230696636
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 134,
+      "name": "logLikelihood",
+      "value": -426.25537065332514
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 135,
+      "name": "logLikelihood",
+      "value": -429.06538713218714
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":136,"name":"logLikelihood","value":-431.803401840205},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 137,
+      "name": "logLikelihood",
+      "value": -434.1892298245931
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 138,
+      "name": "logLikelihood",
+      "value": -440.1184858998323
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 139,
+      "name": "logLikelihood",
+      "value": -442.3090650192395
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 140,
+      "name": "logLikelihood",
+      "value": -446.2688367264277
+    },
+    {"type":"metric","runId":"kalman-filter:none","step":141,"name":"logLikelihood","value":-448.887202757557},
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 142,
+      "name": "logLikelihood",
+      "value": -451.0589632745568
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 143,
+      "name": "logLikelihood",
+      "value": -453.26833941519266
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 144,
+      "name": "logLikelihood",
+      "value": -456.6612507817789
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 145,
+      "name": "logLikelihood",
+      "value": -459.98314916524134
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 146,
+      "name": "logLikelihood",
+      "value": -462.68345239581794
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 147,
+      "name": "logLikelihood",
+      "value": -465.84771641654396
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 148,
+      "name": "logLikelihood",
+      "value": -469.27813116256584
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 149,
+      "name": "logLikelihood",
+      "value": -472.2291839671682
+    },
+    {
+      "type": "metric",
+      "runId": "kalman-filter:none",
+      "step": 150,
+      "name": "logLikelihood",
+      "value": -475.3924431742779
+    },
+    {
+      "type": "end",
+      "runId": "kalman-filter:none",
+      "status": "completed",
+      "steps": 150,
+      "summary": {
+        "logLikelihood": -475.3924431742779,
+        "nis": 1.9843193169506188
+      }
+    }
+  ]
+}

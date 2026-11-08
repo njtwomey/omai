@@ -75,7 +75,28 @@ export function Shell(props: {
             </Link>
           ))}
         </nav>
-        <ColourToggle />
+        <div className="ml-auto flex items-center gap-2">
+          <a
+            href="https://github.com/njtwomey/omai"
+            aria-label="Source on GitHub"
+            title="Source on GitHub"
+            className="rounded-md p-1.5 text-muted hover:bg-surface hover:text-fg"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
+            </svg>
+            <span className="sr-only">Source on GitHub</span>
+          </a>
+          <ColourToggle />
+        </div>
       </header>
       {sidebar === undefined ? (
         <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>

@@ -151,7 +151,7 @@ describe('matrix', () => {
     expect(s.data[0]).toEqual([0, 1, 0])
     const el = s.renderItem({ dataIndex: 3 }, api)
     expect(el.children[1].style.text).toBe('3')
-    expect(el.children[1].style.fill).toBe('#1f2328')
+    expect(el.children[1].style.fill).toBe('#0a0a0a')
     expect(s.renderItem({ dataIndex: 9 }, api).children).toEqual([])
     expect(() => matrix([[1]], { rowLabels: ['a', 'b'] })).toThrow()
     expect(rampStops('magma', 'dark')[0]).toBe('#000004')

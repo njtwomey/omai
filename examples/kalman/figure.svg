@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="578" viewBox="0 0 620 578"><title>A target going round a circle, its noisy readings and the estimate of a Kalman filter following it</title><rect width="100%" height="100%" fill="#ffffff"></rect><text x="310" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#0a0a0a">average distance from the target: readings 1.26, filter 0.68</text><svg x="0" y="26" width="620" height="520" overflow="visible"><svg width="620" height="520" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 620 520">
+<rect width="620" height="520" x="0" y="0" fill="#ffffff"></rect>
+<path d="M61 476.5L608 476.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 453.5L608 453.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 408.5L608 408.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 363.5L608 363.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 318.5L608 318.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 273.5L608 273.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 228.5L608 228.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 183.5L608 183.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 137.5L608 137.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 92.5L608 92.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 70.5L608 70.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61.5 70L61.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M91.5 70L91.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M152.5 70L152.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M213.5 70L213.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M273.5 70L273.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M334.5 70L334.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M395.5 70L395.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M456.5 70L456.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M517.5 70L517.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M577.5 70L577.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M608.5 70L608.5 476" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="-5.5" transform="matrix(0,-1,1,0,19,273)" fill="#525252">y</text>
+<path d="M61.5 476L61.5 70" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(334.5 504)" fill="#525252">x</text>
+<path d="M61 476.5L608 476.5" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 453.4444)" fill="#737373">-8</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 408.3333)" fill="#737373">-6</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 363.2222)" fill="#737373">-4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 318.1111)" fill="#737373">-2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 273)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 227.8889)" fill="#737373">2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 182.7778)" fill="#737373">4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 137.6667)" fill="#737373">6</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 92.5556)" fill="#737373">8</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(91.3889 484)" fill="#737373">-8</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(152.1667 484)" fill="#737373">-6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(212.9444 484)" fill="#737373">-4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(273.7222 484)" fill="#737373">-2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(334.5 484)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(395.2778 484)" fill="#737373">2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(456.0556 484)" fill="#737373">4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(516.8333 484)" fill="#737373">6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(577.6111 484)" fill="#737373">8</text>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,430.604,167.9277)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="0" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,403.4763,154.4979)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,390.5744,196.7523)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="2" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,346.9411,142.0355)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="3" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,323.1479,164.8137)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="4" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,384.8848,164.4723)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="5" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,307.5855,161.1928)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="6" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,332.3059,165.551)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="7" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,298.8516,178.4513)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="8" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,313.4099,131.9279)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="9" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,293.4543,179.3005)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="10" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,303.6804,171.059)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="11" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,315.882,230.8978)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="12" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,280.9328,180.4127)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="13" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,230.0586,149.5704)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="14" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,225.3694,191.2513)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="15" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,234.5618,182.1204)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="16" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,223.0027,192.0193)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="17" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,209.6534,230.5344)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="18" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,254.6779,208.9854)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="19" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,228.8061,188.0759)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="20" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,256.2965,206.3417)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="21" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,195.4652,250.0424)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="22" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,168.3538,205.6011)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="23" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(3,0,0,3,233.9293,214.0013)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="0.26666666666666666" stroke-opacity="0.5" ecmeta_series_index="1" ecmeta_data_index="24" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(5.5,0,0,5.5,200.0628,220.4442)" fill="#0a0a0a" ecmeta_series_index="10" ecmeta_data_index="0" ecmeta_ssr_type="chart" class="zr0-cls-2"></path>
+<g clip-path="url(#zr0-c0)">
+<path d="M486.4 273L486.2 266.2L485.4 259.5L484 252.8L482.1 246.2L479.7 239.7L476.7 233.3L473.2 227L469.3 220.9L464.8 215L459.9 209.3L454.5 203.9L448.7 198.6L442.5 193.7L435.9 189L429 184.7L421.6 180.6L414 176.9L406.1 173.5L398 170.5L389.6 167.9L381 165.6L372.2 163.8L363.3 162.3L354.3 161.2L345.2 160.5L336.1 160.2L327 160.4L317.9 160.9L308.9 161.8L300 163.2L291.2 164.9L282.5 167L274 169.5L265.8 172.4L257.8 175.6L250.1 179.2L242.6 183.2L235.5 187.4L228.8 192L222.5 196.8L216.5 201.9L211 207.3L205.9 212.9L201.3 218.8L197.1 224.8L193.5 231L190.3 237.4L187.7 243.8L185.6 250.4L184.1 257.1L183.1 263.8L182.6 270.6L182.7 277.3L183.3 284.1L184.5 290.8L186.2 297.4L188.4 304L191.2 310.4L194.5 316.8L198.2 322.9L202.5 328.9L207.3 334.7L212.5 340.2L218.1 345.5L224.2 350.6L230.7 355.3L237.5 359.8L244.7 364L252.2 367.8L260 371.3L268.1 374.4L276.4 377.2L284.9 379.6L293.6 381.6L302.5 383.2L311.4 384.5L320.5 385.3L329.6 385.7L338.7 385.7L347.8 385.3L356.8 384.6L365.8 383.4L374.7 381.8L383.4 379.8L391.9 377.4L400.3 374.7L408.4 371.6L416.2 368.1L423.7 364.3L430.9 360.2L437.8 355.7L444.3 351L450.4 345.9L456.1 340.6L461.3 335.1L466.1 329.3L470.4 323.4L474.3 317.2L477.6 310.9L480.4 304.5L482.7 298L484.4 291.3L485.6 284.6L486.3 277.9L486.4 271.1L486 264.3L485 257.6L483.5 250.9L481.5 244.4L478.9 237.9L475.8 231.5L472.2 225.3L468.1 219.2L463.5 213.4L458.4 207.8L453 202.4L447 197.2L440.7 192.3L434 187.8L426.9 183.5L419.5 179.5L411.8 175.9L403.9 172.7L395.6 169.7L387.2 167.2L378.5 165.1L369.7 163.3L360.8 161.9L351.8 161L342.7 160.4L333.6 160.2L324.5 160.5L315.4 161.1L306.4 162.2L297.5 163.6L288.7 165.5L280.1 167.7L271.7 170.3L263.5 173.3L255.6 176.6L248 180.3L240.6 184.3L233.6 188.7L227 193.3L220.7 198.2L214.9 203.4L209.5 208.9L204.6 214.6L200.1 220.4" fill="none" pointer-events="visible" stroke="#737373" stroke-opacity="0.5" stroke-dasharray="1" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c1)">
+<path d="M519.4 250L501.3 243.1L493.7 243L492 247.3L485.7 245.5L481.5 237.6" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-opacity="0.195" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c2)">
+<path d="M481.5 237.6L471.3 225.9L472.1 215.6L448.8 211.3L435.4 188.4L424.8 167.8" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-opacity="0.31" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c3)">
+<path d="M424.8 167.8L398.8 158.1L408 155.8L388.8 156.1L390.4 165.3L396.4 162.5" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-opacity="0.42500000000000004" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c4)">
+<path d="M396.4 162.5L394.5 157L390 164.9L374.4 156.5L355.2 156.3L357.4 156.5" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-opacity="0.54" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c5)">
+<path d="M357.4 156.5L338.4 156L330.4 157.2L315.2 162L307.7 153.1L296.9 159.1" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-opacity="0.655" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c6)">
+<path d="M296.9 159.1L292 162.1L292.4 181.5L283.9 183.5L263.2 176L245.6 181.2" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-opacity="0.77" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c7)">
+<path d="M245.6 181.2L234.6 182.8L223.4 186.7L211.6 200.7L215.9 206L213.3 204" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-opacity="0.885" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<g clip-path="url(#zr0-c8)">
+<path d="M213.3 204L220.1 207L209.3 221.5L193.3 220.7L199.2 221.7" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="3" stroke-linejoin="bevel" class="zr0-cls-3"></path>
+</g>
+<path d="M-5 -5l590.6 0l0 42l-590.6 0Z" transform="translate(22.44 5)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#b7b9be" stroke-width="0" class="zr0-cls-0"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(22.44 9)" fill="#737373" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(22.44 9)" fill="#525252">circle</text>
+<path d="M0 -4l42.6 0l0 11l-42.6 0Z" transform="translate(22.44 9)" fill="none" pointer-events="visible" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(76.07 9)" fill="#ff7f0e" fill-opacity="0.5" stroke="#ffffff" stroke-width="2" stroke-opacity="0.5" stroke-linecap="butt" stroke-miterlimit="10" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(76.07 9)" fill="#525252">readings</text>
+<path d="M-1 -4l60.4 0l0 11l-60.3 0Z" transform="translate(76.07 9)" fill="none" pointer-events="visible" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(145.42 9)" fill="#1f77b4" ecmeta_series_index="2" ecmeta_data_index="2" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(145.42 9)" fill="#525252">estimate 0</text>
+<path d="M0 -4l67.9 0l0 11l-67.9 0Z" transform="translate(145.42 9)" fill="none" pointer-events="visible" ecmeta_series_index="2" ecmeta_data_index="2" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(223.35 9)" fill="#1f77b4" ecmeta_series_index="3" ecmeta_data_index="3" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(223.35 9)" fill="#525252">estimate 1</text>
+<path d="M0 -4l67.9 0l0 11l-67.9 0Z" transform="translate(223.35 9)" fill="none" pointer-events="visible" ecmeta_series_index="3" ecmeta_data_index="3" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(301.28 9)" fill="#1f77b4" ecmeta_series_index="4" ecmeta_data_index="4" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(301.28 9)" fill="#525252">estimate 2</text>
+<path d="M0 -4l67.9 0l0 11l-67.9 0Z" transform="translate(301.28 9)" fill="none" pointer-events="visible" ecmeta_series_index="4" ecmeta_data_index="4" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(379.21 9)" fill="#1f77b4" ecmeta_series_index="5" ecmeta_data_index="5" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(379.21 9)" fill="#525252">estimate 3</text>
+<path d="M0 -4l67.9 0l0 11l-67.9 0Z" transform="translate(379.21 9)" fill="none" pointer-events="visible" ecmeta_series_index="5" ecmeta_data_index="5" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(457.14 9)" fill="#1f77b4" ecmeta_series_index="6" ecmeta_data_index="6" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(457.14 9)" fill="#525252">estimate 4</text>
+<path d="M0 -4l67.9 0l0 11l-67.9 0Z" transform="translate(457.14 9)" fill="none" pointer-events="visible" ecmeta_series_index="6" ecmeta_data_index="6" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(535.07 9)" fill="#1f77b4" ecmeta_series_index="7" ecmeta_data_index="7" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(535.07 9)" fill="#525252">estimate 5</text>
+<path d="M0 -4l67.9 0l0 11l-67.9 0Z" transform="translate(535.07 9)" fill="none" pointer-events="visible" ecmeta_series_index="7" ecmeta_data_index="7" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(22.44 30)" fill="#1f77b4" ecmeta_series_index="8" ecmeta_data_index="8" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(22.44 30)" fill="#525252">estimate 6</text>
+<path d="M0 -4l67.9 0l0 11l-67.9 0Z" transform="translate(22.44 30)" fill="none" pointer-events="visible" ecmeta_series_index="8" ecmeta_data_index="8" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(100.37 30)" fill="#1f77b4" ecmeta_series_index="9" ecmeta_data_index="9" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(100.37 30)" fill="#525252">estimate</text>
+<path d="M0 -4l58.7 0l0 11l-58.7 0Z" transform="translate(100.37 30)" fill="none" pointer-events="visible" ecmeta_series_index="9" ecmeta_data_index="9" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(169.06 30)" fill="#0a0a0a" ecmeta_series_index="10" ecmeta_data_index="10" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(169.06 30)" fill="#525252">target</text>
+<path d="M0 -4l45.3 0l0 11l-45.3 0Z" transform="translate(169.06 30)" fill="none" pointer-events="visible" ecmeta_series_index="10" ecmeta_data_index="10" ecmeta_ssr_type="legend" class="zr0-cls-4"></path>
+<defs >
+<clipPath id="zr0-c0">
+<path d="M60 69.5l549 0l0 407l-549 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c1">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c2">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c3">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c4">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c5">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c6">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c7">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+<clipPath id="zr0-c8">
+<path d="M59 68.5l551 0l0 409l-551 0Z" fill="#000" class="zr0-cls-5"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr0-cls-0:hover {
+pointer-events:none;
+}
+.zr0-cls-1:hover {
+cursor:pointer;
+fill:rgba(255,139,15,1);
+}
+.zr0-cls-2:hover {
+cursor:pointer;
+fill:rgba(11,11,11,1);
+}
+.zr0-cls-5:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr0-cls-3:hover {
+cursor:pointer;
+}
+.zr0-cls-4:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></svg></svg>

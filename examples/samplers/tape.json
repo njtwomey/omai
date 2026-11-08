@@ -1,0 +1,1009 @@
+{
+  "schema": "omai.run/1",
+  "events": [
+    {
+      "type": "run",
+      "runId": "sampleChains:none",
+      "name": "sampleChains",
+      "seed": null,
+      "version": "0.1.4",
+      "config": {
+        "sampler": "windowAdaptation",
+        "numChains": 1,
+        "numDraws": 300,
+        "numWarmup": 300,
+        "thin": 1
+      }
+    },
+    {
+      "type": "run",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "name": "sampling/window-adaptation",
+      "seed": null,
+      "version": "0.1.4",
+      "config": {
+        "dim": 2,
+        "dense": false,
+        "numWarmup": 300,
+        "targetAcceptance": 0.8,
+        "regularisation": 0.001
+      },
+      "parent": "sampleChains:none",
+      "channels": {
+        "metrics": {
+          "stepSize": {
+            "description": "step size used in the transition"
+          },
+          "acceptanceRate": {
+            "description": "acceptance rate of the transition",
+            "direction": "higher"
+          },
+          "logDensity": {
+            "description": "log density at the current position"
+          },
+          "divergent": {
+            "description": "1 when the transition diverged",
+            "direction": "lower"
+          },
+          "treeDepth": {
+            "description": "NUTS tree depth"
+          }
+        },
+        "tensors": {},
+        "messages": {
+          "windowEnd": {
+            "description": "a slow window ended: new mass matrix and restarted dual averaging",
+            "payload": {
+              "stepSize": "number",
+              "inverseMassMatrix": "number[]"
+            }
+          }
+        },
+        "episodes": false,
+        "frames": false
+      }
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 0,
+      "name": "logDensity",
+      "value": -4.981489355077455
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 5,
+      "name": "logDensity",
+      "value": -5.48021559636395
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 10,
+      "name": "logDensity",
+      "value": -5.02171050589244
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 15,
+      "name": "logDensity",
+      "value": -4.6733367175089455
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 20,
+      "name": "logDensity",
+      "value": -2.950049652817067
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 25,
+      "name": "logDensity",
+      "value": -2.943229915214774
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 30,
+      "name": "logDensity",
+      "value": -2.9762721858164327
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 35,
+      "name": "logDensity",
+      "value": -3.940280759231781
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 40,
+      "name": "logDensity",
+      "value": -2.9868440838675636
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 45,
+      "name": "logDensity",
+      "value": -3.9530233279768057
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 50,
+      "name": "logDensity",
+      "value": -3.823701889348067
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 55,
+      "name": "logDensity",
+      "value": -3.0681507386822378
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 60,
+      "name": "logDensity",
+      "value": -4.327178579340875
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 65,
+      "name": "logDensity",
+      "value": -2.9706573142170853
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 70,
+      "name": "logDensity",
+      "value": -3.2783013114444857
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 75,
+      "name": "logDensity",
+      "value": -4.956238703689263
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 80,
+      "name": "logDensity",
+      "value": -3.2909999647308434
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 85,
+      "name": "logDensity",
+      "value": -4.6808284780315415
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 90,
+      "name": "logDensity",
+      "value": -4.471858289408059
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 95,
+      "name": "logDensity",
+      "value": -3.088106720676272
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 100,
+      "name": "logDensity",
+      "value": -3.3055977568689165
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 105,
+      "name": "logDensity",
+      "value": -3.560422673903303
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 110,
+      "name": "logDensity",
+      "value": -3.143756287441426
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 115,
+      "name": "logDensity",
+      "value": -3.6173431096711908
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 120,
+      "name": "logDensity",
+      "value": -2.993696663168715
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 125,
+      "name": "logDensity",
+      "value": -3.4268491049069603
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 130,
+      "name": "logDensity",
+      "value": -3.5220915375148785
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 135,
+      "name": "logDensity",
+      "value": -2.9729213251986524
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 140,
+      "name": "logDensity",
+      "value": -3.1738353345361188
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 145,
+      "name": "logDensity",
+      "value": -3.7417270790934127
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 150,
+      "name": "logDensity",
+      "value": -3.4124823452421533
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 155,
+      "name": "logDensity",
+      "value": -4.661571358916994
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 160,
+      "name": "logDensity",
+      "value": -4.411486087237817
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 165,
+      "name": "logDensity",
+      "value": -7.688153391015929
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 170,
+      "name": "logDensity",
+      "value": -3.2223592005610064
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 175,
+      "name": "logDensity",
+      "value": -3.6162962862861217
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 180,
+      "name": "logDensity",
+      "value": -3.370260734188943
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 185,
+      "name": "logDensity",
+      "value": -3.241258566414021
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 190,
+      "name": "logDensity",
+      "value": -3.478348923521502
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 195,
+      "name": "logDensity",
+      "value": -3.8411175666299435
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 200,
+      "name": "logDensity",
+      "value": -6.275841771800231
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 205,
+      "name": "logDensity",
+      "value": -4.278243240091743
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 210,
+      "name": "logDensity",
+      "value": -3.2011153910786243
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 215,
+      "name": "logDensity",
+      "value": -3.2071149097611213
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 220,
+      "name": "logDensity",
+      "value": -3.5183469490391293
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 225,
+      "name": "logDensity",
+      "value": -4.374153903212793
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 230,
+      "name": "logDensity",
+      "value": -3.1744992357790838
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 235,
+      "name": "logDensity",
+      "value": -2.98548201412544
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 240,
+      "name": "logDensity",
+      "value": -3.1739301421983805
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 245,
+      "name": "logDensity",
+      "value": -3.0675366384968457
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 250,
+      "name": "logDensity",
+      "value": -3.005150524604218
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 255,
+      "name": "logDensity",
+      "value": -3.564742552622094
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 260,
+      "name": "logDensity",
+      "value": -5.237576781077582
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 265,
+      "name": "logDensity",
+      "value": -3.0777005416433507
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 270,
+      "name": "logDensity",
+      "value": -4.085928515598616
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 275,
+      "name": "logDensity",
+      "value": -6.0580288944101515
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 280,
+      "name": "logDensity",
+      "value": -4.8549292067993495
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 285,
+      "name": "logDensity",
+      "value": -3.034083923902544
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 290,
+      "name": "logDensity",
+      "value": -3.0116030874430217
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 295,
+      "name": "logDensity",
+      "value": -3.477513793997689
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "step": 300,
+      "name": "logDensity",
+      "value": -2.948978103149451
+    },
+    {
+      "type": "end",
+      "runId": "sampleChains:none/sampling/window-adaptation#1",
+      "status": "completed",
+      "steps": 300,
+      "summary": {
+        "stepSize": 0.493229493127754,
+        "logDensity": -2.948978103149451,
+        "acceptanceRate": 1,
+        "divergent": 0
+      }
+    },
+    {
+      "type": "run",
+      "runId": "sampleChains:none/chain-0",
+      "name": "hmc",
+      "seed": null,
+      "version": "0.1.4",
+      "config": {
+        "dim": 2,
+        "stepSize": 0.28983420499580126,
+        "numIntegrationSteps": 12,
+        "divergenceThreshold": 1000
+      },
+      "parent": "sampleChains:none",
+      "channels": {
+        "metrics": {
+          "logDensity": {
+            "description": "log density at the current position"
+          },
+          "acceptanceRate": {
+            "description": "Metropolis acceptance probability of the transition",
+            "direction": "higher"
+          },
+          "accepted": {
+            "description": "1 when the proposal was accepted"
+          },
+          "divergent": {
+            "description": "1 when the trajectory diverged",
+            "direction": "lower"
+          },
+          "treeDepth": {
+            "description": "depth of the NUTS tree"
+          },
+          "numSteps": {
+            "description": "number of integrator steps in the transition"
+          },
+          "energy": {
+            "description": "Hamiltonian at the new state"
+          },
+          "stepSize": {
+            "description": "integrator or proposal step size"
+          }
+        },
+        "tensors": {
+          "position": {
+            "role": "state",
+            "description": "the current position",
+            "shape": [2]
+          }
+        },
+        "messages": {},
+        "episodes": false,
+        "frames": false
+      }
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 0,
+      "name": "logDensity",
+      "value": -2.948978103149451
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 5,
+      "name": "logDensity",
+      "value": -3.651584461422679
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 10,
+      "name": "logDensity",
+      "value": -4.923785090362305
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 15,
+      "name": "logDensity",
+      "value": -3.242508633938136
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 20,
+      "name": "logDensity",
+      "value": -4.369836820857739
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 25,
+      "name": "logDensity",
+      "value": -3.9596954911239464
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 30,
+      "name": "logDensity",
+      "value": -3.087400528228048
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 35,
+      "name": "logDensity",
+      "value": -3.4031503283085054
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 40,
+      "name": "logDensity",
+      "value": -4.187109701902957
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 45,
+      "name": "logDensity",
+      "value": -3.5227148587680053
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 50,
+      "name": "logDensity",
+      "value": -3.801374217509779
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 55,
+      "name": "logDensity",
+      "value": -5.339591516056314
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 60,
+      "name": "logDensity",
+      "value": -3.3618352741366873
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 65,
+      "name": "logDensity",
+      "value": -3.1440855110973756
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 70,
+      "name": "logDensity",
+      "value": -4.181509420150767
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 75,
+      "name": "logDensity",
+      "value": -3.7295591841029303
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 80,
+      "name": "logDensity",
+      "value": -3.236585996639092
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 85,
+      "name": "logDensity",
+      "value": -3.565243538060489
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 90,
+      "name": "logDensity",
+      "value": -3.1266013399958035
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 95,
+      "name": "logDensity",
+      "value": -4.238164533648501
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 100,
+      "name": "logDensity",
+      "value": -4.942102105499815
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 105,
+      "name": "logDensity",
+      "value": -4.796482391266029
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 110,
+      "name": "logDensity",
+      "value": -4.604776402034104
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 115,
+      "name": "logDensity",
+      "value": -4.836005058990306
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 120,
+      "name": "logDensity",
+      "value": -3.899302705491972
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 125,
+      "name": "logDensity",
+      "value": -4.968388113442506
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 130,
+      "name": "logDensity",
+      "value": -3.0282848098693065
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 135,
+      "name": "logDensity",
+      "value": -3.157525611051271
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 140,
+      "name": "logDensity",
+      "value": -4.70342131403015
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 145,
+      "name": "logDensity",
+      "value": -3.1914423737939734
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 150,
+      "name": "logDensity",
+      "value": -3.4228324579349736
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 155,
+      "name": "logDensity",
+      "value": -4.960122401131439
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 160,
+      "name": "logDensity",
+      "value": -4.682208571863669
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 165,
+      "name": "logDensity",
+      "value": -5.119597873543401
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 170,
+      "name": "logDensity",
+      "value": -4.92347592184667
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 175,
+      "name": "logDensity",
+      "value": -3.297284147501501
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 180,
+      "name": "logDensity",
+      "value": -3.4233175025718356
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 185,
+      "name": "logDensity",
+      "value": -4.271405948180117
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 190,
+      "name": "logDensity",
+      "value": -3.1183047684506775
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 195,
+      "name": "logDensity",
+      "value": -3.353601878832031
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 200,
+      "name": "logDensity",
+      "value": -4.026986193522872
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 205,
+      "name": "logDensity",
+      "value": -4.576359795348743
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 210,
+      "name": "logDensity",
+      "value": -3.936023524568334
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 215,
+      "name": "logDensity",
+      "value": -4.015270076574861
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 220,
+      "name": "logDensity",
+      "value": -3.5494205447312632
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 225,
+      "name": "logDensity",
+      "value": -3.000778636159895
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 230,
+      "name": "logDensity",
+      "value": -4.10760972610426
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 235,
+      "name": "logDensity",
+      "value": -3.559881532464282
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 240,
+      "name": "logDensity",
+      "value": -5.556469195264364
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 245,
+      "name": "logDensity",
+      "value": -3.702106968365969
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 250,
+      "name": "logDensity",
+      "value": -3.0917848557455407
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 255,
+      "name": "logDensity",
+      "value": -6.310384293497432
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 260,
+      "name": "logDensity",
+      "value": -3.4844390384261335
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 265,
+      "name": "logDensity",
+      "value": -4.724787094736016
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 270,
+      "name": "logDensity",
+      "value": -3.931151447985177
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 275,
+      "name": "logDensity",
+      "value": -3.7430469629550895
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 280,
+      "name": "logDensity",
+      "value": -3.352845753866131
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 285,
+      "name": "logDensity",
+      "value": -3.595074249926435
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 290,
+      "name": "logDensity",
+      "value": -3.2518314462734788
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 295,
+      "name": "logDensity",
+      "value": -3.0260488966334633
+    },
+    {
+      "type": "metric",
+      "runId": "sampleChains:none/chain-0",
+      "step": 300,
+      "name": "logDensity",
+      "value": -2.9590723803411847
+    },
+    {
+      "type": "end",
+      "runId": "sampleChains:none/chain-0",
+      "status": "completed",
+      "steps": 300,
+      "summary": {
+        "logDensity": -2.9590723803411847,
+        "acceptanceRate": 1,
+        "accepted": 1,
+        "divergent": 0,
+        "numSteps": 12,
+        "energy": 3.450853440476455,
+        "stepSize": 0.28983420499580126
+      }
+    },
+    {
+      "type": "end",
+      "runId": "sampleChains:none",
+      "status": "completed",
+      "steps": 1,
+      "summary": {}
+    }
+  ]
+}

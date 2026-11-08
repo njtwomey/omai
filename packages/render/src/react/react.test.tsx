@@ -36,7 +36,7 @@ describe('react bindings', () => {
     expect(html).toContain('height:150px')
   })
   it('default to dark, and follow an explicit mode', () => {
-    expect(renderToString(<ModeProbe />)).toBe('dark:#0d1117')
+    expect(renderToString(<ModeProbe />)).toBe('dark:#0a0a0a')
     expect(
       renderToString(
         <ThemeProvider mode="light">

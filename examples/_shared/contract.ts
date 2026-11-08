@@ -24,11 +24,33 @@ export interface Meta {
   readonly readme: boolean
   /** The alt text of its figure. */
   readonly alt: string
+  /**
+   * Set for the examples the site's front page plays in a carousel (the site imports the example and runs it in the
+   * browser): the tab's name, the playing rate and how long the slide shows.
+   */
+  readonly home?: {
+    readonly label: string
+    /** How long the slide shows before the next, in seconds: the time the run takes to play at `fps`, and a pause on the last frame. */
+    readonly seconds?: number
+    /** The frames a second the run plays at (default 10); the reader can change it with the player. */
+    readonly fps?: number
+  }
 }
 
 /** A run kept for replay: a session (written as a tape file with its method and probes) or the events of a recorder. */
 // biome-ignore lint/suspicious/noExplicitAny: sessions of any method
 export type Tape = Run | Session<any, any>
+
+/**
+ * A run that is stepped by whoever shows it, instead of being run to the end first: the site's front page calls `step` a
+ * few times a second and draws `result()` after each, so what is on screen is being computed as it is watched.
+ */
+export interface Live<R> {
+  /** Do one more step of the run; false once it is over. */
+  step(): boolean
+  /** What the run has produced so far, in the shape `run` returns, for `View` (drawn at its last frame). */
+  result(): R
+}
 
 /** What `run` returns: the result the figure is drawn from, and the tapes of the runs behind it. */
 export interface Outcome<R> {
@@ -48,5 +70,17 @@ export interface Outcome<R> {
 export interface ExampleModule<R = unknown> {
   readonly meta: Meta
   run(): Outcome<R> | Promise<Outcome<R>>
-  View(props: { readonly result: R }): ReactElement
+  /**
+   * The figure. Without `at` it is the finished figure (what the runner writes as `figure.svg`); with `at`, the figure
+   * as it was after that many frames of the run, so the site can play the recorded run (see `frames`). `mode` is the colour
+   * mode to draw in (default light, which is what the runner writes): the site passes its own, so the figures follow the page.
+   */
+  View(props: { readonly result: R; readonly at?: number; readonly mode?: 'light' | 'dark' }): ReactElement
+  /**
+   * Start the run live: the site steps it and draws it as it goes (and starts it again when it is over), where `run` computes
+   * everything first. The finished figure and tape still come from `run`.
+   */
+  live?(): Live<R>
+  /** How many frames the run can be played through (`at` runs from 0 to `frames(result)`), for an example that animates. */
+  frames?(result: R): number
 }

@@ -40,6 +40,9 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - `make docs-catalogue`: precompile the docs catalogue into `apps/site/.generated/docs/` (static files the docs pages
   fetch); `make dev` and `make site` run it first, and it skips itself when the output is newer than the sources. The
   dev server regenerates it in the background after engine edits.
+- `make thumbs`: make the gallery thumbnails in `apps/site/public/thumbs/` with headless Chrome (about 3 minutes for
+  all of them). It only makes the missing ones; `ARGS="--force"` redoes all, `ARGS="--only axes"` or
+  `ARGS="--only axes/twin-axes"` limits it. Run it with `--force` after a recipe's figure changes.
 - `make agent-index`: regenerate the agent index (`llms.txt` at the root, `packages/{engine,render}/llms.txt` and
   `index/`) from the `@index` tags; `make agent-index-check` (part of `make verify` and `make check`) fails on a stale file or an invalid
   tag. See "The agent index" below.

@@ -1,0 +1,314 @@
+[
+  {
+    "name": "bijectors",
+    "title": "Bijections between distributions",
+    "summary": "A Normal through exp is a log-normal; a coupling layer turns a Gaussian into a banana. The density stays exact.",
+    "alt": "A Normal, the map exp, the log-normal it gives, and a coupling layer turning a Gaussian into a banana",
+    "readme": true,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": []
+  },
+  {
+    "name": "decision-tree",
+    "title": "A decision tree and the regions it cuts",
+    "summary": "A classification tree on two iris measurements, drawn by the library as its splits and as the regions of the plane.",
+    "alt": "A decision tree on iris petal length and width, drawn as a tree of splits beside the regions of the plane it makes",
+    "readme": true,
+    "hasReadme": true,
+    "animation": false,
+    "home": {
+      "label": "Decision tree",
+      "fps": 3,
+      "seconds": 7
+    },
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "optimisers",
+    "title": "Optimisers, first and second order",
+    "summary": "Gradient descent, momentum and Adam against BFGS, L-BFGS and Newton on the Rosenbrock function: the paths and the loss from the recorded runs.",
+    "alt": "Six optimisers on the Rosenbrock function: their paths over the function and the loss against the step on a log axis",
+    "readme": true,
+    "hasReadme": true,
+    "animation": false,
+    "home": {
+      "label": "Optimisers",
+      "fps": 10,
+      "seconds": 17
+    },
+    "tapes": [
+      "tape-gradient-descent.json", "tape-momentum.json", "tape-adam.json", "tape-bfgs.json",
+      "tape-lbfgs.json", "tape-newton.json"
+    ]
+  },
+  {
+    "name": "session",
+    "title": "Pause, jump back, compare with the truth",
+    "summary": "A support vector classifier as a session: its decision surface at step 3 and at the end, and the best possible accuracy.",
+    "alt": "The decision surface of a support vector classifier at step 3 and at the end",
+    "readme": true,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "svm",
+    "title": "Support vectors and the margin",
+    "summary": "A kernel support vector classifier with a small and a large C: the score, the boundary, the margins and the support vectors.",
+    "alt": "Two support vector classifiers on the two-moons data: the score as a heat map with the boundary and margins as contours, and the support vectors ringed",
+    "readme": true,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape-small-c.json","tape-large-c.json"]
+  },
+  {
+    "name": "bandit",
+    "title": "Which arm to pull",
+    "summary": "Epsilon-greedy, UCB1 and Thompson sampling on a five-armed bandit: the regret curves and how often each arm was pulled.",
+    "alt": "Cumulative regret of three bandit strategies over 400 pulls, and the number of pulls of each of the five arms",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape-epsilon-greedy.json","tape-ucb1.json","tape-thompson.json"]
+  },
+  {
+    "name": "changepoints",
+    "title": "Finding the moment a stream changes",
+    "summary": "Bayesian online changepoint detection read back from its tape: the stream, its prediction, and the belief about how long the current stretch has lasted.",
+    "alt": "A stream whose mean shifts twice with the changes a detector found, its prediction, and the run-length belief over time and at one step",
+    "readme": false,
+    "hasReadme": false,
+    "animation": false,
+    "home": {
+      "label": "Change points",
+      "fps": 10,
+      "seconds": 12
+    },
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "clustering",
+    "title": "A Gaussian mixture, step by step",
+    "summary": "Expectation-maximisation for three overlapping Gaussians: the density, the log likelihood and the soft assignments.",
+    "alt": "A Gaussian mixture fitted by EM: the density it gives the plane with the rows coloured by component, and the log likelihood over the steps",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": {
+      "label": "Mixture",
+      "seconds": 9
+    },
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "embedding",
+    "title": "Handwritten digits in two dimensions",
+    "summary": "600 handwritten digits, each 64 numbers, placed on a plane by PCA, t-SNE and UMAP and coloured by the digit.",
+    "alt": "The same 600 handwritten digits placed on a plane by PCA, t-SNE and UMAP, each point coloured by its digit",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "fourier",
+    "title": "A drawing from rotating circles",
+    "summary": "A closed curve as the sum of turning circles: its Fourier coefficients, chained tip to tip, draw it again.",
+    "alt": "A chain of rotating circles whose tip traces a heart-shaped curve",
+    "readme": false,
+    "hasReadme": false,
+    "animation": false,
+    "home": {
+      "label": "Fourier",
+      "fps": 20,
+      "seconds": 11
+    },
+    "tapes": []
+  },
+  {
+    "name": "gam-neural",
+    "title": "A neural additive model, from its spline bases",
+    "summary": "A learnable spline with no smoothness penalty: the weighted basis functions and their sum come up to the points as it trains (learning.gif).",
+    "alt": "A spline fitted with no smoothness penalty: its weighted basis functions and their sum against the data, the truth and the classic GAM, and the training loss",
+    "readme": false,
+    "hasReadme": true,
+    "animation": true,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "gp",
+    "title": "A Gaussian process, tuned by a gradient",
+    "summary": "grad of the marginal likelihood written as a plain function, and a Gaussian process fitted on that gradient.",
+    "alt": "A Gaussian process on noisy sine data, before and after its hyperparameters are learned, each with its uncertainty band",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "kalman",
+    "title": "Tracking a moving target",
+    "summary": "A Kalman filter following a target round a circle through noisy position readings, one reading at a time.",
+    "alt": "A target going round a circle, its noisy readings and the estimate of a Kalman filter following it",
+    "readme": false,
+    "hasReadme": false,
+    "animation": false,
+    "home": {
+      "label": "Tracking",
+      "fps": 10,
+      "seconds": 16
+    },
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "logistic",
+    "title": "Bayesian logistic regression, approximated four ways",
+    "summary": "The weight posterior by NUTS, Laplace and two variational fits, and the predicted probability beside the true boundary.",
+    "alt": "The weight posterior of a Bayesian logistic regression by NUTS, Laplace and two variational fits, and the predicted probability with the true boundary",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "lorenz",
+    "title": "Chaos: nearby paths part",
+    "summary": "The Lorenz equations from seven starting points one part in a thousand apart: the paths separate and follow different turns of the butterfly.",
+    "alt": "Seven paths of the Lorenz system started a hair apart, seen from the front, with fading tails",
+    "readme": false,
+    "hasReadme": false,
+    "animation": false,
+    "home": {
+      "label": "Chaos",
+      "fps": 20,
+      "seconds": 28
+    },
+    "tapes": []
+  },
+  {
+    "name": "neural-network",
+    "title": "A small neural network, trained and watched",
+    "summary": "A multilayer perceptron on the two moons: the loss at every step, and the decision surface at the start, the middle and the end.",
+    "alt": "The training loss of a small network on two moons, and its decision surface at the start, the middle and the end of training",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": {
+      "label": "Neural network",
+      "seconds": 18
+    },
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "newton",
+    "title": "Second order: grad of grad, Hessians and Newton",
+    "summary": "grad(grad(f)), hessian and hvp; Newton reaches the minimum in 12 steps where gradient descent needs 2662.",
+    "alt": "Newton's path against gradient descent on the Rosenbrock function, with the curvature at two points",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape-newton.json","tape-gradient-descent.json"]
+  },
+  {
+    "name": "ode",
+    "title": "Predators and prey, from an equation",
+    "summary": "The Lotka-Volterra differential equations solved with an adaptive ODE solver: the two populations, the loop they trace, and the step sizes the solver chose.",
+    "alt": "Prey and predator populations over time, the closed loop they trace in the prey and predator plane, and the solver step size against time",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "pca",
+    "title": "Principal components of the iris data",
+    "summary": "PCA found one component per step: the flowers in the first two components, the variance each explains, the loadings.",
+    "alt": "PCA of the iris data: the rows in the plane of the first two components coloured by species, the variance explained and the loadings",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "prolog",
+    "title": "A logic program and its proof search",
+    "summary": "A small Prolog family database; the query is answered by SLD resolution and the search tree is drawn from the run.",
+    "alt": "The search tree of the query grandparent(tom, W): the answers, and the branches that fail and backtrack",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "qlearning",
+    "title": "An agent learning",
+    "summary": "Q-learning on the cliff-walking gridworld: the return of each episode, drawn from the recorded run.",
+    "alt": "Episode returns while Q-learning learns to walk along the cliff",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "roc",
+    "title": "The metrics of a classifier",
+    "summary": "The ROC curve, the precision-recall curve, the precision-recall gain curve and the contingency table of a support vector classifier on held-out data.",
+    "alt": "The ROC, precision-recall and precision-recall gain curves of a classifier, and its contingency table with totals and rates",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "sampler",
+    "title": "A sampler on a banana",
+    "summary": "NUTS on a twisted Gaussian: the draws over the true density, the trace of one coordinate, R-hat and effective sample size.",
+    "alt": "Draws of four NUTS chains over the contours of the banana density, and the trace of the first coordinate",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "samplers",
+    "title": "A random walk against Hamiltonian Monte Carlo",
+    "summary": "Two samplers on a twisted density: a random walk takes blind steps, Hamiltonian Monte Carlo follows the slope.",
+    "alt": "The draws of a random-walk sampler and of Hamiltonian Monte Carlo over the contours of a banana-shaped density",
+    "readme": false,
+    "hasReadme": false,
+    "animation": false,
+    "home": {
+      "label": "Sampling",
+      "fps": 10,
+      "seconds": 20
+    },
+    "tapes": ["tape.json"]
+  },
+  {
+    "name": "sat",
+    "title": "Two SAT solvers on a hard puzzle",
+    "summary": "Six pigeons cannot each have their own hole in five holes. Two SAT solvers, DPLL and CDCL, both prove it, and their traces differ.",
+    "alt": "Conflicts and decision level against steps for the DPLL and CDCL solvers on the pigeonhole formula with six pigeons and five holes",
+    "readme": false,
+    "hasReadme": true,
+    "animation": false,
+    "home": null,
+    "tapes": ["tape-dpll.json","tape-cdcl.json"]
+  }
+]

@@ -41,21 +41,21 @@ export const palettes: {
   readonly dark: Readonly<Record<ThemeToken, string>>
 } = {
   light: {
-    fg: '#1f2328',
+    fg: '#0a0a0a',
     bg: '#ffffff',
-    surface: '#f6f8fa',
-    muted: '#6e7781',
-    grid: '#d0d7de',
-    accent: '#0969da',
+    surface: '#f5f5f5',
+    muted: '#737373',
+    grid: '#e5e5e5',
+    accent: '#171717',
     ...TAB10,
   },
   dark: {
-    fg: '#e6edf3',
-    bg: '#0d1117',
-    surface: '#161b22',
-    muted: '#8b949e',
-    grid: '#30363d',
-    accent: '#2f81f7',
+    fg: '#fafafa',
+    bg: '#0a0a0a',
+    surface: '#171717',
+    muted: '#a3a3a3',
+    grid: '#262626',
+    accent: '#e5e5e5',
     ...TAB10,
   },
 }

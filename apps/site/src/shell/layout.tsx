@@ -96,7 +96,7 @@ export function Card(props: {
       className="group flex flex-col overflow-hidden rounded-lg border border-line bg-bg transition-colors hover:border-muted"
     >
       {preview === undefined ? null : (
-        <div className="flex aspect-[16/10] items-center justify-center overflow-hidden border-b border-line bg-surface">
+        <div className="flex aspect-[16/10] items-center justify-center overflow-hidden border-b border-line bg-bg">
           {preview}
         </div>
       )}

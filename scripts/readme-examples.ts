@@ -133,6 +133,23 @@ function tapeFilesOf(name: string): string[] {
 }
 
 made.set('README.md', `${indexOf()}\n`)
+// The same list for the site's front page: `examples/index.json`, in the order of the index (README ones first).
+made.set(
+  'index.json',
+  `${prettyJson(
+    [...entries.filter((e) => e.module.meta.readme), ...entries.filter((e) => !e.module.meta.readme)].map((e) => ({
+      name: e.name,
+      title: e.module.meta.title,
+      summary: e.module.meta.summary,
+      alt: e.module.meta.alt,
+      readme: e.module.meta.readme,
+      hasReadme: existsSync(join(EXAMPLES, e.name, 'README.md')),
+      animation: existsSync(join(EXAMPLES, e.name, 'learning.gif')),
+      home: e.module.meta.home ?? null,
+      tapes: tapeFilesOf(e.name),
+    })),
+  )}\n`,
+)
 
 function write(root: string): void {
   for (const [path, text] of made) {

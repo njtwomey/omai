@@ -47,10 +47,10 @@ export type DivergingName = 'rdbu' | 'coolwarm'
 
 const VIRIDIS = ['#440154', '#472d7b', '#3b528b', '#2c728e', '#21918c', '#28ae80', '#5ec962', '#addc30', '#fde725']
 const MAGMA = ['#000004', '#1c1044', '#4f127b', '#812581', '#b5367a', '#e55064', '#fb8761', '#fec287', '#fcfdbf']
-const BLUES_LIGHT = ['#f6f8fa', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b']
-const BLUES_DARK = ['#161b22', '#182232', '#172d4d', '#163a6d', '#174a94', '#1c5bbb', '#2a6fde', '#3f87f5', '#62a2ff']
-const GREYS_LIGHT = ['#f6f8fa', '#d9d9d9', '#bdbdbd', '#969696', '#737373', '#525252', '#252525']
-const GREYS_DARK = ['#161b22', '#30363d', '#484f58', '#6e7681', '#8b949e', '#c9d1d9', '#f0f6fc']
+const BLUES_LIGHT = ['#f5f5f5', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b']
+const BLUES_DARK = ['#171717', '#182232', '#172d4d', '#163a6d', '#174a94', '#1c5bbb', '#2a6fde', '#3f87f5', '#62a2ff']
+const GREYS_LIGHT = ['#f5f5f5', '#d9d9d9', '#bdbdbd', '#969696', '#737373', '#525252', '#252525']
+const GREYS_DARK = ['#171717', '#262626', '#404040', '#737373', '#a3a3a3', '#d4d4d4', '#fafafa']
 const RDBU = ['#2166ac', '#4393c3', '#92c5de', '#d1e5f0', '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b']
 const COOLWARM = ['#3b4cc0', '#7b9ff9', '#c0d4f5', '#f2cbb7', '#ee8468', '#b40426']
 
@@ -67,7 +67,7 @@ const COOLWARM = ['#3b4cc0', '#7b9ff9', '#c0d4f5', '#f2cbb7', '#ee8468', '#b4042
  * ```ts
  * import { sequentialRamp } from 'omai-render/theme'
  * sequentialRamp('viridis')[0] // => '#440154'
- * sequentialRamp('blues', 'dark')[0] // => '#161b22'
+ * sequentialRamp('blues', 'dark')[0] // => '#171717'
  * ```
  */
 export function sequentialRamp(name: SequentialName = 'viridis', mode: ColourMode = 'light'): readonly string[] {

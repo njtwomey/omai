@@ -32,7 +32,7 @@ export function themeName(mode: ColourMode): string {
  * @example
  * ```ts
  * import { axisStyle } from 'omai-render/theme'
- * axisStyle('light').splitLine.lineStyle.color // => '#d0d7de'
+ * axisStyle('light').splitLine.lineStyle.color // => '#e5e5e5'
  * ```
  */
 export function axisStyle(

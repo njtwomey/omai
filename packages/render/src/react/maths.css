@@ -1,6 +1,6 @@
 /* Live values in equations (\htmlClass{wb-slot}), highlighted as controls move them. */
 .wb-slot {
-  color: var(--wb-accent, #2f81f7);
+  color: var(--wb-accent, #171717);
 }
 
 .wb-slot-strong {

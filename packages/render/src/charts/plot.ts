@@ -422,7 +422,7 @@ function endLabel(max: number, label: string | undefined): string {
  * ```ts
  * import { chartFrame } from 'omai-render/charts'
  * import { figure } from 'omai-render/figure'
- * chartFrame(figure(), { title: 'Loss' }).title // => { text: 'Loss', left: 8, top: 4, textStyle: { fontSize: 13, fontWeight: 600, color: '#1f2328' } }
+ * chartFrame(figure(), { title: 'Loss' }).title // => { text: 'Loss', left: 8, top: 4, textStyle: { fontSize: 13, fontWeight: 600, color: '#0a0a0a' } }
  * ```
  */
 export function chartFrame(

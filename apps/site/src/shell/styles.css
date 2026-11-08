@@ -13,21 +13,21 @@
  */
 :root {
   --wb-bg: #ffffff;
-  --wb-fg: #1f2328;
+  --wb-fg: #0a0a0a;
   --site-code-keyword: #8250df;
   --site-code-string: #0a3069;
   --site-code-number: #953800;
-  --site-code-comment: #6e7781;
+  --site-code-comment: #737373;
   --site-code-type: #0550ae;
 }
 
 .dark {
-  --wb-bg: #0d1117;
-  --wb-fg: #e6edf3;
+  --wb-bg: #0a0a0a;
+  --wb-fg: #fafafa;
   --site-code-keyword: #d2a8ff;
   --site-code-string: #a5d6ff;
   --site-code-number: #ffa657;
-  --site-code-comment: #8b949e;
+  --site-code-comment: #a3a3a3;
   --site-code-type: #79c0ff;
 }
 
@@ -72,4 +72,27 @@ body {
 }
 .site-code .tok-type {
   color: var(--site-code-type);
+}
+
+/* The landing page carousel's progress bar under the active tab. */
+@keyframes carousel-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/*
+ * A lighter, dotted ground for the figures on the front page. The example figures draw their own background; here it is
+ * made see-through (the page's rectangles first in each SVG) so the dots show.
+ */
+.dotted {
+  background-color: var(--wb-surface);
+  background-image: radial-gradient(color-mix(in oklab, var(--wb-fg) 16%, transparent) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+.dotted svg > rect:first-of-type {
+  fill: transparent;
 }

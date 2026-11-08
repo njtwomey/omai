@@ -13,6 +13,11 @@ export const INK: string = light.fg
 export const MUTED: string = light.muted
 export const GRID: string = light.grid
 
+/** The ink and the page colour of a colour mode (the module's constants are the light ones). */
+export type Mode = 'light' | 'dark'
+export const inkOf = (mode: Mode): string => tokens(mode).fg
+export const paperOf = (mode: Mode): string => tokens(mode).bg
+
 /** The colour of a categorical slot (`tab0` to `tab9`). */
 export const tab = (index: number): string => light[`tab${((index % 10) + 10) % 10}` as 'tab0']
 

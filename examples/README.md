@@ -58,6 +58,14 @@ Epsilon-greedy, UCB1 and Thompson sampling on a five-armed bandit: the regret cu
 
 [bandit/main.tsx](bandit/main.tsx), [bandit/README.md](bandit/README.md), tape: [tape-epsilon-greedy.json](bandit/tape-epsilon-greedy.json), tape: [tape-ucb1.json](bandit/tape-ucb1.json), tape: [tape-thompson.json](bandit/tape-thompson.json)
 
+## Finding the moment a stream changes
+
+Bayesian online changepoint detection read back from its tape: the stream, its prediction, and the belief about how long the current stretch has lasted.
+
+![A stream whose mean shifts twice with the changes a detector found, its prediction, and the run-length belief over time and at one step](changepoints/figure.svg)
+
+[changepoints/main.tsx](changepoints/main.tsx), tape: [tape.json](changepoints/tape.json)
+
 ## A Gaussian mixture, step by step
 
 Expectation-maximisation for three overlapping Gaussians: the density, the log likelihood and the soft assignments.
@@ -73,6 +81,14 @@ Expectation-maximisation for three overlapping Gaussians: the density, the log l
 ![The same 600 handwritten digits placed on a plane by PCA, t-SNE and UMAP, each point coloured by its digit](embedding/figure.svg)
 
 [embedding/main.tsx](embedding/main.tsx), [embedding/README.md](embedding/README.md), tape: [tape.json](embedding/tape.json)
+
+## A drawing from rotating circles
+
+A closed curve as the sum of turning circles: its Fourier coefficients, chained tip to tip, draw it again.
+
+![A chain of rotating circles whose tip traces a heart-shaped curve](fourier/figure.svg)
+
+[fourier/main.tsx](fourier/main.tsx)
 
 ## A neural additive model, from its spline bases
 
@@ -90,6 +106,14 @@ grad of the marginal likelihood written as a plain function, and a Gaussian proc
 
 [gp/main.tsx](gp/main.tsx), [gp/README.md](gp/README.md), tape: [tape.json](gp/tape.json)
 
+## Tracking a moving target
+
+A Kalman filter following a target round a circle through noisy position readings, one reading at a time.
+
+![A target going round a circle, its noisy readings and the estimate of a Kalman filter following it](kalman/figure.svg)
+
+[kalman/main.tsx](kalman/main.tsx), tape: [tape.json](kalman/tape.json)
+
 ## Bayesian logistic regression, approximated four ways
 
 The weight posterior by NUTS, Laplace and two variational fits, and the predicted probability beside the true boundary.
@@ -97,6 +121,14 @@ The weight posterior by NUTS, Laplace and two variational fits, and the predicte
 ![The weight posterior of a Bayesian logistic regression by NUTS, Laplace and two variational fits, and the predicted probability with the true boundary](logistic/figure.svg)
 
 [logistic/main.tsx](logistic/main.tsx), [logistic/README.md](logistic/README.md), tape: [tape.json](logistic/tape.json)
+
+## Chaos: nearby paths part
+
+The Lorenz equations from seven starting points one part in a thousand apart: the paths separate and follow different turns of the butterfly.
+
+![Seven paths of the Lorenz system started a hair apart, seen from the front, with fading tails](lorenz/figure.svg)
+
+[lorenz/main.tsx](lorenz/main.tsx)
 
 ## A small neural network, trained and watched
 
@@ -161,6 +193,14 @@ NUTS on a twisted Gaussian: the draws over the true density, the trace of one co
 ![Draws of four NUTS chains over the contours of the banana density, and the trace of the first coordinate](sampler/figure.svg)
 
 [sampler/main.tsx](sampler/main.tsx), [sampler/README.md](sampler/README.md), tape: [tape.json](sampler/tape.json)
+
+## A random walk against Hamiltonian Monte Carlo
+
+Two samplers on a twisted density: a random walk takes blind steps, Hamiltonian Monte Carlo follows the slope.
+
+![The draws of a random-walk sampler and of Hamiltonian Monte Carlo over the contours of a banana-shaped density](samplers/figure.svg)
+
+[samplers/main.tsx](samplers/main.tsx), tape: [tape.json](samplers/tape.json)
 
 ## Two SAT solvers on a hard puzzle
 

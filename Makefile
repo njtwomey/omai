@@ -130,6 +130,10 @@ docs-catalogue: ## Precompile the docs catalogue into apps/site/.generated/docs 
 dev: docs-catalogue ## Serve the site (gallery and docs) at http://localhost:5300 with hot reload
 	$(PNPM) --dir apps/site exec vite
 
+.PHONY: thumbs
+thumbs: docs-catalogue ## Make the missing gallery thumbnails in apps/site/public/thumbs (ARGS="--force" for all, "--only axes" for a section; needs Chrome)
+	$(NODE) scripts/thumbs.ts $(ARGS)
+
 .PHONY: site
 site: docs-catalogue ## Build the site into apps/site/dist
 	$(PNPM) --dir apps/site exec vite build

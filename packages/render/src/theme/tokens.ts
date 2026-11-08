@@ -34,8 +34,8 @@ const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
 const LIGHT: Tokens = {
   ...palettes.light,
   mode: 'light',
-  fgSecondary: '#424a53',
-  axis: '#afb8c1',
+  fgSecondary: '#525252',
+  axis: '#d4d4d4',
   tooltip: '#ffffff',
   success: '#1a7f37',
   warning: '#9a6700',
@@ -48,9 +48,9 @@ const LIGHT: Tokens = {
 const DARK: Tokens = {
   ...palettes.dark,
   mode: 'dark',
-  fgSecondary: '#c9d1d9',
-  axis: '#484f58',
-  tooltip: '#1c2128',
+  fgSecondary: '#d4d4d4',
+  axis: '#404040',
+  tooltip: '#171717',
   success: '#3fb950',
   warning: '#d29922',
   danger: '#f85149',
@@ -69,7 +69,7 @@ const DARK: Tokens = {
  * ```ts
  * import { tokens } from 'omai-render/theme'
  * tokens('light').tab0 // => '#1f77b4'
- * tokens('dark').bg // => '#0d1117'
+ * tokens('dark').bg // => '#0a0a0a'
  * ```
  */
 export function tokens(mode: ColourMode = 'light'): Tokens {
@@ -118,7 +118,7 @@ function kebab(name: string): string {
  * @example
  * ```ts
  * import { cssVariables } from 'omai-render/theme'
- * cssVariables('light')['--wb-accent'] // => '#0969da'
+ * cssVariables('light')['--wb-accent'] // => '#171717'
  * ```
  */
 export function cssVariables(mode: ColourMode = 'light', prefix = 'wb'): Record<string, string> {
@@ -129,7 +129,7 @@ export function cssVariables(mode: ColourMode = 'light', prefix = 'wb'): Record<
 }
 
 /**
- * The tokens of a theme as a CSS rule body (`--wb-fg: #1f2328; ...`), for a `<style>` block.
+ * The tokens of a theme as a CSS rule body (`--wb-fg: #0a0a0a; ...`), for a `<style>` block.
  *
  * @param mode - The colour mode.
  * @param selector - The rule's selector (default `:root`).

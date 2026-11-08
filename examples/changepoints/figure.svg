@@ -1,0 +1,269 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="660" viewBox="0 0 900 660"><title>A stream whose mean shifts twice with the changes a detector found, its prediction, and the run-length belief over time and at one step</title><rect width="100%" height="100%" fill="#ffffff"></rect><text x="320" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#0a0a0a">the stream, the true changes and the ones found</text><svg x="0" y="26" width="640" height="280" overflow="visible"><svg width="640" height="280" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 640 280">
+<rect width="640" height="280" x="0" y="0" fill="#ffffff"></rect>
+<path d="M61 236.5L628 236.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 226.5L628 226.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 182.5L628 182.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 137.5L628 137.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 93.5L628 93.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 48.5L628 48.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61 12.5L628 12.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M61.5 12L61.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M137.5 12L137.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M213.5 12L213.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M289.5 12L289.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M365.5 12L365.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M441.5 12L441.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M517.5 12L517.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M594.5 12L594.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<path d="M628.5 12L628.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="-5.5" transform="matrix(0,-1,1,0,19,124)" fill="#525252">value</text>
+<path d="M61.5 236L61.5 12" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(344.5 264)" fill="#525252">reading</text>
+<path d="M61 236.5L628 236.5" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 226.5474)" fill="#737373">-4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 182.0436)" fill="#737373">-2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 137.5397)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 93.0358)" fill="#737373">2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 48.532)" fill="#737373">4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(61 244)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(137.1074 244)" fill="#737373">20</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(213.2148 244)" fill="#737373">40</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(289.3221 244)" fill="#737373">60</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(365.4295 244)" fill="#737373">80</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(441.5369 244)" fill="#737373">100</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(517.6443 244)" fill="#737373">120</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(593.7517 244)" fill="#737373">140</text>
+<g clip-path="url(#zr0-c0)">
+<path d="M61 99.8L64.8 141.4L68.6 155.9L72.4 146.8L76.2 149.6L80 81.5L83.8 104.7L87.6 132.9L91.4 155.1L95.2 108.7L99.1 111.2L102.9 132.4L106.7 162.1L110.5 69.6L114.3 107.2L118.1 146.8L121.9 122.9L125.7 141.5L129.5 119.7L133.3 127.1L137.1 137.6L140.9 145.7L144.7 133.1L148.5 135.7L152.3 135.6L156.1 161L159.9 137.2L163.7 96L167.6 136.6L171.4 162.4L175.2 155.9L179 141.5L182.8 113.8L186.6 181.2L190.4 159.7L194.2 131.9L198 108.6L201.8 166.8L205.6 151.1L209.4 138.9L213.2 82.9L217 139.1L220.8 177.4L224.6 97.2L228.4 111.7L232.2 182.8L236 144.7L239.9 153L243.7 135.9L247.5 154.2L251.3 89.8L255.1 85.8L258.9 112.1L262.7 43.8L266.5 76.6L270.3 71L274.1 111.7L277.9 81.7L281.7 72.3L285.5 64.2L289.3 78.3L293.1 75.7L296.9 87.8L300.7 83.4L304.5 85.4L308.3 57.4L312.2 79.6L316 70L319.8 58.6L323.6 69.5L327.4 23.1L331.2 48.6L335 61.2L338.8 78L342.6 38.2L346.4 57.2L350.2 80.6L354 41.7L357.8 74.8L361.6 47.3L365.4 99.9L369.2 41.9L373 47.7L376.8 53.8L380.7 103.3L384.5 53.5L388.3 84.2L392.1 33.6L395.9 63.1L399.7 93L403.5 68.6L407.3 64.1L411.1 71.5L414.9 84.8L418.7 35.7L422.5 155.4L426.3 140L430.1 197.5L433.9 154.5L437.7 183.6L441.5 174.2L445.3 189.1L449.1 145.4L453 217.8L456.8 119.4L460.6 189.1L464.4 221.4L468.2 172.2L472 171.4L475.8 144.3L479.6 191.9L483.4 138.6L487.2 166.4L491 164L494.8 147L498.6 148.2L502.4 181.1L506.2 160.3L510 164.1L513.8 170.6L517.6 190.6L521.4 190L525.3 155.9L529.1 156.4L532.9 177.4L536.7 124.4L540.5 180.6L544.3 190L548.1 156.1L551.9 179.6L555.7 146.5L559.5 181.1L563.3 169.3L567.1 115.6L570.9 164.5L574.7 167.2L578.5 187L582.3 175.3L586.1 179.4L589.9 174.2L593.8 163.9L597.6 175.7L601.4 178.1L605.2 168.4L609 224.9L612.8 183.4L616.6 139.9L620.4 178.5L624.2 174.3L628 182.2" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="1.8" stroke-linejoin="bevel" class="zr0-cls-1"></path>
+</g>
+<g clip-path="url(#zr0-c1)">
+<path d="M251.3 236L251.3 12" fill="none" pointer-events="visible" stroke="#737373" stroke-width="1.4" stroke-dasharray="5.6,2.8" stroke-linejoin="bevel" class="zr0-cls-1"></path>
+</g>
+<g clip-path="url(#zr0-c2)">
+<path d="M422.5 236L422.5 12" fill="none" pointer-events="visible" stroke="#737373" stroke-width="1.4" stroke-dasharray="5.6,2.8" stroke-linejoin="bevel" class="zr0-cls-1"></path>
+</g>
+<g clip-path="url(#zr0-c3)">
+<path d="M251.3 236L251.3 12" fill="none" pointer-events="visible" stroke="#ff7f0e" stroke-width="1.4" stroke-linejoin="bevel" class="zr0-cls-1"></path>
+</g>
+<g clip-path="url(#zr0-c4)">
+<path d="M422.5 236L422.5 12" fill="none" pointer-events="visible" stroke="#ff7f0e" stroke-width="1.4" stroke-linejoin="bevel" class="zr0-cls-1"></path>
+</g>
+<path d="M-5 -5l254.9 0l0 21l-254.9 0Z" transform="translate(378.09 5)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#b7b9be" stroke-width="0" class="zr0-cls-0"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(378.09 9)" fill="#1f77b4" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(378.09 9)" fill="#525252">stream</text>
+<path d="M0 -4l50.7 0l0 11l-50.7 0Z" transform="translate(378.09 9)" fill="none" pointer-events="visible" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr0-cls-2"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(438.75 9)" fill="#737373" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(438.75 9)" fill="#525252">true change</text>
+<path d="M0 -4l75.4 0l0 11l-75.4 0Z" transform="translate(438.75 9)" fill="none" pointer-events="visible" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" class="zr0-cls-2"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(524.16 9)" fill="#ff7f0e" ecmeta_series_index="3" ecmeta_data_index="2" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(524.16 9)" fill="#525252">detected change</text>
+<path d="M0 -4l98.8 0l0 11l-98.8 0Z" transform="translate(524.16 9)" fill="none" pointer-events="visible" ecmeta_series_index="3" ecmeta_data_index="2" ecmeta_ssr_type="legend" class="zr0-cls-2"></path>
+<defs >
+<clipPath id="zr0-c0">
+<path d="M60 11.1l570 0l0 225.8l-570 0Z" fill="#000" class="zr0-cls-3"></path>
+</clipPath>
+<clipPath id="zr0-c1">
+<path d="M60 11.3l570 0l0 225.4l-570 0Z" fill="#000" class="zr0-cls-3"></path>
+</clipPath>
+<clipPath id="zr0-c2">
+<path d="M60 11.3l570 0l0 225.4l-570 0Z" fill="#000" class="zr0-cls-3"></path>
+</clipPath>
+<clipPath id="zr0-c3">
+<path d="M60 11.3l570 0l0 225.4l-570 0Z" fill="#000" class="zr0-cls-3"></path>
+</clipPath>
+<clipPath id="zr0-c4">
+<path d="M60 11.3l570 0l0 225.4l-570 0Z" fill="#000" class="zr0-cls-3"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr0-cls-0:hover {
+pointer-events:none;
+}
+.zr0-cls-3:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr0-cls-1:hover {
+cursor:pointer;
+}
+.zr0-cls-2:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></svg><text x="770" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#0a0a0a">what it expects next</text><svg x="640" y="26" width="260" height="280" overflow="visible"><svg width="260" height="280" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 260 280">
+<rect width="260" height="280" x="0" y="0" fill="#ffffff"></rect>
+<path d="M20 236.5L248 236.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M20 226.5L248 226.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M20 182.5L248 182.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M20 137.5L248 137.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M20 93.5L248 93.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M20 48.5L248 48.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M20 12.5L248 12.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M20.5 12L20.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M75.5 12L75.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M131.5 12L131.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M186.5 12L186.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M242.5 12L242.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<path d="M248.5 12L248.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr1-cls-4"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(134 264)" fill="#525252">density</text>
+<path d="M20 236.5L248 236.5" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr1-cls-4"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(20 244)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(75.4721 244)" fill="#737373">0.1</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(130.9441 244)" fill="#737373">0.2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(186.4162 244)" fill="#737373">0.3</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(241.8882 244)" fill="#737373">0.4</text>
+<g clip-path="url(#zr1-c0)">
+<path d="M24 236L25 234.1L26.2 232.2L27.6 230.4L29.3 228.5L31.3 226.6L33.7 224.7L36.4 222.8L39.6 220.9L43.2 219.1L47.3 217.2L51.9 215.3L57 213.4L62.8 211.5L69.1 209.6L76 207.8L83.5 205.9L91.5 204L100 202.1L109 200.2L118.3 198.4L128 196.5L137.8 194.6L147.8 192.7L157.7 190.8L167.5 188.9L177 187.1L186 185.2L194.5 183.3L202.2 181.4L209.1 179.5L215.1 177.6L219.9 175.8L223.6 173.9L226.1 172L227.3 170.1L227.2 168.2L225.8 166.4L223.1 164.5L219.2 162.6L214.1 160.7L208 158.8L201 156.9L193.1 155.1L184.5 153.2L175.4 151.3L165.8 149.4L156 147.5L146.1 145.6L136.1 143.8L126.3 141.9L116.7 140L107.4 138.1L98.5 136.2L90 134.4L82.1 132.5L74.8 130.6L68 128.7L61.7 126.8L56.1 124.9L51 123.1L46.5 121.2L42.5 119.3L39 117.4L35.9 115.5L33.3 113.6L31 111.8L29 109.9L27.4 108L26 106.1L24.8 104.2L23.9 102.4L23.1 100.5L22.4 98.6L21.9 96.7L21.5 94.8L21.2 92.9L20.9 91.1L20.7 89.2L20.5 87.3L20.4 85.4L20.3 83.5L20.2 81.6L20.2 79.8L20.1 77.9L20.1 76L20.1 74.1L20 72.2L20 70.4L20 68.5L20 66.6L20 64.7L20 62.8L20 60.9L20 59.1L20 57.2L20 55.3L20 53.4L20 51.5L20 49.6L20 47.8L20 45.9L20 44L20 42.1L20 40.2L20 38.4L20 36.5L20 34.6L20 32.7L20 30.8L20 28.9L20 27.1L20 25.2L20 23.3L20 21.4L20 19.5L20 17.6L20 15.8L20 13.9L20 12" fill="none" pointer-events="visible" stroke="#2ca02c" stroke-width="2" stroke-linejoin="bevel" class="zr1-cls-5"></path>
+</g>
+<g clip-path="url(#zr1-c1)">
+<path d="M20 182.2L248 182.2" fill="none" pointer-events="visible" stroke="#0a0a0a" stroke-width="1.6" stroke-dasharray="6.4,3.2" stroke-linejoin="bevel" class="zr1-cls-5"></path>
+</g>
+<defs >
+<clipPath id="zr1-c0">
+<path d="M19 11l230 0l0 226l-230 0Z" fill="#000" class="zr1-cls-6"></path>
+</clipPath>
+<clipPath id="zr1-c1">
+<path d="M19 11.2l231 0l0 225.6l-231 0Z" fill="#000" class="zr1-cls-6"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr1-cls-4:hover {
+pointer-events:none;
+}
+.zr1-cls-6:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr1-cls-5:hover {
+cursor:pointer;
+}
+
+]]>
+
+</style>
+</svg></svg><g transform="translate(0, 320)"><text x="320" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#0a0a0a">belief about how long the current stretch has lasted</text><svg x="0" y="26" width="640" height="280" overflow="visible"><svg width="640" height="280" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 640 280">
+<rect width="640" height="280" x="0" y="0" fill="#ffffff"></rect>
+<path d="M61 236.5L628 236.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M61 198.5L628 198.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M61 161.5L628 161.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M61 124.5L628 124.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M61 86.5L628 86.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M61 49.5L628 49.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M61 12.5L628 12.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M61.5 12L61.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M137.5 12L137.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M213.5 12L213.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M289.5 12L289.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M365.5 12L365.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M441.5 12L441.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M517.5 12L517.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M594.5 12L594.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<path d="M628.5 12L628.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr2-cls-7"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" y="-5.5" transform="matrix(0,-1,1,0,19,124)" fill="#525252">run length</text>
+<path d="M61.5 236L61.5 12" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr2-cls-7"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(344.5 264)" fill="#525252">reading</text>
+<path d="M61 236.5L628 236.5" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr2-cls-7"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 236)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 198.6667)" fill="#737373">10</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 161.3333)" fill="#737373">20</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 124)" fill="#737373">30</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 86.6667)" fill="#737373">40</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 49.3333)" fill="#737373">50</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 12)" fill="#737373">60</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(61 244)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(137.1074 244)" fill="#737373">20</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(213.2148 244)" fill="#737373">40</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(289.3221 244)" fill="#737373">60</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(365.4295 244)" fill="#737373">80</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(441.5369 244)" fill="#737373">100</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(517.6443 244)" fill="#737373">120</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(593.7517 244)" fill="#737373">140</text>
+<g clip-path="url(#zr2-c0)">
+<image preserveAspectRatio="none" href="data:image/png;base64,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" width="570.8053691275168" height="224" x="59.0973154362416" y="13.866666666666674" opacity="1" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="chart" ecmeta_silent="true"></image>
+</g>
+<g clip-path="url(#zr2-c1)">
+<path d="M61 232.3L64.8 228.5L68.6 224.8L72.4 221.1L76.2 217.3L80 213.6L83.8 209.9L87.6 206.1L91.4 202.4L95.2 198.7L99.1 194.9L102.9 191.2L106.7 187.5L110.5 183.7L114.3 180L118.1 176.3L121.9 172.5L125.7 168.8L129.5 165.1L133.3 161.3L137.1 157.6L140.9 153.9L144.7 150.1L148.5 146.4L152.3 142.7L156.1 138.9L159.9 135.2L163.7 131.5L167.6 127.7L171.4 124L175.2 120.3L179 116.5L182.8 112.8L186.6 109.1L190.4 105.3L194.2 101.6L198 97.9L201.8 94.1L205.6 90.4L209.4 86.7L213.2 82.9L217 79.2L220.8 75.5L224.6 71.7L228.4 68L232.2 64.3L236 60.5L239.9 56.8L243.7 53.1L247.5 49.3L251.3 45.6L255.1 41.9L258.9 38.1L262.7 221.1L266.5 217.3L270.3 213.6L274.1 209.9L277.9 206.1L281.7 202.4L285.5 198.7L289.3 194.9L293.1 191.2L296.9 187.5L300.7 183.7L304.5 180L308.3 176.3L312.2 172.5L316 168.8L319.8 165.1L323.6 161.3L327.4 157.6L331.2 153.9L335 150.1L338.8 146.4L342.6 142.7L346.4 138.9L350.2 135.2L354 131.5L357.8 127.7L361.6 124L365.4 120.3L369.2 116.5L373 112.8L376.8 109.1L380.7 105.3L384.5 101.6L388.3 97.9L392.1 94.1L395.9 90.4L399.7 86.7L403.5 82.9L407.3 79.2L411.1 75.5L414.9 71.7L418.7 68L422.5 232.3L426.3 228.5L430.1 224.8L433.9 221.1L437.7 217.3L441.5 213.6L445.3 209.9L449.1 206.1L453 202.4L456.8 198.7L460.6 194.9L464.4 191.2L468.2 187.5L472 183.7L475.8 180L479.6 176.3L483.4 172.5L487.2 168.8L491 165.1L494.8 161.3L498.6 157.6L502.4 153.9L506.2 150.1L510 146.4L513.8 142.7L517.6 138.9L521.4 135.2L525.3 131.5L529.1 127.7L532.9 124L536.7 120.3L540.5 116.5L544.3 112.8L548.1 109.1L551.9 105.3L555.7 101.6L559.5 97.9L563.3 94.1L567.1 90.4L570.9 86.7L574.7 82.9L578.5 79.2L582.3 75.5L586.1 71.7L589.9 68L593.8 64.3L597.6 60.5L601.4 56.8L605.2 53.1L609 49.3L612.8 45.6L616.6 41.9L620.4 38.1L624.2 34.4L628 30.7" fill="none" pointer-events="visible" stroke="#ff7f0e" stroke-width="2" stroke-linejoin="bevel" class="zr2-cls-8"></path>
+</g>
+<g clip-path="url(#zr2-c2)">
+<path d="M251.3 236L251.3 12" fill="none" pointer-events="visible" stroke="#0a0a0a" stroke-width="1.4" stroke-dasharray="5.6,2.8" stroke-linejoin="bevel" class="zr2-cls-8"></path>
+</g>
+<g clip-path="url(#zr2-c3)">
+<path d="M422.5 236L422.5 12" fill="none" pointer-events="visible" stroke="#0a0a0a" stroke-width="1.4" stroke-dasharray="5.6,2.8" stroke-linejoin="bevel" class="zr2-cls-8"></path>
+</g>
+<defs >
+<clipPath id="zr2-c0">
+<path d="M60 12l568 0l0 224l-568 0Z" fill="#000" class="zr2-cls-7"></path>
+</clipPath>
+<clipPath id="zr2-c1">
+<path d="M59 11l570 0l0 226l-570 0Z" fill="#000" class="zr2-cls-9"></path>
+</clipPath>
+<clipPath id="zr2-c2">
+<path d="M60 11.3l570 0l0 225.4l-570 0Z" fill="#000" class="zr2-cls-9"></path>
+</clipPath>
+<clipPath id="zr2-c3">
+<path d="M60 11.3l570 0l0 225.4l-570 0Z" fill="#000" class="zr2-cls-9"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr2-cls-7:hover {
+pointer-events:none;
+}
+.zr2-cls-9:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr2-cls-8:hover {
+cursor:pointer;
+}
+
+]]>
+
+</style>
+</svg></svg><text x="770" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#0a0a0a">the belief at this reading</text><svg x="640" y="26" width="260" height="280" overflow="visible"><svg width="260" height="280" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 260 280">
+<rect width="260" height="280" x="0" y="0" fill="#ffffff"></rect>
+<path d="M20 236.5L248 236.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M20 198.5L248 198.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M20 161.5L248 161.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M20 124.5L248 124.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M20 86.5L248 86.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M20 49.5L248 49.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M20 12.5L248 12.5" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M20.5 12L20.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M88.5 12L88.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M157.5 12L157.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M225.5 12L225.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<path d="M248.5 12L248.5 236" fill="none" pointer-events="visible" stroke="#e5e5e5" class="zr3-cls-10"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" y="5.5" transform="translate(134 264)" fill="#525252">probability now</text>
+<path d="M20 236.5L248 236.5" fill="none" pointer-events="visible" stroke="#d4d4d4" stroke-linecap="round" class="zr3-cls-10"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(20 244)" fill="#737373">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(88.4 244)" fill="#737373">0.3</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(156.8 244)" fill="#737373">0.6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(225.2 244)" fill="#737373">0.9</text>
+<g clip-path="url(#zr3-c0)">
+<path d="M20 236L20.7 232.3L20.5 228.5L20.5 224.8L20.4 221.1L20.3 217.3L20.6 213.6L20.5 209.9L20.5 206.1L20.5 202.4L20.4 198.7L20.4 194.9L20.5 191.2L20.5 187.5L20.6 183.7L20.6 180L20.5 176.3L20.2 172.5L20.2 168.8L20.2 165.1L20.2 161.3L20.2 157.6L20.2 153.9L20.2 150.1L20.2 146.4L20.2 142.7L20.2 138.9L20.2 135.2L20.2 131.5L20.2 127.7L20.2 124L20.2 120.3L20.2 116.5L20.2 112.8L20.2 109.1L20.2 105.3L20.2 101.6L20.2 97.9L20.2 94.1L20.2 90.4L20.2 86.7L20.3 82.9L20.3 79.2L20.3 75.5L20.2 71.7L20.2 68L20.3 64.3L20.3 60.5L20.3 56.8L20.3 53.1L20.3 49.3L20.4 45.6L20.4 41.9L21.4 38.1L21 34.4L229.3 30.7L20 26.9L20 23.2L20 19.5L20 15.7" fill="none" pointer-events="visible" stroke="#ff7f0e" stroke-width="2" stroke-linejoin="bevel" class="zr3-cls-11"></path>
+</g>
+<defs >
+<clipPath id="zr3-c0">
+<path d="M19 11l230 0l0 226l-230 0Z" fill="#000" class="zr3-cls-12"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr3-cls-10:hover {
+pointer-events:none;
+}
+.zr3-cls-12:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr3-cls-11:hover {
+cursor:pointer;
+}
+
+]]>
+
+</style>
+</svg></svg></g></svg>

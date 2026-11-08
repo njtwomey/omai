@@ -59,7 +59,12 @@ export default function GroupReportRecipe(): ReactNode {
             idx.map((i) => rows.labels[i] ?? 0),
             idx.map((i) => rows.scores[i] ?? 0),
           )
-          return { fpr: toFlat(c.fpr), tpr: toFlat(c.tpr), thresholds: toFlat(c.thresholds) }
+          // The curve starts above every score, at a threshold of infinity; the report wants finite ones, and the scores are at most 1.
+          return {
+            fpr: toFlat(c.fpr),
+            tpr: toFlat(c.tpr),
+            thresholds: toFlat(c.thresholds).map((t) => (Number.isFinite(t) ? t : 1)),
+          }
         }),
         sweep: {
           thresholds: grid,

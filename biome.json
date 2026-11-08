@@ -18,6 +18,7 @@
       "!packages/*/index",
       "!docs/methods-catalog",
       "!examples/README.md",
+      "!examples/index.json",
       "!examples/*/figure.svg",
       "!examples/*/tape*.json"
     ]

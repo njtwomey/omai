@@ -9,16 +9,28 @@
 import { cartesian, contours, heatmap, type Layer, points } from 'omai-render/charts'
 import { figure } from 'omai-render/figure'
 import { categoricalColour } from 'omai-render/theme'
-import { INK, mix, PAPER, tab } from './colours.ts'
+import { INK, inkOf, type Mode, mix, PAPER, paperOf, tab } from './colours.ts'
 
 /** The two class colours (tab10's blue and orange), used for the rows and the ends of the class ramp. */
 export const CLASS_COLOURS: readonly [string, string] = [categoricalColour(0), categoricalColour(1)]
 
 /** The ramp of a two-class field: class 0, white, class 1. */
 export const CLASS_RAMP: readonly string[] = [CLASS_COLOURS[0], mix(PAPER, INK, 0.04), CLASS_COLOURS[1]]
+/** The class ramp of a colour mode. */
+export const classRamp = (mode: Mode): readonly string[] => [
+  CLASS_COLOURS[0],
+  mix(paperOf(mode), inkOf(mode), 0.04),
+  CLASS_COLOURS[1],
+]
 
 /** The ramp of a density or a likelihood: white to a muted blue-grey, so coloured rows stay readable over it. */
 export const DENSITY_RAMP: readonly string[] = [PAPER, mix(PAPER, tab(0), 0.15), mix(PAPER, tab(0), 0.45)]
+/** The density ramp of a colour mode: the page's colour towards the first category's, so it is blues in either. */
+export const densityRamp = (mode: Mode): readonly string[] => [
+  paperOf(mode),
+  mix(paperOf(mode), tab(0), mode === 'dark' ? 0.3 : 0.15),
+  mix(paperOf(mode), tab(0), mode === 'dark' ? 0.65 : 0.45),
+]
 
 /** The window a map covers: the data's extent in each coordinate and a small margin. */
 export interface Window {
@@ -90,17 +102,21 @@ export interface ClassMapOptions {
   readonly height: number
   readonly xLabel: string
   readonly yLabel: string
+  /** The colour mode to draw in (default light). */
+  readonly mode?: Mode
 }
 
 /** A two-class field as a figure: the heat map, its contours, the rows and any ringed rows. */
 export function classMap(o: ClassMapOptions): unknown {
+  const mode = o.mode ?? 'light'
   const n = o.field.length
   const axes = axesOf(o.window, n)
   const layers: Layer[] = [
     heatmap(o.field, {
       x: o.window.x,
       y: o.window.y,
-      ramp: CLASS_RAMP,
+      ramp: classRamp(mode),
+      mode,
       range: o.range,
       centre: o.centre,
       smooth: o.cells === true ? 'cells' : 'bicubic',
@@ -108,7 +124,7 @@ export function classMap(o: ClassMapOptions): unknown {
       label: o.label,
       opacity: 0.8,
     }),
-    contours(o.field, { x: axes.x, y: axes.y, levels: [o.boundary], colour: 'fg', width: 2, labels: false }),
+    contours(o.field, { x: axes.x, y: axes.y, levels: [o.boundary], colour: 'fg', width: 2, labels: false, mode }),
   ]
   if ((o.dashed ?? []).length > 0)
     layers.push(
@@ -120,6 +136,7 @@ export function classMap(o: ClassMapOptions): unknown {
         width: 1,
         dash: 'dashed',
         labels: false,
+        mode,
       }),
     )
   layers.push(...(o.extra ?? []))
@@ -137,27 +154,31 @@ export function classMap(o: ClassMapOptions): unknown {
             opacity: 1,
           },
         ],
-        { colourOffset: 0 },
+        { colourOffset: 0, mode },
       ),
     )
   }
   const ring = o.ringed ?? []
   if (ring.length > 0)
     layers.push(
-      points([
-        {
-          x: ring.map((i) => o.rows[i]?.[0] ?? 0),
-          y: ring.map((i) => o.rows[i]?.[1] ?? 0),
-          name: o.ringName ?? 'ringed',
-          colour: 'fg',
-          size: 13,
-          symbol: 'emptyCircle',
-          opacity: 1,
-          outline: false,
-        },
-      ]),
+      points(
+        [
+          {
+            x: ring.map((i) => o.rows[i]?.[0] ?? 0),
+            y: ring.map((i) => o.rows[i]?.[1] ?? 0),
+            name: o.ringName ?? 'ringed',
+            colour: 'fg',
+            size: 13,
+            symbol: 'emptyCircle',
+            opacity: 1,
+            outline: false,
+          },
+        ],
+        { mode },
+      ),
     )
   return cartesian(layers, {
+    mode,
     figure: figure({ width: o.width, height: o.height, padding: { top: 30, right: 12, bottom: 38, left: 42 } }),
     x: { label: o.xLabel, limits: [...o.window.x] },
     y: { label: o.yLabel, limits: [...o.window.y] },
@@ -178,14 +199,17 @@ export function densityMap(o: {
   readonly height: number
   readonly xLabel: string
   readonly yLabel: string
+  readonly mode?: Mode
 }): unknown {
+  const mode = o.mode ?? 'light'
   const n = o.field.length
   const axes = axesOf(o.window, n)
   const layers: Layer[] = [
     heatmap(o.field, {
       x: o.window.x,
       y: o.window.y,
-      ramp: DENSITY_RAMP,
+      ramp: densityRamp(mode),
+      mode,
       range: [0, Math.max(...o.field.flat())],
       resolution: 96,
       label: o.label,
@@ -198,6 +222,7 @@ export function densityMap(o: {
       width: 1,
       opacity: 0.6,
       labels: false,
+      mode,
     }),
   ]
   const rows = o.rows ?? []
@@ -207,19 +232,23 @@ export function densityMap(o: {
     const idx = groups.flatMap((g, i) => (g === c ? [i] : []))
     if (idx.length === 0) continue
     layers.push(
-      points([
-        {
-          x: idx.map((i) => rows[i]?.[0] ?? 0),
-          y: idx.map((i) => rows[i]?.[1] ?? 0),
-          name: o.names?.[c] ?? `component ${c}`,
-          colour: `tab${c}`,
-          size: 6,
-          opacity: 1,
-        },
-      ]),
+      points(
+        [
+          {
+            x: idx.map((i) => rows[i]?.[0] ?? 0),
+            y: idx.map((i) => rows[i]?.[1] ?? 0),
+            name: o.names?.[c] ?? `component ${c}`,
+            colour: `tab${c}`,
+            size: 6,
+            opacity: 1,
+          },
+        ],
+        { mode },
+      ),
     )
   }
   return cartesian(layers, {
+    mode,
     figure: figure({ width: o.width, height: o.height, padding: { top: 30, right: 12, bottom: 38, left: 42 } }),
     x: { label: o.xLabel, limits: [...o.window.x] },
     y: { label: o.yLabel, limits: [...o.window.y] },
@@ -240,13 +269,16 @@ export function fieldLayers(o: {
   readonly colourBar?: boolean
   /** The values at the two ends of the ramp (default the field's own extent; a density starts at 0). */
   readonly range?: readonly [number, number]
+  readonly mode?: Mode
 }): Layer[] {
+  const mode = o.mode ?? 'light'
   const axes = axesOf(o.window, o.field.length)
   return [
     heatmap(o.field, {
       x: o.window.x,
       y: o.window.y,
-      ramp: DENSITY_RAMP,
+      ramp: densityRamp(mode),
+      mode,
       range: o.range ?? [Math.min(...o.field.flat()), Math.max(...o.field.flat())],
       resolution: 96,
       label: o.label,
@@ -260,6 +292,7 @@ export function fieldLayers(o: {
       width: 1,
       opacity: 0.45,
       labels: false,
+      mode,
     }),
   ]
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Thumbnail } from '../home/Thumbnail.tsx'
 import { LazyRecipeView } from '../shell/LazyRecipe.tsx'
 import { Card, CardGrid, PageHeader, PageSection, Prose } from '../shell/layout.tsx'
 import type { Section } from './recipe.ts'
@@ -18,9 +19,15 @@ export function GalleryHome(props: { readonly nav?: ReactNode }): ReactNode {
         if (items.length === 0) return null
         return (
           <PageSection key={s.id} id={s.id} title={s.title} blurb={s.blurb}>
-            <CardGrid>
+            <CardGrid min={260}>
               {items.map((e) => (
-                <Card key={e.path} path={e.path} title={e.title} text={e.question} />
+                <Card
+                  key={e.path}
+                  path={e.path}
+                  title={e.title}
+                  text={e.question}
+                  preview={<Thumbnail section={e.section} slug={e.slug} />}
+                />
               ))}
             </CardGrid>
           </PageSection>
@@ -45,9 +52,15 @@ export function SectionPage(props: { readonly section: Section; readonly nav?: R
       {items.length === 0 ? (
         <p className="text-sm text-muted">No recipes here yet.</p>
       ) : (
-        <CardGrid>
+        <CardGrid min={260}>
           {items.map((e) => (
-            <Card key={e.path} path={e.path} title={e.title} text={e.question} />
+            <Card
+              key={e.path}
+              path={e.path}
+              title={e.title}
+              text={e.question}
+              preview={<Thumbnail section={e.section} slug={e.slug} />}
+            />
           ))}
         </CardGrid>
       )}

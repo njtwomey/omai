@@ -138,6 +138,17 @@ them and writes `figure.svg`, `tape*.json` and the index `examples/README.md`; `
 `make check`) fails when those files are stale. Examples import the packages through their entry points only, which
 `make layers` checks. Adding an example is adding a folder.
 
+An example can also animate. `View` takes an optional `at` (the figure after that many frames of the run, none for the
+finished figure that `figure.svg` holds) and a `mode` (`light` or `dark`; the runner writes light), and `frames(result)`
+says how many frames the run has. `meta.home` (a tab name, a playing rate in frames a second, a slide length) puts the
+example in the front page's carousel: the site imports the example's `main.tsx` and shows it in the page's colour mode. An
+example that exports `live()` (a `step()` and a `result()`) is computed as it is watched: the site calls `step` at the
+playing rate (the library's `useTicker`) and draws `result()` with `View`; the others run once and their frames are played with
+`usePlayback` and `Player`. A live run uses the library's steppable parts (`iterate` over an algorithm, a session's `advance`,
+a kernel's `step`). The runner also writes
+`examples/index.json` (the list the site reads). Figures use theme slots (`tab0`, `fg`, `muted`) and the `blues` ramp, never
+hex colours; `examples/_shared/colours.ts` is where the few concrete colours come from.
+
 ## 2. Conventions every file follows
 
 **Entry points.** Every folder is an entry point. `packages/engine/src/lib/numerics/linalg/` is imported as
@@ -7577,6 +7588,12 @@ the current page, folder names linking their pages) with previous and next links
 keys too), and the recipe and code-view components (a live figure beside its own source, `ErrorBoundary` keeping a
 failing example to itself).
 
+`src/Home.tsx` and `src/home/`: the front page. A live Gaussian process the reader can drag (`HeroGp`), the library in
+numbers (from the docs index and the gallery registry), the carousel of examples (`Carousel`, `examples.tsx`: each slide
+runs an example of `examples/` in the browser and plays it with the render package's player), the three packages as cards
+and a thumbnail of one recipe of each gallery section (`Thumbnail`, from `public/thumbs`, written by `make thumbs`).
+`.github/workflows/pages.yml` publishes the build (`make site`, with `OMAI_SITE_BASE` set to the Pages path) on each push to main.
+
 `src/gallery/` (hand-written: what omai-render can show and how its pieces interact)
 - Pages: the index of sections, a section, an entry (a figure with its source and export menu).
 - `registry.ts`: the recipes from their `recipe` metadata alone (an eager glob with `?recipe`, which
@@ -7719,6 +7736,13 @@ library for the same computation. They do not set a higher bar than that library
 - `apps/site/plugins/build-docs.ts` (`make docs-catalogue`): the docs catalogue extracted once (about 3 seconds) and
   written as the site's static docs files (section 8); `--if-stale` returns at once when they are newer than the
   engine's source, omai-meta's `extract/` and `schema/`, and the generator.
+- `scripts/thumbs.ts` (`make thumbs`): the gallery thumbnails. Opens each recipe page of the site in headless Chrome
+  (driven over the DevTools protocol, no dependency, four tabs at a time), light and dark, and saves the first figure of
+  the page as `apps/site/public/thumbs/<section>/<slug>-<theme>.webp`, which the gallery and the front page show. Unless
+  given `--url`, it builds the site into a temporary folder and serves that with `vite preview`, then removes both.
+  It only makes what is missing (`--force` redoes all; `--only <section | section/slug>` limits it). A figure that is
+  moving is captured a few seconds in, and a player waiting at step 0 is started first. Needs Chrome; the images are
+  committed.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.

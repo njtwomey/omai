@@ -435,7 +435,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
     for (let c = 0; c < g.cols; c++) {
       const v = g.values[r * g.cols + c] ?? Number.NaN
       const colour = Number.isFinite(v) ? toHex(interpolateRgba(parsed, scaleFraction(v, domain))) : t.surface
-      const ink = relativeLuminance(colour) > 0.4 ? '#1f2328' : '#ffffff'
+      const ink = relativeLuminance(colour) > 0.4 ? '#0a0a0a' : '#ffffff'
       // Category index of the row on the y axis, which lists rows bottom-up so row 0 sits at the top.
       // Its colour outside a colour bar selection: blended towards the background.
       const dimmed = mixColours(t.bg, colour, DIMMED_OPACITY)
