@@ -66,15 +66,15 @@ describe('convolutional synthesis and analysis', () => {
 })
 
 describe('convolutional sparse coding', () => {
-  it('has the code zero once lambda exceeds the largest correlation, and sparser as lambda grows', () => {
+  it('has the code zero once lambda exceeds the largest correlation', () => {
     fc.assert(
       fc.property(problem, ({ D, r }) => {
         const top = Math.max(0, ...toFlat(convolutionalAnalysis(D, r)).map(Math.abs))
         fc.pre(top > 1e-3)
         expect(convolutionalSparseCode(D, r, { lambda: top * 1.01 }).nonzeros).toBe(0)
-        const loose = convolutionalSparseCode(D, r, { lambda: top * 0.05, maxSteps: 300 })
-        const tight = convolutionalSparseCode(D, r, { lambda: top * 0.5, maxSteps: 300 })
-        expect(tight.nonzeros).toBeLessThanOrEqual(loose.nonzeros)
+        // Below it the code is not zero (the first step of the proximal gradient already moves where the correlation is
+        // above lambda). The number of nonzeros is not monotone in lambda in general, so nothing is claimed about it.
+        expect(convolutionalSparseCode(D, r, { lambda: top * 0.5, maxSteps: 50 }).nonzeros).toBeGreaterThan(0)
       }),
       { numRuns: 25 },
     )
