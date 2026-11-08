@@ -112,6 +112,25 @@ export interface WorldSceneOptions {
   readonly path?: readonly number[]
   /** A value per cell, shaded over the terrain (largest values most opaque). */
   readonly values?: ArrayLike<number>
+  /** How `values` are drawn (the default is the accent colour, more opaque the larger the magnitude). */
+  readonly valueStyle?: ValueStyle
+}
+
+/** How {@link toScene} draws a world's per-cell `values`. */
+export interface ValueStyle {
+  /**
+   * The paint of a cell's disc: one paint, or a function of the value and its place in the range (0 to 1) to draw a
+   * colour ramp. With a function the disc has the same opacity everywhere (`maxOpacity`), so the colour carries the
+   * value; with one paint the opacity carries it.
+   */
+  readonly fill?: Paint | ((value: number, normalised: number) => Paint)
+  /**
+   * The values that map to 0 and 1 (default 0 and the largest magnitude, so only magnitude counts). Fix it to draw
+   * every frame of an animation on one scale, or to let negative values map below the middle.
+   */
+  readonly range?: readonly [number, number]
+  /** The opacity of the strongest disc (default 0.75). */
+  readonly maxOpacity?: number
 }
 
 /**
@@ -120,7 +139,7 @@ export interface WorldSceneOptions {
  * cells are squares, hexagons hexagons, graph nodes circles joined by their edges.
  *
  * @param w - The world.
- * @param options - Scale, title, agent, path and per-cell values.
+ * @param options - Scale, title, agent, path, per-cell values and how they are drawn.
  * @returns The scene.
  * @concept scene-graph
  * @example
@@ -136,19 +155,32 @@ export function toScene(w: World, options: WorldSceneOptions = {}): Scene {
   const t = w.topology
   const nodes: SceneNode[] = []
   const at = (p: readonly [number, number]): [number, number] => [p[0] * k, p[1] * k]
+  // The largest magnitude among the finite values: one NaN must not switch off the shading of the rest.
   let hi = 0
-  for (let i = 0; i < (options.values?.length ?? 0); i++) hi = Math.max(hi, Math.abs(options.values?.[i] ?? 0))
+  for (let i = 0; i < (options.values?.length ?? 0); i++) {
+    const v = options.values?.[i] ?? 0
+    if (Number.isFinite(v)) hi = Math.max(hi, Math.abs(v))
+  }
+  const style = options.valueStyle ?? {}
+  const [lo, top] = style.range ?? [0, hi]
+  const maxOpacity = style.maxOpacity ?? 0.75
   for (let cell = 0; cell < w.n; cell++) {
     const tr = terrainOf(w, cell)
-    const style = { fill: tr.paint, stroke: 'grid' as const, strokeWidth: 1, title: `cell ${cell}: ${tr.name}` }
+    const look = { fill: tr.paint, stroke: 'grid' as const, strokeWidth: 1, title: `cell ${cell}: ${tr.name}` }
     if (t.kind === 'graph') {
       const [x, y] = at(cellCentre(w, cell))
-      nodes.push(circle(x, y, k / 3, style))
-    } else nodes.push(polygon(cellCorners(w, cell).map(at), style))
+      nodes.push(circle(x, y, k / 3, look))
+    } else nodes.push(polygon(cellCorners(w, cell).map(at), look))
     const v = options.values?.[cell]
-    if (v !== undefined && hi > 0 && Number.isFinite(v)) {
+    if (v !== undefined && Number.isFinite(v) && (style.range !== undefined || hi > 0) && top > lo) {
       const [x, y] = at(cellCentre(w, cell))
-      nodes.push(circle(x, y, k * 0.42, { fill: 'accent', opacity: (0.75 * Math.abs(v)) / hi }))
+      const share = style.range === undefined ? Math.abs(v) / hi : Math.min(1, Math.max(0, (v - lo) / (top - lo)))
+      const fill = style.fill ?? 'accent'
+      nodes.push(
+        typeof fill === 'function'
+          ? circle(x, y, k * 0.42, { fill: fill(v, share), opacity: maxOpacity })
+          : circle(x, y, k * 0.42, { fill, opacity: maxOpacity * share }),
+      )
     }
   }
   if (t.kind === 'graph') {

@@ -43,6 +43,14 @@ export interface BeliefPropagationOptions {
    * leaves-to-root-to-leaves pass, exact on a factor tree).
    */
   readonly schedule?: BpSchedule
+  /**
+   * How much one step does. `sweep` (default): a whole iteration, as above. `factor`: one factor's messages (for
+   * flooding the first step of an iteration computes every variable-to-factor message, then each step is one factor's
+   * outgoing messages; the tree and residual schedules treat it as `message`). `message`: a single directed message
+   * (for the residual schedule, the pending message that would change most). A run takes more, smaller steps and ends
+   * in the same beliefs; the convergence test is made at the end of an iteration.
+   */
+  readonly granularity?: 'sweep' | 'factor' | 'message'
   /** Damping in [0, 1): each new factor-to-variable message is (1 - damping) new + damping old. */
   readonly damping?: number
   /** Stop when no message changes by more than this (in probability, default 1e-10). */
@@ -59,10 +67,14 @@ export interface BeliefPropagationState {
   readonly f2v: readonly Float64Array[]
   /** Variable-to-factor messages, by edge. */
   readonly v2f: readonly Float64Array[]
-  /** The largest message change in the last iteration. */
+  /** The largest message change in the last completed iteration (the pending change under the residual schedule). */
   readonly residual: number
   /** Message updates so far. */
   readonly updates: number
+  /** Where a finer-grained run is in its iteration: the index of the next step of the plan (0 between iterations). */
+  readonly cursor: number
+  /** The largest message change so far in the iteration under way (finer granularity only). */
+  readonly running: number
 }
 
 /** Result of {@link beliefPropagation}. */
@@ -153,13 +165,43 @@ function treeSchedule(c: Compiled): { kind: 'v2f' | 'f2v'; edge: number }[] {
   return [...collect, ...distribute]
 }
 
+/** One directed message update of a plan. */
+type BpUnit = { readonly kind: 'v2f' | 'f2v'; readonly edge: number }
+
+/**
+ * The steps of one iteration of a finer-grained run: each step is a group of directed updates. Flooding computes every
+ * variable-to-factor message first (from the messages the iteration began with, which do not change until the
+ * factor-to-variable ones start), sequential goes factor by factor with the newest messages, and the tree schedule
+ * follows its leaves-to-root-to-leaves order.
+ */
+function stepPlan(
+  c: Compiled,
+  schedule: BpSchedule,
+  granularity: 'factor' | 'message',
+  tree: readonly BpUnit[],
+): BpUnit[][] {
+  const v2f = (e: number): BpUnit => ({ kind: 'v2f', edge: e })
+  const f2v = (e: number): BpUnit => ({ kind: 'f2v', edge: e })
+  const each = (units: readonly BpUnit[]): BpUnit[][] => units.map((u) => [u])
+  if (schedule === 'tree') return each(tree)
+  if (schedule === 'flooding') {
+    const all = c.edges.map((_, e) => e)
+    if (granularity === 'message') return each([...all.map(v2f), ...all.map(f2v)])
+    return [all.map(v2f), ...c.factorEdges.map((es) => es.map(f2v))]
+  }
+  // sequential: a factor's variable messages, then its factor messages.
+  if (granularity === 'message') return each(c.factorEdges.flatMap((es) => [...es.map(v2f), ...es.map(f2v)]))
+  return c.factorEdges.map((es) => [...es.map(v2f), ...es.map(f2v)])
+}
+
 /**
  * Belief propagation on the factor graph of any discrete model, as an {@link Algorithm}: sum-product for marginals or
  * max-product for max-marginals, with flooding, sequential, residual or tree schedules and optional damping. On a
  * factor tree it is exact; on a loopy graph it iterates to a fixed point of the Bethe free energy (loopy belief
  * propagation) or stops at the iteration cap. Each step is one iteration (one pass of updates, or for the residual
- * schedule as many single updates as there are edges); observed states record the residual and the Bethe free energy,
- * and the factor-to-variable messages as `message` events.
+ * schedule as many single updates as there are edges), or with `granularity` one factor's messages or a single message;
+ * observed states record the residual and the Bethe free energy, every variable's belief as the frame, and the
+ * factor-to-variable messages as `message` events.
  *
  * @param model - The model.
  * @param options - Evidence, mode, schedule, damping and stopping rule.
@@ -185,9 +227,11 @@ export function beliefPropagationAlgorithm(
   if (!(damping >= 0 && damping < 1)) throw new OmaiError('value', 'belief propagation: damping must be in [0, 1)')
   const tree = schedule === 'tree' ? treeSchedule(c) : []
   const nEdges = c.edges.length
+  const granularity = options.granularity ?? 'sweep'
+  const plan = granularity === 'sweep' || schedule === 'residual' ? [] : stepPlan(c, schedule, granularity, tree)
   return {
     name: 'beliefPropagation',
-    config: { mode, schedule, damping, tol } as Json,
+    config: { mode, schedule, damping, tol, granularity } as Json,
     schema: channels({
       metrics: {
         residual: { description: 'largest message change in the iteration', direction: 'lower' },
@@ -198,7 +242,7 @@ export function beliefPropagationAlgorithm(
     init: () => {
       const f2v = c.edges.map((e) => uniform(c.card[e.variable] ?? 1))
       const v2f = c.edges.map((e) => uniform(c.card[e.variable] ?? 1))
-      return { f2v, v2f, residual: Number.POSITIVE_INFINITY, updates: 0 }
+      return { f2v, v2f, residual: Number.POSITIVE_INFINITY, updates: 0, cursor: 0, running: 0 }
     },
     step: (state) => {
       const f2v = [...state.f2v]
@@ -209,6 +253,40 @@ export function beliefPropagationAlgorithm(
         const m = damp(next, old, damping, mode)
         residual = Math.max(residual, messageChange(m, old))
         f2v[e] = m
+      }
+      if (granularity !== 'sweep' && schedule === 'residual') {
+        // One message: the pending one that would change most (the same choice the sweep's queue makes).
+        for (let e = 0; e < nEdges; e++) v2f[e] = variableMessage(c, f2v, e, mode)
+        let best = -1
+        let change = -1
+        let pick: Float64Array | undefined
+        for (let e = 0; e < nEdges; e++) {
+          const next = factorMessage(c, v2f, e, mode)
+          const r = messageChange(next, f2v[e] as Float64Array)
+          if (r > change) {
+            best = e
+            change = r
+            pick = next
+          }
+        }
+        if (best >= 0 && pick !== undefined) setF2V(best, pick)
+        for (let e = 0; e < nEdges; e++) v2f[e] = variableMessage(c, f2v, e, mode)
+        residual = 0
+        for (let e = 0; e < nEdges; e++)
+          residual = Math.max(residual, messageChange(factorMessage(c, v2f, e, mode), f2v[e] as Float64Array))
+        return { f2v, v2f, residual, updates: state.updates + 1, cursor: 0, running: 0 }
+      }
+      if (granularity !== 'sweep') {
+        const group = plan[state.cursor] ?? []
+        for (const u of group) {
+          if (u.kind === 'v2f') v2f[u.edge] = variableMessage(c, f2v, u.edge, mode)
+          else setF2V(u.edge, factorMessage(c, v2f, u.edge, mode))
+        }
+        const running = Math.max(state.running, residual)
+        const cursor = state.cursor + 1
+        const updates = state.updates + group.length
+        if (cursor < plan.length) return { f2v, v2f, residual: state.residual, updates, cursor, running }
+        return { f2v, v2f, residual: schedule === 'tree' ? 0 : running, updates, cursor: 0, running: 0 }
       }
       if (schedule === 'flooding') {
         for (let e = 0; e < nEdges; e++) v2f[e] = variableMessage(c, state.f2v, e, mode)
@@ -261,14 +339,29 @@ export function beliefPropagationAlgorithm(
         for (let e = 0; e < nEdges; e++)
           residual = Math.max(residual, messageChange(candidate[e] as Float64Array, f2v[e] as Float64Array))
       }
-      return { f2v, v2f, residual, updates: state.updates + (schedule === 'tree' ? tree.length : nEdges) }
+      return {
+        f2v,
+        v2f,
+        residual,
+        updates: state.updates + (schedule === 'tree' ? tree.length : nEdges),
+        cursor: 0,
+        running: 0,
+      }
     },
-    done: (state, t) => (t > 0 && (schedule === 'tree' || state.residual <= tol) ? 'converged' : undefined),
+    done: (state, t) =>
+      t > 0 && state.cursor === 0 && (schedule === 'tree' || state.residual <= tol) ? 'converged' : undefined,
     observe: (state) => {
       const metrics: Record<string, number> = { residual: Number.isFinite(state.residual) ? state.residual : -1 }
-      if (mode === 'sum') metrics['betheFreeEnergy'] = bethe(c, state).free
+      const current = bethe(c, state, mode)
+      if (mode === 'sum') metrics['betheFreeEnergy'] = current.free
+      // The current belief of every variable (probabilities, or max-marginals scaled to 1 at the largest), so a view
+      // need not rebuild them from the messages.
+      const beliefs: Record<string, number[]> = {}
+      for (const [i, b] of current.variables.entries())
+        beliefs[c.names[i] ?? String(i)] = Array.from(b, (lb) => Math.exp(lb))
       return {
         metrics,
+        frame: { beliefs },
         messages: c.edges.map((e, i) => ({
           kind: 'factorToVariable',
           payload: { factor: e.factor, variable: c.names[e.variable] ?? '', values: Array.from(state.f2v[i] ?? []) },

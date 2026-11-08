@@ -404,3 +404,47 @@ export function group(
 export function isScene(value: unknown): value is Scene {
   return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'scene'
 }
+
+const recoloured = (
+  node: SceneNode,
+  tones: Readonly<Record<string, Paint>>,
+  inherited: Paint | undefined,
+): SceneNode => {
+  const paint = (node.id === undefined ? undefined : tones[node.id]) ?? inherited
+  if (node.kind === 'group') {
+    const children = node.children.map((c) => recoloured(c, tones, paint))
+    return children.some((c, i) => c !== node.children[i]) ? { ...node, children } : node
+  }
+  if (paint === undefined) return node
+  if (node.kind === 'text' || node.kind === 'tex') return { ...node, fill: paint }
+  if (node.kind === 'image' || node.kind === 'layer3d') return node
+  // A shape with a fill takes the paint as its fill; a line, an open path or an outline takes it as its stroke.
+  const filled = node.fill !== undefined && node.fill !== 'none'
+  return filled || (node.stroke === undefined && node.kind !== 'line')
+    ? { ...node, fill: paint }
+    : { ...node, stroke: paint }
+}
+
+/**
+ * A scene with some nodes drawn in another paint: a failed state in red, a chosen cell in the accent. A node named in
+ * `tones` by its `id` takes the paint as its fill (its stroke if it has no fill, as a line has none); a group named
+ * there recolours everything in it; text takes it as its text colour. The scene given is not changed.
+ *
+ * @param s - The scene.
+ * @param tones - The paint to give each node, by node id; ids that are not in the scene are ignored.
+ * @returns The recoloured scene (the same scene when nothing is named).
+ * @concept scene-graph
+ * @index function Redraw named nodes of a Scene in another paint.
+ * @example
+ * ```ts
+ * import { circle, recolour, scene } from 'omai-engine/scene'
+ * const s = scene(10, 10, [circle(5, 5, 2, { fill: 'tab0', id: 'dot' })])
+ * const red = recolour(s, { dot: 'tab3' })
+ * red.children[0]?.kind === 'circle' && red.children[0].fill // => 'tab3'
+ * ```
+ */
+export function recolour(s: Scene, tones: Readonly<Record<string, Paint>>): Scene {
+  if (Object.keys(tones).length === 0) return s
+  const children = s.children.map((c) => recoloured(c, tones, undefined))
+  return children.some((c, i) => c !== s.children[i]) ? { ...s, children } : s
+}

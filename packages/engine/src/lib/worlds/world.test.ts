@@ -9,6 +9,7 @@ import {
   destination,
   exits,
   fromAscii,
+  greedyPath,
   hasWall,
   neighbours,
   passable,
@@ -158,5 +159,37 @@ describe('blocks, structures and scenes', () => {
     const g = toScene(world({ topology: { kind: 'graph', n: 3, neighbours: [[1], [0, 2], [1]] }, walls: [[0, 1]] }))
     expect(g.children.filter((n) => n.kind === 'circle')).toHaveLength(3)
     expect(g.children.filter((n) => n.kind === 'line')).toHaveLength(2)
+  })
+
+  it('shades values by magnitude, ignores a NaN when scaling, and takes a paint, a ramp and a fixed range', () => {
+    const w = fromAscii(['S.G'])
+    const discs = (options: Parameters<typeof toScene>[1]): { opacity?: number; fill?: string }[] =>
+      toScene(w, options).children.flatMap((n) => (n.kind === 'circle' && n.opacity !== undefined ? [n] : []))
+    const plain = discs({ values: [0, 1, 2] })
+    expect(plain.map((d) => d.opacity)).toEqual([0, 0.375, 0.75])
+    // One NaN no longer switches the shading off.
+    expect(discs({ values: [Number.NaN, 1, 2] }).map((d) => d.opacity)).toEqual([0.375, 0.75])
+    // A paint, and a ramp (constant opacity, colour by the share of the range).
+    expect(discs({ values: [1, 2, 4], valueStyle: { fill: 'tab0', maxOpacity: 0.5 } }).map((d) => d.fill)).toEqual([
+      'tab0',
+      'tab0',
+      'tab0',
+    ])
+    const ramp = discs({
+      values: [1, 3],
+      valueStyle: { fill: (_v, share) => (share > 0.5 ? 'tab3' : 'tab0'), range: [0, 4], maxOpacity: 1 },
+    })
+    expect(ramp.map((d) => [d.fill, d.opacity])).toEqual([
+      ['tab0', 1],
+      ['tab3', 1],
+    ])
+  })
+
+  it('follows the greedy path up the values to a goal, a local maximum or the step limit', () => {
+    const w = fromAscii(['S..G'])
+    expect(greedyPath(w, [0, 1, 2, 3], 0)).toEqual([0, 1, 2, 3])
+    expect(greedyPath(w, [0, 1, 0, 3], 0)).toEqual([0, 1])
+    expect(greedyPath(w, [0, 1, 2, 3], 0, { maxSteps: 2 })).toEqual([0, 1, 2])
+    expect(greedyPath(w, [0, 1, 2, 3], 3)).toEqual([3])
   })
 })
