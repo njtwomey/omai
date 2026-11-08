@@ -1,6 +1,6 @@
 import { dict, int } from 'omai-engine/space'
 import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'omai-engine/trace'
-import { type ReactElement, useState } from 'react'
+import { type ComponentProps, type ReactElement, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, inAct, mountElement, resetGlobals } from '../_harness.tsx'
 import type { StartPolicy } from '../start.ts'
@@ -39,17 +39,33 @@ const count: Method<S, Config> = defineMethod<S, Config>({
   defaults: { n: Log() },
 })
 
-const page: { at: number | null; live?: LiveSession<S, Config>; playhead: { current: number } } = {
+const page: {
+  at: number | null
+  active: boolean
+  poke?: () => void
+  live?: LiveSession<S, Config>
+  playhead: { current: number }
+} = {
   at: null,
+  active: true,
   playhead: { current: -1 },
 }
 
-function Page(props: { readonly start: StartPolicy; readonly steps?: number }): ReactElement {
+function Page(props: {
+  readonly start: StartPolicy
+  readonly steps?: number
+  readonly player?: Partial<ComponentProps<typeof SessionPlayer>>
+}): ReactElement {
   const [at, setAt] = useState<number | null>(null)
-  const live = useSession(count, { steps: props.steps ?? 200 }, [], { start: props.start })
+  const [, poke] = useState(0)
+  page.poke = () => poke((n) => n + 1)
+  const live = useSession(count, { steps: props.steps ?? 200 }, [], {
+    start: props.start,
+    active: page.active,
+  })
   page.at = at
   page.live = live
-  return <SessionPlayer live={live} at={at} onScrub={setAt} playhead={page.playhead} />
+  return <SessionPlayer {...props.player} live={live} at={at} onScrub={setAt} playhead={page.playhead} />
 }
 
 const controller = (): PlaybackController => seen.controller as PlaybackController
@@ -59,6 +75,7 @@ let frames: FakeFrames
 beforeEach(() => {
   frames = fakeFrames()
   page.at = null
+  page.active = true
   page.playhead.current = -1
   delete seen.controller
 })
@@ -188,5 +205,73 @@ describe('the playhead', () => {
     }
     expect(told).toBeGreaterThan(0)
     expect(page.at).toBeLessThanOrEqual(200)
+  })
+})
+
+describe('the rate, the eager toggle and the statistics line', () => {
+  it('starts at the stored preference rate, 60 by default, and keeps the reader’s pick', async () => {
+    await mountElement(<Page start="first" />)
+    expect(controller().fps).toBe(60)
+    await inAct(() => controller().setFps(10))
+    expect(controller().fps).toBe(10)
+  })
+
+  it('takes the rate from `fps` when given, which rules, and tells `onFpsChange` of the reader’s pick', async () => {
+    const picked: number[] = []
+    const m = await mountElement(<Page start="first" player={{ fps: 24, onFpsChange: (f) => picked.push(f) }} />)
+    expect(controller().fps).toBe(24)
+    await inAct(() => controller().setFps(5))
+    expect(picked).toEqual([5])
+    // The host owns the rate: it stays 24 until the host passes another.
+    expect(controller().fps).toBe(24)
+    await m.rerender()
+    expect(controller().fps).toBe(24)
+  })
+
+  it('the player ticks at the rate it is given', async () => {
+    await mountElement(<Page start="first" player={{ fps: 2 }} />)
+    await untilDone()
+    await inAct(() => controller().play())
+    await frames.frame()
+    const from = page.at as number
+    // Two steps a second: a second of 100 ms frames is two steps, nowhere near the 60 of the default.
+    for (let n = 0; n < 10; n++) await frames.frame(100)
+    expect((page.at as number) - from).toBeLessThanOrEqual(3)
+  })
+
+  it('offers the eager toggle unless `eagerToggle` is false or the start is given', async () => {
+    await mountElement(<Page start="first" />)
+    expect(controller().setEager).toBeDefined()
+    await mountElement(<Page start="first" player={{ eagerToggle: false }} />)
+    expect(controller().setEager).toBeUndefined()
+    await mountElement(<Page start="first" player={{ eagerToggle: true, start: 'first' }} />)
+    expect(controller().setEager).toBeUndefined()
+    await mountElement(<Page start="first" player={{ eagerToggle: true }} />)
+    expect(controller().setEager).toBeDefined()
+  })
+
+  it('shows the statistics line, and hides it with `statistics` false', async () => {
+    const shown = await mountElement(<Page start="first" />)
+    await untilDone()
+    expect(shown.text()).toContain('last slice')
+    const hidden = await mountElement(<Page start="first" player={{ statistics: false }} />)
+    await untilDone()
+    expect(hidden.text()).not.toContain('last slice')
+    expect(hidden.text()).not.toContain('step')
+  })
+
+  it('does not compute or tick while the session is inactive, and goes on when it is active again', async () => {
+    page.active = false
+    await mountElement(<Page start="first" />)
+    await inAct(() => controller().play())
+    await frames.frames(5)
+    expect(live().head).toBe(0)
+    expect(live().computing).toBe(false)
+    expect(frames.pending).toBe(0)
+    page.active = true
+    await inAct(() => page.poke?.())
+    await frames.frames(5)
+    expect(live().head).toBeGreaterThan(0)
+    expect(live().computing).toBe(true)
   })
 })

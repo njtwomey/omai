@@ -67,6 +67,31 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   by itself). `useLiveRun(algorithm, { maxSteps, start: 'first', history })` is the same for an algorithm; its
   `history` is a ring buffer of that many states (stepping back stops at `oldest`), and it returns `phase` (the
   status) and `progress`.
+- Slides and hidden pages (React). Four things on the handle serve a host that shows and hides sessions:
+  - `active` (hook option of `useSession`, `useSessions` and `useLiveRun`, default true): while false nothing computes
+    (no priming, the producer stopped, a worker paused, the player's clock off) and the tape and the state are kept; it
+    carries on when true again. `live.halt()` and `live.pause()` are the imperative forms; `dispose()` throws the tape
+    away, and is safe to call from a frame that was already queued.
+  - `live.disposed` is true after `dispose()` until `compute`, `play`, `advance` or `apply` uses the session again. The
+    `status` then reads `'preparing'` (a session at step 0), which is not a restart; check `disposed` to tell them apart.
+  - `live.madeWith` is `{ config, seed }` of the run on the tape (`live.session.config` and `.seed`). A change of the
+    options is applied after 250 ms, or held until play, so until then the options are newer than the run: draw what the
+    run was made with from `madeWith`.
+  - `live.progress` is the step reached over the options' `steps` while the run goes on, and exactly 1 once it has
+    ended, whatever its length (a run that converges after 8 of 1000 steps jumps to 1 on its last step).
+- Player and panel settings (React). `SessionPlayer` takes `fps` (the rate; with `onFpsChange` the host owns it),
+  `eagerToggle={false}` (hide the Eager button) and `statistics={false}` (hide the line of event counts and slice
+  time). Its starting rate and mode come from the session preferences: a `SessionPreferencesProvider` with `defaults`
+  (`{ mode, hold, fps }`) and `storage` (`false` for none, or a `Storage` of the host's; the browser's `localStorage`
+  under the key `omai-session-preferences` by default) gives a subtree its own, read by `useSessionPreferences` and
+  changed by `useSetSessionPreferences`. The size of every panel (width, height, type size, padding) is the figure of a
+  `PanelFigureProvider figure={figure({ width: 640, height: 400, fontSize: 14 })}` above them, or the `figure` prop of
+  `SessionPanels`; the default is 440 by 320.
+- States that an algorithm changes in place (React and engine). What a view draws at a step comes from what was
+  recorded at that step (`observe`, or `ctx.log` and `ctx.emit` at emit time), or from `session.stateAt(t)`, which is
+  exact through checkpoints; `session.state` is the live object. An algorithm that mutates its state in place gives
+  an optional `snapshot(state)`, and `useLiveRun` keeps each frame of its history through it, so every frame shows its
+  own step. States need not be immutable.
 - Controls and interaction (React). Form controls, controls generated from a `Space` and a dataset picker are in
   `react/controls`; draggable points, brushes and hover overlays are in `react/interaction`; `Chart`, `SceneView`,
   `StructureView` and `FigureGrid` are the base components in `react`.

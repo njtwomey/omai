@@ -67,6 +67,7 @@ export function useSettled<T>(value: T, ms: number): T {
 export function staticLive(session: Session<any, any>): LiveSession<any, any> {
   return {
     session,
+    madeWith: { config: session.config, seed: session.seed },
     version: 0,
     head: session.t,
     done: session.status !== undefined,

@@ -6,7 +6,6 @@
 
 import type { Exposition, ExpositionKind } from 'omai-engine/exposition'
 import { type ReactNode, useMemo } from 'react'
-import { figure } from '../../figure/figure.ts'
 import { imageGridFigure } from '../../views/images.ts'
 import { stripAspect } from '../../views/strips.ts'
 import { FigureFrame } from '../FigureFrame.tsx'
@@ -24,7 +23,7 @@ import { StructureStepsView } from '../views/structure-steps.tsx'
 import { TranscriptView } from '../views/transcript.tsx'
 import { useStepCursor } from './cursor.tsx'
 import type { Panel } from './layout.ts'
-import { FIG, Note, useProbe } from './RowsPanel.tsx'
+import { Note, reshaped, usePanelFigure, useProbe } from './RowsPanel.tsx'
 import type { LiveSession } from './useSession.ts'
 
 type Recorded<K extends ExpositionKind> = Extract<Exposition, { kind: K }>
@@ -46,9 +45,10 @@ function useRecord<K extends ExpositionKind>(
 
 // A frame saying why nothing is drawn yet.
 function Nothing(props: { readonly title: string; readonly filename: string; readonly problem?: string }): ReactNode {
+  const base = usePanelFigure()
   return (
     <FigureFrame
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       caption={<Note>{props.problem === undefined ? 'nothing recorded yet' : `unavailable: ${props.problem}`}</Note>}
@@ -58,11 +58,9 @@ function Nothing(props: { readonly title: string; readonly filename: string; rea
   )
 }
 
-/** The width the record panels draw at: the session panels' figure width, whatever the record's shape. */
-const WIDTH = FIG.width
-
-// The figure of the equation panel: the expressions, the table of terms, the curve and the residual strip stacked.
-const TALL = figure({ width: WIDTH, height: 500 })
+// The equation panel's figure is taller than the others (500 against 320 pixels by default): the expressions, the table
+// of terms, the curve and the residual strip stacked.
+const TALL_RATIO = 500 / 320
 
 /**
  * A strip probed at the viewed step: tokens on x, a row of cells per track, tags, the chosen path and marks.
@@ -78,10 +76,12 @@ export function StripPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'strip', props.panel.path, props.panel.args)
+  // The width is the session panels' figure width, whatever the record's shape.
   const fig = useMemo(
-    () => (record === undefined ? FIG : figure({ width: WIDTH, aspect: stripAspect(record) })),
-    [record],
+    () => (record === undefined ? base : reshaped(base, { aspect: stripAspect(record) })),
+    [record, base],
   )
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return <StripView record={record} figure={fig} title={props.title} filename={props.filename} />
@@ -101,9 +101,10 @@ export function TablePanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'markedTable', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <MarkedTableView record={record} figure={FIG} title={props.title} filename={props.filename} />
+  return <MarkedTableView record={record} figure={base} title={props.title} filename={props.filename} />
 }
 
 /**
@@ -120,11 +121,13 @@ export function ImagesPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { panel, t } = props
   const { record, problem } = useRecord(props.live, t, 'imageSteps', panel.path, panel.args)
   const fig = useMemo(
-    () => (record === undefined ? FIG : imageGridFigure(record, WIDTH, panel.columns)),
-    [record, panel.columns],
+    () =>
+      record === undefined ? base : { ...imageGridFigure(record, base.width, panel.columns), fontSize: base.fontSize },
+    [record, panel.columns, base],
   )
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return (
@@ -153,6 +156,7 @@ export function GraphPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { panel, t } = props
   const { record, problem } = useRecord(props.live, t, 'structureSteps', panel.path, panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
@@ -160,7 +164,7 @@ export function GraphPanel(props: {
     <StructureStepsView
       record={record}
       step={t}
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       {...(panel.layout === undefined ? {} : { layout: panel.layout })}
@@ -182,6 +186,7 @@ export function PointsPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'pointsSteps', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   const { colour, fade, camera } = props.panel
@@ -189,7 +194,7 @@ export function PointsPanel(props: {
     <PointsStepsView
       record={record}
       step={props.t}
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       {...(colour === undefined ? {} : { colour })}
@@ -213,9 +218,10 @@ export function ScenePanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'sceneSteps', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <SceneStepsView record={record} step={props.t} figure={FIG} title={props.title} filename={props.filename} />
+  return <SceneStepsView record={record} step={props.t} figure={base} title={props.title} filename={props.filename} />
 }
 
 /**
@@ -232,13 +238,14 @@ export function LandscapePanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { panel, t } = props
   const { record, problem } = useRecord(props.live, t, 'landscapeSlice', panel.path, panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return (
     <LandscapeSliceView
       record={record}
-      figure={FIG}
+      figure={base}
       title={props.title}
       filename={props.filename}
       {...(panel.surface === undefined ? {} : { surface: panel.surface })}
@@ -260,9 +267,10 @@ export function StabilityPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'stabilityRegion', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <StabilityRegionView record={record} figure={FIG} title={props.title} filename={props.filename} />
+  return <StabilityRegionView record={record} figure={base} title={props.title} filename={props.filename} />
 }
 
 /**
@@ -279,9 +287,11 @@ export function EquationPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
+  const tall = useMemo(() => reshaped(base, { height: Math.round(base.height * TALL_RATIO) }), [base])
   const { record, problem } = useRecord(props.live, props.t, 'equationFit', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <EquationFitView record={record} figure={TALL} title={props.title} filename={props.filename} />
+  return <EquationFitView record={record} figure={tall} title={props.title} filename={props.filename} />
 }
 
 /**
@@ -327,9 +337,10 @@ export function TranscriptPanel(props: {
   readonly title: string
   readonly filename: string
 }): ReactNode {
+  const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'transcript', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <TranscriptView record={record} figure={FIG} title={props.title} filename={props.filename} />
+  return <TranscriptView record={record} figure={base} title={props.title} filename={props.filename} />
 }
 
 /**

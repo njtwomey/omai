@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type Algorithm, iterate, runAlgorithm, runFor } from './algorithm.ts'
+import { type Algorithm, iterate, runAlgorithm, runFor, snapshotOf } from './algorithm.ts'
 import { checkpointEvery, resume, seek } from './checkpoint.ts'
 import type { CheckpointEvent, RunStatus } from './events.ts'
 import { policies } from './policy.ts'
@@ -116,5 +116,38 @@ describe('checkpoints', () => {
       { maxSteps: 12, tracer: again, policy: policies.debug },
     )
     expect(again.events.filter((e) => e.type === 'checkpoint').map((e) => (e as CheckpointEvent).step)).toEqual([20])
+  })
+})
+
+describe('state and mutation', () => {
+  interface Frontier {
+    readonly open: number[]
+  }
+  const search: Algorithm<Frontier> = {
+    name: 'search',
+    config: {},
+    init: () => ({ open: [] }),
+    step: (s, ctx) => {
+      s.open.push(ctx.t)
+      return s
+    },
+    snapshot: (s) => ({ open: [...s.open] }),
+    serialise: (s) => ({ open: [...s.open] }),
+    deserialise: (j) => ({ open: [...(j as { open: number[] }).open] }),
+  }
+
+  it('iterate yields the live object: an algorithm that mutates in place shows every kept state as the latest', () => {
+    const states = Array.from(iterate(search, { maxSteps: 3 }), (x) => x.state)
+    expect(states.every((s) => s === states[0])).toBe(true)
+    expect(states[0]?.open).toEqual([0, 1, 2])
+  })
+
+  it('snapshotOf keeps each state as it was, and is the identity without a snapshot', () => {
+    const kept = Array.from(iterate(search, { maxSteps: 3 }), (x) => snapshotOf(search, x.state).open)
+    expect(kept).toEqual([[], [0], [0, 1], [0, 1, 2]])
+    const plain = { ...search }
+    delete plain.snapshot
+    const live = { open: [1] }
+    expect(snapshotOf(plain, live)).toBe(live)
   })
 })

@@ -18,7 +18,7 @@ import { type MutableRefObject, type ReactElement, useEffect, useMemo, useRef, u
 import { Player } from '../Player.tsx'
 import type { StartPolicy } from '../start.ts'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
-import { setSessionPreferences } from './preferences.ts'
+import { useSessionPreferences, useSetSessionPreferences } from './preferences.ts'
 import { SessionExport, type SessionExportProps } from './SessionExport.tsx'
 import { type LiveSession, type LiveSessions, variantsOf } from './useSession.ts'
 
@@ -55,8 +55,24 @@ export function SessionPlayer<S, C extends Config>(props: {
    * draws on its own frame (a canvas) reads it to show the frame at the playhead.
    */
   readonly playhead?: MutableRefObject<number>
+  /**
+   * The rate in steps per second. Given, it rules (the rate menu asks `onFpsChange` and shows this); omitted, the player
+   * starts at the stored preference (`fps` of the session preferences, 60 unless a `SessionPreferencesProvider` says
+   * another) and the reader's pick from the menu is kept in the player.
+   */
+  readonly fps?: number
+  /** Called with the rate the reader picked from the rate menu. */
+  readonly onFpsChange?: (fps: number) => void
+  /**
+   * Offer the eager toggle (default true). `false` hides it, for a page that has its own control for the mode; it is
+   * never offered with `start` given, because the start policy then rules and a toggle would do nothing.
+   */
+  readonly eagerToggle?: boolean
+  /** Show the statistics line (the tape's event counts and the milliseconds of the last slice; default true). */
+  readonly statistics?: boolean
 }): ReactElement {
   const { live, at, onScrub } = props
+  const statistics = props.statistics ?? true
   const variants = variantsOf(live)
   // Every variant is remade at once, so the first one's session stands for the remake.
   const first = variants[0]?.live.session
@@ -67,17 +83,25 @@ export function SessionPlayer<S, C extends Config>(props: {
   const viewed = at === null ? head : Math.min(at, head)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
   const counts = useMemo(() => {
+    if (!statistics) return ''
     const c = new Map<string, number>()
     for (const e of first?.run().events ?? []) c.set(e.type, (c.get(e.type) ?? 0) + 1)
     const text = [...c].map(([k, v]) => `${v} ${k}`).join(', ')
     return variants.length > 1 && text !== '' ? `${text} × ${variants.length} variants` : text
-  }, [first, live.version, variants.length])
+  }, [first, live.version, variants.length, statistics])
   // A producer with a lookahead computes up to the cursor and no more: tell it where the cursor stands (and again after
   // a remake, which made a new producer).
   const follow = live.follow
   // biome-ignore lint/correctness/useExhaustiveDependencies: once per step and per remake; `follow` reads the latest producer
   useEffect(() => follow?.(viewed), [viewed, first])
-  const [fps, setFps] = useState(60)
+  const preferences = useSessionPreferences()
+  const setPreferences = useSetSessionPreferences()
+  const [picked, setPicked] = useState<number | undefined>(undefined)
+  const fps = props.fps ?? picked ?? preferences.fps
+  const setFps = (rate: number): void => {
+    setPicked(rate)
+    props.onFpsChange?.(rate)
+  }
   // The cursor ticks through the tape at `fps` steps per second: it waits at the head of an unfinished run for the
   // producer, and stops at the end of a finished one.
   const [ticking, setTicking] = useState(false)
@@ -115,7 +139,7 @@ export function SessionPlayer<S, C extends Config>(props: {
     handlers.current.pause()
   }
   useTicker(
-    ticking,
+    ticking && live.active,
     fps,
     (n) => {
       const { head: h, done } = cursor.current
@@ -212,10 +236,10 @@ export function SessionPlayer<S, C extends Config>(props: {
     fps,
     open: !live.done,
     eager,
-    ...(props.start === undefined
+    ...(props.start === undefined && props.eagerToggle !== false
       ? {
           setEager: (on: boolean): void => {
-            setSessionPreferences({ mode: on ? 'eager' : 'live' })
+            setPreferences({ mode: on ? 'eager' : 'live' })
             if (on) {
               stop()
               if (live.done) onScrub(null)
@@ -282,17 +306,20 @@ export function SessionPlayer<S, C extends Config>(props: {
                 ? ` · computed to ${head}`
                 : ' · computing'
               : ''
+  const showsRow = statistics || live.producer?.fallback !== undefined || props.pageExport !== undefined
   return (
     <div className="flex flex-col gap-3">
       <Player controller={controller} stamp={(f) => `step ${f} of ${head}${status}${where}`} fpsChoices={RATES} />
-      <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
-        <span>{counts || 'nothing recorded'}</span>
-        <span>last slice {live.lastMs.toFixed(1)} ms</span>
-        {live.producer?.fallback === undefined ? null : <span>main thread: {live.producer.fallback}</span>}
-        {props.pageExport === undefined ? null : (
-          <SessionExport live={live} at={at} onScrub={onScrub} {...props.pageExport} />
-        )}
-      </div>
+      {showsRow ? (
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
+          {statistics ? <span>{counts || 'nothing recorded'}</span> : null}
+          {statistics ? <span>last slice {live.lastMs.toFixed(1)} ms</span> : null}
+          {live.producer?.fallback === undefined ? null : <span>main thread: {live.producer.fallback}</span>}
+          {props.pageExport === undefined ? null : (
+            <SessionExport live={live} at={at} onScrub={onScrub} {...props.pageExport} />
+          )}
+        </div>
+      ) : null}
       {live.error === undefined ? null : (
         <div role="alert" className="rounded border border-red-500/50 px-2 py-1 text-xs text-red-500">
           the session failed: {live.error}

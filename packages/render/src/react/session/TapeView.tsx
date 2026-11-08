@@ -19,7 +19,7 @@ import { FigureFrame } from '../FigureFrame.tsx'
 import { SceneView } from '../SceneView.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
-import { Note } from './RowsPanel.tsx'
+import { Note, usePanelFigure } from './RowsPanel.tsx'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { recordedSteps, stepMarker, useScrubClick } from './scrub.ts'
 import type { LiveSession } from './useSession.ts'
@@ -82,6 +82,8 @@ export function TapeChannels<S, C extends Config>(
   props: Omit<TapeViewProps<S, C>, 'onScrub'> & { readonly onScrub?: (t: number | null) => void },
 ): ReactElement {
   const { live, at, onEpisodeClick } = props
+  const base = usePanelFigure(FIG)
+  const small = usePanelFigure(SMALL)
   const mode = useColourMode()
   const s = live.session
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tape changes with the version
@@ -114,10 +116,10 @@ export function TapeChannels<S, C extends Config>(
         ))}
         {eps.length > 0 ? (
           <Chart
-            figure={FIG}
+            figure={base}
             option={cartesian(episodeCurves(run, { mode, window: 10 }), {
               mode,
-              figure: FIG,
+              figure: base,
               title: 'return per episode (click one)',
               x: { label: 'episode' },
             })}
@@ -153,7 +155,7 @@ export function TapeChannels<S, C extends Config>(
                 <div className="text-sm opacity-70">
                   {kind} at step {latest.step}
                 </div>
-                <ExpositionView record={latest.payload} figure={SMALL} />
+                <ExpositionView record={latest.payload} figure={small} />
               </div>
             )
           return (
@@ -185,7 +187,7 @@ export function TapeChannels<S, C extends Config>(
           return record !== undefined && isExposition(record) ? (
             <div key={name} className="flex flex-col gap-1">
               <div className="text-sm opacity-70">{name}, from the tape so far</div>
-              <ExpositionView record={record} figure={SMALL} />
+              <ExpositionView record={record} figure={small} />
             </div>
           ) : null
         })}
@@ -206,21 +208,22 @@ function MetricGroup(props: {
   readonly onScrub: ((t: number | null) => void) | undefined
 }): ReactElement {
   const { prefix, names, run, viewed, head, mode } = props
+  const base = usePanelFigure(FIG)
   const option = useMemo(() => {
     const curves = metricCurves(run, names, { mode })
     return cartesian([curves, ...stepMarker(curves, viewed, mode)], {
       mode,
-      figure: FIG,
+      figure: base,
       title: prefix || 'metrics',
       x: { label: 'step' },
       legend: true,
     })
-  }, [run, names, viewed, mode, prefix])
+  }, [run, names, viewed, mode, prefix, base])
   const steps = useMemo(() => recordedSteps(run, names), [run, names])
   const onInit = useScrubClick(steps, head, props.onScrub)
   return (
-    <FigureFrame figure={FIG} filename={prefix || 'metrics'}>
-      <Chart figure={FIG} option={option} onInit={onInit} />
+    <FigureFrame figure={base} filename={prefix || 'metrics'}>
+      <Chart figure={base} option={option} onInit={onInit} />
     </FigureFrame>
   )
 }
@@ -232,6 +235,7 @@ function TensorPanel(props: {
   readonly mode: 'light' | 'dark'
 }): ReactElement | null {
   const { name, events, viewed, mode } = props
+  const small = usePanelFigure(SMALL)
   const at = events.filter((e) => e.step <= viewed).at(-1)
   if (at === undefined) return null
   if (at.values !== undefined) {
@@ -239,8 +243,8 @@ function TensorPanel(props: {
     const z = rowsOf(at.values, width)
     return (
       <Chart
-        figure={SMALL}
-        option={heatmapChart(z, {}, { mode, figure: SMALL, title: `${name} at ${at.step} (${at.shape.join('×')})` })}
+        figure={small}
+        option={heatmapChart(z, {}, { mode, figure: small, title: `${name} at ${at.step} (${at.shape.join('×')})` })}
       />
     )
   }
@@ -248,10 +252,10 @@ function TensorPanel(props: {
   const norms = events.map((e) => e.summary?.norm ?? Number.NaN)
   return (
     <Chart
-      figure={SMALL}
+      figure={small}
       option={cartesian([lines([{ x: steps, y: norms, name }], { mode })], {
         mode,
-        figure: SMALL,
+        figure: small,
         title: `‖${name}‖ (summary)`,
         x: { label: 'step' },
       })}

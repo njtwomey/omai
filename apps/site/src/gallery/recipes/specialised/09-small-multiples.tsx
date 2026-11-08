@@ -10,9 +10,11 @@ import {
   stateFromJson,
   stateToJson,
 } from 'omai-engine/trace'
+import { figure } from 'omai-render/figure'
 import {
   ControlPanel,
   type Panel,
+  PanelFigureProvider,
   SessionPanels,
   SessionPlayer,
   SpaceControls,
@@ -27,7 +29,7 @@ export const recipe: Recipe = {
   title: 'Small multiples',
   question: 'How do I draw one panel many times, once per variant, per quantity or per value, on shared axes?',
   explain:
-    'The layout entry `{ kind: "multiples", panel, over }` repeats one panel spec over a facet in a grid of titled cells under the one step cursor. `over: { by: "variants" }` makes a cell of each variant of a comparison (here four learning rates), with the vertical axis of the curves shared so that the cells compare by eye (`shared: false` lets each find its own scale); `{ by: "paths" }` makes a chart of each path of a curves panel; `{ by: "args", key, values }` asks the panel\'s probe once per value (a flow per curvature). Every cell follows the player.',
+    'The layout entry `{ kind: "multiples", panel, over }` repeats one panel spec over a facet in a grid of titled cells under the one step cursor. `over: { by: "variants" }` makes a cell of each variant of a comparison (here four learning rates), with the vertical axis of the curves shared so that the cells compare by eye (`shared: false` lets each find its own scale); `{ by: "paths" }` makes a chart of each path of a curves panel; `{ by: "args", key, values }` asks the panel\'s probe once per value (a flow per curvature). Every cell follows the player. The panels here are drawn smaller than the default 440 by 320 so that three fit a row: a `PanelFigureProvider` above them sets the size and type size of every cell, and `statistics={false}` takes the line of event counts off the player.',
   shows: ['vectorField'],
 }
 
@@ -113,6 +115,9 @@ const LAYOUT: readonly Panel[] = [
   },
 ]
 
+// Three cells to a row: smaller than the default 440 by 320, with a smaller type to match.
+const CELL = figure({ width: 360, height: 260, fontSize: 10 })
+
 export default function SmallMultiplesRecipe(): ReactNode {
   const [params, setParams] = useState<Config>(() => defaults(SHARED) as Config)
   const [at, setAt] = useState<number | null>(null)
@@ -131,8 +136,16 @@ export default function SmallMultiplesRecipe(): ReactNode {
       <ControlPanel columns={2}>
         <SpaceControls space={SHARED} value={params} onChange={(p) => setParams(p as Config)} />
       </ControlPanel>
-      <SessionPlayer live={live} at={at} onScrub={setAt} onReset={() => setParams(defaults(SHARED) as Config)} />
-      <SessionPanels id="gallery/small-multiples" live={live} at={at} onScrub={setAt} layout={LAYOUT} />
+      <SessionPlayer
+        live={live}
+        at={at}
+        onScrub={setAt}
+        onReset={() => setParams(defaults(SHARED) as Config)}
+        statistics={false}
+      />
+      <PanelFigureProvider figure={CELL}>
+        <SessionPanels id="gallery/small-multiples" live={live} at={at} onScrub={setAt} layout={LAYOUT} />
+      </PanelFigureProvider>
     </div>
   )
 }

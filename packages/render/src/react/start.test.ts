@@ -24,6 +24,9 @@ describe('start policies', () => {
     expect(progressOf(50, false, 200)).toBe(0.25)
     expect(progressOf(500, false, 200)).toBe(1)
     expect(progressOf(80, true, 200)).toBe(1)
+    // A run that ended after 8 of its 1000 steps is complete, against its own length.
+    expect(progressOf(8, false)).toBe(0.008)
+    expect(progressOf(8, true)).toBe(1)
     expect(progressOf(250, false)).toBe(250 / DEFAULT_STEPS)
     expect(progressOf(5, false, 0)).toBe(0)
   })

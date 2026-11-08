@@ -41,7 +41,14 @@ export function replayLive(file: TapeFile, registry: MethodRegistry): LiveSessio
     // biome-ignore lint/suspicious/noExplicitAny: as above
     (s): LiveVariant<any, any> => ({
       label: s.label,
-      live: { ...handle, session: s.session, head: s.session.t, done: true, apply: () => s.session },
+      live: {
+        ...handle,
+        session: s.session,
+        madeWith: { config: s.session.config, seed: s.session.seed },
+        head: s.session.t,
+        done: true,
+        apply: () => s.session,
+      },
     }),
   )
   return {

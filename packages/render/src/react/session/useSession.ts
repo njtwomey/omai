@@ -70,8 +70,10 @@ export interface LiveHandle {
    */
   readonly status: PlayStatus
   /**
-   * The fraction of the run computed, 0 to 1. The total is the options' `steps` (the engine's default of 1000 without
-   * one), so a run that ends early (it converged) reads less than 1 until it ends, and exactly 1 once it has.
+   * The fraction of the run computed, 0 to 1. While the run goes on, the total is the options' `steps` (the engine's
+   * default of 1000 without one); once it has ended, whatever step it ended at (a run that converged after 8 steps), it
+   * is exactly 1, against its own length. So a run that ends early sits near 0 while it computes and jumps to 1 on the
+   * step that ends it, and a hairline driven by it always completes.
    */
   readonly progress: number
   /** Whether play has been pressed (by the player or by `play()`) and not stopped. */
@@ -81,9 +83,22 @@ export interface LiveHandle {
   /** Stop playing (the tape, and the priming of one, carry on). */
   pause(): void
   /**
+   * Whether the session was let go of (`dispose()`) and nothing has used it since. Its `status` then reads
+   * `'preparing'`, because the tape is at step 0 with nothing computed, which is not a restart: check this to tell a
+   * disposed session from a fresh one. Cleared by `compute`, `play`, `advance` and `apply`. (It is a flag beside `status`
+   * and not a member of {@link PlayStatus}, so a switch over `status` stays exhaustive.)
+   */
+  readonly disposed: boolean
+  /**
+   * Whether the session computes (`active` of the hook's options, default true). While false nothing computes: no
+   * priming, the producer stopped (a worker pauses), `computing` reads false; the tape and the state are kept, and the
+   * computing carries on when it is true again.
+   */
+  readonly active: boolean
+  /**
    * Let go of everything: stop the producer, terminate a worker, drop the tape and the history buffers. The handle
-   * stays valid, at step 0 with nothing computed, and starts from nothing if it is used again (`play`, `compute`).
-   * Unmounting does this by itself.
+   * stays valid, at step 0 with nothing computed and `disposed` true, and starts from nothing if it is used again
+   * (`play`, `compute`). Unmounting does this by itself.
    */
   dispose(): void
 }
@@ -94,12 +109,14 @@ export interface LiveHandle {
  */
 export const STILL_HANDLE: Pick<
   LiveHandle,
-  'start' | 'status' | 'progress' | 'playing' | 'play' | 'pause' | 'dispose'
+  'start' | 'status' | 'progress' | 'playing' | 'play' | 'pause' | 'dispose' | 'disposed' | 'active'
 > = {
   start: 'end',
   status: 'ready',
   progress: 1,
   playing: false,
+  disposed: false,
+  active: true,
   play: () => undefined,
   pause: () => undefined,
   dispose: () => undefined,
@@ -112,6 +129,13 @@ export const STILL_HANDLE: Pick<
  */
 export interface LiveSession<S, C extends Config> extends LiveHandle {
   readonly session: Session<S, C>
+  /**
+   * The configuration and seed the session on the tape was made with, which are the ones its figures are of. A change
+   * to the method's options is applied after a pause (`DEBOUNCE_MS`, 250 ms) or held until `apply` (live mode), and
+   * until then the page's options are newer than the run: draw what the run was made with from here, not from the
+   * options. It is `session.config` and `session.seed`, read in one place, and changes when the session is remade.
+   */
+  readonly madeWith: { readonly config: C; readonly seed: number }
   /** Remake the session from the latest method and options now (it is also `session` from the next render). */
   apply(): Session<S, C>
 }
@@ -154,6 +178,13 @@ export interface SessionHookOptions {
    * factory stable (module level, or memoised): it is read when the sessions are made, and does not remake them.
    */
   readonly producer?: ProducerFactory
+  /**
+   * Whether the sessions compute (default true). While false nothing computes: no priming, the producer stopped (a
+   * worker pauses), the player's clock off; the tape, the state and a change of options held are kept, and the work
+   * carries on when it is true again. The declarative form of `halt()`, for a session on a page that is hidden (a slide
+   * that is not showing), where `dispose()` would throw the tape away. `step` by hand still computes.
+   */
+  readonly active?: boolean
 }
 
 /** Milliseconds of computation per animation frame while computing ahead and playing: the rest of the frame is the page's. */
@@ -236,10 +267,18 @@ export function useSessions<S, C extends Config>(
   const current = useRef(producer)
   const applied = useRef(allDeps)
   const [version, setVersion] = useState(0)
-  const [computing, setComputing] = useState(false)
+  const [wanted, setComputing] = useState(false)
+  const [disposed, setDisposed] = useState(false)
+  const active = hook.active ?? true
+  // Computing is what is wanted and allowed: an inactive session keeps wanting, and carries on when it is active again.
+  const computing = wanted && active
   const [playing, setPlaying] = useState(false)
   const playingNow = useRef(playing)
   playingNow.current = playing
+  const disposedNow = useRef(disposed)
+  disposedNow.current = disposed
+  const activeNow = useRef(active)
+  activeNow.current = active
   const hooks = useRef(hook)
   hooks.current = hook
   const [lastMs, setLastMs] = useState(0)
@@ -252,6 +291,8 @@ export function useSessions<S, C extends Config>(
     setProducer(next)
     setComputing(false)
     setPlaying(false)
+    disposedNow.current = false
+    setDisposed(false)
     bump()
     return next.sessions
   }, [bump])
@@ -260,6 +301,8 @@ export function useSessions<S, C extends Config>(
       const t0 = performance.now() // allow: the cost of a frame's work, shown in the status line; not on the tape
       current.current.advance(budget)
       setLastMs(performance.now() - t0) // allow: as above
+      disposedNow.current = false
+      setDisposed(false)
       bump()
     },
     [bump],
@@ -283,6 +326,8 @@ export function useSessions<S, C extends Config>(
     let lastBump: number | undefined
     let cost = 0
     let handle = requestAnimationFrame(function tick(now: number) {
+      // A frame queued before `dispose()` or before the session went inactive may still come: it computes nothing.
+      if (disposedNow.current || !activeNow.current) return
       const sessions = current.current.sessions
       const t0 = performance.now() // allow: the frame budget and the cost of the frame's work; not on the tape
       current.current.advance({ ms: playingNow.current ? FRAME_MS : PRIME_MS, clock: () => performance.now() }) // allow: as above
@@ -334,8 +379,10 @@ export function useSessions<S, C extends Config>(
   // is told to ignore the lookahead.
   // biome-ignore lint/correctness/useExhaustiveDependencies: a remake (a new producer) is primed again
   useEffect(() => {
-    if (prime && current.current.sessions.some((s) => s.status === undefined)) setComputing(true)
-  }, [prime, producer])
+    if (prime && active && !disposedNow.current && current.current.sessions.some((s) => s.status === undefined)) {
+      setComputing(true)
+    }
+  }, [prime, active, producer])
   const stale = !same(allDeps, applied.current)
   const held = stale && start === 'play' && (hook.hold ?? true)
   // An unheld change is applied after a pause, and each further change restarts the pause.
@@ -349,6 +396,8 @@ export function useSessions<S, C extends Config>(
     return () => clearTimeout(handle)
   }, [stale, held, change, apply])
   const compute = (): void => {
+    disposedNow.current = false
+    setDisposed(false)
     if (current.current.sessions.some((s) => s.status === undefined)) setComputing(true)
   }
   const halt = (): void => setComputing(false)
@@ -360,6 +409,8 @@ export function useSessions<S, C extends Config>(
   const pause = (): void => setPlaying(false)
   const dispose = (): void => {
     current.current.dispose()
+    disposedNow.current = true
+    setDisposed(true)
     setComputing(false)
     setPlaying(false)
     bump()
@@ -388,6 +439,8 @@ export function useSessions<S, C extends Config>(
     playing,
     play,
     pause,
+    disposed,
+    active,
     dispose,
   }
   const list = sessions.map(
@@ -396,6 +449,7 @@ export function useSessions<S, C extends Config>(
       live: {
         ...handle,
         session: s,
+        madeWith: { config: s.config, seed: s.seed },
         head: s.t,
         done: s.status !== undefined,
         apply: () => apply()[i] ?? s,
