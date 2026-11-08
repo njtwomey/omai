@@ -1,1 +1,747 @@
-{"schema":"mdml.tape/1","method":"gp/regression","seed":0,"title":"A Gaussian process, tuned by a gradient","variants":[{"label":"session","config":{"alpha":0.03,"restarts":0,"solver":{"memory":10,"ftol":2.220446049250313e-9,"gradTol":0.00001,"kind":"lbfgsb"}},"head":11,"status":"converged","run":{"schema":"mdml.run/1","events":[{"type":"run","runId":"gp/regression:0","name":"gp/regression","seed":0,"version":"0.1.2","config":{"alpha":0.03,"restarts":0,"solver":{"memory":10,"ftol":2.220446049250313e-9,"gradTol":0.00001,"kind":"lbfgsb"}},"channels":{"metrics":{"solver/gradNorm":{"description":"the infinity norm of the projected gradient of the likelihood in theta"},"solver/run":{"description":"the optimiser run in progress (0 is the kernel’s own start)"},"gp/logMarginalLikelihood":{"description":"the log marginal likelihood at the current hyperparameters","direction":"higher"}},"tensors":{"gp/hyper":{"role":"param","description":"the kernel hyperparameters in natural units, in the order of `hyperparameters(kernel)`"}},"messages":{"fit/iteration/end":{"description":"","payload":{"t":"the iteration just finished"}}},"episodes":false,"frames":false}},{"type":"checkpoint","runId":"gp/regression:0","step":0,"state":{"run":0,"starts":[[0,-0.6931471805599453]],"inner":{"x":{"$typed":"Float64Array","values":[0,-0.6931471805599453]},"value":20.30077378300438,"grad":{"$typed":"Float64Array","values":[-9.497262811484825,58.6198697828131]},"nfev":1,"ngev":1,"nhev":0,"step":0,"s":[],"y":[],"theta":1,"iterations":0,"projectedGradNorm":10.819778284410283,"free":2,"segments":0},"steps":0,"best":null,"finished":false}},{"type":"metric","runId":"gp/regression:0","step":0,"name":"gp/logMarginalLikelihood","value":-5.948047621178976},{"type":"tensor","runId":"gp/regression:0","step":0,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":1.3400875797478766,"std":1.1644054739774523,"min":0.1756821057704242,"max":2.504493053725329,"norm":2.5106472588650033,"zeros":0,"histogram":{"edges":[0.1756821057704242,0.4085632005659147,0.6414442953614052,0.8743253901568958,1.1072064849523864,1.3400875797478768,1.5729686745433673,1.8058497693388578,2.0387308641343482,2.2716119589298387,2.504493053725329],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":1,"name":"gp/logMarginalLikelihood","value":-5.6647444930650765},{"type":"tensor","runId":"gp/regression:0","step":1,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":1.2231926928479795,"std":1.0378804825051176,"min":0.18531221034286172,"max":2.261073175353097,"norm":2.2686543411466396,"zeros":0,"histogram":{"edges":[0.18531221034286172,0.3928883068438852,0.6004644033449087,0.8080404998459323,1.015616596346956,1.2231926928479793,1.4307687893490029,1.6383448858500262,1.8459209823510498,2.0534970788520734,2.261073175353097],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":2,"name":"gp/logMarginalLikelihood","value":-5.303475890808659},{"type":"tensor","runId":"gp/regression:0","step":2,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.9755603241924258,"std":0.7791247445406482,"min":0.19643557965177766,"max":1.754685068733074,"norm":1.7656462350618036,"zeros":0,"histogram":{"edges":[0.19643557965177766,0.3522605285599073,0.508085477468037,0.6639104263761666,0.8197353752842962,0.9755603241924258,1.1313852731005556,1.2872102220086852,1.4430351709168148,1.5988601198249444,1.754685068733074],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":3,"name":"gp/logMarginalLikelihood","value":-4.9004023494602915},{"type":"tensor","runId":"gp/regression:0","step":3,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.7053360057487119,"std":0.5068275567816434,"min":0.19850844896706862,"max":1.2121635625303553,"norm":1.2283102648099926,"zeros":0,"histogram":{"edges":[0.19850844896706862,0.2998739603233973,0.40123947167972596,0.5026049830360547,0.6039704943923834,0.705336005748712,0.8067015171050408,0.9080670284613694,1.009432539817698,1.1107980511740267,1.2121635625303553],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":4,"name":"gp/logMarginalLikelihood","value":-4.24620441209596},{"type":"tensor","runId":"gp/regression:0","step":4,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.3572396512525471,"std":0.17383947995695417,"min":0.18340017129559288,"max":0.5310791312095012,"norm":0.5618546666509867,"zeros":0,"histogram":{"edges":[0.18340017129559288,0.21816806728698374,0.25293596327837453,0.2877038592697654,0.32247175526115623,0.3572396512525471,0.39200754724393794,0.42677544323532873,0.4615433392267196,0.49631123521811044,0.5310791312095013],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"checkpoint","runId":"gp/regression:0","step":5,"state":{"run":0,"starts":[[0,-0.6931471805599453]],"inner":{"x":{"$typed":"Float64Array","values":[-0.6328442458496104,-1.6960847851602476]},"value":4.24620441209596,"grad":{"$typed":"Float64Array","values":[-0.2960546949306089,4.976154950370243]},"nfev":8,"ngev":8,"nhev":0,"step":0.8290391008862554,"iterations":5,"s":[{"$typed":"Float64Array","values":[0.9180863402941515,-1.045931953774728]},{"$typed":"Float64Array","values":[-0.10224678336762716,0.053365881469426]},{"$typed":"Float64Array","values":[-0.25355016412675924,0.05829251251924772]},{"$typed":"Float64Array","values":[-0.3698825616751216,0.010497124651120515]},{"$typed":"Float64Array","values":[-0.8252510769742538,-0.07916116946536844]}],"y":[{"$typed":"Float64Array","values":[11.81798923018615,-60.842417222450536]},{"$typed":"Float64Array","values":[-0.36510966001226475,2.0239419895489283]},{"$typed":"Float64Array","values":[-0.5356178606405839,2.5222179547668393]},{"$typed":"Float64Array","values":[-0.49777718317008324,1.3699844879465557]},{"$typed":"Float64Array","values":[-1.2182764098090018,1.282557957745356]}],"theta":3.4620064841685827,"projectedGradNorm":4.976154950370243,"cauchy":{"$typed":"Float64Array","values":[0.17732662453983802,-1.6773214623202368]},"free":2,"segments":1,"lineSearch":{"alpha":1,"value":4.24620441209596,"slope":-0.14959878947742175,"grad":{"$typed":"Float64Array","values":[-0.2960546949306089,4.976154950370243]},"success":true,"evaluations":1,"gradEvaluations":1,"trials":[{"alpha":1,"value":4.24620441209596,"slope":-0.14959878947742175}],"message":"strong Wolfe conditions satisfied"},"curvature":{"sy":0.9038551314049691,"used":true,"s":{"$typed":"Float64Array","values":[-0.8252510769742538,-0.07916116946536844]},"y":{"$typed":"Float64Array","values":[-1.2182764098090018,1.282557957745356]}}},"steps":5,"best":null,"finished":false}},{"type":"metric","runId":"gp/regression:0","step":5,"name":"gp/logMarginalLikelihood","value":-3.737650377097596},{"type":"tensor","runId":"gp/regression:0","step":5,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.2773003771443781,"std":0.12063003823418883,"min":0.15667033891018928,"max":0.39793041537856694,"norm":0.42766132696047277,"zeros":0,"histogram":{"edges":[0.15667033891018928,0.18079634655702703,0.20492235420386481,0.22904836185070257,0.25317436949754035,0.2773003771443781,0.30142638479121586,0.3255523924380537,0.34967840008489137,0.3738044077317292,0.39793041537856694],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":6,"name":"gp/logMarginalLikelihood","value":-3.5928298470201057},{"type":"tensor","runId":"gp/regression:0","step":6,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.29151167534038647,"std":0.15523092659538607,"min":0.1362807487450004,"max":0.44674260193577253,"norm":0.46706679914423593,"zeros":0,"histogram":{"edges":[0.1362807487450004,0.16732693406407761,0.19837311938315483,0.22941930470223204,0.26046549002130925,0.29151167534038647,0.3225578606594637,0.3536040459785409,0.3846502312976181,0.4156964166166953,0.44674260193577253],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":7,"name":"gp/logMarginalLikelihood","value":-3.572318668355855},{"type":"tensor","runId":"gp/regression:0","step":7,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.274937439009101,"std":0.1358114298134089,"min":0.1391260091956921,"max":0.4107488688225099,"norm":0.4336711653703659,"zeros":0,"histogram":{"edges":[0.1391260091956921,0.16628829515837387,0.19345058112105565,0.22061286708373742,0.2477751530464192,0.27493743900910095,0.3020997249717827,0.3292620109344645,0.3564242968971463,0.38358658285982805,0.4107488688225098],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":8,"name":"gp/logMarginalLikelihood","value":-3.571889393762822},{"type":"tensor","runId":"gp/regression:0","step":8,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.2792231421115729,"std":0.13902998427978785,"min":0.14019315783178504,"max":0.41825312639136075,"norm":0.4411233378988187,"zeros":0,"histogram":{"edges":[0.14019315783178504,0.16799915468774262,0.19580515154370018,0.22361114839965776,0.2514171452556153,0.2792231421115729,0.3070291389675305,0.334835135823488,0.36264113267944564,0.39044712953540317,0.41825312639136075],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"metric","runId":"gp/regression:0","step":9,"name":"gp/logMarginalLikelihood","value":-3.5718722165700996},{"type":"tensor","runId":"gp/regression:0","step":9,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.2785702330736249,"std":0.1385620411301798,"min":0.14000819194344508,"max":0.4171322742038047,"norm":0.4400018499889639,"zeros":0,"histogram":{"edges":[0.14000819194344508,0.16772060016948104,0.19543300839551703,0.223145416621553,0.25085782484758895,0.27857023307362494,0.3062826412996609,0.33399504952569686,0.36170745775173285,0.3894198659777688,0.4171322742038047],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"checkpoint","runId":"gp/regression:0","step":10,"state":{"run":0,"starts":[[0,-0.6931471805599453]],"inner":{"x":{"$typed":"Float64Array","values":[-0.8743519031563206,-1.9660543442029526]},"value":3.5718722165700996,"grad":{"$typed":"Float64Array","values":[0.0001025694452652659,-0.00015552301968166978]},"nfev":13,"ngev":13,"nhev":0,"step":0.002990629856576605,"iterations":10,"s":[{"$typed":"Float64Array","values":[0.9180863402941515,-1.045931953774728]},{"$typed":"Float64Array","values":[-0.10224678336762716,0.053365881469426]},{"$typed":"Float64Array","values":[-0.25355016412675924,0.05829251251924772]},{"$typed":"Float64Array","values":[-0.3698825616751216,0.010497124651120515]},{"$typed":"Float64Array","values":[-0.8252510769742538,-0.07916116946536844]},{"$typed":"Float64Array","values":[-0.2886338788658811,-0.15752664820833195]},{"$typed":"Float64Array","values":[0.11570543989492177,-0.13942675866945953]},{"$typed":"Float64Array","values":[-0.08400059117978986,0.02066297650269333]},{"$typed":"Float64Array","values":[0.0181048117917334,0.007641107051135965]},{"$typed":"Float64Array","values":[-0.0026834389476944054,-0.001320235718742735]}],"y":[{"$typed":"Float64Array","values":[11.81798923018615,-60.842417222450536]},{"$typed":"Float64Array","values":[-0.36510966001226475,2.0239419895489283]},{"$typed":"Float64Array","values":[-0.5356178606405839,2.5222179547668393]},{"$typed":"Float64Array","values":[-0.49777718317008324,1.3699844879465557]},{"$typed":"Float64Array","values":[-1.2182764098090018,1.282557957745356]},{"$typed":"Float64Array","values":[-0.24572494728263705,-2.2088743506585957]},{"$typed":"Float64Array","values":[0.8384498467887196,-3.552740430874212]},{"$typed":"Float64Array","values":[-0.32168848109295023,0.7049335261169792]},{"$typed":"Float64Array","values":[0.028638977535744625,0.09913331906096046]},{"$typed":"Float64Array","values":[-0.0035181315730028195,-0.01876253703505716]}],"theta":10.651632085576274,"projectedGradNorm":0.00015552301968166978,"cauchy":{"$typed":"Float64Array","values":[-0.8718594975643007,-1.9657158411123683]},"free":2,"segments":1,"lineSearch":{"alpha":1,"value":3.5718722165700996,"slope":-6.991179859775425e-8,"grad":{"$typed":"Float64Array","values":[0.0001025694452652659,-0.00015552301968166978]},"success":true,"evaluations":1,"gradEvaluations":1,"trials":[{"alpha":1,"value":3.5718722165700996,"slope":-6.991179859775425e-8}],"message":"strong Wolfe conditions satisfied"},"curvature":{"sy":0.00003421166285402502,"used":true,"s":{"$typed":"Float64Array","values":[-0.0026834389476944054,-0.001320235718742735]},"y":{"$typed":"Float64Array","values":[-0.0035181315730028195,-0.01876253703505716]}}},"steps":10,"best":null,"finished":false}},{"type":"metric","runId":"gp/regression:0","step":10,"name":"gp/logMarginalLikelihood","value":-3.5718722147918314},{"type":"tensor","runId":"gp/regression:0","step":10,"name":"gp/hyper","role":"param","shape":[2],"summary":{"n":2,"mean":0.27856371490122134,"std":0.13855520410933578,"min":0.1400085107918856,"max":0.41711891901055714,"norm":0.43998929042727536,"zeros":0,"histogram":{"edges":[0.1400085107918856,0.16771955161375274,0.1954305924356199,0.22314163325748707,0.2508526740793542,0.27856371490122134,0.30627475572308854,0.3339857965449557,0.36169683736682284,0.38940787818869,0.41711891901055714],"counts":[1,0,0,0,0,0,0,0,0,1]}}},{"type":"end","runId":"gp/regression:0","status":"converged","steps":11,"summary":{}}]},"kinds":{"solver/gradNorm":"scalar","solver/run":"scalar","fit/iteration/end":"event","model/params":"derived","model/decision-surface":"derived","model/predictions":"derived","gp/logMarginalLikelihood":"scalar","gp/hyper":"tensor","model/posterior":"derived","model/samples":"derived","solver/surface":"derived"},"fired":{"fit/iteration/end":[0,1,2,3,4,5,6,7,8,9,10]},"probes":[]}]}
+{
+  "schema": "mdml.tape/1",
+  "method": "gp/regression",
+  "seed": 0,
+  "title": "A Gaussian process, tuned by a gradient",
+  "variants": [
+    {
+      "label": "session",
+      "config": {
+        "alpha": 0.03,
+        "restarts": 0,
+        "solver": {
+          "memory": 10,
+          "ftol": 2.220446049250313e-9,
+          "gradTol": 0.00001,
+          "kind": "lbfgsb"
+        }
+      },
+      "head": 11,
+      "status": "converged",
+      "run": {
+        "schema": "mdml.run/1",
+        "events": [
+          {
+            "type": "run",
+            "runId": "gp/regression:0",
+            "name": "gp/regression",
+            "seed": 0,
+            "version": "0.1.2",
+            "config": {
+              "alpha": 0.03,
+              "restarts": 0,
+              "solver": {
+                "memory": 10,
+                "ftol": 2.220446049250313e-9,
+                "gradTol": 0.00001,
+                "kind": "lbfgsb"
+              }
+            },
+            "channels": {
+              "metrics": {
+                "solver/gradNorm": {
+                  "description": "the infinity norm of the projected gradient of the likelihood in theta"
+                },
+                "solver/run": {
+                  "description": "the optimiser run in progress (0 is the kernel’s own start)"
+                },
+                "gp/logMarginalLikelihood": {
+                  "description": "the log marginal likelihood at the current hyperparameters",
+                  "direction": "higher"
+                }
+              },
+              "tensors": {
+                "gp/hyper": {
+                  "role": "param",
+                  "description": "the kernel hyperparameters in natural units, in the order of `hyperparameters(kernel)`"
+                }
+              },
+              "messages": {
+                "fit/iteration/end": {
+                  "description": "",
+                  "payload": {
+                    "t": "the iteration just finished"
+                  }
+                }
+              },
+              "episodes": false,
+              "frames": false
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "gp/regression:0",
+            "step": 0,
+            "state": {
+              "run": 0,
+              "starts": [
+                [0,-0.6931471805599453]
+              ],
+              "inner": {
+                "x": {
+                  "$typed": "Float64Array",
+                  "values": [0,-0.6931471805599453]
+                },
+                "value": 20.30077378300438,
+                "grad": {
+                  "$typed": "Float64Array",
+                  "values": [-9.497262811484825,58.6198697828131]
+                },
+                "nfev": 1,
+                "ngev": 1,
+                "nhev": 0,
+                "step": 0,
+                "s": [],
+                "y": [],
+                "theta": 1,
+                "iterations": 0,
+                "projectedGradNorm": 10.819778284410283,
+                "free": 2,
+                "segments": 0
+              },
+              "steps": 0,
+              "best": null,
+              "finished": false
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 0,
+            "name": "gp/logMarginalLikelihood",
+            "value": -5.948047621178976
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 0,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 1.3400875797478766,
+              "std": 1.1644054739774523,
+              "min": 0.1756821057704242,
+              "max": 2.504493053725329,
+              "norm": 2.5106472588650033,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.1756821057704242, 0.4085632005659147, 0.6414442953614052, 0.8743253901568958,
+                  1.1072064849523864, 1.3400875797478768, 1.5729686745433673, 1.8058497693388578,
+                  2.0387308641343482, 2.2716119589298387, 2.504493053725329
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 1,
+            "name": "gp/logMarginalLikelihood",
+            "value": -5.6647444930650765
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 1,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 1.2231926928479795,
+              "std": 1.0378804825051176,
+              "min": 0.18531221034286172,
+              "max": 2.261073175353097,
+              "norm": 2.2686543411466396,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.18531221034286172, 0.3928883068438852, 0.6004644033449087, 0.8080404998459323,
+                  1.015616596346956, 1.2231926928479793, 1.4307687893490029, 1.6383448858500262,
+                  1.8459209823510498, 2.0534970788520734, 2.261073175353097
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 2,
+            "name": "gp/logMarginalLikelihood",
+            "value": -5.303475890808659
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 2,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.9755603241924258,
+              "std": 0.7791247445406482,
+              "min": 0.19643557965177766,
+              "max": 1.754685068733074,
+              "norm": 1.7656462350618036,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.19643557965177766, 0.3522605285599073, 0.508085477468037, 0.6639104263761666,
+                  0.8197353752842962, 0.9755603241924258, 1.1313852731005556, 1.2872102220086852,
+                  1.4430351709168148, 1.5988601198249444, 1.754685068733074
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 3,
+            "name": "gp/logMarginalLikelihood",
+            "value": -4.9004023494602915
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 3,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.7053360057487119,
+              "std": 0.5068275567816434,
+              "min": 0.19850844896706862,
+              "max": 1.2121635625303553,
+              "norm": 1.2283102648099926,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.19850844896706862, 0.2998739603233973, 0.40123947167972596, 0.5026049830360547,
+                  0.6039704943923834, 0.705336005748712, 0.8067015171050408, 0.9080670284613694,
+                  1.009432539817698, 1.1107980511740267, 1.2121635625303553
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 4,
+            "name": "gp/logMarginalLikelihood",
+            "value": -4.24620441209596
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 4,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.3572396512525471,
+              "std": 0.17383947995695417,
+              "min": 0.18340017129559288,
+              "max": 0.5310791312095012,
+              "norm": 0.5618546666509867,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.18340017129559288, 0.21816806728698374, 0.25293596327837453, 0.2877038592697654,
+                  0.32247175526115623, 0.3572396512525471, 0.39200754724393794, 0.42677544323532873,
+                  0.4615433392267196, 0.49631123521811044, 0.5310791312095013
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "gp/regression:0",
+            "step": 5,
+            "state": {
+              "run": 0,
+              "starts": [
+                [0,-0.6931471805599453]
+              ],
+              "inner": {
+                "x": {
+                  "$typed": "Float64Array",
+                  "values": [-0.6328442458496104,-1.6960847851602476]
+                },
+                "value": 4.24620441209596,
+                "grad": {
+                  "$typed": "Float64Array",
+                  "values": [-0.2960546949306089,4.976154950370243]
+                },
+                "nfev": 8,
+                "ngev": 8,
+                "nhev": 0,
+                "step": 0.8290391008862554,
+                "iterations": 5,
+                "s": [
+                  {
+                    "$typed": "Float64Array",
+                    "values": [0.9180863402941515,-1.045931953774728]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.10224678336762716,0.053365881469426]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.25355016412675924,0.05829251251924772]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.3698825616751216,0.010497124651120515]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.8252510769742538,-0.07916116946536844]
+                  }
+                ],
+                "y": [
+                  {
+                    "$typed": "Float64Array",
+                    "values": [11.81798923018615,-60.842417222450536]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.36510966001226475,2.0239419895489283]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.5356178606405839,2.5222179547668393]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.49777718317008324,1.3699844879465557]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-1.2182764098090018,1.282557957745356]
+                  }
+                ],
+                "theta": 3.4620064841685827,
+                "projectedGradNorm": 4.976154950370243,
+                "cauchy": {
+                  "$typed": "Float64Array",
+                  "values": [0.17732662453983802,-1.6773214623202368]
+                },
+                "free": 2,
+                "segments": 1,
+                "lineSearch": {
+                  "alpha": 1,
+                  "value": 4.24620441209596,
+                  "slope": -0.14959878947742175,
+                  "grad": {
+                    "$typed": "Float64Array",
+                    "values": [-0.2960546949306089,4.976154950370243]
+                  },
+                  "success": true,
+                  "evaluations": 1,
+                  "gradEvaluations": 1,
+                  "trials": [
+                    {"alpha":1,"value":4.24620441209596,"slope":-0.14959878947742175}
+                  ],
+                  "message": "strong Wolfe conditions satisfied"
+                },
+                "curvature": {
+                  "sy": 0.9038551314049691,
+                  "used": true,
+                  "s": {
+                    "$typed": "Float64Array",
+                    "values": [-0.8252510769742538,-0.07916116946536844]
+                  },
+                  "y": {
+                    "$typed": "Float64Array",
+                    "values": [-1.2182764098090018,1.282557957745356]
+                  }
+                }
+              },
+              "steps": 5,
+              "best": null,
+              "finished": false
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 5,
+            "name": "gp/logMarginalLikelihood",
+            "value": -3.737650377097596
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 5,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.2773003771443781,
+              "std": 0.12063003823418883,
+              "min": 0.15667033891018928,
+              "max": 0.39793041537856694,
+              "norm": 0.42766132696047277,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.15667033891018928, 0.18079634655702703, 0.20492235420386481, 0.22904836185070257,
+                  0.25317436949754035, 0.2773003771443781, 0.30142638479121586, 0.3255523924380537,
+                  0.34967840008489137, 0.3738044077317292, 0.39793041537856694
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 6,
+            "name": "gp/logMarginalLikelihood",
+            "value": -3.5928298470201057
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 6,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.29151167534038647,
+              "std": 0.15523092659538607,
+              "min": 0.1362807487450004,
+              "max": 0.44674260193577253,
+              "norm": 0.46706679914423593,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.1362807487450004, 0.16732693406407761, 0.19837311938315483, 0.22941930470223204,
+                  0.26046549002130925, 0.29151167534038647, 0.3225578606594637, 0.3536040459785409,
+                  0.3846502312976181, 0.4156964166166953, 0.44674260193577253
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 7,
+            "name": "gp/logMarginalLikelihood",
+            "value": -3.572318668355855
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 7,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.274937439009101,
+              "std": 0.1358114298134089,
+              "min": 0.1391260091956921,
+              "max": 0.4107488688225099,
+              "norm": 0.4336711653703659,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.1391260091956921, 0.16628829515837387, 0.19345058112105565, 0.22061286708373742,
+                  0.2477751530464192, 0.27493743900910095, 0.3020997249717827, 0.3292620109344645,
+                  0.3564242968971463, 0.38358658285982805, 0.4107488688225098
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 8,
+            "name": "gp/logMarginalLikelihood",
+            "value": -3.571889393762822
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 8,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.2792231421115729,
+              "std": 0.13902998427978785,
+              "min": 0.14019315783178504,
+              "max": 0.41825312639136075,
+              "norm": 0.4411233378988187,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.14019315783178504, 0.16799915468774262, 0.19580515154370018, 0.22361114839965776,
+                  0.2514171452556153, 0.2792231421115729, 0.3070291389675305, 0.334835135823488,
+                  0.36264113267944564, 0.39044712953540317, 0.41825312639136075
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 9,
+            "name": "gp/logMarginalLikelihood",
+            "value": -3.5718722165700996
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 9,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.2785702330736249,
+              "std": 0.1385620411301798,
+              "min": 0.14000819194344508,
+              "max": 0.4171322742038047,
+              "norm": 0.4400018499889639,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.14000819194344508, 0.16772060016948104, 0.19543300839551703, 0.223145416621553,
+                  0.25085782484758895, 0.27857023307362494, 0.3062826412996609, 0.33399504952569686,
+                  0.36170745775173285, 0.3894198659777688, 0.4171322742038047
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "gp/regression:0",
+            "step": 10,
+            "state": {
+              "run": 0,
+              "starts": [
+                [0,-0.6931471805599453]
+              ],
+              "inner": {
+                "x": {
+                  "$typed": "Float64Array",
+                  "values": [-0.8743519031563206,-1.9660543442029526]
+                },
+                "value": 3.5718722165700996,
+                "grad": {
+                  "$typed": "Float64Array",
+                  "values": [0.0001025694452652659,-0.00015552301968166978]
+                },
+                "nfev": 13,
+                "ngev": 13,
+                "nhev": 0,
+                "step": 0.002990629856576605,
+                "iterations": 10,
+                "s": [
+                  {
+                    "$typed": "Float64Array",
+                    "values": [0.9180863402941515,-1.045931953774728]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.10224678336762716,0.053365881469426]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.25355016412675924,0.05829251251924772]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.3698825616751216,0.010497124651120515]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.8252510769742538,-0.07916116946536844]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.2886338788658811,-0.15752664820833195]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [0.11570543989492177,-0.13942675866945953]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.08400059117978986,0.02066297650269333]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [0.0181048117917334,0.007641107051135965]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.0026834389476944054,-0.001320235718742735]
+                  }
+                ],
+                "y": [
+                  {
+                    "$typed": "Float64Array",
+                    "values": [11.81798923018615,-60.842417222450536]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.36510966001226475,2.0239419895489283]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.5356178606405839,2.5222179547668393]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.49777718317008324,1.3699844879465557]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-1.2182764098090018,1.282557957745356]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.24572494728263705,-2.2088743506585957]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [0.8384498467887196,-3.552740430874212]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.32168848109295023,0.7049335261169792]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [0.028638977535744625,0.09913331906096046]
+                  },
+                  {
+                    "$typed": "Float64Array",
+                    "values": [-0.0035181315730028195,-0.01876253703505716]
+                  }
+                ],
+                "theta": 10.651632085576274,
+                "projectedGradNorm": 0.00015552301968166978,
+                "cauchy": {
+                  "$typed": "Float64Array",
+                  "values": [-0.8718594975643007,-1.9657158411123683]
+                },
+                "free": 2,
+                "segments": 1,
+                "lineSearch": {
+                  "alpha": 1,
+                  "value": 3.5718722165700996,
+                  "slope": -6.991179859775425e-8,
+                  "grad": {
+                    "$typed": "Float64Array",
+                    "values": [0.0001025694452652659,-0.00015552301968166978]
+                  },
+                  "success": true,
+                  "evaluations": 1,
+                  "gradEvaluations": 1,
+                  "trials": [
+                    {"alpha":1,"value":3.5718722165700996,"slope":-6.991179859775425e-8}
+                  ],
+                  "message": "strong Wolfe conditions satisfied"
+                },
+                "curvature": {
+                  "sy": 0.00003421166285402502,
+                  "used": true,
+                  "s": {
+                    "$typed": "Float64Array",
+                    "values": [-0.0026834389476944054,-0.001320235718742735]
+                  },
+                  "y": {
+                    "$typed": "Float64Array",
+                    "values": [-0.0035181315730028195,-0.01876253703505716]
+                  }
+                }
+              },
+              "steps": 10,
+              "best": null,
+              "finished": false
+            }
+          },
+          {
+            "type": "metric",
+            "runId": "gp/regression:0",
+            "step": 10,
+            "name": "gp/logMarginalLikelihood",
+            "value": -3.5718722147918314
+          },
+          {
+            "type": "tensor",
+            "runId": "gp/regression:0",
+            "step": 10,
+            "name": "gp/hyper",
+            "role": "param",
+            "shape": [2],
+            "summary": {
+              "n": 2,
+              "mean": 0.27856371490122134,
+              "std": 0.13855520410933578,
+              "min": 0.1400085107918856,
+              "max": 0.41711891901055714,
+              "norm": 0.43998929042727536,
+              "zeros": 0,
+              "histogram": {
+                "edges": [
+                  0.1400085107918856, 0.16771955161375274, 0.1954305924356199, 0.22314163325748707,
+                  0.2508526740793542, 0.27856371490122134, 0.30627475572308854, 0.3339857965449557,
+                  0.36169683736682284, 0.38940787818869, 0.41711891901055714
+                ],
+                "counts": [1,0,0,0,0,0,0,0,0,1]
+              }
+            }
+          },
+          {
+            "type": "end",
+            "runId": "gp/regression:0",
+            "status": "converged",
+            "steps": 11,
+            "summary": {}
+          }
+        ]
+      },
+      "kinds": {
+        "solver/gradNorm": "scalar",
+        "solver/run": "scalar",
+        "fit/iteration/end": "event",
+        "model/params": "derived",
+        "model/decision-surface": "derived",
+        "model/predictions": "derived",
+        "gp/logMarginalLikelihood": "scalar",
+        "gp/hyper": "tensor",
+        "model/posterior": "derived",
+        "model/samples": "derived",
+        "solver/surface": "derived"
+      },
+      "fired": {
+        "fit/iteration/end": [0,1,2,3,4,5,6,7,8,9,10]
+      },
+      "probes": []
+    }
+  ]
+}

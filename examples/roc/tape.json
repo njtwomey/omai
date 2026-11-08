@@ -1,1 +1,384 @@
-{"schema":"mdml.tape/1","method":"svm/svc","seed":0,"title":"A metric curve","variants":[{"label":"session","config":{"loss":"hinge","solver":{"kind":"smo"},"C":1,"kernel":"rbf","degree":3,"coef0":0},"head":45,"status":"converged","run":{"schema":"mdml.run/1","events":[{"type":"run","runId":"svm/svc:0","name":"svm/svc","seed":0,"version":"0.1.2","config":{"loss":"hinge","solver":{"kind":"smo"},"C":1,"kernel":"rbf","degree":3,"coef0":0},"channels":{"metrics":{"solver/dual":{"description":"the dual objective of the pair being solved (to be maximised)","direction":"higher"},"solver/gap":{"description":"the primal-dual gap of the pair being solved (zero at the optimum)","direction":"lower"},"solver/violation":{"description":"the largest KKT violation m(alpha) - M(alpha) of the working-set selection"},"solver/support":{"description":"the support vectors of the pair being solved"},"smo/alphaChanged":{"description":"the change of the two dual variables updated in the step, |da_i| + |da_j|"}},"tensors":{"solver/alphas":{"role":"param","description":"the dual variables of the pair being solved"}},"messages":{"solver/pair":{"description":"the working pair (i, j) of the step, as training rows, and the classes being separated"},"fit/iteration/end":{"description":"","payload":{"t":"the iteration just finished"}}},"episodes":false,"frames":false}},{"type":"metric","runId":"svm/svc:0","step":0,"name":"solver/dual","value":0},{"type":"metric","runId":"svm/svc:0","step":0,"name":"solver/gap","value":120},{"type":"checkpoint","runId":"svm/svc:0","step":0,"state":{"phase":"fit","current":0,"smo":{"alpha":{"$typed":"Float64Array","values":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"grad":{"$typed":"Float64Array","values":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]},"active":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119],"violation":{"$number":"inf"},"iterations":0,"counter":121,"unshrunk":false,"finished":false},"live":{"coef":[{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},{"$number":"-0"},0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rho":0},"margins":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"solved":[],"platt":[null]}},{"type":"metric","runId":"svm/svc:0","step":1,"name":"solver/dual","value":1.9837740815903953},{"type":"metric","runId":"svm/svc:0","step":1,"name":"solver/gap","value":115.71230941677148},{"type":"metric","runId":"svm/svc:0","step":2,"name":"solver/dual","value":3.9610659816565614},{"type":"metric","runId":"svm/svc:0","step":2,"name":"solver/gap","value":112.58238614935706},{"type":"metric","runId":"svm/svc:0","step":3,"name":"solver/dual","value":5.702079327078915},{"type":"metric","runId":"svm/svc:0","step":3,"name":"solver/gap","value":111.46370457978827},{"type":"metric","runId":"svm/svc:0","step":4,"name":"solver/dual","value":7.62473700685826},{"type":"metric","runId":"svm/svc:0","step":4,"name":"solver/gap","value":108.96232346344098},{"type":"metric","runId":"svm/svc:0","step":5,"name":"solver/dual","value":9.345176842259178},{"type":"metric","runId":"svm/svc:0","step":5,"name":"solver/gap","value":97.8451963921793},{"type":"metric","runId":"svm/svc:0","step":6,"name":"solver/dual","value":11.28807803765714},{"type":"metric","runId":"svm/svc:0","step":6,"name":"solver/gap","value":91.46163669073596},{"type":"metric","runId":"svm/svc:0","step":7,"name":"solver/dual","value":13.273743016105282},{"type":"metric","runId":"svm/svc:0","step":7,"name":"solver/gap","value":94.78964526982698},{"type":"metric","runId":"svm/svc:0","step":8,"name":"solver/dual","value":15.019668935917512},{"type":"metric","runId":"svm/svc:0","step":8,"name":"solver/gap","value":91.14761149375968},{"type":"metric","runId":"svm/svc:0","step":9,"name":"solver/dual","value":16.952054816901253},{"type":"metric","runId":"svm/svc:0","step":9,"name":"solver/gap","value":89.97582122893445},{"type":"metric","runId":"svm/svc:0","step":10,"name":"solver/dual","value":18.599115497375966},{"type":"metric","runId":"svm/svc:0","step":10,"name":"solver/gap","value":85.59161272505943},{"type":"metric","runId":"svm/svc:0","step":11,"name":"solver/dual","value":20.103222618098926},{"type":"metric","runId":"svm/svc:0","step":11,"name":"solver/gap","value":67.28904879207},{"type":"metric","runId":"svm/svc:0","step":12,"name":"solver/dual","value":22.03903985661539},{"type":"metric","runId":"svm/svc:0","step":12,"name":"solver/gap","value":63.202142146679904},{"type":"metric","runId":"svm/svc:0","step":13,"name":"solver/dual","value":23.439941377258307},{"type":"metric","runId":"svm/svc:0","step":13,"name":"solver/gap","value":59.44160572887324},{"type":"metric","runId":"svm/svc:0","step":14,"name":"solver/dual","value":25.42332794258207},{"type":"metric","runId":"svm/svc:0","step":14,"name":"solver/gap","value":59.23371320584418},{"type":"metric","runId":"svm/svc:0","step":15,"name":"solver/dual","value":27.265286542427745},{"type":"metric","runId":"svm/svc:0","step":15,"name":"solver/gap","value":60.842081306092524},{"type":"metric","runId":"svm/svc:0","step":16,"name":"solver/dual","value":29.297158513104872},{"type":"metric","runId":"svm/svc:0","step":16,"name":"solver/gap","value":38.95224477376475},{"type":"metric","runId":"svm/svc:0","step":17,"name":"solver/dual","value":31.29340450986156},{"type":"metric","runId":"svm/svc:0","step":17,"name":"solver/gap","value":37.8779509829582},{"type":"metric","runId":"svm/svc:0","step":18,"name":"solver/dual","value":32.96903055012052},{"type":"metric","runId":"svm/svc:0","step":18,"name":"solver/gap","value":28.213629205664446},{"type":"metric","runId":"svm/svc:0","step":19,"name":"solver/dual","value":34.572457243974114},{"type":"metric","runId":"svm/svc:0","step":19,"name":"solver/gap","value":19.93194316411028},{"type":"metric","runId":"svm/svc:0","step":20,"name":"solver/dual","value":35.174552240606246},{"type":"metric","runId":"svm/svc:0","step":20,"name":"solver/gap","value":9.85847215370594},{"type":"metric","runId":"svm/svc:0","step":21,"name":"solver/dual","value":35.6768200577389},{"type":"metric","runId":"svm/svc:0","step":21,"name":"solver/gap","value":5.249152784379163},{"type":"metric","runId":"svm/svc:0","step":22,"name":"solver/dual","value":36.17297674372649},{"type":"metric","runId":"svm/svc:0","step":22,"name":"solver/gap","value":3.856300068365151},{"type":"metric","runId":"svm/svc:0","step":23,"name":"solver/dual","value":36.320675931178044},{"type":"metric","runId":"svm/svc:0","step":23,"name":"solver/gap","value":3.6418731210477446},{"type":"metric","runId":"svm/svc:0","step":24,"name":"solver/dual","value":36.41268894314712},{"type":"metric","runId":"svm/svc:0","step":24,"name":"solver/gap","value":2.473603167134776},{"type":"metric","runId":"svm/svc:0","step":25,"name":"solver/dual","value":36.52140451501598},{"type":"metric","runId":"svm/svc:0","step":25,"name":"solver/gap","value":0.6044036290132624},{"type":"metric","runId":"svm/svc:0","step":26,"name":"solver/dual","value":36.61350255815569},{"type":"metric","runId":"svm/svc:0","step":26,"name":"solver/gap","value":0.7396714759714058},{"type":"metric","runId":"svm/svc:0","step":27,"name":"solver/dual","value":36.645779397181684},{"type":"metric","runId":"svm/svc:0","step":27,"name":"solver/gap","value":0.2867040460968866},{"type":"metric","runId":"svm/svc:0","step":28,"name":"solver/dual","value":36.658527302852875},{"type":"metric","runId":"svm/svc:0","step":28,"name":"solver/gap","value":0.5112119943315605},{"type":"metric","runId":"svm/svc:0","step":29,"name":"solver/dual","value":36.668352352835235},{"type":"metric","runId":"svm/svc:0","step":29,"name":"solver/gap","value":0.1281716697080313},{"type":"metric","runId":"svm/svc:0","step":30,"name":"solver/dual","value":36.67240510859776},{"type":"metric","runId":"svm/svc:0","step":30,"name":"solver/gap","value":0.08953215974854345},{"type":"metric","runId":"svm/svc:0","step":31,"name":"solver/dual","value":36.674537065064925},{"type":"metric","runId":"svm/svc:0","step":31,"name":"solver/gap","value":0.12206573341087079},{"type":"metric","runId":"svm/svc:0","step":32,"name":"solver/dual","value":36.68493059858363},{"type":"metric","runId":"svm/svc:0","step":32,"name":"solver/gap","value":0.09349561553747776},{"type":"metric","runId":"svm/svc:0","step":33,"name":"solver/dual","value":36.69716662992398},{"type":"metric","runId":"svm/svc:0","step":33,"name":"solver/gap","value":0.06591953338257639},{"type":"metric","runId":"svm/svc:0","step":34,"name":"solver/dual","value":36.704677897946226},{"type":"metric","runId":"svm/svc:0","step":34,"name":"solver/gap","value":0.06313696996443952},{"type":"metric","runId":"svm/svc:0","step":35,"name":"solver/dual","value":36.70618076749944},{"type":"metric","runId":"svm/svc:0","step":35,"name":"solver/gap","value":0.03509440993953916},{"type":"metric","runId":"svm/svc:0","step":36,"name":"solver/dual","value":36.707238373406966},{"type":"metric","runId":"svm/svc:0","step":36,"name":"solver/gap","value":0.036201817862419716},{"type":"metric","runId":"svm/svc:0","step":37,"name":"solver/dual","value":36.70779280756917},{"type":"metric","runId":"svm/svc:0","step":37,"name":"solver/gap","value":0.01523681610784422},{"type":"metric","runId":"svm/svc:0","step":38,"name":"solver/dual","value":36.70807749046859},{"type":"metric","runId":"svm/svc:0","step":38,"name":"solver/gap","value":0.016224470232685917},{"type":"metric","runId":"svm/svc:0","step":39,"name":"solver/dual","value":36.708137840760024},{"type":"metric","runId":"svm/svc:0","step":39,"name":"solver/gap","value":0.007114378207077721},{"type":"metric","runId":"svm/svc:0","step":40,"name":"solver/dual","value":36.70815393884696},{"type":"metric","runId":"svm/svc:0","step":40,"name":"solver/gap","value":0.005755480498201848},{"type":"metric","runId":"svm/svc:0","step":41,"name":"solver/dual","value":36.70816087099107},{"type":"metric","runId":"svm/svc:0","step":41,"name":"solver/gap","value":0.0019059921697817117},{"type":"metric","runId":"svm/svc:0","step":42,"name":"solver/dual","value":36.70816437974183},{"type":"metric","runId":"svm/svc:0","step":42,"name":"solver/gap","value":0.0017055379939137083},{"type":"metric","runId":"svm/svc:0","step":43,"name":"solver/dual","value":36.70816509545222},{"type":"metric","runId":"svm/svc:0","step":43,"name":"solver/gap","value":0.0010571631533835557},{"type":"metric","runId":"svm/svc:0","step":44,"name":"solver/dual","value":36.70816560984862},{"type":"metric","runId":"svm/svc:0","step":44,"name":"solver/gap","value":0.0011548153110823023},{"type":"metric","runId":"svm/svc:0","step":45,"name":"solver/dual","value":36.708165609848606},{"type":"metric","runId":"svm/svc:0","step":45,"name":"solver/gap","value":0.0011548153110823023},{"type":"end","runId":"svm/svc:0","status":"converged","steps":45,"summary":{}}]},"kinds":{"solver/dual":"scalar","solver/gap":"scalar","solver/violation":"scalar","solver/support":"scalar","solver/alphas":"tensor","solver/pair":"message","fit/iteration/end":"event","model/params":"derived","model/decision-surface":"derived","model/predictions":"derived","smo/alphaChanged":"scalar","model/support-vectors":"derived"},"fired":{"fit/iteration/end":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44]},"probes":[]}]}
+{
+  "schema": "mdml.tape/1",
+  "method": "svm/svc",
+  "seed": 0,
+  "title": "A metric curve",
+  "variants": [
+    {
+      "label": "session",
+      "config": {
+        "loss": "hinge",
+        "solver": {
+          "kind": "smo"
+        },
+        "C": 1,
+        "kernel": "rbf",
+        "degree": 3,
+        "coef0": 0
+      },
+      "head": 45,
+      "status": "converged",
+      "run": {
+        "schema": "mdml.run/1",
+        "events": [
+          {
+            "type": "run",
+            "runId": "svm/svc:0",
+            "name": "svm/svc",
+            "seed": 0,
+            "version": "0.1.2",
+            "config": {
+              "loss": "hinge",
+              "solver": {
+                "kind": "smo"
+              },
+              "C": 1,
+              "kernel": "rbf",
+              "degree": 3,
+              "coef0": 0
+            },
+            "channels": {
+              "metrics": {
+                "solver/dual": {
+                  "description": "the dual objective of the pair being solved (to be maximised)",
+                  "direction": "higher"
+                },
+                "solver/gap": {
+                  "description": "the primal-dual gap of the pair being solved (zero at the optimum)",
+                  "direction": "lower"
+                },
+                "solver/violation": {
+                  "description": "the largest KKT violation m(alpha) - M(alpha) of the working-set selection"
+                },
+                "solver/support": {
+                  "description": "the support vectors of the pair being solved"
+                },
+                "smo/alphaChanged": {
+                  "description": "the change of the two dual variables updated in the step, |da_i| + |da_j|"
+                }
+              },
+              "tensors": {
+                "solver/alphas": {
+                  "role": "param",
+                  "description": "the dual variables of the pair being solved"
+                }
+              },
+              "messages": {
+                "solver/pair": {
+                  "description": "the working pair (i, j) of the step, as training rows, and the classes being separated"
+                },
+                "fit/iteration/end": {
+                  "description": "",
+                  "payload": {
+                    "t": "the iteration just finished"
+                  }
+                }
+              },
+              "episodes": false,
+              "frames": false
+            }
+          },
+          {"type":"metric","runId":"svm/svc:0","step":0,"name":"solver/dual","value":0},
+          {"type":"metric","runId":"svm/svc:0","step":0,"name":"solver/gap","value":120},
+          {
+            "type": "checkpoint",
+            "runId": "svm/svc:0",
+            "step": 0,
+            "state": {
+              "phase": "fit",
+              "current": 0,
+              "smo": {
+                "alpha": {
+                  "$typed": "Float64Array",
+                  "values": [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                  ]
+                },
+                "grad": {
+                  "$typed": "Float64Array",
+                  "values": [
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+                  ]
+                },
+                "active": [
+                  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+                  25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+                  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+                  71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93,
+                  94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112,
+                  113, 114, 115, 116, 117, 118, 119
+                ],
+                "violation": {
+                  "$number": "inf"
+                },
+                "iterations": 0,
+                "counter": 121,
+                "unshrunk": false,
+                "finished": false
+              },
+              "live": {
+                "coef": [
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  {"$number":"-0"},
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "rho": 0
+              },
+              "margins": [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+              ],
+              "solved": [],
+              "platt": [null]
+            }
+          },
+          {"type":"metric","runId":"svm/svc:0","step":1,"name":"solver/dual","value":1.9837740815903953},
+          {"type":"metric","runId":"svm/svc:0","step":1,"name":"solver/gap","value":115.71230941677148},
+          {"type":"metric","runId":"svm/svc:0","step":2,"name":"solver/dual","value":3.9610659816565614},
+          {"type":"metric","runId":"svm/svc:0","step":2,"name":"solver/gap","value":112.58238614935706},
+          {"type":"metric","runId":"svm/svc:0","step":3,"name":"solver/dual","value":5.702079327078915},
+          {"type":"metric","runId":"svm/svc:0","step":3,"name":"solver/gap","value":111.46370457978827},
+          {"type":"metric","runId":"svm/svc:0","step":4,"name":"solver/dual","value":7.62473700685826},
+          {"type":"metric","runId":"svm/svc:0","step":4,"name":"solver/gap","value":108.96232346344098},
+          {"type":"metric","runId":"svm/svc:0","step":5,"name":"solver/dual","value":9.345176842259178},
+          {"type":"metric","runId":"svm/svc:0","step":5,"name":"solver/gap","value":97.8451963921793},
+          {"type":"metric","runId":"svm/svc:0","step":6,"name":"solver/dual","value":11.28807803765714},
+          {"type":"metric","runId":"svm/svc:0","step":6,"name":"solver/gap","value":91.46163669073596},
+          {"type":"metric","runId":"svm/svc:0","step":7,"name":"solver/dual","value":13.273743016105282},
+          {"type":"metric","runId":"svm/svc:0","step":7,"name":"solver/gap","value":94.78964526982698},
+          {"type":"metric","runId":"svm/svc:0","step":8,"name":"solver/dual","value":15.019668935917512},
+          {"type":"metric","runId":"svm/svc:0","step":8,"name":"solver/gap","value":91.14761149375968},
+          {"type":"metric","runId":"svm/svc:0","step":9,"name":"solver/dual","value":16.952054816901253},
+          {"type":"metric","runId":"svm/svc:0","step":9,"name":"solver/gap","value":89.97582122893445},
+          {"type":"metric","runId":"svm/svc:0","step":10,"name":"solver/dual","value":18.599115497375966},
+          {"type":"metric","runId":"svm/svc:0","step":10,"name":"solver/gap","value":85.59161272505943},
+          {"type":"metric","runId":"svm/svc:0","step":11,"name":"solver/dual","value":20.103222618098926},
+          {"type":"metric","runId":"svm/svc:0","step":11,"name":"solver/gap","value":67.28904879207},
+          {"type":"metric","runId":"svm/svc:0","step":12,"name":"solver/dual","value":22.03903985661539},
+          {"type":"metric","runId":"svm/svc:0","step":12,"name":"solver/gap","value":63.202142146679904},
+          {"type":"metric","runId":"svm/svc:0","step":13,"name":"solver/dual","value":23.439941377258307},
+          {"type":"metric","runId":"svm/svc:0","step":13,"name":"solver/gap","value":59.44160572887324},
+          {"type":"metric","runId":"svm/svc:0","step":14,"name":"solver/dual","value":25.42332794258207},
+          {"type":"metric","runId":"svm/svc:0","step":14,"name":"solver/gap","value":59.23371320584418},
+          {"type":"metric","runId":"svm/svc:0","step":15,"name":"solver/dual","value":27.265286542427745},
+          {"type":"metric","runId":"svm/svc:0","step":15,"name":"solver/gap","value":60.842081306092524},
+          {"type":"metric","runId":"svm/svc:0","step":16,"name":"solver/dual","value":29.297158513104872},
+          {"type":"metric","runId":"svm/svc:0","step":16,"name":"solver/gap","value":38.95224477376475},
+          {"type":"metric","runId":"svm/svc:0","step":17,"name":"solver/dual","value":31.29340450986156},
+          {"type":"metric","runId":"svm/svc:0","step":17,"name":"solver/gap","value":37.8779509829582},
+          {"type":"metric","runId":"svm/svc:0","step":18,"name":"solver/dual","value":32.96903055012052},
+          {"type":"metric","runId":"svm/svc:0","step":18,"name":"solver/gap","value":28.213629205664446},
+          {"type":"metric","runId":"svm/svc:0","step":19,"name":"solver/dual","value":34.572457243974114},
+          {"type":"metric","runId":"svm/svc:0","step":19,"name":"solver/gap","value":19.93194316411028},
+          {"type":"metric","runId":"svm/svc:0","step":20,"name":"solver/dual","value":35.174552240606246},
+          {"type":"metric","runId":"svm/svc:0","step":20,"name":"solver/gap","value":9.85847215370594},
+          {"type":"metric","runId":"svm/svc:0","step":21,"name":"solver/dual","value":35.6768200577389},
+          {"type":"metric","runId":"svm/svc:0","step":21,"name":"solver/gap","value":5.249152784379163},
+          {"type":"metric","runId":"svm/svc:0","step":22,"name":"solver/dual","value":36.17297674372649},
+          {"type":"metric","runId":"svm/svc:0","step":22,"name":"solver/gap","value":3.856300068365151},
+          {"type":"metric","runId":"svm/svc:0","step":23,"name":"solver/dual","value":36.320675931178044},
+          {"type":"metric","runId":"svm/svc:0","step":23,"name":"solver/gap","value":3.6418731210477446},
+          {"type":"metric","runId":"svm/svc:0","step":24,"name":"solver/dual","value":36.41268894314712},
+          {"type":"metric","runId":"svm/svc:0","step":24,"name":"solver/gap","value":2.473603167134776},
+          {"type":"metric","runId":"svm/svc:0","step":25,"name":"solver/dual","value":36.52140451501598},
+          {"type":"metric","runId":"svm/svc:0","step":25,"name":"solver/gap","value":0.6044036290132624},
+          {"type":"metric","runId":"svm/svc:0","step":26,"name":"solver/dual","value":36.61350255815569},
+          {"type":"metric","runId":"svm/svc:0","step":26,"name":"solver/gap","value":0.7396714759714058},
+          {"type":"metric","runId":"svm/svc:0","step":27,"name":"solver/dual","value":36.645779397181684},
+          {"type":"metric","runId":"svm/svc:0","step":27,"name":"solver/gap","value":0.2867040460968866},
+          {"type":"metric","runId":"svm/svc:0","step":28,"name":"solver/dual","value":36.658527302852875},
+          {"type":"metric","runId":"svm/svc:0","step":28,"name":"solver/gap","value":0.5112119943315605},
+          {"type":"metric","runId":"svm/svc:0","step":29,"name":"solver/dual","value":36.668352352835235},
+          {"type":"metric","runId":"svm/svc:0","step":29,"name":"solver/gap","value":0.1281716697080313},
+          {"type":"metric","runId":"svm/svc:0","step":30,"name":"solver/dual","value":36.67240510859776},
+          {"type":"metric","runId":"svm/svc:0","step":30,"name":"solver/gap","value":0.08953215974854345},
+          {"type":"metric","runId":"svm/svc:0","step":31,"name":"solver/dual","value":36.674537065064925},
+          {"type":"metric","runId":"svm/svc:0","step":31,"name":"solver/gap","value":0.12206573341087079},
+          {"type":"metric","runId":"svm/svc:0","step":32,"name":"solver/dual","value":36.68493059858363},
+          {"type":"metric","runId":"svm/svc:0","step":32,"name":"solver/gap","value":0.09349561553747776},
+          {"type":"metric","runId":"svm/svc:0","step":33,"name":"solver/dual","value":36.69716662992398},
+          {"type":"metric","runId":"svm/svc:0","step":33,"name":"solver/gap","value":0.06591953338257639},
+          {"type":"metric","runId":"svm/svc:0","step":34,"name":"solver/dual","value":36.704677897946226},
+          {"type":"metric","runId":"svm/svc:0","step":34,"name":"solver/gap","value":0.06313696996443952},
+          {"type":"metric","runId":"svm/svc:0","step":35,"name":"solver/dual","value":36.70618076749944},
+          {"type":"metric","runId":"svm/svc:0","step":35,"name":"solver/gap","value":0.03509440993953916},
+          {"type":"metric","runId":"svm/svc:0","step":36,"name":"solver/dual","value":36.707238373406966},
+          {"type":"metric","runId":"svm/svc:0","step":36,"name":"solver/gap","value":0.036201817862419716},
+          {"type":"metric","runId":"svm/svc:0","step":37,"name":"solver/dual","value":36.70779280756917},
+          {"type":"metric","runId":"svm/svc:0","step":37,"name":"solver/gap","value":0.01523681610784422},
+          {"type":"metric","runId":"svm/svc:0","step":38,"name":"solver/dual","value":36.70807749046859},
+          {"type":"metric","runId":"svm/svc:0","step":38,"name":"solver/gap","value":0.016224470232685917},
+          {"type":"metric","runId":"svm/svc:0","step":39,"name":"solver/dual","value":36.708137840760024},
+          {"type":"metric","runId":"svm/svc:0","step":39,"name":"solver/gap","value":0.007114378207077721},
+          {"type":"metric","runId":"svm/svc:0","step":40,"name":"solver/dual","value":36.70815393884696},
+          {"type":"metric","runId":"svm/svc:0","step":40,"name":"solver/gap","value":0.005755480498201848},
+          {"type":"metric","runId":"svm/svc:0","step":41,"name":"solver/dual","value":36.70816087099107},
+          {"type":"metric","runId":"svm/svc:0","step":41,"name":"solver/gap","value":0.0019059921697817117},
+          {"type":"metric","runId":"svm/svc:0","step":42,"name":"solver/dual","value":36.70816437974183},
+          {"type":"metric","runId":"svm/svc:0","step":42,"name":"solver/gap","value":0.0017055379939137083},
+          {"type":"metric","runId":"svm/svc:0","step":43,"name":"solver/dual","value":36.70816509545222},
+          {"type":"metric","runId":"svm/svc:0","step":43,"name":"solver/gap","value":0.0010571631533835557},
+          {"type":"metric","runId":"svm/svc:0","step":44,"name":"solver/dual","value":36.70816560984862},
+          {"type":"metric","runId":"svm/svc:0","step":44,"name":"solver/gap","value":0.0011548153110823023},
+          {"type":"metric","runId":"svm/svc:0","step":45,"name":"solver/dual","value":36.708165609848606},
+          {"type":"metric","runId":"svm/svc:0","step":45,"name":"solver/gap","value":0.0011548153110823023},
+          {
+            "type": "end",
+            "runId": "svm/svc:0",
+            "status": "converged",
+            "steps": 45,
+            "summary": {}
+          }
+        ]
+      },
+      "kinds": {
+        "solver/dual": "scalar",
+        "solver/gap": "scalar",
+        "solver/violation": "scalar",
+        "solver/support": "scalar",
+        "solver/alphas": "tensor",
+        "solver/pair": "message",
+        "fit/iteration/end": "event",
+        "model/params": "derived",
+        "model/decision-surface": "derived",
+        "model/predictions": "derived",
+        "smo/alphaChanged": "scalar",
+        "model/support-vectors": "derived"
+      },
+      "fired": {
+        "fit/iteration/end": [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+          27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44
+        ]
+      },
+      "probes": []
+    }
+  ]
+}

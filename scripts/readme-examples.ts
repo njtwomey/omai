@@ -37,6 +37,7 @@ const check = args.includes('--check')
 const only = new Set(check ? [] : args.filter((a) => !a.startsWith('--')))
 
 const { renderView, tapeJson } = await import('../examples/_shared/render.ts')
+const { prettyJson } = await import('../examples/_shared/pretty-json.ts')
 type ExampleModule = import('../examples/_shared/contract.ts').ExampleModule
 type Tape = import('../examples/_shared/contract.ts').Tape
 
@@ -67,7 +68,7 @@ for (const name of names) {
     const tape = tapes[key] as Tape
     const file = keys.length === 1 ? 'tape.json' : `tape-${key}.json`
     const json = await tapeJson(key, tape, entry.module.meta.title)
-    made.set(`${name}/${file}`, `${JSON.stringify(json)}\n`)
+    made.set(`${name}/${file}`, `${prettyJson(json)}\n`)
     entry.tapeFiles.push(file)
   }
   console.log(`  ${(svg.length / 1024).toFixed(0)} KB figure, ${keys.length} tape(s)`)
